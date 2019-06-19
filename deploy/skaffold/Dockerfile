@@ -39,7 +39,7 @@ RUN curl -LO https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-c
 ENV PATH=$PATH:/google-cloud-sdk/bin
 RUN /google-cloud-sdk/bin/gcloud auth configure-docker
 
-ENV KUSTOMIZE_VERSION=1.0.1
+ENV KUSTOMIZE_VERSION=2.0.3
 RUN curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64 && \
   chmod +x kustomize_${KUSTOMIZE_VERSION}_linux_amd64 && \
   mv kustomize_${KUSTOMIZE_VERSION}_linux_amd64 /usr/local/bin/kustomize
@@ -95,6 +95,11 @@ COPY . .
 
 FROM builder as integration
 ARG VERSION
+
+ENV KIND_VERSION=v0.3.0
+RUN curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64 && \
+  chmod +x kind && \
+  mv kind /usr/local/bin/
 
 RUN make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
 

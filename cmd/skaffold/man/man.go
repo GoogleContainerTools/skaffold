@@ -27,31 +27,18 @@ import (
 )
 
 func main() {
-	if err := printMan(os.Stdout, os.Stderr); err != nil {
-		panic(err)
-	}
+	printMan(os.Stdout, os.Stderr)
 }
 
-func printMan(stdout, stderr io.Writer) error {
+func printMan(stdout, stderr io.Writer) {
 	command := cmd.NewSkaffoldCommand(stdout, stderr)
-
-	return printSubCommands(stdout, command)
+	printCommand(stdout, command)
 }
 
-func printSubCommands(out io.Writer, command *cobra.Command) error {
-	for _, subCommand := range command.Commands() {
-		if err := printCommand(out, subCommand); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func printCommand(out io.Writer, command *cobra.Command) error {
+func printCommand(out io.Writer, command *cobra.Command) {
 	command.DisableFlagsInUseLine = true
 
-	fmt.Fprintf(out, "\n### %s\n", command.UseLine())
+	fmt.Fprintf(out, "\n### %s\n", command.CommandPath())
 	fmt.Fprintf(out, "\n%s\n", command.Short)
 	fmt.Fprintf(out, "\n```\n%s\n\n```\n", command.UsageString())
 
@@ -63,5 +50,7 @@ func printCommand(out io.Writer, command *cobra.Command) error {
 		})
 	}
 
-	return printSubCommands(out, command)
+	for _, subCommand := range command.Commands() {
+		printCommand(out, subCommand)
+	}
 }

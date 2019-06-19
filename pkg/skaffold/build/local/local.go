@@ -124,20 +124,13 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
 
 	case a.CustomArtifact != nil:
-		paths, err = custom.GetDependencies(ctx, a.Workspace, a.CustomArtifact)
+		paths, err = custom.GetDependencies(ctx, a.Workspace, a.CustomArtifact, b.insecureRegistries)
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
 	}
 
 	if err != nil {
-		// if the context was cancelled act as if all is well
-		// TODO(dgageot): this should be even higher in the call chain.
-		if ctx.Err() == context.Canceled {
-			logrus.Debugln(errors.Wrap(err, "ignore error since context is cancelled"))
-			return nil, nil
-		}
-
 		return nil, err
 	}
 
@@ -150,4 +143,12 @@ func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, err
 		return "", errors.Wrap(err, "inspecting image")
 	}
 	return insp.ID, nil
+}
+
+func (b *Builder) SyncMap(ctx context.Context, a *latest.Artifact) (map[string][]string, error) {
+	if a.DockerArtifact == nil {
+		return nil, build.ErrSyncMapNotSupported{}
+	}
+
+	return docker.SyncMap(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
 }

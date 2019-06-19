@@ -17,7 +17,6 @@ limitations under the License.
 package initializer
 
 import (
-	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -25,77 +24,76 @@ import (
 
 func TestIsSupportedKubernetesFileExtension(t *testing.T) {
 	tests := []struct {
-		name     string
-		filename string
-		expected bool
+		description string
+		filename    string
+		expected    bool
 	}{
 		{
-			name:     "valid k8 yaml filename format",
-			filename: "test1.yaml",
-			expected: true,
+			description: "valid k8 yaml filename format",
+			filename:    "test1.yaml",
+			expected:    true,
 		},
 		{
-			name:     "valid k8 json filename format",
-			filename: "test1.json",
-			expected: true,
+			description: "valid k8 json filename format",
+			filename:    "test1.json",
+			expected:    true,
 		},
 		{
-			name:     "valid k8 yaml filename format",
-			filename: "test1.yml",
-			expected: true,
+			description: "valid k8 yaml filename format",
+			filename:    "test1.yml",
+			expected:    true,
 		},
 		{
-			name:     "invalid file",
-			filename: "some.config",
-			expected: false,
+			description: "invalid file",
+			filename:    "some.config",
+			expected:    false,
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if IsSupportedKubernetesFileExtension(test.filename) != test.expected {
-				t.Errorf("expected to see %t for %s, but instead got %t", test.expected,
-					test.filename, !test.expected)
-			}
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			supported := IsSupportedKubernetesFileExtension(test.filename)
+
+			t.CheckDeepEqual(test.expected, supported)
 		})
 	}
 }
 
 func TestIsSkaffoldConfig(t *testing.T) {
 	tests := []struct {
-		name     string
-		contents []byte
-		expected bool
+		description string
+		contents    string
+		isValid     bool
 	}{
 		{
-			name: "valid skaffold config",
-			contents: []byte(`apiVersion: skaffold/v1beta6
+			description: "valid skaffold config",
+			contents: `apiVersion: skaffold/v1beta6
 kind: Config
 deploy:
-  kustomize: {}`),
-			expected: true,
+  kustomize: {}`,
+			isValid: true,
 		},
 		{
-			name:     "not a valid format",
-			contents: []byte("test"),
-			expected: false,
+			description: "not a valid format",
+			contents:    "test",
+			isValid:     false,
 		},
 		{
-			name: "invalid skaffold config version",
-			contents: []byte(`apiVersion: skaffold/v2beta1
+			description: "invalid skaffold config version",
+			contents: `apiVersion: skaffold/v2beta1
 kind: Config
 deploy:
-  kustomize: {}`),
-			expected: false,
+  kustomize: {}`,
+			isValid: false,
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			filename := testutil.CreateTempFileWithContents(t, "", "skaffold.yaml", test.contents)
-			defer os.Remove(filename) // clean up
-			if IsSkaffoldConfig(filename) != test.expected {
-				t.Errorf("expected to see %t for\n%s. but instead got %t", test.expected,
-					test.contents, !test.expected)
-			}
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Write("skaffold.yaml", test.contents)
+
+			isValid := IsSkaffoldConfig(tmpDir.Path("skaffold.yaml"))
+
+			t.CheckDeepEqual(test.isValid, isValid)
 		})
 	}
 }

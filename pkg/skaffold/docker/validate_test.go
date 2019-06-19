@@ -54,15 +54,13 @@ func TestValidateDockerfile(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmp, delete := testutil.NewTempDir(t)
-			defer delete()
-
-			tmp.Write("Dockerfile", test.content)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmp := t.NewTempDir().
+				Write("Dockerfile", test.content)
 
 			valid := ValidateDockerfile(tmp.Path(test.fileToValidate))
 
-			testutil.CheckDeepEqual(t, test.expectedValid, valid)
+			t.CheckDeepEqual(test.expectedValid, valid)
 		})
 	}
 }

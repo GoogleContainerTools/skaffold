@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -46,25 +47,25 @@ func TestParseSamples(t *testing.T) {
 		t.Fatalf("did not find sample files in %q", samplesRoot)
 	}
 
-	tmpDir, teardown := testutil.NewTempDir(t)
-	defer teardown()
-
 	for _, path := range paths {
 		name := filepath.Base(path)
 
-		t.Run(name, func(t *testing.T) {
+		testutil.Run(t, name, func(t *testutil.T) {
 			for _, is := range ignoredSamples {
 				if name == is {
 					t.Skip()
 				}
 			}
+
 			buf, err := ioutil.ReadFile(path)
-			testutil.CheckError(t, false, err)
+			t.CheckNoError(err)
 
-			tmpDir.Write(name, addHeader(buf))
+			configFile := t.TempFile("skaffold.yaml", addHeader(buf))
+			cfg, err := ParseConfig(configFile, true)
+			t.CheckNoError(err)
 
-			_, err = ParseConfig(tmpDir.Path(name), true)
-			testutil.CheckError(t, false, err)
+			err = validation.Process(cfg.(*latest.SkaffoldConfig))
+			t.CheckNoError(err)
 		})
 	}
 }
@@ -82,9 +83,9 @@ func findSamples(root string) ([]string, error) {
 	return files, err
 }
 
-func addHeader(buf []byte) string {
+func addHeader(buf []byte) []byte {
 	if bytes.HasPrefix(buf, []byte("apiVersion:")) {
-		return string(buf)
+		return buf
 	}
-	return fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, buf)
+	return []byte(fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, buf))
 }

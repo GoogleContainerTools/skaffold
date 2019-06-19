@@ -21,6 +21,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
@@ -110,4 +111,8 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	return nil // noop
+}
+
+func (b *Builder) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
+	return nil, build.ErrSyncMapNotSupported{}
 }

@@ -20,7 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta10"
+const Version string = "skaffold/v1beta11"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -99,6 +99,8 @@ type GitTagger struct {
 	// `Tags` (default): use git tags or fall back to abbreviated commit hash.
 	// `CommitSha`: use the full git commit sha.
 	// `AbbrevCommitSha`: use the abbreviated git commit sha.
+	// `TreeSha`: use the full tree hash of the artifact workingdir.
+	// `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.
 	Variant string `yaml:"variant,omitempty"`
 }
 
@@ -205,7 +207,7 @@ type LocalDir struct {
 // KanikoBuildContext contains the different fields available to specify
 // a Kaniko build context.
 type KanikoBuildContext struct {
-	// GCSBucket is the CGS bucket to which sources are uploaded.
+	// GCSBucket is the GCS bucket to which sources are uploaded.
 	// Kaniko will need access to that bucket to download the sources.
 	GCSBucket string `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext"`
 
@@ -219,15 +221,19 @@ type KanikoCache struct {
 	// Repo is a remote repository to store cached layers. If none is specified, one will be
 	// inferred from the image name. See [Kaniko Caching](https://github.com/GoogleContainerTools/kaniko#caching).
 	Repo string `yaml:"repo,omitempty"`
+	// HostPath specifies a path on the host that is mounted to each pod as read only cache volume containing base images.
+	// If set, must exist on each node and prepopulated with kaniko-warmer.
+	HostPath string `yaml:"hostPath,omitempty"`
 }
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
 type ClusterDetails struct {
-	// PullSecret is the path to the secret key file.
+	// PullSecret is the path to the Google Cloud service account secret key file.
 	PullSecret string `yaml:"pullSecret,omitempty"`
 
 	// PullSecretName is the name of the Kubernetes secret for pulling the files
-	// from the build context and pushing the final image.
+	// from the build context and pushing the final image. If given, the secret needs to
+	// contain the Google Cloud service account secret key under the key `kaniko-secret`.
 	// Defaults to `kaniko-secret`.
 	PullSecretName string `yaml:"pullSecretName,omitempty"`
 
@@ -249,10 +255,11 @@ type ClusterDetails struct {
 // DockerConfig contains information about the docker `config.json` to mount.
 type DockerConfig struct {
 	// Path is the path to the docker `config.json`.
-	Path string `yaml:"path,omitempty"`
+	Path string `yaml:"path,omitempty" yamltags:"oneOf=dockerSecret"`
 
-	// SecretName is the Kubernetes secret that will hold the Docker configuration.
-	SecretName string `yaml:"secretName,omitempty"`
+	// SecretName is the Kubernetes secret that contains the `config.json` Docker configuration.
+	// Note that the expected secret type is not 'kubernetes.io/dockerconfigjson' but 'Opaque'.
+	SecretName string `yaml:"secretName,omitempty" yamltags:"oneOf=dockerSecret"`
 }
 
 // ResourceRequirements describes the resource requirements for the kaniko pod.
@@ -411,6 +418,10 @@ type HelmRelease struct {
 	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
 
+	// Remote specifies whether the chart path is remote, or exists on the host filesystem.
+	// `remote: true` implies `skipBuildDependencies: true`.
+	Remote bool `yaml:"remote,omitempty"`
+
 	// Overrides are key-value pairs.
 	// If present, Skaffold will build a Helm `values` file that overrides
 	// the original and use it to call Helm CLI (`--f` flag).
@@ -469,14 +480,36 @@ type Artifact struct {
 
 	// Sync *alpha* lists local files synced to pods instead
 	// of triggering an image build when modified.
-	// This is a mapping of local files to sync to remote folders.
-	// For example: `{"*.py": ".", "css/**/*.css": "app/css"}`.
-	Sync map[string]string `yaml:"sync,omitempty"`
+	Sync *Sync `yaml:"sync,omitempty"`
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
 
 	WorkspaceHash string `yaml:"-,omitempty"`
+}
+
+// Sync *alpha* specifies what files to sync into the container.
+// This is a list of sync rules indicating the intent to sync for source files.
+type Sync struct {
+	// Manual lists manual sync rules indicating the source and destination.
+	Manual []*SyncRule `yaml:"manual,omitempty" yamltags:"oneOf=sync"`
+}
+
+// SyncRule specifies which local files to sync to remote folders.
+type SyncRule struct {
+	// Src is a glob pattern to match local paths against.
+	// Directories should be delimited by `/` on all platforms.
+	// For example: `"css/**/*.css"`.
+	Src string `yaml:"src,omitempty" yamltags:"required"`
+
+	// Dest is the destination path in the container where the files should be synced to.
+	// For example: `"app/"`
+	Dest string `yaml:"dest,omitempty" yamltags:"required"`
+
+	// Strip specifies the path prefix to remove from the source path when
+	// transplanting the files into the destination folder.
+	// For example: `"css/"`
+	Strip string `yaml:"strip,omitempty"`
 }
 
 // Profile *beta* profiles are used to override any `build`, `test` or `deploy` configuration.
@@ -566,12 +599,28 @@ type CustomArtifact struct {
 }
 
 // CustomDependencies *alpha* is used to specify dependencies for an artifact built by a custom build script.
+// Either `dockerfile` or `paths` should be specified for file watching to work as expected.
 type CustomDependencies struct {
+	// Dockerfile should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies.
+	Dockerfile *DockerfileDependency `yaml:"dockerfile,omitempty" yamltags:"oneOf=dependency"`
+	// Command represents a custom command that skaffold executes to obtain dependencies. The output of this command *must* be a valid JSON array.
+	Command string `yaml:"command,omitempty" yamltags:"oneOf=dependency"`
 	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
 	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
 	// Will only work in conjunction with `paths`.
 	Ignore []string `yaml:"ignore,omitempty"`
+}
+
+// DockerfileDependency *alpha* is used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile.
+type DockerfileDependency struct {
+	// Path locates the Dockerfile relative to workspace.
+	Path string `yaml:"path,omitempty"`
+
+	// BuildArgs are arguments passed to the docker build.
+	// It also accepts environment variables via the go template syntax.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
+	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 }
 
 // KanikoArtifact *alpha* describes an artifact built from a Dockerfile,
@@ -623,14 +672,17 @@ type DockerArtifact struct {
 	// NetworkMode is passed through to docker and overrides the
 	// network configuration of docker builder. If unset, use whatever
 	// is configured in the underlying docker daemon. Valid modes are
-	// `Host`: use the host's networking stack.
-	// `Bridge`: use the bridged network configuration.
-	// `None`: no networking in the container.
+	// `host`: use the host's networking stack.
+	// `bridge`: use the bridged network configuration.
+	// `none`: no networking in the container.
 	NetworkMode string `yaml:"network,omitempty"`
 
 	// CacheFrom lists the Docker images used as cache sources.
 	// For example: `["golang:1.10.1-alpine3.7", "alpine:3.7"]`.
 	CacheFrom []string `yaml:"cacheFrom,omitempty"`
+
+	// NoCache used to pass in --no-cache to docker build to prevent caching.
+	NoCache bool `yaml:"noCache,omitempty"`
 }
 
 // BazelArtifact *beta* describes an artifact built with [Bazel](https://bazel.build/).

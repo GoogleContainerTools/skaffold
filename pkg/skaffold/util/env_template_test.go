@@ -25,16 +25,16 @@ import (
 
 func TestEnvTemplate_ExecuteEnvTemplate(t *testing.T) {
 	tests := []struct {
-		name      string
-		template  string
-		customMap map[string]string
-		env       []string
-		want      string
-		shouldErr bool
+		description string
+		template    string
+		customMap   map[string]string
+		env         []string
+		want        string
+		shouldErr   bool
 	}{
 		{
-			name:     "custom only",
-			template: "{{.FOO}}:{{.BAR}}",
+			description: "custom only",
+			template:    "{{.FOO}}:{{.BAR}}",
 			customMap: map[string]string{
 				"FOO": "foo",
 				"BAR": "bar",
@@ -42,15 +42,15 @@ func TestEnvTemplate_ExecuteEnvTemplate(t *testing.T) {
 			want: "foo:bar",
 		},
 		{
-			name:     "env only",
-			template: "{{.FOO}}-{{.BAZ}}:latest",
-			env:      []string{"FOO=BAR", "BAZ=BAT"},
-			want:     "BAR-BAT:latest",
+			description: "env only",
+			template:    "{{.FOO}}-{{.BAZ}}:latest",
+			env:         []string{"FOO=BAR", "BAZ=BAT"},
+			want:        "BAR-BAT:latest",
 		},
 		{
-			name:     "both and custom precedence",
-			template: "{{.MY_NAME}}-{{.FROM_ENV}}:latest",
-			env:      []string{"FROM_ENV=FOO", "MY_NAME=BAR"},
+			description: "both and custom precedence",
+			template:    "{{.MY_NAME}}-{{.FROM_ENV}}:latest",
+			env:         []string{"FROM_ENV=FOO", "MY_NAME=BAR"},
 			customMap: map[string]string{
 				"FOO":     "foo",
 				"MY_NAME": "from_custom",
@@ -59,14 +59,13 @@ func TestEnvTemplate_ExecuteEnvTemplate(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			testTemplate := template.Must(template.New("").Parse(test.template))
-			OSEnviron = func() []string {
-				return test.env
-			}
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&OSEnviron, func() []string { return test.env })
 
+			testTemplate := template.Must(template.New("").Parse(test.template))
 			got, err := ExecuteEnvTemplate(testTemplate, test.customMap)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.want, got)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, got)
 		})
 	}
 }

@@ -16,40 +16,32 @@ limitations under the License.
 package apiversion
 
 import (
-	"reflect"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/blang/semver"
 )
 
 func TestMustParse(t *testing.T) {
-	_ = MustParse("skaffold/v1alpha4")
+	MustParse("skaffold/v1alpha4")
 }
 
 func TestMustParse_panic(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Errorf("Should have panicked")
-		}
-	}()
-	_ = MustParse("invalid version")
+	defer testutil.EnsureTestPanicked(t)
+
+	MustParse("invalid version")
 }
 
 func TestParseVersion(t *testing.T) {
-	type args struct {
-		v string
-	}
 	tests := []struct {
-		name    string
-		args    args
-		want    semver.Version
-		wantErr bool
+		description string
+		version     string
+		want        semver.Version
+		shouldErr   bool
 	}{
 		{
-			name: "full",
-			args: args{
-				v: "skaffold/v7alpha3",
-			},
+			description: "full",
+			version:     "skaffold/v7alpha3",
 			want: semver.Version{
 				Major: 7,
 				Pre: []semver.PRVersion{
@@ -64,32 +56,23 @@ func TestParseVersion(t *testing.T) {
 			},
 		},
 		{
-			name: "ga",
-			args: args{
-				v: "skaffold/v4",
-			},
+			description: "ga",
+			version:     "skaffold/v4",
 			want: semver.Version{
 				Major: 4,
 			},
 		},
 		{
-			name: "incorrect",
-			args: args{
-				v: "apps/v1",
-			},
-			wantErr: true,
+			description: "incorrect",
+			version:     "apps/v1",
+			shouldErr:   true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := Parse(tt.args.v)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Parse() = %v, want %v", got, tt.want)
-			}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			got, err := Parse(test.version)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, got)
 		})
 	}
 }

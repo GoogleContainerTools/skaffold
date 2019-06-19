@@ -21,25 +21,10 @@ import (
 	"io"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 )
 
-func NewCmdList(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "list",
-		Short: "List all values set in the global Skaffold config",
-		Args:  cobra.ExactArgs(0),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return runList(out)
-		},
-	}
-	AddConfigFlags(cmd)
-	AddListFlags(cmd)
-	return cmd
-}
-
-func runList(out io.Writer) error {
+func List(out io.Writer) error {
 	var configYaml []byte
 	if showAll {
 		cfg, err := readConfig()
@@ -66,7 +51,9 @@ func runList(out io.Writer) error {
 			return errors.Wrap(err, "marshaling config")
 		}
 	}
-	out.Write([]byte(fmt.Sprintf("skaffold config: %s\n", configFile)))
+
+	fmt.Fprintf(out, "skaffold config: %s\n", configFile)
 	out.Write(configYaml)
+
 	return nil
 }

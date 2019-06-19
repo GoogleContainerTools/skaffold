@@ -16,22 +16,22 @@ limitations under the License.
 
 package config
 
-import (
-	"github.com/spf13/cobra"
+import "github.com/spf13/pflag"
+
+var (
+	configFile, kubecontext string
+	showAll, global         bool
 )
 
-var configFile, kubecontext string
-var showAll, global bool
-
-func AddConfigFlags(cmd *cobra.Command) {
-	cmd.Flags().StringVarP(&configFile, "config", "c", "", "Path to Skaffold config")
-	cmd.Flags().StringVarP(&kubecontext, "kube-context", "k", "", "Kubectl context to set values against")
+func AddCommonFlags(f *pflag.FlagSet) {
+	f.StringVarP(&configFile, "config", "c", "", "Path to Skaffold config")
+	f.StringVarP(&kubecontext, "kube-context", "k", "", "Kubectl context to set values against")
 }
 
-func AddListFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVarP(&showAll, "all", "a", false, "Show values for all kubecontexts")
+func AddListFlags(f *pflag.FlagSet) {
+	f.BoolVarP(&showAll, "all", "a", false, "Show values for all kubecontexts")
 }
 
-func AddSetFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVarP(&global, "global", "g", false, "Set value for global config")
+func AddSetUnsetFlags(f *pflag.FlagSet) {
+	f.BoolVarP(&global, "global", "g", false, "Set value for global config")
 }

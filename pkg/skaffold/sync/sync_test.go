@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -50,8 +49,8 @@ func TestNewSyncItem(t *testing.T) {
 			description: "match copy",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: map[string]string{
-					"*.html": ".",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{{Src: "*.html", Dest: "."}},
 				},
 				Workspace: ".",
 			},
@@ -66,18 +65,18 @@ func TestNewSyncItem(t *testing.T) {
 			},
 			expected: &Item{
 				Image: "test:123",
-				Copy: map[string]string{
-					"index.html": "index.html",
+				Copy: map[string][]string{
+					"index.html": {"index.html"},
 				},
-				Delete: map[string]string{},
+				Delete: map[string][]string{},
 			},
 		},
 		{
 			description: "no tag for image",
 			artifact: &latest.Artifact{
 				ImageName: "notbuildyet",
-				Sync: map[string]string{
-					"*.html": ".",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{{Src: "*.html", Dest: "."}},
 				},
 				Workspace: ".",
 			},
@@ -96,10 +95,12 @@ func TestNewSyncItem(t *testing.T) {
 			description: "multiple sync patterns",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: map[string]string{
-					"*.js":   ".",
-					"*.html": ".",
-					"*.json": ".",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "*.js", Dest: "."},
+						{Src: "*.html", Dest: "."},
+						{Src: "*.json", Dest: "."},
+					},
 				},
 				Workspace: "node",
 			},
@@ -116,12 +117,12 @@ func TestNewSyncItem(t *testing.T) {
 			},
 			expected: &Item{
 				Image: "test:123",
-				Copy: map[string]string{
-					filepath.Join("node", "server.js"):  "server.js",
-					filepath.Join("node", "index.html"): "index.html",
+				Copy: map[string][]string{
+					filepath.Join("node", "server.js"):  {"server.js"},
+					filepath.Join("node", "index.html"): {"index.html"},
 				},
-				Delete: map[string]string{
-					filepath.Join("node", "package.json"): "package.json",
+				Delete: map[string][]string{
+					filepath.Join("node", "package.json"): {"package.json"},
 				},
 			},
 		},
@@ -129,8 +130,10 @@ func TestNewSyncItem(t *testing.T) {
 			description: "recursive glob patterns",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: map[string]string{
-					"src/**/*.js": "src/",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "src/**/*.js", Dest: "src/", Strip: "src/"},
+					},
 				},
 				Workspace: "node",
 			},
@@ -146,18 +149,20 @@ func TestNewSyncItem(t *testing.T) {
 			workingDir: "/",
 			expected: &Item{
 				Image: "test:123",
-				Copy: map[string]string{
-					filepath.Join("node", "src/app/server/server.js"): "/src/server.js",
+				Copy: map[string][]string{
+					filepath.Join("node", "src/app/server/server.js"): {"/src/app/server/server.js"},
 				},
-				Delete: map[string]string{},
+				Delete: map[string][]string{},
 			},
 		},
 		{
 			description: "sync all",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: map[string]string{
-					"*": ".",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "*", Dest: "."},
+					},
 				},
 				Workspace: "node",
 			},
@@ -174,20 +179,22 @@ func TestNewSyncItem(t *testing.T) {
 			},
 			expected: &Item{
 				Image: "test:123",
-				Copy: map[string]string{
-					filepath.Join("node", "server.js"):  "server.js",
-					filepath.Join("node", "index.html"): "index.html",
+				Copy: map[string][]string{
+					filepath.Join("node", "server.js"):  {"server.js"},
+					filepath.Join("node", "index.html"): {"index.html"},
 				},
-				Delete: map[string]string{
-					filepath.Join("node", "package.json"): "package.json",
+				Delete: map[string][]string{
+					filepath.Join("node", "package.json"): {"package.json"},
 				},
 			},
 		},
 		{
 			description: "not copy syncable",
 			artifact: &latest.Artifact{
-				Sync: map[string]string{
-					"*.html": ".",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "*.html", Dest: "."},
+					},
 				},
 				Workspace: ".",
 			},
@@ -204,8 +211,10 @@ func TestNewSyncItem(t *testing.T) {
 		{
 			description: "not delete syncable",
 			artifact: &latest.Artifact{
-				Sync: map[string]string{
-					"*.html": "/static",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "*.html", Dest: "/static"},
+					},
 				},
 				Workspace: ".",
 			},
@@ -222,8 +231,10 @@ func TestNewSyncItem(t *testing.T) {
 		{
 			description: "err bad pattern",
 			artifact: &latest.Artifact{
-				Sync: map[string]string{
-					"[*.html": "*",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "[*.html", Dest: "*"},
+					},
 				},
 				Workspace: ".",
 			},
@@ -236,8 +247,10 @@ func TestNewSyncItem(t *testing.T) {
 		{
 			description: "no change no sync",
 			artifact: &latest.Artifact{
-				Sync: map[string]string{
-					"*.html": "*",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "*.html", Dest: "*"},
+					},
 				},
 				Workspace: ".",
 			},
@@ -252,12 +265,14 @@ func TestNewSyncItem(t *testing.T) {
 			description: "slashes in glob pattern",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: map[string]string{
-					"**/**/*.js": ".",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "**/**/*.js", Dest: "."},
+					},
 				},
 				Workspace: ".",
 			},
-			workingDir: "/some/dir",
+			workingDir: "/some",
 			builds: []build.Artifact{
 				{
 					ImageName: "test",
@@ -265,22 +280,24 @@ func TestNewSyncItem(t *testing.T) {
 				},
 			},
 			evt: watch.Events{
-				Added: []string{filepath.Join("dir1", "dir2/node.js")},
+				Added: []string{filepath.Join("dir1", "dir2", "node.js")},
 			},
 			expected: &Item{
 				Image: "test:123",
-				Copy: map[string]string{
-					filepath.Join("dir1", "dir2/node.js"): "/some/dir/node.js",
+				Copy: map[string][]string{
+					filepath.Join("dir1", "dir2", "node.js"): {"/some/dir1/dir2/node.js"},
 				},
-				Delete: map[string]string{},
+				Delete: map[string][]string{},
 			},
 		},
 		{
-			description: "triple-stars mean subtrees",
+			description: "sync subtrees",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: map[string]string{
-					"dir1/***/*.js": ".",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "dir1/**/*.js", Dest: ".", Strip: "dir1/"},
+					},
 				},
 				Workspace: ".",
 			},
@@ -296,23 +313,25 @@ func TestNewSyncItem(t *testing.T) {
 			},
 			expected: &Item{
 				Image: "test:123",
-				Copy: map[string]string{
-					filepath.Join("dir1", "dir2/node.js"): "/some/dir/dir2/node.js",
+				Copy: map[string][]string{
+					filepath.Join("dir1", "dir2/node.js"): {"/some/dir/dir2/node.js"},
 				},
-				Delete: map[string]string{},
+				Delete: map[string][]string{},
 			},
 		},
 		{
-			description: "triple-stars take precedence",
+			description: "multiple matches",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: map[string]string{
-					"dir1/***/*.js":   ".",
-					"dir1/**/**/*.js": ".",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "dir1/**/*.js", Dest: ".", Strip: "dir1/"},
+						{Src: "dir1/**/**/*.js", Dest: "."},
+					},
 				},
 				Workspace: ".",
 			},
-			workingDir: "/some/dir",
+			workingDir: "/some",
 			builds: []build.Artifact{
 				{
 					ImageName: "test",
@@ -320,23 +339,25 @@ func TestNewSyncItem(t *testing.T) {
 				},
 			},
 			evt: watch.Events{
-				Added: []string{filepath.Join("dir1", "dir2/node.js")},
+				Added: []string{filepath.Join("dir1", "dir2", "node.js")},
 			},
 			expected: &Item{
 				Image: "test:123",
-				Copy: map[string]string{
-					filepath.Join("dir1", "dir2/node.js"): "/some/dir/dir2/node.js",
+				Copy: map[string][]string{
+					filepath.Join("dir1", "dir2", "node.js"): {"/some/dir2/node.js", "/some/dir1/dir2/node.js"},
 				},
-				Delete: map[string]string{},
+				Delete: map[string][]string{},
 			},
 		},
 		{
 			description: "stars work with absolute paths",
 			artifact: &latest.Artifact{
 				ImageName: "test",
-				Sync: map[string]string{
-					"dir1a/***/*.js": "/tstar",
-					"dir1b/**/*.js":  "/dstar",
+				Sync: &latest.Sync{
+					Manual: []*latest.SyncRule{
+						{Src: "dir1a/**/*.js", Dest: "/tstar", Strip: "dir1a/"},
+						{Src: "dir1b/**/*.js", Dest: "/dstar"},
+					},
 				},
 				Workspace: ".",
 			},
@@ -349,88 +370,94 @@ func TestNewSyncItem(t *testing.T) {
 			},
 			evt: watch.Events{
 				Added: []string{
-					filepath.Join("dir1a", "dir2/dir3/node.js"),
-					filepath.Join("dir1b", "dir2/dir3/node.js"),
+					filepath.Join("dir1a", "dir2", "dir3", "node.js"),
+					filepath.Join("dir1b", "dir1", "node.js"),
 				},
 			},
 			expected: &Item{
 				Image: "test:123",
-				Copy: map[string]string{
-					filepath.Join("dir1a", "dir2/dir3/node.js"): "/tstar/dir2/dir3/node.js",
-					filepath.Join("dir1b", "dir2/dir3/node.js"): "/dstar/node.js",
+				Copy: map[string][]string{
+					filepath.Join("dir1a", "dir2", "dir3", "node.js"): {"/tstar/dir2/dir3/node.js"},
+					filepath.Join("dir1b", "dir1", "node.js"):         {"/dstar/dir1b/dir1/node.js"},
 				},
-				Delete: map[string]string{},
+				Delete: map[string][]string{},
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			originalWorkingDir := WorkingDir
-			WorkingDir = func(_ string, _ map[string]bool) (string, error) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) {
 				return test.workingDir, nil
-			}
-			defer func() {
-				WorkingDir = originalWorkingDir
-			}()
+			})
+
 			actual, err := NewItem(test.artifact, test.evt, test.builds, map[string]bool{})
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
-
 }
 
 func TestIntersect(t *testing.T) {
 	var tests = []struct {
-		description  string
-		syncPatterns map[string]string
-		files        []string
-		context      string
-		workingDir   string
-		expected     map[string]string
-		shouldErr    bool
+		description string
+		syncRules   []*latest.SyncRule
+		files       []string
+		context     string
+		workingDir  string
+		expected    syncMap
+		shouldErr   bool
 	}{
 		{
 			description: "nil sync patterns doesn't sync",
-			expected:    map[string]string{},
+			expected:    map[string][]string{},
 		},
 		{
 			description: "copy nested file to correct destination",
 			files:       []string{filepath.Join("static", "index.html"), filepath.Join("static", "test.html")},
-			syncPatterns: map[string]string{
-				filepath.Join("static", "*.html"): "/html",
+			syncRules: []*latest.SyncRule{
+				{Src: filepath.Join("static", "*.html"), Dest: "/html", Strip: "static/"},
 			},
-			expected: map[string]string{
-				filepath.Join("static", "index.html"): "/html/index.html",
-				filepath.Join("static", "test.html"):  "/html/test.html",
+			expected: map[string][]string{
+				filepath.Join("static", "index.html"): {"/html/index.html"},
+				filepath.Join("static", "test.html"):  {"/html/test.html"},
+			},
+		},
+		{
+			description: "double-star matches depth zero",
+			files:       []string{"index.html"},
+			syncRules: []*latest.SyncRule{
+				{Src: filepath.Join("**", "*.html"), Dest: "/html"},
+			},
+			expected: map[string][]string{
+				"index.html": {"/html/index.html"},
 			},
 		},
 		{
 			description: "file not in . copies to correct destination",
 			files:       []string{filepath.Join("node", "server.js")},
 			context:     "node",
-			syncPatterns: map[string]string{
-				"*.js": "/",
+			syncRules: []*latest.SyncRule{
+				{Src: "*.js", Dest: "/"},
 			},
-			expected: map[string]string{
-				filepath.Join("node", "server.js"): "/server.js",
+			expected: map[string][]string{
+				filepath.Join("node", "server.js"): {"/server.js"},
 			},
 		},
 		{
 			description: "file change not relative to context throws error",
 			files:       []string{filepath.Join("node", "server.js"), filepath.Join("/", "something", "test.js")},
 			context:     "node",
-			syncPatterns: map[string]string{
-				"*.js": "/",
+			syncRules: []*latest.SyncRule{
+				{Src: "*.js", Dest: "/"},
 			},
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			actual, err := intersect(test.context, test.syncPatterns, test.files, test.workingDir)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual, err := intersect(test.context, test.workingDir, test.syncRules, test.files)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
 }
@@ -452,20 +479,24 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files map[string]string) []*exec.Cmd {
+func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files map[string][]string) []*exec.Cmd {
 	cmds := make([]*exec.Cmd, len(files))
 	i := 0
-	for src, dst := range files {
-		cmds[i] = exec.CommandContext(ctx, "copy", src, dst)
-		i++
+	for src, dsts := range files {
+		for _, dst := range dsts {
+			cmds[i] = exec.CommandContext(ctx, "copy", src, dst)
+			i++
+		}
 	}
 	return cmds
 }
 
 var pod = &v1.Pod{
 	ObjectMeta: meta_v1.ObjectMeta{
-		Name:   "podname",
-		Labels: constants.Labels.DefaultLabels,
+		Name: "podname",
+		Labels: map[string]string{
+			"app.kubernetes.io/managed-by": "skaffold-dirty",
+		},
 	},
 	Status: v1.PodStatus{
 		Phase: v1.PodRunning,
@@ -484,8 +515,8 @@ func TestPerform(t *testing.T) {
 	var tests = []struct {
 		description string
 		image       string
-		files       map[string]string
-		cmdFn       func(context.Context, v1.Pod, v1.Container, map[string]string) []*exec.Cmd
+		files       syncMap
+		cmdFn       func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd
 		cmdErr      error
 		clientErr   error
 		expected    []string
@@ -494,14 +525,14 @@ func TestPerform(t *testing.T) {
 		{
 			description: "no error",
 			image:       "gcr.io/k8s-skaffold:123",
-			files:       map[string]string{"test.go": "/test.go"},
+			files:       syncMap{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			expected:    []string{"copy test.go /test.go"},
 		},
 		{
 			description: "cmd error",
 			image:       "gcr.io/k8s-skaffold:123",
-			files:       map[string]string{"test.go": "/test.go"},
+			files:       syncMap{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			cmdErr:      fmt.Errorf(""),
 			shouldErr:   true,
@@ -509,7 +540,7 @@ func TestPerform(t *testing.T) {
 		{
 			description: "client error",
 			image:       "gcr.io/k8s-skaffold:123",
-			files:       map[string]string{"test.go": "/test.go"},
+			files:       syncMap{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			clientErr:   fmt.Errorf(""),
 			shouldErr:   true,
@@ -517,28 +548,23 @@ func TestPerform(t *testing.T) {
 		{
 			description: "no copy",
 			image:       "gcr.io/different-pod:123",
-			files:       map[string]string{"test.go": "/test.go"},
+			files:       syncMap{"test.go": {"/test.go"}},
 			cmdFn:       fakeCmd,
 			shouldErr:   true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			cmdRecord := &TestCmdRecorder{err: test.cmdErr}
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = cmdRecord
 
-			defer func(c func() (kubernetes.Interface, error)) { pkgkubernetes.Client = c }(pkgkubernetes.GetClientset)
-			pkgkubernetes.Client = func() (kubernetes.Interface, error) {
+			t.Override(&util.DefaultExecCommand, cmdRecord)
+			t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
 				return fake.NewSimpleClientset(pod), test.clientErr
-			}
-
-			util.DefaultExecCommand = cmdRecord
+			})
 
 			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cmdRecord.cmds)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cmdRecord.cmds)
 		})
 	}
 }

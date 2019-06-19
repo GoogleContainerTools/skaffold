@@ -83,24 +83,22 @@ func TestGetDependenciesGradle(t *testing.T) {
 			expected:    []string{"build", "dep1", "dep2"},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOutErr(
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, t.FakeRunOutErr(
 				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"}).Args, " "),
 				test.stdout,
 				test.err,
-			)
+			))
 
 			// Change build file mod time
 			os.Chtimes(build, test.modTime, test.modTime)
 
 			deps, err := GetDependenciesGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"})
 			if test.err != nil {
-				testutil.CheckErrorAndDeepEqual(t, true, err, "getting jibGradle dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+): "+test.err.Error(), err.Error())
+				t.CheckErrorAndDeepEqual(true, err, "getting jibGradle dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+): "+test.err.Error(), err.Error())
 			} else {
-				testutil.CheckDeepEqual(t, test.expected, deps)
+				t.CheckDeepEqual(test.expected, deps)
 			}
 		})
 	}
@@ -148,27 +146,25 @@ func TestGetCommandGradle(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmpDir, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
 			for _, file := range test.filesInWorkspace {
 				tmpDir.Write(file, "")
 			}
 
 			cmd := getCommandGradle(ctx, tmpDir.Root(), &test.jibGradleArtifact)
 			expectedCmd := test.expectedCmd(tmpDir.Root())
-			testutil.CheckDeepEqual(t, expectedCmd.Path, cmd.Path)
-			testutil.CheckDeepEqual(t, expectedCmd.Args, cmd.Args)
-			testutil.CheckDeepEqual(t, expectedCmd.Dir, cmd.Dir)
+
+			t.CheckDeepEqual(expectedCmd.Path, cmd.Path)
+			t.CheckDeepEqual(expectedCmd.Args, cmd.Args)
+			t.CheckDeepEqual(expectedCmd.Dir, cmd.Dir)
 		})
 	}
 }
 
 func TestGenerateGradleArgs(t *testing.T) {
-	var testCases = []struct {
+	var tests = []struct {
 		in        latest.JibGradleArtifact
 		skipTests bool
 		out       []string
@@ -179,10 +175,9 @@ func TestGenerateGradleArgs(t *testing.T) {
 		{latest.JibGradleArtifact{Project: "project"}, false, []string{"-Djib.console=plain", ":project:task", "--image=image"}},
 		{latest.JibGradleArtifact{Project: "project"}, true, []string{"-Djib.console=plain", ":project:task", "--image=image", "-x", "test"}},
 	}
+	for _, test := range tests {
+		command := GenerateGradleArgs("task", "image", &test.in, test.skipTests)
 
-	for _, tt := range testCases {
-		command := GenerateGradleArgs("task", "image", &tt.in, tt.skipTests)
-
-		testutil.CheckDeepEqual(t, tt.out, command)
+		testutil.CheckDeepEqual(t, test.out, command)
 	}
 }

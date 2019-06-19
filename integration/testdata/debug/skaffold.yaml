@@ -1,0 +1,26 @@
+apiVersion: skaffold/v1beta10
+kind: Config
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/skaffold-debug-jib
+    context: jib
+    jibMaven:
+      args:
+      - -q
+  - image: gcr.io/k8s-skaffold/skaffold-debug-npm
+    context: npm
+  - image: gcr.io/k8s-skaffold/skaffold-debug-nodejs
+    context: nodejs
+  - image: gcr.io/k8s-skaffold/skaffold-debug-python3
+    context: python3
+deploy:
+  kubectl:
+    manifests:
+    - jib/k8s/web.yaml
+    - nodejs/k8s/pod.yaml
+    - npm/k8s/pod.yaml
+    - python3/k8s/pod.yaml
+profiles:
+  - name: kustomize
+    deploy:
+      kustomize: {}

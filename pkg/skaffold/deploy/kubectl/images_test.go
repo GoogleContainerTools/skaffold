@@ -86,9 +86,9 @@ spec:
   - image: in valid
 `)}
 
-	defer func(w warnings.Warner) { warnings.Printf = w }(warnings.Printf)
 	fakeWarner := &warnings.Collect{}
-	warnings.Printf = fakeWarner.Warnf
+	reset := testutil.Override(t, &warnings.Printf, fakeWarner.Warnf)
+	defer reset()
 
 	resultManifest, err := manifests.ReplaceImages(builds, "")
 

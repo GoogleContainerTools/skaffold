@@ -1,0 +1,5 @@
+resources:
+  - jib/k8s/web.yaml
+  - nodejs/k8s/pod.yaml
+  - npm/k8s/pod.yaml
+  - python3/k8s/pod.yaml

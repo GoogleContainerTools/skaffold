@@ -17,9 +17,13 @@ limitations under the License.
 package custom
 
 import (
+	"os"
+	"os/exec"
+	"reflect"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -59,28 +63,74 @@ func TestRetrieveEnv(t *testing.T) {
 			expected:      []string{"BUILD_CONTEXT=", "IMAGES=gcr.io/image/push:tag", "KUBECONTEXT=mycluster", "PUSH_IMAGE=true"},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			initialEnviron := environ
-			defer func() {
-				environ = initialEnviron
-			}()
-			environ = func() []string {
-				return test.environ
-			}
-
-			initialBuildContext := buildContext
-			defer func() {
-				buildContext = initialBuildContext
-			}()
-			buildContext = func(_ string) (string, error) {
-				return test.buildContext, nil
-			}
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.OSEnviron, func() []string { return test.environ })
+			t.Override(&buildContext, func(string) (string, error) { return test.buildContext, nil })
 
 			artifactBuilder := NewArtifactBuilder(test.pushImages, test.additionalEnv)
 			actual, err := artifactBuilder.retrieveEnv(&latest.Artifact{}, test.tag)
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
+}
+
+func TestRetrieveCmd(t *testing.T) {
+	tests := []struct {
+		description string
+		artifact    *latest.Artifact
+		tag         string
+		expected    *exec.Cmd
+	}{
+		{
+			description: "artifact with workspace set",
+			artifact: &latest.Artifact{
+				Workspace: "workspace",
+				ArtifactType: latest.ArtifactType{
+					CustomArtifact: &latest.CustomArtifact{
+						BuildCommand: "./build.sh",
+					},
+				},
+			},
+			tag:      "image:tag",
+			expected: expectedCmd("./build.sh", "workspace", nil, []string{"BUILD_CONTEXT=workspace", "IMAGES=image:tag", "PUSH_IMAGE=false"}),
+		}, {
+			description: "buildcommand with multiple args",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					CustomArtifact: &latest.CustomArtifact{
+						BuildCommand: "./build.sh --flag --anotherflag",
+					},
+				},
+			},
+			tag:      "image:tag",
+			expected: expectedCmd("./build.sh", "", []string{"--flag", "--anotherflag"}, []string{"BUILD_CONTEXT=", "IMAGES=image:tag", "PUSH_IMAGE=false"}),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.OSEnviron, func() []string { return nil })
+			t.Override(&buildContext, func(string) (string, error) { return test.artifact.Workspace, nil })
+
+			builder := NewArtifactBuilder(false, nil)
+			cmd, err := builder.retrieveCmd(test.artifact, test.tag)
+
+			t.CheckNoError(err)
+			// cmp.Diff cannot access unexported fields in *exec.Cmd, so use reflect.DeepEqual here directly
+			if !reflect.DeepEqual(test.expected, cmd) {
+				t.Errorf("Expected result different from actual result. Expected: \n%v, \nActual: \n%v", test.expected, cmd)
+			}
+		})
+	}
+}
+
+func expectedCmd(buildCommand, dir string, args, env []string) *exec.Cmd {
+	cmd := exec.Command(buildCommand, args...)
+	cmd.Dir = dir
+	cmd.Env = env
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd
 }

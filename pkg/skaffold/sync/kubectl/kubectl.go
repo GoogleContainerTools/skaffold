@@ -58,19 +58,19 @@ func (k *Syncer) Sync(ctx context.Context, s *sync.Item) error {
 	return nil
 }
 
-func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files map[string]string) []*exec.Cmd {
+func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files map[string][]string) []*exec.Cmd {
 	// "kubectl" is below...
-	deleteCmd := []string{"exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "--", "rm", "-rf"}
+	deleteCmd := []string{"exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "--", "rm", "-rf", "--"}
 	args := make([]string, 0, len(deleteCmd)+len(files))
 	args = append(args, deleteCmd...)
-	for _, dst := range files {
-		args = append(args, dst)
+	for _, dsts := range files {
+		args = append(args, dsts...)
 	}
 	delete := exec.CommandContext(ctx, "kubectl", args...)
 	return []*exec.Cmd{delete}
 }
 
-func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files map[string]string) []*exec.Cmd {
+func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files map[string][]string) []*exec.Cmd {
 	// Use "m" flag to touch the files as they are copied.
 	reader, writer := io.Pipe()
 	copy := exec.CommandContext(ctx, "kubectl", "exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "-i",

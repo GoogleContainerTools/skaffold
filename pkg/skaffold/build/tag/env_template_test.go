@@ -26,7 +26,7 @@ import (
 
 func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 	tests := []struct {
-		name             string
+		description      string
 		template         string
 		imageName        string
 		env              []string
@@ -34,55 +34,55 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 		expectedWarnings []string
 	}{
 		{
-			name:      "empty env",
-			template:  "{{.IMAGE_NAME}}",
-			imageName: "foo",
-			expected:  "foo",
+			description: "empty env",
+			template:    "{{.IMAGE_NAME}}",
+			imageName:   "foo",
+			expected:    "foo",
 		},
 		{
-			name:      "env",
-			template:  "{{.FOO}}-{{.BAZ}}:latest",
-			env:       []string{"FOO=BAR", "BAZ=BAT"},
-			imageName: "foo",
-			expected:  "BAR-BAT:latest",
+			description: "env",
+			template:    "{{.FOO}}-{{.BAZ}}:latest",
+			env:         []string{"FOO=BAR", "BAZ=BAT"},
+			imageName:   "foo",
+			expected:    "BAR-BAT:latest",
 		},
 		{
-			name:      "opts precedence",
-			template:  "{{.IMAGE_NAME}}-{{.FROM_ENV}}:latest",
-			env:       []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
-			imageName: "image_name",
-			expected:  "image_name-FOO:latest",
+			description: "opts precedence",
+			template:    "{{.IMAGE_NAME}}-{{.FROM_ENV}}:latest",
+			env:         []string{"FROM_ENV=FOO", "IMAGE_NAME=BAT"},
+			imageName:   "image_name",
+			expected:    "image_name-FOO:latest",
 		},
 		{
-			name:             "ignore @{{.DIGEST}} suffix",
+			description:      "ignore @{{.DIGEST}} suffix",
 			template:         "{{.IMAGE_NAME}}:tag@{{.DIGEST}}",
 			imageName:        "foo",
 			expected:         "foo:tag",
 			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags"},
 		},
 		{
-			name:             "ignore @{{.DIGEST_ALGO}}:{{.DIGEST_HEX}} suffix",
+			description:      "ignore @{{.DIGEST_ALGO}}:{{.DIGEST_HEX}} suffix",
 			template:         "{{.IMAGE_NAME}}:tag@{{.DIGEST_ALGO}}:{{.DIGEST_HEX}}",
 			imageName:        "image_name",
 			expected:         "image_name:tag",
 			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags"},
 		},
 		{
-			name:             "digest is deprecated",
+			description:      "digest is deprecated",
 			template:         "{{.IMAGE_NAME}}:{{.DIGEST}}",
 			imageName:        "foo",
 			expected:         "foo:_DEPRECATED_DIGEST_",
 			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags"},
 		},
 		{
-			name:             "digest algo is deprecated",
+			description:      "digest algo is deprecated",
 			template:         "{{.IMAGE_NAME}}:{{.DIGEST_ALGO}}",
 			imageName:        "foo",
 			expected:         "foo:_DEPRECATED_DIGEST_ALGO_",
 			expectedWarnings: []string{"{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags"},
 		},
 		{
-			name:             "digest hex is deprecated",
+			description:      "digest hex is deprecated",
 			template:         "{{.IMAGE_NAME}}:{{.DIGEST_HEX}}",
 			imageName:        "foo",
 			expected:         "foo:_DEPRECATED_DIGEST_HEX_",
@@ -90,46 +90,44 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			util.OSEnviron = func() []string {
-				return test.env
-			}
-
-			defer func(w warnings.Warner) { warnings.Printf = w }(warnings.Printf)
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			fakeWarner := &warnings.Collect{}
-			warnings.Printf = fakeWarner.Warnf
+			t.Override(&warnings.Printf, fakeWarner.Warnf)
+			t.Override(&util.OSEnviron, func() []string { return test.env })
 
 			c, err := NewEnvTemplateTagger(test.template)
-			testutil.CheckError(t, false, err)
+			t.CheckNoError(err)
 
 			got, err := c.GenerateFullyQualifiedImageName("", test.imageName)
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, got)
-			testutil.CheckDeepEqual(t, test.expectedWarnings, fakeWarner.Warnings)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, got)
+			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}
 }
 
 func TestNewEnvTemplateTagger(t *testing.T) {
 	tests := []struct {
-		name      string
-		template  string
-		shouldErr bool
+		description string
+		template    string
+		shouldErr   bool
 	}{
 		{
-			name:     "valid template",
-			template: "{{.FOO}}",
+			description: "valid template",
+			template:    "{{.FOO}}",
 		},
 		{
-			name:      "invalid template",
-			template:  "{{.FOO",
-			shouldErr: true,
+			description: "invalid template",
+			template:    "{{.FOO",
+			shouldErr:   true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewEnvTemplateTagger(tt.template)
-			testutil.CheckError(t, tt.shouldErr, err)
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			_, err := NewEnvTemplateTagger(test.template)
+
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }

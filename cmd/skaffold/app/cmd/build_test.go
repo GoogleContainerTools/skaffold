@@ -37,10 +37,6 @@ func TestQuietFlag(t *testing.T) {
 		}}, nil
 	}
 
-	defer func(f func(context.Context, io.Writer) ([]build.Artifact, error)) {
-		createRunnerAndBuildFunc = f
-	}(createRunnerAndBuildFunc)
-
 	var tests = []struct {
 		description    string
 		template       string
@@ -50,7 +46,7 @@ func TestQuietFlag(t *testing.T) {
 	}{
 		{
 			description:    "quiet flag print build images with no template",
-			expectedOutput: []byte("{[{gcr.io/skaffold/example test}]}"),
+			expectedOutput: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
 			shouldErr:      false,
 			mock:           mockCreateRunner,
 		},
@@ -69,19 +65,19 @@ func TestQuietFlag(t *testing.T) {
 			mock:           mockCreateRunner,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			quietFlag = true
-			defer func() { quietFlag = false }()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&quietFlag, true)
+			t.Override(&createRunnerAndBuildFunc, test.mock)
 			if test.template != "" {
-				buildFormatFlag = flags.NewTemplateFlag(test.template, BuildOutput{})
+				t.Override(&buildFormatFlag, flags.NewTemplateFlag(test.template, flags.BuildOutput{}))
 			}
-			defer func() { buildFormatFlag = nil }()
-			createRunnerAndBuildFunc = test.mock
+
 			var output bytes.Buffer
-			err := runBuild(&output)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, string(test.expectedOutput), output.String())
+
+			err := doBuild(context.Background(), &output)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, string(test.expectedOutput), output.String())
 		})
 	}
 }
@@ -96,9 +92,6 @@ func TestRunBuild(t *testing.T) {
 			Tag:       "test",
 		}}, nil
 	}
-	defer func(f func(context.Context, io.Writer) ([]build.Artifact, error)) {
-		createRunnerAndBuildFunc = f
-	}(createRunnerAndBuildFunc)
 
 	var tests = []struct {
 		description string
@@ -117,10 +110,12 @@ func TestRunBuild(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			createRunnerAndBuildFunc = test.mock
-			err := runBuild(ioutil.Discard)
-			testutil.CheckError(t, test.shouldErr, err)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&createRunnerAndBuildFunc, test.mock)
+
+			err := doBuild(context.Background(), ioutil.Discard)
+
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }

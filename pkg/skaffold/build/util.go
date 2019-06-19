@@ -16,6 +16,9 @@ limitations under the License.
 
 package build
 
+// MergeWithPreviousBuilds merges previous or prebuilt build artifacts with
+// builds. If an artifact is already present in builds, the same artifact from
+// previous will be ignored.
 func MergeWithPreviousBuilds(builds, previous []Artifact) []Artifact {
 	updatedBuilds := map[string]bool{}
 	for _, build := range builds {

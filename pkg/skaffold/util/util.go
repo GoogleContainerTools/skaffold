@@ -30,12 +30,12 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -44,15 +44,6 @@ const (
 
 func RandomID() string {
 	b := make([]byte, 16)
-	_, err := rand.Read(b)
-	if err != nil {
-		panic(err)
-	}
-	return fmt.Sprintf("%x", b)
-}
-
-func RandomFourCharacterID() string {
-	b := make([]byte, 2)
 	_, err := rand.Read(b)
 	if err != nil {
 		panic(err)
@@ -76,12 +67,24 @@ func IsSupportedKubernetesFormat(n string) bool {
 }
 
 func StrSliceContains(sl []string, s string) bool {
-	for _, a := range sl {
+	return StrSliceIndex(sl, s) >= 0
+}
+
+func StrSliceIndex(sl []string, s string) int {
+	for i, a := range sl {
 		if a == s {
-			return true
+			return i
 		}
 	}
-	return false
+	return -1
+}
+
+func StrSliceInsert(sl []string, index int, insert []string) []string {
+	newSlice := make([]string, len(sl)+len(insert))
+	copy(newSlice[0:index], sl[0:index])
+	copy(newSlice[index:index+len(insert)], insert)
+	copy(newSlice[index+len(insert):], sl[index:])
+	return newSlice
 }
 
 // ExpandPathsGlob expands paths according to filepath.Glob patterns
@@ -133,17 +136,6 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 	return ret, nil
 }
 
-// HasMeta reports whether path contains any of the magic characters
-// recognized by filepath.Match.
-// This is a copy of filepath/match.go's hasMeta
-func HasMeta(path string) bool {
-	magicChars := `*?[`
-	if runtime.GOOS != "windows" {
-		magicChars = `*?[\`
-	}
-	return strings.ContainsAny(path, magicChars)
-}
-
 // BoolPtr returns a pointer to a bool
 func BoolPtr(b bool) *bool {
 	o := b
@@ -189,9 +181,9 @@ func VerifyOrCreateFile(path string) error {
 
 // RemoveFromSlice removes a string from a slice of strings
 func RemoveFromSlice(s []string, target string) []string {
-	for i, val := range s {
-		if val == target {
-			return append(s[:i], s[i+1:]...)
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == target {
+			s = append(s[:i], s[i+1:]...)
 		}
 	}
 	return s
@@ -263,6 +255,18 @@ func CloneThroughJSON(old interface{}, new interface{}) error {
 	}
 	if err := json.Unmarshal(o, &new); err != nil {
 		return errors.Wrap(err, "unmarshalling new")
+	}
+	return nil
+}
+
+// CloneThroughYAML marshals the old interface into the new one
+func CloneThroughYAML(old interface{}, new interface{}) error {
+	contents, err := yaml.Marshal(old)
+	if err != nil {
+		return errors.Wrap(err, "unmarshalling properties")
+	}
+	if err := yaml.Unmarshal(contents, new); err != nil {
+		return errors.Wrap(err, "unmarshalling bazel artifact")
 	}
 	return nil
 }

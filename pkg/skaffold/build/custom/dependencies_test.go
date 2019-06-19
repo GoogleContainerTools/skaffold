@@ -22,10 +22,11 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetDependencies(t *testing.T) {
+func TestGetDependenciesDockerfile(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
@@ -34,11 +35,50 @@ func TestGetDependencies(t *testing.T) {
 	//   bar
 	// - baz
 	//     file
+	//   Dockerfile
 	tmpDir.Write("foo", "")
 	tmpDir.Write("bar", "")
 	tmpDir.Mkdir("baz")
 	tmpDir.Write("baz/file", "")
+	tmpDir.Write("Dockerfile", "FROM scratch \n ARG file \n COPY $file baz/file .")
 
+	customArtifact := &latest.CustomArtifact{
+		Dependencies: &latest.CustomDependencies{
+			Dockerfile: &latest.DockerfileDependency{
+				Path: "Dockerfile",
+				BuildArgs: map[string]*string{
+					"file": util.StringPtr("foo"),
+				},
+			},
+		},
+	}
+
+	expected := []string{"Dockerfile", filepath.FromSlash("baz/file"), "foo"}
+	deps, err := GetDependencies(context.Background(), tmpDir.Root(), customArtifact, nil)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, deps)
+}
+
+func TestGetDependenciesCommand(t *testing.T) {
+	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
+		"echo [\"file1\",\"file2\",\"file3\"]",
+		"[\"file1\",\"file2\",\"file3\"]",
+	))
+	defer reset()
+
+	customArtifact := &latest.CustomArtifact{
+		Dependencies: &latest.CustomDependencies{
+			Command: "echo [\"file1\",\"file2\",\"file3\"]",
+		},
+	}
+
+	expected := []string{"file1", "file2", "file3"}
+	deps, err := GetDependencies(context.Background(), "", customArtifact, nil)
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, deps)
+}
+
+func TestGetDependenciesPaths(t *testing.T) {
 	tests := []struct {
 		description string
 		ignore      []string
@@ -58,17 +98,28 @@ func TestGetDependencies(t *testing.T) {
 			expected:    []string{"foo"},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// Directory structure:
+			//   foo
+			//   bar
+			// - baz
+			//     file
+			tmpDir := t.NewTempDir().
+				Write("foo", "").
+				Write("bar", "").
+				Mkdir("baz").
+				Write("baz/file", "")
+
 			deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.CustomArtifact{
 				Dependencies: &latest.CustomDependencies{
 					Paths:  test.paths,
 					Ignore: test.ignore,
 				},
-			})
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, deps)
+			}, nil)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, deps)
 		})
 	}
-
 }

@@ -19,16 +19,90 @@ package testutil
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
+
+type T struct {
+	*testing.T
+	teardownActions []func()
+}
+
+func (t *T) FakeRunOut(command string, output string) *FakeCmd {
+	return FakeRunOut(t.T, command, output)
+}
+
+func (t *T) FakeRunOutErr(command string, output string, err error) *FakeCmd {
+	return FakeRunOutErr(t.T, command, output, err)
+}
+
+func (t *T) Override(dest, tmp interface{}) {
+	teardown, err := override(t.T, dest, tmp)
+	if err != nil {
+		t.Errorf("temporary override value is invalid: %v", err)
+		return
+	}
+	t.teardownActions = append(t.teardownActions, teardown)
+}
+
+func (t *T) CheckContains(expected, actual string) {
+	CheckContains(t.T, expected, actual)
+}
+
+func (t *T) CheckDeepEqual(expected, actual interface{}, opts ...cmp.Option) {
+	CheckDeepEqual(t.T, expected, actual, opts...)
+}
+
+func (t *T) CheckErrorAndDeepEqual(shouldErr bool, err error, expected, actual interface{}, opts ...cmp.Option) {
+	CheckErrorAndDeepEqual(t.T, shouldErr, err, expected, actual, opts...)
+}
+
+func (t *T) CheckError(shouldErr bool, err error) {
+	CheckError(t.T, shouldErr, err)
+}
+
+func (t *T) CheckErrorContains(message string, err error) {
+	CheckErrorContains(t.T, message, err)
+}
+
+func (t *T) TempFile(prefix string, content []byte) string {
+	name, teardown := TempFile(t.T, prefix, content)
+	t.teardownActions = append(t.teardownActions, teardown)
+	return name
+}
+
+func (t *T) NewTempDir() *TempDir {
+	tmpDir, teardown := NewTempDir(t.T)
+	t.teardownActions = append(t.teardownActions, teardown)
+	return tmpDir
+}
+
+func Run(t *testing.T, name string, f func(t *T)) {
+	if name == "" {
+		name = t.Name()
+	}
+
+	t.Run(name, func(tt *testing.T) {
+		testWrapper := &T{
+			T: tt,
+		}
+
+		defer func() {
+			for _, teardownAction := range testWrapper.teardownActions {
+				teardownAction()
+			}
+		}()
+
+		f(testWrapper)
+	})
+}
+
+////
 
 func CheckContains(t *testing.T, expected, actual string) {
 	t.Helper()
@@ -58,21 +132,6 @@ func CheckErrorAndDeepEqual(t *testing.T, shouldErr bool, err error, expected, a
 	}
 }
 
-func CheckErrorAndTypeEquality(t *testing.T, shouldErr bool, err error, expected, actual interface{}) {
-	t.Helper()
-	if err := checkErr(shouldErr, err); err != nil {
-		t.Error(err)
-		return
-	}
-	expectedType := reflect.TypeOf(expected)
-	actualType := reflect.TypeOf(actual)
-
-	if expectedType != actualType {
-		t.Errorf("Types do not match. Expected %s, Actual %s", expectedType, actualType)
-		return
-	}
-}
-
 func CheckError(t *testing.T, shouldErr bool, err error) {
 	t.Helper()
 	if err := checkErr(shouldErr, err); err != nil {
@@ -94,24 +153,9 @@ func CheckErrorContains(t *testing.T, message string, err error) {
 	}
 }
 
-// Chdir changes current directory for a test
-func Chdir(t *testing.T, dir string) func() {
-	t.Helper()
-
-	pwd, err := os.Getwd()
-	if err != nil {
-		t.Fatal("unable to get current directory")
-	}
-
-	err = os.Chdir(dir)
-	if err != nil {
-		t.Fatal("unable to change current directory")
-	}
-
-	return func() {
-		if err := os.Chdir(pwd); err != nil {
-			t.Fatal("unable to reset current directory")
-		}
+func EnsureTestPanicked(t *testing.T) {
+	if recover() == nil {
+		t.Errorf("should have panicked")
 	}
 }
 
@@ -125,28 +169,6 @@ func checkErr(shouldErr bool, err error) error {
 	return nil
 }
 
-// SetEnvs takes a map of key values to set using os.Setenv and returns
-// a function that can be called to reset the envs to their previous values.
-func SetEnvs(t *testing.T, envs map[string]string) func(*testing.T) {
-	prevEnvs := map[string]string{}
-	for key, value := range envs {
-		prevEnv := os.Getenv(key)
-		prevEnvs[key] = prevEnv
-		err := os.Setenv(key, value)
-		if err != nil {
-			t.Error(err)
-		}
-	}
-	return func(t *testing.T) {
-		for key, value := range prevEnvs {
-			err := os.Setenv(key, value)
-			if err != nil {
-				t.Error(err)
-			}
-		}
-	}
-}
-
 // ServeFile serves a file with http. Returns the url to the file and a teardown
 // function that should be called to properly stop the server.
 func ServeFile(t *testing.T, content []byte) (url string, tearDown func()) {
@@ -157,19 +179,55 @@ func ServeFile(t *testing.T, content []byte) (url string, tearDown func()) {
 	return ts.URL, ts.Close
 }
 
-// CreateTempFileWithContents creates a temporary file in the dir specified or
-// os.TempDir by default with contents mentioned.
-func CreateTempFileWithContents(t *testing.T, dir string, name string, content []byte) string {
-	t.Helper()
-	tmpfile, err := ioutil.TempFile(dir, name)
+// Override sets a dest variable to a given value.
+// Returns the function to call to restore the variable
+// to its original state.
+func Override(t *testing.T, dest, tmp interface{}) func() {
+	f, err := override(t, dest, tmp)
 	if err != nil {
-		t.Fatal(err)
+		t.Errorf("temporary value is invalid: %v", err)
 	}
-	if _, err := tmpfile.Write(content); err != nil {
-		t.Fatal(err)
+	return f
+}
+
+func override(t *testing.T, dest, tmp interface{}) (f func(), err error) {
+	t.Helper()
+
+	defer func() {
+		if r := recover(); r != nil {
+			f = nil
+			switch x := r.(type) {
+			case string:
+				err = errors.New(x)
+			case error:
+				err = x
+			default:
+				err = errors.New("unknown panic")
+			}
+		}
+	}()
+
+	dValue := reflect.ValueOf(dest).Elem()
+
+	// Save current value
+	curValue := reflect.New(dValue.Type()).Elem()
+	curValue.Set(dValue)
+
+	// Set to temporary value
+	var tmpV reflect.Value
+	if tmp == nil {
+		tmpV = reflect.Zero(dValue.Type())
+	} else {
+		tmpV = reflect.ValueOf(tmp)
 	}
-	if err := tmpfile.Close(); err != nil {
-		t.Fatal(err)
-	}
-	return tmpfile.Name()
+	dValue.Set(tmpV)
+
+	return func() {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Error("panic while restoring original value")
+			}
+		}()
+		dValue.Set(curValue)
+	}, nil
 }

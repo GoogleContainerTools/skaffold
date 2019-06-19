@@ -22,7 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/pkg/errors"
@@ -45,6 +44,7 @@ type Artifact struct {
 
 // Labeller can give key/value labels to set on deployed resources.
 type Labeller interface {
+	// Labels keys must be prefixed with "skaffold.dev/"
 	Labels() map[string]string
 }
 
@@ -96,7 +96,6 @@ func labelDeployResults(labels map[string]string, results []Artifact) {
 func addLabels(labels map[string]string, accessor metav1.Object) {
 	kv := make(map[string]string)
 
-	copyMap(kv, constants.Labels.DefaultLabels)
 	copyMap(kv, accessor.GetLabels())
 	copyMap(kv, labels)
 

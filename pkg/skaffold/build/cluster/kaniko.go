@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster/sources"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -94,7 +95,7 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 
 	waitForLogs := streamLogs(out, pod.Name, pods)
 
-	if err := kubernetes.WaitForPodComplete(ctx, pods, pod.Name, b.timeout); err != nil {
+	if err := kubernetes.WaitForPodSucceeded(ctx, pods, pod.Name, b.timeout); err != nil {
 		return "", errors.Wrap(err, "waiting for pod to complete")
 	}
 
@@ -110,6 +111,9 @@ func appendCacheIfExists(args []string, cache *latest.KanikoCache) []string {
 	args = append(args, "--cache=true")
 	if cache.Repo != "" {
 		args = append(args, fmt.Sprintf("--cache-repo=%s", cache.Repo))
+	}
+	if cache.HostPath != "" {
+		args = append(args, fmt.Sprintf("--cache-dir=%s", constants.DefaultKanikoDockerConfigPath))
 	}
 	return args
 }

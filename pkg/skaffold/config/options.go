@@ -18,6 +18,8 @@ package config
 
 import (
 	"strings"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // SkaffoldOptions are options that are set by command line arguments not included
@@ -33,7 +35,9 @@ type SkaffoldOptions struct {
 	CacheArtifacts     bool
 	EnableRPC          bool
 	Force              bool
+	ForceDev           bool
 	NoPrune            bool
+	NoPruneChildren    bool
 	CustomTag          string
 	Namespace          string
 	CacheFile          string
@@ -43,7 +47,6 @@ type SkaffoldOptions struct {
 	CustomLabels       []string
 	TargetImages       []string
 	Profiles           []string
-	PreBuiltImages     []string
 	InsecureRegistries []string
 	Command            string
 	RPCPort            int
@@ -56,16 +59,16 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 	labels := map[string]string{}
 
 	if opts.Cleanup {
-		labels["cleanup"] = "true"
+		labels["skaffold.dev/cleanup"] = "true"
 	}
 	if opts.Tail || opts.TailDev {
-		labels["tail"] = "true"
+		labels["skaffold.dev/tail"] = "true"
 	}
 	if opts.Namespace != "" {
-		labels["namespace"] = opts.Namespace
+		labels["skaffold.dev/namespace"] = opts.Namespace
 	}
 	if len(opts.Profiles) > 0 {
-		labels["profiles"] = strings.Join(opts.Profiles, "__")
+		labels["skaffold.dev/profiles"] = strings.Join(opts.Profiles, "__")
 	}
 	for _, cl := range opts.CustomLabels {
 		l := strings.SplitN(cl, "=", 2)
@@ -85,5 +88,19 @@ func (opts *SkaffoldOptions) Prune() bool {
 }
 
 func (opts *SkaffoldOptions) ForceDeploy() bool {
-	return opts.Command == "dev" || opts.Force
+	return opts.ForceDev || opts.Force
+}
+
+func (opts *SkaffoldOptions) IsTargetImage(artifact *latest.Artifact) bool {
+	if len(opts.TargetImages) == 0 {
+		return true
+	}
+
+	for _, targetImage := range opts.TargetImages {
+		if strings.Contains(artifact.ImageName, targetImage) {
+			return true
+		}
+	}
+
+	return false
 }

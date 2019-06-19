@@ -24,32 +24,25 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // NewCmdDev describes the CLI command to run a pipeline in development mode.
 func NewCmdDev(out io.Writer) *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "dev",
-		Short: "Runs a pipeline file in development mode",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return dev(out)
-		},
-	}
-	AddRunDevFlags(cmd)
-	AddDevDebugFlags(cmd)
-	cmd.Flags().StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling, manual or notify)")
-	cmd.Flags().StringSliceVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
-	cmd.Flags().IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
-	return cmd
+	cmdUse := "dev"
+	return NewCmd(out, cmdUse).
+		WithDescription("Runs a pipeline file in development mode").
+		WithCommonFlags().
+		WithFlags(func(f *pflag.FlagSet) {
+			f.StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling, manual or notify)")
+			f.StringSliceVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
+			f.IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
+		}).
+		NoArgs(cancelWithCtrlC(context.Background(), doDev))
 }
 
-func dev(out io.Writer) error {
+func doDev(ctx context.Context, out io.Writer) error {
 	opts.EnableRPC = true
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	catchCtrlC(cancel)
 
 	cleanup := func() {}
 	if opts.Cleanup {
@@ -91,10 +84,11 @@ func dev(out io.Writer) error {
 				}
 			}
 			if err != nil {
-				if errors.Cause(err) != runner.ErrorConfigurationChanged {
-					r.RPCServerShutdown()
+				if errors.Cause(err) == runner.ErrorConfigurationChanged {
 					return err
 				}
+				r.RPCServerShutdown()
+				return alwaysSucceedWhenCancelled(ctx, err)
 			}
 			r.RPCServerShutdown()
 		}

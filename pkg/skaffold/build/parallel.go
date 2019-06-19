@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -33,84 +34,108 @@ const bufferedLinesPerArtifact = 10000
 
 type artifactBuilder func(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error)
 
+// For testing
+var (
+	buffSize      = bufferedLinesPerArtifact
+	runInSequence = InSequence
+)
+
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
 func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+	if len(artifacts) == 0 {
+		return nil, nil
+	}
+
 	if len(artifacts) == 1 {
-		return InSequence(ctx, out, tags, artifacts, buildArtifact)
+		return runInSequence(ctx, out, tags, artifacts, buildArtifact)
 	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	n := len(artifacts)
-	finalTags := make([]string, n)
-	errs := make([]error, n)
-	outputs := make([]chan []byte, n)
+	results := new(sync.Map)
+	outputs := make([]chan []byte, len(artifacts))
 
 	// Run builds in //
-	for index := range artifacts {
-		i := index
-		lines := make(chan []byte, bufferedLinesPerArtifact)
-		outputs[i] = lines
-
+	for i := range artifacts {
+		outputs[i] = make(chan []byte, buffSize)
 		r, w := io.Pipe()
+		cw := setUpColorWriter(w, out)
 
-		// Log to the pipe, output will be collected and printed later
-		go func() {
-			// Make sure logs are printed in colors
-			var cw io.WriteCloser
-			if color.IsTerminal(out) {
-				cw = color.ColoredWriteCloser{WriteCloser: w}
-			} else {
-				cw = w
-			}
-
-			color.Default.Fprintf(cw, "Building [%s]...\n", artifacts[i].ImageName)
-
-			event.BuildInProgress(artifacts[i].ImageName)
-
-			tag, present := tags[artifacts[i].ImageName]
-			if !present {
-				errs[i] = fmt.Errorf("unable to find tag for image %s", artifacts[i].ImageName)
-				event.BuildFailed(artifacts[i].ImageName, errs[i])
-			} else {
-				finalTags[i], errs[i] = buildArtifact(ctx, cw, artifacts[i], tag)
-				if errs[i] != nil {
-					event.BuildFailed(artifacts[i].ImageName, errs[i])
-				}
-			}
-
-			event.BuildComplete(artifacts[i].ImageName)
-			cw.Close()
-		}()
-
-		go func() {
-			scanner := bufio.NewScanner(r)
-			for scanner.Scan() {
-				lines <- scanner.Bytes()
-			}
-			close(lines)
-		}()
+		// Run build and write output/logs to piped writer and store build result in
+		// sync.Map
+		go runBuild(ctx, cw, tags, artifacts[i], results, buildArtifact)
+		// Read build output/logs and write to buffered channel
+		go readOutputAndWriteToChannel(r, outputs[i])
 	}
 
 	// Print logs and collect results in order.
-	var built []Artifact
+	return collectResults(out, artifacts, results, outputs)
+}
 
-	for i, artifact := range artifacts {
-		for line := range outputs[i] {
-			out.Write(line)
-			fmt.Fprintln(out)
-		}
+func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build artifactBuilder) {
+	event.BuildInProgress(artifact.ImageName)
 
-		if errs[i] != nil {
-			return nil, errors.Wrapf(errs[i], "building [%s]", artifact.ImageName)
-		}
-
-		built = append(built, Artifact{
-			ImageName: artifact.ImageName,
-			Tag:       finalTags[i],
-		})
+	finalTag, err := getBuildResult(ctx, cw, tags, artifact, build)
+	if err != nil {
+		event.BuildFailed(artifact.ImageName, err)
+		results.Store(artifact.ImageName, err)
+	} else {
+		event.BuildComplete(artifact.ImageName)
+		artifact := Artifact{ImageName: artifact.ImageName, Tag: finalTag}
+		results.Store(artifact.ImageName, artifact)
 	}
+	cw.Close()
+}
 
+func readOutputAndWriteToChannel(r io.Reader, lines chan []byte) {
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		lines <- scanner.Bytes()
+	}
+	close(lines)
+}
+
+func setUpColorWriter(w io.WriteCloser, out io.Writer) io.WriteCloser {
+	if color.IsTerminal(out) {
+		return color.ColoredWriteCloser{WriteCloser: w}
+	}
+	return w
+}
+
+func getBuildResult(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latest.Artifact, build artifactBuilder) (string, error) {
+	color.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
+	tag, present := tags[artifact.ImageName]
+	if !present {
+		return "", fmt.Errorf("unable to find tag for image %s", artifact.ImageName)
+	}
+	return build(ctx, cw, artifact, tag)
+}
+
+func collectResults(out io.Writer, artifacts []*latest.Artifact, results *sync.Map, outputs []chan []byte) ([]Artifact, error) {
+	var built []Artifact
+	for i, artifact := range artifacts {
+		// Wait for build to complete.
+		printResult(out, outputs[i])
+		v, ok := results.Load(artifact.ImageName)
+		if !ok {
+			return nil, fmt.Errorf("could not find build result for image %s", artifact.ImageName)
+		}
+		switch t := v.(type) {
+		case error:
+			return nil, errors.Wrapf(t, "building [%s]", artifact.ImageName)
+		case Artifact:
+			built = append(built, t)
+		default:
+			return nil, fmt.Errorf("unknown type %T for %s", t, artifact.ImageName)
+		}
+	}
 	return built, nil
+}
+
+func printResult(out io.Writer, output chan []byte) {
+	for line := range output {
+		out.Write(line)
+		fmt.Fprintln(out)
+	}
 }

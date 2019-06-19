@@ -46,6 +46,8 @@ const (
 	DefaultKanikoContainerName          = "kaniko"
 	DefaultKanikoEmptyDirName           = "kaniko-emptydir"
 	DefaultKanikoEmptyDirMountPath      = "/kaniko/buildcontext"
+	DefaultKanikoCacheDirName           = "kaniko-cache"
+	DefaultKanikoCacheDirMountPath      = "/cache"
 	DefaultKanikoDockerConfigSecretName = "docker-cfg"
 	DefaultKanikoDockerConfigPath       = "/kaniko/.docker"
 
@@ -99,13 +101,9 @@ var Labels = struct {
 	Deployer         string
 	Builder          string
 	DockerAPIVersion string
-	DefaultLabels    map[string]string
 }{
-	DefaultLabels: map[string]string{
-		"deployed-with": "skaffold",
-	},
-	TagPolicy:        "skaffold-tag-policy",
-	Deployer:         "skaffold-deployer",
-	Builder:          "skaffold-builder",
-	DockerAPIVersion: "docker-api-version",
+	TagPolicy:        "skaffold.dev/tag-policy",
+	Deployer:         "skaffold.dev/deployer",
+	Builder:          "skaffold.dev/builder",
+	DockerAPIVersion: "skaffold.dev/docker-api-version",
 }

@@ -18,23 +18,49 @@ package custom
 
 import (
 	"context"
+	"encoding/json"
+	"os/exec"
 	"sort"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
 // GetDependencies returns dependencies listed for a custom artifact
-func GetDependencies(ctx context.Context, workspace string, a *latest.CustomArtifact) ([]string, error) {
-	files, err := docker.WalkWorkspace(workspace, a.Dependencies.Ignore, a.Dependencies.Paths)
-	if err != nil {
-		return nil, errors.Wrapf(err, "walking workspace %s", workspace)
+func GetDependencies(ctx context.Context, workspace string, a *latest.CustomArtifact, insecureRegistries map[string]bool) ([]string, error) {
+
+	switch {
+	case a.Dependencies.Dockerfile != nil:
+		dockerfile := a.Dependencies.Dockerfile
+		return docker.GetDependencies(ctx, workspace, dockerfile.Path, dockerfile.BuildArgs, insecureRegistries)
+
+	case a.Dependencies.Command != "":
+		split := strings.Split(a.Dependencies.Command, " ")
+		cmd := exec.CommandContext(ctx, split[0], split[1:]...)
+		output, err := util.RunCmdOut(cmd)
+		if err != nil {
+			return nil, errors.Wrapf(err, "getting dependencies from command: %s", a.Dependencies.Command)
+		}
+		var deps []string
+		if err := json.Unmarshal(output, &deps); err != nil {
+			return nil, errors.Wrap(err, "unmarshalling dependency output into string array")
+		}
+		return deps, nil
+
+	default:
+		files, err := docker.WalkWorkspace(workspace, a.Dependencies.Ignore, a.Dependencies.Paths)
+		if err != nil {
+			return nil, errors.Wrapf(err, "walking workspace %s", workspace)
+		}
+		var dependencies []string
+		for file := range files {
+			dependencies = append(dependencies, file)
+		}
+		sort.Strings(dependencies)
+		return dependencies, nil
 	}
-	var dependencies []string
-	for file := range files {
-		dependencies = append(dependencies, file)
-	}
-	sort.Strings(dependencies)
-	return dependencies, nil
+
 }

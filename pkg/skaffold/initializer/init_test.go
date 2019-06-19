@@ -55,10 +55,12 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := bytes.NewBuffer([]byte{})
+
 			err := printAnalyzeJSON(out, test.skipBuild, test.dockerfiles, test.images)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, out.String())
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
 		})
 	}
 }
@@ -155,26 +157,21 @@ deploy:
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			testDir, cleanUp := testutil.NewTempDir(t)
-			defer cleanUp()
-			rootDir := testDir.Root()
-			writeAllFiles(testDir, test.filesWithContents)
-			potentialConfigs, dockerfiles, err := walk(rootDir, test.force, testValidDocker)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err,
-				testDir.Paths(test.expectedConfigs), potentialConfigs)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err,
-				testDir.Paths(test.expectedDockerfiles), dockerfiles)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			for file, contents := range test.filesWithContents {
+				tmpDir.Write(file, contents)
+			}
+
+			potentialConfigs, dockerfiles, err := walk(tmpDir.Root(), test.force, testValidDocker)
+
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), potentialConfigs)
+			t.CheckDeepEqual(tmpDir.Paths(test.expectedDockerfiles...), dockerfiles)
 		})
 	}
 }
 
 func testValidDocker(path string) bool {
 	return strings.HasSuffix(path, "Dockerfile")
-}
-
-func writeAllFiles(tmpDir *testutil.TempDir, filesWithContents map[string]string) {
-	for file, contents := range filesWithContents {
-		tmpDir.Write(file, contents)
-	}
 }

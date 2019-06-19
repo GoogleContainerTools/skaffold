@@ -71,6 +71,13 @@ with it. After Cloud Build finishes building your artifacts, they will
 be saved to the specified remote registry, such as
 [Google Container Registry](https://cloud.google.com/container-registry/).
 
+Skaffold Google Cloud Build process differs from the gcloud command
+`gcloud builds submit`. Skaffold will create a list of dependent files
+and submit a tar file to GCB. It will then generate a single step `cloudbuild.yaml`
+and will start the building process. Skaffold does not honor `.gitignore` or `.gcloudignore`
+exclusions. If you need to ignore files use `.dockerignore`. Any `cloudbuild.yaml` found will not
+be used in the build process. 
+
 ### Configuration
 
 To use Cloud Build, add build type `googleCloudBuild` to the `build`
@@ -93,18 +100,44 @@ Kubernetes cluster. Kaniko enables building container images in environments
 that cannot easily or securely run a Docker daemon.
 
 Skaffold can help build artifacts in a Kubernetes cluster using the Kaniko
-image; after the artifacts are built, kaniko can push them to remote registries.
+image; after the artifacts are built, kaniko must push them to a registry.
 
 ### Configuration
 
 To use Kaniko, add build type `kaniko` to the `build` section of
 `skaffold.yaml`. The following options can optionally be configured:
 
-{{< schema root="KanikoBuild" >}}
+{{< schema root="KanikoArtifact" >}}
 
 The `buildContext` can be either:
 
 {{< schema root="KanikoBuildContext" >}}
+
+Since Kaniko must push images to a registry, it is required to set up cluster credentials.
+These credentials are configured in the `cluster` section with the following options:
+
+{{< schema root="ClusterDetails" >}}
+
+To set up the credentials for kaniko have a look at the [kaniko docs](https://github.com/GoogleContainerTools/kaniko#kubernetes-secret).
+The recommended way is to store the pull secret in Kubernetes and configure `pullSecretName`.
+Alternatively, the path to a credentials file can be set with the `pullSecret` option:
+```yaml
+build:
+  cluster:
+    pullSecretName: pull-secret-in-kubernetes
+    # OR
+    pullSecret: path-to-service-account-key-file
+```
+Similarly, when pushing to a docker registry:
+```yaml
+build:
+  cluster:
+    dockerConfig:
+      path: ~/.docker/config.json
+      # OR
+      secretName: docker-config-secret-in-kubernetes
+```
+Note that the kubernetes secret must not be of type `kubernetes.io/dockerconfigjson` which stores the config json under the key `".dockerconfigjson"`, but an opaque secret with the key `"config.json"`.
 
 ### Example
 
@@ -262,10 +295,62 @@ Currently, this only works with the `local` and `cluster` build types. Supported
 
 
 `buildCommand` is *required* and points skaffold to the custom build script which will be executed to build the artifact.
+
+#### Dependencies for a Custom Artifact
+
 `dependencies` tells the skaffold file watcher which files should be watched to trigger rebuilds and file syncs.  Supported schema for `dependencies` includes:
 
 
 {{< schema root="CustomDependencies" >}}
+
+##### Paths and Ignore
+`Paths` and `Ignore` are arrays used to list dependencies. 
+Any paths in `Ignore` will be ignored by the skaffold file watcher, even if they are also specified in `Paths`.
+`Ignore` will only work in conjunction with `Paths`, and with none of the other custom artifact dependency types.
+
+```yaml
+custom:
+  buildCommand: ./build.sh
+  dependencies:
+    paths:
+    - pkg/**
+    - src/*.go
+    ignore:
+    - vendor/**
+```
+
+
+##### Dockerfile
+Skaffold can calculate dependencies from a Dockerfile for a custom artifact.
+Passing in the path to the Dockerfile and any build args, if necessary, will allow skaffold to do dependency calculation.
+
+{{< schema root="DockerfileDependency" >}}
+
+```yaml
+custom:
+  buildCommand: ./build.sh
+  dependencies:
+    dockerfile:
+      path: path/to/Dockerfile
+      buildArgs:
+        file: foo
+```
+
+##### Getting dependencies from a command
+Sometimes you might have a builder that can provide the dependencies for a given artifact.
+For example bazel has the `bazel query deps` command.
+Custom artifact builders can ask Skaffold to execute a custom command, which Skaffold can use to get the dependencies for the artifact for file watching.
+
+The command *must* return dependencies as a JSON array, otherwise skaffold will error out.
+
+For example, the following configuration is valid, as executing the dependency command returns a valid JSON array.
+
+```yaml
+custom:
+  buildCommand: ./build.sh
+  dependencies:
+    command: echo ["file1","file2","file3"]
+```
 
 #### Custom Build Scripts and File Sync
 Syncable files must be included in both the `paths` section of `dependencies`, so that the skaffold file watcher knows to watch them, and the `sync` section, so that skaffold knows to sync them.  

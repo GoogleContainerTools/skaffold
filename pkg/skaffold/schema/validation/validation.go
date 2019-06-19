@@ -34,6 +34,8 @@ var (
 func Process(config *latest.SkaffoldConfig) error {
 	errs := visitStructs(config, validateYamltags)
 	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
+	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
+	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -46,7 +48,7 @@ func Process(config *latest.SkaffoldConfig) error {
 	return fmt.Errorf(strings.Join(messages, " | "))
 }
 
-// validateDockerNetworkMode makes sure that networkMode is one of `Bridge`, `None`, or `Host` if set.
+// validateDockerNetworkMode makes sure that networkMode is one of `bridge`, `none`, or `host` if set.
 func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 	for _, a := range artifacts {
 		if a.DockerArtifact == nil || a.DockerArtifact.NetworkMode == "" {
@@ -57,6 +59,22 @@ func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 			continue
 		}
 		errs = append(errs, fmt.Errorf("artifact %s has invalid networkMode '%s'", a.ImageName, mode))
+	}
+	return
+}
+
+// validateCustomDependencies makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
+func validateCustomDependencies(artifacts []*latest.Artifact) (errs []error) {
+	for _, a := range artifacts {
+		if a.CustomArtifact == nil {
+			continue
+		}
+		if a.CustomArtifact.Dependencies.Ignore == nil {
+			continue
+		}
+		if a.CustomArtifact.Dependencies.Dockerfile != nil || a.CustomArtifact.Dependencies.Command != "" {
+			errs = append(errs, fmt.Errorf("artifact %s has invalid dependencies; dependencies.ignore can only be used in conjunction with dependencies.paths", a.ImageName))
+		}
 	}
 	return
 }
@@ -106,4 +124,20 @@ func visitStructs(s interface{}, visitor func(interface{}) error) []error {
 		// other values are fine
 		return nil
 	}
+}
+
+// validateSyncRules checks that all manual sync rules have a valid strip prefix
+func validateSyncRules(artifacts []*latest.Artifact) []error {
+	var errs []error
+	for _, a := range artifacts {
+		if a.Sync != nil {
+			for _, r := range a.Sync.Manual {
+				if !strings.HasPrefix(r.Src, r.Strip) {
+					err := fmt.Errorf("sync rule pattern '%s' does not have prefix '%s'", r.Src, r.Strip)
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+	return errs
 }
