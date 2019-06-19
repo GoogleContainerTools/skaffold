@@ -156,7 +156,10 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	tr, tw := io.Pipe()
 	cmd := exec.CommandContext(ctx, "kubectl", "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
 	cmd.Stdout = tw
-	go util.RunCmd(cmd)
+	go func() {
+		util.RunCmd(cmd)
+		tw.Close()
+	}()
 
 	color := a.colorPicker.Pick(pod)
 	prefix := prefix(pod, container)
