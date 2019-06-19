@@ -21,16 +21,14 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/pkg/errors"
 )
 
 // Run builds artifacts, runs tests on built artifacts, and then deploys them.
 func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
-		return err
+	if err := r.buildAndTest(ctx, out, artifacts); err != nil {
+		return errors.Wrap(err, "failed to build")
 	}
-	if r.runCtx.Opts.Tail {
-		logger := r.newLogger(out, artifacts)
-		return r.TailLogs(ctx, out, logger)
-	}
-	return nil
+
+	return r.Deploy(ctx, out, r.builds)
 }

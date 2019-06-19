@@ -73,10 +73,11 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				}
 			}
 		case len(changed.needsRebuild) > 0:
-			if err := r.buildTestDeploy(ctx, out, changed.needsRebuild); err != nil {
+			if err := r.buildAndTest(ctx, out, changed.needsRebuild); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil
 			}
+			fallthrough
 		case changed.needsRedeploy:
 			if err := r.deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
@@ -127,9 +128,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return errors.Wrapf(err, "watching skaffold configuration %s", r.runCtx.Opts.ConfigurationFile)
 	}
 
-	// First run
-	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
-		return errors.Wrap(err, "exiting dev mode because first run failed")
+	// First build
+	if err := r.buildAndTest(ctx, out, artifacts); err != nil {
+		return errors.Wrap(err, "exiting dev mode because first build failed")
 	}
 
 	// Start logs
@@ -139,6 +140,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
+	// First deploy
+	if err := r.deploy(ctx, out, r.builds); err != nil {
+		return errors.Wrap(err, "exiting dev mode because first deploy failed")
+	}
+
+	// Forward ports
 	if r.runCtx.Opts.PortForward {
 		if err := portForwarder.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting port-forwarder")

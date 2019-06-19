@@ -247,24 +247,3 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
 	return imageTags, nil
 }
-
-func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	bRes, err := r.BuildAndTest(ctx, out, artifacts)
-	if err != nil {
-		return err
-	}
-
-	// Update which images are logged.
-	for _, build := range bRes {
-		r.imageList.Add(build.Tag)
-	}
-
-	// Make sure all artifacts are redeployed. Not only those that were just built.
-	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
-
-	if err := r.deploy(ctx, out, r.builds); err != nil {
-		return errors.Wrap(err, "deploy failed")
-	}
-
-	return nil
-}

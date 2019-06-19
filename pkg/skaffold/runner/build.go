@@ -29,6 +29,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+func (r *SkaffoldRunner) buildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
+	bRes, err := r.BuildAndTest(ctx, out, artifacts)
+	if err != nil {
+		return err
+	}
+
+	// Update which images are logged.
+	for _, build := range bRes {
+		r.imageList.Add(build.Tag)
+	}
+
+	// Make sure all artifacts are redeployed. Not only those that were just built.
+	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
+	return nil
+}
+
 // BuildAndTest builds artifacts and runs tests on built artifacts
 func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	tags, err := r.imageTags(ctx, out, artifacts)
@@ -51,6 +67,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	if err := r.cache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
 		logrus.Warnf("error caching artifacts: %v", err)
 	}
+
 	if !r.runCtx.Opts.SkipTests {
 		if err = r.Test(ctx, out, bRes); err != nil {
 			return nil, errors.Wrap(err, "test failed")

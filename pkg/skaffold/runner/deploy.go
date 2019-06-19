@@ -21,25 +21,37 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/pkg/errors"
 )
 
-// Deploy deploys build artifacts.
+// Deploy deploys the given artifacts and tail logs if tail present
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	if !r.runCtx.Opts.Tail {
+		return r.deploy(ctx, out, artifacts)
+	}
+
+	var imageNames []string
+	for _, artifact := range artifacts {
+		imageNames = append(imageNames, artifact.ImageName)
+	}
+
+	logger := r.newLoggerForImages(out, imageNames)
+	defer logger.Stop()
+
+	if err := logger.Start(ctx); err != nil {
+		return errors.Wrap(err, "starting logger")
+	}
+
 	if err := r.deploy(ctx, out, artifacts); err != nil {
 		return err
 	}
-	if r.runCtx.Opts.Tail {
-		images := make([]string, len(artifacts))
-		for i, a := range artifacts {
-			images[i] = a.ImageName
-		}
-		logger := r.newLoggerForImages(out, images)
-		return r.TailLogs(ctx, out, logger)
-	}
+
+	<-ctx.Done()
+
 	return nil
 }
 
-// Deploy deploys the given artifacts and tail logs if tail present
+// deploy deploys the given artifacts
 func (r *SkaffoldRunner) deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
 	err := r.Deployer.Deploy(ctx, out, artifacts, r.labellers)
 	r.hasDeployed = true
