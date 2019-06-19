@@ -179,9 +179,8 @@ func DoInit(out io.Writer, c Config) error {
 
 // autoSelectBuilders takes a list of builders and images, checks if any of the builders' configured target
 // images match an image in the image list, and returns a list of the matching builder/image pairs. Also
-// returns the builder configs and images from the original image list that didn't have any matches.
+// separately returns the builder configs and images that didn't have any matches.
 func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
-	// Auto-select builders that have a definite target image
 	pairs := []builderImagePair{}
 	unresolvedImages := []string{}
 	for _, image := range images {
