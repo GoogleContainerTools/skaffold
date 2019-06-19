@@ -38,7 +38,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 			description: "builders and images",
 			builders:    []InitBuilder{docker.Dockerfile("Dockerfile1"), docker.Dockerfile("Dockerfile2")},
 			images:      []string{"image1", "image2"},
-			expected:    "{\"builders\":[{\"path\":\"Dockerfile1\"},{\"path\":\"Dockerfile2\"}],\"images\":[\"image1\",\"image2\"]}",
+			expected:    "{\"builders\":[{\"name\":\"Docker\",\"path\":\"Dockerfile1\"},{\"name\":\"Docker\",\"path\":\"Dockerfile2\"}],\"images\":[\"image1\",\"image2\"]}",
 		},
 		{
 			description: "no builders, skip build",

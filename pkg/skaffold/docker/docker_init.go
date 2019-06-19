@@ -31,9 +31,14 @@ import (
 // Dockerfile is the path to a dockerfile. Implements the InitBuilder interface.
 type Dockerfile string
 
+// Name returns the name of the builder, "Docker"
+func (d Dockerfile) Name() string {
+	return "Docker"
+}
+
 // Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
 func (d Dockerfile) Describe() string {
-	return fmt.Sprintf("Docker (%s)", d)
+	return fmt.Sprintf("%s (%s)", d.Name(), d)
 }
 
 // CreateArtifact creates an Artifact to be included in the generated Build Config
