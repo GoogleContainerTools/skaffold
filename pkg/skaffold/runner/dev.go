@@ -38,8 +38,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	logger := r.newLogger(out, artifacts)
 	defer logger.Stop()
 
-	portManager := portforward.NewPortManager(out, r.imageList, r.runCtx.Namespaces, r.defaultLabeller.K8sMangedByLabel(), r.runCtx.Opts.PortForward)
-	defer portManager.Stop()
+	forwarderManager := portforward.NewForwarderManager(out, r.imageList, r.runCtx.Namespaces, r.defaultLabeller.K8sMangedByLabel(), r.runCtx.Opts.PortForward)
+	defer forwarderManager.Stop()
 
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
@@ -139,7 +139,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
-	if err := portManager.Start(ctx); err != nil {
+	if err := forwarderManager.Start(ctx); err != nil {
 		return errors.Wrap(err, "starting port manager")
 	}
 

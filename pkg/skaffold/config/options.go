@@ -44,6 +44,7 @@ type SkaffoldOptions struct {
 	ForceDev           bool
 	NoPrune            bool
 	NoPruneChildren    bool
+	PortForward        PortForwardOptions
 	CustomTag          string
 	Namespace          string
 	CacheFile          string
@@ -57,7 +58,6 @@ type SkaffoldOptions struct {
 	Command            string
 	RPCPort            int
 	RPCHTTPPort        int
-	PortForward        PortForwardOptions
 }
 
 // Labels returns a map of labels to be applied to all deployed

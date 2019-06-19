@@ -30,8 +30,8 @@ type Forwarder interface {
 	Stop()
 }
 
-// PortManager manages all port forwarding
-type PortManager struct {
+// ForwarderManager manages all forwarders
+type ForwarderManager struct {
 	output io.Writer
 
 	EntryForwarder
@@ -39,32 +39,32 @@ type PortManager struct {
 }
 
 var (
-	emptyPortManager = &PortManager{}
+	emptyForwarderManager = &ForwarderManager{}
 )
 
-// NewPortManager returns a new port manager which handles starting and stopping port forwarding
-func NewPortManager(out io.Writer, podSelector kubernetes.PodSelector, namespaces []string, label string, opts config.PortForwardOptions) *PortManager {
+// NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
+func NewForwarderManager(out io.Writer, podSelector kubernetes.PodSelector, namespaces []string, label string, opts config.PortForwardOptions) *ForwarderManager {
 	if !opts.PortForward {
-		return emptyPortManager
+		return emptyForwarderManager
 	}
 
 	em := NewEntryManager(out)
 
-	portManager := &PortManager{
+	ForwarderManager := &ForwarderManager{
 		output:     out,
 		Forwarders: []Forwarder{NewResourceForwarder(em, label)},
 	}
 
 	if opts.ForwardPods {
 		f := NewWatchingPodForwarder(em, podSelector, namespaces)
-		portManager.Forwarders = append(portManager.Forwarders, f)
+		ForwarderManager.Forwarders = append(ForwarderManager.Forwarders, f)
 	}
 
-	return portManager
+	return ForwarderManager
 }
 
-// Start begins all forwarders managed by the PortManager
-func (p *PortManager) Start(ctx context.Context) error {
+// Start begins all forwarders managed by the ForwarderManager
+func (p *ForwarderManager) Start(ctx context.Context) error {
 	for _, f := range p.Forwarders {
 		if err := f.Start(ctx); err != nil {
 			return err
@@ -73,8 +73,8 @@ func (p *PortManager) Start(ctx context.Context) error {
 	return nil
 }
 
-// Stop cleans up and terminates all forwarders managed by the PortManager
-func (p *PortManager) Stop() {
+// Stop cleans up and terminates all forwarders managed by the ForwarderManager
+func (p *ForwarderManager) Stop() {
 	for _, f := range p.Forwarders {
 		f.Stop()
 	}

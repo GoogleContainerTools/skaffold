@@ -58,12 +58,16 @@ func newTestForwarder(forwardErr error) *testForwarder {
 
 func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int, *sync.Map) int {
 	// Return first available port in ports that isn't taken
+	lock := sync.Mutex{}
 	return func(int, *sync.Map) int {
 		for _, p := range availablePorts {
+			lock.Lock()
 			if _, ok := taken[p]; ok {
+				lock.Unlock()
 				continue
 			}
 			taken[p] = struct{}{}
+			lock.Unlock()
 			return p
 		}
 		return -1
