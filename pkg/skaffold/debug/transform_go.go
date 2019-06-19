@@ -94,7 +94,7 @@ func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration
 			container.Args = rewriteDlvCommandLine(config.arguments, *spec)
 
 		default:
-			logrus.Warnf("Skipping %q as does not appear to be go", container.Name)
+			logrus.Warnf("Skipping %q as does not appear to be Go-based", container.Name)
 			return nil
 		}
 	}
@@ -187,5 +187,8 @@ func (spec dlvSpec) asArguments() []string {
 	if spec.log {
 		args = append(args, "--log")
 	}
+
+	// indicate end of Delve arguments
+	args = append(args, "--")
 	return args
 }
