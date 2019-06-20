@@ -42,6 +42,11 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+// For testing
+var (
+	promptUserForBuildConfigFunc = promptUserForBuildConfig
+)
+
 // NoBuilder allows users to specify they don't want to build
 // an image we parse out from a kubernetes manifest
 const NoBuilder = "None (image not built from these sources)"
@@ -213,7 +218,7 @@ func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builde
 
 func detectBuilders(path string) ([]InitBuilder, error) {
 	// Check for jib
-	if builders := jib.ValidateJibConfig(path); builders != nil {
+	if builders := jib.ValidateJibConfigFunc(path); builders != nil {
 		results := make([]InitBuilder, len(builders))
 		for i := range builders {
 			results[i] = builders[i]
@@ -222,8 +227,8 @@ func detectBuilders(path string) ([]InitBuilder, error) {
 	}
 
 	// Check for Dockerfile
-	if docker.ValidateDockerfile(path) {
-		results := []InitBuilder{docker.Dockerfile(path)}
+	if docker.ValidateDockerfileFunc(path) {
+		results := []InitBuilder{docker.Docker(path)}
 		return results, nil
 	}
 
@@ -242,7 +247,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 
 		// TODO: Allow passing Jib config via CLI
 		pairs = append(pairs, builderImagePair{
-			Builder:   docker.Dockerfile(parts[0]),
+			Builder:   docker.Docker(parts[0]),
 			ImageName: parts[1],
 		})
 	}
@@ -281,7 +286,7 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []build
 			break
 		}
 		image := images[0]
-		choice := promptUserForBuildConfig(image, choices)
+		choice := promptUserForBuildConfigFunc(image, choices)
 		if choice != NoBuilder {
 			pairs = append(pairs, builderImagePair{Builder: choiceMap[choice], ImageName: image})
 			choices = util.RemoveFromSlice(choices, choice)
@@ -294,7 +299,7 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []build
 	return pairs
 }
 
-var promptUserForBuildConfig = func(image string, choices []string) string {
+func promptUserForBuildConfig(image string, choices []string) string {
 	var selectedBuildConfig string
 	options := append(choices, NoBuilder)
 	prompt := &survey.Select{

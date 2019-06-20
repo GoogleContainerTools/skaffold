@@ -70,12 +70,12 @@ func TestValidateDockerfile(t *testing.T) {
 func TestDescribe(t *testing.T) {
 	var tests = []struct {
 		description    string
-		dockerfile     Dockerfile
+		dockerfile     Docker
 		expectedPrompt string
 	}{
 		{
 			description:    "Dockerfile prompt",
-			dockerfile:     Dockerfile("path/to/Dockerfile"),
+			dockerfile:     Docker("path/to/Dockerfile"),
 			expectedPrompt: "Docker (path/to/Dockerfile)",
 		},
 	}
@@ -89,14 +89,14 @@ func TestDescribe(t *testing.T) {
 func TestCreateArtifact(t *testing.T) {
 	var tests = []struct {
 		description      string
-		dockerfile       Dockerfile
+		dockerfile       Docker
 		manifestImage    string
 		expectedArtifact latest.Artifact
 		expectedImage    string
 	}{
 		{
 			description:   "default filename",
-			dockerfile:    Dockerfile(filepath.Join("path", "to", "Dockerfile")),
+			dockerfile:    Docker(filepath.Join("path", "to", "Dockerfile")),
 			manifestImage: "image",
 			expectedArtifact: latest.Artifact{
 				ImageName:    "image",
@@ -106,7 +106,7 @@ func TestCreateArtifact(t *testing.T) {
 		},
 		{
 			description:   "non-default filename",
-			dockerfile:    Dockerfile(filepath.Join("path", "to", "Dockerfile1")),
+			dockerfile:    Docker(filepath.Join("path", "to", "Dockerfile1")),
 			manifestImage: "image",
 			expectedArtifact: latest.Artifact{
 				ImageName: "image",
@@ -118,7 +118,7 @@ func TestCreateArtifact(t *testing.T) {
 		},
 		{
 			description:   "ignore workspace",
-			dockerfile:    Dockerfile("Dockerfile"),
+			dockerfile:    Docker("Dockerfile"),
 			manifestImage: "image",
 			expectedArtifact: latest.Artifact{
 				ImageName:    "image",

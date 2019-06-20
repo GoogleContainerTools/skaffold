@@ -38,9 +38,9 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 		{
 			description: "builders and images",
 			builders: []InitBuilder{
-				docker.Dockerfile("Dockerfile"),
-				jib.Config{BuilderName: jib.JibGradle, Image: "image1", FilePath: "build.gradle", Project: "project"},
-				jib.Config{BuilderName: jib.JibMaven, Image: "image2", FilePath: "pom.xml"},
+				docker.Docker("Dockerfile"),
+				jib.Jib{BuilderName: jib.JibGradle, Image: "image1", FilePath: "build.gradle", Project: "project"},
+				jib.Jib{BuilderName: jib.JibMaven, Image: "image2", FilePath: "pom.xml"},
 			},
 			images:   []string{"image1", "image2"},
 			expected: "{\"builders\":[{\"name\":\"Docker\",\"path\":\"Dockerfile\"},{\"name\":\"Jib Gradle Plugin\",\"path\":\"build.gradle\",\"configuredImage\":\"image1\"},{\"name\":\"Jib Maven Plugin\",\"path\":\"pom.xml\",\"configuredImage\":\"image2\"}],\"images\":[\"image1\",\"image2\"]}",
@@ -194,8 +194,8 @@ deploy:
 				tmpDir.Write(file, contents)
 			}
 
-			t.Override(&docker.ValidateDockerfile, fakeValidateDockerfile)
-			t.Override(&jib.ValidateJibConfig, fakeValidateJibConfig)
+			t.Override(&docker.ValidateDockerfileFunc, fakeValidateDockerfile)
+			t.Override(&jib.ValidateJibConfigFunc, fakeValidateJibConfig)
 
 			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, detectBuilders)
 
@@ -213,11 +213,11 @@ func fakeValidateDockerfile(path string) bool {
 	return strings.HasSuffix(path, "Dockerfile")
 }
 
-func fakeValidateJibConfig(path string) []jib.Config {
+func fakeValidateJibConfig(path string) []jib.Jib {
 	if strings.HasSuffix(path, "build.gradle") {
-		return []jib.Config{{BuilderName: jib.JibGradle, FilePath: path}}
+		return []jib.Jib{{BuilderName: jib.JibGradle, FilePath: path}}
 	} else if strings.HasSuffix(path, "pom.xml") {
-		return []jib.Config{{BuilderName: jib.JibMaven, FilePath: path}}
+		return []jib.Jib{{BuilderName: jib.JibMaven, FilePath: path}}
 	}
 	return nil
 }
@@ -239,28 +239,28 @@ func TestResolveBuilderImages(t *testing.T) {
 		},
 		{
 			description:      "don't prompt for single dockerfile and image",
-			buildConfigs:     []InitBuilder{docker.Dockerfile("Dockerfile1")},
+			buildConfigs:     []InitBuilder{docker.Docker("Dockerfile1")},
 			images:           []string{"image1"},
 			shouldMakeChoice: false,
 			expectedPairs: []builderImagePair{
 				{
-					Builder:   docker.Dockerfile("Dockerfile1"),
+					Builder:   docker.Docker("Dockerfile1"),
 					ImageName: "image1",
 				},
 			},
 		},
 		{
 			description:      "prompt for multiple builders and images",
-			buildConfigs:     []InitBuilder{docker.Dockerfile("Dockerfile1"), jib.Config{BuilderName: jib.JibGradle, FilePath: "build.gradle"}, jib.Config{BuilderName: jib.JibMaven, Project: "project", FilePath: "pom.xml"}},
+			buildConfigs:     []InitBuilder{docker.Docker("Dockerfile1"), jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle"}, jib.Jib{BuilderName: jib.JibMaven, Project: "project", FilePath: "pom.xml"}},
 			images:           []string{"image1", "image2"},
 			shouldMakeChoice: true,
 			expectedPairs: []builderImagePair{
 				{
-					Builder:   docker.Dockerfile("Dockerfile1"),
+					Builder:   docker.Docker("Dockerfile1"),
 					ImageName: "image1",
 				},
 				{
-					Builder:   jib.Config{BuilderName: jib.JibGradle, FilePath: "build.gradle"},
+					Builder:   jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle"},
 					ImageName: "image2",
 				},
 			},
@@ -269,7 +269,7 @@ func TestResolveBuilderImages(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			// Overrides promptUserForBuildConfig to choose first option rather than using the interactive menu
-			t.Override(&promptUserForBuildConfig, func(image string, choices []string) string {
+			t.Override(&promptUserForBuildConfigFunc, func(image string, choices []string) string {
 				if !test.shouldMakeChoice {
 					t.FailNow()
 				}
@@ -295,51 +295,51 @@ func TestAutoSelectBuilders(t *testing.T) {
 		{
 			description: "no automatic matches",
 			builderConfigs: []InitBuilder{
-				docker.Dockerfile("Dockerfile"),
-				jib.Config{BuilderName: jib.JibGradle, FilePath: "build.gradle"},
-				jib.Config{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "not a k8s image"},
+				docker.Docker("Dockerfile"),
+				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle"},
+				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "not a k8s image"},
 			},
 			images:        []string{"image1", "image2"},
 			expectedPairs: []builderImagePair{},
 			expectedBuildersLeft: []InitBuilder{
-				docker.Dockerfile("Dockerfile"),
-				jib.Config{BuilderName: jib.JibGradle, FilePath: "build.gradle"},
-				jib.Config{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "not a k8s image"},
+				docker.Docker("Dockerfile"),
+				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle"},
+				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "not a k8s image"},
 			},
 			expectedFilteredImages: []string{"image1", "image2"},
 		},
 		{
 			description: "automatic jib matches",
 			builderConfigs: []InitBuilder{
-				docker.Dockerfile("Dockerfile"),
-				jib.Config{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
-				jib.Config{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image2"},
+				docker.Docker("Dockerfile"),
+				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
+				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image2"},
 			},
 			images: []string{"image1", "image2", "image3"},
 			expectedPairs: []builderImagePair{
 				{
-					jib.Config{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
+					jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
 					"image1",
 				},
 				{
-					jib.Config{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image2"},
+					jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image2"},
 					"image2",
 				},
 			},
-			expectedBuildersLeft:   []InitBuilder{docker.Dockerfile("Dockerfile")},
+			expectedBuildersLeft:   []InitBuilder{docker.Docker("Dockerfile")},
 			expectedFilteredImages: []string{"image3"},
 		},
 		{
 			description: "multiple matches for one image",
 			builderConfigs: []InitBuilder{
-				jib.Config{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
-				jib.Config{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image1"},
+				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
+				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image1"},
 			},
 			images:        []string{"image1", "image2"},
 			expectedPairs: []builderImagePair{},
 			expectedBuildersLeft: []InitBuilder{
-				jib.Config{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
-				jib.Config{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image1"},
+				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
+				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image1"},
 			},
 			expectedFilteredImages: []string{"image1", "image2"},
 		},

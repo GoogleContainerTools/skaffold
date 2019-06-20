@@ -28,21 +28,26 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Dockerfile is the path to a dockerfile. Implements the InitBuilder interface.
-type Dockerfile string
+// For testing
+var (
+	ValidateDockerfileFunc = ValidateDockerfile
+)
+
+// Docker is the path to a dockerfile. Implements the InitBuilder interface.
+type Docker string
 
 // Name returns the name of the builder, "Docker"
-func (d Dockerfile) Name() string {
+func (d Docker) Name() string {
 	return "Docker"
 }
 
 // Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
-func (d Dockerfile) Describe() string {
+func (d Docker) Describe() string {
 	return fmt.Sprintf("%s (%s)", d.Name(), d)
 }
 
 // CreateArtifact creates an Artifact to be included in the generated Build Config
-func (d Dockerfile) CreateArtifact(manifestImage string) *latest.Artifact {
+func (d Docker) CreateArtifact(manifestImage string) *latest.Artifact {
 	path := string(d)
 	workspace := filepath.Dir(path)
 	a := &latest.Artifact{ImageName: manifestImage}
@@ -59,18 +64,18 @@ func (d Dockerfile) CreateArtifact(manifestImage string) *latest.Artifact {
 }
 
 // ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured
-func (d Dockerfile) ConfiguredImage() string {
+func (d Docker) ConfiguredImage() string {
 	// Target image is not configured in dockerfiles
 	return ""
 }
 
 // Path returns the path to the dockerfile
-func (d Dockerfile) Path() string {
+func (d Docker) Path() string {
 	return string(d)
 }
 
 // ValidateDockerfile makes sure the given Dockerfile is existing and valid.
-var ValidateDockerfile = func(path string) bool {
+func ValidateDockerfile(path string) bool {
 	f, err := os.Open(path)
 	if err != nil {
 		logrus.Warnf("opening file %s: %s", path, err.Error())

@@ -29,6 +29,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+// For testing
+var (
+	ValidateJibConfigFunc = ValidateJibConfig
+)
+
 const (
 	// JibGradle the name of the Jib Gradle Plugin
 	JibGradle = "Jib Gradle Plugin"
@@ -36,8 +41,8 @@ const (
 	JibMaven = "Jib Maven Plugin"
 )
 
-// Config holds information about a Jib project
-type Config struct {
+// Jib holds information about a Jib project
+type Jib struct {
 	BuilderName string `json:"name,omitempty"`
 	Image       string `json:"image,omitempty"`
 	FilePath    string `json:"path,omitempty"`
@@ -45,12 +50,12 @@ type Config struct {
 }
 
 // Name returns the name of the builder
-func (j Config) Name() string {
+func (j Jib) Name() string {
 	return j.BuilderName
 }
 
 // Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
-func (j Config) Describe() string {
+func (j Jib) Describe() string {
 	if j.Project != "" {
 		return fmt.Sprintf("%s (%s, %s)", j.BuilderName, j.Project, j.FilePath)
 	}
@@ -58,7 +63,7 @@ func (j Config) Describe() string {
 }
 
 // CreateArtifact creates an Artifact to be included in the generated Build Config
-func (j Config) CreateArtifact(manifestImage string) *latest.Artifact {
+func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 	workspace := filepath.Dir(j.FilePath)
 
 	a := &latest.Artifact{ImageName: j.Image}
@@ -95,12 +100,12 @@ func (j Config) CreateArtifact(manifestImage string) *latest.Artifact {
 }
 
 // ConfiguredImage returns the target image configured by the builder, or empty string if no image is configured
-func (j Config) ConfiguredImage() string {
+func (j Jib) ConfiguredImage() string {
 	return j.Image
 }
 
 // Path returns the path to the build definition
-func (j Config) Path() string {
+func (j Jib) Path() string {
 	return j.FilePath
 }
 
@@ -111,7 +116,7 @@ type jibJSON struct {
 }
 
 // ValidateJibConfig checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
-var ValidateJibConfig = func(path string) []Config {
+func ValidateJibConfig(path string) []Jib {
 	// Determine whether maven or gradle
 	var builderType, executable, wrapper, taskName string
 	if strings.HasSuffix(path, "pom.xml") {
@@ -145,7 +150,7 @@ var ValidateJibConfig = func(path string) []Config {
 		return nil
 	}
 
-	results := make([]Config, len(matches))
+	results := make([]Jib, len(matches))
 	for i, match := range matches {
 		line := bytes.Replace(match[1], []byte(`\`), []byte(`\\`), -1)
 		parsedJSON := jibJSON{}
@@ -153,7 +158,7 @@ var ValidateJibConfig = func(path string) []Config {
 			return nil
 		}
 
-		results[i] = Config{BuilderName: builderType, Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
+		results[i] = Jib{BuilderName: builderType, Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
 	}
 	return results
 }
