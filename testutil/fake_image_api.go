@@ -44,6 +44,7 @@ type FakeAPIClient struct {
 
 	nextImageID  int
 	Pushed       []string
+	Built        []types.ImageBuildOptions
 	PushedImages []string
 }
 
@@ -78,6 +79,8 @@ func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types
 			f.TagToImageID[tag+":latest"] = imageID
 		}
 	}
+
+	f.Built = append(f.Built, options)
 
 	return types.ImageBuildResponse{
 		Body: f.body(imageID),
