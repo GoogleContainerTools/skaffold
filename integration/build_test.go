@@ -18,6 +18,10 @@ package integration
 
 import (
 	"context"
+	"crypto/md5"
+	"crypto/sha256"
+	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"testing"
@@ -62,7 +66,7 @@ func TestBuild(t *testing.T) {
 			description: "sha256 tagger",
 			dir:         "testdata/tagPolicy",
 			args:        []string{"-p", "sha256"},
-			expectImage: imageName + "latest",
+			expectImage: imageName + computeSha256Tag("testdata/tagPolicy"),
 		},
 		{
 			description: "dateTime tagger",
@@ -91,6 +95,25 @@ func TestBuild(t *testing.T) {
 			checkImageExists(t, test.expectImage)
 		})
 	}
+}
+
+//computeSha256Tag generate a checksum based on the test dir content.
+func computeSha256Tag(dir string) string {
+	computeChecksum := func(path string, checksum []byte) []byte {
+		f, _ := os.Open(path)
+		defer f.Close()
+
+		h := sha256.New()
+		io.Copy(h, f)
+		return h.Sum(checksum)
+	}
+
+	var checksum []byte
+
+	checksum = computeChecksum(dir+"/Dockerfile", checksum)
+	checksum = computeChecksum(dir+"/skaffold.yaml", checksum)
+
+	return fmt.Sprintf("%x", md5.Sum(checksum))
 }
 
 // removeImage removes the given image if present.

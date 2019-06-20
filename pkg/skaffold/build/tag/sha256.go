@@ -17,6 +17,13 @@ limitations under the License.
 package tag
 
 import (
+	"crypto/md5"
+	"crypto/sha256"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
@@ -38,10 +45,50 @@ func (c *ChecksumTagger) GenerateFullyQualifiedImageName(workingDir, imageName s
 	}
 
 	if parsed.Tag == "" {
-		// No supplied tag, so use "latest".
-		return imageName + ":latest", nil
+		checksum, err := generateCheckSum(workingDir)
+		//If impossible to generate a checksum for the working dir
+		//we set the tag to latest by default.
+		if err != nil {
+			return imageName + ":latest", nil
+		}
+
+		return imageName + ":" + checksum, nil
 	}
 
 	// They already have a tag.
 	return imageName, nil
+}
+
+func generateCheckSum(workingDir string) (string, error) {
+
+	var checksum []byte
+
+	err := filepath.Walk(workingDir,
+		func(path string, info os.FileInfo, err error) error {
+			//if Walk failed on a given file, we skip it.
+			// The checksum will be compute on all the other files.
+			if err != nil {
+				return nil
+			}
+
+			f, err := os.Open(path)
+			//if file cannot be opened, we skip it. See above.
+			if err != nil {
+				return nil
+			}
+			defer f.Close()
+
+			h := sha256.New()
+			if _, err := io.Copy(h, f); err != nil {
+				return nil
+			}
+			checksum = h.Sum(checksum)
+			return nil
+		})
+
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", md5.Sum(checksum)), nil
 }
