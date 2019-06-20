@@ -83,14 +83,11 @@ func doDev(ctx context.Context, out io.Writer) error {
 					}
 				}
 			}
-			if err != nil {
-				if errors.Cause(err) == runner.ErrorConfigurationChanged {
-					return err
-				}
+
+			if err != nil && errors.Cause(err) != runner.ErrorConfigurationChanged {
 				r.RPCServerShutdown()
 				return alwaysSucceedWhenCancelled(ctx, err)
 			}
-			r.RPCServerShutdown()
 		}
 	}
 }

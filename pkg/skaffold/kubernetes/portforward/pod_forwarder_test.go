@@ -430,6 +430,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 
 			forwardingTimeoutTime = time.Second
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
+			t.Override(&portForwardEvent, func(*portForwardEntry) {})
 
 			entryManager := EntryManager{
 				output:             ioutil.Discard,

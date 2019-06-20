@@ -79,6 +79,14 @@ func StrSliceIndex(sl []string, s string) int {
 	return -1
 }
 
+func StrSliceInsert(sl []string, index int, insert []string) []string {
+	newSlice := make([]string, len(sl)+len(insert))
+	copy(newSlice[0:index], sl[0:index])
+	copy(newSlice[index:index+len(insert)], insert)
+	copy(newSlice[index+len(insert):], sl[index:])
+	return newSlice
+}
+
 // ExpandPathsGlob expands paths according to filepath.Glob patterns
 // Returns a list of unique files that match the glob patterns passed in.
 func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
