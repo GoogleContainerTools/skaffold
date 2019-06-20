@@ -28,23 +28,31 @@ import (
 func TestPrintAnalyzeJSON(t *testing.T) {
 	tests := []struct {
 		description string
-		dockerfiles []InitBuilder
+		pairs       []builderImagePair
+		builders    []InitBuilder
 		images      []string
 		skipBuild   bool
 		shouldErr   bool
 		expected    string
 	}{
 		{
-			description: "dockerfile and image",
-			dockerfiles: []InitBuilder{docker.Docker("Dockerfile1"), docker.Docker("Dockerfile2")},
+			description: "builders and images with pairs",
+			pairs:       []builderImagePair{{docker.Docker("Dockerfile1"), "image1"}},
+			builders:    []InitBuilder{docker.Docker("Dockerfile2")},
+			images:      []string{"image2"},
+			expected:    "{\"builders\":[{\"name\":\"Docker\",\"payload\":\"Dockerfile1\"},{\"name\":\"Docker\",\"payload\":\"Dockerfile2\"}],\"images\":[{\"name\":\"image1\",\"requiresPrompt\":false},{\"name\":\"image2\",\"requiresPrompt\":true}]}",
+		},
+		{
+			description: "builders and images with no pairs",
+			builders:    []InitBuilder{docker.Docker("Dockerfile1"), docker.Docker("Dockerfile2")},
 			images:      []string{"image1", "image2"},
-			expected:    "{\"dockerfiles\":[\"Dockerfile1\",\"Dockerfile2\"],\"images\":[\"image1\",\"image2\"]}",
+			expected:    "{\"builders\":[{\"name\":\"Docker\",\"payload\":\"Dockerfile1\"},{\"name\":\"Docker\",\"payload\":\"Dockerfile2\"}],\"images\":[{\"name\":\"image1\",\"requiresPrompt\":true},{\"name\":\"image2\",\"requiresPrompt\":true}]}",
 		},
 		{
 			description: "no dockerfile, skip build",
 			images:      []string{"image1", "image2"},
 			skipBuild:   true,
-			expected:    "{\"images\":[\"image1\",\"image2\"]}"},
+			expected:    "{\"images\":[{\"name\":\"image1\",\"requiresPrompt\":true},{\"name\":\"image2\",\"requiresPrompt\":true}]}"},
 		{
 			description: "no dockerfile",
 			images:      []string{"image1", "image2"},
@@ -59,7 +67,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := bytes.NewBuffer([]byte{})
 
-			err := printAnalyzeJSON(out, test.skipBuild, test.dockerfiles, test.images)
+			err := printAnalyzeJSON(out, test.skipBuild, test.pairs, test.builders, test.images)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
 		})
