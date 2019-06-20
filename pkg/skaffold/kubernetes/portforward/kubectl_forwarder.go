@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"os/exec"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -56,7 +55,6 @@ func (*KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 		return errors.Wrapf(err, "port forwarding %s/%s, port: %d to local port: %d, err: %s", pfe.resource.Type, pfe.resource.Name, pfe.resource.Port, pfe.localPort, buf.String())
 	}
 
-	event.PortForwarded(pfe.localPort, pfe.resource.Port, pfe.podName, pfe.containerName, pfe.resource.Namespace, pfe.portName, pfe.resource.Type, pfe.resource.Name)
 	go cmd.Wait()
 	return portForwardSuccessful(pfe.localPort)
 }

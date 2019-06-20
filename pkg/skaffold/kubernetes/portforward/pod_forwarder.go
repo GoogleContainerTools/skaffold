@@ -105,7 +105,7 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 		for _, port := range c.Ports {
 			// get current entry for this container
 			resource := latest.PortForwardResource{
-				Type:      constants.PodResourceType,
+				Type:      constants.Pod,
 				Name:      pod.Name,
 				Namespace: pod.Namespace,
 				Port:      port.ContainerPort,

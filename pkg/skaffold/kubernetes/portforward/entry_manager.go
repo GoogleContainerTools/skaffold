@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -33,7 +34,7 @@ var (
 )
 
 // EntryManager handles forwarding entries and keeping track of
-// forwarded ports and resources
+// forwarded ports and resources.
 type EntryManager struct {
 	EntryForwarder
 	output io.Writer
@@ -59,12 +60,17 @@ func NewEntryManager(out io.Writer) EntryManager {
 func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portForwardEntry) error {
 	b.forwardedResources.Store(entry.key(), entry)
 	color.Default.Fprintln(b.output, fmt.Sprintf("Port Forwarding %s/%s %d -> %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort))
-	return wait.PollImmediate(time.Second, forwardingTimeoutTime, func() (bool, error) {
+	err := wait.PollImmediate(time.Second, forwardingTimeoutTime, func() (bool, error) {
 		if err := b.Forward(ctx, entry); err != nil {
 			return false, nil
 		}
 		return true, nil
 	})
+	if err != nil {
+		return err
+	}
+	event.PortForwarded(entry.localPort, entry.resource.Port, entry.podName, entry.containerName, entry.resource.Namespace, entry.portName, string(entry.resource.Type), entry.resource.Name)
+	return nil
 }
 
 // Stop terminates all kubectl port-forward commands.

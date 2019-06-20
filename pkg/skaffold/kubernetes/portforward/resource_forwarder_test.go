@@ -24,6 +24,8 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
@@ -76,14 +78,14 @@ func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) fun
 
 func TestStart(t *testing.T) {
 	svc1 := latest.PortForwardResource{
-		Type:      constants.ServiceResourceType,
+		Type:      constants.Service,
 		Name:      "svc1",
 		Namespace: "default",
 		Port:      8080,
 	}
 
 	svc2 := latest.PortForwardResource{
-		Type:      constants.ServiceResourceType,
+		Type:      constants.Service,
 		Name:      "svc2",
 		Namespace: "default",
 		Port:      9000,
@@ -113,6 +115,7 @@ func TestStart(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			event.InitializeState(&runcontext.RunContext{Cfg: &latest.Pipeline{Build: latest.BuildConfig{}}})
 			fakeForwarder := newTestForwarder(nil)
 			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "")
 			rf.EntryForwarder = fakeForwarder

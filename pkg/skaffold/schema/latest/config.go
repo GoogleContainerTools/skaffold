@@ -58,11 +58,14 @@ func (c *SkaffoldConfig) GetVersion() string {
 	return c.APIVersion
 }
 
+// ResourceType describes the Kubernetes resource types used for port forwarding.
+type ResourceType string
+
 // PortForwardResource describes a resource to port forward.
 type PortForwardResource struct {
 	// Type is the Kubernetes type that should be port forwarded.
 	// Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.
-	Type string `yaml:"resourceType,omitempty"`
+	Type ResourceType `yaml:"resourceType,omitempty"`
 
 	// Name is the name of the Kubernetes resource to port forward.
 	Name string `yaml:"resourceName,omitempty"`

@@ -43,14 +43,14 @@ func TestNewEntryManager(t *testing.T) {
 func TestStop(t *testing.T) {
 	pfe1 := &portForwardEntry{
 		resource: latest.PortForwardResource{
-			Type:      constants.PodResourceType,
+			Type:      constants.Pod,
 			Name:      "resource",
 			Namespace: "default",
 		},
 	}
 	pfe2 := &portForwardEntry{
 		resource: latest.PortForwardResource{
-			Type:      constants.PodResourceType,
+			Type:      constants.Pod,
 			Name:      "resource2",
 			Namespace: "default",
 		},

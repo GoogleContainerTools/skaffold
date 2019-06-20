@@ -115,7 +115,7 @@ func retrieveServiceResources(label string) ([]latest.PortForwardResource, error
 	for _, s := range services.Items {
 		for _, p := range s.Spec.Ports {
 			resources = append(resources, latest.PortForwardResource{
-				Type:      constants.ServiceResourceType,
+				Type:      constants.Service,
 				Name:      s.Name,
 				Namespace: s.Namespace,
 				Port:      p.Port,
