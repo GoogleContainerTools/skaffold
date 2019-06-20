@@ -27,6 +27,10 @@ import (
 )
 
 func TestPod(t *testing.T) {
+	env:=[]v1.EnvVar{{
+		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+		Value: "/secret/kaniko-secret",
+	}}
 	reqs := &latest.ResourceRequirements{
 		Requests: &latest.ResourceRequirement{
 			CPU:    "0.1",
@@ -78,10 +82,7 @@ func TestPod(t *testing.T) {
 				Image:           "image",
 				Args:            []string{"arg1", "arg2"},
 				ImagePullPolicy: v1.PullIfNotPresent,
-				Env: []v1.EnvVar{{
-					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-					Value: "/secret/kaniko-secret",
-				}},
+				Env: env,
 				VolumeMounts: []v1.VolumeMount{
 					{
 						Name:      constants.DefaultKanikoSecretName,
