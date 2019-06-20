@@ -165,6 +165,11 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	go func() {
 		timer := time.NewTimer(1<<63 - 1) // Forever
 
+		// Since the file watcher can take some time to start, it
+		// can lose the very first few changes. To mitigate that issue,
+		// we always trigger once, after t.Interval.
+		initialTimer := time.NewTimer(t.Interval)
+
 		for {
 			select {
 			case e := <-c:
@@ -175,8 +180,11 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 				timer.Reset(t.Interval)
 			case <-timer.C:
 				trigger <- true
+			case <-initialTimer.C:
+				trigger <- true
 			case <-ctx.Done():
 				timer.Stop()
+				initialTimer.Stop()
 				return
 			}
 		}
