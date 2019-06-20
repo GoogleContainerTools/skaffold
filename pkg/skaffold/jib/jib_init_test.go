@@ -174,13 +174,13 @@ func TestCreateArtifact(t *testing.T) {
 		},
 		{
 			description:   "jib maven without image and project",
-			config:        Config{BuilderName: JibGradle, FilePath: filepath.Join("path", "to", "build.gradle")},
+			config:        Config{BuilderName: JibMaven, FilePath: filepath.Join("path", "to", "pom.xml")},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName: "different-image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibGradleArtifact: &latest.JibGradleArtifact{
+					JibMavenArtifact: &latest.JibMavenArtifact{
 						Flags: []string{"-Dimage=different-image"},
 					},
 				},
