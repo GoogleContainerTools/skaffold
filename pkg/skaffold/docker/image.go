@@ -140,7 +140,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
 	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
 
-	buildArgs, err := evaluateBuildArgs(a.BuildArgs)
+	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to evaluate build args")
 	}
@@ -342,7 +342,7 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	var args []string
 
-	buildArgs, err := evaluateBuildArgs(a.BuildArgs)
+	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to evaluate build args")
 	}
@@ -383,7 +383,8 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	return args, nil
 }
 
-func evaluateBuildArgs(args map[string]*string) (map[string]*string, error) {
+// EvaluateBuildArgs evaluates templated build args.
+func EvaluateBuildArgs(args map[string]*string) (map[string]*string, error) {
 	if args == nil {
 		return nil, nil
 	}

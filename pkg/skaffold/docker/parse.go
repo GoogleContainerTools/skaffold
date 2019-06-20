@@ -98,7 +98,7 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 }
 
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
-	args, err := evaluateBuildArgs(buildArgs)
+	args, err := EvaluateBuildArgs(buildArgs)
 	if err != nil {
 		return errors.Wrap(err, "unable to evaluate build args")
 	}
