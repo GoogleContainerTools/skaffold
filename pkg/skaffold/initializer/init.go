@@ -115,19 +115,19 @@ func DoInit(out io.Writer, c Config) error {
 		return err
 	}
 	images := k.GetImages()
+
+	// Determine which builders/images require prompting
+	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(builderConfigs, images)
+
 	if c.Analyze {
-		return printAnalyzeJSON(out, c.SkipBuild, builderConfigs, images)
+		return printAnalyzeJSON(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
 	}
 
 	// conditionally generate build artifacts
-	var pairs []builderImagePair
 	if !c.SkipBuild {
 		if len(builderConfigs) == 0 {
 			return errors.New("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
 		}
-
-		var unresolvedImages []string
-		pairs, builderConfigs, unresolvedImages = autoSelectBuilders(builderConfigs, images)
 
 		if c.CliArtifacts != nil {
 			newPairs, err := processCliArtifacts(c.CliArtifacts)
@@ -136,7 +136,7 @@ func DoInit(out io.Writer, c Config) error {
 			}
 			pairs = append(pairs, newPairs...)
 		} else {
-			pairs = append(pairs, resolveBuilderImages(builderConfigs, unresolvedImages)...)
+			pairs = append(pairs, resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages)...)
 		}
 	}
 
@@ -346,28 +346,56 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 	return pipelineStr, nil
 }
 
-func printAnalyzeJSON(out io.Writer, skipBuild bool, builderConfigs []InitBuilder, images []string) error {
+// printAnalyzeJSON takes the automatically resolved builder/image pairs, the unresolved images, and the unresolved builders, and generates
+// a JSON string containing builder config information,
+func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, builderConfigs []InitBuilder, images []string) error {
 	if !skipBuild && len(builderConfigs) == 0 {
 		return errors.New("one or more valid build configuration must be present to build images with skaffold; please provide at least one Dockerfile or Jib configuration and try again, or run `skaffold init --skip-build`")
 	}
 
+	// Build JSON output. Example schema is below:
+	//	{
+	//		"builders":[
+	//			{
+	//				"name":"Docker",
+	//				"payload":"path/to/Dockerfile"
+	//			},
+	//			{
+	//				"name":"Name of Builder",
+	//				"payload": { // Payload structure may vary depending on builder type
+	//					"pathToConfig":"path/to/builder.config",
+	//					"builderSpecificField":"value",
+	//					"targetImage":"gcr.io/project/images"
+	//				}
+	//			},
+	//		],
+	//		"images":[
+	//			{"name":"gcr.io/project/images", "requiresPrompt":"false"}, // No need to prompt for this image since its builder was automatically resolved
+	//			{"name":"another/image", "requiresPrompt":"true"},
+	//		],
+	//	}
 	type Builder struct {
-		Name            string `json:"name,omitempty"`
-		Path            string `json:"path,omitempty"`
-		ConfiguredImage string `json:"configuredImage,omitempty"`
+		Name    string      `json:"name,omitempty"`
+		Payload InitBuilder `json:"payload"`
+	}
+	type Image struct {
+		Name           string `json:"name"`
+		RequiresPrompt bool   `json:"requiresPrompt"`
 	}
 	a := struct {
 		Builders []Builder `json:"builders,omitempty"`
-		Images   []string  `json:"images,omitempty"`
-	}{Images: images}
+		Images   []Image   `json:"images,omitempty"`
+	}{}
 
-	a.Builders = make([]Builder, len(builderConfigs))
-	for i := range builderConfigs {
-		a.Builders[i] = Builder{
-			Name:            builderConfigs[i].Name(),
-			Path:            builderConfigs[i].Path(),
-			ConfiguredImage: builderConfigs[i].ConfiguredImage(),
-		}
+	for _, pair := range pairs {
+		a.Builders = append(a.Builders, Builder{Name: pair.Builder.Name(), Payload: pair.Builder})
+		a.Images = append(a.Images, Image{Name: pair.ImageName, RequiresPrompt: false})
+	}
+	for _, config := range builderConfigs {
+		a.Builders = append(a.Builders, Builder{Name: config.Name(), Payload: config})
+	}
+	for _, image := range images {
+		a.Images = append(a.Images, Image{Name: image, RequiresPrompt: true})
 	}
 
 	contents, err := json.Marshal(a)

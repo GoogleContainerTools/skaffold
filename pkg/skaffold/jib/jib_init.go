@@ -43,7 +43,7 @@ const (
 
 // Jib holds information about a Jib project
 type Jib struct {
-	BuilderName string `json:"name,omitempty"`
+	BuilderName string `json:"-"`
 	Image       string `json:"image,omitempty"`
 	FilePath    string `json:"path,omitempty"`
 	Project     string `json:"project,omitempty"`

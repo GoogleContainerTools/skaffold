@@ -29,6 +29,7 @@ import (
 func TestPrintAnalyzeJSON(t *testing.T) {
 	tests := []struct {
 		description string
+		pairs       []builderImagePair
 		builders    []InitBuilder
 		images      []string
 		skipBuild   bool
@@ -36,27 +37,30 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 		expected    string
 	}{
 		{
-			description: "builders and images",
-			builders: []InitBuilder{
-				docker.Docker("Dockerfile"),
-				jib.Jib{BuilderName: jib.JibGradle, Image: "image1", FilePath: "build.gradle", Project: "project"},
-				jib.Jib{BuilderName: jib.JibMaven, Image: "image2", FilePath: "pom.xml"},
-			},
-			images:   []string{"image1", "image2"},
-			expected: "{\"builders\":[{\"name\":\"Docker\",\"path\":\"Dockerfile\"},{\"name\":\"Jib Gradle Plugin\",\"path\":\"build.gradle\",\"configuredImage\":\"image1\"},{\"name\":\"Jib Maven Plugin\",\"path\":\"pom.xml\",\"configuredImage\":\"image2\"}],\"images\":[\"image1\",\"image2\"]}",
+			description: "builders and images with pairs",
+			pairs:       []builderImagePair{{jib.Jib{BuilderName: jib.JibGradle, Image: "image1", FilePath: "build.gradle", Project: "project"}, "image1"}},
+			builders:    []InitBuilder{docker.Docker("Dockerfile")},
+			images:      []string{"image2"},
+			expected:    "{\"builders\":[{\"name\":\"Jib Gradle Plugin\",\"payload\":{\"image\":\"image1\",\"path\":\"build.gradle\",\"project\":\"project\"}},{\"name\":\"Docker\",\"payload\":\"Dockerfile\"}],\"images\":[{\"name\":\"image1\",\"requiresPrompt\":false},{\"name\":\"image2\",\"requiresPrompt\":true}]}",
 		},
 		{
-			description: "no builders, skip build",
+			description: "builders and images with no pairs",
+			builders:    []InitBuilder{jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Project: "project"}, docker.Docker("Dockerfile")},
+			images:      []string{"image1", "image2"},
+			expected:    "{\"builders\":[{\"name\":\"Jib Gradle Plugin\",\"payload\":{\"path\":\"build.gradle\",\"project\":\"project\"}},{\"name\":\"Docker\",\"payload\":\"Dockerfile\"}],\"images\":[{\"name\":\"image1\",\"requiresPrompt\":true},{\"name\":\"image2\",\"requiresPrompt\":true}]}",
+		},
+		{
+			description: "no dockerfile, skip build",
 			images:      []string{"image1", "image2"},
 			skipBuild:   true,
-			expected:    "{\"images\":[\"image1\",\"image2\"]}"},
+			expected:    "{\"images\":[{\"name\":\"image1\",\"requiresPrompt\":true},{\"name\":\"image2\",\"requiresPrompt\":true}]}"},
 		{
-			description: "no builders",
+			description: "no dockerfile",
 			images:      []string{"image1", "image2"},
 			shouldErr:   true,
 		},
 		{
-			description: "no builders or images",
+			description: "no dockerfiles or images",
 			shouldErr:   true,
 		},
 	}
@@ -64,7 +68,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := bytes.NewBuffer([]byte{})
 
-			err := printAnalyzeJSON(out, test.skipBuild, test.builders, test.images)
+			err := printAnalyzeJSON(out, test.skipBuild, test.pairs, test.builders, test.images)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
 		})
