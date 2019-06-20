@@ -138,18 +138,20 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 	return pod
 }
 
-func setProxy(clusterDetails *latest.ClusterDetails, env []v1.EnvVar) []v1.EnvVar {
-	if(clusterDetails.HTTP_PROXY !=""){
+
+func setProxy(clusterDetails *latest.ClusterDetails, env []v1.EnvVar) []v1.EnvVar{  
+	if(clusterDetails.Http_Proxy != ""){
 		proxy:= v1.EnvVar{
 			Name: "HTTP_PROXY",
-			Value: clusterDetails.HTTP_PROXY,
+			Value: clusterDetails.Http_Proxy,
 		}
 		env = append(env, proxy)
 	}
-	if(clusterDetails.HTTPS_PROXY !=""){
+
+	if(clusterDetails.Https_Proxy != ""){
 		proxy:= v1.EnvVar{
 			Name: "HTTPS_PROXY",
-			Value: clusterDetails.HTTPS_PROXY,
+			Value: clusterDetails.Https_Proxy,
 		}
 		env = append(env, proxy)
 	}
