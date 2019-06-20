@@ -1,0 +1,26 @@
+FROM ubuntu AS protoc
+RUN apt-get update && apt-get install -y curl unzip
+ENV PROTOC_VERSION=3.8.0
+RUN curl -Lo protoc-${PROTOC_VERSION}-linux-x86_64.zip https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip && \
+    unzip protoc-${PROTOC_VERSION}-linux-x86_64.zip -d protoc && \
+    mv protoc/bin/protoc /usr/bin/protoc
+
+
+FROM golang
+
+COPY --from=protoc /usr/bin/protoc /usr/bin/protoc
+
+ENV GIT_TAG="v1.2.0"
+RUN go get -d -u github.com/golang/protobuf/protoc-gen-go
+RUN git -C "$(go env GOPATH)"/src/github.com/golang/protobuf checkout $GIT_TAG
+RUN go install github.com/golang/protobuf/protoc-gen-go
+
+
+WORKDIR /
+COPY pkg/skaffold/server/proto/skaffold.proto pkg/skaffold/server/proto/skaffold.proto
+RUN protoc -I /usr/local/include -I pkg/skaffold/server/proto -I $GOPATH/src -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:pkg/skaffold/server/proto pkg/skaffold/server/proto/skaffold.proto --go_out=plugins=grpc:pkg/skaffold/server/proto
+
+
+# RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+# RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+# RUN go get -u github.com/golang/protobuf/protoc-gen-go
