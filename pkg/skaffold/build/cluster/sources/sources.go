@@ -55,7 +55,8 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 	env := []v1.EnvVar{{
 		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 		Value: "/secret/kaniko-secret",
-	},}
+	}}
+
 	env = setProxy(clusterDetails, env)
 
 	pod := &v1.Pod{
@@ -71,7 +72,7 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 					Image:           artifact.Image,
 					Args:            args,
 					ImagePullPolicy: v1.PullIfNotPresent,
-					Env: env,
+					Env:             env,
 					VolumeMounts: []v1.VolumeMount{
 						{
 							Name:      constants.DefaultKanikoSecretName,
@@ -139,18 +140,18 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 }
 
 
-func setProxy(clusterDetails *latest.ClusterDetails, env []v1.EnvVar) []v1.EnvVar{  
-	if(clusterDetails.HTTPProxy != ""){
-		proxy:= v1.EnvVar{
-			Name: "HTTP_PROXY",
+func setProxy(clusterDetails *latest.ClusterDetails, env []v1.EnvVar) []v1.EnvVar {
+	if clusterDetails.HTTPProxy != "" {
+		proxy := v1.EnvVar{
+			Name:  "HTTP_PROXY",
 			Value: clusterDetails.HTTPProxy,
 		}
 		env = append(env, proxy)
 	}
 
-	if(clusterDetails.HTTPSProxy != ""){
-		proxy:= v1.EnvVar{
-			Name: "HTTPS_PROXY",
+	if clusterDetails.HTTPSProxy != "" {
+		proxy := v1.EnvVar{
+			Name:  "HTTPS_PROXY",
 			Value: clusterDetails.HTTPSProxy,
 		}
 		env = append(env, proxy)
