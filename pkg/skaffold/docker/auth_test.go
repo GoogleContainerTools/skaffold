@@ -36,14 +36,16 @@ var gcrAuthConfig = types.AuthConfig{
 	ServerAddress: "https://gcr.io",
 }
 
+var allAuthConfig = map[string]types.AuthConfig{
+	"gcr.io": gcrAuthConfig,
+}
+
 func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 	return gcrAuthConfig, t.getAuthConfigErr
 }
 
 func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
-	return map[string]types.AuthConfig{
-		"gcr.io": gcrAuthConfig,
-	}, t.getAllAuthConfigsErr
+	return allAuthConfig, t.getAllAuthConfigsErr
 }
 
 func TestGetEncodedRegistryAuth(t *testing.T) {

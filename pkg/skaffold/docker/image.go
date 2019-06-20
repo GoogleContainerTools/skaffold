@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
@@ -139,6 +140,11 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
 	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
 
+	buildArgs, err := evaluateBuildArgs(a.BuildArgs)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to evaluate build args")
+	}
+
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
 		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a, l.insecureRegistries)
@@ -155,12 +161,12 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	resp, err := l.apiClient.ImageBuild(ctx, body, types.ImageBuildOptions{
 		Tags:        []string{ref},
 		Dockerfile:  a.DockerfilePath,
-		BuildArgs:   a.BuildArgs,
+		BuildArgs:   buildArgs,
 		CacheFrom:   a.CacheFrom,
 		AuthConfigs: authConfigs,
 		Target:      a.Target,
 		ForceRemove: l.forceRemove,
-		NetworkMode: a.NetworkMode,
+		NetworkMode: strings.ToLower(a.NetworkMode),
 		NoCache:     a.NoCache,
 	})
 	if err != nil {
@@ -183,7 +189,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	}
 
 	if err := streamDockerMessages(out, resp.Body, auxCallback); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "unable to stream build output")
 	}
 
 	if imageID == "" {
@@ -336,8 +342,13 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	var args []string
 
+	buildArgs, err := evaluateBuildArgs(a.BuildArgs)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to evaluate build args")
+	}
+
 	var keys []string
-	for k := range a.BuildArgs {
+	for k := range buildArgs {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
@@ -345,15 +356,11 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	for _, k := range keys {
 		args = append(args, "--build-arg")
 
-		v := a.BuildArgs[k]
+		v := buildArgs[k]
 		if v == nil {
 			args = append(args, k)
 		} else {
-			value, err := evaluateBuildArgsValue(*v)
-			if err != nil {
-				return nil, errors.Wrapf(err, "unable to get value for build arg: %s", k)
-			}
-			args = append(args, fmt.Sprintf("%s=%s", k, value))
+			args = append(args, fmt.Sprintf("%s=%s", k, *v))
 		}
 	}
 
@@ -374,4 +381,31 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	}
 
 	return args, nil
+}
+
+func evaluateBuildArgs(args map[string]*string) (map[string]*string, error) {
+	if args == nil {
+		return nil, nil
+	}
+
+	evaluated := map[string]*string{}
+	for k, v := range args {
+		if v == nil {
+			evaluated[k] = nil
+			continue
+		}
+
+		tmpl, err := util.ParseEnvTemplate(*v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to parse template for build arg: %s=%s", k, *v)
+		}
+
+		value, err := util.ExecuteEnvTemplate(tmpl, nil)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to get value for build arg: %s", k)
+		}
+		evaluated[k] = &value
+	}
+
+	return evaluated, nil
 }
