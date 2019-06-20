@@ -19,7 +19,6 @@ package portforward
 import (
 	"context"
 	"io/ioutil"
-	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -27,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -191,11 +191,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
 
 			actualEntry := rf.getCurrentEntry(test.resource)
-
-			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
-			if !reflect.DeepEqual(expectedEntry, actualEntry) {
-				t.Errorf("expected entry differs from actual entry. Expected: %s, Actual: %s", expectedEntry, actualEntry)
-			}
+			t.CheckDeepEqual(expectedEntry, actualEntry, cmp.AllowUnexported(portForwardEntry{}))
 		})
 	}
 }

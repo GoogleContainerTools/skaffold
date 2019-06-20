@@ -56,17 +56,17 @@ func TestStop(t *testing.T) {
 		},
 	}
 
-	bf := NewEntryManager(ioutil.Discard)
+	em := NewEntryManager(ioutil.Discard)
 
-	bf.forwardedResources = &sync.Map{}
-	bf.forwardedResources.Store("pod-resource-default-0", pfe1)
-	bf.forwardedResources.Store("pod-resource2-default-0", pfe2)
+	em.forwardedResources = &sync.Map{}
+	em.forwardedResources.Store("pod-resource-default-0", pfe1)
+	em.forwardedResources.Store("pod-resource2-default-0", pfe2)
 
 	fakeForwarder := newTestForwarder(nil)
-	fakeForwarder.forwardedEntries = bf.forwardedResources
-	bf.EntryForwarder = fakeForwarder
+	fakeForwarder.forwardedEntries = em.forwardedResources
+	em.EntryForwarder = fakeForwarder
 
-	bf.Stop()
+	em.Stop()
 
 	if count := lengthSyncMap(fakeForwarder.forwardedEntries); count != 0 {
 		t.Fatalf("error stopping port forwarding. expected 0 entries and got %d", count)
