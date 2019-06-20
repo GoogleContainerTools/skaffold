@@ -19,12 +19,9 @@ package runner
 import (
 	"context"
 	"io"
-	"os/exec"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -54,16 +51,6 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	if !r.runCtx.Opts.SkipTests {
 		if err = r.Test(ctx, out, bRes); err != nil {
 			return nil, errors.Wrap(err, "test failed")
-		}
-	}
-
-	// With `kind`, docker images have to be loaded with the `kind` CLI.
-	if config.IsKindCluster(r.runCtx.KubeContext) {
-		for _, image := range bRes {
-			cmd := exec.CommandContext(ctx, "kind", "load", "docker-image", image.Tag)
-			if err := util.RunCmd(cmd); err != nil {
-				return nil, errors.Wrapf(err, "unable to load image with kind: %s", image.Tag)
-			}
 		}
 	}
 
