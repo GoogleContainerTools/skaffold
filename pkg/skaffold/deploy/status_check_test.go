@@ -19,6 +19,7 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
@@ -63,8 +64,129 @@ func TestGetDeployments(t *testing.T) {
 				Namespace:   "test",
 				KubeContext: testKubeContext,
 			}
-			actual, err := getDeployments(context.Background(), cli)
+			actual, err := getDeploymentsWithDeadline(context.Background(), cli)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+		})
+	}
+}
+
+
+func TestCheckDeployment(t *testing.T) {
+	getDeploymentCommand := "kubectl --context kubecontext --namespace test get deployments --output go-template='{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}}{{\",\"}}{{end}}'"
+
+	var tests = []struct {
+		description string
+		command     util.Command
+		expected    map[string]int
+		shouldErr   bool
+	}{
+		{
+			description: "returns deployments",
+			command: testutil.NewFakeCmd(t).
+				WithRunOut(getDeploymentCommand, "dep1:100,dep2:200"),
+			expected: map[string]int{"dep1": 100, "dep2": 200},
+		},
+		{
+			description: "no deployments",
+			command: testutil.NewFakeCmd(t).
+				WithRunOut(getDeploymentCommand, ""),
+			expected: map[string]int{},
+		},
+		{
+			description: "get deployments error",
+			command: testutil.NewFakeCmd(t).
+				WithRunOutErr(getDeploymentCommand, "", fmt.Errorf("error")),
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			reset := testutil.Override(t, &util.DefaultExecCommand, test.command)
+			defer reset()
+			cli := kubectl.CLI{
+				Namespace:   "test",
+				KubeContext: testKubeContext,
+			}
+			actual, err := getDeploymentsWithDeadline(context.Background(), cli)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+		})
+	}
+}
+
+func TestGetStatus(t *testing.T) {
+	var tests = []struct {
+		description string
+		deps map[string]interface{}
+		depsWithDeadline map[string]int
+		expectedErrMsg []string
+		shouldErr bool
+	}{
+		{
+			description: "one error",
+			deps: map[string]interface{}{
+				"dep1": "SUCCESS",
+				"dep2": fmt.Errorf("could not return within default timeout"),
+			},
+			depsWithDeadline: map[string]int{
+				"dep1": 1,
+				"dep2": 0,
+			},
+			expectedErrMsg: []string{"deployment dep2 failed due to could not return within default timeout"},
+			shouldErr: true,
+		},
+		{
+			description: "no error",
+			deps: map[string]interface{}{
+				"dep1": "SUCCESS",
+				"dep2": "RUNNING",
+			},
+			depsWithDeadline: map[string]int{
+				"dep1": 1,
+				"dep2": 1,
+			},
+		},
+		{
+			description: "multiple errors",
+			deps: map[string]interface{}{
+				"dep1": "SUCCESS",
+				"dep2": fmt.Errorf("could not return within default timeout"),
+				"dep3": fmt.Errorf("ERROR"),
+			},
+			depsWithDeadline: map[string]int{
+				"dep1": 1,
+				"dep2": 1,
+				"dep3": 1,
+			},
+			expectedErrMsg: []string{"deployment dep2 failed due to could not return within default timeout",
+				"deployment dep3 failed due to ERROR"},
+			shouldErr: true,
+		},
+		{
+			description: "could not find result for deployment errors",
+			deps: map[string]interface{}{
+				"dep1": "SUCCESS",
+			},
+			depsWithDeadline: map[string]int{
+				"dep1": 1,
+				"dep2": 1,
+			},
+			expectedErrMsg: []string{"could not verify status for deployment dep2"},
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			syncMap := sync.Map{}
+			for k, v := range(test.deps) {
+				syncMap.Store(k, v)
+			}
+			err := getStatus(context.Background(), syncMap, test.depsWithDeadline)
+			testutil.CheckError(t, test.shouldErr,  err)
+			for _, msg := range (test.expectedErrMsg) {
+					testutil.CheckErrorContains(t, msg, err)
+			}
 		})
 	}
 }

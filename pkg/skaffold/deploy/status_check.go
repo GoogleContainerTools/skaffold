@@ -23,6 +23,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
@@ -40,30 +42,38 @@ func StatusCheck(ctx context.Context, out io.Writer, runCtx runcontext.RunContex
 		Namespace:   runCtx.Opts.Namespace,
 		KubeContext: runCtx.KubeContext,
 	}
-	dMap, err := getDeployments(ctx, kubeCtl)
+	dMap, err := getDeploymentsWithDeadline(ctx, kubeCtl)
+	if err != nil {
+		return errors.Wrap(err, "could not fetch deployments")
+	}
+	w := sync.WaitGroup{}
+	syncMap := sync.Map{}
+
 	for dName, deadline := range dMap {
 		// Set the deadline to defaultStatusCheckDeadlineInSeconds if deadline is set to Math.MaxInt
 		// See https://github.com/kubernetes/kubernetes/blob/master/pkg/apis/extensions/v1beta1/defaults.go#L119
 		if deadline == math.MaxInt32 {
 			deadline = defaultStatusCheckDeadlineInSeconds
 		}
-		go fmt.Println(dName)
-	}
-	if err != nil {
-		return errors.Wrap(err, "could not fetch deployments")
+		w.Add(1)
+		fmt.Println(dName, deadline)
+		go checkDeploymentsStatus(ctx , kubeCtl, dName, deadline, syncMap)
 	}
 
+	// Wait for all deployment status to be fetched
+	w.Wait()
 	return nil
+	return getStatus(ctx, syncMap, dMap)
 }
 
-func getDeployments(ctx context.Context, k kubectl.CLI) (map[string]int, error) {
+func getDeploymentsWithDeadline(ctx context.Context, k kubectl.CLI) (map[string]int, error) {
 	b, err := k.RunOut(ctx, nil, "get", []string{"deployments"}, "--output", fmt.Sprintf("go-template='%s'", deploymentOutputTemplate))
 	if err != nil {
 		return nil, err
 	}
-	m := map[string]int{}
+	deployments := map[string]int{}
 	if len(b) == 0 {
-		return m, nil
+		return deployments, nil
 	}
 	lines := strings.Split(string(b), ",")
 	for _, line := range lines {
@@ -71,13 +81,42 @@ func getDeployments(ctx context.Context, k kubectl.CLI) (map[string]int, error) 
 		if len(kv) != 2 {
 			return nil, fmt.Errorf("error parsing `kubectl get deployments` %s", line)
 		}
-		i, err := strconv.Atoi(kv[1])
+		deadline, err := strconv.Atoi(kv[1])
 		if err != nil {
-			return m, err
+			return deployments, err
 		}
 
-		m[kv[0]] = i
+		deployments[kv[0]] = deadline
 	}
-	return m, nil
+	return deployments, nil
 
+}
+
+
+func checkDeploymentsStatus(ctx context.Context, k kubectl.CLI, dName string, deadline int, syncMap sync.Map)  {
+  timeoutContext, cancel := context.WithTimeout(ctx, time.Duration(deadline) * time.Second + 1)
+  defer cancel()
+	b, err := k.RunOut(timeoutContext, nil, "get", []string{"deployments"}, "--output", fmt.Sprintf("go-template='%s'", deploymentOutputTemplate))
+	if err != nil {
+		syncMap.Store(dName, b)
+	}
+	syncMap.Store(dName, err)
+}
+
+func getStatus(ctx context.Context, syncMap sync.Map, deps map[string]int) error  {
+	errorStrings := []string{}
+	for d, _ := range deps {
+		v, ok  := syncMap.Load((d))
+		if !ok {
+			errorStrings = append(errorStrings, fmt.Sprintf("could not verify status for deployment %s", d))
+		}
+		switch t := v.(type) {
+		case error:
+			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", d, t.Error()))
+		}
+	}
+	if len(errorStrings) == 0 {
+		return nil
+	}
+	return fmt.Errorf("following deployments are not stable:\n%s", strings.Join(errorStrings, "\n"))
 }
