@@ -46,6 +46,7 @@ func TestExtractDlvArg(t *testing.T) {
 		{[]string{"foo", "--foo"}, nil},
 		{[]string{"dlv", "debug", "--headless"}, &dlvSpec{mode: "debug", headless: true, apiVersion: 2, log: false}},
 		{[]string{"dlv", "--headless", "exec"}, &dlvSpec{mode: "exec", headless: true, apiVersion: 2, log: false}},
+		{[]string{"dlv", "--headless", "exec", "--", "--listen=host:4345"}, &dlvSpec{mode: "exec", headless: true, apiVersion: 2, log: false}},
 		{[]string{"dlv", "test", "--headless", "--listen=host:4345"}, &dlvSpec{mode: "test", host: "host", port: 4345, headless: true, apiVersion: 2, log: false}},
 		{[]string{"dlv", "debug", "--headless", "--api-version=1"}, &dlvSpec{mode: "debug", headless: true, apiVersion: 1, log: false}},
 		{[]string{"dlv", "debug", "--listen=host:4345", "--headless", "--api-version=2", "--log"}, &dlvSpec{mode: "debug", host: "host", port: 4345, headless: true, apiVersion: 2, log: true}},
@@ -132,9 +133,9 @@ func TestDlvTransformerApply(t *testing.T) {
 		{
 			description:   "basic",
 			containerSpec: v1.Container{},
-			configuration: imageConfiguration{entrypoint: []string{"app"}},
+			configuration: imageConfiguration{entrypoint: []string{"app", "arg"}},
 			result: v1.Container{
-				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
+				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 				Ports:   []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
 		},
@@ -143,18 +144,18 @@ func TestDlvTransformerApply(t *testing.T) {
 			containerSpec: v1.Container{
 				Ports: []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}},
 			},
-			configuration: imageConfiguration{entrypoint: []string{"app"}},
+			configuration: imageConfiguration{entrypoint: []string{"app", "arg"}},
 			result: v1.Container{
-				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
+				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "dlv", ContainerPort: 56268}},
 			},
 		},
 		{
 			description:   "command not entrypoint",
 			containerSpec: v1.Container{},
-			configuration: imageConfiguration{arguments: []string{"app"}},
+			configuration: imageConfiguration{arguments: []string{"app", "arg"}},
 			result: v1.Container{
-				Args:  []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
+				Args:  []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 				Ports: []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
 		},
@@ -202,7 +203,7 @@ func TestTransformManifestDelve(t *testing.T) {
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{
 						Name:    "test",
-						Command: []string{"app"},
+						Command: []string{"app", "arg"},
 						Env:     []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 					}},
 				}},
@@ -214,7 +215,7 @@ func TestTransformManifestDelve(t *testing.T) {
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{
 						Name:         "test",
-						Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
+						Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 						Ports:        []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 						Env:          []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -239,7 +240,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:    "test",
-								Command: []string{"app"},
+								Command: []string{"app", "arg"},
 								Env:     []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 							}},
 						}}}},
@@ -257,7 +258,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
+								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 								Ports:        []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 								Env:          []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -282,7 +283,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:    "test",
-								Command: []string{"app"},
+								Command: []string{"app", "arg"},
 								Env:     []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 							}},
 						}}}},
@@ -300,7 +301,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
+								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 								Ports:        []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 								Env:          []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -325,7 +326,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:    "test",
-								Command: []string{"app"},
+								Command: []string{"app", "arg"},
 								Env:     []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 							}},
 						}}}},
@@ -343,7 +344,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
+								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 								Ports:        []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 								Env:          []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -367,7 +368,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:    "test",
-								Command: []string{"app"},
+								Command: []string{"app", "arg"},
 								Env:     []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 							}},
 						}}}},
@@ -384,7 +385,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
+								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 								Ports:        []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 								Env:          []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -408,7 +409,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:    "test",
-								Command: []string{"app"},
+								Command: []string{"app", "arg"},
 								Env:     []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 							}},
 						}}}},
@@ -425,7 +426,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
+								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 								Ports:        []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 								Env:          []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -450,7 +451,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:    "test",
-								Command: []string{"app"},
+								Command: []string{"app", "arg"},
 								Env:     []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 							}},
 						}}}},
@@ -468,7 +469,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
+								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 								Ports:        []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 								Env:          []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -499,7 +500,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:    "test",
-								Command: []string{"app"},
+								Command: []string{"app", "arg"},
 								Env:     []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 							}},
 						}},
@@ -521,7 +522,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app"},
+								Command:      []string{"/dbg/go/bin/dlv", "exec", "--headless", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 								Ports:        []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 								Env:          []v1.EnvVar{{Name: "GOMAXPROCS", Value: "1"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},

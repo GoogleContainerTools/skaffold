@@ -21,6 +21,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 )
@@ -127,8 +129,11 @@ func extractDlvSpec(args []string) *dlvSpec {
 		return nil
 	}
 	spec := dlvSpec{apiVersion: 2, log: false, headless: false}
+arguments:
 	for _, arg := range args {
 		switch {
+		case arg == "--":
+			break arguments
 		case arg == "debug" || arg == "test" || arg == "exec":
 			spec.mode = arg
 		case arg == "--headless":
@@ -161,7 +166,12 @@ func extractDlvSpec(args []string) *dlvSpec {
 
 // rewriteDlvCommandLine rewrites a go command-line to insert a `dlv`
 func rewriteDlvCommandLine(commandLine []string, spec dlvSpec) []string {
-	// todo: parse off dlv commands if present
+	// todo: parse off dlv commands if present?
+
+	if len(commandLine) > 1 {
+		// insert "--" after app binary to indicate end of Delve arguments
+		commandLine = util.StrSliceInsert(commandLine, 1, []string{"--"})
+	}
 	return append(spec.asArguments(), commandLine...)
 }
 
@@ -187,8 +197,5 @@ func (spec dlvSpec) asArguments() []string {
 	if spec.log {
 		args = append(args, "--log")
 	}
-
-	// indicate end of Delve arguments
-	args = append(args, "--")
 	return args
 }
