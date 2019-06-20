@@ -49,6 +49,7 @@ type LogAggregator struct {
 	startTime         time.Time
 	cancel            context.CancelFunc
 	trackedContainers trackedContainers
+	finalState        map[string](chan *v1.ContainerStateTerminated)
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
@@ -61,6 +62,7 @@ func NewLogAggregator(out io.Writer, baseImageNames []string, podSelector PodSel
 		trackedContainers: trackedContainers{
 			ids: map[string]bool{},
 		},
+		finalState: map[string](chan *v1.ContainerStateTerminated){},
 	}
 }
 
@@ -90,10 +92,6 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 					return
 				}
 
-				if evt.Type != watch.Added && evt.Type != watch.Modified {
-					continue
-				}
-
 				pod, ok := evt.Object.(*v1.Pod)
 				if !ok {
 					continue
@@ -111,13 +109,17 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 						continue
 					}
 
-					if c.State.Terminated != nil {
-						color.Purple.Fprintln(a.output, c.State.Terminated.Message)
-						continue
+					if !a.trackedContainers.add(c.ContainerID) {
+						// TODO(dgageot): make sure those channels are GCed
+						a.finalState[c.ContainerID] = make(chan *v1.ContainerStateTerminated, 10)
+
+						go a.streamContainerLogs(cancelCtx, pod, c)
 					}
 
-					if !a.trackedContainers.add(c.ContainerID) {
-						go a.streamContainerLogs(cancelCtx, pod, c)
+					// TODO(dgageot): Sometimes, the container's termination is not detected
+					if c.State.Terminated != nil {
+						logrus.Infoln("Terminated", c.ContainerID)
+						a.finalState[c.ContainerID] <- c.State.Terminated
 					}
 				}
 			}
@@ -165,6 +167,9 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	if err := a.streamRequest(ctx, headerColor, prefix, tr); err != nil {
 		logrus.Errorf("streaming request %s", err)
 	}
+
+	finalState := <-a.finalState[container.ContainerID]
+	a.printLogLine(headerColor, prefix, fmt.Sprintf("%s, exit code: %d %s\n", finalState.Reason, finalState.ExitCode, finalState.Message))
 }
 
 func (a *LogAggregator) printLogLine(headerColor color.Color, prefix, text string) {
