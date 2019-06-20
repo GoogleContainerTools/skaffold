@@ -27,7 +27,7 @@ import (
 )
 
 func TestPod(t *testing.T) {
-	env:=[]v1.EnvVar{{
+	env := []v1.EnvVar{{
 		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 		Value: "/secret/kaniko-secret",
 	}}
@@ -82,7 +82,7 @@ func TestPod(t *testing.T) {
 				Image:           "image",
 				Args:            []string{"arg1", "arg2"},
 				ImagePullPolicy: v1.PullIfNotPresent,
-				Env: env,
+				Env:             env,
 				VolumeMounts: []v1.VolumeMount{
 					{
 						Name:      constants.DefaultKanikoSecretName,
