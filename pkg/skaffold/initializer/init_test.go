@@ -36,7 +36,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 	}{
 		{
 			description: "builders and images",
-			builders:    []InitBuilder{docker.Dockerfile("Dockerfile1"), docker.Dockerfile("Dockerfile2")},
+			builders:    []InitBuilder{docker.Docker("Dockerfile1"), docker.Docker("Dockerfile2")},
 			images:      []string{"image1", "image2"},
 			expected:    "{\"builders\":[{\"name\":\"Docker\",\"path\":\"Dockerfile1\"},{\"name\":\"Docker\",\"path\":\"Dockerfile2\"}],\"images\":[\"image1\",\"image2\"]}",
 		},
@@ -164,7 +164,7 @@ deploy:
 				tmpDir.Write(file, contents)
 			}
 
-			t.Override(&docker.ValidateDockerfile, testValidDocker)
+			t.Override(&docker.ValidateDockerfileFunc, testValidDocker)
 
 			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, detectBuilders)
 
@@ -199,28 +199,28 @@ func TestResolveBuilderImages(t *testing.T) {
 		},
 		{
 			description:      "don't prompt for single dockerfile and image",
-			buildConfigs:     []InitBuilder{docker.Dockerfile("Dockerfile1")},
+			buildConfigs:     []InitBuilder{docker.Docker("Dockerfile1")},
 			images:           []string{"image1"},
 			shouldMakeChoice: false,
 			expectedPairs: []builderImagePair{
 				{
-					Builder:   docker.Dockerfile("Dockerfile1"),
+					Builder:   docker.Docker("Dockerfile1"),
 					ImageName: "image1",
 				},
 			},
 		},
 		{
 			description:      "prompt for multiple builders and images",
-			buildConfigs:     []InitBuilder{docker.Dockerfile("Dockerfile1"), docker.Dockerfile("Dockerfile2")},
+			buildConfigs:     []InitBuilder{docker.Docker("Dockerfile1"), docker.Docker("Dockerfile2")},
 			images:           []string{"image1", "image2"},
 			shouldMakeChoice: true,
 			expectedPairs: []builderImagePair{
 				{
-					Builder:   docker.Dockerfile("Dockerfile1"),
+					Builder:   docker.Docker("Dockerfile1"),
 					ImageName: "image1",
 				},
 				{
-					Builder:   docker.Dockerfile("Dockerfile2"),
+					Builder:   docker.Docker("Dockerfile2"),
 					ImageName: "image2",
 				},
 			},
@@ -229,7 +229,7 @@ func TestResolveBuilderImages(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			// Overrides promptUserForBuildConfig to choose first option rather than using the interactive menu
-			t.Override(&promptUserForBuildConfig, func(image string, choices []string) string {
+			t.Override(&promptUserForBuildConfigFunc, func(image string, choices []string) string {
 				if !test.shouldMakeChoice {
 					t.FailNow()
 				}
