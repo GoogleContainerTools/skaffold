@@ -26,13 +26,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Client is for tests
@@ -104,21 +103,21 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 					continue
 				}
 
-				for _, container := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
-					if container.ContainerID == "" {
-						if container.State.Waiting != nil && container.State.Waiting.Message != "" {
-							color.Red.Fprintln(a.output, container.State.Waiting.Message)
+				for _, c := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
+					if c.ContainerID == "" {
+						if c.State.Waiting != nil && c.State.Waiting.Message != "" {
+							color.Red.Fprintln(a.output, c.State.Waiting.Message)
 						}
 						continue
 					}
 
-					if container.State.Terminated != nil {
-						color.Purple.Fprintln(a.output, container.State.Terminated.Message)
+					if c.State.Terminated != nil {
+						color.Purple.Fprintln(a.output, c.State.Terminated.Message)
 						continue
 					}
 
-					if !a.trackedContainers.add(container.ContainerID) {
-						go a.streamContainerLogs(cancelCtx, pod, container)
+					if !a.trackedContainers.add(c.ContainerID) {
+						go a.streamContainerLogs(cancelCtx, pod, c)
 					}
 				}
 			}
@@ -161,13 +160,18 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 		tw.Close()
 	}()
 
-	color := a.colorPicker.Pick(pod)
+	headerColor := a.colorPicker.Pick(pod)
 	prefix := prefix(pod, container)
-	go func() {
-		if err := a.streamRequest(ctx, color, prefix, tr); err != nil {
-			logrus.Errorf("streaming request %s", err)
-		}
-	}()
+	if err := a.streamRequest(ctx, headerColor, prefix, tr); err != nil {
+		logrus.Errorf("streaming request %s", err)
+	}
+}
+
+func (a *LogAggregator) printLogLine(headerColor color.Color, prefix, text string) {
+	if !a.IsMuted() {
+		headerColor.Fprintf(a.output, "%s ", prefix)
+		fmt.Fprint(a.output, text)
+	}
 }
 
 func prefix(pod *v1.Pod, container v1.ContainerStatus) string {
@@ -177,38 +181,27 @@ func prefix(pod *v1.Pod, container v1.ContainerStatus) string {
 	return fmt.Sprintf("[%s]", container.Name)
 }
 
-func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Color, header string, rc io.Reader) error {
+func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Color, prefix string, rc io.Reader) error {
 	r := bufio.NewReader(rc)
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Infof("%s interrupted", header)
+			logrus.Infof("%s interrupted", prefix)
 			return nil
 		default:
-		}
+			// Read up to newline
+			line, err := r.ReadString('\n')
+			if err == io.EOF {
+				logrus.Infof("%s exited", prefix)
+				return nil
+			}
+			if err != nil {
+				return errors.Wrap(err, "reading bytes from log stream")
+			}
 
-		// Read up to newline
-		line, err := r.ReadBytes('\n')
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return errors.Wrap(err, "reading bytes from log stream")
-		}
-
-		if a.IsMuted() {
-			continue
-		}
-
-		if _, err := headerColor.Fprintf(a.output, "%s ", header); err != nil {
-			return errors.Wrap(err, "writing pod prefix header to out")
-		}
-		if _, err := fmt.Fprint(a.output, string(line)); err != nil {
-			return errors.Wrap(err, "writing pod log to out")
+			a.printLogLine(headerColor, prefix, line)
 		}
 	}
-	logrus.Infof("%s exited", header)
-	return nil
 }
 
 // Mute mutes the logs.
