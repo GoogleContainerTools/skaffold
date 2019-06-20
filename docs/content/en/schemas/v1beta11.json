@@ -479,6 +479,16 @@
     },
     "ClusterDetails": {
       "properties": {
+        "HTTPS_PROXY": {
+          "type": "string",
+          "description": "for kaniko pod.",
+          "x-intellij-html-description": "for kaniko pod."
+        },
+        "HTTP_PROXY": {
+          "type": "string",
+          "description": "for kaniko pod.",
+          "x-intellij-html-description": "for kaniko pod."
+        },
         "dockerConfig": {
           "$ref": "#/definitions/DockerConfig",
           "description": "describes how to mount the local Docker configuration into a pod.",
@@ -491,8 +501,8 @@
         },
         "pullSecret": {
           "type": "string",
-          "description": "path to the Google Cloud service account secret key file.",
-          "x-intellij-html-description": "path to the Google Cloud service account secret key file."
+          "description": "path to the secret key file.",
+          "x-intellij-html-description": "path to the secret key file."
         },
         "pullSecretName": {
           "type": "string",
@@ -512,6 +522,8 @@
         }
       },
       "preferredOrder": [
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
         "pullSecret",
         "pullSecretName",
         "namespace",
