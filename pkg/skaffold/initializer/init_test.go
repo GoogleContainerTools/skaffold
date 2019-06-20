@@ -28,30 +28,30 @@ import (
 func TestPrintAnalyzeJSON(t *testing.T) {
 	tests := []struct {
 		description string
-		builders    []InitBuilder
+		dockerfiles []InitBuilder
 		images      []string
 		skipBuild   bool
 		shouldErr   bool
 		expected    string
 	}{
 		{
-			description: "builders and images",
-			builders:    []InitBuilder{docker.Docker("Dockerfile1"), docker.Docker("Dockerfile2")},
+			description: "dockerfile and image",
+			dockerfiles: []InitBuilder{docker.Docker("Dockerfile1"), docker.Docker("Dockerfile2")},
 			images:      []string{"image1", "image2"},
-			expected:    "{\"builders\":[{\"name\":\"Docker\",\"path\":\"Dockerfile1\"},{\"name\":\"Docker\",\"path\":\"Dockerfile2\"}],\"images\":[\"image1\",\"image2\"]}",
+			expected:    "{\"dockerfiles\":[\"Dockerfile1\",\"Dockerfile2\"],\"images\":[\"image1\",\"image2\"]}",
 		},
 		{
-			description: "no builders, skip build",
+			description: "no dockerfile, skip build",
 			images:      []string{"image1", "image2"},
 			skipBuild:   true,
 			expected:    "{\"images\":[\"image1\",\"image2\"]}"},
 		{
-			description: "no builders",
+			description: "no dockerfile",
 			images:      []string{"image1", "image2"},
 			shouldErr:   true,
 		},
 		{
-			description: "no builders or images",
+			description: "no dockerfiles or images",
 			shouldErr:   true,
 		},
 	}
@@ -59,7 +59,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := bytes.NewBuffer([]byte{})
 
-			err := printAnalyzeJSON(out, test.skipBuild, test.builders, test.images)
+			err := printAnalyzeJSON(out, test.skipBuild, test.dockerfiles, test.images)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
 		})

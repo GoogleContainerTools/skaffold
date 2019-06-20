@@ -335,28 +335,20 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 	return pipelineStr, nil
 }
 
-func printAnalyzeJSON(out io.Writer, skipBuild bool, builderConfigs []InitBuilder, images []string) error {
-	if !skipBuild && len(builderConfigs) == 0 {
-		return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again, or run `skaffold init --skip-build`")
-	}
-
-	type Builder struct {
-		Name            string `json:"name,omitempty"`
-		Path            string `json:"path,omitempty"`
-		ConfiguredImage string `json:"configuredImage,omitempty"`
+// TODO: make more flexible for non-docker builders
+func printAnalyzeJSON(out io.Writer, skipBuild bool, dockerfiles []InitBuilder, images []string) error {
+	if !skipBuild && len(dockerfiles) == 0 {
+		return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again or run `skaffold init --skip-build`")
 	}
 	a := struct {
-		Builders []Builder `json:"builders,omitempty"`
-		Images   []string  `json:"images,omitempty"`
-	}{Images: images}
-
-	a.Builders = make([]Builder, len(builderConfigs))
-	for i := range builderConfigs {
-		a.Builders[i] = Builder{
-			Name:            builderConfigs[i].Name(),
-			Path:            builderConfigs[i].Path(),
-			ConfiguredImage: builderConfigs[i].ConfiguredImage(),
-		}
+		Dockerfiles []string `json:"dockerfiles,omitempty"`
+		Images      []string `json:"images,omitempty"`
+	}{
+		Images: images,
+	}
+	a.Dockerfiles = make([]string, len(dockerfiles))
+	for i, dockerfile := range dockerfiles {
+		a.Dockerfiles[i] = dockerfile.Path()
 	}
 
 	contents, err := json.Marshal(a)
