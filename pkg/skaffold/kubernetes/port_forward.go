@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -73,6 +74,7 @@ type kubectlForwarder struct{}
 var (
 	// For testing
 	retrieveAvailablePort = util.GetAvailablePort
+	portForwardEvent      = sendPortForwardEvent
 )
 
 // Forward port-forwards a pod using kubectl port-forward
@@ -94,8 +96,6 @@ func (*kubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 		}
 		return errors.Wrapf(err, "port forwarding pod: %s/%s, port: %d to local port: %d, err: %s", pfe.namespace, pfe.podName, pfe.port, pfe.localPort, buf.String())
 	}
-
-	event.PortForwarded(pfe.localPort, pfe.port, pfe.podName, pfe.containerName, pfe.namespace, pfe.portName)
 
 	go cmd.Wait()
 
@@ -197,9 +197,14 @@ func (p *PortForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 			if err := p.forward(ctx, entry); err != nil {
 				return errors.Wrap(err, "failed to forward port")
 			}
+			portForwardEvent(entry)
 		}
 	}
 	return nil
+}
+
+func sendPortForwardEvent(entry *portForwardEntry) {
+	event.PortForwarded(entry.localPort, entry.port, entry.podName, entry.containerName, entry.namespace, entry.portName, string(constants.Pod), entry.podName)
 }
 
 func (p *PortForwarder) getCurrentEntry(pod *v1.Pod, c v1.Container, port v1.ContainerPort, resourceVersion int) *portForwardEntry {

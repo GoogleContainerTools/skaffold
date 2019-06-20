@@ -66,6 +66,13 @@ const (
 	DefaultRPCHTTPPort = 50052
 )
 
+// ResourceType describes the Kubernetes resource types used for port forwarding
+type ResourceType string
+
+var (
+	Pod ResourceType = "pod"
+)
+
 var (
 	// Images is an environment variable key, whose value is an array of fully qualified image names passed in to a custom build script.
 	Images = "IMAGES"
