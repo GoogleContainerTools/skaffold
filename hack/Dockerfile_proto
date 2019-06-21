@@ -21,9 +21,9 @@ RUN go install github.com/golang/protobuf/protoc-gen-go
 WORKDIR /go/src/github.com/grpc-ecosystem
 RUN git clone https://github.com/grpc-ecosystem/grpc-gateway.git
 
-ENV GRPC_GATEWAY_VERSION=1.9.2
+ENV GRPC_GATEWAY_REVISION=e6f18d33a7b3bfa5b94f3d5fb513252184ce2d90
 WORKDIR /go/src/github.com/grpc-ecosystem/grpc-gateway
-RUN git checkout v${GRPC_GATEWAY_VERSION} && git checkout -b v${GRPC_GATEWAY_VERSION}
+RUN git checkout ${GRPC_GATEWAY_REVISION} && git checkout -b v${GRPC_GATEWAY_REVISION}
 
 ENV GO111MODULE=on
 RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway

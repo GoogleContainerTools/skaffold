@@ -246,13 +246,13 @@ func RegisterSkaffoldServiceHandlerClient(ctx context.Context, mux *runtime.Serv
 }
 
 var (
-	pattern_SkaffoldService_GetState_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "state"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_SkaffoldService_GetState_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "state"}, ""))
 
-	pattern_SkaffoldService_EventLog_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "events"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_SkaffoldService_EventLog_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "events"}, ""))
 
-	pattern_SkaffoldService_Handle_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "events", "handle"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_SkaffoldService_Handle_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"v1", "events", "handle"}, ""))
 
-	pattern_SkaffoldService_Build_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "build"}, "", runtime.AssumeColonVerbOpt(true)))
+	pattern_SkaffoldService_Build_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "build"}, ""))
 )
 
 var (

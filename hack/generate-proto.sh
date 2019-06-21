@@ -18,6 +18,12 @@ cd $GOPATH/src/github.com/GoogleContainerTools/skaffold
 export CONTAINER_NAME=generate-proto
 export PROTO_PATH=pkg/skaffold/server/proto
 docker build -t $CONTAINER_NAME -f hack/Dockerfile_proto --target generateFiles .
+if [ $? -ne 0 ]; then
+   printf "\nError generating files.\n"
+   exit 1
+fi
+
+
 docker run $CONTAINER_NAME cat /${PROTO_PATH}/skaffold.pb.go > ${PROTO_PATH}/skaffold.pb.go
 docker run $CONTAINER_NAME cat /${PROTO_PATH}/skaffold.pb.gw.go > ${PROTO_PATH}/skaffold.pb.gw.go
 
