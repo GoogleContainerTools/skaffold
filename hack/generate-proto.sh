@@ -14,9 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-export CONTAINER_NAME=generate-proto 
+cd $GOPATH/src/github.com/GoogleContainerTools/skaffold
+export CONTAINER_NAME=generate-proto
+export PROTO_PATH=pkg/skaffold/server/proto
 docker build -t $CONTAINER_NAME -f hack/Dockerfile_proto --target generateFiles .
-docker run $CONTAINER_NAME cat /pkg/skaffold/server/proto/skaffold.pb.go > pkg/skaffold/server/proto/skaffold.pb.go
-docker run $CONTAINER_NAME cat /pkg/skaffold/server/proto/skaffold.pb.gw.go > pkg/skaffold/server/proto/skaffold.pb.gw.go
+docker run $CONTAINER_NAME cat /${PROTO_PATH}/skaffold.pb.go > ${PROTO_PATH}/skaffold.pb.go
+docker run $CONTAINER_NAME cat /${PROTO_PATH}/skaffold.pb.gw.go > ${PROTO_PATH}/skaffold.pb.gw.go
 
 printf "\nFinished generating proto files, please commit the results.\n"

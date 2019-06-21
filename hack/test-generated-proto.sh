@@ -21,3 +21,4 @@ if [ $? -ne 0 ]; then
    printf "\nGenerated proto files aren't updated. Please run ./hack/generate-proto.sh\n"
 fi
 
+printf "\nGenerated proto files are updated!\n"

@@ -39,7 +39,5 @@ RUN protoc -I /usr/local/include -I pkg/skaffold/server/proto -I $GOPATH/src -I 
 FROM generateFiles AS compare
 WORKDIR /compare
 COPY ${PROTO_PATH}/*.go ./
-RUN ls
-RUN ls ${PROTO_PATH}
 RUN cmp ${PROTO_PATH}/skaffold.pb.go skaffold.pb.go
 RUN cmp ${PROTO_PATH}/skaffold.pb.gw.go skaffold.pb.gw.go
