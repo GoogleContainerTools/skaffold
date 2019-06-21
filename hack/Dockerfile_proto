@@ -1,3 +1,4 @@
+# Install protoc
 FROM ubuntu AS protoc
 RUN apt-get update && apt-get install -y curl unzip
 ENV PROTOC_VERSION=3.8.0
@@ -5,22 +6,40 @@ RUN curl -Lo protoc-${PROTOC_VERSION}-linux-x86_64.zip https://github.com/google
     unzip protoc-${PROTOC_VERSION}-linux-x86_64.zip -d protoc && \
     mv protoc/bin/protoc /usr/bin/protoc
 
-
-FROM golang
+# Install protoc-gen-go and grpc-gateway binaries; then generate files.
+FROM golang AS generateFiles
 
 COPY --from=protoc /usr/bin/protoc /usr/bin/protoc
+COPY --from=protoc /protoc/include /usr/local/include
 
-ENV GIT_TAG="v1.2.0"
+ENV GIT_TAG=v1.2.0
 RUN go get -d -u github.com/golang/protobuf/protoc-gen-go
 RUN git -C "$(go env GOPATH)"/src/github.com/golang/protobuf checkout $GIT_TAG
 RUN go install github.com/golang/protobuf/protoc-gen-go
 
 
+WORKDIR /go/src/github.com/grpc-ecosystem
+RUN git clone https://github.com/grpc-ecosystem/grpc-gateway.git
+
+ENV GRPC_GATEWAY_VERSION=1.9.2
+WORKDIR /go/src/github.com/grpc-ecosystem/grpc-gateway
+RUN git checkout v${GRPC_GATEWAY_VERSION} && git checkout -b v${GRPC_GATEWAY_VERSION}
+
+ENV GO111MODULE=on
+RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+RUN go get -u github.com/golang/protobuf/protoc-gen-go
+
 WORKDIR /
-COPY pkg/skaffold/server/proto/skaffold.proto pkg/skaffold/server/proto/skaffold.proto
+ENV PROTO_PATH=/pkg/skaffold/server/proto
+COPY ${PROTO_PATH}/skaffold.proto ${PROTO_PATH}/skaffold.proto
 RUN protoc -I /usr/local/include -I pkg/skaffold/server/proto -I $GOPATH/src -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:pkg/skaffold/server/proto pkg/skaffold/server/proto/skaffold.proto --go_out=plugins=grpc:pkg/skaffold/server/proto
 
-
-# RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-# RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-# RUN go get -u github.com/golang/protobuf/protoc-gen-go
+# Compare the proto files with the existing proto files
+FROM generateFiles AS compare
+WORKDIR /compare
+COPY ${PROTO_PATH}/*.go ./
+RUN ls
+RUN ls ${PROTO_PATH}
+RUN cmp ${PROTO_PATH}/skaffold.pb.go skaffold.pb.go
+RUN cmp ${PROTO_PATH}/skaffold.pb.gw.go skaffold.pb.gw.go
