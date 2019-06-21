@@ -5,70 +5,37 @@
 * Date: 7/05/2019
 * Status: 
 
+#Disclaimer
+
+This design doc covers only pod failure case
+
 ## Background
 
-Kaniko pod exiting before errors could be read by Skaffold. Do a normal skaffold run and put a invalid 
-base image or any other condition that would immediately(idea is to kill the kaniko pod before logger
-is attached ) fail to build a image and exit kaniko pod. In this condition user would not get acutual 
-reason of failure, he will just see following error
+Consider a scenerio where kaniko pod fails due to kubernetes constraint, presently user gets pod already in terminal state only. User don't get any other info apart 
+from pod why pod failed. In such scenerio skaffold should fetch all the event related to kaniko pod.   
 
-build step: building [someBaseImageUrl]: kaniko build for [someBaseImageUrl]: waiting for pod to complete: pod already in terminal phase: Failed   
-
-
-Where as user should get actual error
-
-     Error while retrieving image from cache: could not parse reference
-     INFO[0002] Downloading base image gcr.io/invalidImageNameORUnReachableImage
-     error building image: could not parse reference
-
-
-This problem can also be exacted to a situation where user has put a such command which produce tons of output and before skaffold logger can pull all the logs kaniko pod  dies.
+Scenerio: User has put his custom init image and that image is not available for any reason 
+than kaniko simply waits for init container to complete where init container fails to pull
+the base image eventually kaniko also fails. In these kind of scenerios event logs related 
+to kaniko pod would be extremely helpful where k8s clearly says ImagePullBackError.       
 
 ## Design
 
-There should be a way where user can configure kaniko pod to stay alive for certain amount of time, so 
-that no logs are flushed before being fetched. There should be podGracePeriodSecond which ensures that
-kaniko pod stays alive for certain seconds after it finishes off building and pushing to registry. 
-
-Possible solution to counter above situation would be create a extra container in same kaniko pod
-which should continously monitor kaniko process. As soon as kaniko process terminate it should put 
-other container to sleep for specified mount of time. Extra container could be called a side car 
-which would not be very resource agnostic.
+Possible solution to above problem statement would be fetch events log from k8s system.
 
 ### Kaniko Pod Definition changes
 
 ```yaml
-Containers: []v1.Container{
-  {
-    Name:            constants.DefaultKanikoContainerName,
-    Image:           cfg.Image,
-    Args:            args,
-    ImagePullPolicy: v1.PullIfNotPresent,
-    Env:             []v1.EnvVar{},
-    VolumeMounts:    []v1.VolumeMount{},
-  },
-  {
-    Name:            "side-car",
-    Image:           constants.DefaultBusyboxImage,
-    ImagePullPolicy: v1.PullIfNotPresent,
-    Command: []string{"sh", "-c", "while [[ $(ps -ef | grep kaniko | wc -l) -gt 1 ]] ; do sleep 1; done; sleep " + cfg.PodGracePeriodSeconds},
-  },
-}
+  case v1.PodFailed or v1.PodUnknown or v1.PodPending::
+   kubectl get events --namespace namespace-name --field-selector involvedObject.name=kaniko-pod-name
 ```
-### Config changes
-
-Extra podGracePeriodSeconds field would be added, so that user can configure it.
-
 
 ### Open Issues/Question
 #1978
+Should we pull event logs in case of all kind of pod failure? Yes we should pull logs for 
+all failures in WaitForPodScheduled(), WaitForPodComplete() and WaitForPodInitialized().
 
 
 ## Implementation plan
 
-1. Modify kaniko pod definition
-2. Monitoring kaniko pod, adding sleep when kaniko pod terminates
-
-## Glossary
-
-- side_car: Extra container running simulateously on kaniko pod and monitoring kaniko.
+1. Pulling events from  k8s in pkg/skaffold/kubernetes/wait.go WaitForPodComplete function 
