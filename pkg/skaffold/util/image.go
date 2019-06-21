@@ -30,6 +30,31 @@ const prefixRegexStr = "gcr.io/[a-zA-Z0-9-_]+/"
 var escapeRegex = regexp.MustCompile(escapeChars)
 var prefixRegex = regexp.MustCompile(prefixRegexStr)
 
+type Registry interface {
+	// Name returns the string representation of the registry
+	String() string
+
+	// Replace replaces the current registry in a given image name to input registry
+	Update(reg *Registry) Registry
+
+	// Prefix gives the prefix for replacing the registry
+	Prefix() string
+
+	// Postfix gives the postfix for replacing the registry
+	Postfix() string
+}
+
+type Image interface {
+	// Registry returns the registry for a given image
+	Registry() *Registry
+
+	// Name returns the image name
+	String() string
+
+	// Replace updates the Registry for the image to a new Registry and returns the updated Image
+	Update(reg *Registry) string
+}
+
 func SubstituteDefaultRepoIntoImage(defaultRepo string, originalImage string) string {
 	if defaultRepo == "" {
 		return originalImage
