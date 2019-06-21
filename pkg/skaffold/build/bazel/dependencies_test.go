@@ -29,7 +29,7 @@ func TestGetDependencies(t *testing.T) {
 	tests := []struct {
 		description   string
 		target        string
-		hasWorkspace  bool
+		files         map[string]string
 		expectedQuery string
 		output        string
 		expected      []string
@@ -37,7 +37,7 @@ func TestGetDependencies(t *testing.T) {
 		{
 			description:   "with workspace",
 			target:        "target",
-			hasWorkspace:  true,
+			files:         map[string]string{"WORKSPACE": "content is ignored"},
 			expectedQuery: "bazel query kind('source file', deps('target')) union buildfiles('target') --noimplicit_deps --order_output=no",
 			output:        "@ignored\n//external/ignored\n\n//:dep1\n//:dep2\n",
 			expected:      []string{"dep1", "dep2", "WORKSPACE"},
@@ -45,7 +45,7 @@ func TestGetDependencies(t *testing.T) {
 		{
 			description:   "without workspace",
 			target:        "target2",
-			hasWorkspace:  false,
+			files:         map[string]string{},
 			expectedQuery: "bazel query kind('source file', deps('target2')) union buildfiles('target2') --noimplicit_deps --order_output=no",
 			output:        "@ignored\n//external/ignored\n\n//:dep3\n",
 			expected:      []string{"dep3"},
@@ -54,11 +54,8 @@ func TestGetDependencies(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, t.FakeRunOut(test.expectedQuery, test.output))
-
-			tmpDir := t.NewTempDir()
-			if test.hasWorkspace {
-				tmpDir.Write("WORKSPACE", "")
-			}
+			tmpDir := t.NewTempDir().
+				WriteFiles(test.files)
 
 			deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.BazelArtifact{
 				BuildTarget: test.target,

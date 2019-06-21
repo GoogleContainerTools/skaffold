@@ -91,8 +91,7 @@ func TestExpandPathsGlob(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir().
-				Write("dir/sub_dir/file", "").
-				Write("dir_b/sub_dir_b/file", "")
+				Touch("dir/sub_dir/file", "dir_b/sub_dir_b/file")
 
 			actual, err := ExpandPathsGlob(tmpDir.Root(), test.in)
 
@@ -165,7 +164,8 @@ func TestExpand(t *testing.T) {
 func TestAbsFile(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
-	tmpDir.Write("file", "")
+	tmpDir.Touch("file")
+
 	expectedFile, err := filepath.Abs(filepath.Join(tmpDir.Root(), "file"))
 	testutil.CheckError(t, false, err)
 

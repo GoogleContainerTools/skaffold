@@ -29,32 +29,22 @@ import (
 func TestWatch(t *testing.T) {
 	var tests = []struct {
 		description string
-		setup       func(folder *testutil.TempDir)
 		update      func(folder *testutil.TempDir)
 	}{
 		{
 			description: "file change",
-			setup: func(folder *testutil.TempDir) {
-				folder.Write("file", "content")
-			},
 			update: func(folder *testutil.TempDir) {
 				folder.Chtimes("file", time.Now().Add(2*time.Second))
 			},
 		},
 		{
 			description: "file delete",
-			setup: func(folder *testutil.TempDir) {
-				folder.Write("file", "content")
-			},
 			update: func(folder *testutil.TempDir) {
 				folder.Remove("file")
 			},
 		},
 		{
 			description: "file create",
-			setup: func(folder *testutil.TempDir) {
-				folder.Write("file", "content")
-			},
 			update: func(folder *testutil.TempDir) {
 				folder.Write("new", "content")
 			},
@@ -62,8 +52,8 @@ func TestWatch(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			test.setup(tmpDir)
+			tmpDir := t.NewTempDir().
+				Write("file", "content")
 
 			folderChanged := newCallback()
 			somethingChanged := newCallback()
