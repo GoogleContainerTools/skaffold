@@ -40,10 +40,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	tmpDir.Write("build", "")
-	tmpDir.Write("dep1", "")
-	tmpDir.Write("dep2", "")
-
+	tmpDir.Touch("build", "dep1", "dep2")
 	build := tmpDir.Path("build")
 	dep1 := tmpDir.Path("dep1")
 	dep2 := tmpDir.Path("dep2")
@@ -148,14 +145,12 @@ func TestGetCommandGradle(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			for _, file := range test.filesInWorkspace {
-				tmpDir.Write(file, "")
-			}
+			tmpDir := t.NewTempDir().
+				Touch(test.filesInWorkspace...)
 
 			cmd := getCommandGradle(ctx, tmpDir.Root(), &test.jibGradleArtifact)
-			expectedCmd := test.expectedCmd(tmpDir.Root())
 
+			expectedCmd := test.expectedCmd(tmpDir.Root())
 			t.CheckDeepEqual(expectedCmd.Path, cmd.Path)
 			t.CheckDeepEqual(expectedCmd.Args, cmd.Args)
 			t.CheckDeepEqual(expectedCmd.Dir, cmd.Dir)

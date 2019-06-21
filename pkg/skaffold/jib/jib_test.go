@@ -30,11 +30,7 @@ func TestGetDependencies(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	tmpDir.Write("dep1", "")
-	tmpDir.Write("dep2", "")
-	tmpDir.Write("dep3/fileA", "")
-	tmpDir.Write("dep3/sub/path/fileB", "")
-
+	tmpDir.Touch("dep1", "dep2", "dep3/fileA", "dep3/sub/path/fileB")
 	dep1 := tmpDir.Path("dep1")
 	dep2 := tmpDir.Path("dep2")
 	dep3 := tmpDir.Path("dep3")

@@ -244,8 +244,7 @@ func TestAddFileToTarSymlinks(t *testing.T) {
 }
 
 func prepareFiles(t *testutil.T, files map[string]string) (*testutil.TempDir, []string) {
-	tmpDir := t.NewTempDir().
-		Chdir()
+	tmpDir := t.NewTempDir().Chdir()
 
 	var paths []string
 	for path, content := range files {

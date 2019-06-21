@@ -43,9 +43,7 @@ func TestTestDependencies(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	tmpDir.Write("tests/test1.yaml", "")
-	tmpDir.Write("tests/test2.yaml", "")
-	tmpDir.Write("test3.yaml", "")
+	tmpDir.Touch("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 
 	runCtx := &runcontext.RunContext{
 		WorkingDir: tmpDir.Root(),
@@ -96,9 +94,7 @@ func TestTestSuccess(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	tmpDir.Write("tests/test1.yaml", "")
-	tmpDir.Write("tests/test2.yaml", "")
-	tmpDir.Write("test3.yaml", "")
+	tmpDir.Touch("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	util.DefaultExecCommand = testutil.
@@ -135,7 +131,7 @@ func TestTestFailure(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	tmpDir.Write("test.yaml", "")
+	tmpDir.Touch("test.yaml")
 
 	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
 	util.DefaultExecCommand = testutil.

@@ -64,10 +64,8 @@ func TestGetCommand(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			for _, file := range test.filesInWorkspace {
-				tmpDir.Write(file, "")
-			}
+			tmpDir := t.NewTempDir().
+				Touch(test.filesInWorkspace...)
 
 			definition := &CommandWrapper{Executable: test.defaultExecutable, Wrapper: test.wrapperExecutable}
 			cmd := definition.CreateCommand(context.TODO(), tmpDir.Root(), test.args)
