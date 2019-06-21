@@ -40,7 +40,7 @@ func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMa
 	return deps, nil
 }
 
-func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) *exec.Cmd {
+func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) exec.Cmd {
 	args := mavenArgs(a)
 	args = append(args, "jib:_skaffold-files-v2", "--quiet")
 

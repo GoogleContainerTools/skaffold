@@ -56,7 +56,7 @@ type filesLists struct {
 var watchedFiles = map[string]filesLists{}
 
 // getDependencies returns a list of files to watch for changes to rebuild
-func getDependencies(workspace string, cmd *exec.Cmd, projectName string) ([]string, error) {
+func getDependencies(workspace string, cmd exec.Cmd, projectName string) ([]string, error) {
 	var dependencyList []string
 	files, ok := watchedFiles[projectName]
 	if !ok {
@@ -107,8 +107,8 @@ func getDependencies(workspace string, cmd *exec.Cmd, projectName string) ([]str
 }
 
 // refreshDependencyList calls out to Jib to update files with the latest list of files/directories to watch.
-func refreshDependencyList(files *filesLists, cmd *exec.Cmd) error {
-	stdout, err := util.RunCmdOut(cmd)
+func refreshDependencyList(files *filesLists, cmd exec.Cmd) error {
+	stdout, err := util.RunCmdOut(&cmd)
 	if err != nil {
 		return errors.Wrap(err, "failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+)")
 	}

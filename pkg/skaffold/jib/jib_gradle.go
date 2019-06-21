@@ -42,7 +42,7 @@ func GetDependenciesGradle(ctx context.Context, workspace string, a *latest.JibG
 	return deps, nil
 }
 
-func getCommandGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) *exec.Cmd {
+func getCommandGradle(ctx context.Context, workspace string, a *latest.JibGradleArtifact) exec.Cmd {
 	args := []string{gradleCommand(a, "_jibSkaffoldFilesV2"), "-q"}
 	return GradleCommand.CreateCommand(ctx, workspace, args)
 }
