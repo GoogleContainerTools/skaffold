@@ -16,7 +16,7 @@
 
 
 cd $GOPATH/src/github.com/GoogleContainerTools/skaffold
-docker build -t generate-proto -f hack/Dockerfile_proto --target compare .
+docker build -t generate-proto -f hack/proto/Dockerfile --target compare .
 if [ $? -ne 0 ]; then
    printf "\nGenerated proto files aren't updated. Please run ./hack/generate-proto.sh\n"
 fi
