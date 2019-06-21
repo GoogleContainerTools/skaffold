@@ -32,8 +32,6 @@ type RunContext struct {
 	Opts *config.SkaffoldOptions
 	Cfg  *latest.Pipeline
 
-	Trigger chan bool
-
 	DefaultRepo        string
 	KubeContext        string
 	WorkingDir         string
@@ -85,6 +83,5 @@ func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.Pipeline) (*RunCont
 		KubeContext:        kubeContext,
 		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
-		Trigger:            make(chan bool),
 	}, nil
 }

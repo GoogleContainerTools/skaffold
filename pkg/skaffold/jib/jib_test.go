@@ -83,18 +83,41 @@ func TestGetDependencies(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		// Reset map between each test to ensure stdout is read each time
-		watchedFiles = map[string]filesLists{}
-
 		testutil.Run(t, "", func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, t.FakeRunOut(
-				"ignored",
-				test.stdout,
-			))
+			t.Override(&util.DefaultExecCommand, t.FakeRunOut("ignored", test.stdout))
 
-			results, err := getDependencies(tmpDir.Root(), &exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, "test")
+			results, err := getDependencies(tmpDir.Root(), exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, util.RandomID())
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDeps, results)
 		})
 	}
+}
+
+func TestGetUpdatedDependencies(t *testing.T) {
+	testutil.Run(t, "Both build definitions are created at the same time", func(t *testutil.T) {
+		tmpDir := t.NewTempDir()
+
+		stdout := fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\",\"%s\"],\"inputs\":[],\"ignore\":[]}\n", tmpDir.Path("build.gradle"), tmpDir.Path("settings.gradle"))
+		t.Override(&util.DefaultExecCommand, t.
+			FakeRunOut("ignored", stdout).
+			WithRunOut("ignored", stdout).
+			WithRunOut("ignored", stdout),
+		)
+
+		listCmd := exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}
+		projectID := util.RandomID()
+
+		// List dependencies
+		_, err := getDependencies(tmpDir.Root(), listCmd, projectID)
+		t.CheckNoError(err)
+
+		// Create new build definition files
+		tmpDir.
+			Write("build.gradle", "").
+			Write("settings.gradle", "")
+
+		// Update dependencies
+		_, err = getDependencies(tmpDir.Root(), listCmd, projectID)
+		t.CheckNoError(err)
+	})
 }
