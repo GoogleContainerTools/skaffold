@@ -6,7 +6,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestImageReplaceDefaultRepo(t *testing.T) {
+func TestGenericImageReplaceDefaultRepo(t *testing.T) {
 	tests := []struct {
 		description   string
 		repo          string

@@ -1,7 +1,6 @@
 package image
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"regexp"
 	"strings"
 )
@@ -19,7 +18,7 @@ type GenericContainerRegistry struct {
 	RegistryName string
 }
 
-func NewGenericContainerRegistry(name string) util.Registry{
+func NewGenericContainerRegistry(name string) Registry{
 	return &GenericContainerRegistry{name}
 }
 
@@ -27,7 +26,7 @@ func (r *GenericContainerRegistry) String() string {
 	return r.RegistryName
 }
 
-func (r *GenericContainerRegistry) Update(reg *util.Registry) util.Registry {
+func (r *GenericContainerRegistry) Update(reg *Registry) Registry {
 	return nil
 }
 
@@ -40,15 +39,15 @@ func (r *GenericContainerRegistry) Postfix() string {
 }
 
 type GenericImage struct {
-	ImageRegistry util.Registry
+	ImageRegistry Registry
 	ImageName string
 }
 
-func NewGenericImage(reg util.Registry, name string) *GenericImage {
+func NewGenericImage(reg Registry, name string) *GenericImage {
 	return &GenericImage{reg, name}
 }
 
-func (i *GenericImage) Registry() util.Registry {
+func (i *GenericImage) Registry() Registry {
 	return i.ImageRegistry
 }
 
@@ -56,7 +55,7 @@ func (i *GenericImage) String() string {
 	return i.ImageName
 }
 
-func (i *GenericImage) Update(reg util.Registry) string {
+func (i *GenericImage) Update(reg Registry) string {
 	originalImage := i.ImageRegistry.String() + "/" + i.String()
 	if reg.String() == "" {
 		return originalImage

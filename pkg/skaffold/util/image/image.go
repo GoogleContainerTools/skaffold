@@ -14,21 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package image
 
 import (
-	"regexp"
 	"strings"
 )
 
-const maxLength = 255
-
-const gcr = "gcr.io"
-const escapeChars = "[/._:@]"
-const prefixRegexStr = "gcr.io/[a-zA-Z0-9-_]+/"
-
-var escapeRegex = regexp.MustCompile(escapeChars)
-var prefixRegex = regexp.MustCompile(prefixRegexStr)
 
 type Registry interface {
 	// Name returns the string representation of the registry
@@ -46,13 +37,28 @@ type Registry interface {
 
 type Image interface {
 	// Registry returns the registry for a given image
-	Registry() *Registry
+	Registry() Registry
 
 	// Name returns the image name
 	String() string
 
 	// Replace updates the Registry for the image to a new Registry and returns the updated Image
-	Update(reg *Registry) string
+	Update(reg Registry) string
+}
+
+func RegistryFactory(repo string) Registry {
+	// Default: return generic registry type
+	return NewGenericContainerRegistry(repo)
+}
+
+func ImageFactory(image string) Image {
+	// Separate repo from image name in string
+	splitImage := strings.Split(image, "/")
+	imageRegistry := NewGenericContainerRegistry(strings.Join(splitImage[:len(splitImage)-1], "/"))
+	imageName := splitImage[len(splitImage)-1]
+
+	// Default: return generic image type
+	return NewGenericImage(imageRegistry, imageName)
 }
 
 func SubstituteDefaultRepoIntoImage(defaultRepo string, originalImage string) string {
@@ -73,11 +79,4 @@ func SubstituteDefaultRepoIntoImage(defaultRepo string, originalImage string) st
 		return truncate(defaultRepo + "/" + originalImage)
 	}
 	return truncate(defaultRepo + "/" + escapeRegex.ReplaceAllString(originalImage, "_"))
-}
-
-func truncate(image string) string {
-	if len(image) > maxLength {
-		return image[0:maxLength]
-	}
-	return image
 }
