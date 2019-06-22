@@ -107,11 +107,6 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 						continue
 					}
 
-					if c.State.Terminated != nil {
-						color.Purple.Fprintln(a.output, c.State.Terminated.Message)
-						continue
-					}
-
 					if !a.trackedContainers.add(c.ContainerID) {
 						go a.streamContainerLogs(cancelCtx, pod, c)
 					}
@@ -188,7 +183,7 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Col
 			// Read up to newline
 			line, err := r.ReadString('\n')
 			if err == io.EOF {
-				logrus.Infof("%s exited", prefix)
+				a.printLogLine(headerColor, prefix, "<Exited>\n")
 				return nil
 			}
 			if err != nil {
