@@ -90,10 +90,6 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 					return
 				}
 
-				if evt.Type != watch.Added && evt.Type != watch.Modified {
-					continue
-				}
-
 				pod, ok := evt.Object.(*v1.Pod)
 				if !ok {
 					continue
