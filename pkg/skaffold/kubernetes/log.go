@@ -31,6 +31,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
@@ -107,11 +108,6 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 						continue
 					}
 
-					if c.State.Terminated != nil {
-						color.Purple.Fprintln(a.output, c.State.Terminated.Message)
-						continue
-					}
-
 					if !a.trackedContainers.add(c.ContainerID) {
 						go a.streamContainerLogs(cancelCtx, pod, c)
 					}
@@ -161,6 +157,33 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	if err := a.streamRequest(ctx, headerColor, prefix, tr); err != nil {
 		logrus.Errorf("streaming request %s", err)
 	}
+
+	finalState, err := getFinalState(pod.Namespace, pod.Name, container.ContainerID)
+	if err != nil {
+		logrus.Errorf("getting container's final state %s", err)
+	}
+
+	fmt.Fprintf(a.output, "<%s>, exit code: %d %s\n", finalState.Reason, finalState.ExitCode, finalState.Message)
+}
+
+func getFinalState(ns, podName, containerID string) (*v1.ContainerStateTerminated, error) {
+	client, err := Client()
+	if err != nil {
+		return nil, errors.Wrap(err, "getting client")
+	}
+
+	pod, err := client.CoreV1().Pods(ns).Get(podName, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting pod %s", podName)
+	}
+
+	for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+		if c.ContainerID == containerID && c.LastTerminationState.Terminated != nil {
+			return c.LastTerminationState.Terminated, nil
+		}
+	}
+
+	return nil, errors.Wrap(err, "getting container's final state")
 }
 
 func (a *LogAggregator) printLogLine(headerColor color.Color, prefix, text string) {
