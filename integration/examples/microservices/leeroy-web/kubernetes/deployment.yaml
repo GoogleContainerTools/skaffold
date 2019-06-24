@@ -1,19 +1,19 @@
-apiVersion: v1
-kind: Service
-metadata:
-  name: leeroy-web
-  labels:
-    app: leeroy-web
-spec:
-  type: NodePort
-  ports:
-    - port: 8080
-      targetPort: 8080
-      protocol: TCP
-      name: leeroy-web
-  selector:
-    app: leeroy-web
----
+--- # ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: leeroy-web
+#   labels:
+#     app: leeroy-web
+# spec:
+#   type: NodePort
+#   ports:
+#     - port: 8080
+#       targetPort: 8080
+#       protocol: TCP
+#       name: leeroy-web
+#   selector:
+#     app: leeroy-web
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,7 +31,7 @@ spec:
         app: leeroy-web
     spec:
       containers:
-      - name: leeroy-web
-        image: gcr.io/k8s-skaffold/leeroy-web
-        ports:
-        - containerPort: 8080
+        - name: leeroy-web
+          image: gcr.io/k8s-skaffold/leeroy-web
+          ports:
+            - containerPort: 8080
