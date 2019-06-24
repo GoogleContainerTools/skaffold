@@ -48,7 +48,7 @@ func Process(config *latest.SkaffoldConfig) error {
 	return fmt.Errorf(strings.Join(messages, " | "))
 }
 
-// validateDockerNetworkMode makes sure that networkMode is one of `Bridge`, `None`, or `Host` if set.
+// validateDockerNetworkMode makes sure that networkMode is one of `bridge`, `none`, or `host` if set.
 func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 	for _, a := range artifacts {
 		if a.DockerArtifact == nil || a.DockerArtifact.NetworkMode == "" {

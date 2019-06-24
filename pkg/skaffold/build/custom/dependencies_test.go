@@ -36,10 +36,7 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 	// - baz
 	//     file
 	//   Dockerfile
-	tmpDir.Write("foo", "")
-	tmpDir.Write("bar", "")
-	tmpDir.Mkdir("baz")
-	tmpDir.Write("baz/file", "")
+	tmpDir.Touch("foo", "bar", "baz/file")
 	tmpDir.Write("Dockerfile", "FROM scratch \n ARG file \n COPY $file baz/file .")
 
 	customArtifact := &latest.CustomArtifact{
@@ -106,10 +103,7 @@ func TestGetDependenciesPaths(t *testing.T) {
 			// - baz
 			//     file
 			tmpDir := t.NewTempDir().
-				Write("foo", "").
-				Write("bar", "").
-				Mkdir("baz").
-				Write("baz/file", "")
+				Touch("foo", "bar", "baz/file")
 
 			deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.CustomArtifact{
 				Dependencies: &latest.CustomDependencies{

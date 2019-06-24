@@ -207,10 +207,10 @@ func TestParseConfig(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 
-			tmp := t.NewTempDir().
+			tmpDir := t.NewTempDir().
 				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config))
 
-			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true)
+			cfg, err := ParseConfig(tmpDir.Path("skaffold.yaml"), true)
 			if cfg != nil {
 				config := cfg.(*latest.SkaffoldConfig)
 				err := defaults.Set(config)

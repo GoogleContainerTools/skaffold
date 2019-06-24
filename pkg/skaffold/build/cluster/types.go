@@ -35,6 +35,7 @@ import (
 type Builder struct {
 	*latest.ClusterDetails
 
+	kubeContext        string
 	timeout            time.Duration
 	insecureRegistries map[string]bool
 }
@@ -47,8 +48,10 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	}
 
 	return &Builder{
-		ClusterDetails: runCtx.Cfg.Build.Cluster,
-		timeout:        timeout,
+		ClusterDetails:     runCtx.Cfg.Build.Cluster,
+		timeout:            timeout,
+		kubeContext:        runCtx.KubeContext,
+		insecureRegistries: runCtx.InsecureRegistries,
 	}, nil
 }
 

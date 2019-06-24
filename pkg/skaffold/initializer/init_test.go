@@ -193,10 +193,8 @@ deploy:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			for file, contents := range test.filesWithContents {
-				tmpDir.Write(file, contents)
-			}
+			tmpDir := t.NewTempDir().
+				WriteFiles(test.filesWithContents)
 
 			t.Override(&docker.ValidateDockerfileFunc, fakeValidateDockerfile)
 			t.Override(&jib.ValidateJibConfigFunc, fakeValidateJibConfig)

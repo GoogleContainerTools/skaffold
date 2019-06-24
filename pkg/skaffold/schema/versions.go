@@ -134,7 +134,7 @@ func upgradeToLatest(vc util.VersionedConfig) (util.VersionedConfig, error) {
 		return nil, fmt.Errorf("config version %s is too new for this version: upgrade Skaffold", vc.GetVersion())
 	}
 
-	logrus.Warnf("config version (%s) out of date: upgrading to latest (%s)", vc.GetVersion(), latest.Version)
+	logrus.Debugf("config version (%s) out of date: upgrading to latest (%s)", vc.GetVersion(), latest.Version)
 
 	for vc.GetVersion() != latest.Version {
 		vc, err = vc.Upgrade()

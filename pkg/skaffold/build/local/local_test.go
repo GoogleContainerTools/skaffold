@@ -45,9 +45,6 @@ func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
 
 func TestLocalRun(t *testing.T) {
-	reset := testutil.Override(t, &docker.DefaultAuthHelper, testAuthHelper{})
-	defer reset()
-
 	var tests = []struct {
 		description      string
 		api              testutil.FakeAPIClient
@@ -221,6 +218,7 @@ func TestLocalRun(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 
@@ -259,8 +257,8 @@ func TestNewBuilder(t *testing.T) {
 
 	pFalse := false
 
-	tcs := []struct {
-		name            string
+	tests := []struct {
+		description     string
 		shouldErr       bool
 		localBuild      *latest.LocalBuild
 		expectedBuilder *Builder
@@ -268,14 +266,14 @@ func TestNewBuilder(t *testing.T) {
 		localDockerFn   func(*runcontext.RunContext) (docker.LocalDaemon, error)
 	}{
 		{
-			name: "failed to get docker client",
+			description: "failed to get docker client",
 			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
 				e = errors.New("dummy docker error")
 				return
 			},
 			shouldErr: true,
 		}, {
-			name: "pushImages becomes !localCluster when local:push is not defined",
+			description: "pushImages becomes !localCluster when local:push is not defined",
 			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
 				daemon = dummyDaemon
 				return
@@ -297,7 +295,7 @@ func TestNewBuilder(t *testing.T) {
 				insecureRegistries: nil,
 			},
 		}, {
-			name: "pushImages defined in config (local:push)",
+			description: "pushImages defined in config (local:push)",
 			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
 				daemon = dummyDaemon
 				return
@@ -325,18 +323,20 @@ func TestNewBuilder(t *testing.T) {
 			},
 		},
 	}
-	for _, tc := range tcs {
-		testutil.Run(t, tc.name, func(t *testutil.T) {
-			if tc.localDockerFn != nil {
-				t.Override(&getLocalDocker, tc.localDockerFn)
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			if test.localDockerFn != nil {
+				t.Override(&getLocalDocker, test.localDockerFn)
 			}
-			if tc.localClusterFn != nil {
-				t.Override(&getLocalCluster, tc.localClusterFn)
+			if test.localClusterFn != nil {
+				t.Override(&getLocalCluster, test.localClusterFn)
 			}
-			builder, err := NewBuilder(stubRunContext(tc.localBuild))
-			t.CheckError(tc.shouldErr, err)
-			if !tc.shouldErr {
-				t.CheckDeepEqual(tc.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, dummyDaemon))
+
+			builder, err := NewBuilder(stubRunContext(test.localBuild))
+
+			t.CheckError(test.shouldErr, err)
+			if !test.shouldErr {
+				t.CheckDeepEqual(test.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, dummyDaemon))
 			}
 		})
 	}

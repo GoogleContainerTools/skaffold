@@ -91,8 +91,7 @@ func TestExpandPathsGlob(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir().
-				Write("dir/sub_dir/file", "").
-				Write("dir_b/sub_dir_b/file", "")
+				Touch("dir/sub_dir/file", "dir_b/sub_dir_b/file")
 
 			actual, err := ExpandPathsGlob(tmpDir.Root(), test.in)
 
@@ -165,7 +164,8 @@ func TestExpand(t *testing.T) {
 func TestAbsFile(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
-	tmpDir.Write("file", "")
+	tmpDir.Touch("file")
+
 	expectedFile, err := filepath.Abs(filepath.Join(tmpDir.Root(), "file"))
 	testutil.CheckError(t, false, err)
 
@@ -292,4 +292,14 @@ func TestRemoveFromSlice(t *testing.T) {
 	testutil.CheckDeepEqual(t, []string{"B", "C"}, RemoveFromSlice([]string{"A", "B", "C"}, "A"))
 	testutil.CheckDeepEqual(t, []string{"A", "C"}, RemoveFromSlice([]string{"A", "B", "B", "C"}, "B"))
 	testutil.CheckDeepEqual(t, []string{}, RemoveFromSlice([]string{"B", "B"}, "B"))
+}
+
+func TestStrSliceInsert(t *testing.T) {
+	testutil.CheckDeepEqual(t, []string{"d", "e"}, StrSliceInsert(nil, 0, []string{"d", "e"}))
+	testutil.CheckDeepEqual(t, []string{"d", "e"}, StrSliceInsert([]string{}, 0, []string{"d", "e"}))
+	testutil.CheckDeepEqual(t, []string{"a", "d", "e", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 1, []string{"d", "e"}))
+	testutil.CheckDeepEqual(t, []string{"d", "e", "a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 0, []string{"d", "e"}))
+	testutil.CheckDeepEqual(t, []string{"a", "b", "c", "d", "e"}, StrSliceInsert([]string{"a", "b", "c"}, 3, []string{"d", "e"}))
+	testutil.CheckDeepEqual(t, []string{"a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 0, nil))
+	testutil.CheckDeepEqual(t, []string{"a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 1, nil))
 }
