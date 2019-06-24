@@ -23,9 +23,9 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -35,11 +35,6 @@ import (
 var (
 	quietFlag       bool
 	buildFormatFlag = flags.NewTemplateFlag("{{json .}}", flags.BuildOutput{})
-)
-
-// For testing
-var (
-	createRunnerAndBuildFunc = createRunnerAndBuild
 )
 
 // NewCmdBuild describes the CLI command to build artifacts.
@@ -66,29 +61,18 @@ func doBuild(ctx context.Context, out io.Writer) error {
 		color.Default.Fprintln(buildOut, "Complete in", time.Since(start))
 	}()
 
-	bRes, err := createRunnerAndBuildFunc(ctx, buildOut)
-	if err != nil {
-		return alwaysSucceedWhenCancelled(ctx, err)
-	}
+	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
+		bRes, err := r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
 
-	if quietFlag {
-		cmdOut := flags.BuildOutput{Builds: bRes}
-		if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
-			return errors.Wrap(err, "executing template")
+		if quietFlag {
+			cmdOut := flags.BuildOutput{Builds: bRes}
+			if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
+				return errors.Wrap(err, "executing template")
+			}
 		}
-	}
 
-	return nil
-}
-
-func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Artifact, error) {
-	runner, config, err := newRunner(opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating runner")
-	}
-	defer runner.RPCServerShutdown()
-
-	return runner.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
+		return err
+	})
 }
 
 func targetArtifacts(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) []*latest.Artifact {

@@ -78,7 +78,7 @@ func verifyJibPackageGoal(ctx context.Context, requiredGoal string, workspace st
 
 	cmd := jib.MavenCommand.CreateCommand(ctx, workspace, command)
 	logrus.Debugf("Looking for jib bound package goals for %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	stdout, err := util.RunCmdOut(cmd)
+	stdout, err := util.RunCmdOut(&cmd)
 	if err != nil {
 		return errors.Wrap(err, "could not obtain jib package goals")
 	}
@@ -100,7 +100,7 @@ func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace 
 	cmd.Stderr = out
 
 	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	if err := util.RunCmd(cmd); err != nil {
+	if err := util.RunCmd(&cmd); err != nil {
 		return errors.Wrap(err, "maven build failed")
 	}
 

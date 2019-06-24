@@ -528,21 +528,15 @@ func TestGetDependencies(t *testing.T) {
 		},
 	}
 
-	resetWorkingDir := testutil.Override(t, &WorkingDir, func(_ string, _ map[string]bool) (string, error) {
-		return "/", nil
-	})
-	defer resetWorkingDir()
-
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			imageFetcher := fakeImageFetcher{}
 			t.Override(&RetrieveImage, imageFetcher.fetch)
 			t.Override(&util.OSEnviron, func() []string { return test.env })
+			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return "/", nil })
 
-			tmpDir := t.NewTempDir()
-			for _, file := range []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot"} {
-				tmpDir.Write(file, "")
-			}
+			tmpDir := t.NewTempDir().
+				Touch("docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot")
 
 			if !test.badReader {
 				tmpDir.Write(test.workspace+"/Dockerfile", test.dockerfile)

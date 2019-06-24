@@ -34,19 +34,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func withRunner(ctx context.Context, action func(*runner.SkaffoldRunner, *latest.SkaffoldConfig) error) error {
-	runner, config, err := newRunner(opts)
+// For tests
+var createRunner = createNewRunner
+
+func withRunner(ctx context.Context, action func(runner.Runner, *latest.SkaffoldConfig) error) error {
+	runner, config, err := createRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
-	defer runner.RPCServerShutdown()
+	defer runner.Stop()
 
 	err = action(runner, config)
 	return alwaysSucceedWhenCancelled(ctx, err)
 }
 
-// newRunner creates a SkaffoldRunner and returns the SkaffoldConfig associated with it.
-func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldConfig, error) {
+// createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
+func createNewRunner(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
 	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
 	if err != nil {
 		// If the error is NOT that the file doesn't exist, then we warn the user

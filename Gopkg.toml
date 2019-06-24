@@ -19,29 +19,25 @@
   name = "github.com/spf13/cobra"
   version = "0.0.2"
 
-[[override]]
-  name = "github.com/xeipuuv/gojsonschema"
-  revision = "0c8571ac0ce161a5feb57375a9cdf148c98c0f70"
-
 [[constraint]]
   name = "github.com/docker/distribution"
   revision = "83389a148052d74ac602f5f1d62f86ff2f3c4aa5"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.11.0"
+  version = "kubernetes-1.12.9"
 
 [[constraint]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.11.0"
+  version = "kubernetes-1.12.9"
 
 [[constraint]]
   name = "k8s.io/api"
-  version = "kubernetes-1.11.0"
+  version = "kubernetes-1.12.9"
 
 [[override]]
   name = "github.com/Azure/go-autorest"
-  version = "v10.6.2"
+  revision = "bca49d5b51a50dc5bb17bbf6204c711c6dbded06"
 
 [[constraint]]
   name = "cloud.google.com/go"

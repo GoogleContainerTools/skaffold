@@ -60,7 +60,7 @@ func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace
 	cmd.Stderr = out
 
 	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	if err := util.RunCmd(cmd); err != nil {
+	if err := util.RunCmd(&cmd); err != nil {
 		return errors.Wrap(err, "gradle build failed")
 	}
 

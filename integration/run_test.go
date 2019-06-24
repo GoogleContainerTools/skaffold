@@ -83,6 +83,11 @@ func TestRun(t *testing.T) {
 			pods:        []string{"getting-started-kaniko"},
 			gcpOnly:     true,
 		}, {
+			description: "kaniko local with target",
+			dir:         "testdata/kaniko-target",
+			pods:        []string{"getting-started-kaniko"},
+			gcpOnly:     true,
+		}, {
 			description: "kaniko local with sub folder",
 			dir:         "testdata/kaniko-sub-folder",
 			pods:        []string{"getting-started-kaniko"},
