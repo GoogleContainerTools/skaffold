@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/image"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -101,9 +101,9 @@ func applyDefaultRepoSubstitution(config *latest.SkaffoldConfig, defaultRepo str
 		return
 	}
 	for _, artifact := range config.Build.Artifacts {
-		artifact.ImageName = util.SubstituteDefaultRepoIntoImage(defaultRepo, artifact.ImageName)
+		artifact.ImageName = image.SubstituteDefaultRepoIntoImage(defaultRepo, artifact.ImageName)
 	}
 	for _, testCase := range config.Test {
-		testCase.ImageName = util.SubstituteDefaultRepoIntoImage(defaultRepo, testCase.ImageName)
+		testCase.ImageName = image.SubstituteDefaultRepoIntoImage(defaultRepo, testCase.ImageName)
 	}
 }

@@ -22,7 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/image"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
@@ -111,5 +111,5 @@ func (r *imageReplacer) Check() {
 }
 
 func (r *imageReplacer) substituteRepoIntoImage(originalImage string) string {
-	return util.SubstituteDefaultRepoIntoImage(r.defaultRepo, originalImage)
+	return image.SubstituteDefaultRepoIntoImage(r.defaultRepo, originalImage)
 }

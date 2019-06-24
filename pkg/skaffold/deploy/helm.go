@@ -37,6 +37,7 @@ import (
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/image"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -414,7 +415,7 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 
 	paramToBuildResult := map[string]build.Artifact{}
 	for param, imageName := range params {
-		newImageName := util.SubstituteDefaultRepoIntoImage(h.defaultRepo, imageName)
+		newImageName := image.SubstituteDefaultRepoIntoImage(h.defaultRepo, imageName)
 		b, ok := imageToBuildResult[newImageName]
 		if !ok {
 			if len(builds) == 0 {
