@@ -58,7 +58,7 @@ type SkaffoldRunner struct {
 	runCtx               *runcontext.RunContext
 	labellers            []deploy.Labeller
 	defaultLabeller      *DefaultLabeller
-	portForwardResources []latest.PortForwardResource
+	portForwardResources []*latest.PortForwardResource
 	builds               []build.Artifact
 	hasBuilt             bool
 	hasDeployed          bool

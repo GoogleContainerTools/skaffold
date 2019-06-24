@@ -32,7 +32,7 @@ import (
 // services deployed by skaffold.
 type ResourceForwarder struct {
 	EntryManager
-	userDefinedResources []latest.PortForwardResource
+	userDefinedResources []*latest.PortForwardResource
 	label                string
 }
 
@@ -43,7 +43,7 @@ var (
 )
 
 // NewResourceForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewResourceForwarder(em EntryManager, label string, userDefinedResources []latest.PortForwardResource) *ResourceForwarder {
+func NewResourceForwarder(em EntryManager, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
 	return &ResourceForwarder{
 		EntryManager:         em,
 		userDefinedResources: userDefinedResources,
@@ -63,11 +63,11 @@ func (p *ResourceForwarder) Start(ctx context.Context) error {
 }
 
 // Port forward each resource individuallly in a goroutine
-func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources []latest.PortForwardResource) {
+func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources []*latest.PortForwardResource) {
 	for _, r := range resources {
 		r := r
 		go func() {
-			if err := p.portForwardResource(ctx, r); err != nil {
+			if err := p.portForwardResource(ctx, *r); err != nil {
 				logrus.Warnf("Unable to port forward %s/%s: %v", r.Type, r.Name, err)
 			}
 		}()
@@ -102,7 +102,7 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 
 // retrieveServiceResources retrieves all services in the cluster matching the given label
 // as a list of PortForwardResources
-func retrieveServiceResources(label string) ([]latest.PortForwardResource, error) {
+func retrieveServiceResources(label string) ([]*latest.PortForwardResource, error) {
 	clientset, err := kubernetes.GetClientset()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting clientset")
@@ -113,10 +113,10 @@ func retrieveServiceResources(label string) ([]latest.PortForwardResource, error
 	if err != nil {
 		return nil, errors.Wrapf(err, "selecting services by label %s", label)
 	}
-	var resources []latest.PortForwardResource
+	var resources []*latest.PortForwardResource
 	for _, s := range services.Items {
 		for _, p := range s.Spec.Ports {
-			resources = append(resources, latest.PortForwardResource{
+			resources = append(resources, &latest.PortForwardResource{
 				Type:      constants.Service,
 				Name:      s.Name,
 				Namespace: s.Namespace,

@@ -36,6 +36,7 @@ func Process(config *latest.SkaffoldConfig) error {
 	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
 	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
 	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
+	errs = append(errs, validatePortForwardResources(config.PortForward)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -137,6 +138,38 @@ func validateSyncRules(artifacts []*latest.Artifact) []error {
 					errs = append(errs, err)
 				}
 			}
+		}
+	}
+	return errs
+}
+
+// validatePortForwardResources checks that all user defined port forward resources
+// have a valid resourceType
+func validatePortForwardResources(pfrs []*latest.PortForwardResource) []error {
+	var errs []error
+	validResourceTypes := map[string]struct{}{
+		"pod":        struct{}{},
+		"po":         struct{}{},
+		"deployment": struct{}{},
+		"deploy":     struct{}{},
+		"service":    struct{}{},
+		"svc":        struct{}{},
+		"replicaset": struct{}{},
+		"rs":         struct{}{},
+		"replicationcontroller": struct{}{},
+		"rc":          struct{}{},
+		"statefulset": struct{}{},
+		"sts":         struct{}{},
+		"daemonset":   struct{}{},
+		"ds":          struct{}{},
+		"cronjob":     struct{}{},
+		"cj":          struct{}{},
+		"job":         struct{}{},
+	}
+	for _, pfr := range pfrs {
+		resourceType := strings.ToLower(string(pfr.Type))
+		if _, ok := validResourceTypes[resourceType]; !ok {
+			errs = append(errs, fmt.Errorf("%s is not a valid resource type for port fowarding", pfr.Type))
 		}
 	}
 	return errs

@@ -44,7 +44,7 @@ var (
 )
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
-func NewForwarderManager(out io.Writer, podSelector kubernetes.PodSelector, namespaces []string, label string, opts config.PortForwardOptions, userDefined []latest.PortForwardResource) *ForwarderManager {
+func NewForwarderManager(out io.Writer, podSelector kubernetes.PodSelector, namespaces []string, label string, opts config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
 	if !opts.PortForward {
 		return emptyForwarderManager
 	}

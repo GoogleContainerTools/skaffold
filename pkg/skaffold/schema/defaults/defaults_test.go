@@ -112,3 +112,23 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildMavenImage, cfg.Build.GoogleCloudBuild.MavenImage)
 	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildGradleImage, cfg.Build.GoogleCloudBuild.GradleImage)
 }
+
+func TestSetDefaultPortForwardNamespace(t *testing.T) {
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{},
+			PortForward: []*latest.PortForwardResource{
+				{
+					Type:      constants.Service,
+					Namespace: "mynamespace",
+				}, {
+					Type: constants.Service,
+				},
+			},
+		},
+	}
+	err := Set(cfg)
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, "mynamespace", cfg.PortForward[0].Namespace)
+	testutil.CheckDeepEqual(t, constants.DefaultPortForwardNamespace, cfg.PortForward[1].Namespace)
+}

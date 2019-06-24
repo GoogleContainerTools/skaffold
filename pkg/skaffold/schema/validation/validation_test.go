@@ -518,3 +518,44 @@ func TestValidateCustomDependencies(t *testing.T) {
 		})
 	}
 }
+
+func TestValidatePortForwardResources(t *testing.T) {
+	tests := []struct {
+		resourceType string
+		shouldErr    bool
+	}{
+		{resourceType: "pod"},
+		{resourceType: "po"},
+		{resourceType: "Deployment"},
+		{resourceType: "deploy"},
+		{resourceType: "service"},
+		{resourceType: "svc"},
+		{resourceType: "replicaset"},
+		{resourceType: "rs"},
+		{resourceType: "replicationcontroller"},
+		{resourceType: "rc"},
+		{resourceType: "statefulset"},
+		{resourceType: "sts"},
+		{resourceType: "daemonset"},
+		{resourceType: "ds"},
+		{resourceType: "cronjob"},
+		{resourceType: "cj"},
+		{resourceType: "job"},
+		{resourceType: "dne", shouldErr: true},
+	}
+	for _, test := range tests {
+		t.Run(test.resourceType, func(t *testing.T) {
+			pfrs := []*latest.PortForwardResource{
+				{
+					Type: latest.ResourceType(test.resourceType),
+				},
+			}
+			errs := validatePortForwardResources(pfrs)
+			var err error
+			if len(errs) > 0 {
+				err = errs[0]
+			}
+			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
+}
