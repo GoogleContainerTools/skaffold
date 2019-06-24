@@ -256,7 +256,7 @@ func (l *ImageList) Select(pod *v1.Pod) bool {
 	l.RLock()
 	defer l.RUnlock()
 
-	for _, container := range pod.Spec.Containers {
+	for _, container := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
 		if l.names[container.Image] {
 			return true
 		}
