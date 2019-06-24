@@ -39,7 +39,7 @@ const (
 	defaultAPIVersion = 2
 )
 
-// dlvSpec captures the useful nodejs devtools options
+// dlvSpec captures the useful delve runtime options
 type dlvSpec struct {
 	mode       string
 	host       string
