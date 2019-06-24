@@ -32,7 +32,8 @@ import (
 // services deployed by skaffold.
 type ResourceForwarder struct {
 	EntryManager
-	label string
+	userDefinedResources []latest.PortForwardResource
+	label                string
 }
 
 var (
@@ -42,10 +43,11 @@ var (
 )
 
 // NewResourceForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewResourceForwarder(em EntryManager, label string) *ResourceForwarder {
+func NewResourceForwarder(em EntryManager, label string, userDefinedResources []latest.PortForwardResource) *ResourceForwarder {
 	return &ResourceForwarder{
-		EntryManager: em,
-		label:        label,
+		EntryManager:         em,
+		userDefinedResources: userDefinedResources,
+		label:                label,
 	}
 }
 
@@ -56,7 +58,7 @@ func (p *ResourceForwarder) Start(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "retrieving services for automatic port forwarding")
 	}
-	p.portForwardResources(ctx, serviceResources)
+	p.portForwardResources(ctx, append(serviceResources, p.userDefinedResources...))
 	return nil
 }
 
