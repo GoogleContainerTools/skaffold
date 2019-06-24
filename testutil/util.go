@@ -68,8 +68,18 @@ func (t *T) CheckError(shouldErr bool, err error) {
 	CheckError(t.T, shouldErr, err)
 }
 
+// CheckErrorContains checks that an error is not nil and contains
+// a given message.
 func (t *T) CheckErrorContains(message string, err error) {
-	CheckErrorContains(t.T, message, err)
+	t.Helper()
+	if err == nil {
+		t.Error("expected error, but returned none")
+		return
+	}
+	if !strings.Contains(err.Error(), message) {
+		t.Errorf("expected message [%s] not found in error: %s", message, err.Error())
+		return
+	}
 }
 
 func (t *T) TempFile(prefix string, content []byte) string {
@@ -138,20 +148,6 @@ func CheckError(t *testing.T, shouldErr bool, err error) {
 	t.Helper()
 	if err := checkErr(shouldErr, err); err != nil {
 		t.Error(err)
-	}
-}
-
-// CheckErrorContains checks that an error is not nil and contains
-// a given message.
-func CheckErrorContains(t *testing.T, message string, err error) {
-	t.Helper()
-	if err == nil {
-		t.Error("expected error, but returned none")
-		return
-	}
-	if !strings.Contains(err.Error(), message) {
-		t.Errorf("expected message [%s] not found in error: %s", message, err.Error())
-		return
 	}
 }
 

@@ -77,7 +77,7 @@ This helper function will generate the following file tree for testing purpose
 	├── valid-skaffold.yaml
 	└── invalid-skaffold.yaml
 */
-func setUpTempFiles(tt *testutil.T, latestVersion, upgradeableVersion string) (*testutil.TempDir, *testutil.TempDir) {
+func setUpTempFiles(t *testutil.T, latestVersion, upgradeableVersion string) (*testutil.TempDir, *testutil.TempDir) {
 	validYaml := fmt.Sprintf(`apiVersion: %s
 kind: Config
 build:
@@ -86,6 +86,7 @@ build:
     docker:
       dockerfile: dockerfile.test
 `, latestVersion)
+
 	upgradeableYaml := fmt.Sprintf(`apiVersion: %s
 kind: Config
 build:
@@ -94,46 +95,19 @@ build:
     docker:
       dockerfile: dockerfile.test
 `, upgradeableVersion)
+
 	invalidYaml := `This is invalid`
 
-	tmpDir1 := tt.NewTempDir()
-	tmpDir2 := tt.NewTempDir()
+	tmpDir1 := t.NewTempDir().WriteFiles(map[string]string{
+		invalidFileName:     invalidYaml,
+		validFileName:       validYaml,
+		upgradeableFileName: upgradeableYaml,
+	})
 
-	files := []struct {
-		fileName string
-		content  string
-		tmpDir   *testutil.TempDir
-	}{
-		{
-			fileName: invalidFileName,
-			content:  invalidYaml,
-			tmpDir:   tmpDir1,
-		},
-		{
-			fileName: validFileName,
-			content:  validYaml,
-			tmpDir:   tmpDir1,
-		},
-		{
-			fileName: upgradeableFileName,
-			content:  upgradeableYaml,
-			tmpDir:   tmpDir1,
-		},
-		{
-			fileName: invalidFileName,
-			content:  invalidYaml,
-			tmpDir:   tmpDir2,
-		},
-		{
-			fileName: validFileName,
-			content:  validYaml,
-			tmpDir:   tmpDir2,
-		},
-	}
-
-	for _, file := range files {
-		file.tmpDir.Write(file.fileName, file.content)
-	}
+	tmpDir2 := t.NewTempDir().WriteFiles(map[string]string{
+		invalidFileName: invalidYaml,
+		validFileName:   validYaml,
+	})
 
 	return tmpDir1, tmpDir2
 }

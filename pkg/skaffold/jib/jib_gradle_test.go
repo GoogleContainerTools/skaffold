@@ -40,10 +40,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	tmpDir.Write("build", "")
-	tmpDir.Write("dep1", "")
-	tmpDir.Write("dep2", "")
-
+	tmpDir.Touch("build", "dep1", "dep2")
 	build := tmpDir.Path("build")
 	dep1 := tmpDir.Path("dep1")
 	dep2 := tmpDir.Path("dep2")
@@ -111,13 +108,13 @@ func TestGetCommandGradle(t *testing.T) {
 		description       string
 		jibGradleArtifact latest.JibGradleArtifact
 		filesInWorkspace  []string
-		expectedCmd       func(workspace string) *exec.Cmd
+		expectedCmd       func(workspace string) exec.Cmd
 	}{
 		{
 			description:       "gradle default",
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{},
-			expectedCmd: func(workspace string) *exec.Cmd {
+			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFilesV2", "-q"})
 			},
 		},
@@ -125,7 +122,7 @@ func TestGetCommandGradle(t *testing.T) {
 			description:       "gradle default with project",
 			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
 			filesInWorkspace:  []string{},
-			expectedCmd: func(workspace string) *exec.Cmd {
+			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFilesV2", "-q"})
 			},
 		},
@@ -133,7 +130,7 @@ func TestGetCommandGradle(t *testing.T) {
 			description:       "gradle with wrapper",
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
-			expectedCmd: func(workspace string) *exec.Cmd {
+			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFilesV2", "-q"})
 			},
 		},
@@ -141,21 +138,19 @@ func TestGetCommandGradle(t *testing.T) {
 			description:       "gradle with wrapper and project",
 			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
 			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
-			expectedCmd: func(workspace string) *exec.Cmd {
+			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFilesV2", "-q"})
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			for _, file := range test.filesInWorkspace {
-				tmpDir.Write(file, "")
-			}
+			tmpDir := t.NewTempDir().
+				Touch(test.filesInWorkspace...)
 
 			cmd := getCommandGradle(ctx, tmpDir.Root(), &test.jibGradleArtifact)
-			expectedCmd := test.expectedCmd(tmpDir.Root())
 
+			expectedCmd := test.expectedCmd(tmpDir.Root())
 			t.CheckDeepEqual(expectedCmd.Path, cmd.Path)
 			t.CheckDeepEqual(expectedCmd.Args, cmd.Args)
 			t.CheckDeepEqual(expectedCmd.Dir, cmd.Dir)

@@ -29,22 +29,21 @@ import (
 )
 
 func TestNewBuilder(t *testing.T) {
-
-	tcs := []struct {
-		name            string
+	tests := []struct {
+		description     string
 		shouldErr       bool
 		runCtx          *runcontext.RunContext
 		expectedBuilder *Builder
 	}{
 		{
-			name: "failed to parse cluster build timeout",
+			description: "failed to parse cluster build timeout",
 			runCtx: stubRunContext(&latest.ClusterDetails{
 				Timeout: "illegal",
 			}, nil),
 			shouldErr: true,
 		},
 		{
-			name: "cluster builder inherits the config",
+			description: "cluster builder inherits the config",
 			runCtx: stubRunContext(&latest.ClusterDetails{
 				Timeout:   "100s",
 				Namespace: "test-ns",
@@ -60,7 +59,7 @@ func TestNewBuilder(t *testing.T) {
 			},
 		},
 		{
-			name: "insecure registries are taken from the run context",
+			description: "insecure registries are taken from the run context",
 			runCtx: stubRunContext(&latest.ClusterDetails{
 				Timeout:   "100s",
 				Namespace: "test-ns",
@@ -76,12 +75,13 @@ func TestNewBuilder(t *testing.T) {
 			},
 		},
 	}
-	for _, tc := range tcs {
-		testutil.Run(t, tc.name, func(t *testutil.T) {
-			builder, err := NewBuilder(tc.runCtx)
-			t.CheckError(tc.shouldErr, err)
-			if !tc.shouldErr {
-				t.CheckDeepEqual(tc.expectedBuilder, builder, cmp.AllowUnexported(Builder{}))
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			builder, err := NewBuilder(test.runCtx)
+
+			t.CheckError(test.shouldErr, err)
+			if !test.shouldErr {
+				t.CheckDeepEqual(test.expectedBuilder, builder, cmp.AllowUnexported(Builder{}))
 			}
 		})
 	}
