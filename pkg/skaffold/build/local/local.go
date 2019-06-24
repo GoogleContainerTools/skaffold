@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
@@ -33,11 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-)
-
-// For testing
-var (
-	getRemoteDigest = docker.RemoteDigest
 )
 
 // Build runs a docker build on the host and tags the resulting image with
@@ -74,18 +68,9 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 		return tag + "@" + digest, nil
 	}
 
-	// k8s doesn't recognize the imageID or any combination of the image name
-	// suffixed with the imageID, as a valid image name.
-	// So, the solution we chose is to create a tag, just for Skaffold, from
-	// the imageID, and use that in the manifests.
 	imageID := digestOrImageID
 	b.builtImages = append(b.builtImages, imageID)
-	uniqueTag := artifact.ImageName + ":" + strings.TrimPrefix(imageID, "sha256:")
-	if err := b.localDocker.Tag(ctx, imageID, uniqueTag); err != nil {
-		return "", err
-	}
-
-	return uniqueTag, nil
+	return b.localDocker.TagWithImageID(ctx, artifact.ImageName, imageID)
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {

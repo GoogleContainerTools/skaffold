@@ -138,7 +138,12 @@ func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ types.ImagePu
 		return nil, fmt.Errorf("")
 	}
 
-	digest := fmt.Sprintf("sha256:%x", sha256.New().Sum([]byte(f.TagToImageID[ref])))
+	sha256Digester := sha256.New()
+	if _, err := sha256Digester.Write([]byte(f.TagToImageID[ref])); err != nil {
+		return nil, err
+	}
+
+	digest := "sha256:" + fmt.Sprintf("%x", sha256Digester.Sum(nil))[0:64]
 	f.Pushed = append(f.Pushed, digest)
 	f.PushedImages = append(f.PushedImages, ref)
 

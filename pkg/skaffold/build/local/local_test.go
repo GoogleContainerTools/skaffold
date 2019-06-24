@@ -99,9 +99,9 @@ func TestLocalRun(t *testing.T) {
 			pushImages: true,
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:tag@sha256:7368613235363a31e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+				Tag:       "gcr.io/test/image:tag@sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165",
 			}},
-			expectedPushed: []string{"sha256:7368613235363a31e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+			expectedPushed: []string{"sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165"},
 		},
 		{
 			description: "error build",

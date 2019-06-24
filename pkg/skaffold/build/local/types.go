@@ -87,6 +87,10 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	}, nil
 }
 
+func (b *Builder) PushImages() bool {
+	return b.pushImages
+}
+
 // Labels are labels specific to local builder.
 func (b *Builder) Labels() map[string]string {
 	labels := map[string]string{
