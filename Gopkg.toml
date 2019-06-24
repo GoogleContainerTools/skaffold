@@ -78,3 +78,8 @@
 [[constraint]]
   branch = "master"
   name = "4d63.com/tz"
+
+
+[[override]]
+  name = "github.com/russross/blackfriday"
+  revision = "300106c228d52c8941d4b3de6054a6062a86dda3"
