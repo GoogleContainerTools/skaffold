@@ -101,6 +101,10 @@ func Initialize(opts *config.SkaffoldOptions) (func() error, error) {
 }
 
 func initialize(opts *config.SkaffoldOptions) (func() error, error) {
+	if !opts.EnableRPC {
+		return func() error { return nil }, nil
+	}
+
 	originalRPCPort := opts.RPCPort
 	if originalRPCPort == -1 {
 		return func() error { return nil }, nil
