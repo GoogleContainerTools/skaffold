@@ -100,6 +100,22 @@ func (h *TempDir) Write(file, content string) *TempDir {
 	return h.failIfErr(ioutil.WriteFile(h.Path(file), []byte(content), os.ModePerm))
 }
 
+// WriteFiles write a list of files (path->content) in the temp directory.
+func (h *TempDir) WriteFiles(files map[string]string) *TempDir {
+	for path, content := range files {
+		h.Write(path, content)
+	}
+	return h
+}
+
+// Touch creates a list of empty files in the temp directory.
+func (h *TempDir) Touch(files ...string) *TempDir {
+	for _, file := range files {
+		h.Write(file, "")
+	}
+	return h
+}
+
 // Symlink creates a symlink.
 func (h *TempDir) Symlink(dst, src string) *TempDir {
 	h.failIfErr(os.MkdirAll(filepath.Dir(h.Path(src)), os.ModePerm))

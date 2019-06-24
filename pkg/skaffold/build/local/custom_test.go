@@ -14,23 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package local
 
 import (
-	"context"
-	"io"
+	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-// Run builds artifacts, runs tests on built artifacts, and then deploys them.
-func (r *SkaffoldRunner) Run(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
-		return err
+func TestRetrieveEnv(t *testing.T) {
+	extraEnv := []string{"EXTRA_ENV=additional"}
+	fakeClient := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, extraEnv, false, nil)
+
+	builder := &Builder{
+		localDocker: fakeClient,
 	}
-	if r.runCtx.Opts.Tail {
-		logger := r.newLogger(out, artifacts)
-		return r.TailLogs(ctx, out, logger)
-	}
-	return nil
+
+	actual := builder.retrieveExtraEnv()
+	expected := extraEnv
+	testutil.CheckErrorAndDeepEqual(t, false, nil, expected, actual)
 }

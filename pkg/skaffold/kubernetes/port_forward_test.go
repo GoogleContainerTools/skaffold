@@ -437,6 +437,7 @@ func TestPortForwardPod(t *testing.T) {
 			taken := map[int]struct{}{}
 
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
+			t.Override(&portForwardEvent, func(*portForwardEntry) {})
 
 			p := NewPortForwarder(ioutil.Discard, NewImageList(), []string{""})
 			if test.forwarder == nil {

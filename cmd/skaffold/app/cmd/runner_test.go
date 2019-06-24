@@ -25,7 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestNewRunner(t *testing.T) {
+func TestCreateNewRunner(t *testing.T) {
 	tests := []struct {
 		description   string
 		config        string
@@ -85,7 +85,7 @@ func TestNewRunner(t *testing.T) {
 				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, test.config)).
 				Chdir()
 
-			_, _, err := newRunner(test.options)
+			_, _, err := createNewRunner(test.options)
 
 			t.CheckError(test.shouldErr, err)
 			if test.expectedError != "" {

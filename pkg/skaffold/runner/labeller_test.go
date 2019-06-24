@@ -17,7 +17,6 @@ limitations under the License.
 package runner
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -36,18 +35,27 @@ func TestDefaultLabeller(t *testing.T) {
 		},
 		{
 			description: "empty version should add postfix unknown",
-			expected:    fmt.Sprintf("skaffold-unknown"),
+			expected:    "skaffold-unknown",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			l := &DefaultLabeller{
-				version: test.version,
-			}
+			l := NewLabeller(test.version)
 			labels := l.Labels()
 
 			expected := map[string]string{"app.kubernetes.io/managed-by": test.expected}
 			t.CheckDeepEqual(expected, labels)
 		})
+	}
+}
+
+func TestK8sManagedByLabelKeyValueString(t *testing.T) {
+	defaultLabeller := &DefaultLabeller{
+		version: "version",
+	}
+	expected := "app.kubernetes.io/managed-by=skaffold-version"
+	actual := defaultLabeller.K8sManagedByLabelKeyValueString()
+	if actual != expected {
+		t.Fatalf("actual label not equal to expected label. Actual: \n %s \n Expected: \n %s", actual, expected)
 	}
 }

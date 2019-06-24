@@ -28,6 +28,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/rjeczalik/notify"
 	"github.com/sirupsen/logrus"
 )
@@ -54,7 +55,7 @@ func NewTrigger(runctx *runcontext.RunContext) (Trigger, error) {
 		return &manualTrigger{}, nil
 	case "api":
 		return &apiTrigger{
-			Trigger: runctx.Trigger,
+			Trigger: server.Trigger,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported trigger: %s", runctx.Opts.Trigger)
@@ -159,6 +160,11 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	if err := notify.Watch("./...", c, notify.All); err != nil {
 		return nil, err
 	}
+
+	// Since the file watcher runs in a separate go routine
+	// and can take some time to start, it can lose the very first change.
+	// As a mitigation, we act as if a change was detected.
+	go func() { c <- nil }()
 
 	trigger := make(chan bool)
 	go func() {

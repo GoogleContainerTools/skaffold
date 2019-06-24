@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -55,7 +56,9 @@ func TestNewTrigger(t *testing.T) {
 		{
 			description: "api trigger",
 			opts:        &config.SkaffoldOptions{Trigger: "api"},
-			expected:    &apiTrigger{},
+			expected: &apiTrigger{
+				Trigger: server.Trigger,
+			},
 		},
 		{
 			description: "unknown trigger",

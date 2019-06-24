@@ -55,23 +55,18 @@ func TestSizeOfDockerContext(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			// Directory structure:
-			// Dockerfile
 			tmpDir := t.NewTempDir().
-				Write("Dockerfile", test.DockerfileContents)
-			// Add files.
-			for fp, c := range test.files {
-				tmpDir.Write(fp, c)
-			}
+				Write("Dockerfile", test.DockerfileContents).
+				WriteFiles(test.files)
 
 			dummyArtifact := &latest.Artifact{
+				Workspace: tmpDir.Root(),
 				ImageName: test.artifactName,
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
 						DockerfilePath: "Dockerfile",
 					},
 				},
-				Workspace: tmpDir.Root(),
 			}
 
 			actual, err := sizeOfDockerContext(context.TODO(), dummyArtifact, map[string]bool{})
