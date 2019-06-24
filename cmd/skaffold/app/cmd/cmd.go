@@ -23,12 +23,13 @@ import (
 	"os"
 	"strings"
 
+   	
+	"k8s.io/kubectl/pkg/util/templates"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"k8s.io/kubernetes/pkg/kubectl/util/templates"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

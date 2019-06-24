@@ -49,6 +49,14 @@
   revision = "bca49d5b51a50dc5bb17bbf6204c711c6dbded06"
 
 [[projects]]
+  branch = "master"
+  digest = "1:5c3da1e5d06de403fff791e185009015230b30111aabd56125cae296b7e581cf"
+  name = "github.com/MakeNowJust/heredoc"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "e9091a26100e9cfb2b6a8f470085bfa541931a91"
+
+[[projects]]
   digest = "1:2be791e7b333ff7c06f8fb3dc18a7d70580e9399dbdffd352621d067ff260b6e"
   name = "github.com/Microsoft/go-winio"
   packages = ["."]
@@ -225,6 +233,17 @@
   pruneopts = "NUT"
   revision = "47565b4f722fb6ceae66b95f853feed578a4a51c"
   version = "v0.3.3"
+
+[[projects]]
+  branch = "master"
+  digest = "1:eb8f1b1913bffd6e788deee9fe4ba3a4d83267aff6045d3be33105e35ece290b"
+  name = "github.com/docker/spdystream"
+  packages = [
+    ".",
+    "spdy",
+  ]
+  pruneopts = "NUT"
+  revision = "6480d4af844c189cf5dd913db24ddd339d3a4f85"
 
 [[projects]]
   digest = "1:b498b36dbb2b306d1c5205ee5236c9e60352be8f9eea9bf08186723a9f75b4f3"
@@ -533,6 +552,14 @@
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:9f63926f52745d1f9d6053f8fbbb3bd3983c2c97c0565957e682b8d2f7aad3af"
+  name = "github.com/mitchellh/go-wordwrap"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "9e67c67572bc5dd02aef930e2b0ae3c02a4b5a5c"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:5b4289f0f483890552edcb868d9834ff96ffdb68847fa82ec45764cc4a83d8b8"
   name = "github.com/moby/buildkit"
   packages = [
@@ -671,6 +698,14 @@
   pruneopts = "NUT"
   revision = "69d839f37b13a8cb7a78366f7633a4071cb43be7"
   version = "v0.9.2"
+
+[[projects]]
+  digest = "1:926cba3a3c1cddfcfad996917e5d72fb4726536dbdc7264fa936e8c99890e558"
+  name = "github.com/russross/blackfriday"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "d3b5b032dc8e8927d31a5071b56e14c89f045135"
+  version = "v2.0.1"
 
 [[projects]]
   digest = "1:d917313f309bda80d27274d53985bc65651f81a5b66b820749ac7f8ef061fd04"
@@ -1075,7 +1110,7 @@
   version = "kubernetes-1.12.9"
 
 [[projects]]
-  digest = "1:98c41b6c03e07992fc7e20dfd3e411db84e1969f0374234fbf73a54cb1487f0c"
+  digest = "1:a1c2528cac5a9eb02304bd6d9d9beb78e617669409a2ea25b6d6f4afa4349812"
   name = "k8s.io/apimachinery"
   packages = [
     "pkg/api/errors",
@@ -1101,11 +1136,14 @@
     "pkg/util/clock",
     "pkg/util/errors",
     "pkg/util/framer",
+    "pkg/util/httpstream",
+    "pkg/util/httpstream/spdy",
     "pkg/util/intstr",
     "pkg/util/json",
     "pkg/util/mergepatch",
     "pkg/util/naming",
     "pkg/util/net",
+    "pkg/util/remotecommand",
     "pkg/util/runtime",
     "pkg/util/sets",
     "pkg/util/strategicpatch",
@@ -1116,6 +1154,7 @@
     "pkg/version",
     "pkg/watch",
     "third_party/forked/golang/json",
+    "third_party/forked/golang/netutil",
     "third_party/forked/golang/reflect",
   ]
   pruneopts = "NUT"
@@ -1123,7 +1162,7 @@
   version = "kubernetes-1.12.9"
 
 [[projects]]
-  digest = "1:50502455264a0cd5d5cfb4e007a833ab35a84037451788ca860e7be5cbc2ca03"
+  digest = "1:4f4c7c949f463c96851c6b517a6838767e6e59dc4cab220e940b93a1d2755f3d"
   name = "k8s.io/client-go"
   packages = [
     "discovery",
@@ -1215,9 +1254,12 @@
     "tools/clientcmd/api/v1",
     "tools/metrics",
     "tools/reference",
+    "tools/remotecommand",
     "transport",
+    "transport/spdy",
     "util/cert",
     "util/connrotation",
+    "util/exec",
     "util/flowcontrol",
     "util/homedir",
     "util/integer",
@@ -1234,6 +1276,18 @@
   packages = ["pkg/util/proto"]
   pruneopts = "NUT"
   revision = "0317810137be915b9cf888946c6e115c1bfac693"
+
+[[projects]]
+  branch = "master"
+  digest = "1:64b73c527d28472bdc7d5133f5011968508174cd01557affafac2de9be293f61"
+  name = "k8s.io/kubectl"
+  packages = [
+    "pkg/util/interrupt",
+    "pkg/util/templates",
+    "pkg/util/term",
+  ]
+  pruneopts = "NUT"
+  revision = "955b067cc6d359e4529c0e0c49f39aa6527b14b7"
 
 [solve-meta]
   analyzer-name = "dep"
@@ -1286,7 +1340,6 @@
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
     "golang.org/x/crypto/ssh/terminal",
-    "golang.org/x/net/context",
     "golang.org/x/oauth2",
     "golang.org/x/oauth2/google",
     "google.golang.org/api/cloudbuild/v1",
@@ -1331,6 +1384,7 @@
     "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/clientcmd",
     "k8s.io/client-go/tools/clientcmd/api",
+    "k8s.io/kubectl/pkg/util/templates",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
