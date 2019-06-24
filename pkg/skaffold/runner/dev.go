@@ -43,29 +43,28 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	defer forwarderManager.Stop()
 
 	// Create watcher and register artifacts to build current state of files.
-	changed := changes{}
 	onChange := func() error {
-		defer changed.reset()
+		defer r.changeSet.reset()
 
 		logger.Mute()
 
-		for _, a := range changed.dirtyArtifacts {
+		for _, a := range r.changeSet.dirtyArtifacts {
 			s, err := sync.NewItem(a.artifact, a.events, r.builds, r.runCtx.InsecureRegistries)
 			if err != nil {
 				return errors.Wrap(err, "sync")
 			}
 			if s != nil {
-				changed.AddResync(s)
+				r.changeSet.AddResync(s)
 			} else {
-				changed.AddRebuild(a.artifact)
+				r.changeSet.AddRebuild(a.artifact)
 			}
 		}
 
 		switch {
-		case changed.needsReload:
+		case r.changeSet.needsReload:
 			return ErrorConfigurationChanged
-		case len(changed.needsResync) > 0:
-			for _, s := range changed.needsResync {
+		case len(r.changeSet.needsResync) > 0:
+			for _, s := range r.changeSet.needsResync {
 				color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
 
 				if err := r.Syncer.Sync(ctx, s); err != nil {
@@ -73,13 +72,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 					return nil
 				}
 			}
-		case len(changed.needsRebuild) > 0:
-			if _, err := r.BuildAndTest(ctx, out, changed.needsRebuild); err != nil {
+		case len(r.changeSet.needsRebuild) > 0:
+			if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil
 			}
 			fallthrough
-		case changed.needsRedeploy:
+		case r.changeSet.needsRedeploy:
 			if err := r.Deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil
@@ -99,7 +98,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 		if err := r.Watcher.Register(
 			func() ([]string, error) { return r.Builder.DependenciesForArtifact(ctx, artifact) },
-			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
+			func(e watch.Events) { r.changeSet.AddDirtyArtifact(artifact, e) },
 		); err != nil {
 			return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
 		}
@@ -108,7 +107,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch test configuration
 	if err := r.Watcher.Register(
 		r.Tester.TestDependencies,
-		func(watch.Events) { changed.needsRedeploy = true },
+		func(watch.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
 		return errors.Wrap(err, "watching test files")
 	}
@@ -116,7 +115,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch deployment configuration
 	if err := r.Watcher.Register(
 		r.Deployer.Dependencies,
-		func(watch.Events) { changed.needsRedeploy = true },
+		func(watch.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
 		return errors.Wrap(err, "watching files for deployer")
 	}
@@ -124,7 +123,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch Skaffold configuration
 	if err := r.Watcher.Register(
 		func() ([]string, error) { return []string{r.runCtx.Opts.ConfigurationFile}, nil },
-		func(watch.Events) { changed.needsReload = true },
+		func(watch.Events) { r.changeSet.needsReload = true },
 	); err != nil {
 		return errors.Wrapf(err, "watching skaffold configuration %s", r.runCtx.Opts.ConfigurationFile)
 	}

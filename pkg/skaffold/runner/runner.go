@@ -66,6 +66,7 @@ type SkaffoldRunner struct {
 	watch.Watcher
 
 	cache                *cache.Cache
+	changeSet            *changes
 	runCtx               *runcontext.RunContext
 	labellers            []deploy.Labeller
 	defaultLabeller      *deploy.DefaultLabeller
@@ -123,6 +124,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		Tagger:               tagger,
 		Syncer:               kubectl.NewSyncer(runCtx.Namespaces),
 		Watcher:              watch.NewWatcher(trigger),
+		changeSet:            &changes{},
 		labellers:            labellers,
 		defaultLabeller:      defaultLabeller,
 		portForwardResources: cfg.PortForward,
