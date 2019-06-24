@@ -19,7 +19,6 @@ package gcb
 import (
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
@@ -27,9 +26,6 @@ import (
 
 func (b *Builder) buildDescription(artifact *latest.Artifact, tag, bucket, object string) (*cloudbuild.Build, error) {
 	tags := []string{tag}
-	if artifact.WorkspaceHash != "" {
-		tags = append(tags, cache.HashTag(artifact))
-	}
 
 	steps, err := b.buildSteps(artifact, tags)
 	if err != nil {

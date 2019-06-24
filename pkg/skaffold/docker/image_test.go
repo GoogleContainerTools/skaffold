@@ -49,7 +49,7 @@ func TestPush(t *testing.T) {
 					"gcr.io/scratchman": "sha256:imageIDabcab",
 				},
 			},
-			expectedDigest: "sha256:7368613235363a696d61676549446162636162e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+			expectedDigest: "sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0",
 		},
 		{
 			description: "stream error",
