@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package watch
+package trigger
 
 import (
 	"bufio"
@@ -219,4 +219,22 @@ func (t *apiTrigger) Debounce() bool {
 
 func (t *apiTrigger) WatchForChanges(out io.Writer) {
 	color.Yellow.Fprintln(out, "Watching on designated port for build requests...")
+}
+
+// StartTrigger attempts to start a trigger.
+// It will attempt to start as a polling trigger if it tried unsuccessfully to start a notify trigger.
+func StartTrigger(ctx context.Context, t Trigger) (<-chan bool, error) {
+	ret, err := t.Start(ctx)
+	if err != nil {
+		if notifyTrigger, ok := t.(*fsNotifyTrigger); ok {
+			t = &pollTrigger{
+				Interval: notifyTrigger.Interval,
+			}
+
+			logrus.Debugln("Couldn't start notify trigger. Falling back to a polling trigger")
+			ret, err = t.Start(ctx)
+		}
+	}
+
+	return ret, err
 }

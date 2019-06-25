@@ -17,9 +17,9 @@ limitations under the License.
 package runner
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 )
 
 type changes struct {
@@ -32,10 +32,10 @@ type changes struct {
 
 type artifactChange struct {
 	artifact *latest.Artifact
-	events   watch.Events
+	events   filemon.Events
 }
 
-func (c *changes) AddDirtyArtifact(a *latest.Artifact, e watch.Events) {
+func (c *changes) AddDirtyArtifact(a *latest.Artifact, e filemon.Events) {
 	c.dirtyArtifacts = append(c.dirtyArtifacts, &artifactChange{artifact: a, events: e})
 }
 

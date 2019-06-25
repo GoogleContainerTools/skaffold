@@ -26,8 +26,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 )
 
@@ -118,7 +118,7 @@ func timeToConstructSyncMap(ctx context.Context, builder build.Builder, a *lates
 func timeToComputeMTimes(deps []string) (time.Duration, error) {
 	start := time.Now()
 
-	if _, err := watch.Stat(func() ([]string, error) { return deps, nil }); err != nil {
+	if _, err := filemon.Stat(func() ([]string, error) { return deps, nil }); err != nil {
 		return 0, errors.Wrap(err, "computing modTimes")
 	}
 

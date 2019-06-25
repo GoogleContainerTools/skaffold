@@ -32,39 +32,39 @@ func TestBuildTestDeploy(t *testing.T) {
 		description     string
 		testBench       *TestBench
 		shouldErr       bool
-		expectedActions []Actions
+		expectedActions Actions
 	}{
 		{
 			description: "run no error",
 			testBench:   &TestBench{},
-			expectedActions: []Actions{{
+			expectedActions: Actions{
 				Built:    []string{"img:1"},
 				Tested:   []string{"img:1"},
 				Deployed: []string{"img:1"},
-			}},
+			},
 		},
 		{
 			description:     "run build error",
 			testBench:       &TestBench{buildErrors: []error{errors.New("")}},
 			shouldErr:       true,
-			expectedActions: []Actions{{}},
+			expectedActions: Actions{},
 		},
 		{
 			description: "run test error",
 			testBench:   &TestBench{testErrors: []error{errors.New("")}},
 			shouldErr:   true,
-			expectedActions: []Actions{{
+			expectedActions: Actions{
 				Built: []string{"img:1"},
-			}},
+			},
 		},
 		{
 			description: "run deploy error",
 			testBench:   &TestBench{deployErrors: []error{errors.New("")}},
 			shouldErr:   true,
-			expectedActions: []Actions{{
+			expectedActions: Actions{
 				Built:  []string{"img:1"},
 				Tested: []string{"img:1"},
-			}},
+			},
 		},
 	}
 	for _, test := range tests {

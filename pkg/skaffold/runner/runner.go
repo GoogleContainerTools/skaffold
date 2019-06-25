@@ -33,6 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -40,6 +41,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -63,7 +66,8 @@ type SkaffoldRunner struct {
 	test.Tester
 	tag.Tagger
 	sync.Syncer
-	watch.Watcher
+	trigger.Trigger
+	filemon.Monitor
 
 	cache                *cache.Cache
 	changeSet            *changes
@@ -110,7 +114,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		deployer = WithNotification(deployer)
 	}
 
-	trigger, err := watch.NewTrigger(runCtx)
+	trigger, err := trigger.NewTrigger(runCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}
@@ -123,7 +127,8 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		Deployer:             deployer,
 		Tagger:               tagger,
 		Syncer:               kubectl.NewSyncer(runCtx.Namespaces),
-		Watcher:              watch.NewWatcher(trigger),
+		Trigger:              trigger,
+		Monitor:              filemon.NewMonitor(),
 		changeSet:            &changes{},
 		labellers:            labellers,
 		defaultLabeller:      defaultLabeller,

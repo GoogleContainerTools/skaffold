@@ -26,10 +26,10 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -55,7 +55,7 @@ type Item struct {
 	Delete map[string][]string
 }
 
-func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
+func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
 	// If there are no changes, short circuit and don't sync anything
 	if !e.HasChanged() || a.Sync == nil || len(a.Sync.Manual) == 0 {
 		return nil, nil

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	gosync "sync"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -48,9 +49,44 @@ type TestBench struct {
 	testErrors   []error
 	deployErrors []error
 
+	changeSet      *gosync.Map
 	currentActions Actions
 	actions        []Actions
 	tag            int
+}
+
+func NewTestBench() *TestBench {
+	return &TestBench{
+		changeSet: &gosync.Map{},
+	}
+}
+
+func (t *TestBench) WithBuildErrors(buildErrors []error) *TestBench {
+	t.buildErrors = buildErrors
+	return t
+}
+
+func (t *TestBench) WithSyncErrors(syncErrors []error) *TestBench {
+	t.syncErrors = syncErrors
+	return t
+}
+
+func (t *TestBench) WithDeployErrors(deployErrors []error) *TestBench {
+	t.deployErrors = deployErrors
+	return t
+}
+
+func (t *TestBench) WithTestErrors(testErrors []error) *TestBench {
+	t.testErrors = testErrors
+	return t
+}
+
+func (t *TestBench) MarkChanged(artifact string) {
+	t.changeSet.Store(artifact, true)
+}
+
+func (t *TestBench) MarkProcessed(artifact string) {
+	t.changeSet.Delete(artifact)
 }
 
 func (t *TestBench) Labels() map[string]string                        { return map[string]string{} }
@@ -63,11 +99,6 @@ func (t *TestBench) SyncMap(ctx context.Context, artifact *latest.Artifact) (map
 }
 func (t *TestBench) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 	return nil, nil
-}
-
-func (t *TestBench) enterNewCycle() {
-	t.actions = append(t.actions, t.currentActions)
-	t.currentActions = Actions{}
 }
 
 func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
@@ -89,7 +120,10 @@ func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, 
 		})
 	}
 
-	t.currentActions.Built = findTags(builds)
+	built := findTags(builds)
+	if len(built) > 0 {
+		t.currentActions.Built = append(t.currentActions.Built, built...)
+	}
 	return builds, nil
 }
 
@@ -102,7 +136,9 @@ func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {
 		}
 	}
 
-	t.currentActions.Synced = []string{item.Image}
+	if item != nil && item.Image != "" {
+		t.currentActions.Synced = append(t.currentActions.Synced, item.Image)
+	}
 	return nil
 }
 
@@ -115,7 +151,10 @@ func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.A
 		}
 	}
 
-	t.currentActions.Tested = findTags(artifacts)
+	tested := findTags(artifacts)
+	if len(tested) > 0 {
+		t.currentActions.Tested = append(t.currentActions.Tested, findTags(artifacts)...)
+	}
 	return nil
 }
 
@@ -128,12 +167,15 @@ func (t *TestBench) Deploy(ctx context.Context, out io.Writer, artifacts []build
 		}
 	}
 
-	t.currentActions.Deployed = findTags(artifacts)
+	deployed := findTags(artifacts)
+	if len(deployed) > 0 {
+		t.currentActions.Deployed = append(t.currentActions.Deployed, findTags(artifacts)...)
+	}
 	return nil
 }
 
-func (t *TestBench) Actions() []Actions {
-	return append(t.actions, t.currentActions)
+func (t *TestBench) Actions() Actions {
+	return t.currentActions
 }
 
 func findTags(artifacts []build.Artifact) []string {
@@ -146,7 +188,8 @@ func findTags(artifacts []build.Artifact) []string {
 
 func createRunner(t *testutil.T, testBench *TestBench) *SkaffoldRunner {
 	opts := &config.SkaffoldOptions{
-		Trigger: "polling",
+		Trigger:           "polling",
+		WatchPollInterval: 100,
 	}
 
 	cfg := &latest.SkaffoldConfig{}

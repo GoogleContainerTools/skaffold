@@ -22,10 +22,10 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -58,6 +58,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			} else {
 				r.changeSet.AddRebuild(a.artifact)
 			}
+		}
+
+		if r.changeSet.needsReload || len(r.changeSet.needsRebuild) > 0 || r.changeSet.needsRedeploy {
+			// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
+			defer r.Trigger.WatchForChanges(out)
+			defer r.Monitor.Reset()
 		}
 
 		switch {
@@ -96,34 +102,34 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			continue
 		}
 
-		if err := r.Watcher.Register(
+		if err := r.Monitor.Register(
 			func() ([]string, error) { return r.Builder.DependenciesForArtifact(ctx, artifact) },
-			func(e watch.Events) { r.changeSet.AddDirtyArtifact(artifact, e) },
+			func(e filemon.Events) { r.changeSet.AddDirtyArtifact(artifact, e) },
 		); err != nil {
 			return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
 		}
 	}
 
 	// Watch test configuration
-	if err := r.Watcher.Register(
+	if err := r.Monitor.Register(
 		r.Tester.TestDependencies,
-		func(watch.Events) { r.changeSet.needsRedeploy = true },
+		func(filemon.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
 		return errors.Wrap(err, "watching test files")
 	}
 
 	// Watch deployment configuration
-	if err := r.Watcher.Register(
+	if err := r.Monitor.Register(
 		r.Deployer.Dependencies,
-		func(watch.Events) { r.changeSet.needsRedeploy = true },
+		func(filemon.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
 		return errors.Wrap(err, "watching files for deployer")
 	}
 
 	// Watch Skaffold configuration
-	if err := r.Watcher.Register(
+	if err := r.Monitor.Register(
 		func() ([]string, error) { return []string{r.runCtx.Opts.ConfigurationFile}, nil },
-		func(watch.Events) { r.changeSet.needsReload = true },
+		func(filemon.Events) { r.changeSet.needsReload = true },
 	); err != nil {
 		return errors.Wrapf(err, "watching skaffold configuration %s", r.runCtx.Opts.ConfigurationFile)
 	}
@@ -153,5 +159,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return errors.Wrap(err, "starting forwarder manager")
 	}
 
-	return r.Watcher.Run(ctx, out, onChange)
+	r.Trigger.WatchForChanges(out)
+	return r.Listen(ctx, out, onChange)
 }

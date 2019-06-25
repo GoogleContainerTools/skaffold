@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package watch
+package filemon
 
 import (
 	"context"
@@ -26,20 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestWatchWithPollTrigger(t *testing.T) {
-	testWatch(t, &pollTrigger{
-		Interval: 10 * time.Millisecond,
-	})
-}
-
-func TestWatchWithNotifyTrigger(t *testing.T) {
-	t.Skip("Skip flaky test")
-	testWatch(t, &fsNotifyTrigger{
-		Interval: 10 * time.Millisecond,
-	})
-}
-
-func testWatch(t *testing.T, trigger Trigger) {
+func TestWatch(t *testing.T) {
 	var tests = []struct {
 		description string
 		update      func(folder *testutil.TempDir)
@@ -69,11 +56,10 @@ func testWatch(t *testing.T, trigger Trigger) {
 				Write("file", "content")
 
 			folderChanged := newCallback()
-			somethingChanged := newCallback()
 
 			// Watch folder
-			watcher := NewWatcher(trigger)
-			err := watcher.Register(tmpDir.List, folderChanged.call)
+			monitor := NewMonitor()
+			err := monitor.Register(tmpDir.List, folderChanged.call)
 			t.CheckNoError(err)
 
 			// Run the watcher
@@ -81,7 +67,7 @@ func testWatch(t *testing.T, trigger Trigger) {
 			var stopped sync.WaitGroup
 			stopped.Add(1)
 			go func() {
-				err = watcher.Run(ctx, ioutil.Discard, somethingChanged.callNoErr)
+				err = monitor.Run(ctx, ioutil.Discard, false)
 				stopped.Done()
 				t.CheckNoError(err)
 			}()
@@ -90,7 +76,6 @@ func testWatch(t *testing.T, trigger Trigger) {
 
 			// Wait for the callbacks
 			folderChanged.wait()
-			somethingChanged.wait()
 			cancel()
 			stopped.Wait() // Make sure the watcher is stopped before deleting the tmp folder
 		})
@@ -112,11 +97,6 @@ func newCallback() *callback {
 
 func (c *callback) call(e Events) {
 	c.wg.Done()
-}
-
-func (c *callback) callNoErr() error {
-	c.wg.Done()
-	return nil
 }
 
 func (c *callback) wait() {
