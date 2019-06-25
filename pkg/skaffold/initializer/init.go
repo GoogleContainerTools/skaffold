@@ -67,7 +67,7 @@ type InitBuilder interface {
 	// Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
 	// Must be unique between artifacts.
 	Describe() string
-	// GetArtifact creates an Artifact to be included in the generated Build Config
+	// CreateArtifact creates an Artifact to be included in the generated Build Config
 	CreateArtifact(image string) *latest.Artifact
 	// ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured.
 	// This should be a cheap operation.
@@ -187,8 +187,8 @@ func DoInit(out io.Writer, c Config) error {
 // images match an image in the image list, and returns a list of the matching builder/image pairs. Also
 // separately returns the builder configs and images that didn't have any matches.
 func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
-	pairs := []builderImagePair{}
-	unresolvedImages := []string{}
+	var pairs []builderImagePair
+	var unresolvedImages []string
 	for _, image := range images {
 		matchingConfigIndex := -1
 		for i, config := range builderConfigs {

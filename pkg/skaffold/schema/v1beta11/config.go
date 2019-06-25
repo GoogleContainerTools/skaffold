@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1beta11
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta12"
+const Version string = "skaffold/v1beta11"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -700,7 +700,7 @@ type BazelArtifact struct {
 // [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
 type JibMavenArtifact struct {
 	// Module selects which Maven module to build, for a multi module project.
-	Module string `yaml:"module,omitempty"`
+	Module string `yaml:"module"`
 
 	// Profile selects which Maven profile to activate.
 	Profile string `yaml:"profile"`
@@ -714,7 +714,7 @@ type JibMavenArtifact struct {
 // [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
 type JibGradleArtifact struct {
 	// Project selects which Gradle project to build.
-	Project string `yaml:"project,omitempty"`
+	Project string `yaml:"project"`
 
 	// Flags are additional build flags passed to Gradle.
 	// For example: `["--no-build-cache"]`.
