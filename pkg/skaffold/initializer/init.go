@@ -128,9 +128,6 @@ func DoInit(out io.Writer, c Config) error {
 			return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least Dockerfile and try again or run `skaffold init --skip-build`")
 		}
 
-		var unresolvedImages []string
-		pairs, builderConfigs, unresolvedImages = autoSelectBuilders(builderConfigs, images)
-
 		if c.CliArtifacts != nil {
 			newPairs, err := processCliArtifacts(c.CliArtifacts)
 			if err != nil {
@@ -340,8 +337,8 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 
 // printAnalyzeJSON takes the automatically resolved builder/image pairs, the unresolved images, and the unresolved builders, and generates
 // a JSON string containing builder config information,
-func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, builderConfigs []InitBuilder, images []string) error {
-	if !skipBuild && len(builderConfigs) == 0 {
+func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
+	if !skipBuild && len(unresolvedBuilders) == 0 {
 		return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again, or run `skaffold init --skip-build`")
 	}
 
@@ -355,9 +352,9 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, b
 	//			{
 	//				"name":"Name of Builder",
 	//				"payload": { // Payload structure may vary depending on builder type
-	//					"pathToConfig":"path/to/builder.config",
-	//					"builderSpecificField":"value",
-	//					"targetImage":"gcr.io/project/images"
+	//					"path":"path/to/builder.config",
+	//					"targetImage":"gcr.io/project/images",
+	//					...
 	//				}
 	//			},
 	//		],
@@ -383,10 +380,10 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, b
 		a.Builders = append(a.Builders, Builder{Name: pair.Builder.Name(), Payload: pair.Builder})
 		a.Images = append(a.Images, Image{Name: pair.ImageName, RequiresPrompt: false})
 	}
-	for _, config := range builderConfigs {
+	for _, config := range unresolvedBuilders {
 		a.Builders = append(a.Builders, Builder{Name: config.Name(), Payload: config})
 	}
-	for _, image := range images {
+	for _, image := range unresolvedImages {
 		a.Images = append(a.Images, Image{Name: image, RequiresPrompt: true})
 	}
 
