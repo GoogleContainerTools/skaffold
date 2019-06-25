@@ -148,15 +148,15 @@ func validateSyncRules(artifacts []*latest.Artifact) []error {
 func validatePortForwardResources(pfrs []*latest.PortForwardResource) []error {
 	var errs []error
 	validResourceTypes := map[string]struct{}{
-		"pod":                   struct{}{},
-		"deployment":            struct{}{},
-		"service":               struct{}{},
-		"replicaset":            struct{}{},
-		"replicationcontroller": struct{}{},
-		"statefulset":           struct{}{},
-		"daemonset":             struct{}{},
-		"cronjob":               struct{}{},
-		"job":                   struct{}{},
+		"pod":                   {},
+		"deployment":            {},
+		"service":               {},
+		"replicaset":            {},
+		"replicationcontroller": {},
+		"statefulset":           {},
+		"daemonset":             {},
+		"cronjob":               {},
+		"job":                   {},
 	}
 	for _, pfr := range pfrs {
 		resourceType := strings.ToLower(string(pfr.Type))

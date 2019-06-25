@@ -85,3 +85,10 @@ func (b *EntryManager) Stop() {
 		return true
 	})
 }
+
+// Terminate terminates a single port forward entry
+func (b *EntryManager) Terminate(p *portForwardEntry) {
+	b.forwardedResources.Delete(p.key())
+	b.forwardedPorts.Delete(p.localPort)
+	b.EntryForwarder.Terminate(p)
+}
