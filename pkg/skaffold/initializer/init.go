@@ -218,7 +218,7 @@ func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builde
 func detectBuilders(path string) ([]InitBuilder, error) {
 	// Check for Dockerfile
 	if docker.ValidateDockerfileFunc(path) {
-		results := []InitBuilder{docker.Docker(path)}
+		results := []InitBuilder{docker.Docker{Dockerfile: path}}
 		return results, nil
 	}
 
@@ -236,7 +236,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 		}
 
 		pairs = append(pairs, builderImagePair{
-			Builder:   docker.Docker(parts[0]),
+			Builder:   docker.Docker{Dockerfile: parts[0]},
 			ImageName: parts[1],
 		})
 	}

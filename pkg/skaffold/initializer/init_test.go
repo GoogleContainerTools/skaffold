@@ -37,16 +37,16 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 	}{
 		{
 			description: "builders and images with pairs",
-			pairs:       []builderImagePair{{docker.Docker("Dockerfile1"), "image1"}},
-			builders:    []InitBuilder{docker.Docker("Dockerfile2")},
+			pairs:       []builderImagePair{{docker.Docker{Dockerfile: "Dockerfile1"}, "image1"}},
+			builders:    []InitBuilder{docker.Docker{Dockerfile: "Dockerfile2"}},
 			images:      []string{"image2"},
-			expected:    "{\"builders\":[{\"name\":\"Docker\",\"payload\":\"Dockerfile1\"},{\"name\":\"Docker\",\"payload\":\"Dockerfile2\"}],\"images\":[{\"name\":\"image1\",\"requiresPrompt\":false},{\"name\":\"image2\",\"requiresPrompt\":true}]}",
+			expected:    "{\"builders\":[{\"name\":\"Docker\",\"payload\":{\"path\":\"Dockerfile1\"}},{\"name\":\"Docker\",\"payload\":{\"path\":\"Dockerfile2\"}}],\"images\":[{\"name\":\"image1\",\"requiresPrompt\":false},{\"name\":\"image2\",\"requiresPrompt\":true}]}",
 		},
 		{
 			description: "builders and images with no pairs",
-			builders:    []InitBuilder{docker.Docker("Dockerfile1"), docker.Docker("Dockerfile2")},
+			builders:    []InitBuilder{docker.Docker{Dockerfile: "Dockerfile1"}, docker.Docker{Dockerfile: "Dockerfile2"}},
 			images:      []string{"image1", "image2"},
-			expected:    "{\"builders\":[{\"name\":\"Docker\",\"payload\":\"Dockerfile1\"},{\"name\":\"Docker\",\"payload\":\"Dockerfile2\"}],\"images\":[{\"name\":\"image1\",\"requiresPrompt\":true},{\"name\":\"image2\",\"requiresPrompt\":true}]}",
+			expected:    "{\"builders\":[{\"name\":\"Docker\",\"payload\":{\"path\":\"Dockerfile1\"}},{\"name\":\"Docker\",\"payload\":{\"path\":\"Dockerfile2\"}}],\"images\":[{\"name\":\"image1\",\"requiresPrompt\":true},{\"name\":\"image2\",\"requiresPrompt\":true}]}",
 		},
 		{
 			description: "no dockerfile, skip build",
@@ -205,28 +205,28 @@ func TestResolveBuilderImages(t *testing.T) {
 		},
 		{
 			description:      "don't prompt for single dockerfile and image",
-			buildConfigs:     []InitBuilder{docker.Docker("Dockerfile1")},
+			buildConfigs:     []InitBuilder{docker.Docker{Dockerfile: "Dockerfile1"}},
 			images:           []string{"image1"},
 			shouldMakeChoice: false,
 			expectedPairs: []builderImagePair{
 				{
-					Builder:   docker.Docker("Dockerfile1"),
+					Builder:   docker.Docker{Dockerfile: "Dockerfile1"},
 					ImageName: "image1",
 				},
 			},
 		},
 		{
 			description:      "prompt for multiple builders and images",
-			buildConfigs:     []InitBuilder{docker.Docker("Dockerfile1"), docker.Docker("Dockerfile2")},
+			buildConfigs:     []InitBuilder{docker.Docker{Dockerfile: "Dockerfile1"}, docker.Docker{Dockerfile: "Dockerfile2"}},
 			images:           []string{"image1", "image2"},
 			shouldMakeChoice: true,
 			expectedPairs: []builderImagePair{
 				{
-					Builder:   docker.Docker("Dockerfile1"),
+					Builder:   docker.Docker{Dockerfile: "Dockerfile1"},
 					ImageName: "image1",
 				},
 				{
-					Builder:   docker.Docker("Dockerfile2"),
+					Builder:   docker.Docker{Dockerfile: "Dockerfile2"},
 					ImageName: "image2",
 				},
 			},
