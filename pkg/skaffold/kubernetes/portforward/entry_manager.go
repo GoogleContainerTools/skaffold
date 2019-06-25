@@ -58,6 +58,10 @@ func NewEntryManager(out io.Writer) EntryManager {
 }
 
 func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portForwardEntry) error {
+	// Check if this resource has already been forwarded
+	if _, ok := b.forwardedResources.Load(entry.key()); ok {
+		return nil
+	}
 	b.forwardedResources.Store(entry.key(), entry)
 	color.Default.Fprintln(b.output, fmt.Sprintf("Port Forwarding %s/%s %d -> %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort))
 	err := wait.PollImmediate(time.Second, forwardingTimeoutTime, func() (bool, error) {

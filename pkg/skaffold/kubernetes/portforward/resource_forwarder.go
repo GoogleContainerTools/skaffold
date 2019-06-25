@@ -58,7 +58,7 @@ func (p *ResourceForwarder) Start(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "retrieving services for automatic port forwarding")
 	}
-	p.portForwardResources(ctx, append(serviceResources, p.userDefinedResources...))
+	p.portForwardResources(ctx, append(p.userDefinedResources, serviceResources...))
 	return nil
 }
 
