@@ -57,6 +57,16 @@ func TestArgs(t *testing.T) {
 			expectedArgs: []string{"--cache=true", "--cache-repo", "repo"},
 		},
 		{
+			description: "cache path",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Cache: &latest.KanikoCache{
+					HostPath: "/cache",
+				},
+			},
+			expectedArgs: []string{"--cache=true", "--cache-dir", "/cache"},
+		},
+		{
 			description: "target",
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
