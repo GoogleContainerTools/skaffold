@@ -302,7 +302,7 @@ func TestAutoSelectBuilders(t *testing.T) {
 				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "not a k8s image"},
 			},
 			images:        []string{"image1", "image2"},
-			expectedPairs: []builderImagePair{},
+			expectedPairs: nil,
 			expectedBuildersLeft: []InitBuilder{
 				docker.Docker("Dockerfile"),
 				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle"},
@@ -338,7 +338,7 @@ func TestAutoSelectBuilders(t *testing.T) {
 				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image1"},
 			},
 			images:        []string{"image1", "image2"},
-			expectedPairs: []builderImagePair{},
+			expectedPairs: nil,
 			expectedBuildersLeft: []InitBuilder{
 				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
 				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image1"},
