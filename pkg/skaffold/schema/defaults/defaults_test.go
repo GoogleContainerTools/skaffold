@@ -132,3 +132,25 @@ func TestSetDefaultPortForwardNamespace(t *testing.T) {
 	testutil.CheckDeepEqual(t, "mynamespace", cfg.PortForward[0].Namespace)
 	testutil.CheckDeepEqual(t, constants.DefaultPortForwardNamespace, cfg.PortForward[1].Namespace)
 }
+
+func TestSetPortForwardLocalPort(t *testing.T) {
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{},
+			PortForward: []*latest.PortForwardResource{
+				{
+					Type: constants.Service,
+					Port: 8080,
+				}, {
+					Type:      constants.Service,
+					Port:      8080,
+					LocalPort: 9000,
+				},
+			},
+		},
+	}
+	err := Set(cfg)
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, int32(8080), cfg.PortForward[0].LocalPort)
+	testutil.CheckDeepEqual(t, int32(9000), cfg.PortForward[1].LocalPort)
+}
