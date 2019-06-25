@@ -343,26 +343,26 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 	}
 
 	// Build JSON output. Example schema is below:
-	//	{
-	//		"builders":[
-	//			{
-	//				"name":"Docker",
-	//				"payload":"path/to/Dockerfile"
-	//			},
-	//			{
-	//				"name":"Name of Builder",
-	//				"payload": { // Payload structure may vary depending on builder type
-	//					"path":"path/to/builder.config",
-	//					"targetImage":"gcr.io/project/images",
-	//					...
-	//				}
-	//			},
-	//		],
-	//		"images":[
-	//			{"name":"gcr.io/project/images", "requiresPrompt":"false"}, // No need to prompt for this image since its builder was automatically resolved
-	//			{"name":"another/image", "requiresPrompt":"true"},
-	//		],
-	//	}
+	// {
+	//     "builders":[
+	//         {
+	//             "name":"Docker",
+	//             "payload":"path/to/Dockerfile"
+	//         },
+	//         {
+	//             "name":"Name of Builder",
+	//             "payload": { // Payload structure may vary depending on builder type
+	//                 "path":"path/to/builder.config",
+	//                 "targetImage":"gcr.io/project/images",
+	//                 ...
+	//             }
+	//         },
+	//     ],
+	//     "images":[
+	//         {"name":"gcr.io/project/images", "requiresPrompt":"false"}, // No need to prompt for this image since its builder was automatically resolved
+	//         {"name":"another/image", "requiresPrompt":"true"},
+	//     ],
+	// }
 	type Builder struct {
 		Name    string      `json:"name,omitempty"`
 		Payload InitBuilder `json:"payload"`
