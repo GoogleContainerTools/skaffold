@@ -40,10 +40,7 @@ func TestGetDependenciesMaven(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	tmpDir.Write("build", "")
-	tmpDir.Write("dep1", "")
-	tmpDir.Write("dep2", "")
-
+	tmpDir.Touch("build", "dep1", "dep2")
 	build := tmpDir.Path("build")
 	dep1 := tmpDir.Path("dep1")
 	dep2 := tmpDir.Path("dep2")
@@ -110,13 +107,13 @@ func TestGetCommandMaven(t *testing.T) {
 		description      string
 		jibMavenArtifact latest.JibMavenArtifact
 		filesInWorkspace []string
-		expectedCmd      func(workspace string) *exec.Cmd
+		expectedCmd      func(workspace string) exec.Cmd
 	}{
 		{
 			description:      "maven no profile",
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{},
-			expectedCmd: func(workspace string) *exec.Cmd {
+			expectedCmd: func(workspace string) exec.Cmd {
 				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
@@ -126,7 +123,7 @@ func TestGetCommandMaven(t *testing.T) {
 				Flags: []string{"-DskipTests", "-x"},
 			},
 			filesInWorkspace: []string{},
-			expectedCmd: func(workspace string) *exec.Cmd {
+			expectedCmd: func(workspace string) exec.Cmd {
 				return MavenCommand.CreateCommand(ctx, workspace, []string{"-DskipTests", "-x", "--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
@@ -134,7 +131,7 @@ func TestGetCommandMaven(t *testing.T) {
 			description:      "maven with profile",
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{},
-			expectedCmd: func(workspace string) *exec.Cmd {
+			expectedCmd: func(workspace string) exec.Cmd {
 				return MavenCommand.CreateCommand(ctx, workspace, []string{"--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
@@ -142,7 +139,7 @@ func TestGetCommandMaven(t *testing.T) {
 			description:      "maven with wrapper no profile",
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
-			expectedCmd: func(workspace string) *exec.Cmd {
+			expectedCmd: func(workspace string) exec.Cmd {
 				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
@@ -150,7 +147,7 @@ func TestGetCommandMaven(t *testing.T) {
 			description:      "maven with wrapper no profile",
 			jibMavenArtifact: latest.JibMavenArtifact{},
 			filesInWorkspace: []string{"mvnw", "mvnw.cmd"},
-			expectedCmd: func(workspace string) *exec.Cmd {
+			expectedCmd: func(workspace string) exec.Cmd {
 				return MavenCommand.CreateCommand(ctx, workspace, []string{"--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
@@ -158,7 +155,7 @@ func TestGetCommandMaven(t *testing.T) {
 			description:      "maven with wrapper and profile",
 			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
-			expectedCmd: func(workspace string) *exec.Cmd {
+			expectedCmd: func(workspace string) exec.Cmd {
 				return MavenCommand.CreateCommand(ctx, workspace, []string{"--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
@@ -166,22 +163,19 @@ func TestGetCommandMaven(t *testing.T) {
 			description:      "maven with multi-modules",
 			jibMavenArtifact: latest.JibMavenArtifact{Module: "module"},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
-			expectedCmd: func(workspace string) *exec.Cmd {
+			expectedCmd: func(workspace string) exec.Cmd {
 				return MavenCommand.CreateCommand(ctx, workspace, []string{"--projects", "module", "--also-make", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-
-			for _, file := range test.filesInWorkspace {
-				tmpDir.Write(file, "")
-			}
+			tmpDir := t.NewTempDir().
+				Touch(test.filesInWorkspace...)
 
 			cmd := getCommandMaven(ctx, tmpDir.Root(), &test.jibMavenArtifact)
-			expectedCmd := test.expectedCmd(tmpDir.Root())
 
+			expectedCmd := test.expectedCmd(tmpDir.Root())
 			t.CheckDeepEqual(expectedCmd.Path, cmd.Path)
 			t.CheckDeepEqual(expectedCmd.Args, cmd.Args)
 			t.CheckDeepEqual(expectedCmd.Dir, cmd.Dir)
