@@ -65,15 +65,15 @@ func (r *imageReplacer) Matches(key string) bool {
 }
 
 func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
-	image, ok := old.(string)
+	imageName, ok := old.(string)
 	if !ok {
 		return false, nil
 	}
 
-	found, tag := r.parseAndReplace(image)
+	found, tag := r.parseAndReplace(imageName)
 	if !found {
-		subbedImage := r.substituteRepoIntoImage(image)
-		if image == subbedImage {
+		subbedImage := r.substituteRepoIntoImage(imageName)
+		if imageName == subbedImage {
 			return found, tag
 		}
 		// no match, so try substituting in defaultRepo value
@@ -82,16 +82,16 @@ func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
 	return found, tag
 }
 
-func (r *imageReplacer) parseAndReplace(image string) (bool, interface{}) {
-	parsed, err := docker.ParseReference(image)
+func (r *imageReplacer) parseAndReplace(imageName string) (bool, interface{}) {
+	parsed, err := docker.ParseReference(imageName)
 	if err != nil {
-		warnings.Printf("Couldn't parse image: %s", image)
+		warnings.Printf("Couldn't parse image: %s", imageName)
 		return false, nil
 	}
 
 	if tag, present := r.tagsByImageName[parsed.BaseName]; present {
 		if parsed.FullyQualified {
-			if tag == image {
+			if tag == imageName {
 				r.found[parsed.BaseName] = true
 			}
 		} else {
@@ -110,6 +110,8 @@ func (r *imageReplacer) Check() {
 	}
 }
 
-func (r *imageReplacer) substituteRepoIntoImage(originalImage string) string {
-	return image.SubstituteDefaultRepoIntoImage(r.defaultRepo, originalImage)
+func (r *imageReplacer) substituteRepoIntoImage(imageName string) string {
+	defaultRegistry := image.RegistryFactory(r.defaultRepo)
+	originalImage := image.ImageFactory(imageName)
+	return originalImage.Update(defaultRegistry)
 }

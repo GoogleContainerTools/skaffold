@@ -56,7 +56,12 @@ func (i *GenericImage) String() string {
 }
 
 func (i *GenericImage) Update(reg Registry) string {
-	originalImage := i.ImageRegistry.String() + "/" + i.String()
+	// In the case that defaultRepo is an emptystring, we don't want a slash at the start
+	originalImage := i.String()
+	if len(i.ImageRegistry.String()) != 0 {
+		originalImage = i.ImageRegistry.String() + "/" + originalImage
+	}
+
 	if reg.String() == "" {
 		return originalImage
 	}

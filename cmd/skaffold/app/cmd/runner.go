@@ -100,10 +100,14 @@ func applyDefaultRepoSubstitution(config *latest.SkaffoldConfig, defaultRepo str
 		// noop
 		return
 	}
+
+	defaultRegistry := image.RegistryFactory(defaultRepo)
 	for _, artifact := range config.Build.Artifacts {
-		artifact.ImageName = image.SubstituteDefaultRepoIntoImage(defaultRepo, artifact.ImageName)
+		originalImage := image.ImageFactory(artifact.ImageName)
+		artifact.ImageName = originalImage.Update(defaultRegistry)
 	}
 	for _, testCase := range config.Test {
-		testCase.ImageName = image.SubstituteDefaultRepoIntoImage(defaultRepo, testCase.ImageName)
+		originalImage := image.ImageFactory(testCase.ImageName)
+		testCase.ImageName = originalImage.Update(defaultRegistry)
 	}
 }
