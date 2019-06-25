@@ -128,6 +128,9 @@ func DoInit(out io.Writer, c Config) error {
 			return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least Dockerfile and try again or run `skaffold init --skip-build`")
 		}
 
+		var unresolvedImages []string
+		pairs, builderConfigs, unresolvedImages = autoSelectBuilders(builderConfigs, images)
+
 		if c.CliArtifacts != nil {
 			newPairs, err := processCliArtifacts(c.CliArtifacts)
 			if err != nil {
