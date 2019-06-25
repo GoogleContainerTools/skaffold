@@ -27,7 +27,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
-func TestRun(t *testing.T) {
+func TestBuildTestDeploy(t *testing.T) {
 	var tests = []struct {
 		description     string
 		testBench       *TestBench
@@ -71,10 +71,16 @@ func TestRun(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 
-			runner := createRunner(t, test.testBench)
-			err := runner.Run(context.Background(), ioutil.Discard, []*latest.Artifact{{
+			ctx := context.Background()
+			artifacts := []*latest.Artifact{{
 				ImageName: "img",
-			}})
+			}}
+
+			runner := createRunner(t, test.testBench)
+			bRes, err := runner.BuildAndTest(ctx, ioutil.Discard, artifacts)
+			if err == nil {
+				err = runner.DeployAndLog(ctx, ioutil.Discard, bRes)
+			}
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedActions, test.testBench.Actions())
 		})

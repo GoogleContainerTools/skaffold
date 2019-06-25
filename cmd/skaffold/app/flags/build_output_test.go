@@ -34,14 +34,14 @@ func TestNewBuildOutputFlag(t *testing.T) {
 func TestBuildOutputSet(t *testing.T) {
 	var tests = []struct {
 		description         string
-		buildOutputBytes    []byte
-		setValue            string
+		files               map[string]string
 		shouldErr           bool
 		expectedBuildOutput BuildOutput
 	}{
 		{
 			description: "set returns correct build output format for json",
-			buildOutputBytes: []byte(`{
+			files: map[string]string{
+				"test.in": `{
 "builds": [{
 	"imageName": "gcr.io/k8s/test1",
 	"tag": "sha256@foo"
@@ -49,8 +49,8 @@ func TestBuildOutputSet(t *testing.T) {
 	"imageName": "gcr.io/k8s/test2",
 	"tag": "sha256@bar"
   }]
-}`),
-			setValue: "test.in",
+}`,
+			},
 			expectedBuildOutput: BuildOutput{
 				Builds: []build.Artifact{{
 					ImageName: "gcr.io/k8s/test1",
@@ -62,33 +62,30 @@ func TestBuildOutputSet(t *testing.T) {
 			},
 		},
 		{
-			description:      "set errors with in-correct build output format",
-			buildOutputBytes: []byte{},
-			setValue:         "test.in",
-			shouldErr:        true,
+			description: "set errors with in-correct build output format",
+			files: map[string]string{
+				"test.in": "",
+			},
+			shouldErr: true,
 		},
 		{
-			description:      "set should error when file is not present with original flag value",
-			buildOutputBytes: nil,
-			setValue:         "does_not_exist.in",
-			shouldErr:        true,
+			description: "set should error when file is not present with original flag value",
+			files:       map[string]string{},
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			dir := t.NewTempDir()
+			tmpDir := t.NewTempDir().
+				WriteFiles(test.files)
 
 			flag := NewBuildOutputFileFlag("")
-			if test.buildOutputBytes != nil {
-				dir.Write(test.setValue, string(test.buildOutputBytes))
-			}
+			err := flag.Set(tmpDir.Path("test.in"))
+
 			expectedFlag := &BuildOutputFileFlag{
-				filename:    test.setValue,
+				filename:    "test.in",
 				buildOutput: test.expectedBuildOutput,
 			}
-
-			err := flag.Set(dir.Path(test.setValue))
-
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, expectedFlag.buildOutput, flag.buildOutput)
 		})
 	}

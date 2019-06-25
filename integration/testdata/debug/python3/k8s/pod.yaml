@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: python3
+spec:
+  containers:
+  - name: web
+    image: gcr.io/k8s-skaffold/skaffold-debug-python3
+    ports:
+    - containerPort: 5000

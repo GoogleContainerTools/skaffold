@@ -1,3 +1,65 @@
+# v0.32.0 Release - 06/20/2019
+
+New Features:
+* Add resourceType and resourceName to PortForward event [#2272](https://github.com/GoogleContainerTools/skaffold/pull/2272)
+* Add custom artifact type to cluster builder [#2048](https://github.com/GoogleContainerTools/skaffold/pull/2048)
+* Add Python debugging support [#2205](https://github.com/GoogleContainerTools/skaffold/pull/2205)
+* Add K8sManagedBy function to labeller [#2270](https://github.com/GoogleContainerTools/skaffold/pull/2270)
+* Add resources to Kaniko init container [#2260](https://github.com/GoogleContainerTools/skaffold/pull/2260)
+* Implements `skaffold find-configs -d <dir>` command [#2244](https://github.com/GoogleContainerTools/skaffold/pull/2244)
+* Expand values file paths prefixed with ~ [#2233](https://github.com/GoogleContainerTools/skaffold/pull/2233)
+* Implement destination inference for sync of dockerfile artifacts [2/3] [#2084](https://github.com/GoogleContainerTools/skaffold/pull/2084)
+
+Bug Fixes:
+* Handle `eu.gcr.io` like `gcr.io` when replacing default image [#2300](https://github.com/GoogleContainerTools/skaffold/pull/2300)
+* Fix config reload in skaffold dev [#2279](https://github.com/GoogleContainerTools/skaffold/pull/2279)
+* Docker is case sensitive about networks [#2288](https://github.com/GoogleContainerTools/skaffold/pull/2288)
+* cluster builder fails to detect insecure registries [#2266](https://github.com/GoogleContainerTools/skaffold/pull/2266)
+* fix static linking of linux binary [#2252](https://github.com/GoogleContainerTools/skaffold/pull/2252)
+* fix racey test [#2251](https://github.com/GoogleContainerTools/skaffold/pull/2251)
+
+Updates & Refactors:
+* Remove the `config out of date` warning [#2298](https://github.com/GoogleContainerTools/skaffold/pull/2298)
+* Fix codecov2 [#2293](https://github.com/GoogleContainerTools/skaffold/pull/2293)
+* Handle simple glob patterns when upgrading the sync patterns [#2287](https://github.com/GoogleContainerTools/skaffold/pull/2287)
+* more debug codeowner-ship [#2292](https://github.com/GoogleContainerTools/skaffold/pull/2292)
+* comment setup for codecov [#2291](https://github.com/GoogleContainerTools/skaffold/pull/2291)
+* adding tests for cluster builder [#2275](https://github.com/GoogleContainerTools/skaffold/pull/2275)
+* Update debug owners [#2285](https://github.com/GoogleContainerTools/skaffold/pull/2285)
+* add test for one method in diagnose.  [#2238](https://github.com/GoogleContainerTools/skaffold/pull/2238)
+* Bumping kustomize version fixes #2137 [#2265](https://github.com/GoogleContainerTools/skaffold/pull/2265)
+* Upgrade golangci-lint to v1.17.1 [#2248](https://github.com/GoogleContainerTools/skaffold/pull/2248)
+* ability to `make integration` only on a chosen set of integration tests [#2250](https://github.com/GoogleContainerTools/skaffold/pull/2250)
+* another testcase for local builder [#2253](https://github.com/GoogleContainerTools/skaffold/pull/2253)
+* Simpler Makefile [#2259](https://github.com/GoogleContainerTools/skaffold/pull/2259)
+* Add `debug` codeowners [#2247](https://github.com/GoogleContainerTools/skaffold/pull/2247)
+* Improve code coverage [#2242](https://github.com/GoogleContainerTools/skaffold/pull/2242)
+* Mark `debug` as alpha [#2246](https://github.com/GoogleContainerTools/skaffold/pull/2246)
+* Use kind to run integration tests on TravisCI [#2196](https://github.com/GoogleContainerTools/skaffold/pull/2196)
+* tests for local.NewBuilder [#2240](https://github.com/GoogleContainerTools/skaffold/pull/2240)
+* Add unit tests for WaitForPodSucceeded [#2239](https://github.com/GoogleContainerTools/skaffold/pull/2239)
+* remove webhook from coverage report [#2236](https://github.com/GoogleContainerTools/skaffold/pull/2236)
+* Dep ensure [#2230](https://github.com/GoogleContainerTools/skaffold/pull/2230)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Balint Pato
+- balopat
+- Brian de Alwis
+- Cedric Kring
+- Cornelius Weig
+- David Gageot
+- Nick Kubala
+- priyawadhwa
+- Priya Wadhwa
+- steevee
+- stephane lacoin
+- Stephane Lacoin (aka nxmatic)
+- Tejal Desai
+- Valentin Fedoskin
+- yfei1
+
+
 # v0.31.0 Release - 06/06/2019
 
 New Features:

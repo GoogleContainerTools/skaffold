@@ -11,12 +11,15 @@ build:
     context: npm
   - image: gcr.io/k8s-skaffold/skaffold-debug-nodejs
     context: nodejs
+  - image: gcr.io/k8s-skaffold/skaffold-debug-python3
+    context: python3
 deploy:
   kubectl:
     manifests:
     - jib/k8s/web.yaml
     - nodejs/k8s/pod.yaml
     - npm/k8s/pod.yaml
+    - python3/k8s/pod.yaml
 profiles:
   - name: kustomize
     deploy:

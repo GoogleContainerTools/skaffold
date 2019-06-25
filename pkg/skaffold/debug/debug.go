@@ -57,7 +57,7 @@ func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, i
 		if artifact := findArtifact(image, builds); artifact != nil {
 			return retrieveImageConfiguration(ctx, artifact, insecureRegistries)
 		}
-		return imageConfiguration{}, errors.Errorf("no build artifact for [%q]", image)
+		return imageConfiguration{}, errors.Errorf("no build artifact for %q", image)
 	}
 	return applyDebuggingTransforms(l, retriever)
 }
@@ -89,7 +89,7 @@ func applyDebuggingTransforms(l kubectl.ManifestList, retriever configurationRet
 func findArtifact(image string, builds []build.Artifact) *build.Artifact {
 	for _, artifact := range builds {
 		if image == artifact.ImageName || image == artifact.Tag {
-			logrus.Debugf("Found artifact for image [%s]", image)
+			logrus.Debugf("Found artifact for image %q", image)
 			return &artifact
 		}
 	}

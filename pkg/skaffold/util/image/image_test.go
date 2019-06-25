@@ -47,6 +47,12 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			expectedImage: "gcr.io/default/registry",
 		},
 		{
+			description:   "provided image has defaultRepo eu prefix",
+			image:         "eu.gcr.io/project/registry",
+			defaultRepo:   "eu.gcr.io/project",
+			expectedImage: "eu.gcr.io/project/registry",
+		},
+		{
 			description:   "image has shared prefix with defaultRepo",
 			image:         "gcr.io/default/example/registry",
 			defaultRepo:   "gcr.io/default/repository",

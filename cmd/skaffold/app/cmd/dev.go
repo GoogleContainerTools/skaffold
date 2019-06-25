@@ -21,7 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
-	"github.com/pkg/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -63,34 +63,30 @@ func doDev(ctx context.Context, out io.Writer) error {
 		case <-ctx.Done():
 			return nil
 		default:
-			r, config, err := newRunner(opts)
-			if err != nil {
-				return errors.Wrap(err, "creating runner")
-			}
+			err := withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
+				err := r.Dev(ctx, out, config.Build.Artifacts)
 
-			err = r.Dev(ctx, out, config.Build.Artifacts)
-			if r.HasDeployed() {
-				cleanup = func() {
-					if err := r.Cleanup(context.Background(), out); err != nil {
-						logrus.Warnln("deployer cleanup:", err)
+				if r.HasDeployed() {
+					cleanup = func() {
+						if err := r.Cleanup(context.Background(), out); err != nil {
+							logrus.Warnln("deployer cleanup:", err)
+						}
 					}
 				}
-			}
-			if r.HasBuilt() {
-				prune = func() {
-					if err := r.Prune(context.Background(), out); err != nil {
-						logrus.Warnln("builder cleanup:", err)
+
+				if r.HasBuilt() {
+					prune = func() {
+						if err := r.Prune(context.Background(), out); err != nil {
+							logrus.Warnln("builder cleanup:", err)
+						}
 					}
 				}
-			}
+
+				return err
+			})
 			if err != nil {
-				if errors.Cause(err) == runner.ErrorConfigurationChanged {
-					return err
-				}
-				r.RPCServerShutdown()
-				return alwaysSucceedWhenCancelled(ctx, err)
+				return err
 			}
-			r.RPCServerShutdown()
 		}
 	}
 }

@@ -24,7 +24,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster/sources"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -47,29 +46,16 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	}
 	defer s.Cleanup(ctx)
 
-	kanikoArtifact := artifact.KanikoArtifact
-	// Create pod spec
-	args := []string{
-		"--dockerfile", kanikoArtifact.DockerfilePath,
-		"--context", context,
-		"--destination", tag,
-		"-v", logLevel().String()}
-
-	// TODO: remove since AdditionalFlags will be deprecated (priyawadhwa@)
-	if kanikoArtifact.AdditionalFlags != nil {
-		logrus.Warn("The additionalFlags field in kaniko is deprecated, please consult the current schema at skaffold.dev to update your skaffold.yaml.")
-		args = append(args, kanikoArtifact.AdditionalFlags...)
+	args, err := args(artifact.KanikoArtifact, context, tag)
+	if err != nil {
+		return "", errors.Wrap(err, "building args list")
 	}
-	args = appendBuildArgsIfExists(args, kanikoArtifact.BuildArgs)
-	args = appendTargetIfExists(args, kanikoArtifact.Target)
-	args = appendCacheIfExists(args, kanikoArtifact.Cache)
 
 	if artifact.WorkspaceHash != "" {
 		hashTag := cache.HashTag(artifact)
 		args = append(args, []string{"--destination", hashTag}...)
 	}
 
-	podSpec := s.Pod(args)
 	// Create pod
 	client, err := kubernetes.GetClientset()
 	if err != nil {
@@ -77,6 +63,7 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	}
 	pods := client.CoreV1().Pods(b.Namespace)
 
+	podSpec := s.Pod(args)
 	pod, err := pods.Create(podSpec)
 	if err != nil {
 		return "", errors.Wrap(err, "creating kaniko pod")
@@ -104,47 +91,55 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
 
-func appendCacheIfExists(args []string, cache *latest.KanikoCache) []string {
-	if cache == nil {
-		return args
-	}
-	args = append(args, "--cache=true")
-	if cache.Repo != "" {
-		args = append(args, fmt.Sprintf("--cache-repo=%s", cache.Repo))
-	}
-	if cache.HostPath != "" {
-		args = append(args, fmt.Sprintf("--cache-dir=%s", constants.DefaultKanikoDockerConfigPath))
-	}
-	return args
-}
+func args(artifact *latest.KanikoArtifact, context, tag string) ([]string, error) {
+	// Create pod spec
+	args := []string{
+		"--dockerfile", artifact.DockerfilePath,
+		"--context", context,
+		"--destination", tag,
+		"-v", logLevel().String()}
 
-func appendTargetIfExists(args []string, target string) []string {
-	if target == "" {
-		return args
-	}
-	return append(args, fmt.Sprintf("--target=%s", target))
-}
-
-func appendBuildArgsIfExists(args []string, buildArgs map[string]*string) []string {
-	if buildArgs == nil {
-		return args
+	// TODO: remove since AdditionalFlags will be deprecated (priyawadhwa@)
+	if artifact.AdditionalFlags != nil {
+		logrus.Warn("The additionalFlags field in kaniko is deprecated, please consult the current schema at skaffold.dev to update your skaffold.yaml.")
+		args = append(args, artifact.AdditionalFlags...)
 	}
 
-	var keys []string
-	for k := range buildArgs {
-		keys = append(keys, k)
+	buildArgs, err := docker.EvaluateBuildArgs(artifact.BuildArgs)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to evaluate build args")
 	}
-	sort.Strings(keys)
 
-	for _, k := range keys {
-		args = append(args, "--build-arg")
+	if buildArgs != nil {
+		var keys []string
+		for k := range buildArgs {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
 
-		v := buildArgs[k]
-		if v == nil {
-			args = append(args, k)
-		} else {
-			args = append(args, fmt.Sprintf("%s=%s", k, *v))
+		for _, k := range keys {
+			v := buildArgs[k]
+			if v == nil {
+				args = append(args, "--build-arg", k)
+			} else {
+				args = append(args, "--build-arg", fmt.Sprintf("%s=%s", k, *v))
+			}
 		}
 	}
-	return args
+
+	if artifact.Target != "" {
+		args = append(args, "--target", artifact.Target)
+	}
+
+	if artifact.Cache != nil {
+		args = append(args, "--cache=true")
+		if artifact.Cache.Repo != "" {
+			args = append(args, "--cache-repo", artifact.Cache.Repo)
+		}
+		if artifact.Cache.HostPath != "" {
+			args = append(args, "--cache-dir", artifact.Cache.HostPath)
+		}
+	}
+
+	return args, nil
 }
