@@ -30,17 +30,20 @@ import (
 )
 
 const (
-	samplesRoot = "../../../docs/content/en/samples"
+	samplesRoot  = "../../../docs/content/en/samples"
+	examplesRoot = "../../../examples"
 )
 
 var (
 	ignoredSamples = []string{"structureTest.yaml", "build.sh"}
 )
 
+// Samples are skaffold.yaml fragments that are used
+// in the documentation.
 func TestParseSamples(t *testing.T) {
 	paths, err := findSamples(samplesRoot)
 	if err != nil {
-		t.Fatalf("unable to read sample files in %q", samplesRoot)
+		t.Fatalf("unable to list samples in %q", samplesRoot)
 	}
 
 	if len(paths) == 0 {
@@ -70,11 +73,50 @@ func TestParseSamples(t *testing.T) {
 	}
 }
 
+// TestParseExamples complete skaffold.yaml that user can use
+// with the latest release of Skaffold.
+func TestParseExamples(t *testing.T) {
+	paths, err := findExamples(examplesRoot)
+	if err != nil {
+		t.Fatalf("unable to list examples in %q", examplesRoot)
+	}
+
+	if len(paths) == 0 {
+		t.Fatalf("did not find examples in %q", examplesRoot)
+	}
+
+	for _, path := range paths {
+		name := filepath.Base(filepath.Dir(path))
+
+		testutil.Run(t, name, func(t *testutil.T) {
+			buf, err := ioutil.ReadFile(path)
+			t.CheckNoError(err)
+
+			configFile := t.TempFile("skaffold.yaml", buf)
+			_, err = ParseConfig(configFile, true)
+			t.CheckNoError(err)
+		})
+	}
+}
+
 func findSamples(root string) ([]string, error) {
 	var files []string
 
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
+			files = append(files, path)
+		}
+		return err
+	})
+
+	return files, err
+}
+
+func findExamples(root string) ([]string, error) {
+	var files []string
+
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() && info.Name() == "skaffold.yaml" {
 			files = append(files, path)
 		}
 		return err
