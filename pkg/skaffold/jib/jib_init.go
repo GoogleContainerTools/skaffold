@@ -119,17 +119,18 @@ type jibJSON struct {
 func ValidateJibConfig(path string) []Jib {
 	// Determine whether maven or gradle
 	var builderType, executable, wrapper, taskName string
-	if strings.HasSuffix(path, "pom.xml") {
+	switch {
+	case strings.HasSuffix(path, "pom.xml"):
 		builderType = JibMaven
 		executable = "mvn"
 		wrapper = "mvnw"
 		taskName = "jib:_skaffold-init"
-	} else if strings.HasSuffix(path, "build.gradle") {
+	case strings.HasSuffix(path, "build.gradle"):
 		builderType = JibGradle
 		executable = "gradle"
 		wrapper = "gradlew"
 		taskName = "_jibSkaffoldInit"
-	} else {
+	default:
 		return nil
 	}
 
