@@ -22,6 +22,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
+// PortForwardOptions are options set by the command line for port forwarding
+// with additional configuration information as well
+type PortForwardOptions struct {
+	Enabled     bool
+	ForwardPods bool
+}
+
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
@@ -30,7 +37,6 @@ type SkaffoldOptions struct {
 	Notification       bool
 	Tail               bool
 	TailDev            bool
-	PortForward        bool
 	SkipTests          bool
 	CacheArtifacts     bool
 	EnableRPC          bool
@@ -38,6 +44,7 @@ type SkaffoldOptions struct {
 	ForceDev           bool
 	NoPrune            bool
 	NoPruneChildren    bool
+	PortForward        PortForwardOptions
 	CustomTag          string
 	Namespace          string
 	CacheFile          string

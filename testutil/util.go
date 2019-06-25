@@ -26,6 +26,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/watch"
+	fake_testing "k8s.io/client-go/testing"
 )
 
 type T struct {
@@ -226,4 +228,11 @@ func override(t *testing.T, dest, tmp interface{}) (f func(), err error) {
 		}()
 		dValue.Set(curValue)
 	}, nil
+}
+
+// SetupFakeWatcher helps set up a fake Kubernetes watcher
+func SetupFakeWatcher(w watch.Interface) func(a fake_testing.Action) (handled bool, ret watch.Interface, err error) {
+	return func(a fake_testing.Action) (handled bool, ret watch.Interface, err error) {
+		return true, w, nil
+	}
 }

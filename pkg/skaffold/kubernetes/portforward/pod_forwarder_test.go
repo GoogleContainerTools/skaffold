@@ -14,63 +14,31 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubernetes
+package portforward
 
 import (
 	"context"
 	"fmt"
 	"io/ioutil"
 	"reflect"
-	"strings"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
+	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
 
-type testForwarder struct {
-	forwardedEntries map[string]*portForwardEntry
-	forwardedPorts   map[int32]bool
-
-	forwardErr error
-}
-
-func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) error {
-	f.forwardedEntries[pfe.key()] = pfe
-	f.forwardedPorts[pfe.localPort] = true
-	return f.forwardErr
-}
-
-func (f *testForwarder) Terminate(pfe *portForwardEntry) {
-	delete(f.forwardedEntries, pfe.key())
-	delete(f.forwardedPorts, pfe.port)
-}
-
-func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int, *sync.Map) int {
-	// Return first available port in ports that isn't taken
-	return func(int, *sync.Map) int {
-		for _, p := range availablePorts {
-			if _, ok := taken[p]; ok {
-				continue
-			}
-			taken[p] = struct{}{}
-			return p
-		}
-		return -1
-	}
-}
-
-func newTestForwarder(forwardErr error) *testForwarder {
-	return &testForwarder{
-		forwardedEntries: map[string]*portForwardEntry{},
-		forwardedPorts:   map[int32]bool{},
-		forwardErr:       forwardErr,
-	}
-}
-
-func TestPortForwardPod(t *testing.T) {
+func TestAutomaticPortForwardPod(t *testing.T) {
 	var tests = []struct {
 		description     string
 		pods            []*v1.Pod
@@ -81,20 +49,23 @@ func TestPortForwardPod(t *testing.T) {
 		shouldErr       bool
 	}{
 		{
-			description: "single container port",
-			expectedPorts: map[int32]bool{
-				8080: true,
-			},
+			description:    "single container port",
+			expectedPorts:  map[int32]bool{8080: true},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
-					namespace:       "namespace",
-					portName:        "portname",
-					port:            8080,
-					localPort:       8080,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname",
+						Namespace: "namespace",
+						Port:      8080,
+					},
+					automaticPodForwarding: true,
+					portName:               "portname",
+					localPort:              8080,
 				},
 			},
 			pods: []*v1.Pod{
@@ -121,19 +92,22 @@ func TestPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description: "unavailable container port",
-			expectedPorts: map[int32]bool{
-				9000: true,
-			},
+			description:   "unavailable container port",
+			expectedPorts: map[int32]bool{9000: true},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
-					containerName:   "containername",
-					namespace:       "namespace",
-					portName:        "portname",
-					port:            8080,
-					localPort:       9000,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname",
+						Namespace: "namespace",
+						Port:      8080,
+					},
+					automaticPodForwarding: true,
+					containerName:          "containername",
+					portName:               "portname",
+					localPort:              9000,
 				},
 			},
 			availablePorts: []int{9000},
@@ -190,10 +164,8 @@ func TestPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description: "forward error",
-			expectedPorts: map[int32]bool{
-				8080: true,
-			},
+			description:    "forward error",
+			expectedPorts:  map[int32]bool{8080: true},
 			forwarder:      newTestForwarder(fmt.Errorf("")),
 			shouldErr:      true,
 			availablePorts: []int{8080},
@@ -202,10 +174,15 @@ func TestPortForwardPod(t *testing.T) {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
-					namespace:       "namespace",
 					portName:        "portname",
-					port:            8080,
-					localPort:       8080,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname",
+						Namespace: "namespace",
+						Port:      8080,
+					},
+					automaticPodForwarding: true,
+					localPort:              8080,
 				},
 			},
 			pods: []*v1.Pod{
@@ -232,30 +209,37 @@ func TestPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description: "two different container ports",
-			expectedPorts: map[int32]bool{
-				8080:  true,
-				50051: true,
-			},
+			description:    "two different container ports",
+			expectedPorts:  map[int32]bool{8080: true, 50051: true},
 			availablePorts: []int{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
-					namespace:       "namespace",
-					portName:        "portname",
-					port:            8080,
-					localPort:       8080,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname",
+						Namespace: "namespace",
+						Port:      8080,
+					},
+					portName:               "portname",
+					automaticPodForwarding: true,
+					localPort:              8080,
 				},
 				"containername2-namespace2-portname2-50051": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
-					namespace:       "namespace2",
-					portName:        "portname2",
-					port:            50051,
-					localPort:       50051,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname2",
+						Namespace: "namespace2",
+						Port:      50051,
+					},
+					portName:               "portname2",
+					automaticPodForwarding: true,
+					localPort:              50051,
 				},
 			},
 			pods: []*v1.Pod{
@@ -302,30 +286,37 @@ func TestPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description: "two same container ports",
-			expectedPorts: map[int32]bool{
-				8080: true,
-				9000: true,
-			},
+			description:    "two same container ports",
+			expectedPorts:  map[int32]bool{8080: true, 9000: true},
 			availablePorts: []int{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
-					namespace:       "namespace",
 					portName:        "portname",
-					port:            8080,
-					localPort:       8080,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname",
+						Namespace: "namespace",
+						Port:      8080,
+					},
+					automaticPodForwarding: true,
+					localPort:              8080,
 				},
 				"containername2-namespace2-portname2-8080": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
-					namespace:       "namespace2",
 					portName:        "portname2",
-					port:            8080,
-					localPort:       9000,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname2",
+						Namespace: "namespace2",
+						Port:      8080,
+					},
+					automaticPodForwarding: true,
+					localPort:              9000,
 				},
 			},
 			pods: []*v1.Pod{
@@ -372,20 +363,23 @@ func TestPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description: "updated pod gets port forwarded",
-			expectedPorts: map[int32]bool{
-				8080: true,
-			},
+			description:    "updated pod gets port forwarded",
+			expectedPorts:  map[int32]bool{8080: true},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
 					resourceVersion: 2,
 					podName:         "podname",
 					containerName:   "containername",
-					namespace:       "namespace",
 					portName:        "portname",
-					port:            8080,
-					localPort:       8080,
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname",
+						Namespace: "namespace",
+						Port:      8080,
+					},
+					automaticPodForwarding: true,
+					localPort:              8080,
 				},
 			},
 			pods: []*v1.Pod{
@@ -434,49 +428,150 @@ func TestPortForwardPod(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			event.InitializeState(&runcontext.RunContext{Cfg: &latest.Pipeline{Build: latest.BuildConfig{}}})
 			taken := map[int]struct{}{}
 
+			forwardingTimeoutTime = time.Second
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
-			t.Override(&portForwardEvent, func(*portForwardEntry) {})
 
-			p := NewPortForwarder(ioutil.Discard, NewImageList(), []string{""})
+			entryManager := EntryManager{
+				output:             ioutil.Discard,
+				forwardedPorts:     &sync.Map{},
+				forwardedResources: &sync.Map{},
+			}
+			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), nil)
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder(nil)
 			}
-			p.Forwarder = test.forwarder
+			p.EntryForwarder = test.forwarder
 
 			for _, pod := range test.pods {
 				err := p.portForwardPod(context.Background(), pod)
 				t.CheckError(test.shouldErr, err)
 			}
 
-			// Error is already checked above
-			t.CheckDeepEqual(test.expectedPorts, test.forwarder.forwardedPorts)
-
+			actualPorts := generateActualPortsMap(test.forwarder.forwardedPorts)
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
-			if !reflect.DeepEqual(test.expectedEntries, test.forwarder.forwardedEntries) {
-				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %s", test.expectedEntries, test.forwarder.forwardedEntries)
+			if !reflect.DeepEqual(test.expectedPorts, actualPorts) {
+				t.Errorf("Expected differs from actual entries. Expected: %v, Actual: %v", test.expectedPorts, actualPorts)
+			}
+
+			actualForwardedEntries := generateActualForwardedEntriesMap(test.forwarder.forwardedEntries)
+			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
+			if !reflect.DeepEqual(test.expectedEntries, actualForwardedEntries) {
+				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %v", test.expectedEntries, actualForwardedEntries)
 			}
 		})
 	}
 }
 
-func TestPortForwardEntryKey(t *testing.T) {
-	pfe := &portForwardEntry{
-		podName:       "pod",
-		containerName: "container",
-		namespace:     "default",
-		portName:      "port",
-		port:          8080,
+func TestStartPodForwarder(t *testing.T) {
+	tests := []struct {
+		description   string
+		entryExpected bool
+		obj           runtime.Object
+		event         watch.EventType
+	}{
+		{
+			description:   "pod modified event",
+			entryExpected: true,
+			event:         watch.Modified,
+		}, {
+			description: "pod error event",
+			event:       watch.Error,
+		}, {
+			description: "event isn't for a pod",
+			obj:         &v1.Service{},
+			event:       watch.Modified,
+		}, {
+			description: "event is deleted",
+			event:       watch.Deleted,
+		},
 	}
 
-	expectedKey := "container-default-port-8080"
-	acutalKey := pfe.key()
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			event.InitializeState(&runcontext.RunContext{Cfg: &latest.Pipeline{Build: latest.BuildConfig{}}})
+			client := fakekubeclientset.NewSimpleClientset(&v1.Pod{})
+			fakeWatcher := watch.NewRaceFreeFake()
+			client.PrependWatchReactor("*", testutil.SetupFakeWatcher(fakeWatcher))
 
-	if acutalKey != expectedKey {
-		t.Fatalf("port forward entry key is incorrect: \n actual: %s \n expected: %s", acutalKey, expectedKey)
+			waitForWatcher := make(chan bool)
+			testutil.Override(t, &aggregatePodWatcher, func(_ []string, aggregate chan<- watch.Event) (func(), error) {
+				go func() {
+					waitForWatcher <- true
+					for msg := range fakeWatcher.ResultChan() {
+						aggregate <- msg
+					}
+				}()
+				return func() {}, nil
+			})
+
+			imageList := kubernetes.NewImageList()
+			imageList.Add("image")
+
+			p := NewWatchingPodForwarder(NewEntryManager(ioutil.Discard), imageList, nil)
+			fakeForwarder := newTestForwarder(nil)
+			p.EntryForwarder = fakeForwarder
+			p.Start(context.Background())
+
+			// Wait for the watcher to start before we send it an event
+			<-waitForWatcher
+			obj := test.obj
+			if test.obj == nil {
+				obj = &v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace:       "default",
+						ResourceVersion: "9",
+					},
+					Spec: v1.PodSpec{
+						Containers: []v1.Container{
+							{
+								Name:  "mycontainer",
+								Image: "image",
+								Ports: []v1.ContainerPort{
+									{
+										Name:          "myport",
+										ContainerPort: 8080,
+									},
+								},
+							},
+						},
+					},
+					Status: v1.PodStatus{
+						Phase: v1.PodRunning,
+					},
+				}
+			}
+
+			fakeWatcher.Action(test.event, obj)
+
+			// poll for 2 seconds for the pod resource to be forwarded
+			err := wait.PollImmediate(time.Second, 2*time.Second, func() (bool, error) {
+				_, ok := fakeForwarder.forwardedEntries.Load("mycontainer-default-myport-8080")
+				return ok, nil
+			})
+			if err != nil && test.entryExpected {
+				t.Fatalf("expected entry wasn't forwarded: %v", err)
+			}
+		})
 	}
-	if strings.Contains(acutalKey, "pod") {
-		t.Fatal("key should not contain podname, otherwise containers will be mapped to a new port every time a pod is regenerated. See Issues #1815 and #1594.")
-	}
+}
+
+func generateActualPortsMap(sm *sync.Map) map[int32]bool {
+	m := make(map[int32]bool)
+	sm.Range(func(k, v interface{}) bool {
+		m[k.(int32)] = v.(bool)
+		return true
+	})
+	return m
+}
+
+func generateActualForwardedEntriesMap(sm *sync.Map) map[string]*portForwardEntry {
+	m := make(map[string]*portForwardEntry)
+	sm.Range(func(k, v interface{}) bool {
+		m[k.(string)] = v.(*portForwardEntry)
+		return true
+	})
+	return m
 }

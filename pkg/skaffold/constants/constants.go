@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/sirupsen/logrus"
 )
 
@@ -66,11 +67,9 @@ const (
 	DefaultRPCHTTPPort = 50052
 )
 
-// ResourceType describes the Kubernetes resource types used for port forwarding
-type ResourceType string
-
 var (
-	Pod ResourceType = "pod"
+	Pod     latest.ResourceType = "pod"
+	Service latest.ResourceType = "service"
 )
 
 var (
