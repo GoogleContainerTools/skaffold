@@ -26,49 +26,60 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+type mockRunner struct {
+	runner.Runner
+}
+
+func (r *mockRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	return []build.Artifact{{
+		ImageName: "gcr.io/skaffold/example",
+		Tag:       "test",
+	}}, nil
+}
+
+func (r *mockRunner) Stop() error {
+	return nil
+}
+
 func TestQuietFlag(t *testing.T) {
-	mockCreateRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
-		return []build.Artifact{{
-			ImageName: "gcr.io/skaffold/example",
-			Tag:       "test",
-		}}, nil
+	mockCreateRunner := func(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
 	}
 
 	var tests = []struct {
 		description    string
 		template       string
 		expectedOutput []byte
-		mock           func(context.Context, io.Writer) ([]build.Artifact, error)
 		shouldErr      bool
 	}{
 		{
 			description:    "quiet flag print build images with no template",
 			expectedOutput: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
 			shouldErr:      false,
-			mock:           mockCreateRunner,
 		},
 		{
 			description:    "quiet flag print build images applies pattern specified in template ",
 			template:       "{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}",
 			expectedOutput: []byte("gcr.io/skaffold/example -> test\n"),
 			shouldErr:      false,
-			mock:           mockCreateRunner,
 		},
 		{
 			description:    "build errors out when incorrect template specified",
 			template:       "{{.Incorrect}}",
 			expectedOutput: nil,
 			shouldErr:      true,
-			mock:           mockCreateRunner,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&quietFlag, true)
-			t.Override(&createRunnerAndBuildFunc, test.mock)
+			t.Override(&createRunner, mockCreateRunner)
 			if test.template != "" {
 				t.Override(&buildFormatFlag, flags.NewTemplateFlag(test.template, flags.BuildOutput{}))
 			}
@@ -83,19 +94,16 @@ func TestQuietFlag(t *testing.T) {
 }
 
 func TestRunBuild(t *testing.T) {
-	errRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
-		return nil, errors.New("some error")
+	errRunner := func(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+		return nil, nil, errors.New("some error")
 	}
-	mockCreateRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
-		return []build.Artifact{{
-			ImageName: "gcr.io/skaffold/example",
-			Tag:       "test",
-		}}, nil
+	mockCreateRunner := func(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
 	}
 
 	var tests = []struct {
 		description string
-		mock        func(context.Context, io.Writer) ([]build.Artifact, error)
+		mock        func(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error)
 		shouldErr   bool
 	}{
 		{
@@ -111,7 +119,7 @@ func TestRunBuild(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&createRunnerAndBuildFunc, test.mock)
+			t.Override(&createRunner, test.mock)
 
 			err := doBuild(context.Background(), ioutil.Discard)
 

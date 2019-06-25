@@ -73,12 +73,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				}
 			}
 		case len(changed.needsRebuild) > 0:
-			if err := r.buildTestDeploy(ctx, out, changed.needsRebuild); err != nil {
+			if _, err := r.BuildAndTest(ctx, out, changed.needsRebuild); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil
 			}
+			fallthrough
 		case changed.needsRedeploy:
-			if err := r.deploy(ctx, out, r.builds); err != nil {
+			if err := r.Deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil
 			}
@@ -105,7 +106,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Watch test configuration
 	if err := r.Watcher.Register(
-		r.TestDependencies,
+		r.Tester.TestDependencies,
 		func(watch.Events) { changed.needsRedeploy = true },
 	); err != nil {
 		return errors.Wrap(err, "watching test files")
@@ -113,7 +114,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Watch deployment configuration
 	if err := r.Watcher.Register(
-		r.Dependencies,
+		r.Deployer.Dependencies,
 		func(watch.Events) { changed.needsRedeploy = true },
 	); err != nil {
 		return errors.Wrap(err, "watching files for deployer")
@@ -127,9 +128,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return errors.Wrapf(err, "watching skaffold configuration %s", r.runCtx.Opts.ConfigurationFile)
 	}
 
-	// First run
-	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
-		return errors.Wrap(err, "exiting dev mode because first run failed")
+	// First build
+	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {
+		return errors.Wrap(err, "exiting dev mode because first build failed")
 	}
 
 	// Start logs
@@ -139,6 +140,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 
+	// First deploy
+	if err := r.Deploy(ctx, out, r.builds); err != nil {
+		return errors.Wrap(err, "exiting dev mode because first deploy failed")
+	}
+
+	// Forward ports
 	if r.runCtx.Opts.PortForward {
 		if err := portForwarder.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting port-forwarder")

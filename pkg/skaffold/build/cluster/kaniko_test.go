@@ -20,102 +20,83 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestAppendCacheIfExists(t *testing.T) {
+func TestArgs(t *testing.T) {
 	tests := []struct {
 		description  string
-		cache        *latest.KanikoCache
-		args         []string
+		artifact     *latest.KanikoArtifact
+		shouldErr    bool
 		expectedArgs []string
 	}{
 		{
-			description:  "no cache",
-			cache:        nil,
-			args:         []string{"some", "args"},
-			expectedArgs: []string{"some", "args"},
-		}, {
-			description:  "cache layers",
-			cache:        &latest.KanikoCache{},
-			args:         []string{"some", "more", "args"},
-			expectedArgs: []string{"some", "more", "args", "--cache=true"},
-		}, {
+			description: "simple build",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+			},
+			expectedArgs: []string{},
+		},
+		{
+			description: "cache layers",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Cache:          &latest.KanikoCache{},
+			},
+			expectedArgs: []string{"--cache=true"},
+		},
+		{
 			description: "cache layers to specific repo",
-			cache: &latest.KanikoCache{
-				Repo: "myrepo",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Cache: &latest.KanikoCache{
+					Repo: "repo",
+				},
 			},
-			args:         []string{"initial", "args"},
-			expectedArgs: []string{"initial", "args", "--cache=true", "--cache-repo=myrepo"},
+			expectedArgs: []string{"--cache=true", "--cache-repo", "repo"},
 		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := appendCacheIfExists(test.args, test.cache)
-
-			t.CheckDeepEqual(test.expectedArgs, actual)
-		})
-	}
-}
-
-func TestAppendTargetIfExists(t *testing.T) {
-	tests := []struct {
-		description  string
-		target       string
-		args         []string
-		expectedArgs []string
-	}{
 		{
-			description:  "pass in empty target",
-			args:         []string{"first", "args"},
-			expectedArgs: []string{"first", "args"},
-		}, {
-			description:  "pass in target",
-			target:       "stageOne",
-			args:         []string{"first", "args"},
-			expectedArgs: []string{"first", "args", "--target=stageOne"},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := appendTargetIfExists(test.args, test.target)
-
-			t.CheckDeepEqual(test.expectedArgs, actual)
-		})
-	}
-}
-
-func TestAppendBuildArgsIfExists(t *testing.T) {
-	tests := []struct {
-		description  string
-		buildArgs    map[string]*string
-		args         []string
-		expectedArgs []string
-	}{
-		{
-			description:  "no build args",
-			args:         []string{"first", "args"},
-			expectedArgs: []string{"first", "args"},
-		}, {
-			description: "buid args",
-			buildArgs: map[string]*string{
-				"nil_key":   nil,
-				"empty_key": pointer(""),
-				"value_key": pointer("value"),
+			description: "target",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Target:         "target",
 			},
-			args:         []string{"first", "args"},
-			expectedArgs: []string{"first", "args", "--build-arg", "empty_key=", "--build-arg", "nil_key", "--build-arg", "value_key=value"},
+			expectedArgs: []string{"--target", "target"},
+		},
+		{
+			description: "build args",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				BuildArgs: map[string]*string{
+					"nil_key":   nil,
+					"empty_key": util.StringPtr(""),
+					"value_key": util.StringPtr("value"),
+				},
+			},
+			expectedArgs: []string{"--build-arg", "empty_key=", "--build-arg", "nil_key", "--build-arg", "value_key=value"},
+		},
+		{
+			description: "invalid build args",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				BuildArgs: map[string]*string{
+					"invalid": util.StringPtr("{{Invalid"),
+				},
+			},
+			shouldErr: true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := appendBuildArgsIfExists(test.args, test.buildArgs)
+			commonArgs := []string{"--dockerfile", "Dockerfile", "--context", "context", "--destination", "tag", "-v", "info"}
 
-			t.CheckDeepEqual(test.expectedArgs, actual)
+			args, err := args(test.artifact, "context", "tag")
+
+			t.CheckError(test.shouldErr, err)
+			if !test.shouldErr {
+				t.CheckDeepEqual(append(commonArgs, test.expectedArgs...), args)
+			}
 		})
 	}
-}
-
-func pointer(a string) *string {
-	return &a
 }

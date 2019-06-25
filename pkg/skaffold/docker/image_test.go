@@ -90,41 +90,107 @@ func TestPush(t *testing.T) {
 	}
 }
 
-func TestRunBuild(t *testing.T) {
+func TestBuild(t *testing.T) {
 	var tests = []struct {
-		description string
-		expected    string
-		api         testutil.FakeAPIClient
-		shouldErr   bool
+		description   string
+		env           map[string]string
+		api           *testutil.FakeAPIClient
+		workspace     string
+		artifact      *latest.DockerArtifact
+		expected      types.ImageBuildOptions
+		shouldErr     bool
+		expectedError string
 	}{
 		{
 			description: "build",
-			expected:    "test",
+			api:         &testutil.FakeAPIClient{},
+			workspace:   ".",
+			artifact:    &latest.DockerArtifact{},
+			expected: types.ImageBuildOptions{
+				Tags:        []string{"finalimage"},
+				AuthConfigs: allAuthConfig,
+			},
+		},
+		{
+			description: "build with options",
+			api:         &testutil.FakeAPIClient{},
+			env: map[string]string{
+				"VALUE3": "value3",
+			},
+			workspace: ".",
+			artifact: &latest.DockerArtifact{
+				DockerfilePath: "Dockerfile",
+				BuildArgs: map[string]*string{
+					"k1": nil,
+					"k2": util.StringPtr("value2"),
+					"k3": util.StringPtr("{{.VALUE3}}"),
+				},
+				CacheFrom:   []string{"from-1"},
+				Target:      "target",
+				NetworkMode: "None",
+				NoCache:     true,
+			},
+			expected: types.ImageBuildOptions{
+				Tags:       []string{"finalimage"},
+				Dockerfile: "Dockerfile",
+				BuildArgs: map[string]*string{
+					"k1": nil,
+					"k2": util.StringPtr("value2"),
+					"k3": util.StringPtr("value3"),
+				},
+				CacheFrom:   []string{"from-1"},
+				AuthConfigs: allAuthConfig,
+				Target:      "target",
+				NetworkMode: "none",
+				NoCache:     true,
+			},
 		},
 		{
 			description: "bad image build",
-			api: testutil.FakeAPIClient{
+			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
-			shouldErr: true,
+			workspace:     ".",
+			artifact:      &latest.DockerArtifact{},
+			shouldErr:     true,
+			expectedError: "docker build",
 		},
 		{
 			description: "bad return reader",
-			api: testutil.FakeAPIClient{
+			api: &testutil.FakeAPIClient{
 				ErrStream: true,
 			},
-			shouldErr: true,
+			workspace:     ".",
+			artifact:      &latest.DockerArtifact{},
+			shouldErr:     true,
+			expectedError: "unable to stream build output",
+		},
+		{
+			description: "bad build arg template",
+			artifact: &latest.DockerArtifact{
+				BuildArgs: map[string]*string{
+					"key": util.StringPtr("{{INVALID"),
+				},
+			},
+			shouldErr:     true,
+			expectedError: `function "INVALID" not defined`,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetEnvs(test.env)
+
 			localDocker := &localDaemon{
-				apiClient: &test.api,
+				apiClient: test.api,
 			}
+			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage")
 
-			_, err := localDocker.Build(context.Background(), ioutil.Discard, ".", &latest.DockerArtifact{}, "finalimage")
-
-			t.CheckError(test.shouldErr, err)
+			if test.shouldErr {
+				t.CheckErrorContains(test.expectedError, err)
+			} else {
+				t.CheckNoError(err)
+				t.CheckDeepEqual(test.api.Built[0], test.expected)
+			}
 		})
 	}
 }
@@ -195,12 +261,10 @@ func TestGetBuildArgs(t *testing.T) {
 			want: []string{"--build-arg", "key1=value1", "--build-arg", "key2", "--build-arg", "key3=bar"},
 		},
 		{
-			description: "build args",
+			description: "invalid build arg",
 			artifact: &latest.DockerArtifact{
 				BuildArgs: map[string]*string{
-					"key1": util.StringPtr("value1"),
-					"key2": nil,
-					"key3": util.StringPtr("{{.DOES_NOT_EXIST}}"),
+					"key": util.StringPtr("{{INVALID"),
 				},
 			},
 			shouldErr: true,
@@ -252,11 +316,9 @@ func TestGetBuildArgs(t *testing.T) {
 
 			result, err := GetBuildArgs(test.artifact)
 
-			if test.shouldErr {
-				// TODO(dgageot): should be true
-				t.CheckNoError(err)
-			} else {
-				t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, result)
+			t.CheckError(test.shouldErr, err)
+			if !test.shouldErr {
+				t.CheckDeepEqual(test.want, result)
 			}
 		})
 	}

@@ -36,6 +36,7 @@ scripts=(
     "hack/dep.sh"
     "hack/check-samples.sh"
     "hack/check-docs.sh"
+    "hack/test-generated-proto.sh"
 )
 fail=0
 for s in "${scripts[@]}"; do

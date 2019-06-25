@@ -98,6 +98,11 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 }
 
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
+	args, err := EvaluateBuildArgs(buildArgs)
+	if err != nil {
+		return errors.Wrap(err, "unable to evaluate build args")
+	}
+
 	for i, node := range nodes {
 		if node.Value != command.Arg {
 			continue
@@ -109,12 +114,8 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 
 		// build arg's value
 		var value string
-		var err error
-		if buildArgs[key] != nil {
-			value, err = evaluateBuildArgsValue(*buildArgs[key])
-			if err != nil {
-				return errors.Wrapf(err, "unable to get value for build arg: %s", key)
-			}
+		if args[key] != nil {
+			value = *args[key]
 		} else if len(keyValue) > 1 {
 			value = keyValue[1]
 		}
@@ -132,15 +133,6 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 		}
 	}
 	return nil
-}
-
-func evaluateBuildArgsValue(nameTemplate string) (string, error) {
-	tmpl, err := util.ParseEnvTemplate(nameTemplate)
-	if err != nil {
-		return "", errors.Wrap(err, "parsing template")
-	}
-
-	return util.ExecuteEnvTemplate(tmpl, nil)
 }
 
 func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, error) {
