@@ -71,7 +71,7 @@ type SkaffoldRunner struct {
 	cache             *cache.Cache
 	runCtx            *runcontext.RunContext
 	labellers         []deploy.Labeller
-	defaultLabeller   *DefaultLabeller
+	defaultLabeller   *deploy.DefaultLabeller
 	builds            []build.Artifact
 	hasBuilt          bool
 	hasDeployed       bool
