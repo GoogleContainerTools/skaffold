@@ -76,7 +76,7 @@ type PortForwardResource struct {
 	// Port is the resource port that will be forwarded.
 	Port int32 `yaml:"port,omitempty"`
 
-	// LocalPort is the local port to forward too. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
+	// LocalPort is the local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
 	LocalPort int32 `yaml:"localPort,omitempty"`
 }
 

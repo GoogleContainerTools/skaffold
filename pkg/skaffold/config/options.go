@@ -25,7 +25,7 @@ import (
 // PortForwardOptions are options set by the command line for port forwarding
 // with additional configuration information as well
 type PortForwardOptions struct {
-	PortForward bool
+	Enabled     bool
 	ForwardPods bool
 }
 
