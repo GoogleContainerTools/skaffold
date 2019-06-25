@@ -376,7 +376,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Type:      "pod",
 						Name:      "podname",
 						Namespace: "namespace",
-						Port:      8080,
+						LocalPort: 8080,
 					},
 					automaticPodForwarding: true,
 					localPort:              8080,

@@ -15,3 +15,8 @@ portForward:
   - resourceType: deployment
     resourceName: leeroy-web
     port: 8080
+    localPort: 9000
+  - resourceType: service
+    resourceName: leeroy-app
+    port: 50051
+    localPort: 50060

@@ -525,21 +525,13 @@ func TestValidatePortForwardResources(t *testing.T) {
 		shouldErr    bool
 	}{
 		{resourceType: "pod"},
-		{resourceType: "po"},
 		{resourceType: "Deployment"},
-		{resourceType: "deploy"},
 		{resourceType: "service"},
-		{resourceType: "svc"},
 		{resourceType: "replicaset"},
-		{resourceType: "rs"},
 		{resourceType: "replicationcontroller"},
-		{resourceType: "rc"},
 		{resourceType: "statefulset"},
-		{resourceType: "sts"},
 		{resourceType: "daemonset"},
-		{resourceType: "ds"},
 		{resourceType: "cronjob"},
-		{resourceType: "cj"},
 		{resourceType: "job"},
 		{resourceType: "dne", shouldErr: true},
 	}
