@@ -23,13 +23,12 @@ import (
 	"os"
 	"strings"
 
-   	
-	"k8s.io/kubectl/pkg/util/templates"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"k8s.io/kubectl/pkg/util/templates"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -116,19 +115,17 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				NewCmdFix(out),
 			},
 		},
-		{
-			Message: "Utilities:",
-			Commands: []*cobra.Command{
-				NewCmdVersion(out),
-				NewCmdCompletion(out),
-				NewCmdConfig(out),
-				NewCmdFindConfigs(out),
-				NewCmdDiagnose(out),
-				NewCmdDebug(out),
-			},
-		},
 	}
 	groups.Add(rootCmd)
+
+	// other commands
+	rootCmd.AddCommand(NewCmdVersion(out))
+	rootCmd.AddCommand(NewCmdCompletion(out))
+	rootCmd.AddCommand(NewCmdConfig(out))
+	rootCmd.AddCommand(NewCmdFindConfigs(out))
+	rootCmd.AddCommand(NewCmdDiagnose(out))
+	rootCmd.AddCommand(NewCmdDebug(out))
+
 	templates.ActsAsRootCommand(rootCmd, []string{"options"}, groups...)
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
 	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.Default), "Specify the default output color in ANSI escape codes")
