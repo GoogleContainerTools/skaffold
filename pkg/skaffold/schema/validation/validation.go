@@ -161,7 +161,7 @@ func validatePortForwardResources(pfrs []*latest.PortForwardResource) []error {
 	for _, pfr := range pfrs {
 		resourceType := strings.ToLower(string(pfr.Type))
 		if _, ok := validResourceTypes[resourceType]; !ok {
-			errs = append(errs, fmt.Errorf("%s is not a valid resource type for port fowarding", pfr.Type))
+			errs = append(errs, fmt.Errorf("%s is not a valid resource type for port forwarding", pfr.Type))
 		}
 	}
 	return errs

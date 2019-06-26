@@ -215,7 +215,7 @@ var FlagRegistry = []Flag{
 	{
 		Name:          "port-forward",
 		Usage:         "Port-forward exposed container ports within pods",
-		Value:         &opts.PortForward.PortForward,
+		Value:         &opts.PortForward.Enabled,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug"},

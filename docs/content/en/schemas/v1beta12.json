@@ -1476,8 +1476,8 @@
       "properties": {
         "localPort": {
           "$ref": "#/definitions/int32",
-          "description": "local port to forward too. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.",
-          "x-intellij-html-description": "local port to forward too. If the port is unavailable, Skaffold will choose a random open port to forward to. <em>Optional</em>."
+          "description": "local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.",
+          "x-intellij-html-description": "local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. <em>Optional</em>."
         },
         "namespace": {
           "type": "string",
