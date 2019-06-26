@@ -173,6 +173,11 @@ func TestDependenciesForKustomization(t *testing.T) {
 			expected:    []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
 		},
 		{
+			description: "patchesStrategicMerge",
+			yaml:        `patchesStrategicMerge: [patch1.yaml, path/patch2.yaml]`,
+			expected:    []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
+		},
+		{
 			description: "crds",
 			yaml:        `patches: [crd1.yaml, path/crd2.yaml]`,
 			expected:    []string{"kustomization.yaml", "crd1.yaml", "path/crd2.yaml"},
