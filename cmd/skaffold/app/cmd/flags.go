@@ -220,6 +220,14 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug"},
 	},
+	{
+		Name:          "status-check",
+		Usage:         "",
+		Value:         &opts.StatusCheck,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug", "deploy"},
+	},
 }
 
 var commandFlags []*pflag.Flag
