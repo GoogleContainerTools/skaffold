@@ -31,6 +31,7 @@ func TestDockerContext(t *testing.T) {
 		testutil.Run(t, dir, func(t *testutil.T) {
 			imageFetcher := fakeImageFetcher{}
 			t.Override(&RetrieveImage, imageFetcher.fetch)
+			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return "/", nil })
 			t.NewTempDir().
 				Write(dir+"/.dockerignore", "**/ignored.txt\nalsoignored.txt").
 				Write(dir+"/Dockerfile", "FROM alpine\nCOPY ./files /files").
