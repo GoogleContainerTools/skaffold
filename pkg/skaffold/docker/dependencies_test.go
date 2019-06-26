@@ -120,7 +120,7 @@ const onbuild = `
 FROM golang:onbuild
 `
 
-const onbuildError = `
+const baseImageNotFound = `
 FROM noimage:latest
 ADD ./file /etc/file
 `
@@ -208,10 +208,12 @@ type fakeImageFetcher struct {
 }
 
 func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*v1.ConfigFile, error) {
-	f.fetched = append(f.fetched, image)
+	if !util.StrSliceContains(f.fetched, image) {
+		f.fetched = append(f.fetched, image)
+	}
 
 	switch image {
-	case "ubuntu:14.04", "busybox", "nginx", "golang:1.9.2", "jboss/wildfly:14.0.1.Final":
+	case "ubuntu:14.04", "busybox", "nginx", "golang:1.9.2", "jboss/wildfly:14.0.1.Final", "gcr.io/distroless/base":
 		return &v1.ConfigFile{}, nil
 	case "golang:onbuild":
 		return &v1.ConfigFile{
@@ -400,10 +402,10 @@ func TestGetDependencies(t *testing.T) {
 			fetched:     []string{"golang:onbuild"},
 		},
 		{
-			description: "onbuild error",
-			dockerfile:  onbuildError,
+			description: "base image not found",
+			dockerfile:  baseImageNotFound,
 			workspace:   ".",
-			expected:    []string{"Dockerfile", "file"},
+			shouldErr:   true,
 			fetched:     []string{"noimage:latest"},
 		},
 		{
@@ -533,7 +535,6 @@ func TestGetDependencies(t *testing.T) {
 			imageFetcher := fakeImageFetcher{}
 			t.Override(&RetrieveImage, imageFetcher.fetch)
 			t.Override(&util.OSEnviron, func() []string { return test.env })
-			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return "/", nil })
 
 			tmpDir := t.NewTempDir().
 				Touch("docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot")
@@ -549,7 +550,8 @@ func TestGetDependencies(t *testing.T) {
 			workspace := tmpDir.Path(test.workspace)
 			deps, err := GetDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs, map[string]bool{})
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expected, deps)
 			t.CheckDeepEqual(test.fetched, imageFetcher.fetched)
 		})
 	}

@@ -58,9 +58,6 @@ type fromTo struct {
 }
 
 var (
-	// WorkingDir is overridden for unit testing
-	WorkingDir = RetrieveWorkingDir
-
 	// RetrieveImage is overridden for unit testing
 	RetrieveImage = retrieveImage
 )
@@ -177,6 +174,10 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, e
 }
 
 func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegistries map[string]bool) ([]*copyCommand, error) {
+	stages := map[string]bool{
+		"scratch": true,
+	}
+
 	slex := shell.NewLex('\\')
 	var copied []*copyCommand
 
@@ -185,11 +186,26 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegis
 	for _, node := range nodes {
 		switch node.Value {
 		case command.From:
-			wd, err := WorkingDir(node.Next.Value, insecureRegistries)
-			if err != nil {
-				return nil, err
+			from := fromInstruction(node)
+			if from.as != "" {
+				// Stage names are case insensitive
+				stages[strings.ToLower(from.as)] = true
 			}
-			workdir = wd
+
+			// If `from` references a previous stage, then the `workdir`
+			// was already changed.
+			if !stages[strings.ToLower(from.image)] {
+				img, err := RetrieveImage(from.image, insecureRegistries)
+				if err != nil {
+					return nil, err
+				}
+
+				workdir = img.Config.WorkingDir
+				if workdir == "" {
+					workdir = "/"
+				}
+			}
+
 			if onlyLastImage {
 				copied = nil
 			}

@@ -300,10 +300,10 @@ func TestSyncMap(t *testing.T) {
 			fetched:     []string{"golang:onbuild"},
 		},
 		{
-			description: "onbuild error",
-			dockerfile:  onbuildError,
+			description: "base image not found",
+			dockerfile:  baseImageNotFound,
 			workspace:   ".",
-			expected:    map[string][]string{"file": {"/etc/file"}},
+			shouldErr:   true,
 			fetched:     []string{"noimage:latest"},
 		},
 		{
@@ -417,10 +417,6 @@ func TestSyncMap(t *testing.T) {
 			tmpDir, cleanup := testutil.NewTempDir(t)
 			defer cleanup()
 
-			originalWorkingDir := WorkingDir
-			WorkingDir = func(_ string, _ map[string]bool) (string, error) { return "/", nil }
-			defer func() { WorkingDir = originalWorkingDir }()
-
 			imageFetcher := fakeImageFetcher{}
 			RetrieveImage = imageFetcher.fetch
 			defer func() { RetrieveImage = retrieveImage }()
@@ -526,10 +522,6 @@ ADD * .
 
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
-
-	originalWorkingDir := WorkingDir
-	WorkingDir = func(_ string, _ map[string]bool) (string, error) { return "/", nil }
-	defer func() { WorkingDir = originalWorkingDir }()
 
 	imageFetcher := fakeImageFetcher{}
 	RetrieveImage = imageFetcher.fetch
