@@ -38,13 +38,14 @@ import (
 
 // kustomization is the content of a kustomization.yaml file.
 type kustomization struct {
-	Bases              []string             `yaml:"bases"`
-	Resources          []string             `yaml:"resources"`
-	Patches            []string             `yaml:"patches"`
-	CRDs               []string             `yaml:"crds"`
-	PatchesJSON6902    []patchJSON6902      `yaml:"patchesJson6902"`
-	ConfigMapGenerator []configMapGenerator `yaml:"configMapGenerator"`
-	SecretGenerator    []secretGenerator    `yaml:"secretGenerator"`
+	Bases                 []string             `yaml:"bases"`
+	Resources             []string             `yaml:"resources"`
+	Patches               []string             `yaml:"patches"`
+	PatchesStrategicMerge []string             `yaml:"patchesStrategicMerge"`
+	CRDs                  []string             `yaml:"crds"`
+	PatchesJSON6902       []patchJSON6902      `yaml:"patchesJson6902"`
+	ConfigMapGenerator    []configMapGenerator `yaml:"configMapGenerator"`
+	SecretGenerator       []secretGenerator    `yaml:"secretGenerator"`
 }
 
 type patchJSON6902 struct {
@@ -177,6 +178,7 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 	deps = append(deps, path)
 	deps = append(deps, joinPaths(dir, content.Resources)...)
 	deps = append(deps, joinPaths(dir, content.Patches)...)
+	deps = append(deps, joinPaths(dir, content.PatchesStrategicMerge)...)
 	deps = append(deps, joinPaths(dir, content.CRDs)...)
 	for _, patch := range content.PatchesJSON6902 {
 		deps = append(deps, filepath.Join(dir, patch.Path))
