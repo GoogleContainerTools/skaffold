@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	cfg "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster"
@@ -79,6 +80,10 @@ type SkaffoldRunner struct {
 	hasDeployed          bool
 	imageList            *kubernetes.ImageList
 }
+
+var (
+	statusCheck = deploy.StatusCheck
+)
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*SkaffoldRunner, error) {
@@ -207,6 +212,9 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> add status check flag which does nothing for now and test
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
 	if cfg.IsKindCluster(r.runCtx.KubeContext) {
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
@@ -220,6 +228,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	if err != nil {
 		return err
 	}
+<<<<<<< HEAD
 	return r.performStatusCheck(out)
 }
 
@@ -227,12 +236,25 @@ func (r *SkaffoldRunner) performStatusCheck(out io.Writer) error {
 	// Check if we need to perform deploy status
 	if r.runCtx.Opts.StatusCheck {
 		fmt.Fprintln(out, "Waiting for deployments to stabilize")
+=======
+	return r.performStatusCheck(ctx, out)
+}
+
+func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
+	// Check if we need to perform deploy status
+	if r.runCtx.Opts.StatusCheck {
+		fmt.Fprintln(out, "Performing status check")
+>>>>>>> add status check flag which does nothing for now and test
 		// TODO : Actually perform status check
 	}
 	return nil
 }
+<<<<<<< HEAD
 =======
 >>>>>>> wip
+=======
+
+>>>>>>> add status check flag which does nothing for now and test
 
 // HasDeployed returns true if this runner has deployed something.
 func (r *SkaffoldRunner) HasDeployed() bool {
