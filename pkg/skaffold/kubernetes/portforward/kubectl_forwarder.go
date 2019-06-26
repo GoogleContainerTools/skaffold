@@ -63,7 +63,7 @@ func portForwardSuccessful(port int32) error {
 	// creating a listening port should not succeed
 	if ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port)); err == nil {
 		ln.Close()
-		return errors.New("port-forward failed") 
+		return errors.New("port-forward failed")
 	}
 	return nil
 }
