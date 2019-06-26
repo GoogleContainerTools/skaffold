@@ -216,18 +216,17 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	if err != nil {
 		return err
 	}
-	return r.performStatusCheck(ctx, out)
+	return r.performStatusCheck(out)
 }
 
-func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
+func (r *SkaffoldRunner) performStatusCheck(out io.Writer) error {
 	// Check if we need to perform deploy status
 	if r.runCtx.Opts.StatusCheck {
-		fmt.Fprintln(out, "Performing status check")
+		fmt.Fprintln(out, "Waiting for deployments to stabalize")
 		// TODO : Actually perform status check
 	}
 	return nil
 }
-
 
 // HasDeployed returns true if this runner has deployed something.
 func (r *SkaffoldRunner) HasDeployed() bool {

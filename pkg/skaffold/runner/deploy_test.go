@@ -28,18 +28,19 @@ import (
 )
 
 func TestDeploy(t *testing.T) {
+	expectedOutput := "Waiting for deployments to stabalize"
 	var tests = []struct {
 		description string
 		testBench   *TestBench
-		output string
-		shouldError bool
+		shdWait     bool
 		statusCheck bool
+		shouldError bool
 	}{
 		{
 			description: "deploy shd perform status check",
 			testBench:   &TestBench{},
 			statusCheck: true,
-			output: "Performing status check",
+			shdWait:     true,
 		},
 		{
 			description: "deploy shd not perform status check",
@@ -65,8 +66,8 @@ func TestDeploy(t *testing.T) {
 				{ImageName: "img2", Tag: "img2:tag2"},
 			})
 			t.CheckError(test.shouldError, err)
-			if !strings.Contains(out.String(), test.output) {
-				t.Errorf("expected %s to contain %s", out.String(), test.output)
+			if strings.Contains(out.String(), expectedOutput) != test.shdWait {
+				t.Errorf("expected %s to contain %s %t. But found %t", out.String(), expectedOutput, test.shdWait, !test.shdWait)
 			}
 		})
 	}
