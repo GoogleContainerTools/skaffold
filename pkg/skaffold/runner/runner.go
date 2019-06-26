@@ -71,7 +71,7 @@ type SkaffoldRunner struct {
 	cache                *cache.Cache
 	runCtx               *runcontext.RunContext
 	labellers            []deploy.Labeller
-	defaultLabeller      *DefaultLabeller
+	defaultLabeller      *deploy.DefaultLabeller
 	portForwardResources []*latest.PortForwardResource
 	builds               []build.Artifact
 	hasBuilt             bool
@@ -105,7 +105,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "parsing deploy config")
 	}
 
-	defaultLabeller := NewLabeller("")
+	defaultLabeller := deploy.NewLabeller("")
 	labellers := []deploy.Labeller{opts, builder, deployer, tagger, defaultLabeller}
 
 	builder, tester, deployer = WithTimings(builder, tester, deployer, opts.CacheArtifacts)
