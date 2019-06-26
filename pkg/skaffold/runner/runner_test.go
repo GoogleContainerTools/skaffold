@@ -51,7 +51,6 @@ type TestBench struct {
 
 	changeSet      *gosync.Map
 	currentActions Actions
-	actions        []Actions
 	tag            int
 }
 
