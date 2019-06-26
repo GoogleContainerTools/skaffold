@@ -61,7 +61,7 @@ func TestSetDefaults(t *testing.T) {
 }
 
 func TestSetDefaultsOnCluster(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
+	testutil.Run(t, "no docker config", func(t *testutil.T) {
 		t.SetupFakeKubernetesContext(api.Config{
 			CurrentContext: "cluster1",
 			Contexts: map[string]*api.Context{
@@ -69,25 +69,49 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 			},
 		})
 
+		// no docker config
 		cfg := &latest.SkaffoldConfig{
 			Pipeline: latest.Pipeline{
 				Build: latest.BuildConfig{
-					Artifacts: []*latest.Artifact{
-						{ImageName: "image"},
-					},
 					BuildType: latest.BuildType{
 						Cluster: &latest.ClusterDetails{},
 					},
 				},
 			},
 		}
-
 		err := Set(cfg)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("ns", cfg.Build.Cluster.Namespace)
 		t.CheckDeepEqual(constants.DefaultKanikoTimeout, cfg.Build.Cluster.Timeout)
 		t.CheckDeepEqual(constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
+
+		// default docker config
+		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{}
+		err = Set(cfg)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(constants.DefaultKanikoDockerConfigSecretName, cfg.Build.Cluster.DockerConfig.SecretName)
+
+		// docker config with path
+		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{
+			Path: "/path",
+		}
+		err = Set(cfg)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("", cfg.Build.Cluster.DockerConfig.SecretName)
+		t.CheckDeepEqual("/path", cfg.Build.Cluster.DockerConfig.Path)
+
+		// docker config with secret name
+		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{
+			SecretName: "secret",
+		}
+		err = Set(cfg)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("secret", cfg.Build.Cluster.DockerConfig.SecretName)
+		t.CheckDeepEqual("", cfg.Build.Cluster.DockerConfig.Path)
 	})
 }
 
