@@ -112,6 +112,6 @@ func (r *imageReplacer) Check() {
 
 func (r *imageReplacer) substituteRepoIntoImage(imageName string) string {
 	defaultRegistry := image.RegistryFactory(r.defaultRepo)
-	originalImage := image.ImageFactory(imageName)
+	originalImage := image.Factory(imageName)
 	return originalImage.Update(defaultRegistry)
 }

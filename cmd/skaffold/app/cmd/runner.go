@@ -106,11 +106,11 @@ func applyDefaultRepoSubstitution(config *latest.SkaffoldConfig, defaultRepo str
 
 	defaultRegistry := image.RegistryFactory(defaultRepo)
 	for _, artifact := range config.Build.Artifacts {
-		originalImage := image.ImageFactory(artifact.ImageName)
+		originalImage := image.Factory(artifact.ImageName)
 		artifact.ImageName = originalImage.Update(defaultRegistry)
 	}
 	for _, testCase := range config.Test {
-		originalImage := image.ImageFactory(testCase.ImageName)
+		originalImage := image.Factory(testCase.ImageName)
 		testCase.ImageName = originalImage.Update(defaultRegistry)
 	}
 }

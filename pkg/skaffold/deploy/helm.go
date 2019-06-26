@@ -416,7 +416,7 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 	paramToBuildResult := map[string]build.Artifact{}
 	for param, imageName := range params {
 		defaultRegistry := image.RegistryFactory(h.defaultRepo)
-		originalImage := image.ImageFactory(imageName)
+		originalImage := image.Factory(imageName)
 		newImageName := originalImage.Update(defaultRegistry)
 
 		b, ok := imageToBuildResult[newImageName]

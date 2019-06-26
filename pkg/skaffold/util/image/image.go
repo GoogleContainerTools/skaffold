@@ -17,9 +17,14 @@ limitations under the License.
 package image
 
 import (
+	"regexp"
 	"strings"
 )
 
+var (
+	escapeRegex = regexp.MustCompile(`[/._:@]`)
+	prefixRegex = regexp.MustCompile(`(.*\.)?gcr.io/[a-zA-Z0-9-_]+/?`)
+)
 
 type Registry interface {
 	// Name returns the string representation of the registry
@@ -46,12 +51,14 @@ type Image interface {
 	Update(reg Registry) string
 }
 
+// RegistryFactory takesn an input string repo and parses it to return the appropriate registry type
 func RegistryFactory(repo string) Registry {
 	// Default: return generic registry type
 	return NewGenericContainerRegistry(repo)
 }
 
-func ImageFactory(image string) Image {
+// Factory takes an input string image and parses it to return the appropriate image type
+func Factory(image string) Image {
 	// Separate repo from image name in string
 	splitImage := strings.Split(image, "/")
 	imageRegistry := NewGenericContainerRegistry(strings.Join(splitImage[:len(splitImage)-1], "/"))
@@ -60,11 +67,6 @@ func ImageFactory(image string) Image {
 	// Default: return generic image type
 	return NewGenericImage(imageRegistry, imageName)
 }
-
-var (
-	escapeRegex = regexp.MustCompile(`[/._:@]`)
-	prefixRegex = regexp.MustCompile(`(.*\.)?gcr.io/[a-zA-Z0-9-_]+/?`)
-)
 
 func SubstituteDefaultRepoIntoImage(defaultRepo string, originalImage string) string {
 	if defaultRepo == "" {
