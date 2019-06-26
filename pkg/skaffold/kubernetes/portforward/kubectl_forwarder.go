@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/http"
+	"net"
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -60,8 +60,12 @@ func (*KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 }
 
 func portForwardSuccessful(port int32) error {
-	_, err := http.Get(fmt.Sprintf("http://%s:%d", util.Loopback, port))
-	return err
+	// creating a listening port should not succeed
+	if ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port)); err == nil {
+		ln.Close()
+		return errors.New("port-forward failed")
+	}
+	return nil
 }
 
 // Terminate terminates an existing kubectl port-forward command using SIGTERM
