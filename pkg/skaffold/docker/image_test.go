@@ -19,7 +19,6 @@ package docker
 import (
 	"context"
 	"io/ioutil"
-	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -33,14 +32,6 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
 )
-
-func TestMain(m *testing.M) {
-	// So we don't shell out to credentials helpers or try to read dockercfg
-	defer func(h AuthConfigHelper) { DefaultAuthHelper = h }(DefaultAuthHelper)
-	DefaultAuthHelper = testAuthHelper{}
-
-	os.Exit(m.Run())
-}
 
 func TestPush(t *testing.T) {
 	var tests = []struct {
@@ -79,6 +70,8 @@ func TestPush(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&DefaultAuthHelper, testAuthHelper{})
+
 			localDocker := &localDaemon{
 				apiClient: &test.api,
 			}
@@ -178,6 +171,7 @@ func TestBuild(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&DefaultAuthHelper, testAuthHelper{})
 			t.SetEnvs(test.env)
 
 			localDocker := &localDaemon{
