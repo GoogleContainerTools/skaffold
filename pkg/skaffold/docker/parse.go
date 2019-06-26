@@ -317,8 +317,7 @@ func parseOnbuild(image string, insecureRegistries map[string]bool) ([]*parser.N
 	// Image names are case SENSITIVE
 	img, err := RetrieveImage(image, insecureRegistries)
 	if err != nil {
-		logrus.Warnf("Error processing base image (%s) for ONBUILD triggers: %s. Dependencies may be incomplete.", image, err)
-		return []*parser.Node{}, nil
+		return nil, fmt.Errorf("processing base image (%s) for ONBUILD triggers: %s", image, err)
 	}
 
 	if len(img.Config.OnBuild) == 0 {
