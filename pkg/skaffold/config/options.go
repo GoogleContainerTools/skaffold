@@ -59,7 +59,6 @@ type SkaffoldOptions struct {
 	Command            string
 	RPCPort            int
 	RPCHTTPPort        int
-	StatusCheck        bool
 }
 
 // Labels returns a map of labels to be applied to all deployed

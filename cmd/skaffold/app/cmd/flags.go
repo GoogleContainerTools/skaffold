@@ -223,10 +223,14 @@ var FlagRegistry = []Flag{
 	{
 		Name:          "status-check",
 <<<<<<< HEAD
+<<<<<<< HEAD
 		Usage:         "Wait for deployed resources to stabilize",
 =======
 		Usage:         "",
 >>>>>>> wip
+=======
+		Usage:         "Wait for deployed resources to stabalize",
+>>>>>>> fix linter
 		Value:         &opts.StatusCheck,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",

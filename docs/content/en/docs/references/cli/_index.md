@@ -275,9 +275,42 @@ Options:
       --toot=false: Emit a terminal beep after the deploy is complete
 
 Usage:
+<<<<<<< HEAD
   skaffold debug [options]
 
 Use "skaffold debug options" for a list of global command-line options (applies to all commands).
+=======
+  skaffold debug
+
+Flags:
+      --cache-artifacts             Set to true to enable caching of artifacts
+      --cache-file string           Specify the location of the cache file (default $HOME/.skaffold/cache)
+      --cleanup                     Delete deployments after dev or debug mode is interrupted (default true)
+  -d, --default-repo string         Default repository value (overrides global config)
+      --enable-rpc skaffold dev     Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
+  -f, --filename string             Filename or URL to the pipeline file (default "skaffold.yaml")
+      --force                       Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!) (default true)
+      --insecure-registry strings   Target registries for built images which are not secure
+  -l, --label strings               Add custom labels to deployed objects. Set multiple times for multiple labels
+  -n, --namespace string            Run deployments in the specified namespace
+      --no-prune                    Skip removing images and containers built by Skaffold
+      --no-prune-children           Skip removing layers reused by Skaffold
+      --port-forward                Port-forward exposed container ports within pods
+  -p, --profile strings             Activate profiles by name
+      --rpc-http-port int           tcp port to expose event REST API over HTTP (default 50052)
+      --rpc-port int                tcp port to expose event API (default 50051)
+      --skip-tests                  Whether to skip the tests after building
+<<<<<<< HEAD
+=======
+      --status-check                Wait for deployed resources to stabalize (default true)
+>>>>>>> fix linter
+      --tail                        Stream logs from deployed objects (default true)
+      --toot                        Emit a terminal beep after the deploy is complete
+
+Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+>>>>>>> fix linter
 
 
 ```
@@ -354,9 +387,37 @@ E.g. build.out created by running skaffold build --quiet {{json .}} > build.out
       --toot=false: Emit a terminal beep after the deploy is complete
 
 Usage:
+<<<<<<< HEAD
   skaffold deploy [options]
 
 Use "skaffold deploy options" for a list of global command-line options (applies to all commands).
+=======
+  skaffold deploy
+
+Flags:
+  -a, --build-artifacts *flags.BuildOutputFileFlag   Filepath containing build output.
+                                                     E.g. build.out created by running skaffold build --quiet {{json .}} > build.out
+  -d, --default-repo string                          Default repository value (overrides global config)
+      --enable-rpc skaffold dev                      Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
+  -f, --filename string                              Filename or URL to the pipeline file (default "skaffold.yaml")
+      --force                                        Recreate kubernetes resources if necessary for deployment (default false, warning: might cause downtime!)
+  -i, --images *flags.Images                         A list of pre-built images to deploy
+  -l, --label strings                                Add custom labels to deployed objects. Set multiple times for multiple labels
+  -n, --namespace string                             Run deployments in the specified namespace
+  -p, --profile strings                              Activate profiles by name
+      --rpc-http-port int                            tcp port to expose event REST API over HTTP (default 50052)
+      --rpc-port int                                 tcp port to expose event API (default 50051)
+<<<<<<< HEAD
+=======
+      --status-check                                 Wait for deployed resources to stabalize (default true)
+>>>>>>> fix linter
+      --tail                                         Stream logs from deployed objects (default false)
+      --toot                                         Emit a terminal beep after the deploy is complete
+
+Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+>>>>>>> fix linter
 
 
 ```
@@ -408,9 +469,45 @@ Options:
   -i, --watch-poll-interval=1000: Interval (in ms) between two checks for file changes
 
 Usage:
+<<<<<<< HEAD
   skaffold dev [options]
 
 Use "skaffold dev options" for a list of global command-line options (applies to all commands).
+=======
+  skaffold dev
+
+Flags:
+      --cache-artifacts             Set to true to enable caching of artifacts
+      --cache-file string           Specify the location of the cache file (default $HOME/.skaffold/cache)
+      --cleanup                     Delete deployments after dev or debug mode is interrupted (default true)
+  -d, --default-repo string         Default repository value (overrides global config)
+      --enable-rpc skaffold dev     Enable gRPC for exposing Skaffold events (true by default for skaffold dev)
+  -f, --filename string             Filename or URL to the pipeline file (default "skaffold.yaml")
+      --force                       Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!) (default true)
+      --insecure-registry strings   Target registries for built images which are not secure
+  -l, --label strings               Add custom labels to deployed objects. Set multiple times for multiple labels
+  -n, --namespace string            Run deployments in the specified namespace
+      --no-prune                    Skip removing images and containers built by Skaffold
+      --no-prune-children           Skip removing layers reused by Skaffold
+      --port-forward                Port-forward exposed container ports within pods
+  -p, --profile strings             Activate profiles by name
+      --rpc-http-port int           tcp port to expose event REST API over HTTP (default 50052)
+      --rpc-port int                tcp port to expose event API (default 50051)
+      --skip-tests                  Whether to skip the tests after building
+<<<<<<< HEAD
+=======
+      --status-check                Wait for deployed resources to stabalize (default true)
+>>>>>>> fix linter
+      --tail                        Stream logs from deployed objects (default true)
+      --toot                        Emit a terminal beep after the deploy is complete
+      --trigger string              How are changes detected? (polling, manual or notify) (default "polling")
+  -w, --watch-image strings         Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
+  -i, --watch-poll-interval int     Interval (in ms) between two checks for file changes (default 1000)
+
+Global Flags:
+      --color int          Specify the default output color in ANSI escape codes (default 34)
+  -v, --verbosity string   Log level (debug, info, warn, error, fatal, panic) (default "warning")
+>>>>>>> fix linter
 
 
 ```
