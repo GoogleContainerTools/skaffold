@@ -46,7 +46,7 @@ type LogAggregator struct {
 	colorPicker ColorPicker
 
 	muted             int32
-	startTime         time.Time
+	sinceTime         time.Time
 	cancel            context.CancelFunc
 	trackedContainers trackedContainers
 }
@@ -64,12 +64,15 @@ func NewLogAggregator(out io.Writer, baseImageNames []string, podSelector PodSel
 	}
 }
 
+func (a *LogAggregator) SetSince(t time.Time) {
+	a.sinceTime = t
+}
+
 // Start starts a logger that listens to pods and tail their logs
 // if they are matched by the `podSelector`.
 func (a *LogAggregator) Start(ctx context.Context) error {
 	cancelCtx, cancel := context.WithCancel(ctx)
 	a.cancel = cancel
-	a.startTime = time.Now()
 
 	aggregate := make(chan watch.Event)
 	stopWatchers, err := AggregatePodWatcher(a.namespaces, aggregate)
@@ -141,7 +144,7 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	// In theory, it's more precise to use --since-time='' but there can be a time
 	// difference between the user's machine and the server.
 	// So we use --since=Xs and round up to the nearest second to not lose any log.
-	sinceSeconds := fmt.Sprintf("--since=%ds", sinceSeconds(time.Since(a.startTime)))
+	sinceSeconds := fmt.Sprintf("--since=%ds", sinceSeconds(time.Since(a.sinceTime)))
 
 	tr, tw := io.Pipe()
 	cmd := exec.CommandContext(ctx, "kubectl", "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
