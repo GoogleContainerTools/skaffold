@@ -413,22 +413,16 @@ func TestSyncMap(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmpDir, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			imageFetcher := fakeImageFetcher{}
-			RetrieveImage = imageFetcher.fetch
-			defer func() { RetrieveImage = retrieveImage }()
+			t.Override(&RetrieveImage, imageFetcher.fetch)
 
-			for _, file := range []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot"} {
-				tmpDir.Write(file, "")
-			}
+			tmpDir := t.NewTempDir().
+				Touch("docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot")
 
 			if !test.badReader {
 				tmpDir.Write(test.workspace+"/Dockerfile", test.dockerfile)
 			}
-
 			if test.ignore != "" {
 				tmpDir.Write(test.workspace+"/.dockerignore", test.ignore)
 			}
@@ -441,8 +435,9 @@ func TestSyncMap(t *testing.T) {
 				sort.Strings(dsts)
 			}
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
-			testutil.CheckDeepEqual(t, test.fetched, imageFetcher.fetched)
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expected, deps)
+			t.CheckDeepEqual(test.fetched, imageFetcher.fetched)
 		})
 	}
 }
@@ -520,34 +515,26 @@ ADD * .
 		},
 	}
 
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-
-	imageFetcher := fakeImageFetcher{}
-	RetrieveImage = imageFetcher.fetch
-	defer func() { RetrieveImage = retrieveImage }()
-
-	for _, file := range []string{"subfolder/bar", "baz", "foo", "bar", "ignored/bar"} {
-		tmpDir.Write(file, "")
-	}
-
-	// ignore these files for the sake of shorter expectations
-	tmpDir.Write(".dockerignore", "Dockerfile\n.dockerignore\nignored/bar")
-
-	workspace := tmpDir.Path("")
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			tmpDir.Write("Dockerfile", test.dockerfile)
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			imageFetcher := fakeImageFetcher{}
+			t.Override(&RetrieveImage, imageFetcher.fetch)
+
+			tmpDir := t.NewTempDir().
+				Touch("subfolder/bar", "baz", "foo", "bar", "ignored/bar").
+				Write(".dockerignore", "Dockerfile\n.dockerignore\nignored/bar").
+				Write("Dockerfile", test.dockerfile)
 
 			for i := 0; i < repeat; i++ {
-				deps, err := SyncMap(context.Background(), workspace, "Dockerfile", nil, nil)
+				deps, err := SyncMap(context.Background(), tmpDir.Root(), "Dockerfile", nil, nil)
 
 				// destinations are not sorted, but for the test assertion they must be
 				for _, dsts := range deps {
 					sort.Strings(dsts)
 				}
 
-				testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, deps)
+				t.CheckNoError(err)
+				t.CheckDeepEqual(test.expected, deps)
 			}
 		})
 	}
