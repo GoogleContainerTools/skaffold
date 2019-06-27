@@ -19,7 +19,7 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"github.com/sirupsen/logrus"
+
 	"math"
 	"strconv"
 	"strings"
@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -41,7 +42,7 @@ var (
 )
 
 func StatusCheck(ctx context.Context, runCtx *runcontext.RunContext) error {
-	kubeCtl := kubectl.CLI{
+	kubeCtl := &kubectl.CLI{
 		Namespace:   runCtx.Opts.Namespace,
 		KubeContext: runCtx.KubeContext,
 	}
@@ -72,7 +73,7 @@ func StatusCheck(ctx context.Context, runCtx *runcontext.RunContext) error {
 	return getDeployStatus(syncMap, dMap)
 }
 
-func getDeadlineForDeployments(ctx context.Context, k kubectl.CLI) (map[string]float32, error) {
+func getDeadlineForDeployments(ctx context.Context, k *kubectl.CLI) (map[string]float32, error) {
 	skaffoldLabel := NewLabeller("").K8sManagedByLabelKeyValueString()
 	b, err := k.RunOut(ctx, nil, "get", []string{"deployments"}, "-l", skaffoldLabel, "--output", fmt.Sprintf("go-template='%s'", rolloutStatusTemplate))
 	if err != nil {
@@ -105,7 +106,7 @@ func getDeadlineForDeployments(ctx context.Context, k kubectl.CLI) (map[string]f
 
 }
 
-func pollDeploymentsStatus(ctx context.Context, k kubectl.CLI, dName string, deadline time.Duration, syncMap *sync.Map) {
+func pollDeploymentsStatus(ctx context.Context, k *kubectl.CLI, dName string, deadline time.Duration, syncMap *sync.Map) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollDuration)
@@ -143,7 +144,7 @@ func getDeployStatus(syncMap *sync.Map, deps map[string]float32) error {
 	return fmt.Errorf("following deployments are not stable:\n%s", strings.Join(errorStrings, "\n"))
 }
 
-func getRollOutStatus(ctx context.Context, k kubectl.CLI, dName string) (string, error) {
+func getRollOutStatus(ctx context.Context, k *kubectl.CLI, dName string) (string, error) {
 	b, err := k.RunOut(ctx, nil, "rollout", []string{"status", "deployment", dName},
 		"--watch=false")
 	if err != nil {

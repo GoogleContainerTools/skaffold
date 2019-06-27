@@ -61,7 +61,7 @@ func TestGetDeadlineForDeployments(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.command)
-			cli := kubectl.CLI{
+			cli := &kubectl.CLI{
 				Namespace:   "test",
 				KubeContext: testKubeContext,
 			}
@@ -77,7 +77,7 @@ type MockRolloutStatus struct {
 	err       error
 }
 
-func (m *MockRolloutStatus) Executefunc(context.Context, kubectl.CLI, string) (string, error) {
+func (m *MockRolloutStatus) Executefunc(context.Context, *kubectl.CLI, string) (string, error) {
 	var resp string
 	if m.err != nil {
 		m.called++
@@ -130,7 +130,7 @@ func TestPollDeploymentsStatus(t *testing.T) {
 			exactCalls: 3,
 		},
 		{
-			description: "rollout returns did not stabalize within the given timeout",
+			description: "rollout returns did not stabilize within the given timeout",
 			mock: &MockRolloutStatus{
 				responses: []string{
 					"Waiting for rollout to finish: 1 of 3 updated replicas are available...",
@@ -154,7 +154,7 @@ func TestPollDeploymentsStatus(t *testing.T) {
 			defer func() { defaultPollPeriodInMilliseconds = originalPollingPeriod }()
 
 			actual := &sync.Map{}
-			pollDeploymentsStatus(context.Background(), kubectl.CLI{}, "dep", time.Duration(test.duration)*time.Millisecond, actual)
+			pollDeploymentsStatus(context.Background(), &kubectl.CLI{}, "dep", time.Duration(test.duration)*time.Millisecond, actual)
 			_, isErr := isErrorforValue(actual, "dep")
 			t.CheckDeepEqual(test.shouldErr, isErr)
 			if test.exactCalls > 0 {
