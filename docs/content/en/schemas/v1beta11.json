@@ -1522,11 +1522,11 @@
       },
       "preferredOrder": [
         "name",
-        "patches",
-        "activation",
         "build",
         "test",
-        "deploy"
+        "deploy",
+        "patches",
+        "activation"
       ],
       "additionalProperties": false,
       "description": "*beta* profiles are used to override any `build`, `test` or `deploy` configuration.",
@@ -1631,10 +1631,10 @@
       "preferredOrder": [
         "apiVersion",
         "kind",
-        "profiles",
         "build",
         "test",
-        "deploy"
+        "deploy",
+        "profiles"
       ],
       "additionalProperties": false,
       "description": "holds the fields parsed from the Skaffold configuration file (skaffold.yaml).",
