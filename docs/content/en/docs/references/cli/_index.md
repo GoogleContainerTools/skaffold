@@ -523,13 +523,13 @@ Usage:
   skaffold init
 
 Flags:
-      --analyze               Print all discoverable Dockerfiles and images in JSON format to stdout
-  -a, --artifact strings      '='-delimited dockerfile/image pair to generate build artifact
-                              (example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)
-      --compose-file string   Initialize from a docker-compose file
-  -f, --filename string       Filename or URL to the pipeline file (default "skaffold.yaml")
-      --force                 Force the generation of the Skaffold config
-      --skip-build            Skip generating build artifacts in Skaffold config
+      --analyze                Print all discoverable Dockerfiles and images in JSON format to stdout
+  -a, --artifact stringArray   '='-delimited builder JSON/image pair to generate build artifact
+                               (example: --artifact='{"name":"Docker","payload":{"path":"/web/Dockerfile.web"}}=gcr.io/web-project/image)
+      --compose-file string    Initialize from a docker-compose file
+  -f, --filename string        Filename or URL to the pipeline file (default "skaffold.yaml")
+      --force                  Force the generation of the Skaffold config
+      --skip-build             Skip generating build artifacts in Skaffold config
 
 Global Flags:
       --color int          Specify the default output color in ANSI escape codes (default 34)
