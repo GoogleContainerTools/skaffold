@@ -19,24 +19,24 @@ package deploy
 import (
 	"context"
 	"fmt"
-
-	"math"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 var (
-	rolloutStatusTemplate = "{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}},{{end}}"
 	// TODO: Move this to a flag or global config.
-	// Default deadline set to 10 minutes
-	defaultStatusCheckDeadlineInSeconds float32 = 600
+	// Default deadline set to 10 minutes. This is default value for progressDeadlineInSeconds
+	// See: https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/api/apps/v1/types.go#L305
+	defaultStatusCheckDeadlineInSeconds int32 = 600
 	// Poll period for checking set to 100 milliseconds
 	defaultPollPeriodInMilliseconds = 100
 
@@ -44,72 +44,65 @@ var (
 	executeRolloutStatus = getRollOutStatus
 )
 
-func StatusCheck(ctx context.Context, runCtx *runcontext.RunContext) error {
+func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext) error {
+
+	client, err := kubernetesutil.GetClientset()
+	if err != nil {
+		return err
+	}
+	dMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller)
+	if err != nil {
+		return errors.Wrap(err, "could not fetch deployments")
+	}
+
+	wg := sync.WaitGroup{}
+	// Its safe to use sync.Map without locks here as each subroutine adds a different key.
+	syncMap := &sync.Map{}
 	kubeCtl := &kubectl.CLI{
 		Namespace:   runCtx.Opts.Namespace,
 		KubeContext: runCtx.KubeContext,
 	}
-	dMap, err := getDeadlineForDeployments(ctx, kubeCtl)
-	if err != nil {
-		return errors.Wrap(err, "could not fetch deployments")
-	}
-	w := sync.WaitGroup{}
-	// Its safe to use sync.Map without locks here as each subroutine adds a different key.
-	syncMap := &sync.Map{}
 
 	for dName, deadline := range dMap {
-		// Set the deadline to defaultStatusCheckDeadlineInSeconds if deadline is set to Math.MaxInt
-		// See https://github.com/kubernetes/kubernetes/blob/master/pkg/apis/extensions/v1beta1/defaults.go#L119
-		if deadline == math.MaxInt32 {
-			deadline = defaultStatusCheckDeadlineInSeconds
-		}
 		deadlineDuration := time.Duration(deadline) * time.Second
-		w.Add(1)
+		wg.Add(1)
 		go func(dName string, deadlineDuration time.Duration) {
-			defer w.Done()
-			pollDeploymentsStatus(ctx, kubeCtl, dName, deadlineDuration, syncMap)
+			defer wg.Done()
+			pollDeploymentRolloutStatus(ctx, kubeCtl, dName, deadlineDuration, syncMap)
 		}(dName, deadlineDuration)
 	}
 
 	// Wait for all deployment status to be fetched
-	w.Wait()
+	wg.Wait()
 	return getDeployStatus(syncMap)
 }
 
-func getDeadlineForDeployments(ctx context.Context, k *kubectl.CLI) (map[string]float32, error) {
-	skaffoldLabel := NewLabeller("").K8sManagedByLabelKeyValueString()
-	b, err := k.RunOut(ctx, nil, "get", []string{"deployments"}, "-l", skaffoldLabel, "--output", fmt.Sprintf("go-template='%s'", rolloutStatusTemplate))
+func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) (map[string]int32, error) {
+
+	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
+		LabelSelector: l.K8sManagedByLabelKeyValueString(),
+	})
+
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "could not fetch deployments")
 	}
-	deployments := map[string]float32{}
-	if len(b) == 0 {
-		return deployments, nil
+	depMap := map[string]int32{}
+
+	for _, d := range deps.Items {
+		var deadline int32
+		if d.Spec.ProgressDeadlineSeconds == nil {
+			logrus.Warnf("no progressDeadlineSeconds config found for deployment %s. Setting deadline to %d seconds", d.Name, defaultStatusCheckDeadlineInSeconds)
+			deadline = defaultStatusCheckDeadlineInSeconds
+		} else {
+			deadline = *d.Spec.ProgressDeadlineSeconds
+		}
+		depMap[d.Name] = deadline
 	}
 
-	output := strings.Trim(string(b), ",'")
-	lines := strings.Split(output, ",")
-
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		kv := strings.Split(line, ":")
-		if len(kv) != 2 {
-			return nil, fmt.Errorf("error parsing `kubectl get deployments` %s", line)
-		}
-		deadline, err := strconv.ParseFloat(kv[1], 32)
-		if err != nil {
-			return deployments, err
-		}
-
-		deployments[kv[0]] = float32(deadline)
-	}
-	return deployments, nil
-
+	return depMap, nil
 }
 
-func pollDeploymentsStatus(ctx context.Context, k *kubectl.CLI, dName string, deadline time.Duration, syncMap *sync.Map) {
+func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName string, deadline time.Duration, syncMap *sync.Map) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollDuration)
@@ -137,9 +130,8 @@ func pollDeploymentsStatus(ctx context.Context, k *kubectl.CLI, dName string, de
 func getDeployStatus(m *sync.Map) error {
 	errorStrings := []string{}
 	m.Range(func(k, v interface{}) bool {
-		resourceName, _ := k.(string)
 		if t, ok := v.(error); ok {
-			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", resourceName, t.Error()))
+			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", k, t.Error()))
 		}
 		return true
 	})

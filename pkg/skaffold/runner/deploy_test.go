@@ -107,11 +107,7 @@ func TestDeploy(t *testing.T) {
 		},
 	}
 
-<<<<<<< HEAD
 	dummyStatusCheck := func(ctx context.Context, l *deploy.DefaultLabeller, runCtx *runcontext.RunContext) error {
-=======
-	dummyStatusCheck := func(ctx context.Context, runCtx *runcontext.RunContext) error {
->>>>>>> fix gofmt and integration tests
 		return nil
 	}
 	originalStatusCheck := deploy.StatusCheck

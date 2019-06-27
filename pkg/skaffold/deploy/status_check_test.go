@@ -25,47 +25,149 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
 
-func TestGetDeadlineForDeployments(t *testing.T) {
-	getDeploymentCommand := "kubectl --context kubecontext --namespace test get deployments -l app.kubernetes.io/managed-by=skaffold-unknown --output go-template='{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}},{{end}}'"
-
+func TestGetDeployments(t *testing.T) {
+	labeller := NewLabeller("")
 	var tests = []struct {
 		description string
-		command     util.Command
-		expected    map[string]float32
+		deps        []*appsv1.Deployment
+		deadline    map[string]int32
+		expected    map[string]int32
 		shouldErr   bool
 	}{
 		{
-			description: "returns deployments",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(getDeploymentCommand, "dep1:100,dep2:200"),
-			expected: map[string]float32{"dep1": 100, "dep2": 200},
+			description: "multiple deployments in same namespace",
+			deps: []*appsv1.Deployment{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "dep1",
+						Namespace: "test",
+						Labels: map[string]string{
+							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							"random":            "foo",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "dep2",
+						Namespace: "test",
+						Labels: map[string]string{
+							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+						},
+					},
+				},
+			},
+			deadline: map[string]int32{"dep1": 10, "dep2": 20},
+			expected: map[string]int32{"dep1": 10, "dep2": 20},
+		},
+		{
+			description: "multiple deployments with no progress deadline set",
+			deps: []*appsv1.Deployment{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "dep1",
+						Namespace: "test",
+						Labels: map[string]string{
+							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "dep2",
+						Namespace: "test",
+						Labels: map[string]string{
+							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+						},
+					},
+				},
+			},
+			deadline: map[string]int32{"dep1": 100},
+			expected: map[string]int32{"dep1": 100, "dep2": 600},
 		},
 		{
 			description: "no deployments",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(getDeploymentCommand, "''"),
-			expected: map[string]float32{},
+			expected:    map[string]int32{},
 		},
 		{
-			description: "get deployments error",
-			command: testutil.NewFakeCmd(t).
-				WithRunOutErr(getDeploymentCommand, "", fmt.Errorf("error")),
-			shouldErr: true,
+			description: "multiple deployments in different namespaces",
+			deps: []*appsv1.Deployment{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "dep1",
+						Namespace: "test",
+						Labels: map[string]string{
+							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "dep2",
+						Namespace: "test1",
+						Labels: map[string]string{
+							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+						},
+					},
+				},
+			},
+			deadline: map[string]int32{"dep1": 100, "dep2": 100},
+			expected: map[string]int32{"dep1": 100},
+		},
+		{
+			description: "deployment in correct namespace but not deployed by skaffold",
+			deps: []*appsv1.Deployment{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "dep1",
+						Namespace: "test",
+						Labels: map[string]string{
+							"some-other-tool": "helm",
+						},
+					},
+				},
+			},
+			deadline: map[string]int32{"dep1": 100},
+			expected: map[string]int32{},
+		},
+		{
+			description: "deployment in correct namespace  deployed by skaffold but previous version",
+			deps: []*appsv1.Deployment{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "dep1",
+						Namespace: "test",
+						Labels: map[string]string{
+							K8ManagedByLabelKey: "skaffold-0.26.0",
+						},
+					},
+				},
+			},
+			deadline: map[string]int32{"dep1": 100},
+			expected: map[string]int32{},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.command)
-			cli := &kubectl.CLI{
-				Namespace:   "test",
-				KubeContext: testKubeContext,
+			objs := make([]runtime.Object, len(test.deps))
+			for i, dep := range test.deps {
+				if v, ok := test.deadline[dep.Name]; ok {
+					i := new(int32)
+					*i = v
+					dep.Spec.ProgressDeadlineSeconds = i
+				}
+				objs[i] = dep
 			}
-			actual, err := getDeadlineForDeployments(context.Background(), cli)
+			client := fakekubeclientset.NewSimpleClientset(objs...)
+			actual, err := getDeployments(client, "test", labeller)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
@@ -92,7 +194,7 @@ func (m *MockRolloutStatus) Executefunc(context.Context, *kubectl.CLI, string) (
 	return resp, m.err
 }
 
-func TestPollDeploymentsStatus(t *testing.T) {
+func TestPollDeploymentRolloutStatus(t *testing.T) {
 
 	var tests = []struct {
 		description string
@@ -154,7 +256,7 @@ func TestPollDeploymentsStatus(t *testing.T) {
 			defer func() { defaultPollPeriodInMilliseconds = originalPollingPeriod }()
 
 			actual := &sync.Map{}
-			pollDeploymentsStatus(context.Background(), &kubectl.CLI{}, "dep", time.Duration(test.duration)*time.Millisecond, actual)
+			pollDeploymentRolloutStatus(context.Background(), &kubectl.CLI{}, "dep", time.Duration(test.duration)*time.Millisecond, actual)
 
 			if _, ok := actual.Load("dep"); !ok {
 				t.Error("expected result for deployment dep. But found none")
