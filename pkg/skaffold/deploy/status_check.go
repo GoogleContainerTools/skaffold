@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	"io"
 	"math"
 	"strconv"
 	"strings"
@@ -41,7 +40,7 @@ var (
 	executeRolloutStatus = getRollOutStatus
 )
 
-func StatusCheck(ctx context.Context, out io.Writer, runCtx *runcontext.RunContext) error {
+func StatusCheck(ctx context.Context, runCtx *runcontext.RunContext) error {
 	kubeCtl := kubectl.CLI{
 		Namespace:   runCtx.Opts.Namespace,
 		KubeContext: runCtx.KubeContext,

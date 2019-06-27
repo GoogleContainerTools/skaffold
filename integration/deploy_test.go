@@ -17,6 +17,7 @@ limitations under the License.
 package integration
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
@@ -108,9 +109,12 @@ func TestDeployWithInCorrectConfig(t *testing.T) {
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	err := skaffold.Deploy().InDir("examples/unstable-deployment").InNs("test").Run(t)
+	out, err := skaffold.Deploy().InDir("examples/unstable-deployment").InNs("test").RunWithOutput(t)
 	if err == nil {
 		t.Error("expected an error to see since the deployment is not stable. However deploy returned success")
+	}
+	if !strings.Contains(string(out), "exceeded its progress deadline") {
+		t.Errorf("expected to see message :exceeded progress deadline error. however saw this error %s", string(out))
 	}
 
 	skaffold.Delete().InDir("examples/unstable-deployment").InNs(ns.Name).RunOrFail(t)

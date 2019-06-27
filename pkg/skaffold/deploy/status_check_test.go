@@ -219,7 +219,7 @@ func TestGetDeployStatus(t *testing.T) {
 				"dep1": 1,
 				"dep2": 1,
 			},
-			expectedErrMsg: []string{"could not verify status for deployment dep2"},
+			expectedErrMsg: []string{"could not verify status for deployment"},
 			shouldErr: true,
 		},
 	}

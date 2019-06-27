@@ -172,6 +172,24 @@ func (b *RunBuilder) Run(t *testing.T) error {
 	return nil
 }
 
+// RunWithOutput runs the skaffold command with output.
+func (b *RunBuilder) RunWithOutput(t *testing.T) ([]byte, error) {
+	t.Helper()
+
+	cmd := b.cmd(context.Background())
+	cmd.Stdout, cmd.Stderr = nil, nil
+	logrus.Infoln(cmd.Args)
+
+	start := time.Now()
+	out, err := cmd.Output()
+	if err != nil {
+		return out, errors.Wrapf(err, "skaffold %s", b.command)
+	}
+
+	logrus.Infoln("Ran in", time.Since(start))
+	return out, nil
+}
+
 // RunOrFailOutput runs the skaffold command and fails the test
 // if the command returns an error.
 // It only returns the standard output.
