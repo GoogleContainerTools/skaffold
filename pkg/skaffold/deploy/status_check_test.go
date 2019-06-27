@@ -18,35 +18,37 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetDeployments(t *testing.T) {
-	getDeploymentCommand := "kubectl --context kubecontext --namespace test get deployments --output go-template='{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}}{{\",\"}}{{end}}'"
+func TestGetDeadlineForDeployments(t *testing.T) {
+	getDeploymentCommand := "kubectl --context kubecontext --namespace test get deployments -l app.kubernetes.io/managed-by=skaffold-unknown --output go-template='{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}},{{end}}'"
 
 	var tests = []struct {
 		description string
 		command     util.Command
-		expected    map[string]int
+		expected    map[string]float32
 		shouldErr   bool
 	}{
 		{
 			description: "returns deployments",
 			command: testutil.NewFakeCmd(t).
 				WithRunOut(getDeploymentCommand, "dep1:100,dep2:200"),
-			expected: map[string]int{"dep1": 100, "dep2": 200},
+			expected: map[string]float32{"dep1": 100, "dep2": 200},
 		},
 		{
 			description: "no deployments",
 			command: testutil.NewFakeCmd(t).
 				WithRunOut(getDeploymentCommand, ""),
-			expected: map[string]int{},
+			expected: map[string]float32{},
 		},
 		{
 			description: "get deployments error",
@@ -57,68 +59,114 @@ func TestGetDeployments(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			reset := testutil.Override(t, &util.DefaultExecCommand, test.command)
-			defer reset()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.command)
 			cli := kubectl.CLI{
 				Namespace:   "test",
 				KubeContext: testKubeContext,
 			}
-			actual, err := getDeploymentsWithDeadline(context.Background(), cli)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+			actual, err := getDeadlineForDeployments(context.Background(), cli)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
 }
 
+type MockRolloutStatus struct {
+	called int
+	responses []string
+	err error
+}
 
-func TestCheckDeployment(t *testing.T) {
-	getDeploymentCommand := "kubectl --context kubecontext --namespace test get deployments --output go-template='{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}}{{\",\"}}{{end}}'"
+func (m *MockRolloutStatus) Executefunc(context.Context,kubectl.CLI, string) (string, error){
+	var resp string
+	if m.err != nil{
+		m.called++
+		return "", m.err
+	}
+	if m.called >= len(m.responses) {
+		resp = m.responses[len(m.responses)-1]
+	} else {
+		resp = m.responses[m.called]
+	}
+	m.called++
+	return resp, m.err
+}
+
+func TestPollDeploymentsStatus(t *testing.T) {
 
 	var tests = []struct {
 		description string
-		command     util.Command
-		expected    map[string]int
-		shouldErr   bool
+		mock  *MockRolloutStatus
+		duration int
+		expectedCalled int
+		shouldErr bool
 	}{
 		{
-			description: "returns deployments",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(getDeploymentCommand, "dep1:100,dep2:200"),
-			expected: map[string]int{"dep1": 100, "dep2": 200},
+			description: "rollout returns success",
+			mock : &MockRolloutStatus{
+				responses: []string{"dep successfully rolled out"},
+			},
+			expectedCalled: 1,
+			duration: 500,
 		},
 		{
-			description: "no deployments",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(getDeploymentCommand, ""),
-			expected: map[string]int{},
+			description: "rollout returns error in the first attempt",
+			mock : &MockRolloutStatus{
+				err: errors.New("deployment.apps/dep could not be found"),
+			},
+			shouldErr: true,
+			expectedCalled: 1,
+			duration: 500,
 		},
 		{
-			description: "get deployments error",
-			command: testutil.NewFakeCmd(t).
-				WithRunOutErr(getDeploymentCommand, "", fmt.Errorf("error")),
+			description: "rollout returns success before time out",
+			mock : &MockRolloutStatus{
+				responses: []string{
+					"Waiting for rollout to finish: 0 of 1 updated replicas are available...",
+					"Waiting for rollout to finish: 0 of 1 updated replicas are available...",
+					"deployment.apps/dep successfully rolled out"},
+			},
+			duration: 500,
+			expectedCalled: 3,
+		},
+		{
+			description: "rollout returns did not stabalize within the given timeout",
+			mock : &MockRolloutStatus{
+				responses: []string{
+					"Waiting for rollout to finish: 1 of 3 updated replicas are available...",
+					"Waiting for rollout to finish: 1 of 3 updated replicas are available...",
+					"Waiting for rollout to finish: 2 of 3 updated replicas are available..."},
+			},
+			duration: 1000,
+			expectedCalled: 10,
 			shouldErr: true,
 		},
 	}
-
+	originalPollingPeriod := defaultPollPeriodInMilliseconds
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			reset := testutil.Override(t, &util.DefaultExecCommand, test.command)
-			defer reset()
-			cli := kubectl.CLI{
-				Namespace:   "test",
-				KubeContext: testKubeContext,
-			}
-			actual, err := getDeploymentsWithDeadline(context.Background(), cli)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			mock := test.mock
+			// Figure out why i can't use t.Override.
+			// Using t.Override throws an error "reflect: call of reflect.Value.Elem on func Value"
+			executeRolloutStatus = mock.Executefunc
+			defer func(){executeRolloutStatus = getRollOutStatus}()
+
+			defaultPollPeriodInMilliseconds = 100
+			defer func(){defaultPollPeriodInMilliseconds = originalPollingPeriod}()
+			actual := &sync.Map{}
+			pollDeploymentsStatus(context.Background(),kubectl.CLI{}, "dep", time.Duration(test.duration)*time.Millisecond, actual)
+			_, isErr := isErrorforValue(actual, "dep")
+			t.CheckDeepEqual(test.shouldErr, isErr)
+			t.CheckDeepEqual(test.expectedCalled, mock.called)
 		})
 	}
 }
 
-func TestGetStatus(t *testing.T) {
+func TestGetDeployStatus(t *testing.T) {
 	var tests = []struct {
 		description string
 		deps map[string]interface{}
-		depsWithDeadline map[string]int
+		depsWithDeadline map[string]float32
 		expectedErrMsg []string
 		shouldErr bool
 	}{
@@ -128,9 +176,9 @@ func TestGetStatus(t *testing.T) {
 				"dep1": "SUCCESS",
 				"dep2": fmt.Errorf("could not return within default timeout"),
 			},
-			depsWithDeadline: map[string]int{
+			depsWithDeadline: map[string]float32{
 				"dep1": 1,
-				"dep2": 0,
+				"dep2": 1,
 			},
 			expectedErrMsg: []string{"deployment dep2 failed due to could not return within default timeout"},
 			shouldErr: true,
@@ -141,7 +189,7 @@ func TestGetStatus(t *testing.T) {
 				"dep1": "SUCCESS",
 				"dep2": "RUNNING",
 			},
-			depsWithDeadline: map[string]int{
+			depsWithDeadline: map[string]float32{
 				"dep1": 1,
 				"dep2": 1,
 			},
@@ -153,7 +201,7 @@ func TestGetStatus(t *testing.T) {
 				"dep2": fmt.Errorf("could not return within default timeout"),
 				"dep3": fmt.Errorf("ERROR"),
 			},
-			depsWithDeadline: map[string]int{
+			depsWithDeadline: map[string]float32{
 				"dep1": 1,
 				"dep2": 1,
 				"dep3": 1,
@@ -167,7 +215,7 @@ func TestGetStatus(t *testing.T) {
 			deps: map[string]interface{}{
 				"dep1": "SUCCESS",
 			},
-			depsWithDeadline: map[string]int{
+			depsWithDeadline: map[string]float32{
 				"dep1": 1,
 				"dep2": 1,
 			},
@@ -177,15 +225,15 @@ func TestGetStatus(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			syncMap := sync.Map{}
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			syncMap := &sync.Map{}
 			for k, v := range(test.deps) {
 				syncMap.Store(k, v)
 			}
-			err := getStatus(context.Background(), syncMap, test.depsWithDeadline)
-			testutil.CheckError(t, test.shouldErr,  err)
+			err := getDeployStatus(syncMap, test.depsWithDeadline)
+			t.CheckError(test.shouldErr,  err)
 			for _, msg := range (test.expectedErrMsg) {
-					testutil.CheckErrorContains(t, msg, err)
+					t.CheckErrorContains(msg, err)
 			}
 		})
 	}

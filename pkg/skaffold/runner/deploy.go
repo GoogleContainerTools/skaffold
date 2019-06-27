@@ -19,12 +19,13 @@ package runner
 import (
 	"context"
 	"io"
+
 	cfg "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/pkg/errors"
 )
-
 
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
 	if cfg.IsKindCluster(r.runCtx.KubeContext) {
@@ -36,14 +37,17 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 
 	err := r.Deployer.Deploy(ctx, out, artifacts, r.labellers)
 	r.hasDeployed = true
-	return err
+	if err != nil {
+		return err
+	}
+	return r.statusCheck(ctx, out)
 }
-
 
 func (r *SkaffoldRunner) statusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
-	if !r.runCtx.Opts.StatusCheck {
-
+	if r.runCtx.Opts.StatusCheck {
+		io.WriteString(out, "running status check\n")
+		return deploy.StatusCheck(ctx, out, r.runCtx)
 	}
 	return nil
 }

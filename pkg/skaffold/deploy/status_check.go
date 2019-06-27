@@ -19,6 +19,7 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io"
 	"math"
 	"strconv"
@@ -32,22 +33,26 @@ import (
 )
 
 var (
-	deploymentOutputTemplate = "{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}}{{\",\"}}{{end}}"
-	// TODO: Move this to a flag or global setting.
-	defaultStatusCheckDeadlineInSeconds = 600
+	rolloutStatusTemplate       = "{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}},{{end}}"
+	// TODO: Move this to a flag or global config.
+	defaultStatusCheckDeadlineInSeconds float32 = 10
+	defaultPollPeriodInMilliseconds = 600
+	// For testing
+	executeRolloutStatus = getRollOutStatus
 )
 
-func StatusCheck(ctx context.Context, out io.Writer, runCtx runcontext.RunContext) error {
+func StatusCheck(ctx context.Context, out io.Writer, runCtx *runcontext.RunContext) error {
 	kubeCtl := kubectl.CLI{
 		Namespace:   runCtx.Opts.Namespace,
 		KubeContext: runCtx.KubeContext,
 	}
-	dMap, err := getDeploymentsWithDeadline(ctx, kubeCtl)
+	dMap, err := getDeadlineForDeployments(ctx, kubeCtl)
 	if err != nil {
 		return errors.Wrap(err, "could not fetch deployments")
 	}
 	w := sync.WaitGroup{}
-	syncMap := sync.Map{}
+	// Its safe to use sync.Map without locks here as each subroutine adds a different key.
+	syncMap := &sync.Map{}
 
 	for dName, deadline := range dMap {
 		// Set the deadline to defaultStatusCheckDeadlineInSeconds if deadline is set to Math.MaxInt
@@ -55,68 +60,106 @@ func StatusCheck(ctx context.Context, out io.Writer, runCtx runcontext.RunContex
 		if deadline == math.MaxInt32 {
 			deadline = defaultStatusCheckDeadlineInSeconds
 		}
+		deadlineDuration := time.Duration(deadline) * time.Second
 		w.Add(1)
-		fmt.Println(dName, deadline)
-		go checkDeploymentsStatus(ctx , kubeCtl, dName, deadline, syncMap)
+		go func(dName string, deadlineDuration time.Duration) {
+			defer w.Done()
+			pollDeploymentsStatus(ctx, kubeCtl, dName, deadlineDuration, syncMap)
+		}(dName, deadlineDuration)
 	}
 
 	// Wait for all deployment status to be fetched
 	w.Wait()
-	return nil
-	return getStatus(ctx, syncMap, dMap)
+	return getDeployStatus(syncMap, dMap)
 }
 
-func getDeploymentsWithDeadline(ctx context.Context, k kubectl.CLI) (map[string]int, error) {
-	b, err := k.RunOut(ctx, nil, "get", []string{"deployments"}, "--output", fmt.Sprintf("go-template='%s'", deploymentOutputTemplate))
+func getDeadlineForDeployments(ctx context.Context, k kubectl.CLI) (map[string]float32, error) {
+	skaffoldLabel := NewLabeller("").K8sManagedByLabelKeyValueString()
+	b, err := k.RunOut(ctx, nil, "get", []string{"deployments"}, "-l", skaffoldLabel, "--output", fmt.Sprintf("go-template='%s'", rolloutStatusTemplate))
 	if err != nil {
 		return nil, err
 	}
-	deployments := map[string]int{}
+	deployments := map[string]float32{}
 	if len(b) == 0 {
 		return deployments, nil
 	}
-	lines := strings.Split(string(b), ",")
+
+	lines := strings.Split(strings.Trim(string(b), "',"), ",")
+
 	for _, line := range lines {
 		kv := strings.Split(line, ":")
 		if len(kv) != 2 {
 			return nil, fmt.Errorf("error parsing `kubectl get deployments` %s", line)
 		}
-		deadline, err := strconv.Atoi(kv[1])
+		deadline, err := strconv.ParseFloat(kv[1], 32)
 		if err != nil {
 			return deployments, err
 		}
 
-		deployments[kv[0]] = deadline
+		deployments[kv[0]] = float32(deadline)
 	}
 	return deployments, nil
 
 }
 
-
-func checkDeploymentsStatus(ctx context.Context, k kubectl.CLI, dName string, deadline int, syncMap sync.Map)  {
-  timeoutContext, cancel := context.WithTimeout(ctx, time.Duration(deadline) * time.Second + 1)
-  defer cancel()
-	b, err := k.RunOut(timeoutContext, nil, "get", []string{"deployments"}, "--output", fmt.Sprintf("go-template='%s'", deploymentOutputTemplate))
-	if err != nil {
-		syncMap.Store(dName, b)
+func pollDeploymentsStatus(ctx context.Context, k kubectl.CLI, dName string, deadline time.Duration, syncMap *sync.Map) {
+	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
+	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
+	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollDuration)
+	logrus.Debugf("checking rollout status %s", dName)
+	defer cancel()
+	for {
+		select {
+		case <-timeoutContext.Done():
+			syncMap.Store(dName, errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", deadline)))
+			return
+		case <-time.After(pollDuration):
+			status, err := executeRolloutStatus(timeoutContext, k, dName)
+			if err != nil {
+				syncMap.Store(dName, err)
+				return
+			}
+			if strings.Contains(status, "successfully rolled out") {
+				syncMap.Store(dName, status)
+				return
+			}
+		}
 	}
-	syncMap.Store(dName, err)
 }
 
-func getStatus(ctx context.Context, syncMap sync.Map, deps map[string]int) error  {
+func getDeployStatus(syncMap *sync.Map, deps map[string]float32) error {
 	errorStrings := []string{}
 	for d, _ := range deps {
-		v, ok  := syncMap.Load((d))
-		if !ok {
-			errorStrings = append(errorStrings, fmt.Sprintf("could not verify status for deployment %s", d))
-		}
-		switch t := v.(type) {
-		case error:
-			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", d, t.Error()))
+		if errStr, ok := isErrorforValue(syncMap, d); ok {
+			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", d, errStr))
 		}
 	}
 	if len(errorStrings) == 0 {
 		return nil
 	}
 	return fmt.Errorf("following deployments are not stable:\n%s", strings.Join(errorStrings, "\n"))
+}
+
+func getRollOutStatus(ctx context.Context, k kubectl.CLI, dName string) (string, error) {
+	b, err := k.RunOut(ctx, nil, "rollout", []string{"status", "deployment", dName},
+		"--watch=false")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+
+func isErrorforValue(syncMap *sync.Map, d string) (string, bool) {
+	v, ok := syncMap.Load(d)
+	logrus.Debugf("rollout status for deployment %s is %v", d, v)
+	if !ok {
+		return "could not verify status for deployment", true
+	}
+	switch t := v.(type) {
+	case error:
+		return t.Error(), true
+  default:
+     return "", false
+  }
 }

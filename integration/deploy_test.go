@@ -96,3 +96,22 @@ func TestDeploy(t *testing.T) {
 
 	skaffold.Delete().InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
 }
+
+func TestDeployWithInCorrectConfig(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	err := skaffold.Deploy().InDir("examples/unstable-deployment").InNs("test").Run(t)
+	if err == nil {
+		t.Error("expected an error to see since the deployment is not stable. However deploy returned success")
+	}
+
+	skaffold.Delete().InDir("examples/unstable-deployment").InNs(ns.Name).RunOrFail(t)
+}
