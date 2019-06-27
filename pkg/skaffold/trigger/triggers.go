@@ -36,7 +36,7 @@ import (
 // Trigger describes a mechanism that triggers the watch.
 type Trigger interface {
 	Start(context.Context) (<-chan bool, error)
-	WatchForChanges(io.Writer)
+	LogWatchToUser(io.Writer)
 	Debounce() bool
 }
 
@@ -72,7 +72,7 @@ func (t *pollTrigger) Debounce() bool {
 	return true
 }
 
-func (t *pollTrigger) WatchForChanges(out io.Writer) {
+func (t *pollTrigger) LogWatchToUser(out io.Writer) {
 	color.Yellow.Fprintf(out, "Watching for changes every %v...\n", t.Interval)
 }
 
@@ -104,7 +104,7 @@ func (t *manualTrigger) Debounce() bool {
 	return false
 }
 
-func (t *manualTrigger) WatchForChanges(out io.Writer) {
+func (t *manualTrigger) LogWatchToUser(out io.Writer) {
 	color.Yellow.Fprintln(out, "Press any key to rebuild/redeploy the changes")
 }
 
@@ -148,7 +148,7 @@ func (t *fsNotifyTrigger) Debounce() bool {
 	return false
 }
 
-func (t *fsNotifyTrigger) WatchForChanges(out io.Writer) {
+func (t *fsNotifyTrigger) LogWatchToUser(out io.Writer) {
 	color.Yellow.Fprintln(out, "Watching for changes...")
 }
 
@@ -217,7 +217,7 @@ func (t *apiTrigger) Debounce() bool {
 	return false
 }
 
-func (t *apiTrigger) WatchForChanges(out io.Writer) {
+func (t *apiTrigger) LogWatchToUser(out io.Writer) {
 	color.Yellow.Fprintln(out, "Watching on designated port for build requests...")
 }
 
@@ -225,15 +225,16 @@ func (t *apiTrigger) WatchForChanges(out io.Writer) {
 // It will attempt to start as a polling trigger if it tried unsuccessfully to start a notify trigger.
 func StartTrigger(ctx context.Context, t Trigger) (<-chan bool, error) {
 	ret, err := t.Start(ctx)
-	if err != nil {
-		if notifyTrigger, ok := t.(*fsNotifyTrigger); ok {
-			t = &pollTrigger{
-				Interval: notifyTrigger.Interval,
-			}
+	if err == nil {
+		return ret, err
+	}
+	if notifyTrigger, ok := t.(*fsNotifyTrigger); ok {
+		logrus.Debugln("Couldn't start notify trigger. Falling back to a polling trigger")
 
-			logrus.Debugln("Couldn't start notify trigger. Falling back to a polling trigger")
-			ret, err = t.Start(ctx)
+		t = &pollTrigger{
+			Interval: notifyTrigger.Interval,
 		}
+		ret, err = t.Start(ctx)
 	}
 
 	return ret, err

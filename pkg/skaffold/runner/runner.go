@@ -61,16 +61,17 @@ type Runner interface {
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
+	// TODO(nkubala): make embedded fields private
 	build.Builder
 	deploy.Deployer
 	test.Tester
 	tag.Tagger
 	sync.Syncer
-	trigger.Trigger
-	filemon.Monitor
+	monitor  filemon.Monitor
+	listener Listener
 
 	cache                *cache.Cache
-	changeSet            *changes
+	changeSet            *changeSet
 	runCtx               *runcontext.RunContext
 	labellers            []deploy.Labeller
 	defaultLabeller      *deploy.DefaultLabeller
@@ -121,15 +122,20 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 
 	event.InitializeState(runCtx.Cfg.Build)
 
+	monitor := filemon.NewMonitor()
+
 	return &SkaffoldRunner{
-		Builder:              builder,
-		Tester:               tester,
-		Deployer:             deployer,
-		Tagger:               tagger,
-		Syncer:               kubectl.NewSyncer(runCtx.Namespaces),
-		Trigger:              trigger,
-		Monitor:              filemon.NewMonitor(),
-		changeSet:            &changes{},
+		Builder:  builder,
+		Tester:   tester,
+		Deployer: deployer,
+		Tagger:   tagger,
+		Syncer:   kubectl.NewSyncer(runCtx.Namespaces),
+		monitor:  monitor,
+		listener: &SkaffoldListener{
+			Monitor: monitor,
+			Trigger: trigger,
+		},
+		changeSet:            &changeSet{},
 		labellers:            labellers,
 		defaultLabeller:      defaultLabeller,
 		portForwardResources: cfg.PortForward,

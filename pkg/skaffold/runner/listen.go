@@ -20,37 +20,53 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
+type Listener interface {
+	WatchForChanges(context.Context, io.Writer, func() error) error
+	LogWatchToUser(io.Writer)
+}
+
+type SkaffoldListener struct {
+	Monitor filemon.Monitor
+	Trigger trigger.Trigger
+}
+
+func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
+	l.Trigger.LogWatchToUser(out)
+}
+
 // Listen listens to a trigger, and when one is received, computes file changes and
 // conditionally runs the dev loop.
-func (r *SkaffoldRunner) Listen(ctx context.Context, out io.Writer, onChange func() error) error {
+func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, devLoop func() error) error {
 	ctxTrigger, cancelTrigger := context.WithCancel(ctx)
 	defer cancelTrigger()
-	trigger, err := trigger.StartTrigger(ctxTrigger, r.Trigger)
+	trigger, err := trigger.StartTrigger(ctxTrigger, l.Trigger)
 	if err != nil {
 		return errors.Wrap(err, "unable to start trigger")
 	}
 
 	// exit if file monitor fails the first time
-	err = r.Monitor.Run(ctx, out, r.Trigger.Debounce())
-	if err != nil {
+	if err := l.Monitor.Run(ctx, out, l.Trigger.Debounce()); err != nil {
 		return errors.Wrap(err, "failed to monitor files")
 	}
+
+	l.LogWatchToUser(out)
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		case <-trigger:
-			if err := r.Monitor.Run(ctx, out, r.Trigger.Debounce()); err != nil {
+			if err := l.Monitor.Run(ctx, out, l.Trigger.Debounce()); err != nil {
 				logrus.Warnf("error computing file changes: %s", err.Error())
 				logrus.Warnf("skaffold may not run successfully!")
 			}
-			if err := onChange(); err != nil {
+			if err := devLoop(); err != nil {
 				logrus.Errorf("error running dev loop: %s", err.Error())
 			}
 		}

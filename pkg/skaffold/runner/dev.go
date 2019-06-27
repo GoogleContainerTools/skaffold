@@ -33,6 +33,22 @@ import (
 // ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
 var ErrorConfigurationChanged = errors.New("configuration changed")
 
+func (r *SkaffoldRunner) separateBuildAndSync() error {
+	// TODO(nkubala): can this be moved into callback registered in monitor?
+	for _, a := range r.changeSet.dirtyArtifacts {
+		s, err := sync.NewItem(a.artifact, a.events, r.builds, r.runCtx.InsecureRegistries)
+		if err != nil {
+			return errors.Wrap(err, "sync")
+		}
+		if s != nil {
+			r.changeSet.AddResync(s)
+		} else {
+			r.changeSet.AddRebuild(a.artifact)
+		}
+	}
+	return nil
+}
+
 // Dev watches for changes and runs the skaffold build and deploy
 // config until interrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
@@ -48,22 +64,14 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 		logger.Mute()
 
-		for _, a := range r.changeSet.dirtyArtifacts {
-			s, err := sync.NewItem(a.artifact, a.events, r.builds, r.runCtx.InsecureRegistries)
-			if err != nil {
-				return errors.Wrap(err, "sync")
-			}
-			if s != nil {
-				r.changeSet.AddResync(s)
-			} else {
-				r.changeSet.AddRebuild(a.artifact)
-			}
+		if err := r.separateBuildAndSync(); err != nil {
+			return err
 		}
 
-		if r.changeSet.needsReload || len(r.changeSet.needsRebuild) > 0 || r.changeSet.needsRedeploy {
+		if r.changeSet.needsAction() {
 			// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
-			defer r.Trigger.WatchForChanges(out)
-			defer r.Monitor.Reset()
+			defer r.monitor.Reset()
+			defer r.listener.LogWatchToUser(out)
 		}
 
 		switch {
@@ -102,7 +110,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			continue
 		}
 
-		if err := r.Monitor.Register(
+		if err := r.monitor.Register(
 			func() ([]string, error) { return r.Builder.DependenciesForArtifact(ctx, artifact) },
 			func(e filemon.Events) { r.changeSet.AddDirtyArtifact(artifact, e) },
 		); err != nil {
@@ -111,7 +119,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// Watch test configuration
-	if err := r.Monitor.Register(
+	if err := r.monitor.Register(
 		r.Tester.TestDependencies,
 		func(filemon.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
@@ -119,7 +127,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// Watch deployment configuration
-	if err := r.Monitor.Register(
+	if err := r.monitor.Register(
 		r.Deployer.Dependencies,
 		func(filemon.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
@@ -127,7 +135,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// Watch Skaffold configuration
-	if err := r.Monitor.Register(
+	if err := r.monitor.Register(
 		func() ([]string, error) { return []string{r.runCtx.Opts.ConfigurationFile}, nil },
 		func(filemon.Events) { r.changeSet.needsReload = true },
 	); err != nil {
@@ -159,6 +167,5 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return errors.Wrap(err, "starting forwarder manager")
 	}
 
-	r.Trigger.WatchForChanges(out)
-	return r.Listen(ctx, out, onChange)
+	return r.listener.WatchForChanges(ctx, out, onChange)
 }

@@ -22,7 +22,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
-type changes struct {
+type changeSet struct {
 	dirtyArtifacts []*artifactChange
 	needsRebuild   []*latest.Artifact
 	needsResync    []*sync.Item
@@ -35,23 +35,27 @@ type artifactChange struct {
 	events   filemon.Events
 }
 
-func (c *changes) AddDirtyArtifact(a *latest.Artifact, e filemon.Events) {
+func (c *changeSet) AddDirtyArtifact(a *latest.Artifact, e filemon.Events) {
 	c.dirtyArtifacts = append(c.dirtyArtifacts, &artifactChange{artifact: a, events: e})
 }
 
-func (c *changes) AddRebuild(a *latest.Artifact) {
+func (c *changeSet) AddRebuild(a *latest.Artifact) {
 	c.needsRebuild = append(c.needsRebuild, a)
 }
 
-func (c *changes) AddResync(s *sync.Item) {
+func (c *changeSet) AddResync(s *sync.Item) {
 	c.needsResync = append(c.needsResync, s)
 }
 
-func (c *changes) reset() {
+func (c *changeSet) reset() {
 	c.dirtyArtifacts = nil
 	c.needsRebuild = nil
 	c.needsResync = nil
 
 	c.needsRedeploy = false
 	c.needsReload = false
+}
+
+func (c *changeSet) needsAction() bool {
+	return c.needsReload || len(c.needsRebuild) > 0 || c.needsRedeploy
 }

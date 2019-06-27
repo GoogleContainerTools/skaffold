@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestWatch(t *testing.T) {
+func TestFileMonitor(t *testing.T) {
 	var tests = []struct {
 		description string
 		update      func(folder *testutil.TempDir)

@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	gosync "sync"
+	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -49,15 +50,18 @@ type TestBench struct {
 	testErrors   []error
 	deployErrors []error
 
-	changeSet      *gosync.Map
+	devLoop func() error
+	// monitor        filemon.Monitor
+	firstMonitor   func(context.Context, io.Writer, bool) error
+	cycles         int
+	currentCycle   int
 	currentActions Actions
+	actions        []Actions
 	tag            int
 }
 
 func NewTestBench() *TestBench {
-	return &TestBench{
-		changeSet: &gosync.Map{},
-	}
+	return &TestBench{}
 }
 
 func (t *TestBench) WithBuildErrors(buildErrors []error) *TestBench {
@@ -80,14 +84,6 @@ func (t *TestBench) WithTestErrors(testErrors []error) *TestBench {
 	return t
 }
 
-func (t *TestBench) MarkChanged(artifact string) {
-	t.changeSet.Store(artifact, true)
-}
-
-func (t *TestBench) MarkProcessed(artifact string) {
-	t.changeSet.Delete(artifact)
-}
-
 func (t *TestBench) Labels() map[string]string                        { return map[string]string{} }
 func (t *TestBench) TestDependencies() ([]string, error)              { return nil, nil }
 func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
@@ -100,7 +96,12 @@ func (t *TestBench) DependenciesForArtifact(ctx context.Context, artifact *lates
 	return nil, nil
 }
 
-func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (t *TestBench) enterNewCycle() {
+	t.actions = append(t.actions, t.currentActions)
+	t.currentActions = Actions{}
+}
+
+func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if len(t.buildErrors) > 0 {
 		err := t.buildErrors[0]
 		t.buildErrors = t.buildErrors[1:]
@@ -119,14 +120,11 @@ func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, 
 		})
 	}
 
-	built := findTags(builds)
-	if len(built) > 0 {
-		t.currentActions.Built = append(t.currentActions.Built, built...)
-	}
+	t.currentActions.Built = findTags(builds)
 	return builds, nil
 }
 
-func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {
+func (t *TestBench) Sync(_ context.Context, item *sync.Item) error {
 	if len(t.syncErrors) > 0 {
 		err := t.syncErrors[0]
 		t.syncErrors = t.syncErrors[1:]
@@ -135,13 +133,11 @@ func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {
 		}
 	}
 
-	if item != nil && item.Image != "" {
-		t.currentActions.Synced = append(t.currentActions.Synced, item.Image)
-	}
+	t.currentActions.Synced = []string{item.Image}
 	return nil
 }
 
-func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []build.Artifact) error {
 	if len(t.testErrors) > 0 {
 		err := t.testErrors[0]
 		t.testErrors = t.testErrors[1:]
@@ -150,14 +146,11 @@ func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.A
 		}
 	}
 
-	tested := findTags(artifacts)
-	if len(tested) > 0 {
-		t.currentActions.Tested = append(t.currentActions.Tested, findTags(artifacts)...)
-	}
+	t.currentActions.Tested = findTags(artifacts)
 	return nil
 }
 
-func (t *TestBench) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact, labellers []deploy.Labeller) error {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ []deploy.Labeller) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
@@ -166,16 +159,30 @@ func (t *TestBench) Deploy(ctx context.Context, out io.Writer, artifacts []build
 		}
 	}
 
-	deployed := findTags(artifacts)
-	if len(deployed) > 0 {
-		t.currentActions.Deployed = append(t.currentActions.Deployed, findTags(artifacts)...)
+	t.currentActions.Deployed = findTags(artifacts)
+	return nil
+}
+
+func (t *TestBench) Actions() []Actions {
+	return append(t.actions, t.currentActions)
+}
+
+func (t *TestBench) WatchForChanges(_ context.Context, _ io.Writer, _ func() error) error {
+	// don't actually call the monitor here, because extra actions would be added
+	if err := t.firstMonitor(context.Background(), ioutil.Discard, true); err != nil {
+		return err
+	}
+	for i := 0; i < t.cycles; i++ {
+		t.enterNewCycle()
+		t.currentCycle = i
+		if err := t.devLoop(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
 
-func (t *TestBench) Actions() Actions {
-	return t.currentActions
-}
+func (t *TestBench) LogWatchToUser(_ io.Writer) {}
 
 func findTags(artifacts []build.Artifact) []string {
 	var tags []string
@@ -183,6 +190,11 @@ func findTags(artifacts []build.Artifact) []string {
 		tags = append(tags, artifact.Tag)
 	}
 	return tags
+}
+
+func (r *SkaffoldRunner) WithMonitor(m filemon.Monitor) *SkaffoldRunner {
+	r.monitor = m
+	return r
 }
 
 func createRunner(t *testutil.T, testBench *TestBench) *SkaffoldRunner {
@@ -201,6 +213,38 @@ func createRunner(t *testutil.T, testBench *TestBench) *SkaffoldRunner {
 	runner.Syncer = testBench
 	runner.Tester = testBench
 	runner.Deployer = testBench
+	runner.listener = testBench
+
+	testBench.devLoop = func() error {
+		if err := runner.monitor.Run(context.Background(), nil, true); err != nil {
+			return err
+		}
+
+		if err := runner.separateBuildAndSync(); err != nil {
+			return err
+		}
+
+		if len(runner.changeSet.needsResync) > 0 {
+			for _, s := range runner.changeSet.needsResync {
+				if err := runner.Syncer.Sync(context.Background(), s); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+
+		_, bErr := runner.BuildAndTest(context.Background(), ioutil.Discard, runner.changeSet.needsRebuild)
+		if bErr == nil {
+			runner.Deploy(context.Background(), ioutil.Discard, runner.builds)
+		}
+		runner.changeSet.reset()
+		return nil
+	}
+
+	testBench.firstMonitor = func(context.Context, io.Writer, bool) error {
+		// default to noop so we don't add extra actions
+		return nil
+	}
 
 	return runner
 }

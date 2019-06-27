@@ -85,11 +85,11 @@ func TestPollTrigger_Debounce(t *testing.T) {
 	testutil.CheckDeepEqual(t, want, got)
 }
 
-func TestPollTrigger_WatchForChanges(t *testing.T) {
+func TestPollTrigger_LogWatchToUser(t *testing.T) {
 	out := new(bytes.Buffer)
 
 	trigger := &pollTrigger{Interval: 10}
-	trigger.WatchForChanges(out)
+	trigger.LogWatchToUser(out)
 
 	got, want := out.String(), "Watching for changes every 10ns...\n"
 	testutil.CheckDeepEqual(t, want, got)
@@ -101,11 +101,11 @@ func TestNotifyTrigger_Debounce(t *testing.T) {
 	testutil.CheckDeepEqual(t, want, got)
 }
 
-func TestNotifyTrigger_WatchForChanges(t *testing.T) {
+func TestNotifyTrigger_LogWatchToUser(t *testing.T) {
 	out := new(bytes.Buffer)
 
 	trigger := &fsNotifyTrigger{Interval: 10}
-	trigger.WatchForChanges(out)
+	trigger.LogWatchToUser(out)
 
 	got, want := out.String(), "Watching for changes...\n"
 	testutil.CheckDeepEqual(t, want, got)
@@ -117,11 +117,11 @@ func TestManualTrigger_Debounce(t *testing.T) {
 	testutil.CheckDeepEqual(t, want, got)
 }
 
-func TestManualTrigger_WatchForChanges(t *testing.T) {
+func TestManualTrigger_LogWatchToUser(t *testing.T) {
 	out := new(bytes.Buffer)
 
 	trigger := &manualTrigger{}
-	trigger.WatchForChanges(out)
+	trigger.LogWatchToUser(out)
 
 	got, want := out.String(), "Press any key to rebuild/redeploy the changes\n"
 	testutil.CheckDeepEqual(t, want, got)
