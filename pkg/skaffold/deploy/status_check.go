@@ -32,10 +32,10 @@ import (
 )
 
 var (
-	rolloutStatusTemplate       = "{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}},{{end}}"
+	rolloutStatusTemplate = "{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}},{{end}}"
 	// TODO: Move this to a flag or global config.
 	defaultStatusCheckDeadlineInSeconds float32 = 10
-	defaultPollPeriodInMilliseconds = 600
+	defaultPollPeriodInMilliseconds             = 600
 	// For testing
 	executeRolloutStatus = getRollOutStatus
 )
@@ -83,9 +83,13 @@ func getDeadlineForDeployments(ctx context.Context, k kubectl.CLI) (map[string]f
 		return deployments, nil
 	}
 
-	lines := strings.Split(strings.Trim(string(b), "',"), ",")
+	output := strings.Trim(string(b), ",'")
+	lines := strings.Split(output, ",")
 
 	for _, line := range lines {
+		if line == "" {
+			continue
+		}
 		kv := strings.Split(line, ":")
 		if len(kv) != 2 {
 			return nil, fmt.Errorf("error parsing `kubectl get deployments` %s", line)
@@ -128,7 +132,7 @@ func pollDeploymentsStatus(ctx context.Context, k kubectl.CLI, dName string, dea
 
 func getDeployStatus(syncMap *sync.Map, deps map[string]float32) error {
 	errorStrings := []string{}
-	for d, _ := range deps {
+	for d := range deps {
 		if errStr, ok := isErrorforValue(syncMap, d); ok {
 			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", d, errStr))
 		}
@@ -148,7 +152,6 @@ func getRollOutStatus(ctx context.Context, k kubectl.CLI, dName string) (string,
 	return string(b), nil
 }
 
-
 func isErrorforValue(syncMap *sync.Map, d string) (string, bool) {
 	v, ok := syncMap.Load(d)
 	logrus.Debugf("rollout status for deployment %s is %v", d, v)
@@ -158,7 +161,7 @@ func isErrorforValue(syncMap *sync.Map, d string) (string, bool) {
 	switch t := v.(type) {
 	case error:
 		return t.Error(), true
-  default:
-     return "", false
-  }
+	default:
+		return "", false
+	}
 }

@@ -47,7 +47,7 @@ func TestGetDeadlineForDeployments(t *testing.T) {
 		{
 			description: "no deployments",
 			command: testutil.NewFakeCmd(t).
-				WithRunOut(getDeploymentCommand, ""),
+				WithRunOut(getDeploymentCommand, "''"),
 			expected: map[string]float32{},
 		},
 		{
@@ -72,14 +72,14 @@ func TestGetDeadlineForDeployments(t *testing.T) {
 }
 
 type MockRolloutStatus struct {
-	called int
+	called    int
 	responses []string
-	err error
+	err       error
 }
 
-func (m *MockRolloutStatus) Executefunc(context.Context,kubectl.CLI, string) (string, error){
+func (m *MockRolloutStatus) Executefunc(context.Context, kubectl.CLI, string) (string, error) {
 	var resp string
-	if m.err != nil{
+	if m.err != nil {
 		m.called++
 		return "", m.err
 	}
@@ -96,49 +96,48 @@ func TestPollDeploymentsStatus(t *testing.T) {
 
 	var tests = []struct {
 		description string
-		mock  *MockRolloutStatus
-		duration int
-		expectedCalled int
-		shouldErr bool
+		mock        *MockRolloutStatus
+		duration    int
+		exactCalls  int
+		shouldErr   bool
 	}{
 		{
 			description: "rollout returns success",
-			mock : &MockRolloutStatus{
+			mock: &MockRolloutStatus{
 				responses: []string{"dep successfully rolled out"},
 			},
-			expectedCalled: 1,
-			duration: 500,
+			exactCalls: 1,
+			duration:   500,
 		},
 		{
 			description: "rollout returns error in the first attempt",
-			mock : &MockRolloutStatus{
+			mock: &MockRolloutStatus{
 				err: errors.New("deployment.apps/dep could not be found"),
 			},
-			shouldErr: true,
-			expectedCalled: 1,
-			duration: 500,
+			shouldErr:  true,
+			exactCalls: 1,
+			duration:   500,
 		},
 		{
 			description: "rollout returns success before time out",
-			mock : &MockRolloutStatus{
+			mock: &MockRolloutStatus{
 				responses: []string{
 					"Waiting for rollout to finish: 0 of 1 updated replicas are available...",
 					"Waiting for rollout to finish: 0 of 1 updated replicas are available...",
 					"deployment.apps/dep successfully rolled out"},
 			},
-			duration: 500,
-			expectedCalled: 3,
+			duration:   500,
+			exactCalls: 3,
 		},
 		{
 			description: "rollout returns did not stabalize within the given timeout",
-			mock : &MockRolloutStatus{
+			mock: &MockRolloutStatus{
 				responses: []string{
 					"Waiting for rollout to finish: 1 of 3 updated replicas are available...",
 					"Waiting for rollout to finish: 1 of 3 updated replicas are available...",
 					"Waiting for rollout to finish: 2 of 3 updated replicas are available..."},
 			},
-			duration: 1000,
-			expectedCalled: 10,
+			duration:  1000,
 			shouldErr: true,
 		},
 	}
@@ -149,26 +148,29 @@ func TestPollDeploymentsStatus(t *testing.T) {
 			// Figure out why i can't use t.Override.
 			// Using t.Override throws an error "reflect: call of reflect.Value.Elem on func Value"
 			executeRolloutStatus = mock.Executefunc
-			defer func(){executeRolloutStatus = getRollOutStatus}()
+			defer func() { executeRolloutStatus = getRollOutStatus }()
 
 			defaultPollPeriodInMilliseconds = 100
-			defer func(){defaultPollPeriodInMilliseconds = originalPollingPeriod}()
+			defer func() { defaultPollPeriodInMilliseconds = originalPollingPeriod }()
+
 			actual := &sync.Map{}
-			pollDeploymentsStatus(context.Background(),kubectl.CLI{}, "dep", time.Duration(test.duration)*time.Millisecond, actual)
+			pollDeploymentsStatus(context.Background(), kubectl.CLI{}, "dep", time.Duration(test.duration)*time.Millisecond, actual)
 			_, isErr := isErrorforValue(actual, "dep")
 			t.CheckDeepEqual(test.shouldErr, isErr)
-			t.CheckDeepEqual(test.expectedCalled, mock.called)
+			if test.exactCalls > 0 {
+				t.CheckDeepEqual(test.exactCalls, mock.called)
+			}
 		})
 	}
 }
 
 func TestGetDeployStatus(t *testing.T) {
 	var tests = []struct {
-		description string
-		deps map[string]interface{}
+		description      string
+		deps             map[string]interface{}
 		depsWithDeadline map[string]float32
-		expectedErrMsg []string
-		shouldErr bool
+		expectedErrMsg   []string
+		shouldErr        bool
 	}{
 		{
 			description: "one error",
@@ -181,7 +183,7 @@ func TestGetDeployStatus(t *testing.T) {
 				"dep2": 1,
 			},
 			expectedErrMsg: []string{"deployment dep2 failed due to could not return within default timeout"},
-			shouldErr: true,
+			shouldErr:      true,
 		},
 		{
 			description: "no error",
@@ -220,20 +222,20 @@ func TestGetDeployStatus(t *testing.T) {
 				"dep2": 1,
 			},
 			expectedErrMsg: []string{"could not verify status for deployment"},
-			shouldErr: true,
+			shouldErr:      true,
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			syncMap := &sync.Map{}
-			for k, v := range(test.deps) {
+			for k, v := range test.deps {
 				syncMap.Store(k, v)
 			}
 			err := getDeployStatus(syncMap, test.depsWithDeadline)
-			t.CheckError(test.shouldErr,  err)
-			for _, msg := range (test.expectedErrMsg) {
-					t.CheckErrorContains(msg, err)
+			t.CheckError(test.shouldErr, err)
+			for _, msg := range test.expectedErrMsg {
+				t.CheckErrorContains(msg, err)
 			}
 		})
 	}

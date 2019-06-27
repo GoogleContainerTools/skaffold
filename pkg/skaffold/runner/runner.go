@@ -22,7 +22,6 @@ import (
 	"io"
 	"time"
 
-	cfg "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster"
@@ -230,10 +229,14 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	}
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 	return r.performStatusCheck(out)
+=======
+	return r.performStatusCheck(ctx, out)
+>>>>>>> fix gofmt and integration tests
 }
 
-func (r *SkaffoldRunner) performStatusCheck(out io.Writer) error {
+func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
 	if r.runCtx.Opts.StatusCheck {
 <<<<<<< HEAD
@@ -261,8 +264,12 @@ func (r *SkaffoldRunner) performStatusCheck(out io.Writer) error {
 		err:= deploy.StatusCheck(ctx, r.runCtx)
 =======
 		fmt.Fprintln(out, "Waiting for deployments to stabilize")
+<<<<<<< HEAD
 		err:= statusCheck(ctx, r.runCtx)
 >>>>>>> fix test
+=======
+		err := statusCheck(ctx, r.defaultLabeller, r.runCtx)
+>>>>>>> fix gofmt and integration tests
 		if err != nil {
 			fmt.Fprintln(out, err.Error())
 		}
