@@ -237,6 +237,7 @@ func (r *SkaffoldRunner) performStatusCheck(out io.Writer) error {
 	// Check if we need to perform deploy status
 	if r.runCtx.Opts.StatusCheck {
 <<<<<<< HEAD
+<<<<<<< HEAD
 		fmt.Fprintln(out, "Waiting for deployments to stabilize")
 =======
 	return r.performStatusCheck(ctx, out)
@@ -258,6 +259,10 @@ func (r *SkaffoldRunner) performStatusCheck(out io.Writer) error {
 =======
 		fmt.Fprintln(out, "Performing status check")
 		err:= deploy.StatusCheck(ctx, r.runCtx)
+=======
+		fmt.Fprintln(out, "Waiting for deployments to stabilize")
+		err:= statusCheck(ctx, r.runCtx)
+>>>>>>> fix test
 		if err != nil {
 			fmt.Fprintln(out, err.Error())
 		}
