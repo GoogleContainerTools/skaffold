@@ -34,7 +34,9 @@ var (
 )
 
 // Docker is the path to a dockerfile. Implements the InitBuilder interface.
-type Docker string
+type Docker struct {
+	Dockerfile string `json:"path"`
+}
 
 // Name returns the name of the builder, "Docker"
 func (d Docker) Name() string {
@@ -43,20 +45,19 @@ func (d Docker) Name() string {
 
 // Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
 func (d Docker) Describe() string {
-	return fmt.Sprintf("%s (%s)", d.Name(), d)
+	return fmt.Sprintf("%s (%s)", d.Name(), d.Dockerfile)
 }
 
 // CreateArtifact creates an Artifact to be included in the generated Build Config
 func (d Docker) CreateArtifact(manifestImage string) *latest.Artifact {
-	path := string(d)
-	workspace := filepath.Dir(path)
+	workspace := filepath.Dir(d.Dockerfile)
 	a := &latest.Artifact{ImageName: manifestImage}
 	if workspace != "." {
 		a.Workspace = workspace
 	}
-	if filepath.Base(path) != constants.DefaultDockerfilePath {
+	if filepath.Base(d.Dockerfile) != constants.DefaultDockerfilePath {
 		a.ArtifactType = latest.ArtifactType{
-			DockerArtifact: &latest.DockerArtifact{DockerfilePath: path},
+			DockerArtifact: &latest.DockerArtifact{DockerfilePath: d.Dockerfile},
 		}
 	}
 
@@ -71,7 +72,7 @@ func (d Docker) ConfiguredImage() string {
 
 // Path returns the path to the dockerfile
 func (d Docker) Path() string {
-	return string(d)
+	return d.Dockerfile
 }
 
 // ValidateDockerfile makes sure the given Dockerfile is existing and valid.

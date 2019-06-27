@@ -228,7 +228,7 @@ func detectBuilders(path string) ([]InitBuilder, error) {
 
 	// Check for Dockerfile
 	if docker.ValidateDockerfileFunc(path) {
-		results := []InitBuilder{docker.Docker(path)}
+		results := []InitBuilder{docker.Docker{Dockerfile: path}}
 		return results, nil
 	}
 
@@ -247,7 +247,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 
 		// TODO: Allow passing Jib config via CLI
 		pairs = append(pairs, builderImagePair{
-			Builder:   docker.Docker(parts[0]),
+			Builder:   docker.Docker{Dockerfile: parts[0]},
 			ImageName: parts[1],
 		})
 	}
@@ -348,32 +348,32 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 
 // printAnalyzeJSON takes the automatically resolved builder/image pairs, the unresolved images, and the unresolved builders, and generates
 // a JSON string containing builder config information,
-func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, builderConfigs []InitBuilder, images []string) error {
-	if !skipBuild && len(builderConfigs) == 0 {
+func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
+	if !skipBuild && len(unresolvedBuilders) == 0 {
 		return errors.New("one or more valid build configuration must be present to build images with skaffold; please provide at least one Dockerfile or Jib configuration and try again, or run `skaffold init --skip-build`")
 	}
 
 	// Build JSON output. Example schema is below:
-	//	{
-	//		"builders":[
-	//			{
-	//				"name":"Docker",
-	//				"payload":"path/to/Dockerfile"
-	//			},
-	//			{
-	//				"name":"Name of Builder",
-	//				"payload": { // Payload structure may vary depending on builder type
-	//					"pathToConfig":"path/to/builder.config",
-	//					"builderSpecificField":"value",
-	//					"targetImage":"gcr.io/project/images"
-	//				}
-	//			},
-	//		],
-	//		"images":[
-	//			{"name":"gcr.io/project/images", "requiresPrompt":"false"}, // No need to prompt for this image since its builder was automatically resolved
-	//			{"name":"another/image", "requiresPrompt":"true"},
-	//		],
-	//	}
+	// {
+	//     "builders":[
+	//         {
+	//             "name":"Docker",
+	//             "payload":"path/to/Dockerfile"
+	//         },
+	//         {
+	//             "name":"Name of Builder",
+	//             "payload": { // Payload structure may vary depending on builder type
+	//                 "path":"path/to/builder.config",
+	//                 "targetImage":"gcr.io/project/images",
+	//                 ...
+	//             }
+	//         },
+	//     ],
+	//     "images":[
+	//         {"name":"gcr.io/project/images", "requiresPrompt":"false"}, // No need to prompt for this image since its builder was automatically resolved
+	//         {"name":"another/image", "requiresPrompt":"true"},
+	//     ],
+	// }
 	type Builder struct {
 		Name    string      `json:"name,omitempty"`
 		Payload InitBuilder `json:"payload"`
@@ -391,10 +391,10 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, b
 		a.Builders = append(a.Builders, Builder{Name: pair.Builder.Name(), Payload: pair.Builder})
 		a.Images = append(a.Images, Image{Name: pair.ImageName, RequiresPrompt: false})
 	}
-	for _, config := range builderConfigs {
+	for _, config := range unresolvedBuilders {
 		a.Builders = append(a.Builders, Builder{Name: config.Name(), Payload: config})
 	}
-	for _, image := range images {
+	for _, image := range unresolvedImages {
 		a.Images = append(a.Images, Image{Name: image, RequiresPrompt: true})
 	}
 
