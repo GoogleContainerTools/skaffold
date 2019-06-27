@@ -56,7 +56,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	}
 
 	wg := sync.WaitGroup{}
-	// Its safe to use sync.Map without locks here as each subroutine adds a different key.
+	// Its safe to use sync.Map without locks here as each subroutine adds a different key to the map.
 	syncMap := &sync.Map{}
 	kubeCtl := &kubectl.CLI{
 		Namespace:   runCtx.Opts.Namespace,
@@ -74,7 +74,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Wait for all deployment status to be fetched
 	wg.Wait()
-	return getDeployStatus(syncMap)
+	return getSkaffoldDeployStatus(syncMap)
 }
 
 func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) (map[string]int32, error) {
@@ -82,10 +82,10 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) 
 	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
 		LabelSelector: l.K8sManagedByLabelKeyValueString(),
 	})
-
 	if err != nil {
 		return nil, errors.Wrap(err, "could not fetch deployments")
 	}
+
 	depMap := map[string]int32{}
 
 	for _, d := range deps.Items {
@@ -127,7 +127,7 @@ func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName stri
 	}
 }
 
-func getDeployStatus(m *sync.Map) error {
+func getSkaffoldDeployStatus(m *sync.Map) error {
 	errorStrings := []string{}
 	m.Range(func(k, v interface{}) bool {
 		if t, ok := v.(error); ok {

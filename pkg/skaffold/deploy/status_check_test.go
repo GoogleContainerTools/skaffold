@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -261,7 +262,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			if _, ok := actual.Load("dep"); !ok {
 				t.Error("expected result for deployment dep. But found none")
 			}
-			err := getDeployStatus(actual)
+			err := getSkaffoldDeployStatus(actual)
 			t.CheckError(test.shouldErr, err)
 			if test.exactCalls > 0 {
 				t.CheckDeepEqual(test.exactCalls, mock.called)
@@ -312,11 +313,51 @@ func TestGetDeployStatus(t *testing.T) {
 			for k, v := range test.deps {
 				syncMap.Store(k, v)
 			}
-			err := getDeployStatus(syncMap)
+			err := getSkaffoldDeployStatus(syncMap)
 			t.CheckError(test.shouldErr, err)
 			for _, msg := range test.expectedErrMsg {
 				t.CheckErrorContains(msg, err)
 			}
+		})
+	}
+}
+
+func TestGetRollOutStatus(t *testing.T) {
+	rolloutCmd := "kubectl --context kubecontext --namespace test rollout status deployment dep --watch=false"
+	var tests = []struct {
+		description string
+		command     util.Command
+		expected    string
+		shouldErr   bool
+	}{
+		{
+			description: "some output",
+			command: testutil.NewFakeCmd(t).
+				WithRunOut(rolloutCmd, "Waiting for replicas to be available"),
+			expected: "Waiting for replicas to be available",
+		},
+		{
+			description: "no output",
+			command: testutil.NewFakeCmd(t).
+				WithRunOut(rolloutCmd, ""),
+		},
+		{
+			description: "rollout status error",
+			command: testutil.NewFakeCmd(t).
+				WithRunOutErr(rolloutCmd, "", fmt.Errorf("error")),
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.command)
+			cli := &kubectl.CLI{
+				Namespace:   "test",
+				KubeContext: testKubeContext,
+			}
+			actual, err := getRollOutStatus(context.Background(), cli, "dep")
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
 }
