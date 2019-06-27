@@ -81,6 +81,65 @@ func TestWaitForPodSucceeded(t *testing.T) {
 
 }
 
+func TestWaitForPodToStabilize(t *testing.T) {
+	tests := []struct {
+		description string
+		phases      []v1.PodPhase
+		shouldErr   bool
+	}{
+		{
+			description: "pod completes",
+			phases:      []v1.PodPhase{v1.PodRunning, v1.PodSucceeded},
+		}, {
+			description: "pod fails",
+			phases:      []v1.PodPhase{v1.PodFailed},
+			shouldErr:   true,
+		}, {
+			description: "pod is running",
+			phases:      []v1.PodPhase{v1.PodRunning},
+		}, {
+			description: "pod timesout",
+			phases:      []v1.PodPhase{v1.PodPending, v1.PodPending, v1.PodPending, v1.PodPending, v1.PodPending, v1.PodPending},
+			shouldErr:   true,
+		}, {
+			description: "pod in unknown state",
+			phases:      []v1.PodPhase{v1.PodUnknown, v1.PodUnknown, v1.PodUnknown, v1.PodUnknown, v1.PodUnknown, v1.PodUnknown},
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			pod := &v1.Pod{}
+			client := fakekubeclientset.NewSimpleClientset(pod)
+
+			fakeWatcher := watch.NewRaceFreeFake()
+			client.PrependWatchReactor("*", testutil.SetupFakeWatcher(fakeWatcher))
+			fakePods := client.CoreV1().Pods("")
+
+			errChan := make(chan error)
+			go func() {
+				errChan <- WaitForPodToStabilize(context.TODO(), fakePods, "", 5*time.Second)
+			}()
+
+			for _, phase := range test.phases {
+				if fakeWatcher.IsStopped() {
+					break
+				}
+				fakeWatcher.Modify(&v1.Pod{
+					Status: v1.PodStatus{
+						Phase: phase,
+					},
+				})
+				time.Sleep(time.Second)
+			}
+			err := <-errChan
+			testutil.CheckError(t, test.shouldErr, err)
+		})
+	}
+
+}
+
 func TestIsPodSucceeded(t *testing.T) {
 
 	tests := []struct {
@@ -129,6 +188,60 @@ func TestIsPodSucceeded(t *testing.T) {
 				Object: pod,
 			}
 			actual, err := isPodSucceeded(test.podName)(dummyEvent)
+			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, actual, test.expected)
+		})
+	}
+}
+
+func TestIsPodStable(t *testing.T) {
+
+	tests := []struct {
+		description string
+		podName     string
+		phase       v1.PodPhase
+		shouldErr   bool
+		expected    bool
+	}{
+		{
+			description: "pod name doesn't match",
+			podName:     "another-pod",
+		}, {
+			description: "pod phase is PodSucceeded",
+			phase:       v1.PodSucceeded,
+			expected:    true,
+		}, {
+			description: "pod phase is PodRunning",
+			phase:       v1.PodRunning,
+			expected:    true,
+		}, {
+			description: "pod phase is PodFailed",
+			phase:       v1.PodFailed,
+			shouldErr:   true,
+		}, {
+			description: "pod phase is PodUnknown",
+			phase:       v1.PodUnknown,
+		}, {
+			description: "pod phase is PodPending",
+			phase:       v1.PodPending,
+		}, {
+			description: "unknown pod phase",
+			phase:       "unknownPhase",
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			pod := &v1.Pod{
+				Status: v1.PodStatus{
+					Phase: test.phase,
+				},
+			}
+			dummyEvent := &watch.Event{
+				Type:   "dummyEvent",
+				Object: pod,
+			}
+			actual, err := isPodStable(test.podName)(dummyEvent)
 			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, actual, test.expected)
 		})
 	}

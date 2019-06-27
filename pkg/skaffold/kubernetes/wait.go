@@ -154,3 +154,41 @@ func WaitForDeploymentToStabilize(ctx context.Context, c kubernetes.Interface, n
 		return false, nil
 	})
 }
+
+func WaitForPodToStabilize(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
+	logrus.Infof("Waiting for %s to be complete", podName)
+
+	w, err := pods.Watch(meta_v1.ListOptions{
+		IncludeUninitialized: true,
+	})
+	if err != nil {
+		return fmt.Errorf("initializing pod watcher: %s", err)
+	}
+	defer w.Stop()
+
+	return watchUntilTimeout(ctx, timeout, w, isPodStable(podName))
+}
+
+func isPodStable(podName string) func(event *watch.Event) (bool, error) {
+	return func(event *watch.Event) (bool, error) {
+		if event.Object == nil {
+			return false, nil
+		}
+		pod := event.Object.(*v1.Pod)
+		if pod.Name != podName {
+			return false, nil
+		}
+
+		switch pod.Status.Phase {
+		case v1.PodSucceeded:
+			return true, nil
+		case v1.PodRunning:
+			return true, nil
+		case v1.PodFailed:
+			return false, fmt.Errorf("pod already in terminal phase: %s", pod.Status.Phase)
+		case v1.PodUnknown, v1.PodPending:
+			return false, nil
+		}
+		return false, fmt.Errorf("unknown phase: %s", pod.Status.Phase)
+	}
+}
