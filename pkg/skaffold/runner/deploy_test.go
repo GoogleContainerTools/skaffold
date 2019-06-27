@@ -19,28 +19,28 @@ package runner
 import (
 	"bytes"
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/pkg/errors"
 )
 
 func TestDeploy(t *testing.T) {
-	expectedOutput := "Waiting for deployments to stabalize"
+	expectedOutput := "Waiting for deployments to stabilize"
 	var tests = []struct {
 		description string
 		testBench   *TestBench
-		shdWait     bool
 		statusCheck bool
-		shouldError bool
+		shouldErr   bool
+		shouldWait  bool
 	}{
 		{
 			description: "deploy shd perform status check",
 			testBench:   &TestBench{},
 			statusCheck: true,
-			shdWait:     true,
+			shouldWait:  true,
 		},
 		{
 			description: "deploy shd not perform status check",
@@ -48,9 +48,9 @@ func TestDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy shd not perform status check when deployer is in error",
-			testBench:   &TestBench{deployErrors: []error{errors.New("deploy error")}},
-			shouldError: true,
+			shouldErr:   true,
 			statusCheck: true,
+			testBench:   &TestBench{deployErrors: []error{errors.New("deploy error")}},
 		},
 	}
 
@@ -65,9 +65,9 @@ func TestDeploy(t *testing.T) {
 				{ImageName: "img1", Tag: "img1:tag1"},
 				{ImageName: "img2", Tag: "img2:tag2"},
 			})
-			t.CheckError(test.shouldError, err)
-			if strings.Contains(out.String(), expectedOutput) != test.shdWait {
-				t.Errorf("expected %s to contain %s %t. But found %t", out.String(), expectedOutput, test.shdWait, !test.shdWait)
+			t.CheckError(test.shouldErr, err)
+			if strings.Contains(out.String(), expectedOutput) != test.shouldWait {
+				t.Errorf("expected %s to contain %s %t. But found %t", out.String(), expectedOutput, test.shouldWait, !test.shouldWait)
 			}
 		})
 	}
