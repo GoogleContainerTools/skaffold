@@ -35,8 +35,11 @@ import (
 var (
 	rolloutStatusTemplate = "{{range .items}}{{.metadata.name}}:{{.spec.progressDeadlineSeconds}},{{end}}"
 	// TODO: Move this to a flag or global config.
-	defaultStatusCheckDeadlineInSeconds float32 = 10
-	defaultPollPeriodInMilliseconds             = 600
+	// Default deadline set to 10 minutes
+	defaultStatusCheckDeadlineInSeconds float32 = 600
+	// Poll period for checking set to 100 milliseconds
+	defaultPollPeriodInMilliseconds = 100
+
 	// For testing
 	executeRolloutStatus = getRollOutStatus
 )
@@ -70,7 +73,7 @@ func StatusCheck(ctx context.Context, runCtx *runcontext.RunContext) error {
 
 	// Wait for all deployment status to be fetched
 	w.Wait()
-	return getDeployStatus(syncMap, dMap)
+	return getDeployStatus(syncMap)
 }
 
 func getDeadlineForDeployments(ctx context.Context, k *kubectl.CLI) (map[string]float32, error) {
@@ -131,13 +134,16 @@ func pollDeploymentsStatus(ctx context.Context, k *kubectl.CLI, dName string, de
 	}
 }
 
-func getDeployStatus(syncMap *sync.Map, deps map[string]float32) error {
+func getDeployStatus(m *sync.Map) error {
 	errorStrings := []string{}
-	for d := range deps {
-		if errStr, ok := isErrorforValue(syncMap, d); ok {
-			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", d, errStr))
+	m.Range(func(k, v interface{}) bool {
+		resourceName, _ := k.(string)
+		if t, ok := v.(error); ok {
+			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", resourceName, t.Error()))
 		}
-	}
+		return true
+	})
+
 	if len(errorStrings) == 0 {
 		return nil
 	}
@@ -151,18 +157,4 @@ func getRollOutStatus(ctx context.Context, k *kubectl.CLI, dName string) (string
 		return "", err
 	}
 	return string(b), nil
-}
-
-func isErrorforValue(syncMap *sync.Map, d string) (string, bool) {
-	v, ok := syncMap.Load(d)
-	logrus.Debugf("rollout status for deployment %s is %v", d, v)
-	if !ok {
-		return "could not verify status for deployment", true
-	}
-	switch t := v.(type) {
-	case error:
-		return t.Error(), true
-	default:
-		return "", false
-	}
 }

@@ -155,8 +155,12 @@ func TestPollDeploymentsStatus(t *testing.T) {
 
 			actual := &sync.Map{}
 			pollDeploymentsStatus(context.Background(), &kubectl.CLI{}, "dep", time.Duration(test.duration)*time.Millisecond, actual)
-			_, isErr := isErrorforValue(actual, "dep")
-			t.CheckDeepEqual(test.shouldErr, isErr)
+
+			if _, ok := actual.Load("dep"); !ok {
+				t.Error("expected result for deployment dep. But found none")
+			}
+			err := getDeployStatus(actual)
+			t.CheckError(test.shouldErr, err)
 			if test.exactCalls > 0 {
 				t.CheckDeepEqual(test.exactCalls, mock.called)
 			}
@@ -166,21 +170,16 @@ func TestPollDeploymentsStatus(t *testing.T) {
 
 func TestGetDeployStatus(t *testing.T) {
 	var tests = []struct {
-		description      string
-		deps             map[string]interface{}
-		depsWithDeadline map[string]float32
-		expectedErrMsg   []string
-		shouldErr        bool
+		description    string
+		deps           map[string]interface{}
+		expectedErrMsg []string
+		shouldErr      bool
 	}{
 		{
 			description: "one error",
 			deps: map[string]interface{}{
 				"dep1": "SUCCESS",
 				"dep2": fmt.Errorf("could not return within default timeout"),
-			},
-			depsWithDeadline: map[string]float32{
-				"dep1": 1,
-				"dep2": 1,
 			},
 			expectedErrMsg: []string{"deployment dep2 failed due to could not return within default timeout"},
 			shouldErr:      true,
@@ -191,10 +190,6 @@ func TestGetDeployStatus(t *testing.T) {
 				"dep1": "SUCCESS",
 				"dep2": "RUNNING",
 			},
-			depsWithDeadline: map[string]float32{
-				"dep1": 1,
-				"dep2": 1,
-			},
 		},
 		{
 			description: "multiple errors",
@@ -203,26 +198,9 @@ func TestGetDeployStatus(t *testing.T) {
 				"dep2": fmt.Errorf("could not return within default timeout"),
 				"dep3": fmt.Errorf("ERROR"),
 			},
-			depsWithDeadline: map[string]float32{
-				"dep1": 1,
-				"dep2": 1,
-				"dep3": 1,
-			},
 			expectedErrMsg: []string{"deployment dep2 failed due to could not return within default timeout",
 				"deployment dep3 failed due to ERROR"},
 			shouldErr: true,
-		},
-		{
-			description: "could not find result for deployment errors",
-			deps: map[string]interface{}{
-				"dep1": "SUCCESS",
-			},
-			depsWithDeadline: map[string]float32{
-				"dep1": 1,
-				"dep2": 1,
-			},
-			expectedErrMsg: []string{"could not verify status for deployment"},
-			shouldErr:      true,
 		},
 	}
 
@@ -232,7 +210,7 @@ func TestGetDeployStatus(t *testing.T) {
 			for k, v := range test.deps {
 				syncMap.Store(k, v)
 			}
-			err := getDeployStatus(syncMap, test.depsWithDeadline)
+			err := getDeployStatus(syncMap)
 			t.CheckError(test.shouldErr, err)
 			for _, msg := range test.expectedErrMsg {
 				t.CheckErrorContains(msg, err)

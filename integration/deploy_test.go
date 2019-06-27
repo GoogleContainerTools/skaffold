@@ -109,7 +109,7 @@ func TestDeployWithInCorrectConfig(t *testing.T) {
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	out, err := skaffold.Deploy().InDir("examples/unstable-deployment").InNs("test").RunWithOutput(t)
+	out, err := skaffold.Deploy().InDir("testdata/unstable-deployment").InNs(ns.Name).RunWithOutput(t)
 	if err == nil {
 		t.Error("expected an error to see since the deployment is not stable. However deploy returned success")
 	}
@@ -117,5 +117,21 @@ func TestDeployWithInCorrectConfig(t *testing.T) {
 		t.Errorf("expected to see message :exceeded progress deadline error. however saw this error %s", string(out))
 	}
 
-	skaffold.Delete().InDir("examples/unstable-deployment").InNs(ns.Name).RunOrFail(t)
+	skaffold.Delete().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
+}
+
+func TestDeployWithInCorrectConfigWithNoStatusCheck(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	skaffold.Deploy("--status-check=false").InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFailOutput(t)
+
+	skaffold.Delete().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
 }
