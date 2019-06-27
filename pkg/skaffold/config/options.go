@@ -44,6 +44,7 @@ type SkaffoldOptions struct {
 	ForceDev           bool
 	NoPrune            bool
 	NoPruneChildren    bool
+	StatusCheck        bool
 	PortForward        PortForwardOptions
 	CustomTag          string
 	Namespace          string
