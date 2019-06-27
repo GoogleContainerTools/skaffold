@@ -22,16 +22,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/sirupsen/logrus"
-	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/kubernetes"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
@@ -117,39 +111,6 @@ func WaitForPodInitialized(ctx context.Context, pods corev1.PodInterface, podNam
 			if ic.State.Running != nil {
 				return true, nil
 			}
-		}
-		return false, nil
-	})
-}
-
-// WaitForDeploymentToStabilize waits until the Deployment has a matching generation/replica count between spec and status.
-func WaitForDeploymentToStabilize(ctx context.Context, c kubernetes.Interface, ns, name string, timeout time.Duration) error {
-	logrus.Infof("Waiting for %s to stabilize", name)
-
-	fields := fields.Set{
-		"metadata.name":      name,
-		"metadata.namespace": ns,
-	}
-	w, err := c.AppsV1().Deployments(ns).Watch(meta_v1.ListOptions{
-		FieldSelector: fields.AsSelector().String(),
-	})
-	if err != nil {
-		return fmt.Errorf("initializing deployment watcher: %s", err)
-	}
-
-	return watchUntilTimeout(ctx, timeout, w, func(event *watch.Event) (bool, error) {
-		if event.Type == watch.Deleted {
-			return false, apierrs.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
-		}
-
-		if dp, ok := event.Object.(*appsv1.Deployment); ok {
-			if dp.Name == name && dp.Namespace == ns &&
-				dp.Generation <= dp.Status.ObservedGeneration &&
-				*(dp.Spec.Replicas) == dp.Status.Replicas {
-				return true, nil
-			}
-			glog.Infof("Waiting for deployment %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
-				name, dp.Generation, dp.Status.ObservedGeneration, *(dp.Spec.Replicas), dp.Status.Replicas)
 		}
 		return false, nil
 	})

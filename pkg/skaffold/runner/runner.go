@@ -211,10 +211,6 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 	}
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> add status check flag which does nothing for now and test
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
 	if cfg.IsKindCluster(r.runCtx.KubeContext) {
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
@@ -228,67 +224,22 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	if err != nil {
 		return err
 	}
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-	return r.performStatusCheck(out)
-=======
 	return r.performStatusCheck(ctx, out)
->>>>>>> fix gofmt and integration tests
 }
 
 func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
 	if r.runCtx.Opts.StatusCheck {
-<<<<<<< HEAD
-<<<<<<< HEAD
 		fmt.Fprintln(out, "Waiting for deployments to stabilize")
-=======
-	return r.performStatusCheck(ctx, out)
-=======
-	return r.performStatusCheck(out)
->>>>>>> fix linter
-}
-
-func (r *SkaffoldRunner) performStatusCheck(out io.Writer) error {
-	// Check if we need to perform deploy status
-	if r.runCtx.Opts.StatusCheck {
-<<<<<<< HEAD
-		fmt.Fprintln(out, "Performing status check")
->>>>>>> add status check flag which does nothing for now and test
-=======
-		fmt.Fprintln(out, "Waiting for deployments to stabalize")
->>>>>>> fix linter
-		// TODO : Actually perform status check
-=======
-		fmt.Fprintln(out, "Performing status check")
-		err:= deploy.StatusCheck(ctx, r.runCtx)
-=======
-		fmt.Fprintln(out, "Waiting for deployments to stabilize")
-<<<<<<< HEAD
-		err:= statusCheck(ctx, r.runCtx)
->>>>>>> fix test
-=======
 		err := statusCheck(ctx, r.defaultLabeller, r.runCtx)
->>>>>>> fix gofmt and integration tests
 		if err != nil {
 			fmt.Fprintln(out, err.Error())
 		}
 		return err
->>>>>>> more testing
 	}
 	return nil
 }
-<<<<<<< HEAD
-=======
->>>>>>> wip
-=======
 
-<<<<<<< HEAD
->>>>>>> add status check flag which does nothing for now and test
-
-=======
->>>>>>> fix linter
 // HasDeployed returns true if this runner has deployed something.
 func (r *SkaffoldRunner) HasDeployed() bool {
 	return r.hasDeployed

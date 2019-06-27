@@ -23,9 +23,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/gcs"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/webhook/gcs"
 	pkggithub "github.com/GoogleContainerTools/skaffold/pkg/webhook/github"
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/labels"

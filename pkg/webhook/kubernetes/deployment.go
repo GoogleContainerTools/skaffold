@@ -28,12 +28,19 @@ import (
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/labels"
+	"github.com/golang/glog"
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -128,7 +135,7 @@ func WaitForDeploymentToStabilize(d *appsv1.Deployment, ip string) error {
 	if err != nil {
 		return errors.Wrap(err, "getting clientset")
 	}
-	if err := pkgkubernetes.WaitForDeploymentToStabilize(context.Background(), client, d.Namespace, d.Name, 5*time.Minute); err != nil {
+	if err := waitForDeploymentToStabilize(context.Background(), client, d.Namespace, d.Name, 5*time.Minute); err != nil {
 		return errors.Wrap(err, "waiting for deployment to stabilize")
 	}
 	// wait up to five minutes for the URL to return a valid endpoint
@@ -165,4 +172,43 @@ func Logs(d *appsv1.Deployment) string {
 		log.Printf("Error retrieving deployment logs for %s: %v", d.Name, err)
 	}
 	return fmt.Sprintf("Init container logs: \n %s \nContainer Logs: \n %s", initLogs, logs)
+}
+
+// waitForDeploymentToStabilize waits until the Deployment has a matching generation/replica count between spec and status.
+func waitForDeploymentToStabilize(ctx context.Context, c kubernetes.Interface, ns, name string, timeout time.Duration) error {
+	logrus.Infof("Waiting for %s to stabilize", name)
+
+	fields := fields.Set{
+		"metadata.name":      name,
+		"metadata.namespace": ns,
+	}
+	w, err := c.AppsV1().Deployments(ns).Watch(metav1.ListOptions{
+		FieldSelector: fields.AsSelector().String(),
+	})
+	if err != nil {
+		return fmt.Errorf("initializing deployment watcher: %s", err)
+	}
+
+	ctx, cancelTimeout := context.WithTimeout(ctx, timeout)
+	defer cancelTimeout()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New("context closed while waiting for condition")
+		case event := <-w.ResultChan():
+			if event.Type == watch.Deleted {
+				return apierrs.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
+			}
+			if dp, ok := event.Object.(*appsv1.Deployment); ok {
+				if dp.Name == name && dp.Namespace == ns &&
+					dp.Generation <= dp.Status.ObservedGeneration &&
+					*(dp.Spec.Replicas) == dp.Status.Replicas {
+					return nil
+				}
+				glog.Infof("Waiting for deployment %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
+					name, dp.Generation, dp.Status.ObservedGeneration, *(dp.Spec.Replicas), dp.Status.Replicas)
+			}
+		}
+	}
 }

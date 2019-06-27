@@ -52,8 +52,6 @@ func TestHelmDeploy(t *testing.T) {
 
 	skaffold.Deploy(runArgs...).InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFailOutput(t)
 
-	client.WaitForDeploymentsToStabilize(depName)
-
 	expectedLabels := map[string]string{
 		"app.kubernetes.io/managed-by": TestVersion,
 		"release":                      depName,

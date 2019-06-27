@@ -300,13 +300,6 @@ Flags:
       --rpc-http-port int           tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                tcp port to expose event API (default 50051)
       --skip-tests                  Whether to skip the tests after building
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      --status-check                Wait for deployed resources to stabalize (default true)
->>>>>>> fix linter
-=======
->>>>>>> address @balintp's comment
       --tail                        Stream logs from deployed objects (default true)
       --toot                        Emit a terminal beep after the deploy is complete
 
@@ -410,13 +403,6 @@ Flags:
   -p, --profile strings                              Activate profiles by name
       --rpc-http-port int                            tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                                 tcp port to expose event API (default 50051)
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      --status-check                                 Wait for deployed resources to stabalize (default true)
->>>>>>> fix linter
-=======
->>>>>>> address @balintp's comment
       --tail                                         Stream logs from deployed objects (default false)
       --toot                                         Emit a terminal beep after the deploy is complete
 
@@ -500,13 +486,6 @@ Flags:
       --rpc-http-port int           tcp port to expose event REST API over HTTP (default 50052)
       --rpc-port int                tcp port to expose event API (default 50051)
       --skip-tests                  Whether to skip the tests after building
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      --status-check                Wait for deployed resources to stabalize (default true)
->>>>>>> fix linter
-=======
->>>>>>> address @balintp's comment
       --tail                        Stream logs from deployed objects (default true)
       --toot                        Emit a terminal beep after the deploy is complete
       --trigger string              How are changes detected? (polling, manual or notify) (default "polling")
