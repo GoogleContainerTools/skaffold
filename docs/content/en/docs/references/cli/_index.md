@@ -88,7 +88,6 @@ Use "skaffold [command] --help" for more information about a command.
 Env vars:
 
 * `SKAFFOLD_COLOR` (same as `--color`)
-* `SKAFFOLD_FORCE_COLORS` (same as `--force-colors`)
 * `SKAFFOLD_VERBOSITY` (same as `--verbosity`)
 
 ### skaffold build
@@ -306,7 +305,6 @@ Env vars:
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
-* `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 
@@ -380,7 +378,6 @@ Env vars:
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
-* `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 
@@ -441,7 +438,6 @@ Env vars:
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
-* `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
 * `SKAFFOLD_TRIGGER` (same as `--trigger`)
