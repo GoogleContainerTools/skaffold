@@ -19,7 +19,6 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"k8s.io/api/core/v1"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -52,11 +52,11 @@ var (
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext) error {
 	depErr := StatusCheckDeployments(ctx, defaultLabeller, runCtx)
 	podsErr := StatusCheckPods(ctx, defaultLabeller, runCtx)
+	fmt.Println(podsErr)
 	return depErr
 }
 
 func StatusCheckDeployments(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext) error {
-
 	client, err := kubernetesutil.GetClientset()
 	if err != nil {
 		return err
