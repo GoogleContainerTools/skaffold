@@ -77,14 +77,14 @@ func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) fun
 }
 
 func TestStart(t *testing.T) {
-	svc1 := latest.PortForwardResource{
+	svc1 := &latest.PortForwardResource{
 		Type:      constants.Service,
 		Name:      "svc1",
 		Namespace: "default",
 		Port:      8080,
 	}
 
-	svc2 := latest.PortForwardResource{
+	svc2 := &latest.PortForwardResource{
 		Type:      constants.Service,
 		Name:      "svc2",
 		Namespace: "default",
@@ -93,21 +93,21 @@ func TestStart(t *testing.T) {
 
 	tests := []struct {
 		description    string
-		resources      []latest.PortForwardResource
+		resources      []*latest.PortForwardResource
 		availablePorts []int
 		expected       map[string]*portForwardEntry
 	}{
 		{
 			description:    "forward two services",
-			resources:      []latest.PortForwardResource{svc1, svc2},
+			resources:      []*latest.PortForwardResource{svc1, svc2},
 			availablePorts: []int{8080, 9000},
 			expected: map[string]*portForwardEntry{
 				"service-svc1-default-8080": {
-					resource:  svc1,
+					resource:  *svc1,
 					localPort: 8080,
 				},
 				"service-svc2-default-9000": {
-					resource:  svc2,
+					resource:  *svc2,
 					localPort: 9000,
 				},
 			},
@@ -117,11 +117,11 @@ func TestStart(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(&runcontext.RunContext{Cfg: &latest.Pipeline{Build: latest.BuildConfig{}}})
 			fakeForwarder := newTestForwarder(nil)
-			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "")
+			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "", nil)
 			rf.EntryForwarder = fakeForwarder
 
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
-			t.Override(&retrieveServices, func(string) ([]latest.PortForwardResource, error) {
+			t.Override(&retrieveServices, func(string) ([]*latest.PortForwardResource, error) {
 				return test.resources, nil
 			})
 
@@ -188,7 +188,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			expectedEntry := test.expected
 			expectedEntry.resource = test.resource
 
-			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "")
+			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "", nil)
 			rf.forwardedResources = generateSyncMap(test.forwardedResources)
 
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
@@ -197,6 +197,56 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			t.CheckDeepEqual(expectedEntry, actualEntry, cmp.AllowUnexported(portForwardEntry{}))
 		})
 	}
+}
+
+func TestUserDefinedResources(t *testing.T) {
+	svc := &latest.PortForwardResource{
+		Type:      constants.Service,
+		Name:      "svc1",
+		Namespace: "default",
+		Port:      8080,
+	}
+
+	pod := &latest.PortForwardResource{
+		Type:      constants.Pod,
+		Name:      "pod",
+		Namespace: "default",
+		Port:      9000,
+	}
+
+	expected := map[string]*portForwardEntry{
+		"service-svc1-default-8080": {
+			resource:  *svc,
+			localPort: 8080,
+		},
+		"pod-pod-default-9000": {
+			resource:  *pod,
+			localPort: 9000,
+		},
+	}
+
+	testutil.Run(t, "one service and one user defined pod", func(t *testutil.T) {
+		event.InitializeState(&runcontext.RunContext{Cfg: &latest.Pipeline{Build: latest.BuildConfig{}}})
+		fakeForwarder := newTestForwarder(nil)
+		rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "", []*latest.PortForwardResource{pod})
+		rf.EntryForwarder = fakeForwarder
+
+		t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, []int{8080, 9000}))
+		t.Override(&retrieveServices, func(string) ([]*latest.PortForwardResource, error) {
+			return []*latest.PortForwardResource{svc}, nil
+		})
+
+		if err := rf.Start(context.Background()); err != nil {
+			t.Fatalf("error starting resource forwarder: %v", err)
+		}
+		// poll up to 10 seconds for the resources to be forwarded
+		err := wait.PollImmediate(time.Second, 10*time.Second, func() (bool, error) {
+			return len(expected) == lengthSyncMap(fakeForwarder.forwardedEntries), nil
+		})
+		if err != nil {
+			t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", expected, fakeForwarder.forwardedEntries)
+		}
+	})
 }
 
 func generateSyncMap(m map[string]*portForwardEntry) *sync.Map {

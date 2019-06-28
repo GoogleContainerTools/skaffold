@@ -67,6 +67,11 @@ func Set(c *latest.SkaffoldConfig) error {
 		setDefaultDockerfile(a)
 	}
 
+	for _, pf := range c.PortForward {
+		setDefaultPortForwardNamespace(pf)
+		setDefaultLocalPort(pf)
+	}
+
 	return nil
 }
 
@@ -265,4 +270,14 @@ func currentNamespace() (string, error) {
 	}
 
 	return "default", nil
+}
+
+func setDefaultLocalPort(pf *latest.PortForwardResource) {
+	if pf.LocalPort == 0 {
+		pf.LocalPort = pf.Port
+	}
+}
+
+func setDefaultPortForwardNamespace(pf *latest.PortForwardResource) {
+	pf.Namespace = valueOrDefault(pf.Namespace, constants.DefaultPortForwardNamespace)
 }

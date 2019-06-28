@@ -65,6 +65,8 @@ const (
 
 	DefaultRPCPort     = 50051
 	DefaultRPCHTTPPort = 50052
+
+	DefaultPortForwardNamespace = "default"
 )
 
 var (

@@ -32,7 +32,8 @@ import (
 // services deployed by skaffold.
 type ResourceForwarder struct {
 	EntryManager
-	label string
+	userDefinedResources []*latest.PortForwardResource
+	label                string
 }
 
 var (
@@ -42,10 +43,11 @@ var (
 )
 
 // NewResourceForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewResourceForwarder(em EntryManager, label string) *ResourceForwarder {
+func NewResourceForwarder(em EntryManager, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
 	return &ResourceForwarder{
-		EntryManager: em,
-		label:        label,
+		EntryManager:         em,
+		userDefinedResources: userDefinedResources,
+		label:                label,
 	}
 }
 
@@ -56,16 +58,16 @@ func (p *ResourceForwarder) Start(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrap(err, "retrieving services for automatic port forwarding")
 	}
-	p.portForwardResources(ctx, serviceResources)
+	p.portForwardResources(ctx, append(p.userDefinedResources, serviceResources...))
 	return nil
 }
 
 // Port forward each resource individuallly in a goroutine
-func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources []latest.PortForwardResource) {
+func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources []*latest.PortForwardResource) {
 	for _, r := range resources {
 		r := r
 		go func() {
-			if err := p.portForwardResource(ctx, r); err != nil {
+			if err := p.portForwardResource(ctx, *r); err != nil {
 				logrus.Warnf("Unable to port forward %s/%s: %v", r.Type, r.Name, err)
 			}
 		}()
@@ -94,13 +96,13 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = int32(retrieveAvailablePort(int(resource.Port), p.forwardedPorts))
+	entry.localPort = int32(retrieveAvailablePort(int(resource.LocalPort), p.forwardedPorts))
 	return entry
 }
 
 // retrieveServiceResources retrieves all services in the cluster matching the given label
 // as a list of PortForwardResources
-func retrieveServiceResources(label string) ([]latest.PortForwardResource, error) {
+func retrieveServiceResources(label string) ([]*latest.PortForwardResource, error) {
 	clientset, err := kubernetes.GetClientset()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting clientset")
@@ -111,14 +113,15 @@ func retrieveServiceResources(label string) ([]latest.PortForwardResource, error
 	if err != nil {
 		return nil, errors.Wrapf(err, "selecting services by label %s", label)
 	}
-	var resources []latest.PortForwardResource
+	var resources []*latest.PortForwardResource
 	for _, s := range services.Items {
 		for _, p := range s.Spec.Ports {
-			resources = append(resources, latest.PortForwardResource{
+			resources = append(resources, &latest.PortForwardResource{
 				Type:      constants.Service,
 				Name:      s.Name,
 				Namespace: s.Namespace,
 				Port:      p.Port,
+				LocalPort: p.Port,
 			})
 		}
 	}

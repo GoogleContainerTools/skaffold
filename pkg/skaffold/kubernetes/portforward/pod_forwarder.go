@@ -109,6 +109,7 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 				Name:      pod.Name,
 				Namespace: pod.Namespace,
 				Port:      port.ContainerPort,
+				LocalPort: port.ContainerPort,
 			}
 
 			entry, err := p.podForwardingEntry(pod.ResourceVersion, c.Name, port.Name, resource)

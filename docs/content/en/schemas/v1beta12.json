@@ -1550,6 +1550,14 @@
           "description": "patches applied to the configuration. Patches use the JSON patch notation.",
           "x-intellij-html-description": "patches applied to the configuration. Patches use the JSON patch notation."
         },
+        "portForward": {
+          "items": {
+            "$ref": "#/definitions/PortForwardResource"
+          },
+          "type": "array",
+          "description": "describes user defined resources to port-forward.",
+          "x-intellij-html-description": "describes user defined resources to port-forward."
+        },
         "test": {
           "items": {
             "$ref": "#/definitions/TestCase"
@@ -1565,7 +1573,8 @@
         "activation",
         "build",
         "test",
-        "deploy"
+        "deploy",
+        "portForward"
       ],
       "additionalProperties": false,
       "description": "*beta* profiles are used to override any `build`, `test` or `deploy` configuration.",
@@ -1655,6 +1664,14 @@
           "x-intellij-html-description": "always <code>Config</code>.",
           "default": "Config"
         },
+        "portForward": {
+          "items": {
+            "$ref": "#/definitions/PortForwardResource"
+          },
+          "type": "array",
+          "description": "describes user defined resources to port-forward.",
+          "x-intellij-html-description": "describes user defined resources to port-forward."
+        },
         "profiles": {
           "items": {
             "$ref": "#/definitions/Profile"
@@ -1678,7 +1695,8 @@
         "profiles",
         "build",
         "test",
-        "deploy"
+        "deploy",
+        "portForward"
       ],
       "additionalProperties": false,
       "description": "holds the fields parsed from the Skaffold configuration file (skaffold.yaml).",
