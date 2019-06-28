@@ -58,7 +58,7 @@ func RetrieveRemoteConfig(identifier string, insecureRegistries map[string]bool)
 func remoteImage(identifier string, insecureRegistries map[string]bool) (v1.Image, error) {
 	ref, err := name.ParseReference(identifier)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing initial ref")
+		return nil, errors.Wrapf(err, "parsing reference [%s]", identifier)
 	}
 
 	if isInsecure(ref.Context().Registry.Name(), insecureRegistries) {
@@ -72,7 +72,11 @@ func remoteImage(identifier string, insecureRegistries map[string]bool) (v1.Imag
 }
 
 func getInsecureRegistry(identifier string) (name.Reference, error) {
-	return name.ParseReference(identifier, name.Insecure)
+	ref, err := name.ParseReference(identifier, name.Insecure)
+	if err != nil {
+		return nil, errors.Wrapf(err, "parsing reference [%s]", identifier)
+	}
+	return ref, nil
 }
 
 func isInsecure(ref string, insecureRegistries map[string]bool) bool {
