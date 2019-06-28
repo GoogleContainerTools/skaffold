@@ -19,6 +19,7 @@ package runner
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
@@ -133,16 +134,19 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return errors.Wrap(err, "exiting dev mode because first build failed")
 	}
 
-	// Start logs
-	if r.runCtx.Opts.TailDev {
-		if err := logger.Start(ctx); err != nil {
-			return errors.Wrap(err, "starting logger")
-		}
-	}
+	// Logs should be retrieve up to just before the deploy
+	logger.SetSince(time.Now())
 
 	// First deploy
 	if err := r.Deploy(ctx, out, r.builds); err != nil {
 		return errors.Wrap(err, "exiting dev mode because first deploy failed")
+	}
+
+	// Start printing the logs after deploy is finished
+	if r.runCtx.Opts.TailDev {
+		if err := logger.Start(ctx); err != nil {
+			return errors.Wrap(err, "starting logger")
+		}
 	}
 
 	// Forward ports
