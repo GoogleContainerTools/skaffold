@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -165,6 +166,10 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 		if err != nil {
 			return errors.Wrap(err, "getting pods for namespace "+ns)
 		}
+
+		r := regexp.MustCompile("(.*)@(.*)")
+		g := r.FindSubmatch([]byte(image))
+		image = string(g[1])
 
 		for _, p := range pods.Items {
 			for _, c := range p.Spec.Containers {
