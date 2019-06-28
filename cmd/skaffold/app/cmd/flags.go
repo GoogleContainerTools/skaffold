@@ -220,6 +220,14 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug"},
 	},
+	{
+		Name:          "status-check",
+		Usage:         "Wait for deployed resources to stabilize",
+		Value:         &opts.StatusCheck,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug", "deploy"},
+	},
 }
 
 var commandFlags []*pflag.Flag
@@ -256,6 +264,7 @@ func AddFlags(fs *pflag.FlagSet, cmdName string) {
 			fs.AddFlag(f)
 		}
 	}
+	fs.MarkHidden("status-check")
 }
 
 func hasCmdAnnotation(cmdName string, annotations []string) bool {

@@ -45,6 +45,7 @@ If port 9000 is unavailable, Skaffold will forward to a random open port.
 Skaffold will run `kubectl port-forward` on each of these resources in addition to the automatic port forwarding described above.
 Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`. 
 
+
 | Field        | Values           | Mandatory  |
 | ------------- |-------------| -----|
 | resourceType     | `pod`, `service`, `deployment`, `replicaset`, `statefulset`, `replicationcontroller`, `daemonset`, `job`, `cronjob` | Yes | 
@@ -54,6 +55,18 @@ Acceptable resource types include: `Service`, `Pod` and Controller resource type
 | localPort | LocalPort is the local port to forward too. | No. Defaults to value set for `port`. |
 
 
-//TODO (priyawadhwa@)"little" diagram of port forwarding and log tailing from skaffold to one of the multiple pods
+Skaffold will run `kubectl port-forward` on all user defined resources.
+`kubectl port-forward` will select one pod created by that resource to forward too.
 
+For example, forwarding a deployment that creates 3 replicas could look like this:
 
+```yaml
+portForward:
+- resourceType: deployment
+  resourceName: myDep
+  namespace: mynamespace
+  port: 8080
+  localPort: 9000
+```
+
+![portforward_deployment](/images/portforward.png)
