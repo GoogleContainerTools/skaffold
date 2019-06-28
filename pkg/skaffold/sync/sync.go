@@ -169,7 +169,9 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 
 		r := regexp.MustCompile("(.*)@(.*)")
 		g := r.FindSubmatch([]byte(image))
-		image = string(g[1])
+		if g != nil {
+			image = string(g[1])
+		}
 
 		for _, p := range pods.Items {
 			for _, c := range p.Spec.Containers {
