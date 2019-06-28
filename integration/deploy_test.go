@@ -132,3 +132,4 @@ func TestDeployWithInCorrectConfigWithNoStatusCheck(t *testing.T) {
 
 	skaffold.Delete().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
 }
+
