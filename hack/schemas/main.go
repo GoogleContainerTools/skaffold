@@ -195,6 +195,7 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 			yamlName := yamlFieldName(field)
 
 			if strings.Contains(field.Tag.Value, "inline") {
+				def.PreferredOrder = append(def.PreferredOrder, "<inline>")
 				def.inlines = append(def.inlines, &Definition{
 					Ref: defPrefix + field.Type.(*ast.Ident).Name,
 				})
@@ -300,23 +301,46 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 			continue
 		}
 
-		var options []*Definition
+		for _, inlineStruct := range def.inlines {
+			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
+			inlines = append(inlines, ref)
+		}
 
+		// First, inline definitions without `oneOf`
+		inlineIndex := 0
+		var defPreferredOrder []string
+		for _, k := range def.PreferredOrder {
+			if k != "<inline>" {
+				defPreferredOrder = append(defPreferredOrder, k)
+				continue
+			}
+
+			inlineStruct := def.inlines[inlineIndex]
+			inlineIndex++
+
+			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
+			inlineStructRef := definitions[ref]
+			if isOneOf(inlineStructRef) {
+				continue
+			}
+
+			if def.Properties == nil {
+				def.Properties = make(map[string]*Definition, len(inlineStructRef.Properties))
+			}
+			for k, v := range inlineStructRef.Properties {
+				def.Properties[k] = v
+			}
+			defPreferredOrder = append(defPreferredOrder, inlineStructRef.PreferredOrder...)
+			def.Required = append(def.Required, inlineStructRef.Required...)
+		}
+		def.PreferredOrder = defPreferredOrder
+
+		// Then add options for `oneOf` definitions
+		var options []*Definition
 		for _, inlineStruct := range def.inlines {
 			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
 			inlineStructRef := definitions[ref]
-			inlines = append(inlines, ref)
-
-			// if not anyof, merge & continue
 			if !isOneOf(inlineStructRef) {
-				if def.Properties == nil {
-					def.Properties = make(map[string]*Definition, len(inlineStructRef.Properties))
-				}
-				for k, v := range inlineStructRef.Properties {
-					def.Properties[k] = v
-				}
-				def.PreferredOrder = append(def.PreferredOrder, inlineStructRef.PreferredOrder...)
-				def.Required = append(def.Required, inlineStructRef.Required...)
 				continue
 			}
 
