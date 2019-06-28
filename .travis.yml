@@ -3,6 +3,9 @@ language: go
 git:
   submodules: false
 
+env:
+  - DOCKER_BUILDKIT=1
+
 go_import_path: github.com/GoogleContainerTools/skaffold
 
 jobs:
