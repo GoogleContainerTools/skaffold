@@ -68,7 +68,8 @@ func TestBuildDeploy(t *testing.T) {
 	dir.Write("build.out", string(outputBytes))
 
 	// Run Deploy using the build output
-	skaffold.Deploy("--build-artifacts", buildOutputFile).InDir("examples/microservices").InNs(ns.Name).RunOrFail(t)
+	// See https://github.com/GoogleContainerTools/skaffold/issues/2372 on why status-check=false
+	skaffold.Deploy("--build-artifacts", buildOutputFile, "--status-check=false").InDir("examples/microservices").InNs(ns.Name).RunOrFail(t)
 
 	depApp := client.GetDeployment("leeroy-app")
 	testutil.CheckDeepEqual(t, appTag, depApp.Spec.Template.Spec.Containers[0].Image)

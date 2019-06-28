@@ -39,13 +39,16 @@ func TestDebug(t *testing.T) {
 	}{
 		{
 			description: "kubectl",
+			// see https://github.com/GoogleContainerTools/skaffold/issues/2373
 			dir:         "testdata/debug",
+			args:        []string{"--status-check=false"},
 			deployments: []string{"jib"},
 			pods:        []string{"nodejs", "npm", "python3"},
 		},
 		{
 			description: "kustomize",
-			args:        []string{"--profile", "kustomize"},
+			// See https://github.com/GoogleContainerTools/skaffold/issues/2373
+			args:        []string{"--profile", "kustomize", "--status-check=false"},
 			dir:         "testdata/debug",
 			deployments: []string{"jib"},
 			pods:        []string{"nodejs", "npm", "python3"},
