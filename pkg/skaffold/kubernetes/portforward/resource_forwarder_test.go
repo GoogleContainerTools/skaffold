@@ -25,7 +25,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
@@ -115,7 +114,7 @@ func TestStart(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState(&runcontext.RunContext{Cfg: &latest.Pipeline{Build: latest.BuildConfig{}}})
+			event.InitializeState(latest.BuildConfig{})
 			fakeForwarder := newTestForwarder(nil)
 			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "", nil)
 			rf.EntryForwarder = fakeForwarder
@@ -226,7 +225,7 @@ func TestUserDefinedResources(t *testing.T) {
 	}
 
 	testutil.Run(t, "one service and one user defined pod", func(t *testutil.T) {
-		event.InitializeState(&runcontext.RunContext{Cfg: &latest.Pipeline{Build: latest.BuildConfig{}}})
+		event.InitializeState(latest.BuildConfig{})
 		fakeForwarder := newTestForwarder(nil)
 		rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "", []*latest.PortForwardResource{pod})
 		rf.EntryForwarder = fakeForwarder

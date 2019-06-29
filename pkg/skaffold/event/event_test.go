@@ -55,7 +55,7 @@ func TestGetLogEvents(t *testing.T) {
 
 func TestGetState(t *testing.T) {
 	ev := &eventHandler{
-		state: emptyState(nil),
+		state: emptyState(latest.BuildConfig{}),
 	}
 
 	ev.stateLock.Lock()
@@ -68,10 +68,10 @@ func TestGetState(t *testing.T) {
 }
 
 func TestDeployInProgress(t *testing.T) {
-	defer func() { handler = nil }()
+	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(nil),
+		state: emptyState(latest.BuildConfig{}),
 	}
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
@@ -80,10 +80,10 @@ func TestDeployInProgress(t *testing.T) {
 }
 
 func TestDeployFailed(t *testing.T) {
-	defer func() { handler = nil }()
+	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(nil),
+		state: emptyState(latest.BuildConfig{}),
 	}
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
@@ -92,10 +92,10 @@ func TestDeployFailed(t *testing.T) {
 }
 
 func TestDeployComplete(t *testing.T) {
-	defer func() { handler = nil }()
+	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(nil),
+		state: emptyState(latest.BuildConfig{}),
 	}
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
@@ -104,10 +104,10 @@ func TestDeployComplete(t *testing.T) {
 }
 
 func TestBuildInProgress(t *testing.T) {
-	defer func() { handler = nil }()
+	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(&latest.BuildConfig{
+		state: emptyState(latest.BuildConfig{
 			Artifacts: []*latest.Artifact{{
 				ImageName: "img",
 			}},
@@ -120,10 +120,10 @@ func TestBuildInProgress(t *testing.T) {
 }
 
 func TestBuildFailed(t *testing.T) {
-	defer func() { handler = nil }()
+	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(&latest.BuildConfig{
+		state: emptyState(latest.BuildConfig{
 			Artifacts: []*latest.Artifact{{
 				ImageName: "img",
 			}},
@@ -136,10 +136,10 @@ func TestBuildFailed(t *testing.T) {
 }
 
 func TestBuildComplete(t *testing.T) {
-	defer func() { handler = nil }()
+	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(&latest.BuildConfig{
+		state: emptyState(latest.BuildConfig{
 			Artifacts: []*latest.Artifact{{
 				ImageName: "img",
 			}},
@@ -152,10 +152,10 @@ func TestBuildComplete(t *testing.T) {
 }
 
 func TestPortForwarded(t *testing.T) {
-	defer func() { handler = nil }()
+	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(nil),
+		state: emptyState(latest.BuildConfig{}),
 	}
 
 	wait(t, func() bool { return handler.getState().ForwardedPorts["container"] == nil })
