@@ -19,26 +19,28 @@ package sources
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestPodTemplate(t *testing.T) {
 	tests := []struct {
 		description string
 		initial     *latest.ClusterDetails
-		image       string
+		artifact    *latest.KanikoArtifact
 		args        []string
 		expected    *v1.Pod
 	}{
 		{
 			description: "basic pod",
 			initial:     &latest.ClusterDetails{},
+			artifact: &latest.KanikoArtifact{
+				Image: "kaniko-latest",
+			},
 			expected: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "kaniko-",
@@ -48,30 +50,26 @@ func TestPodTemplate(t *testing.T) {
 					RestartPolicy: "Never",
 					Containers: []v1.Container{
 						{
-							Name: "kaniko",
-							Env: []v1.EnvVar{
-								{
-									Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-									Value: "/secret/kaniko-secret",
-								},
-							},
-							VolumeMounts: []v1.VolumeMount{
-								{
-									Name: "kaniko-secret", MountPath: "/secret",
-								},
-							},
+							Name:  "kaniko",
+							Image: "kaniko-latest",
+							Env: []v1.EnvVar{{
+								Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+								Value: "/secret/kaniko-secret",
+							}},
+							VolumeMounts: []v1.VolumeMount{{
+								Name:      "kaniko-secret",
+								MountPath: "/secret",
+							}},
 							ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
 						},
 					},
-					Volumes: []v1.Volume{
-						{
-							Name: "kaniko-secret",
-							VolumeSource: v1.VolumeSource{
-								Secret: &v1.SecretVolumeSource{
-									SecretName: "",
-								},
+					Volumes: []v1.Volume{{
+						Name: "kaniko-secret",
+						VolumeSource: v1.VolumeSource{
+							Secret: &v1.SecretVolumeSource{
+								SecretName: "",
 							},
-						},
+						}},
 					},
 				},
 			},
@@ -79,10 +77,14 @@ func TestPodTemplate(t *testing.T) {
 		{
 			description: "with docker config",
 			initial: &latest.ClusterDetails{
+				PullSecretName: "pull-secret",
 				DockerConfig: &latest.DockerConfig{
 					SecretName: "docker-cfg",
 					Path:       "/kaniko/.docker",
 				},
+			},
+			artifact: &latest.KanikoArtifact{
+				Image: "kaniko-latest",
 			},
 			expected: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
@@ -91,32 +93,31 @@ func TestPodTemplate(t *testing.T) {
 				},
 				Spec: v1.PodSpec{
 					RestartPolicy: "Never",
-					Containers: []v1.Container{
-						{
-							Name: "kaniko",
-							Env: []v1.EnvVar{
-								{
-									Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-									Value: "/secret/kaniko-secret",
-								},
+					Containers: []v1.Container{{
+						Name:  "kaniko",
+						Image: "kaniko-latest",
+						Env: []v1.EnvVar{{
+							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+							Value: "/secret/kaniko-secret",
+						}},
+						VolumeMounts: []v1.VolumeMount{
+							{
+								Name:      "kaniko-secret",
+								MountPath: "/secret",
 							},
-							VolumeMounts: []v1.VolumeMount{
-								{
-									Name: "kaniko-secret", MountPath: "/secret",
-								},
-								{
-									Name: "docker-cfg", MountPath: "/kaniko/.docker",
-								},
+							{
+								Name:      "docker-cfg",
+								MountPath: "/kaniko/.docker",
 							},
-							ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
 						},
-					},
+						ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
+					}},
 					Volumes: []v1.Volume{
 						{
 							Name: "kaniko-secret",
 							VolumeSource: v1.VolumeSource{
 								Secret: &v1.SecretVolumeSource{
-									SecretName: "",
+									SecretName: "pull-secret",
 								},
 							},
 						},
@@ -146,6 +147,9 @@ func TestPodTemplate(t *testing.T) {
 					},
 				},
 			},
+			artifact: &latest.KanikoArtifact{
+				Image: "kaniko-latest",
+			},
 			expected: &v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: "kaniko-",
@@ -153,38 +157,82 @@ func TestPodTemplate(t *testing.T) {
 				},
 				Spec: v1.PodSpec{
 					RestartPolicy: "Never",
-					Containers: []v1.Container{
-						{
-							Name: "kaniko",
-							Env: []v1.EnvVar{
-								{
-									Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-									Value: "/secret/kaniko-secret",
-								},
-							},
-							VolumeMounts: []v1.VolumeMount{
-								{
-									Name: "kaniko-secret", MountPath: "/secret",
-								},
-							},
-							ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
-							Resources: createResourceRequirements(
-								resource.MustParse("1.0"),
-								resource.MustParse("2000"),
-								resource.MustParse("0.5"),
-								resource.MustParse("1000")),
-						},
-					},
-					Volumes: []v1.Volume{
-						{
-							Name: "kaniko-secret",
-							VolumeSource: v1.VolumeSource{
-								Secret: &v1.SecretVolumeSource{
-									SecretName: "",
-								},
+					Containers: []v1.Container{{
+						Name:  "kaniko",
+						Image: "kaniko-latest",
+						Env: []v1.EnvVar{{
+							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+							Value: "/secret/kaniko-secret",
+						}},
+						VolumeMounts: []v1.VolumeMount{{
+							Name:      "kaniko-secret",
+							MountPath: "/secret",
+						}},
+						ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
+						Resources: createResourceRequirements(
+							resource.MustParse("1.0"),
+							resource.MustParse("2000"),
+							resource.MustParse("0.5"),
+							resource.MustParse("1000")),
+					}},
+					Volumes: []v1.Volume{{
+						Name: "kaniko-secret",
+						VolumeSource: v1.VolumeSource{
+							Secret: &v1.SecretVolumeSource{
+								SecretName: "",
 							},
 						},
-					},
+					}},
+				},
+			},
+		},
+		{
+			description: "with cache",
+			initial:     &latest.ClusterDetails{},
+			artifact: &latest.KanikoArtifact{
+				Image: "kaniko-latest",
+				Cache: &latest.KanikoCache{
+					HostPath: "/cache-path",
+				},
+			},
+			expected: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "kaniko-",
+					Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy: "Never",
+					Containers: []v1.Container{{
+						Name:  "kaniko",
+						Image: "kaniko-latest",
+						Env: []v1.EnvVar{{
+							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+							Value: "/secret/kaniko-secret",
+						}},
+						VolumeMounts: []v1.VolumeMount{{
+							Name:      "kaniko-secret",
+							MountPath: "/secret",
+						}, {
+							Name:      "kaniko-cache",
+							MountPath: "/cache",
+						}},
+						ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
+					}},
+					Volumes: []v1.Volume{{
+						Name: "kaniko-secret",
+						VolumeSource: v1.VolumeSource{
+							Secret: &v1.SecretVolumeSource{
+								SecretName: "",
+							},
+						},
+					}, {
+						Name: "kaniko-cache",
+						VolumeSource: v1.VolumeSource{
+							HostPath: &v1.HostPathVolumeSource{
+								Path: "/cache-path",
+							},
+						},
+					}},
 				},
 			},
 		},
@@ -196,7 +244,7 @@ func TestPodTemplate(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := podTemplate(test.initial, &latest.KanikoArtifact{Image: test.image, Cache: &latest.KanikoCache{}}, test.args)
+			actual := podTemplate(test.initial, test.artifact, test.args)
 
 			t.CheckDeepEqual(test.expected, actual, opt)
 		})
