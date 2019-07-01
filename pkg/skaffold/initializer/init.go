@@ -363,6 +363,9 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 	//         {"name":"another/image", "requiresPrompt":"true"},
 	//     ],
 	// }
+	//
+	// "builders" is the list of builder configurations, and contains a builder name and a builder-specific payload
+	// "images" contains an image name and a boolean that indicates whether a builder/image pair can be automatically resolved (false) or if it requires prompting (true)
 	type Builder struct {
 		Name    string      `json:"name,omitempty"`
 		Payload InitBuilder `json:"payload"`
