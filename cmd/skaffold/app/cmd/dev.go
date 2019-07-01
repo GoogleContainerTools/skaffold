@@ -43,8 +43,6 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 }
 
 func doDev(ctx context.Context, out io.Writer) error {
-	opts.EnableRPC = true
-
 	cleanup := func() {}
 	if opts.Cleanup {
 		defer func() {

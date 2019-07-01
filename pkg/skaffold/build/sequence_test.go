@@ -25,9 +25,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -143,15 +141,9 @@ func (t *concatTagger) doBuild(ctx context.Context, out io.Writer, artifact *lat
 }
 
 func initializeEvents() {
-	cfg := latest.BuildConfig{
+	event.InitializeState(latest.BuildConfig{
 		BuildType: latest.BuildType{
 			LocalBuild: &latest.LocalBuild{},
 		},
-	}
-	event.InitializeState(&runcontext.RunContext{
-		Cfg: &latest.Pipeline{
-			Build: cfg,
-		},
-		Opts: &config.SkaffoldOptions{},
 	})
 }

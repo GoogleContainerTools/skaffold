@@ -222,17 +222,12 @@ func TestLocalRun(t *testing.T) {
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 
-			cfg := latest.BuildConfig{
+			event.InitializeState(latest.BuildConfig{
 				BuildType: latest.BuildType{
 					LocalBuild: &latest.LocalBuild{},
 				},
-			}
-			event.InitializeState(&runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Build: cfg,
-				},
-				Opts: &config.SkaffoldOptions{},
 			})
+
 			l := Builder{
 				cfg:         &latest.LocalBuild{},
 				localDocker: docker.NewLocalDaemon(&test.api, nil, false, map[string]bool{}),

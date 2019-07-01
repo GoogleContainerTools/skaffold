@@ -36,11 +36,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -56,7 +54,6 @@ type Runner interface {
 	Prune(context.Context, io.Writer) error
 	HasDeployed() bool
 	HasBuilt() bool
-	Stop() error
 }
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
@@ -77,7 +74,6 @@ type SkaffoldRunner struct {
 	hasBuilt             bool
 	hasDeployed          bool
 	imageList            *kubernetes.ImageList
-	RPCServerShutdown    func() error
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -118,12 +114,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}
 
-	shutdown, err := server.Initialize(opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "initializing skaffold server")
-	}
-	event.InitializeState(runCtx)
-	event.LogSkaffoldMetadata(version.Get())
+	event.InitializeState(runCtx.Cfg.Build)
 
 	return &SkaffoldRunner{
 		Builder:              builder,
@@ -138,7 +129,6 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		imageList:            kubernetes.NewImageList(),
 		cache:                artifactCache,
 		runCtx:               runCtx,
-		RPCServerShutdown:    shutdown,
 	}, nil
 }
 
@@ -287,9 +277,4 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
 	return imageTags, nil
-}
-
-// Stop stops the runner.
-func (r *SkaffoldRunner) Stop() error {
-	return r.RPCServerShutdown()
 }

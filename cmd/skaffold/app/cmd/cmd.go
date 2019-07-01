@@ -26,6 +26,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
@@ -44,47 +46,68 @@ var (
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	updateMsg := make(chan string)
+	var shutdownAPIServer func() error
 
 	rootCmd := &cobra.Command{
 		Use:           "skaffold",
 		Short:         "A tool that facilitates continuous development for Kubernetes applications.",
 		SilenceErrors: true,
-	}
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			cmd.Root().SilenceUsage = true
 
-	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		opts.Command = cmd.Use
+			opts.Command = cmd.Use
 
-		if err := SetUpLogs(err, v); err != nil {
-			return err
-		}
+			// Setup colors
+			if forceColors {
+				color.ForceColors()
+			}
+			color.OverwriteDefault(color.Color(defaultColor))
 
-		if forceColors {
-			color.ForceColors()
-		}
+			// Setup logs
+			if err := setUpLogs(err, v); err != nil {
+				return err
+			}
 
-		rootCmd.SilenceUsage = true
-		logrus.Infof("Skaffold %+v", version.Get())
-		color.OverwriteDefault(color.Color(defaultColor))
+			// Start API Server
+			if cmd.Use == "dev" {
+				// TODO(dgageot): api server is always started in dev mode, right now.
+				// It should instead default to true.
+				opts.EnableRPC = true
+			}
+			shutdown, err := server.Initialize(opts)
+			if err != nil {
+				return errors.Wrap(err, "initializing api server")
+			}
+			shutdownAPIServer = shutdown
 
-		if quietFlag {
-			logrus.Debugf("Update check is disabled because of quiet mode")
-		} else {
-			go func() {
-				if err := updateCheck(updateMsg); err != nil {
-					logrus.Infof("update check failed: %s", err)
-				}
-			}()
-		}
+			// Print version
+			version := version.Get()
+			logrus.Infof("Skaffold %+v", version)
+			event.LogSkaffoldMetadata(version)
 
-		return nil
-	}
+			if quietFlag {
+				logrus.Debugf("Update check is disabled because of quiet mode")
+			} else {
+				go func() {
+					if err := updateCheck(updateMsg); err != nil {
+						logrus.Infof("update check failed: %s", err)
+					}
+				}()
+			}
 
-	rootCmd.PersistentPostRun = func(cmd *cobra.Command, args []string) {
-		select {
-		case msg := <-updateMsg:
-			fmt.Fprintf(out, "%s\n", msg)
-		default:
-		}
+			return nil
+		},
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			select {
+			case msg := <-updateMsg:
+				fmt.Fprintf(out, "%s\n", msg)
+			default:
+			}
+
+			if shutdownAPIServer != nil {
+				shutdownAPIServer()
+			}
+		},
 	}
 
 	SetUpFlags()
@@ -158,9 +181,9 @@ func FlagToEnvVarName(f *pflag.Flag) string {
 	return fmt.Sprintf("SKAFFOLD_%s", strings.Replace(strings.ToUpper(f.Name), "-", "_", -1))
 }
 
-func SetUpLogs(out io.Writer, level string) error {
+func setUpLogs(out io.Writer, level string) error {
 	logrus.SetOutput(out)
-	lvl, err := logrus.ParseLevel(v)
+	lvl, err := logrus.ParseLevel(level)
 	if err != nil {
 		return errors.Wrap(err, "parsing log level")
 	}

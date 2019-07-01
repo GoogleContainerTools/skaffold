@@ -42,9 +42,9 @@ func withRunner(ctx context.Context, action func(runner.Runner, *latest.Skaffold
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
-	defer runner.Stop()
 
 	err = action(runner, config)
+
 	return alwaysSucceedWhenCancelled(ctx, err)
 }
 

@@ -27,7 +27,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
@@ -436,7 +435,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState(&runcontext.RunContext{Cfg: &latest.Pipeline{Build: latest.BuildConfig{}}})
+			event.InitializeState(latest.BuildConfig{})
 			taken := map[int]struct{}{}
 
 			forwardingTimeoutTime = time.Second
@@ -499,7 +498,7 @@ func TestStartPodForwarder(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			event.InitializeState(&runcontext.RunContext{Cfg: &latest.Pipeline{Build: latest.BuildConfig{}}})
+			event.InitializeState(latest.BuildConfig{})
 			client := fakekubeclientset.NewSimpleClientset(&v1.Pod{})
 			fakeWatcher := watch.NewRaceFreeFake()
 			client.PrependWatchReactor("*", testutil.SetupFakeWatcher(fakeWatcher))
