@@ -49,7 +49,7 @@ RUN chmod +x container-structure-test
 
 # Download kind
 FROM alpine:3.9 as download-kind
-ENV KIND_VERSION v0.3.0
+ENV KIND_VERSION v0.4.0
 ENV KIND_URL https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64
 RUN wget -O kind "${KIND_URL}"
 RUN chmod +x kind
