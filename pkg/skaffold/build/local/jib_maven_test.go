@@ -18,12 +18,87 @@ package local
 
 import (
 	"context"
+	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/pkg/errors"
 )
+
+func TestBuildJibMaven(t *testing.T) {
+	var tests = []struct {
+		description   string
+		artifact      *latest.JibMavenArtifact
+		cmd           util.Command
+		shouldErr     bool
+		expectedError string
+	}{
+		{
+			description: "local build",
+			artifact:    &latest.JibMavenArtifact{},
+			cmd:         testutil.FakeRun(t, "mvn -Djib.console=plain --non-recursive prepare-package jib:dockerBuild -Dimage=img:tag"),
+		},
+		{
+			description: "local build with additional flags",
+			artifact:    &latest.JibMavenArtifact{Flags: []string{"--flag1", "--flag2"}},
+			cmd:         testutil.FakeRun(t, "mvn -Djib.console=plain --flag1 --flag2 --non-recursive prepare-package jib:dockerBuild -Dimage=img:tag"),
+		},
+		{
+			description: "local build with module",
+			artifact:    &latest.JibMavenArtifact{Module: "module"},
+			cmd: testutil.
+				FakeRunOut(t, "mvn --quiet --projects module jib:_skaffold-package-goals", "dockerBuild").
+				WithRun("mvn -Djib.console=plain --projects module --also-make package -Dimage=img:tag"),
+		},
+		{
+			description: "local build with module and profile",
+			artifact:    &latest.JibMavenArtifact{Module: "module", Profile: "profile"},
+			cmd: testutil.
+				FakeRunOut(t, "mvn --quiet --projects module jib:_skaffold-package-goals --activate-profiles profile", "dockerBuild").
+				WithRun("mvn -Djib.console=plain --activate-profiles profile --projects module --also-make package -Dimage=img:tag"),
+		},
+		{
+			description:   "fail local build",
+			artifact:      &latest.JibMavenArtifact{},
+			cmd:           testutil.FakeRunErr(t, "mvn -Djib.console=plain --non-recursive prepare-package jib:dockerBuild -Dimage=img:tag", errors.New("BUG")),
+			shouldErr:     true,
+			expectedError: "maven build failed",
+		},
+		{
+			description:   "fail to check package goals",
+			artifact:      &latest.JibMavenArtifact{Module: "module"},
+			cmd:           testutil.FakeRunOutErr(t, "mvn --quiet --projects module jib:_skaffold-package-goals", "", errors.New("BUG")),
+			shouldErr:     true,
+			expectedError: "could not obtain jib package goals",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.cmd)
+
+			api := &testutil.FakeAPIClient{
+				TagToImageID: map[string]string{"img:tag": "abacab"},
+			}
+
+			builder := &Builder{
+				pushImages:  false,
+				localDocker: docker.NewLocalDaemon(api, nil, false, map[string]bool{}),
+			}
+			result, err := builder.buildJibMaven(context.Background(), ioutil.Discard, ".", test.artifact, "img:tag")
+
+			t.CheckError(test.shouldErr, err)
+			if test.shouldErr {
+				t.CheckErrorContains(test.expectedError, err)
+			} else {
+				t.CheckDeepEqual("abacab", result)
+			}
+		})
+	}
+}
 
 func TestMavenVerifyJibPackageGoal(t *testing.T) {
 	var tests = []struct {
