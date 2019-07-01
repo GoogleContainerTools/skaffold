@@ -29,7 +29,6 @@ import (
 
 // Set makes sure default values are set on a SkaffoldConfig.
 func Set(c *latest.SkaffoldConfig) error {
-
 	defaultToLocalBuild(c)
 	defaultToKubectlDeploy(c)
 	setDefaultTagger(c)
@@ -207,8 +206,6 @@ func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
 		return nil
 	}
 
-	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
-
 	if cluster.DockerConfig.Path != "" {
 		absPath, err := homedir.Expand(cluster.DockerConfig.Path)
 		if err != nil {
@@ -218,6 +215,8 @@ func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
 		cluster.DockerConfig.Path = absPath
 		return nil
 	}
+
+	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
 
 	return nil
 }
