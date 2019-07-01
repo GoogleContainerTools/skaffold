@@ -129,7 +129,8 @@ func TestDevFailFirstCycle(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 
-			runner := createRunner(t, test.testBench).WithMonitor(test.monitor)
+			// runner := createRunner(t, test.testBench).WithMonitor(test.monitor)
+			runner := createRunner(t, test.testBench, test.monitor)
 			test.testBench.firstMonitor = test.monitor.Run
 
 			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{{
@@ -259,7 +260,7 @@ func TestDev(t *testing.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			test.testBench.cycles = len(test.watchEvents)
 
-			runner := createRunner(t, test.testBench).WithMonitor(&TestMonitor{
+			runner := createRunner(t, test.testBench, &TestMonitor{
 				events:    test.watchEvents,
 				testBench: test.testBench,
 			})
@@ -327,7 +328,7 @@ func TestDevSync(t *testing.T) {
 			t.Override(&sync.WorkingDir, func(string, map[string]bool) (string, error) { return "/", nil })
 			test.testBench.cycles = len(test.watchEvents)
 
-			runner := createRunner(t, test.testBench).WithMonitor(&TestMonitor{
+			runner := createRunner(t, test.testBench, &TestMonitor{
 				events:    test.watchEvents,
 				testBench: test.testBench,
 			})

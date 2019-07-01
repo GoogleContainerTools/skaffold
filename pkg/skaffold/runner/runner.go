@@ -40,9 +40,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -70,6 +68,7 @@ type SkaffoldRunner struct {
 	monitor  filemon.Monitor
 	listener Listener
 
+	logger               *kubernetes.LogAggregator
 	cache                *cache.Cache
 	changeSet            *changeSet
 	runCtx               *runcontext.RunContext

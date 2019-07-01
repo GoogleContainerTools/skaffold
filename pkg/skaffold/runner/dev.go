@@ -49,59 +49,58 @@ func (r *SkaffoldRunner) separateBuildAndSync() error {
 	return nil
 }
 
+func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
+	defer r.changeSet.reset()
+
+	r.logger.Mute()
+
+	if err := r.separateBuildAndSync(); err != nil {
+		return err
+	}
+
+	if r.changeSet.needsAction() {
+		// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
+		defer r.monitor.Reset()
+		defer r.listener.LogWatchToUser(out)
+	}
+
+	switch {
+	case r.changeSet.needsReload:
+		return ErrorConfigurationChanged
+	case len(r.changeSet.needsResync) > 0:
+		for _, s := range r.changeSet.needsResync {
+			color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
+
+			if err := r.Syncer.Sync(ctx, s); err != nil {
+				logrus.Warnln("Skipping deploy due to sync error:", err)
+				return nil
+			}
+		}
+	case len(r.changeSet.needsRebuild) > 0:
+		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
+			logrus.Warnln("Skipping deploy due to error:", err)
+			return nil
+		}
+		fallthrough
+	case r.changeSet.needsRedeploy:
+		if err := r.Deploy(ctx, out, r.builds); err != nil {
+			logrus.Warnln("Skipping deploy due to error:", err)
+			return nil
+		}
+	}
+
+	r.logger.Unmute()
+	return nil
+}
+
 // Dev watches for changes and runs the skaffold build and deploy
 // config until interrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	logger := r.newLogger(out, artifacts)
-	defer logger.Stop()
+	r.createLogger(out, artifacts)
+	defer r.logger.Stop()
 
 	forwarderManager := portforward.NewForwarderManager(out, r.imageList, r.runCtx.Namespaces, r.defaultLabeller.K8sManagedByLabelKeyValueString(), r.runCtx.Opts.PortForward, r.portForwardResources)
 	defer forwarderManager.Stop()
-
-	// Create watcher and register artifacts to build current state of files.
-	onChange := func() error {
-		defer r.changeSet.reset()
-
-		logger.Mute()
-
-		if err := r.separateBuildAndSync(); err != nil {
-			return err
-		}
-
-		if r.changeSet.needsAction() {
-			// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
-			defer r.monitor.Reset()
-			defer r.listener.LogWatchToUser(out)
-		}
-
-		switch {
-		case r.changeSet.needsReload:
-			return ErrorConfigurationChanged
-		case len(r.changeSet.needsResync) > 0:
-			for _, s := range r.changeSet.needsResync {
-				color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
-
-				if err := r.Syncer.Sync(ctx, s); err != nil {
-					logrus.Warnln("Skipping deploy due to sync error:", err)
-					return nil
-				}
-			}
-		case len(r.changeSet.needsRebuild) > 0:
-			if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
-				logrus.Warnln("Skipping deploy due to error:", err)
-				return nil
-			}
-			fallthrough
-		case r.changeSet.needsRedeploy:
-			if err := r.Deploy(ctx, out, r.builds); err != nil {
-				logrus.Warnln("Skipping deploy due to error:", err)
-				return nil
-			}
-		}
-
-		logger.Unmute()
-		return nil
-	}
 
 	// Watch artifacts
 	for i := range artifacts {
@@ -147,8 +146,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return errors.Wrap(err, "exiting dev mode because first build failed")
 	}
 
-	// Logs should be retrieve up to just before the deploy
-	logger.SetSince(time.Now())
+	// Logs should be retrieved up to just before the deploy
+	r.logger.SetSince(time.Now())
 
 	// First deploy
 	if err := r.Deploy(ctx, out, r.builds); err != nil {
@@ -157,7 +156,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Start printing the logs after deploy is finished
 	if r.runCtx.Opts.TailDev {
-		if err := logger.Start(ctx); err != nil {
+		if err := r.logger.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting logger")
 		}
 	}
@@ -167,5 +166,5 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return errors.Wrap(err, "starting forwarder manager")
 	}
 
-	return r.listener.WatchForChanges(ctx, out, onChange)
+	return r.listener.WatchForChanges(ctx, out, r.doDev)
 }

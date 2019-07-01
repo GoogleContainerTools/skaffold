@@ -50,8 +50,7 @@ type TestBench struct {
 	testErrors   []error
 	deployErrors []error
 
-	devLoop func() error
-	// monitor        filemon.Monitor
+	devLoop        func(context.Context, io.Writer) error
 	firstMonitor   func(context.Context, io.Writer, bool) error
 	cycles         int
 	currentCycle   int
@@ -167,7 +166,7 @@ func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
 
-func (t *TestBench) WatchForChanges(_ context.Context, _ io.Writer, _ func() error) error {
+func (t *TestBench) WatchForChanges(_ context.Context, _ io.Writer, _ func(context.Context, io.Writer) error) error {
 	// don't actually call the monitor here, because extra actions would be added
 	if err := t.firstMonitor(context.Background(), ioutil.Discard, true); err != nil {
 		return err
@@ -175,7 +174,7 @@ func (t *TestBench) WatchForChanges(_ context.Context, _ io.Writer, _ func() err
 	for i := 0; i < t.cycles; i++ {
 		t.enterNewCycle()
 		t.currentCycle = i
-		if err := t.devLoop(); err != nil {
+		if err := t.devLoop(context.Background(), ioutil.Discard); err != nil {
 			return err
 		}
 	}
@@ -197,7 +196,7 @@ func (r *SkaffoldRunner) WithMonitor(m filemon.Monitor) *SkaffoldRunner {
 	return r
 }
 
-func createRunner(t *testutil.T, testBench *TestBench) *SkaffoldRunner {
+func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) *SkaffoldRunner {
 	opts := &config.SkaffoldOptions{
 		Trigger:           "polling",
 		WatchPollInterval: 100,
@@ -214,31 +213,13 @@ func createRunner(t *testutil.T, testBench *TestBench) *SkaffoldRunner {
 	runner.Tester = testBench
 	runner.Deployer = testBench
 	runner.listener = testBench
+	runner.monitor = monitor
 
-	testBench.devLoop = func() error {
-		if err := runner.monitor.Run(context.Background(), nil, true); err != nil {
+	testBench.devLoop = func(context.Context, io.Writer) error {
+		if err := monitor.Run(context.Background(), ioutil.Discard, true); err != nil {
 			return err
 		}
-
-		if err := runner.separateBuildAndSync(); err != nil {
-			return err
-		}
-
-		if len(runner.changeSet.needsResync) > 0 {
-			for _, s := range runner.changeSet.needsResync {
-				if err := runner.Syncer.Sync(context.Background(), s); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-
-		_, bErr := runner.BuildAndTest(context.Background(), ioutil.Discard, runner.changeSet.needsRebuild)
-		if bErr == nil {
-			runner.Deploy(context.Background(), ioutil.Discard, runner.builds)
-		}
-		runner.changeSet.reset()
-		return nil
+		return runner.doDev(context.Background(), ioutil.Discard)
 	}
 
 	testBench.firstMonitor = func(context.Context, io.Writer, bool) error {

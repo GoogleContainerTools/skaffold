@@ -27,7 +27,7 @@ import (
 )
 
 type Listener interface {
-	WatchForChanges(context.Context, io.Writer, func() error) error
+	WatchForChanges(context.Context, io.Writer, func(context.Context, io.Writer) error) error
 	LogWatchToUser(io.Writer)
 }
 
@@ -42,7 +42,7 @@ func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
 
 // Listen listens to a trigger, and when one is received, computes file changes and
 // conditionally runs the dev loop.
-func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, devLoop func() error) error {
+func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, devLoop func(context.Context, io.Writer) error) error {
 	ctxTrigger, cancelTrigger := context.WithCancel(ctx)
 	defer cancelTrigger()
 	trigger, err := trigger.StartTrigger(ctxTrigger, l.Trigger)
@@ -66,7 +66,7 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 				logrus.Warnf("error computing file changes: %s", err.Error())
 				logrus.Warnf("skaffold may not run successfully!")
 			}
-			if err := devLoop(); err != nil {
+			if err := devLoop(ctx, out); err != nil {
 				logrus.Errorf("error running dev loop: %s", err.Error())
 			}
 		}
