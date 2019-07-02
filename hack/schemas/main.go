@@ -123,7 +123,9 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 		}
 
 		if !dryRun {
-			ioutil.WriteFile(output, buf, os.ModePerm)
+			if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
+				return false, errors.Wrapf(err, "unable to write schema %s", output)
+			}
 		}
 	}
 
