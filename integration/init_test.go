@@ -43,8 +43,8 @@ func TestInit(t *testing.T) {
 			name: "microservices",
 			dir:  "testdata/init/microservices",
 			args: []string{
-				"-a", "{\"name\":\"Docker\",\"payload\":{\"path\":\"leeroy-app/Dockerfile\"}}=gcr.io/k8s-skaffold/leeroy-app",
-				"-a", "{\"name\":\"Docker\",\"payload\":{\"path\":\"leeroy-web/Dockerfile\"}}=gcr.io/k8s-skaffold/leeroy-web",
+				"-a", `{"name":"Docker","payload":{"path":"leeroy-app/Dockerfile"}}=gcr.io/k8s-skaffold/leeroy-app`,
+				"-a", `{"name":"Docker","payload":{"path":"leeroy-web/Dockerfile"}}=gcr.io/k8s-skaffold/leeroy-web`,
 			},
 		},
 		{
