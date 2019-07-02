@@ -1,0 +1,38 @@
+{
+  "type": "object",
+  "anyOf": [
+    {
+      "$ref": "#/definitions/TestStruct"
+    }
+  ],
+  "$schema": "http://json-schema-org/draft-07/schema#",
+  "definitions": {
+    "TestStruct": {
+      "properties": {
+        "int32Field": {
+          "type": "integer",
+          "description": "an integer",
+          "x-intellij-html-description": "an integer"
+        },
+        "int64Field": {
+          "type": "integer",
+          "description": "an integer",
+          "x-intellij-html-description": "an integer"
+        },
+        "intField": {
+          "type": "integer",
+          "description": "an integer",
+          "x-intellij-html-description": "an integer"
+        }
+      },
+      "preferredOrder": [
+        "int32Field",
+        "int64Field",
+        "intField"
+      ],
+      "additionalProperties": false,
+      "description": "for testing the schema generator.",
+      "x-intellij-html-description": "for testing the schema generator."
+    }
+  }
+}

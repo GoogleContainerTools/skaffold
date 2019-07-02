@@ -808,7 +808,7 @@
     "GoogleCloudBuild": {
       "properties": {
         "diskSizeGb": {
-          "type": "number",
+          "type": "integer",
           "description": "disk size of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
           "x-intellij-html-description": "disk size of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>."
         },

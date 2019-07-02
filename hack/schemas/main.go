@@ -144,8 +144,8 @@ func setTypeOrRef(def *Definition, typeName string) {
 		def.Type = typeName
 	case "bool":
 		def.Type = "boolean"
-	case "int", "int64":
-		def.Type = "number"
+	case "int", "int64", "int32":
+		def.Type = "integer"
 	default:
 		def.Ref = defPrefix + typeName
 	}

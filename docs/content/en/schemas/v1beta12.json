@@ -804,7 +804,7 @@
     "GoogleCloudBuild": {
       "properties": {
         "diskSizeGb": {
-          "type": "number",
+          "type": "integer",
           "description": "disk size of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
           "x-intellij-html-description": "disk size of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>."
         },
@@ -1475,7 +1475,7 @@
     "PortForwardResource": {
       "properties": {
         "localPort": {
-          "$ref": "#/definitions/int32",
+          "type": "integer",
           "description": "local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.",
           "x-intellij-html-description": "local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. <em>Optional</em>."
         },
@@ -1485,7 +1485,7 @@
           "x-intellij-html-description": "namespace of the resource to port forward."
         },
         "port": {
-          "$ref": "#/definitions/int32",
+          "type": "integer",
           "description": "resource port that will be forwarded.",
           "x-intellij-html-description": "resource port that will be forwarded."
         },
