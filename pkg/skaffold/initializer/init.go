@@ -248,8 +248,8 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 		// Parses JSON in the form of: {"name":"Name of Builder","payload": {...}}
 		// Parse name field first to determine builder type
 		nameCheck := struct {
-			Name    string
-			Payload interface{}
+			Name    string      `json:"name"`
+			Payload interface{} `json:"payload"`
 		}{}
 		if err := json.Unmarshal([]byte(parts[0]), &nameCheck); err != nil {
 			return nil, err
@@ -260,8 +260,8 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 		switch nameCheck.Name {
 		case "Docker":
 			parsed := struct {
-				Name    string
-				Payload docker.Docker
+				Name    string        `json:"name"`
+				Payload docker.Docker `json:"payload"`
 			}{}
 			if err := json.Unmarshal([]byte(parts[0]), &parsed); err != nil {
 				return nil, err
@@ -270,8 +270,8 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 
 		case jib.JibGradle, jib.JibMaven:
 			parsed := struct {
-				Name    string
-				Payload jib.Jib
+				Name    string  `json:"name"`
+				Payload jib.Jib `json:"payload"`
 			}{}
 			if err := json.Unmarshal([]byte(parts[0]), &parsed); err != nil {
 				return nil, err
