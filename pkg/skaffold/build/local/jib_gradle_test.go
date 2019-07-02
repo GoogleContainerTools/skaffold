@@ -28,7 +28,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func TestBuildJibGradle(t *testing.T) {
+func TestBuildJibGradleToDocker(t *testing.T) {
 	var tests = []struct {
 		description   string
 		artifact      *latest.JibGradleArtifact
@@ -37,22 +37,22 @@ func TestBuildJibGradle(t *testing.T) {
 		expectedError string
 	}{
 		{
-			description: "local build",
+			description: "build",
 			artifact:    &latest.JibGradleArtifact{},
 			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain :jibDockerBuild --image=img:tag"),
 		},
 		{
-			description: "local build with additional flags",
+			description: "build with additional flags",
 			artifact:    &latest.JibGradleArtifact{Flags: []string{"--flag1", "--flag2"}},
 			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain :jibDockerBuild --image=img:tag --flag1 --flag2"),
 		},
 		{
-			description: "local build with project",
+			description: "build with project",
 			artifact:    &latest.JibGradleArtifact{Project: "project"},
 			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain :project:jibDockerBuild --image=img:tag"),
 		},
 		{
-			description:   "fail local build",
+			description:   "fail build",
 			artifact:      &latest.JibGradleArtifact{},
 			cmd:           testutil.FakeRunErr(t, "gradle -Djib.console=plain :jibDockerBuild --image=img:tag", errors.New("BUG")),
 			shouldErr:     true,
@@ -65,7 +65,7 @@ func TestBuildJibGradle(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.cmd)
 
 			api := &testutil.FakeAPIClient{
-				TagToImageID: map[string]string{"img:tag": "abacab"},
+				TagToImageID: map[string]string{"img:tag": "imageID"},
 			}
 
 			builder := &Builder{
@@ -78,7 +78,65 @@ func TestBuildJibGradle(t *testing.T) {
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
 			} else {
-				t.CheckDeepEqual("abacab", result)
+				t.CheckDeepEqual("imageID", result)
+			}
+		})
+	}
+}
+
+func TestBuildJibGradleToRegistry(t *testing.T) {
+	var tests = []struct {
+		description   string
+		artifact      *latest.JibGradleArtifact
+		cmd           util.Command
+		shouldErr     bool
+		expectedError string
+	}{
+		{
+			description: "remote build",
+			artifact:    &latest.JibGradleArtifact{},
+			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain :jib --image=img:tag"),
+		},
+		{
+			description: "build with additional flags",
+			artifact:    &latest.JibGradleArtifact{Flags: []string{"--flag1", "--flag2"}},
+			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain :jib --image=img:tag --flag1 --flag2"),
+		},
+		{
+			description: "build with project",
+			artifact:    &latest.JibGradleArtifact{Project: "project"},
+			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain :project:jib --image=img:tag"),
+		},
+		{
+			description:   "fail build",
+			artifact:      &latest.JibGradleArtifact{},
+			cmd:           testutil.FakeRunErr(t, "gradle -Djib.console=plain :jib --image=img:tag", errors.New("BUG")),
+			shouldErr:     true,
+			expectedError: "gradle build failed",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.cmd)
+			t.Override(&getRemoteDigest, func(identifier string, _ map[string]bool) (string, error) {
+				if identifier == "img:tag" {
+					return "digest", nil
+				}
+				return "", errors.New("unknown remote tag")
+			})
+
+			builder := &Builder{
+				pushImages:  true,
+				localDocker: docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, map[string]bool{}),
+			}
+			result, err := builder.buildJibGradle(context.Background(), ioutil.Discard, ".", test.artifact, "img:tag")
+
+			t.CheckError(test.shouldErr, err)
+			if test.shouldErr {
+				t.CheckErrorContains(test.expectedError, err)
+			} else {
+				t.CheckDeepEqual("digest", result)
 			}
 		})
 	}
