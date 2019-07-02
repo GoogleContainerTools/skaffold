@@ -703,7 +703,7 @@ type JibMavenArtifact struct {
 	Module string `yaml:"module,omitempty"`
 
 	// Profile selects which Maven profile to activate.
-	Profile string `yaml:"profile"`
+	Profile string `yaml:"profile,omitempty"`
 
 	// Flags are additional build flags passed to Maven.
 	// For example: `["-x", "-DskipTests"]`.
