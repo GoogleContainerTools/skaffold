@@ -35,6 +35,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// For testing
+var (
+	getRemoteDigest = docker.RemoteDigest
+)
+
 // Build runs a docker build on the host and tags the resulting image with
 // its checksum. It streams build progress to the writer argument.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
