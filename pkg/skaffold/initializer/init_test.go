@@ -218,7 +218,8 @@ func fakeValidateDockerfile(path string) bool {
 func fakeValidateJibConfig(path string) []jib.Jib {
 	if strings.HasSuffix(path, "build.gradle") {
 		return []jib.Jib{{BuilderName: jib.JibGradle, FilePath: path}}
-	} else if strings.HasSuffix(path, "pom.xml") {
+	}
+	if strings.HasSuffix(path, "pom.xml") {
 		return []jib.Jib{{BuilderName: jib.JibMaven, FilePath: path}}
 	}
 	return nil

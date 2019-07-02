@@ -49,7 +49,9 @@ func TestValidateJibConfig(t *testing.T) {
 			description: "jib gradle single project",
 			path:        "path/to/build.gradle",
 			command:     "gradle _jibSkaffoldInit -q",
-			stdout:      "BEGIN JIB JSON\n{\"image\":\"image\",\"project\":\"project\"}\n",
+			stdout: `BEGIN JIB JSON
+{"image":"image","project":"project"}
+`,
 			expectedConfig: []Jib{
 				{BuilderName: JibGradle, FilePath: "path/to/build.gradle", Image: "image", Project: "project"},
 			},
@@ -58,7 +60,12 @@ func TestValidateJibConfig(t *testing.T) {
 			description: "jib gradle multi-project",
 			path:        "path/to/build.gradle",
 			command:     "gradle _jibSkaffoldInit -q",
-			stdout:      "BEGIN JIB JSON\n{\"image\":\"image\",\"project\":\"project1\"}\n\nBEGIN JIB JSON\n{\"project\":\"project2\"}\n",
+			stdout: `BEGIN JIB JSON
+{"image":"image","project":"project1"}
+
+BEGIN JIB JSON
+{"project":"project2"}
+`,
 			expectedConfig: []Jib{
 				{BuilderName: JibGradle, FilePath: "path/to/build.gradle", Image: "image", Project: "project1"},
 				{BuilderName: JibGradle, FilePath: "path/to/build.gradle", Project: "project2"},
@@ -68,7 +75,8 @@ func TestValidateJibConfig(t *testing.T) {
 			description: "jib maven single module",
 			path:        "path/to/pom.xml",
 			command:     "mvn jib:_skaffold-init -q",
-			stdout:      "BEGIN JIB JSON\n{\"image\":\"image\",\"project\":\"project\"}\n",
+			stdout: `BEGIN JIB JSON
+{"image":"image","project":"project"}`,
 			expectedConfig: []Jib{
 				{BuilderName: JibMaven, FilePath: "path/to/pom.xml", Image: "image", Project: "project"},
 			},
@@ -77,7 +85,12 @@ func TestValidateJibConfig(t *testing.T) {
 			description: "jib maven multi-module",
 			path:        "path/to/pom.xml",
 			command:     "mvn jib:_skaffold-init -q",
-			stdout:      "BEGIN JIB JSON\n{\"image\":\"image\",\"project\":\"project1\"}\n\nBEGIN JIB JSON\n{\"project\":\"project2\"}\n",
+			stdout: `BEGIN JIB JSON
+{"image":"image","project":"project1"}
+
+BEGIN JIB JSON
+{"project":"project2"}
+`,
 			expectedConfig: []Jib{
 				{BuilderName: JibMaven, FilePath: "path/to/pom.xml", Image: "image", Project: "project1"},
 				{BuilderName: JibMaven, FilePath: "path/to/pom.xml", Project: "project2"},
