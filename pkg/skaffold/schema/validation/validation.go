@@ -67,12 +67,10 @@ func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 // validateCustomDependencies makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
 func validateCustomDependencies(artifacts []*latest.Artifact) (errs []error) {
 	for _, a := range artifacts {
-		if a.CustomArtifact == nil {
+		if a.CustomArtifact == nil || a.CustomArtifact.Dependencies == nil || a.CustomArtifact.Dependencies.Ignore == nil {
 			continue
 		}
-		if a.CustomArtifact.Dependencies.Ignore == nil {
-			continue
-		}
+
 		if a.CustomArtifact.Dependencies.Dockerfile != nil || a.CustomArtifact.Dependencies.Command != "" {
 			errs = append(errs, fmt.Errorf("artifact %s has invalid dependencies; dependencies.ignore can only be used in conjunction with dependencies.paths", a.ImageName))
 		}
