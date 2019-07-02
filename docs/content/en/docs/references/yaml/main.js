@@ -3,8 +3,8 @@ import { unsafeHTML } from "https://unpkg.com/lit-html@1.0.0/directives/unsafe-h
 
 var version;
 (async function() {
-  const url = new URL(import.meta.url);
-  version = url.searchParams.get('version').replace('skaffold/', '');
+  version = document.getElementById('table').attributes['data-version'].value;
+  version = version.replace('skaffold/', '');
 
   const response = await fetch(`/schemas/${version}.json`);
   const json = await response.json();
