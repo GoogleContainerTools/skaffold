@@ -123,7 +123,9 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 		}
 
 		if !dryRun {
-			ioutil.WriteFile(output, buf, os.ModePerm)
+			if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
+				return false, errors.Wrapf(err, "unable to write schema %s", output)
+			}
 		}
 	}
 
@@ -144,8 +146,8 @@ func setTypeOrRef(def *Definition, typeName string) {
 		def.Type = typeName
 	case "bool":
 		def.Type = "boolean"
-	case "int", "int64":
-		def.Type = "number"
+	case "int", "int64", "int32":
+		def.Type = "integer"
 	default:
 		def.Ref = defPrefix + typeName
 	}

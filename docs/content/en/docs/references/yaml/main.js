@@ -1,14 +1,14 @@
-import { html, render } from "https://unpkg.com/lit-html@1.0.0/lit-html.js";
-import { unsafeHTML } from "https://unpkg.com/lit-html@1.0.0/directives/unsafe-html.js";
+import { html, render } from 'https://unpkg.com/lit-html@1.0.0/lit-html.js';
+import { unsafeHTML } from 'https://unpkg.com/lit-html@1.0.0/directives/unsafe-html.js';
 
 var version;
 (async function() {
-  const url = new URL(import.meta.url);
-  version = url.searchParams.get('version').replace('skaffold/', '');
+  version = document.getElementById('table').attributes['data-version'].value;
+  version = version.replace('skaffold/', '');
 
   const response = await fetch(`/schemas/${version}.json`);
   const json = await response.json();
-  const table = document.getElementById("table");
+  const table = document.getElementById('table');
 
   render(html`
     ${template(json.definitions, undefined, json.anyOf[0].$ref, 0)}
@@ -16,7 +16,7 @@ var version;
 })();
 
 function* template(definitions, parentDefinition, ref, ident) {
-  const name = ref.replace("#/definitions/", "");
+  const name = ref.replace('#/definitions/', '');
   const allProperties = [];
   const seen = {};
 
@@ -37,28 +37,28 @@ function* template(definitions, parentDefinition, ref, ident) {
   }
 
   let index = -1;
-  for (var [key, definition] of allProperties) {
+  for (let [key, definition] of allProperties) {
     index++;
 
     // Key
     let required = definitions[name].required && definitions[name].required.includes(key);
-    let keyClass = required ? "key required" : "key";
+    let keyClass = required ? 'key required' : 'key';
 
     // Value
     let value = definition.default;
-    if (key === "apiVersion") {
+    if (key === 'apiVersion') {
       value = `skaffold/${version}`;
     } else if (definition.examples && definition.examples.length > 0) {
       value = definition.examples[0];
     }
-    let valueClass = definition.examples ? "example" : "value";
+    let valueClass = definition.examples ? 'example' : 'value';
 
     // Description
-    const desc = definition["x-intellij-html-description"];
+    const desc = definition['x-intellij-html-description'];
     
     // Special case for profiles
-    if ((name === "Profile") && (key === "build" || key === "test" || key === "deploy")) {
-      value = "{}";
+    if ((name === 'Profile') && (key === 'build' || key === 'test' || key === 'deploy')) {
+      value = '{}';
       yield html`
         <tr>
           <td>
@@ -74,9 +74,9 @@ function* template(definitions, parentDefinition, ref, ident) {
 
     if (definition.$ref) {
       // Check if the referenced description is a final one
-      const refName = definition.$ref.replace("#/definitions/", "");
+      const refName = definition.$ref.replace('#/definitions/', '');
       if (!definitions[refName].properties && !definitions[refName].anyOf) {
-        value = "{}";
+        value = '{}';
       }
 
       yield html`
@@ -100,7 +100,7 @@ function* template(definitions, parentDefinition, ref, ident) {
           <td class="comment">${unsafeHTML(desc)}</td>
         </tr>
       `;
-    } else if (parentDefinition && (parentDefinition.type === "array") && (index == 0)) {
+    } else if (parentDefinition && (parentDefinition.type === 'array') && (index === 0)) {
       yield html`
         <tr>
           <td>
@@ -111,7 +111,7 @@ function* template(definitions, parentDefinition, ref, ident) {
           <td class="comment">${unsafeHTML(desc)}</td>
         </tr>
       `;
-    } else if ((definition.type === "array") && value && (value != "[]")) {
+    } else if ((definition.type === 'array') && value && (value !== '[]')) {
       // Parse value to json array
       const values = JSON.parse(value);
 
@@ -137,7 +137,7 @@ function* template(definitions, parentDefinition, ref, ident) {
           </tr>
         `;
       }
-    } else if (definition.type === "object" && value && value != "{}") {
+    } else if (definition.type === 'object' && value && value !== '{}') {
       // Parse value to json object
       const values = JSON.parse(value);
 
@@ -154,6 +154,7 @@ function* template(definitions, parentDefinition, ref, ident) {
       `;
 
       for (const k in values) {
+        if (!values.hasOwnProperty(k)) continue;
         const v = values[k];
 
         yield html`
