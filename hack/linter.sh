@@ -25,6 +25,7 @@ fi
 
 golangci-lint run \
 	--no-config \
+	-E bodyclose \
 	-E goconst \
 	-E goimports \
 	-E gocritic \
