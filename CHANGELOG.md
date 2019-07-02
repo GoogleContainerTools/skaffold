@@ -66,7 +66,6 @@ Huge thanks goes out to all of our contributors for this release:
 - David Gageot
 - JieJhih Jhang
 - Nick Kubala
-- priyawadhwa
 - Priya Wadhwa
 - Tad Cordle
 - Tejal Desai
