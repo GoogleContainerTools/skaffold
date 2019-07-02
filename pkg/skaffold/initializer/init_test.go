@@ -40,19 +40,19 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 			pairs:       []builderImagePair{{docker.Docker{Dockerfile: "Dockerfile1"}, "image1"}},
 			builders:    []InitBuilder{docker.Docker{Dockerfile: "Dockerfile2"}},
 			images:      []string{"image2"},
-			expected:    "{\"builders\":[{\"name\":\"Docker\",\"payload\":{\"path\":\"Dockerfile1\"}},{\"name\":\"Docker\",\"payload\":{\"path\":\"Dockerfile2\"}}],\"images\":[{\"name\":\"image1\",\"requiresPrompt\":false},{\"name\":\"image2\",\"requiresPrompt\":true}]}",
+			expected:    `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","requiresPrompt":false},{"name":"image2","requiresPrompt":true}]}`,
 		},
 		{
 			description: "builders and images with no pairs",
 			builders:    []InitBuilder{docker.Docker{Dockerfile: "Dockerfile1"}, docker.Docker{Dockerfile: "Dockerfile2"}},
 			images:      []string{"image1", "image2"},
-			expected:    "{\"builders\":[{\"name\":\"Docker\",\"payload\":{\"path\":\"Dockerfile1\"}},{\"name\":\"Docker\",\"payload\":{\"path\":\"Dockerfile2\"}}],\"images\":[{\"name\":\"image1\",\"requiresPrompt\":true},{\"name\":\"image2\",\"requiresPrompt\":true}]}",
+			expected:    `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","requiresPrompt":true},{"name":"image2","requiresPrompt":true}]}`,
 		},
 		{
 			description: "no dockerfile, skip build",
 			images:      []string{"image1", "image2"},
 			skipBuild:   true,
-			expected:    "{\"images\":[{\"name\":\"image1\",\"requiresPrompt\":true},{\"name\":\"image2\",\"requiresPrompt\":true}]}"},
+			expected:    `{"images":[{"name":"image1","requiresPrompt":true},{"name":"image2","requiresPrompt":true}]}`},
 		{
 			description: "no dockerfile",
 			images:      []string{"image1", "image2"},
@@ -65,9 +65,9 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			out := bytes.NewBuffer([]byte{})
+			var out bytes.Buffer
 
-			err := printAnalyzeJSON(out, test.skipBuild, test.pairs, test.builders, test.images)
+			err := printAnalyzeJSON(&out, test.skipBuild, test.pairs, test.builders, test.images)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
 		})
