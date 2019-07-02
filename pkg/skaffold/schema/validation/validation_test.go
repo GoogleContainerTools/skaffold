@@ -500,6 +500,9 @@ func TestValidateCustomDependencies(t *testing.T) {
 				Ignore:  []string{"ignoreme"},
 			},
 			expectedErrors: 1,
+		}, {
+			description:  "nil dependencies",
+			dependencies: nil,
 		},
 	}
 	for _, test := range tests {
