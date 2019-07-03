@@ -17,10 +17,13 @@ limitations under the License.
 package docker
 
 import (
+	"net/http"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -53,6 +56,30 @@ func RetrieveRemoteConfig(identifier string, insecureRegistries map[string]bool)
 	}
 
 	return img.ConfigFile()
+}
+
+// Push pushes the tarball image
+func Push(tarPath, tag string, insecureRegistries map[string]bool) (string, error) {
+	t, err := name.NewTag(tag, name.WeakValidation)
+	if err != nil {
+		return "", errors.Wrapf(err, "parsing tag %q", tag)
+	}
+
+	auth, err := authn.DefaultKeychain.Resolve(t.Registry)
+	if err != nil {
+		return "", errors.Wrapf(err, "getting creds for %q", t)
+	}
+
+	i, err := tarball.ImageFromPath(tarPath, nil)
+	if err != nil {
+		return "", errors.Wrapf(err, "reading image %q", tarPath)
+	}
+
+	if err := remote.Write(t, i, auth, http.DefaultTransport); err != nil {
+		return "", errors.Wrapf(err, "writing image %q", t)
+	}
+
+	return RemoteDigest(tag, insecureRegistries)
 }
 
 func remoteImage(identifier string, insecureRegistries map[string]bool) (v1.Image, error) {
