@@ -29,7 +29,6 @@ import (
 
 // Set makes sure default values are set on a SkaffoldConfig.
 func Set(c *latest.SkaffoldConfig) error {
-
 	defaultToLocalBuild(c)
 	defaultToKubectlDeploy(c)
 	setDefaultTagger(c)
@@ -65,6 +64,11 @@ func Set(c *latest.SkaffoldConfig) error {
 		setDefaultWorkspace(a)
 		defaultToDockerArtifact(a)
 		setDefaultDockerfile(a)
+	}
+
+	for _, pf := range c.PortForward {
+		setDefaultPortForwardNamespace(pf)
+		setDefaultLocalPort(pf)
 	}
 
 	return nil
@@ -202,8 +206,6 @@ func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
 		return nil
 	}
 
-	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
-
 	if cluster.DockerConfig.Path != "" {
 		absPath, err := homedir.Expand(cluster.DockerConfig.Path)
 		if err != nil {
@@ -213,6 +215,8 @@ func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
 		cluster.DockerConfig.Path = absPath
 		return nil
 	}
+
+	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
 
 	return nil
 }
@@ -265,4 +269,14 @@ func currentNamespace() (string, error) {
 	}
 
 	return "default", nil
+}
+
+func setDefaultLocalPort(pf *latest.PortForwardResource) {
+	if pf.LocalPort == 0 {
+		pf.LocalPort = pf.Port
+	}
+}
+
+func setDefaultPortForwardNamespace(pf *latest.PortForwardResource) {
+	pf.Namespace = valueOrDefault(pf.Namespace, constants.DefaultPortForwardNamespace)
 }

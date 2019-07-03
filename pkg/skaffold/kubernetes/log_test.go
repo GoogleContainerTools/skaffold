@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	v1 "k8s.io/api/core/v1"
 )
 
 func TestSinceSeconds(t *testing.T) {
@@ -46,6 +47,44 @@ func TestSinceSeconds(t *testing.T) {
 			since := sinceSeconds(test.duration)
 
 			t.CheckDeepEqual(test.expected, since)
+		})
+	}
+}
+
+func TestSelect(t *testing.T) {
+	var tests = []struct {
+		description   string
+		images        []string
+		podSpec       v1.PodSpec
+		expectedMatch bool
+	}{
+		{
+			description:   "match container",
+			podSpec:       v1.PodSpec{Containers: []v1.Container{{Image: "image1"}}},
+			expectedMatch: true,
+		},
+		{
+			description:   "match init container",
+			podSpec:       v1.PodSpec{InitContainers: []v1.Container{{Image: "image2"}}},
+			expectedMatch: true,
+		},
+		{
+			description:   "no match",
+			podSpec:       v1.PodSpec{Containers: []v1.Container{{Image: "image3"}}},
+			expectedMatch: false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			list := NewImageList()
+			list.Add("image1")
+			list.Add("image2")
+
+			selected := list.Select(&v1.Pod{
+				Spec: test.podSpec,
+			})
+
+			t.CheckDeepEqual(test.expectedMatch, selected)
 		})
 	}
 }

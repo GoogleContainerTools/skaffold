@@ -33,7 +33,7 @@ func TestDockerContext(t *testing.T) {
 			t.Override(&RetrieveImage, imageFetcher.fetch)
 			t.NewTempDir().
 				Write(dir+"/.dockerignore", "**/ignored.txt\nalsoignored.txt").
-				Write(dir+"/Dockerfile", "FROM alpine\nCOPY ./files /files").
+				Write(dir+"/Dockerfile", "FROM busybox\nCOPY ./files /files").
 				Touch(dir + "/files/ignored.txt").
 				Touch(dir + "/files/included.txt").
 				Touch(dir + "/ignored.txt").

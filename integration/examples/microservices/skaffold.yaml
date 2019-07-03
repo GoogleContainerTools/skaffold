@@ -2,12 +2,17 @@ apiVersion: skaffold/v1beta12
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/leeroy-web
-    context: ./leeroy-web/
-  - image: gcr.io/k8s-skaffold/leeroy-app
-    context: ./leeroy-app/
+    - image: gcr.io/k8s-skaffold/leeroy-web
+      context: ./leeroy-web/
+    - image: gcr.io/k8s-skaffold/leeroy-app
+      context: ./leeroy-app/
 deploy:
   kubectl:
     manifests:
-    - ./leeroy-web/kubernetes/*
-    - ./leeroy-app/kubernetes/*
+      - ./leeroy-web/kubernetes/*
+      - ./leeroy-app/kubernetes/*
+portForward:
+  - resourceType: deployment
+    resourceName: leeroy-web
+    port: 8080
+    localPort: 9000

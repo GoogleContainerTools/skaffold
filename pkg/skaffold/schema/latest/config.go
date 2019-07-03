@@ -52,10 +52,35 @@ type Pipeline struct {
 
 	// Deploy describes how images are deployed.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
+
+	// PortForward describes user defined resources to port-forward.
+	PortForward []*PortForwardResource `yaml:"portForward,omitempty"`
 }
 
 func (c *SkaffoldConfig) GetVersion() string {
 	return c.APIVersion
+}
+
+// ResourceType describes the Kubernetes resource types used for port forwarding.
+type ResourceType string
+
+// PortForwardResource describes a resource to port forward.
+type PortForwardResource struct {
+	// Type is the Kubernetes type that should be port forwarded.
+	// Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.
+	Type ResourceType `yaml:"resourceType,omitempty"`
+
+	// Name is the name of the Kubernetes resource to port forward.
+	Name string `yaml:"resourceName,omitempty"`
+
+	// Namespace is the namespace of the resource to port forward.
+	Namespace string `yaml:"namespace,omitempty"`
+
+	// Port is the resource port that will be forwarded.
+	Port int32 `yaml:"port,omitempty"`
+
+	// LocalPort is the local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
+	LocalPort int32 `yaml:"localPort,omitempty"`
 }
 
 // BuildConfig contains all the configuration for the build steps.
@@ -703,7 +728,7 @@ type JibMavenArtifact struct {
 	Module string `yaml:"module,omitempty"`
 
 	// Profile selects which Maven profile to activate.
-	Profile string `yaml:"profile"`
+	Profile string `yaml:"profile,omitempty"`
 
 	// Flags are additional build flags passed to Maven.
 	// For example: `["-x", "-DskipTests"]`.

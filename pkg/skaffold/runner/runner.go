@@ -36,11 +36,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -56,7 +54,6 @@ type Runner interface {
 	Prune(context.Context, io.Writer) error
 	HasDeployed() bool
 	HasBuilt() bool
-	Stop() error
 }
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
@@ -68,15 +65,15 @@ type SkaffoldRunner struct {
 	sync.Syncer
 	watch.Watcher
 
-	cache             *cache.Cache
-	runCtx            *runcontext.RunContext
-	labellers         []deploy.Labeller
-	defaultLabeller   *DefaultLabeller
-	builds            []build.Artifact
-	hasBuilt          bool
-	hasDeployed       bool
-	imageList         *kubernetes.ImageList
-	RPCServerShutdown func() error
+	cache                *cache.Cache
+	runCtx               *runcontext.RunContext
+	labellers            []deploy.Labeller
+	defaultLabeller      *deploy.DefaultLabeller
+	portForwardResources []*latest.PortForwardResource
+	builds               []build.Artifact
+	hasBuilt             bool
+	hasDeployed          bool
+	imageList            *kubernetes.ImageList
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -104,7 +101,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "parsing deploy config")
 	}
 
-	defaultLabeller := NewLabeller("")
+	defaultLabeller := deploy.NewLabeller("")
 	labellers := []deploy.Labeller{opts, builder, deployer, tagger, defaultLabeller}
 
 	builder, tester, deployer = WithTimings(builder, tester, deployer, opts.CacheArtifacts)
@@ -117,26 +114,21 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}
 
-	shutdown, err := server.Initialize(opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "initializing skaffold server")
-	}
-	event.InitializeState(runCtx)
-	event.LogSkaffoldMetadata(version.Get())
+	event.InitializeState(runCtx.Cfg.Build)
 
 	return &SkaffoldRunner{
-		Builder:           builder,
-		Tester:            tester,
-		Deployer:          deployer,
-		Tagger:            tagger,
-		Syncer:            kubectl.NewSyncer(runCtx.Namespaces),
-		Watcher:           watch.NewWatcher(trigger),
-		labellers:         labellers,
-		defaultLabeller:   defaultLabeller,
-		imageList:         kubernetes.NewImageList(),
-		cache:             artifactCache,
-		runCtx:            runCtx,
-		RPCServerShutdown: shutdown,
+		Builder:              builder,
+		Tester:               tester,
+		Deployer:             deployer,
+		Tagger:               tagger,
+		Syncer:               kubectl.NewSyncer(runCtx.Namespaces),
+		Watcher:              watch.NewWatcher(trigger),
+		labellers:            labellers,
+		defaultLabeller:      defaultLabeller,
+		portForwardResources: cfg.PortForward,
+		imageList:            kubernetes.NewImageList(),
+		cache:                artifactCache,
+		runCtx:               runCtx,
 	}, nil
 }
 
@@ -213,7 +205,19 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 
 	err := r.Deployer.Deploy(ctx, out, artifacts, r.labellers)
 	r.hasDeployed = true
-	return err
+	if err != nil {
+		return err
+	}
+	return r.performStatusCheck(out)
+}
+
+func (r *SkaffoldRunner) performStatusCheck(out io.Writer) error {
+	// Check if we need to perform deploy status
+	if r.runCtx.Opts.StatusCheck {
+		fmt.Fprintln(out, "Waiting for deployments to stabilize")
+		// TODO : Actually perform status check
+	}
+	return nil
 }
 
 // HasDeployed returns true if this runner has deployed something.
@@ -273,9 +277,4 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
 	return imageTags, nil
-}
-
-// Stop stops the runner.
-func (r *SkaffoldRunner) Stop() error {
-	return r.RPCServerShutdown()
 }

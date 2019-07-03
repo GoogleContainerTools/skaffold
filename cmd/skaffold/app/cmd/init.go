@@ -25,11 +25,12 @@ import (
 )
 
 var (
-	composeFile  string
-	cliArtifacts []string
-	skipBuild    bool
-	force        bool
-	analyze      bool
+	composeFile   string
+	cliArtifacts  []string
+	skipBuild     bool
+	force         bool
+	analyze       bool
+	enableJibInit bool
 )
 
 // NewCmdInit describes the CLI command to generate a Skaffold configuration.
@@ -43,17 +44,20 @@ func NewCmdInit(out io.Writer) *cobra.Command {
 			f.StringVar(&composeFile, "compose-file", "", "Initialize from a docker-compose file")
 			f.StringArrayVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited builder JSON/image pair to generate build artifact\n(example: --artifact='{\"name\":\"Docker\",\"payload\":{\"path\":\"/web/Dockerfile.web\"}}=gcr.io/web-project/image)")
 			f.BoolVar(&analyze, "analyze", false, "Print all discoverable Dockerfiles and images in JSON format to stdout")
+			f.BoolVar(&enableJibInit, "XXenableJibInit", false, "")
+			f.MarkHidden("XXenableJibInit")
 		}).
 		NoArgs(doInit)
 }
 
 func doInit(out io.Writer) error {
 	return initializer.DoInit(out, initializer.Config{
-		ComposeFile:  composeFile,
-		CliArtifacts: cliArtifacts,
-		SkipBuild:    skipBuild,
-		Force:        force,
-		Analyze:      analyze,
-		Opts:         opts,
+		ComposeFile:   composeFile,
+		CliArtifacts:  cliArtifacts,
+		SkipBuild:     skipBuild,
+		Force:         force,
+		Analyze:       analyze,
+		EnableJibInit: enableJibInit,
+		Opts:          opts,
 	})
 }

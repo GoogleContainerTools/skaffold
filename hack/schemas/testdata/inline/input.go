@@ -20,18 +20,21 @@ package latest
 type TestStruct struct {
 	// RequiredField should be required
 	RequiredField string `yaml:"reqField" yamltags:"required"`
-	InlineStruct  `yaml:"inline"`
+
+	InlineStruct `yaml:"inline"`
+
+	// Field4 should be listed last in `preferredOrder`
+	Field4 string `yaml:"field4"`
 }
 
-//InlineOneOfStruct is embedded inline into TestStruct
+// InlineStruct is embedded inline into TestStruct.
 type InlineStruct struct {
-
-	//Field1 should be the first field
+	// Field1 should be the first field
 	Field1 string `yaml:"field1"`
 
-	//Field2 should be the second field
+	// Field2 should be the second field
 	Field2 string `yaml:"field2"`
 
-	//Field3 should be the third field and listed in required
+	// Field3 should be the third field and listed in required
 	RequiredField3 string `yaml:"reqField3" yamltags:"required"`
 }

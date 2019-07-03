@@ -146,6 +146,8 @@ func TestEventLogHTTP(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error connecting to gRPC REST API: %s", err.Error())
 	}
+	defer httpResponse.Body.Close()
+
 	numEntries := 0
 	var logEntries []proto.LogEntry
 	for {
@@ -303,6 +305,8 @@ func retrieveHTTPState(t *testing.T, httpAddr string) proto.State {
 	if err != nil {
 		t.Fatalf("error connecting to gRPC REST API: %s", err.Error())
 	}
+	defer httpResponse.Body.Close()
+
 	b, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
 		t.Errorf("error reading body from http response: %s", err.Error())

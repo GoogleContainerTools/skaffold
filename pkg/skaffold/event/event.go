@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"sync"
 
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -35,10 +34,7 @@ const (
 	Failed     = "Failed"
 )
 
-var (
-	handler *eventHandler
-	once    sync.Once
-)
+var handler = &eventHandler{}
 
 type eventHandler struct {
 	eventLog []proto.LogEntry
@@ -126,12 +122,10 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(build *latest.BuildConfig) proto.State {
+func emptyState(build latest.BuildConfig) proto.State {
 	builds := map[string]string{}
-	if build != nil {
-		for _, a := range build.Artifacts {
-			builds[a.ImageName] = NotStarted
-		}
+	for _, a := range build.Artifacts {
+		builds[a.ImageName] = NotStarted
 	}
 
 	return proto.State{
@@ -146,12 +140,8 @@ func emptyState(build *latest.BuildConfig) proto.State {
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-func InitializeState(runCtx *runcontext.RunContext) {
-	once.Do(func() {
-		handler = &eventHandler{
-			state: emptyState(&runCtx.Cfg.Build),
-		}
-	})
+func InitializeState(build latest.BuildConfig) {
+	handler.setState(emptyState(build))
 }
 
 // DeployInProgress notifies that a deployment has been started.
@@ -200,6 +190,12 @@ func PortForwarded(localPort, remotePort int32, podName, containerName, namespac
 			},
 		},
 	})
+}
+
+func (ev *eventHandler) setState(state proto.State) {
+	ev.stateLock.Lock()
+	ev.state = state
+	ev.stateLock.Unlock()
 }
 
 func (ev *eventHandler) handleDeployEvent(e *proto.DeployEvent) {
