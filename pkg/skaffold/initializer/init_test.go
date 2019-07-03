@@ -27,32 +27,49 @@ import (
 
 func TestPrintAnalyzeJSON(t *testing.T) {
 	tests := []struct {
-		description string
-		pairs       []builderImagePair
-		builders    []InitBuilder
-		images      []string
-		skipBuild   bool
-		shouldErr   bool
-		expected    string
+		description   string
+		pairs         []builderImagePair
+		builders      []InitBuilder
+		images        []string
+		skipBuild     bool
+		enableJibInit bool
+		shouldErr     bool
+		expected      string
 	}{
 		{
-			description: "builders and images with pairs",
-			pairs:       []builderImagePair{{docker.Docker{Dockerfile: "Dockerfile1"}, "image1"}},
-			builders:    []InitBuilder{docker.Docker{Dockerfile: "Dockerfile2"}},
-			images:      []string{"image2"},
-			expected:    `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","requiresPrompt":false},{"name":"image2","requiresPrompt":true}]}`,
-		},
-		{
-			description: "builders and images with no pairs",
+			description: "builders and images (backwards compatibility)",
 			builders:    []InitBuilder{docker.Docker{Dockerfile: "Dockerfile1"}, docker.Docker{Dockerfile: "Dockerfile2"}},
 			images:      []string{"image1", "image2"},
-			expected:    `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","requiresPrompt":true},{"name":"image2","requiresPrompt":true}]}`,
+			expected:    `{"dockerfiles":["Dockerfile1","Dockerfile2"],"images":["image1","image2"]}`,
 		},
 		{
-			description: "no dockerfile, skip build",
+			description: "no dockerfile, skip build (backwards compatibility)",
 			images:      []string{"image1", "image2"},
 			skipBuild:   true,
-			expected:    `{"images":[{"name":"image1","requiresPrompt":true},{"name":"image2","requiresPrompt":true}]}`},
+			expected:    `{"images":["image1","image2"]}`,
+		},
+		{
+			description:   "builders and images with pairs",
+			pairs:         []builderImagePair{{docker.Docker{Dockerfile: "Dockerfile1"}, "image1"}},
+			builders:      []InitBuilder{docker.Docker{Dockerfile: "Dockerfile2"}},
+			images:        []string{"image2"},
+			enableJibInit: true,
+			expected:      `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","requiresPrompt":false},{"name":"image2","requiresPrompt":true}]}`,
+		},
+		{
+			description:   "builders and images with no pairs",
+			builders:      []InitBuilder{docker.Docker{Dockerfile: "Dockerfile1"}, docker.Docker{Dockerfile: "Dockerfile2"}},
+			images:        []string{"image1", "image2"},
+			enableJibInit: true,
+			expected:      `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","requiresPrompt":true},{"name":"image2","requiresPrompt":true}]}`,
+		},
+		{
+			description:   "no dockerfile, skip build",
+			images:        []string{"image1", "image2"},
+			skipBuild:     true,
+			enableJibInit: true,
+			expected:      `{"images":[{"name":"image1","requiresPrompt":true},{"name":"image2","requiresPrompt":true}]}`,
+		},
 		{
 			description: "no dockerfile",
 			images:      []string{"image1", "image2"},
@@ -67,7 +84,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var out bytes.Buffer
 
-			err := printAnalyzeJSON(&out, test.skipBuild, test.pairs, test.builders, test.images)
+			err := printAnalyzeJSON(&out, test.skipBuild, test.enableJibInit, test.pairs, test.builders, test.images)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
 		})
@@ -172,7 +189,7 @@ deploy:
 
 			t.Override(&docker.ValidateDockerfileFunc, testValidDocker)
 
-			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, detectBuilders)
+			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, false, detectBuilders)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), potentialConfigs)
