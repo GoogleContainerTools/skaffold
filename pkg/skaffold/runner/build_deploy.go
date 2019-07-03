@@ -19,6 +19,7 @@ package runner
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -79,12 +80,16 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	logger := r.newLoggerForImages(out, imageNames)
 	defer logger.Stop()
 
-	if err := logger.Start(ctx); err != nil {
-		return errors.Wrap(err, "starting logger")
-	}
+	// Logs should be retrieve up to just before the deploy
+	logger.SetSince(time.Now())
 
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
 		return err
+	}
+
+	// Start printing the logs after deploy is finished
+	if err := logger.Start(ctx); err != nil {
+		return errors.Wrap(err, "starting logger")
 	}
 
 	<-ctx.Done()

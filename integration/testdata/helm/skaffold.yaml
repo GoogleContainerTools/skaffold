@@ -1,5 +1,3 @@
-# This config should be used for running integration tests purpose only.
-# Please use to skaffold.yaml to run this example
 apiVersion: skaffold/v1beta10
 kind: Config
 build:

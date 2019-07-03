@@ -88,7 +88,6 @@ Use "skaffold [command] --help" for more information about a command.
 Env vars:
 
 * `SKAFFOLD_COLOR` (same as `--color`)
-* `SKAFFOLD_FORCE_COLORS` (same as `--force-colors`)
 * `SKAFFOLD_VERBOSITY` (same as `--verbosity`)
 
 ### skaffold build

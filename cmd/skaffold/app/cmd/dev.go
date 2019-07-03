@@ -22,6 +22,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -42,8 +43,6 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 }
 
 func doDev(ctx context.Context, out io.Writer) error {
-	opts.EnableRPC = true
-
 	cleanup := func() {}
 	if opts.Cleanup {
 		defer func() {
@@ -85,7 +84,11 @@ func doDev(ctx context.Context, out io.Writer) error {
 				return err
 			})
 			if err != nil {
-				return err
+				if errors.Cause(err) != runner.ErrorConfigurationChanged {
+					return err
+				}
+				// Otherwise, the skaffold config has changed.
+				// just recreate a new runner and restart a dev loop
 			}
 		}
 	}

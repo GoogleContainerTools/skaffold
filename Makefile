@@ -163,7 +163,7 @@ clean:
 
 .PHONY: kind-cluster
 kind-cluster:
-	kind get clusters | grep -q kind || kind create cluster
+	kind get clusters | grep -q kind || kind create cluster --image=kindest/node:v1.13.7@sha256:f3f1cfc2318d1eb88d91253a9c5fa45f6e9121b6b1e65aea6c7ef59f1549aaaf
 
 .PHONY: skaffold-builder
 skaffold-builder:

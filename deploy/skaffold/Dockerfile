@@ -12,59 +12,90 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Download kubectl
+FROM alpine:3.9 as download-kubectl
+ENV KUBECTL_VERSION v1.12.8
+ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl
+RUN wget -O kubectl "${KUBECTL_URL}"
+RUN chmod +x kubectl
+
+# Download helm
+FROM alpine:3.9 as download-helm
+ENV HELM_VERSION v2.12.0
+ENV HELM_URL https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}-linux-amd64.tar.gz
+RUN wget -O helm.tar.gz "${HELM_URL}"
+RUN tar -xvf helm.tar.gz --strip-components 1
+
+# Download kustomize
+FROM alpine:3.9 as download-kustomize
+ENV KUSTOMIZE_VERSION 2.1.0
+ENV KUSTOMIZE_URL https://github.com/kubernetes-sigs/kustomize/releases/download/v${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64
+RUN wget -O kustomize "${KUSTOMIZE_URL}"
+RUN chmod +x kustomize
+
+# Download kompose
+FROM alpine:3.9 as download-kompose
+ENV KOMPOSE_VERSION v1.18.0
+ENV KOMPOSE_URL https://github.com/kubernetes/kompose/releases/download/${KOMPOSE_VERSION}/kompose-linux-amd64
+RUN wget -O kompose "${KOMPOSE_URL}"
+RUN chmod +x kompose
+
+# Download container-structure-test
+FROM alpine:3.9 as download-container-structure-test
+ENV CONTAINER_STRUCTURE_TEST_VERSION v1.5.0
+ENV CONTAINER_STRUCTURE_TEST_URL https://storage.googleapis.com/container-structure-test/${CONTAINER_STRUCTURE_TEST_VERSION}/container-structure-test-linux-amd64
+RUN wget -O container-structure-test "${CONTAINER_STRUCTURE_TEST_URL}"
+RUN chmod +x container-structure-test
+
+# Download kind
+FROM alpine:3.9 as download-kind
+ENV KIND_VERSION v0.4.0
+ENV KIND_URL https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64
+RUN wget -O kind "${KIND_URL}"
+RUN chmod +x kind
+
+# Download gcloud
+FROM alpine:3.9 as download-gcloud
+ENV GCLOUD_VERSION 245.0.0
+ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz
+RUN wget -O gcloud.tar.gz "${GCLOUD_URL}"
+RUN tar -zxf gcloud.tar.gz
+
+# Download bazel
+FROM alpine:3.9 as download-bazel
+ENV BAZEL_VERSION 0.27.0
+ENV BAZEL_URL https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-x86_64
+RUN wget -O bazel "${BAZEL_URL}"
+RUN chmod +x bazel
+
 FROM gcr.io/gcp-runtimes/ubuntu_16_0_4 as runtime_deps
 
 RUN apt-get update && \
   apt-get install --no-install-recommends --no-install-suggests -y \
-  git \
-  python && \
+  git python unzip && \
   rm -rf /var/lib/apt/lists/*
 
-ENV KUBECTL_VERSION v1.12.0
-RUN curl -Lo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl  && \
-  chmod +x /usr/local/bin/kubectl
+COPY --from=docker:18.09.6 /usr/local/bin/docker /usr/local/bin/
+COPY --from=download-kubectl kubectl /usr/local/bin/
+COPY --from=download-helm helm /usr/local/bin/
+COPY --from=download-kustomize kustomize /usr/local/bin/
+COPY --from=download-kompose kompose /usr/local/bin/
+COPY --from=download-container-structure-test container-structure-test /usr/local/bin/
+COPY --from=download-bazel bazel /usr/local/bin/
+COPY --from=download-gcloud google-cloud-sdk/ /google-cloud-sdk/
 
-ENV HELM_VERSION v2.8.1
-RUN curl -LO https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}-linux-amd64.tar.gz && \
-  tar -xvf helm-${HELM_VERSION}-linux-amd64.tar.gz -C /usr/local/bin --strip-components 1 && \
-  rm -f helm-${HELM_VERSION}-linux-amd64.tar.gz
+# Finish installation of bazel
+RUN bazel version
 
-ENV CLOUD_SDK_VERSION 217.0.0
-RUN curl -LO https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz && \
-  tar -zxvf google-cloud-sdk-${CLOUD_SDK_VERSION}-linux-x86_64.tar.gz && \
-  CLOUDSDK_PYTHON="python2.7" /google-cloud-sdk/install.sh --usage-reporting=false \
-  --bash-completion=false \
-  --disable-installation-options && \
-  rm -rf google-cloud-sdk-*.tar.gz
+# Finish installation of gcloud
+RUN CLOUDSDK_PYTHON="python2.7" /google-cloud-sdk/install.sh \
+    --usage-reporting=false \
+    --bash-completion=false \
+    --disable-installation-options
 ENV PATH=$PATH:/google-cloud-sdk/bin
-RUN /google-cloud-sdk/bin/gcloud auth configure-docker
-
-ENV KUSTOMIZE_VERSION=2.0.3
-RUN curl -LO https://github.com/kubernetes-sigs/kustomize/releases/download/v${KUSTOMIZE_VERSION}/kustomize_${KUSTOMIZE_VERSION}_linux_amd64 && \
-  chmod +x kustomize_${KUSTOMIZE_VERSION}_linux_amd64 && \
-  mv kustomize_${KUSTOMIZE_VERSION}_linux_amd64 /usr/local/bin/kustomize
-
-ENV KOMPOSE_VERSION=1.17.0
-RUN curl -L https://github.com/kubernetes/kompose/releases/download/v${KOMPOSE_VERSION}/kompose-linux-amd64 -o kompose && \
-  chmod +x kompose && \
-  mv kompose /usr/local/bin
-
-RUN echo "deb [arch=amd64] http://storage.googleapis.com/bazel-apt stable jdk1.8" | tee /etc/apt/sources.list.d/bazel.list \
-  && curl https://bazel.build/bazel-release.pub.gpg | apt-key add -
-
-RUN apt-get update \
-  && apt-get install -y bazel && \
-  rm -rf /var/lib/apt/lists/*
-
-ENV CONTAINER_STRUCTURE_TEST_VERSION=1.5.0
-RUN curl -LO https://storage.googleapis.com/container-structure-test/v${CONTAINER_STRUCTURE_TEST_VERSION}/container-structure-test-linux-amd64 \
-  && chmod +x container-structure-test-linux-amd64 \
-  && mv container-structure-test-linux-amd64 /usr/local/bin/container-structure-test
-
-ENV PATH /usr/local/go/bin:/go/bin:/google-cloud-sdk/bin:$PATH
+RUN gcloud auth configure-docker
 
 FROM runtime_deps as builder
-
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
   ca-certificates \
   curl \
@@ -75,36 +106,18 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
   openjdk-8-jdk \
   software-properties-common \
   apt-transport-https && \
-  curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
-  apt-key fingerprint 0EBFCD88 && \
-  add-apt-repository \
-  "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-  xenial \
-  edge" && \
-  apt-get -y update && \
-  apt-get -y install docker-ce=17.12.0~ce-0~ubuntu && \
   rm -rf /var/lib/apt/lists/*
-
 COPY --from=golang:1.11 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/go/bin:$PATH
 ENV GOPATH /go/
-
 WORKDIR /go/src/github.com/GoogleContainerTools/skaffold
-
 COPY . .
 
 FROM builder as integration
 ARG VERSION
-
-ENV KIND_VERSION=v0.3.0
-RUN curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64 && \
-  chmod +x kind && \
-  mv kind /usr/local/bin/
-
+COPY --from=download-kind kind /usr/local/bin/
 RUN make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
-
 CMD ["make", "integration"]
 
 FROM runtime_deps as distribution
-
 COPY --from=integration /usr/bin/skaffold /usr/bin/skaffold

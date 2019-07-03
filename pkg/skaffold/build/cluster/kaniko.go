@@ -24,7 +24,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster/sources"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -83,11 +82,11 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 
 	waitForLogs := streamLogs(out, pod.Name, pods)
 
-	if err := kubernetes.WaitForPodSucceeded(ctx, pods, pod.Name, b.timeout); err != nil {
+	err = kubernetes.WaitForPodSucceeded(ctx, pods, pod.Name, b.timeout)
+	waitForLogs()
+	if err != nil {
 		return "", errors.Wrap(err, "waiting for pod to complete")
 	}
-
-	waitForLogs()
 
 	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
@@ -138,7 +137,7 @@ func args(artifact *latest.KanikoArtifact, context, tag string) ([]string, error
 			args = append(args, "--cache-repo", artifact.Cache.Repo)
 		}
 		if artifact.Cache.HostPath != "" {
-			args = append(args, "--cache-dir", constants.DefaultKanikoDockerConfigPath)
+			args = append(args, "--cache-dir", artifact.Cache.HostPath)
 		}
 	}
 

@@ -56,12 +56,14 @@ spec:
 
 func TestKubectlDeploy(t *testing.T) {
 	var tests = []struct {
-		description string
-		cfg         *latest.KubectlDeploy
-		builds      []build.Artifact
-		command     util.Command
-		shouldErr   bool
-		forceDeploy bool
+		description          string
+		cfg                  *latest.KubectlDeploy
+		builds               []build.Artifact
+		command              util.Command
+		shouldErr            bool
+		forceDeploy          bool
+		expectedDependencies []string
+		warnings             []string
 	}{
 		{
 			description: "no manifest",
@@ -95,7 +97,8 @@ func TestKubectlDeploy(t *testing.T) {
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
 			}},
-			forceDeploy: true,
+			forceDeploy:          true,
+			expectedDependencies: []string{"deployment.yaml"},
 		},
 		{
 			description: "deploy success",
@@ -110,6 +113,22 @@ func TestKubectlDeploy(t *testing.T) {
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
 			}},
+			expectedDependencies: []string{"deployment.yaml"},
+		},
+		{
+			description: "http manifest",
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml", "http://remote.yaml"},
+			},
+			command: testutil.NewFakeCmd(t).
+				WithRunOut("kubectl version --client -ojson", kubectlVersion).
+				WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml -f http://remote.yaml", deploymentWebYAML).
+				WithRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
+			builds: []build.Artifact{{
+				ImageName: "leeroy-web",
+				Tag:       "leeroy-web:123",
+			}},
+			expectedDependencies: []string{"deployment.yaml"},
 		},
 		{
 			description: "deploy command error",
@@ -124,7 +143,8 @@ func TestKubectlDeploy(t *testing.T) {
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
 			}},
-			shouldErr: true,
+			shouldErr:            true,
+			expectedDependencies: []string{"deployment.yaml"},
 		},
 		{
 			description: "additional flags",
@@ -144,7 +164,8 @@ func TestKubectlDeploy(t *testing.T) {
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
 			}},
-			shouldErr: true,
+			shouldErr:            true,
+			expectedDependencies: []string{"deployment.yaml"},
 		},
 	}
 	for _, test := range tests {
@@ -170,8 +191,12 @@ func TestKubectlDeploy(t *testing.T) {
 					Force:     test.forceDeploy,
 				},
 			})
-			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
+			dependencies, err := k.Dependencies()
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedDependencies, dependencies)
+
+			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 			t.CheckError(test.shouldErr, err)
 		})
 	}

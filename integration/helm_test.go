@@ -36,22 +36,19 @@ func TestHelmDeploy(t *testing.T) {
 		t.Skip("skipping gcp only test")
 	}
 
-	helmDir := "examples/helm-deployment"
+	helmDir := "testdata/helm"
 
 	ns, client, deleteNs := SetupNamespace(t)
 	// To fix #1823, we make use of env variable templating for release name
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
 	depName := fmt.Sprintf("skaffold-helm-%s", ns.Name)
-	// Please make sure to make the same changes in skaffold.yaml if you make
-	// any changes to skaffold-int.yaml
-	overrideConfigArgs := []string{"-f", "skaffold-int.yaml"}
 
 	defer func() {
-		skaffold.Delete(overrideConfigArgs...).InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFail(t)
+		skaffold.Delete().InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFail(t)
 		deleteNs()
 	}()
 
-	runArgs := append(overrideConfigArgs, "--images", "gcr.io/k8s-skaffold/skaffold-helm")
+	runArgs := []string{"--images", "gcr.io/k8s-skaffold/skaffold-helm"}
 
 	skaffold.Deploy(runArgs...).InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFailOutput(t)
 

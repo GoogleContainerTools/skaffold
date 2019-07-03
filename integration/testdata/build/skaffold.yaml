@@ -33,3 +33,8 @@ build:
     context: targets
     docker:
       target: target2
+
+    # Multi-stage build
+    # Would have caught #2315
+  - image: multi-stage
+    context: multi-stage

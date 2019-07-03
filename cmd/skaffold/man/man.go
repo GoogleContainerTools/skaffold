@@ -46,7 +46,9 @@ func printCommand(out io.Writer, command *cobra.Command) {
 		fmt.Fprint(out, "Env vars:\n\n")
 
 		command.LocalFlags().VisitAll(func(flag *pflag.Flag) {
-			fmt.Fprintf(out, "* `%s` (same as `--%s`)\n", cmd.FlagToEnvVarName(flag), flag.Name)
+			if !flag.Hidden {
+				fmt.Fprintf(out, "* `%s` (same as `--%s`)\n", cmd.FlagToEnvVarName(flag), flag.Name)
+			}
 		})
 	}
 

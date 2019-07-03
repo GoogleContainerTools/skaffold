@@ -459,7 +459,7 @@ func TestHelmDeploy(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.cmd)
 
-			event.InitializeState(test.runContext)
+			event.InitializeState(test.runContext.Cfg.Build)
 			err := NewHelmDeployer(test.runContext).Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
 			t.CheckError(test.shouldErr, err)
