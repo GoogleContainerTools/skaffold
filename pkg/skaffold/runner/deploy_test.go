@@ -57,7 +57,7 @@ func TestDeploy(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 
-			runner := createRunner(t, test.testBench)
+			runner := createRunner(t, test.testBench, nil)
 			runner.runCtx.Opts.StatusCheck = test.statusCheck
 			out := new(bytes.Buffer)
 

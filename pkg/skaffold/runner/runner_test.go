@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -27,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -48,9 +50,37 @@ type TestBench struct {
 	testErrors   []error
 	deployErrors []error
 
+	devLoop        func(context.Context, io.Writer) error
+	firstMonitor   func(context.Context, io.Writer, bool) error
+	cycles         int
+	currentCycle   int
 	currentActions Actions
 	actions        []Actions
 	tag            int
+}
+
+func NewTestBench() *TestBench {
+	return &TestBench{}
+}
+
+func (t *TestBench) WithBuildErrors(buildErrors []error) *TestBench {
+	t.buildErrors = buildErrors
+	return t
+}
+
+func (t *TestBench) WithSyncErrors(syncErrors []error) *TestBench {
+	t.syncErrors = syncErrors
+	return t
+}
+
+func (t *TestBench) WithDeployErrors(deployErrors []error) *TestBench {
+	t.deployErrors = deployErrors
+	return t
+}
+
+func (t *TestBench) WithTestErrors(testErrors []error) *TestBench {
+	t.testErrors = testErrors
+	return t
 }
 
 func (t *TestBench) Labels() map[string]string                        { return map[string]string{} }
@@ -70,7 +100,7 @@ func (t *TestBench) enterNewCycle() {
 	t.currentActions = Actions{}
 }
 
-func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if len(t.buildErrors) > 0 {
 		err := t.buildErrors[0]
 		t.buildErrors = t.buildErrors[1:]
@@ -93,7 +123,7 @@ func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, 
 	return builds, nil
 }
 
-func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {
+func (t *TestBench) Sync(_ context.Context, item *sync.Item) error {
 	if len(t.syncErrors) > 0 {
 		err := t.syncErrors[0]
 		t.syncErrors = t.syncErrors[1:]
@@ -106,7 +136,7 @@ func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {
 	return nil
 }
 
-func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []build.Artifact) error {
 	if len(t.testErrors) > 0 {
 		err := t.testErrors[0]
 		t.testErrors = t.testErrors[1:]
@@ -119,7 +149,7 @@ func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.A
 	return nil
 }
 
-func (t *TestBench) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact, labellers []deploy.Labeller) error {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ []deploy.Labeller) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
@@ -136,6 +166,23 @@ func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
 
+func (t *TestBench) WatchForChanges(_ context.Context, _ io.Writer, _ func(context.Context, io.Writer) error) error {
+	// don't actually call the monitor here, because extra actions would be added
+	if err := t.firstMonitor(context.Background(), ioutil.Discard, true); err != nil {
+		return err
+	}
+	for i := 0; i < t.cycles; i++ {
+		t.enterNewCycle()
+		t.currentCycle = i
+		if err := t.devLoop(context.Background(), ioutil.Discard); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *TestBench) LogWatchToUser(_ io.Writer) {}
+
 func findTags(artifacts []build.Artifact) []string {
 	var tags []string
 	for _, artifact := range artifacts {
@@ -144,9 +191,15 @@ func findTags(artifacts []build.Artifact) []string {
 	return tags
 }
 
-func createRunner(t *testutil.T, testBench *TestBench) *SkaffoldRunner {
+func (r *SkaffoldRunner) WithMonitor(m filemon.Monitor) *SkaffoldRunner {
+	r.monitor = m
+	return r
+}
+
+func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) *SkaffoldRunner {
 	opts := &config.SkaffoldOptions{
-		Trigger: "polling",
+		Trigger:           "polling",
+		WatchPollInterval: 100,
 	}
 
 	cfg := &latest.SkaffoldConfig{}
@@ -159,6 +212,20 @@ func createRunner(t *testutil.T, testBench *TestBench) *SkaffoldRunner {
 	runner.Syncer = testBench
 	runner.Tester = testBench
 	runner.Deployer = testBench
+	runner.listener = testBench
+	runner.monitor = monitor
+
+	testBench.devLoop = func(context.Context, io.Writer) error {
+		if err := monitor.Run(context.Background(), ioutil.Discard, true); err != nil {
+			return err
+		}
+		return runner.doDev(context.Background(), ioutil.Discard)
+	}
+
+	testBench.firstMonitor = func(context.Context, io.Writer, bool) error {
+		// default to noop so we don't add extra actions
+		return nil
+	}
 
 	return runner
 }

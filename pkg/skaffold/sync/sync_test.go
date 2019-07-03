@@ -24,10 +24,10 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,7 +39,7 @@ func TestNewSyncItem(t *testing.T) {
 	var tests = []struct {
 		description string
 		artifact    *latest.Artifact
-		evt         watch.Events
+		evt         filemon.Events
 		builds      []build.Artifact
 		shouldErr   bool
 		expected    *Item
@@ -60,7 +60,7 @@ func TestNewSyncItem(t *testing.T) {
 					Tag:       "test:123",
 				},
 			},
-			evt: watch.Events{
+			evt: filemon.Events{
 				Added: []string{"index.html"},
 			},
 			expected: &Item{
@@ -86,7 +86,7 @@ func TestNewSyncItem(t *testing.T) {
 					Tag:       "test:123",
 				},
 			},
-			evt: watch.Events{
+			evt: filemon.Events{
 				Added: []string{"index.html"},
 			},
 			shouldErr: true,
@@ -110,7 +110,7 @@ func TestNewSyncItem(t *testing.T) {
 					Tag:       "test:123",
 				},
 			},
-			evt: watch.Events{
+			evt: filemon.Events{
 				Added:    []string{filepath.Join("node", "index.html")},
 				Modified: []string{filepath.Join("node", "server.js")},
 				Deleted:  []string{filepath.Join("node", "package.json")},
@@ -143,7 +143,7 @@ func TestNewSyncItem(t *testing.T) {
 					Tag:       "test:123",
 				},
 			},
-			evt: watch.Events{
+			evt: filemon.Events{
 				Modified: []string{filepath.Join("node", "src/app/server/server.js")},
 			},
 			workingDir: "/",
@@ -172,7 +172,7 @@ func TestNewSyncItem(t *testing.T) {
 					Tag:       "test:123",
 				},
 			},
-			evt: watch.Events{
+			evt: filemon.Events{
 				Added:    []string{filepath.Join("node", "index.html")},
 				Modified: []string{filepath.Join("node", "server.js")},
 				Deleted:  []string{filepath.Join("node", "package.json")},
@@ -198,7 +198,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			evt: watch.Events{
+			evt: filemon.Events{
 				Added:   []string{"main.go"},
 				Deleted: []string{"index.html"},
 			},
@@ -218,7 +218,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			evt: watch.Events{
+			evt: filemon.Events{
 				Added:   []string{"index.html"},
 				Deleted: []string{"some/other/file"},
 			},
@@ -238,7 +238,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			evt: watch.Events{
+			evt: filemon.Events{
 				Added:   []string{"index.html"},
 				Deleted: []string{"some/other/file"},
 			},
@@ -279,7 +279,7 @@ func TestNewSyncItem(t *testing.T) {
 					Tag:       "test:123",
 				},
 			},
-			evt: watch.Events{
+			evt: filemon.Events{
 				Added: []string{filepath.Join("dir1", "dir2", "node.js")},
 			},
 			expected: &Item{
@@ -308,7 +308,7 @@ func TestNewSyncItem(t *testing.T) {
 					Tag:       "test:123",
 				},
 			},
-			evt: watch.Events{
+			evt: filemon.Events{
 				Added: []string{filepath.Join("dir1", "dir2/node.js")},
 			},
 			expected: &Item{
@@ -338,7 +338,7 @@ func TestNewSyncItem(t *testing.T) {
 					Tag:       "test:123",
 				},
 			},
-			evt: watch.Events{
+			evt: filemon.Events{
 				Added: []string{filepath.Join("dir1", "dir2", "node.js")},
 			},
 			expected: &Item{
@@ -368,7 +368,7 @@ func TestNewSyncItem(t *testing.T) {
 					Tag:       "test:123",
 				},
 			},
-			evt: watch.Events{
+			evt: filemon.Events{
 				Added: []string{
 					filepath.Join("dir1a", "dir2", "dir3", "node.js"),
 					filepath.Join("dir1b", "dir1", "node.js"),

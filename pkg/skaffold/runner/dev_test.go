@@ -23,84 +23,84 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
-type NoopWatcher struct{}
+type NoopMonitor struct{}
 
-func (t *NoopWatcher) Register(func() ([]string, error), func(watch.Events)) error {
+func (t *NoopMonitor) Register(func() ([]string, error), func(filemon.Events)) error {
 	return nil
 }
 
-func (t *NoopWatcher) Run(context.Context, io.Writer, func() error) error {
+func (t *NoopMonitor) Run(context.Context, io.Writer, bool) error {
 	return nil
 }
 
-type FailWatcher struct{}
+func (t *NoopMonitor) Reset() {}
 
-func (t *FailWatcher) Register(func() ([]string, error), func(watch.Events)) error {
+type FailMonitor struct{}
+
+func (t *FailMonitor) Register(func() ([]string, error), func(filemon.Events)) error {
 	return nil
 }
 
-func (t *FailWatcher) Run(context.Context, io.Writer, func() error) error {
+func (t *FailMonitor) Run(context.Context, io.Writer, bool) error {
 	return errors.New("BUG")
 }
 
-type TestWatcher struct {
-	events    []watch.Events
-	callbacks []func(watch.Events)
+func (t *FailMonitor) Reset() {}
+
+type TestMonitor struct {
+	events    []filemon.Events
+	callbacks []func(filemon.Events)
 	testBench *TestBench
 }
 
-func (t *TestWatcher) Register(deps func() ([]string, error), onChange func(watch.Events)) error {
+func (t *TestMonitor) Register(deps func() ([]string, error), onChange func(filemon.Events)) error {
 	t.callbacks = append(t.callbacks, onChange)
 	return nil
 }
 
-func (t *TestWatcher) Run(ctx context.Context, out io.Writer, onChange func() error) error {
-	for _, evt := range t.events {
-		t.testBench.enterNewCycle()
+func (t *TestMonitor) Run(ctx context.Context, out io.Writer, _ bool) error {
+	evt := t.events[t.testBench.currentCycle]
 
-		for _, file := range evt.Modified {
-			switch file {
-			case "file1":
-				t.callbacks[0](evt) // 1st artifact changed
-			case "file2":
-				t.callbacks[1](evt) // 2nd artifact changed
-			case "manifest.yaml":
-				t.callbacks[3](evt) // deployment configuration changed
-			}
-		}
-
-		if err := onChange(); err != nil {
-			return err
+	for _, file := range evt.Modified {
+		switch file {
+		case "file1":
+			t.callbacks[0](evt) // 1st artifact changed
+		case "file2":
+			t.callbacks[1](evt) // 2nd artifact changed
+		case "manifest.yaml":
+			t.callbacks[3](evt) // deployment configuration changed
 		}
 	}
 
 	return nil
 }
 
+func (t *TestMonitor) Reset() {}
+
 func TestDevFailFirstCycle(t *testing.T) {
 	var tests = []struct {
 		description     string
 		testBench       *TestBench
-		watcher         watch.Watcher
+		monitor         filemon.Monitor
 		expectedActions []Actions
 	}{
 		{
 			description:     "fails to build the first time",
 			testBench:       &TestBench{buildErrors: []error{errors.New("")}},
-			watcher:         &NoopWatcher{},
+			monitor:         &NoopMonitor{},
 			expectedActions: []Actions{{}},
 		},
 		{
 			description: "fails to test the first time",
 			testBench:   &TestBench{testErrors: []error{errors.New("")}},
-			watcher:     &NoopWatcher{},
+			monitor:     &NoopMonitor{},
 			expectedActions: []Actions{{
 				Built: []string{"img:1"},
 			}},
@@ -108,7 +108,7 @@ func TestDevFailFirstCycle(t *testing.T) {
 		{
 			description: "fails to deploy the first time",
 			testBench:   &TestBench{deployErrors: []error{errors.New("")}},
-			watcher:     &NoopWatcher{},
+			monitor:     &NoopMonitor{},
 			expectedActions: []Actions{{
 				Built:  []string{"img:1"},
 				Tested: []string{"img:1"},
@@ -117,7 +117,7 @@ func TestDevFailFirstCycle(t *testing.T) {
 		{
 			description: "fails to watch after first cycle",
 			testBench:   &TestBench{},
-			watcher:     &FailWatcher{},
+			monitor:     &FailMonitor{},
 			expectedActions: []Actions{{
 				Built:    []string{"img:1"},
 				Tested:   []string{"img:1"},
@@ -129,8 +129,9 @@ func TestDevFailFirstCycle(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 
-			runner := createRunner(t, test.testBench)
-			runner.Watcher = test.watcher
+			// runner := createRunner(t, test.testBench).WithMonitor(test.monitor)
+			runner := createRunner(t, test.testBench, test.monitor)
+			test.testBench.firstMonitor = test.monitor.Run
 
 			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{{
 				ImageName: "img",
@@ -145,13 +146,13 @@ func TestDev(t *testing.T) {
 	var tests = []struct {
 		description     string
 		testBench       *TestBench
-		watchEvents     []watch.Events
+		watchEvents     []filemon.Events
 		expectedActions []Actions
 	}{
 		{
 			description: "ignore subsequent build errors",
-			testBench:   &TestBench{buildErrors: []error{nil, errors.New("")}},
-			watchEvents: []watch.Events{
+			testBench:   NewTestBench().WithBuildErrors([]error{nil, errors.New("")}),
+			watchEvents: []filemon.Events{
 				{Modified: []string{"file1", "file2"}},
 			},
 			expectedActions: []Actions{
@@ -166,7 +167,7 @@ func TestDev(t *testing.T) {
 		{
 			description: "ignore subsequent test errors",
 			testBench:   &TestBench{testErrors: []error{nil, errors.New("")}},
-			watchEvents: []watch.Events{
+			watchEvents: []filemon.Events{
 				{Modified: []string{"file1", "file2"}},
 			},
 			expectedActions: []Actions{
@@ -183,7 +184,7 @@ func TestDev(t *testing.T) {
 		{
 			description: "ignore subsequent deploy errors",
 			testBench:   &TestBench{deployErrors: []error{nil, errors.New("")}},
-			watchEvents: []watch.Events{
+			watchEvents: []filemon.Events{
 				{Modified: []string{"file1", "file2"}},
 			},
 			expectedActions: []Actions{
@@ -201,7 +202,7 @@ func TestDev(t *testing.T) {
 		{
 			description: "full cycle twice",
 			testBench:   &TestBench{},
-			watchEvents: []watch.Events{
+			watchEvents: []filemon.Events{
 				{Modified: []string{"file1", "file2"}},
 			},
 			expectedActions: []Actions{
@@ -220,7 +221,7 @@ func TestDev(t *testing.T) {
 		{
 			description: "only change second artifact",
 			testBench:   &TestBench{},
-			watchEvents: []watch.Events{
+			watchEvents: []filemon.Events{
 				{Modified: []string{"file2"}},
 			},
 			expectedActions: []Actions{
@@ -239,7 +240,7 @@ func TestDev(t *testing.T) {
 		{
 			description: "redeploy",
 			testBench:   &TestBench{},
-			watchEvents: []watch.Events{
+			watchEvents: []filemon.Events{
 				{Modified: []string{"manifest.yaml"}},
 			},
 			expectedActions: []Actions{
@@ -257,12 +258,12 @@ func TestDev(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+			test.testBench.cycles = len(test.watchEvents)
 
-			runner := createRunner(t, test.testBench)
-			runner.Watcher = &TestWatcher{
+			runner := createRunner(t, test.testBench, &TestMonitor{
 				events:    test.watchEvents,
 				testBench: test.testBench,
-			}
+			})
 
 			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
 				{ImageName: "img1"},
@@ -279,13 +280,13 @@ func TestDevSync(t *testing.T) {
 	var tests = []struct {
 		description     string
 		testBench       *TestBench
-		watchEvents     []watch.Events
+		watchEvents     []filemon.Events
 		expectedActions []Actions
 	}{
 		{
 			description: "sync",
 			testBench:   &TestBench{},
-			watchEvents: []watch.Events{
+			watchEvents: []filemon.Events{
 				{Modified: []string{"file1"}},
 			},
 			expectedActions: []Actions{
@@ -302,7 +303,7 @@ func TestDevSync(t *testing.T) {
 		{
 			description: "sync twice",
 			testBench:   &TestBench{},
-			watchEvents: []watch.Events{
+			watchEvents: []filemon.Events{
 				{Modified: []string{"file1"}},
 				{Modified: []string{"file1"}},
 			},
@@ -325,12 +326,12 @@ func TestDevSync(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			t.Override(&sync.WorkingDir, func(string, map[string]bool) (string, error) { return "/", nil })
+			test.testBench.cycles = len(test.watchEvents)
 
-			runner := createRunner(t, test.testBench)
-			runner.Watcher = &TestWatcher{
+			runner := createRunner(t, test.testBench, &TestMonitor{
 				events:    test.watchEvents,
 				testBench: test.testBench,
-			}
+			})
 
 			err := runner.Dev(context.Background(), ioutil.Discard, []*latest.Artifact{
 				{

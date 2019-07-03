@@ -33,13 +33,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -58,14 +59,18 @@ type Runner interface {
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
+	// TODO(nkubala): make embedded fields private
 	build.Builder
 	deploy.Deployer
 	test.Tester
 	tag.Tagger
 	sync.Syncer
-	watch.Watcher
+	monitor  filemon.Monitor
+	listener Listener
 
+	logger               *kubernetes.LogAggregator
 	cache                *cache.Cache
+	changeSet            *changeSet
 	runCtx               *runcontext.RunContext
 	labellers            []deploy.Labeller
 	defaultLabeller      *deploy.DefaultLabeller
@@ -109,20 +114,27 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		deployer = WithNotification(deployer)
 	}
 
-	trigger, err := watch.NewTrigger(runCtx)
+	trigger, err := trigger.NewTrigger(runCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}
 
 	event.InitializeState(runCtx.Cfg.Build)
 
+	monitor := filemon.NewMonitor()
+
 	return &SkaffoldRunner{
-		Builder:              builder,
-		Tester:               tester,
-		Deployer:             deployer,
-		Tagger:               tagger,
-		Syncer:               kubectl.NewSyncer(runCtx.Namespaces),
-		Watcher:              watch.NewWatcher(trigger),
+		Builder:  builder,
+		Tester:   tester,
+		Deployer: deployer,
+		Tagger:   tagger,
+		Syncer:   kubectl.NewSyncer(runCtx.Namespaces),
+		monitor:  monitor,
+		listener: &SkaffoldListener{
+			Monitor: monitor,
+			Trigger: trigger,
+		},
+		changeSet:            &changeSet{},
 		labellers:            labellers,
 		defaultLabeller:      defaultLabeller,
 		portForwardResources: cfg.PortForward,
