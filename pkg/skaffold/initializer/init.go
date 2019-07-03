@@ -261,7 +261,12 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 			Payload interface{} `json:"payload"`
 		}{}
 		if err := json.Unmarshal([]byte(parts[0]), &nameCheck); err != nil {
-			return nil, err
+			// Not JSON, use backwards compatible method
+			pairs = append(pairs, builderImagePair{
+				Builder:   docker.Docker{Dockerfile: parts[0]},
+				ImageName: parts[1],
+			})
+			continue
 		}
 
 		// Use builder type to parse payload

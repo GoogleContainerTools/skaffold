@@ -444,6 +444,23 @@ func TestProcessCliArtifacts(t *testing.T) {
 			shouldErr:   true,
 		},
 		{
+			description: "Valid (backwards compatibility)",
+			artifacts: []string{
+				`/path/to/Dockerfile=image1`,
+				`/path/to/Dockerfile2=image2`,
+			},
+			expectedPairs: []builderImagePair{
+				{
+					Builder:   docker.Docker{Dockerfile: "/path/to/Dockerfile"},
+					ImageName: "image1",
+				},
+				{
+					Builder:   docker.Docker{Dockerfile: "/path/to/Dockerfile2"},
+					ImageName: "image2",
+				},
+			},
+		},
+		{
 			description: "Valid",
 			artifacts: []string{
 				`{"name":"Docker","payload":{"path":"/path/to/Dockerfile"}}=image1`,
