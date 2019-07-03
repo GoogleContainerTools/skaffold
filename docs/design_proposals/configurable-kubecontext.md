@@ -1,7 +1,7 @@
 # Configurable kubecontext
 
 * Author(s): Cornelius Weig (@corneliusweig)
-* Design Shepherd: tbd
+* Design Shepherd: Balint Pato (@balopat)
 * Date: 29 June 2019
 * Status: [Reviewed/Cancelled/Under implementation/Complete]
 
