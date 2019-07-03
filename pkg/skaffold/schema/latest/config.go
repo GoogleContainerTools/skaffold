@@ -259,7 +259,7 @@ type ClusterDetails struct {
 	// HTTP_PROXY for kaniko pod
 	HTTP_PROXY string `yaml:"HTTP_PROXY,omitempty"`
 	
-	// HTTPS_PROXY for kaniko pod
+	// HTTPS_PROXY for kaniko pod.
 	HTTPS_PROXY string `yaml:"HTTPS_PROXY,omitempty"`
 
 
