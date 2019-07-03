@@ -78,12 +78,13 @@ type InitBuilder interface {
 
 // Config defines the Initializer Config for Init API of skaffold.
 type Config struct {
-	ComposeFile  string
-	CliArtifacts []string
-	SkipBuild    bool
-	Force        bool
-	Analyze      bool
-	Opts         *config.SkaffoldOptions
+	ComposeFile   string
+	CliArtifacts  []string
+	SkipBuild     bool
+	Force         bool
+	Analyze       bool
+	EnableJibInit bool // TODO: Remove this parameter
+	Opts          *config.SkaffoldOptions
 }
 
 // builderImagePair defines a builder and the image it builds
@@ -105,7 +106,7 @@ func DoInit(out io.Writer, c Config) error {
 		}
 	}
 
-	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, detectBuilders)
+	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, c.EnableJibInit, detectBuilders)
 	if err != nil {
 		return err
 	}
@@ -117,10 +118,10 @@ func DoInit(out io.Writer, c Config) error {
 	images := k.GetImages()
 
 	// Determine which builders/images require prompting
-	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(builderConfigs, images)
+	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(c.EnableJibInit, builderConfigs, images)
 
 	if c.Analyze {
-		return printAnalyzeJSON(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
+		return printAnalyzeJSON(out, c.SkipBuild, c.EnableJibInit, pairs, unresolvedBuilderConfigs, unresolvedImages)
 	}
 
 	// conditionally generate build artifacts
@@ -186,7 +187,12 @@ func DoInit(out io.Writer, c Config) error {
 // autoSelectBuilders takes a list of builders and images, checks if any of the builders' configured target
 // images match an image in the image list, and returns a list of the matching builder/image pairs. Also
 // separately returns the builder configs and images that didn't have any matches.
-func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
+func autoSelectBuilders(enableJibInit bool, builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
+	// TODO: Remove backwards compatibility block
+	if !enableJibInit {
+		return nil, builderConfigs, images
+	}
+
 	var pairs []builderImagePair
 	var unresolvedImages []string
 	for _, image := range images {
@@ -216,14 +222,17 @@ func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builde
 	return pairs, builderConfigs, unresolvedImages
 }
 
-func detectBuilders(path string) ([]InitBuilder, error) {
-	// Check for jib
-	if builders := jib.ValidateJibConfigFunc(path); builders != nil {
-		results := make([]InitBuilder, len(builders))
-		for i := range builders {
-			results[i] = builders[i]
+func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, error) {
+	// TODO: Remove backwards compatibility if statement (not entire block)
+	if enableJibInit {
+		// Check for jib
+		if builders := jib.ValidateJibConfigFunc(path); builders != nil {
+			results := make([]InitBuilder, len(builders))
+			for i := range builders {
+				results[i] = builders[i]
+			}
+			return results, filepath.SkipDir
 		}
-		return results, filepath.SkipDir
 	}
 
 	// Check for Dockerfile
@@ -348,9 +357,39 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 
 // printAnalyzeJSON takes the automatically resolved builder/image pairs, the unresolved images, and the unresolved builders, and generates
 // a JSON string containing builder config information,
-func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
+func printAnalyzeJSON(out io.Writer, skipBuild, enableJibInit bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
 	if !skipBuild && len(unresolvedBuilders) == 0 {
 		return errors.New("one or more valid build configuration must be present to build images with skaffold; please provide at least one Dockerfile or Jib configuration and try again, or run `skaffold init --skip-build`")
+	}
+
+	// TODO: Remove backwards compatibility block
+	if !enableJibInit {
+		a := struct {
+			Dockerfiles []string `json:"dockerfiles,omitempty"`
+			Images      []string `json:"images,omitempty"`
+		}{}
+
+		for _, pair := range pairs {
+			if pair.Builder.Name() == "Docker" {
+				a.Dockerfiles = append(a.Dockerfiles, pair.Builder.Path())
+			}
+			a.Images = append(a.Images, pair.ImageName)
+		}
+		for _, config := range unresolvedBuilders {
+			if config.Name() == "Docker" {
+				a.Dockerfiles = append(a.Dockerfiles, config.Path())
+			}
+		}
+		for _, image := range unresolvedImages {
+			a.Images = append(a.Images, image)
+		}
+
+		contents, err := json.Marshal(a)
+		if err != nil {
+			return errors.Wrap(err, "marshalling contents")
+		}
+		_, err = out.Write(contents)
+		return err
 	}
 
 	// Build JSON output. Example schema is below:
@@ -409,7 +448,7 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 	return err
 }
 
-func walk(dir string, force bool, validateBuildFile func(string) ([]InitBuilder, error)) ([]string, []InitBuilder, error) {
+func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, string) ([]InitBuilder, error)) ([]string, []InitBuilder, error) {
 	var potentialConfigs []string
 	var foundBuilders []InitBuilder
 	err := filepath.Walk(dir, func(path string, f os.FileInfo, e error) error {
@@ -432,7 +471,7 @@ func walk(dir string, force bool, validateBuildFile func(string) ([]InitBuilder,
 			return nil
 		}
 		// try and parse build file
-		if builderConfigs, err := validateBuildFile(path); builderConfigs != nil {
+		if builderConfigs, err := validateBuildFile(enableJibInit, path); builderConfigs != nil {
 			for _, buildConfig := range builderConfigs {
 				logrus.Infof("existing builder found: %s", buildConfig.Describe())
 				foundBuilders = append(foundBuilders, buildConfig)
