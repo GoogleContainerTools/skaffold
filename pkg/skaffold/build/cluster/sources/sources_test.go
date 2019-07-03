@@ -265,25 +265,25 @@ func TestSetProxy(t *testing.T) {
 			expectedArgs:   []v1.EnvVar{},
 		}, {
 			description:    "set http proxy",
-			clusterDetails: &latest.ClusterDetails{HTTPProxy: "proxy.com"},
+			clusterDetails: &latest.ClusterDetails{HTTP_PROXY: "proxy.com"},
 			env:            []v1.EnvVar{},
-			expectedArgs:   []v1.EnvVar{{Name: "HTTPProxy", Value: "proxy.com"}},
+			expectedArgs:   []v1.EnvVar{{Name: "HTTP_PROXY", Value: "proxy.com"}},
 		}, {
 			description:    "set https proxy",
-			clusterDetails: &latest.ClusterDetails{HTTPSProxy: "proxy.com"},
+			clusterDetails: &latest.ClusterDetails{HTTPS_PROXY: "proxy.com"},
 			env:            []v1.EnvVar{},
-			expectedArgs:   []v1.EnvVar{{Name: "HTTPSProxy", Value: "proxy.com"}},
+			expectedArgs:   []v1.EnvVar{{Name: "HTTPS_PROXY", Value: "proxy.com"}},
 		}, {
 			description:    "set http and https proxy",
-			clusterDetails: &latest.ClusterDetails{HTTPProxy: "proxy.com", HTTPSProxy: "proxy.com"},
+			clusterDetails: &latest.ClusterDetails{HTTP_PROXY: "proxy.com", HTTPS_PROXY: "proxy.com"},
 			env:            []v1.EnvVar{},
-			expectedArgs:   []v1.EnvVar{{Name: "HTTPProxy", Value: "proxy.com"}, {Name: "HTTPSProxy", Value: "proxy.com"}},
+			expectedArgs:   []v1.EnvVar{{Name: "HTTP_PROXY", Value: "proxy.com"}, {Name: "HTTPS_PROXY", Value: "proxy.com"}},
 		},
 	}
 
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			actual := appendCacheIfExists(test.clusterDetails, test.env)
+		t.Run(test.description, func(t *testing.T) {
+			actual := setProxy(test.clusterDetails, test.env)
 			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedArgs, actual)
 		})
 	}

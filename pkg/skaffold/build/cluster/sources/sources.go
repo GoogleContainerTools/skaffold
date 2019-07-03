@@ -183,5 +183,4 @@ func resourceRequirements(rr *latest.ResourceRequirements) v1.ResourceRequiremen
 	}
 
 	return req
-
 }
