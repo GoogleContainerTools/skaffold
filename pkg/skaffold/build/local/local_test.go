@@ -45,9 +45,6 @@ func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
 
 func TestLocalRun(t *testing.T) {
-	reset := testutil.Override(t, &docker.DefaultAuthHelper, testAuthHelper{})
-	defer reset()
-
 	var tests = []struct {
 		description      string
 		api              testutil.FakeAPIClient
@@ -136,7 +133,7 @@ func TestLocalRun(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "unkown artifact type",
+			description: "unknown artifact type",
 			artifacts:   []*latest.Artifact{{}},
 			shouldErr:   true,
 		},
@@ -221,20 +218,16 @@ func TestLocalRun(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 
-			cfg := latest.BuildConfig{
+			event.InitializeState(latest.BuildConfig{
 				BuildType: latest.BuildType{
 					LocalBuild: &latest.LocalBuild{},
 				},
-			}
-			event.InitializeState(&runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Build: cfg,
-				},
-				Opts: &config.SkaffoldOptions{},
 			})
+
 			l := Builder{
 				cfg:         &latest.LocalBuild{},
 				localDocker: docker.NewLocalDaemon(&test.api, nil, false, map[string]bool{}),
@@ -257,22 +250,47 @@ type dummyLocalDaemon struct {
 func TestNewBuilder(t *testing.T) {
 	dummyDaemon := dummyLocalDaemon{}
 
-	tcs := []struct {
-		name            string
+	pFalse := false
+
+	tests := []struct {
+		description     string
 		shouldErr       bool
+		localBuild      *latest.LocalBuild
 		expectedBuilder *Builder
 		localClusterFn  func() (bool, error)
 		localDockerFn   func(*runcontext.RunContext) (docker.LocalDaemon, error)
 	}{
 		{
-			name: "failed to get docker client",
+			description: "failed to get docker client",
 			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
 				e = errors.New("dummy docker error")
 				return
 			},
 			shouldErr: true,
 		}, {
-			name: "pushImages becomes !localCluster when local:push is not defined",
+			description: "pushImages becomes !localCluster when local:push is not defined",
+			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
+				daemon = dummyDaemon
+				return
+			},
+			localClusterFn: func() (b bool, e error) {
+				b = false //because this is false and localBuild.push is nil
+				return
+			},
+
+			shouldErr: false,
+			expectedBuilder: &Builder{
+				cfg:                &latest.LocalBuild{},
+				kubeContext:        "",
+				localDocker:        dummyDaemon,
+				localCluster:       false,
+				pushImages:         true, //this will be true
+				skipTests:          false,
+				prune:              true,
+				insecureRegistries: nil,
+			},
+		}, {
+			description: "pushImages defined in config (local:push)",
 			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
 				daemon = dummyDaemon
 				return
@@ -281,42 +299,53 @@ func TestNewBuilder(t *testing.T) {
 				b = false
 				return
 			},
+			localBuild: &latest.LocalBuild{
+				Push: &pFalse, //because this is false
+			},
 			shouldErr: false,
 			expectedBuilder: &Builder{
-				cfg:                &latest.LocalBuild{},
-				kubeContext:        "",
-				localDocker:        dummyDaemon,
-				localCluster:       false,
-				pushImages:         true,
+				pushImages: false, //this will be false too
+				cfg: &latest.LocalBuild{ // and the config is inherited
+					Push: &pFalse,
+				},
+				kubeContext:  "",
+				localDocker:  dummyDaemon,
+				localCluster: false,
+
 				skipTests:          false,
 				prune:              true,
 				insecureRegistries: nil,
 			},
 		},
 	}
-	for _, tc := range tcs {
-		testutil.Run(t, tc.name, func(t *testutil.T) {
-			if tc.localDockerFn != nil {
-				t.Override(&getLocalDocker, tc.localDockerFn)
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			if test.localDockerFn != nil {
+				t.Override(&getLocalDocker, test.localDockerFn)
 			}
-			if tc.localClusterFn != nil {
-				t.Override(&getLocalCluster, tc.localClusterFn)
+			if test.localClusterFn != nil {
+				t.Override(&getLocalCluster, test.localClusterFn)
 			}
-			builder, err := NewBuilder(dummyRunContext())
-			t.CheckError(tc.shouldErr, err)
-			if !tc.shouldErr {
-				t.CheckDeepEqual(tc.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, dummyDaemon))
+
+			builder, err := NewBuilder(stubRunContext(test.localBuild))
+
+			t.CheckError(test.shouldErr, err)
+			if !test.shouldErr {
+				t.CheckDeepEqual(test.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, dummyDaemon))
 			}
 		})
 	}
 }
 
-func dummyRunContext() *runcontext.RunContext {
+func stubRunContext(localBuild *latest.LocalBuild) *runcontext.RunContext {
+	if localBuild == nil {
+		localBuild = &latest.LocalBuild{}
+	}
 	return &runcontext.RunContext{
 		Cfg: &latest.Pipeline{
 			Build: latest.BuildConfig{
 				BuildType: latest.BuildType{
-					LocalBuild: &latest.LocalBuild{},
+					LocalBuild: localBuild,
 				},
 			},
 		},

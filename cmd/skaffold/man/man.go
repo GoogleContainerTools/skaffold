@@ -27,27 +27,15 @@ import (
 )
 
 func main() {
-	if err := printMan(os.Stdout, os.Stderr); err != nil {
-		panic(err)
-	}
+	printMan(os.Stdout, os.Stderr)
 }
 
-func printMan(stdout, stderr io.Writer) error {
+func printMan(stdout, stderr io.Writer) {
 	command := cmd.NewSkaffoldCommand(stdout, stderr)
-	return printCommand(stdout, command)
+	printCommand(stdout, command)
 }
 
-func printSubCommands(out io.Writer, command *cobra.Command) error {
-	for _, subCommand := range command.Commands() {
-		if err := printCommand(out, subCommand); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func printCommand(out io.Writer, command *cobra.Command) error {
+func printCommand(out io.Writer, command *cobra.Command) {
 	command.DisableFlagsInUseLine = true
 
 	fmt.Fprintf(out, "\n### %s\n", command.CommandPath())
@@ -58,9 +46,13 @@ func printCommand(out io.Writer, command *cobra.Command) error {
 		fmt.Fprint(out, "Env vars:\n\n")
 
 		command.LocalFlags().VisitAll(func(flag *pflag.Flag) {
-			fmt.Fprintf(out, "* `%s` (same as `--%s`)\n", cmd.FlagToEnvVarName(flag), flag.Name)
+			if !flag.Hidden {
+				fmt.Fprintf(out, "* `%s` (same as `--%s`)\n", cmd.FlagToEnvVarName(flag), flag.Name)
+			}
 		})
 	}
 
-	return printSubCommands(out, command)
+	for _, subCommand := range command.Commands() {
+		printCommand(out, subCommand)
+	}
 }

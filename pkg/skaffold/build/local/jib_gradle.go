@@ -20,7 +20,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -50,7 +49,7 @@ func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, w
 		return "", err
 	}
 
-	return docker.RemoteDigest(tag, b.insecureRegistries)
+	return getRemoteDigest(tag, b.insecureRegistries)
 }
 
 func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
@@ -60,7 +59,7 @@ func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace
 	cmd.Stderr = out
 
 	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
-	if err := util.RunCmd(cmd); err != nil {
+	if err := util.RunCmd(&cmd); err != nil {
 		return errors.Wrap(err, "gradle build failed")
 	}
 

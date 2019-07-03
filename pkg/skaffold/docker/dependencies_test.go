@@ -120,7 +120,7 @@ const onbuild = `
 FROM golang:onbuild
 `
 
-const onbuildError = `
+const baseImageNotFound = `
 FROM noimage:latest
 ADD ./file /etc/file
 `
@@ -203,15 +203,11 @@ FROM jboss/wildfly:14.0.1.Final
 ADD ./file /etc/file
 `
 
-type fakeImageFetcher struct {
-	fetched []string
-}
+type fakeImageFetcher struct{}
 
 func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*v1.ConfigFile, error) {
-	f.fetched = append(f.fetched, image)
-
 	switch image {
-	case "ubuntu:14.04", "busybox", "nginx", "golang:1.9.2", "jboss/wildfly:14.0.1.Final":
+	case "ubuntu:14.04", "busybox", "nginx", "golang:1.9.2", "jboss/wildfly:14.0.1.Final", "gcr.io/distroless/base":
 		return &v1.ConfigFile{}, nil
 	case "golang:onbuild":
 		return &v1.ConfigFile{
@@ -236,7 +232,6 @@ func TestGetDependencies(t *testing.T) {
 		env         []string
 
 		expected  []string
-		fetched   []string
 		badReader bool
 		shouldErr bool
 	}{
@@ -245,27 +240,23 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  copyServerGo,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "server.go"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "add dependency",
 			dockerfile:  addNginx,
 			workspace:   "docker",
 			expected:    []string{"Dockerfile", "nginx.conf"},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "wildcards",
 			dockerfile:  wildcards,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "server.go", "worker.go"},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "wildcards matches none",
 			dockerfile:  wildcardsMatchesNone,
 			workspace:   ".",
-			fetched:     []string{"nginx"},
 			shouldErr:   true,
 		},
 		{
@@ -273,7 +264,6 @@ func TestGetDependencies(t *testing.T) {
 			dockerfile:  oneWilcardMatchesNone,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "server.go", "worker.go"},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "bad read",
@@ -285,49 +275,42 @@ func TestGetDependencies(t *testing.T) {
 			description: "no dependencies on remote files",
 			dockerfile:  remoteFileAdd,
 			expected:    []string{"Dockerfile"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "multistage dockerfile",
 			dockerfile:  multiStageDockerfile1,
 			workspace:   "",
 			expected:    []string{"Dockerfile", "worker.go"},
-			fetched:     []string{"golang:1.9.2", "gcr.io/distroless/base"},
 		},
 		{
 			description: "multistage dockerfile with source dependencies in both stages",
 			dockerfile:  multiStageDockerfile2,
 			workspace:   "",
 			expected:    []string{"Dockerfile", "server.go", "worker.go"},
-			fetched:     []string{"golang:1.9.2", "gcr.io/distroless/base"},
 		},
 		{
 			description: "copy twice",
 			dockerfile:  multiCopy,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "test.conf"},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "env test",
 			dockerfile:  envTest,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "bar"},
-			fetched:     []string{"busybox"},
 		},
 		{
 			description: "multiple env test",
 			dockerfile:  multiEnvTest,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", filepath.Join("docker", "nginx.conf")},
-			fetched:     []string{"busybox"},
 		},
 		{
 			description: "multi file copy",
 			dockerfile:  multiFileCopy,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "file", "server.go"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "dockerignore test",
@@ -335,7 +318,6 @@ func TestGetDependencies(t *testing.T) {
 			ignore:      "bar\ndocker/*",
 			workspace:   ".",
 			expected:    []string{".dot", "Dockerfile", "file", "server.go", "test.conf", "worker.go"},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "dockerignore dockerfile",
@@ -343,7 +325,6 @@ func TestGetDependencies(t *testing.T) {
 			ignore:      "Dockerfile",
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "server.go"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "dockerignore with non canonical workspace",
@@ -351,14 +332,12 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   "docker/../docker",
 			ignore:      "bar\ndocker/*",
 			expected:    []string{"Dockerfile", "nginx.conf"},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "ignore none",
 			dockerfile:  copyAll,
 			workspace:   ".",
 			expected:    []string{".dot", "Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "ignore dotfiles",
@@ -366,7 +345,6 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			ignore:      ".*",
 			expected:    []string{"Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "ignore dotfiles (root syntax)",
@@ -374,7 +352,6 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			ignore:      "/.*",
 			expected:    []string{"Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "dockerignore with context in parent directory",
@@ -382,14 +359,12 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   "docker/..",
 			ignore:      "bar\ndocker/*\n*.go",
 			expected:    []string{".dot", "Dockerfile", "file", "test.conf"},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "onbuild test",
 			dockerfile:  onbuild,
 			workspace:   ".",
 			expected:    []string{".dot", "Dockerfile", "bar", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf"), "file", "server.go", "test.conf", "worker.go"},
-			fetched:     []string{"golang:onbuild"},
 		},
 		{
 			description: "onbuild with dockerignore",
@@ -397,14 +372,12 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			ignore:      "bar\ndocker/*",
 			expected:    []string{".dot", "Dockerfile", "file", "server.go", "test.conf", "worker.go"},
-			fetched:     []string{"golang:onbuild"},
 		},
 		{
-			description: "onbuild error",
-			dockerfile:  onbuildError,
+			description: "base image not found",
+			dockerfile:  baseImageNotFound,
 			workspace:   ".",
-			expected:    []string{"Dockerfile", "file"},
-			fetched:     []string{"noimage:latest"},
+			shouldErr:   true,
 		},
 		{
 			description: "build args",
@@ -412,7 +385,6 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
 			expected:    []string{"Dockerfile", "server.go"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args with same prefix",
@@ -420,7 +392,6 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO2": util.StringPtr("worker.go")},
 			expected:    []string{"Dockerfile", "worker.go"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args with curly braces",
@@ -428,7 +399,6 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
 			expected:    []string{"Dockerfile", "server.go"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args with extra whitespace",
@@ -436,28 +406,24 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
 			expected:    []string{"Dockerfile", "server.go"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args with default value",
 			dockerfile:  copyServerGoBuildArgDefaultValue,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "server.go"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args with redefined default value",
 			dockerfile:  copyWorkerGoBuildArgRedefinedDefaultValue,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "worker.go"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args all defined a the top",
 			dockerfile:  copyServerGoBuildArgsAtTheTop,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "server.go"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "override default build arg",
@@ -465,7 +431,6 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("worker.go")},
 			expected:    []string{"Dockerfile", "worker.go"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "ignore build arg and use default arg value",
@@ -473,42 +438,36 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": nil},
 			expected:    []string{"Dockerfile", "server.go"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "from base stage",
 			dockerfile:  fromStage,
 			workspace:   ".",
 			expected:    []string{"Dockerfile"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "from base stage, ignoring case",
 			dockerfile:  fromStageIgnoreCase,
 			workspace:   ".",
 			expected:    []string{"Dockerfile"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "from scratch",
 			dockerfile:  fromScratch,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "file"},
-			fetched:     nil,
 		},
 		{
 			description: "from scratch, ignoring case",
 			dockerfile:  fromScratchUppercase,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "file"},
-			fetched:     nil,
 		},
 		{
 			description: "case sensitive",
 			dockerfile:  fromImageCaseSensitive,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "file"},
-			fetched:     []string{"jboss/wildfly:14.0.1.Final"},
 		},
 		{
 			description: "build args with an environment variable",
@@ -517,7 +476,6 @@ func TestGetDependencies(t *testing.T) {
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("{{.FILE_NAME}}")},
 			env:         []string{"FILE_NAME=server.go"},
 			expected:    []string{"Dockerfile", "server.go"},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "invalid go template as build arg",
@@ -528,21 +486,14 @@ func TestGetDependencies(t *testing.T) {
 		},
 	}
 
-	resetWorkingDir := testutil.Override(t, &WorkingDir, func(_ string, _ map[string]bool) (string, error) {
-		return "/", nil
-	})
-	defer resetWorkingDir()
-
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			imageFetcher := fakeImageFetcher{}
 			t.Override(&RetrieveImage, imageFetcher.fetch)
 			t.Override(&util.OSEnviron, func() []string { return test.env })
 
-			tmpDir := t.NewTempDir()
-			for _, file := range []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot"} {
-				tmpDir.Write(file, "")
-			}
+			tmpDir := t.NewTempDir().
+				Touch("docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot")
 
 			if !test.badReader {
 				tmpDir.Write(test.workspace+"/Dockerfile", test.dockerfile)
@@ -555,8 +506,8 @@ func TestGetDependencies(t *testing.T) {
 			workspace := tmpDir.Path(test.workspace)
 			deps, err := GetDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs, map[string]bool{})
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
-			t.CheckDeepEqual(test.fetched, imageFetcher.fetched)
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expected, deps)
 		})
 	}
 }

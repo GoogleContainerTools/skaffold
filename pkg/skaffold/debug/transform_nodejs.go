@@ -67,10 +67,15 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 	return false
 }
 
+func (t nodeTransformer) RuntimeSupportImage() string {
+	// no additional support required
+	return ""
+}
+
 // Apply configures a container definition for NodeJS Chrome V8 Inspector.
 // Returns a simple map describing the debug configuration details.
 func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
-	logrus.Infof("Configuring [%s] for node.js debugging", container.Name)
+	logrus.Infof("Configuring %q for node.js debugging", container.Name)
 
 	// try to find existing `--inspect` command
 	spec := retrieveNodeInspectSpec(config)
@@ -92,7 +97,7 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 			container.Args = rewriteNpmCommandLine(config.arguments, *spec)
 
 		default:
-			logrus.Warnf("Skipping [%s] as does not appear to invoke node", container.Name)
+			logrus.Warnf("Skipping %q as does not appear to invoke node", container.Name)
 			return nil
 		}
 	}
@@ -153,7 +158,7 @@ func extractInspectArg(arg string) *inspectSpec {
 		if split := strings.SplitN(address, ":", 2); len(split) == 1 {
 			port, err := strconv.ParseInt(split[0], 10, 32)
 			if err != nil {
-				logrus.Errorf("Invalid NodeJS inspect port \"%s\": %s\n", address, err)
+				logrus.Errorf("Invalid NodeJS inspect port %q: %s\n", address, err)
 				return nil
 			}
 			spec.port = int32(port)
@@ -161,7 +166,7 @@ func extractInspectArg(arg string) *inspectSpec {
 			spec.host = split[0]
 			port, err := strconv.ParseInt(split[1], 10, 32)
 			if err != nil {
-				logrus.Errorf("Invalid NodeJS inspect port \"%s\": %s\n", address, err)
+				logrus.Errorf("Invalid NodeJS inspect port %q: %s\n", address, err)
 				return nil
 			}
 			spec.port = int32(port)

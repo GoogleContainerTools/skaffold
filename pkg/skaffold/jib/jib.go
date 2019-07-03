@@ -28,14 +28,10 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/blang/semver"
 	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
-
-// minJibVersion is the minimum version of Jib required
-var minJibVersion = semver.MustParse("1.3.0")
 
 const (
 	dotDotSlash = ".." + string(filepath.Separator)
@@ -43,9 +39,6 @@ const (
 
 // filesLists contains cached build/input dependencies
 type filesLists struct {
-	// BuildDefinitions lists paths to build definitions that trigger a call out to Jib to refresh the pathMap, as well as a rebuild, upon changing
-	JibVersion string `json:"version"`
-
 	// BuildDefinitions lists paths to build definitions that trigger a call out to Jib to refresh the pathMap, as well as a rebuild, upon changing
 	BuildDefinitions []string `json:"build"`
 
@@ -63,7 +56,7 @@ type filesLists struct {
 var watchedFiles = map[string]filesLists{}
 
 // getDependencies returns a list of files to watch for changes to rebuild
-func getDependencies(workspace string, cmd *exec.Cmd, projectName string) ([]string, error) {
+func getDependencies(workspace string, cmd exec.Cmd, projectName string) ([]string, error) {
 	var dependencyList []string
 	files, ok := watchedFiles[projectName]
 	if !ok {
@@ -79,9 +72,6 @@ func getDependencies(workspace string, cmd *exec.Cmd, projectName string) ([]str
 		// Refresh dependency list if empty
 		if err := refreshDependencyList(&files, cmd); err != nil {
 			return nil, errors.Wrap(err, "initial Jib dependency refresh failed")
-		}
-		if err := checkJibVersion(files.JibVersion); err != nil {
-			return nil, err
 		}
 	} else if err := walkFiles(workspace, files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
 		// Walk build files to check for changes
@@ -116,10 +106,10 @@ func getDependencies(workspace string, cmd *exec.Cmd, projectName string) ([]str
 }
 
 // refreshDependencyList calls out to Jib to update files with the latest list of files/directories to watch.
-func refreshDependencyList(files *filesLists, cmd *exec.Cmd) error {
-	stdout, err := util.RunCmdOut(cmd)
+func refreshDependencyList(files *filesLists, cmd exec.Cmd) error {
+	stdout, err := util.RunCmdOut(&cmd)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v%s+)", minJibVersion)
+		return errors.Wrapf(err, "failed to get Jib dependencies")
 	}
 
 	// Search for Jib's output JSON. Jib's Maven/Gradle output takes the following form:
@@ -238,27 +228,4 @@ func relativize(path string, roots ...string) (string, error) {
 		}
 	}
 	return "", errors.New("could not relativize path")
-}
-
-// checkJibVersion checks if the provided version is a Maven-style version string
-// and is compatible with our minimum supported version.
-func checkJibVersion(mavenVersion string) error {
-	// semver.Parse doesn't support maven-style version qualifiers
-	// we assume a version with a qualifiers is just as good as the release
-	if index := strings.Index(mavenVersion, "-"); index >= 0 {
-		mavenVersion = mavenVersion[0:index]
-	}
-
-	if len(mavenVersion) == 0 {
-		return errors.Errorf("requires Jib v%s+", minJibVersion)
-	}
-	parsed, err := semver.Parse(mavenVersion)
-	switch {
-	case err != nil:
-		return err
-	case parsed.LT(minJibVersion):
-		return errors.Errorf("requires Jib v%s+", minJibVersion)
-	default:
-		return nil
-	}
 }

@@ -25,10 +25,9 @@ import (
 
 func TestReadConfiguration(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		tmpDir := t.NewTempDir()
-		t.Chdir(tmpDir.Root())
-
-		tmpDir.Write("skaffold.yaml", "some yaml")
+		t.NewTempDir().
+			Write("skaffold.yaml", "some yaml").
+			Chdir()
 
 		content, err := ReadConfiguration("skaffold.yaml")
 
@@ -39,11 +38,10 @@ func TestReadConfiguration(t *testing.T) {
 
 func TestReadConfigurationFallback(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		tmpDir := t.NewTempDir()
-		t.Chdir(tmpDir.Root())
-
-		// skaffold.yaml doesn't exist but .yml does
-		tmpDir.Write("skaffold.yml", "some yaml")
+		t.NewTempDir().
+			// skaffold.yaml doesn't exist but .yml does
+			Write("skaffold.yml", "some yaml").
+			Chdir()
 
 		content, err := ReadConfiguration("skaffold.yaml")
 

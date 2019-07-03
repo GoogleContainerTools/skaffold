@@ -66,10 +66,9 @@ func TestKustomizeDeploy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			t.Chdir(tmpDir.Root())
-
 			t.Override(&util.DefaultExecCommand, test.command)
+			t.NewTempDir().
+				Chdir()
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
@@ -171,6 +170,11 @@ func TestDependenciesForKustomization(t *testing.T) {
 		{
 			description: "paches",
 			yaml:        `patches: [patch1.yaml, path/patch2.yaml]`,
+			expected:    []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
+		},
+		{
+			description: "patchesStrategicMerge",
+			yaml:        `patchesStrategicMerge: [patch1.yaml, path/patch2.yaml]`,
 			expected:    []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
 		},
 		{

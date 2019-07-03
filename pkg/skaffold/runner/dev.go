@@ -19,9 +19,10 @@ package runner
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
@@ -38,8 +39,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	logger := r.newLogger(out, artifacts)
 	defer logger.Stop()
 
-	portForwarder := kubernetes.NewPortForwarder(out, r.imageList, r.runCtx.Namespaces)
-	defer portForwarder.Stop()
+	forwarderManager := portforward.NewForwarderManager(out, r.imageList, r.runCtx.Namespaces, r.defaultLabeller.K8sManagedByLabelKeyValueString(), r.runCtx.Opts.PortForward, r.portForwardResources)
+	defer forwarderManager.Stop()
 
 	// Create watcher and register artifacts to build current state of files.
 	changed := changes{}
@@ -73,10 +74,11 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 				}
 			}
 		case len(changed.needsRebuild) > 0:
-			if err := r.buildTestDeploy(ctx, out, changed.needsRebuild); err != nil {
+			if _, err := r.BuildAndTest(ctx, out, changed.needsRebuild); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
 				return nil
 			}
+			fallthrough
 		case changed.needsRedeploy:
 			if err := r.Deploy(ctx, out, r.builds); err != nil {
 				logrus.Warnln("Skipping deploy due to error:", err)
@@ -105,7 +107,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Watch test configuration
 	if err := r.Watcher.Register(
-		r.TestDependencies,
+		r.Tester.TestDependencies,
 		func(watch.Events) { changed.needsRedeploy = true },
 	); err != nil {
 		return errors.Wrap(err, "watching test files")
@@ -113,7 +115,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Watch deployment configuration
 	if err := r.Watcher.Register(
-		r.Dependencies,
+		r.Deployer.Dependencies,
 		func(watch.Events) { changed.needsRedeploy = true },
 	); err != nil {
 		return errors.Wrap(err, "watching files for deployer")
@@ -127,22 +129,29 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return errors.Wrapf(err, "watching skaffold configuration %s", r.runCtx.Opts.ConfigurationFile)
 	}
 
-	// First run
-	if err := r.buildTestDeploy(ctx, out, artifacts); err != nil {
-		return errors.Wrap(err, "exiting dev mode because first run failed")
+	// First build
+	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {
+		return errors.Wrap(err, "exiting dev mode because first build failed")
 	}
 
-	// Start logs
+	// Logs should be retrieve up to just before the deploy
+	logger.SetSince(time.Now())
+
+	// First deploy
+	if err := r.Deploy(ctx, out, r.builds); err != nil {
+		return errors.Wrap(err, "exiting dev mode because first deploy failed")
+	}
+
+	// Start printing the logs after deploy is finished
 	if r.runCtx.Opts.TailDev {
 		if err := logger.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting logger")
 		}
 	}
 
-	if r.runCtx.Opts.PortForward {
-		if err := portForwarder.Start(ctx); err != nil {
-			return errors.Wrap(err, "starting port-forwarder")
-		}
+	// Forward ports
+	if err := forwarderManager.Start(ctx); err != nil {
+		return errors.Wrap(err, "starting forwarder manager")
 	}
 
 	return r.Watcher.Run(ctx, out, onChange)

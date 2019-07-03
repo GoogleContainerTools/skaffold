@@ -21,17 +21,22 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/watch"
+	fake_testing "k8s.io/client-go/testing"
 )
 
 type T struct {
 	*testing.T
 	teardownActions []func()
+}
+
+func (t *T) FakeRun(command string) *FakeCmd {
+	return FakeRun(t.T, command)
 }
 
 func (t *T) FakeRunOut(command string, output string) *FakeCmd {
@@ -67,8 +72,18 @@ func (t *T) CheckError(shouldErr bool, err error) {
 	CheckError(t.T, shouldErr, err)
 }
 
+// CheckErrorContains checks that an error is not nil and contains
+// a given message.
 func (t *T) CheckErrorContains(message string, err error) {
-	CheckErrorContains(t.T, message, err)
+	t.Helper()
+	if err == nil {
+		t.Error("expected error, but returned none")
+		return
+	}
+	if !strings.Contains(err.Error(), message) {
+		t.Errorf("expected message [%s] not found in error: %s", message, err.Error())
+		return
+	}
 }
 
 func (t *T) TempFile(prefix string, content []byte) string {
@@ -81,16 +96,6 @@ func (t *T) NewTempDir() *TempDir {
 	tmpDir, teardown := NewTempDir(t.T)
 	t.teardownActions = append(t.teardownActions, teardown)
 	return tmpDir
-}
-
-func (t *T) Chdir(dir string) {
-	teardown := Chdir(t.T, dir)
-	t.teardownActions = append(t.teardownActions, teardown)
-}
-
-func (t *T) SetEnvs(envs map[string]string) {
-	teardown := SetEnvs(t.T, envs)
-	t.teardownActions = append(t.teardownActions, teardown)
 }
 
 func Run(t *testing.T, name string, f func(t *T)) {
@@ -150,44 +155,9 @@ func CheckError(t *testing.T, shouldErr bool, err error) {
 	}
 }
 
-// CheckErrorContains checks that an error is not nil and contains
-// a given message.
-func CheckErrorContains(t *testing.T, message string, err error) {
-	t.Helper()
-	if err == nil {
-		t.Error("expected error, but returned none")
-		return
-	}
-	if !strings.Contains(err.Error(), message) {
-		t.Errorf("expected message [%s] not found in error: %s", message, err.Error())
-		return
-	}
-}
-
 func EnsureTestPanicked(t *testing.T) {
 	if recover() == nil {
 		t.Errorf("should have panicked")
-	}
-}
-
-// Chdir changes current directory for a test
-func Chdir(t *testing.T, dir string) func() {
-	t.Helper()
-
-	pwd, err := os.Getwd()
-	if err != nil {
-		t.Fatal("unable to get current directory")
-	}
-
-	err = os.Chdir(dir)
-	if err != nil {
-		t.Fatal("unable to change current directory")
-	}
-
-	return func() {
-		if err := os.Chdir(pwd); err != nil {
-			t.Fatal("unable to reset current directory")
-		}
 	}
 }
 
@@ -199,29 +169,6 @@ func checkErr(shouldErr bool, err error) error {
 		return fmt.Errorf("unexpected error: %s", err)
 	}
 	return nil
-}
-
-// SetEnvs takes a map of key values to set using os.Setenv and returns
-// a function that can be called to reset the envs to their previous values.
-func SetEnvs(t *testing.T, envs map[string]string) func() {
-	prevEnvs := map[string]string{}
-	for key, value := range envs {
-		prevEnv := os.Getenv(key)
-		prevEnvs[key] = prevEnv
-		err := os.Setenv(key, value)
-		if err != nil {
-			t.Error(err)
-		}
-	}
-
-	return func() {
-		for key, value := range prevEnvs {
-			err := os.Setenv(key, value)
-			if err != nil {
-				t.Error(err)
-			}
-		}
-	}
 }
 
 // ServeFile serves a file with http. Returns the url to the file and a teardown
@@ -285,4 +232,11 @@ func override(t *testing.T, dest, tmp interface{}) (f func(), err error) {
 		}()
 		dValue.Set(curValue)
 	}, nil
+}
+
+// SetupFakeWatcher helps set up a fake Kubernetes watcher
+func SetupFakeWatcher(w watch.Interface) func(a fake_testing.Action) (handled bool, ret watch.Interface, err error) {
+	return func(a fake_testing.Action) (handled bool, ret watch.Interface, err error) {
+		return true, w, nil
+	}
 }

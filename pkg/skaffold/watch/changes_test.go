@@ -95,67 +95,44 @@ func TestEvents(t *testing.T) {
 }
 
 func TestStat(t *testing.T) {
-	var tests = []struct {
-		description string
-		setup       func(folder *testutil.TempDir)
-		expected    FileMap
-		shouldErr   bool
-	}{
-		{
-			description: "stat files",
-			setup: func(folder *testutil.TempDir) {
-				folder.Write("file", "content")
-			},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			test.setup(tmpDir)
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().
+			Write("file", "content")
 
-			list, _ := tmpDir.List()
-			actual, err := Stat(tmpDir.List)
+		list, _ := tmpDir.List()
+		actual, err := Stat(tmpDir.List)
 
-			t.CheckError(test.shouldErr, err)
-			t.CheckDeepEqual(len(list), len(actual))
-			for _, f := range list {
-				_, present := actual[f]
-				t.CheckDeepEqual(true, present)
-			}
-		})
-	}
+		t.CheckNoError(err)
+		t.CheckDeepEqual(len(list), len(actual))
+		for _, f := range list {
+			_, present := actual[f]
+			t.CheckDeepEqual(true, present)
+		}
+	})
 }
 
 func TestStatNotExist(t *testing.T) {
 	var tests = []struct {
 		description string
-		setup       func(folder *testutil.TempDir)
 		deps        []string
 		depsErr     error
-		expected    FileMap
 		shouldErr   bool
 	}{
 		{
 			description: "no error when deps returns nonexisting file",
-			setup: func(folder *testutil.TempDir) {
-				folder.Write("file", "content")
-			},
-			deps: []string{"file/that/doesnt/exist/anymore"},
+			deps:        []string{"file/that/doesnt/exist/anymore"},
 		},
 		{
 			description: "deps function error",
-			setup: func(folder *testutil.TempDir) {
-				folder.Write("file", "content")
-			},
-			deps:      []string{"file/that/doesnt/exist/anymore"},
-			depsErr:   fmt.Errorf(""),
-			shouldErr: true,
+			deps:        []string{"file/that/doesnt/exist/anymore"},
+			depsErr:     fmt.Errorf(""),
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			test.setup(tmpDir)
+			t.NewTempDir().
+				Write("file", "content")
 
 			_, err := Stat(func() ([]string, error) { return test.deps, test.depsErr })
 

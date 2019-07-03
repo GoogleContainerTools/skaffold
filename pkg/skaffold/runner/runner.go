@@ -22,6 +22,7 @@ import (
 	"io"
 	"time"
 
+	cfg "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster"
@@ -35,17 +36,27 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
-// SkaffoldRunner is responsible for running the skaffold build and deploy config.
+// Runner is responsible for running the skaffold build, test and deploy config.
+type Runner interface {
+	DiagnoseArtifacts(io.Writer) error
+	Dev(context.Context, io.Writer, []*latest.Artifact) error
+	BuildAndTest(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)
+	DeployAndLog(context.Context, io.Writer, []build.Artifact) error
+	Cleanup(context.Context, io.Writer) error
+	Prune(context.Context, io.Writer) error
+	HasDeployed() bool
+	HasBuilt() bool
+}
+
+// SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
 	build.Builder
 	deploy.Deployer
@@ -54,14 +65,15 @@ type SkaffoldRunner struct {
 	sync.Syncer
 	watch.Watcher
 
-	cache             *cache.Cache
-	runCtx            *runcontext.RunContext
-	labellers         []deploy.Labeller
-	builds            []build.Artifact
-	hasBuilt          bool
-	hasDeployed       bool
-	imageList         *kubernetes.ImageList
-	RPCServerShutdown func() error
+	cache                *cache.Cache
+	runCtx               *runcontext.RunContext
+	labellers            []deploy.Labeller
+	defaultLabeller      *deploy.DefaultLabeller
+	portForwardResources []*latest.PortForwardResource
+	builds               []build.Artifact
+	hasBuilt             bool
+	hasDeployed          bool
+	imageList            *kubernetes.ImageList
 }
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -89,7 +101,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "parsing deploy config")
 	}
 
-	defaultLabeller := NewLabeller("")
+	defaultLabeller := deploy.NewLabeller("")
 	labellers := []deploy.Labeller{opts, builder, deployer, tagger, defaultLabeller}
 
 	builder, tester, deployer = WithTimings(builder, tester, deployer, opts.CacheArtifacts)
@@ -102,26 +114,21 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}
 
-	shutdown, err := server.Initialize(runCtx)
-	if err != nil {
-		return nil, errors.Wrap(err, "initializing skaffold server")
-	}
-	event.InitializeState(runCtx)
-
-	event.LogSkaffoldMetadata(version.Get())
+	event.InitializeState(runCtx.Cfg.Build)
 
 	return &SkaffoldRunner{
-		Builder:           builder,
-		Tester:            tester,
-		Deployer:          deployer,
-		Tagger:            tagger,
-		Syncer:            kubectl.NewSyncer(runCtx.Namespaces),
-		Watcher:           watch.NewWatcher(trigger),
-		labellers:         labellers,
-		imageList:         kubernetes.NewImageList(),
-		cache:             artifactCache,
-		runCtx:            runCtx,
-		RPCServerShutdown: shutdown,
+		Builder:              builder,
+		Tester:               tester,
+		Deployer:             deployer,
+		Tagger:               tagger,
+		Syncer:               kubectl.NewSyncer(runCtx.Namespaces),
+		Watcher:              watch.NewWatcher(trigger),
+		labellers:            labellers,
+		defaultLabeller:      defaultLabeller,
+		portForwardResources: cfg.PortForward,
+		imageList:            kubernetes.NewImageList(),
+		cache:                artifactCache,
+		runCtx:               runCtx,
 	}, nil
 }
 
@@ -188,6 +195,31 @@ func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
 	}
 }
 
+func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	if cfg.IsKindCluster(r.runCtx.KubeContext) {
+		// With `kind`, docker images have to be loaded with the `kind` CLI.
+		if err := r.loadImagesInKindNodes(ctx, out, artifacts); err != nil {
+			return errors.Wrapf(err, "loading images into kind nodes")
+		}
+	}
+
+	err := r.Deployer.Deploy(ctx, out, artifacts, r.labellers)
+	r.hasDeployed = true
+	if err != nil {
+		return err
+	}
+	return r.performStatusCheck(out)
+}
+
+func (r *SkaffoldRunner) performStatusCheck(out io.Writer) error {
+	// Check if we need to perform deploy status
+	if r.runCtx.Opts.StatusCheck {
+		fmt.Fprintln(out, "Waiting for deployments to stabilize")
+		// TODO : Actually perform status check
+	}
+	return nil
+}
+
 // HasDeployed returns true if this runner has deployed something.
 func (r *SkaffoldRunner) HasDeployed() bool {
 	return r.hasDeployed
@@ -245,25 +277,4 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
 	return imageTags, nil
-}
-
-func (r *SkaffoldRunner) buildTestDeploy(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	bRes, err := r.BuildAndTest(ctx, out, artifacts)
-	if err != nil {
-		return err
-	}
-
-	// Update which images are logged.
-	for _, build := range bRes {
-		r.imageList.Add(build.Tag)
-	}
-
-	// Make sure all artifacts are redeployed. Not only those that were just built.
-	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
-
-	if err := r.deploy(ctx, out, r.builds); err != nil {
-		return errors.Wrap(err, "deploy failed")
-	}
-
-	return nil
 }

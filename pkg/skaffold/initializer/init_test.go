@@ -21,13 +21,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestPrintAnalyzeJSON(t *testing.T) {
 	tests := []struct {
 		description string
-		dockerfiles []string
+		dockerfiles []InitBuilder
 		images      []string
 		skipBuild   bool
 		shouldErr   bool
@@ -35,9 +36,9 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 	}{
 		{
 			description: "dockerfile and image",
-			dockerfiles: []string{"Dockerfile", "Dockerfile_2"},
+			dockerfiles: []InitBuilder{docker.Docker("Dockerfile1"), docker.Docker("Dockerfile2")},
 			images:      []string{"image1", "image2"},
-			expected:    "{\"dockerfiles\":[\"Dockerfile\",\"Dockerfile_2\"],\"images\":[\"image1\",\"image2\"]}",
+			expected:    "{\"dockerfiles\":[\"Dockerfile1\",\"Dockerfile2\"],\"images\":[\"image1\",\"image2\"]}",
 		},
 		{
 			description: "no dockerfile, skip build",
@@ -68,15 +69,15 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 func TestWalk(t *testing.T) {
 	emptyFile := ""
 	tests := []struct {
-		description         string
-		filesWithContents   map[string]string
-		expectedConfigs     []string
-		expectedDockerfiles []string
-		force               bool
-		shouldErr           bool
+		description       string
+		filesWithContents map[string]string
+		expectedConfigs   []string
+		expectedPaths     []string
+		force             bool
+		shouldErr         bool
 	}{
 		{
-			description: "should return correct k8 configs and dockerfiles",
+			description: "should return correct k8 configs and build files",
 			filesWithContents: map[string]string{
 				"config/test.yaml":  emptyFile,
 				"k8pod.yml":         emptyFile,
@@ -89,7 +90,7 @@ func TestWalk(t *testing.T) {
 				"config/test.yaml",
 				"k8pod.yml",
 			},
-			expectedDockerfiles: []string{
+			expectedPaths: []string{
 				"Dockerfile",
 				"deploy/Dockerfile",
 			},
@@ -108,7 +109,7 @@ func TestWalk(t *testing.T) {
 			expectedConfigs: []string{
 				"k8pod.yml",
 			},
-			expectedDockerfiles: []string{
+			expectedPaths: []string{
 				"Dockerfile",
 			},
 			shouldErr: false,
@@ -131,7 +132,7 @@ deploy:
 				"config/test.yaml",
 				"k8pod.yml",
 			},
-			expectedDockerfiles: []string{
+			expectedPaths: []string{
 				"Dockerfile",
 				"deploy/Dockerfile",
 			},
@@ -150,28 +151,92 @@ kind: Config
 deploy:
   kustomize: {}`,
 			},
-			force:               false,
-			expectedConfigs:     nil,
-			expectedDockerfiles: nil,
-			shouldErr:           true,
+			force:           false,
+			expectedConfigs: nil,
+			expectedPaths:   nil,
+			shouldErr:       true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir()
-			for file, contents := range test.filesWithContents {
-				tmpDir.Write(file, contents)
-			}
+			tmpDir := t.NewTempDir().
+				WriteFiles(test.filesWithContents)
 
-			potentialConfigs, dockerfiles, err := walk(tmpDir.Root(), test.force, testValidDocker)
+			t.Override(&docker.ValidateDockerfileFunc, testValidDocker)
+
+			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, detectBuilders)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), potentialConfigs)
-			t.CheckDeepEqual(tmpDir.Paths(test.expectedDockerfiles...), dockerfiles)
+			t.CheckDeepEqual(len(test.expectedPaths), len(builders))
+			for i := range builders {
+				t.CheckDeepEqual(tmpDir.Path(test.expectedPaths[i]), builders[i].Path())
+			}
 		})
 	}
 }
 
 func testValidDocker(path string) bool {
 	return strings.HasSuffix(path, "Dockerfile")
+}
+
+func TestResolveBuilderImages(t *testing.T) {
+	tests := []struct {
+		description      string
+		buildConfigs     []InitBuilder
+		images           []string
+		shouldMakeChoice bool
+		expectedPairs    []builderImagePair
+	}{
+		{
+			description:      "nothing to choose from",
+			buildConfigs:     []InitBuilder{},
+			images:           []string{},
+			shouldMakeChoice: false,
+			expectedPairs:    []builderImagePair{},
+		},
+		{
+			description:      "don't prompt for single dockerfile and image",
+			buildConfigs:     []InitBuilder{docker.Docker("Dockerfile1")},
+			images:           []string{"image1"},
+			shouldMakeChoice: false,
+			expectedPairs: []builderImagePair{
+				{
+					Builder:   docker.Docker("Dockerfile1"),
+					ImageName: "image1",
+				},
+			},
+		},
+		{
+			description:      "prompt for multiple builders and images",
+			buildConfigs:     []InitBuilder{docker.Docker("Dockerfile1"), docker.Docker("Dockerfile2")},
+			images:           []string{"image1", "image2"},
+			shouldMakeChoice: true,
+			expectedPairs: []builderImagePair{
+				{
+					Builder:   docker.Docker("Dockerfile1"),
+					ImageName: "image1",
+				},
+				{
+					Builder:   docker.Docker("Dockerfile2"),
+					ImageName: "image2",
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// Overrides promptUserForBuildConfig to choose first option rather than using the interactive menu
+			t.Override(&promptUserForBuildConfigFunc, func(image string, choices []string) string {
+				if !test.shouldMakeChoice {
+					t.FailNow()
+				}
+				return choices[0]
+			})
+
+			pairs := resolveBuilderImages(test.buildConfigs, test.images)
+
+			t.CheckDeepEqual(test.expectedPairs, pairs)
+		})
+	}
 }

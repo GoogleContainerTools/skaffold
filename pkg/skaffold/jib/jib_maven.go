@@ -26,6 +26,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Skaffold-Jib depends on functionality introduced after Jib-Maven 1.3.0
+const MinimumJibMavenVersion = "(1.3.0,)"
+
 // MavenCommand stores Maven executable and wrapper name
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
@@ -40,7 +43,7 @@ func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMa
 	return deps, nil
 }
 
-func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) *exec.Cmd {
+func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) exec.Cmd {
 	args := mavenArgs(a)
 	args = append(args, "jib:_skaffold-files-v2", "--quiet")
 
@@ -72,8 +75,7 @@ func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact
 }
 
 func mavenArgs(a *latest.JibMavenArtifact) []string {
-	var args []string
-
+	args := []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion}
 	args = append(args, a.Flags...)
 
 	if a.Profile != "" {

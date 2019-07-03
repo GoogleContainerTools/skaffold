@@ -23,9 +23,9 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -37,11 +37,6 @@ var (
 	buildFormatFlag = flags.NewTemplateFlag("{{json .}}", flags.BuildOutput{})
 )
 
-// For testing
-var (
-	createRunnerAndBuildFunc = createRunnerAndBuild
-)
-
 // NewCmdBuild describes the CLI command to build artifacts.
 func NewCmdBuild(out io.Writer) *cobra.Command {
 	return NewCmd(out, "build").
@@ -50,7 +45,7 @@ func NewCmdBuild(out io.Writer) *cobra.Command {
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
 			f.BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
-			f.VarP(buildFormatFlag, "output", "o", "Used in conjuction with --quiet flag. "+buildFormatFlag.Usage())
+			f.VarP(buildFormatFlag, "output", "o", "Used in conjunction with --quiet flag. "+buildFormatFlag.Usage())
 		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doBuild))
 }
@@ -66,29 +61,18 @@ func doBuild(ctx context.Context, out io.Writer) error {
 		color.Default.Fprintln(buildOut, "Complete in", time.Since(start))
 	}()
 
-	bRes, err := createRunnerAndBuildFunc(ctx, buildOut)
-	if err != nil {
-		return alwaysSucceedWhenCancelled(ctx, err)
-	}
+	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
+		bRes, err := r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
 
-	if quietFlag {
-		cmdOut := flags.BuildOutput{Builds: bRes}
-		if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
-			return errors.Wrap(err, "executing template")
+		if quietFlag {
+			cmdOut := flags.BuildOutput{Builds: bRes}
+			if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
+				return errors.Wrap(err, "executing template")
+			}
 		}
-	}
 
-	return nil
-}
-
-func createRunnerAndBuild(ctx context.Context, buildOut io.Writer) ([]build.Artifact, error) {
-	runner, config, err := newRunner(opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating runner")
-	}
-	defer runner.RPCServerShutdown()
-
-	return runner.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
+		return err
+	})
 }
 
 func targetArtifacts(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) []*latest.Artifact {

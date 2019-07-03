@@ -38,6 +38,6 @@ jobs:
       os: linux
       go: "1.11.x"
       before_install:
-        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.3.0/kind-linux-amd64
+        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
         - chmod +x ${HOME}/bin/kind
       script: make integration-in-kind

@@ -22,6 +22,7 @@ import (
 	"compress/gzip"
 	"io"
 	"io/ioutil"
+	"runtime"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -130,9 +131,9 @@ func TestCreateTarSubDirectory(t *testing.T) {
 
 func TestCreateTarEmptyFolder(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		tmpDir := t.NewTempDir()
-		tmpDir.Mkdir("empty")
-		t.Chdir(tmpDir.Root())
+		t.NewTempDir().
+			Mkdir("empty").
+			Chdir()
 
 		var b bytes.Buffer
 		err := CreateTar(&b, ".", []string{"empty"})
@@ -191,9 +192,59 @@ func TestCreateTarWithAbsolutePaths(t *testing.T) {
 	})
 }
 
+func TestAddFileToTarSymlinks(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("creating symlinks requires extra privileges on Windows")
+	}
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		files := map[string]string{
+			"foo":     "baz1",
+			"bar/bat": "baz2",
+			"bar/baz": "baz3",
+		}
+		tmpDir, paths := prepareFiles(t, files)
+
+		links := map[string]string{
+			"foo.link":     "foo",
+			"bat.link":     "bar/bat",
+			"bat/baz.link": "bar/baz",
+		}
+		for link, file := range links {
+			tmpDir.Symlink(file, link)
+			paths = append(paths, link)
+		}
+
+		var b bytes.Buffer
+		err := CreateTar(&b, tmpDir.Root(), tmpDir.Paths(paths...))
+		t.CheckNoError(err)
+
+		// Make sure the links match.
+		tr := tar.NewReader(&b)
+		for {
+			hdr, err := tr.Next()
+			if err == io.EOF {
+				break
+			}
+			t.CheckNoError(err)
+
+			if _, isFile := files[hdr.Name]; isFile {
+				continue
+			}
+
+			link, isLink := links[hdr.Name]
+			if !isLink {
+				t.Errorf("Unexpected file/link in tar: %s", hdr.Name)
+			}
+			if hdr.Linkname != link {
+				t.Errorf("Link destination doesn't match. %s != %s.", link, hdr.Linkname)
+			}
+		}
+	})
+}
+
 func prepareFiles(t *testutil.T, files map[string]string) (*testutil.TempDir, []string) {
-	tmpDir := t.NewTempDir()
-	t.Chdir(tmpDir.Root())
+	tmpDir := t.NewTempDir().Chdir()
 
 	var paths []string
 	for path, content := range files {

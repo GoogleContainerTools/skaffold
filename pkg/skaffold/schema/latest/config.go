@@ -20,7 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta11"
+const Version string = "skaffold/v1beta12"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -52,10 +52,35 @@ type Pipeline struct {
 
 	// Deploy describes how images are deployed.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
+
+	// PortForward describes user defined resources to port-forward.
+	PortForward []*PortForwardResource `yaml:"portForward,omitempty"`
 }
 
 func (c *SkaffoldConfig) GetVersion() string {
 	return c.APIVersion
+}
+
+// ResourceType describes the Kubernetes resource types used for port forwarding.
+type ResourceType string
+
+// PortForwardResource describes a resource to port forward.
+type PortForwardResource struct {
+	// Type is the Kubernetes type that should be port forwarded.
+	// Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.
+	Type ResourceType `yaml:"resourceType,omitempty"`
+
+	// Name is the name of the Kubernetes resource to port forward.
+	Name string `yaml:"resourceName,omitempty"`
+
+	// Namespace is the namespace of the resource to port forward.
+	Namespace string `yaml:"namespace,omitempty"`
+
+	// Port is the resource port that will be forwarded.
+	Port int32 `yaml:"port,omitempty"`
+
+	// LocalPort is the local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
+	LocalPort int32 `yaml:"localPort,omitempty"`
 }
 
 // BuildConfig contains all the configuration for the build steps.
@@ -498,6 +523,7 @@ type Sync struct {
 // SyncRule specifies which local files to sync to remote folders.
 type SyncRule struct {
 	// Src is a glob pattern to match local paths against.
+	// Directories should be delimited by `/` on all platforms.
 	// For example: `"css/**/*.css"`.
 	Src string `yaml:"src,omitempty" yamltags:"required"`
 
@@ -671,9 +697,9 @@ type DockerArtifact struct {
 	// NetworkMode is passed through to docker and overrides the
 	// network configuration of docker builder. If unset, use whatever
 	// is configured in the underlying docker daemon. Valid modes are
-	// `Host`: use the host's networking stack.
-	// `Bridge`: use the bridged network configuration.
-	// `None`: no networking in the container.
+	// `host`: use the host's networking stack.
+	// `bridge`: use the bridged network configuration.
+	// `none`: no networking in the container.
 	NetworkMode string `yaml:"network,omitempty"`
 
 	// CacheFrom lists the Docker images used as cache sources.

@@ -41,26 +41,39 @@ endif
 GO_GCFLAGS := "all=-trimpath=${PWD}"
 GO_ASMFLAGS := "all=-trimpath=${PWD}"
 
-GO_LDFLAGS :="
-GO_LDFLAGS += -extldflags \"${LDFLAGS}\"
-GO_LDFLAGS += -X $(VERSION_PACKAGE).version=$(VERSION)
+LDFLAGS_linux = -static
+LDFLAGS_darwin =
+LDFLAGS_windows =
+
+GO_BUILD_TAGS_linux := "osusergo netgo static_build"
+GO_BUILD_TAGS_darwin := ""
+GO_BUILD_TAGS_windows := ""
+
+
+GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitCommit=$(COMMIT)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTreeState=$(if $(shell git status --porcelain),dirty,clean)
-GO_LDFLAGS +="
+
+GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
+GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
+GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
+$(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
+
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	if [ "$(GOOS)" = "$*" ]; then \
-		GOOS=$* GOARCH=$(GOARCH) CGO_ENABLED=1 go build -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE);\
-	else \
-		docker build --build-arg PROJECT=$(REPOPATH) --build-arg TARGETS=$*/$(GOARCH) --build-arg FLAG_LDFLAGS=$(GO_LDFLAGS) -f deploy/cross/Dockerfile -t skaffold/cross .;\
-		docker run --rm --entrypoint sh skaffold/cross -c "cat /build/skaffold*" > $@;\
-	fi
+	docker build --build-arg PROJECT=$(REPOPATH) \
+		--build-arg TARGETS=$*/$(GOARCH) \
+		--build-arg FLAG_LDFLAGS=$(GO_LDFLAGS_$(*)) \
+		--build-arg FLAG_TAGS=$(GO_BUILD_TAGS_$(*)) \
+		-f deploy/cross/Dockerfile -t skaffold/cross .
+	docker run --rm --entrypoint sh skaffold/cross -c "cat /build/skaffold*" > $@
 
 %.sha256: %
 	shasum -a 256 $< > $@
@@ -86,7 +99,7 @@ test: $(BUILD_DIR)
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -ldflags $(GO_LDFLAGS) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
 integration: install
@@ -96,7 +109,7 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 15m
+	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 15m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
@@ -150,7 +163,7 @@ clean:
 
 .PHONY: kind-cluster
 kind-cluster:
-	kind get clusters | grep -q kind || kind create cluster
+	kind get clusters | grep -q kind || kind create cluster --image=kindest/node:v1.13.7@sha256:f3f1cfc2318d1eb88d91253a9c5fa45f6e9121b6b1e65aea6c7ef59f1549aaaf
 
 .PHONY: skaffold-builder
 skaffold-builder:
@@ -184,6 +197,7 @@ integration-in-docker: skaffold-builder
 		-e GKE_ZONE=$(GKE_ZONE) \
 		-e DOCKER_CONFIG=/root/.docker \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
+		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
 		gcr.io/$(GCP_PROJECT)/skaffold-integration
 
 .PHONY: submit-build-trigger

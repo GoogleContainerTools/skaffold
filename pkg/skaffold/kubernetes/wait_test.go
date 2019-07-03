@@ -27,14 +27,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
-	fake_testing "k8s.io/client-go/testing"
 )
-
-func watcher(w watch.Interface) func(a fake_testing.Action) (handled bool, ret watch.Interface, err error) {
-	return func(a fake_testing.Action) (handled bool, ret watch.Interface, err error) {
-		return true, w, nil
-	}
-}
 
 func TestWaitForPodSucceeded(t *testing.T) {
 	tests := []struct {
@@ -61,11 +54,11 @@ func TestWaitForPodSucceeded(t *testing.T) {
 			pod := &v1.Pod{}
 			client := fakekubeclientset.NewSimpleClientset(pod)
 
-			fakeWatcher := watch.NewFake()
-			client.PrependWatchReactor("*", watcher(fakeWatcher))
+			fakeWatcher := watch.NewRaceFreeFake()
+			client.PrependWatchReactor("*", testutil.SetupFakeWatcher(fakeWatcher))
 			fakePods := client.CoreV1().Pods("")
 
-			errChan := make(chan (error))
+			errChan := make(chan error)
 			go func() {
 				errChan <- WaitForPodSucceeded(context.TODO(), fakePods, "", 5*time.Second)
 			}()

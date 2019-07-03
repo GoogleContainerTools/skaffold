@@ -82,7 +82,6 @@ func TestSyncMap(t *testing.T) {
 		buildArgs   map[string]*string
 
 		expected  map[string][]string
-		fetched   []string
 		badReader bool
 		shouldErr bool
 	}{
@@ -91,69 +90,59 @@ func TestSyncMap(t *testing.T) {
 			dockerfile:  copyServerGo,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/server.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "add dependency",
 			dockerfile:  addNginx,
 			workspace:   "docker",
 			expected:    map[string][]string{"nginx.conf": {"/etc/nginx"}},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "copy subdirectory",
 			dockerfile:  copySubdirectory,
 			workspace:   ".",
 			expected:    map[string][]string{filepath.Join("docker", "nginx.conf"): {"/nginx.conf"}, filepath.Join("docker", "bar"): {"/bar"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "copy file after workdir",
 			dockerfile:  copyWorkdir,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/app/server.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "copy file with absolute dest after workdir",
 			dockerfile:  copyWorkdirAbsDest,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/bar"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "two copy commands with same destination",
 			dockerfile:  copySameDest,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/server.go"}, "test.conf": {"/test.conf"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "copy file with absolute dest dir after workdir",
 			dockerfile:  copyWorkdirAbsDestDir,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/bar/server.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "wildcards",
 			dockerfile:  wildcards,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/tmp/server.go"}, "worker.go": {"/tmp/worker.go"}},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "wildcards after workdir",
 			dockerfile:  wildcardsWorkdir,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/app/server.go"}, "worker.go": {"/app/worker.go"}},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "wildcards matches none",
 			dockerfile:  wildcardsMatchesNone,
 			workspace:   ".",
-			fetched:     []string{"nginx"},
 			shouldErr:   true,
 		},
 		{
@@ -161,14 +150,12 @@ func TestSyncMap(t *testing.T) {
 			dockerfile:  oneWilcardMatchesNone,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/tmp/server.go"}, "worker.go": {"/tmp/worker.go"}},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "wildcard matches directory, flattens contents",
 			dockerfile:  wildcardsMatchesDirectory,
 			workspace:   ".",
 			expected:    map[string][]string{".dot": {"/tmp/.dot"}, "Dockerfile": {"/tmp/Dockerfile"}, filepath.Join("docker", "bar"): {"/tmp/bar"}, filepath.Join("docker", "nginx.conf"): {"/tmp/nginx.conf"}, "file": {"/tmp/file"}, "server.go": {"/tmp/server.go"}, "test.conf": {"/tmp/test.conf"}, "worker.go": {"/tmp/worker.go"}},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "bad read",
@@ -180,54 +167,46 @@ func TestSyncMap(t *testing.T) {
 			description: "no dependencies on remote files",
 			dockerfile:  remoteFileAdd,
 			expected:    map[string][]string{},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "multistage dockerfile",
 			dockerfile:  multiStageDockerfile1,
 			expected:    map[string][]string{},
-			fetched:     []string{"golang:1.9.2", "gcr.io/distroless/base"},
 		},
 		{
 			description: "multistage dockerfile, only dependencies in the latest image are syncable",
 			dockerfile:  multiStageDockerfile2,
 			expected:    map[string][]string{"server.go": {"/server.go"}},
-			fetched:     []string{"golang:1.9.2", "gcr.io/distroless/base"},
 		},
 		{
 			description: "copy twice",
 			dockerfile:  multiCopy,
 			workspace:   ".",
 			expected:    map[string][]string{"test.conf": {"/etc/test1", "/etc/test2"}},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "env test",
 			dockerfile:  envTest,
 			workspace:   ".",
 			expected:    map[string][]string{"bar": {"/quux"}},
-			fetched:     []string{"busybox"},
 		},
 		{
 			description: "workdir depends on env",
 			dockerfile:  envWorkdirTest,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/bar/server.go"}},
-			fetched:     []string{"busybox"},
 		},
 		{
 			description: "multiple env test",
 			dockerfile:  multiEnvTest,
 			workspace:   ".",
 			expected:    map[string][]string{filepath.Join("docker", "nginx.conf"): {"/nginx.conf"}},
-			fetched:     []string{"busybox"},
 		},
 		{
 			description: "multi file copy",
 			dockerfile:  multiFileCopy,
 			workspace:   ".",
 			expected:    map[string][]string{"file": {"/file"}, "server.go": {"/server.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "dockerignore test",
@@ -235,7 +214,6 @@ func TestSyncMap(t *testing.T) {
 			ignore:      "bar\ndocker/*",
 			workspace:   ".",
 			expected:    map[string][]string{".dockerignore": {"/etc/.dockerignore"}, ".dot": {"/etc/.dot"}, "Dockerfile": {"/etc/Dockerfile"}, "file": {"/etc/file"}, "server.go": {"/etc/server.go"}, "test.conf": {"/etc/test.conf"}, "worker.go": {"/etc/worker.go"}},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "dockerignore dockerfile",
@@ -243,7 +221,6 @@ func TestSyncMap(t *testing.T) {
 			ignore:      "Dockerfile",
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/server.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "dockerignore with non canonical workspace",
@@ -251,14 +228,12 @@ func TestSyncMap(t *testing.T) {
 			workspace:   "docker/../docker",
 			ignore:      "bar\ndocker/*",
 			expected:    map[string][]string{".dockerignore": {"/files/.dockerignore"}, "Dockerfile": {"/files/Dockerfile"}, "nginx.conf": {"/etc/nginx", "/files/nginx.conf"}},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "ignore none",
 			dockerfile:  copyAll,
 			workspace:   ".",
 			expected:    map[string][]string{".dot": {"/.dot"}, "Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/docker/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {"/worker.go"}},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "ignore dotfiles",
@@ -266,7 +241,6 @@ func TestSyncMap(t *testing.T) {
 			workspace:   ".",
 			ignore:      ".*",
 			expected:    map[string][]string{"Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/docker/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {"/worker.go"}},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "ignore dotfiles (root syntax)",
@@ -274,7 +248,6 @@ func TestSyncMap(t *testing.T) {
 			workspace:   ".",
 			ignore:      "/.*",
 			expected:    map[string][]string{"Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/docker/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {"/worker.go"}},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "dockerignore with context in parent directory",
@@ -282,14 +255,12 @@ func TestSyncMap(t *testing.T) {
 			workspace:   "docker/..",
 			ignore:      "bar\ndocker/*\n*.go",
 			expected:    map[string][]string{".dockerignore": {"/etc/.dockerignore"}, ".dot": {"/etc/.dot"}, "Dockerfile": {"/etc/Dockerfile"}, "file": {"/etc/file"}, "test.conf": {"/etc/test.conf"}},
-			fetched:     []string{"nginx"},
 		},
 		{
 			description: "onbuild test",
 			dockerfile:  onbuild,
 			workspace:   ".",
 			expected:    map[string][]string{".dot": {"/onbuild/.dot"}, "Dockerfile": {"/onbuild/Dockerfile"}, "bar": {"/onbuild/bar"}, filepath.Join("docker", "bar"): {"/onbuild/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/onbuild/docker/nginx.conf"}, "file": {"/onbuild/file"}, "server.go": {"/onbuild/server.go"}, "test.conf": {"/onbuild/test.conf"}, "worker.go": {"/onbuild/worker.go"}},
-			fetched:     []string{"golang:onbuild"},
 		},
 		{
 			description: "onbuild with dockerignore",
@@ -297,14 +268,12 @@ func TestSyncMap(t *testing.T) {
 			workspace:   ".",
 			ignore:      "bar\ndocker/*",
 			expected:    map[string][]string{".dockerignore": {"/onbuild/.dockerignore"}, ".dot": {"/onbuild/.dot"}, "Dockerfile": {"/onbuild/Dockerfile"}, "file": {"/onbuild/file"}, "server.go": {"/onbuild/server.go"}, "test.conf": {"/onbuild/test.conf"}, "worker.go": {"/onbuild/worker.go"}},
-			fetched:     []string{"golang:onbuild"},
 		},
 		{
-			description: "onbuild error",
-			dockerfile:  onbuildError,
+			description: "base image not found",
+			dockerfile:  baseImageNotFound,
 			workspace:   ".",
-			expected:    map[string][]string{"file": {"/etc/file"}},
-			fetched:     []string{"noimage:latest"},
+			shouldErr:   true,
 		},
 		{
 			description: "build args",
@@ -312,7 +281,6 @@ func TestSyncMap(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
 			expected:    map[string][]string{"server.go": {"/server.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args with same prefix",
@@ -320,7 +288,6 @@ func TestSyncMap(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO2": util.StringPtr("worker.go")},
 			expected:    map[string][]string{"worker.go": {"/worker.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args with curly braces",
@@ -328,7 +295,6 @@ func TestSyncMap(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
 			expected:    map[string][]string{"server.go": {"/server.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args with extra whitespace",
@@ -336,28 +302,24 @@ func TestSyncMap(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
 			expected:    map[string][]string{"server.go": {"/server.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args with default value",
 			dockerfile:  copyServerGoBuildArgDefaultValue,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/server.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args with redefined default value",
 			dockerfile:  copyWorkerGoBuildArgRedefinedDefaultValue,
 			workspace:   ".",
 			expected:    map[string][]string{"worker.go": {"/worker.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "build args all defined a the top",
 			dockerfile:  copyServerGoBuildArgsAtTheTop,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/server.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "override default build arg",
@@ -365,7 +327,6 @@ func TestSyncMap(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("worker.go")},
 			expected:    map[string][]string{"worker.go": {"/worker.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "ignore build arg and use default arg value",
@@ -373,66 +334,50 @@ func TestSyncMap(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": nil},
 			expected:    map[string][]string{"server.go": {"/server.go"}},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "from base stage",
 			dockerfile:  fromStage,
 			workspace:   ".",
 			expected:    map[string][]string{},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "from base stage, ignoring case",
 			dockerfile:  fromStageIgnoreCase,
 			workspace:   ".",
 			expected:    map[string][]string{},
-			fetched:     []string{"ubuntu:14.04"},
 		},
 		{
 			description: "from scratch",
 			dockerfile:  fromScratch,
 			workspace:   ".",
 			expected:    map[string][]string{"file": {"/etc/file"}},
-			fetched:     nil,
 		},
 		{
 			description: "from scratch, ignoring case",
 			dockerfile:  fromScratchUppercase,
 			workspace:   ".",
 			expected:    map[string][]string{"file": {"/etc/file"}},
-			fetched:     nil,
 		},
 		{
 			description: "case sensitive",
 			dockerfile:  fromImageCaseSensitive,
 			workspace:   ".",
 			expected:    map[string][]string{"file": {"/etc/file"}},
-			fetched:     []string{"jboss/wildfly:14.0.1.Final"},
 		},
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmpDir, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-
-			originalWorkingDir := WorkingDir
-			WorkingDir = func(_ string, _ map[string]bool) (string, error) { return "/", nil }
-			defer func() { WorkingDir = originalWorkingDir }()
-
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			imageFetcher := fakeImageFetcher{}
-			RetrieveImage = imageFetcher.fetch
-			defer func() { RetrieveImage = retrieveImage }()
+			t.Override(&RetrieveImage, imageFetcher.fetch)
 
-			for _, file := range []string{"docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot"} {
-				tmpDir.Write(file, "")
-			}
+			tmpDir := t.NewTempDir().
+				Touch("docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot")
 
 			if !test.badReader {
 				tmpDir.Write(test.workspace+"/Dockerfile", test.dockerfile)
 			}
-
 			if test.ignore != "" {
 				tmpDir.Write(test.workspace+"/.dockerignore", test.ignore)
 			}
@@ -445,8 +390,8 @@ func TestSyncMap(t *testing.T) {
 				sort.Strings(dsts)
 			}
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, deps)
-			testutil.CheckDeepEqual(t, test.fetched, imageFetcher.fetched)
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expected, deps)
 		})
 	}
 }
@@ -524,38 +469,26 @@ ADD * .
 		},
 	}
 
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-
-	originalWorkingDir := WorkingDir
-	WorkingDir = func(_ string, _ map[string]bool) (string, error) { return "/", nil }
-	defer func() { WorkingDir = originalWorkingDir }()
-
-	imageFetcher := fakeImageFetcher{}
-	RetrieveImage = imageFetcher.fetch
-	defer func() { RetrieveImage = retrieveImage }()
-
-	for _, file := range []string{"subfolder/bar", "baz", "foo", "bar", "ignored/bar"} {
-		tmpDir.Write(file, "")
-	}
-
-	// ignore these files for the sake of shorter expectations
-	tmpDir.Write(".dockerignore", "Dockerfile\n.dockerignore\nignored/bar")
-
-	workspace := tmpDir.Path("")
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			tmpDir.Write("Dockerfile", test.dockerfile)
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			imageFetcher := fakeImageFetcher{}
+			t.Override(&RetrieveImage, imageFetcher.fetch)
+
+			tmpDir := t.NewTempDir().
+				Touch("subfolder/bar", "baz", "foo", "bar", "ignored/bar").
+				Write(".dockerignore", "Dockerfile\n.dockerignore\nignored/bar").
+				Write("Dockerfile", test.dockerfile)
 
 			for i := 0; i < repeat; i++ {
-				deps, err := SyncMap(context.Background(), workspace, "Dockerfile", nil, nil)
+				deps, err := SyncMap(context.Background(), tmpDir.Root(), "Dockerfile", nil, nil)
 
 				// destinations are not sorted, but for the test assertion they must be
 				for _, dsts := range deps {
 					sort.Strings(dsts)
 				}
 
-				testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, deps)
+				t.CheckNoError(err)
+				t.CheckDeepEqual(test.expected, deps)
 			}
 		})
 	}

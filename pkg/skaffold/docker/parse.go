@@ -58,9 +58,6 @@ type fromTo struct {
 }
 
 var (
-	// WorkingDir is overridden for unit testing
-	WorkingDir = RetrieveWorkingDir
-
 	// RetrieveImage is overridden for unit testing
 	RetrieveImage = retrieveImage
 )
@@ -98,6 +95,11 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 }
 
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
+	args, err := EvaluateBuildArgs(buildArgs)
+	if err != nil {
+		return errors.Wrap(err, "unable to evaluate build args")
+	}
+
 	for i, node := range nodes {
 		if node.Value != command.Arg {
 			continue
@@ -109,12 +111,8 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 
 		// build arg's value
 		var value string
-		var err error
-		if buildArgs[key] != nil {
-			value, err = evaluateBuildArgsValue(*buildArgs[key])
-			if err != nil {
-				return errors.Wrapf(err, "unable to get value for build arg: %s", key)
-			}
+		if args[key] != nil {
+			value = *args[key]
 		} else if len(keyValue) > 1 {
 			value = keyValue[1]
 		}
@@ -132,15 +130,6 @@ func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 		}
 	}
 	return nil
-}
-
-func evaluateBuildArgsValue(nameTemplate string) (string, error) {
-	tmpl, err := util.ParseEnvTemplate(nameTemplate)
-	if err != nil {
-		return "", errors.Wrap(err, "parsing template")
-	}
-
-	return util.ExecuteEnvTemplate(tmpl, nil)
 }
 
 func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, error) {
@@ -185,6 +174,10 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, e
 }
 
 func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegistries map[string]bool) ([]*copyCommand, error) {
+	stages := map[string]bool{
+		"scratch": true,
+	}
+
 	slex := shell.NewLex('\\')
 	var copied []*copyCommand
 
@@ -193,11 +186,26 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegis
 	for _, node := range nodes {
 		switch node.Value {
 		case command.From:
-			wd, err := WorkingDir(node.Next.Value, insecureRegistries)
-			if err != nil {
-				return nil, err
+			from := fromInstruction(node)
+			if from.as != "" {
+				// Stage names are case insensitive
+				stages[strings.ToLower(from.as)] = true
 			}
-			workdir = wd
+
+			// If `from` references a previous stage, then the `workdir`
+			// was already changed.
+			if !stages[strings.ToLower(from.image)] {
+				img, err := RetrieveImage(from.image, insecureRegistries)
+				if err != nil {
+					return nil, err
+				}
+
+				workdir = img.Config.WorkingDir
+				if workdir == "" {
+					workdir = "/"
+				}
+			}
+
 			if onlyLastImage {
 				copied = nil
 			}
@@ -309,8 +317,7 @@ func parseOnbuild(image string, insecureRegistries map[string]bool) ([]*parser.N
 	// Image names are case SENSITIVE
 	img, err := RetrieveImage(image, insecureRegistries)
 	if err != nil {
-		logrus.Warnf("Error processing base image (%s) for ONBUILD triggers: %s. Dependencies may be incomplete.", image, err)
-		return []*parser.Node{}, nil
+		return nil, fmt.Errorf("processing base image (%s) for ONBUILD triggers: %s", image, err)
 	}
 
 	if len(img.Config.OnBuild) == 0 {

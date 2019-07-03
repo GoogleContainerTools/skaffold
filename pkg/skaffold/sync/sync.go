@@ -33,6 +33,7 @@ import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -150,6 +151,7 @@ func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) (
 }
 
 func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd, namespaces []string) error {
+	errs, ctx := errgroup.WithContext(ctx)
 	if len(files) == 0 {
 		return nil
 	}
@@ -174,9 +176,10 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 
 				cmds := cmdFn(ctx, p, c, files)
 				for _, cmd := range cmds {
-					if _, err := util.RunCmdOut(cmd); err != nil {
+					errs.Go(func() error {
+						_, err := util.RunCmdOut(cmd)
 						return err
-					}
+					})
 					numSynced++
 				}
 			}
@@ -187,5 +190,5 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 		return errors.New("didn't sync any files")
 	}
 
-	return nil
+	return errs.Wait()
 }

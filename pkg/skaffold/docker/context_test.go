@@ -29,17 +29,16 @@ import (
 func TestDockerContext(t *testing.T) {
 	for _, dir := range []string{".", "sub"} {
 		testutil.Run(t, dir, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().
-				Write(dir+"/files/ignored.txt", "").
-				Write(dir+"/files/included.txt", "").
-				Write(dir+"/.dockerignore", "**/ignored.txt\nalsoignored.txt").
-				Write(dir+"/Dockerfile", "FROM alpine\nCOPY ./files /files").
-				Write(dir+"/ignored.txt", "").
-				Write(dir+"/alsoignored.txt", "")
-			t.Chdir(tmpDir.Root())
-
 			imageFetcher := fakeImageFetcher{}
 			t.Override(&RetrieveImage, imageFetcher.fetch)
+			t.NewTempDir().
+				Write(dir+"/.dockerignore", "**/ignored.txt\nalsoignored.txt").
+				Write(dir+"/Dockerfile", "FROM busybox\nCOPY ./files /files").
+				Touch(dir + "/files/ignored.txt").
+				Touch(dir + "/files/included.txt").
+				Touch(dir + "/ignored.txt").
+				Touch(dir + "/alsoignored.txt").
+				Chdir()
 
 			artifact := &latest.DockerArtifact{
 				DockerfilePath: "Dockerfile",
