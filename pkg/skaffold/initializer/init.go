@@ -358,7 +358,7 @@ func printAnalyzeJSON(out io.Writer, skipBuild, enableJibInit bool, pairs []buil
 		a := struct {
 			Dockerfiles []string `json:"dockerfiles,omitempty"`
 			Images      []string `json:"images,omitempty"`
-		}{}
+		}{Images: unresolvedImages}
 
 		for _, pair := range pairs {
 			if pair.Builder.Name() == "Docker" {
@@ -370,9 +370,6 @@ func printAnalyzeJSON(out io.Writer, skipBuild, enableJibInit bool, pairs []buil
 			if config.Name() == "Docker" {
 				a.Dockerfiles = append(a.Dockerfiles, config.Path())
 			}
-		}
-		for _, image := range unresolvedImages {
-			a.Images = append(a.Images, image)
 		}
 
 		contents, err := json.Marshal(a)
