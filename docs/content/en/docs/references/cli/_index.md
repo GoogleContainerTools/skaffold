@@ -538,7 +538,6 @@ Global Flags:
 ```
 Env vars:
 
-* `SKAFFOLD_XXENABLEJIBINIT` (same as `--XXenableJibInit`)
 * `SKAFFOLD_ANALYZE` (same as `--analyze`)
 * `SKAFFOLD_ARTIFACT` (same as `--artifact`)
 * `SKAFFOLD_COMPOSE_FILE` (same as `--compose-file`)
