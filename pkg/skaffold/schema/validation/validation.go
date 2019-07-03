@@ -36,6 +36,7 @@ func Process(config *latest.SkaffoldConfig) error {
 	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
 	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
 	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
+	errs = append(errs, validatePortForwardResources(config.PortForward)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -66,12 +67,10 @@ func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 // validateCustomDependencies makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
 func validateCustomDependencies(artifacts []*latest.Artifact) (errs []error) {
 	for _, a := range artifacts {
-		if a.CustomArtifact == nil {
+		if a.CustomArtifact == nil || a.CustomArtifact.Dependencies == nil || a.CustomArtifact.Dependencies.Ignore == nil {
 			continue
 		}
-		if a.CustomArtifact.Dependencies.Ignore == nil {
-			continue
-		}
+
 		if a.CustomArtifact.Dependencies.Dockerfile != nil || a.CustomArtifact.Dependencies.Command != "" {
 			errs = append(errs, fmt.Errorf("artifact %s has invalid dependencies; dependencies.ignore can only be used in conjunction with dependencies.paths", a.ImageName))
 		}
@@ -137,6 +136,30 @@ func validateSyncRules(artifacts []*latest.Artifact) []error {
 					errs = append(errs, err)
 				}
 			}
+		}
+	}
+	return errs
+}
+
+// validatePortForwardResources checks that all user defined port forward resources
+// have a valid resourceType
+func validatePortForwardResources(pfrs []*latest.PortForwardResource) []error {
+	var errs []error
+	validResourceTypes := map[string]struct{}{
+		"pod":                   {},
+		"deployment":            {},
+		"service":               {},
+		"replicaset":            {},
+		"replicationcontroller": {},
+		"statefulset":           {},
+		"daemonset":             {},
+		"cronjob":               {},
+		"job":                   {},
+	}
+	for _, pfr := range pfrs {
+		resourceType := strings.ToLower(string(pfr.Type))
+		if _, ok := validResourceTypes[resourceType]; !ok {
+			errs = append(errs, fmt.Errorf("%s is not a valid resource type for port forwarding", pfr.Type))
 		}
 	}
 	return errs

@@ -500,6 +500,9 @@ func TestValidateCustomDependencies(t *testing.T) {
 				Ignore:  []string{"ignoreme"},
 			},
 			expectedErrors: 1,
+		}, {
+			description:  "nil dependencies",
+			dependencies: nil,
 		},
 	}
 	for _, test := range tests {
@@ -515,6 +518,39 @@ func TestValidateCustomDependencies(t *testing.T) {
 			errs := validateCustomDependencies([]*latest.Artifact{artifact})
 
 			t.CheckDeepEqual(test.expectedErrors, len(errs))
+		})
+	}
+}
+
+func TestValidatePortForwardResources(t *testing.T) {
+	tests := []struct {
+		resourceType string
+		shouldErr    bool
+	}{
+		{resourceType: "pod"},
+		{resourceType: "Deployment"},
+		{resourceType: "service"},
+		{resourceType: "replicaset"},
+		{resourceType: "replicationcontroller"},
+		{resourceType: "statefulset"},
+		{resourceType: "daemonset"},
+		{resourceType: "cronjob"},
+		{resourceType: "job"},
+		{resourceType: "dne", shouldErr: true},
+	}
+	for _, test := range tests {
+		t.Run(test.resourceType, func(t *testing.T) {
+			pfrs := []*latest.PortForwardResource{
+				{
+					Type: latest.ResourceType(test.resourceType),
+				},
+			}
+			errs := validatePortForwardResources(pfrs)
+			var err error
+			if len(errs) > 0 {
+				err = errs[0]
+			}
+			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
 }

@@ -804,7 +804,7 @@
     "GoogleCloudBuild": {
       "properties": {
         "diskSizeGb": {
-          "type": "number",
+          "type": "integer",
           "description": "disk size of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
           "x-intellij-html-description": "disk size of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>."
         },
@@ -1472,6 +1472,45 @@
       "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
       "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
     },
+    "PortForwardResource": {
+      "properties": {
+        "localPort": {
+          "type": "integer",
+          "description": "local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.",
+          "x-intellij-html-description": "local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. <em>Optional</em>."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "namespace of the resource to port forward.",
+          "x-intellij-html-description": "namespace of the resource to port forward."
+        },
+        "port": {
+          "type": "integer",
+          "description": "resource port that will be forwarded.",
+          "x-intellij-html-description": "resource port that will be forwarded."
+        },
+        "resourceName": {
+          "type": "string",
+          "description": "name of the Kubernetes resource to port forward.",
+          "x-intellij-html-description": "name of the Kubernetes resource to port forward."
+        },
+        "resourceType": {
+          "$ref": "#/definitions/ResourceType",
+          "description": "Kubernetes type that should be port forwarded. Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.",
+          "x-intellij-html-description": "Kubernetes type that should be port forwarded. Acceptable resource types include: <code>Service</code>, <code>Pod</code> and Controller resource type that has a pod spec: <code>ReplicaSet</code>, <code>ReplicationController</code>, <code>Deployment</code>, <code>StatefulSet</code>, <code>DaemonSet</code>, <code>Job</code>, <code>CronJob</code>."
+        }
+      },
+      "preferredOrder": [
+        "resourceType",
+        "resourceName",
+        "namespace",
+        "port",
+        "localPort"
+      ],
+      "additionalProperties": false,
+      "description": "describes a resource to port forward.",
+      "x-intellij-html-description": "describes a resource to port forward."
+    },
     "Profile": {
       "required": [
         "name"
@@ -1511,6 +1550,14 @@
           "description": "patches applied to the configuration. Patches use the JSON patch notation.",
           "x-intellij-html-description": "patches applied to the configuration. Patches use the JSON patch notation."
         },
+        "portForward": {
+          "items": {
+            "$ref": "#/definitions/PortForwardResource"
+          },
+          "type": "array",
+          "description": "describes user defined resources to port-forward.",
+          "x-intellij-html-description": "describes user defined resources to port-forward."
+        },
         "test": {
           "items": {
             "$ref": "#/definitions/TestCase"
@@ -1522,11 +1569,12 @@
       },
       "preferredOrder": [
         "name",
-        "patches",
-        "activation",
         "build",
         "test",
-        "deploy"
+        "deploy",
+        "portForward",
+        "patches",
+        "activation"
       ],
       "additionalProperties": false,
       "description": "*beta* profiles are used to override any `build`, `test` or `deploy` configuration.",
@@ -1580,6 +1628,11 @@
       "description": "describes the resource requirements for the kaniko pod.",
       "x-intellij-html-description": "describes the resource requirements for the kaniko pod."
     },
+    "ResourceType": {
+      "type": "string",
+      "description": "describes the Kubernetes resource types used for port forwarding.",
+      "x-intellij-html-description": "describes the Kubernetes resource types used for port forwarding."
+    },
     "ShaTagger": {
       "description": "*beta* tags images with their sha256 digest.",
       "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest."
@@ -1611,6 +1664,14 @@
           "x-intellij-html-description": "always <code>Config</code>.",
           "default": "Config"
         },
+        "portForward": {
+          "items": {
+            "$ref": "#/definitions/PortForwardResource"
+          },
+          "type": "array",
+          "description": "describes user defined resources to port-forward.",
+          "x-intellij-html-description": "describes user defined resources to port-forward."
+        },
         "profiles": {
           "items": {
             "$ref": "#/definitions/Profile"
@@ -1631,10 +1692,11 @@
       "preferredOrder": [
         "apiVersion",
         "kind",
-        "profiles",
         "build",
         "test",
-        "deploy"
+        "deploy",
+        "portForward",
+        "profiles"
       ],
       "additionalProperties": false,
       "description": "holds the fields parsed from the Skaffold configuration file (skaffold.yaml).",

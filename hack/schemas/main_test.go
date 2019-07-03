@@ -45,6 +45,7 @@ func TestGenerators(t *testing.T) {
 		{name: "inline"},
 		{name: "inline-anyof"},
 		{name: "inline-hybrid"},
+		{name: "integer"},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
