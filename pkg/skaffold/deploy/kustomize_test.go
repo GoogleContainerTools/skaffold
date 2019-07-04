@@ -161,6 +161,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 		yaml        string
 		expected    []string
 		shouldErr   bool
+		createFiles map[string]string
 	}{
 		{
 			description: "resources",
@@ -204,15 +205,27 @@ func TestDependenciesForKustomization(t *testing.T) {
 			expected: []string{"kustomization.yaml", "secret1.file", "secret2.file", "secret3.file"},
 		},
 		{
-			description: "unknown base",
-			yaml:        `bases: [other]`,
-			shouldErr:   true,
+			description: "base exists locally",
+			yaml:        `bases: [base]`,
+			expected:    []string{"base/kustomization.yaml", "base/app.yaml", "kustomization.yaml"},
+			createFiles: map[string]string{
+				"base/kustomization.yaml": `resources: [app.yaml]`,
+			},
+		},
+		{
+			description: "missing base locally",
+			yaml:        `bases: [missing-or-remote-base]`,
+			expected:    []string{"kustomization.yaml"},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir().
 				Write("kustomization.yaml", test.yaml)
+
+			for path, contents := range test.createFiles {
+				tmpDir.Write(path, contents)
+			}
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				Cfg: &latest.Pipeline{

@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 
@@ -167,6 +168,12 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 	}
 
 	for _, base := range content.Bases {
+		// If the file  doesn't exist locally, we can assume it's a remote file and
+		// skip it, since we can't monitor remote files. Kustomize itself will
+		// handle invalid/missing files.
+		if !fileExistsLocally(base, dir) {
+			continue
+		}
 		baseDeps, err := dependenciesForKustomization(filepath.Join(dir, base))
 		if err != nil {
 			return nil, err
@@ -201,6 +208,17 @@ func joinPaths(root string, paths []string) []string {
 	}
 
 	return list
+}
+
+func fileExistsLocally(filename string, workingDir string) bool {
+	path := filename
+	if !filepath.IsAbs(filename) {
+		path = filepath.Join(workingDir, filename)
+	}
+	if _, err := os.Stat(path); err == nil {
+		return true
+	}
+	return false
 }
 
 // Dependencies lists all the files that can change what needs to be deployed.
