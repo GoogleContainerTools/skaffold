@@ -1,5 +1,9 @@
 language: go
 
+dist: xenial
+env:
+  - DOCKER_BUILDKIT=1
+
 git:
   submodules: false
 
