@@ -17,3 +17,35 @@ jobs:
       script:
       - df -h
       - make integration-in-kind
+    - os: linux
+      go: "1.12.x"
+      before_install:
+        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
+        - chmod +x ${HOME}/bin/kind
+      script:
+      - df -h
+      - make integration-in-kind
+    - os: linux
+      go: "1.12.x"
+      before_install:
+        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
+        - chmod +x ${HOME}/bin/kind
+      script:
+      - df -h
+      - make integration-in-kind
+    - os: linux
+      go: "1.12.x"
+      before_install:
+        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
+        - chmod +x ${HOME}/bin/kind
+      script:
+      - df -h
+      - make integration-in-kind
+    - os: linux
+      go: "1.12.x"
+      before_install:
+        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
+        - chmod +x ${HOME}/bin/kind
+      script:
+      - df -h
+      - make integration-in-kind
