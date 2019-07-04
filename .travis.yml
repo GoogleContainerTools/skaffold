@@ -8,35 +8,27 @@ go_import_path: github.com/GoogleContainerTools/skaffold
 jobs:
   include:
     - os: linux
-      go: "1.11.x"
+      go: "1.12.x"
       script:
         - make
         - make test
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - os: osx
-      go: "1.11.x"
+      go: "1.12.x"
       script:
         - make
         - make test
       after_success:
         - bash <(curl -s https://codecov.io/bash)
-    - os: linux
-      go: "1.12.x"
-      script:
-        - make
-    - os: osx
-      go: "1.12.x"
-      script:
-        - make
     - os: windows
-      go: "1.11.x"
+      go: "1.12.x"
       script:
         - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
         - go test -short -timeout 60s ./...
     - stage: integration
       os: linux
-      go: "1.11.x"
+      go: "1.12.x"
       before_install:
         - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
         - chmod +x ${HOME}/bin/kind
