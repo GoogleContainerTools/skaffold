@@ -273,7 +273,7 @@ func TestSetProxy(t *testing.T) {
 			description:    "set https proxy",
 			clusterDetails: &latest.ClusterDetails{HTTPSProxy: "proxy.com"},
 			env:            []v1.EnvVar{},
-			expectedArgs:   []v1.EnvVar{{Name: "HTTP_PROXY", Value: "proxy.com"}},
+			expectedArgs:   []v1.EnvVar{{Name: "HTTPS_PROXY", Value: "proxy.com"}},
 		}, {
 			description:    "set http and https proxy",
 			clusterDetails: &latest.ClusterDetails{HTTPProxy: "proxy.com", HTTPSProxy: "proxy.com"},
