@@ -511,11 +511,32 @@ var pod = &v1.Pod{
 	},
 }
 
+var nonRunningPod = &v1.Pod{
+	ObjectMeta: meta_v1.ObjectMeta{
+		Name: "podname",
+		Labels: map[string]string{
+			"app.kubernetes.io/managed-by": "skaffold-dirty",
+		},
+	},
+	Status: v1.PodStatus{
+		Phase: v1.PodPending,
+	},
+	Spec: v1.PodSpec{
+		Containers: []v1.Container{
+			{
+				Name:  "container_name",
+				Image: "gcr.io/k8s-skaffold:123",
+			},
+		},
+	},
+}
+
 func TestPerform(t *testing.T) {
 	var tests = []struct {
 		description string
 		image       string
 		files       syncMap
+		pod         *v1.Pod
 		cmdFn       func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd
 		cmdErr      error
 		clientErr   error
@@ -526,6 +547,7 @@ func TestPerform(t *testing.T) {
 			description: "no error",
 			image:       "gcr.io/k8s-skaffold:123",
 			files:       syncMap{"test.go": {"/test.go"}},
+			pod:         pod,
 			cmdFn:       fakeCmd,
 			expected:    []string{"copy test.go /test.go"},
 		},
@@ -533,6 +555,7 @@ func TestPerform(t *testing.T) {
 			description: "cmd error",
 			image:       "gcr.io/k8s-skaffold:123",
 			files:       syncMap{"test.go": {"/test.go"}},
+			pod:         pod,
 			cmdFn:       fakeCmd,
 			cmdErr:      fmt.Errorf(""),
 			shouldErr:   true,
@@ -541,6 +564,7 @@ func TestPerform(t *testing.T) {
 			description: "client error",
 			image:       "gcr.io/k8s-skaffold:123",
 			files:       syncMap{"test.go": {"/test.go"}},
+			pod:         pod,
 			cmdFn:       fakeCmd,
 			clientErr:   fmt.Errorf(""),
 			shouldErr:   true,
@@ -549,6 +573,15 @@ func TestPerform(t *testing.T) {
 			description: "no copy",
 			image:       "gcr.io/different-pod:123",
 			files:       syncMap{"test.go": {"/test.go"}},
+			pod:         pod,
+			cmdFn:       fakeCmd,
+			shouldErr:   true,
+		},
+		{
+			description: "Skip sync when pod is not running",
+			image:       "gcr.io/k8s-skaffold:123",
+			files:       syncMap{"test.go": {"/test.go"}},
+			pod:         nonRunningPod,
 			cmdFn:       fakeCmd,
 			shouldErr:   true,
 		},
@@ -559,7 +592,7 @@ func TestPerform(t *testing.T) {
 
 			t.Override(&util.DefaultExecCommand, cmdRecord)
 			t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
-				return fake.NewSimpleClientset(pod), test.clientErr
+				return fake.NewSimpleClientset(test.pod), test.clientErr
 			})
 
 			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
