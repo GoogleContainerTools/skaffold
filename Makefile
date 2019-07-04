@@ -110,7 +110,7 @@ ifeq ($(GCP_ONLY),true)
 		--project $(GCP_PROJECT)
 endif
 	kubectl get nodes -oyaml
-	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 15m $(INTEGRATION_TEST_ARGS)
+	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
