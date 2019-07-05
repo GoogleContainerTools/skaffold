@@ -19,7 +19,6 @@ package runner
 import (
 	"context"
 	"errors"
-	"io"
 	"io/ioutil"
 	"testing"
 
@@ -36,7 +35,7 @@ func (t *NoopMonitor) Register(func() ([]string, error), func(filemon.Events)) e
 	return nil
 }
 
-func (t *NoopMonitor) Run(context.Context, io.Writer, bool) error {
+func (t *NoopMonitor) Run(bool) error {
 	return nil
 }
 
@@ -48,7 +47,7 @@ func (t *FailMonitor) Register(func() ([]string, error), func(filemon.Events)) e
 	return nil
 }
 
-func (t *FailMonitor) Run(context.Context, io.Writer, bool) error {
+func (t *FailMonitor) Run(bool) error {
 	return errors.New("BUG")
 }
 
@@ -65,7 +64,7 @@ func (t *TestMonitor) Register(deps func() ([]string, error), onChange func(file
 	return nil
 }
 
-func (t *TestMonitor) Run(ctx context.Context, out io.Writer, _ bool) error {
+func (t *TestMonitor) Run(bool) error {
 	evt := t.events[t.testBench.currentCycle]
 
 	for _, file := range evt.Modified {
