@@ -14,11 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if [[ "${TRAVIS}" == "true" ]] && [[ "${TRAVIS_OS_NAME}" != "linux" ]]; then
+   printf "On Travis CI, we only test proto generation on Linux\n"
+    exit 0
+fi
 
-cd $GOPATH/src/github.com/GoogleContainerTools/skaffold
-docker build -t generate-proto -f hack/proto/Dockerfile --target compare .
+export PROTO_PATH=pkg/skaffold/server/proto
+docker build -t generate-proto -f hack/proto/Dockerfile --target compare ${PROTO_PATH}
 if [ $? -ne 0 ]; then
    printf "\nGenerated proto files aren't updated. Please run ./hack/generate-proto.sh\n"
+   exit 1
 fi
 
 printf "\nGenerated proto files are updated!\n"

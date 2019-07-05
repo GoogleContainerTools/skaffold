@@ -23,6 +23,7 @@ if [ $? -ne 0 ]; then
    exit 1
 fi
 
+set -e
 
 docker run $CONTAINER_NAME cat /${PROTO_PATH}/skaffold.pb.go > ${PROTO_PATH}/skaffold.pb.go
 docker run $CONTAINER_NAME cat /${PROTO_PATH}/skaffold.pb.gw.go > ${PROTO_PATH}/skaffold.pb.gw.go
