@@ -169,6 +169,12 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 		}
 
 		for _, p := range pods.Items {
+
+			if p.Status.Phase != v1.PodRunning {
+				logrus.Infof("Skipping sync with pod %s because it's not running", p.Name)
+				continue
+			}
+
 			for _, c := range p.Spec.Containers {
 				if c.Image != image {
 					continue
