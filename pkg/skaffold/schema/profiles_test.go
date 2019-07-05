@@ -375,8 +375,10 @@ func TestActivatedProfiles(t *testing.T) {
 				{Name: "activated", Activation: []latest.Activation{{KubeContext: "prod-context"}}},
 				{Name: "not-activated", Activation: []latest.Activation{{KubeContext: "dev-context"}}},
 				{Name: "also-activated", Activation: []latest.Activation{{KubeContext: "!dev-context"}}},
+				{Name: "activated-regexp", Activation: []latest.Activation{{KubeContext: "prod-.*"}}},
+				{Name: "not-activated-regexp", Activation: []latest.Activation{{KubeContext: "dev-.*"}}},
 			},
-			expected: []string{"activated", "also-activated"},
+			expected: []string{"activated", "also-activated", "activated-regexp"},
 		}, {
 			description: "AND between activation criteria",
 			opts: &cfg.SkaffoldOptions{
