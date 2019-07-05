@@ -40,7 +40,7 @@ func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
 	l.Trigger.LogWatchToUser(out)
 }
 
-// Listen listens to a trigger, and when one is received, computes file changes and
+// WatchForChanges listens to a trigger, and when one is received, computes file changes and
 // conditionally runs the dev loop.
 func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, devLoop func(context.Context, io.Writer) error) error {
 	ctxTrigger, cancelTrigger := context.WithCancel(ctx)
@@ -51,7 +51,7 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 	}
 
 	// exit if file monitor fails the first time
-	if err := l.Monitor.Run(ctx, out, l.Trigger.Debounce()); err != nil {
+	if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
 		return errors.Wrap(err, "failed to monitor files")
 	}
 
@@ -62,7 +62,7 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 		case <-ctx.Done():
 			return nil
 		case <-trigger:
-			if err := l.Monitor.Run(ctx, out, l.Trigger.Debounce()); err != nil {
+			if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
 				logrus.Warnf("error computing file changes: %s", err.Error())
 				logrus.Warnf("skaffold may not run successfully!")
 			}
