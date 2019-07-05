@@ -17,16 +17,13 @@ limitations under the License.
 package filemon
 
 import (
-	"context"
-	"io"
-
 	"github.com/pkg/errors"
 )
 
 // Monitor monitors files changes for multiples components.
 type Monitor interface {
 	Register(deps func() ([]string, error), onChange func(Events)) error
-	Run(ctx context.Context, out io.Writer, debounce bool) error
+	Run(debounce bool) error
 	Reset()
 }
 
@@ -69,7 +66,7 @@ func (w *watchList) Reset() {
 }
 
 // Run watches files until the context is cancelled or an error occurs.
-func (w *watchList) Run(ctx context.Context, out io.Writer, debounce bool) error {
+func (w *watchList) Run(debounce bool) error {
 	changed := 0
 	for i, component := range w.components {
 		state, err := Stat(component.deps)

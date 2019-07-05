@@ -51,7 +51,7 @@ type TestBench struct {
 	deployErrors []error
 
 	devLoop        func(context.Context, io.Writer) error
-	firstMonitor   func(context.Context, io.Writer, bool) error
+	firstMonitor   func(bool) error
 	cycles         int
 	currentCycle   int
 	currentActions Actions
@@ -166,9 +166,9 @@ func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
 
-func (t *TestBench) WatchForChanges(_ context.Context, _ io.Writer, _ func(context.Context, io.Writer) error) error {
+func (t *TestBench) WatchForChanges(context.Context, io.Writer, func(context.Context, io.Writer) error) error {
 	// don't actually call the monitor here, because extra actions would be added
-	if err := t.firstMonitor(context.Background(), ioutil.Discard, true); err != nil {
+	if err := t.firstMonitor(true); err != nil {
 		return err
 	}
 	for i := 0; i < t.cycles; i++ {
@@ -216,13 +216,13 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 	runner.monitor = monitor
 
 	testBench.devLoop = func(context.Context, io.Writer) error {
-		if err := monitor.Run(context.Background(), ioutil.Discard, true); err != nil {
+		if err := monitor.Run(true); err != nil {
 			return err
 		}
 		return runner.doDev(context.Background(), ioutil.Discard)
 	}
 
-	testBench.firstMonitor = func(context.Context, io.Writer, bool) error {
+	testBench.firstMonitor = func(bool) error {
 		// default to noop so we don't add extra actions
 		return nil
 	}

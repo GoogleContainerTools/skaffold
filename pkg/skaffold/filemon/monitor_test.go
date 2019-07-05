@@ -17,9 +17,6 @@ limitations under the License.
 package filemon
 
 import (
-	"context"
-	"io/ioutil"
-	"sync"
 	"testing"
 	"time"
 
@@ -29,76 +26,59 @@ import (
 func TestFileMonitor(t *testing.T) {
 	var tests = []struct {
 		description string
-		update      func(folder *testutil.TempDir)
+		makeChanges func(folder *testutil.TempDir)
 	}{
 		{
 			description: "file change",
-			update: func(folder *testutil.TempDir) {
+			makeChanges: func(folder *testutil.TempDir) {
 				folder.Chtimes("file", time.Now().Add(2*time.Second))
 			},
 		},
 		{
 			description: "file delete",
-			update: func(folder *testutil.TempDir) {
+			makeChanges: func(folder *testutil.TempDir) {
 				folder.Remove("file")
 			},
 		},
 		{
 			description: "file create",
-			update: func(folder *testutil.TempDir) {
-				folder.Write("new", "content")
+			makeChanges: func(folder *testutil.TempDir) {
+				folder.Touch("new")
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().
-				Write("file", "content")
+			tmpDir := t.NewTempDir().Touch("file")
 
-			folderChanged := newCallback()
-
-			// Watch folder
 			monitor := NewMonitor()
-			err := monitor.Register(tmpDir.List, folderChanged.call)
-			t.CheckNoError(err)
 
-			// Run the watcher
-			ctx, cancel := context.WithCancel(context.Background())
-			var stopped sync.WaitGroup
-			stopped.Add(1)
-			go func() {
-				err = monitor.Run(ctx, ioutil.Discard, false)
-				stopped.Done()
-				t.CheckNoError(err)
-			}()
+			// Register files
+			changed := callback{}
+			err := monitor.Register(tmpDir.List, changed.call)
+			t.CheckErrorAndDeepEqual(false, err, 0, changed.calls())
 
-			test.update(tmpDir)
+			test.makeChanges(tmpDir)
 
-			// Wait for the callbacks
-			folderChanged.wait()
-			cancel()
-			stopped.Wait() // Make sure the watcher is stopped before deleting the tmp folder
+			// Verify the Monitor detects a change
+			err = monitor.Run(false)
+			t.CheckErrorAndDeepEqual(false, err, 1, changed.calls())
+
+			// Verify the Monitor doesn't detect more changes
+			err = monitor.Run(false)
+			t.CheckErrorAndDeepEqual(false, err, 1, changed.calls())
 		})
 	}
 }
 
 type callback struct {
-	wg *sync.WaitGroup
-}
-
-func newCallback() *callback {
-	var wg sync.WaitGroup
-	wg.Add(1)
-
-	return &callback{
-		wg: &wg,
-	}
+	events []Events
 }
 
 func (c *callback) call(e Events) {
-	c.wg.Done()
+	c.events = append(c.events, e)
 }
 
-func (c *callback) wait() {
-	c.wg.Wait()
+func (c *callback) calls() int {
+	return len(c.events)
 }
