@@ -58,19 +58,9 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 		}
 	}
 
-	newSyncRules := config.convertSyncRules()
-	// convert Build (should be same)
-	var newBuild next.BuildConfig
-	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
-		return nil, errors.Wrap(err, "converting new build")
-	}
-	// set Sync in newBuild
-	for i, a := range newBuild.Artifacts {
-		if len(newSyncRules[i]) > 0 {
-			a.Sync = &next.Sync{
-				Manual: newSyncRules[i],
-			}
-		}
+	newBuild, err := convertBuildConfig(config.Build)
+	if err != nil {
+		return nil, err
 	}
 
 	// convert Test (should be the same)
@@ -91,12 +81,30 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	}, nil
 }
 
+func convertBuildConfig(buildConfig BuildConfig) (next.BuildConfig, error) {
+	newSyncRules := convertSyncRules(buildConfig.Artifacts)
+	// convert Build (should be same)
+	var newBuild next.BuildConfig
+	if err := pkgutil.CloneThroughJSON(buildConfig, &newBuild); err != nil {
+		return next.BuildConfig{}, errors.Wrap(err, "converting new build")
+	}
+	// set Sync in newBuild
+	for i, a := range newBuild.Artifacts {
+		if len(newSyncRules[i]) > 0 {
+			a.Sync = &next.Sync{
+				Manual: newSyncRules[i],
+			}
+		}
+	}
+	return newBuild, nil
+}
+
 // convertSyncRules converts the old sync map into sync rules.
 // It also prints a warning message when some rules can not be upgraded.
-func (config *SkaffoldConfig) convertSyncRules() [][]*next.SyncRule {
+func convertSyncRules(artifacts []*Artifact) [][]*next.SyncRule {
 	var incompatiblePatterns []string
-	newSync := make([][]*next.SyncRule, len(config.Build.Artifacts))
-	for i, a := range config.Build.Artifacts {
+	newSync := make([][]*next.SyncRule, len(artifacts))
+	for i, a := range artifacts {
 		newRules := make([]*next.SyncRule, 0, len(a.Sync))
 		for src, dest := range a.Sync {
 			var syncRule *next.SyncRule
