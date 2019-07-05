@@ -167,6 +167,10 @@ func TestDependenciesForKustomization(t *testing.T) {
 			description: "resources",
 			yaml:        `resources: [pod1.yaml, path/pod2.yaml]`,
 			expected:    []string{"kustomization.yaml", "pod1.yaml", "path/pod2.yaml"},
+			createFiles: map[string]string{
+				"pod1.yaml":      "",
+				"path/pod2.yaml": "",
+			},
 		},
 		{
 			description: "paches",
@@ -207,15 +211,44 @@ func TestDependenciesForKustomization(t *testing.T) {
 		{
 			description: "base exists locally",
 			yaml:        `bases: [base]`,
-			expected:    []string{"base/kustomization.yaml", "base/app.yaml", "kustomization.yaml"},
+			expected:    []string{"kustomization.yaml", "base/kustomization.yaml", "base/app.yaml"},
 			createFiles: map[string]string{
 				"base/kustomization.yaml": `resources: [app.yaml]`,
+				"base/app.yaml":           "",
 			},
 		},
 		{
 			description: "missing base locally",
 			yaml:        `bases: [missing-or-remote-base]`,
 			expected:    []string{"kustomization.yaml"},
+		},
+		{
+			description: "local kustomization resource",
+			yaml:        `resources: [app.yaml, base]`,
+			expected:    []string{"kustomization.yaml", "app.yaml", "base/kustomization.yaml", "base/app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml":                "",
+				"base/kustomization.yaml": `resources: [app.yaml]`,
+				"base/app.yaml":           "",
+			},
+		},
+		{
+			description: "missing local kustomization resource",
+			yaml:        `resources: [app.yaml, missing-or-remote-base]`,
+			expected:    []string{"kustomization.yaml", "app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml": "",
+			},
+		},
+		{
+			description: "mixed resource types",
+			yaml:        `resources: [app.yaml, missing-or-remote-base, base]`,
+			expected:    []string{"kustomization.yaml", "app.yaml", "base/kustomization.yaml", "base/app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml":                "",
+				"base/kustomization.yaml": `resources: [app.yaml]`,
+				"base/app.yaml":           "",
+			},
 		},
 	}
 	for _, test := range tests {
