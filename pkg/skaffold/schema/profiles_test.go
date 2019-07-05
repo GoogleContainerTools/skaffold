@@ -348,8 +348,10 @@ func TestActivatedProfiles(t *testing.T) {
 				{Name: "run-profile", Activation: []latest.Activation{{Command: "run"}}},
 				{Name: "dev-profile", Activation: []latest.Activation{{Command: "dev"}}},
 				{Name: "non-run-profile", Activation: []latest.Activation{{Command: "!run"}}},
+				{Name: "run-or-dev-profile", Activation: []latest.Activation{{Command: "(run)|(dev)"}}},
+				{Name: "other-profile", Activation: []latest.Activation{{Command: "!(run)|(dev)"}}},
 			},
-			expected: []string{"dev-profile", "non-run-profile"},
+			expected: []string{"dev-profile", "non-run-profile", "run-or-dev-profile"},
 		}, {
 			description: "Auto-activated by env variable",
 			opts:        &cfg.SkaffoldOptions{},
@@ -357,8 +359,9 @@ func TestActivatedProfiles(t *testing.T) {
 				{Name: "activated", Activation: []latest.Activation{{Env: "KEY=VALUE"}}},
 				{Name: "not-activated", Activation: []latest.Activation{{Env: "KEY=OTHER"}}},
 				{Name: "also-activated", Activation: []latest.Activation{{Env: "KEY=!OTHER"}}},
+				{Name: "regex-activated", Activation: []latest.Activation{{Env: "KEY=V.*E"}}},
 			},
-			expected: []string{"activated", "also-activated"},
+			expected: []string{"activated", "also-activated", "regex-activated"},
 		}, {
 			description: "Invalid env variable",
 			opts:        &cfg.SkaffoldOptions{},
@@ -375,6 +378,7 @@ func TestActivatedProfiles(t *testing.T) {
 				{Name: "also-activated", Activation: []latest.Activation{{KubeContext: "!dev-context"}}},
 				{Name: "activated-regexp", Activation: []latest.Activation{{KubeContext: "prod-.*"}}},
 				{Name: "not-activated-regexp", Activation: []latest.Activation{{KubeContext: "dev-.*"}}},
+				{Name: "invalid-regexp", Activation: []latest.Activation{{KubeContext: `\`}}},
 			},
 			expected: []string{"activated", "also-activated", "activated-regexp"},
 		}, {
