@@ -52,15 +52,22 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
-	if config.Profiles != nil {
-		if err := pkgutil.CloneThroughJSON(config.Profiles, &newProfiles); err != nil {
+	for _, p := range config.Profiles {
+		var newProfile next.Profile
+		if err := pkgutil.CloneThroughJSON(p, &newProfile); err != nil {
 			return nil, errors.Wrap(err, "converting new profile")
 		}
+		newProfileBuild, err := convertBuildConfig(p.Build)
+		if err != nil {
+			return nil, errors.Wrap(err, "converting new profile build")
+		}
+		newProfile.Build = newProfileBuild
+		newProfiles = append(newProfiles, newProfile)
 	}
 
 	newBuild, err := convertBuildConfig(config.Build)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "converting new build")
 	}
 
 	// convert Test (should be the same)
@@ -81,14 +88,14 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	}, nil
 }
 
-func convertBuildConfig(buildConfig BuildConfig) (next.BuildConfig, error) {
-	newSyncRules := convertSyncRules(buildConfig.Artifacts)
+func convertBuildConfig(build BuildConfig) (next.BuildConfig, error) {
 	// convert Build (should be same)
 	var newBuild next.BuildConfig
-	if err := pkgutil.CloneThroughJSON(buildConfig, &newBuild); err != nil {
-		return next.BuildConfig{}, errors.Wrap(err, "converting new build")
+	if err := pkgutil.CloneThroughJSON(build, &newBuild); err != nil {
+		return next.BuildConfig{}, err
 	}
 	// set Sync in newBuild
+	newSyncRules := convertSyncRules(build.Artifacts)
 	for i, a := range newBuild.Artifacts {
 		if len(newSyncRules[i]) > 0 {
 			a.Sync = &next.Sync{
