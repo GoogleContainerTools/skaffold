@@ -43,10 +43,6 @@ func TestDev(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			// TODO(nkubala): fix this test and remove the skip
-			if test.skipFlakyTest {
-				t.Skip("Skip flaky test")
-			}
 			if testing.Short() {
 				t.Skip("skipping integration test")
 			}

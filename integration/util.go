@@ -103,6 +103,8 @@ func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
 	waitLoop:
 		select {
 		case <-ctx.Done():
+			k.printDiskFreeSpace()
+			k.debug("nodes")
 			k.debug("pods")
 			k.t.Fatalf("Timed out waiting for pods %v ready in namespace %s", podNames, k.ns)
 
@@ -158,6 +160,8 @@ func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 	waitLoop:
 		select {
 		case <-ctx.Done():
+			k.printDiskFreeSpace()
+			k.debug("nodes")
 			k.debug("deployments.apps")
 			k.debug("pods")
 			k.t.Fatalf("Timed out waiting for deployments %v to stabilize in namespace %s", depNames, k.ns)
@@ -187,6 +191,12 @@ func (k *NSKubernetesClient) debug(entities string) {
 
 	logrus.Warnln(cmd.Args)
 	// Use fmt.Println, not logrus, for prettier output
+	fmt.Println(string(out))
+}
+
+func (k *NSKubernetesClient) printDiskFreeSpace() {
+	cmd := exec.Command("df", "-h")
+	out, _ := cmd.CombinedOutput()
 	fmt.Println(string(out))
 }
 
