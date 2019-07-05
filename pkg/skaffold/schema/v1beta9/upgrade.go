@@ -52,25 +52,22 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
-	if config.Profiles != nil {
-		if err := pkgutil.CloneThroughJSON(config.Profiles, &newProfiles); err != nil {
+	for _, p := range config.Profiles {
+		var newProfile next.Profile
+		if err := pkgutil.CloneThroughJSON(p, &newProfile); err != nil {
 			return nil, errors.Wrap(err, "converting new profile")
 		}
+		newProfileBuild, err := convertBuildConfig(p.Build)
+		if err != nil {
+			return nil, errors.Wrap(err, "converting new profile build")
+		}
+		newProfile.Build = newProfileBuild
+		newProfiles = append(newProfiles, newProfile)
 	}
 
-	newSyncRules := config.convertSyncRules()
-	// convert Build (should be same)
-	var newBuild next.BuildConfig
-	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
+	newBuild, err := convertBuildConfig(config.Build)
+	if err != nil {
 		return nil, errors.Wrap(err, "converting new build")
-	}
-	// set Sync in newBuild
-	for i, a := range newBuild.Artifacts {
-		if len(newSyncRules[i]) > 0 {
-			a.Sync = &next.Sync{
-				Manual: newSyncRules[i],
-			}
-		}
 	}
 
 	// convert Test (should be the same)
@@ -91,12 +88,30 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	}, nil
 }
 
+func convertBuildConfig(build BuildConfig) (next.BuildConfig, error) {
+	// convert Build (should be same)
+	var newBuild next.BuildConfig
+	if err := pkgutil.CloneThroughJSON(build, &newBuild); err != nil {
+		return next.BuildConfig{}, err
+	}
+	// set Sync in newBuild
+	newSyncRules := convertSyncRules(build.Artifacts)
+	for i, a := range newBuild.Artifacts {
+		if len(newSyncRules[i]) > 0 {
+			a.Sync = &next.Sync{
+				Manual: newSyncRules[i],
+			}
+		}
+	}
+	return newBuild, nil
+}
+
 // convertSyncRules converts the old sync map into sync rules.
 // It also prints a warning message when some rules can not be upgraded.
-func (config *SkaffoldConfig) convertSyncRules() [][]*next.SyncRule {
+func convertSyncRules(artifacts []*Artifact) [][]*next.SyncRule {
 	var incompatiblePatterns []string
-	newSync := make([][]*next.SyncRule, len(config.Build.Artifacts))
-	for i, a := range config.Build.Artifacts {
+	newSync := make([][]*next.SyncRule, len(artifacts))
+	for i, a := range artifacts {
 		newRules := make([]*next.SyncRule, 0, len(a.Sync))
 		for src, dest := range a.Sync {
 			var syncRule *next.SyncRule
