@@ -19,8 +19,7 @@ if [[ "${TRAVIS}" == "true" ]] && [[ "${TRAVIS_OS_NAME}" != "linux" ]]; then
     exit 0
 fi
 
-export PROTO_PATH=pkg/skaffold/server/proto
-docker build -t generate-proto -f hack/proto/Dockerfile --target compare ${PROTO_PATH}
+docker build -t generate-proto -f hack/proto/Dockerfile --target compare proto
 if [ $? -ne 0 ]; then
    printf "\nGenerated proto files aren't updated. Please run ./hack/generate-proto.sh\n"
    exit 1

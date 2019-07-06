@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/golang/protobuf/ptypes/empty"
 )
 
