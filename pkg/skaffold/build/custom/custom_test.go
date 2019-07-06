@@ -17,6 +17,7 @@ limitations under the License.
 package custom
 
 import (
+	"context"
 	"os"
 	"os/exec"
 	"reflect"
@@ -115,7 +116,7 @@ func TestRetrieveCmd(t *testing.T) {
 			t.Override(&buildContext, func(string) (string, error) { return test.artifact.Workspace, nil })
 
 			builder := NewArtifactBuilder(false, nil)
-			cmd, err := builder.retrieveCmd(test.artifact, test.tag)
+			cmd, err := builder.retrieveCmd(context.Background(), test.artifact, test.tag)
 
 			t.CheckNoError(err)
 			// cmp.Diff cannot access unexported fields in *exec.Cmd, so use reflect.DeepEqual here directly
@@ -127,7 +128,7 @@ func TestRetrieveCmd(t *testing.T) {
 }
 
 func expectedCmd(buildCommand, dir string, args, env []string) *exec.Cmd {
-	cmd := exec.Command(buildCommand, args...)
+	cmd := exec.CommandContext(context.Background(), buildCommand, args...)
 	cmd.Dir = dir
 	cmd.Env = env
 	cmd.Stdout = os.Stdout

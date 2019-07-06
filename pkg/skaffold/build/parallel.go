@@ -50,6 +50,9 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 		return runInSequence(ctx, out, tags, artifacts, buildArtifact)
 	}
 
+	var wg sync.WaitGroup
+	defer wg.Wait()
+
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -57,6 +60,7 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	outputs := make([]chan []byte, len(artifacts))
 
 	// Run builds in //
+	wg.Add(len(artifacts))
 	for i := range artifacts {
 		outputs[i] = make(chan []byte, buffSize)
 		r, w := io.Pipe()
@@ -64,7 +68,7 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 
 		// Run build and write output/logs to piped writer and store build result in
 		// sync.Map
-		go runBuild(ctx, cw, tags, artifacts[i], results, buildArtifact)
+		go runBuild(ctx, &wg, cw, tags, artifacts[i], results, buildArtifact)
 		// Read build output/logs and write to buffered channel
 		go readOutputAndWriteToChannel(r, outputs[i])
 	}
@@ -73,7 +77,8 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	return collectResults(out, artifacts, results, outputs)
 }
 
-func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build artifactBuilder) {
+func runBuild(ctx context.Context, wg *sync.WaitGroup, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build artifactBuilder) {
+	defer wg.Done()
 	event.BuildInProgress(artifact.ImageName)
 
 	finalTag, err := getBuildResult(ctx, cw, tags, artifact, build)
