@@ -27,18 +27,16 @@ import (
 
 func TestDev(t *testing.T) {
 	var tests = []struct {
-		description   string
-		trigger       string
-		skipFlakyTest bool
+		description string
+		trigger     string
 	}{
 		{
 			description: "dev with polling trigger",
 			trigger:     "polling",
 		},
 		{
-			description:   "dev with notify trigger",
-			trigger:       "notify",
-			skipFlakyTest: true,
+			description: "dev with notify trigger",
+			trigger:     "notify",
 		},
 	}
 	for _, test := range tests {
