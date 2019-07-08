@@ -68,7 +68,10 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 
 		// Run build and write output/logs to piped writer and store build result in
 		// sync.Map
-		go runBuild(ctx, &wg, cw, tags, artifacts[i], results, buildArtifact)
+		go func(i int) {
+			runBuild(ctx, cw, tags, artifacts[i], results, buildArtifact)
+			wg.Done()
+		}(i)
 		// Read build output/logs and write to buffered channel
 		go readOutputAndWriteToChannel(r, outputs[i])
 	}
@@ -77,8 +80,7 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	return collectResults(out, artifacts, results, outputs)
 }
 
-func runBuild(ctx context.Context, wg *sync.WaitGroup, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build artifactBuilder) {
-	defer wg.Done()
+func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, artifact *latest.Artifact, results *sync.Map, build artifactBuilder) {
 	event.BuildInProgress(artifact.ImageName)
 
 	finalTag, err := getBuildResult(ctx, cw, tags, artifact, build)
