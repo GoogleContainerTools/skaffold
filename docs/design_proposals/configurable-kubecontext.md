@@ -72,13 +72,14 @@ It should also be possible to specify in various places:
 
 1. `--namespace` CLI flag
 2. `SKAFFOLD_NAMESPACE` env var
-3. In `skaffold.yaml` at json-path `deploy.namespace` 
+3. In `skaffold.yaml` at json-path `deploy.namespace`
 4. globally or per project in the Skaffold config
 
 ### Detailed discussion
 #### Option in `skaffold.yaml`
 A configuration option in `skaffold.yaml` has the advantage of being most discoverable:
 it is in the place where users configure all aspects of their pipeline.
+In addition, it allows to define the kubecontext per Skaffold profile.
 
 However, it also has questionable implications:
 
@@ -89,8 +90,8 @@ However, it also has questionable implications:
   For example, the current context is `A` and activates some profile.
   This profile activates a different kubecontext `B`.
   A solution could be to forbid specifying a kubecontext in a profile if it is activated by a kubecontext (and validate that).
- 
-The best place for the config in `skaffold.yaml` is in `latest.DeployConfig`, resulting in a json path `deploy.kubeContext`.
+
+A natural place for the config in `skaffold.yaml` is in `latest.DeployConfig`, resulting in a json path `deploy.kubeContext`.
 
 #### Option in global Skaffold config
 Specifying a default kubecontext globally is straightforward. For example, via new config option
@@ -117,7 +118,7 @@ There are at least two possibilities:
   This variant is stable against relocations.
   It is also unique unless a user forks a project and wants to define different kubecontexts for each fork.
   Compared to the other alternatives, it is rather slow.
-  
+
 **\<What option has the best tradeoffs?\>**
 
 Resolution: __Not Yet Resolved__
