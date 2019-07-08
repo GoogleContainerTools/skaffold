@@ -17,6 +17,7 @@ Open issues concerning this problem are
 - Support kube.config and kube.context for specifying alternative Kubernetes config file or context (#2325)
 - Feature: Support regex in profile activation via kubeContext (#1677)
 - Skaffold.yaml files are not portable (#480)
+- Support forcing a context and a namespace for a profile/command (#2426)
 
 There also was an attempt to add a configuration option to `skaffold.yaml` (Support for overriding kubectl context during deployment #1540).
 
