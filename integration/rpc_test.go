@@ -29,7 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes/empty"

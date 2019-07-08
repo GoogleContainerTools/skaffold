@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"google.golang.org/grpc"
 )
