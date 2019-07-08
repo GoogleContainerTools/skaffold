@@ -136,6 +136,9 @@ func TestEventLogHTTP(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
 
 	httpAddr := randomPort()
 	teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
@@ -203,6 +206,9 @@ func TestGetStateRPC(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
 
 	rpcAddr := randomPort()
 	// start a skaffold dev loop on an example
@@ -255,6 +261,9 @@ func TestGetStateRPC(t *testing.T) {
 func TestGetStateHTTP(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
 	}
 
 	httpAddr := randomPort()
