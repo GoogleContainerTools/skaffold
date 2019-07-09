@@ -30,6 +30,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"k8s.io/kubectl/pkg/util/templates"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -112,20 +114,42 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 	SetUpFlags()
 	rootCmd.SetOutput(out)
-	rootCmd.AddCommand(NewCmdCompletion(out))
-	rootCmd.AddCommand(NewCmdVersion(out))
-	rootCmd.AddCommand(NewCmdRun(out))
-	rootCmd.AddCommand(NewCmdDev(out))
-	rootCmd.AddCommand(NewCmdDebug(out))
-	rootCmd.AddCommand(NewCmdBuild(out))
-	rootCmd.AddCommand(NewCmdDeploy(out))
-	rootCmd.AddCommand(NewCmdDelete(out))
-	rootCmd.AddCommand(NewCmdFix(out))
-	rootCmd.AddCommand(NewCmdConfig(out))
-	rootCmd.AddCommand(NewCmdInit(out))
-	rootCmd.AddCommand(NewCmdDiagnose(out))
-	rootCmd.AddCommand(NewCmdFindConfigs(out))
 
+	groups := templates.CommandGroups{
+		{
+			Message: "End-to-end pipelines:",
+			Commands: []*cobra.Command{
+				NewCmdRun(out),
+				NewCmdDev(out),
+			},
+		},
+		{
+			Message: "Pipeline building blocks for CI/CD:",
+			Commands: []*cobra.Command{
+				NewCmdBuild(out),
+				NewCmdDeploy(out),
+				NewCmdDelete(out),
+			},
+		},
+		{
+			Message: "Getting started with a new project:",
+			Commands: []*cobra.Command{
+				NewCmdInit(out),
+				NewCmdFix(out),
+			},
+		},
+	}
+	groups.Add(rootCmd)
+
+	// other commands
+	rootCmd.AddCommand(NewCmdVersion(out))
+	rootCmd.AddCommand(NewCmdCompletion(out))
+	rootCmd.AddCommand(NewCmdConfig(out))
+	rootCmd.AddCommand(NewCmdFindConfigs(out))
+	rootCmd.AddCommand(NewCmdDiagnose(out))
+	rootCmd.AddCommand(NewCmdDebug(out))
+
+	templates.ActsAsRootCommand(rootCmd, []string{"options"}, groups...)
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
 	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.Default), "Specify the default output color in ANSI escape codes")
 	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
