@@ -32,6 +32,10 @@ func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
 	return event.ForEachEvent(stream.Send)
 }
 
+func (s *server) Events(stream proto.SkaffoldService_EventsServer) error {
+	return event.ForEachEvent(stream.Send)
+}
+
 func (s *server) Handle(ctx context.Context, e *proto.Event) (*empty.Empty, error) {
 	event.Handle(e)
 	return &empty.Empty{}, nil

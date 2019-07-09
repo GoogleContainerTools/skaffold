@@ -84,6 +84,12 @@ service SkaffoldService {
 
   rpc EventLog(stream LogEntry) returns (stream LogEntry) {
     option (google.api.http) = {
+      get: "/v1/event_log"
+    };
+  }
+
+  rpc Events(stream LogEntry) returns (stream LogEntry) {
+    option (google.api.http) = {
       get: "/v1/events"
     };
   }
