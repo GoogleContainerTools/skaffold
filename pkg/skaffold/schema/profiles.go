@@ -132,11 +132,14 @@ func satisfies(expected, actual string) bool {
 }
 
 func matches(expected, actual string) bool {
-	matcher, err := re.Compile(expected)
+	if actual == expected {
+		return true
+	}
 
+	matcher, err := re.Compile(expected)
 	if err != nil {
 		logrus.Infof("profile activation criteria '%s' is not a valid regexp, falling back to string", expected)
-		return actual == expected
+		return false
 	}
 
 	return matcher.MatchString(actual)
