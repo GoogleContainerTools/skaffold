@@ -167,23 +167,30 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 		return nil, err
 	}
 
-	for _, base := range content.Bases {
+	deps = append(deps, path)
+
+	candidates := append(content.Bases, content.Resources...)
+
+	for _, candidate := range candidates {
 		// If the file  doesn't exist locally, we can assume it's a remote file and
 		// skip it, since we can't monitor remote files. Kustomize itself will
 		// handle invalid/missing files.
-		if !fileExistsLocally(base, dir) {
+		local, mode := pathExistsLocally(candidate, dir)
+		if !local {
 			continue
 		}
-		baseDeps, err := dependenciesForKustomization(filepath.Join(dir, base))
-		if err != nil {
-			return nil, err
-		}
 
-		deps = append(deps, baseDeps...)
+		if mode.IsDir() {
+			candidateDeps, err := dependenciesForKustomization(filepath.Join(dir, candidate))
+			if err != nil {
+				return nil, err
+			}
+			deps = append(deps, candidateDeps...)
+		} else {
+			deps = append(deps, filepath.Join(dir, candidate))
+		}
 	}
 
-	deps = append(deps, path)
-	deps = append(deps, joinPaths(dir, content.Resources)...)
 	deps = append(deps, joinPaths(dir, content.Patches)...)
 	deps = append(deps, joinPaths(dir, content.PatchesStrategicMerge)...)
 	deps = append(deps, joinPaths(dir, content.CRDs)...)
@@ -210,15 +217,15 @@ func joinPaths(root string, paths []string) []string {
 	return list
 }
 
-func fileExistsLocally(filename string, workingDir string) bool {
+func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {
 	path := filename
 	if !filepath.IsAbs(filename) {
 		path = filepath.Join(workingDir, filename)
 	}
-	if _, err := os.Stat(path); err == nil {
-		return true
+	if f, err := os.Stat(path); err == nil {
+		return true, f.Mode()
 	}
-	return false
+	return false, 0
 }
 
 // Dependencies lists all the files that can change what needs to be deployed.
