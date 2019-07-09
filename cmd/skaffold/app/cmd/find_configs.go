@@ -40,7 +40,7 @@ var (
 
 // NewCmdFindConfigs list the skaffold config files in the specified directory.
 func NewCmdFindConfigs(out io.Writer) *cobra.Command {
-	return NewCmd(out, "find-configs").
+	cmd := NewCmd(out, "find-configs").
 		WithDescription("Find in a given directory all skaffold yamls files that are parseable or upgradeable with their versions.").
 		WithFlags(func(f *pflag.FlagSet) {
 			// Default to current directory
@@ -49,6 +49,8 @@ func NewCmdFindConfigs(out io.Writer) *cobra.Command {
 			f.StringVarP(&format, "output", "o", "table", "Result format, default to table. [(-o|--output=)json|table]")
 		}).
 		NoArgs(doFindConfigs)
+	cmd.Hidden = true
+	return cmd
 }
 
 func doFindConfigs(out io.Writer) error {

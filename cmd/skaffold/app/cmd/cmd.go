@@ -121,6 +121,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			Commands: []*cobra.Command{
 				NewCmdRun(out),
 				NewCmdDev(out),
+				NewCmdDebug(out),
 			},
 		},
 		{
@@ -147,7 +148,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdConfig(out))
 	rootCmd.AddCommand(NewCmdFindConfigs(out))
 	rootCmd.AddCommand(NewCmdDiagnose(out))
-	rootCmd.AddCommand(NewCmdDebug(out))
 
 	templates.ActsAsRootCommand(rootCmd, []string{"options"}, groups...)
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
