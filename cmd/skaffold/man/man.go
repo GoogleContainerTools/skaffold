@@ -36,6 +36,10 @@ func printMan(stdout, stderr io.Writer) {
 }
 
 func printCommand(out io.Writer, command *cobra.Command) {
+	if command.Hidden {
+		return
+	}
+
 	command.DisableFlagsInUseLine = true
 
 	fmt.Fprintf(out, "\n### %s\n", command.CommandPath())

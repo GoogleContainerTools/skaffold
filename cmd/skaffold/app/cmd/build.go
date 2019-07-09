@@ -40,7 +40,7 @@ var (
 // NewCmdBuild describes the CLI command to build artifacts.
 func NewCmdBuild(out io.Writer) *cobra.Command {
 	return NewCmd(out, "build").
-		WithDescription("Builds the artifacts").
+		WithDescription("Build the artifacts").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")

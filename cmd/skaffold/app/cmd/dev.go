@@ -32,7 +32,7 @@ import (
 func NewCmdDev(out io.Writer) *cobra.Command {
 	cmdUse := "dev"
 	return NewCmd(out, cmdUse).
-		WithDescription("Runs a pipeline file in development mode").
+		WithDescription("Run a pipeline in development mode").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling, manual or notify)")

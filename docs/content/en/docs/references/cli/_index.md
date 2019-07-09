@@ -62,24 +62,23 @@ A tool that facilitates continuous development for Kubernetes applications.
 
 
 End-to-end pipelines:
-  run          Runs a pipeline file
-  dev          Runs a pipeline file in development mode
+  run          Run a pipeline
+  dev          Run a pipeline in development mode
+  debug        Run a pipeline in debug mode
 
 Pipeline building blocks for CI/CD:
-  build        Builds the artifacts
-  deploy       Deploys the artifacts
-  delete       Delete the deployed resources
+  build        Build the artifacts
+  deploy       Deploy pre-built artifacts
+  delete       Delete the deployed application
 
 Getting started with a new project:
-  init         Automatically generate Skaffold configuration for deploying an application
-  fix          Converts old Skaffold config to newest schema version
+  init         Generate configuration for deploying an application
+  fix          Update old configuration to newest schema version
 
 Other Commands:
   completion   Output shell completion for the given shell (bash or zsh)
-  config       A set of commands for interacting with the Skaffold config.
-  debug        Runs a pipeline file in debug mode
+  config       Interact with the Skaffold configuration
   diagnose     Run a diagnostic on Skaffold
-  find-configs Find in a given directory all skaffold yamls files that are parseable or upgradeable with their versions.
   version      Print the version information
 
 Use "skaffold <command> --help" for more information about a given command.
@@ -93,7 +92,7 @@ Env vars:
 
 ### skaffold build
 
-Builds the artifacts
+Build the artifacts
 
 ```
 
@@ -157,7 +156,7 @@ Use "skaffold completion options" for a list of global command-line options (app
 
 ### skaffold config
 
-A set of commands for interacting with the Skaffold config.
+Interact with the Skaffold configuration
 
 ```
 
@@ -249,7 +248,7 @@ Env vars:
 
 ### skaffold debug
 
-Runs a pipeline file in debug mode
+Run a pipeline in debug mode
 
 ```
 
@@ -306,7 +305,7 @@ Env vars:
 
 ### skaffold delete
 
-Delete the deployed resources
+Delete the deployed application
 
 ```
 
@@ -333,7 +332,7 @@ Env vars:
 
 ### skaffold deploy
 
-Deploys the artifacts
+Deploy pre-built artifacts
 
 ```
 
@@ -379,7 +378,7 @@ Env vars:
 
 ### skaffold dev
 
-Runs a pipeline file in development mode
+Run a pipeline in development mode
 
 ```
 
@@ -463,32 +462,9 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 
-### skaffold find-configs
-
-Find in a given directory all skaffold yamls files that are parseable or upgradeable with their versions.
-
-```
-
-
-Options:
-  -d, --directory='.': Root directory to lookup the config files.
-  -o, --output='table': Result format, default to table. [(-o|--output=)json|table]
-
-Usage:
-  skaffold find-configs [options]
-
-Use "skaffold find-configs options" for a list of global command-line options (applies to all commands).
-
-
-```
-Env vars:
-
-* `SKAFFOLD_DIRECTORY` (same as `--directory`)
-* `SKAFFOLD_OUTPUT` (same as `--output`)
-
 ### skaffold fix
 
-Converts old Skaffold config to newest schema version
+Update old configuration to newest schema version
 
 ```
 
@@ -511,7 +487,7 @@ Env vars:
 
 ### skaffold init
 
-Automatically generate Skaffold configuration for deploying an application
+Generate configuration for deploying an application
 
 ```
 
@@ -543,7 +519,7 @@ Env vars:
 
 ### skaffold run
 
-Runs a pipeline file
+Run a pipeline
 
 ```
 

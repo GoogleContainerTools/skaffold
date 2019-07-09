@@ -35,7 +35,7 @@ var (
 // NewCmdInit describes the CLI command to generate a Skaffold configuration.
 func NewCmdInit(out io.Writer) *cobra.Command {
 	return NewCmd(out, "init").
-		WithDescription("Automatically generate Skaffold configuration for deploying an application").
+		WithDescription("Generate configuration for deploying an application").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 			f.BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in Skaffold config")

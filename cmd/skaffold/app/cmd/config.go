@@ -27,7 +27,7 @@ import (
 func NewCmdConfig(out io.Writer) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
-		Short: "A set of commands for interacting with the Skaffold config.",
+		Short: "Interact with the Skaffold configuration",
 	}
 
 	cmd.AddCommand(NewCmdSet(out))

@@ -36,7 +36,7 @@ var (
 // NewCmdDeploy describes the CLI command to deploy artifacts.
 func NewCmdDeploy(out io.Writer) *cobra.Command {
 	return NewCmd(out, "deploy").
-		WithDescription("Deploys the artifacts").
+		WithDescription("Deploy pre-built artifacts").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
