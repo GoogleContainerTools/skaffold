@@ -81,6 +81,7 @@ type SkaffoldRunner struct {
 	imageList            *kubernetes.ImageList
 }
 
+// for testing
 var (
 	statusCheck = deploy.StatusCheck
 )

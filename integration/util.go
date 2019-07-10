@@ -150,4 +150,3 @@ func (k *NSKubernetesClient) printDiskFreeSpace() {
 	out, _ := cmd.CombinedOutput()
 	fmt.Println(string(out))
 }
-

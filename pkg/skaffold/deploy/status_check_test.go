@@ -203,6 +203,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 		duration    int
 		exactCalls  int
 		shouldErr   bool
+		timedOut    bool
 	}{
 		{
 			description: "rollout returns success",
@@ -229,7 +230,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 					"Waiting for rollout to finish: 0 of 1 updated replicas are available...",
 					"deployment.apps/dep successfully rolled out"},
 			},
-			duration:   500,
+			duration:   800,
 			exactCalls: 3,
 		},
 		{
@@ -242,6 +243,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			},
 			duration:  1000,
 			shouldErr: true,
+			timedOut:  true,
 		},
 	}
 	originalPollingPeriod := defaultPollPeriodInMilliseconds
@@ -264,7 +266,8 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			}
 			err := getSkaffoldDeployStatus(actual)
 			t.CheckError(test.shouldErr, err)
-			if test.exactCalls > 0 {
+			// Check number of calls only if command did not timeout since there could be n-1 or n or n+1 calls when command timed out
+			if !test.timedOut {
 				t.CheckDeepEqual(test.exactCalls, mock.called)
 			}
 		})

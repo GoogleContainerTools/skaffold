@@ -91,7 +91,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) 
 	for _, d := range deps.Items {
 		var deadline int32
 		if d.Spec.ProgressDeadlineSeconds == nil {
-			logrus.Warnf("no progressDeadlineSeconds config found for deployment %s. Setting deadline to %d seconds", d.Name, defaultStatusCheckDeadlineInSeconds)
+			logrus.Debugf("no progressDeadlineSeconds config found for deployment %s. Setting deadline to %d seconds", d.Name, defaultStatusCheckDeadlineInSeconds)
 			deadline = defaultStatusCheckDeadlineInSeconds
 		} else {
 			deadline = *d.Spec.ProgressDeadlineSeconds
@@ -120,7 +120,7 @@ func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName stri
 				return
 			}
 			if strings.Contains(status, "successfully rolled out") {
-				syncMap.Store(dName, status)
+				syncMap.Store(dName, nil)
 				return
 			}
 		}
@@ -145,8 +145,5 @@ func getSkaffoldDeployStatus(m *sync.Map) error {
 func getRollOutStatus(ctx context.Context, k *kubectl.CLI, dName string) (string, error) {
 	b, err := k.RunOut(ctx, nil, "rollout", []string{"status", "deployment", dName},
 		"--watch=false")
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
+	return string(b), err
 }
