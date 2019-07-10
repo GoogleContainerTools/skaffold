@@ -29,9 +29,8 @@ import (
 )
 
 // NewCmdDev describes the CLI command to run a pipeline in development mode.
-func NewCmdDev(out io.Writer) *cobra.Command {
-	cmdUse := "dev"
-	return NewCmd(out, cmdUse).
+func NewCmdDev() *cobra.Command {
+	return NewCmd("dev").
 		WithDescription("Run a pipeline in development mode").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {

@@ -27,8 +27,8 @@ import (
 
 var versionFlag = flags.NewTemplateFlag("{{.Version}}\n", version.Info{})
 
-func NewCmdVersion(out io.Writer) *cobra.Command {
-	return NewCmd(out, "version").
+func NewCmdVersion() *cobra.Command {
+	return NewCmd("version").
 		WithDescription("Print the version information").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.VarP(versionFlag, "output", "o", versionFlag.Usage())

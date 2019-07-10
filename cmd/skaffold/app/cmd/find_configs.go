@@ -39,8 +39,8 @@ var (
 )
 
 // NewCmdFindConfigs list the skaffold config files in the specified directory.
-func NewCmdFindConfigs(out io.Writer) *cobra.Command {
-	cmd := NewCmd(out, "find-configs").
+func NewCmdFindConfigs() *cobra.Command {
+	cmd := NewCmd("find-configs").
 		WithDescription("Find in a given directory all skaffold yamls files that are parseable or upgradeable with their versions.").
 		WithFlags(func(f *pflag.FlagSet) {
 			// Default to current directory

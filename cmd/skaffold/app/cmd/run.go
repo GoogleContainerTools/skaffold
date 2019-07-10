@@ -29,8 +29,8 @@ import (
 )
 
 // NewCmdRun describes the CLI command to run a pipeline.
-func NewCmdRun(out io.Writer) *cobra.Command {
-	return NewCmd(out, "run").
+func NewCmdRun() *cobra.Command {
+	return NewCmd("run").
 		WithDescription("Run a pipeline").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
