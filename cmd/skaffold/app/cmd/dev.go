@@ -43,17 +43,17 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 }
 
 func doDev(ctx context.Context, out io.Writer) error {
-	cleanup := func() {}
-	if opts.Cleanup {
-		defer func() {
-			cleanup()
-		}()
-	}
-
 	prune := func() {}
 	if opts.Prune() {
 		defer func() {
 			prune()
+		}()
+	}
+
+	cleanup := func() {}
+	if opts.Cleanup {
+		defer func() {
+			cleanup()
 		}()
 	}
 
