@@ -17,27 +17,25 @@ limitations under the License.
 package cmd
 
 import (
-	"io"
-
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
 
-func NewCmdConfig(out io.Writer) *cobra.Command {
+func NewCmdConfig() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "Interact with the Skaffold configuration",
 	}
 
-	cmd.AddCommand(NewCmdSet(out))
-	cmd.AddCommand(NewCmdUnset(out))
-	cmd.AddCommand(NewCmdList(out))
+	cmd.AddCommand(NewCmdSet())
+	cmd.AddCommand(NewCmdUnset())
+	cmd.AddCommand(NewCmdList())
 	return cmd
 }
 
-func NewCmdSet(out io.Writer) *cobra.Command {
-	return NewCmd(out, "set").
+func NewCmdSet() *cobra.Command {
+	return NewCmd("set").
 		WithDescription("Set a value in the global Skaffold config").
 		WithFlags(func(f *pflag.FlagSet) {
 			config.AddCommonFlags(f)
@@ -46,8 +44,8 @@ func NewCmdSet(out io.Writer) *cobra.Command {
 		ExactArgs(2, config.Set)
 }
 
-func NewCmdUnset(out io.Writer) *cobra.Command {
-	return NewCmd(out, "unset").
+func NewCmdUnset() *cobra.Command {
+	return NewCmd("unset").
 		WithDescription("Unset a value in the global Skaffold config").
 		WithFlags(func(f *pflag.FlagSet) {
 			config.AddCommonFlags(f)
@@ -56,8 +54,8 @@ func NewCmdUnset(out io.Writer) *cobra.Command {
 		ExactArgs(1, config.Unset)
 }
 
-func NewCmdList(out io.Writer) *cobra.Command {
-	return NewCmd(out, "list").
+func NewCmdList() *cobra.Command {
+	return NewCmd("list").
 		WithDescription("List all values set in the global Skaffold config").
 		WithFlags(func(f *pflag.FlagSet) {
 			config.AddCommonFlags(f)

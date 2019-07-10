@@ -102,7 +102,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			select {
 			case msg := <-updateMsg:
-				fmt.Fprintf(out, "%s\n", msg)
+				cmd.Printf("%s\n", msg)
 			default:
 			}
 
@@ -119,35 +119,35 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		{
 			Message: "End-to-end pipelines:",
 			Commands: []*cobra.Command{
-				NewCmdRun(out),
-				NewCmdDev(out),
-				NewCmdDebug(out),
+				NewCmdRun(),
+				NewCmdDev(),
+				NewCmdDebug(),
 			},
 		},
 		{
 			Message: "Pipeline building blocks for CI/CD:",
 			Commands: []*cobra.Command{
-				NewCmdBuild(out),
-				NewCmdDeploy(out),
-				NewCmdDelete(out),
+				NewCmdBuild(),
+				NewCmdDeploy(),
+				NewCmdDelete(),
 			},
 		},
 		{
 			Message: "Getting started with a new project:",
 			Commands: []*cobra.Command{
-				NewCmdInit(out),
-				NewCmdFix(out),
+				NewCmdInit(),
+				NewCmdFix(),
 			},
 		},
 	}
 	groups.Add(rootCmd)
 
 	// other commands
-	rootCmd.AddCommand(NewCmdVersion(out))
-	rootCmd.AddCommand(NewCmdCompletion(out))
-	rootCmd.AddCommand(NewCmdConfig(out))
-	rootCmd.AddCommand(NewCmdFindConfigs(out))
-	rootCmd.AddCommand(NewCmdDiagnose(out))
+	rootCmd.AddCommand(NewCmdVersion())
+	rootCmd.AddCommand(NewCmdCompletion())
+	rootCmd.AddCommand(NewCmdConfig())
+	rootCmd.AddCommand(NewCmdFindConfigs())
+	rootCmd.AddCommand(NewCmdDiagnose())
 
 	templates.ActsAsRootCommand(rootCmd, []string{"options"}, groups...)
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
@@ -205,8 +205,8 @@ func FlagToEnvVarName(f *pflag.Flag) string {
 	return fmt.Sprintf("SKAFFOLD_%s", strings.Replace(strings.ToUpper(f.Name), "-", "_", -1))
 }
 
-func setUpLogs(out io.Writer, level string) error {
-	logrus.SetOutput(out)
+func setUpLogs(stdErr io.Writer, level string) error {
+	logrus.SetOutput(stdErr)
 	lvl, err := logrus.ParseLevel(level)
 	if err != nil {
 		return errors.Wrap(err, "parsing log level")

@@ -38,8 +38,8 @@ var (
 )
 
 // NewCmdBuild describes the CLI command to build artifacts.
-func NewCmdBuild(out io.Writer) *cobra.Command {
-	return NewCmd(out, "build").
+func NewCmdBuild() *cobra.Command {
+	return NewCmd("build").
 		WithDescription("Build the artifacts").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
