@@ -33,30 +33,10 @@ import (
 // ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
 var ErrorConfigurationChanged = errors.New("configuration changed")
 
-func (r *SkaffoldRunner) separateBuildAndSync() error {
-	// TODO(nkubala): can this be moved into callback registered in monitor?
-	for _, a := range r.changeSet.dirtyArtifacts {
-		s, err := sync.NewItem(a.artifact, a.events, r.builds, r.runCtx.InsecureRegistries)
-		if err != nil {
-			return errors.Wrap(err, "sync")
-		}
-		if s != nil {
-			r.changeSet.AddResync(s)
-		} else {
-			r.changeSet.AddRebuild(a.artifact)
-		}
-	}
-	return nil
-}
-
 func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	defer r.changeSet.reset()
 
 	r.logger.Mute()
-
-	if err := r.separateBuildAndSync(); err != nil {
-		return err
-	}
 
 	if r.changeSet.needsAction() {
 		// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
@@ -111,7 +91,17 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 		if err := r.monitor.Register(
 			func() ([]string, error) { return r.Builder.DependenciesForArtifact(ctx, artifact) },
-			func(e filemon.Events) { r.changeSet.AddDirtyArtifact(artifact, e) },
+			func(e filemon.Events) {
+				s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries)
+				switch {
+				case err != nil:
+					logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
+				case s != nil:
+					r.changeSet.AddResync(s)
+				default:
+					r.changeSet.AddRebuild(artifact)
+				}
+			},
 		); err != nil {
 			return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
 		}
