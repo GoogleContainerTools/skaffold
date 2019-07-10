@@ -38,6 +38,7 @@ type Builder struct {
 	localCluster       bool
 	pushImages         bool
 	prune              bool
+	pruneChildren      bool
 	skipTests          bool
 	kubeContext        string
 	builtImages        []string
@@ -81,6 +82,7 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 		pushImages:         pushImages,
 		skipTests:          runCtx.Opts.SkipTests,
 		prune:              runCtx.Opts.Prune(),
+		pruneChildren:      !runCtx.Opts.NoPruneChildren,
 		insecureRegistries: runCtx.InsecureRegistries,
 	}, nil
 }
@@ -101,5 +103,5 @@ func (b *Builder) Labels() map[string]string {
 
 // Prune uses the docker API client to remove all images built with Skaffold
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
-	return docker.Prune(ctx, out, b.builtImages, b.localDocker)
+	return b.localDocker.Prune(ctx, out, b.builtImages, b.pruneChildren)
 }
