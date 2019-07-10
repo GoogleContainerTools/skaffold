@@ -33,6 +33,7 @@ var (
 	currentConfigOnce sync.Once
 	currentConfig     clientcmdapi.Config
 	currentConfigErr  error
+	kubeContext       string
 )
 
 // ResetCurrentConfig is used by tests
@@ -40,6 +41,7 @@ func ResetCurrentConfig() {
 	currentConfigOnce = sync.Once{}
 }
 
+// getCurrentConfig retrieves the kubeconfig file. If UseKubeContext was called before, the CurrentContext will be overridden.
 func getCurrentConfig() (clientcmdapi.Config, error) {
 	currentConfigOnce.Do(func() {
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
@@ -50,6 +52,16 @@ func getCurrentConfig() (clientcmdapi.Config, error) {
 			return
 		}
 		currentConfig = cfg
+
+		if kubeContext != "" {
+			currentConfig.CurrentContext = kubeContext
+		}
 	})
 	return currentConfig, currentConfigErr
+}
+
+// UseKubeContext sets an override for the current context in the k8s config.
+// This override must be set before calling CurrentConfig.
+func UseKubeContext(overrideKubeContext string) {
+	kubeContext = overrideKubeContext
 }

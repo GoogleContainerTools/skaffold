@@ -32,6 +32,16 @@ func TestCurrentContext(t *testing.T) {
 		t.CheckDeepEqual("cluster1", config.CurrentContext)
 	})
 
+	testutil.Run(t, "override context", func(t *testutil.T) {
+		resetKubeConfig(t, "apiVersion: v1\nkind: Config\ncurrent-context: cluster1\n")
+
+		UseKubeContext("cluster2")
+		config, err := CurrentConfig()
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("cluster2", config.CurrentContext)
+	})
+
 	testutil.Run(t, "invalid context", func(t *testutil.T) {
 		resetKubeConfig(t, "invalid")
 
@@ -44,5 +54,6 @@ func TestCurrentContext(t *testing.T) {
 func resetKubeConfig(t *testutil.T, content string) {
 	kubeConfig := t.TempFile("config", []byte(content))
 	t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
+	kubeContext = ""
 	ResetCurrentConfig()
 }
