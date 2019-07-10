@@ -55,6 +55,7 @@ type LocalDaemon interface {
 	RepoDigest(ctx context.Context, ref string) (string, error)
 	ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error)
 	ImageExists(ctx context.Context, ref string) bool
+	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error
 }
 
 type localDaemon struct {
@@ -409,4 +410,26 @@ func EvaluateBuildArgs(args map[string]*string) (map[string]*string, error) {
 	}
 
 	return evaluated, nil
+}
+
+func (l *localDaemon) Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error {
+	for _, id := range images {
+		resp, err := l.ImageRemove(ctx, id, types.ImageRemoveOptions{
+			Force:         true,
+			PruneChildren: pruneChildren,
+		})
+		if err != nil {
+			return errors.Wrap(err, "pruning images")
+		}
+		for _, r := range resp {
+			if r.Deleted != "" {
+				fmt.Fprintf(out, "deleted image %s\n", r.Deleted)
+			}
+			if r.Untagged != "" {
+				fmt.Fprintf(out, "untagged image %s\n", r.Untagged)
+			}
+		}
+	}
+
+	return nil
 }
