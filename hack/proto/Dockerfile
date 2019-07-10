@@ -22,7 +22,7 @@ RUN unzip protoc.zip -d protoc
 
 # Install protoc-gen-go and grpc-gateway binaries; then generate files.
 FROM golang:1.12.5-alpine3.9 AS generateFiles
-RUN apk add --no-cache protobuf git
+RUN apk add --no-cache protobuf=3.6.1-r1 git
 
 COPY --from=protoc /protoc/include /usr/local/include
 
@@ -43,14 +43,12 @@ RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 RUN go get -u github.com/golang/protobuf/protoc-gen-go
 
-WORKDIR /
-ENV PROTO_PATH=/pkg/skaffold/server/proto
-COPY skaffold.proto ${PROTO_PATH}/skaffold.proto
-RUN protoc -I /usr/local/include -I pkg/skaffold/server/proto -I $GOPATH/src -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:pkg/skaffold/server/proto pkg/skaffold/server/proto/skaffold.proto --go_out=plugins=grpc:pkg/skaffold/server/proto
+WORKDIR /proto
+COPY skaffold.proto ./
+RUN protoc -I /usr/local/include -I . -I $GOPATH/src -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:. skaffold.proto --go_out=plugins=grpc:.
 
 # Compare the proto files with the existing proto files
 FROM generateFiles AS compare
 WORKDIR /compare
 COPY *.go ./
-RUN cmp ${PROTO_PATH}/skaffold.pb.go skaffold.pb.go
-RUN cmp ${PROTO_PATH}/skaffold.pb.gw.go skaffold.pb.gw.go
+CMD cmp /proto/skaffold.pb.go skaffold.pb.go && cmp /proto/skaffold.pb.gw.go skaffold.pb.gw.go
