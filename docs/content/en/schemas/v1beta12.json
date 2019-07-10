@@ -1704,15 +1704,6 @@
     },
     "Sync": {
       "properties": {
-        "infer": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "file patterns which may be synced into the container. The container destination is inferred by the builder. Currently only available for docker artifacts.",
-          "x-intellij-html-description": "file patterns which may be synced into the container. The container destination is inferred by the builder. Currently only available for docker artifacts.",
-          "default": "[]"
-        },
         "manual": {
           "items": {
             "$ref": "#/definitions/SyncRule"
@@ -1723,8 +1714,7 @@
         }
       },
       "preferredOrder": [
-        "manual",
-        "infer"
+        "manual"
       ],
       "additionalProperties": false,
       "description": "*alpha* specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files.",
