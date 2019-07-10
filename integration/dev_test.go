@@ -26,12 +26,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/clientcmd"
+
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func TestDev(t *testing.T) {
@@ -362,4 +364,56 @@ func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retrie
 		}
 	}
 	return stream, err
+}
+
+func TestDev_WithKubecontextOverride(t *testing.T) {
+	const (
+		kubecontext = "modified-context"
+		kubeconfig  = "kubeconfig"
+	)
+
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	testutil.Run(t, "skaffold run with kubecontext override", func(t *testutil.T) {
+		dir := "examples/getting-started"
+		pods := []string{"getting-started"}
+
+		ns, client, deleteNs := SetupNamespace(t.T)
+		defer deleteNs()
+
+		modifiedKubeconfig, err := createModifiedKubeconfig(kubecontext, ns.Name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		kubeconfig := t.NewTempDir().
+			Write(kubeconfig, string(modifiedKubeconfig)).
+			Path(kubeconfig)
+		env := []string{fmt.Sprintf("KUBECONFIG=%s", kubeconfig)}
+
+		// n.b. for the sake of this test the namespace must not be given explicitly
+		skaffold.Run("--kube-context", kubecontext).InDir(dir).WithEnv(env).RunOrFailOutput(t.T)
+
+		client.WaitForPodsReady(pods...)
+
+		// n.b. for the sake of this test the namespace must not be given explicitly
+		skaffold.Delete("--kube-context", kubecontext).InDir(dir).WithEnv(env).RunOrFail(t.T)
+	})
+}
+
+func createModifiedKubeconfig(contextName, namespace string) ([]byte, error) {
+	config, err := clientcmd.NewDefaultClientConfigLoadingRules().Load()
+	if err != nil {
+		return nil, err
+	}
+	activeContext := config.Contexts[config.CurrentContext]
+	// clear the namespace in the active context
+	activeContext.Namespace = ""
+
+	newContext := activeContext.DeepCopy()
+	newContext.Namespace = namespace
+	config.Contexts[contextName] = newContext
+
+	return clientcmd.Write(*config)
 }
