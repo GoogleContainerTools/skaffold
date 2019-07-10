@@ -33,8 +33,8 @@ import (
 )
 
 // NewCmdDiagnose describes the CLI command to diagnose skaffold.
-func NewCmdDiagnose(out io.Writer) *cobra.Command {
-	return NewCmd(out, "diagnose").
+func NewCmdDiagnose() *cobra.Command {
+	return NewCmd("diagnose").
 		WithDescription("Run a diagnostic on Skaffold").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")

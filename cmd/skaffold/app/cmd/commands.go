@@ -34,14 +34,12 @@ type Builder interface {
 }
 
 type builder struct {
-	out io.Writer
 	cmd cobra.Command
 }
 
 // NewCmd creates a new command builder.
-func NewCmd(out io.Writer, use string) Builder {
+func NewCmd(use string) Builder {
 	return &builder{
-		out: out,
 		cmd: cobra.Command{
 			Use: use,
 		},
@@ -70,16 +68,16 @@ func (b *builder) WithFlags(adder func(*pflag.FlagSet)) Builder {
 
 func (b *builder) ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command {
 	b.cmd.Args = cobra.ExactArgs(argCount)
-	b.cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return action(b.out, args)
+	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
+		return action(b.cmd.OutOrStdout(), args)
 	}
 	return &b.cmd
 }
 
 func (b *builder) NoArgs(action func(io.Writer) error) *cobra.Command {
 	b.cmd.Args = cobra.NoArgs
-	b.cmd.RunE = func(cmd *cobra.Command, _ []string) error {
-		return action(b.out)
+	b.cmd.RunE = func(*cobra.Command, []string) error {
+		return action(b.cmd.OutOrStdout())
 	}
 	return &b.cmd
 }
