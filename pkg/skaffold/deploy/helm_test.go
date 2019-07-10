@@ -381,12 +381,7 @@ func TestHelmDeploy(t *testing.T) {
 				t:         t,
 				getResult: fmt.Errorf("not found"),
 				installMatcher: func(cmd *exec.Cmd) bool {
-					dockerRef, err := docker.ParseReference(testBuilds[0].Tag)
-					if err != nil {
-						return false
-					}
-
-					expected := fmt.Sprintf("image.registry=%s,image.repository=%s,image.tag=%s", dockerRef.Domain, dockerRef.Path, dockerRef.Tag)
+					expected := fmt.Sprintf("image.registry=%s,image.repository=%s,image.tag=%s", "docker.io:5000", "skaffold-helm", "3605e7bc17cf46e53f4d81c4cbc24e5b4c495184")
 					for _, arg := range cmd.Args {
 						if expected == arg {
 							return true

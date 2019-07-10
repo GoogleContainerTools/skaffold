@@ -871,8 +871,8 @@
       "properties": {
         "explicitRegistry": {
           "type": "boolean",
-          "description": "enables passing a value for `registry` to Helm.",
-          "x-intellij-html-description": "enables passing a value for <code>registry</code> to Helm.",
+          "description": "separates `image.registry` to the image config syntax. Useful for some charts e.g. `postgresql`.",
+          "x-intellij-html-description": "separates <code>image.registry</code> to the image config syntax. Useful for some charts e.g. <code>postgresql</code>.",
           "default": "false"
         }
       },
