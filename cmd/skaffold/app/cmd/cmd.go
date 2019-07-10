@@ -71,12 +71,12 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				return err
 			}
 
-			// Start API Server
-			if cmd.Use == "dev" {
-				// TODO(dgageot): api server is always started in dev mode, right now.
-				// It should instead default to true.
+			// In dev mode, the default is to enable the rpc server
+			if cmd.Use == "dev" && !cmd.Flag("enable-rpc").Changed {
 				opts.EnableRPC = true
 			}
+
+			// Start API Server
 			shutdown, err := server.Initialize(opts)
 			if err != nil {
 				return errors.Wrap(err, "initializing api server")
