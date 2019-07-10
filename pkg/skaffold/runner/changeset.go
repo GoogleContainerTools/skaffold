@@ -17,22 +17,15 @@ limitations under the License.
 package runner
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
 type changeSet struct {
-	dirtyArtifacts []*artifactChange
-	needsRebuild   []*latest.Artifact
-	needsResync    []*sync.Item
-	needsRedeploy  bool
-	needsReload    bool
-}
-
-type artifactChange struct {
-	artifact *latest.Artifact
-	events   filemon.Events
+	needsRebuild  []*latest.Artifact
+	needsResync   []*sync.Item
+	needsRedeploy bool
+	needsReload   bool
 }
 
 func (c *changeSet) AddRebuild(a *latest.Artifact) {
@@ -44,7 +37,6 @@ func (c *changeSet) AddResync(s *sync.Item) {
 }
 
 func (c *changeSet) reset() {
-	c.dirtyArtifacts = nil
 	c.needsRebuild = nil
 	c.needsResync = nil
 
