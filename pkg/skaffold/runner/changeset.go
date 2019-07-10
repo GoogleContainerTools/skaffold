@@ -35,10 +35,6 @@ type artifactChange struct {
 	events   filemon.Events
 }
 
-func (c *changeSet) AddDirtyArtifact(a *latest.Artifact, e filemon.Events) {
-	c.dirtyArtifacts = append(c.dirtyArtifacts, &artifactChange{artifact: a, events: e})
-}
-
 func (c *changeSet) AddRebuild(a *latest.Artifact) {
 	c.needsRebuild = append(c.needsRebuild, a)
 }

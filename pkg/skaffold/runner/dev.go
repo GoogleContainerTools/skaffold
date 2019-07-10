@@ -93,11 +93,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			func() ([]string, error) { return r.Builder.DependenciesForArtifact(ctx, artifact) },
 			func(e filemon.Events) {
 				s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries)
-				if err != nil {
+				switch {
+				case err != nil:
 					logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
-				} else if s != nil {
+				case s != nil:
 					r.changeSet.AddResync(s)
-				} else {
+				default:
 					r.changeSet.AddRebuild(artifact)
 				}
 			},
