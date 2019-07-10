@@ -31,6 +31,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -368,8 +370,7 @@ func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retrie
 
 func TestDev_WithKubecontextOverride(t *testing.T) {
 	const (
-		kubecontext = "modified-context"
-		kubeconfig  = "kubeconfig"
+		kubeconfig = "kubeconfig"
 	)
 
 	if testing.Short() {
@@ -383,7 +384,7 @@ func TestDev_WithKubecontextOverride(t *testing.T) {
 		ns, client, deleteNs := SetupNamespace(t.T)
 		defer deleteNs()
 
-		modifiedKubeconfig, err := createModifiedKubeconfig(kubecontext, ns.Name)
+		modifiedKubeconfig, kubecontext, err := createModifiedKubeconfig(ns.Name)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -402,18 +403,25 @@ func TestDev_WithKubecontextOverride(t *testing.T) {
 	})
 }
 
-func createModifiedKubeconfig(contextName, namespace string) ([]byte, error) {
-	config, err := clientcmd.NewDefaultClientConfigLoadingRules().Load()
+func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
+	kubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-	activeContext := config.Contexts[config.CurrentContext]
+
+	contextName := "modified-context"
+	if config.IsKindCluster(kubeConfig.CurrentContext) {
+		contextName = contextName + "@kind"
+	}
+
+	activeContext := kubeConfig.Contexts[kubeConfig.CurrentContext]
 	// clear the namespace in the active context
 	activeContext.Namespace = ""
 
 	newContext := activeContext.DeepCopy()
 	newContext.Namespace = namespace
-	config.Contexts[contextName] = newContext
+	kubeConfig.Contexts[contextName] = newContext
 
-	return clientcmd.Write(*config)
+	yaml, err := clientcmd.Write(kubeConfig)
+	return yaml, contextName, err
 }
