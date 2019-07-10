@@ -11,6 +11,8 @@ import (
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -841,6 +843,23 @@ type SkaffoldServiceServer interface {
 	EventLog(SkaffoldService_EventLogServer) error
 	Handle(context.Context, *Event) (*empty.Empty, error)
 	Build(context.Context, *empty.Empty) (*empty.Empty, error)
+}
+
+// UnimplementedSkaffoldServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedSkaffoldServiceServer struct {
+}
+
+func (*UnimplementedSkaffoldServiceServer) GetState(ctx context.Context, req *empty.Empty) (*State, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetState not implemented")
+}
+func (*UnimplementedSkaffoldServiceServer) EventLog(srv SkaffoldService_EventLogServer) error {
+	return status.Errorf(codes.Unimplemented, "method EventLog not implemented")
+}
+func (*UnimplementedSkaffoldServiceServer) Handle(ctx context.Context, req *Event) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Handle not implemented")
+}
+func (*UnimplementedSkaffoldServiceServer) Build(ctx context.Context, req *empty.Empty) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Build not implemented")
 }
 
 func RegisterSkaffoldServiceServer(s *grpc.Server, srv SkaffoldServiceServer) {

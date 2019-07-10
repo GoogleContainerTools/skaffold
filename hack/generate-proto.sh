@@ -24,7 +24,7 @@ fi
 
 set -e
 
-docker run $CONTAINER_NAME cat /proto/skaffold.pb.go > proto/skaffold.pb.go
-docker run $CONTAINER_NAME cat /proto/skaffold.pb.gw.go > proto/skaffold.pb.gw.go
+docker run $CONTAINER_NAME cat pkg/skaffold/server/proto/skaffold.pb.go > proto/skaffold.pb.go
+docker run $CONTAINER_NAME cat pkg/skaffold/server/proto/skaffold.pb.gw.go > proto/skaffold.pb.gw.go
 
 printf "\nFinished generating proto files, please commit the results.\n"
