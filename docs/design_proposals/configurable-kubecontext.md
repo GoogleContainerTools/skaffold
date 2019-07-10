@@ -13,13 +13,13 @@ In particular when working on multiple such projects in parallel, the current be
 
 Open issues concerning this problem are
 
-- Allow option to specify the kubectl context (#511)
-- Support kube.config and kube.context for specifying alternative Kubernetes config file or context (#2325)
-- Feature: Support regex in profile activation via kubeContext (#1677)
-- Skaffold.yaml files are not portable (#480)
-- Support forcing a context and a namespace for a profile/command (#2426)
+- Allow option to specify the kubectl context ([#511](https://github.com/GoogleContainerTools/skaffold/issues/511))
+- Support kube.config and kube.context for specifying alternative Kubernetes config file or context ([#2325](https://github.com/GoogleContainerTools/skaffold/issues/2325))
+- Feature: Support regex in profile activation via kubeContext ([#1677](https://github.com/GoogleContainerTools/skaffold/issues/1677))
+- Skaffold.yaml files are not portable ([#480](https://github.com/GoogleContainerTools/skaffold/issues/480))
+- Support forcing a context and a namespace for a profile/command ([#2426](https://github.com/GoogleContainerTools/skaffold/issues/2426))
 
-There also was an attempt to add a configuration option to `skaffold.yaml` (Support for overriding kubectl context during deployment #1540).
+There also was an attempt to add a configuration option to `skaffold.yaml` (Support for overriding kubectl context during deployment [#1540](https://github.com/GoogleContainerTools/skaffold/pull/1540)).
 
 The goal of this document is to create an agreement on what options should be supported and identify edge cases.
 
@@ -87,9 +87,9 @@ However, it also has questionable implications:
 - `skaffold.yaml` is meant to be shared, but kubecontext names vary across users.
   Sharing therefore makes only sense in a corporate setting where context names are the same across many users.
   There is however a risk of abuse in settings where sharing the context name does not make sense, for example in open source projects.
-- Due to profile activation by Skaffold profiles, there can be circular problems.
-  For example, the current context is `A` and activates some profile.
-  This profile activates a different kubecontext `B`.
+- Due to profile activation by Skaffold profiles, there can be confusing/surprising situations.
+  For example, the current context is `minikube` and activates some profile.
+  This profile is deploying to a different kubecontext `gke_abc_123`. This can be surprising to the user.
   A solution could be to forbid specifying a kubecontext in a profile if it is activated by a kubecontext (and validate that).
 
 A natural place for the config in `skaffold.yaml` is in `latest.DeployConfig`, resulting in a json path `deploy.kubeContext`.
@@ -112,7 +112,7 @@ There are at least two possibilities:
 
 - Identify projects by their absolute host path.
   This is guaranteed to be unique, but may break if a user moves his project to another location.
-- Identify projects by a new `metadata.name` entry in `skaffold.yaml` (see also #2200).
+- Identify projects by a new `metadata.name` entry in `skaffold.yaml` (see also [#2200](https://github.com/GoogleContainerTools/skaffold/issues/2200)).
   This has the drawback of being potentially not unique, so that users accidentally pin the kubecontext for more projects than intended.
   On the other hand, this is the standard approach taken by kubernetes resources.
 - Identify project by their initial commit.
