@@ -64,12 +64,11 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	for i := range artifacts {
 		outputs[i] = make(chan []byte, buffSize)
 		r, w := io.Pipe()
-		cw := setUpColorWriter(w, out)
 
 		// Run build and write output/logs to piped writer and store build result in
 		// sync.Map
 		go func(i int) {
-			runBuild(ctx, cw, tags, artifacts[i], results, buildArtifact)
+			runBuild(ctx, w, tags, artifacts[i], results, buildArtifact)
 			wg.Done()
 		}(i)
 		// Read build output/logs and write to buffered channel
@@ -101,13 +100,6 @@ func readOutputAndWriteToChannel(r io.Reader, lines chan []byte) {
 		lines <- scanner.Bytes()
 	}
 	close(lines)
-}
-
-func setUpColorWriter(w io.WriteCloser, out io.Writer) io.WriteCloser {
-	if color.IsTerminal(out) {
-		return color.ColoredWriteCloser{WriteCloser: w}
-	}
-	return w
 }
 
 func getBuildResult(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latest.Artifact, build artifactBuilder) (string, error) {

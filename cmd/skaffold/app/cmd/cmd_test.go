@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package app
+package cmd
 
 import (
 	"bytes"
@@ -34,7 +34,7 @@ func TestMainHelp(t *testing.T) {
 
 		t.Override(&os.Args, []string{"skaffold", "help"})
 
-		err := Run(&output, &errOutput)
+		err := NewSkaffoldCommand(&output, &errOutput).Execute()
 
 		t.CheckNoError(err)
 		t.CheckContains("End-to-end pipelines", output.String())
@@ -47,7 +47,7 @@ func TestMainUnknownCommand(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&os.Args, []string{"skaffold", "unknown"})
 
-		err := Run(ioutil.Discard, ioutil.Discard)
+		err := NewSkaffoldCommand(ioutil.Discard, ioutil.Discard).Execute()
 
 		t.CheckError(true, err)
 	})

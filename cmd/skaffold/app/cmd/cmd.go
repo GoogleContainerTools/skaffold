@@ -23,6 +23,9 @@ import (
 	"os"
 	"strings"
 
+	colorable "github.com/mattn/go-colorable"
+	isatty "github.com/mattn/go-isatty"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -46,7 +49,7 @@ var (
 	overwrite    bool
 )
 
-func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
+func NewSkaffoldCommand(stdOut, stdErr io.Writer) *cobra.Command {
 	updateMsg := make(chan string)
 	var shutdownAPIServer func() error
 
@@ -56,17 +59,22 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		SilenceErrors: true,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.Root().SilenceUsage = true
-
 			opts.Command = cmd.Use
 
 			// Setup colors
-			if forceColors {
-				color.ForceColors()
-			}
 			color.OverwriteDefault(color.Color(defaultColor))
 
+			// Disable colors in output?
+			if !isTerminal(stdOut) && !forceColors {
+				stdOut = colorable.NewNonColorable(stdOut)
+			}
+			if !isTerminal(stdErr) && !forceColors {
+				stdErr = colorable.NewNonColorable(stdErr)
+			}
+			cmd.Root().SetOutput(stdOut)
+
 			// Setup logs
-			if err := setUpLogs(err, v); err != nil {
+			if err := setUpLogs(stdErr, v); err != nil {
 				return err
 			}
 
@@ -102,7 +110,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			select {
 			case msg := <-updateMsg:
-				cmd.Printf("%s\n", msg)
+				fmt.Fprintf(cmd.OutOrStdout(), "%s\n", msg)
 			default:
 			}
 
@@ -113,7 +121,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	}
 
 	SetUpFlags()
-	rootCmd.SetOutput(out)
 
 	groups := templates.CommandGroups{
 		{
@@ -221,4 +228,13 @@ func alwaysSucceedWhenCancelled(ctx context.Context, err error) error {
 		return nil
 	}
 	return err
+}
+
+func isTerminal(w io.Writer) bool {
+	switch v := w.(type) {
+	case *os.File:
+		return isatty.IsTerminal(v.Fd())
+	default:
+		return false
+	}
 }

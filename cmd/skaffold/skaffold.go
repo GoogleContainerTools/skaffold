@@ -18,16 +18,17 @@ package main
 
 import (
 	"context"
-	"os"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
+	colorable "github.com/mattn/go-colorable"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app"
 )
 
 func main() {
-	if err := app.Run(os.Stdout, os.Stderr); err != nil {
+	skaffoldCmd := cmd.NewSkaffoldCommand(colorable.NewColorableStdout(), colorable.NewColorableStderr())
+
+	if err := skaffoldCmd.Execute(); err != nil {
 		if errors.Cause(err) == context.Canceled {
 			logrus.Debugln(errors.Wrap(err, "ignore error since context is cancelled"))
 		} else {

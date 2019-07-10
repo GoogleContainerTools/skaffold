@@ -100,7 +100,7 @@ deploy:
 			inputYaml: fmt.Sprintf(`apiVersion: %s
 kind: Config
 `, latest.Version),
-			output: "config is already latest version\n",
+			output: "config is already latest version",
 		},
 		{
 			description: "invalid input",
@@ -115,7 +115,8 @@ kind: Config
 			var b bytes.Buffer
 			err := fix(&b, cfgFile, false)
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.output, b.String())
+			t.CheckError(test.shouldErr, err)
+			t.CheckContains(test.output, b.String())
 		})
 	}
 }
