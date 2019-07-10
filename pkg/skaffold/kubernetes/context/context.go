@@ -20,6 +20,7 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
@@ -30,38 +31,44 @@ var (
 )
 
 var (
-	currentConfigOnce sync.Once
-	currentConfig     clientcmdapi.Config
-	currentConfigErr  error
-	kubeContext       string
+	kubeConfigOnce sync.Once
+	kubeConfig     clientcmd.ClientConfig
+	kubeContext    string
 )
 
-// ResetCurrentConfig is used by tests
-func ResetCurrentConfig() {
-	currentConfigOnce = sync.Once{}
-}
-
-// getCurrentConfig retrieves the kubeconfig file. If UseKubeContext was called before, the CurrentContext will be overridden.
-func getCurrentConfig() (clientcmdapi.Config, error) {
-	currentConfigOnce.Do(func() {
-		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
-		cfg, err := kubeConfig.RawConfig()
-		if err != nil {
-			currentConfigErr = errors.Wrap(err, "loading kubeconfig")
-			return
-		}
-		currentConfig = cfg
-
-		if kubeContext != "" {
-			currentConfig.CurrentContext = kubeContext
-		}
-	})
-	return currentConfig, currentConfigErr
+// ResetConfig is used by tests
+func ResetConfig() {
+	kubeConfigOnce = sync.Once{}
 }
 
 // UseKubeContext sets an override for the current context in the k8s config.
 // This override must be set before calling CurrentConfig.
 func UseKubeContext(overrideKubeContext string) {
 	kubeContext = overrideKubeContext
+}
+
+func GetRestClientConfig() (*restclient.Config, error) {
+	clientConfig, err := getKubeConfig().ClientConfig()
+	return clientConfig, errors.Wrap(err, "error creating kubeConfig")
+}
+
+// getCurrentConfig retrieves the kubeconfig file. If UseKubeContext was called before, the CurrentContext will be overridden.
+func getCurrentConfig() (clientcmdapi.Config, error) {
+	cfg, err := getKubeConfig().RawConfig()
+	if kubeContext != "" {
+		// RawConfig does not respect the override in kubeConfig
+		cfg.CurrentContext = kubeContext
+	}
+	return cfg, errors.Wrap(err, "loading kubeconfig")
+}
+
+// getKubeConfig creates a cached kubeConfig. If UseKubeContext was called before, the CurrentContext will be overridden.
+func getKubeConfig() clientcmd.ClientConfig {
+	kubeConfigOnce.Do(func() {
+		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+		kubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{
+			CurrentContext: kubeContext,
+		})
+	})
+	return kubeConfig
 }
