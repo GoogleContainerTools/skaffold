@@ -193,11 +193,6 @@ func DoInit(out io.Writer, c Config) error {
 // images match an image in the image list, and returns a list of the matching builder/image pairs. Also
 // separately returns the builder configs and images that didn't have any matches.
 func autoSelectBuilders(enableJibInit bool, builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
-	// TODO: Remove backwards compatibility block
-	if !enableJibInit {
-		return nil, builderConfigs, images
-	}
-
 	var pairs []builderImagePair
 	var unresolvedImages []string
 	for _, image := range images {
