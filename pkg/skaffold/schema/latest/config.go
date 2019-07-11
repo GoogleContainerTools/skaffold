@@ -35,11 +35,20 @@ type SkaffoldConfig struct {
 	// Kind is always `Config`. Defaults to `Config`.
 	Kind string `yaml:"kind" yamltags:"required"`
 
+	// Metadata holds additional information about the config.
+	Metadata Metadata `yaml:"metadata,omitempty"`
+
 	// Pipeline defines the Build/Test/Deploy phases.
 	Pipeline `yaml:",inline"`
 
 	// Profiles *beta* can override be used to `build`, `test` or `deploy` configuration.
 	Profiles []Profile `yaml:"profiles,omitempty"`
+}
+
+// Metadata holds an optional name of the project.
+type Metadata struct {
+	// Name is an identifier for the project.
+	Name string `yaml:"name,omitempty"`
 }
 
 // Pipeline describes a Skaffold pipeline.

@@ -1484,6 +1484,21 @@
       "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
       "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
     },
+    "Metadata": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "an identifier for the project.",
+          "x-intellij-html-description": "an identifier for the project."
+        }
+      },
+      "preferredOrder": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "holds an optional name of the project.",
+      "x-intellij-html-description": "holds an optional name of the project."
+    },
     "PortForwardResource": {
       "properties": {
         "localPort": {
@@ -1676,6 +1691,11 @@
           "x-intellij-html-description": "always <code>Config</code>.",
           "default": "Config"
         },
+        "metadata": {
+          "$ref": "#/definitions/Metadata",
+          "description": "holds additional information about the config.",
+          "x-intellij-html-description": "holds additional information about the config."
+        },
         "portForward": {
           "items": {
             "$ref": "#/definitions/PortForwardResource"
@@ -1704,6 +1724,7 @@
       "preferredOrder": [
         "apiVersion",
         "kind",
+        "metadata",
         "build",
         "test",
         "deploy",
