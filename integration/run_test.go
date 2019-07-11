@@ -126,6 +126,7 @@ func TestRun(t *testing.T) {
 			skaffold.Run(test.args...).WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFailOutput(t)
 
 			client.WaitForPodsReady(test.pods...)
+			client.WaitForDeploymentsToStabilize(test.deployments...)
 
 			skaffold.Delete().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})

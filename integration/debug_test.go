@@ -66,7 +66,6 @@ func TestDebug(t *testing.T) {
 			defer stop()
 
 			client.WaitForPodsReady(test.pods...)
-
 			for _, depName := range test.deployments {
 				deploy := client.GetDeployment(depName)
 

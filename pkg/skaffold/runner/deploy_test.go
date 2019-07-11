@@ -28,7 +28,10 @@ import (
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"k8s.io/client-go/tools/clientcmd/api"
+
 )
+
+
 
 func TestDeploy(t *testing.T) {
 	expectedOutput := "Waiting for deployments to stabilize"
@@ -51,9 +54,9 @@ func TestDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy shd not perform status check when deployer is in error",
-			shouldErr:   true,
-			statusCheck: true,
 			testBench:   &TestBench{deployErrors: []error{errors.New("deploy error")}},
+			shouldErr: true,
+			statusCheck: true,
 		},
 	}
 
