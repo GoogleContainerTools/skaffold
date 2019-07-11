@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -156,7 +157,11 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 func dependenciesForKustomization(dir string) ([]string, error) {
 	var deps []string
 
-	path := filepath.Join(dir, "kustomization.yaml")
+	path, err := findKustomizationConfig(dir)
+	if err != nil {
+		return nil, err
+	}
+
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -215,6 +220,18 @@ func joinPaths(root string, paths []string) []string {
 	}
 
 	return list
+}
+
+// A kustomization config must be at the root of the direectory. Kustomize will
+// error if more than one of these files exists so order doesn't matter.
+func findKustomizationConfig(dir string) (string, error) {
+	candidates := []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
+	for _, candidate := range candidates {
+		if local, _ := pathExistsLocally(candidate, dir); local {
+			return filepath.Join(dir, candidate), nil
+		}
+	}
+	return "", fmt.Errorf("no Kustomization configuration found in directory: %s", dir)
 }
 
 func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {

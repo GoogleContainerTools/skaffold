@@ -162,6 +162,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 		expected    []string
 		shouldErr   bool
 		createFiles map[string]string
+		configName  string
 	}{
 		{
 			description: "resources",
@@ -250,11 +251,54 @@ func TestDependenciesForKustomization(t *testing.T) {
 				"base/app.yaml":           "",
 			},
 		},
+		{
+			description: "alt config name: kustomization.yml",
+			yaml:        `resources: [app.yaml]`,
+			expected:    []string{"kustomization.yml", "app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml": "",
+			},
+			configName: "kustomization.yml",
+		},
+		{
+			description: "alt config name: Kustomization",
+			yaml:        `resources: [app.yaml]`,
+			expected:    []string{"Kustomization", "app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml": "",
+			},
+			configName: "Kustomization",
+		},
+		{
+			description: "mixture of config names",
+			yaml:        `resources: [app.yaml, base1, base2]`,
+			expected:    []string{"Kustomization", "app.yaml", "base1/kustomization.yml", "base1/app.yaml", "base2/Kustomization", "base2/app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml":                "",
+				"base1/kustomization.yml": `resources: [app.yaml]`,
+				"base1/app.yaml":          "",
+				"base2/Kustomization":     `resources: [app.yaml]`,
+				"base2/app.yaml":          "",
+			},
+			configName: "Kustomization",
+		},
+		{
+			description: "no kustomization config",
+			yaml:        `resources: [foo]`,
+			shouldErr:   true,
+			createFiles: map[string]string{
+				"foo/invalid-config-name": "",
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			if test.configName == "" {
+				test.configName = "kustomization.yaml"
+			}
+
 			tmpDir := t.NewTempDir().
-				Write("kustomization.yaml", test.yaml)
+				Write(test.configName, test.yaml)
 
 			for path, contents := range test.createFiles {
 				tmpDir.Write(path, contents)
