@@ -684,6 +684,9 @@ type KanikoArtifact struct {
 	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
 	// use a remote cache which will speed up builds.
 	Cache *KanikoCache `yaml:"cache,omitempty"`
+
+	// Reproducible is used to strip timestamps out of the built image.
+	Reproducible bool `yaml:"reproducible,omitempty"`
 }
 
 // DockerArtifact *beta* describes an artifact built from a Dockerfile,
