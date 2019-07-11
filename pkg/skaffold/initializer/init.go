@@ -401,7 +401,7 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 	// }
 	//
 	// "builders" is the list of builder configurations, and contains a builder name and a builder-specific payload
-	// "images" contains an image name and a boolean that indicates whether a builder/image pair can be automatically resolved (false) or if it requires prompting (true)
+	// "images" contains an image name and a boolean that indicates whether a builder/image pair can be automatically resolved (true) or if it requires prompting (false)
 	type Builder struct {
 		Name    string      `json:"name,omitempty"`
 		Payload InitBuilder `json:"payload"`
@@ -417,13 +417,13 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 
 	for _, pair := range pairs {
 		a.Builders = append(a.Builders, Builder{Name: pair.Builder.Name(), Payload: pair.Builder})
-		a.Images = append(a.Images, Image{Name: pair.ImageName, FoundMatch: false})
+		a.Images = append(a.Images, Image{Name: pair.ImageName, FoundMatch: true})
 	}
 	for _, config := range unresolvedBuilders {
 		a.Builders = append(a.Builders, Builder{Name: config.Name(), Payload: config})
 	}
 	for _, image := range unresolvedImages {
-		a.Images = append(a.Images, Image{Name: image, FoundMatch: true})
+		a.Images = append(a.Images, Image{Name: image, FoundMatch: false})
 	}
 
 	contents, err := json.Marshal(a)

@@ -40,19 +40,19 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 			pairs:       []builderImagePair{{docker.Docker{File: "Dockerfile1"}, "image1"}},
 			builders:    []InitBuilder{docker.Docker{File: "Dockerfile2"}},
 			images:      []string{"image2"},
-			expected:    `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":true}]}`,
+			expected:    `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":false}]}`,
 		},
 		{
 			description: "builders and images with no pairs",
 			builders:    []InitBuilder{docker.Docker{File: "Dockerfile1"}, docker.Docker{File: "Dockerfile2"}},
 			images:      []string{"image1", "image2"},
-			expected:    `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":true}]}`,
+			expected:    `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":false}]}`,
 		},
 		{
 			description: "no dockerfile, skip build",
 			images:      []string{"image1", "image2"},
 			skipBuild:   true,
-			expected:    `{"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":true}]}`,
+			expected:    `{"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":false}]}`,
 		},
 		{
 			description: "no dockerfile",
