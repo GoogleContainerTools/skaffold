@@ -226,7 +226,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.StatusCheck,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "debug", "deploy"},
+		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
 	},
 }
 

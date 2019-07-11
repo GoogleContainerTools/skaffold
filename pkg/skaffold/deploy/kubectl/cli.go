@@ -118,3 +118,13 @@ func (c *CLI) args(command string, commandFlags []string, arg ...string) []strin
 
 	return args
 }
+
+// Run shells out kubectl CLI.
+func (c *CLI) RunOut(ctx context.Context, in io.Reader, command string, commandFlags []string, arg ...string) ([]byte, error) {
+	args := c.args(command, commandFlags, arg...)
+
+	cmd := exec.CommandContext(ctx, "kubectl", args...)
+	cmd.Stdin = in
+
+	return util.RunCmdOut(cmd)
+}

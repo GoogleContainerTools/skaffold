@@ -67,7 +67,8 @@ func TestBuildDeploy(t *testing.T) {
 	dir.Write("build.out", string(outputBytes))
 
 	// Run Deploy using the build output
-	skaffold.Deploy("--build-artifacts", buildOutputFile).InDir("examples/microservices").InNs(ns.Name).RunOrFail(t)
+	// See https://github.com/GoogleContainerTools/skaffold/issues/2372 on why status-check=false
+	skaffold.Deploy("--build-artifacts", buildOutputFile, "--status-check=false").InDir("examples/microservices").InNs(ns.Name).RunOrFail(t)
 
 	depApp := client.GetDeployment("leeroy-app")
 	testutil.CheckDeepEqual(t, appTag, depApp.Spec.Template.Spec.Containers[0].Image)
@@ -95,4 +96,39 @@ func TestDeploy(t *testing.T) {
 	testutil.CheckDeepEqual(t, "index.docker.io/library/busybox:1", dep.Spec.Template.Spec.Containers[0].Image)
 
 	skaffold.Delete().InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
+}
+
+func TestDeployWithInCorrectConfig(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	err := skaffold.Deploy().InDir("testdata/unstable-deployment").InNs(ns.Name).Run(t)
+	if err == nil {
+		t.Error("expected an error to see since the deployment is not stable. However deploy returned success")
+	}
+
+	skaffold.Delete().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
+}
+
+func TestDeployWithInCorrectConfigWithNoStatusCheck(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	skaffold.Deploy("--status-check=false").InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFailOutput(t)
+
+	skaffold.Delete().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
 }
