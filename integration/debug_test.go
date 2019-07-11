@@ -39,15 +39,12 @@ func TestDebug(t *testing.T) {
 	}{
 		{
 			description: "kubectl",
-			// see https://github.com/GoogleContainerTools/skaffold/issues/2373
 			dir:         "testdata/debug",
-			args:        []string{},
 			deployments: []string{"jib"},
 			pods:        []string{"nodejs", "npm", "python3"},
 		},
 		{
 			description: "kustomize",
-			// See https://github.com/GoogleContainerTools/skaffold/issues/2373
 			args:        []string{"--profile", "kustomize"},
 			dir:         "testdata/debug",
 			deployments: []string{"jib"},
@@ -61,8 +58,8 @@ func TestDebug(t *testing.T) {
 
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
-			args := append(test.args, "--status-check=false")
-			stop := skaffold.Debug(args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
+
+			stop := skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 			defer stop()
 
 			client.WaitForPodsReady(test.pods...)
