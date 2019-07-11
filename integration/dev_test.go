@@ -57,7 +57,7 @@ func TestDev(t *testing.T) {
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			stop := skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+			stop := skaffold.Dev("--trigger", test.trigger, "--status-check=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 			defer stop()
 
 			dep := client.GetDeployment("test-dev")
