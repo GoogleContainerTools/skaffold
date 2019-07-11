@@ -216,7 +216,7 @@ deploy:
 
 			t.Override(&docker.ValidateDockerfileFunc, testValidDocker)
 
-			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, false, detectBuilders)
+			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, detectBuilders)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), potentialConfigs)

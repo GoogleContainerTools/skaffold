@@ -105,7 +105,7 @@ func DoInit(out io.Writer, c Config) error {
 		}
 	}
 
-	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, c.EnableJibInit, detectBuilders)
+	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, detectBuilders)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builde
 	return pairs, builderConfigs, unresolvedImages
 }
 
-func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, error) {
+func detectBuilders(path string) ([]InitBuilder, error) {
 	// Check for Dockerfile
 	if docker.ValidateDockerfileFunc(path) {
 		results := []InitBuilder{docker.Docker{File: path}}
@@ -434,7 +434,7 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 	return err
 }
 
-func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, string) ([]InitBuilder, error)) ([]string, []InitBuilder, error) {
+func walk(dir string, force bool, validateBuildFile func(string) ([]InitBuilder, error)) ([]string, []InitBuilder, error) {
 	var potentialConfigs []string
 	var foundBuilders []InitBuilder
 	err := filepath.Walk(dir, func(path string, f os.FileInfo, e error) error {
@@ -457,7 +457,7 @@ func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, st
 			return nil
 		}
 		// try and parse build file
-		if builderConfigs, err := validateBuildFile(enableJibInit, path); builderConfigs != nil {
+		if builderConfigs, err := validateBuildFile(path); builderConfigs != nil {
 			for _, buildConfig := range builderConfigs {
 				logrus.Infof("existing builder found: %s", buildConfig.Describe())
 				foundBuilders = append(foundBuilders, buildConfig)
