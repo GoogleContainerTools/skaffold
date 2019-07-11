@@ -228,7 +228,7 @@ func completion(cmd *cobra.Command, args []string) {
 }
 
 // NewCmdCompletion returns the cobra command that outputs shell completion code
-func NewCmdCompletion(out io.Writer) *cobra.Command {
+func NewCmdCompletion() *cobra.Command {
 	return &cobra.Command{
 		Use: "completion SHELL",
 		Args: func(cmd *cobra.Command, args []string) error {

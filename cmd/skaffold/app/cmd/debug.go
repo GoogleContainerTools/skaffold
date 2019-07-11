@@ -26,9 +26,9 @@ import (
 )
 
 // NewCmdDebug describes the CLI command to run a pipeline in debug mode.
-func NewCmdDebug(out io.Writer) *cobra.Command {
-	return NewCmd(out, "debug").
-		WithDescription("Runs a pipeline file in debug mode").
+func NewCmdDebug() *cobra.Command {
+	return NewCmd("debug").
+		WithDescription("Run a pipeline in debug mode").
 		WithLongDescription("Similar to `dev`, but configures the pipeline for debugging.").
 		WithCommonFlags().
 		NoArgs(cancelWithCtrlC(context.Background(), doDebug))

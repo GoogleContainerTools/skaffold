@@ -75,7 +75,7 @@ func TestDescribe(t *testing.T) {
 	}{
 		{
 			description:    "Dockerfile prompt",
-			dockerfile:     Docker{Dockerfile: "path/to/Dockerfile"},
+			dockerfile:     Docker{File: "path/to/Dockerfile"},
 			expectedPrompt: "Docker (path/to/Dockerfile)",
 		},
 	}
@@ -96,7 +96,7 @@ func TestCreateArtifact(t *testing.T) {
 	}{
 		{
 			description:   "default filename",
-			dockerfile:    Docker{Dockerfile: filepath.Join("path", "to", "Dockerfile")},
+			dockerfile:    Docker{File: filepath.Join("path", "to", "Dockerfile")},
 			manifestImage: "image",
 			expectedArtifact: latest.Artifact{
 				ImageName:    "image",
@@ -106,7 +106,7 @@ func TestCreateArtifact(t *testing.T) {
 		},
 		{
 			description:   "non-default filename",
-			dockerfile:    Docker{Dockerfile: filepath.Join("path", "to", "Dockerfile1")},
+			dockerfile:    Docker{File: filepath.Join("path", "to", "Dockerfile1")},
 			manifestImage: "image",
 			expectedArtifact: latest.Artifact{
 				ImageName: "image",
@@ -118,7 +118,7 @@ func TestCreateArtifact(t *testing.T) {
 		},
 		{
 			description:   "ignore workspace",
-			dockerfile:    Docker{Dockerfile: "Dockerfile"},
+			dockerfile:    Docker{File: "Dockerfile"},
 			manifestImage: "image",
 			expectedArtifact: latest.Artifact{
 				ImageName:    "image",
