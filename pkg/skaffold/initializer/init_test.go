@@ -27,48 +27,32 @@ import (
 
 func TestPrintAnalyzeJSON(t *testing.T) {
 	tests := []struct {
-		description   string
-		pairs         []builderImagePair
-		builders      []InitBuilder
-		images        []string
-		skipBuild     bool
-		enableJibInit bool
-		shouldErr     bool
-		expected      string
+		description string
+		pairs       []builderImagePair
+		builders    []InitBuilder
+		images      []string
+		skipBuild   bool
+		shouldErr   bool
+		expected    string
 	}{
 		{
-			description: "builders and images (backwards compatibility)",
-			builders:    []InitBuilder{docker.Docker{Dockerfile: "Dockerfile1"}, docker.Docker{Dockerfile: "Dockerfile2"}},
-			images:      []string{"image1", "image2"},
-			expected:    `{"dockerfiles":["Dockerfile1","Dockerfile2"],"images":["image1","image2"]}`,
+			description: "builders and images with pairs",
+			pairs:       []builderImagePair{{docker.Docker{File: "Dockerfile1"}, "image1"}},
+			builders:    []InitBuilder{docker.Docker{File: "Dockerfile2"}},
+			images:      []string{"image2"},
+			expected:    `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":true}]}`,
 		},
 		{
-			description: "no dockerfile, skip build (backwards compatibility)",
+			description: "builders and images with no pairs",
+			builders:    []InitBuilder{docker.Docker{File: "Dockerfile1"}, docker.Docker{File: "Dockerfile2"}},
+			images:      []string{"image1", "image2"},
+			expected:    `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":true}]}`,
+		},
+		{
+			description: "no dockerfile, skip build",
 			images:      []string{"image1", "image2"},
 			skipBuild:   true,
-			expected:    `{"images":["image1","image2"]}`,
-		},
-		{
-			description:   "builders and images with pairs",
-			pairs:         []builderImagePair{{docker.Docker{Dockerfile: "Dockerfile1"}, "image1"}},
-			builders:      []InitBuilder{docker.Docker{Dockerfile: "Dockerfile2"}},
-			images:        []string{"image2"},
-			enableJibInit: true,
-			expected:      `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","requiresPrompt":false},{"name":"image2","requiresPrompt":true}]}`,
-		},
-		{
-			description:   "builders and images with no pairs",
-			builders:      []InitBuilder{docker.Docker{Dockerfile: "Dockerfile1"}, docker.Docker{Dockerfile: "Dockerfile2"}},
-			images:        []string{"image1", "image2"},
-			enableJibInit: true,
-			expected:      `{"builders":[{"name":"Docker","payload":{"path":"Dockerfile1"}},{"name":"Docker","payload":{"path":"Dockerfile2"}}],"images":[{"name":"image1","requiresPrompt":true},{"name":"image2","requiresPrompt":true}]}`,
-		},
-		{
-			description:   "no dockerfile, skip build",
-			images:        []string{"image1", "image2"},
-			skipBuild:     true,
-			enableJibInit: true,
-			expected:      `{"images":[{"name":"image1","requiresPrompt":true},{"name":"image2","requiresPrompt":true}]}`,
+			expected:    `{"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":true}]}`,
 		},
 		{
 			description: "no dockerfile",
@@ -84,7 +68,50 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var out bytes.Buffer
 
-			err := printAnalyzeJSON(&out, test.skipBuild, test.enableJibInit, test.pairs, test.builders, test.images)
+			err := printAnalyzeJSON(&out, test.skipBuild, test.pairs, test.builders, test.images)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
+		})
+	}
+}
+
+func TestPrintAnalyzeJSONNoJib(t *testing.T) {
+	tests := []struct {
+		description string
+		pairs       []builderImagePair
+		builders    []InitBuilder
+		images      []string
+		skipBuild   bool
+		shouldErr   bool
+		expected    string
+	}{
+		{
+			description: "builders and images (backwards compatibility)",
+			builders:    []InitBuilder{docker.Docker{File: "Dockerfile1"}, docker.Docker{File: "Dockerfile2"}},
+			images:      []string{"image1", "image2"},
+			expected:    `{"dockerfiles":["Dockerfile1","Dockerfile2"],"images":["image1","image2"]}`,
+		},
+		{
+			description: "no dockerfile, skip build (backwards compatibility)",
+			images:      []string{"image1", "image2"},
+			skipBuild:   true,
+			expected:    `{"images":["image1","image2"]}`,
+		},
+		{
+			description: "no dockerfile",
+			images:      []string{"image1", "image2"},
+			shouldErr:   true,
+		},
+		{
+			description: "no dockerfiles or images",
+			shouldErr:   true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			var out bytes.Buffer
+
+			err := printAnalyzeJSONNoJib(&out, test.skipBuild, test.pairs, test.builders, test.images)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
 		})
@@ -222,28 +249,28 @@ func TestResolveBuilderImages(t *testing.T) {
 		},
 		{
 			description:      "don't prompt for single dockerfile and image",
-			buildConfigs:     []InitBuilder{docker.Docker{Dockerfile: "Dockerfile1"}},
+			buildConfigs:     []InitBuilder{docker.Docker{File: "Dockerfile1"}},
 			images:           []string{"image1"},
 			shouldMakeChoice: false,
 			expectedPairs: []builderImagePair{
 				{
-					Builder:   docker.Docker{Dockerfile: "Dockerfile1"},
+					Builder:   docker.Docker{File: "Dockerfile1"},
 					ImageName: "image1",
 				},
 			},
 		},
 		{
 			description:      "prompt for multiple builders and images",
-			buildConfigs:     []InitBuilder{docker.Docker{Dockerfile: "Dockerfile1"}, docker.Docker{Dockerfile: "Dockerfile2"}},
+			buildConfigs:     []InitBuilder{docker.Docker{File: "Dockerfile1"}, docker.Docker{File: "Dockerfile2"}},
 			images:           []string{"image1", "image2"},
 			shouldMakeChoice: true,
 			expectedPairs: []builderImagePair{
 				{
-					Builder:   docker.Docker{Dockerfile: "Dockerfile1"},
+					Builder:   docker.Docker{File: "Dockerfile1"},
 					ImageName: "image1",
 				},
 				{
-					Builder:   docker.Docker{Dockerfile: "Dockerfile2"},
+					Builder:   docker.Docker{File: "Dockerfile2"},
 					ImageName: "image2",
 				},
 			},

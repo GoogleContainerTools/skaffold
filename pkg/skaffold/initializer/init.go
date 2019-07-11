@@ -117,10 +117,15 @@ func DoInit(out io.Writer, c Config) error {
 	images := k.GetImages()
 
 	// Determine which builders/images require prompting
-	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(c.EnableJibInit, builderConfigs, images)
+	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(builderConfigs, images)
 
 	if c.Analyze {
-		return printAnalyzeJSON(out, c.SkipBuild, c.EnableJibInit, pairs, unresolvedBuilderConfigs, unresolvedImages)
+		// TODO: Remove backwards compatibility block
+		if !c.EnableJibInit {
+			return printAnalyzeJSONNoJib(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
+		}
+
+		return printAnalyzeJSON(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
 	}
 
 	// conditionally generate build artifacts
@@ -186,12 +191,7 @@ func DoInit(out io.Writer, c Config) error {
 // autoSelectBuilders takes a list of builders and images, checks if any of the builders' configured target
 // images match an image in the image list, and returns a list of the matching builder/image pairs. Also
 // separately returns the builder configs and images that didn't have any matches.
-func autoSelectBuilders(enableJibInit bool, builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
-	// TODO: Remove backwards compatibility block
-	if !enableJibInit {
-		return nil, builderConfigs, images
-	}
-
+func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
 	var pairs []builderImagePair
 	var unresolvedImages []string
 	for _, image := range images {
@@ -224,13 +224,8 @@ func autoSelectBuilders(enableJibInit bool, builderConfigs []InitBuilder, images
 func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, error) {
 	// Check for Dockerfile
 	if docker.ValidateDockerfileFunc(path) {
-		results := []InitBuilder{docker.Docker{Dockerfile: path}}
+		results := []InitBuilder{docker.Docker{File: path}}
 		return results, nil
-	}
-
-	// TODO: Remove backwards compatibility block
-	if !enableJibInit {
-		return nil, nil
 	}
 
 	// TODO: Check for more builders
@@ -247,7 +242,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 		}
 
 		pairs = append(pairs, builderImagePair{
-			Builder:   docker.Docker{Dockerfile: parts[0]},
+			Builder:   docker.Docker{File: parts[0]},
 			ImageName: parts[1],
 		})
 	}
@@ -346,38 +341,41 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 	return pipelineStr, nil
 }
 
-// printAnalyzeJSON takes the automatically resolved builder/image pairs, the unresolved images, and the unresolved builders, and generates
-// a JSON string containing builder config information,
-func printAnalyzeJSON(out io.Writer, skipBuild, enableJibInit bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
+func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
 	if !skipBuild && len(unresolvedBuilders) == 0 {
 		return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again, or run `skaffold init --skip-build`")
 	}
 
-	// TODO: Remove backwards compatibility block
-	if !enableJibInit {
-		a := struct {
-			Dockerfiles []string `json:"dockerfiles,omitempty"`
-			Images      []string `json:"images,omitempty"`
-		}{Images: unresolvedImages}
+	a := struct {
+		Dockerfiles []string `json:"dockerfiles,omitempty"`
+		Images      []string `json:"images,omitempty"`
+	}{Images: unresolvedImages}
 
-		for _, pair := range pairs {
-			if pair.Builder.Name() == "Docker" {
-				a.Dockerfiles = append(a.Dockerfiles, pair.Builder.Path())
-			}
-			a.Images = append(a.Images, pair.ImageName)
+	for _, pair := range pairs {
+		if pair.Builder.Name() == "Docker" {
+			a.Dockerfiles = append(a.Dockerfiles, pair.Builder.Path())
 		}
-		for _, config := range unresolvedBuilders {
-			if config.Name() == "Docker" {
-				a.Dockerfiles = append(a.Dockerfiles, config.Path())
-			}
+		a.Images = append(a.Images, pair.ImageName)
+	}
+	for _, config := range unresolvedBuilders {
+		if config.Name() == "Docker" {
+			a.Dockerfiles = append(a.Dockerfiles, config.Path())
 		}
+	}
 
-		contents, err := json.Marshal(a)
-		if err != nil {
-			return errors.Wrap(err, "marshalling contents")
-		}
-		_, err = out.Write(contents)
-		return err
+	contents, err := json.Marshal(a)
+	if err != nil {
+		return errors.Wrap(err, "marshalling contents")
+	}
+	_, err = out.Write(contents)
+	return err
+}
+
+// printAnalyzeJSON takes the automatically resolved builder/image pairs, the unresolved images, and the unresolved builders, and generates
+// a JSON string containing builder config information,
+func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
+	if !skipBuild && len(unresolvedBuilders) == 0 {
+		return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again, or run `skaffold init --skip-build`")
 	}
 
 	// Build JSON output. Example schema is below:
@@ -397,8 +395,8 @@ func printAnalyzeJSON(out io.Writer, skipBuild, enableJibInit bool, pairs []buil
 	//         },
 	//     ],
 	//     "images":[
-	//         {"name":"gcr.io/project/images", "requiresPrompt":"false"}, // No need to prompt for this image since its builder was automatically resolved
-	//         {"name":"another/image", "requiresPrompt":"true"},
+	//         {"name":"gcr.io/project/images", "foundMatch":"true"}, // No need to prompt for this image since its builder was automatically resolved
+	//         {"name":"another/image", "foundMatch":"false"},
 	//     ],
 	// }
 	//
@@ -409,8 +407,8 @@ func printAnalyzeJSON(out io.Writer, skipBuild, enableJibInit bool, pairs []buil
 		Payload InitBuilder `json:"payload"`
 	}
 	type Image struct {
-		Name           string `json:"name"`
-		RequiresPrompt bool   `json:"requiresPrompt"`
+		Name       string `json:"name"`
+		FoundMatch bool   `json:"foundMatch"`
 	}
 	a := struct {
 		Builders []Builder `json:"builders,omitempty"`
@@ -419,13 +417,13 @@ func printAnalyzeJSON(out io.Writer, skipBuild, enableJibInit bool, pairs []buil
 
 	for _, pair := range pairs {
 		a.Builders = append(a.Builders, Builder{Name: pair.Builder.Name(), Payload: pair.Builder})
-		a.Images = append(a.Images, Image{Name: pair.ImageName, RequiresPrompt: false})
+		a.Images = append(a.Images, Image{Name: pair.ImageName, FoundMatch: false})
 	}
 	for _, config := range unresolvedBuilders {
 		a.Builders = append(a.Builders, Builder{Name: config.Name(), Payload: config})
 	}
 	for _, image := range unresolvedImages {
-		a.Images = append(a.Images, Image{Name: image, RequiresPrompt: true})
+		a.Images = append(a.Images, Image{Name: image, FoundMatch: true})
 	}
 
 	contents, err := json.Marshal(a)
