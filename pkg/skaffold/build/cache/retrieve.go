@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -42,77 +43,57 @@ type ImageDetails struct {
 	ID     string `yaml:"id,omitempty"`
 }
 
-type detailsErr struct {
-	details *cachedArtifactDetails
-	err     error
-}
-
 // RetrieveCachedArtifacts checks to see if artifacts are cached, and returns tags for cached images, otherwise a list of images to be built
 func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]*latest.Artifact, []build.Artifact, error) {
 	if !c.useCache {
 		return artifacts, nil, nil
 	}
 
-	start := time.Now()
 	color.Default.Fprintln(out, "Checking cache...")
+	start := time.Now()
 
-	detailsErrs := make([]chan detailsErr, len(artifacts))
+	wg := sync.WaitGroup{}
+	builtImages := make([]bool, len(artifacts))
+	needToBuildImages := make([]bool, len(artifacts))
 
 	for i := range artifacts {
-		detailsErrs[i] = make(chan detailsErr, 1)
-
+		wg.Add(1)
 		i := i
 		go func() {
-			details, err := c.retrieveCachedArtifactDetails(ctx, artifacts[i])
-			detailsErrs[i] <- detailsErr{details: details, err: err}
+			defer wg.Done()
+			ok, err := c.retrieveCachedArtifact(ctx, out, artifacts[i])
+			if ok {
+				builtImages[i] = true
+				return
+			}
+			if err != nil {
+				logrus.Debugf("error finding cached artifact for %s: %v", artifacts[i].ImageName, err)
+			}
+			color.Default.Fprintf(out, " - %s: ", artifacts[i].ImageName)
+			color.Red.Fprintf(out, "Not Found. Rebuilding.\n")
+			needToBuildImages[i] = true
 		}()
 	}
+
+	wg.Wait()
 
 	var (
 		needToBuild []*latest.Artifact
 		built       []build.Artifact
 	)
 
-	for i, artifact := range artifacts {
-		color.Default.Fprintf(out, " - %s: ", artifact.ImageName)
-
-		select {
-		case <-ctx.Done():
-			return nil, nil, context.Canceled
-
-		case d := <-detailsErrs[i]:
-			details := d.details
-			err := d.err
-			if err != nil || details.needsRebuild {
-				color.Red.Fprintln(out, "Not found. Rebuilding.")
-				needToBuild = append(needToBuild, artifact)
-				continue
-			}
-
-			color.Green.Fprint(out, "Found")
-			if details.needsRetag {
-				color.Green.Fprint(out, ". Retagging")
-			}
-			if details.needsPush {
-				color.Green.Fprint(out, ". Pushing.")
-			}
-			color.Default.Fprintln(out)
-
-			if details.needsRetag {
-				if err := c.client.Tag(ctx, details.prebuiltImage, details.hashTag); err != nil {
-					return nil, nil, errors.Wrap(err, "retagging image")
-				}
-			}
-			if details.needsPush {
-				if _, err := c.client.Push(ctx, out, details.hashTag); err != nil {
-					return nil, nil, errors.Wrap(err, "pushing image")
-				}
-			}
-
+	for i, imageBuilt := range builtImages {
+		if imageBuilt {
 			built = append(built, build.Artifact{
-				ImageName: artifact.ImageName,
-				Tag:       details.hashTag,
+				ImageName: artifacts[i].ImageName,
+				Tag:       HashTag(artifacts[i]),
 			})
+		}
+	}
+
+	for i, imageBuilt := range needToBuildImages {
+		if imageBuilt {
+			needToBuild = append(needToBuild, artifacts[i])
 		}
 	}
 
@@ -120,107 +101,97 @@ func (c *Cache) RetrieveCachedArtifacts(ctx context.Context, out io.Writer, arti
 	return needToBuild, built, nil
 }
 
-type cachedArtifactDetails struct {
-	needsRebuild  bool
-	needsRetag    bool
-	needsPush     bool
-	prebuiltImage string
-	hashTag       string
-}
-
-func (c *Cache) retrieveCachedArtifactDetails(ctx context.Context, a *latest.Artifact) (*cachedArtifactDetails, error) {
+// retrieveCachedArtifact tries to retrieve a cached artifact.
+// If it cannot, it returns false.
+// If it can, it returns true.
+func (c *Cache) retrieveCachedArtifact(ctx context.Context, out io.Writer, a *latest.Artifact) (bool, error) {
 	hash, err := hashForArtifact(ctx, c.builder, a)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting hash for artifact %s", a.ImageName)
+		return false, errors.Wrapf(err, "getting hash for artifact %s", a.ImageName)
 	}
 	a.WorkspaceHash = hash
 	imageDetails, cacheHit := c.artifactCache[hash]
 	if !cacheHit {
-		return &cachedArtifactDetails{
-			needsRebuild: true,
-		}, nil
+		return false, nil
 	}
+	if c.localCluster && !c.pushImages {
+		return c.artifactExistsLocally(ctx, out, a, imageDetails)
+	}
+	return c.artifactExistsRemotely(ctx, out, a, imageDetails)
+}
+
+// artifactExistsLocally assumes the artifact must exist locally.
+// This is called when using a local cluster and push:false.
+// 1. Check if image exists locally
+// 2. If not, check if same digest exists locally. If it does, retag.
+// 3. If not, rebuild
+// It returns true if the artifact exists locally, and false if not.
+func (c *Cache) artifactExistsLocally(ctx context.Context, out io.Writer, a *latest.Artifact, imageDetails ImageDetails) (bool, error) {
 	hashTag := HashTag(a)
-	il, err := c.imageLocation(ctx, imageDetails, hashTag)
-	if err != nil {
-		return nil, errors.Wrapf(err, "getting artifact details for %s", a.ImageName)
-	}
-	return &cachedArtifactDetails{
-		needsRebuild:  needsRebuild(il, c.localCluster),
-		needsRetag:    needsRetag(il),
-		needsPush:     needsPush(il, c.localCluster, c.pushImages),
-		prebuiltImage: il.prebuiltImage,
-		hashTag:       hashTag,
-	}, nil
-}
-
-// imageLocation holds information about where the image currently is
-type imageLocation struct {
-	existsRemotely bool
-	existsLocally  bool
-	prebuiltImage  string
-}
-
-func (c *Cache) imageLocation(ctx context.Context, imageDetails ImageDetails, tag string) (*imageLocation, error) {
-	// Check if tagged image exists remotely with the same digest
-	existsRemotely := imgExistsRemotely(tag, imageDetails.Digest, c.insecureRegistries)
-	existsLocally := false
-	if c.client != nil {
-		// See if this image exists in the local daemon
-		if c.client.ImageExists(ctx, tag) {
-			existsLocally = true
-		}
-	}
-	if existsLocally {
-		return &imageLocation{
-			existsLocally:  existsLocally,
-			existsRemotely: existsRemotely,
-			prebuiltImage:  tag,
-		}, nil
+	if c.client.ImageExists(ctx, hashTag) {
+		color.Default.Fprintf(out, " - %s: ", a.ImageName)
+		color.Green.Fprintf(out, "Found\n")
+		return true, nil
 	}
 	// Check for a local image with the same digest as the image we want to build
 	prebuiltImage, err := c.retrievePrebuiltImage(imageDetails)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting prebuilt image")
+		return false, errors.Wrapf(err, "getting prebuilt image")
 	}
-	return &imageLocation{
-		existsRemotely: existsRemotely,
-		existsLocally:  existsLocally,
-		prebuiltImage:  prebuiltImage,
-	}, nil
+	// If prebuilt image exists, tag it. Otherwise, return false, as artifact doesn't exist locally.
+	if prebuiltImage != "" {
+		color.Default.Fprintf(out, " - %s: ", a.ImageName)
+		color.Green.Fprintf(out, "Found. Retagging.\n")
+		if err := c.client.Tag(ctx, prebuiltImage, hashTag); err != nil {
+			return false, errors.Wrap(err, "retagging image")
+		}
+		return true, nil
+	}
+	return false, nil
 }
 
-func needsRebuild(d *imageLocation, localCluster bool) bool {
-	// If using local cluster, rebuild if all of the following are true:
-	//   1. does not exist locally
-	//   2. can't retag a prebuilt image
-	if localCluster {
-		return !d.existsLocally && d.prebuiltImage == ""
+// artifactExistsRemotely assumes the artifact must exist locally.
+// this is used when running a remote cluster, or when push:true
+// 1. Check if image exists remotely.
+// 2. If not, check if same digest exists locally. If it does, retag and repush.
+// 3. If not, rebuild.
+// It returns true if the artifact exists remotely, and false if not.
+func (c *Cache) artifactExistsRemotely(ctx context.Context, out io.Writer, a *latest.Artifact, imageDetails ImageDetails) (bool, error) {
+	hashTag := HashTag(a)
+	if imgExistsRemotely(hashTag, imageDetails.Digest, c.insecureRegistries) {
+		color.Default.Fprintf(out, " - %s: ", a.ImageName)
+		color.Green.Fprintf(out, "Found\n")
+		return true, nil
 	}
-	// If using remote cluster, only rebuild image if all of the following are true:
-	//  1. does not exist locally
-	//  2. does not exist remotely
-	//  3. can't retag a prebuilt image
-	return !d.existsLocally && !d.existsRemotely && d.prebuiltImage == ""
-}
 
-func needsPush(d *imageLocation, localCluster, push bool) bool {
-	// If using local cluster...
-	if localCluster {
-		// ...  only push if specified and image does not exist remotely
-		return push && !d.existsRemotely
+	// Check if image exists locally.
+	if c.client.ImageExists(ctx, hashTag) {
+		color.Default.Fprintf(out, " - %s: ", a.ImageName)
+		color.Green.Fprintf(out, "Found Locally. Pushing.\n")
+		if _, err := c.client.Push(ctx, out, hashTag); err != nil {
+			return false, errors.Wrap(err, "retagging image")
+		}
+		return true, nil
 	}
-	// If using remote cluster, push if image does not exist remotely
-	return !d.existsRemotely
-}
 
-func needsRetag(d *imageLocation) bool {
-	// Don't need a retag if image already exists locally
-	if d.existsLocally {
-		return false
+	// Check for a local image with the same digest as the image we want to build
+	prebuiltImage, err := c.retrievePrebuiltImage(imageDetails)
+	if err != nil {
+		return false, errors.Wrapf(err, "getting prebuilt image")
 	}
-	// If a prebuilt image is found locally, retag the image
-	return d.prebuiltImage != ""
+	// If prebuilt image exists, tag it and push it. Otherwise, return false, as artifact doesn't exist locally.
+	if prebuiltImage != "" {
+		color.Default.Fprintf(out, " - %s: ", a.ImageName)
+		color.Green.Fprintf(out, "Found Locally. Retagging and Pushing.\n")
+		if err := c.client.Tag(ctx, prebuiltImage, hashTag); err != nil {
+			return false, errors.Wrap(err, "retagging image")
+		}
+		if _, err := c.client.Push(ctx, out, hashTag); err != nil {
+			return false, errors.Wrap(err, "retagging image")
+		}
+		return true, nil
+	}
+	return false, nil
 }
 
 func (c *Cache) retrievePrebuiltImage(details ImageDetails) (string, error) {
