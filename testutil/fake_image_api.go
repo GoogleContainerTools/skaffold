@@ -43,6 +43,7 @@ type FakeAPIClient struct {
 	ErrStream       bool
 
 	nextImageID  int
+	Tagged       []string
 	Pushed       []string
 	Built        []types.ImageBuildOptions
 	PushedImages []string
@@ -119,7 +120,7 @@ func (f *FakeAPIClient) ImageTag(_ context.Context, image, ref string) error {
 		f.TagToImageID = make(map[string]string)
 	}
 	f.TagToImageID[ref] = imageID
-
+	f.Tagged = append(f.Tagged, ref)
 	return nil
 }
 
