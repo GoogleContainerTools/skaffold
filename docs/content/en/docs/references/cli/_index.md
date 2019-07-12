@@ -103,6 +103,7 @@ Options:
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
+      --file-output='': Filename to write build images to
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
       --insecure-registry=[]: Target registries for built images which are not secure
   -n, --namespace='': Run deployments in the specified namespace
@@ -128,6 +129,7 @@ Env vars:
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
+* `SKAFFOLD_FILE_OUTPUT` (same as `--file-output`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)

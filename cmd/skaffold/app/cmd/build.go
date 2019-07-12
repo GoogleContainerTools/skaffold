@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
@@ -35,6 +36,7 @@ import (
 var (
 	quietFlag       bool
 	buildFormatFlag = flags.NewTemplateFlag("{{json .}}", flags.BuildOutput{})
+	buildOutputFlag string
 )
 
 // NewCmdBuild describes the CLI command to build artifacts.
@@ -46,6 +48,7 @@ func NewCmdBuild() *cobra.Command {
 			f.StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
 			f.BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
 			f.VarP(buildFormatFlag, "output", "o", "Used in conjunction with --quiet flag. "+buildFormatFlag.Usage())
+			f.StringVar(&buildOutputFlag, "file-output", "", "Filename to write build images to")
 		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doBuild))
 }
@@ -64,8 +67,19 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
 		bRes, err := r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
 
-		if quietFlag {
+		if quietFlag || buildOutputFlag != "" {
 			cmdOut := flags.BuildOutput{Builds: bRes}
+
+			if buildOutputFlag != "" {
+				f, err := os.OpenFile(buildOutputFlag, os.O_RDWR|os.O_CREATE, 0755)
+				if err != nil {
+					return errors.Wrap(err, "opening file")
+				}
+				defer func() {
+					f.Close()
+				}()
+				out = f
+			}
 			if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
 				return errors.Wrap(err, "executing template")
 			}
