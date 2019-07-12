@@ -141,5 +141,9 @@ func args(artifact *latest.KanikoArtifact, context, tag string) ([]string, error
 		}
 	}
 
+	if artifact.Reproducible {
+		args = append(args, "--reproducible")
+	}
+
 	return args, nil
 }
