@@ -36,8 +36,8 @@ var (
 	kubeContext    string
 )
 
-// ResetConfig is used by tests
-func ResetConfig() {
+// resetConfig is used by tests
+func resetConfig() {
 	kubeConfigOnce = sync.Once{}
 }
 
@@ -47,12 +47,16 @@ func UseKubeContext(overrideKubeContext string) {
 	kubeContext = overrideKubeContext
 }
 
+// GetRestClientConfig returns a REST client config for API calls against the Kubernetes API.
+// If UseKubeContext was called before, the CurrentContext will be overridden.
+// The result will be cached after the first call.
 func GetRestClientConfig() (*restclient.Config, error) {
 	clientConfig, err := getKubeConfig().ClientConfig()
 	return clientConfig, errors.Wrap(err, "error creating kubeConfig")
 }
 
 // getCurrentConfig retrieves the kubeconfig file. If UseKubeContext was called before, the CurrentContext will be overridden.
+// The result will be cached after the first call.
 func getCurrentConfig() (clientcmdapi.Config, error) {
 	cfg, err := getKubeConfig().RawConfig()
 	if kubeContext != "" {
@@ -62,7 +66,7 @@ func getCurrentConfig() (clientcmdapi.Config, error) {
 	return cfg, errors.Wrap(err, "loading kubeconfig")
 }
 
-// getKubeConfig creates a cached kubeConfig. If UseKubeContext was called before, the CurrentContext will be overridden.
+// getKubeConfig retrieves and caches the kubeConfig. If UseKubeContext was called before, the CurrentContext will be overridden.
 func getKubeConfig() clientcmd.ClientConfig {
 	kubeConfigOnce.Do(func() {
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()

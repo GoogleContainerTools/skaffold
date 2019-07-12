@@ -240,7 +240,7 @@ var FlagRegistry = []Flag{
 	},
 	{
 		Name:          "kube-context",
-		Usage:         "Use this kubernetes context",
+		Usage:         "Deploy to this kubernetes context",
 		Value:         &opts.KubeContext,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",

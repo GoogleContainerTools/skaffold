@@ -124,7 +124,7 @@ Options:
       --file-output='': Filename to write build images to
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
       --insecure-registry=[]: Target registries for built images which are not secure
-      --kube-context='': Use this kubernetes context
+      --kube-context='': Deploy to this kubernetes context
   -n, --namespace='': Run deployments in the specified namespace
   -o, --output={{json .}}: Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput
   -p, --profile=[]: Activate profiles by name
@@ -296,7 +296,7 @@ Options:
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
       --force=true: Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!)
       --insecure-registry=[]: Target registries for built images which are not secure
-      --kube-context='': Use this kubernetes context
+      --kube-context='': Deploy to this kubernetes context
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
@@ -351,7 +351,7 @@ Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
-      --kube-context='': Use this kubernetes context
+      --kube-context='': Deploy to this kubernetes context
   -n, --namespace='': Run deployments in the specified namespace
   -p, --profile=[]: Activate profiles by name
 
@@ -387,7 +387,7 @@ E.g. build.out created by running skaffold build --quiet {{json .}} > build.out
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
       --force=false: Recreate kubernetes resources if necessary for deployment (default false, warning: might cause downtime!)
   -i, --images=: A list of pre-built images to deploy
-      --kube-context='': Use this kubernetes context
+      --kube-context='': Deploy to this kubernetes context
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace='': Run deployments in the specified namespace
   -p, --profile=[]: Activate profiles by name
@@ -438,7 +438,7 @@ Options:
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
       --force=true: Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!)
       --insecure-registry=[]: Target registries for built images which are not secure
-      --kube-context='': Use this kubernetes context
+      --kube-context='': Deploy to this kubernetes context
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
@@ -603,7 +603,7 @@ Options:
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
       --force=true: Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!)
       --insecure-registry=[]: Target registries for built images which are not secure
-      --kube-context='': Use this kubernetes context
+      --kube-context='': Deploy to this kubernetes context
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold

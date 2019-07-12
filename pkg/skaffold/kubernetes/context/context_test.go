@@ -111,5 +111,5 @@ func resetKubeConfig(t *testutil.T, content string) {
 	kubeConfig := t.TempFile("config", []byte(content))
 	kubeContext = ""
 	t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
-	ResetConfig()
+	resetConfig()
 }
