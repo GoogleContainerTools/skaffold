@@ -54,6 +54,9 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		Use:           "skaffold",
 		Short:         "A tool that facilitates continuous development for Kubernetes applications.",
 		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
+		},
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			cmd.Root().SilenceUsage = true
 
@@ -148,8 +151,9 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdConfig())
 	rootCmd.AddCommand(NewCmdFindConfigs())
 	rootCmd.AddCommand(NewCmdDiagnose())
+	rootCmd.AddCommand(NewCmdOptions())
 
-	templates.ActsAsRootCommand(rootCmd, []string{"options"}, groups...)
+	templates.ActsAsRootCommand(rootCmd, nil, groups...)
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
 	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.Default), "Specify the default output color in ANSI escape codes")
 	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
@@ -158,6 +162,18 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	setFlagsFromEnvVariables(rootCmd)
 
 	return rootCmd
+}
+
+func NewCmdOptions() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "options",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Usage()
+		},
+	}
+	templates.UseOptionsTemplates(cmd)
+
+	return cmd
 }
 
 func updateCheck(ch chan string) error {
