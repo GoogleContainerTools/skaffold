@@ -49,6 +49,14 @@ type FakeAPIClient struct {
 	PushedImages []string
 }
 
+type notFoundError struct {
+	error
+}
+
+func (e notFoundError) NotFound() bool {
+	return true
+}
+
 type errReader struct{}
 
 func (f errReader) Read([]byte) (int, error) { return 0, fmt.Errorf("") }
@@ -93,17 +101,18 @@ func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, ref string) (type
 		return types.ImageInspect{}, nil, fmt.Errorf("")
 	}
 
-	id, ok := f.TagToImageID[ref]
-	if !ok {
-		return types.ImageInspect{}, nil, fmt.Errorf("")
+	for tag, imageID := range f.TagToImageID {
+		if tag == ref || imageID == ref {
+			rawConfig := []byte(fmt.Sprintf(`{"Config":{"Image":"%s"}}`, imageID))
+
+			return types.ImageInspect{
+				ID:          imageID,
+				RepoDigests: f.RepoDigests,
+			}, rawConfig, nil
+		}
 	}
 
-	rawConfig := []byte(fmt.Sprintf(`{"Config":{"Image":"%s"}}`, id))
-
-	return types.ImageInspect{
-		ID:          id,
-		RepoDigests: f.RepoDigests,
-	}, rawConfig, nil
+	return types.ImageInspect{}, nil, &notFoundError{}
 }
 
 func (f *FakeAPIClient) ImageTag(_ context.Context, image, ref string) error {
