@@ -23,12 +23,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) *kubernetes.LogAggregator {
+func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []*latest.Artifact) {
 	var imageNames []string
 	for _, artifact := range artifacts {
 		imageNames = append(imageNames, artifact.ImageName)
 	}
-	return r.newLoggerForImages(out, imageNames)
+	r.logger = r.newLoggerForImages(out, imageNames)
 }
 
 func (r *SkaffoldRunner) newLoggerForImages(out io.Writer, images []string) *kubernetes.LogAggregator {

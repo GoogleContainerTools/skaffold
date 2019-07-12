@@ -107,7 +107,7 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
   software-properties-common \
   apt-transport-https && \
   rm -rf /var/lib/apt/lists/*
-COPY --from=golang:1.11 /usr/local/go /usr/local/go
+COPY --from=golang:1.12 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/go/bin:$PATH
 ENV GOPATH /go/
 WORKDIR /go/src/github.com/GoogleContainerTools/skaffold

@@ -30,9 +30,9 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-func NewCmdFix(out io.Writer) *cobra.Command {
-	return NewCmd(out, "fix").
-		WithDescription("Converts old Skaffold config to newest schema version").
+func NewCmdFix() *cobra.Command {
+	return NewCmd("fix").
+		WithDescription("Update old configuration to newest schema version").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 			f.BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")

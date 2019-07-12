@@ -287,6 +287,7 @@ func TestNewBuilder(t *testing.T) {
 				pushImages:         true, //this will be true
 				skipTests:          false,
 				prune:              true,
+				pruneChildren:      true,
 				insecureRegistries: nil,
 			},
 		}, {
@@ -314,6 +315,7 @@ func TestNewBuilder(t *testing.T) {
 
 				skipTests:          false,
 				prune:              true,
+				pruneChildren:      true,
 				insecureRegistries: nil,
 			},
 		},

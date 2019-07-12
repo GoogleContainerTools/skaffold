@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,10 +28,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 )
 
@@ -60,34 +55,10 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, artifact *lates
 	tarPath := filepath.Join(bazelBin, buildTarPath(a.BuildTarget))
 
 	if b.pushImages {
-		return pushImage(tarPath, tag, b.insecureRegistries)
+		return docker.Push(tarPath, tag, b.insecureRegistries)
 	}
 
 	return b.loadImage(ctx, out, tarPath, a, tag)
-}
-
-// pushImage pushes the tarball image created by bazel
-func pushImage(tarPath, tag string, insecureRegistries map[string]bool) (string, error) {
-	t, err := name.NewTag(tag, name.WeakValidation)
-	if err != nil {
-		return "", errors.Wrapf(err, "parsing tag %q", tag)
-	}
-
-	auth, err := authn.DefaultKeychain.Resolve(t.Registry)
-	if err != nil {
-		return "", errors.Wrapf(err, "getting creds for %q", t)
-	}
-
-	i, err := tarball.ImageFromPath(tarPath, nil)
-	if err != nil {
-		return "", errors.Wrapf(err, "reading image %q", tarPath)
-	}
-
-	if err := remote.Write(t, i, auth, http.DefaultTransport); err != nil {
-		return "", errors.Wrapf(err, "writing image %q", t)
-	}
-
-	return docker.RemoteDigest(tag, insecureRegistries)
 }
 
 func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, a *latest.BazelArtifact, tag string) (string, error) {

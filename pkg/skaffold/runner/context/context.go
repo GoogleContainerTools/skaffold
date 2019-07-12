@@ -53,7 +53,7 @@ func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.Pipeline) (*RunCont
 		return nil, errors.Wrap(err, "finding current directory")
 	}
 
-	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace)
+	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting namespace list")
 	}

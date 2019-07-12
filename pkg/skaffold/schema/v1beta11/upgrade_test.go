@@ -19,9 +19,9 @@ package v1beta11
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta12"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func TestUpgrade(t *testing.T) {
