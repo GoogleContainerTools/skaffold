@@ -478,8 +478,6 @@ type Artifact struct {
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
 
-	WorkspaceHash string `yaml:"-,omitempty"`
-
 	// BuilderPlugin is the plugin used to build this artifact.
 	BuilderPlugin *BuilderPlugin `yaml:"plugin,omitempty"`
 }
