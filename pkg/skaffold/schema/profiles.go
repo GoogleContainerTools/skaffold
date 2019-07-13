@@ -39,7 +39,7 @@ import (
 func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 	byName := profilesByName(c.Profiles)
 
-	profiles, err := activatedProfiles(c.Profiles, opts)
+	profiles, isContextSpecific, err := activatedProfiles(c.Profiles, opts)
 	if err != nil {
 		return errors.Wrap(err, "finding auto-activated profiles")
 	}
@@ -55,11 +55,30 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 		}
 	}
 
+	return enableEffectiveKubecontext(isContextSpecific, c.Deploy.KubeContext)
+}
+
+func enableEffectiveKubecontext(contextMustNotChange bool, effectiveContext string) error {
+	kubeConfig, err := kubectx.CurrentConfig()
+	if err != nil {
+		return errors.Wrap(err, "getting current cluster context")
+	}
+
+	if effectiveContext == "" || effectiveContext == kubeConfig.CurrentContext {
+		return nil
+	}
+
+	if contextMustNotChange {
+		return fmt.Errorf("some activated profile contains kubecontext specific settings for a different than the effective kubecontext, please revise your profile activations")
+	}
+
+	kubectx.UseKubeContext(effectiveContext)
 	return nil
 }
 
-func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, error) {
+func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, bool, error) {
 	activated := opts.Profiles
+	hasContextSpecificProfile := false
 
 	// Auto-activated profiles
 	for _, profile := range profiles {
@@ -68,21 +87,24 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]s
 
 			env, err := isEnv(cond.Env)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 
 			kubeContext, err := isKubeContext(cond.KubeContext)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 
 			if command && env && kubeContext {
+				if cond.KubeContext != "" {
+					hasContextSpecificProfile = true
+				}
 				activated = append(activated, profile.Name)
 			}
 		}
 	}
 
-	return activated, nil
+	return activated, hasContextSpecificProfile, nil
 }
 
 func isEnv(env string) (bool, error) {
@@ -300,6 +322,11 @@ func overlayProfileField(fieldName string, config interface{}, profile interface
 		return v.Interface()
 	case reflect.Int:
 		if v.Interface() == reflect.Zero(v.Type()).Interface() {
+			return config
+		}
+		return v.Interface()
+	case reflect.String:
+		if reflect.DeepEqual("", v.Interface()) {
 			return config
 		}
 		return v.Interface()

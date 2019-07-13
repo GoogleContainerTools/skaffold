@@ -20,12 +20,14 @@ import (
 	"fmt"
 	"testing"
 
+	yamlpatch "github.com/krishicks/yaml-patch"
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	yamlpatch "github.com/krishicks/yaml-patch"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 func TestApplyPatch(t *testing.T) {
@@ -338,6 +340,25 @@ func TestApplyProfiles(t *testing.T) {
 				}),
 			),
 		},
+		{
+			description: "activate kubecontext specific profile and change the kubecontext",
+			profile:     "profile",
+			config: config(
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							KubeContext: "staging",
+						},
+					}},
+					latest.Profile{
+						Name:       "prod",
+						Activation: []latest.Activation{{KubeContext: "prod-context"}},
+					},
+				),
+			),
+			shouldErr: true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -548,11 +569,42 @@ func TestActivatedProfiles(t *testing.T) {
 			t.SetEnvs(test.envs)
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "prod-context"})
 
-			activated, err := activatedProfiles(test.profiles, test.opts)
+			activated, _, err := activatedProfiles(test.profiles, test.opts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, activated)
 		})
 	}
+}
+
+// KubeContext activation has a side-effect which needs to be checked explicitly.
+func TestOverrideKubecontext(t *testing.T) {
+	config := `build:
+  artifacts:
+  - image: example
+profiles:
+- name: prod
+  deploy:
+    kubeContext: prod-context
+`
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.SetupFakeKubernetesContext(api.Config{CurrentContext: "staging-context"})
+		tmpDir := t.NewTempDir().
+			Write("skaffold.yaml", addVersion(config))
+
+		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"), false)
+		t.CheckNoError(err)
+
+		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
+			Profiles: []string{"prod"},
+		})
+
+		t.CheckNoError(err)
+		cfg, err := kubectx.CurrentConfig()
+		t.CheckNoError(err)
+		t.CheckDeepEqual("prod-context", cfg.CurrentContext)
+	})
 }
 
 func str(value string) *interface{} {
