@@ -50,6 +50,7 @@ profiles:
 `
 
 	testutil.Run(t, "", func(t *testutil.T) {
+		setupFakeKubeConfig(t, api.Config{CurrentContext: "prod-context"})
 		tmpDir := t.NewTempDir().
 			Write("skaffold.yaml", addVersion(config))
 
@@ -340,6 +341,7 @@ func TestApplyProfiles(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			setupFakeKubeConfig(t, api.Config{CurrentContext: "prod-context"})
 			err := ApplyProfiles(test.config, cfg.SkaffoldOptions{
 				Profiles: []string{test.profile},
 			})
@@ -560,4 +562,10 @@ func str(value string) *interface{} {
 
 func addVersion(yaml string) string {
 	return fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, yaml)
+}
+
+func setupFakeKubeConfig(t *testutil.T, config api.Config) {
+	t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
+		return config, nil
+	})
 }
