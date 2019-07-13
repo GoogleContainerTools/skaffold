@@ -85,9 +85,13 @@ func TestBuild(t *testing.T) {
 				defer teardown()
 			}
 
-			// remove image in case it is already present
 			removeImage(t, test.expectImage)
 			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
+			checkImageExists(t, test.expectImage)
+
+			removeImage(t, test.expectImage)
+			skaffold.Build(append(test.args, "--cache-artifacts=true")...).InDir(test.dir).RunOrFail(t)
+			skaffold.Build(append(test.args, "--cache-artifacts=true")...).InDir(test.dir).RunOrFail(t)
 			checkImageExists(t, test.expectImage)
 		})
 	}
