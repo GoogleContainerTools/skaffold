@@ -108,7 +108,7 @@ On the other hand, building a relation between projects and kubecontext needs to
 
 ##### How to identify projects
 
-There are at least two possibilities:
+There are at least three possibilities:
 
 - Identify projects by their absolute host path.
   This is guaranteed to be unique, but may break if a user moves his project to another location.
@@ -122,7 +122,7 @@ There are at least two possibilities:
 
 **\<What option has the best tradeoffs?\>**
 
-Resolution: __Not Yet Resolved__
+Resolution: We will go ahead with the `metadata.name` approach. As the name may not be unique, this requires special documentation.
 
 
 ##### How to save project/kubecontext relations
@@ -168,12 +168,12 @@ Resolution: __Not Yet Resolved__
 
 **\<Should there be a config option in `skaffold.yaml`?\>**
 
-Resolution: __Not Yet Resolved__
+Resolution: Yes.
 
 ## Implementation plan
 1. Implement the CLI flag and env var variant first. This should also be the most important for the IDE integration.
-2. Implement the global Skaffold config variant.
-3. Implement `skaffold.yaml` variant if applicable.
+2. Implement `skaffold.yaml` variant if applicable.
+3. Implement the global Skaffold config variant.
 4. Implement `skaffold config set` adaptions.
 5. Implement the namespace functionality.
 
