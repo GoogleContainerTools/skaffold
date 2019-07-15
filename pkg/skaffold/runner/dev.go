@@ -68,6 +68,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			return nil
 		}
+		if err := r.forwarderManager.Start(ctx); err != nil {
+			logrus.Warnln("Port forwarding failed due to error:", err)
+		}
 	}
 
 	r.logger.Unmute()
@@ -142,6 +145,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// First deploy
 	if err := r.Deploy(ctx, out, r.builds); err != nil {
 		return errors.Wrap(err, "exiting dev mode because first deploy failed")
+	}
+
+	if err := r.forwarderManager.Start(ctx); err != nil {
+		logrus.Warnln("Error starting port forwarding:", err)
 	}
 
 	// Start printing the logs after deploy is finished

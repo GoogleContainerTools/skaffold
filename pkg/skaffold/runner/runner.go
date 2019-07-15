@@ -227,13 +227,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	if err != nil {
 		return err
 	}
-	if err := r.performStatusCheck(ctx, out); err != nil {
-		return errors.Wrap(err, "performing status check")
-	}
-	if r.forwarderManager != nil {
-		return r.forwarderManager.Start(ctx)
-	}
-	return nil
+	return r.performStatusCheck(ctx, out)
 }
 
 func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
