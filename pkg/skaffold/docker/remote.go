@@ -17,6 +17,7 @@ limitations under the License.
 package docker
 
 import (
+	"github.com/docker/cli/cli/config"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -68,7 +69,7 @@ func Push(tarPath, tag string, insecureRegistries map[string]bool) (string, erro
 		return "", errors.Wrapf(err, "reading image %q", tarPath)
 	}
 
-	if err := remote.Write(t, i, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
+	if err := remote.Write(t, i, remote.WithAuth(auth(t))); err != nil {
 		return "", errors.Wrapf(err, "writing image %q", t)
 	}
 
@@ -105,5 +106,21 @@ func isInsecure(ref string, insecureRegistries map[string]bool) bool {
 }
 
 func getRemoteImage(ref name.Reference) (v1.Image, error) {
-	return remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	return remote.Image(ref, remote.WithAuth(auth(ref)))
+}
+
+// remote.WithAuthFromKeychain(authn.DefaultKeychain) can't be used
+// because it prints too many things directly to the console.
+func auth(ref name.Reference) authn.Authenticator {
+	cfg, err := config.Load(configDir)
+	if err != nil || len(cfg.CredentialHelpers) == 0 && cfg.CredentialsStore == "" && len(cfg.AuthConfigs) == 0 {
+		return authn.Anonymous
+	}
+
+	auth, err := authn.DefaultKeychain.Resolve(ref.Context().Registry)
+	if err != nil {
+		return authn.Anonymous
+	}
+
+	return auth
 }
