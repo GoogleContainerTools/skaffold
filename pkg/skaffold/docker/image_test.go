@@ -198,8 +198,18 @@ func TestImageID(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
-			description: "get digest",
+			description: "find by tag",
 			ref:         "identifier:latest",
+			api: testutil.FakeAPIClient{
+				TagToImageID: map[string]string{
+					"identifier:latest": "sha256:123abc",
+				},
+			},
+			expected: "sha256:123abc",
+		},
+		{
+			description: "find by imageID",
+			ref:         "sha256:123abc",
 			api: testutil.FakeAPIClient{
 				TagToImageID: map[string]string{
 					"identifier:latest": "sha256:123abc",
@@ -218,7 +228,7 @@ func TestImageID(t *testing.T) {
 		{
 			description: "not found",
 			ref:         "somethingelse",
-			shouldErr:   true,
+			expected:    "",
 		},
 	}
 	for _, test := range tests {

@@ -82,6 +82,7 @@ Other Commands:
   version      Print the version information
 
 Use "skaffold <command> --help" for more information about a given command.
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -118,7 +119,7 @@ Options:
 Usage:
   skaffold build [options]
 
-Use "skaffold build options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -151,7 +152,7 @@ Output shell completion for the given shell (bash or zsh)
 Usage:
   skaffold completion SHELL [options]
 
-Use "skaffold completion options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -188,7 +189,7 @@ Options:
 Usage:
   skaffold config list [options]
 
-Use "skaffold config options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -213,7 +214,7 @@ Options:
 Usage:
   skaffold config set [options]
 
-Use "skaffold config options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -238,7 +239,7 @@ Options:
 Usage:
   skaffold config unset [options]
 
-Use "skaffold config options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -279,7 +280,7 @@ Options:
 Usage:
   skaffold debug [options]
 
-Use "skaffold debug options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -321,7 +322,7 @@ Options:
 Usage:
   skaffold delete [options]
 
-Use "skaffold delete options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -358,7 +359,7 @@ E.g. build.out created by running skaffold build --quiet {{json .}} > build.out
 Usage:
   skaffold deploy [options]
 
-Use "skaffold deploy options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -412,7 +413,7 @@ Options:
 Usage:
   skaffold dev [options]
 
-Use "skaffold dev options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -455,7 +456,7 @@ Options:
 Usage:
   skaffold diagnose [options]
 
-Use "skaffold diagnose options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -478,7 +479,7 @@ Options:
 Usage:
   skaffold fix [options]
 
-Use "skaffold fix options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -506,7 +507,7 @@ Options:
 Usage:
   skaffold init [options]
 
-Use "skaffold init options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -518,6 +519,19 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_SKIP_BUILD` (same as `--skip-build`)
+
+### skaffold options
+
+
+
+```
+The following options can be passed to any command:
+
+      --color=34: Specify the default output color in ANSI escape codes
+  -v, --verbosity='warning': Log level (debug, info, warn, error, fatal, panic)
+
+
+```
 
 ### skaffold run
 
@@ -550,7 +564,7 @@ Options:
 Usage:
   skaffold run [options]
 
-Use "skaffold run options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```
@@ -590,7 +604,7 @@ Options:
 Usage:
   skaffold version [options]
 
-Use "skaffold version options" for a list of global command-line options (applies to all commands).
+Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
 ```

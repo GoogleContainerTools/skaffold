@@ -81,6 +81,11 @@ type SkaffoldRunner struct {
 	imageList            *kubernetes.ImageList
 }
 
+// for testing
+var (
+	statusCheck = deploy.StatusCheck
+)
+
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*SkaffoldRunner, error) {
 	runCtx, err := runcontext.GetRunContext(opts, &cfg.Pipeline)
@@ -220,14 +225,18 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	if err != nil {
 		return err
 	}
-	return r.performStatusCheck(out)
+	return r.performStatusCheck(ctx, out)
 }
 
-func (r *SkaffoldRunner) performStatusCheck(out io.Writer) error {
+func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
 	if r.runCtx.Opts.StatusCheck {
 		fmt.Fprintln(out, "Waiting for deployments to stabilize")
-		// TODO : Actually perform status check
+		err := statusCheck(ctx, r.defaultLabeller, r.runCtx)
+		if err != nil {
+			fmt.Fprintln(out, err.Error())
+		}
+		return err
 	}
 	return nil
 }

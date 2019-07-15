@@ -22,14 +22,16 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 
-	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/internal/retry"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type manifest interface {
@@ -39,14 +41,19 @@ type manifest interface {
 }
 
 // Write pushes the provided img to the specified image reference.
-func Write(ref name.Reference, img v1.Image, auth authn.Authenticator, t http.RoundTripper) error {
+func Write(ref name.Reference, img v1.Image, options ...Option) error {
 	ls, err := img.Layers()
 	if err != nil {
 		return err
 	}
 
+	o, err := makeOptions(ref.Context().Registry, options...)
+	if err != nil {
+		return err
+	}
+
 	scopes := scopesForUploadingImage(ref, ls)
-	tr, err := transport.New(ref.Context().Registry, auth, t, scopes)
+	tr, err := transport.New(ref.Context().Registry, o.auth, o.transport, scopes)
 	if err != nil {
 		return err
 	}
@@ -303,38 +310,50 @@ func (w *writer) uploadOne(l v1.Layer) error {
 		}
 	}
 
-	location, mounted, err := w.initiateUpload(from, mount)
-	if err != nil {
-		return err
-	} else if mounted {
+	tryUpload := func() error {
+		location, mounted, err := w.initiateUpload(from, mount)
+		if err != nil {
+			return err
+		} else if mounted {
+			h, err := l.Digest()
+			if err != nil {
+				return err
+			}
+			log.Printf("mounted blob: %s", h.String())
+			return nil
+		}
+
+		blob, err := l.Compressed()
+		if err != nil {
+			return err
+		}
+		location, err = w.streamBlob(blob, location)
+		if err != nil {
+			return err
+		}
+
 		h, err := l.Digest()
 		if err != nil {
 			return err
 		}
-		log.Printf("mounted blob: %s", h.String())
+		digest := h.String()
+
+		if err := w.commitBlob(location, digest); err != nil {
+			return err
+		}
+		log.Printf("pushed blob: %s", digest)
 		return nil
 	}
 
-	blob, err := l.Compressed()
-	if err != nil {
-		return err
-	}
-	location, err = w.streamBlob(blob, location)
-	if err != nil {
-		return err
+	// Try this three times, waiting 1s after first failure, 3s after second.
+	backoff := wait.Backoff{
+		Duration: 1.0 * time.Second,
+		Factor:   3.0,
+		Jitter:   0.1,
+		Steps:    3,
 	}
 
-	h, err := l.Digest()
-	if err != nil {
-		return err
-	}
-	digest := h.String()
-
-	if err := w.commitBlob(location, digest); err != nil {
-		return err
-	}
-	log.Printf("pushed blob: %s", digest)
-	return nil
+	return retry.Retry(tryUpload, retry.IsTemporary, backoff)
 }
 
 // commitImage does a PUT of the image's manifest.
@@ -404,14 +423,18 @@ func scopesForUploadingImage(ref name.Reference, layers []v1.Layer) []string {
 // WriteIndex pushes the provided ImageIndex to the specified image reference.
 // WriteIndex will attempt to push all of the referenced manifests before
 // attempting to push the ImageIndex, to retain referential integrity.
-func WriteIndex(ref name.Reference, ii v1.ImageIndex, auth authn.Authenticator, t http.RoundTripper) error {
+func WriteIndex(ref name.Reference, ii v1.ImageIndex, options ...Option) error {
 	index, err := ii.IndexManifest()
 	if err != nil {
 		return err
 	}
 
+	o, err := makeOptions(ref.Context().Registry, options...)
+	if err != nil {
+		return err
+	}
 	scopes := []string{ref.Scope(transport.PushScope)}
-	tr, err := transport.New(ref.Context().Registry, auth, t, scopes)
+	tr, err := transport.New(ref.Context().Registry, o.auth, o.transport, scopes)
 	if err != nil {
 		return err
 	}
@@ -441,7 +464,7 @@ func WriteIndex(ref name.Reference, ii v1.ImageIndex, auth authn.Authenticator, 
 				return err
 			}
 
-			if err := WriteIndex(ref, ii, auth, t); err != nil {
+			if err := WriteIndex(ref, ii, WithAuth(o.auth), WithTransport(o.transport)); err != nil {
 				return err
 			}
 		case types.OCIManifestSchema1, types.DockerManifestSchema2:
@@ -449,7 +472,7 @@ func WriteIndex(ref name.Reference, ii v1.ImageIndex, auth authn.Authenticator, 
 			if err != nil {
 				return err
 			}
-			if err := Write(ref, img, auth, t); err != nil {
+			if err := Write(ref, img, WithAuth(o.auth), WithTransport(o.transport)); err != nil {
 				return err
 			}
 		}
