@@ -17,10 +17,10 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"io/ioutil"
-	"os"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
@@ -69,19 +69,21 @@ func doBuild(ctx context.Context, out io.Writer) error {
 
 		if quietFlag || buildOutputFlag != "" {
 			cmdOut := flags.BuildOutput{Builds: bRes}
+			var buildOutput bytes.Buffer
+			if err := buildFormatFlag.Template().Execute(&buildOutput, cmdOut); err != nil {
+				return errors.Wrap(err, "executing template")
+			}
+
+			if quietFlag {
+				if _, err := out.Write(buildOutput.Bytes()); err != nil {
+					return errors.Wrap(err, "writing build output")
+				}
+			}
 
 			if buildOutputFlag != "" {
-				f, err := os.OpenFile(buildOutputFlag, os.O_RDWR|os.O_CREATE, 0755)
-				if err != nil {
-					return errors.Wrap(err, "opening file")
+				if err := ioutil.WriteFile(buildOutputFlag, buildOutput.Bytes(), 0644); err != nil {
+					return errors.Wrap(err, "writing build output to file")
 				}
-				defer func() {
-					f.Close()
-				}()
-				out = f
-			}
-			if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
-				return errors.Wrap(err, "executing template")
 			}
 		}
 

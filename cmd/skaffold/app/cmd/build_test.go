@@ -93,6 +93,68 @@ func TestQuietFlag(t *testing.T) {
 	}
 }
 
+func TestFileOutputFlag(t *testing.T) {
+	mockCreateRunner := func(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
+	}
+
+	var tests = []struct {
+		description         string
+		filename            string
+		quietFlag           bool
+		template            string
+		expectedOutput      []byte
+		expectedFileContent []byte
+	}{
+		{
+			description:         "file output flag creates a file",
+			filename:            "testfile.out",
+			quietFlag:           false,
+			expectedOutput:      []byte(`Complete in `),
+			expectedFileContent: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
+		},
+		{
+			description:         "file output flag with quiet flag creates a file and suppresses build output",
+			filename:            "testfile.out",
+			quietFlag:           true,
+			expectedOutput:      []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
+			expectedFileContent: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
+		},
+		{
+			description:         "file output flag with template properly formats output and writes to a file",
+			filename:            "testfile.out",
+			quietFlag:           true,
+			template:            "{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}",
+			expectedOutput:      []byte("gcr.io/skaffold/example -> test\n"),
+			expectedFileContent: []byte("gcr.io/skaffold/example -> test\n"),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&quietFlag, test.quietFlag)
+			t.Override(&buildOutputFlag, test.filename)
+			t.Override(&createRunner, mockCreateRunner)
+			if test.template != "" {
+				t.Override(&buildFormatFlag, flags.NewTemplateFlag(test.template, flags.BuildOutput{}))
+			}
+
+			// tempDir for writing file to
+			tempDir := t.NewTempDir()
+			tempDir.Chdir()
+
+			// Check that stdout is correct
+			var output bytes.Buffer
+			err := doBuild(context.Background(), &output)
+			t.CheckError(false, err)
+			t.CheckContains(string(test.expectedOutput), output.String())
+
+			// Check that file contents are correct
+			fileContent, err := ioutil.ReadFile(test.filename)
+			t.CheckErrorAndDeepEqual(false, err, string(test.expectedFileContent), string(fileContent))
+		})
+	}
+}
+
 func TestRunBuild(t *testing.T) {
 	errRunner := func(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
 		return nil, nil, errors.New("some error")
