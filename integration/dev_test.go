@@ -32,7 +32,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -369,15 +368,11 @@ func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retrie
 }
 
 func TestDev_WithKubecontextOverride(t *testing.T) {
-	const (
-		kubeconfig = "kubeconfig"
-	)
-
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-
 	testutil.Run(t, "skaffold run with kubecontext override", func(t *testutil.T) {
+		if testing.Short() {
+			t.Skip("skipping integration test")
+		}
+
 		dir := "examples/getting-started"
 		pods := []string{"getting-started"}
 
@@ -389,8 +384,8 @@ func TestDev_WithKubecontextOverride(t *testing.T) {
 			t.Fatal(err)
 		}
 		kubeconfig := t.NewTempDir().
-			Write(kubeconfig, string(modifiedKubeconfig)).
-			Path(kubeconfig)
+			Write("kubeconfig", string(modifiedKubeconfig)).
+			Path("kubeconfig")
 		env := []string{fmt.Sprintf("KUBECONFIG=%s", kubeconfig)}
 
 		// n.b. for the sake of this test the namespace must not be given explicitly
@@ -404,17 +399,21 @@ func TestDev_WithKubecontextOverride(t *testing.T) {
 }
 
 func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
-	kubeConfig, err := kubectx.CurrentConfig()
+	// do not use context.CurrentConfig(), because it may have cached a different config
+	kubeConfig, err := clientcmd.NewDefaultClientConfigLoadingRules().Load()
 	if err != nil {
 		return nil, "", err
 	}
 
 	contextName := "modified-context"
 	if config.IsKindCluster(kubeConfig.CurrentContext) {
-		contextName = contextName + "@kind"
+		contextName += "@kind"
 	}
 
 	activeContext := kubeConfig.Contexts[kubeConfig.CurrentContext]
+	if activeContext == nil {
+		return nil, "", fmt.Errorf("no active kube-context set")
+	}
 	// clear the namespace in the active context
 	activeContext.Namespace = ""
 
@@ -422,6 +421,6 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 	newContext.Namespace = namespace
 	kubeConfig.Contexts[contextName] = newContext
 
-	yaml, err := clientcmd.Write(kubeConfig)
+	yaml, err := clientcmd.Write(*kubeConfig)
 	return yaml, contextName, err
 }
