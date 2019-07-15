@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -65,8 +66,9 @@ type SkaffoldRunner struct {
 	test.Tester
 	tag.Tagger
 	sync.Syncer
-	monitor  filemon.Monitor
-	listener Listener
+	monitor          filemon.Monitor
+	listener         Listener
+	forwarderManager *portforward.ForwarderManager
 
 	logger               *kubernetes.LogAggregator
 	cache                *cache.Cache
@@ -225,7 +227,13 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	if err != nil {
 		return err
 	}
-	return r.performStatusCheck(ctx, out)
+	if err := r.performStatusCheck(ctx, out); err != nil {
+		return errors.Wrap(err, "performing status check")
+	}
+	if r.forwarderManager != nil {
+		return r.forwarderManager.Start(ctx)
+	}
+	return nil
 }
 
 func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {

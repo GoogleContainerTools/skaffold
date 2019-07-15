@@ -47,6 +47,7 @@ func TestStop(t *testing.T) {
 			Name:      "resource",
 			Namespace: "default",
 		},
+		localPort: 9000,
 	}
 	pfe2 := &portForwardEntry{
 		resource: latest.PortForwardResource{
@@ -54,6 +55,7 @@ func TestStop(t *testing.T) {
 			Name:      "resource2",
 			Namespace: "default",
 		},
+		localPort: 9001,
 	}
 
 	em := NewEntryManager(ioutil.Discard)
@@ -61,6 +63,10 @@ func TestStop(t *testing.T) {
 	em.forwardedResources = &sync.Map{}
 	em.forwardedResources.Store("pod-resource-default-0", pfe1)
 	em.forwardedResources.Store("pod-resource2-default-0", pfe2)
+
+	em.forwardedPorts = &sync.Map{}
+	em.forwardedPorts.Store(9000, struct{}{})
+	em.forwardedPorts.Store(9001, struct{}{})
 
 	fakeForwarder := newTestForwarder(nil)
 	fakeForwarder.forwardedEntries = em.forwardedResources
@@ -70,5 +76,9 @@ func TestStop(t *testing.T) {
 
 	if count := lengthSyncMap(fakeForwarder.forwardedEntries); count != 0 {
 		t.Fatalf("error stopping port forwarding. expected 0 entries and got %d", count)
+	}
+
+	if count := lengthSyncMap(fakeForwarder.forwardedPorts); count != 0 {
+		t.Fatalf("error cleaning up ports. expected 0 entries and got %d", count)
 	}
 }

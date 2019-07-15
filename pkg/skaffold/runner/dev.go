@@ -63,6 +63,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		}
 		fallthrough
 	case r.changeSet.needsRedeploy:
+		r.forwarderManager.Stop()
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			return nil
@@ -79,8 +80,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	r.createLogger(out, artifacts)
 	defer r.logger.Stop()
 
-	forwarderManager := portforward.NewForwarderManager(out, r.imageList, r.runCtx.Namespaces, r.defaultLabeller.K8sManagedByLabelKeyValueString(), r.runCtx.Opts.PortForward, r.portForwardResources)
-	defer forwarderManager.Stop()
+	r.forwarderManager = portforward.NewForwarderManager(out, r.imageList, r.runCtx.Namespaces, r.defaultLabeller.K8sManagedByLabelKeyValueString(), r.runCtx.Opts.PortForward, r.portForwardResources)
 
 	// Watch artifacts
 	for i := range artifacts {
@@ -149,11 +149,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		if err := r.logger.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting logger")
 		}
-	}
-
-	// Forward ports
-	if err := forwarderManager.Start(ctx); err != nil {
-		return errors.Wrap(err, "starting forwarder manager")
 	}
 
 	return r.listener.WatchForChanges(ctx, out, r.doDev)
