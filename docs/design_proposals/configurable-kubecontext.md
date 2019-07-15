@@ -23,6 +23,22 @@ There also was an attempt to add a configuration option to `skaffold.yaml` (Supp
 
 The goal of this document is to create an agreement on what options should be supported and identify edge cases.
 
+### Recommended use-cases
+
+##### As Skaffold user, I want to define the kubecontext for a single skaffold run.
+Use CLI flag or environment variable.
+
+##### As enterprise user, I want to define a default kubecontext for a project to be used across different machines.
+Use the kubecontext configuration in `skaffold.yaml`.
+Think twice before using this approach in open source projects, as the setting will not be portable.
+
+##### As individual user, I want to define a default kubecontext for a project.
+Use kubecontext setting in the global Skaffold config (via `skaffold config set ...`).
+
+##### As Skaffold user with multiple profiles, I want to use different kubecontexts for different profiles.
+Use the kubecontext configuration in `skaffold.yaml`.
+
+
 ## Design
 
 There are four places where kubecontext activation can be added:
