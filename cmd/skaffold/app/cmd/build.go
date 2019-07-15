@@ -21,10 +21,8 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -58,11 +56,6 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	if quietFlag {
 		buildOut = ioutil.Discard
 	}
-
-	start := time.Now()
-	defer func() {
-		color.Default.Fprintln(buildOut, "Complete in", time.Since(start))
-	}()
 
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
 		bRes, err := r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
