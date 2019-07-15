@@ -17,7 +17,6 @@ limitations under the License.
 package docker
 
 import (
-	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -45,7 +44,7 @@ func AddRemoteTag(src, target string, insecureRegistries map[string]bool) error 
 		return errors.Wrap(err, "getting target reference")
 	}
 
-	return remote.Write(targetRef, img, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	return remote.Write(targetRef, img, remote.WithAuth(authenticators.For(targetRef)))
 }
 
 func getRemoteDigest(identifier string, insecureRegistries map[string]bool) (string, error) {
@@ -84,7 +83,7 @@ func Push(tarPath, tag string, insecureRegistries map[string]bool) (string, erro
 		return "", errors.Wrapf(err, "reading image %q", tarPath)
 	}
 
-	if err := remote.Write(t, i, remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
+	if err := remote.Write(t, i, remote.WithAuth(authenticators.For(t))); err != nil {
 		return "", errors.Wrapf(err, "writing image %q", t)
 	}
 
@@ -121,5 +120,5 @@ func isInsecure(ref string, insecureRegistries map[string]bool) bool {
 }
 
 func getRemoteImage(ref name.Reference) (v1.Image, error) {
-	return remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	return remote.Image(ref, remote.WithAuth(authenticators.For(ref)))
 }
