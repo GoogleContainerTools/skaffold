@@ -28,10 +28,10 @@ import (
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/api/core/v1"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 var (
@@ -50,22 +50,22 @@ var (
 )
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext) error {
-	depErr := StatusCheckDeployments(ctx, defaultLabeller, runCtx)
-	podsErr := StatusCheckPods(ctx, defaultLabeller, runCtx)
-	fmt.Println(podsErr)
-	return depErr
-}
-
-func StatusCheckDeployments(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext) error {
 	client, err := kubernetesutil.GetClientset()
 	if err != nil {
 		return err
 	}
-	dMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller)
+	dMap, podLabelSelectors, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller)
 	if err != nil {
 		return errors.Wrap(err, "could not fetch deployments")
 	}
+	depErr := StatusCheckDeployments(ctx, dMap, runCtx)
+	fmt.Println(depErr)
+	podsErr := StatusCheckPods(ctx, defaultLabeller, runCtx, podLabelSelectors)
+	fmt.Println(podsErr)
+	return depErr
+}
 
+func StatusCheckDeployments(ctx context.Context,dMap map[string]int32, runCtx *runcontext.RunContext) error {
 	wg := sync.WaitGroup{}
 	// Its safe to use sync.Map without locks here as each subroutine adds a different key to the map.
 	syncMap := &sync.Map{}
@@ -88,18 +88,19 @@ func StatusCheckDeployments(ctx context.Context, defaultLabeller *DefaultLabelle
 	return getSkaffoldDeployStatus(syncMap)
 }
 
-func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) (map[string]int32, error) {
+func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) (map[string]int32, []*metav1.LabelSelector, error) {
 
 	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
 		LabelSelector: l.K8sManagedByLabelKeyValueString(),
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "could not fetch deployments")
+		return nil, nil, errors.Wrap(err, "could not fetch deployments")
 	}
 
 	depMap := map[string]int32{}
+	labelSelectors := make([]*metav1.LabelSelector, len(deps.Items))
 
-	for _, d := range deps.Items {
+	for i, d := range deps.Items {
 		var deadline int32
 		if d.Spec.ProgressDeadlineSeconds == nil {
 			logrus.Debugf("no progressDeadlineSeconds config found for deployment %s. Setting deadline to %d seconds", d.Name, defaultStatusCheckDeadlineInSeconds)
@@ -108,9 +109,14 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) 
 			deadline = *d.Spec.ProgressDeadlineSeconds
 		}
 		depMap[d.Name] = deadline
+		s , err := metav1.LabelSelectorAsSelector(d.Spec.Selector)
+
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to parse deployment %s selector: %v", d.Name, err)
+		}
 	}
 
-	return depMap, nil
+	return depMap, labelSelectors, nil
 }
 
 func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName string, deadline time.Duration, syncMap *sync.Map) {
@@ -159,14 +165,14 @@ func getRollOutStatus(ctx context.Context, k *kubectl.CLI, dName string) (string
 	return string(b), err
 }
 
-func StatusCheckPods(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext) error {
+func StatusCheckPods(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, filterSpec []*metav1.LabelSelector) error {
 
 	client, err := kubernetesutil.GetClientset()
 	if err != nil {
 		return err
 	}
 	podInterface := client.CoreV1().Pods(runCtx.Opts.Namespace)
-	pods, err := getPods(podInterface, defaultLabeller)
+	pods, err := getFilteredPods(podInterface, defaultLabeller, filterSpec)
 	if err != nil {
 		return errors.Wrap(err, "could not fetch pods")
 	}
@@ -188,19 +194,19 @@ func StatusCheckPods(ctx context.Context, defaultLabeller *DefaultLabeller, runC
 	return podErrors(syncMap)
 }
 
-func getPods(pi corev1.PodInterface, l *DefaultLabeller) ([]v1.Pod, error) {
+func getFilteredPods(pi corev1.PodInterface, l *DefaultLabeller, filterSpec []*metav1.LabelSelector) ([]v1.Pod, error) {
 	pods, err := pi.List(metav1.ListOptions{
 		LabelSelector: l.K8sManagedByLabelKeyValueString(),
 	})
-	if err != nil {
-		return nil, err
+	for _, s := range(filterSpec) {
+		options := metav1.ListOptions{LabelSelector:s.String()}
+		pods, err := pi.List(options)
 	}
 	return pods.Items, err
 }
 
 func getPodStatus(ctx context.Context, pi corev1.PodInterface, po *v1.Pod, deadline time.Duration, syncMap *sync.Map) {
-	err := kubernetesutil.WaitForPodToStabilize(ctx, pi, po.Name, deadline)
-	syncMap.Store(po.Name, err)
+	syncMap.Store(po.Name, kubernetesutil.WaitForPodToStabilize(ctx, pi, po.Name, deadline))
 }
 
 func podErrors(m *sync.Map) error {

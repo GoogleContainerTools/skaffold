@@ -108,7 +108,7 @@ func TestDeployWithInCorrectConfig(t *testing.T) {
 
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
-	
+
 	err := skaffold.Deploy().InDir("testdata/unstable-deployment").InNs(ns.Name).Run(t)
 	if err == nil {
 		t.Error("expected an error to see since the deployment is not stable. However deploy returned success")
@@ -132,4 +132,3 @@ func TestDeployWithInCorrectConfigWithNoStatusCheck(t *testing.T) {
 
 	skaffold.Delete().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
 }
-
