@@ -35,13 +35,24 @@ func NewCmdConfig() *cobra.Command {
 }
 
 func NewCmdSet() *cobra.Command {
-	return NewCmd("set").
+	cmd := NewCmd("set").
 		WithDescription("Set a value in the global Skaffold config").
 		WithFlags(func(f *pflag.FlagSet) {
 			config.AddCommonFlags(f)
 			config.AddSetUnsetFlags(f)
 		}).
 		ExactArgs(2, config.Set)
+
+	cmd.Example = `  # Mark a registry as insecure
+  skaffold config set insecure-registries <insecure1.io>
+
+  # Globally set the default image repository
+  skaffold config set default-repo <myrepo>
+
+  # Tell Skaffold not to push images for a given Kubernetes context
+  skaffold config set --kube-context <mycluster> local-cluster true
+`
+	return cmd
 }
 
 func NewCmdUnset() *cobra.Command {
