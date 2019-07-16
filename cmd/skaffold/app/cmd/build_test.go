@@ -37,6 +37,7 @@ type mockRunner struct {
 }
 
 func (r *mockRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	out.Write([]byte("Build Completed"))
 	return []build.Artifact{{
 		ImageName: "gcr.io/skaffold/example",
 		Tag:       "test",
@@ -107,10 +108,10 @@ func TestFileOutputFlag(t *testing.T) {
 		expectedFileContent []byte
 	}{
 		{
-			description:         "file output flag creates a file",
+			description:         "build runs successfully with flag and creates a file",
 			filename:            "testfile.out",
 			quietFlag:           false,
-			expectedOutput:      []byte(`Complete in `),
+			expectedOutput:      []byte("Build Completed"),
 			expectedFileContent: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
 		},
 		{
@@ -145,8 +146,7 @@ func TestFileOutputFlag(t *testing.T) {
 			// Check that stdout is correct
 			var output bytes.Buffer
 			err := doBuild(context.Background(), &output)
-			t.CheckError(false, err)
-			t.CheckContains(string(test.expectedOutput), output.String())
+			t.CheckErrorAndDeepEqual(false, err, string(test.expectedOutput), output.String())
 
 			// Check that file contents are correct
 			fileContent, err := ioutil.ReadFile(test.filename)
