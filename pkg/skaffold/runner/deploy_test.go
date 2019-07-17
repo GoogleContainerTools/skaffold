@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"strings"
 	"testing"
 
@@ -57,7 +58,7 @@ func TestDeploy(t *testing.T) {
 		},
 	}
 
-	dummyStatusCheck := func(ctx context.Context, l *deploy.DefaultLabeller, runCtx *runcontext.RunContext) error {
+	dummyStatusCheck := func(context.Context, *deploy.DefaultLabeller, *runcontext.RunContext, io.Writer) error {
 		return nil
 	}
 	originalStatusCheck := deploy.StatusCheck

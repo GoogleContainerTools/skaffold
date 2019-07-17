@@ -262,7 +262,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			actual := &sync.Map{}
 			pollDeploymentRolloutStatus(context.Background(), &kubectl.CLI{}, "dep", time.Duration(test.duration)*time.Millisecond, actual)
 
-			if _, ok := actual.Load("dep"); !ok {
+			if _, ok := actual.Load("deployment/dep"); !ok {
 				t.Error("expected result for deployment dep. But found none")
 			}
 			err := getSkaffoldDeployStatus(actual)
@@ -285,28 +285,28 @@ func TestGetDeployStatus(t *testing.T) {
 		{
 			description: "one error",
 			deps: map[string]interface{}{
-				"dep1": "SUCCESS",
-				"dep2": fmt.Errorf("could not return within default timeout"),
+				"deployment/dep1": "SUCCESS",
+				"deployment/dep2": fmt.Errorf("could not return within default timeout"),
 			},
-			expectedErrMsg: []string{"deployment dep2 failed due to could not return within default timeout"},
+			expectedErrMsg: []string{"deployment/dep2 failed due to could not return within default timeout"},
 			shouldErr:      true,
 		},
 		{
 			description: "no error",
 			deps: map[string]interface{}{
-				"dep1": "SUCCESS",
-				"dep2": "RUNNING",
+				"deployment/dep1": "SUCCESS",
+				"pod/pod1":        "RUNNING",
 			},
 		},
 		{
 			description: "multiple errors",
 			deps: map[string]interface{}{
-				"dep1": "SUCCESS",
-				"dep2": fmt.Errorf("could not return within default timeout"),
-				"dep3": fmt.Errorf("ERROR"),
+				"deployment/dep1": "SUCCESS",
+				"deployment/dep2": fmt.Errorf("could not return within default timeout"),
+				"pod/pod1":        fmt.Errorf("ERROR"),
 			},
-			expectedErrMsg: []string{"deployment dep2 failed due to could not return within default timeout",
-				"deployment dep3 failed due to ERROR"},
+			expectedErrMsg: []string{"deployment/dep2 failed due to could not return within default timeout",
+				"pod/pod1 failed due to ERROR"},
 			shouldErr: true,
 		},
 	}

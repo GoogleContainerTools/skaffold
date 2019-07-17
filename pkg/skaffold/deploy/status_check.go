@@ -19,8 +19,10 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
@@ -42,65 +44,86 @@ var (
 	// Poll period for checking set to 100 milliseconds
 	defaultPollPeriodInMilliseconds = 100
 
-	// Default deadline set to 5 minutes for pods.
-	defaultPodStatusDeadline = time.Duration(5) * time.Minute
+	// Default deadline set to 1 minutes for pods.
+	defaultPodStatusDeadline = time.Duration(1) * time.Minute
 
 	// For testing
 	executeRolloutStatus = getRollOutStatus
 )
 
-func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext) error {
+func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	client, err := kubernetesutil.GetClientset()
 	if err != nil {
 		return err
 	}
-	dMap, podLabelSelectors, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller)
-	if err != nil {
-		return errors.Wrap(err, "could not fetch deployments")
-	}
-	depErr := StatusCheckDeployments(ctx, dMap, runCtx)
-	fmt.Println(depErr)
-	podsErr := StatusCheckPods(ctx, defaultLabeller, runCtx, podLabelSelectors)
-	fmt.Println(podsErr)
-	return depErr
+
+	wg := &sync.WaitGroup{}
+
+	// Its safe to use sync.Map without locks here as each subroutine adds a different resource/name to the map.
+	syncMap := &sync.Map{}
+
+	// Check deployment status
+	wg.Add(1)
+	go func(syncMap *sync.Map) {
+		defer wg.Done()
+		StatusCheckDeployments(ctx, client, defaultLabeller, runCtx, syncMap, out)
+	}(syncMap)
+
+	// Check pod status
+	wg.Add(1)
+	go func(syncMap *sync.Map) {
+		defer wg.Done()
+		StatusCheckPods(ctx, client, defaultLabeller, runCtx, syncMap, out)
+	}(syncMap)
+
+	// Wait for all resource status to be fetched
+	wg.Wait()
+
+	return getSkaffoldDeployStatus(syncMap)
 }
 
-func StatusCheckDeployments(ctx context.Context,dMap map[string]int32, runCtx *runcontext.RunContext) error {
-	wg := sync.WaitGroup{}
-	// Its safe to use sync.Map without locks here as each subroutine adds a different key to the map.
-	syncMap := &sync.Map{}
+func StatusCheckDeployments(ctx context.Context, client kubernetes.Interface, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, syncMap *sync.Map, out io.Writer) {
+	dMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller)
+	if err != nil {
+		syncMap.Store("could not fetch deployments", err)
+		return
+	}
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
 	kubeCtl := &kubectl.CLI{
 		Namespace:   runCtx.Opts.Namespace,
 		KubeContext: runCtx.KubeContext,
 	}
+	numDeps := int32(len(dMap))
+	var ops int32
+	atomic.StoreInt32(&ops, numDeps)
 
+	fmt.Fprintln(out, fmt.Sprintf("Waiting on %d of %d deployments", atomic.LoadInt32(&ops), numDeps))
 	for dName, deadline := range dMap {
 		deadlineDuration := time.Duration(deadline) * time.Second
 		wg.Add(1)
 		go func(dName string, deadlineDuration time.Duration) {
-			defer wg.Done()
+			defer func() {
+				atomic.AddInt32(&ops, -1)
+				fmt.Fprintln(out, fmt.Sprintf("Waiting on %d of %d deployments", atomic.LoadInt32(&ops), numDeps))
+				wg.Done()
+			}()
 			pollDeploymentRolloutStatus(ctx, kubeCtl, dName, deadlineDuration, syncMap)
 		}(dName, deadlineDuration)
 	}
-
-	// Wait for all deployment status to be fetched
-	wg.Wait()
-	return getSkaffoldDeployStatus(syncMap)
 }
 
-func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) (map[string]int32, []*metav1.LabelSelector, error) {
-
+func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) (map[string]int32, error) {
 	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
 		LabelSelector: l.K8sManagedByLabelKeyValueString(),
 	})
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "could not fetch deployments")
+		return nil, errors.Wrap(err, "could not fetch deployments")
 	}
 
 	depMap := map[string]int32{}
-	labelSelectors := make([]*metav1.LabelSelector, len(deps.Items))
 
-	for i, d := range deps.Items {
+	for _, d := range deps.Items {
 		var deadline int32
 		if d.Spec.ProgressDeadlineSeconds == nil {
 			logrus.Debugf("no progressDeadlineSeconds config found for deployment %s. Setting deadline to %d seconds", d.Name, defaultStatusCheckDeadlineInSeconds)
@@ -109,14 +132,9 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) 
 			deadline = *d.Spec.ProgressDeadlineSeconds
 		}
 		depMap[d.Name] = deadline
-		s , err := metav1.LabelSelectorAsSelector(d.Spec.Selector)
-
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to parse deployment %s selector: %v", d.Name, err)
-		}
 	}
 
-	return depMap, labelSelectors, nil
+	return depMap, nil
 }
 
 func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName string, deadline time.Duration, syncMap *sync.Map) {
@@ -128,35 +146,20 @@ func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName stri
 	for {
 		select {
 		case <-timeoutContext.Done():
-			syncMap.Store(dName, errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", deadline)))
+			syncMap.Store(fmt.Sprintf("deployment/%s", dName), errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", deadline)))
 			return
 		case <-time.After(pollDuration):
 			status, err := executeRolloutStatus(timeoutContext, k, dName)
 			if err != nil {
-				syncMap.Store(dName, err)
+				syncMap.Store(fmt.Sprintf("deployment/%s", dName), err)
 				return
 			}
 			if strings.Contains(status, "successfully rolled out") {
-				syncMap.Store(dName, nil)
+				syncMap.Store(fmt.Sprintf("deployment/%s", dName), nil)
 				return
 			}
 		}
 	}
-}
-
-func getSkaffoldDeployStatus(m *sync.Map) error {
-	errorStrings := []string{}
-	m.Range(func(k, v interface{}) bool {
-		if t, ok := v.(error); ok {
-			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", k, t.Error()))
-		}
-		return true
-	})
-
-	if len(errorStrings) == 0 {
-		return nil
-	}
-	return fmt.Errorf("following deployments are not stable:\n%s", strings.Join(errorStrings, "\n"))
 }
 
 func getRollOutStatus(ctx context.Context, k *kubectl.CLI, dName string) (string, error) {
@@ -165,55 +168,52 @@ func getRollOutStatus(ctx context.Context, k *kubectl.CLI, dName string) (string
 	return string(b), err
 }
 
-func StatusCheckPods(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, filterSpec []*metav1.LabelSelector) error {
-
-	client, err := kubernetesutil.GetClientset()
-	if err != nil {
-		return err
-	}
+func StatusCheckPods(ctx context.Context, client kubernetes.Interface, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, syncMap *sync.Map, out io.Writer) {
 	podInterface := client.CoreV1().Pods(runCtx.Opts.Namespace)
-	pods, err := getFilteredPods(podInterface, defaultLabeller, filterSpec)
+	pods, err := getPods(podInterface, defaultLabeller)
 	if err != nil {
-		return errors.Wrap(err, "could not fetch pods")
+		syncMap.Store("could not fetch pods", err)
+		return
 	}
+	numPods := int32(len(pods))
+	var ops int32
+	atomic.StoreInt32(&ops, numPods)
 
-	wg := sync.WaitGroup{}
-	// Its safe to use sync.Map without locks here as each subroutine adds a different key to the map.
-	syncMap := &sync.Map{}
-
+	wg := &sync.WaitGroup{}
+	defer wg.Wait()
+	fmt.Fprintln(out, fmt.Sprintf("Waiting on %d of %d pods", atomic.LoadInt32(&ops), numPods))
 	for _, po := range pods {
 		wg.Add(1)
 		go func(po *v1.Pod) {
-			defer wg.Done()
+			defer func() {
+				atomic.AddInt32(&ops, -1)
+				fmt.Fprintln(out, fmt.Sprintf("Waiting on %d of %d pods", atomic.LoadInt32(&ops), numPods))
+				wg.Done()
+			}()
 			getPodStatus(ctx, podInterface, po, defaultPodStatusDeadline, syncMap)
 		}(&po)
 	}
-
-	// Wait for all deployment status to be fetched
-	wg.Wait()
-	return podErrors(syncMap)
 }
 
-func getFilteredPods(pi corev1.PodInterface, l *DefaultLabeller, filterSpec []*metav1.LabelSelector) ([]v1.Pod, error) {
+func getPods(pi corev1.PodInterface, l *DefaultLabeller) ([]v1.Pod, error) {
 	pods, err := pi.List(metav1.ListOptions{
 		LabelSelector: l.K8sManagedByLabelKeyValueString(),
 	})
-	for _, s := range(filterSpec) {
-		options := metav1.ListOptions{LabelSelector:s.String()}
-		pods, err := pi.List(options)
-	}
 	return pods.Items, err
 }
 
 func getPodStatus(ctx context.Context, pi corev1.PodInterface, po *v1.Pod, deadline time.Duration, syncMap *sync.Map) {
-	syncMap.Store(po.Name, kubernetesutil.WaitForPodToStabilize(ctx, pi, po.Name, deadline))
+	syncMap.Store(
+		fmt.Sprintf("pod/%s", po.Name),
+		kubernetesutil.WaitForPodToStabilize(ctx, pi, po.Name, deadline),
+	)
 }
 
-func podErrors(m *sync.Map) error {
+func getSkaffoldDeployStatus(m *sync.Map) error {
 	errorStrings := []string{}
 	m.Range(func(k, v interface{}) bool {
-		if _, ok := v.(error); ok {
-			errorStrings = append(errorStrings, fmt.Sprintf("pod %s is not stable", k))
+		if t, ok := v.(error); ok {
+			errorStrings = append(errorStrings, fmt.Sprintf("%s failed due to %s", k, t.Error()))
 		}
 		return true
 	})
@@ -221,5 +221,5 @@ func podErrors(m *sync.Map) error {
 	if len(errorStrings) == 0 {
 		return nil
 	}
-	return fmt.Errorf("following pods are not stable:\n%s", strings.Join(errorStrings, "\n"))
+	return fmt.Errorf("following resources are not stable:\n%s", strings.Join(errorStrings, "\n"))
 }
