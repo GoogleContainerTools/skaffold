@@ -218,6 +218,26 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 		return "", errors.Wrapf(err, "getting auth config for %s", ref)
 	}
 
+	// Check if the local image has a digest from a previous push
+	// If the remote image has the same digest, there's no need
+	// to push.
+	image, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
+	if err != nil {
+		return "", errors.Wrapf(err, "inspecting image %s", ref)
+	}
+
+	if len(image.RepoDigests) == 1 {
+		parsed, err := ParseReference(image.RepoDigests[0])
+		if err == nil {
+			remoteInspect, err := l.apiClient.DistributionInspect(ctx, ref, registryAuth)
+			if err == nil {
+				if parsed.Digest == remoteInspect.Descriptor.Digest.String() {
+					return parsed.Digest, nil
+				}
+			}
+		}
+	}
+
 	rc, err := l.apiClient.ImagePush(ctx, ref, types.ImagePushOptions{
 		RegistryAuth: registryAuth,
 	})
