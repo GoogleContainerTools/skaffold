@@ -206,6 +206,16 @@ Set a value in the global Skaffold config
 ```
 
 
+Examples:
+  # Mark a registry as insecure
+  skaffold config set insecure-registries <insecure1.io>
+
+  # Globally set the default image repository
+  skaffold config set default-repo <myrepo>
+
+  # Tell Skaffold not to push images for a given Kubernetes context
+  skaffold config set --kube-context <mycluster> local-cluster true
+
 Options:
   -c, --config='': Path to Skaffold config
   -g, --global=false: Set value for global config
