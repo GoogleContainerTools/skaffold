@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -103,7 +104,7 @@ func typeOfArtifact(a *latest.Artifact) string {
 	}
 }
 
-func timeToListDependencies(ctx context.Context, builder build.Builder, a *latest.Artifact) (time.Duration, []string, error) {
+func timeToListDependencies(ctx context.Context, builder cache.DependencyLister, a *latest.Artifact) (time.Duration, []string, error) {
 	start := time.Now()
 	paths, err := builder.DependenciesForArtifact(ctx, a)
 	return time.Since(start), paths, err
