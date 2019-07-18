@@ -151,19 +151,17 @@ There are two possibilities to add the relation:
   ```yaml
   kubecontexts:
   - kube-context: my-context
-    projects:
-    - /home/user/projects/skaffold-project
-    - project-name
-    - d76524a31c58657b06404f4442e1e64949f4d762
+    skaffoldConfigs:
+    - config-name
   ```
   The drawback here is that the data structure does not forbid conflicting entries, such as this:
   ```yaml
   kubecontexts:
   - kube-context: context1
-    projects:
+    skaffoldConfigs:
     - my-project
   - kube-context: context2
-    projects:
+    skaffoldConfigs:
     - my-project
   ```
 - Add a new top-level entry in Skaffold config:
