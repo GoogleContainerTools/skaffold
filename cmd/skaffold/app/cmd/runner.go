@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"os"
 
-	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -79,17 +78,12 @@ func createNewRunner(opts *config.SkaffoldOptions) (runner.Runner, *latest.Skaff
 		return nil, nil, errors.Wrap(err, "invalid skaffold config")
 	}
 
-	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting default repo")
-	}
-
-	applyDefaultRepoSubstitution(config, defaultRepo)
-
 	runCtx, err := runcontext.GetRunContext(opts, &config.Pipeline)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting run context")
 	}
+
+	applyDefaultRepoSubstitution(config, runCtx.DefaultRepo)
 
 	runner, err := runner.NewForConfig(runCtx)
 	if err != nil {
