@@ -113,6 +113,14 @@ func TestNewCmdWithCommonFlags(t *testing.T) {
 	}
 }
 
+func TestNewCmdHidden(t *testing.T) {
+	cmd := NewCmd("").NoArgs(nil)
+	testutil.CheckDeepEqual(t, false, cmd.Hidden)
+
+	cmd = NewCmd("").Hidden().NoArgs(nil)
+	testutil.CheckDeepEqual(t, true, cmd.Hidden)
+}
+
 func listFlags(set *pflag.FlagSet) map[string]*pflag.Flag {
 	flagsByName := make(map[string]*pflag.Flag)
 

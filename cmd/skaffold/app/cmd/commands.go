@@ -31,6 +31,7 @@ type Builder interface {
 	WithExample(comment, command string) Builder
 	WithFlags(adder func(*pflag.FlagSet)) Builder
 	WithCommonFlags() Builder
+	Hidden() Builder
 	ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command
 	NoArgs(action func(io.Writer) error) *cobra.Command
 }
@@ -73,6 +74,11 @@ func (b *builder) WithCommonFlags() Builder {
 
 func (b *builder) WithFlags(adder func(*pflag.FlagSet)) Builder {
 	adder(b.cmd.Flags())
+	return b
+}
+
+func (b *builder) Hidden() Builder {
+	b.cmd.Hidden = true
 	return b
 }
 
