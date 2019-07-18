@@ -123,7 +123,7 @@ Options:
       --file-output='': Filename to write build images to
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
       --insecure-registry=[]: Target registries for built images which are not secure
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='default': Run deployments in the specified namespace
   -o, --output={{json .}}: Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput
   -p, --profile=[]: Activate profiles by name
   -q, --quiet=false: Suppress the build output and print image built on success. See --output to format output.
@@ -292,7 +292,7 @@ Options:
       --force=true: Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!)
       --insecure-registry=[]: Target registries for built images which are not secure
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='default': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
       --port-forward=false: Port-forward exposed container ports within pods
@@ -342,7 +342,7 @@ Delete the deployed application
 Options:
   -d, --default-repo='': Default repository value (overrides global config)
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='default': Run deployments in the specified namespace
   -p, --profile=[]: Activate profiles by name
 
 Usage:
@@ -375,7 +375,7 @@ E.g. build.out created by running skaffold build --quiet {{json .}} > build.out
       --force=false: Recreate kubernetes resources if necessary for deployment (default false, warning: might cause downtime!)
   -i, --images=: A list of pre-built images to deploy
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='default': Run deployments in the specified namespace
   -p, --profile=[]: Activate profiles by name
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -422,7 +422,7 @@ Options:
       --force=true: Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!)
       --insecure-registry=[]: Target registries for built images which are not secure
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='default': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
       --port-forward=false: Port-forward exposed container ports within pods
@@ -583,7 +583,7 @@ Options:
       --force=true: Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!)
       --insecure-registry=[]: Target registries for built images which are not secure
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
-  -n, --namespace='': Run deployments in the specified namespace
+  -n, --namespace='default': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
   -p, --profile=[]: Activate profiles by name
