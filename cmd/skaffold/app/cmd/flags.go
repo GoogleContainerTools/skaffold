@@ -66,7 +66,7 @@ var FlagRegistry = []Flag{
 		Shorthand:     "n",
 		Usage:         "Run deployments in the specified namespace",
 		Value:         &opts.Namespace,
-		DefValue:      "default",
+		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"all"},
 	},
