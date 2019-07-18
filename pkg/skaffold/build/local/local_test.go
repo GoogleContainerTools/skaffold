@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
@@ -247,12 +248,10 @@ type dummyLocalDaemon struct {
 func TestNewBuilder(t *testing.T) {
 	dummyDaemon := dummyLocalDaemon{}
 
-	pFalse := false
-
 	tests := []struct {
 		description     string
 		shouldErr       bool
-		localBuild      *latest.LocalBuild
+		localBuild      latest.LocalBuild
 		expectedBuilder *Builder
 		localClusterFn  func() (bool, error)
 		localDockerFn   func(*runcontext.RunContext) (docker.LocalDaemon, error)
@@ -264,7 +263,8 @@ func TestNewBuilder(t *testing.T) {
 				return
 			},
 			shouldErr: true,
-		}, {
+		},
+		{
 			description: "pushImages becomes !localCluster when local:push is not defined",
 			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
 				daemon = dummyDaemon
@@ -274,7 +274,6 @@ func TestNewBuilder(t *testing.T) {
 				b = false //because this is false and localBuild.push is nil
 				return
 			},
-
 			shouldErr: false,
 			expectedBuilder: &Builder{
 				cfg:                &latest.LocalBuild{},
@@ -287,7 +286,8 @@ func TestNewBuilder(t *testing.T) {
 				pruneChildren:      true,
 				insecureRegistries: nil,
 			},
-		}, {
+		},
+		{
 			description: "pushImages defined in config (local:push)",
 			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
 				daemon = dummyDaemon
@@ -297,14 +297,14 @@ func TestNewBuilder(t *testing.T) {
 				b = false
 				return
 			},
-			localBuild: &latest.LocalBuild{
-				Push: &pFalse, //because this is false
+			localBuild: latest.LocalBuild{
+				Push: util.BoolPtr(false),
 			},
 			shouldErr: false,
 			expectedBuilder: &Builder{
 				pushImages: false, //this will be false too
 				cfg: &latest.LocalBuild{ // and the config is inherited
-					Push: &pFalse,
+					Push: util.BoolPtr(false),
 				},
 				kubeContext:  "",
 				localDocker:  dummyDaemon,
@@ -336,17 +336,11 @@ func TestNewBuilder(t *testing.T) {
 	}
 }
 
-func stubRunContext(localBuild *latest.LocalBuild) *runcontext.RunContext {
-	if localBuild == nil {
-		localBuild = &latest.LocalBuild{}
-	}
+func stubRunContext(localBuild latest.LocalBuild) *runcontext.RunContext {
+	pipeline := latest.Pipeline{}
+	pipeline.Build.BuildType.LocalBuild = &localBuild
+
 	return &runcontext.RunContext{
-		Cfg: &latest.Pipeline{
-			Build: latest.BuildConfig{
-				BuildType: latest.BuildType{
-					LocalBuild: localBuild,
-				},
-			},
-		},
+		Cfg: pipeline,
 	}
 }

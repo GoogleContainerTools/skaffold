@@ -177,7 +177,7 @@ func TestKubectlDeploy(t *testing.T) {
 
 			k := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
-				Cfg: &latest.Pipeline{
+				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KubectlDeploy: test.cfg,
@@ -251,7 +251,7 @@ func TestKubectlCleanup(t *testing.T) {
 
 			k := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
-				Cfg: &latest.Pipeline{
+				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KubectlDeploy: test.cfg,
@@ -319,7 +319,7 @@ spec:
 		}
 		deployer := NewKubectlDeployer(&runcontext.RunContext{
 			WorkingDir: tmpDir.Root(),
-			Cfg: &latest.Pipeline{
+			Cfg: latest.Pipeline{
 				Deploy: latest.DeployConfig{
 					DeployType: latest.DeployType{
 						KubectlDeploy: cfg,

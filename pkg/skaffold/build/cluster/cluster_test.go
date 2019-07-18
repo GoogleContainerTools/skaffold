@@ -27,7 +27,7 @@ import (
 func TestRetrieveEnv(t *testing.T) {
 	builder, err := NewBuilder(&runcontext.RunContext{
 		KubeContext: "kubecontext",
-		Cfg: &latest.Pipeline{
+		Cfg: latest.Pipeline{
 			Build: latest.BuildConfig{
 				BuildType: latest.BuildType{
 					Cluster: &latest.ClusterDetails{
@@ -42,11 +42,9 @@ func TestRetrieveEnv(t *testing.T) {
 			},
 		},
 	})
-	if err != nil {
-		t.Fatalf("err retrieving builder: %v", err)
-	}
+	testutil.CheckError(t, false, err)
 
 	actual := builder.retrieveExtraEnv()
 	expected := []string{"KUBE_CONTEXT=kubecontext", "NAMESPACE=namespace", "PULL_SECRET_NAME=pullSecret", "DOCKER_CONFIG_SECRET_NAME=dockerconfig", "TIMEOUT=2m"}
-	testutil.CheckErrorAndDeepEqual(t, false, nil, expected, actual)
+	testutil.CheckDeepEqual(t, expected, actual)
 }

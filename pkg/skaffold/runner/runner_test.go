@@ -203,7 +203,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 	defaults.Set(cfg)
 
 	runCtx := &runcontext.RunContext{
-		Cfg: &cfg.Pipeline,
+		Cfg: cfg.Pipeline,
 		Opts: config.SkaffoldOptions{
 			Trigger:           "polling",
 			WatchPollInterval: 100,
@@ -240,7 +240,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 func TestNewForConfig(t *testing.T) {
 	tests := []struct {
 		description      string
-		pipeline         *latest.Pipeline
+		pipeline         latest.Pipeline
 		shouldErr        bool
 		cacheArtifacts   bool
 		expectedBuilder  build.Builder
@@ -249,7 +249,7 @@ func TestNewForConfig(t *testing.T) {
 	}{
 		{
 			description: "local builder config",
-			pipeline: &latest.Pipeline{
+			pipeline: latest.Pipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
 					BuildType: latest.BuildType{
@@ -268,7 +268,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "bad tagger config",
-			pipeline: &latest.Pipeline{
+			pipeline: latest.Pipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{},
 					BuildType: latest.BuildType{
@@ -284,24 +284,8 @@ func TestNewForConfig(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "unknown builder",
-			pipeline: &latest.Pipeline{
-				Build: latest.BuildConfig{},
-			},
-			shouldErr:        true,
-			expectedBuilder:  &local.Builder{},
-			expectedTester:   &test.FullTester{},
-			expectedDeployer: &deploy.KubectlDeployer{},
-		},
-		{
-			description: "unknown tagger",
-			pipeline: &latest.Pipeline{
-				Build: latest.BuildConfig{
-					TagPolicy: latest.TagPolicy{},
-					BuildType: latest.BuildType{
-						LocalBuild: &latest.LocalBuild{},
-					},
-				}},
+			description:      "unknown builder and tagger",
+			pipeline:         latest.Pipeline{},
 			shouldErr:        true,
 			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
@@ -309,7 +293,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown deployer",
-			pipeline: &latest.Pipeline{
+			pipeline: latest.Pipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
 					BuildType: latest.BuildType{
@@ -321,7 +305,7 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "no artifacts, cache",
-			pipeline: &latest.Pipeline{
+			pipeline: latest.Pipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
 					BuildType: latest.BuildType{
@@ -422,7 +406,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 				AutoSync:          test.autoSync,
 				AutoDeploy:        test.autoDeploy,
 			}
-			pipeline := &latest.Pipeline{
+			pipeline := latest.Pipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
 					BuildType: latest.BuildType{

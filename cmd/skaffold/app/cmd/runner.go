@@ -78,7 +78,7 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 		return nil, nil, errors.Wrap(err, "invalid skaffold config")
 	}
 
-	runCtx, err := runcontext.GetRunContext(opts, &config.Pipeline)
+	runCtx, err := runcontext.GetRunContext(opts, config.Pipeline)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting run context")
 	}
