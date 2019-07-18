@@ -12,3 +12,8 @@ profiles:
   - name: gcb
     build:
       googleCloudBuild: {}
+  - name: old-jib
+    patches:
+    - op: add
+      path: /build/artifacts/0/jibMaven/args
+      value: ['-Djib.maven-plugin-version=1.3.0']

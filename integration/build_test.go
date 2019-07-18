@@ -179,3 +179,40 @@ func failNowIfError(t *testing.T, err error) {
 		t.Fatal(err)
 	}
 }
+
+// TestExpectedBuildFailures verifies that `skaffold build` fails in expected ways
+func TestExpectedBuildFailures(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	tests := []struct {
+		description string
+		dir         string
+		filename    string
+		args        []string
+		env         []string
+		gcpOnly     bool
+	}{
+		{
+			description: "jib is too old",
+			dir:         "testdata/jib",
+			args:        []string{"-p", "old-jib"},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			if test.gcpOnly && !ShouldRunGCPOnlyTests() {
+				t.Skip("skipping gcp only test")
+			}
+			if !test.gcpOnly && ShouldRunGCPOnlyTests() {
+				t.Skip("skipping test that is not gcp only")
+			}
+
+			err := skaffold.Build(test.args...).WithConfig(test.filename).InDir(test.dir).Run(t)
+			if err == nil {
+				t.Fatal("expected failure")
+			}
+		})
+	}
+}
