@@ -33,6 +33,36 @@ var (
 	forwardingTimeoutTime = time.Minute
 )
 
+type forwardedPorts struct {
+	ports map[int]struct{}
+	lock  sync.Mutex
+}
+
+func (f forwardedPorts) Store(key, value interface{}) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	val, ok := key.(int)
+	if !ok {
+		panic("only store keys of type int in forwardedPorts")
+	}
+	f.ports[val] = struct{}{}
+}
+
+func (f forwardedPorts) LoadOrStore(key, value interface{}) (actual interface{}, loaded bool) {
+	val, ok := key.(int)
+	if !ok {
+		return nil, false
+	}
+	_, exists := f.ports[val]
+	return nil, exists
+}
+
+func (f forwardedPorts) Delete(port int) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	delete(f.ports, port)
+}
+
 // EntryManager handles forwarding entries and keeping track of
 // forwarded ports and resources.
 type EntryManager struct {
@@ -40,7 +70,7 @@ type EntryManager struct {
 	output io.Writer
 
 	// forwardedPorts serves as a synchronized set of ports we've forwarded.
-	forwardedPorts *sync.Map
+	forwardedPorts forwardedPorts
 
 	// forwardedResources is a map of portForwardEntry key (string) -> portForwardEntry
 	forwardedResources *sync.Map
@@ -50,8 +80,11 @@ type EntryManager struct {
 // of forwarded ports and resources
 func NewEntryManager(out io.Writer) EntryManager {
 	return EntryManager{
-		output:             out,
-		forwardedPorts:     &sync.Map{},
+		output: out,
+		forwardedPorts: forwardedPorts{
+			ports: map[int]struct{}{},
+			lock:  sync.Mutex{},
+		},
 		forwardedResources: &sync.Map{},
 		EntryForwarder:     &KubectlForwarder{},
 	}

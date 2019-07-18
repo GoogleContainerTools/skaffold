@@ -18,26 +18,33 @@ package portforward
 
 import (
 	"io/ioutil"
+	"reflect"
 	"sync"
-	"sync/atomic"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/google/go-cmp/cmp"
 )
+
+func newForwardedPorts() forwardedPorts {
+	return forwardedPorts{
+		lock:  sync.Mutex{},
+		ports: map[int]struct{}{},
+	}
+}
 
 func TestNewEntryManager(t *testing.T) {
 	out := ioutil.Discard
 	expected := EntryManager{
 		output:             out,
-		forwardedPorts:     &sync.Map{},
+		forwardedPorts:     newForwardedPorts(),
 		forwardedResources: &sync.Map{},
 		EntryForwarder:     &KubectlForwarder{},
 	}
 	actual := NewEntryManager(out)
-	testutil.CheckDeepEqual(t, expected, actual, cmp.AllowUnexported(EntryManager{}, sync.Map{}, sync.Mutex{}, atomic.Value{}))
+	if !reflect.DeepEqual(expected, actual) {
+		t.Errorf("Expected result different from actual result. Expected: %v, Actual: %v", expected, actual)
+	}
 }
 
 func TestStop(t *testing.T) {
@@ -64,7 +71,7 @@ func TestStop(t *testing.T) {
 	em.forwardedResources.Store("pod-resource-default-0", pfe1)
 	em.forwardedResources.Store("pod-resource2-default-0", pfe2)
 
-	em.forwardedPorts = &sync.Map{}
+	em.forwardedPorts = newForwardedPorts()
 	em.forwardedPorts.Store(9000, struct{}{})
 	em.forwardedPorts.Store(9001, struct{}{})
 
@@ -78,7 +85,7 @@ func TestStop(t *testing.T) {
 		t.Fatalf("error stopping port forwarding. expected 0 entries and got %d", count)
 	}
 
-	if count := lengthSyncMap(fakeForwarder.forwardedPorts); count != 0 {
+	if count := len(fakeForwarder.forwardedPorts.ports); count != 0 {
 		t.Fatalf("error cleaning up ports. expected 0 entries and got %d", count)
 	}
 }

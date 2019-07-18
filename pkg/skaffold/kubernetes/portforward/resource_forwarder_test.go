@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -33,34 +34,34 @@ import (
 
 type testForwarder struct {
 	forwardedEntries *sync.Map
-	forwardedPorts   *sync.Map
+	forwardedPorts   forwardedPorts
 
 	forwardErr error
 }
 
 func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) error {
 	f.forwardedEntries.Store(pfe.key(), pfe)
-	f.forwardedPorts.Store(pfe.localPort, true)
+	f.forwardedPorts.Store(int(pfe.localPort), true)
 	return f.forwardErr
 }
 
 func (f *testForwarder) Terminate(pfe *portForwardEntry) {
 	f.forwardedEntries.Delete(pfe.key())
-	f.forwardedPorts.Delete(pfe.resource.Port)
+	f.forwardedPorts.Delete(int(pfe.resource.Port))
 }
 
 func newTestForwarder(forwardErr error) *testForwarder {
 	return &testForwarder{
 		forwardedEntries: &sync.Map{},
-		forwardedPorts:   &sync.Map{},
+		forwardedPorts:   newForwardedPorts(),
 		forwardErr:       forwardErr,
 	}
 }
 
-func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int, *sync.Map) int {
+func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int, util.ForwardedPorts) int {
 	// Return first available port in ports that isn't taken
 	lock := sync.Mutex{}
-	return func(int, *sync.Map) int {
+	return func(int, util.ForwardedPorts) int {
 		for _, p := range availablePorts {
 			lock.Lock()
 			if _, ok := taken[p]; ok {
