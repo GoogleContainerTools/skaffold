@@ -152,7 +152,7 @@ func TestIsTargetImage(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			opts := &SkaffoldOptions{
+			opts := SkaffoldOptions{
 				TargetImages: test.targetImages,
 			}
 

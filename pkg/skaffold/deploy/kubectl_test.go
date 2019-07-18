@@ -185,7 +185,7 @@ func TestKubectlDeploy(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
+				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 					Force:     test.forceDeploy,
 				},
@@ -259,7 +259,7 @@ func TestKubectlCleanup(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
+				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
 			})
@@ -327,7 +327,7 @@ spec:
 				},
 			},
 			KubeContext: testKubeContext,
-			Opts: &config.SkaffoldOptions{
+			Opts: config.SkaffoldOptions{
 				Namespace: testNamespace,
 			},
 		})

@@ -695,7 +695,7 @@ func makeRunContext(helmDeploy *latest.HelmDeploy, force bool) *runcontext.RunCo
 			},
 		},
 		KubeContext: testKubeContext,
-		Opts: &config.SkaffoldOptions{
+		Opts: config.SkaffoldOptions{
 			Namespace: testNamespace,
 			Force:     force,
 		},

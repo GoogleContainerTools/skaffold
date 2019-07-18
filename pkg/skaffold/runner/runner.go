@@ -121,7 +121,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	defaultLabeller := deploy.NewLabeller("")
-	labellers := []deploy.Labeller{runCtx.Opts, builder, deployer, tagger, defaultLabeller}
+	labellers := []deploy.Labeller{&runCtx.Opts, builder, deployer, tagger, defaultLabeller}
 
 	builder, tester, deployer = WithTimings(builder, tester, deployer, runCtx.Opts.CacheArtifacts)
 	if runCtx.Opts.Notification {

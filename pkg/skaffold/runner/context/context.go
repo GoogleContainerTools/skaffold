@@ -29,7 +29,7 @@ import (
 )
 
 type RunContext struct {
-	Opts *config.SkaffoldOptions
+	Opts config.SkaffoldOptions
 	Cfg  *latest.Pipeline
 
 	DefaultRepo        string
@@ -39,7 +39,7 @@ type RunContext struct {
 	InsecureRegistries map[string]bool
 }
 
-func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.Pipeline) (*RunContext, error) {
+func GetRunContext(opts config.SkaffoldOptions, cfg *latest.Pipeline) (*RunContext, error) {
 	kubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting current cluster context")

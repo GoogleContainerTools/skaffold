@@ -199,20 +199,18 @@ func (r *SkaffoldRunner) WithMonitor(m filemon.Monitor) *SkaffoldRunner {
 }
 
 func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) *SkaffoldRunner {
-	opts := &config.SkaffoldOptions{
-		Trigger:           "polling",
-		WatchPollInterval: 100,
-		AutoBuild:         true,
-		AutoSync:          true,
-		AutoDeploy:        true,
-	}
-
 	cfg := &latest.SkaffoldConfig{}
 	defaults.Set(cfg)
 
 	runCtx := &runcontext.RunContext{
-		Opts: opts,
-		Cfg:  &cfg.Pipeline,
+		Cfg: &cfg.Pipeline,
+		Opts: config.SkaffoldOptions{
+			Trigger:           "polling",
+			WatchPollInterval: 100,
+			AutoBuild:         true,
+			AutoSync:          true,
+			AutoDeploy:        true,
+		},
 	}
 	runner, err := NewForConfig(runCtx)
 	t.CheckNoError(err)
@@ -348,7 +346,7 @@ func TestNewForConfig(t *testing.T) {
 
 			runCtx := &runcontext.RunContext{
 				Cfg: test.pipeline,
-				Opts: &config.SkaffoldOptions{
+				Opts: config.SkaffoldOptions{
 					Trigger: "polling",
 				},
 			}
@@ -417,29 +415,30 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			opts := &config.SkaffoldOptions{
+			opts := config.SkaffoldOptions{
 				Trigger:           "polling",
 				WatchPollInterval: 100,
 				AutoBuild:         test.autoBuild,
 				AutoSync:          test.autoSync,
 				AutoDeploy:        test.autoDeploy,
 			}
-			defaultConfig := &latest.SkaffoldConfig{
-				Pipeline: latest.Pipeline{
-					Build: latest.BuildConfig{
-						TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
-						BuildType: latest.BuildType{
-							LocalBuild: &latest.LocalBuild{},
-						},
+			pipeline := &latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: &latest.KubectlDeploy{},
-						},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			}
-			r, _ := NewForConfig(opts, defaultConfig)
+			r, _ := NewForConfig(&runcontext.RunContext{
+				Opts: opts,
+				Cfg:  pipeline,
+			})
 
 			r.intents.resetBuild()
 			r.intents.resetSync()

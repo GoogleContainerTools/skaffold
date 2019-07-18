@@ -92,7 +92,7 @@ func TestCacheBuildLocal(t *testing.T) {
 			Chdir()
 
 		runCtx := &runcontext.RunContext{
-			Opts: &config.SkaffoldOptions{
+			Opts: config.SkaffoldOptions{
 				CacheArtifacts: true,
 				CacheFile:      tmpDir.Path("cache"),
 			},
@@ -158,7 +158,7 @@ func TestCacheBuildRemote(t *testing.T) {
 			Chdir()
 
 		runCtx := &runcontext.RunContext{
-			Opts: &config.SkaffoldOptions{
+			Opts: config.SkaffoldOptions{
 				CacheArtifacts: true,
 				CacheFile:      tmpDir.Path("cache"),
 			},
