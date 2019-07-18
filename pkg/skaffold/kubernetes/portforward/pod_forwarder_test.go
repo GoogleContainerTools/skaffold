@@ -48,7 +48,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 	}{
 		{
 			description:    "single container port",
-			expectedPorts:  map[int]struct{}{8080: struct{}{}},
+			expectedPorts:  map[int]struct{}{8080: {}},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
@@ -92,7 +92,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:   "unavailable container port",
-			expectedPorts: map[int]struct{}{9000: struct{}{}},
+			expectedPorts: map[int]struct{}{9000: {}},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
 					resourceVersion: 1,
@@ -165,7 +165,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "forward error",
-			expectedPorts:  map[int]struct{}{8080: struct{}{}},
+			expectedPorts:  map[int]struct{}{8080: {}},
 			forwarder:      newTestForwarder(fmt.Errorf("")),
 			shouldErr:      true,
 			availablePorts: []int{8080},
@@ -211,7 +211,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "two different container ports",
-			expectedPorts:  map[int]struct{}{8080: struct{}{}, 50051: struct{}{}},
+			expectedPorts:  map[int]struct{}{8080: {}, 50051: {}},
 			availablePorts: []int{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
@@ -290,7 +290,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "two same container ports",
-			expectedPorts:  map[int]struct{}{8080: struct{}{}, 9000: struct{}{}},
+			expectedPorts:  map[int]struct{}{8080: {}, 9000: {}},
 			availablePorts: []int{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
@@ -369,7 +369,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "updated pod gets port forwarded",
-			expectedPorts:  map[int]struct{}{8080: struct{}{}},
+			expectedPorts:  map[int]struct{}{8080: {}},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {

@@ -41,7 +41,7 @@ type testForwarder struct {
 
 func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) error {
 	f.forwardedResources.Store(pfe.key(), pfe)
-	f.forwardedPorts.Store(int(pfe.localPort), true)
+	f.forwardedPorts.Store(pfe.localPort, true)
 	return f.forwardErr
 }
 
