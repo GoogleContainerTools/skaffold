@@ -56,7 +56,7 @@ To edit this file above edit index_header - the rest of the file is autogenerate
 
 ### skaffold
 
-A tool that facilitates continuous development for Kubernetes applications.
+
 
 ```
 
@@ -97,6 +97,22 @@ Build the artifacts
 
 ```
 
+
+Examples:
+  # Build all the artifacts
+  skaffold build
+
+  # Build artifacts with a profile activated
+  skaffold build -p <profile>
+
+  # Build artifacts whose image name contains <db>
+  skaffold build -b <db>
+
+  # Quietly build artifacts and output the image names as json
+  skaffold build -q > build_result.json
+
+  # Build the artifacts and then deploy them
+  skaffold build -q > skaffold deploy
 
 Options:
   -b, --build-image=[]: Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
@@ -213,7 +229,7 @@ Examples:
   # Globally set the default image repository
   skaffold config set default-repo <myrepo>
 
-  # Tell Skaffold not to push images for a given Kubernetes context
+  # Disable pushing images for a given Kubernetes context
   skaffold config set --kube-context <mycluster> local-cluster true
 
 Options:
@@ -549,6 +565,13 @@ Run a pipeline
 
 ```
 
+
+Examples:
+  # Build, test, deploy and tail the logs
+  skaffold run --tail
+
+  # Run with a given profile
+  skaffold run -p <profile>
 
 Options:
       --cache-artifacts=false: Set to true to enable caching of artifacts

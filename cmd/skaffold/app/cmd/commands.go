@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -27,6 +28,7 @@ import (
 type Builder interface {
 	WithDescription(description string) Builder
 	WithLongDescription(long string) Builder
+	WithExample(comment, command string) Builder
 	WithFlags(adder func(*pflag.FlagSet)) Builder
 	WithCommonFlags() Builder
 	ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command
@@ -53,6 +55,14 @@ func (b *builder) WithDescription(description string) Builder {
 
 func (b *builder) WithLongDescription(long string) Builder {
 	b.cmd.Long = long
+	return b
+}
+
+func (b *builder) WithExample(comment, command string) Builder {
+	if b.cmd.Example != "" {
+		b.cmd.Example += "\n"
+	}
+	b.cmd.Example += fmt.Sprintf("  # %s\n  skaffold %s\n", comment, command)
 	return b
 }
 

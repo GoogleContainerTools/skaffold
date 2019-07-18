@@ -41,6 +41,18 @@ func TestNewCmdLongDescription(t *testing.T) {
 	testutil.CheckDeepEqual(t, "long description", cmd.Long)
 }
 
+func TestNewCmdExample(t *testing.T) {
+	cmd := NewCmd("").WithExample("comment1", "dev --flag1").NoArgs(nil)
+
+	testutil.CheckDeepEqual(t, "  # comment1\n  skaffold dev --flag1\n", cmd.Example)
+}
+
+func TestNewCmdExamples(t *testing.T) {
+	cmd := NewCmd("").WithExample("comment1", "run --flag1").WithExample("comment2", "run --flag2").NoArgs(nil)
+
+	testutil.CheckDeepEqual(t, "  # comment1\n  skaffold run --flag1\n\n  # comment2\n  skaffold run --flag2\n", cmd.Example)
+}
+
 func TestNewCmdNoArgs(t *testing.T) {
 	cmd := NewCmd("").NoArgs(nil)
 
