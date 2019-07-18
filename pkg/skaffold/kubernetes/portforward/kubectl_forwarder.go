@@ -59,7 +59,7 @@ func (*KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 	return portForwardSuccessful(pfe.localPort)
 }
 
-func portForwardSuccessful(port int32) error {
+func portForwardSuccessful(port int) error {
 	// creating a listening port should not succeed
 	if ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port)); err == nil {
 		ln.Close()
