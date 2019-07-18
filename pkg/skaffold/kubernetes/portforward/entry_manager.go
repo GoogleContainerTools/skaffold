@@ -51,12 +51,12 @@ func (f forwardedPorts) Store(key, value interface{}) {
 func (f forwardedPorts) LoadOrStore(key, value interface{}) (actual interface{}, loaded bool) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
-	val, ok := key.(int)
+	k, ok := key.(int)
 	if !ok {
 		return nil, false
 	}
-	_, exists := f.ports[val]
-	return nil, exists
+	val, exists := f.ports[k]
+	return val, exists
 }
 
 func (f forwardedPorts) Delete(port int) {
@@ -89,21 +89,6 @@ func (f forwardedResources) Load(key string) (*portForwardEntry, bool) {
 	defer f.lock.Unlock()
 	val, exists := f.resources[key]
 	return val, exists
-}
-
-func (f forwardedResources) LoadOrStore(key, value interface{}) (interface{}, bool) {
-	f.lock.Lock()
-	defer f.lock.Unlock()
-	k, ok := key.(string)
-	if !ok {
-		return nil, false
-	}
-	pfe, exists := f.resources[k]
-	if exists {
-		return pfe, exists
-	}
-	f.resources[k] = pfe
-	return value, true
 }
 
 func (f forwardedResources) Delete(resource string) {
@@ -164,7 +149,8 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 	if err != nil {
 		return err
 	}
-	event.PortForwarded(entry.localPort, entry.resource.Port, entry.podName, entry.containerName, entry.resource.Namespace, entry.portName, string(entry.resource.Type), entry.resource.Name)
+	// TODO priyawadhwa@, change event API to accept ports of type int
+	event.PortForwarded(int32(entry.localPort), int32(entry.resource.Port), entry.podName, entry.containerName, entry.resource.Namespace, entry.portName, string(entry.resource.Type), entry.resource.Name)
 	return nil
 }
 
@@ -178,6 +164,6 @@ func (b *EntryManager) Stop() {
 // Terminate terminates a single port forward entry
 func (b *EntryManager) Terminate(p *portForwardEntry) {
 	b.forwardedResources.Delete(p.key())
-	b.forwardedPorts.Delete(int(p.localPort))
+	b.forwardedPorts.Delete(p.localPort)
 	b.EntryForwarder.Terminate(p)
 }

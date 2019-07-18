@@ -86,10 +86,10 @@ type PortForwardResource struct {
 	Namespace string `yaml:"namespace,omitempty"`
 
 	// Port is the resource port that will be forwarded.
-	Port int32 `yaml:"port,omitempty"`
+	Port int `yaml:"port,omitempty"`
 
 	// LocalPort is the local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
-	LocalPort int32 `yaml:"localPort,omitempty"`
+	LocalPort int `yaml:"localPort,omitempty"`
 }
 
 // BuildConfig contains all the configuration for the build steps.

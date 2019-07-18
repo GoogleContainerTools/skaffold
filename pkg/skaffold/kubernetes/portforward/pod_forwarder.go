@@ -108,8 +108,8 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 				Type:      constants.Pod,
 				Name:      pod.Name,
 				Namespace: pod.Namespace,
-				Port:      port.ContainerPort,
-				LocalPort: port.ContainerPort,
+				Port:      int(port.ContainerPort),
+				LocalPort: int(port.ContainerPort),
 			}
 
 			entry, err := p.podForwardingEntry(pod.ResourceVersion, c.Name, port.Name, resource)
@@ -156,7 +156,7 @@ func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = int32(retrieveAvailablePort(int(resource.Port), p.forwardedPorts))
+	entry.localPort = retrieveAvailablePort(resource.Port, p.forwardedPorts)
 
 	return entry, nil
 }

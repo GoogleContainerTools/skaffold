@@ -47,7 +47,7 @@ func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) erro
 
 func (f *testForwarder) Terminate(pfe *portForwardEntry) {
 	f.forwardedResources.Delete(pfe.key())
-	f.forwardedPorts.Delete(int(pfe.resource.Port))
+	f.forwardedPorts.Delete(pfe.resource.Port)
 }
 
 func newTestForwarder(forwardErr error) *testForwarder {
