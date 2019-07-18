@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -85,7 +86,12 @@ func createNewRunner(opts *config.SkaffoldOptions) (runner.Runner, *latest.Skaff
 
 	applyDefaultRepoSubstitution(config, defaultRepo)
 
-	runner, err := runner.NewForConfig(opts, config)
+	runCtx, err := runcontext.GetRunContext(opts, &config.Pipeline)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "getting run context")
+	}
+
+	runner, err := runner.NewForConfig(runCtx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "creating runner")
 	}

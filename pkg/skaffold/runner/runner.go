@@ -30,7 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -93,13 +92,8 @@ var (
 )
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
-func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*SkaffoldRunner, error) {
-	runCtx, err := runcontext.GetRunContext(opts, &cfg.Pipeline)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting run context")
-	}
-
-	tagger, err := getTagger(cfg.Build.TagPolicy, opts.CustomTag)
+func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
+	tagger, err := getTagger(runCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing tag config")
 	}
@@ -127,10 +121,10 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 	}
 
 	defaultLabeller := deploy.NewLabeller("")
-	labellers := []deploy.Labeller{opts, builder, deployer, tagger, defaultLabeller}
+	labellers := []deploy.Labeller{runCtx.Opts, builder, deployer, tagger, defaultLabeller}
 
-	builder, tester, deployer = WithTimings(builder, tester, deployer, opts.CacheArtifacts)
-	if opts.Notification {
+	builder, tester, deployer = WithTimings(builder, tester, deployer, runCtx.Opts.CacheArtifacts)
+	if runCtx.Opts.Notification {
 		deployer = WithNotification(deployer)
 	}
 
@@ -163,11 +157,11 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		},
 		labellers:            labellers,
 		defaultLabeller:      defaultLabeller,
-		portForwardResources: cfg.PortForward,
+		portForwardResources: runCtx.Cfg.PortForward,
 		imageList:            kubernetes.NewImageList(),
 		cache:                artifactCache,
 		runCtx:               runCtx,
-		intents:              newIntents(opts.AutoBuild, opts.AutoSync, opts.AutoDeploy),
+		intents:              newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy),
 	}
 
 	if err := r.setupTriggerCallbacks(intentChan); err != nil {
@@ -268,11 +262,13 @@ func getDeployer(runCtx *runcontext.RunContext) (deploy.Deployer, error) {
 	}
 }
 
-func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
+func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {
+	t := runCtx.Cfg.Build.TagPolicy
+
 	switch {
-	case customTag != "":
+	case runCtx.Opts.CustomTag != "":
 		return &tag.CustomTag{
-			Tag: customTag,
+			Tag: runCtx.Opts.CustomTag,
 		}, nil
 
 	case t.EnvTemplateTagger != nil:
