@@ -20,13 +20,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/karrick/godirwalk"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -82,22 +81,17 @@ func doFindConfigs(out io.Writer) error {
 func findConfigs(directory string) (map[string]string, error) {
 	pathToVersion := make(map[string]string)
 
-	err := filepath.Walk(directory,
-		func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-
+	err := godirwalk.Walk(directory, &godirwalk.Options{
+		Callback: func(path string, info *godirwalk.Dirent) error {
 			// Find files ending in ".yaml" and parseable to skaffold config in the specified root directory recursively.
-			if !info.IsDir() && (strings.Contains(path, ".yaml") || strings.Contains(path, ".yml")) {
-				cfg, err := schema.ParseConfig(path, false)
-				if err == nil {
+			if !info.IsDir() && (strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
+				if cfg, err := schema.ParseConfig(path, false); err == nil {
 					pathToVersion[path] = cfg.GetVersion()
 				}
 			}
 			return nil
-		})
+		},
+	})
 
 	return pathToVersion, err
 }
