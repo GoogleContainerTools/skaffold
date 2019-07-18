@@ -50,13 +50,9 @@ type Builder struct {
 
 var getLocalCluster = configutil.GetLocalCluster
 
-var getLocalDocker = func(runCtx *runcontext.RunContext) (docker.LocalDaemon, error) {
-	return docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
-}
-
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
-	localDocker, err := getLocalDocker(runCtx)
+	localDocker, err := docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}

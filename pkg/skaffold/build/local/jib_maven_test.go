@@ -73,14 +73,18 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 			api := &testutil.FakeAPIClient{
 				TagToImageID: map[string]string{"img:tag": "imageID"},
 			}
+			t.Override(&docker.NewAPIClient, func(bool, map[string]bool) (docker.LocalDaemon, error) {
+				return docker.NewLocalDaemon(api, nil, false, nil), nil
+			})
 
-			builder := &Builder{
-				pushImages:  false,
-				localDocker: docker.NewLocalDaemon(api, nil, false, nil),
-			}
+			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
+				Push: util.BoolPtr(false),
+			}))
+			t.CheckNoError(err)
+
 			result, err := builder.buildJibMaven(context.Background(), ioutil.Discard, ".", test.artifact, "img:tag")
-
 			t.CheckError(test.shouldErr, err)
+
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
 			} else {
@@ -136,14 +140,18 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 				}
 				return "", errors.New("unknown remote tag")
 			})
+			t.Override(&docker.NewAPIClient, func(bool, map[string]bool) (docker.LocalDaemon, error) {
+				return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil), nil
+			})
 
-			builder := &Builder{
-				pushImages:  true,
-				localDocker: docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil),
-			}
+			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
+				Push: util.BoolPtr(true),
+			}))
+			t.CheckNoError(err)
+
 			result, err := builder.buildJibMaven(context.Background(), ioutil.Discard, ".", test.artifact, "img:tag")
-
 			t.CheckError(test.shouldErr, err)
+
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
 			} else {

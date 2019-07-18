@@ -219,6 +219,9 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
+			t.Override(&docker.NewAPIClient, func(bool, map[string]bool) (docker.LocalDaemon, error) {
+				return docker.NewLocalDaemon(&test.api, nil, false, nil), nil
+			})
 
 			event.InitializeState(latest.BuildConfig{
 				BuildType: latest.BuildType{
@@ -226,13 +229,12 @@ func TestLocalRun(t *testing.T) {
 				},
 			})
 
-			l := Builder{
-				cfg:         &latest.LocalBuild{},
-				localDocker: docker.NewLocalDaemon(&test.api, nil, false, nil),
-				pushImages:  test.pushImages,
-			}
+			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
+				Push: util.BoolPtr(test.pushImages),
+			}))
+			t.CheckNoError(err)
 
-			res, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
+			res, err := builder.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
@@ -254,21 +256,19 @@ func TestNewBuilder(t *testing.T) {
 		localBuild      latest.LocalBuild
 		expectedBuilder *Builder
 		localClusterFn  func() (bool, error)
-		localDockerFn   func(*runcontext.RunContext) (docker.LocalDaemon, error)
+		localDockerFn   func(bool, map[string]bool) (docker.LocalDaemon, error)
 	}{
 		{
 			description: "failed to get docker client",
-			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
-				e = errors.New("dummy docker error")
-				return
+			localDockerFn: func(bool, map[string]bool) (docker.LocalDaemon, error) {
+				return nil, errors.New("dummy docker error")
 			},
 			shouldErr: true,
 		},
 		{
 			description: "pushImages becomes !localCluster when local:push is not defined",
-			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
-				daemon = dummyDaemon
-				return
+			localDockerFn: func(bool, map[string]bool) (docker.LocalDaemon, error) {
+				return dummyDaemon, nil
 			},
 			localClusterFn: func() (b bool, e error) {
 				b = false //because this is false and localBuild.push is nil
@@ -289,9 +289,8 @@ func TestNewBuilder(t *testing.T) {
 		},
 		{
 			description: "pushImages defined in config (local:push)",
-			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
-				daemon = dummyDaemon
-				return
+			localDockerFn: func(bool, map[string]bool) (docker.LocalDaemon, error) {
+				return dummyDaemon, nil
 			},
 			localClusterFn: func() (b bool, e error) {
 				b = false
@@ -320,7 +319,7 @@ func TestNewBuilder(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			if test.localDockerFn != nil {
-				t.Override(&getLocalDocker, test.localDockerFn)
+				t.Override(&docker.NewAPIClient, test.localDockerFn)
 			}
 			if test.localClusterFn != nil {
 				t.Override(&getLocalCluster, test.localClusterFn)

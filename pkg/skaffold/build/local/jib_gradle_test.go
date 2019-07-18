@@ -63,19 +63,23 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.cmd)
-
 			api := &testutil.FakeAPIClient{
 				TagToImageID: map[string]string{"img:tag": "imageID"},
 			}
 
-			builder := &Builder{
-				pushImages:  false,
-				localDocker: docker.NewLocalDaemon(api, nil, false, nil),
-			}
-			result, err := builder.buildJibGradle(context.Background(), ioutil.Discard, ".", test.artifact, "img:tag")
+			t.Override(&util.DefaultExecCommand, test.cmd)
+			t.Override(&docker.NewAPIClient, func(bool, map[string]bool) (docker.LocalDaemon, error) {
+				return docker.NewLocalDaemon(api, nil, false, nil), nil
+			})
 
+			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
+				Push: util.BoolPtr(false),
+			}))
+			t.CheckNoError(err)
+
+			result, err := builder.buildJibGradle(context.Background(), ioutil.Discard, ".", test.artifact, "img:tag")
 			t.CheckError(test.shouldErr, err)
+
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
 			} else {
@@ -126,14 +130,18 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 				}
 				return "", errors.New("unknown remote tag")
 			})
+			t.Override(&docker.NewAPIClient, func(bool, map[string]bool) (docker.LocalDaemon, error) {
+				return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil), nil
+			})
 
-			builder := &Builder{
-				pushImages:  true,
-				localDocker: docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil),
-			}
+			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
+				Push: util.BoolPtr(true),
+			}))
+			t.CheckNoError(err)
+
 			result, err := builder.buildJibGradle(context.Background(), ioutil.Discard, ".", test.artifact, "img:tag")
-
 			t.CheckError(test.shouldErr, err)
+
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
 			} else {

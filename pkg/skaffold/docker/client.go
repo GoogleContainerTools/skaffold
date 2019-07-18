@@ -40,14 +40,19 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// For testing
+var (
+	NewAPIClient = NewAPIClientImpl
+)
+
 var (
 	dockerAPIClientOnce sync.Once
 	dockerAPIClient     LocalDaemon
 	dockerAPIClientErr  error
 )
 
-// NewAPIClient guesses the docker client to use based on current kubernetes context.
-func NewAPIClient(forceRemove bool, insecureRegistries map[string]bool) (LocalDaemon, error) {
+// NewAPIClientImpl guesses the docker client to use based on current kubernetes context.
+func NewAPIClientImpl(forceRemove bool, insecureRegistries map[string]bool) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
 		kubeConfig, err := kubectx.CurrentConfig()
 		if err != nil {

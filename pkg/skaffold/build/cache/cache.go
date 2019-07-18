@@ -32,11 +32,6 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-// For testing
-var (
-	newDockerClient = createDockerClient
-)
-
 // ImageDetails holds the Digest and ID of an image
 type ImageDetails struct {
 	Digest string `yaml:"digest,omitempty"`
@@ -79,7 +74,7 @@ func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies D
 		return &noCache{}, nil
 	}
 
-	client, err := newDockerClient(runCtx)
+	client, err := docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
 	if imagesAreLocal && err != nil {
 		return nil, errors.Wrap(err, "getting local Docker client")
 	}
@@ -92,10 +87,6 @@ func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies D
 		cacheFile:          cacheFile,
 		imagesAreLocal:     imagesAreLocal,
 	}, nil
-}
-
-func createDockerClient(runCtx *runcontext.RunContext) (docker.LocalDaemon, error) {
-	return docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
 }
 
 // resolveCacheFile makes sure that either a passed in cache file or the default cache file exists
