@@ -20,7 +20,7 @@ import (
 	"context"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/golang/protobuf/ptypes/empty"
 )
 
@@ -29,6 +29,10 @@ func (s *server) GetState(context.Context, *empty.Empty) (*proto.State, error) {
 }
 
 func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
+	return event.ForEachEvent(stream.Send)
+}
+
+func (s *server) Events(stream proto.SkaffoldService_EventsServer) error {
 	return event.ForEachEvent(stream.Send)
 }
 

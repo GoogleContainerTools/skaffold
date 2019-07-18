@@ -20,7 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta12"
+const Version string = "skaffold/v1beta13"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -35,11 +35,20 @@ type SkaffoldConfig struct {
 	// Kind is always `Config`. Defaults to `Config`.
 	Kind string `yaml:"kind" yamltags:"required"`
 
+	// Metadata holds additional information about the config.
+	Metadata Metadata `yaml:"metadata,omitempty"`
+
 	// Pipeline defines the Build/Test/Deploy phases.
 	Pipeline `yaml:",inline"`
 
 	// Profiles *beta* can override be used to `build`, `test` or `deploy` configuration.
 	Profiles []Profile `yaml:"profiles,omitempty"`
+}
+
+// Metadata holds an optional name of the project.
+type Metadata struct {
+	// Name is an identifier for the project.
+	Name string `yaml:"name,omitempty"`
 }
 
 // Pipeline describes a Skaffold pipeline.
@@ -253,6 +262,12 @@ type KanikoCache struct {
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
 type ClusterDetails struct {
+	// HTTPProxy for kaniko pod.
+	HTTPProxy string `yaml:"HTTP_PROXY,omitempty"`
+
+	// HTTPSProxy for kaniko pod.
+	HTTPSProxy string `yaml:"HTTPS_PROXY,omitempty"`
+
 	// PullSecret is the path to the Google Cloud service account secret key file.
 	PullSecret string `yaml:"pullSecret,omitempty"`
 
@@ -509,8 +524,6 @@ type Artifact struct {
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
-
-	WorkspaceHash string `yaml:"-,omitempty"`
 }
 
 // Sync *alpha* specifies what files to sync into the container.
@@ -678,6 +691,9 @@ type KanikoArtifact struct {
 	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
 	// use a remote cache which will speed up builds.
 	Cache *KanikoCache `yaml:"cache,omitempty"`
+
+	// Reproducible is used to strip timestamps out of the built image.
+	Reproducible bool `yaml:"reproducible,omitempty"`
 }
 
 // DockerArtifact *beta* describes an artifact built from a Dockerfile,

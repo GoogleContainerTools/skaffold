@@ -29,9 +29,12 @@ import (
 )
 
 // NewCmdRun describes the CLI command to run a pipeline.
-func NewCmdRun(out io.Writer) *cobra.Command {
-	return NewCmd(out, "run").
-		WithDescription("Runs a pipeline file").
+func NewCmdRun() *cobra.Command {
+	return NewCmd("run").
+		WithDescription("Run a pipeline").
+		WithLongDescription("Run a pipeline: build and test artifacts, tag them, update Kubernetes manifests and deploy to a cluster.").
+		WithExample("Build, test, deploy and tail the logs", "run --tail").
+		WithExample("Run with a given profile", "run -p <profile>").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")

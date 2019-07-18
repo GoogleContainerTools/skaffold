@@ -52,6 +52,8 @@ func TestRun(t *testing.T) {
 		}, {
 			description: "microservices",
 			dir:         "examples/microservices",
+			// See https://github.com/GoogleContainerTools/skaffold/issues/2372
+			args:        []string{"--status-check=false"},
 			deployments: []string{"leeroy-app", "leeroy-web"},
 		}, {
 			description: "envTagger",

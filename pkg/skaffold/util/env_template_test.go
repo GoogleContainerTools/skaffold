@@ -18,7 +18,6 @@ package util
 
 import (
 	"testing"
-	"text/template"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -57,14 +56,21 @@ func TestEnvTemplate_ExecuteEnvTemplate(t *testing.T) {
 			},
 			want: "from_custom-FOO:latest",
 		},
+		{
+			description: "both and custom precedence",
+			template:    "{{with $x := nil}}tag{{end}}",
+			env:         []string{"VAL=KEY"},
+			shouldErr:   true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&OSEnviron, func() []string { return test.env })
 
-			testTemplate := template.Must(template.New("").Parse(test.template))
-			got, err := ExecuteEnvTemplate(testTemplate, test.customMap)
+			testTemplate, err := ParseEnvTemplate(test.template)
+			t.CheckNoError(err)
 
+			got, err := ExecuteEnvTemplate(testTemplate, test.customMap)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.want, got)
 		})
 	}

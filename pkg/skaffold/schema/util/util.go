@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	yamlpatch "github.com/krishicks/yaml-patch"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 type VersionedConfig interface {

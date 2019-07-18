@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -27,21 +28,21 @@ import (
 type Builder interface {
 	WithDescription(description string) Builder
 	WithLongDescription(long string) Builder
+	WithExample(comment, command string) Builder
 	WithFlags(adder func(*pflag.FlagSet)) Builder
 	WithCommonFlags() Builder
+	Hidden() Builder
 	ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command
 	NoArgs(action func(io.Writer) error) *cobra.Command
 }
 
 type builder struct {
-	out io.Writer
 	cmd cobra.Command
 }
 
 // NewCmd creates a new command builder.
-func NewCmd(out io.Writer, use string) Builder {
+func NewCmd(use string) Builder {
 	return &builder{
-		out: out,
 		cmd: cobra.Command{
 			Use: use,
 		},
@@ -58,6 +59,14 @@ func (b *builder) WithLongDescription(long string) Builder {
 	return b
 }
 
+func (b *builder) WithExample(comment, command string) Builder {
+	if b.cmd.Example != "" {
+		b.cmd.Example += "\n"
+	}
+	b.cmd.Example += fmt.Sprintf("  # %s\n  skaffold %s\n", comment, command)
+	return b
+}
+
 func (b *builder) WithCommonFlags() Builder {
 	AddFlags(b.cmd.Flags(), b.cmd.Use)
 	return b
@@ -68,18 +77,23 @@ func (b *builder) WithFlags(adder func(*pflag.FlagSet)) Builder {
 	return b
 }
 
+func (b *builder) Hidden() Builder {
+	b.cmd.Hidden = true
+	return b
+}
+
 func (b *builder) ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command {
 	b.cmd.Args = cobra.ExactArgs(argCount)
-	b.cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return action(b.out, args)
+	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
+		return action(b.cmd.OutOrStdout(), args)
 	}
 	return &b.cmd
 }
 
 func (b *builder) NoArgs(action func(io.Writer) error) *cobra.Command {
 	b.cmd.Args = cobra.NoArgs
-	b.cmd.RunE = func(cmd *cobra.Command, _ []string) error {
-		return action(b.out)
+	b.cmd.RunE = func(*cobra.Command, []string) error {
+		return action(b.cmd.OutOrStdout())
 	}
 	return &b.cmd
 }

@@ -29,13 +29,12 @@ import (
 )
 
 // NewCmdDev describes the CLI command to run a pipeline in development mode.
-func NewCmdDev(out io.Writer) *cobra.Command {
-	cmdUse := "dev"
-	return NewCmd(out, cmdUse).
-		WithDescription("Runs a pipeline file in development mode").
+func NewCmdDev() *cobra.Command {
+	return NewCmd("dev").
+		WithDescription("Run a pipeline in development mode").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
-			f.StringVar(&opts.Trigger, "trigger", "polling", "How are changes detected? (polling, manual or notify)")
+			f.StringVar(&opts.Trigger, "trigger", "notify", "How are changes detected? (polling, manual or notify)")
 			f.StringSliceVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
 			f.IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
 		}).
@@ -43,17 +42,17 @@ func NewCmdDev(out io.Writer) *cobra.Command {
 }
 
 func doDev(ctx context.Context, out io.Writer) error {
-	cleanup := func() {}
-	if opts.Cleanup {
-		defer func() {
-			cleanup()
-		}()
-	}
-
 	prune := func() {}
 	if opts.Prune() {
 		defer func() {
 			prune()
+		}()
+	}
+
+	cleanup := func() {}
+	if opts.Cleanup {
+		defer func() {
+			cleanup()
 		}()
 	}
 

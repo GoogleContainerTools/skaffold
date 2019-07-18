@@ -251,6 +251,45 @@ func TestPodTemplate(t *testing.T) {
 	}
 }
 
+func TestSetProxy(t *testing.T) {
+	tests := []struct {
+		description    string
+		clusterDetails *latest.ClusterDetails
+		env            []v1.EnvVar
+		expectedArgs   []v1.EnvVar
+	}{
+		{
+			description:    "no http and https proxy",
+			clusterDetails: &latest.ClusterDetails{},
+			env:            []v1.EnvVar{},
+			expectedArgs:   []v1.EnvVar{},
+		}, {
+			description: "set http proxy",
+
+			clusterDetails: &latest.ClusterDetails{HTTPProxy: "proxy.com"},
+			env:            []v1.EnvVar{},
+			expectedArgs:   []v1.EnvVar{{Name: "HTTP_PROXY", Value: "proxy.com"}},
+		}, {
+			description:    "set https proxy",
+			clusterDetails: &latest.ClusterDetails{HTTPSProxy: "proxy.com"},
+			env:            []v1.EnvVar{},
+			expectedArgs:   []v1.EnvVar{{Name: "HTTPS_PROXY", Value: "proxy.com"}},
+		}, {
+			description:    "set http and https proxy",
+			clusterDetails: &latest.ClusterDetails{HTTPProxy: "proxy.com", HTTPSProxy: "proxy.com"},
+			env:            []v1.EnvVar{},
+			expectedArgs:   []v1.EnvVar{{Name: "HTTP_PROXY", Value: "proxy.com"}, {Name: "HTTPS_PROXY", Value: "proxy.com"}},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			actual := setProxy(test.clusterDetails, test.env)
+			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedArgs, actual)
+		})
+	}
+}
+
 func createResourceRequirements(cpuLimit resource.Quantity, memoryLimit resource.Quantity, cpuRequest resource.Quantity, memoryRequest resource.Quantity) v1.ResourceRequirements {
 	return v1.ResourceRequirements{
 		Limits: v1.ResourceList{

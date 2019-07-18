@@ -109,16 +109,17 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 15m $(INTEGRATION_TEST_ARGS)
+	kubectl get nodes -oyaml
+	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
 	docker build \
-        		-f deploy/skaffold/Dockerfile \
-        		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
-        		--build-arg VERSION=$(VERSION) \
-        		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
-        		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
+		-f deploy/skaffold/Dockerfile \
+		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		--build-arg VERSION=$(VERSION) \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_RELEASE_PATH)/
 	gsutil -m cp $(BUILD_DIR)/VERSION $(GSC_RELEASE_PATH)/VERSION
 	gsutil -m cp -r $(GSC_RELEASE_PATH)/* $(GSC_RELEASE_LATEST)
@@ -126,10 +127,10 @@ release: cross $(BUILD_DIR)/VERSION
 .PHONY: release-in-docker
 release-in-docker:
 	docker build \
-    		-f deploy/skaffold/Dockerfile \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
-    		--target builder \
-    		.
+		-f deploy/skaffold/Dockerfile \
+		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		--target builder \
+		.
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
@@ -138,20 +139,20 @@ release-in-docker:
 .PHONY: release-build
 release-build: cross
 	docker build \
-    		-f deploy/skaffold/Dockerfile \
-    		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
+		-f deploy/skaffold/Dockerfile \
+		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_BUILD_PATH)/
 	gsutil -m cp -r $(GSC_BUILD_PATH)/* $(GSC_BUILD_LATEST)
 
 .PHONY: release-build-in-docker
 release-build-in-docker:
 	docker build \
-    		-f deploy/skaffold/Dockerfile \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
-    		--target builder \
-    		.
+		-f deploy/skaffold/Dockerfile \
+		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		--target builder \
+		.
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \

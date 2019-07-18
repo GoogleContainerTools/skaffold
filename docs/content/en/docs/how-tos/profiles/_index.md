@@ -47,7 +47,7 @@ You can activate a profile two ways: CLI flag or skaffold.yaml activations.
 
 **Activations in skaffold.yaml**: You can auto-activate a profile based on
 
-* kubecontext
+* kubecontext (could be either a string or a regexp: prefixing with `!` will negate the match)
 * environment variable value
 * skaffold command (dev/run/build/deploy)
 

@@ -24,10 +24,11 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 )
 
@@ -103,7 +104,7 @@ func typeOfArtifact(a *latest.Artifact) string {
 	}
 }
 
-func timeToListDependencies(ctx context.Context, builder build.Builder, a *latest.Artifact) (time.Duration, []string, error) {
+func timeToListDependencies(ctx context.Context, builder cache.DependencyLister, a *latest.Artifact) (time.Duration, []string, error) {
 	start := time.Now()
 	paths, err := builder.DependenciesForArtifact(ctx, a)
 	return time.Since(start), paths, err
@@ -118,7 +119,7 @@ func timeToConstructSyncMap(ctx context.Context, builder build.Builder, a *lates
 func timeToComputeMTimes(deps []string) (time.Duration, error) {
 	start := time.Now()
 
-	if _, err := watch.Stat(func() ([]string, error) { return deps, nil }); err != nil {
+	if _, err := filemon.Stat(func() ([]string, error) { return deps, nil }); err != nil {
 		return 0, errors.Wrap(err, "computing modTimes")
 	}
 

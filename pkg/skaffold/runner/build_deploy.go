@@ -22,9 +22,9 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // BuildAndTest builds and tests a list of artifacts.
@@ -33,27 +33,29 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	if err != nil {
 		return nil, errors.Wrap(err, "generating tag")
 	}
-	r.hasBuilt = true
 
-	artifactsToBuild, res, err := r.cache.RetrieveCachedArtifacts(ctx, out, artifacts)
-	if err != nil {
-		return nil, errors.Wrap(err, "retrieving cached artifacts")
-	}
-
-	bRes, err := r.Builder.Build(ctx, out, tags, artifactsToBuild)
-	if err != nil {
-		return nil, errors.Wrap(err, "build failed")
-	}
-	r.cache.RetagLocalImages(ctx, out, artifactsToBuild, bRes)
-	bRes = append(bRes, res...)
-	if err := r.cache.CacheArtifacts(ctx, artifacts, bRes); err != nil {
-		logrus.Warnf("error caching artifacts: %v", err)
-	}
-
-	if !r.runCtx.Opts.SkipTests {
-		if err = r.Tester.Test(ctx, out, bRes); err != nil {
-			return nil, errors.Wrap(err, "test failed")
+	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+		if len(artifacts) == 0 {
+			return nil, nil
 		}
+
+		r.hasBuilt = true
+
+		bRes, err := r.Builder.Build(ctx, out, tags, artifacts)
+		if err != nil {
+			return nil, errors.Wrap(err, "build failed")
+		}
+
+		if !r.runCtx.Opts.SkipTests {
+			if err = r.Tester.Test(ctx, out, bRes); err != nil {
+				return nil, errors.Wrap(err, "test failed")
+			}
+		}
+
+		return bRes, nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	// Update which images are logged.

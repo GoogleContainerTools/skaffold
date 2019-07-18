@@ -17,18 +17,16 @@ limitations under the License.
 package cache
 
 import (
-	"bytes"
 	"context"
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"io"
 	"os"
 	"sort"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 )
 
@@ -37,12 +35,13 @@ var (
 	hashFunction = cacheHasher
 )
 
-func getHashForArtifact(ctx context.Context, builder build.Builder, a *latest.Artifact) (string, error) {
-	deps, err := builder.DependenciesForArtifact(ctx, a)
+func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact) (string, error) {
+	deps, err := depLister.DependenciesForArtifact(ctx, a)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 	}
 	sort.Strings(deps)
+
 	var hashes []string
 	for _, d := range deps {
 		h, err := hashFunction(d)
@@ -51,11 +50,15 @@ func getHashForArtifact(ctx context.Context, builder build.Builder, a *latest.Ar
 		}
 		hashes = append(hashes, h)
 	}
+
 	// get a key for the hashes
-	c := bytes.NewBuffer([]byte{})
-	enc := json.NewEncoder(c)
-	enc.Encode(hashes)
-	return util.SHA256(c)
+	hasher := sha256.New()
+	enc := json.NewEncoder(hasher)
+	if err := enc.Encode(hashes); err != nil {
+		return "", err
+	}
+
+	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
 // cacheHasher takes hashes the contents and name of a file
@@ -67,6 +70,7 @@ func cacheHasher(p string) (string, error) {
 	}
 	h.Write([]byte(fi.Mode().String()))
 	h.Write([]byte(fi.Name()))
+	// TODO: empty folder and empty files should not have the same hash
 	if fi.Mode().IsRegular() {
 		f, err := os.Open(p)
 		if err != nil {

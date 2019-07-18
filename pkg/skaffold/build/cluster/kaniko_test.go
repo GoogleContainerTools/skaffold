@@ -75,6 +75,14 @@ func TestArgs(t *testing.T) {
 			expectedArgs: []string{"--target", "target"},
 		},
 		{
+			description: "reproducible",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Reproducible:   true,
+			},
+			expectedArgs: []string{"--reproducible"},
+		},
+		{
 			description: "build args",
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",

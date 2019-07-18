@@ -9,7 +9,7 @@
 
 [[constraint]]
   name = "github.com/google/go-containerregistry"
-  revision = "7d6d1d3cd63b486f713ddf83be5956744f4e1bb3"
+  revision = "e8c6a4993fa7c12b6ca56007739116b27ecb84c1"
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
@@ -78,3 +78,8 @@
 [[constraint]]
   branch = "master"
   name = "4d63.com/tz"
+
+
+[[override]]
+  name = "github.com/russross/blackfriday"
+  revision = "300106c228d52c8941d4b3de6054a6062a86dda3"

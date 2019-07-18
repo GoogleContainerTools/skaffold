@@ -9,7 +9,7 @@ This doc explains the development workflow so you can get started
 You must install these tools:
 
 1. [`go`](https://golang.org/doc/install): The language skaffold is
-   built in (version >= go 1.11)
+   built in (version >= go 1.12)
 1. [`git`](https://help.github.com/articles/set-up-git/): For source control
 1. [`dep`](https://github.com/golang/dep): For managing external Go
    dependencies. - Please Install dep v0.5.0 or greater.
@@ -20,9 +20,6 @@ You must install these tools:
     ```shell
     ./hack/install_golint.sh
     ```
-
-1. [`gocritic`](https://github.com/go-critic/go-critic): Go source code linter
-   providing advanced checks currently missing from other linters.
 
 ## Getting started
 
@@ -77,7 +74,7 @@ Some changes to the skaffold code require a change to the skaffold config. These
 * Check the current config version in the code. This can be found in `pkg/skaffold/schema/latest/config.go`: look for something like
 
 ```golang
-const Version string = "skaffold/v1beta9"
+const Version string = "skaffold/v1betaXX"
 ```
 * If the config versions are different, do nothing. Somebody has already bumped the config version for this release cycle.
 
@@ -147,7 +144,7 @@ make test
 
 _These tests will not run correctly unless you have [checked out your fork into your `$GOPATH`](#checkout-your-fork)._
 
-In case you see go-critic tool error,
+In case you see a linter error such as:
 
 ```shell
 make test
@@ -159,24 +156,43 @@ re-run the `hack/install_golint.sh` script to upgrade `golangci-lint`.
 
 ### Integration tests
 
-The integration tests live in [`integration`](./integration) and run the [`examples`](./examples)
-as tests. They can be run with:
+The integration tests live in [`integration`](./integration). They can be run with:
 
 ```shell
-make integration-test
+make integration
 ```
 
-_These tests require push access to a project in GCP, and so can only be run
-by maintainers who have access. These tests will be kicked off by [reviewers](#reviews)
-for submitted PRs._
+_These tests require a Docker daemon, a Kubernetes cluster and all the tools
+used by every Builder and Deployer, such as kubectl, bazel, java, kustomize..._
+
+A way to run the integration tests without installing those tools
+and without depending on a Kubernetes cluster is to install
+[kind](https://github.com/kubernetes-sigs/kind#installation-and-usage)
+ane run:
+
+```shell
+make integration-in-kind
+```
 
 ### Running a subset of integration tests
 
 You can select specific integration tests to run via the `INTEGRATION_TEST_ARGS` env var:
 
 ```shell
-INTEGRATION_TEST_ARGS="-run=TestDev/" make integration-test
+INTEGRATION_TEST_ARGS="-run=TestDev/" make integration
 ```
+
+### Running GCP specific integration tests
+
+Another set of the integration tests require a GCP project because they will
+push to a GCR registry or use Cloud Build to build artifacts. Those tests
+can be run with:
+
+```shell
+GCP_ONLY=true make integration
+```
+
+_These tests will be kicked off by [reviewers](#reviews) for submitted PRs._
 
 ## Building skaffold docs
 

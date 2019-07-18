@@ -27,30 +27,48 @@ import (
 )
 
 func TestDevSync(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
+	var tests = []struct {
+		description string
+		trigger     string
+	}{
+		{
+			description: "sync with polling trigger",
+			trigger:     "polling",
+		},
+		{
+			description: "sync with notify trigger",
+			trigger:     "notify",
+		},
 	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			if testing.Short() {
+				t.Skip("skipping integration test")
+			}
+			if ShouldRunGCPOnlyTests() {
+				t.Skip("skipping test that is not gcp only")
+			}
+
+			// Run skaffold build first to fail quickly on a build failure
+			skaffold.Build().InDir("testdata/file-sync").RunOrFail(t)
+
+			ns, client, deleteNs := SetupNamespace(t)
+			defer deleteNs()
+
+			stop := skaffold.Dev("--trigger", test.trigger).InDir("testdata/file-sync").InNs(ns.Name).RunBackground(t)
+			defer stop()
+
+			client.WaitForPodsReady("test-file-sync")
+
+			Run(t, "testdata/file-sync", "mkdir", "-p", "test")
+			Run(t, "testdata/file-sync", "touch", "test/foobar")
+			defer Run(t, "testdata/file-sync", "rm", "-rf", "test")
+
+			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+				_, err := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test").Output()
+				return err == nil, nil
+			})
+			testutil.CheckError(t, false, err)
+		})
 	}
-
-	ns, client, deleteNs := SetupNamespace(t)
-	defer deleteNs()
-
-	skaffold.Build().InDir("testdata/file-sync").InNs(ns.Name).RunOrFail(t)
-
-	stop := skaffold.Dev().InDir("testdata/file-sync").InNs(ns.Name).RunBackground(t)
-	defer stop()
-
-	client.WaitForPodsReady("test-file-sync")
-
-	Run(t, "testdata/file-sync", "mkdir", "-p", "test")
-	Run(t, "testdata/file-sync", "touch", "test/foobar")
-	defer Run(t, "testdata/file-sync", "rm", "-rf", "test")
-
-	err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-		_, err := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "ls", "/test").Output()
-		return err == nil, nil
-	})
-	testutil.CheckError(t, false, err)
 }

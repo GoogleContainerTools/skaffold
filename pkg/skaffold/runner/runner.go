@@ -33,13 +33,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -58,14 +59,18 @@ type Runner interface {
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
+	// TODO(nkubala): make embedded fields private
 	build.Builder
 	deploy.Deployer
 	test.Tester
 	tag.Tagger
 	sync.Syncer
-	watch.Watcher
+	monitor  filemon.Monitor
+	listener Listener
 
-	cache                *cache.Cache
+	logger               *kubernetes.LogAggregator
+	cache                cache.Cache
+	changeSet            *changeSet
 	runCtx               *runcontext.RunContext
 	labellers            []deploy.Labeller
 	defaultLabeller      *deploy.DefaultLabeller
@@ -75,6 +80,11 @@ type SkaffoldRunner struct {
 	hasDeployed          bool
 	imageList            *kubernetes.ImageList
 }
+
+// for testing
+var (
+	statusCheck = deploy.StatusCheck
+)
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*SkaffoldRunner, error) {
@@ -92,7 +102,16 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing build config")
 	}
-	artifactCache := cache.NewCache(builder, runCtx)
+
+	imagesAreLocal := false
+	if localBuilder, ok := builder.(*local.Builder); ok {
+		imagesAreLocal = !localBuilder.PushImages()
+	}
+
+	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, builder)
+	if err != nil {
+		return nil, errors.Wrap(err, "initializing cache")
+	}
 
 	tester := getTester(runCtx)
 
@@ -109,20 +128,27 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		deployer = WithNotification(deployer)
 	}
 
-	trigger, err := watch.NewTrigger(runCtx)
+	trigger, err := trigger.NewTrigger(runCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating watch trigger")
 	}
 
 	event.InitializeState(runCtx.Cfg.Build)
 
+	monitor := filemon.NewMonitor()
+
 	return &SkaffoldRunner{
-		Builder:              builder,
-		Tester:               tester,
-		Deployer:             deployer,
-		Tagger:               tagger,
-		Syncer:               kubectl.NewSyncer(runCtx.Namespaces),
-		Watcher:              watch.NewWatcher(trigger),
+		Builder:  builder,
+		Tester:   tester,
+		Deployer: deployer,
+		Tagger:   tagger,
+		Syncer:   kubectl.NewSyncer(runCtx.Namespaces),
+		monitor:  monitor,
+		listener: &SkaffoldListener{
+			Monitor: monitor,
+			Trigger: trigger,
+		},
+		changeSet:            &changeSet{},
 		labellers:            labellers,
 		defaultLabeller:      defaultLabeller,
 		portForwardResources: cfg.PortForward,
@@ -208,14 +234,18 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	if err != nil {
 		return err
 	}
-	return r.performStatusCheck(out)
+	return r.performStatusCheck(ctx, out)
 }
 
-func (r *SkaffoldRunner) performStatusCheck(out io.Writer) error {
+func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
 	if r.runCtx.Opts.StatusCheck {
 		fmt.Fprintln(out, "Waiting for deployments to stabilize")
-		// TODO : Actually perform status check
+		err := statusCheck(ctx, r.defaultLabeller, r.runCtx)
+		if err != nil {
+			fmt.Fprintln(out, err.Error())
+		}
+		return err
 	}
 	return nil
 }

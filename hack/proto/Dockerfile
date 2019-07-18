@@ -13,26 +13,23 @@
 # limitations under the License.
 
 # Install protoc
-FROM ubuntu@sha256:9b1702dcfe32c873a770a32cfd306dd7fc1c4fd134adfb783db68defc8894b3c AS protoc
-RUN apt-get update && apt-get install -y curl unzip
+FROM alpine:3.9 AS protoc
+RUN apk add --no-cache unzip
 
 ENV PROTOC_VERSION=3.8.0
-RUN curl -Lo protoc-${PROTOC_VERSION}-linux-x86_64.zip https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip && \
-    unzip protoc-${PROTOC_VERSION}-linux-x86_64.zip -d protoc && \
-    mv protoc/bin/protoc /usr/bin/protoc
-
+RUN wget -O protoc.zip https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
+RUN unzip protoc.zip -d protoc
 
 # Install protoc-gen-go and grpc-gateway binaries; then generate files.
-FROM golang AS generateFiles
+FROM golang:1.12.5-alpine3.9 AS generateFiles
+RUN apk add --no-cache protobuf=3.6.1-r1 git
 
-COPY --from=protoc /usr/bin/protoc /usr/bin/protoc
 COPY --from=protoc /protoc/include /usr/local/include
 
 ENV GIT_TAG=v1.2.0
 RUN go get -d -u github.com/golang/protobuf/protoc-gen-go
 RUN git -C "$(go env GOPATH)"/src/github.com/golang/protobuf checkout $GIT_TAG
 RUN go install github.com/golang/protobuf/protoc-gen-go
-
 
 WORKDIR /go/src/github.com/grpc-ecosystem
 RUN git clone https://github.com/grpc-ecosystem/grpc-gateway.git
@@ -46,15 +43,12 @@ RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 RUN go get -u github.com/golang/protobuf/protoc-gen-go
 
-WORKDIR /
-ENV PROTO_PATH=/pkg/skaffold/server/proto
-COPY ${PROTO_PATH}/skaffold.proto ${PROTO_PATH}/skaffold.proto
-RUN protoc -I /usr/local/include -I pkg/skaffold/server/proto -I $GOPATH/src -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:pkg/skaffold/server/proto pkg/skaffold/server/proto/skaffold.proto --go_out=plugins=grpc:pkg/skaffold/server/proto
-
+WORKDIR /proto
+COPY skaffold.proto ./
+RUN protoc -I /usr/local/include -I . -I $GOPATH/src -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:. skaffold.proto --go_out=plugins=grpc:.
 
 # Compare the proto files with the existing proto files
 FROM generateFiles AS compare
 WORKDIR /compare
-COPY ${PROTO_PATH}/*.go ./
-RUN cmp ${PROTO_PATH}/skaffold.pb.go skaffold.pb.go
-RUN cmp ${PROTO_PATH}/skaffold.pb.gw.go skaffold.pb.gw.go
+COPY *.go ./
+CMD cmp /proto/skaffold.pb.go skaffold.pb.go && cmp /proto/skaffold.pb.gw.go skaffold.pb.gw.go
