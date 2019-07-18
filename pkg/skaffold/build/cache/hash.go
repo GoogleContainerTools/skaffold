@@ -26,7 +26,6 @@ import (
 	"os"
 	"sort"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
@@ -36,12 +35,13 @@ var (
 	hashFunction = cacheHasher
 )
 
-func getHashForArtifact(ctx context.Context, builder build.Builder, a *latest.Artifact) (string, error) {
-	deps, err := builder.DependenciesForArtifact(ctx, a)
+func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact) (string, error) {
+	deps, err := depLister.DependenciesForArtifact(ctx, a)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 	}
 	sort.Strings(deps)
+
 	var hashes []string
 	for _, d := range deps {
 		h, err := hashFunction(d)

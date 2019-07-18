@@ -71,7 +71,7 @@ type SkaffoldRunner struct {
 	forwarderManager *portforward.ForwarderManager
 
 	logger               *kubernetes.LogAggregator
-	cache                *cache.Cache
+	cache                cache.Cache
 	changeSet            *changeSet
 	runCtx               *runcontext.RunContext
 	labellers            []deploy.Labeller
@@ -104,7 +104,16 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing build config")
 	}
-	artifactCache := cache.NewCache(builder, runCtx)
+
+	imagesAreLocal := false
+	if localBuilder, ok := builder.(*local.Builder); ok {
+		imagesAreLocal = !localBuilder.PushImages()
+	}
+
+	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, builder)
+	if err != nil {
+		return nil, errors.Wrap(err, "initializing cache")
+	}
 
 	tester := getTester(runCtx)
 

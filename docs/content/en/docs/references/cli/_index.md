@@ -56,7 +56,7 @@ To edit this file above edit index_header - the rest of the file is autogenerate
 
 ### skaffold
 
-A tool that facilitates continuous development for Kubernetes applications.
+
 
 ```
 
@@ -98,12 +98,29 @@ Build the artifacts
 ```
 
 
+Examples:
+  # Build all the artifacts
+  skaffold build
+
+  # Build artifacts with a profile activated
+  skaffold build -p <profile>
+
+  # Build artifacts whose image name contains <db>
+  skaffold build -b <db>
+
+  # Quietly build artifacts and output the image names as json
+  skaffold build -q > build_result.json
+
+  # Build the artifacts and then deploy them
+  skaffold build -q > skaffold deploy
+
 Options:
   -b, --build-image=[]: Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
       --cache-artifacts=false: Set to true to enable caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
+      --file-output='': Filename to write build images to
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
       --insecure-registry=[]: Target registries for built images which are not secure
   -n, --namespace='': Run deployments in the specified namespace
@@ -129,6 +146,7 @@ Env vars:
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
+* `SKAFFOLD_FILE_OUTPUT` (same as `--file-output`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
@@ -203,6 +221,16 @@ Set a value in the global Skaffold config
 
 ```
 
+
+Examples:
+  # Mark a registry as insecure
+  skaffold config set insecure-registries <insecure1.io>
+
+  # Globally set the default image repository
+  skaffold config set default-repo <myrepo>
+
+  # Disable pushing images for a given Kubernetes context
+  skaffold config set --kube-context <mycluster> local-cluster true
 
 Options:
   -c, --config='': Path to Skaffold config
@@ -404,7 +432,7 @@ Options:
       --skip-tests=false: Whether to skip the tests after building
       --tail=true: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
-      --trigger='polling': How are changes detected? (polling, manual or notify)
+      --trigger='notify': How are changes detected? (polling, manual or notify)
   -w, --watch-image=[]: Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
   -i, --watch-poll-interval=1000: Interval (in ms) between two checks for file changes
 
@@ -537,6 +565,13 @@ Run a pipeline
 
 ```
 
+
+Examples:
+  # Build, test, deploy and tail the logs
+  skaffold run --tail
+
+  # Run with a given profile
+  skaffold run -p <profile>
 
 Options:
       --cache-artifacts=false: Set to true to enable caching of artifacts

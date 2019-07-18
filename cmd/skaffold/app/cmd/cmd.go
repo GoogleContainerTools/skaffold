@@ -51,8 +51,10 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	var shutdownAPIServer func() error
 
 	rootCmd := &cobra.Command{
-		Use:           "skaffold",
-		Short:         "A tool that facilitates continuous development for Kubernetes applications.",
+		Use: "skaffold",
+		Long: `A tool that facilitates continuous development for Kubernetes applications.
+
+  Find more information at: https://skaffold.dev/docs/getting-started/`,
 		SilenceErrors: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()

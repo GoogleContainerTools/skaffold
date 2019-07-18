@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -49,7 +50,7 @@ func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, w
 		return "", err
 	}
 
-	return getRemoteDigest(tag, b.insecureRegistries)
+	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
 
 func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {

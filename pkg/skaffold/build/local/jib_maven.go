@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -63,7 +64,7 @@ func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, wo
 		return "", err
 	}
 
-	return getRemoteDigest(tag, b.insecureRegistries)
+	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
 
 // verifyJibPackageGoal verifies that the referenced module has `package` bound to a single jib goal.

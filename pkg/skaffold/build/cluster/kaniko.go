@@ -22,7 +22,6 @@ import (
 	"io"
 	"sort"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -49,11 +48,6 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	args, err := args(artifact.KanikoArtifact, context, tag)
 	if err != nil {
 		return "", errors.Wrap(err, "building args list")
-	}
-
-	if artifact.WorkspaceHash != "" {
-		hashTag := cache.HashTag(artifact)
-		args = append(args, []string{"--destination", hashTag}...)
 	}
 
 	// Create pod
