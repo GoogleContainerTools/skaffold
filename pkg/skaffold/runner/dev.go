@@ -23,7 +23,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/pkg/errors"
@@ -83,7 +82,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	r.createLogger(out, artifacts)
 	defer r.logger.Stop()
 
-	r.forwarderManager = portforward.NewForwarderManager(out, r.imageList, r.runCtx.Namespaces, r.defaultLabeller.K8sManagedByLabelKeyValueString(), r.runCtx.Opts.PortForward, r.portForwardResources)
+	r.createForwarder(out)
 
 	// Watch artifacts
 	for i := range artifacts {
