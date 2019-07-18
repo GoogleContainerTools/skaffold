@@ -35,7 +35,7 @@ var (
 
 type forwardedPorts struct {
 	ports map[int]struct{}
-	lock  sync.Mutex
+	lock  *sync.Mutex
 }
 
 func (f forwardedPorts) Store(key, value interface{}) {
@@ -49,6 +49,8 @@ func (f forwardedPorts) Store(key, value interface{}) {
 }
 
 func (f forwardedPorts) LoadOrStore(key, value interface{}) (actual interface{}, loaded bool) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
 	val, ok := key.(int)
 	if !ok {
 		return nil, false
@@ -63,6 +65,59 @@ func (f forwardedPorts) Delete(port int) {
 	delete(f.ports, port)
 }
 
+type forwardedResources struct {
+	resources map[string]*portForwardEntry
+	lock      *sync.Mutex
+}
+
+func (f forwardedResources) Store(key, value interface{}) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	k, ok := key.(string)
+	if !ok {
+		panic("only store keys of type string in forwardedResources")
+	}
+	val, ok := value.(*portForwardEntry)
+	if !ok {
+		panic("only store values of type *portForwardEntry in forwardedResources")
+	}
+	f.resources[k] = val
+}
+
+func (f forwardedResources) Load(key string) (*portForwardEntry, bool) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	val, exists := f.resources[key]
+	return val, exists
+}
+
+func (f forwardedResources) LoadOrStore(key, value interface{}) (interface{}, bool) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	k, ok := key.(string)
+	if !ok {
+		return nil, false
+	}
+	pfe, exists := f.resources[k]
+	if exists {
+		return pfe, exists
+	}
+	f.resources[k] = pfe
+	return value, true
+}
+
+func (f forwardedResources) Delete(resource string) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	delete(f.resources, resource)
+}
+
+func (f forwardedResources) Length() int {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	return len(f.resources)
+}
+
 // EntryManager handles forwarding entries and keeping track of
 // forwarded ports and resources.
 type EntryManager struct {
@@ -73,7 +128,7 @@ type EntryManager struct {
 	forwardedPorts forwardedPorts
 
 	// forwardedResources is a map of portForwardEntry key (string) -> portForwardEntry
-	forwardedResources *sync.Map
+	forwardedResources forwardedResources
 }
 
 // NewEntryManager returns a new port forward entry manager to keep track
@@ -83,10 +138,13 @@ func NewEntryManager(out io.Writer) EntryManager {
 		output: out,
 		forwardedPorts: forwardedPorts{
 			ports: map[int]struct{}{},
-			lock:  sync.Mutex{},
+			lock:  &sync.Mutex{},
 		},
-		forwardedResources: &sync.Map{},
-		EntryForwarder:     &KubectlForwarder{},
+		forwardedResources: forwardedResources{
+			resources: map[string]*portForwardEntry{},
+			lock:      &sync.Mutex{},
+		},
+		EntryForwarder: &KubectlForwarder{},
 	}
 }
 
@@ -112,11 +170,9 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 
 // Stop terminates all kubectl port-forward commands.
 func (b *EntryManager) Stop() {
-	b.forwardedResources.Range(func(key, value interface{}) bool {
-		entry := value.(*portForwardEntry)
-		b.Terminate(entry)
-		return true
-	})
+	for _, pfe := range b.forwardedResources.resources {
+		b.Terminate(pfe)
+	}
 }
 
 // Terminate terminates a single port forward entry

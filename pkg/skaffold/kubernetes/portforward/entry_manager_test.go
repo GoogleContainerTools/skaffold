@@ -28,8 +28,15 @@ import (
 
 func newForwardedPorts() forwardedPorts {
 	return forwardedPorts{
-		lock:  sync.Mutex{},
+		lock:  &sync.Mutex{},
 		ports: map[int]struct{}{},
+	}
+}
+
+func newForwardedResources() forwardedResources {
+	return forwardedResources{
+		lock:      &sync.Mutex{},
+		resources: map[string]*portForwardEntry{},
 	}
 }
 
@@ -38,7 +45,7 @@ func TestNewEntryManager(t *testing.T) {
 	expected := EntryManager{
 		output:             out,
 		forwardedPorts:     newForwardedPorts(),
-		forwardedResources: &sync.Map{},
+		forwardedResources: newForwardedResources(),
 		EntryForwarder:     &KubectlForwarder{},
 	}
 	actual := NewEntryManager(out)
@@ -67,7 +74,7 @@ func TestStop(t *testing.T) {
 
 	em := NewEntryManager(ioutil.Discard)
 
-	em.forwardedResources = &sync.Map{}
+	em.forwardedResources = newForwardedResources()
 	em.forwardedResources.Store("pod-resource-default-0", pfe1)
 	em.forwardedResources.Store("pod-resource2-default-0", pfe2)
 
@@ -76,12 +83,12 @@ func TestStop(t *testing.T) {
 	em.forwardedPorts.Store(9001, struct{}{})
 
 	fakeForwarder := newTestForwarder(nil)
-	fakeForwarder.forwardedEntries = em.forwardedResources
+	fakeForwarder.forwardedResources = em.forwardedResources
 	em.EntryForwarder = fakeForwarder
 
 	em.Stop()
 
-	if count := lengthSyncMap(fakeForwarder.forwardedEntries); count != 0 {
+	if count := len(fakeForwarder.forwardedResources.resources); count != 0 {
 		t.Fatalf("error stopping port forwarding. expected 0 entries and got %d", count)
 	}
 

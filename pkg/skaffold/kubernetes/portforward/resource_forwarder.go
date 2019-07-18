@@ -90,13 +90,12 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 	oldEntry, ok := p.forwardedResources.Load(entry.key())
 
 	if ok {
-		oldEntry := oldEntry.(*portForwardEntry)
 		entry.localPort = oldEntry.localPort
 		return entry
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = int32(retrieveAvailablePort(int(resource.LocalPort), p.forwardedPorts))
+	entry.localPort = int32(retrieveAvailablePort(int(resource.LocalPort), &p.forwardedPorts))
 	return entry
 }
 

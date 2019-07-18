@@ -121,7 +121,6 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 			}
 			if prevEntry, ok := p.forwardedResources.Load(entry.key()); ok {
 				// Check if this is a new generation of pod
-				prevEntry := prevEntry.(*portForwardEntry)
 				if entry.resourceVersion > prevEntry.resourceVersion {
 					p.Terminate(prevEntry)
 				}
@@ -152,7 +151,6 @@ func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName
 	oldEntry, ok := p.forwardedResources.Load(entry.key())
 
 	if ok {
-		oldEntry := oldEntry.(*portForwardEntry)
 		entry.localPort = oldEntry.localPort
 		return entry, nil
 	}

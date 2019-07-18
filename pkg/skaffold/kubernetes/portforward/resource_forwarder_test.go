@@ -33,28 +33,28 @@ import (
 )
 
 type testForwarder struct {
-	forwardedEntries *sync.Map
-	forwardedPorts   forwardedPorts
+	forwardedResources forwardedResources
+	forwardedPorts     forwardedPorts
 
 	forwardErr error
 }
 
 func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) error {
-	f.forwardedEntries.Store(pfe.key(), pfe)
+	f.forwardedResources.Store(pfe.key(), pfe)
 	f.forwardedPorts.Store(int(pfe.localPort), true)
 	return f.forwardErr
 }
 
 func (f *testForwarder) Terminate(pfe *portForwardEntry) {
-	f.forwardedEntries.Delete(pfe.key())
+	f.forwardedResources.Delete(pfe.key())
 	f.forwardedPorts.Delete(int(pfe.resource.Port))
 }
 
 func newTestForwarder(forwardErr error) *testForwarder {
 	return &testForwarder{
-		forwardedEntries: &sync.Map{},
-		forwardedPorts:   newForwardedPorts(),
-		forwardErr:       forwardErr,
+		forwardedResources: newForwardedResources(),
+		forwardedPorts:     newForwardedPorts(),
+		forwardErr:         forwardErr,
 	}
 }
 
@@ -130,10 +130,10 @@ func TestStart(t *testing.T) {
 			}
 			// poll up to 10 seconds for the resources to be forwarded
 			err := wait.PollImmediate(time.Second, 10*time.Second, func() (bool, error) {
-				return len(test.expected) == lengthSyncMap(fakeForwarder.forwardedEntries), nil
+				return len(test.expected) == fakeForwarder.forwardedResources.Length(), nil
 			})
 			if err != nil {
-				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expected, fakeForwarder.forwardedEntries)
+				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expected, fakeForwarder.forwardedResources)
 			}
 		})
 	}
@@ -189,7 +189,10 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			expectedEntry.resource = test.resource
 
 			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "", nil)
-			rf.forwardedResources = generateSyncMap(test.forwardedResources)
+			rf.forwardedResources = forwardedResources{
+				resources: test.forwardedResources,
+				lock:      &sync.Mutex{},
+			}
 
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
 
@@ -241,27 +244,10 @@ func TestUserDefinedResources(t *testing.T) {
 		}
 		// poll up to 10 seconds for the resources to be forwarded
 		err := wait.PollImmediate(time.Second, 10*time.Second, func() (bool, error) {
-			return len(expected) == lengthSyncMap(fakeForwarder.forwardedEntries), nil
+			return len(expected) == fakeForwarder.forwardedResources.Length(), nil
 		})
 		if err != nil {
-			t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", expected, fakeForwarder.forwardedEntries)
+			t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", expected, fakeForwarder.forwardedResources.resources)
 		}
 	})
-}
-
-func generateSyncMap(m map[string]*portForwardEntry) *sync.Map {
-	sm := &sync.Map{}
-	for k, v := range m {
-		sm.Store(k, v)
-	}
-	return sm
-}
-
-func lengthSyncMap(m *sync.Map) int {
-	count := 0
-	m.Range(func(key, value interface{}) bool {
-		count++
-		return true
-	})
-	return count
 }

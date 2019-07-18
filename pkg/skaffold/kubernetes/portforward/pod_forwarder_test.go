@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"reflect"
-	"sync"
 	"testing"
 	"time"
 
@@ -444,7 +443,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			entryManager := EntryManager{
 				output:             ioutil.Discard,
 				forwardedPorts:     newForwardedPorts(),
-				forwardedResources: &sync.Map{},
+				forwardedResources: newForwardedResources(),
 			}
 			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), nil)
 			if test.forwarder == nil {
@@ -462,10 +461,10 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 				t.Errorf("Expected differs from actual entries. Expected: %v, Actual: %v", test.expectedPorts, test.forwarder.forwardedPorts.ports)
 			}
 
-			actualForwardedEntries := generateActualForwardedEntriesMap(test.forwarder.forwardedEntries)
+			actualForwardedResources := test.forwarder.forwardedResources.resources
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
-			if !reflect.DeepEqual(test.expectedEntries, actualForwardedEntries) {
-				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %v", test.expectedEntries, actualForwardedEntries)
+			if !reflect.DeepEqual(test.expectedEntries, actualForwardedResources) {
+				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %v", test.expectedEntries, actualForwardedResources)
 			}
 		})
 	}
@@ -554,7 +553,7 @@ func TestStartPodForwarder(t *testing.T) {
 
 			// poll for 2 seconds for the pod resource to be forwarded
 			err := wait.PollImmediate(time.Second, 2*time.Second, func() (bool, error) {
-				_, ok := fakeForwarder.forwardedEntries.Load("mycontainer-default-myport-8080")
+				_, ok := fakeForwarder.forwardedResources.Load("mycontainer-default-myport-8080")
 				return ok, nil
 			})
 			if err != nil && test.entryExpected {
@@ -562,13 +561,4 @@ func TestStartPodForwarder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func generateActualForwardedEntriesMap(sm *sync.Map) map[string]*portForwardEntry {
-	m := make(map[string]*portForwardEntry)
-	sm.Range(func(k, v interface{}) bool {
-		m[k.(string)] = v.(*portForwardEntry)
-		return true
-	})
-	return m
 }
