@@ -504,7 +504,7 @@ func TestGetDependencies(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := GetDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs, map[string]bool{})
+			deps, err := GetDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs, nil)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, deps)

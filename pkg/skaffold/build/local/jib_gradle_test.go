@@ -71,7 +71,7 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 
 			builder := &Builder{
 				pushImages:  false,
-				localDocker: docker.NewLocalDaemon(api, nil, false, map[string]bool{}),
+				localDocker: docker.NewLocalDaemon(api, nil, false, nil),
 			}
 			result, err := builder.buildJibGradle(context.Background(), ioutil.Discard, ".", test.artifact, "img:tag")
 
@@ -129,7 +129,7 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 
 			builder := &Builder{
 				pushImages:  true,
-				localDocker: docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, map[string]bool{}),
+				localDocker: docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil),
 			}
 			result, err := builder.buildJibGradle(context.Background(), ioutil.Discard, ".", test.artifact, "img:tag")
 

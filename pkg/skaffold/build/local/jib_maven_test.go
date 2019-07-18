@@ -76,7 +76,7 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 
 			builder := &Builder{
 				pushImages:  false,
-				localDocker: docker.NewLocalDaemon(api, nil, false, map[string]bool{}),
+				localDocker: docker.NewLocalDaemon(api, nil, false, nil),
 			}
 			result, err := builder.buildJibMaven(context.Background(), ioutil.Discard, ".", test.artifact, "img:tag")
 
@@ -139,7 +139,7 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 
 			builder := &Builder{
 				pushImages:  true,
-				localDocker: docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, map[string]bool{}),
+				localDocker: docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil),
 			}
 			result, err := builder.buildJibMaven(context.Background(), ioutil.Discard, ".", test.artifact, "img:tag")
 
