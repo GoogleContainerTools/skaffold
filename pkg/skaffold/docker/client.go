@@ -30,7 +30,7 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/docker/docker/api"
@@ -52,16 +52,10 @@ var (
 )
 
 // NewAPIClientImpl guesses the docker client to use based on current kubernetes context.
-func NewAPIClientImpl(forceRemove bool, insecureRegistries map[string]bool) (LocalDaemon, error) {
+func NewAPIClientImpl(runCtx *runcontext.RunContext) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
-		kubeConfig, err := kubectx.CurrentConfig()
-		if err != nil {
-			dockerAPIClientErr = errors.Wrap(err, "getting current cluster context")
-			return
-		}
-
-		env, apiClient, err := newAPIClient(kubeConfig.CurrentContext)
-		dockerAPIClient = NewLocalDaemon(apiClient, env, forceRemove, insecureRegistries)
+		env, apiClient, err := newAPIClient(runCtx.KubeContext)
+		dockerAPIClient = NewLocalDaemon(apiClient, env, runCtx.Opts.Prune(), runCtx.InsecureRegistries)
 		dockerAPIClientErr = err
 	})
 

@@ -20,6 +20,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -27,7 +28,7 @@ import (
 func TestRetrieveEnv(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		extraEnv := []string{"EXTRA_ENV=additional"}
-		t.Override(&docker.NewAPIClient, func(bool, map[string]bool) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 			return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, extraEnv, false, nil), nil
 		})
 

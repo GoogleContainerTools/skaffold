@@ -74,7 +74,7 @@ func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies D
 		return &noCache{}, nil
 	}
 
-	client, err := docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
+	client, err := docker.NewAPIClient(runCtx)
 	if imagesAreLocal && err != nil {
 		return nil, errors.Wrap(err, "getting local Docker client")
 	}

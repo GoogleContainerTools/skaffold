@@ -27,6 +27,7 @@ import (
 	"4d63.com/tz"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/api/types"
 	"github.com/sirupsen/logrus"
@@ -115,7 +116,7 @@ func removeImage(t *testing.T, image string) {
 		return
 	}
 
-	client, err := docker.NewAPIClient(false, nil)
+	client, err := docker.NewAPIClient(&runcontext.RunContext{})
 	failNowIfError(t, err)
 
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
@@ -134,7 +135,7 @@ func checkImageExists(t *testing.T, image string) {
 		return
 	}
 
-	client, err := docker.NewAPIClient(false, nil)
+	client, err := docker.NewAPIClient(&runcontext.RunContext{})
 	failNowIfError(t, err)
 
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))

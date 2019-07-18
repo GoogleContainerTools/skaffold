@@ -114,7 +114,7 @@ func TestCacheBuildLocal(t *testing.T) {
 
 		// Mock Docker
 		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
-		t.Override(&docker.NewAPIClient, func(bool, map[string]bool) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
 
@@ -180,7 +180,7 @@ func TestCacheBuildRemote(t *testing.T) {
 
 		// Mock Docker
 		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
-		t.Override(&docker.NewAPIClient, func(bool, map[string]bool) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
 

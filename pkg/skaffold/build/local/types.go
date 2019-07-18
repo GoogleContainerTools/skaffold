@@ -52,7 +52,7 @@ var getLocalCluster = configutil.GetLocalCluster
 
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
+	localDocker, err := docker.NewAPIClient(runCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}

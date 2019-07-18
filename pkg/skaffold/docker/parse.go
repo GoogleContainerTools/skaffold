@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
@@ -347,7 +348,10 @@ func fromInstruction(node *parser.Node) from {
 }
 
 func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {
-	localDaemon, err := NewAPIClient(false, insecureRegistries) // Cached after first call
+	// TODO: use the proper RunContext
+	localDaemon, err := NewAPIClient(&runcontext.RunContext{
+		InsecureRegistries: insecureRegistries,
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
