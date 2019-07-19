@@ -62,7 +62,7 @@ func (p *ResourceForwarder) Start(ctx context.Context) error {
 	return nil
 }
 
-// Port forward each resource individuallly in a goroutine
+// Port forward each resource individually in a goroutine
 func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources []*latest.PortForwardResource) {
 	for _, r := range resources {
 		r := r

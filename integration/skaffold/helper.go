@@ -183,7 +183,7 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 	logrus.Infoln(cmd.Args)
 
 	start := time.Now()
-	out, err := cmd.Output()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
 	}

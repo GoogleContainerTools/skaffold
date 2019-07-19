@@ -31,6 +31,18 @@ import (
 var (
 	// For testing
 	forwardingTimeoutTime = time.Minute
+	portForwardEvent      = func(entry *portForwardEntry) {
+		// TODO priyawadhwa@, change event API to accept ports of type int
+		event.PortForwarded(
+			int32(entry.localPort),
+			int32(entry.resource.Port),
+			entry.podName,
+			entry.containerName,
+			entry.resource.Namespace,
+			entry.portName,
+			string(entry.resource.Type),
+			entry.resource.Name)
+	}
 )
 
 type forwardedPorts struct {
@@ -149,8 +161,8 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 	if err != nil {
 		return err
 	}
-	// TODO priyawadhwa@, change event API to accept ports of type int
-	event.PortForwarded(int32(entry.localPort), int32(entry.resource.Port), entry.podName, entry.containerName, entry.resource.Namespace, entry.portName, string(entry.resource.Type), entry.resource.Name)
+
+	portForwardEvent(entry)
 	return nil
 }
 

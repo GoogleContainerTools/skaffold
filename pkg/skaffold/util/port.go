@@ -54,6 +54,7 @@ func GetAvailablePort(port int, forwardedPorts ForwardedPorts) int {
 
 	for port = 4503; port <= 4533; port++ {
 		if getPortIfAvailable(port, forwardedPorts) {
+			logrus.Debugf("found open port: %d", port)
 			return port
 		}
 	}

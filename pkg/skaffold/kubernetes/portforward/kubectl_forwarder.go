@@ -22,8 +22,12 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
+	"time"
+
+	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -41,6 +45,10 @@ func (*KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 	logrus.Debugf("Port forwarding %v", pfe)
 
 	ctx, cancel := context.WithCancel(parentCtx)
+	// when retrying a portforwarding entry, it might already have a context running
+	if pfe.cancel != nil {
+		pfe.cancel()
+	}
 	pfe.cancel = cancel
 
 	cmd := exec.CommandContext(ctx, "kubectl", "port-forward", fmt.Sprintf("%s/%s", pfe.resource.Type, pfe.resource.Name), fmt.Sprintf("%d:%d", pfe.localPort, pfe.resource.Port), "--namespace", pfe.resource.Namespace)
@@ -55,17 +63,29 @@ func (*KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 		return errors.Wrapf(err, "port forwarding %s/%s, port: %d to local port: %d, err: %s", pfe.resource.Type, pfe.resource.Name, pfe.resource.Port, pfe.localPort, buf.String())
 	}
 
-	go cmd.Wait()
-	return portForwardSuccessful(pfe.localPort)
-}
+	resultChan := make(chan error, 1)
+	go func() {
+		err := cmd.Wait()
+		if err != nil {
+			logrus.Debugf("port forwarding process terminated: %s, output: %s", err, buf.String())
+			resultChan <- err
+		}
+	}()
 
-func portForwardSuccessful(port int) error {
-	// creating a listening port should not succeed
-	if ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port)); err == nil {
-		ln.Close()
-		return errors.New("port-forward failed")
-	}
-	return nil
+	go func() {
+		err := wait.PollImmediate(200*time.Millisecond, 5*time.Second, func() (bool, error) {
+			// creating a listening port should not succeed
+			if ln, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, pfe.localPort)); err == nil {
+				ln.Close()
+				return false, nil
+			}
+			return true, nil
+		})
+		resultChan <- err
+	}()
+
+	err := <-resultChan
+	return err
 }
 
 // Terminate terminates an existing kubectl port-forward command using SIGTERM
