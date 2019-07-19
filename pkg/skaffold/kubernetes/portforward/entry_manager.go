@@ -115,6 +115,20 @@ func (f forwardedResources) Length() int {
 	return len(f.resources)
 }
 
+func newForwardedPorts() forwardedPorts {
+	return forwardedPorts{
+		lock:  &sync.Mutex{},
+		ports: map[int]struct{}{},
+	}
+}
+
+func newForwardedResources() forwardedResources {
+	return forwardedResources{
+		lock:      &sync.Mutex{},
+		resources: map[string]*portForwardEntry{},
+	}
+}
+
 // EntryManager handles forwarding entries and keeping track of
 // forwarded ports and resources.
 type EntryManager struct {
@@ -132,16 +146,10 @@ type EntryManager struct {
 // of forwarded ports and resources
 func NewEntryManager(out io.Writer) EntryManager {
 	return EntryManager{
-		output: out,
-		forwardedPorts: forwardedPorts{
-			ports: map[int]struct{}{},
-			lock:  &sync.Mutex{},
-		},
-		forwardedResources: forwardedResources{
-			resources: map[string]*portForwardEntry{},
-			lock:      &sync.Mutex{},
-		},
-		EntryForwarder: &KubectlForwarder{},
+		output:             out,
+		forwardedPorts:     newForwardedPorts(),
+		forwardedResources: newForwardedResources(),
+		EntryForwarder:     &KubectlForwarder{},
 	}
 }
 
