@@ -17,6 +17,7 @@ New Features:
 * The user is now able to disable RPC in dev mode [#2427](https://github.com/GoogleContainerTools/skaffold/pull/2427)
 * Feat(sync): skip sync on non-running pods [#2403](https://github.com/GoogleContainerTools/skaffold/pull/2403)
 * Allow for remote kustomize bases [#2269](https://github.com/GoogleContainerTools/skaffold/pull/2269)
+* :sparkles: Add support for regexp in profile activation kubeContext [#2065](https://github.com/GoogleContainerTools/skaffold/pull/2065)
 
 Bug Fixes:
 * Fix port forwarding in dev loop [#2477](https://github.com/GoogleContainerTools/skaffold/pull/2477)
@@ -56,7 +57,6 @@ Updates & Refactors:
 * Improve `skaffold help` [#2434](https://github.com/GoogleContainerTools/skaffold/pull/2434)
 * Remove unused property [#2428](https://github.com/GoogleContainerTools/skaffold/pull/2428)
 * Wait for parallel builds to be cancelled on error [#2424](https://github.com/GoogleContainerTools/skaffold/pull/2424)
-* :sparkles: Add support for regexp in profile activation kubeContext [#2065](https://github.com/GoogleContainerTools/skaffold/pull/2065)
 * Better integration tests [#2406](https://github.com/GoogleContainerTools/skaffold/pull/2406)
 * Faster proto generation [#2402](https://github.com/GoogleContainerTools/skaffold/pull/2402)
 * Build with Go 1.12 [#2396](https://github.com/GoogleContainerTools/skaffold/pull/2396)
