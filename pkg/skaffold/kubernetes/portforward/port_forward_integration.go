@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -31,6 +33,8 @@ import (
 //This is testing a port forward + stop + restart in a simulated dev cycle
 func WhiteBoxPortForwardCycle(namespace string, t *testing.T) {
 	em := NewEntryManager(os.Stdout)
+	portForwardEventHandler := portForwardEvent
+	defer func() { portForwardEvent = portForwardEventHandler }()
 	portForwardEvent = func(entry *portForwardEntry) {}
 	ctx := context.Background()
 	localPort := retrieveAvailablePort(9000, em.forwardedPorts)
@@ -51,16 +55,16 @@ func WhiteBoxPortForwardCycle(namespace string, t *testing.T) {
 	}
 	em.Stop()
 
-	time.Sleep(2 * time.Second)
+	logrus.Info("waiting for the same port to become available...")
+	if err := wait.Poll(100*time.Millisecond, 5*time.Second, func() (done bool, err error) {
+		nextPort := retrieveAvailablePort(localPort, em.forwardedPorts)
 
-	logrus.Info("getting next port...")
-	nextPort := retrieveAvailablePort(localPort, em.forwardedPorts)
-
-	// theoretically we should be able to bind to the very same port
-	// this might get flaky when multiple tests are ran. However
-	// we shouldn't collide with our own process because of poor cleanup
-	if nextPort != localPort {
-		t.Fatalf("the same port should be still open, instead first port: %d != second port: %d", localPort, nextPort)
+		// theoretically we should be able to bind to the very same port
+		// this might get flaky when multiple tests are ran. However
+		// we shouldn't collide with our own process because of poor cleanup
+		return nextPort == localPort, nil
+	}); err != nil {
+		t.Fatalf("port is not released after portforwarding stopped: %d", localPort)
 	}
 
 	if err := em.forwardPortForwardEntry(ctx, pfe); err != nil {

@@ -29,11 +29,13 @@ func TestPortForward(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 	dir := "examples/microservices"
 	skaffold.Run().InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
-	defer skaffold.Delete().InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
 	logrus.SetLevel(logrus.DebugLevel)
 	portforward.WhiteBoxPortForwardCycle(ns.Name, t)
 }

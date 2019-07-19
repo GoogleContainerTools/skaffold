@@ -185,6 +185,9 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 	start := time.Now()
 	out, err := cmd.Output()
 	if err != nil {
+		if ee, ok := err.(*exec.ExitError); ok {
+			defer t.Errorf(string(ee.Stderr))
+		}
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
 	}
 
