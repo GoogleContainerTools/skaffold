@@ -67,6 +67,11 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 				logrus.Warnf("skaffold may not run successfully!")
 			}
 			if err := devLoop(ctx, out); err != nil {
+				// propagating this error up causes a new runner to be created
+				// and a new dev loop to start
+				if errors.Cause(err) == ErrorConfigurationChanged {
+					return err
+				}
 				logrus.Errorf("error running dev loop: %s", err.Error())
 			}
 		}
