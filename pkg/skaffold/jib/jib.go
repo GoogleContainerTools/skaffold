@@ -109,7 +109,7 @@ func getDependencies(workspace string, cmd exec.Cmd, projectName string) ([]stri
 func refreshDependencyList(files *filesLists, cmd exec.Cmd) error {
 	stdout, err := util.RunCmdOut(&cmd)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get Jib dependencies")
+		return errors.Wrap(err, "failed to get Jib dependencies")
 	}
 
 	// Search for Jib's output JSON. Jib's Maven/Gradle output takes the following form:
