@@ -7,11 +7,12 @@ build:
       args:
       - -q
 
-# optional profile to run the jib build on Google Cloud Build
 profiles:
+  # optional profile to run the jib build on Google Cloud Build
   - name: gcb
     build:
       googleCloudBuild: {}
+  # profile to check that an unsupported Jib version fails the build
   - name: old-jib
     patches:
     - op: add
