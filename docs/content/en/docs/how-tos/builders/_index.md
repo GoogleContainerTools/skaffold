@@ -157,7 +157,7 @@ without a Docker daemon.
 Skaffold can help build artifacts using Jib; Jib builds the container images and then
 pushes them to the local Docker daemon or to remote registries as instructed by Skaffold.
 
-Skaffold requires using Jib v1.3.0 or later.
+Skaffold requires using Jib v1.4.0 or later.
 
 ### Configuration
 
@@ -202,7 +202,7 @@ produce a container image. Then for each such module:
 {{% alert title="Updating from earlier versions" %}}
 Skaffold had required Maven multi-module projects bind a Jib
 `build` or `dockerBuild` goal to the *package* phase.  These bindings are
-no longer required with Jib 1.3.0 and should be removed.
+no longer required with Jib 1.4.0 and should be removed.
 {{% /alert %}}
 
 #### Gradle
