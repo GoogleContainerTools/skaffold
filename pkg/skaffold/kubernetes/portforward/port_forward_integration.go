@@ -8,23 +8,11 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/integration"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
-//This is testing a port forward + stop + restart dev cycle
-func TestPortForwardCleanupCycle(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	ns, _, deleteNs := integration.SetupNamespace(t)
-	defer deleteNs()
-	dir := "../../../../examples/microservices"
-	skaffold.Run().InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
-	defer skaffold.Delete().InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
-	logrus.SetLevel(logrus.DebugLevel)
+//This is testing a port forward + stop + restart in a simulated dev cycle
+func WhiteBox_PortForwardCycle(namespace string, t *testing.T) {
 	em := NewEntryManager(os.Stdout)
 	portForwardEvent = func(entry *portForwardEntry) {}
 	ctx := context.Background()
@@ -33,7 +21,7 @@ func TestPortForwardCleanupCycle(t *testing.T) {
 		resource: latest.PortForwardResource{
 			Type:      "deployment",
 			Name:      "leeroy-web",
-			Namespace: ns.Name,
+			Namespace: namespace,
 			Port:      8080,
 		},
 		containerName: "dummy container",
