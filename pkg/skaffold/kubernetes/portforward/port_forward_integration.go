@@ -43,7 +43,7 @@ func WhiteBox_PortForwardCycle(namespace string, t *testing.T) {
 	// this might get flaky when multiple tests are ran. However
 	// we shouldn't collide with our own process because of poor cleanup
 	if nextPort != localPort {
-		t.Fatalf("the same port should be still open!, first port: %d, next port: %d", localPort, nextPort)
+		t.Fatalf("the same port should be still open, instead first port: %d != second port: %d", localPort, nextPort)
 	}
 
 	defer em.Stop()
