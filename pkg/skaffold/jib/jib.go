@@ -115,7 +115,7 @@ func refreshDependencyList(files *filesLists, cmd exec.Cmd) error {
 	// Search for Jib's output JSON. Jib's Maven/Gradle output takes the following form:
 	// ...
 	// BEGIN JIB JSON
-	// {"version":"1.3.0","build":["/paths","/to","/buildFiles"],"inputs":["/paths","/to","/inputs"],"ignore":["/paths","/to","/ignore"]}
+	// {"build":["/paths","/to","/buildFiles"],"inputs":["/paths","/to","/inputs"],"ignore":["/paths","/to","/ignore"]}
 	// ...
 	// To parse the output, search for "BEGIN JIB JSON", then unmarshal the next line into the pathMap struct.
 	matches := regexp.MustCompile(`BEGIN JIB JSON\r?\n({.*})`).FindSubmatch(stdout)
