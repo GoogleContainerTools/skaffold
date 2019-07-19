@@ -139,8 +139,6 @@ Huge thanks goes out to all of our contributors for this release:
 - Valentin Fedoskin
 - yfei1
 
->>>>>>> origin/master
-
 # v0.31.0 Release - 06/06/2019
 
 New Features:
