@@ -29,7 +29,7 @@ type portForwardEntry struct {
 	podName                string
 	containerName          string
 	portName               string
-	localPort              int32
+	localPort              int
 	automaticPodForwarding bool
 
 	cancel context.CancelFunc

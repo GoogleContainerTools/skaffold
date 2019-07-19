@@ -23,7 +23,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/pkg/errors"
@@ -63,9 +62,13 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		}
 		fallthrough
 	case r.changeSet.needsRedeploy:
+		r.forwarderManager.Stop()
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			return nil
+		}
+		if err := r.forwarderManager.Start(ctx); err != nil {
+			logrus.Warnln("Port forwarding failed due to error:", err)
 		}
 	}
 
@@ -79,8 +82,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	r.createLogger(out, artifacts)
 	defer r.logger.Stop()
 
-	forwarderManager := portforward.NewForwarderManager(out, r.imageList, r.runCtx.Namespaces, r.defaultLabeller.K8sManagedByLabelKeyValueString(), r.runCtx.Opts.PortForward, r.portForwardResources)
-	defer forwarderManager.Stop()
+	r.createForwarder(out)
+	defer r.forwarderManager.Stop()
 
 	// Watch artifacts
 	for i := range artifacts {
@@ -144,16 +147,15 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return errors.Wrap(err, "exiting dev mode because first deploy failed")
 	}
 
+	if err := r.forwarderManager.Start(ctx); err != nil {
+		logrus.Warnln("Error starting port forwarding:", err)
+	}
+
 	// Start printing the logs after deploy is finished
 	if r.runCtx.Opts.TailDev {
 		if err := r.logger.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting logger")
 		}
-	}
-
-	// Forward ports
-	if err := forwarderManager.Start(ctx); err != nil {
-		return errors.Wrap(err, "starting forwarder manager")
 	}
 
 	return r.listener.WatchForChanges(ctx, out, r.doDev)
