@@ -26,6 +26,8 @@ import (
 
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
 
 func Set(out io.Writer, args []string) error {
@@ -58,7 +60,7 @@ func setConfigValue(name string, value string) error {
 	return writeConfig(cfg)
 }
 
-func getFieldName(cfg *ContextConfig, name string) string {
+func getFieldName(cfg *config.ContextConfig, name string) string {
 	cfgValue := reflect.Indirect(reflect.ValueOf(cfg))
 	var fieldName string
 	for i := 0; i < cfgValue.NumField(); i++ {
@@ -96,7 +98,7 @@ func parseAsType(value string, field reflect.Value) (reflect.Value, error) {
 	}
 }
 
-func writeConfig(cfg *ContextConfig) error {
+func writeConfig(cfg *config.ContextConfig) error {
 	fullConfig, err := readConfig()
 	if err != nil {
 		return err
@@ -113,7 +115,7 @@ func writeConfig(cfg *ContextConfig) error {
 	return writeFullConfig(fullConfig)
 }
 
-func writeFullConfig(cfg *Config) error {
+func writeFullConfig(cfg *config.GlobalConfig) error {
 	contents, err := yaml.Marshal(cfg)
 	if err != nil {
 		return errors.Wrap(err, "marshaling config")

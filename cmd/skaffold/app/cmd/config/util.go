@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -64,20 +65,20 @@ func resolveConfigFile() error {
 }
 
 // ReadConfigForFile reads the specified file and returns the contents
-// parsed into a Config struct.
-func ReadConfigForFile(filename string) (*Config, error) {
+// parsed into a GlobalConfig struct.
+func ReadConfigForFile(filename string) (*config.GlobalConfig, error) {
 	contents, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading global config")
 	}
-	config := Config{}
+	config := config.GlobalConfig{}
 	if err := yaml.Unmarshal(contents, &config); err != nil {
 		return nil, errors.Wrap(err, "unmarshalling global skaffold config")
 	}
 	return &config, nil
 }
 
-func readConfig() (*Config, error) {
+func readConfig() (*config.GlobalConfig, error) {
 	if err := resolveConfigFile(); err != nil {
 		return nil, errors.Wrap(err, "resolving config file location")
 	}
@@ -88,7 +89,7 @@ func readConfig() (*Config, error) {
 // provided kube context.
 // Either returns the config corresponding to the provided or current context,
 // or the global config if that is specified (or if no current context is set).
-func GetConfigForKubectx() (*ContextConfig, error) {
+func GetConfigForKubectx() (*config.ContextConfig, error) {
 	resolveKubectlContext()
 	cfg, err := readConfig()
 	if err != nil {
@@ -107,7 +108,7 @@ func GetConfigForKubectx() (*ContextConfig, error) {
 }
 
 // GetGlobalConfig returns the global config values
-func GetGlobalConfig() (*ContextConfig, error) {
+func GetGlobalConfig() (*config.ContextConfig, error) {
 	cfg, err := readConfig()
 	if err != nil {
 		return nil, err
@@ -115,7 +116,7 @@ func GetGlobalConfig() (*ContextConfig, error) {
 	return cfg.Global, nil
 }
 
-func getOrCreateConfigForKubectx() (*ContextConfig, error) {
+func getOrCreateConfigForKubectx() (*config.ContextConfig, error) {
 	resolveKubectlContext()
 	cfg, err := readConfig()
 	if err != nil {
@@ -123,7 +124,7 @@ func getOrCreateConfigForKubectx() (*ContextConfig, error) {
 	}
 	if global {
 		if cfg.Global == nil {
-			newCfg := &ContextConfig{}
+			newCfg := &config.ContextConfig{}
 			cfg.Global = newCfg
 			if err := writeFullConfig(cfg); err != nil {
 				return nil, err
@@ -136,7 +137,7 @@ func getOrCreateConfigForKubectx() (*ContextConfig, error) {
 			return contextCfg, nil
 		}
 	}
-	newCfg := &ContextConfig{
+	newCfg := &config.ContextConfig{
 		Kubecontext: kubecontext,
 	}
 	cfg.ContextConfigs = append(cfg.ContextConfigs, newCfg)
