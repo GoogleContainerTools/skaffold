@@ -133,11 +133,11 @@ func (m *mockConfigChangeRunner) HasDeployed() bool {
 	return true
 }
 
-func (r *mockConfigChangeRunner) Prune(context.Context, io.Writer) error {
+func (m *mockConfigChangeRunner) Prune(context.Context, io.Writer) error {
 	return nil
 }
 
-func (r *mockConfigChangeRunner) Cleanup(context.Context, io.Writer) error {
+func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer) error {
 	return nil
 }
 
