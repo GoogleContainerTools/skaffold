@@ -12,7 +12,7 @@ jobs:
     - os: linux
       go: "1.12.x"
       env:
-        - TEST_TYPE=unit
+        - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
       script:
         - make
         - make test
@@ -21,7 +21,7 @@ jobs:
     - os: osx
       go: "1.12.x"
       env:
-        - TEST_TYPE=unit
+        - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
       script:
         - make
         - make test
@@ -30,14 +30,14 @@ jobs:
     - os: windows
       go: "1.12.x"
       env:
-        - TEST_TYPE=unit
+        - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
       script:
         - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
         - go test -short -timeout 60s ./...
     - os: linux
       go: "1.12.x"
       env:
-        - TEST_TYPE=integration
+        - TEST_TYPE=integration # this is not used, just purely for nice UI distinction on Travis
       before_install:
         - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
         - chmod +x ${HOME}/bin/kind
