@@ -32,7 +32,7 @@ import (
 )
 
 func TestMinimumGradleVersion(t *testing.T) {
-	testutil.CheckDeepEqual(t, "(1.4.0,)", MinimumJibGradleVersion)
+	testutil.CheckDeepEqual(t, "[1.4.0,)", MinimumJibGradleVersion)
 }
 
 func TestGradleWrapperDefinition(t *testing.T) {

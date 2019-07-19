@@ -32,7 +32,7 @@ import (
 )
 
 func TestMinimumMavenVersion(t *testing.T) {
-	testutil.CheckDeepEqual(t, "(1.4.0,)", MinimumJibMavenVersion)
+	testutil.CheckDeepEqual(t, "[1.4.0,)", MinimumJibMavenVersion)
 }
 
 func TestMavenWrapperDefinition(t *testing.T) {

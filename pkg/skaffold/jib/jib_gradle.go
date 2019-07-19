@@ -27,8 +27,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Skaffold-Jib depends on functionality introduced after Jib-Gradle 1.4.0
-const MinimumJibGradleVersion = "(1.4.0,)"
+// Skaffold-Jib depends on functionality introduced with Jib-Gradle 1.4.0
+const MinimumJibGradleVersion = "[1.4.0,)"
 
 // GradleCommand stores Gradle executable and wrapper name
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
