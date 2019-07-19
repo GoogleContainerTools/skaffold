@@ -175,6 +175,6 @@ func TestSetPortForwardLocalPort(t *testing.T) {
 	}
 	err := Set(cfg)
 	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, int32(8080), cfg.PortForward[0].LocalPort)
-	testutil.CheckDeepEqual(t, int32(9000), cfg.PortForward[1].LocalPort)
+	testutil.CheckDeepEqual(t, 8080, cfg.PortForward[0].LocalPort)
+	testutil.CheckDeepEqual(t, 9000, cfg.PortForward[1].LocalPort)
 }

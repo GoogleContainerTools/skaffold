@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -65,8 +66,9 @@ type SkaffoldRunner struct {
 	test.Tester
 	tag.Tagger
 	sync.Syncer
-	monitor  filemon.Monitor
-	listener Listener
+	monitor          filemon.Monitor
+	listener         Listener
+	forwarderManager *portforward.ForwarderManager
 
 	logger               *kubernetes.LogAggregator
 	cache                cache.Cache
