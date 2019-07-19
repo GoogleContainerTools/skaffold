@@ -51,7 +51,7 @@ func WhiteBoxPortForwardCycle(namespace string, t *testing.T) {
 
 	defer em.Stop()
 	if err := em.forwardPortForwardEntry(ctx, pfe); err != nil {
-		t.Fatalf("failed to forward port: %s", err)
+		t.Fatalf("failed to forward %s: %s", pfe.String(), err)
 	}
 	em.Stop()
 
@@ -68,6 +68,6 @@ func WhiteBoxPortForwardCycle(namespace string, t *testing.T) {
 	}
 
 	if err := em.forwardPortForwardEntry(ctx, pfe); err != nil {
-		t.Fatalf("failed to forward port: %s", err)
+		t.Fatalf("failed to forward %s: %s", pfe.String(), err)
 	}
 }

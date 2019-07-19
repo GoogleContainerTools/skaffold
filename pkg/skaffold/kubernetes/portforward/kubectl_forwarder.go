@@ -67,7 +67,7 @@ func (*KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 	go func() {
 		err := cmd.Wait()
 		if err != nil {
-			logrus.Debugf("port forwarding process terminated: %s, output: %s", err, buf.String())
+			logrus.Debugf("port forwarding %v terminated: %s, output: %s", pfe, err, buf.String())
 			resultChan <- err
 		}
 	}()

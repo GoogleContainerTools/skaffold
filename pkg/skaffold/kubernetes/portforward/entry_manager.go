@@ -50,25 +50,31 @@ type forwardedPorts struct {
 	lock  *sync.Mutex
 }
 
-func (f forwardedPorts) Store(key, value interface{}) {
+func (f forwardedPorts) Store(key, _ interface{}) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	val, ok := key.(int)
 	if !ok {
 		panic("only store keys of type int in forwardedPorts")
 	}
-	f.ports[val] = struct{}{}
+	//this map is only used as a set of keys, we don't care about the values
+	f.ports[val] = dummy()
 }
 
-func (f forwardedPorts) LoadOrStore(key, value interface{}) (actual interface{}, loaded bool) {
+func (f forwardedPorts) LoadOrStore(key, _ interface{}) (interface{}, bool) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	k, ok := key.(int)
 	if !ok {
 		return nil, false
 	}
-	val, exists := f.ports[k]
-	return val, exists
+	//this map is only used as a set of keys, we don't care about the values
+	_, exists := f.ports[k]
+	return dummy(), exists
+}
+
+func dummy() struct{} {
+	return struct{}{}
 }
 
 func (f forwardedPorts) Delete(port int) {
