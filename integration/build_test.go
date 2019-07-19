@@ -191,7 +191,6 @@ func TestExpectedBuildFailures(t *testing.T) {
 		dir         string
 		filename    string
 		args        []string
-		env         []string
 		gcpOnly     bool
 	}{
 		{
