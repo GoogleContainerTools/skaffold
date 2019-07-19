@@ -45,6 +45,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 
 	switch {
 	case r.changeSet.needsReload:
+		r.forwarderManager.Stop()
 		return ErrorConfigurationChanged
 	case len(r.changeSet.needsResync) > 0:
 		for _, s := range r.changeSet.needsResync {
