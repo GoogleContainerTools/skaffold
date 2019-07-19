@@ -63,9 +63,7 @@ func WhiteBoxPortForwardCycle(namespace string, t *testing.T) {
 		t.Fatalf("the same port should be still open, instead first port: %d != second port: %d", localPort, nextPort)
 	}
 
-	defer em.Stop()
 	if err := em.forwardPortForwardEntry(ctx, pfe); err != nil {
 		t.Fatalf("failed to forward port: %s", err)
 	}
-
 }
