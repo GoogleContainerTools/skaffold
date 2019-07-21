@@ -23,9 +23,11 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 )
 
 var (
@@ -150,12 +152,12 @@ type EntryManager struct {
 
 // NewEntryManager returns a new port forward entry manager to keep track
 // of forwarded ports and resources
-func NewEntryManager(out io.Writer) EntryManager {
+func NewEntryManager(out io.Writer, cli *kubectl.CLI) EntryManager {
 	return EntryManager{
 		output:             out,
 		forwardedPorts:     newForwardedPorts(),
 		forwardedResources: newForwardedResources(),
-		EntryForwarder:     &KubectlForwarder{},
+		EntryForwarder:     &KubectlForwarder{kubectl: cli},
 	}
 }
 

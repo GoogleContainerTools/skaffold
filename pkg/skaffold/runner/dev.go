@@ -106,7 +106,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	r.createLogger(out, artifacts)
 	defer r.logger.Stop()
 
-	r.createForwarder(out)
+	r.createForwarder(out, r.kubectlCLI())
 	defer r.forwarderManager.Stop()
 
 	// Watch artifacts

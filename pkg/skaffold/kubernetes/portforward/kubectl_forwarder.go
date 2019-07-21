@@ -21,16 +21,15 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os/exec"
 	"strings"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type EntryForwarder interface {
@@ -39,11 +38,13 @@ type EntryForwarder interface {
 	Monitor(*portForwardEntry, func())
 }
 
-type KubectlForwarder struct{}
+type KubectlForwarder struct {
+	kubectl *kubectl.CLI
+}
 
 // Forward port-forwards a pod using kubectl port-forward
 // It returns an error only if the process fails or was terminated by a signal other than SIGTERM
-func (*KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) error {
+func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) error {
 	ctx, cancel := context.WithCancel(parentCtx)
 	// when retrying a portforwarding entry, it might already have a context running
 	if pfe.cancel != nil {
@@ -51,7 +52,13 @@ func (*KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntr
 	}
 	pfe.cancel = cancel
 
-	cmd := exec.CommandContext(ctx, "kubectl", "port-forward", "--pod-running-timeout", "5s", fmt.Sprintf("%s/%s", pfe.resource.Type, pfe.resource.Name), fmt.Sprintf("%d:%d", pfe.localPort, pfe.resource.Port), "--namespace", pfe.resource.Namespace)
+	cmd := k.kubectl.Command(ctx,
+		"port-forward",
+		"--pod-running-timeout", "5s",
+		fmt.Sprintf("%s/%s", pfe.resource.Type, pfe.resource.Name),
+		fmt.Sprintf("%d:%d", pfe.localPort, pfe.resource.Port),
+		"--namespace", pfe.resource.Namespace,
+	)
 	pfe.logBuffer = &bytes.Buffer{}
 	cmd.Stdout = pfe.logBuffer
 	cmd.Stderr = pfe.logBuffer

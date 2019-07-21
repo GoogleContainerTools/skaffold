@@ -32,7 +32,8 @@ import (
 // For WhiteBox testing only
 // This is testing a port forward + stop + restart in a simulated dev cycle
 func WhiteBoxPortForwardCycle(namespace string, t *testing.T) {
-	em := NewEntryManager(os.Stdout)
+	// todo
+	em := NewEntryManager(os.Stdout, nil)
 	portForwardEventHandler := portForwardEvent
 	defer func() { portForwardEvent = portForwardEventHandler }()
 	portForwardEvent = func(entry *portForwardEntry) {}
