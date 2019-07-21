@@ -32,5 +32,5 @@ func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []*latest.Artifac
 }
 
 func (r *SkaffoldRunner) newLoggerForImages(out io.Writer, images []string) *kubernetes.LogAggregator {
-	return kubernetes.NewLogAggregator(out, images, r.imageList, r.runCtx.Namespaces)
+	return kubernetes.NewLogAggregator(out, r.kubectlCLI(), images, r.imageList, r.runCtx.Namespaces)
 }
