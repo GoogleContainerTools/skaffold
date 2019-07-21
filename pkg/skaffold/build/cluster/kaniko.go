@@ -34,7 +34,7 @@ import (
 
 func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	// Prepare context
-	s := sources.Retrieve(b.ClusterDetails, artifact.KanikoArtifact)
+	s := sources.Retrieve(b.kubectlcli, b.ClusterDetails, artifact.KanikoArtifact)
 	dependencies, err := b.DependenciesForArtifact(ctx, artifact)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
