@@ -68,7 +68,7 @@ There are four places where kubecontext activation can be added:
             <td><code>skaffold.yaml</code></td>
             <td>
               Json-path <code>deploy.kubeContext</code>.
-              This option is shareable, but also creates a lot of complexity due to profile activation (see detailed discussion below).
+              This option is shareable, and requires some error handling for profile activation by kubecontext (see below).
             </td>
         </tr>
         <tr>
@@ -85,12 +85,10 @@ There are four places where kubecontext activation can be added:
 ---
 
 Beside the kubecontext, also the namespace needs to be specified.
-It should also be possible to specify in various places:
-
-1. `--namespace` CLI flag
-2. `SKAFFOLD_NAMESPACE` env var
-3. In `skaffold.yaml` at json-path `deploy.namespace`
-4. globally or per project in the Skaffold config
+Ideally, the namespace should also offer the same override variants as kubecontext.
+This is out of scope for this design proposal.
+As long as this is not implemented, there is always the workaround, to duplicate a kubecontext and set the default namespace for this kubecontext to the desired value.
+Then this kubecontext/namespace pair can be activated with the kubecontext activation machinery detailed in this design proposal.
 
 ### Detailed discussion
 #### Option in `skaffold.yaml`
@@ -98,17 +96,27 @@ A configuration option in `skaffold.yaml` has the advantage of being most discov
 it is in the place where users configure all aspects of their pipeline.
 In addition, it allows to define the kubecontext per Skaffold profile.
 
-However, it also has questionable implications:
-
-- `skaffold.yaml` is meant to be shared, but kubecontext names vary across users.
-  Sharing therefore makes only sense in a corporate setting where context names are the same across many users.
-  There is however a risk of abuse in settings where sharing the context name does not make sense, for example in open source projects.
-- Due to profile activation by Skaffold profiles, there can be confusing/surprising situations.
-  For example, the current context is `minikube` and activates some profile.
-  This profile is deploying to a different kubecontext `gke_abc_123`. This can be surprising to the user.
-  A solution could be to forbid specifying a kubecontext in a profile if it is activated by a kubecontext (and validate that).
-
 A natural place for the config in `skaffold.yaml` is in `latest.DeployConfig`, resulting in a json path `deploy.kubeContext`.
+
+Profiles have a double role, because they may override the kubecontext to a different value as before, but they may also be activated by a kubecontext.
+To catch unexpected behavior, the profile activation will perform the following logic:
+
+1. All profiles are checked if they become active with the _original_ kubecontext.
+2. If any profile was activated by the current kubecontext, the effective kubecontext may not change.
+   In other words, the effective kubecontext _after_ profile activation must match the kubecontext _before_ profile activation.
+   - If the context has changed, return an error.
+   - If the context has not changed, continue.
+
+It is therefore possible that subsequent profiles repeatedly switch the kubecontext, in which case the last one wins.
+
+For example, the following sequence will result in an error:
+
+- The current context is `minikube` and activates some profile.
+- Some profile also overrides the kubecontext and deploys to kubecontext `gke_abc_123`.
+- Thus the `minikube`-specific profile would be deployed to `gke_abc_123`, and this will be forbidden.
+
+**Note**: `skaffold.yaml` is meant to be shared, but kubecontext names vary across users.
+Sharing therefore makes only sense in a corporate setting where context names are the same across different machines.
 
 #### Option in global Skaffold config
 Specifying a default kubecontext globally is straightforward. For example, via new config option
@@ -174,22 +182,18 @@ There are two possibilities to add the relation:
   ```
   This option will be more complex to implement wrt `skaffold config`.
 
+### Open Issues/Questions
+
 **\<What Skaffold config structure has the best tradeoffs?\>**
 
 Resolution: __Not Yet Resolved__
 
-### Open Issues/Questions
-
-**\<Should there be a config option in `skaffold.yaml`?\>**
-
-Resolution: Yes.
-
 ## Implementation plan
 1. Implement the CLI flag and env var variant first. This should also be the most important for the IDE integration.
-2. Implement `skaffold.yaml` variant if applicable.
-3. Implement the global Skaffold config variant.
-4. Implement `skaffold config set` adaptions.
-5. Implement the namespace functionality.
+2. Implement `skaffold.yaml` variant.
+3. Implement the global Skaffold config variant to override a kubecontext for a skaffold config (`kubecontexts[*].skaffoldConfigs`).
+4. Implement the global Skaffold config variant to set a default kubecontext (`global.default-context`).
+~~5. Implement the namespace functionality.~~ (out of scope)
 
 ## Integration test plan
 
