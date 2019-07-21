@@ -35,6 +35,13 @@ type CLI struct {
 	versionOnce sync.Once
 }
 
+func NewFromRunContext(runCtx *runcontext.RunContext) *CLI {
+	return &CLI{
+		KubeContext: runCtx.KubeContext,
+		Namespace:   runCtx.Opts.Namespace,
+	}
+}
+
 // Command creates the underlying exec.CommandContext. This allows low-level control of the executed command.
 func (c *CLI) Command(ctx context.Context, command string, arg ...string) *exec.Cmd {
 	args := c.args(command, arg...)

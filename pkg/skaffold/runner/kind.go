@@ -27,7 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	kubectlcli "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -49,7 +49,8 @@ func (r *SkaffoldRunner) loadImagesInKindNodes(ctx context.Context, out io.Write
 		// Only `kind load` the images that are unknown to the node
 		if knownImages == nil {
 			var err error
-			if knownImages, err = findKnownImages(ctx, r.kubectlCLI()); err != nil {
+			kubectlCLI := kubectlcli.NewFromRunContext(r.runCtx)
+			if knownImages, err = findKnownImages(ctx, kubectlCLI); err != nil {
 				return errors.Wrapf(err, "unable to retrieve node's images")
 			}
 		}
@@ -71,7 +72,7 @@ func (r *SkaffoldRunner) loadImagesInKindNodes(ctx context.Context, out io.Write
 	return nil
 }
 
-func findKnownImages(ctx context.Context, cli *kubectl.CLI) ([]string, error) {
+func findKnownImages(ctx context.Context, cli *kubectlcli.CLI) ([]string, error) {
 	nodeGetOut, err := cli.RunOut(ctx, "get", "nodes", `-ojsonpath='{@.items[*].status.images[*].names[*]}'`)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to inspect the nodes")
