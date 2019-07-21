@@ -100,11 +100,13 @@ profiles:
 
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
-		description string
-		config      *latest.SkaffoldConfig
-		profile     string
-		expected    *latest.SkaffoldConfig
-		shouldErr   bool
+		description         string
+		config              *latest.SkaffoldConfig
+		profile             string
+		expected            *latest.SkaffoldConfig
+		kubeContextCli      string
+		expectedKubeContext string
+		shouldErr           bool
 	}{
 		{
 			description: "unknown profile",
@@ -359,18 +361,60 @@ func TestApplyProfiles(t *testing.T) {
 			),
 			shouldErr: true,
 		},
+		{
+			description: "activate kubecontext with kubecontext override",
+			profile:     "profile",
+			config: config(
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							KubeContext: "staging",
+						},
+					}},
+				),
+			),
+			expected: config(
+				withKubeContext("staging"),
+			),
+			expectedKubeContext: "staging",
+		},
+		{
+			description: "activate kubecontext, CLI flag takes precedence",
+			profile:     "profile",
+			config: config(
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							KubeContext: "staging",
+						},
+					}},
+				),
+			),
+			kubeContextCli: "prod",
+			expected: config(
+				withKubeContext("staging"),
+			),
+			expectedKubeContext: "prod",
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			activeKubeContext := test.kubeContextCli
 			setupFakeKubeConfig(t, api.Config{CurrentContext: "prod-context"})
+			t.Override(&enableKubeContext, func(kubeContext string) { activeKubeContext = kubeContext })
+
 			err := ApplyProfiles(test.config, cfg.SkaffoldOptions{
-				Profiles: []string{test.profile},
+				Profiles:    []string{test.profile},
+				KubeContext: test.kubeContextCli,
 			})
 
 			if test.shouldErr {
 				t.CheckError(test.shouldErr, err)
 			} else {
 				t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, test.config)
+				t.CheckDeepEqual(test.expectedKubeContext, activeKubeContext)
 			}
 		})
 	}

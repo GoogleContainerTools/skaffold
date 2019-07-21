@@ -34,6 +34,10 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
+var (
+	enableKubeContext = kubectx.UseKubeContext
+)
+
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
 func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
@@ -55,6 +59,10 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 		}
 	}
 
+	if opts.KubeContext != "" {
+		return nil
+	}
+
 	return enableEffectiveKubecontext(isContextSpecific, c.Deploy.KubeContext)
 }
 
@@ -72,7 +80,7 @@ func enableEffectiveKubecontext(contextMustNotChange bool, effectiveContext stri
 		return fmt.Errorf("some activated profile contains kubecontext specific settings for a different than the effective kubecontext, please revise your profile activations")
 	}
 
-	kubectx.UseKubeContext(effectiveContext)
+	enableKubeContext(effectiveContext)
 	return nil
 }
 
