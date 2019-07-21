@@ -20,16 +20,18 @@ import (
 	"context"
 	"io"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	kubectlcli "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // KubectlDeployer deploys workflows using kubectl CLI.
@@ -37,7 +39,7 @@ type KubectlDeployer struct {
 	*latest.KubectlDeploy
 
 	workingDir         string
-	kubectl            kubectl.CLI
+	kubectl            kubectl.DeployerCLI
 	defaultRepo        string
 	insecureRegistries map[string]bool
 }
@@ -48,9 +50,11 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 	return &KubectlDeployer{
 		KubectlDeploy: runCtx.Cfg.Deploy.KubectlDeploy,
 		workingDir:    runCtx.WorkingDir,
-		kubectl: kubectl.CLI{
-			Namespace:   runCtx.Opts.Namespace,
-			KubeContext: runCtx.KubeContext,
+		kubectl: kubectl.DeployerCLI{
+			CLI: &kubectlcli.CLI{
+				KubeContext: runCtx.KubeContext,
+				Namespace:   runCtx.Opts.Namespace,
+			},
 			Flags:       runCtx.Cfg.Deploy.KubectlDeploy.Flags,
 			ForceDeploy: runCtx.Opts.ForceDeploy(),
 		},

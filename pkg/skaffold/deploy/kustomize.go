@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -32,10 +33,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	kubectlcli "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
 // kustomization is the content of a kustomization.yaml file.
@@ -66,7 +67,7 @@ type secretGenerator struct {
 type KustomizeDeployer struct {
 	*latest.KustomizeDeploy
 
-	kubectl            kubectl.CLI
+	kubectl            kubectl.DeployerCLI
 	defaultRepo        string
 	insecureRegistries map[string]bool
 }
@@ -74,9 +75,11 @@ type KustomizeDeployer struct {
 func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 	return &KustomizeDeployer{
 		KustomizeDeploy: runCtx.Cfg.Deploy.KustomizeDeploy,
-		kubectl: kubectl.CLI{
-			Namespace:   runCtx.Opts.Namespace,
-			KubeContext: runCtx.KubeContext,
+		kubectl: kubectl.DeployerCLI{
+			CLI: &kubectlcli.CLI{
+				KubeContext: runCtx.KubeContext,
+				Namespace:   runCtx.Opts.Namespace,
+			},
 			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
 			ForceDeploy: runCtx.Opts.ForceDeploy(),
 		},

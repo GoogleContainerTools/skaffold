@@ -22,8 +22,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -34,6 +32,9 @@ import (
 	patch "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
 
 // Artifact contains all information about a completed deployment

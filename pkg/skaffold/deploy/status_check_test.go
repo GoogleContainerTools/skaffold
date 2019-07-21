@@ -24,13 +24,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+
+	kubectlcli "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGetDeployments(t *testing.T) {
@@ -180,7 +181,7 @@ type MockRolloutStatus struct {
 	err       error
 }
 
-func (m *MockRolloutStatus) Executefunc(context.Context, *kubectl.CLI, string) (string, error) {
+func (m *MockRolloutStatus) Executefunc(context.Context, *kubectlcli.CLI, string) (string, error) {
 	var resp string
 	if m.err != nil {
 		m.called++
@@ -258,7 +259,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			defer func() { defaultPollPeriodInMilliseconds = originalPollingPeriod }()
 
 			actual := &sync.Map{}
-			pollDeploymentRolloutStatus(context.Background(), &kubectl.CLI{}, "dep", time.Duration(test.duration)*time.Millisecond, actual)
+			pollDeploymentRolloutStatus(context.Background(), &kubectlcli.CLI{}, "dep", time.Duration(test.duration)*time.Millisecond, actual)
 
 			if _, ok := actual.Load("dep"); !ok {
 				t.Error("expected result for deployment dep. But found none")
@@ -354,10 +355,7 @@ func TestGetRollOutStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.command)
-			cli := &kubectl.CLI{
-				Namespace:   "test",
-				KubeContext: testKubeContext,
-			}
+			cli := &kubectlcli.CLI{KubeContext: testKubeContext, Namespace: "test"}
 			actual, err := getRollOutStatus(context.Background(), cli, "dep")
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
