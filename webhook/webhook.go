@@ -39,7 +39,7 @@ const (
 )
 
 func main() {
-	//Setup the serve route to receive github events
+	// Setup the serve route to receive github events
 	http.HandleFunc("/receive", handleGithubEvent)
 	flag.Parse()
 	// Start the server

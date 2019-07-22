@@ -651,7 +651,7 @@ func TestExpandPaths(t *testing.T) {
 	tests := []struct {
 		description  string
 		paths        []string
-		unixExpanded []string //unix expands path with forward slashes, windows with backward slashes
+		unixExpanded []string // unix expands path with forward slashes, windows with backward slashes
 		winExpanded  []string
 		env          map[string]string
 	}{
