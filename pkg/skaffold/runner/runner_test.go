@@ -200,6 +200,9 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 	opts := &config.SkaffoldOptions{
 		Trigger:           "polling",
 		WatchPollInterval: 100,
+		AutoBuild:         true,
+		AutoSync:          true,
+		AutoDeploy:        true,
 	}
 
 	cfg := &latest.SkaffoldConfig{}
@@ -361,6 +364,90 @@ func TestNewForConfig(t *testing.T) {
 				t.CheckErrorAndTypeEquality(test.shouldErr, err, _t, cfg.Tester)
 				t.CheckErrorAndTypeEquality(test.shouldErr, err, d, cfg.Deployer)
 			}
+		})
+	}
+}
+
+func TestTriggerCallbackAndIntents(t *testing.T) {
+	var tests = []struct {
+		description          string
+		autoBuild            bool
+		autoSync             bool
+		autoDeploy           bool
+		expectedBuildIntent  bool
+		expectedSyncIntent   bool
+		expectedDeployIntent bool
+	}{
+		{
+			description:          "default",
+			autoBuild:            true,
+			autoSync:             true,
+			autoDeploy:           true,
+			expectedBuildIntent:  true,
+			expectedSyncIntent:   true,
+			expectedDeployIntent: true,
+		},
+		{
+			description:          "build trigger in api mode",
+			autoBuild:            false,
+			autoSync:             true,
+			autoDeploy:           true,
+			expectedBuildIntent:  false,
+			expectedSyncIntent:   true,
+			expectedDeployIntent: true,
+		},
+		{
+			description:          "deploy trigger in api mode",
+			autoBuild:            true,
+			autoSync:             true,
+			autoDeploy:           false,
+			expectedBuildIntent:  true,
+			expectedSyncIntent:   true,
+			expectedDeployIntent: false,
+		},
+		{
+			description:          "sync trigger in api mode",
+			autoBuild:            true,
+			autoSync:             false,
+			autoDeploy:           true,
+			expectedBuildIntent:  true,
+			expectedSyncIntent:   false,
+			expectedDeployIntent: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			opts := &config.SkaffoldOptions{
+				Trigger:           "polling",
+				WatchPollInterval: 100,
+				AutoBuild:         test.autoBuild,
+				AutoSync:          test.autoSync,
+				AutoDeploy:        test.autoDeploy,
+			}
+			defaultConfig := &latest.SkaffoldConfig{
+				Pipeline: latest.Pipeline{
+					Build: latest.BuildConfig{
+						TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+						BuildType: latest.BuildType{
+							LocalBuild: &latest.LocalBuild{},
+						},
+					},
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KubectlDeploy: &latest.KubectlDeploy{},
+						},
+					},
+				},
+			}
+			r, _ := NewForConfig(opts, defaultConfig)
+
+			r.intents.resetBuild()
+			r.intents.resetSync()
+			r.intents.resetDeploy()
+			testutil.CheckDeepEqual(t, test.expectedBuildIntent, r.intents.build)
+			testutil.CheckDeepEqual(t, test.expectedSyncIntent, r.intents.sync)
+			testutil.CheckDeepEqual(t, test.expectedDeployIntent, r.intents.deploy)
 		})
 	}
 }
