@@ -115,14 +115,14 @@ func inferredSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artif
 
 	syncMap, err := provider()
 	if err != nil {
-		return nil, errors.Wrapf(err, "infer syncmap for image %s", a.ImageName)
+		return nil, errors.Wrapf(err, "inferring syncmap for image %s", a.ImageName)
 	}
 
 	toCopy := make(map[string][]string)
 	for _, f := range append(e.Modified, e.Added...) {
 		relPath, err := filepath.Rel(a.Workspace, f)
 		if err != nil {
-			return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", f, a.Workspace)
+			return nil, errors.Wrapf(err, "finding changed file %s relative to context %s", f, a.Workspace)
 		}
 
 		matches := false

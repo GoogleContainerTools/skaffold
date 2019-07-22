@@ -95,13 +95,13 @@ func TestDevSyncAPITrigger(t *testing.T) {
 	ns, k8sclient, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	skaffold.Build().InDir("testdata/file-sync").InNs(ns.Name).RunOrFail(t)
+	skaffold.Build().InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunOrFail(t)
 
 	rpcAddr := randomPort()
 	client, shutdown := setupRPCClient(t, rpcAddr)
 	defer shutdown()
 
-	stop := skaffold.Dev("--auto-sync=false", "--rpc-port", rpcAddr).InDir("testdata/file-sync").InNs(ns.Name).RunBackground(t)
+	stop := skaffold.Dev("--auto-sync=false", "--rpc-port", rpcAddr).InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunBackground(t)
 	defer stop()
 
 	k8sclient.WaitForPodsReady("test-file-sync")
