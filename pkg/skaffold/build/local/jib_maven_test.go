@@ -29,7 +29,7 @@ import (
 )
 
 func TestBuildJibMavenToDocker(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		artifact      *latest.JibMavenArtifact
 		cmd           util.Command
@@ -101,7 +101,7 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 }
 
 func TestBuildJibMavenToRegistry(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		artifact      *latest.JibMavenArtifact
 		cmd           util.Command
@@ -175,7 +175,7 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 }
 
 func TestMavenVerifyJibPackageGoal(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description  string
 		requiredGoal string
 		mavenOutput  string

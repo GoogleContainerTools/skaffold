@@ -91,6 +91,7 @@ func (t *TestBench) Prune(ctx context.Context, out io.Writer) error   { return n
 func (t *TestBench) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
 	return nil, nil
 }
+
 func (t *TestBench) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 	return nil, nil
 }
@@ -234,7 +235,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 }
 
 func TestNewForConfig(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description      string
 		config           *latest.SkaffoldConfig
 		shouldErr        bool

@@ -29,7 +29,7 @@ import (
 )
 
 func TestDevSync(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		trigger     string
 	}{

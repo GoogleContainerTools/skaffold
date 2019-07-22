@@ -28,7 +28,7 @@ import (
 )
 
 func TestLoadImagesInKindNodes(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		built         []build.Artifact
 		deployed      []build.Artifact

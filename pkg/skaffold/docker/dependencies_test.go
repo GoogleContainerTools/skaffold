@@ -223,7 +223,7 @@ func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*v1.ConfigFil
 }
 
 func TestGetDependencies(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		dockerfile  string
 		workspace   string

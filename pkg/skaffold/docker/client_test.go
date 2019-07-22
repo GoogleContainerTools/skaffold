@@ -25,7 +25,7 @@ import (
 )
 
 func TestNewEnvClient(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		envs        map[string]string
 		shouldErr   bool
@@ -57,7 +57,7 @@ func TestNewEnvClient(t *testing.T) {
 }
 
 func TestNewMinikubeImageAPIClient(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		env         string
 		expected    client.CommonAPIClient

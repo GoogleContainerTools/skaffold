@@ -78,11 +78,9 @@ func TestWaitForPodSucceeded(t *testing.T) {
 			testutil.CheckError(t, test.shouldErr, err)
 		})
 	}
-
 }
 
 func TestIsPodSucceeded(t *testing.T) {
-
 	tests := []struct {
 		description string
 		podName     string

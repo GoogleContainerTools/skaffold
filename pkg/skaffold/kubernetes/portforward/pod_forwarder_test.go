@@ -37,7 +37,7 @@ import (
 )
 
 func TestAutomaticPortForwardPod(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description     string
 		pods            []*v1.Pod
 		forwarder       *testForwarder

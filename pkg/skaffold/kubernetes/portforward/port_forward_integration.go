@@ -29,8 +29,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-//For WhiteBox testing only
-//This is testing a port forward + stop + restart in a simulated dev cycle
+// For WhiteBox testing only
+// This is testing a port forward + stop + restart in a simulated dev cycle
 func WhiteBoxPortForwardCycle(namespace string, t *testing.T) {
 	em := NewEntryManager(os.Stdout)
 	portForwardEventHandler := portForwardEvent

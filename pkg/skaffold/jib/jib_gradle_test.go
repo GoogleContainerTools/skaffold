@@ -47,7 +47,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 
 	ctx := context.Background()
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		stdout      string
 		modTime     time.Time
@@ -104,7 +104,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 func TestGetCommandGradle(t *testing.T) {
 	ctx := context.Background()
 
-	var tests = []struct {
+	tests := []struct {
 		description       string
 		jibGradleArtifact latest.JibGradleArtifact
 		filesInWorkspace  []string
@@ -159,7 +159,7 @@ func TestGetCommandGradle(t *testing.T) {
 }
 
 func TestGenerateGradleArgs(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		in        latest.JibGradleArtifact
 		skipTests bool
 		out       []string

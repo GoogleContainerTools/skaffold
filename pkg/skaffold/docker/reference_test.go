@@ -23,7 +23,7 @@ import (
 )
 
 func TestParseReference(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description            string
 		image                  string
 		expectedName           string

@@ -33,7 +33,7 @@ var (
 )
 
 func TestEvents(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		prev, current FileMap
 		expected      Events
@@ -112,7 +112,7 @@ func TestStat(t *testing.T) {
 }
 
 func TestStatNotExist(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		deps        []string
 		depsErr     error

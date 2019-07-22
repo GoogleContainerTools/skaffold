@@ -39,7 +39,7 @@ var baseConfig = &Config{
 var emptyConfig = &Config{}
 
 func TestReadConfig(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		filename    string
 		expectedCfg *Config
@@ -77,7 +77,7 @@ func TestReadConfig(t *testing.T) {
 func TestSetAndUnsetConfig(t *testing.T) {
 	dummyContext := "dummy_context"
 
-	var tests = []struct {
+	tests := []struct {
 		expectedSetCfg   *Config
 		expectedUnsetCfg *Config
 		description      string

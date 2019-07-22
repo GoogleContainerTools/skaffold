@@ -27,7 +27,7 @@ import (
 )
 
 func TestGetAllPodNamespaces(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description    string
 		argNamespace   string
 		currentContext string

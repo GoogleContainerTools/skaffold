@@ -45,7 +45,6 @@ var (
 )
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext) error {
-
 	client, err := kubernetesutil.GetClientset()
 	if err != nil {
 		return err
@@ -78,7 +77,6 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 }
 
 func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) (map[string]int32, error) {
-
 	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
 		LabelSelector: l.K8sManagedByLabelKeyValueString(),
 	})

@@ -57,7 +57,7 @@ func (f forwardedPorts) Store(key, _ interface{}) {
 	if !ok {
 		panic("only store keys of type int in forwardedPorts")
 	}
-	//this map is only used as a set of keys, we don't care about the values
+	// this map is only used as a set of keys, we don't care about the values
 	f.ports[val] = dummy()
 }
 
@@ -68,7 +68,7 @@ func (f forwardedPorts) LoadOrStore(key, _ interface{}) (interface{}, bool) {
 	if !ok {
 		return nil, false
 	}
-	//this map is only used as a set of keys, we don't care about the values
+	// this map is only used as a set of keys, we don't care about the values
 	_, exists := f.ports[k]
 	return dummy(), exists
 }

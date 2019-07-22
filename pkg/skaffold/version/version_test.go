@@ -24,7 +24,7 @@ import (
 )
 
 func TestParseVersion(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		in          string
 		out         semver.Version

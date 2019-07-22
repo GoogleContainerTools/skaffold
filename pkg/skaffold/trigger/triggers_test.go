@@ -27,7 +27,7 @@ import (
 )
 
 func TestNewTrigger(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		opts        *config.SkaffoldOptions
 		expected    Trigger

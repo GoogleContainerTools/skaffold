@@ -36,7 +36,7 @@ import (
 )
 
 func TestNewSyncItem(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		artifact    *latest.Artifact
 		evt         filemon.Events
@@ -398,7 +398,7 @@ func TestNewSyncItem(t *testing.T) {
 }
 
 func TestIntersect(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		syncRules   []*latest.SyncRule
 		files       []string
@@ -532,7 +532,7 @@ var nonRunningPod = &v1.Pod{
 }
 
 func TestPerform(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		image       string
 		files       syncMap
