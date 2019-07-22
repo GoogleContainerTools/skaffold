@@ -24,6 +24,7 @@ if ! [ -x "$(command -v golangci-lint)" ]; then
 fi
 
 golangci-lint run \
+	--deadline=2m \
 	--no-config \
 	-E bodyclose \
 	-E goconst \
@@ -37,4 +38,4 @@ golangci-lint run \
 	-E unconvert \
 	-E unparam \
 	-D errcheck \
-  --skip-dirs vendor
+	--skip-dirs vendor
