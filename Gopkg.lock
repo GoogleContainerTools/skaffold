@@ -65,12 +65,12 @@
   version = "v0.4.11"
 
 [[projects]]
-  branch = "master"
-  digest = "1:7da1a26e347165227c79dfb10b90b3b5dedb6cbae50e88cdb81f5b6259b5b951"
-  name = "github.com/Nvveen/Gotty"
-  packages = ["."]
+  digest = "1:6b6d999be55cc0e0704ed0ac4532175f1f71639fbda6d143dc86ac5a5d3bc87f"
+  name = "github.com/Microsoft/hcsshim"
+  packages = ["osversion"]
   pruneopts = "NUT"
-  revision = "cd527374f1e5bff4938207604a14f2e38a9cf512"
+  revision = "f92b8fb9c92e17da496af5a69e3ee13fbe9916e1"
+  version = "v0.8.6"
 
 [[projects]]
   branch = "master"
@@ -133,7 +133,7 @@
   version = "v18.09.0"
 
 [[projects]]
-  digest = "1:ef5c663754b648a4121def310ad1ed50c1ab452442e195b8fe80aaa8cf1cd859"
+  digest = "1:26a1d70717dac8c37ae869d86103b9d72b71a6faf383a5e9b5b7e602c9b9743b"
   name = "github.com/docker/distribution"
   packages = [
     ".",
@@ -150,10 +150,10 @@
     "registry/storage/cache/memory",
   ]
   pruneopts = "NUT"
-  revision = "83389a148052d74ac602f5f1d62f86ff2f3c4aa5"
+  revision = "v2.7.1"
 
 [[projects]]
-  digest = "1:5a5ea972e858a83b5d9f4c8f3ae851eb7e60b89d64de5d034ad9cf04a1237646"
+  digest = "1:31ad275b67deec142dd44e0c6fc93d4ebdc027e581d65146396445fa119a8c34"
   name = "github.com/docker/docker"
   packages = [
     "api",
@@ -193,7 +193,7 @@
     "registry/resumable",
   ]
   pruneopts = "NUT"
-  revision = "71cd53e4a197b303c6ba086bd584ffd67a884281"
+  revision = "3998dffb806f3887f804b813069f59bc14a7f3c1"
 
 [[projects]]
   digest = "1:8866486038791fe65ea1abf660041423954b1f3fb99ea6a0ad8424422e943458"
@@ -588,6 +588,14 @@
   pruneopts = "NUT"
   revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
   version = "1.0.1"
+
+[[projects]]
+  branch = "master"
+  digest = "1:946bf1e858c4884cc82907463b0579dfd3b84e1b541bd49808d2bcfcb9452be0"
+  name = "github.com/morikuni/aec"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "39771216ff4c63d11f5e604076f9c45e8be1067b"
 
 [[projects]]
   digest = "1:e0cc8395ea893c898ff5eb0850f4d9851c1f57c78c232304a026379a47a552d0"

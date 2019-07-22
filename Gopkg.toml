@@ -21,7 +21,7 @@
 
 [[constraint]]
   name = "github.com/docker/distribution"
-  revision = "83389a148052d74ac602f5f1d62f86ff2f3c4aa5"
+  revision = "v2.7.1"
 
 [[constraint]]
   name = "k8s.io/apimachinery"
@@ -61,7 +61,7 @@
 
 [[override]]
   name = "github.com/docker/docker"
-  revision = "71cd53e4a197b303c6ba086bd584ffd67a884281"
+  revision = "3998dffb806f3887f804b813069f59bc14a7f3c1"
 
 [[constraint]]
   name = "github.com/bmatcuk/doublestar"
