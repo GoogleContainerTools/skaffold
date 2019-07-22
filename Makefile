@@ -95,7 +95,7 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 
 .PHONY: test
 test: $(BUILD_DIR)
-	@ ./test.sh
+	@ ./hack/test.sh
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
