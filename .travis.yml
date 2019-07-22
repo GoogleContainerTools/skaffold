@@ -1,6 +1,7 @@
 dist: xenial
 
 language: go
+go: "1.12.x"
 
 git:
   submodules: false
@@ -10,7 +11,6 @@ go_import_path: github.com/GoogleContainerTools/skaffold
 jobs:
   include:
     - os: linux
-      go: "1.12.x"
       env:
         - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
       script:
@@ -19,7 +19,6 @@ jobs:
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - os: osx
-      go: "1.12.x"
       env:
         - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
       script:
@@ -28,14 +27,12 @@ jobs:
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - os: windows
-      go: "1.12.x"
       env:
         - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
       script:
         - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
         - go test -short -timeout 60s ./...
     - os: linux
-      go: "1.12.x"
       env:
         - TEST_TYPE=integration # this is not used, just purely for nice UI distinction on Travis
       before_install:
