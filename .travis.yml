@@ -6,11 +6,19 @@ go: "1.12.x"
 git:
   submodules: false
 
+env:
+  global:
+    - GO111MODULE=on
+
 go_import_path: github.com/GoogleContainerTools/skaffold
 
 jobs:
   include:
     - os: linux
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/gopath/pkg/mod
       env:
         - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
       script:
@@ -19,6 +27,10 @@ jobs:
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - os: osx
+      cache:
+        directories:
+          - $HOME/Library/Caches/go-build
+          - $HOME/gopath/pkg/mod
       env:
         - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
       script:

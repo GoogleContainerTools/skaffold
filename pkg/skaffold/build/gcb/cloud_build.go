@@ -36,7 +36,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/oauth2/google"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
@@ -48,14 +47,9 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 }
 
 func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	client, err := google.DefaultClient(ctx, cloudbuild.CloudPlatformScope)
+	cbclient, err := cloudbuild.NewService(ctx)
 	if err != nil {
-		return "", errors.Wrap(err, "getting google client")
-	}
-
-	cbclient, err := cloudbuild.New(client)
-	if err != nil {
-		return "", errors.Wrap(err, "getting builder")
+		return "", errors.Wrap(err, "getting cloudbuild client")
 	}
 	cbclient.UserAgent = version.UserAgent()
 
