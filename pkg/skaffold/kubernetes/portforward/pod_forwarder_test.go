@@ -495,14 +495,14 @@ func TestStartPodForwarder(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(latest.BuildConfig{})
 			client := fakekubeclientset.NewSimpleClientset(&v1.Pod{})
 			fakeWatcher := watch.NewRaceFreeFake()
 			client.PrependWatchReactor("*", testutil.SetupFakeWatcher(fakeWatcher))
 
 			waitForWatcher := make(chan bool)
-			testutil.Override(t, &aggregatePodWatcher, func(_ []string, aggregate chan<- watch.Event) (func(), error) {
+			t.Override(&aggregatePodWatcher, func(_ []string, aggregate chan<- watch.Event) (func(), error) {
 				go func() {
 					waitForWatcher <- true
 					for msg := range fakeWatcher.ResultChan() {
