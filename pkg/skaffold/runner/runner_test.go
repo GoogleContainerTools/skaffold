@@ -231,7 +231,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 }
 
 func TestNewForConfig(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description      string
 		config           *latest.SkaffoldConfig
 		shouldErr        bool

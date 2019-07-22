@@ -133,7 +133,7 @@ func TestEventLogRPC(t *testing.T) {
 }
 
 func TestEventLogHTTP(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		endpoint    string
 	}{

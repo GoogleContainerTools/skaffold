@@ -25,7 +25,7 @@ import (
 )
 
 func TestValidateDockerfile(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description    string
 		content        string
 		fileToValidate string
@@ -68,7 +68,7 @@ func TestValidateDockerfile(t *testing.T) {
 }
 
 func TestDescribe(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description    string
 		dockerfile     Docker
 		expectedPrompt string
@@ -87,7 +87,7 @@ func TestDescribe(t *testing.T) {
 }
 
 func TestCreateArtifact(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description      string
 		dockerfile       Docker
 		manifestImage    string

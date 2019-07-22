@@ -29,7 +29,7 @@ import (
 )
 
 func TestBuildJibGradleToDocker(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		artifact      *latest.JibGradleArtifact
 		cmd           util.Command
@@ -85,7 +85,7 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 }
 
 func TestBuildJibGradleToRegistry(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		artifact      *latest.JibGradleArtifact
 		cmd           util.Command

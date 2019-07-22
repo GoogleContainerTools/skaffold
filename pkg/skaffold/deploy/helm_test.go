@@ -277,7 +277,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestHelmDeploy(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		cmd         util.Command
 		runContext  *runcontext.RunContext
@@ -536,7 +536,7 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 }
 
 func TestParseHelmRelease(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		yaml        []byte
 		shouldErr   bool
@@ -574,7 +574,7 @@ func TestExtractChartFilename(t *testing.T) {
 }
 
 func TestHelmDependencies(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description           string
 		files                 []string
 		valuesFiles           []string
@@ -648,7 +648,7 @@ func TestHelmDependencies(t *testing.T) {
 func TestExpandPaths(t *testing.T) {
 	homedir.DisableCache = true // for testing only
 
-	var tests = []struct {
+	tests := []struct {
 		description  string
 		paths        []string
 		unixExpanded []string //unix expands path with forward slashes, windows with backward slashes

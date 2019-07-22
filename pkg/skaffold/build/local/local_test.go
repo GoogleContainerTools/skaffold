@@ -45,7 +45,7 @@ func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
 
 func TestLocalRun(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description      string
 		api              testutil.FakeAPIClient
 		tags             tag.ImageTags

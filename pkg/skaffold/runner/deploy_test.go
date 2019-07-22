@@ -32,7 +32,7 @@ import (
 
 func TestDeploy(t *testing.T) {
 	expectedOutput := "Waiting for deployments to stabilize"
-	var tests = []struct {
+	tests := []struct {
 		description string
 		testBench   *TestBench
 		statusCheck bool

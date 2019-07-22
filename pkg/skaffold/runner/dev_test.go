@@ -84,7 +84,7 @@ func (t *TestMonitor) Run(bool) error {
 func (t *TestMonitor) Reset() {}
 
 func TestDevFailFirstCycle(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description     string
 		testBench       *TestBench
 		monitor         filemon.Monitor
@@ -142,7 +142,7 @@ func TestDevFailFirstCycle(t *testing.T) {
 }
 
 func TestDev(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description     string
 		testBench       *TestBench
 		watchEvents     []filemon.Events
@@ -276,7 +276,7 @@ func TestDev(t *testing.T) {
 }
 
 func TestDevSync(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description     string
 		testBench       *TestBench
 		watchEvents     []filemon.Events

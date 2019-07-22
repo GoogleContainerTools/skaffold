@@ -25,7 +25,7 @@ import (
 )
 
 func TestSizeOfDockerContext(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description        string
 		artifactName       string
 		DockerfileContents string

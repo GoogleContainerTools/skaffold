@@ -53,7 +53,7 @@ func TestQuietFlag(t *testing.T) {
 		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		description    string
 		template       string
 		expectedOutput []byte
@@ -99,7 +99,7 @@ func TestFileOutputFlag(t *testing.T) {
 		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		description         string
 		filename            string
 		quietFlag           bool
@@ -163,7 +163,7 @@ func TestRunBuild(t *testing.T) {
 		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		mock        func(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error)
 		shouldErr   bool
