@@ -196,7 +196,6 @@ func (m *MockRolloutStatus) Executefunc(context.Context, *kubectl.CLI, string) (
 }
 
 func TestPollDeploymentRolloutStatus(t *testing.T) {
-
 	tests := []struct {
 		description string
 		mock        *MockRolloutStatus

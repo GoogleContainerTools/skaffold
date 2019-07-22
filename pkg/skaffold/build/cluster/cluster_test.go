@@ -42,7 +42,6 @@ func TestRetrieveEnv(t *testing.T) {
 			},
 		},
 	})
-
 	if err != nil {
 		t.Fatalf("err retrieving builder: %v", err)
 	}

@@ -63,7 +63,6 @@ func TestDeploy(t *testing.T) {
 	originalStatusCheck := deploy.StatusCheck
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 			// Figure out why i can't use t.Override.
 			// Using t.Override throws an error "reflect: call of reflect.Value.Elem on func Value"

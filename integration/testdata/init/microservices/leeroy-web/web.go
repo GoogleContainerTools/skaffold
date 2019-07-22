@@ -16,7 +16,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if _, err := io.Copy(w, resp.Body); err != nil {
 		panic(err)
 	}
-
 }
 
 func main() {
