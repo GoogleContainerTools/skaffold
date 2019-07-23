@@ -167,7 +167,7 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		imageList:            kubernetes.NewImageList(),
 		cache:                artifactCache,
 		runCtx:               runCtx,
-		intents:              NewIntents(opts.AutoBuild, opts.AutoSync, opts.AutoDeploy),
+		intents:              newIntents(opts.AutoBuild, opts.AutoSync, opts.AutoDeploy),
 	}
 
 	if err := r.setupTriggerCallbacks(intentChan); err != nil {

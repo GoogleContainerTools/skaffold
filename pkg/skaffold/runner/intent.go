@@ -30,7 +30,7 @@ type intents struct {
 	lock *gosync.Mutex
 }
 
-func NewIntents(autoBuild, autoSync, autoDeploy bool) *intents {
+func newIntents(autoBuild, autoSync, autoDeploy bool) *intents {
 	i := &intents{
 		lock:        &gosync.Mutex{},
 		resetBuild:  func() {},

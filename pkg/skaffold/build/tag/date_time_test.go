@@ -33,8 +33,6 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 		buildTime   time.Time
 		timezone    string
 		imageName   string
-		digest      string
-		image       string
 		want        string
 	}{
 		{

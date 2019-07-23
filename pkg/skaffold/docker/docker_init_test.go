@@ -92,7 +92,6 @@ func TestCreateArtifact(t *testing.T) {
 		dockerfile       Docker
 		manifestImage    string
 		expectedArtifact latest.Artifact
-		expectedImage    string
 	}{
 		{
 			description:   "default filename",

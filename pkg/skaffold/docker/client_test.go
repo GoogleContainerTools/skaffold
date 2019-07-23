@@ -21,7 +21,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/docker/docker/client"
 )
 
 func TestNewEnvClient(t *testing.T) {
@@ -60,7 +59,6 @@ func TestNewMinikubeImageAPIClient(t *testing.T) {
 	tests := []struct {
 		description string
 		env         string
-		expected    client.CommonAPIClient
 		expectedEnv []string
 		shouldErr   bool
 	}{

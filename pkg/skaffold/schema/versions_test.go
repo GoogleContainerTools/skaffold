@@ -109,7 +109,6 @@ func TestParseConfig(t *testing.T) {
 		description string
 		config      string
 		expected    util.VersionedConfig
-		badReader   bool
 		shouldErr   bool
 	}{
 		{
