@@ -28,7 +28,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/rjeczalik/notify"
 	"github.com/sirupsen/logrus"
 )
@@ -53,10 +52,6 @@ func NewTrigger(runctx *runcontext.RunContext) (Trigger, error) {
 		}, nil
 	case "manual":
 		return &manualTrigger{}, nil
-	case "api":
-		return &apiTrigger{
-			Trigger: server.Trigger,
-		}, nil
 	default:
 		return nil, fmt.Errorf("unsupported trigger: %s", runctx.Opts.Trigger)
 	}
@@ -188,37 +183,6 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	}()
 
 	return trigger, nil
-}
-
-type apiTrigger struct {
-	Trigger chan bool
-}
-
-// Start receives triggers from gRPC/HTTP and triggers a rebuild.
-func (t *apiTrigger) Start(ctx context.Context) (<-chan bool, error) {
-	trigger := make(chan bool)
-
-	go func() {
-		for {
-			select {
-			case <-t.Trigger:
-				logrus.Debugln("build request received")
-				trigger <- true
-			case <-ctx.Done():
-				break
-			}
-		}
-	}()
-
-	return trigger, nil
-}
-
-func (t *apiTrigger) Debounce() bool {
-	return false
-}
-
-func (t *apiTrigger) LogWatchToUser(out io.Writer) {
-	color.Yellow.Fprintln(out, "Watching on designated port for build requests...")
 }
 
 // StartTrigger attempts to start a trigger.

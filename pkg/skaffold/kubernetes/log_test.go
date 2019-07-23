@@ -25,7 +25,7 @@ import (
 )
 
 func TestSinceSeconds(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		duration    time.Duration
 		expected    int64
@@ -52,9 +52,8 @@ func TestSinceSeconds(t *testing.T) {
 }
 
 func TestSelect(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
-		images        []string
 		podSpec       v1.PodSpec
 		expectedMatch bool
 	}{

@@ -135,7 +135,7 @@ func extractPtvsdArg(args []string) *ptvsdSpec {
 				return nil
 			}
 			port, err := strconv.ParseInt(args[i+1], 10, 32)
-			//spec.port, err := strconv.Atoi(args[i+1])
+			// spec.port, err := strconv.Atoi(args[i+1])
 			if err != nil {
 				logrus.Errorf("Invalid python ptvsd port %q: %s\n", args[i+1], err)
 				return nil

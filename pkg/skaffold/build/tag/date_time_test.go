@@ -27,14 +27,12 @@ func TestDateTime_GenerateFullyQualifiedImageName(t *testing.T) {
 	aLocalTimeStamp := time.Date(2015, 03, 07, 11, 06, 39, 123456789, time.Local)
 	localZone, _ := aLocalTimeStamp.Zone()
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		format      string
 		buildTime   time.Time
 		timezone    string
 		imageName   string
-		digest      string
-		image       string
 		want        string
 	}{
 		{

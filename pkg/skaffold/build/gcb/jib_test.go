@@ -26,7 +26,7 @@ import (
 )
 
 func TestJibMavenBuildSteps(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		skipTests bool
 		args      []string
 	}{
@@ -60,7 +60,7 @@ func TestJibMavenBuildSteps(t *testing.T) {
 }
 
 func TestJibGradleBuildSteps(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		skipTests bool
 		args      []string
 	}{

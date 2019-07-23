@@ -14,21 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package runner
 
-// TestStruct for testing the schema generator.
-type TestStruct struct {
-	// RequiredField should be required
-	RequiredField     string `yaml:"reqField" yamltags:"required"`
-	InlineOneOfStruct `yaml:"inline"`
-}
+import (
+	"io"
 
-// InlineOneOfStruct is embedded inline into TestStruct
-type InlineOneOfStruct struct {
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
+)
 
-	// Field1 should be the first choice
-	Field1 string `yaml:"field1" yamltags:"oneOf=fooBar"`
-
-	// Field2 should be the second choice
-	Field2 string `yaml:"field2" yamltags:"oneOf=fooBar"`
+func (r *SkaffoldRunner) createForwarder(out io.Writer) {
+	r.forwarderManager = portforward.NewForwarderManager(out, r.imageList, r.runCtx.Namespaces, r.defaultLabeller.K8sManagedByLabelKeyValueString(), r.runCtx.Opts.PortForward, r.portForwardResources)
 }

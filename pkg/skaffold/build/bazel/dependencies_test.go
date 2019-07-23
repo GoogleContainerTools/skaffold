@@ -98,7 +98,7 @@ func TestQuery(t *testing.T) {
 }
 
 func TestDepToPath(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		dep         string
 		expected    string

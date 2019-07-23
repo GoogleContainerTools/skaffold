@@ -37,7 +37,7 @@ func helperCommand(s ...string) *exec.Cmd {
 	return helperCommandContext(s...)
 }
 
-//adapted from https://npf.io/2015/06/testing-exec-command
+// adapted from https://npf.io/2015/06/testing-exec-command
 func TestHelperProcess(*testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return

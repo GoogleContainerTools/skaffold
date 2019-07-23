@@ -35,8 +35,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -65,8 +67,9 @@ type SkaffoldRunner struct {
 	test.Tester
 	tag.Tagger
 	sync.Syncer
-	monitor  filemon.Monitor
-	listener Listener
+	monitor          filemon.Monitor
+	listener         Listener
+	forwarderManager *portforward.ForwarderManager
 
 	logger               *kubernetes.LogAggregator
 	cache                cache.Cache
@@ -76,9 +79,12 @@ type SkaffoldRunner struct {
 	defaultLabeller      *deploy.DefaultLabeller
 	portForwardResources []*latest.PortForwardResource
 	builds               []build.Artifact
-	hasBuilt             bool
-	hasDeployed          bool
 	imageList            *kubernetes.ImageList
+
+	hasBuilt    bool
+	hasDeployed bool
+
+	intents *intents
 }
 
 // for testing
@@ -137,7 +143,9 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 
 	monitor := filemon.NewMonitor()
 
-	return &SkaffoldRunner{
+	intentChan := make(chan bool, 1)
+
+	r := &SkaffoldRunner{
 		Builder:  builder,
 		Tester:   tester,
 		Deployer: deployer,
@@ -145,17 +153,80 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		Syncer:   kubectl.NewSyncer(runCtx.Namespaces),
 		monitor:  monitor,
 		listener: &SkaffoldListener{
-			Monitor: monitor,
-			Trigger: trigger,
+			Monitor:    monitor,
+			Trigger:    trigger,
+			intentChan: intentChan,
 		},
-		changeSet:            &changeSet{},
+		changeSet: &changeSet{
+			rebuildTracker: make(map[string]*latest.Artifact),
+			resyncTracker:  make(map[string]*sync.Item),
+		},
 		labellers:            labellers,
 		defaultLabeller:      defaultLabeller,
 		portForwardResources: cfg.PortForward,
 		imageList:            kubernetes.NewImageList(),
 		cache:                artifactCache,
 		runCtx:               runCtx,
-	}, nil
+		intents:              newIntents(opts.AutoBuild, opts.AutoSync, opts.AutoDeploy),
+	}
+
+	if err := r.setupTriggerCallbacks(intentChan); err != nil {
+		return nil, errors.Wrapf(err, "setting up trigger callbacks")
+	}
+
+	return r, nil
+}
+
+func (r *SkaffoldRunner) setupTriggerCallbacks(c chan bool) error {
+	if err := r.setupTriggerCallback("build", c); err != nil {
+		return err
+	}
+	if err := r.setupTriggerCallback("sync", c); err != nil {
+		return err
+	}
+	if err := r.setupTriggerCallback("deploy", c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *SkaffoldRunner) setupTriggerCallback(triggerName string, c chan<- bool) error {
+	var (
+		setIntent      func(bool)
+		trigger        bool
+		serverCallback func(func())
+	)
+
+	switch triggerName {
+	case "build":
+		setIntent = r.intents.setBuild
+		trigger = r.runCtx.Opts.AutoBuild
+		serverCallback = server.SetBuildCallback
+	case "sync":
+		setIntent = r.intents.setSync
+		trigger = r.runCtx.Opts.AutoSync
+		serverCallback = server.SetSyncCallback
+	case "deploy":
+		setIntent = r.intents.setDeploy
+		trigger = r.runCtx.Opts.AutoDeploy
+		serverCallback = server.SetDeployCallback
+	default:
+		return fmt.Errorf("unsupported trigger type when setting callbacks: %s", triggerName)
+	}
+
+	setIntent(true)
+
+	// if "auto" is set to false, we're in manual mode
+	if !trigger {
+		setIntent(false) // set the initial value of the intent to false
+		// give the server a callback to set the intent value when a user request is received
+		serverCallback(func() {
+			logrus.Debugf("%s intent received, calling back to runner", triggerName)
+			c <- true
+			setIntent(true)
+		})
+	}
+	return nil
 }
 
 func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {

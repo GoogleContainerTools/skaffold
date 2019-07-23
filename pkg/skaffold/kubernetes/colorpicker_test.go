@@ -25,7 +25,7 @@ import (
 )
 
 func TestColorPicker(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		pod           *v1.Pod
 		expectedColor color.Color

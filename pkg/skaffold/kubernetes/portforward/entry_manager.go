@@ -31,7 +31,109 @@ import (
 var (
 	// For testing
 	forwardingTimeoutTime = time.Minute
+	portForwardEvent      = func(entry *portForwardEntry) {
+		// TODO priyawadhwa@, change event API to accept ports of type int
+		event.PortForwarded(
+			int32(entry.localPort),
+			int32(entry.resource.Port),
+			entry.podName,
+			entry.containerName,
+			entry.resource.Namespace,
+			entry.portName,
+			string(entry.resource.Type),
+			entry.resource.Name)
+	}
 )
+
+type forwardedPorts struct {
+	ports map[int]struct{}
+	lock  *sync.Mutex
+}
+
+func (f forwardedPorts) Store(key, _ interface{}) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	val, ok := key.(int)
+	if !ok {
+		panic("only store keys of type int in forwardedPorts")
+	}
+	// this map is only used as a set of keys, we don't care about the values
+	f.ports[val] = dummy()
+}
+
+func (f forwardedPorts) LoadOrStore(key, _ interface{}) (interface{}, bool) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	k, ok := key.(int)
+	if !ok {
+		return nil, false
+	}
+	// this map is only used as a set of keys, we don't care about the values
+	_, exists := f.ports[k]
+	return dummy(), exists
+}
+
+func dummy() struct{} {
+	return struct{}{}
+}
+
+func (f forwardedPorts) Delete(port int) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	delete(f.ports, port)
+}
+
+type forwardedResources struct {
+	resources map[string]*portForwardEntry
+	lock      *sync.Mutex
+}
+
+func (f forwardedResources) Store(key, value interface{}) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	k, ok := key.(string)
+	if !ok {
+		panic("only store keys of type string in forwardedResources")
+	}
+	val, ok := value.(*portForwardEntry)
+	if !ok {
+		panic("only store values of type *portForwardEntry in forwardedResources")
+	}
+	f.resources[k] = val
+}
+
+func (f forwardedResources) Load(key string) (*portForwardEntry, bool) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	val, exists := f.resources[key]
+	return val, exists
+}
+
+func (f forwardedResources) Delete(resource string) {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	delete(f.resources, resource)
+}
+
+func (f forwardedResources) Length() int {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	return len(f.resources)
+}
+
+func newForwardedPorts() forwardedPorts {
+	return forwardedPorts{
+		lock:  &sync.Mutex{},
+		ports: map[int]struct{}{},
+	}
+}
+
+func newForwardedResources() forwardedResources {
+	return forwardedResources{
+		lock:      &sync.Mutex{},
+		resources: map[string]*portForwardEntry{},
+	}
+}
 
 // EntryManager handles forwarding entries and keeping track of
 // forwarded ports and resources.
@@ -40,10 +142,10 @@ type EntryManager struct {
 	output io.Writer
 
 	// forwardedPorts serves as a synchronized set of ports we've forwarded.
-	forwardedPorts *sync.Map
+	forwardedPorts forwardedPorts
 
 	// forwardedResources is a map of portForwardEntry key (string) -> portForwardEntry
-	forwardedResources *sync.Map
+	forwardedResources forwardedResources
 }
 
 // NewEntryManager returns a new port forward entry manager to keep track
@@ -51,8 +153,8 @@ type EntryManager struct {
 func NewEntryManager(out io.Writer) EntryManager {
 	return EntryManager{
 		output:             out,
-		forwardedPorts:     &sync.Map{},
-		forwardedResources: &sync.Map{},
+		forwardedPorts:     newForwardedPorts(),
+		forwardedResources: newForwardedResources(),
 		EntryForwarder:     &KubectlForwarder{},
 	}
 }
@@ -73,17 +175,16 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 	if err != nil {
 		return err
 	}
-	event.PortForwarded(entry.localPort, entry.resource.Port, entry.podName, entry.containerName, entry.resource.Namespace, entry.portName, string(entry.resource.Type), entry.resource.Name)
+
+	portForwardEvent(entry)
 	return nil
 }
 
 // Stop terminates all kubectl port-forward commands.
 func (b *EntryManager) Stop() {
-	b.forwardedResources.Range(func(key, value interface{}) bool {
-		entry := value.(*portForwardEntry)
-		b.Terminate(entry)
-		return true
-	})
+	for _, pfe := range b.forwardedResources.resources {
+		b.Terminate(pfe)
+	}
 }
 
 // Terminate terminates a single port forward entry

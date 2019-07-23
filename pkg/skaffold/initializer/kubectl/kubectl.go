@@ -39,7 +39,7 @@ type Kubectl struct {
 	images  []string
 }
 
-//New returns a Kubectl skaffold generator.
+// New returns a Kubectl skaffold generator.
 func New(potentialConfigs []string) (*Kubectl, error) {
 	var k8sConfigs, images []string
 	for _, file := range potentialConfigs {

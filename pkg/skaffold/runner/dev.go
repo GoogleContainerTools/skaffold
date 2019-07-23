@@ -23,7 +23,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/pkg/errors"
@@ -34,11 +33,14 @@ import (
 var ErrorConfigurationChanged = errors.New("configuration changed")
 
 func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
-	defer r.changeSet.reset()
-
 	r.logger.Mute()
 
-	if r.changeSet.needsAction() {
+	// acquire the intents
+	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
+
+	if (r.changeSet.needsRedeploy && deployIntent) ||
+		(len(r.changeSet.needsRebuild) > 0 && buildIntent) ||
+		(len(r.changeSet.needsResync) > 0 && syncIntent) {
 		// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
 		defer r.monitor.Reset()
 		defer r.listener.LogWatchToUser(out)
@@ -46,26 +48,51 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 
 	switch {
 	case r.changeSet.needsReload:
+		r.changeSet.resetReload()
 		return ErrorConfigurationChanged
-	case len(r.changeSet.needsResync) > 0:
+	case len(r.changeSet.needsResync) > 0 && syncIntent:
+		defer func() {
+			r.changeSet.resetSync()
+			r.intents.resetSync()
+		}()
 		for _, s := range r.changeSet.needsResync {
 			color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
 
 			if err := r.Syncer.Sync(ctx, s); err != nil {
+				r.changeSet.reset()
 				logrus.Warnln("Skipping deploy due to sync error:", err)
 				return nil
 			}
 		}
-	case len(r.changeSet.needsRebuild) > 0:
+	case len(r.changeSet.needsRebuild) > 0 && buildIntent:
+		defer func() {
+			r.changeSet.resetBuild()
+			r.intents.resetBuild()
+		}()
 		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
+			r.changeSet.reset()
 			logrus.Warnln("Skipping deploy due to error:", err)
 			return nil
 		}
-		fallthrough
-	case r.changeSet.needsRedeploy:
+		r.changeSet.needsRedeploy = true
+		fallthrough // always try a redeploy after a successful build
+	case r.changeSet.needsRedeploy && deployIntent:
+		if !deployIntent {
+			// in case we fell through, but haven't received the go ahead to deploy
+			r.logger.Unmute()
+			return nil
+		}
+		r.forwarderManager.Stop()
+		defer func() {
+			r.changeSet.reset()
+			r.intents.resetDeploy()
+		}()
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			return nil
+		}
+		if err := r.forwarderManager.Start(ctx); err != nil {
+			logrus.Warnln("Port forwarding failed due to error:", err)
 		}
 	}
 
@@ -79,8 +106,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	r.createLogger(out, artifacts)
 	defer r.logger.Stop()
 
-	forwarderManager := portforward.NewForwarderManager(out, r.imageList, r.runCtx.Namespaces, r.defaultLabeller.K8sManagedByLabelKeyValueString(), r.runCtx.Opts.PortForward, r.portForwardResources)
-	defer forwarderManager.Stop()
+	r.createForwarder(out)
+	defer r.forwarderManager.Stop()
 
 	// Watch artifacts
 	for i := range artifacts {
@@ -144,16 +171,15 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return errors.Wrap(err, "exiting dev mode because first deploy failed")
 	}
 
+	if err := r.forwarderManager.Start(ctx); err != nil {
+		logrus.Warnln("Error starting port forwarding:", err)
+	}
+
 	// Start printing the logs after deploy is finished
 	if r.runCtx.Opts.TailDev {
 		if err := r.logger.Start(ctx); err != nil {
 			return errors.Wrap(err, "starting logger")
 		}
-	}
-
-	// Forward ports
-	if err := forwarderManager.Start(ctx); err != nil {
-		return errors.Wrap(err, "starting forwarder manager")
 	}
 
 	return r.listener.WatchForChanges(ctx, out, r.doDev)

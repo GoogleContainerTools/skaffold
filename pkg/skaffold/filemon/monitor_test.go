@@ -24,7 +24,7 @@ import (
 )
 
 func TestFileMonitor(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		makeChanges func(folder *testutil.TempDir)
 	}{

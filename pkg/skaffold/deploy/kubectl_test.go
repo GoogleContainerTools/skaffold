@@ -55,7 +55,7 @@ spec:
     image: leeroy-app`
 
 func TestKubectlDeploy(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description          string
 		cfg                  *latest.KubectlDeploy
 		builds               []build.Artifact
@@ -63,7 +63,6 @@ func TestKubectlDeploy(t *testing.T) {
 		shouldErr            bool
 		forceDeploy          bool
 		expectedDependencies []string
-		warnings             []string
 	}{
 		{
 			description: "no manifest",
@@ -203,7 +202,7 @@ func TestKubectlDeploy(t *testing.T) {
 }
 
 func TestKubectlCleanup(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		cfg         *latest.KubectlDeploy
 		command     util.Command

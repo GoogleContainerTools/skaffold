@@ -31,7 +31,7 @@ import (
 )
 
 func TestKustomizeDeploy(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		cfg         *latest.KustomizeDeploy
 		builds      []build.Artifact
@@ -96,7 +96,7 @@ func TestKustomizeCleanup(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		cfg         *latest.KustomizeDeploy
 		command     util.Command

@@ -32,7 +32,7 @@ func TestNewEmptyImage(t *testing.T) {
 }
 
 func TestImagesFlagSet(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description      string
 		setValue         string
 		shouldErr        bool
@@ -117,7 +117,7 @@ func TestImagesType(t *testing.T) {
 }
 
 func TestConvertToArtifact(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		image       string
 		expected    *build.Artifact

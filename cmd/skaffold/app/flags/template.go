@@ -74,7 +74,7 @@ func NewTemplateFlag(value string, context interface{}) *TemplateFlag {
 }
 
 func parseTemplate(value string) (*template.Template, error) {
-	var funcs = template.FuncMap{
+	funcs := template.FuncMap{
 		"json": func(v interface{}) string {
 			buf := &bytes.Buffer{}
 			enc := json.NewEncoder(buf)

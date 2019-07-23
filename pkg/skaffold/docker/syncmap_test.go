@@ -74,7 +74,7 @@ COPY server.go .
 `
 
 func TestSyncMap(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		dockerfile  string
 		workspace   string

@@ -51,7 +51,7 @@ func TestGetDependenciesMaven(t *testing.T) {
 
 	ctx := context.Background()
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		stdout      string
 		modTime     time.Time
@@ -107,7 +107,7 @@ func TestGetDependenciesMaven(t *testing.T) {
 
 func TestGetCommandMaven(t *testing.T) {
 	ctx := context.Background()
-	var tests = []struct {
+	tests := []struct {
 		description      string
 		jibMavenArtifact latest.JibMavenArtifact
 		filesInWorkspace []string
@@ -188,7 +188,7 @@ func TestGetCommandMaven(t *testing.T) {
 }
 
 func TestGenerateMavenArgs(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		in        latest.JibMavenArtifact
 		skipTests bool
 		out       []string

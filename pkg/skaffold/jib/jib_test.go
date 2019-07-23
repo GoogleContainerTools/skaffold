@@ -35,7 +35,7 @@ func TestGetDependencies(t *testing.T) {
 	dep2 := tmpDir.Path("dep2")
 	dep3 := tmpDir.Path("dep3")
 
-	var tests = []struct {
+	tests := []struct {
 		name         string
 		stdout       string
 		shouldErr    bool

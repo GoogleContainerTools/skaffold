@@ -62,7 +62,7 @@ func (p *ResourceForwarder) Start(ctx context.Context) error {
 	return nil
 }
 
-// Port forward each resource individuallly in a goroutine
+// Port forward each resource individually in a goroutine
 func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources []*latest.PortForwardResource) {
 	for _, r := range resources {
 		r := r
@@ -90,13 +90,12 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 	oldEntry, ok := p.forwardedResources.Load(entry.key())
 
 	if ok {
-		oldEntry := oldEntry.(*portForwardEntry)
 		entry.localPort = oldEntry.localPort
 		return entry
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = int32(retrieveAvailablePort(int(resource.LocalPort), p.forwardedPorts))
+	entry.localPort = retrieveAvailablePort(resource.LocalPort, &p.forwardedPorts)
 	return entry
 }
 
@@ -120,8 +119,8 @@ func retrieveServiceResources(label string) ([]*latest.PortForwardResource, erro
 				Type:      constants.Service,
 				Name:      s.Name,
 				Namespace: s.Namespace,
-				Port:      p.Port,
-				LocalPort: p.Port,
+				Port:      int(p.Port),
+				LocalPort: int(p.Port),
 			})
 		}
 	}
