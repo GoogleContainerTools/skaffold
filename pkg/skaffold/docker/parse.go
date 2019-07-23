@@ -312,7 +312,7 @@ func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[stri
 }
 
 func parseOnbuild(image string, insecureRegistries map[string]bool) ([]*parser.Node, error) {
-	logrus.Debugf("Checking base image %s for ONBUILD triggers.", image)
+	logrus.Tracef("Checking base image %s for ONBUILD triggers.", image)
 
 	// Image names are case SENSITIVE
 	img, err := RetrieveImage(image, insecureRegistries)

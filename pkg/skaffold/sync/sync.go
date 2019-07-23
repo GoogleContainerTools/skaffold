@@ -55,12 +55,25 @@ type Item struct {
 	Delete map[string][]string
 }
 
-func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
-	// If there are no changes, short circuit and don't sync anything
-	if !e.HasChanged() || a.Sync == nil || len(a.Sync.Manual) == 0 {
+type DestinationProvider func() (map[string][]string, error)
+
+func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool, destProvider DestinationProvider) (*Item, error) {
+	if !e.HasChanged() || a.Sync == nil {
 		return nil, nil
 	}
 
+	if len(a.Sync.Manual) > 0 {
+		return manualSyncItem(a, e, builds, insecureRegistries)
+	}
+
+	if len(a.Sync.Infer) > 0 {
+		return inferredSyncItem(a, e, builds, destProvider)
+	}
+
+	return nil, nil
+}
+
+func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
 	tag := latestTag(a.ImageName, builds)
 	if tag == "" {
 		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
@@ -86,11 +99,56 @@ func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, inse
 		return nil, nil
 	}
 
-	return &Item{
-		Image:  tag,
-		Copy:   toCopy,
-		Delete: toDelete,
-	}, nil
+	return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
+}
+
+func inferredSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, provider DestinationProvider) (*Item, error) {
+	// deleted files are no longer contained in the syncMap, so we need to rebuild
+	if len(e.Deleted) > 0 {
+		return nil, nil
+	}
+
+	tag := latestTag(a.ImageName, builds)
+	if tag == "" {
+		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
+	}
+
+	syncMap, err := provider()
+	if err != nil {
+		return nil, errors.Wrapf(err, "inferring syncmap for image %s", a.ImageName)
+	}
+
+	toCopy := make(map[string][]string)
+	for _, f := range append(e.Modified, e.Added...) {
+		relPath, err := filepath.Rel(a.Workspace, f)
+		if err != nil {
+			return nil, errors.Wrapf(err, "finding changed file %s relative to context %s", f, a.Workspace)
+		}
+
+		matches := false
+		for _, p := range a.Sync.Infer {
+			matches, err = doublestar.PathMatch(filepath.FromSlash(p), relPath)
+			if err != nil {
+				return nil, errors.Wrapf(err, "pattern error for %s", relPath)
+			}
+			if matches {
+				break
+			}
+		}
+		if !matches {
+			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
+			return nil, nil
+		}
+
+		if dsts, ok := syncMap[relPath]; ok {
+			toCopy[f] = dsts
+		} else {
+			logrus.Infof("Changed file %s is not syncable. Skipping sync", relPath)
+			return nil, nil
+		}
+	}
+
+	return &Item{Image: tag, Copy: toCopy}, nil
 }
 
 func latestTag(image string, builds []build.Artifact) string {
