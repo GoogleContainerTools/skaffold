@@ -16,7 +16,7 @@ limitations under the License.
 
 package runner
 
-import gosync "sync"
+import "sync"
 
 type intents struct {
 	build  bool
@@ -27,12 +27,11 @@ type intents struct {
 	resetSync   func()
 	resetDeploy func()
 
-	lock *gosync.Mutex
+	lock sync.Mutex
 }
 
 func newIntents(autoBuild, autoSync, autoDeploy bool) *intents {
 	i := &intents{
-		lock:        &gosync.Mutex{},
 		resetBuild:  func() {},
 		resetSync:   func() {},
 		resetDeploy: func() {},
