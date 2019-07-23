@@ -186,7 +186,7 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Col
 			// Read up to newline
 			line, err := r.ReadString('\n')
 			if err == io.EOF {
-				a.printLogLine(headerColor, prefix, "<Exited>\n")
+				a.printLogLine(headerColor, prefix, "<Container was Terminated>\n")
 				return nil
 			}
 			if err != nil {
