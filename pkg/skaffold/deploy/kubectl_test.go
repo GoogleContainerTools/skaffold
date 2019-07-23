@@ -271,15 +271,15 @@ func TestKubectlCleanup(t *testing.T) {
 }
 
 func TestKubectlRedeploy(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-	tmpDir.Write("deployment-web.yaml", deploymentWebYAML)
-	tmpDir.Write("deployment-app.yaml", deploymentAppYAML)
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().
+			Write("deployment-web.yaml", deploymentWebYAML).
+			Write("deployment-app.yaml", deploymentAppYAML)
 
-	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.NewFakeCmd(t).
-		WithRunOut("kubectl version --client -ojson", kubectlVersion).
-		WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
-		WithRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
+		t.Override(&util.DefaultExecCommand, t.
+			FakeRunOut("kubectl version --client -ojson", kubectlVersion).
+			WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
+			WithRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
 kind: Pod
 metadata:
   labels:
@@ -300,8 +300,8 @@ spec:
   containers:
   - image: leeroy-web:v1
     name: leeroy-web`).
-		WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
-		WithRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
+			WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
+			WithRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
 kind: Pod
 metadata:
   labels:
@@ -311,47 +311,47 @@ spec:
   containers:
   - image: leeroy-app:v2
     name: leeroy-app`).
-		WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML),
-	)
-	defer reset()
+			WithRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML),
+		)
 
-	cfg := &latest.KubectlDeploy{
-		Manifests: []string{tmpDir.Path("deployment-app.yaml"), "deployment-web.yaml"},
-	}
-	deployer := NewKubectlDeployer(&runcontext.RunContext{
-		WorkingDir: tmpDir.Root(),
-		Cfg: &latest.Pipeline{
-			Deploy: latest.DeployConfig{
-				DeployType: latest.DeployType{
-					KubectlDeploy: cfg,
+		cfg := &latest.KubectlDeploy{
+			Manifests: []string{tmpDir.Path("deployment-app.yaml"), "deployment-web.yaml"},
+		}
+		deployer := NewKubectlDeployer(&runcontext.RunContext{
+			WorkingDir: tmpDir.Root(),
+			Cfg: &latest.Pipeline{
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: cfg,
+					},
 				},
 			},
-		},
-		KubeContext: testKubeContext,
-		Opts: &config.SkaffoldOptions{
-			Namespace: testNamespace,
-		},
+			KubeContext: testKubeContext,
+			Opts: &config.SkaffoldOptions{
+				Namespace: testNamespace,
+			},
+		})
+		labellers := []Labeller{deployer}
+
+		// Deploy one manifest
+		err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
+			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
+		}, labellers)
+		t.CheckNoError(err)
+
+		// Deploy one manifest since only one image is updated
+		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
+			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
+		}, labellers)
+		t.CheckNoError(err)
+
+		// Deploy zero manifest since no image is updated
+		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
+			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
+			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
+		}, labellers)
+		t.CheckNoError(err)
 	})
-	labellers := []Labeller{deployer}
-
-	// Deploy one manifest
-	err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
-		{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-	}, labellers)
-	testutil.CheckError(t, false, err)
-
-	// Deploy one manifest since only one image is updated
-	err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
-		{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-	}, labellers)
-	testutil.CheckError(t, false, err)
-
-	// Deploy zero manifest since no image is updated
-	err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
-		{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
-		{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-	}, labellers)
-	testutil.CheckError(t, false, err)
 }

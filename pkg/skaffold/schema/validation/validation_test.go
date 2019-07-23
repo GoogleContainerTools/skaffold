@@ -539,7 +539,7 @@ func TestValidatePortForwardResources(t *testing.T) {
 		{resourceType: "dne", shouldErr: true},
 	}
 	for _, test := range tests {
-		t.Run(test.resourceType, func(t *testing.T) {
+		testutil.Run(t, test.resourceType, func(t *testutil.T) {
 			pfrs := []*latest.PortForwardResource{
 				{
 					Type: latest.ResourceType(test.resourceType),
@@ -550,7 +550,8 @@ func TestValidatePortForwardResources(t *testing.T) {
 			if len(errs) > 0 {
 				err = errs[0]
 			}
-			testutil.CheckError(t, test.shouldErr, err)
+
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }

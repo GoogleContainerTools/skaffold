@@ -20,14 +20,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestExtractPtvsdArg(t *testing.T) {
@@ -47,11 +46,11 @@ func TestExtractPtvsdArg(t *testing.T) {
 		{[]string{"-m", "ptvsd", "--wait", "--port", "9329", "--host", "foo"}, &ptvsdSpec{host: "foo", port: 9329, wait: true}},
 	}
 	for _, test := range tests {
-		t.Run(strings.Join(test.in, " "), func(t *testing.T) {
+		testutil.Run(t, strings.Join(test.in, " "), func(t *testutil.T) {
 			if test.result == nil {
-				testutil.CheckDeepEqual(t, test.result, extractPtvsdArg(test.in))
+				t.CheckDeepEqual(test.result, extractPtvsdArg(test.in))
 			} else {
-				testutil.CheckDeepEqual(t, *test.result, *extractPtvsdArg(test.in), cmp.AllowUnexported(ptvsdSpec{}))
+				t.CheckDeepEqual(*test.result, *extractPtvsdArg(test.in), cmp.AllowUnexported(ptvsdSpec{}))
 			}
 		})
 	}
@@ -121,9 +120,10 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			result := pythonTransformer{}.IsApplicable(test.source)
-			testutil.CheckDeepEqual(t, test.result, result)
+
+			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }
@@ -182,9 +182,10 @@ func TestPythonTransformerApply(t *testing.T) {
 		return port
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			pythonTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
-			testutil.CheckDeepEqual(t, test.result, test.containerSpec)
+
+			t.CheckDeepEqual(test.result, test.containerSpec)
 		})
 	}
 }
@@ -551,15 +552,16 @@ func TestTransformManifestPython(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			value := test.in.DeepCopyObject()
 
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
 			result := transformManifest(value, retriever)
-			testutil.CheckDeepEqual(t, test.transformed, result)
-			testutil.CheckDeepEqual(t, test.out, value)
+
+			t.CheckDeepEqual(test.transformed, result)
+			t.CheckDeepEqual(test.out, value)
 		})
 	}
 }
