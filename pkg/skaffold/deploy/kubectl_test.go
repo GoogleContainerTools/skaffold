@@ -63,7 +63,6 @@ func TestKubectlDeploy(t *testing.T) {
 		shouldErr            bool
 		forceDeploy          bool
 		expectedDependencies []string
-		warnings             []string
 	}{
 		{
 			description: "no manifest",

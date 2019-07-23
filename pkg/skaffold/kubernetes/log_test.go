@@ -54,7 +54,6 @@ func TestSinceSeconds(t *testing.T) {
 func TestSelect(t *testing.T) {
 	tests := []struct {
 		description   string
-		images        []string
 		podSpec       v1.PodSpec
 		expectedMatch bool
 	}{
