@@ -87,3 +87,7 @@
 [[constraint]]
   name = "github.com/tektoncd/pipeline"
   version = "0.5.2"
+
+[[constraint]]
+  name = "github.com/ghodss/yaml"
+  version = "1.0.0"

@@ -1473,6 +1473,7 @@
     "github.com/docker/docker/pkg/term",
     "github.com/docker/docker/registry",
     "github.com/docker/go-connections/tlsconfig",
+    "github.com/ghodss/yaml",
     "github.com/golang/glog",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
