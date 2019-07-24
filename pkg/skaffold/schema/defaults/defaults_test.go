@@ -100,7 +100,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		err = Set(cfg)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("", cfg.Build.Cluster.DockerConfig.SecretName)
+		t.CheckDeepEqual("docker-cfg", cfg.Build.Cluster.DockerConfig.SecretName)
 		t.CheckDeepEqual("/path", cfg.Build.Cluster.DockerConfig.Path)
 
 		// docker config with secret name
