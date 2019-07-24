@@ -130,8 +130,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 		}
 	}
 
-	err = k.kubectl.Apply(ctx, out, manifests)
-	if err != nil {
+	if err := k.kubectl.Apply(ctx, out, manifests); err != nil {
 		event.DeployFailed(err)
 		return errors.Wrap(err, "kubectl error")
 	}
@@ -152,6 +151,11 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	}
 
 	return nil
+}
+
+// Dependencies lists all the files that can change what needs to be deployed.
+func (k *KustomizeDeployer) Dependencies() ([]string, error) {
+	return dependenciesForKustomization(k.KustomizePath)
 }
 
 func dependenciesForKustomization(dir string) ([]string, error) {
@@ -233,11 +237,6 @@ func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {
 		return true, f.Mode()
 	}
 	return false, 0
-}
-
-// Dependencies lists all the files that can change what needs to be deployed.
-func (k *KustomizeDeployer) Dependencies() ([]string, error) {
-	return dependenciesForKustomization(k.KustomizePath)
 }
 
 func (k *KustomizeDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {

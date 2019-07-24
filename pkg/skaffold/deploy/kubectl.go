@@ -65,16 +65,6 @@ func (k *KubectlDeployer) Labels() map[string]string {
 	}
 }
 
-type ManifestTransform func(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool) (kubectl.ManifestList, error)
-
-// Transforms are applied to manifests
-var manifestTransforms []ManifestTransform
-
-// AddManifestTransform adds a transform to be applied when deploying.
-func AddManifestTransform(newTransform ManifestTransform) {
-	manifestTransforms = append(manifestTransforms, newTransform)
-}
-
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) error {
@@ -82,8 +72,6 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		color.Default.Fprintln(out, err)
 	}
-
-	event.DeployInProgress()
 
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
@@ -94,6 +82,8 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	if len(manifests) == 0 {
 		return nil
 	}
+
+	event.DeployInProgress()
 
 	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
 	if err != nil {
@@ -114,14 +104,13 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		}
 	}
 
-	err = k.kubectl.Apply(ctx, out, manifests)
-	if err != nil {
+	if err := k.kubectl.Apply(ctx, out, manifests); err != nil {
 		event.DeployFailed(err)
 		return errors.Wrap(err, "kubectl error")
 	}
 
 	event.DeployComplete()
-	return err
+	return nil
 }
 
 // Cleanup deletes what was deployed by calling Deploy.
