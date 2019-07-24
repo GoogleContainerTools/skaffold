@@ -19,6 +19,7 @@ package gcb
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
@@ -29,8 +30,8 @@ func TestJibMavenBuildSteps(t *testing.T) {
 		skipTests bool
 		args      []string
 	}{
-		{false, []string{"-Djib.console=plain", "--non-recursive", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
-		{true, []string{"-Djib.console=plain", "--non-recursive", "-DskipTests=true", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
+		{false, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + jib.MinimumJibMavenVersion, "--non-recursive", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
+		{true, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + jib.MinimumJibMavenVersion, "--non-recursive", "-DskipTests=true", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
 	}
 	for _, test := range tests {
 		artifact := &latest.Artifact{
@@ -63,8 +64,8 @@ func TestJibGradleBuildSteps(t *testing.T) {
 		skipTests bool
 		args      []string
 	}{
-		{false, []string{"-Djib.console=plain", ":jibDockerBuild", "--image=img"}},
-		{true, []string{"-Djib.console=plain", ":jibDockerBuild", "--image=img", "-x", "test"}},
+		{false, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + jib.MinimumJibGradleVersion, ":jibDockerBuild", "--image=img"}},
+		{true, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + jib.MinimumJibGradleVersion, ":jibDockerBuild", "--image=img", "-x", "test"}},
 	}
 	for _, test := range tests {
 		artifact := &latest.Artifact{
