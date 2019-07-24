@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/api/types"
+	"github.com/sirupsen/logrus"
 )
 
 const imageName = "simple-build:"
@@ -190,18 +191,23 @@ func TestExpectedBuildFailures(t *testing.T) {
 		description string
 		dir         string
 		args        []string
+		expected    string
 	}{
 		{
 			description: "jib is too old",
 			dir:         "testdata/jib",
 			args:        []string{"-p", "old-jib"},
+			// test string will need to be updated for the jib.requiredVersion error text when moving to Jib > 1.4.0
+			expected:    "Could not find goal '_skaffold-fail-if-jib-out-of-date' in plugin com.google.cloud.tools:jib-maven-plugin:1.3.0",
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			err := skaffold.Build(test.args...).InDir(test.dir).Run(t)
-			if err == nil {
-				t.Fatal("expected failure")
+			if out, err := skaffold.Build(test.args...).InDir(test.dir).RunWithCombinedOutput(t); err == nil {
+				t.Fatal("expected build to fail")
+			} else if !strings.Contains(string(out), test.expected) {
+				logrus.Info("build output: ", string(out))
+				t.Fatalf("build failed but for wrong reason")
 			}
 		})
 	}
