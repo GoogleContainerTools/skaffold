@@ -186,6 +186,9 @@ func TestExpectedBuildFailures(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
 
 	tests := []struct {
 		description string
@@ -197,8 +200,8 @@ func TestExpectedBuildFailures(t *testing.T) {
 			description: "jib is too old",
 			dir:         "testdata/jib",
 			args:        []string{"-p", "old-jib"},
-			// test string will need to be updated for the jib.requiredVersion error text when moving to Jib > 1.4.0
 			expected:    "Could not find goal '_skaffold-fail-if-jib-out-of-date' in plugin com.google.cloud.tools:jib-maven-plugin:1.3.0",
+			// test string will need to be updated for the jib.requiredVersion error text when moving to Jib > 1.4.0
 		},
 	}
 	for _, test := range tests {
