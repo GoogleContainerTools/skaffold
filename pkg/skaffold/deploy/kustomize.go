@@ -196,30 +196,20 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 		}
 	}
 
-	deps = append(deps, joinPaths(dir, content.Patches)...)
-	deps = append(deps, joinPaths(dir, content.PatchesStrategicMerge)...)
-	deps = append(deps, joinPaths(dir, content.CRDs)...)
+	deps = append(deps, util.AbsolutePaths(dir, content.Patches)...)
+	deps = append(deps, util.AbsolutePaths(dir, content.PatchesStrategicMerge)...)
+	deps = append(deps, util.AbsolutePaths(dir, content.CRDs)...)
 	for _, patch := range content.PatchesJSON6902 {
 		deps = append(deps, filepath.Join(dir, patch.Path))
 	}
 	for _, generator := range content.ConfigMapGenerator {
-		deps = append(deps, joinPaths(dir, generator.Files)...)
+		deps = append(deps, util.AbsolutePaths(dir, generator.Files)...)
 	}
 	for _, generator := range content.SecretGenerator {
-		deps = append(deps, joinPaths(dir, generator.Files)...)
+		deps = append(deps, util.AbsolutePaths(dir, generator.Files)...)
 	}
 
 	return deps, nil
-}
-
-func joinPaths(root string, paths []string) []string {
-	var list []string
-
-	for _, path := range paths {
-		list = append(list, filepath.Join(root, path))
-	}
-
-	return list
 }
 
 // A kustomization config must be at the root of the direectory. Kustomize will
