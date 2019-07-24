@@ -270,6 +270,41 @@ func TestKubectlCleanup(t *testing.T) {
 	}
 }
 
+func TestKubectlDeployerRemoteCleanup(t *testing.T) {
+	cfg := &latest.KubectlDeploy{
+		RemoteManifests: []string{"pod/leeroy-web"},
+	}
+
+	testutil.Run(t, "cleanup remote", func(t *testutil.T) {
+		command := t.FakeRun("kubectl --context kubecontext --namespace testNamespace get pod/leeroy-web -o yaml").
+			WithRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -").
+			WithRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", deploymentWebYAML)
+
+		t.Override(&util.DefaultExecCommand, command)
+		t.NewTempDir().
+			Write("deployment.yaml", deploymentWebYAML).
+			Chdir()
+
+		k := NewKubectlDeployer(&runcontext.RunContext{
+			WorkingDir: ".",
+			Cfg: &latest.Pipeline{
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: cfg,
+					},
+				},
+			},
+			KubeContext: testKubeContext,
+			Opts: &config.SkaffoldOptions{
+				Namespace: testNamespace,
+			},
+		})
+		err := k.Cleanup(context.Background(), ioutil.Discard)
+
+		t.CheckError(false, err)
+	})
+}
+
 func TestKubectlRedeploy(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().
