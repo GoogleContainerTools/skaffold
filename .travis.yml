@@ -2,23 +2,14 @@ dist: xenial
 
 language: go
 go: "1.12.x"
+go_import_path: /skaffold
 
 git:
   submodules: false
 
-env:
-  global:
-    - GO111MODULE=on
-
-go_import_path: github.com/GoogleContainerTools/skaffold
-
 jobs:
   include:
     - os: linux
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-          - $HOME/gopath/pkg/mod
       env:
         - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
       script:
@@ -27,10 +18,6 @@ jobs:
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - os: osx
-      cache:
-        directories:
-          - $HOME/Library/Caches/go-build
-          - $HOME/gopath/pkg/mod
       env:
         - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
       script:
@@ -41,9 +28,10 @@ jobs:
     - os: windows
       env:
         - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
+        - GO111MODULE=on
       script:
-        - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
-        - go test -short -timeout 60s ./...
+        - go build -mod=vendor -o out/skaffold.exe cmd/skaffold/skaffold.go
+        - go test -mod=vendor -short -timeout 60s ./...
     - os: linux
       env:
         - TEST_TYPE=integration # this is not used, just purely for nice UI distinction on Travis
@@ -51,5 +39,4 @@ jobs:
         - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
         - chmod +x ${HOME}/bin/kind
       script:
-        - df -h
         - make integration-in-kind
