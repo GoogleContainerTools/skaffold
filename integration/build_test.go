@@ -189,9 +189,7 @@ func TestExpectedBuildFailures(t *testing.T) {
 	tests := []struct {
 		description string
 		dir         string
-		filename    string
 		args        []string
-		gcpOnly     bool
 	}{
 		{
 			description: "jib is too old",
@@ -201,14 +199,7 @@ func TestExpectedBuildFailures(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if test.gcpOnly && !ShouldRunGCPOnlyTests() {
-				t.Skip("skipping gcp only test")
-			}
-			if !test.gcpOnly && ShouldRunGCPOnlyTests() {
-				t.Skip("skipping test that is not gcp only")
-			}
-
-			err := skaffold.Build(test.args...).WithConfig(test.filename).InDir(test.dir).Run(t)
+			err := skaffold.Build(test.args...).InDir(test.dir).Run(t)
 			if err == nil {
 				t.Fatal("expected failure")
 			}
