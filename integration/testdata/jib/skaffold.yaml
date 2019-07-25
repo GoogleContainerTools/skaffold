@@ -5,7 +5,7 @@ build:
   - image: gcr.io/k8s-skaffold/skaffold-jib
     jibMaven:
       args:
-      - -q
+      - --no-transfer-progress
 
 profiles:
   # optional profile to run the jib build on Google Cloud Build
