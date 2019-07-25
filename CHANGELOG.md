@@ -4,6 +4,59 @@
         Jib v1.4.0 or later.  Maven multi-module projects no longer require
         binding `jib:build` or `jib:dockerBuild` to the _package_ phase and should be removed.
 
+
+# v0.34.1 Release - 07/25/2019
+This minor release addresses [#2523](https://github.com/GoogleContainerTools/skaffold/issues/2523), a
+breaking issue that prevented ports for resources from being re-forwarded on redeploy.
+
+New Features:
+* Let the user specify a path and a secret name [#2539](https://github.com/GoogleContainerTools/skaffold/pull/2539)
+* Add configuration option for sync inference [3/3] [#2088](https://github.com/GoogleContainerTools/skaffold/pull/2088)
+* Expose control API for builds, syncs, and deploys [#2450](https://github.com/GoogleContainerTools/skaffold/pull/2450)
+
+Bug Fixes:
+* Monitor kubectl logs when port forwarding and retry on error [#2543](https://github.com/GoogleContainerTools/skaffold/pull/2543)
+* Make sure logs are not intermixed [#2538](https://github.com/GoogleContainerTools/skaffold/pull/2538)
+
+Updates & Refactors:
+* Add a jibGradle sample [#2549](https://github.com/GoogleContainerTools/skaffold/pull/2549)
+* Make Jib test projects more lightweight [#2544](https://github.com/GoogleContainerTools/skaffold/pull/2544)
+* Add a quicktest Makefile target [#2540](https://github.com/GoogleContainerTools/skaffold/pull/2540)
+* Improve Maven/Jib multimodule builds between Minikube and remote clusters [#2122](https://github.com/GoogleContainerTools/skaffold/pull/2122)
+* Use test helpers [#2520](https://github.com/GoogleContainerTools/skaffold/pull/2520)
+* Better message when a container is terminated [#2514](https://github.com/GoogleContainerTools/skaffold/pull/2514)
+* Simpler code [#2532](https://github.com/GoogleContainerTools/skaffold/pull/2532)
+* Remove unused code [#2513](https://github.com/GoogleContainerTools/skaffold/pull/2513)
+* Fix linter issues [#2527](https://github.com/GoogleContainerTools/skaffold/pull/2527)
+* Longer deadline for linters [#2518](https://github.com/GoogleContainerTools/skaffold/pull/2518)
+* Code format [#2519](https://github.com/GoogleContainerTools/skaffold/pull/2519)
+* Remove duplicate go version [#2517](https://github.com/GoogleContainerTools/skaffold/pull/2517)
+* Move test.sh to hack folder [#2515](https://github.com/GoogleContainerTools/skaffold/pull/2515)
+* Travis CI: integration stage -> job [#2504](https://github.com/GoogleContainerTools/skaffold/pull/2504)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Appu
+- Balint Pato
+- Brian de Alwis
+- Cedric Kring
+- Charles-Henri GUERIN
+- Cornelius Weig
+- David Gageot
+- Jason McClellan
+- JieJhih Jhang
+- Marlon Gamez
+- Medya Ghazizadeh
+- Nick Kubala
+- Prashant Arya
+- Priya Wadhwa
+- Sébastien Le Gall
+- Tad Cordle
+- Taylor Barrella
+- Tejal Desai
+- Tom Dickman
+
+
 # v0.34.0 Release - 07/19/2019
 
 *Note*: This release comes with a new config version `v1beta13`.
