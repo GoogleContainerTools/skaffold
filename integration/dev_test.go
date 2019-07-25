@@ -18,6 +18,10 @@ package integration
 
 import (
 	"context"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -172,4 +176,78 @@ func TestDevAPITriggers(t *testing.T) {
 		return dep.GetGeneration() != newDep.GetGeneration(), nil
 	})
 	testutil.CheckError(t, false, err)
+}
+
+func TestDevPortForward(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	stop := skaffold.Dev("--port-forward").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
+	defer stop()
+
+	err := wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+		resp, err := http.Get("http://localhost:50053")
+		if err != nil {
+			return false, nil
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return false, nil
+		}
+		return "leeroooooy app!!\n" == string(body), nil
+	})
+	testutil.CheckError(t, false, err)
+
+	original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", "examples/microservices/leeroy-app/app.go")
+	if fErr != nil {
+		t.Error(fErr)
+	}
+	defer func() {
+		if original != nil {
+			ioutil.WriteFile("examples/microservices/leeroy-app/app.go", original, perms)
+		}
+	}()
+
+	err = wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+		resp, err := http.Get("http://localhost:50053")
+		if err != nil {
+			return false, nil
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return false, nil
+		}
+		return "test string\n" == string(body), nil
+	})
+
+	testutil.CheckError(t, false, err)
+}
+
+func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, error) {
+	fInfo, err := os.Stat(filepath)
+	if err != nil {
+		return nil, 0, err
+	}
+	original, err := ioutil.ReadFile(filepath)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	newContents := strings.Replace(string(original), target, replacement, -1)
+
+	err = ioutil.WriteFile(filepath, []byte(newContents), 0)
+
+	return original, fInfo.Mode(), err
 }

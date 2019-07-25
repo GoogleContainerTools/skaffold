@@ -165,16 +165,22 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 		return nil
 	}
 	b.forwardedResources.Store(entry.key(), entry)
-	color.Default.Fprintln(b.output, fmt.Sprintf("Port Forwarding %s/%s %d -> %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort))
 	err := wait.PollImmediate(time.Second, forwardingTimeoutTime, func() (bool, error) {
 		if err := b.Forward(ctx, entry); err != nil {
 			return false, nil
 		}
 		return true, nil
 	})
+
+	go b.Monitor(entry, func() {
+		b.Retry(ctx, entry)
+	})
+
 	if err != nil {
 		return err
 	}
+
+	color.Default.Fprintln(b.output, fmt.Sprintf("Port forwarded %s/%s from remote port %d to local port %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort))
 
 	portForwardEvent(entry)
 	return nil
@@ -192,4 +198,9 @@ func (b *EntryManager) Terminate(p *portForwardEntry) {
 	b.forwardedResources.Delete(p.key())
 	b.forwardedPorts.Delete(p.localPort)
 	b.EntryForwarder.Terminate(p)
+}
+
+func (b *EntryManager) Retry(ctx context.Context, p *portForwardEntry) error {
+	b.Terminate(p)
+	return b.forwardPortForwardEntry(ctx, p)
 }

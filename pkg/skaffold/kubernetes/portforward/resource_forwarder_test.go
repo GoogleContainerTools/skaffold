@@ -45,6 +45,8 @@ func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) erro
 	return f.forwardErr
 }
 
+func (f *testForwarder) Monitor(_ *portForwardEntry, _ func()) {}
+
 func (f *testForwarder) Terminate(pfe *portForwardEntry) {
 	f.forwardedResources.Delete(pfe.key())
 	f.forwardedPorts.Delete(pfe.resource.Port)
