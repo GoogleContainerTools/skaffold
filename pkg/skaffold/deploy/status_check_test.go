@@ -265,8 +265,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			if _, ok := actual.Load("deployment/dep"); !ok {
 				t.Error("expected result for deployment dep. But found none")
 			}
-			err := getSkaffoldDeployStatus(actual)
-			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.shouldErr, isSkaffoldDeployInError(actual))
 			// Check number of calls only if command did not timeout since there could be n-1 or n or n+1 calls when command timed out
 			if !test.timedOut {
 				t.CheckDeepEqual(test.exactCalls, mock.called)
@@ -275,12 +274,11 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 	}
 }
 
-func TestGetDeployStatus(t *testing.T) {
+func TestIsSkaffoldDeployInError(t *testing.T) {
 	var tests = []struct {
-		description    string
-		deps           map[string]interface{}
-		expectedErrMsg []string
-		shouldErr      bool
+		description string
+		deps        map[string]interface{}
+		shouldErr   bool
 	}{
 		{
 			description: "one error",
@@ -288,8 +286,7 @@ func TestGetDeployStatus(t *testing.T) {
 				"deployment/dep1": "SUCCESS",
 				"deployment/dep2": fmt.Errorf("could not return within default timeout"),
 			},
-			expectedErrMsg: []string{"deployment/dep2 failed due to could not return within default timeout"},
-			shouldErr:      true,
+			shouldErr: true,
 		},
 		{
 			description: "no error",
@@ -305,8 +302,6 @@ func TestGetDeployStatus(t *testing.T) {
 				"deployment/dep2": fmt.Errorf("could not return within default timeout"),
 				"pod/pod1":        fmt.Errorf("ERROR"),
 			},
-			expectedErrMsg: []string{"deployment/dep2 failed due to could not return within default timeout",
-				"pod/pod1 failed due to ERROR"},
 			shouldErr: true,
 		},
 	}
@@ -317,11 +312,7 @@ func TestGetDeployStatus(t *testing.T) {
 			for k, v := range test.deps {
 				syncMap.Store(k, v)
 			}
-			err := getSkaffoldDeployStatus(syncMap)
-			t.CheckError(test.shouldErr, err)
-			for _, msg := range test.expectedErrMsg {
-				t.CheckErrorContains(msg, err)
-			}
+			t.CheckDeepEqual(test.shouldErr, isSkaffoldDeployInError(syncMap))
 		})
 	}
 }
@@ -474,6 +465,46 @@ func TestGetPods(t *testing.T) {
 			}
 			actual, err := getPods(client.CoreV1().Pods("test"), labeller)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, expectedPods, actual)
+		})
+	}
+}
+
+func TestGetResourceStatus(t *testing.T) {
+	rolloutCmd := "kubectl --context kubecontext --namespace test rollout status deployment dep --watch=false"
+	var tests = []struct {
+		description string
+		command     util.Command
+		expected    string
+		shouldErr   bool
+	}{
+		{
+			description: "some output",
+			command: testutil.NewFakeCmd(t).
+				WithRunOut(rolloutCmd, "Waiting for replicas to be available"),
+			expected: "Waiting for replicas to be available",
+		},
+		{
+			description: "no output",
+			command: testutil.NewFakeCmd(t).
+				WithRunOut(rolloutCmd, ""),
+		},
+		{
+			description: "rollout status error",
+			command: testutil.NewFakeCmd(t).
+				WithRunOutErr(rolloutCmd, "", fmt.Errorf("error")),
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.command)
+			cli := &kubectl.CLI{
+				Namespace:   "test",
+				KubeContext: testKubeContext,
+			}
+			actual, err := getRollOutStatus(context.Background(), cli, "dep")
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
 }

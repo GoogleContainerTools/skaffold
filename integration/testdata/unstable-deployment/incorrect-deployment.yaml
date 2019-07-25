@@ -14,8 +14,10 @@ spec:
         app: unstable
     spec:
       containers:
-        - name: incorrect-example
+        - name: skaffold-example
           image: gcr.io/k8s-skaffold/skaffold-example
+        - name: incorrect-example
+          image: gcr.io/k8s-skaffold/incorrect-example
           readinessProbe:
             exec:
               command:

@@ -25,6 +25,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
@@ -78,8 +79,10 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Wait for all resource status to be fetched
 	wg.Wait()
-
-	return getSkaffoldDeployStatus(syncMap)
+	if isSkaffoldDeployInError(syncMap) {
+		return fmt.Errorf("one or more deployed resources were in error")
+	}
+	return nil
 }
 
 func StatusCheckDeployments(ctx context.Context, client kubernetes.Interface, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, syncMap *sync.Map, out io.Writer) {
@@ -105,7 +108,7 @@ func StatusCheckDeployments(ctx context.Context, client kubernetes.Interface, de
 		go func(dName string, deadlineDuration time.Duration) {
 			defer func() {
 				atomic.AddInt32(&ops, -1)
-				fmt.Fprintln(out, fmt.Sprintf("Waiting on %d of %d deployments", atomic.LoadInt32(&ops), numDeps))
+				printResourceStatus("deployment", dName, syncMap, atomic.LoadInt32(&ops), out)
 				wg.Done()
 			}()
 			pollDeploymentRolloutStatus(ctx, kubeCtl, dName, deadlineDuration, syncMap)
@@ -184,14 +187,14 @@ func StatusCheckPods(ctx context.Context, client kubernetes.Interface, defaultLa
 	fmt.Fprintln(out, fmt.Sprintf("Waiting on %d of %d pods", atomic.LoadInt32(&ops), numPods))
 	for _, po := range pods {
 		wg.Add(1)
-		go func(po *v1.Pod) {
+		go func(po v1.Pod) {
 			defer func() {
 				atomic.AddInt32(&ops, -1)
-				fmt.Fprintln(out, fmt.Sprintf("Waiting on %d of %d pods", atomic.LoadInt32(&ops), numPods))
+				printResourceStatus("pod", po.Name, syncMap, atomic.LoadInt32(&ops), out)
 				wg.Done()
 			}()
-			getPodStatus(ctx, podInterface, po, defaultPodStatusDeadline, syncMap)
-		}(&po)
+			getPodStatus(ctx, podInterface, client, &po, defaultPodStatusDeadline, syncMap)
+		}(po)
 	}
 }
 
@@ -202,24 +205,48 @@ func getPods(pi corev1.PodInterface, l *DefaultLabeller) ([]v1.Pod, error) {
 	return pods.Items, err
 }
 
-func getPodStatus(ctx context.Context, pi corev1.PodInterface, po *v1.Pod, deadline time.Duration, syncMap *sync.Map) {
-	syncMap.Store(
-		fmt.Sprintf("pod/%s", po.Name),
-		kubernetesutil.WaitForPodToStabilize(ctx, pi, po.Name, deadline),
-	)
+func getPodStatus(ctx context.Context, pi corev1.PodInterface, client kubernetes.Interface, po *v1.Pod, deadline time.Duration, syncMap *sync.Map) {
+	err := kubernetesutil.WaitForPodToStabilize(ctx, pi, po.Name, deadline)
+	fmt.Println("in go ", po.Name)
+	if err == nil {
+		syncMap.Store(fmt.Sprintf("pod/%s", po.Name), nil)
+		return
+	}
+	// Get container statuses.
+	podInterface := client.CoreV1().Pods(po.Namespace)
+	statusErr := kubernetesutil.GetPodDetails(podInterface, po.Name)
+	syncMap.Store(fmt.Sprintf("pod/%s", po.Name), statusErr)
 }
 
-func getSkaffoldDeployStatus(m *sync.Map) error {
-	errorStrings := []string{}
+func isSkaffoldDeployInError(m *sync.Map) bool {
+	isError := false
 	m.Range(func(k, v interface{}) bool {
-		if t, ok := v.(error); ok {
-			errorStrings = append(errorStrings, fmt.Sprintf("%s failed due to %s", k, t.Error()))
-		}
-		return true
+		_, isError = v.(error)
+		// Stop range iteration if we see an error by returning false.
+		return !isError
 	})
+	return isError
+}
 
-	if len(errorStrings) == 0 {
-		return nil
+func getResourceStatus(m *sync.Map, resource string) error {
+	v, ok := m.Load(resource)
+	if !ok {
+		return fmt.Errorf("error getting status for %s", resource)
 	}
-	return fmt.Errorf("following resources are not stable:\n%s", strings.Join(errorStrings, "\n"))
+	if t, ok := v.(error); ok {
+		return t
+	}
+	return nil
+}
+
+func printResourceStatus(resourcetype string, name string, m *sync.Map, numLeft int32, out io.Writer) {
+	resource := fmt.Sprintf("%s/%s", resourcetype, name)
+	if err := getResourceStatus(m, resource); err != nil {
+		color.Default.Fprintln(out, fmt.Sprintf("%s failed due to %s", resource, err.Error()))
+	} else {
+		color.Default.Fprintln(out, fmt.Sprintf("%s is ready", resource))
+	}
+	if numLeft > 0 {
+		color.Default.Fprintln(out, fmt.Sprintf("Waiting on %d of %ss", numLeft, resourcetype))
+	}
 }

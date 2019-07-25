@@ -22,10 +22,8 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
-
-	"k8s.io/apimachinery/pkg/watch"
-
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
 
