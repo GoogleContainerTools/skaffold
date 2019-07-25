@@ -23,7 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	kubectlcli "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/pkg/errors"
@@ -107,7 +107,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	r.createLogger(out, artifacts)
 	defer r.logger.Stop()
 
-	kubectlCLI := kubectlcli.NewFromRunContext(r.runCtx)
+	kubectlCLI := kubectl.NewFromRunContext(r.runCtx)
 	r.createForwarder(out, kubectlCLI)
 	defer r.forwarderManager.Stop()
 

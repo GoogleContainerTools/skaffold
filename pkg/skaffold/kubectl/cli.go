@@ -45,8 +45,7 @@ func NewFromRunContext(runCtx *runcontext.RunContext) *CLI {
 // Command creates the underlying exec.CommandContext. This allows low-level control of the executed command.
 func (c *CLI) Command(ctx context.Context, command string, arg ...string) *exec.Cmd {
 	args := c.args(command, arg...)
-	cmd := exec.CommandContext(ctx, "kubectl", args...)
-	return cmd
+	return exec.CommandContext(ctx, "kubectl", args...)
 }
 
 // Run shells out kubectl CLI.
@@ -60,11 +59,12 @@ func (c *CLI) Run(ctx context.Context, in io.Reader, out io.Writer, command stri
 
 // Run shells out kubectl CLI.
 func (c *CLI) RunOut(ctx context.Context, command string, arg ...string) ([]byte, error) {
-	args := c.args(command, arg...)
-	cmd := exec.CommandContext(ctx, "kubectl", args...)
+	cmd := c.Command(ctx, command, arg...)
 	return util.RunCmdOut(cmd)
 }
 
+// args builds an argument list for calling kubectl and consistently
+// adds the `--context` and `--namespace` flags.
 func (c *CLI) args(command string, arg ...string) []string {
 	args := []string{"--context", c.KubeContext}
 	if c.Namespace != "" {

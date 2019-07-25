@@ -28,7 +28,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	kubectlcli "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
@@ -58,10 +58,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	wg := sync.WaitGroup{}
 	// Its safe to use sync.Map without locks here as each subroutine adds a different key to the map.
 	syncMap := &sync.Map{}
-	kubeCtl := &kubectlcli.CLI{
-		KubeContext: runCtx.KubeContext,
-		Namespace:   runCtx.Opts.Namespace,
-	}
+	kubeCtl := kubectl.NewFromRunContext(runCtx)
 
 	for dName, deadline := range dMap {
 		deadlineDuration := time.Duration(deadline) * time.Second
@@ -101,7 +98,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) 
 	return depMap, nil
 }
 
-func pollDeploymentRolloutStatus(ctx context.Context, k *kubectlcli.CLI, dName string, deadline time.Duration, syncMap *sync.Map) {
+func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName string, deadline time.Duration, syncMap *sync.Map) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollDuration)
@@ -141,7 +138,7 @@ func getSkaffoldDeployStatus(m *sync.Map) error {
 	return fmt.Errorf("following deployments are not stable:\n%s", strings.Join(errorStrings, "\n"))
 }
 
-func getRollOutStatus(ctx context.Context, k *kubectlcli.CLI, dName string) (string, error) {
+func getRollOutStatus(ctx context.Context, k *kubectl.CLI, dName string) (string, error) {
 	b, err := k.RunOut(ctx, "rollout", "status", "deployment", dName, "--watch=false")
 	return string(b), err
 }

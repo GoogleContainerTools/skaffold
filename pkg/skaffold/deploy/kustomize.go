@@ -31,9 +31,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	kubectlcli "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -67,7 +67,7 @@ type secretGenerator struct {
 type KustomizeDeployer struct {
 	*latest.KustomizeDeploy
 
-	kubectl            kubectl.DeployerCLI
+	kubectl            deploy.CLI
 	defaultRepo        string
 	insecureRegistries map[string]bool
 }
@@ -75,11 +75,8 @@ type KustomizeDeployer struct {
 func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 	return &KustomizeDeployer{
 		KustomizeDeploy: runCtx.Cfg.Deploy.KustomizeDeploy,
-		kubectl: kubectl.DeployerCLI{
-			CLI: &kubectlcli.CLI{
-				KubeContext: runCtx.KubeContext,
-				Namespace:   runCtx.Opts.Namespace,
-			},
+		kubectl: deploy.CLI{
+			CLI:         kubectl.NewFromRunContext(runCtx),
 			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
 			ForceDeploy: runCtx.Opts.ForceDeploy(),
 		},
@@ -243,7 +240,7 @@ func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {
 	return false, 0
 }
 
-func (k *KustomizeDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
+func (k *KustomizeDeployer) readManifests(ctx context.Context) (deploy.ManifestList, error) {
 	cmd := exec.CommandContext(ctx, "kustomize", "build", k.KustomizePath)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
@@ -254,7 +251,7 @@ func (k *KustomizeDeployer) readManifests(ctx context.Context) (kubectl.Manifest
 		return nil, nil
 	}
 
-	var manifests kubectl.ManifestList
+	var manifests deploy.ManifestList
 	manifests.Append(out)
 	return manifests, nil
 }

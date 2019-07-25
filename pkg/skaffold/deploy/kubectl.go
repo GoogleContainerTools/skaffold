@@ -26,9 +26,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	kubectlcli "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -39,7 +39,7 @@ type KubectlDeployer struct {
 	*latest.KubectlDeploy
 
 	workingDir         string
-	kubectl            kubectl.DeployerCLI
+	kubectl            deploy.CLI
 	defaultRepo        string
 	insecureRegistries map[string]bool
 }
@@ -50,11 +50,8 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 	return &KubectlDeployer{
 		KubectlDeploy: runCtx.Cfg.Deploy.KubectlDeploy,
 		workingDir:    runCtx.WorkingDir,
-		kubectl: kubectl.DeployerCLI{
-			CLI: &kubectlcli.CLI{
-				KubeContext: runCtx.KubeContext,
-				Namespace:   runCtx.Opts.Namespace,
-			},
+		kubectl: deploy.CLI{
+			CLI:         kubectl.NewFromRunContext(runCtx),
 			Flags:       runCtx.Cfg.Deploy.KubectlDeploy.Flags,
 			ForceDeploy: runCtx.Opts.ForceDeploy(),
 		},
@@ -165,7 +162,7 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 }
 
 // readManifests reads the manifests to deploy/delete.
-func (k *KubectlDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
+func (k *KubectlDeployer) readManifests(ctx context.Context) (deploy.ManifestList, error) {
 	// Get file manifests
 	manifests, err := k.Dependencies()
 	if err != nil {
@@ -180,7 +177,7 @@ func (k *KubectlDeployer) readManifests(ctx context.Context) (kubectl.ManifestLi
 	}
 
 	if len(manifests) == 0 {
-		return kubectl.ManifestList{}, nil
+		return deploy.ManifestList{}, nil
 	}
 
 	return k.kubectl.ReadManifests(ctx, manifests)

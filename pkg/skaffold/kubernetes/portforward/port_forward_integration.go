@@ -25,13 +25,13 @@ import (
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	kubectlcli "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // For WhiteBox testing only
 // This is testing a port forward + stop + restart in a simulated dev cycle
-func WhiteBoxPortForwardCycle(t *testing.T, kubectlCLI *kubectlcli.CLI, namespace string) {
+func WhiteBoxPortForwardCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
 	em := NewEntryManager(os.Stdout, kubectlCLI)
 	portForwardEventHandler := portForwardEvent
 	defer func() { portForwardEvent = portForwardEventHandler }()

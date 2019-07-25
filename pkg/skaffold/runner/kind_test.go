@@ -102,7 +102,7 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 			r := &SkaffoldRunner{
 				builds: test.built,
 				runCtx: &runcontext.RunContext{
-					Opts: &config.SkaffoldOptions{
+					Opts: config.SkaffoldOptions{
 						Namespace: "namespace",
 					},
 					KubeContext: "kubecontext",

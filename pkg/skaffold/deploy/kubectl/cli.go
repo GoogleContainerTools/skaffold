@@ -23,13 +23,13 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	kubectlcli "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// DeployerCLI holds parameters to run kubectl.
-type DeployerCLI struct {
-	*kubectlcli.CLI
+// CLI holds parameters to run kubectl.
+type CLI struct {
+	*pkgkubectl.CLI
 	Flags latest.KubectlFlags
 
 	ForceDeploy   bool
@@ -37,7 +37,7 @@ type DeployerCLI struct {
 }
 
 // Delete runs `kubectl delete` on a list of manifests.
-func (c *DeployerCLI) Delete(ctx context.Context, out io.Writer, manifests ManifestList) error {
+func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests ManifestList) error {
 	args := c.args(c.Flags.Delete, "--ignore-not-found=true", "-f", "-")
 	if err := c.Run(ctx, manifests.Reader(), out, "delete", args...); err != nil {
 		return errors.Wrap(err, "kubectl delete")
@@ -47,7 +47,7 @@ func (c *DeployerCLI) Delete(ctx context.Context, out io.Writer, manifests Manif
 }
 
 // Apply runs `kubectl apply` on a list of manifests.
-func (c *DeployerCLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) error {
+func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) error {
 	// Only redeploy modified or new manifests
 	// TODO(dgageot): should we delete a manifest that was deployed and is not anymore?
 	updated := c.previousApply.Diff(manifests)
@@ -70,7 +70,7 @@ func (c *DeployerCLI) Apply(ctx context.Context, out io.Writer, manifests Manife
 }
 
 // ReadManifests reads a list of manifests in yaml format.
-func (c *DeployerCLI) ReadManifests(ctx context.Context, manifests []string) (ManifestList, error) {
+func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (ManifestList, error) {
 	var list []string
 	for _, manifest := range manifests {
 		list = append(list, "-f", manifest)
@@ -89,7 +89,7 @@ func (c *DeployerCLI) ReadManifests(ctx context.Context, manifests []string) (Ma
 	return manifestList, nil
 }
 
-func (c *DeployerCLI) args(commandFlags []string, additionalArgs ...string) []string {
+func (c *CLI) args(commandFlags []string, additionalArgs ...string) []string {
 	args := make([]string, 0, len(c.Flags.Global)+len(commandFlags)+len(additionalArgs))
 
 	args = append(args, c.Flags.Global...)
