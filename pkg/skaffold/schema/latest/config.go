@@ -62,6 +62,8 @@ type Pipeline struct {
 	// Deploy describes how images are deployed.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 
+	IntegrationTest IntegrationTestConfig `yaml:integrationtest,omitempty`
+
 	// PortForward describes user defined resources to port-forward.
 	PortForward []*PortForwardResource `yaml:"portForward,omitempty"`
 }
@@ -769,4 +771,10 @@ type JibGradleArtifact struct {
 	// Flags are additional build flags passed to Gradle.
 	// For example: `["--no-build-cache"]`.
 	Flags []string `yaml:"args,omitempty"`
+}
+
+
+type IntegrationTestConfig struct {
+	PodSelector string `yaml:"podSelector"`
+	TestCommand string `yaml:"testCommand"`
 }

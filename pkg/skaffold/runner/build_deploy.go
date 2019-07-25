@@ -19,9 +19,9 @@ package runner
 import (
 	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/integrationtest"
 	"io"
 	"time"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -148,4 +148,17 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
 	return imageTags, nil
+}
+
+func (r *SkaffoldRunner) DeployAndIntegrationTest(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	err := r.DeployAndLog(ctx, out, artifacts)
+	if err != nil {
+		return err
+	}
+
+	err = integrationtest.IntegrationTest(ctx, r.defaultLabeller, r.runCtx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
