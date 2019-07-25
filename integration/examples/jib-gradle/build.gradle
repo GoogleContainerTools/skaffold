@@ -1,0 +1,37 @@
+plugins {
+    id 'application'
+    id 'groovy'
+    id 'io.spring.dependency-management' version '1.0.6.RELEASE'
+    id 'net.ltgt.apt-idea' version '0.18'
+    id 'com.google.cloud.tools.jib' version '1.4.0'
+}
+
+version '0.1'
+group 'example.jib-gradle'
+
+repositories {
+    mavenCentral()
+    maven { url 'https://jcenter.bintray.com' }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom 'io.micronaut:micronaut-bom:1.0.3'
+    }
+}
+
+dependencies {
+    annotationProcessor 'io.micronaut:micronaut-inject-java'
+    compile 'io.micronaut:micronaut-http-client'
+    compile 'io.micronaut:micronaut-http-server-netty'
+    compile 'io.micronaut:micronaut-runtime-groovy'
+    compile 'io.micronaut:micronaut-inject'
+    compile 'io.micronaut:micronaut-runtime'
+    compileOnly 'io.micronaut:micronaut-inject-groovy'
+    compileOnly 'io.micronaut:micronaut-inject-java'
+    runtime 'ch.qos.logback:logback-classic:1.2.3'
+}
+
+compileJava.options.compilerArgs += '-parameters'
+compileTestJava.options.compilerArgs += '-parameters'
+mainClassName = 'example.micronaut.Application'
