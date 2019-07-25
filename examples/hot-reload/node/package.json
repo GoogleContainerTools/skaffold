@@ -1,12 +1,14 @@
 {
-  "name": "node",
+  "name": "backend",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon server.js"
+    "dev": "nodemon index.js"
   },
-  "dependencies": {},
+  "dependencies": {
+    "express": "^4.16.4"
+  },
   "devDependencies": {
     "nodemon": "^1.18.4"
   }

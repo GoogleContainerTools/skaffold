@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -171,6 +172,24 @@ func (b *RunBuilder) Run(t *testing.T) error {
 	return nil
 }
 
+// RunWithCombinedOutput runs the skaffold command and returns the combined standard output and error.
+func (b *RunBuilder) RunWithCombinedOutput(t *testing.T) ([]byte, error) {
+	t.Helper()
+
+	cmd := b.cmd(context.Background())
+	cmd.Stdout, cmd.Stderr = nil, nil
+	logrus.Infoln(cmd.Args)
+
+	start := time.Now()
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return out, errors.Wrapf(err, "skaffold %s", b.command)
+	}
+
+	logrus.Infoln("Ran in", time.Since(start))
+	return out, nil
+}
+
 // RunOrFailOutput runs the skaffold command and fails the test
 // if the command returns an error.
 // It only returns the standard output.
@@ -184,6 +203,9 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 	start := time.Now()
 	out, err := cmd.Output()
 	if err != nil {
+		if ee, ok := err.(*exec.ExitError); ok {
+			defer t.Errorf(string(ee.Stderr))
+		}
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
 	}
 
@@ -202,7 +224,7 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	args = append(args, b.args...)
 
 	cmd := exec.CommandContext(ctx, "skaffold", args...)
-	cmd.Env = append(removeSkaffoldEnvVariables(os.Environ()), b.env...)
+	cmd.Env = append(removeSkaffoldEnvVariables(util.OSEnviron()), b.env...)
 	if b.stdin != nil {
 		cmd.Stdin = bytes.NewReader(b.stdin)
 	}

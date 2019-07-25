@@ -14,6 +14,39 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/*
+The `debug` package transforms Kubernetes pod-bearing resources so as to configure containers
+for remote debugging as suited for a container's runtime technology.  This package defines
+a _container transformer_ interface. Each transformer implementation should do the following:
+
+1. The transformer should modify the container's entrypoint, command arguments, and environment to enable debugging for the appropriate language runtime.
+2. The transformer should expose the port(s) required to connect remote debuggers.
+3. The transformer should identify any additional support files required to enable debugging (e.g., the `ptvsd` debugger for Python).
+4. The transform should return metadata to describe the remote connection information.
+
+Certain language runtimes require additional support files to enable remote debugging.
+These support files are provided through a set of support images defined at `gcr.io/gcp-dev-tools/duct-tape/`
+and defined at https://github.com/GoogleContainerTools/container-debug-support.
+The appropriate image ID is returned by the language transformer.  These support images
+are configured as initContainers on the pod and are expected to copy the debugging support
+files into a support volume mounted at `/dbg`.  The expected convention is that each runtime's
+files are placed in `/dbg/<runtimeId>`.  This same volume is then mounted into the
+actual containers at `/dbg`.
+
+As Kubernetes container objects don't actually carry metadata, we place this metadata on
+the container's parent as an _annotation_; as a pod/podspec can have multiple containers, each of which may
+be debuggable, we record this metadata using as a JSON object keyed by the container name.
+Kubernetes requires that containers within a podspec are uniquely named.
+For example, a pod with two containers named `microservice` and `adapter` may be:
+
+  debug.cloud.google.com/config: '{
+    "microservice":{"devtools":9229,"runtime":"nodejs"},
+    "adapter":{"jdwp":5005,"runtime":"jvm"}
+  }'
+
+Each configuration is itself a JSON object with a `runtime` field identifying the
+language runtime, and a set of runtime-specific fields describing connection information.
+*/
 package debug
 
 import (
@@ -52,9 +85,15 @@ type containerTransformer interface {
 	// IsApplicable determines if this container is suitable to be transformed.
 	IsApplicable(config imageConfiguration) bool
 
+	// RuntimeSupportImage returns the associated duct-tape helper image required or empty string
+	RuntimeSupportImage() string
+
 	// Apply configures a container definition for debugging, returning a simple map describing the debug configuration details or `nil` if it could not be done
 	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{}
 }
+
+// debuggingSupportVolume is the name of the volume used to hold language runtime debugging support files
+const debuggingSupportFilesVolume = "debugging-support-files"
 
 var containerTransforms []containerTransformer
 
@@ -120,18 +159,58 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 	portAlloc := func(desiredPort int32) int32 {
 		return allocatePort(podSpec, desiredPort)
 	}
-	// containers are required to have unique name within a pod
+	// map of containers -> debugging configuration maps; k8s ensures that a pod's containers are uniquely named
 	configurations := make(map[string]map[string]interface{})
+	// the container images that require debugging support files
+	var containersRequiringSupport []*v1.Container
+	// the set of image IDs required to provide debugging support files
+	requiredSupportImages := make(map[string]bool)
 	for i := range podSpec.Containers {
 		container := &podSpec.Containers[i]
-		// we only reconfigure build artifacts
-		if configuration, err := transformContainer(container, retrieveImageConfiguration, portAlloc); err == nil {
+		// the usual retriever returns an error for non-build artifacts
+		imageConfig, err := retrieveImageConfiguration(container.Image)
+		if err != nil {
+			continue
+		}
+		// requiredImage, if not empty, is the image ID providing the debugging support files
+		if configuration, requiredImage, err := transformContainer(container, imageConfig, portAlloc); err == nil {
 			configurations[container.Name] = configuration
+			if len(requiredImage) > 0 {
+				logrus.Infof("%q requires debugging support image %q", container.Name, requiredImage)
+				containersRequiringSupport = append(containersRequiringSupport, container)
+				requiredSupportImages[requiredImage] = true
+			}
 			// todo: add this artifact to the watch list?
 		} else {
-			logrus.Infof("Image [%s] not configured for debugging: %v", container.Image, err)
+			logrus.Infof("Image %q not configured for debugging: %v", container.Name, err)
 		}
 	}
+
+	// check if we have any images requiring additional debugging support files
+	if len(containersRequiringSupport) > 0 {
+		logrus.Infof("Configuring installation of debugging support files")
+		// we create the volume that will hold the debugging support files
+		supportVolume := v1.Volume{Name: debuggingSupportFilesVolume, VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}}}
+		podSpec.Volumes = append(podSpec.Volumes, supportVolume)
+
+		// this volume is mounted in the containers at `/dbg`
+		supportVolumeMount := v1.VolumeMount{Name: debuggingSupportFilesVolume, MountPath: "/dbg"}
+		// the initContainers are responsible for populating the contents of `/dbg`
+		// TODO make this pluggable for airgapped clusters? or is making container `imagePullPolicy:IfNotPresent` sufficient?
+		for imageID := range requiredSupportImages {
+			supportFilesInitContainer := v1.Container{
+				Name:         fmt.Sprintf("install-%s-support", imageID),
+				Image:        fmt.Sprintf("gcr.io/gcp-dev-tools/duct-tape/%s", imageID),
+				VolumeMounts: []v1.VolumeMount{supportVolumeMount},
+			}
+			podSpec.InitContainers = append(podSpec.InitContainers, supportFilesInitContainer)
+		}
+		// the populated volume is then mounted in the containers at `/dbg` too
+		for _, container := range containersRequiringSupport {
+			container.VolumeMounts = append(container.VolumeMounts, supportVolumeMount)
+		}
+	}
+
 	if len(configurations) > 0 {
 		if metadata.Annotations == nil {
 			metadata.Annotations = make(map[string]string)
@@ -177,17 +256,15 @@ func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
 }
 
 // transformContainer rewrites the container definition to enable debugging.
-// Returns a debugging configuration description or an error if the rewrite was unsuccessful.
-func transformContainer(container *v1.Container, retrieveImageConfiguration configurationRetriever, portAlloc portAllocator) (map[string]interface{}, error) {
-	var config imageConfiguration
-	config, err := retrieveImageConfiguration(container.Image)
-	if err != nil {
-		return nil, err
-	}
-
+// Returns a debugging configuration description with associated language runtime support
+// container image, or an error if the rewrite was unsuccessful.
+func transformContainer(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (map[string]interface{}, string, error) {
 	// update image configuration values with those set in the k8s manifest
 	for _, envVar := range container.Env {
 		// FIXME handle ValueFrom?
+		if config.env == nil {
+			config.env = make(map[string]string)
+		}
 		config.env[envVar.Name] = envVar.Value
 	}
 
@@ -200,10 +277,10 @@ func transformContainer(container *v1.Container, retrieveImageConfiguration conf
 
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
-			return transform.Apply(container, config, portAlloc), nil
+			return transform.Apply(container, config, portAlloc), transform.RuntimeSupportImage(), nil
 		}
 	}
-	return nil, errors.Errorf("unable to determine runtime for [%s]", container.Name)
+	return nil, "", errors.Errorf("unable to determine runtime for %q", container.Name)
 }
 
 func encodeConfigurations(configurations map[string]map[string]interface{}) string {

@@ -39,7 +39,7 @@ func query(target string) string {
 
 // GetDependencies finds the sources dependencies for the given bazel artifact.
 // All paths are relative to the workspace.
-func GetDependencies(ctx context.Context, workspace string, a *latest.BazelArtifact) ([]string, error) {
+func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) ([]string, error) {
 	timer := time.NewTimer(1 * time.Second)
 	defer timer.Stop()
 
@@ -48,8 +48,18 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.BazelArtif
 		logrus.Warnln("Retrieving Bazel dependencies can take a long time the first time")
 	}()
 
+	topLevelFolder, err := findWorkspace(dir)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to find the WORKSPACE file")
+	}
+
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to find absolute path for %s", dir)
+	}
+
 	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no")
-	cmd.Dir = workspace
+	cmd.Dir = dir
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting bazel dependencies")
@@ -68,12 +78,18 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.BazelArtif
 			continue
 		}
 
-		deps = append(deps, depToPath(l))
+		rel, err := filepath.Rel(absDir, filepath.Join(topLevelFolder, depToPath(l)))
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to find absolute path")
+		}
+		deps = append(deps, rel)
 	}
 
-	if _, err := os.Stat(filepath.Join(workspace, "WORKSPACE")); err == nil {
-		deps = append(deps, "WORKSPACE")
+	rel, err := filepath.Rel(absDir, filepath.Join(topLevelFolder, "WORKSPACE"))
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to find absolute path")
 	}
+	deps = append(deps, rel)
 
 	logrus.Debugf("Found dependencies for bazel artifact: %v", deps)
 
@@ -82,4 +98,23 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.BazelArtif
 
 func depToPath(dep string) string {
 	return strings.TrimPrefix(strings.Replace(strings.TrimPrefix(dep, "//"), ":", "/", 1), "/")
+}
+
+func findWorkspace(workingDir string) (string, error) {
+	dir, err := filepath.Abs(workingDir)
+	if err != nil {
+		return "", errors.Wrap(err, "invalid working dir")
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "WORKSPACE")); err == nil {
+			return dir, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", errors.New("no WORKSPACE file found")
+		}
+		dir = parent
+	}
 }

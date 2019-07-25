@@ -44,6 +44,7 @@ func catchCtrlC(cancel context.CancelFunc) {
 
 	go func() {
 		<-signals
+		signal.Stop(signals)
 		cancel()
 	}()
 }

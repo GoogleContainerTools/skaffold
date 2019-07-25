@@ -100,18 +100,44 @@ Kubernetes cluster. Kaniko enables building container images in environments
 that cannot easily or securely run a Docker daemon.
 
 Skaffold can help build artifacts in a Kubernetes cluster using the Kaniko
-image; after the artifacts are built, kaniko can push them to remote registries.
+image; after the artifacts are built, kaniko must push them to a registry.
 
 ### Configuration
 
 To use Kaniko, add build type `kaniko` to the `build` section of
 `skaffold.yaml`. The following options can optionally be configured:
 
-{{< schema root="KanikoBuild" >}}
+{{< schema root="KanikoArtifact" >}}
 
 The `buildContext` can be either:
 
 {{< schema root="KanikoBuildContext" >}}
+
+Since Kaniko must push images to a registry, it is required to set up cluster credentials.
+These credentials are configured in the `cluster` section with the following options:
+
+{{< schema root="ClusterDetails" >}}
+
+To set up the credentials for kaniko have a look at the [kaniko docs](https://github.com/GoogleContainerTools/kaniko#kubernetes-secret).
+The recommended way is to store the pull secret in Kubernetes and configure `pullSecretName`.
+Alternatively, the path to a credentials file can be set with the `pullSecret` option:
+```yaml
+build:
+  cluster:
+    pullSecretName: pull-secret-in-kubernetes
+    # OR
+    pullSecret: path-to-service-account-key-file
+```
+Similarly, when pushing to a docker registry:
+```yaml
+build:
+  cluster:
+    dockerConfig:
+      path: ~/.docker/config.json
+      # OR
+      secretName: docker-config-secret-in-kubernetes
+```
+Note that the kubernetes secret must not be of type `kubernetes.io/dockerconfigjson` which stores the config json under the key `".dockerconfigjson"`, but an opaque secret with the key `"config.json"`.
 
 ### Example
 
@@ -130,6 +156,8 @@ without a Docker daemon.
 
 Skaffold can help build artifacts using Jib; Jib builds the container images and then
 pushes them to the local Docker daemon or to remote registries as instructed by Skaffold.
+
+Skaffold requires using Jib v1.4.0 or later.
 
 ### Configuration
 
@@ -165,22 +193,17 @@ each produce a separate container image.
 To build a Maven multi-module project, first identify the modules that should
 produce a container image. Then for each such module:
 
-  1. Create a Skaffold `artifact` in the `skaffold.yaml`:
-     - Set the `artifact`'s `context` field to the root project location.
-     - Add a `jibMaven` element and set its `module` field to the module's
-       `:artifactId`, `groupId:artifactId`, or the relative path to the module
-       _within the project_.
-  2. Configure the module's `pom.xml` to bind either `jib:build` or `jib:dockerBuild` to
-     the `package` phase as appropriate (see below).
+  - Create a Skaffold `artifact` in the `skaffold.yaml`:
+  - Set the `artifact`'s `context` field to the root project location.
+  - Add a `jibMaven` element and set its `module` field to the module's
+    `:artifactId`, `groupId:artifactId`, or the relative path to the module
+    _within the project_.
 
-This second step is necessary at the moment as Maven applies plugin goals specified
-on the command-line, like `jib:build` or, to all modules and not just the modules
-producing container images.
-The situation is further complicated as Skaffold speeds up deploys to a local cluster,
-such as `minikube`, by building and loading container images directly to the
-local cluster's docker daemon (via `jib:dockerBuild` instead of `jib:build`),
-thus saving a push and a pull of the image.
-We plan to improve this situation [(#1876)](https://github.com/GoogleContainerTools/skaffold/issues/1876).
+{{% alert title="Updating from earlier versions" %}}
+Skaffold had required Maven multi-module projects bind a Jib
+`build` or `dockerBuild` goal to the *package* phase.  These bindings are
+no longer required with Jib 1.4.0 and should be removed.
+{{% /alert %}}
 
 #### Gradle
 
@@ -250,11 +273,19 @@ Skaffold will pass in the following additional environment variables for the fol
 | ------------- |-------------| -----|
 | Docker daemon environment variables     | Inform the custom builder of which docker daemon endpoint we are using. Allows custom build scripts to work with tools like Minikube. For Minikube, this is the output of `minikube docker-env`.| None. | 
 
+##### Cluster Builder
+| Environment Variable         | Description           | Expectation  |
+| ------------- |-------------| -----|
+| $KUBECONTEXT    | The expected kubecontext in which the image will be built.| None. | 
+| $NAMESPACE      | The expected namespace in which the image will be built.| None. | 
+| $PULL_SECRET_NAME    | The name of the secret with authentication required to pull a base image/push the final image built on cluster.| None. | 
+| $DOCKER_CONFIG_SECRET_NAME    | The secret containing any required docker authentication for custom builds on cluster.| None. | 
+| $TIMEOUT        | The amount of time an on cluster build is allowed to run.| None. | 
 
 ### Configuration
 
 To use a custom build script, add a `custom` field to each corresponding artifact in the `build` section of the skaffold.yaml.
-Currently, this only works with the build type `local`. Supported schema for `custom` includes:
+Currently, this only works with the `local` and `cluster` build types. Supported schema for `custom` includes:
 
 
 {{< schema root="CustomArtifact" >}}
@@ -302,7 +333,7 @@ custom:
         file: foo
 ```
 
-##### Getting depedencies from a command
+##### Getting dependencies from a command
 Sometimes you might have a builder that can provide the dependencies for a given artifact.
 For example bazel has the `bazel query deps` command.
 Custom artifact builders can ask Skaffold to execute a custom command, which Skaffold can use to get the dependencies for the artifact for file watching.

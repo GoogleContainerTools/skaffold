@@ -26,82 +26,146 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+type mockRunner struct {
+	runner.Runner
+}
+
+func (r *mockRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	out.Write([]byte("Build Completed"))
+	return []build.Artifact{{
+		ImageName: "gcr.io/skaffold/example",
+		Tag:       "test",
+	}}, nil
+}
+
+func (r *mockRunner) Stop() error {
+	return nil
+}
+
 func TestQuietFlag(t *testing.T) {
-	mockCreateRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
-		return []build.Artifact{{
-			ImageName: "gcr.io/skaffold/example",
-			Tag:       "test",
-		}}, nil
+	mockCreateRunner := func(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		description    string
 		template       string
 		expectedOutput []byte
-		mock           func(context.Context, io.Writer) ([]build.Artifact, error)
 		shouldErr      bool
 	}{
 		{
 			description:    "quiet flag print build images with no template",
 			expectedOutput: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
 			shouldErr:      false,
-			mock:           mockCreateRunner,
 		},
 		{
 			description:    "quiet flag print build images applies pattern specified in template ",
 			template:       "{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}",
 			expectedOutput: []byte("gcr.io/skaffold/example -> test\n"),
 			shouldErr:      false,
-			mock:           mockCreateRunner,
 		},
 		{
 			description:    "build errors out when incorrect template specified",
 			template:       "{{.Incorrect}}",
 			expectedOutput: nil,
 			shouldErr:      true,
-			mock:           mockCreateRunner,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			restore := testutil.Override(t, &quietFlag, true)
-			defer restore()
-
-			restoreFn := testutil.Override(t, &createRunnerAndBuildFunc, test.mock)
-			defer restoreFn()
-
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&quietFlag, true)
+			t.Override(&createRunner, mockCreateRunner)
 			if test.template != "" {
-				restoreTemplate := testutil.Override(t, &buildFormatFlag, flags.NewTemplateFlag(test.template, flags.BuildOutput{}))
-				defer restoreTemplate()
+				t.Override(&buildFormatFlag, flags.NewTemplateFlag(test.template, flags.BuildOutput{}))
 			}
 
 			var output bytes.Buffer
 
 			err := doBuild(context.Background(), &output)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, string(test.expectedOutput), output.String())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, string(test.expectedOutput), output.String())
+		})
+	}
+}
+
+func TestFileOutputFlag(t *testing.T) {
+	mockCreateRunner := func(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
+	}
+
+	tests := []struct {
+		description         string
+		filename            string
+		quietFlag           bool
+		template            string
+		expectedOutput      []byte
+		expectedFileContent []byte
+	}{
+		{
+			description:         "build runs successfully with flag and creates a file",
+			filename:            "testfile.out",
+			quietFlag:           false,
+			expectedOutput:      []byte("Build Completed"),
+			expectedFileContent: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
+		},
+		{
+			description:         "file output flag with quiet flag creates a file and suppresses build output",
+			filename:            "testfile.out",
+			quietFlag:           true,
+			expectedOutput:      []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
+			expectedFileContent: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
+		},
+		{
+			description:         "file output flag with template properly formats output and writes to a file",
+			filename:            "testfile.out",
+			quietFlag:           true,
+			template:            "{{range .Builds}}{{.ImageName}} -> {{.Tag}}\n{{end}}",
+			expectedOutput:      []byte("gcr.io/skaffold/example -> test\n"),
+			expectedFileContent: []byte("gcr.io/skaffold/example -> test\n"),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&quietFlag, test.quietFlag)
+			t.Override(&buildOutputFlag, test.filename)
+			t.Override(&createRunner, mockCreateRunner)
+			if test.template != "" {
+				t.Override(&buildFormatFlag, flags.NewTemplateFlag(test.template, flags.BuildOutput{}))
+			}
+
+			// tempDir for writing file to
+			tempDir := t.NewTempDir()
+			tempDir.Chdir()
+
+			// Check that stdout is correct
+			var output bytes.Buffer
+			err := doBuild(context.Background(), &output)
+			t.CheckErrorAndDeepEqual(false, err, string(test.expectedOutput), output.String())
+
+			// Check that file contents are correct
+			fileContent, err := ioutil.ReadFile(test.filename)
+			t.CheckErrorAndDeepEqual(false, err, string(test.expectedFileContent), string(fileContent))
 		})
 	}
 }
 
 func TestRunBuild(t *testing.T) {
-	errRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
-		return nil, errors.New("some error")
+	errRunner := func(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+		return nil, nil, errors.New("some error")
 	}
-	mockCreateRunner := func(context.Context, io.Writer) ([]build.Artifact, error) {
-		return []build.Artifact{{
-			ImageName: "gcr.io/skaffold/example",
-			Tag:       "test",
-		}}, nil
+	mockCreateRunner := func(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
 	}
 
-	var tests = []struct {
+	tests := []struct {
 		description string
-		mock        func(context.Context, io.Writer) ([]build.Artifact, error)
+		mock        func(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error)
 		shouldErr   bool
 	}{
 		{
@@ -116,13 +180,12 @@ func TestRunBuild(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			restore := testutil.Override(t, &createRunnerAndBuildFunc, test.mock)
-			defer restore()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&createRunner, test.mock)
 
 			err := doBuild(context.Background(), ioutil.Discard)
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }

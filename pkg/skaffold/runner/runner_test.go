@@ -20,20 +20,21 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"testing"
-
-	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type Actions struct {
@@ -49,9 +50,37 @@ type TestBench struct {
 	testErrors   []error
 	deployErrors []error
 
+	devLoop        func(context.Context, io.Writer) error
+	firstMonitor   func(bool) error
+	cycles         int
+	currentCycle   int
 	currentActions Actions
 	actions        []Actions
 	tag            int
+}
+
+func NewTestBench() *TestBench {
+	return &TestBench{}
+}
+
+func (t *TestBench) WithBuildErrors(buildErrors []error) *TestBench {
+	t.buildErrors = buildErrors
+	return t
+}
+
+func (t *TestBench) WithSyncErrors(syncErrors []error) *TestBench {
+	t.syncErrors = syncErrors
+	return t
+}
+
+func (t *TestBench) WithDeployErrors(deployErrors []error) *TestBench {
+	t.deployErrors = deployErrors
+	return t
+}
+
+func (t *TestBench) WithTestErrors(testErrors []error) *TestBench {
+	t.testErrors = testErrors
+	return t
 }
 
 func (t *TestBench) Labels() map[string]string                        { return map[string]string{} }
@@ -59,6 +88,10 @@ func (t *TestBench) TestDependencies() ([]string, error)              { return n
 func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
 func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
 func (t *TestBench) Prune(ctx context.Context, out io.Writer) error   { return nil }
+func (t *TestBench) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
+	return nil, nil
+}
+
 func (t *TestBench) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 	return nil, nil
 }
@@ -68,7 +101,7 @@ func (t *TestBench) enterNewCycle() {
 	t.currentActions = Actions{}
 }
 
-func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	if len(t.buildErrors) > 0 {
 		err := t.buildErrors[0]
 		t.buildErrors = t.buildErrors[1:]
@@ -91,7 +124,7 @@ func (t *TestBench) Build(ctx context.Context, w io.Writer, tags tag.ImageTags, 
 	return builds, nil
 }
 
-func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {
+func (t *TestBench) Sync(_ context.Context, item *sync.Item) error {
 	if len(t.syncErrors) > 0 {
 		err := t.syncErrors[0]
 		t.syncErrors = t.syncErrors[1:]
@@ -104,7 +137,7 @@ func (t *TestBench) Sync(ctx context.Context, item *sync.Item) error {
 	return nil
 }
 
-func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []build.Artifact) error {
 	if len(t.testErrors) > 0 {
 		err := t.testErrors[0]
 		t.testErrors = t.testErrors[1:]
@@ -117,7 +150,7 @@ func (t *TestBench) Test(ctx context.Context, out io.Writer, artifacts []build.A
 	return nil
 }
 
-func (t *TestBench) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact, labellers []deploy.Labeller) error {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ []deploy.Labeller) error {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
@@ -134,6 +167,23 @@ func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
 
+func (t *TestBench) WatchForChanges(context.Context, io.Writer, func(context.Context, io.Writer) error) error {
+	// don't actually call the monitor here, because extra actions would be added
+	if err := t.firstMonitor(true); err != nil {
+		return err
+	}
+	for i := 0; i < t.cycles; i++ {
+		t.enterNewCycle()
+		t.currentCycle = i
+		if err := t.devLoop(context.Background(), ioutil.Discard); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *TestBench) LogWatchToUser(_ io.Writer) {}
+
 func findTags(artifacts []build.Artifact) []string {
 	var tags []string
 	for _, artifact := range artifacts {
@@ -142,33 +192,50 @@ func findTags(artifacts []build.Artifact) []string {
 	return tags
 }
 
-func createRunner(t *testing.T, testBench *TestBench) *SkaffoldRunner {
-	t.Helper()
+func (r *SkaffoldRunner) WithMonitor(m filemon.Monitor) *SkaffoldRunner {
+	r.monitor = m
+	return r
+}
 
+func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) *SkaffoldRunner {
 	opts := &config.SkaffoldOptions{
-		Trigger: "polling",
+		Trigger:           "polling",
+		WatchPollInterval: 100,
+		AutoBuild:         true,
+		AutoSync:          true,
+		AutoDeploy:        true,
 	}
 
 	cfg := &latest.SkaffoldConfig{}
 	defaults.Set(cfg)
 
 	runner, err := NewForConfig(opts, cfg)
-
-	testutil.CheckError(t, false, err)
+	t.CheckNoError(err)
 
 	runner.Builder = testBench
 	runner.Syncer = testBench
 	runner.Tester = testBench
 	runner.Deployer = testBench
+	runner.listener = testBench
+	runner.monitor = monitor
+
+	testBench.devLoop = func(context.Context, io.Writer) error {
+		if err := monitor.Run(true); err != nil {
+			return err
+		}
+		return runner.doDev(context.Background(), ioutil.Discard)
+	}
+
+	testBench.firstMonitor = func(bool) error {
+		// default to noop so we don't add extra actions
+		return nil
+	}
 
 	return runner
 }
 
 func TestNewForConfig(t *testing.T) {
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-	defer restore()
-
-	var tests = []struct {
+	tests := []struct {
 		description      string
 		config           *latest.SkaffoldConfig
 		shouldErr        bool
@@ -283,19 +350,105 @@ func TestNewForConfig(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+
 			cfg, err := NewForConfig(&config.SkaffoldOptions{
 				Trigger: "polling",
 			}, test.config)
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 			if cfg != nil {
 				b, _t, d := WithTimings(test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
 
-				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, b, cfg.Builder)
-				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, _t, cfg.Tester)
-				testutil.CheckErrorAndTypeEquality(t, test.shouldErr, err, d, cfg.Deployer)
+				t.CheckErrorAndTypeEquality(test.shouldErr, err, b, cfg.Builder)
+				t.CheckErrorAndTypeEquality(test.shouldErr, err, _t, cfg.Tester)
+				t.CheckErrorAndTypeEquality(test.shouldErr, err, d, cfg.Deployer)
 			}
+		})
+	}
+}
+
+func TestTriggerCallbackAndIntents(t *testing.T) {
+	var tests = []struct {
+		description          string
+		autoBuild            bool
+		autoSync             bool
+		autoDeploy           bool
+		expectedBuildIntent  bool
+		expectedSyncIntent   bool
+		expectedDeployIntent bool
+	}{
+		{
+			description:          "default",
+			autoBuild:            true,
+			autoSync:             true,
+			autoDeploy:           true,
+			expectedBuildIntent:  true,
+			expectedSyncIntent:   true,
+			expectedDeployIntent: true,
+		},
+		{
+			description:          "build trigger in api mode",
+			autoBuild:            false,
+			autoSync:             true,
+			autoDeploy:           true,
+			expectedBuildIntent:  false,
+			expectedSyncIntent:   true,
+			expectedDeployIntent: true,
+		},
+		{
+			description:          "deploy trigger in api mode",
+			autoBuild:            true,
+			autoSync:             true,
+			autoDeploy:           false,
+			expectedBuildIntent:  true,
+			expectedSyncIntent:   true,
+			expectedDeployIntent: false,
+		},
+		{
+			description:          "sync trigger in api mode",
+			autoBuild:            true,
+			autoSync:             false,
+			autoDeploy:           true,
+			expectedBuildIntent:  true,
+			expectedSyncIntent:   false,
+			expectedDeployIntent: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			opts := &config.SkaffoldOptions{
+				Trigger:           "polling",
+				WatchPollInterval: 100,
+				AutoBuild:         test.autoBuild,
+				AutoSync:          test.autoSync,
+				AutoDeploy:        test.autoDeploy,
+			}
+			defaultConfig := &latest.SkaffoldConfig{
+				Pipeline: latest.Pipeline{
+					Build: latest.BuildConfig{
+						TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+						BuildType: latest.BuildType{
+							LocalBuild: &latest.LocalBuild{},
+						},
+					},
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KubectlDeploy: &latest.KubectlDeploy{},
+						},
+					},
+				},
+			}
+			r, _ := NewForConfig(opts, defaultConfig)
+
+			r.intents.resetBuild()
+			r.intents.resetSync()
+			r.intents.resetDeploy()
+			testutil.CheckDeepEqual(t, test.expectedBuildIntent, r.intents.build)
+			testutil.CheckDeepEqual(t, test.expectedSyncIntent, r.intents.sync)
+			testutil.CheckDeepEqual(t, test.expectedDeployIntent, r.intents.deploy)
 		})
 	}
 }

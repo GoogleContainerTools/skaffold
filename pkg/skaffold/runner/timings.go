@@ -21,14 +21,13 @@ import (
 	"io"
 	"time"
 
-	"k8s.io/apimachinery/pkg/labels"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
+	"k8s.io/apimachinery/pkg/labels"
 )
 
 // WithTimings creates a deployer that logs the duration of each phase.

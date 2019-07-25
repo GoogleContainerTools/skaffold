@@ -20,26 +20,21 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 // NewCmdDelete describes the CLI command to delete deployed resources.
-func NewCmdDelete(out io.Writer) *cobra.Command {
-	return commands.
-		New(out).
-		WithDescription("delete", "Delete the deployed resources").
-		WithFlags(func(f *pflag.FlagSet) {
-			AddRunCommonFlags(f)
-		}).
+func NewCmdDelete() *cobra.Command {
+	return NewCmd("delete").
+		WithDescription("Delete the deployed application").
+		WithCommonFlags().
 		NoArgs(cancelWithCtrlC(context.Background(), doDelete))
 }
 
 func doDelete(ctx context.Context, out io.Writer) error {
-	return withRunner(func(r *runner.SkaffoldRunner, _ *latest.SkaffoldConfig) error {
-		return r.Deployer.Cleanup(ctx, out)
+	return withRunner(ctx, func(r runner.Runner, _ *latest.SkaffoldConfig) error {
+		return r.Cleanup(ctx, out)
 	})
 }

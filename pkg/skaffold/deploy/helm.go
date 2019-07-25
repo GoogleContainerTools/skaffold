@@ -37,6 +37,7 @@ import (
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
@@ -261,7 +262,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		}
 		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
-	for _, valuesFile := range r.ValuesFiles {
+	for _, valuesFile := range expandPaths(r.ValuesFiles) {
 		args = append(args, "-f", valuesFile)
 	}
 
@@ -457,4 +458,15 @@ func extractChartFilename(s, tmp string) (string, error) {
 	}
 
 	return s[idx+len(tmp):], nil
+}
+
+func expandPaths(paths []string) []string {
+	for i, path := range paths {
+		expanded, err := homedir.Expand(path)
+		if err == nil {
+			paths[i] = expanded
+		}
+	}
+
+	return paths
 }

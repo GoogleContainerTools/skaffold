@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package transport provides a round tripper capable of caching HTTP responses.
 package discovery
 
 import (
 	"net/http"
+	"os"
 	"path/filepath"
 
+	"github.com/golang/glog"
 	"github.com/gregjones/httpcache"
 	"github.com/gregjones/httpcache/diskcache"
 	"github.com/peterbourgon/diskv"
@@ -35,6 +36,8 @@ type cacheRoundTripper struct {
 // corresponding requests.
 func newCacheRoundTripper(cacheDir string, rt http.RoundTripper) http.RoundTripper {
 	d := diskv.New(diskv.Options{
+		PathPerm: os.FileMode(0750),
+		FilePerm: os.FileMode(0660),
 		BasePath: cacheDir,
 		TempDir:  filepath.Join(cacheDir, ".diskv-temp"),
 	})
@@ -46,6 +49,17 @@ func newCacheRoundTripper(cacheDir string, rt http.RoundTripper) http.RoundTripp
 
 func (rt *cacheRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	return rt.rt.RoundTrip(req)
+}
+
+func (rt *cacheRoundTripper) CancelRequest(req *http.Request) {
+	type canceler interface {
+		CancelRequest(*http.Request)
+	}
+	if cr, ok := rt.rt.Transport.(canceler); ok {
+		cr.CancelRequest(req)
+	} else {
+		glog.Errorf("CancelRequest not implemented by %T", rt.rt.Transport)
+	}
 }
 
 func (rt *cacheRoundTripper) WrappedRoundTripper() http.RoundTripper { return rt.rt.Transport }

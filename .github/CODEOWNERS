@@ -5,3 +5,11 @@
 # JIB owners
 
 **/**jib** @briandealwis @loosebazooka @TadCordle @chanseokoh @balopat @dgageot @nkubala @priyawadhwa @tejal29
+**/jib_** @briandealwis @loosebazooka @TadCordle @chanseokoh @balopat @dgageot @nkubala @priyawadhwa @tejal29
+
+# Debug owners
+pkg/skaffold/debug/** @briandealwis @loosebazooka @quoctruong
+docs/content/en/docs/how-tos/debug/** @briandealwis @loosebazooka @quoctruong
+integration/test-data/debug/** @briandealwis @loosebazooka @quoctruong
+integration/debug_test.go  @briandealwis @loosebazooka @quoctruong
+

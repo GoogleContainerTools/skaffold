@@ -18,8 +18,10 @@ package deploy
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 
@@ -38,13 +40,14 @@ import (
 
 // kustomization is the content of a kustomization.yaml file.
 type kustomization struct {
-	Bases              []string             `yaml:"bases"`
-	Resources          []string             `yaml:"resources"`
-	Patches            []string             `yaml:"patches"`
-	CRDs               []string             `yaml:"crds"`
-	PatchesJSON6902    []patchJSON6902      `yaml:"patchesJson6902"`
-	ConfigMapGenerator []configMapGenerator `yaml:"configMapGenerator"`
-	SecretGenerator    []secretGenerator    `yaml:"secretGenerator"`
+	Bases                 []string             `yaml:"bases"`
+	Resources             []string             `yaml:"resources"`
+	Patches               []string             `yaml:"patches"`
+	PatchesStrategicMerge []string             `yaml:"patchesStrategicMerge"`
+	CRDs                  []string             `yaml:"crds"`
+	PatchesJSON6902       []patchJSON6902      `yaml:"patchesJson6902"`
+	ConfigMapGenerator    []configMapGenerator `yaml:"configMapGenerator"`
+	SecretGenerator       []secretGenerator    `yaml:"secretGenerator"`
 }
 
 type patchJSON6902 struct {
@@ -154,7 +157,11 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 func dependenciesForKustomization(dir string) ([]string, error) {
 	var deps []string
 
-	path := filepath.Join(dir, "kustomization.yaml")
+	path, err := findKustomizationConfig(dir)
+	if err != nil {
+		return nil, err
+	}
+
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -165,18 +172,32 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 		return nil, err
 	}
 
-	for _, base := range content.Bases {
-		baseDeps, err := dependenciesForKustomization(filepath.Join(dir, base))
-		if err != nil {
-			return nil, err
+	deps = append(deps, path)
+
+	candidates := append(content.Bases, content.Resources...)
+
+	for _, candidate := range candidates {
+		// If the file  doesn't exist locally, we can assume it's a remote file and
+		// skip it, since we can't monitor remote files. Kustomize itself will
+		// handle invalid/missing files.
+		local, mode := pathExistsLocally(candidate, dir)
+		if !local {
+			continue
 		}
 
-		deps = append(deps, baseDeps...)
+		if mode.IsDir() {
+			candidateDeps, err := dependenciesForKustomization(filepath.Join(dir, candidate))
+			if err != nil {
+				return nil, err
+			}
+			deps = append(deps, candidateDeps...)
+		} else {
+			deps = append(deps, filepath.Join(dir, candidate))
+		}
 	}
 
-	deps = append(deps, path)
-	deps = append(deps, joinPaths(dir, content.Resources)...)
 	deps = append(deps, joinPaths(dir, content.Patches)...)
+	deps = append(deps, joinPaths(dir, content.PatchesStrategicMerge)...)
 	deps = append(deps, joinPaths(dir, content.CRDs)...)
 	for _, patch := range content.PatchesJSON6902 {
 		deps = append(deps, filepath.Join(dir, patch.Path))
@@ -199,6 +220,29 @@ func joinPaths(root string, paths []string) []string {
 	}
 
 	return list
+}
+
+// A kustomization config must be at the root of the direectory. Kustomize will
+// error if more than one of these files exists so order doesn't matter.
+func findKustomizationConfig(dir string) (string, error) {
+	candidates := []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
+	for _, candidate := range candidates {
+		if local, _ := pathExistsLocally(candidate, dir); local {
+			return filepath.Join(dir, candidate), nil
+		}
+	}
+	return "", fmt.Errorf("no Kustomization configuration found in directory: %s", dir)
+}
+
+func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {
+	path := filename
+	if !filepath.IsAbs(filename) {
+		path = filepath.Join(workingDir, filename)
+	}
+	if f, err := os.Stat(path); err == nil {
+		return true, f.Mode()
+	}
+	return false, 0
 }
 
 // Dependencies lists all the files that can change what needs to be deployed.

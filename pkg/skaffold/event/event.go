@@ -21,12 +21,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -36,10 +34,7 @@ const (
 	Failed     = "Failed"
 )
 
-var (
-	handler *eventHandler
-	once    sync.Once
-)
+var handler = &eventHandler{}
 
 type eventHandler struct {
 	eventLog []proto.LogEntry
@@ -55,6 +50,22 @@ type listener struct {
 	callback func(*proto.LogEntry) error
 	errors   chan error
 	closed   bool
+}
+
+func GetState() (*proto.State, error) {
+	state := handler.getState()
+	return &state, nil
+}
+
+func ForEachEvent(callback func(*proto.LogEntry) error) error {
+	return handler.forEachEvent(callback)
+}
+
+func Handle(event *proto.Event) error {
+	if event != nil {
+		handler.handle(event)
+	}
+	return nil
 }
 
 func (ev *eventHandler) getState() proto.State {
@@ -111,12 +122,10 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(build *latest.BuildConfig) proto.State {
+func emptyState(build latest.BuildConfig) proto.State {
 	builds := map[string]string{}
-	if build != nil {
-		for _, a := range build.Artifacts {
-			builds[a.ImageName] = NotStarted
-		}
+	for _, a := range build.Artifacts {
+		builds[a.ImageName] = NotStarted
 	}
 
 	return proto.State{
@@ -131,25 +140,8 @@ func emptyState(build *latest.BuildConfig) proto.State {
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-// It returns a shutdown callback for tearing down the grpc server, which the runner is responsible for calling.
-// This function can only be called once.
-func InitializeState(runCtx *runcontext.RunContext) (func() error, error) {
-	var err error
-	serverShutdown := func() error { return nil }
-	once.Do(func() {
-		handler = &eventHandler{
-			state: emptyState(&runCtx.Cfg.Build),
-		}
-
-		if runCtx.Opts.EnableRPC {
-			serverShutdown, err = newStatusServer(runCtx.Opts.RPCPort, runCtx.Opts.RPCHTTPPort)
-			if err != nil {
-				err = errors.Wrap(err, "creating status server")
-				return
-			}
-		}
-	})
-	return serverShutdown, err
+func InitializeState(build latest.BuildConfig) {
+	handler.setState(emptyState(build))
 }
 
 // DeployInProgress notifies that a deployment has been started.
@@ -183,7 +175,7 @@ func BuildComplete(imageName string) {
 }
 
 // PortForwarded notifies that a remote port has been forwarded locally.
-func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string, portName string) {
+func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string, portName string, resourceType, resourceName string) {
 	go handler.handle(&proto.Event{
 		EventType: &proto.Event_PortEvent{
 			PortEvent: &proto.PortEvent{
@@ -193,9 +185,17 @@ func PortForwarded(localPort, remotePort int32, podName, containerName, namespac
 				ContainerName: containerName,
 				Namespace:     namespace,
 				PortName:      portName,
+				ResourceType:  resourceType,
+				ResourceName:  resourceName,
 			},
 		},
 	})
+}
+
+func (ev *eventHandler) setState(state proto.State) {
+	ev.stateLock.Lock()
+	ev.state = state
+	ev.stateLock.Unlock()
 }
 
 func (ev *eventHandler) handleDeployEvent(e *proto.DeployEvent) {

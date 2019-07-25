@@ -24,13 +24,23 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
+// For testing
+var (
+	CurrentConfig = getCurrentConfig
+)
+
 var (
 	currentConfigOnce sync.Once
 	currentConfig     clientcmdapi.Config
 	currentConfigErr  error
 )
 
-func CurrentConfig() (clientcmdapi.Config, error) {
+// ResetCurrentConfig is used by tests
+func ResetCurrentConfig() {
+	currentConfigOnce = sync.Once{}
+}
+
+func getCurrentConfig() (clientcmdapi.Config, error) {
 	currentConfigOnce.Do(func() {
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
@@ -42,12 +52,4 @@ func CurrentConfig() (clientcmdapi.Config, error) {
 		currentConfig = cfg
 	})
 	return currentConfig, currentConfigErr
-}
-
-func CurrentContext() (string, error) {
-	cfg, err := CurrentConfig()
-	if err != nil {
-		return "", err
-	}
-	return cfg.CurrentContext, nil
 }

@@ -20,22 +20,17 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 // NewCmdDebug describes the CLI command to run a pipeline in debug mode.
-func NewCmdDebug(out io.Writer) *cobra.Command {
-	return commands.
-		New(out).
-		WithLongDescription("debug", "Runs a pipeline file in debug mode", "Similar to `dev`, but configures the pipeline for debugging.").
-		WithFlags(func(f *pflag.FlagSet) {
-			AddRunDevFlags(f)
-			AddDevDebugFlags(f)
-		}).
+func NewCmdDebug() *cobra.Command {
+	return NewCmd("debug").
+		WithDescription("Run a pipeline in debug mode").
+		WithLongDescription("Similar to `dev`, but configures the pipeline for debugging.").
+		WithCommonFlags().
 		NoArgs(cancelWithCtrlC(context.Background(), doDebug))
 }
 
@@ -45,7 +40,7 @@ func doDebug(ctx context.Context, out io.Writer) error {
 	if len(opts.TargetImages) == 0 {
 		opts.TargetImages = []string{"none"}
 	}
-
+	opts.PortForward.ForwardPods = true
 	deploy.AddManifestTransform(debugging.ApplyDebuggingTransforms)
 
 	return doDev(ctx, out)

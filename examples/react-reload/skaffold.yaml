@@ -1,13 +1,10 @@
-apiVersion: skaffold/v1beta10
+apiVersion: skaffold/v1beta13
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/react-reload
     context: app
     sync:
-      'src/components/*': src/components/
-      'src/styles/*': src/styles/
-deploy:
-  kubectl:
-    manifests:
-    - 'app/k8s/**'
+      infer:
+      - 'src/components/*'
+      - 'src/styles/*'

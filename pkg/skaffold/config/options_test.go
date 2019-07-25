@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -64,6 +63,20 @@ func TestLabels(t *testing.T) {
 			},
 		},
 		{
+			description: "tail",
+			options:     SkaffoldOptions{Tail: true},
+			expectedLabels: map[string]string{
+				"skaffold.dev/tail": "true",
+			},
+		},
+		{
+			description: "tail dev",
+			options:     SkaffoldOptions{TailDev: true},
+			expectedLabels: map[string]string{
+				"skaffold.dev/tail": "true",
+			},
+		},
+		{
 			description: "all labels",
 			options: SkaffoldOptions{
 				Cleanup:   true,
@@ -96,20 +109,17 @@ func TestLabels(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			labels := test.options.Labels()
 
-			if !reflect.DeepEqual(test.expectedLabels, labels) {
-				t.Errorf("Wrong labels. Expected %v. Got %v", test.expectedLabels, labels)
-			}
+			t.CheckDeepEqual(test.expectedLabels, labels)
 		})
 	}
 }
 
 func TestIsTargetImage(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		targetImages  []string
 		expectedMatch bool
@@ -140,9 +150,8 @@ func TestIsTargetImage(t *testing.T) {
 			expectedMatch: false,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			opts := &SkaffoldOptions{
 				TargetImages: test.targetImages,
 			}
@@ -151,7 +160,7 @@ func TestIsTargetImage(t *testing.T) {
 				ImageName: "domain/image",
 			})
 
-			testutil.CheckDeepEqual(t, test.expectedMatch, match)
+			t.CheckDeepEqual(test.expectedMatch, match)
 		})
 	}
 }

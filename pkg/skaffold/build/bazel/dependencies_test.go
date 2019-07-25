@@ -18,6 +18,7 @@ package bazel
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -25,36 +26,66 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetDependenciesWithWorkspace(t *testing.T) {
-	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
-		"bazel query kind('source file', deps('target')) union buildfiles('target') --noimplicit_deps --order_output=no",
-		"@ignored\n//external/ignored\n\n//:dep1\n//:dep2\n",
-	)
+func TestGetDependencies(t *testing.T) {
+	tests := []struct {
+		description   string
+		workspace     string
+		target        string
+		files         map[string]string
+		expectedQuery string
+		output        string
+		expected      []string
+		shouldErr     bool
+	}{
+		{
+			description: "with WORKSPACE",
+			workspace:   ".",
+			target:      "target",
+			files: map[string]string{
+				"WORKSPACE": "",
+				"BUILD":     "",
+				"dep1":      "",
+				"dep2":      "",
+			},
+			expectedQuery: "bazel query kind('source file', deps('target')) union buildfiles('target') --noimplicit_deps --order_output=no",
+			output:        "@ignored\n//:BUILD\n//external/ignored\n\n//:dep1\n//:dep2\n",
+			expected:      []string{"BUILD", "dep1", "dep2", "WORKSPACE"},
+		},
+		{
+			description: "with parent WORKSPACE",
+			workspace:   "./sub/folder",
+			target:      "target2",
+			files: map[string]string{
+				"WORKSPACE":           "",
+				"BUILD":               "",
+				"sub/folder/BUILD":    "",
+				"sub/folder/dep1":     "",
+				"sub/folder/dep2":     "",
+				"sub/folder/baz/dep3": "",
+			},
+			expectedQuery: "bazel query kind('source file', deps('target2')) union buildfiles('target2') --noimplicit_deps --order_output=no",
+			output:        "@ignored\n//:BUILD\n//sub/folder:BUILD\n//external/ignored\n\n//sub/folder:dep1\n//sub/folder:dep2\n//sub/folder/baz:dep3\n",
+			expected:      []string{filepath.Join("..", "..", "BUILD"), "BUILD", "dep1", "dep2", filepath.Join("baz", "dep3"), filepath.Join("..", "..", "WORKSPACE")},
+		},
+		{
+			description: "without WORKSPACE",
+			workspace:   ".",
+			target:      "target",
+			shouldErr:   true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, t.FakeRunOut(test.expectedQuery, test.output))
+			t.NewTempDir().WriteFiles(test.files).Chdir()
 
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-	tmpDir.Write("WORKSPACE", "")
+			deps, err := GetDependencies(context.Background(), test.workspace, &latest.BazelArtifact{
+				BuildTarget: test.target,
+			})
 
-	deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.BazelArtifact{
-		BuildTarget: "target",
-	})
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep1", "dep2", "WORKSPACE"}, deps)
-}
-
-func TestGetDependenciesWithoutWorkspace(t *testing.T) {
-	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
-		"bazel query kind('source file', deps('target2')) union buildfiles('target2') --noimplicit_deps --order_output=no",
-		"@ignored\n//external/ignored\n\n//:dep3\n",
-	)
-
-	deps, err := GetDependencies(context.Background(), ".", &latest.BazelArtifact{
-		BuildTarget: "target2",
-	})
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, []string{"dep3"}, deps)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
+		})
+	}
 }
 
 func TestQuery(t *testing.T) {
@@ -67,7 +98,7 @@ func TestQuery(t *testing.T) {
 }
 
 func TestDepToPath(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		dep         string
 		expected    string
@@ -83,14 +114,11 @@ func TestDepToPath(t *testing.T) {
 			expected:    "vendor/github.com/gorilla/mux/mux.go",
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			path := depToPath(test.dep)
 
-			if path != test.expected {
-				t.Errorf("Expected %s. Got %s", test.expected, path)
-			}
+			t.CheckDeepEqual(test.expected, path)
 		})
 	}
 }

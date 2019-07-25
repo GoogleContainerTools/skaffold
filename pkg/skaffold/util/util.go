@@ -20,11 +20,8 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -35,6 +32,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -66,12 +64,24 @@ func IsSupportedKubernetesFormat(n string) bool {
 }
 
 func StrSliceContains(sl []string, s string) bool {
-	for _, a := range sl {
+	return StrSliceIndex(sl, s) >= 0
+}
+
+func StrSliceIndex(sl []string, s string) int {
+	for i, a := range sl {
 		if a == s {
-			return true
+			return i
 		}
 	}
-	return false
+	return -1
+}
+
+func StrSliceInsert(sl []string, index int, insert []string) []string {
+	newSlice := make([]string, len(sl)+len(insert))
+	copy(newSlice[0:index], sl[0:index])
+	copy(newSlice[index:index+len(insert)], insert)
+	copy(newSlice[index+len(insert):], sl[index:])
+	return newSlice
 }
 
 // ExpandPathsGlob expands paths according to filepath.Glob patterns
@@ -224,16 +234,6 @@ func NonEmptyLines(input []byte) []string {
 	return result
 }
 
-// SHA256 returns the shasum of the contents of r
-func SHA256(r io.Reader) (string, error) {
-	hasher := sha256.New()
-	_, err := io.Copy(hasher, r)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(hasher.Sum(make([]byte, 0, hasher.Size()))), nil
-}
-
 // CloneThroughJSON marshals the old interface into the new one
 func CloneThroughJSON(old interface{}, new interface{}) error {
 	o, err := json.Marshal(old)
@@ -242,6 +242,18 @@ func CloneThroughJSON(old interface{}, new interface{}) error {
 	}
 	if err := json.Unmarshal(o, &new); err != nil {
 		return errors.Wrap(err, "unmarshalling new")
+	}
+	return nil
+}
+
+// CloneThroughYAML marshals the old interface into the new one
+func CloneThroughYAML(old interface{}, new interface{}) error {
+	contents, err := yaml.Marshal(old)
+	if err != nil {
+		return errors.Wrap(err, "unmarshalling properties")
+	}
+	if err := yaml.Unmarshal(contents, new); err != nil {
+		return errors.Wrap(err, "unmarshalling bazel artifact")
 	}
 	return nil
 }

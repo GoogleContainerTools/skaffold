@@ -17,30 +17,20 @@ limitations under the License.
 package runner
 
 import (
-	"context"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
 )
 
-func (r *SkaffoldRunner) newLogger(out io.Writer, artifacts []*latest.Artifact) *kubernetes.LogAggregator {
+func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []*latest.Artifact) {
 	var imageNames []string
 	for _, artifact := range artifacts {
 		imageNames = append(imageNames, artifact.ImageName)
 	}
-	return r.newLoggerForImages(out, imageNames)
+	r.logger = r.newLoggerForImages(out, imageNames)
 }
 
 func (r *SkaffoldRunner) newLoggerForImages(out io.Writer, images []string) *kubernetes.LogAggregator {
 	return kubernetes.NewLogAggregator(out, images, r.imageList, r.runCtx.Namespaces)
-}
-
-func (r *SkaffoldRunner) TailLogs(ctx context.Context, out io.Writer, logger *kubernetes.LogAggregator) error {
-	if err := logger.Start(ctx); err != nil {
-		return errors.Wrap(err, "starting logger")
-	}
-	<-ctx.Done()
-	return nil
 }

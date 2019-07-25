@@ -143,7 +143,14 @@ func (k *KubectlDeployer) Dependencies() ([]string, error) {
 }
 
 func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
-	list, err := util.ExpandPathsGlob(k.workingDir, manifests)
+	var nonURLManifests []string
+	for _, manifest := range manifests {
+		if !util.IsURL(manifest) {
+			nonURLManifests = append(nonURLManifests, manifest)
+		}
+	}
+
+	list, err := util.ExpandPathsGlob(k.workingDir, nonURLManifests)
 	if err != nil {
 		return nil, errors.Wrap(err, "expanding kubectl manifest paths")
 	}
@@ -165,9 +172,17 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 
 // readManifests reads the manifests to deploy/delete.
 func (k *KubectlDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
+	// Get file manifests
 	manifests, err := k.Dependencies()
 	if err != nil {
 		return nil, errors.Wrap(err, "listing manifests")
+	}
+
+	// Append URL manifests
+	for _, manifest := range k.KubectlDeploy.Manifests {
+		if util.IsURL(manifest) {
+			manifests = append(manifests, manifest)
+		}
 	}
 
 	if len(manifests) == 0 {

@@ -17,16 +17,31 @@ limitations under the License.
 package sources
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestPod(t *testing.T) {
+	env := []v1.EnvVar{{
+		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+		Value: "/secret/kaniko-secret",
+	}}
+	reqs := &latest.ResourceRequirements{
+		Requests: &latest.ResourceRequirement{
+			CPU:    "0.1",
+			Memory: "1Gi",
+		},
+		Limits: &latest.ResourceRequirement{
+			CPU:    "0.5",
+			Memory: "5Gi",
+		},
+	}
+
 	localDir := &LocalDir{
 		artifact: &latest.KanikoArtifact{
 			Image: "image",
@@ -39,6 +54,7 @@ func TestPod(t *testing.T) {
 		clusterDetails: &latest.ClusterDetails{
 			Namespace:      "ns",
 			PullSecretName: "secret",
+			Resources:      reqs,
 		},
 	}
 
@@ -59,16 +75,14 @@ func TestPod(t *testing.T) {
 					Name:      constants.DefaultKanikoEmptyDirName,
 					MountPath: constants.DefaultKanikoEmptyDirMountPath,
 				}},
+				Resources: resourceRequirements(reqs),
 			}},
 			Containers: []v1.Container{{
 				Name:            constants.DefaultKanikoContainerName,
 				Image:           "image",
 				Args:            []string{"arg1", "arg2"},
 				ImagePullPolicy: v1.PullIfNotPresent,
-				Env: []v1.EnvVar{{
-					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-					Value: "/secret/kaniko-secret",
-				}},
+				Env:             env,
 				VolumeMounts: []v1.VolumeMount{
 					{
 						Name:      constants.DefaultKanikoSecretName,
@@ -79,7 +93,7 @@ func TestPod(t *testing.T) {
 						MountPath: constants.DefaultKanikoEmptyDirMountPath,
 					},
 				},
-				Resources: v1.ResourceRequirements{},
+				Resources: resourceRequirements(reqs),
 			}},
 			RestartPolicy: v1.RestartPolicyNever,
 			Volumes: []v1.Volume{
@@ -101,5 +115,7 @@ func TestPod(t *testing.T) {
 		},
 	}
 
-	testutil.CheckDeepEqual(t, expectedPod, pod)
+	if !reflect.DeepEqual(expectedPod, pod) {
+		t.Errorf("Expected manifest differs from actual manifest. Got: \n%v, \nExpected: \n%v", expectedPod, pod)
+	}
 }

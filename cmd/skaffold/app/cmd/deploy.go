@@ -20,7 +20,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/commands"
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -35,26 +34,24 @@ var (
 )
 
 // NewCmdDeploy describes the CLI command to deploy artifacts.
-func NewCmdDeploy(out io.Writer) *cobra.Command {
-	return commands.
-		New(out).
-		WithDescription("deploy", "Deploys the artifacts").
+func NewCmdDeploy() *cobra.Command {
+	return NewCmd("deploy").
+		WithDescription("Deploy pre-built artifacts").
+		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
 			f.VarP(&buildOutputFile, "build-artifacts", "a", `Filepath containing build output.
 E.g. build.out created by running skaffold build --quiet {{json .}} > build.out`)
-			AddRunDevFlags(f)
-			AddRunDeployFlags(f)
 		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doDeploy))
 }
 
 func doDeploy(ctx context.Context, out io.Writer) error {
-	return withRunner(func(r *runner.SkaffoldRunner, _ *latest.SkaffoldConfig) error {
+	return withRunner(ctx, func(r runner.Runner, _ *latest.SkaffoldConfig) error {
 		// If the BuildArtifacts contains an image in the preBuilt list,
 		// use image from BuildArtifacts instead
 		deployArtifacts := build.MergeWithPreviousBuilds(buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts())
 
-		return r.Deploy(ctx, out, deployArtifacts)
+		return r.DeployAndLog(ctx, out, deployArtifacts)
 	})
 }

@@ -32,7 +32,7 @@ func TestNewEmptyImage(t *testing.T) {
 }
 
 func TestImagesFlagSet(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description      string
 		setValue         string
 		shouldErr        bool
@@ -81,17 +81,18 @@ func TestImagesFlagSet(t *testing.T) {
 			shouldErr:   true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			flag := NewEmptyImages("input image name")
+
 			err := flag.Set(test.setValue)
-			testutil.CheckError(t, test.shouldErr, err)
+
+			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
 				image := flag.images[0]
 				// Test flag value is set to new value and expected Artifact
-				testutil.CheckDeepEqual(t, test.expectedArtifact, *image.artifact)
-				testutil.CheckDeepEqual(t, test.setValue, image.name)
+				t.CheckDeepEqual(test.expectedArtifact, *image.artifact)
+				t.CheckDeepEqual(test.setValue, image.name)
 			}
 		})
 	}
@@ -116,7 +117,7 @@ func TestImagesType(t *testing.T) {
 }
 
 func TestConvertToArtifact(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		image       string
 		expected    *build.Artifact
@@ -139,9 +140,10 @@ func TestConvertToArtifact(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			bRes, err := convertImageToArtifact(test.image)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, bRes)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, bRes)
 		})
 	}
 }

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	re "regexp"
 	"strings"
 
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -112,19 +113,36 @@ func isKubeContext(kubeContext string) (bool, error) {
 		return true, nil
 	}
 
-	currentKubeContext, err := kubectx.CurrentContext()
+	currentKubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
 		return false, errors.Wrap(err, "getting current cluster context")
 	}
 
-	return satisfies(kubeContext, currentKubeContext), nil
+	return satisfies(kubeContext, currentKubeConfig.CurrentContext), nil
 }
 
 func satisfies(expected, actual string) bool {
 	if strings.HasPrefix(expected, "!") {
-		return actual != expected[1:]
+		notExpected := expected[1:]
+
+		return !matches(notExpected, actual)
 	}
-	return actual == expected
+
+	return matches(expected, actual)
+}
+
+func matches(expected, actual string) bool {
+	if actual == expected {
+		return true
+	}
+
+	matcher, err := re.Compile(expected)
+	if err != nil {
+		logrus.Infof("profile activation criteria '%s' is not a valid regexp, falling back to string", expected)
+		return false
+	}
+
+	return matcher.MatchString(actual)
 }
 
 func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {

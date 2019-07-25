@@ -22,7 +22,7 @@ It's highly suggested that you only run this example on a local, private cluster
 From this directory, run
 
 ```bash
-$ skaffold dev
+skaffold dev
 ```
 
 Now, in a different terminal, hit the `leeroy-web` endpoint
@@ -43,11 +43,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-Once you see the log message 
+Once you see the log message
 ```
 [leeroy-app-5b4dfdcbc6-6vf6r leeroy-app] 2018/03/30 06:28:47 leeroy app server ready
 ```
-Your service will be ready to hit again with 
+Your service will be ready to hit again with
 
 ```
 $ curl $(minikube service leeroy-web --url)

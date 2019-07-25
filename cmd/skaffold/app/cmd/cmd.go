@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -25,8 +26,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"k8s.io/kubectl/pkg/util/templates"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -43,63 +48,114 @@ var (
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	updateMsg := make(chan string)
+	var shutdownAPIServer func() error
 
 	rootCmd := &cobra.Command{
-		Use:           "skaffold",
-		Short:         "A tool that facilitates continuous development for Kubernetes applications.",
+		Use: "skaffold",
+		Long: `A tool that facilitates continuous development for Kubernetes applications.
+
+  Find more information at: https://skaffold.dev/docs/getting-started/`,
 		SilenceErrors: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
+		},
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			cmd.Root().SilenceUsage = true
+
+			opts.Command = cmd.Use
+
+			// Setup colors
+			if forceColors {
+				color.ForceColors()
+			}
+			color.OverwriteDefault(color.Color(defaultColor))
+			cmd.Root().SetOutput(out)
+
+			// Setup logs
+			if err := setUpLogs(err, v); err != nil {
+				return err
+			}
+
+			// In dev mode, the default is to enable the rpc server
+			if cmd.Use == "dev" && !cmd.Flag("enable-rpc").Changed {
+				opts.EnableRPC = true
+			}
+
+			// Start API Server
+			shutdown, err := server.Initialize(opts)
+			if err != nil {
+				return errors.Wrap(err, "initializing api server")
+			}
+			shutdownAPIServer = shutdown
+
+			// Print version
+			version := version.Get()
+			logrus.Infof("Skaffold %+v", version)
+			event.LogSkaffoldMetadata(version)
+
+			if quietFlag {
+				logrus.Debugf("Update check is disabled because of quiet mode")
+			} else {
+				go func() {
+					if err := updateCheck(updateMsg); err != nil {
+						logrus.Infof("update check failed: %s", err)
+					}
+				}()
+			}
+
+			return nil
+		},
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			select {
+			case msg := <-updateMsg:
+				fmt.Fprintf(cmd.OutOrStdout(), "%s\n", msg)
+			default:
+			}
+
+			if shutdownAPIServer != nil {
+				shutdownAPIServer()
+			}
+		},
 	}
 
-	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		opts.Command = cmd.Use
+	SetUpFlags()
 
-		if err := SetUpLogs(err, v); err != nil {
-			return err
-		}
-
-		if forceColors {
-			color.ForceColors()
-		}
-
-		rootCmd.SilenceUsage = true
-		logrus.Infof("Skaffold %+v", version.Get())
-		color.OverwriteDefault(color.Color(defaultColor))
-
-		if quietFlag {
-			logrus.Debugf("Update check is disabled because of quiet mode")
-		} else {
-			go func() {
-				if err := updateCheck(updateMsg); err != nil {
-					logrus.Infof("update check failed: %s", err)
-				}
-			}()
-		}
-
-		return nil
+	groups := templates.CommandGroups{
+		{
+			Message: "End-to-end pipelines:",
+			Commands: []*cobra.Command{
+				NewCmdRun(),
+				NewCmdDev(),
+				NewCmdDebug(),
+			},
+		},
+		{
+			Message: "Pipeline building blocks for CI/CD:",
+			Commands: []*cobra.Command{
+				NewCmdBuild(),
+				NewCmdDeploy(),
+				NewCmdDelete(),
+			},
+		},
+		{
+			Message: "Getting started with a new project:",
+			Commands: []*cobra.Command{
+				NewCmdInit(),
+				NewCmdFix(),
+			},
+		},
 	}
+	groups.Add(rootCmd)
 
-	rootCmd.PersistentPostRun = func(cmd *cobra.Command, args []string) {
-		select {
-		case msg := <-updateMsg:
-			fmt.Fprintf(out, "%s\n", msg)
-		default:
-		}
-	}
+	// other commands
+	rootCmd.AddCommand(NewCmdVersion())
+	rootCmd.AddCommand(NewCmdCompletion())
+	rootCmd.AddCommand(NewCmdConfig())
+	rootCmd.AddCommand(NewCmdFindConfigs())
+	rootCmd.AddCommand(NewCmdDiagnose())
+	rootCmd.AddCommand(NewCmdOptions())
 
-	rootCmd.SetOutput(out)
-	rootCmd.AddCommand(NewCmdCompletion(out))
-	rootCmd.AddCommand(NewCmdVersion(out))
-	rootCmd.AddCommand(NewCmdRun(out))
-	rootCmd.AddCommand(NewCmdDev(out))
-	rootCmd.AddCommand(NewCmdDebug(out))
-	rootCmd.AddCommand(NewCmdBuild(out))
-	rootCmd.AddCommand(NewCmdDeploy(out))
-	rootCmd.AddCommand(NewCmdDelete(out))
-	rootCmd.AddCommand(NewCmdFix(out))
-	rootCmd.AddCommand(NewCmdConfig(out))
-	rootCmd.AddCommand(NewCmdInit(out))
-	rootCmd.AddCommand(NewCmdDiagnose(out))
-
+	templates.ActsAsRootCommand(rootCmd, nil, groups...)
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
 	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.Default), "Specify the default output color in ANSI escape codes")
 	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
@@ -108,6 +164,18 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	setFlagsFromEnvVariables(rootCmd)
 
 	return rootCmd
+}
+
+func NewCmdOptions() *cobra.Command {
+	cmd := &cobra.Command{
+		Use: "options",
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Usage()
+		},
+	}
+	templates.UseOptionsTemplates(cmd)
+
+	return cmd
 }
 
 func updateCheck(ch chan string) error {
@@ -155,46 +223,20 @@ func FlagToEnvVarName(f *pflag.Flag) string {
 	return fmt.Sprintf("SKAFFOLD_%s", strings.Replace(strings.ToUpper(f.Name), "-", "_", -1))
 }
 
-func AddRunCommonFlags(f *pflag.FlagSet) {
-	f.BoolVar(&opts.EnableRPC, "enable-rpc", false, "Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)")
-	f.IntVar(&opts.RPCPort, "rpc-port", constants.DefaultRPCPort, "tcp port to expose event API")
-	f.IntVar(&opts.RPCHTTPPort, "rpc-http-port", constants.DefaultRPCHTTPPort, "tcp port to expose event REST API over HTTP")
-	f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
-	f.BoolVar(&opts.Notification, "toot", false, "Emit a terminal beep after the deploy is complete")
-	f.StringSliceVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
-	f.StringVarP(&opts.Namespace, "namespace", "n", "", "Run deployments in the specified namespace")
-	f.StringVarP(&opts.DefaultRepo, "default-repo", "d", "", "Default repository value (overrides global config)")
-	f.BoolVar(&opts.NoPrune, "no-prune", false, "Skip removing images and containers built by Skaffold")
-	f.BoolVar(&opts.NoPruneChildren, "no-prune-children", false, "Skip removing layers reused by Skaffold")
-	f.StringSliceVar(&opts.InsecureRegistries, "insecure-registry", nil, "Target registries for built images which are not secure")
-}
-
-func AddRunDeployFlags(f *pflag.FlagSet) {
-	f.BoolVar(&opts.Tail, "tail", false, "Stream logs from deployed objects")
-	f.BoolVar(&opts.Force, "force", false, "Recreate kubernetes resources if necessary for deployment (default: false, warning: might cause downtime!)")
-	f.StringSliceVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels.")
-}
-
-func AddRunDevFlags(f *pflag.FlagSet) {
-	AddRunCommonFlags(f)
-	f.BoolVar(&opts.SkipTests, "skip-tests", false, "Whether to skip the tests after building")
-	f.BoolVar(&opts.CacheArtifacts, "cache-artifacts", false, "Set to true to enable caching of artifacts.")
-	f.StringVarP(&opts.CacheFile, "cache-file", "", "", "Specify the location of the cache file (default $HOME/.skaffold/cache)")
-}
-
-func AddDevDebugFlags(f *pflag.FlagSet) {
-	f.BoolVar(&opts.TailDev, "tail", true, "Stream logs from deployed objects")
-	f.BoolVar(&opts.Cleanup, "cleanup", true, "Delete deployments after dev mode is interrupted")
-	f.BoolVar(&opts.PortForward, "port-forward", false, "Port-forward exposed container ports within pods")
-	f.StringSliceVarP(&opts.CustomLabels, "label", "l", nil, "Add custom labels to deployed objects. Set multiple times for multiple labels")
-}
-
-func SetUpLogs(out io.Writer, level string) error {
-	logrus.SetOutput(out)
-	lvl, err := logrus.ParseLevel(v)
+func setUpLogs(stdErr io.Writer, level string) error {
+	logrus.SetOutput(stdErr)
+	lvl, err := logrus.ParseLevel(level)
 	if err != nil {
 		return errors.Wrap(err, "parsing log level")
 	}
 	logrus.SetLevel(lvl)
 	return nil
+}
+
+func alwaysSucceedWhenCancelled(ctx context.Context, err error) error {
+	// if the context was cancelled act as if all is well
+	if err != nil && ctx.Err() == context.Canceled {
+		return nil
+	}
+	return err
 }

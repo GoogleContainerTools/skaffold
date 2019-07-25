@@ -27,6 +27,9 @@ func TestConfigListForContext(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
 
 	out := skaffold.Config("list", "-c", "testdata/config/config.yaml", "-k", "test-context").RunOrFailOutput(t)
 
@@ -36,6 +39,9 @@ func TestConfigListForContext(t *testing.T) {
 func TestConfigListForAll(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
 	}
 
 	out := skaffold.Config("list", "-c", "testdata/config/config.yaml", "--all").RunOrFailOutput(t)
@@ -54,6 +60,9 @@ func TestFailToSetUnrecognizedValue(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
 
 	err := skaffold.Config("set", "doubt-this-will-ever-be-a-config-key", "VALUE", "-c", "testdata/config/config.yaml", "--global").Run(t)
 
@@ -63,6 +72,9 @@ func TestFailToSetUnrecognizedValue(t *testing.T) {
 func TestSetDefaultRepoForContext(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
 	}
 
 	file, delete := testutil.TempFile(t, "config", nil)
@@ -77,6 +89,9 @@ func TestSetDefaultRepoForContext(t *testing.T) {
 func TestSetGlobalDefaultRepo(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
 	}
 
 	file, delete := testutil.TempFile(t, "config", nil)

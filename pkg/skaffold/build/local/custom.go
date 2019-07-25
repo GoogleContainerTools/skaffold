@@ -27,7 +27,8 @@ import (
 )
 
 func (b *Builder) buildCustom(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	customArtifactBuilder := custom.NewArtifactBuilder(b.pushImages, b.localDocker.ExtraEnv())
+	extraEnv := b.retrieveExtraEnv()
+	customArtifactBuilder := custom.NewArtifactBuilder(b.pushImages, extraEnv)
 
 	if err := customArtifactBuilder.Build(ctx, out, artifact, tag); err != nil {
 		return "", errors.Wrap(err, "building custom artifact")
@@ -38,4 +39,8 @@ func (b *Builder) buildCustom(ctx context.Context, out io.Writer, artifact *late
 	}
 
 	return b.localDocker.ImageID(ctx, tag)
+}
+
+func (b *Builder) retrieveExtraEnv() []string {
+	return b.localDocker.ExtraEnv()
 }

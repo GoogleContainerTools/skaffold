@@ -23,6 +23,11 @@
           "description": "should be the second field",
           "x-intellij-html-description": "should be the second field"
         },
+        "field4": {
+          "type": "string",
+          "description": "should be listed last in `preferredOrder`",
+          "x-intellij-html-description": "should be listed last in <code>preferredOrder</code>"
+        },
         "reqField": {
           "type": "string",
           "description": "should be required",
@@ -38,7 +43,8 @@
         "reqField",
         "field1",
         "field2",
-        "reqField3"
+        "reqField3",
+        "field4"
       ],
       "additionalProperties": false,
       "description": "for testing the schema generator.",

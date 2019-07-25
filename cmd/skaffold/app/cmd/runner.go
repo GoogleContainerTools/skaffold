@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
+	"fmt"
 	"os"
 
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
@@ -33,27 +35,32 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func withRunner(action func(*runner.SkaffoldRunner, *latest.SkaffoldConfig) error) error {
-	runner, config, err := newRunner(opts)
+// For tests
+var createRunner = createNewRunner
+
+func withRunner(ctx context.Context, action func(runner.Runner, *latest.SkaffoldConfig) error) error {
+	runner, config, err := createRunner(opts)
 	if err != nil {
 		return errors.Wrap(err, "creating runner")
 	}
-	defer runner.RPCServerShutdown()
 
-	return action(runner, config)
+	err = action(runner, config)
+
+	return alwaysSucceedWhenCancelled(ctx, err)
 }
 
-// newRunner creates a SkaffoldRunner and returns the SkaffoldConfig associated with it.
-func newRunner(opts *config.SkaffoldOptions) (*runner.SkaffoldRunner, *latest.SkaffoldConfig, error) {
+// createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
+func createNewRunner(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
 	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
 	if err != nil {
+		if os.IsNotExist(errors.Cause(err)) {
+			return nil, nil, fmt.Errorf("[%s] not found. You might need to run `skaffold init`", opts.ConfigurationFile)
+		}
+
 		// If the error is NOT that the file doesn't exist, then we warn the user
 		// that maybe they are using an outdated version of Skaffold that's unable to read
 		// the configuration.
-		if !os.IsNotExist(err) {
-			warnIfUpdateIsAvailable()
-		}
-
+		warnIfUpdateIsAvailable()
 		return nil, nil, errors.Wrap(err, "parsing skaffold config")
 	}
 

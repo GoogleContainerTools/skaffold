@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta9
 
 import (
+	"regexp"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -28,6 +29,11 @@ import (
 
 const (
 	incompatibleSyncWarning = `The semantics of sync has changed, the folder structure is no longer flattened but preserved (see https://skaffold.dev/docs/how-tos/filesync/). The likely impacted patterns in your skaffold yaml are: %s`
+)
+
+var (
+	// compatibleSimplePattern have a directory prefix without stars and a basename with at most one star.
+	compatibleSimplePattern = regexp.MustCompile(`^([^*]*/)?([^*/]*\*[^*/]*|[^*/]+)$`)
 )
 
 // Upgrade upgrades a configuration to the next version.
@@ -46,25 +52,22 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
-	if config.Profiles != nil {
-		if err := pkgutil.CloneThroughJSON(config.Profiles, &newProfiles); err != nil {
+	for _, p := range config.Profiles {
+		var newProfile next.Profile
+		if err := pkgutil.CloneThroughJSON(p, &newProfile); err != nil {
 			return nil, errors.Wrap(err, "converting new profile")
 		}
+		newProfileBuild, err := convertBuildConfig(p.Build)
+		if err != nil {
+			return nil, errors.Wrap(err, "converting new profile build")
+		}
+		newProfile.Build = newProfileBuild
+		newProfiles = append(newProfiles, newProfile)
 	}
 
-	newSyncRules := config.convertSyncRules()
-	// convert Build (should be same)
-	var newBuild next.BuildConfig
-	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
+	newBuild, err := convertBuildConfig(config.Build)
+	if err != nil {
 		return nil, errors.Wrap(err, "converting new build")
-	}
-	// set Sync in newBuild
-	for i, a := range newBuild.Artifacts {
-		if len(newSyncRules[i]) > 0 {
-			a.Sync = &next.Sync{
-				Manual: newSyncRules[i],
-			}
-		}
 	}
 
 	// convert Test (should be the same)
@@ -85,26 +88,54 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	}, nil
 }
 
+func convertBuildConfig(build BuildConfig) (next.BuildConfig, error) {
+	// convert Build (should be same)
+	var newBuild next.BuildConfig
+	if err := pkgutil.CloneThroughJSON(build, &newBuild); err != nil {
+		return next.BuildConfig{}, err
+	}
+	// set Sync in newBuild
+	newSyncRules := convertSyncRules(build.Artifacts)
+	for i, a := range newBuild.Artifacts {
+		if len(newSyncRules[i]) > 0 {
+			a.Sync = &next.Sync{
+				Manual: newSyncRules[i],
+			}
+		}
+	}
+	return newBuild, nil
+}
+
 // convertSyncRules converts the old sync map into sync rules.
 // It also prints a warning message when some rules can not be upgraded.
-func (config *SkaffoldConfig) convertSyncRules() [][]*next.SyncRule {
+func convertSyncRules(artifacts []*Artifact) [][]*next.SyncRule {
 	var incompatiblePatterns []string
-	newSync := make([][]*next.SyncRule, len(config.Build.Artifacts))
-	for i, a := range config.Build.Artifacts {
+	newSync := make([][]*next.SyncRule, len(artifacts))
+	for i, a := range artifacts {
 		newRules := make([]*next.SyncRule, 0, len(a.Sync))
 		for src, dest := range a.Sync {
 			var syncRule *next.SyncRule
-			if strings.Contains(src, "***") {
+			switch {
+			case compatibleSimplePattern.MatchString(src):
+				dest, strip := simplify(dest, compatibleSimplePattern.FindStringSubmatch(src)[1])
+				syncRule = &next.SyncRule{
+					Src:   src,
+					Dest:  dest,
+					Strip: strip,
+				}
+			case strings.Contains(src, "***"):
+				dest, strip := simplify(dest, strings.Split(src, "***")[0])
 				syncRule = &next.SyncRule{
 					Src:   strings.Replace(src, "***", "**", -1),
 					Dest:  dest,
-					Strip: strings.Split(src, "***")[0],
+					Strip: strip,
 				}
-			} else {
-				// only patterns with '**' are incompatible
-				if strings.Contains(src, "**") {
-					incompatiblePatterns = append(incompatiblePatterns, src)
-				}
+			default:
+				// Incompatible patterns contain `**` or glob directories.
+				// Such patterns flatten the content at the destination which
+				// cannot be reproduced with the current config. For example:
+				// `/app/**/subdir/*.html`, `/app/*/*.html`
+				incompatiblePatterns = append(incompatiblePatterns, src)
 				syncRule = &next.SyncRule{
 					Src:  src,
 					Dest: dest,
@@ -120,4 +151,28 @@ func (config *SkaffoldConfig) convertSyncRules() [][]*next.SyncRule {
 		logrus.Warnf(incompatibleSyncWarning, incompatiblePatterns)
 	}
 	return newSync
+}
+
+// simplify dest and strip, if strip is a suffix of dest modulo a trailing `/`.
+func simplify(dest, strip string) (string, string) {
+	if strip == "" || strip == "/" || dest == "" {
+		return dest, strip
+	}
+
+	simpleStrip := strip
+	simpleDest := dest
+
+	if dest[len(dest)-1] != '/' {
+		dest += "/"
+	}
+
+	if strings.HasSuffix(dest, strip) {
+		simpleDest = strings.TrimSuffix(dest, strings.TrimPrefix(strip, "/"))
+		simpleStrip = ""
+		if simpleDest == "" {
+			simpleDest = "."
+		}
+	}
+
+	return simpleDest, simpleStrip
 }

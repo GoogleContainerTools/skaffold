@@ -21,6 +21,10 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/pkg/errors"
+
+	"github.com/google/go-cmp/cmp"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -41,10 +45,7 @@ func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
 
 func TestLocalRun(t *testing.T) {
-	defer func(h docker.AuthConfigHelper) { docker.DefaultAuthHelper = h }(docker.DefaultAuthHelper)
-	docker.DefaultAuthHelper = testAuthHelper{}
-
-	var tests = []struct {
+	tests := []struct {
 		description      string
 		api              testutil.FakeAPIClient
 		tags             tag.ImageTags
@@ -98,9 +99,9 @@ func TestLocalRun(t *testing.T) {
 			pushImages: true,
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:tag@sha256:7368613235363a31e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+				Tag:       "gcr.io/test/image:tag@sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165",
 			}},
-			expectedPushed: []string{"sha256:7368613235363a31e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+			expectedPushed: []string{"sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165"},
 		},
 		{
 			description: "error build",
@@ -132,7 +133,7 @@ func TestLocalRun(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "unkown artifact type",
+			description: "unknown artifact type",
 			artifacts:   []*latest.Artifact{{}},
 			shouldErr:   true,
 		},
@@ -215,23 +216,18 @@ func TestLocalRun(t *testing.T) {
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			defer func(w warnings.Warner) { warnings.Printf = w }(warnings.Printf)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			fakeWarner := &warnings.Collect{}
-			warnings.Printf = fakeWarner.Warnf
-			cfg := latest.BuildConfig{
+			t.Override(&warnings.Printf, fakeWarner.Warnf)
+
+			event.InitializeState(latest.BuildConfig{
 				BuildType: latest.BuildType{
 					LocalBuild: &latest.LocalBuild{},
 				},
-			}
-			event.InitializeState(&runcontext.RunContext{
-				Cfg: &latest.Pipeline{
-					Build: cfg,
-				},
-				Opts: &config.SkaffoldOptions{},
 			})
+
 			l := Builder{
 				cfg:         &latest.LocalBuild{},
 				localDocker: docker.NewLocalDaemon(&test.api, nil, false, map[string]bool{}),
@@ -240,9 +236,126 @@ func TestLocalRun(t *testing.T) {
 
 			res, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, res)
-			testutil.CheckDeepEqual(t, test.expectedWarnings, fakeWarner.Warnings)
-			testutil.CheckDeepEqual(t, test.expectedPushed, test.api.Pushed)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
+			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
+			t.CheckDeepEqual(test.expectedPushed, test.api.Pushed)
 		})
 	}
+}
+
+type dummyLocalDaemon struct {
+	docker.LocalDaemon
+}
+
+func TestNewBuilder(t *testing.T) {
+	dummyDaemon := dummyLocalDaemon{}
+
+	pFalse := false
+
+	tests := []struct {
+		description     string
+		shouldErr       bool
+		localBuild      *latest.LocalBuild
+		expectedBuilder *Builder
+		localClusterFn  func() (bool, error)
+		localDockerFn   func(*runcontext.RunContext) (docker.LocalDaemon, error)
+	}{
+		{
+			description: "failed to get docker client",
+			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
+				e = errors.New("dummy docker error")
+				return
+			},
+			shouldErr: true,
+		}, {
+			description: "pushImages becomes !localCluster when local:push is not defined",
+			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
+				daemon = dummyDaemon
+				return
+			},
+			localClusterFn: func() (b bool, e error) {
+				b = false //because this is false and localBuild.push is nil
+				return
+			},
+
+			shouldErr: false,
+			expectedBuilder: &Builder{
+				cfg:                &latest.LocalBuild{},
+				kubeContext:        "",
+				localDocker:        dummyDaemon,
+				localCluster:       false,
+				pushImages:         true, //this will be true
+				skipTests:          false,
+				prune:              true,
+				pruneChildren:      true,
+				insecureRegistries: nil,
+			},
+		}, {
+			description: "pushImages defined in config (local:push)",
+			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
+				daemon = dummyDaemon
+				return
+			},
+			localClusterFn: func() (b bool, e error) {
+				b = false
+				return
+			},
+			localBuild: &latest.LocalBuild{
+				Push: &pFalse, //because this is false
+			},
+			shouldErr: false,
+			expectedBuilder: &Builder{
+				pushImages: false, //this will be false too
+				cfg: &latest.LocalBuild{ // and the config is inherited
+					Push: &pFalse,
+				},
+				kubeContext:  "",
+				localDocker:  dummyDaemon,
+				localCluster: false,
+
+				skipTests:          false,
+				prune:              true,
+				pruneChildren:      true,
+				insecureRegistries: nil,
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			if test.localDockerFn != nil {
+				t.Override(&getLocalDocker, test.localDockerFn)
+			}
+			if test.localClusterFn != nil {
+				t.Override(&getLocalCluster, test.localClusterFn)
+			}
+
+			builder, err := NewBuilder(stubRunContext(test.localBuild))
+
+			t.CheckError(test.shouldErr, err)
+			if !test.shouldErr {
+				t.CheckDeepEqual(test.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, dummyDaemon))
+			}
+		})
+	}
+}
+
+func stubRunContext(localBuild *latest.LocalBuild) *runcontext.RunContext {
+	if localBuild == nil {
+		localBuild = &latest.LocalBuild{}
+	}
+	return &runcontext.RunContext{
+		Cfg: &latest.Pipeline{
+			Build: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					LocalBuild: localBuild,
+				},
+			},
+		},
+		Opts: &config.SkaffoldOptions{
+			NoPrune:        false,
+			CacheArtifacts: false,
+			SkipTests:      false,
+		},
+	}
+
 }

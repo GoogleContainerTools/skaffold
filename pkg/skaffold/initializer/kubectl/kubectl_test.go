@@ -81,17 +81,14 @@ spec:
 			shouldErr: false,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmpDir, delete := testutil.NewTempDir(t)
-			defer delete()
-
-			tmpDir.Write("deployment.yaml", test.contents)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Write("deployment.yaml", test.contents)
 
 			images, err := parseImagesFromKubernetesYaml(tmpDir.Path("deployment.yaml"))
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.images, images)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.images, images)
 		})
 	}
 }

@@ -473,8 +473,6 @@ type Artifact struct {
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
-
-	WorkspaceHash string `yaml:"-,omitempty"`
 }
 
 // Sync *alpha* specifies what files to sync into the container.
@@ -660,9 +658,9 @@ type DockerArtifact struct {
 	// NetworkMode is passed through to docker and overrides the
 	// network configuration of docker builder. If unset, use whatever
 	// is configured in the underlying docker daemon. Valid modes are
-	// `Host`: use the host's networking stack.
-	// `Bridge`: use the bridged network configuration.
-	// `None`: no networking in the container.
+	// `host`: use the host's networking stack.
+	// `bridge`: use the bridged network configuration.
+	// `none`: no networking in the container.
 	NetworkMode string `yaml:"network,omitempty"`
 
 	// CacheFrom lists the Docker images used as cache sources.

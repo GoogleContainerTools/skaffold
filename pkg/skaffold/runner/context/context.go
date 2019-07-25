@@ -40,10 +40,11 @@ type RunContext struct {
 }
 
 func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.Pipeline) (*RunContext, error) {
-	kubeContext, err := kubectx.CurrentContext()
+	kubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting current cluster context")
 	}
+	kubeContext := kubeConfig.CurrentContext
 	logrus.Infof("Using kubectl context: %s", kubeContext)
 
 	// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
@@ -52,7 +53,7 @@ func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.Pipeline) (*RunCont
 		return nil, errors.Wrap(err, "finding current directory")
 	}
 
-	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace)
+	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace, cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting namespace list")
 	}

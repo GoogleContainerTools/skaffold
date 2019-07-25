@@ -22,22 +22,8 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 )
 
-// PodWatcher returns a watcher that will report on all Pod Events (additions, modifications, etc.)
-func PodWatcher(namespace string) (watch.Interface, error) {
-	kubeclient, err := Client()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting k8s client")
-	}
-	client := kubeclient.CoreV1()
-	var forever int64 = 3600 * 24 * 365 * 100
-	return client.Pods(namespace).Watch(meta_v1.ListOptions{
-		IncludeUninitialized: true,
-		TimeoutSeconds:       &forever,
-	})
-}
-
 // AggregatePodWatcher returns a watcher for multiple namespaces.
-func AggregatePodWatcher(namespaces []string, aggregate chan watch.Event) (func(), error) {
+func AggregatePodWatcher(namespaces []string, aggregate chan<- watch.Event) (func(), error) {
 	watchers := make([]watch.Interface, 0, len(namespaces))
 	stopWatchers := func() {
 		for _, w := range watchers {
@@ -45,17 +31,31 @@ func AggregatePodWatcher(namespaces []string, aggregate chan watch.Event) (func(
 		}
 	}
 
+	kubeclient, err := Client()
+	if err != nil {
+		return func() {}, errors.Wrap(err, "getting k8s client")
+	}
+
+	var forever int64 = 3600 * 24 * 365 * 100
+
 	for _, ns := range namespaces {
-		watcher, err := PodWatcher(ns)
+		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(meta_v1.ListOptions{
+			IncludeUninitialized: true,
+			TimeoutSeconds:       &forever,
+		})
 		if err != nil {
-			return stopWatchers, errors.Wrap(err, "initializing pod watcher for "+ns)
+			stopWatchers()
+			return func() {}, errors.Wrap(err, "initializing pod watcher for "+ns)
 		}
+
 		watchers = append(watchers, watcher)
-		go func(w watch.Interface) {
-			for msg := range w.ResultChan() {
+
+		go func() {
+			for msg := range watcher.ResultChan() {
 				aggregate <- msg
 			}
-		}(watcher)
+		}()
 	}
+
 	return stopWatchers, nil
 }
