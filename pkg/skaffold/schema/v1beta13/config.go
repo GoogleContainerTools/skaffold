@@ -14,13 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1beta13
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta14"
+const Version string = "skaffold/v1beta13"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -336,9 +336,7 @@ type TestCase struct {
 
 // DeployConfig contains all the configuration needed by the deploy steps.
 type DeployConfig struct {
-	// StatusCheckDeadlineSeconds *beta* is the deadline for deployments to stabilize in seconds.
-	StatusCheckDeadlineSeconds int `yaml:"statusCheckDeadlineSeconds,omitempty"`
-	DeployType                 `yaml:",inline"`
+	DeployType `yaml:",inline"`
 }
 
 // DeployType contains the specific implementation and parameters needed
@@ -507,8 +505,6 @@ type HelmFQNConfig struct {
 
 // HelmConventionConfig is the image config in the syntax of image.repository and image.tag.
 type HelmConventionConfig struct {
-	// ExplicitRegistry separates `image.registry` to the image config syntax. Useful for some charts e.g. `postgresql`.
-	ExplicitRegistry bool `yaml:"explicitRegistry,omitempty"`
 }
 
 // Artifact are the items that need to be built, along with the context in which
@@ -750,10 +746,10 @@ type BazelArtifact struct {
 // [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
 type JibMavenArtifact struct {
 	// Module selects which Maven module to build, for a multi module project.
-	Module string `yaml:"module,omitempty"`
+	Module string `yaml:"module"`
 
 	// Profile selects which Maven profile to activate.
-	Profile string `yaml:"profile,omitempty"`
+	Profile string `yaml:"profile"`
 
 	// Flags are additional build flags passed to Maven.
 	// For example: `["-x", "-DskipTests"]`.
@@ -764,7 +760,7 @@ type JibMavenArtifact struct {
 // [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
 type JibGradleArtifact struct {
 	// Project selects which Gradle project to build.
-	Project string `yaml:"project,omitempty"`
+	Project string `yaml:"project"`
 
 	// Flags are additional build flags passed to Gradle.
 	// For example: `["--no-build-cache"]`.
