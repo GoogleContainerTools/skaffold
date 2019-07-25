@@ -17,18 +17,21 @@ limitations under the License.
 package runner
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
-	//"gopkg.in/yaml.v2"
 	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
+	yamlv2 "gopkg.in/yaml.v2"
 	"k8s.io/api/core/v1"
 
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
@@ -40,11 +43,23 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 		return errors.New("Invalid skaffold config")
 	}
 
-	var output bytes.Buffer
+	reader := bufio.NewReader(os.Stdin)
+	err := createSkaffoldProfile(config, reader)
+	if err != nil {
+		return errors.Wrap(err, "setting up profile")
+	}
 
+	fmt.Println("Generating Pipeline...")
+
+	var output bytes.Buffer
 	gitResource, err := generateGitResource(config)
 	if err != nil {
-		return errors.Wrap(err, "generating git resource for pipeline")
+		fmt.Print("Could not get git url automatically, please enter: ")
+		newUrl, err := reader.ReadString('\n')
+		if err != nil {
+			return errors.Wrap(err, "generating git resource for pipeline")
+		}
+		gitResource.Spec.Params[0].Value = newUrl
 	}
 
 	var tasks []tekton.Task
@@ -134,9 +149,6 @@ func generateGitResource(config *latest.SkaffoldConfig) (tekton.PipelineResource
 	// Get git repo url
 	getGitRepo := exec.Command("git", "config", "--get", "remote.origin.url")
 	gitRepo, err := getGitRepo.Output()
-	if err != nil {
-		return tekton.PipelineResource{}, errors.Wrap(err, "getting git repo from git config")
-	}
 
 	// Create git resource for pipeline from users current git repo
 	return tekton.PipelineResource{
@@ -156,7 +168,7 @@ func generateGitResource(config *latest.SkaffoldConfig) (tekton.PipelineResource
 				},
 			},
 		},
-	}, nil
+	}, errors.Wrap(err, "getting git repo from git config")
 }
 
 func generateBuildTask(config *latest.SkaffoldConfig) (tekton.Task, error) {
@@ -225,4 +237,86 @@ func generateDeployTask(config *latest.SkaffoldConfig) (tekton.Task, error) {
 			},
 		},
 	}, nil
+}
+
+func createSkaffoldProfile(config *latest.SkaffoldConfig, reader *bufio.Reader) error {
+	fmt.Println("Checking for oncluster skaffold profile...")
+	profileExists := false
+	for _, profile := range config.Profiles {
+		if profile.Name == "oncluster" {
+			profileExists = true
+			break
+		}
+	}
+
+	if profileExists {
+		fmt.Println("profile \"oncluster\" found!")
+		return nil
+	} else {
+	confirmLoop:
+		for {
+			fmt.Print("No profile \"oncluster\" found. Create one? [y/n]: ")
+			response, err := reader.ReadString('\n')
+			if err != nil {
+				return errors.Wrap(err, "reading user confirmation")
+			}
+
+			response = strings.ToLower(strings.TrimSpace(response))
+			switch response {
+			case "y", "yes":
+				break confirmLoop
+			case "n", "no":
+				return nil
+			}
+		}
+	}
+
+	fmt.Println("Creating skaffold profile \"oncluster\"...")
+
+	newProfile := []latest.Profile{
+		{
+			Name: "oncluster",
+			Pipeline: latest.Pipeline{
+				Build:  latest.BuildConfig{},
+				Deploy: latest.DeployConfig{},
+			},
+		},
+	}
+	// Write profile to skaffold config
+	bNewProfile, err := yamlv2.Marshal(newProfile)
+	if err != nil {
+		return errors.Wrap(err, "marshaling new profile")
+	}
+	fmt.Println(string(bNewProfile))
+
+	fileContents, err := ioutil.ReadFile("skaffold.yaml")
+	if err != nil {
+		return errors.Wrap(err, "reading file contents")
+	}
+	fileStrings := strings.Split(strings.TrimSpace(string(fileContents)), "\n")
+
+	var profilePos int
+	if len(config.Profiles) == 0 {
+		// Create new profiles section
+		fileStrings = append(fileStrings, "profiles:")
+		profilePos = len(fileStrings)
+	} else {
+		for i, line := range fileStrings {
+			if line == "profiles:" {
+				profilePos = i + 1
+			}
+		}
+	}
+
+	fileStrings = append(fileStrings, "")
+	copy(fileStrings[profilePos+1:], fileStrings[profilePos:])
+	fileStrings[profilePos] = strings.TrimSpace(string(bNewProfile))
+
+	fileContents = []byte((strings.Join(fileStrings, "\n")))
+
+	if err := ioutil.WriteFile("skaffold.yaml", fileContents, 0644); err != nil {
+		return errors.Wrap(err, "writing profile to skaffold.yaml")
+	}
+
+	return nil
 }

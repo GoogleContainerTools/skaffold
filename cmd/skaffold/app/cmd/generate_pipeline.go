@@ -40,7 +40,7 @@ func doGeneratePipeline(ctx context.Context, out io.Writer) error {
 		if err := r.GeneratePipeline(ctx, out, config, "pipeline.yaml"); err != nil {
 			return errors.Wrap(err, "generating ")
 		}
-		out.Write([]byte("Pipeline config written to pipeline.yaml"))
+		out.Write([]byte("Pipeline config written to pipeline.yaml!\n"))
 		return nil
 	})
 }
