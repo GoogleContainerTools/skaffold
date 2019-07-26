@@ -216,3 +216,69 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveDefaultKubeContext(t *testing.T) {
+	const (
+		someKubeContext    = "this_is_a_context"
+		skaffoldConfigName = "skaffold-config-name"
+	)
+
+	tests := []struct {
+		name            string
+		cfg             *GlobalConfig
+		contextCLI      string
+		configName      string
+		expectedContext string
+	}{
+		{
+			name:       "cli takes precedence",
+			contextCLI: someKubeContext,
+			configName: skaffoldConfigName,
+			cfg: &GlobalConfig{
+				SkaffoldConfigs: map[string]string{skaffoldConfigName: "other_context"},
+			},
+			expectedContext: someKubeContext,
+		},
+		{
+			name:       "when mapping is found",
+			configName: skaffoldConfigName,
+			cfg: &GlobalConfig{
+				SkaffoldConfigs: map[string]string{skaffoldConfigName: someKubeContext},
+			},
+			expectedContext: someKubeContext,
+		},
+		{
+			name:       "when no mapping is found",
+			configName: skaffoldConfigName,
+			cfg: &GlobalConfig{
+				SkaffoldConfigs: map[string]string{"other-config-name": someKubeContext},
+			},
+			expectedContext: "",
+		},
+		{
+			name:            "when SkaffoldConfigs is not set",
+			configName:      skaffoldConfigName,
+			cfg:             &GlobalConfig{},
+			expectedContext: "",
+		},
+		{
+			name:       "when configName is empty",
+			configName: "",
+			cfg: &GlobalConfig{
+				SkaffoldConfigs: map[string]string{skaffoldConfigName: someKubeContext},
+			},
+			expectedContext: "",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			c, _ := yaml.Marshal(*test.cfg)
+			configFile := t.TempFile("config", c)
+
+			t.Override(&ReadConfigFile, ReadConfigFileNoCache)
+
+			actual, err := GetKubeContext(configFile, test.configName, test.contextCLI)
+			t.CheckErrorAndDeepEqual(false, err, test.expectedContext, actual)
+		})
+	}
+}

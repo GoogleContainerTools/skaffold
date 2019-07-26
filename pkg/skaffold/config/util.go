@@ -181,6 +181,24 @@ func GetInsecureRegistries(configFile string) ([]string, error) {
 	return cfg.InsecureRegistries, nil
 }
 
+func GetKubeContext(configFile, skaffoldConfigName, cliValue string) (string, error) {
+	// CLI flag takes precedence.
+	if cliValue != "" || skaffoldConfigName == "" {
+		return cliValue, nil
+	}
+
+	cfg, err := ReadConfigFile(configFile)
+	if err != nil {
+		return "", err
+	}
+
+	if kubecontext, ok := cfg.SkaffoldConfigs[skaffoldConfigName]; ok {
+		return kubecontext, nil
+	}
+
+	return "", nil
+}
+
 func isDefaultLocal(kubeContext string) bool {
 	return kubeContext == constants.DefaultMinikubeContext ||
 		kubeContext == constants.DefaultDockerForDesktopContext ||

@@ -19,8 +19,14 @@ package config
 // GlobalConfig is the top level struct for the global Skaffold config
 // It is unrelated to the SkaffoldConfig object (parsed from the skaffold.yaml)
 type GlobalConfig struct {
-	Global         *ContextConfig   `yaml:"global,omitempty"`
+	// Global holds configurations that apply to all Skaffold projects.
+	Global *ContextConfig `yaml:"global,omitempty"`
+
+	// ContextConfigs holds configurations that apply for particular kube-contexts.
 	ContextConfigs []*ContextConfig `yaml:"kubeContexts"`
+
+	// SkaffoldConfigs stores a mapping from Skaffold config names to a default kube-context.
+	SkaffoldConfigs map[string]string `yaml:"skaffoldConfigs,omitempty"`
 }
 
 // ContextConfig is the context-specific config information provided in
