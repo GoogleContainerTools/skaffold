@@ -91,13 +91,15 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 			Tasks: []tekton.PipelineTask{},
 		},
 	}
+	//TODO: Ensure that tasks run in order
 	// Create tasks in pipeline spec for all corresponding tasks
-	for _, task := range tasks {
+	for i, task := range tasks {
 		pipelineTask := tekton.PipelineTask{
 			Name: fmt.Sprintf("%s-task", task.Name),
 			TaskRef: tekton.TaskRef{
 				Name: task.Name,
 			},
+			RunAfter: []string{},
 			Resources: &tekton.PipelineTaskResources{
 				Inputs: []tekton.PipelineTaskInputResource{
 					{
@@ -107,12 +109,14 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 				},
 			},
 		}
+		if i > 0 {
+			pipelineTask.RunAfter = []string{pipeline.Spec.Tasks[i-1].Name}
+		}
 		pipeline.Spec.Tasks = append(pipeline.Spec.Tasks, pipelineTask)
 	}
 
 	// json.Marshal all pieces of pipeline, then convert all to yaml and write them to file
 	var jsons [][]byte
-
 	bGitResource, err := json.Marshal(gitResource)
 	if err != nil {
 		return errors.Wrap(err, "marshaling git resource")
@@ -194,10 +198,15 @@ func generateBuildTask(config *latest.SkaffoldConfig) (tekton.Task, error) {
 			},
 			Steps: []v1.Container{
 				{
-					Name:    "run-build",
-					Image:   "gcr.io/k8s-skaffold/skaffold:v0.33.0",
-					Command: []string{"skaffold build"},
-					Args:    []string{"--filename", "/workspace/source/pipeline/skaffold.yaml"},
+					Name:       "run-build",
+					Image:      "gcr.io/k8s-skaffold/skaffold:v0.34.0",
+					WorkingDir: "/workspace/source",
+					Command:    []string{"skaffold"},
+					Args: []string{"build",
+						"--filename", "skaffold.yaml",
+						"--profile", "oncluster",
+						"--file-output", "build.out",
+					},
 				},
 			},
 		},
@@ -207,7 +216,7 @@ func generateBuildTask(config *latest.SkaffoldConfig) (tekton.Task, error) {
 func generateDeployTask(config *latest.SkaffoldConfig) (tekton.Task, error) {
 	deployConfig := config.Pipeline.Deploy
 	if deployConfig.HelmDeploy == nil && deployConfig.KubectlDeploy == nil && deployConfig.KustomizeDeploy == nil {
-		return tekton.Task{}, errors.New("No Help/Kubectl/Kustomize deploy config")
+		return tekton.Task{}, errors.New("No Helm/Kubectl/Kustomize deploy config")
 	}
 
 	return tekton.Task{
@@ -229,10 +238,16 @@ func generateDeployTask(config *latest.SkaffoldConfig) (tekton.Task, error) {
 			},
 			Steps: []v1.Container{
 				{
-					Name:    "run-deploy",
-					Image:   "gcr.io/k8s-skaffold/skaffold:v0.33.0",
-					Command: []string{"skaffold deploy"},
-					Args:    []string{"--filename", "/workspace/source/pipeline/skaffold.yaml"},
+					Name:       "run-deploy",
+					Image:      "gcr.io/k8s-skaffold/skaffold:v0.34.0",
+					WorkingDir: "/workspace/source",
+					Command:    []string{"skaffold"},
+					Args: []string{
+						"deploy",
+						"--filename", "skaffold.yaml",
+						"--profile", "oncluster",
+						"--build-artifacts", "build.out",
+					},
 				},
 			},
 		},
@@ -249,6 +264,7 @@ func createSkaffoldProfile(config *latest.SkaffoldConfig, reader *bufio.Reader) 
 		}
 	}
 
+	// Check for existing oncluster profile, if none exists then prompt to create one
 	if profileExists {
 		fmt.Println("profile \"oncluster\" found!")
 		return nil
@@ -272,22 +288,37 @@ func createSkaffoldProfile(config *latest.SkaffoldConfig, reader *bufio.Reader) 
 	}
 
 	fmt.Println("Creating skaffold profile \"oncluster\"...")
-
 	newProfile := []latest.Profile{
 		{
 			Name: "oncluster",
 			Pipeline: latest.Pipeline{
-				Build:  latest.BuildConfig{},
+				Build:  config.Pipeline.Build,
 				Deploy: latest.DeployConfig{},
 			},
 		},
 	}
-	// Write profile to skaffold config
+	newProfile[0].Build.Cluster = &latest.ClusterDetails{
+		PullSecretName: "kaniko-secret",
+	}
+	newProfile[0].Build.LocalBuild = nil
+	// Add kaniko build config for artifacts
+	for _, artifact := range newProfile[0].Build.Artifacts {
+		artifact.ImageName = fmt.Sprintf("%s-pipeline", artifact.ImageName)
+		if artifact.DockerArtifact != nil {
+			fmt.Printf("Cannot use Docker to build %s on cluster. Adding config for building with Kaniko.\n", artifact.ImageName)
+			artifact.DockerArtifact = nil
+			artifact.KanikoArtifact = &latest.KanikoArtifact{
+				BuildContext: &latest.KanikoBuildContext{
+					GCSBucket: "skaffold-kaniko",
+				},
+			}
+		}
+	}
+
 	bNewProfile, err := yamlv2.Marshal(newProfile)
 	if err != nil {
 		return errors.Wrap(err, "marshaling new profile")
 	}
-	fmt.Println(string(bNewProfile))
 
 	fileContents, err := ioutil.ReadFile("skaffold.yaml")
 	if err != nil {
