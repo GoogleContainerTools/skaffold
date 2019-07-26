@@ -96,7 +96,6 @@ func ReadConfigFileNoCache(configFile string) (*GlobalConfig, error) {
 // GetConfigForCurrentKubectx returns the specific config to be modified based on the kubeContext.
 // Either returns the config corresponding to the provided or current context,
 // or the global config.
-// Note: the returned ContextConfig can be nil, even if there was no error.
 func GetConfigForCurrentKubectx(configFile string) (*ContextConfig, error) {
 	configOnce.Do(func() {
 		cfg, err := ReadConfigFile(configFile)
@@ -117,6 +116,9 @@ func GetConfigForCurrentKubectx(configFile string) (*ContextConfig, error) {
 
 func getConfigForKubeContextWithGlobalDefaults(cfg *GlobalConfig, kubeContext string) (*ContextConfig, error) {
 	if kubeContext == "" {
+		if cfg.Global == nil {
+			return &ContextConfig{}, nil
+		}
 		return cfg.Global, nil
 	}
 
@@ -146,7 +148,7 @@ func GetDefaultRepo(configFile, cliValue string) (string, error) {
 		return cliValue, nil
 	}
 	cfg, err := GetConfigForCurrentKubectx(configFile)
-	if err != nil || cfg == nil {
+	if err != nil {
 		return "", err
 	}
 
@@ -159,7 +161,7 @@ func GetLocalCluster(configFile string) (bool, error) {
 		return false, err
 	}
 	// when set, the local-cluster config takes precedence
-	if cfg != nil && cfg.LocalCluster != nil {
+	if cfg.LocalCluster != nil {
 		return *cfg.LocalCluster, nil
 	}
 
@@ -172,7 +174,7 @@ func GetLocalCluster(configFile string) (bool, error) {
 
 func GetInsecureRegistries(configFile string) ([]string, error) {
 	cfg, err := GetConfigForCurrentKubectx(configFile)
-	if err != nil || cfg == nil {
+	if err != nil {
 		return nil, err
 	}
 

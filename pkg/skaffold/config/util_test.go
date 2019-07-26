@@ -119,6 +119,11 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			},
 		},
 		{
+			name:           "no global config and no kubecontext",
+			cfg:            &GlobalConfig{},
+			expectedConfig: &ContextConfig{},
+		},
+		{
 			name:        "config for unknown kubecontext",
 			kubecontext: someKubeContext,
 			cfg:         &GlobalConfig{},
