@@ -39,42 +39,6 @@ var baseConfig = &config.GlobalConfig{
 
 var emptyConfig = &config.GlobalConfig{}
 
-func TestReadConfig(t *testing.T) {
-	tests := []struct {
-		description string
-		filename    string
-		expectedCfg *config.GlobalConfig
-		shouldErr   bool
-	}{
-		{
-			description: "valid config",
-			filename:    "config",
-			expectedCfg: baseConfig,
-			shouldErr:   false,
-		},
-		{
-			description: "missing config",
-			filename:    "",
-			shouldErr:   true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().
-				Chdir()
-
-			if test.filename != "" {
-				c, _ := yaml.Marshal(*baseConfig)
-				tmpDir.Write(test.filename, string(c))
-			}
-
-			cfg, err := ReadConfigForFile(test.filename)
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedCfg, cfg)
-		})
-	}
-}
-
 func TestSetAndUnsetConfig(t *testing.T) {
 	dummyContext := "dummy_context"
 
@@ -226,7 +190,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 
 			// set specified value
 			err := setConfigValue(test.key, test.value)
-			actualConfig, cfgErr := readConfig()
+			actualConfig, cfgErr := config.ReadConfigForFile(cfg)
 			t.CheckNoError(cfgErr)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedSetCfg, actualConfig)
 
@@ -237,7 +201,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 
 			// unset the value
 			err = unsetConfigValue(test.key)
-			newConfig, cfgErr := readConfig()
+			newConfig, cfgErr := config.ReadConfigForFile(cfg)
 			t.CheckNoError(cfgErr)
 
 			t.CheckNoError(err)
