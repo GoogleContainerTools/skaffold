@@ -35,9 +35,16 @@ func SetKubeContext(out io.Writer, args []string) error {
 	return nil
 }
 
+func UnsetKubeContext(out io.Writer, args []string) error {
+	if err := setKubeContext(""); err != nil {
+		return err
+	}
+	fmt.Fprintf(out, "removed default context for skaffold config %s\n", configMetadataName)
+	return nil
+}
+
 func setKubeContext(kubeContext string) error {
-	metadataName, err := resolveConfigName()
-	if err != nil {
+	if err := resolveConfigName(); err != nil {
 		return err
 	}
 
@@ -51,36 +58,39 @@ func setKubeContext(kubeContext string) error {
 	}
 
 	if kubeContext == "" {
-		delete(cfg.SkaffoldConfigs, metadataName)
+		delete(cfg.SkaffoldConfigs, configMetadataName)
 	} else {
-		cfg.SkaffoldConfigs[metadataName] = kubeContext
+		cfg.SkaffoldConfigs[configMetadataName] = kubeContext
 	}
 
 	return errors.Wrap(writeFullConfig(cfg), "writing config")
 }
 
-func resolveConfigName() (string, error) {
+func resolveConfigName() error {
 	if skaffoldYamlFile != "" && configMetadataName != "" {
-		return "", fmt.Errorf("options `--skaffold-config` and `--filename` cannot be given at the same time")
+		return fmt.Errorf("options `--skaffold-config` and `--filename` cannot be given at the same time")
 	}
 
 	if configMetadataName != "" {
-		return configMetadataName, nil
+		return nil
 	}
 
 	if skaffoldYamlFile == "" {
+		// use this as default when not specified
 		skaffoldYamlFile = "skaffold.yaml"
 	}
 
 	parsed, err := schema.ParseConfig(skaffoldYamlFile, true)
 	if err != nil {
-		return "", errors.Wrapf(err, "parsing pipeline config")
+		return errors.Wrapf(err, "parsing pipeline config")
 	}
 	config := parsed.(*latest.SkaffoldConfig)
 
-	if config.Metadata.Name == "" {
-		return "", fmt.Errorf("metadata.name in %q is unset", skaffoldYamlFile)
+	configMetadataName = config.Metadata.Name
+
+	if configMetadataName == "" {
+		return fmt.Errorf("metadata.name in %q is unset", skaffoldYamlFile)
 	}
 
-	return config.Metadata.Name, nil
+	return nil
 }

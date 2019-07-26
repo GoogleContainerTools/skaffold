@@ -61,13 +61,26 @@ func NewCmdSetKubeContext() *cobra.Command {
 }
 
 func NewCmdUnset() *cobra.Command {
-	return NewCmd("unset").
+	cmd := NewCmd("unset").
 		WithDescription("Unset a value in the global Skaffold config").
 		WithFlags(func(f *pflag.FlagSet) {
 			config.AddCommonFlags(f)
 			config.AddSetUnsetFlags(f)
 		}).
 		ExactArgs(1, config.Unset)
+	cmd.AddCommand(NewCmdUnsetKubeContext())
+	return cmd
+}
+
+func NewCmdUnsetKubeContext() *cobra.Command {
+	return NewCmd("default-context").
+		WithDescription("Unset a default kube-context for a named skaffold.yaml").
+		WithExample("Unset the default kube-context for skaffold.yaml", "config unset default-context").
+		WithExample("Unset the default kube-context for config with the given metadata.name", "config unset default-context --skaffold-config <name>").
+		WithFlags(func(f *pflag.FlagSet) {
+			config.AddSetKubeconfigFlags(f)
+		}).
+		ExactArgs(1, config.UnsetKubeContext)
 }
 
 func NewCmdList() *cobra.Command {

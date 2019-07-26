@@ -297,6 +297,9 @@ Unset a value in the global Skaffold config
 ```
 
 
+Available Commands:
+  default-context Unset a default kube-context for a named skaffold.yaml
+
 Options:
   -c, --config='': Path to Skaffold config
   -g, --global=false: Set value for global config
@@ -305,6 +308,7 @@ Options:
 Usage:
   skaffold config unset [options]
 
+Use "skaffold <command> --help" for more information about a given command.
 Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
@@ -314,6 +318,38 @@ Env vars:
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_GLOBAL` (same as `--global`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
+
+### skaffold config unset default-context
+
+Unset a default kube-context for a named skaffold.yaml
+
+```
+
+
+Examples:
+  # Unset the default kube-context for skaffold.yaml
+  skaffold config unset default-context
+
+  # Unset the default kube-context for config with the given metadata.name
+  skaffold config unset default-context --skaffold-config <name>
+
+Options:
+  -c, --config='': Path to Skaffold config
+  -f, --filename='': Filename or URL to the pipeline file
+  -s, --skaffold-config='': Metadata.name of the skaffold.yaml
+
+Usage:
+  skaffold config unset default-context [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+Env vars:
+
+* `SKAFFOLD_CONFIG` (same as `--config`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_SKAFFOLD_CONFIG` (same as `--skaffold-config`)
 
 ### skaffold debug
 
