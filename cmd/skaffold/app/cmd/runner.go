@@ -26,6 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
@@ -66,6 +67,14 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 	}
 
 	config := parsed.(*latest.SkaffoldConfig)
+
+	if kubeContext, err := pkgconfig.GetKubeContext(opts.GlobalConfig, config.Metadata.Name, opts.KubeContext); err != nil {
+		return nil, nil, errors.Wrap(err, "resolving kubeContext from config")
+	} else {
+		// Do this before profile application, in order to
+		// process profiles with the correct kube-context.
+		kubectx.UseKubeContext(kubeContext)
+	}
 
 	if err = schema.ApplyProfiles(config, opts); err != nil {
 		return nil, nil, errors.Wrap(err, "applying profiles")

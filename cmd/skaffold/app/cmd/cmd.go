@@ -33,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -71,8 +70,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			}
 			color.OverwriteDefault(color.Color(defaultColor))
 			cmd.Root().SetOutput(out)
-
-			kubectx.UseKubeContext(opts.KubeContext)
 
 			// Setup logs
 			if err := setUpLogs(err, v); err != nil {
