@@ -641,7 +641,7 @@ func TestNewSyncItem(t *testing.T) {
 			})
 
 			provider := func() (map[string][]string, error) { return test.dependencies, nil }
-			actual, err := NewItem(test.artifact, test.evt, test.builds, map[string]bool{}, provider)
+			actual, err := NewItem(test.artifact, test.evt, test.builds, nil, provider)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})

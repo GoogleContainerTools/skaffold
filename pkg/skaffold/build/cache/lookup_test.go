@@ -187,7 +187,7 @@ func TestLookupRemote(t *testing.T) {
 			cache := &cache{
 				imagesAreLocal: false,
 				artifactCache:  test.cache,
-				client:         docker.NewLocalDaemon(test.api, nil, false, map[string]bool{}),
+				client:         docker.NewLocalDaemon(test.api, nil, false, nil),
 			}
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
 				ImageName: "artifact",

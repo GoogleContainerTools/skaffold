@@ -24,14 +24,14 @@ import (
 )
 
 // PrintForRun prints tips to the user who has run `skaffold run`.
-func PrintForRun(out io.Writer, opts *config.SkaffoldOptions) {
+func PrintForRun(out io.Writer, opts config.SkaffoldOptions) {
 	if !opts.Tail {
 		printTip(out, "You can also run [skaffold run --tail] to get the logs")
 	}
 }
 
 // PrintForInit prints tips to the user who has run `skaffold init`.
-func PrintForInit(out io.Writer, opts *config.SkaffoldOptions) {
+func PrintForInit(out io.Writer, opts config.SkaffoldOptions) {
 	printTip(out, "You can now run [skaffold build] to build the artifacts")
 	printTip(out, "or [skaffold run] to build and deploy")
 	printTip(out, "or [skaffold dev] to enter development mode, with auto-redeploy")

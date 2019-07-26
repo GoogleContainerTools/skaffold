@@ -83,7 +83,7 @@ type Config struct {
 	Force         bool
 	Analyze       bool
 	EnableJibInit bool // TODO: Remove this parameter
-	Opts          *config.SkaffoldOptions
+	Opts          config.SkaffoldOptions
 }
 
 // builderImagePair defines a builder and the image it builds

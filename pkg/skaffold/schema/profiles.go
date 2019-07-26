@@ -35,7 +35,7 @@ import (
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
-func ApplyProfiles(c *latest.SkaffoldConfig, opts *cfg.SkaffoldOptions) error {
+func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 	byName := profilesByName(c.Profiles)
 
 	profiles, err := activatedProfiles(c.Profiles, opts)
@@ -57,7 +57,7 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts *cfg.SkaffoldOptions) error {
 	return nil
 }
 
-func activatedProfiles(profiles []latest.Profile, opts *cfg.SkaffoldOptions) ([]string, error) {
+func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, error) {
 	activated := opts.Profiles
 
 	// Auto-activated profiles
@@ -100,7 +100,7 @@ func isEnv(env string) (bool, error) {
 	return satisfies(value, os.Getenv(key)), nil
 }
 
-func isCommand(command string, opts *cfg.SkaffoldOptions) bool {
+func isCommand(command string, opts cfg.SkaffoldOptions) bool {
 	if command == "" {
 		return true
 	}

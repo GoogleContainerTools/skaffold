@@ -62,7 +62,7 @@ func SetSyncCallback(callback func()) {
 // Initialize creates the gRPC and HTTP servers for serving the state and event log.
 // It returns a shutdown callback for tearing down the grpc server,
 // which the runner is responsible for calling.
-func Initialize(opts *config.SkaffoldOptions) (func() error, error) {
+func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 	if !opts.EnableRPC {
 		return func() error { return nil }, nil
 	}

@@ -30,9 +30,7 @@ import (
 )
 
 func TestNoTestDependencies(t *testing.T) {
-	runCtx := &runcontext.RunContext{
-		Cfg: &latest.Pipeline{},
-	}
+	runCtx := &runcontext.RunContext{}
 
 	deps, err := NewTester(runCtx).TestDependencies()
 
@@ -47,7 +45,7 @@ func TestTestDependencies(t *testing.T) {
 
 	runCtx := &runcontext.RunContext{
 		WorkingDir: tmpDir.Root(),
-		Cfg: &latest.Pipeline{
+		Cfg: latest.Pipeline{
 			Test: []*latest.TestCase{
 				{StructureTests: []string{"./tests/*"}},
 				{},
@@ -64,7 +62,7 @@ func TestTestDependencies(t *testing.T) {
 
 func TestWrongPattern(t *testing.T) {
 	runCtx := &runcontext.RunContext{
-		Cfg: &latest.Pipeline{
+		Cfg: latest.Pipeline{
 			Test: []*latest.TestCase{
 				{StructureTests: []string{"[]"}},
 			},
@@ -81,9 +79,7 @@ func TestWrongPattern(t *testing.T) {
 }
 
 func TestNoTest(t *testing.T) {
-	runCtx := &runcontext.RunContext{
-		Cfg: &latest.Pipeline{},
-	}
+	runCtx := &runcontext.RunContext{}
 
 	err := NewTester(runCtx).Test(context.Background(), ioutil.Discard, nil)
 
@@ -104,7 +100,7 @@ func TestTestSuccess(t *testing.T) {
 
 	runCtx := &runcontext.RunContext{
 		WorkingDir: tmpDir.Root(),
-		Cfg: &latest.Pipeline{
+		Cfg: latest.Pipeline{
 			Test: []*latest.TestCase{
 				{
 					ImageName:      "image",
@@ -140,7 +136,7 @@ func TestTestFailure(t *testing.T) {
 
 	runCtx := &runcontext.RunContext{
 		WorkingDir: tmpDir.Root(),
-		Cfg: &latest.Pipeline{
+		Cfg: latest.Pipeline{
 			Test: []*latest.TestCase{
 				{
 					ImageName:      "broken-image",

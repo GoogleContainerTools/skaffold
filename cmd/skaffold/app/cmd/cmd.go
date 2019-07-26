@@ -39,7 +39,7 @@ import (
 )
 
 var (
-	opts         = &config.SkaffoldOptions{}
+	opts         config.SkaffoldOptions
 	v            string
 	forceColors  bool
 	defaultColor int
