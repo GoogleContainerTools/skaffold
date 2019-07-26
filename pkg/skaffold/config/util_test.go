@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -79,7 +80,7 @@ func TestResolveConfigFile(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		actual, err := ResolveConfigFile("")
 		t.CheckNoError(err)
-		const suffix = ".skaffold/config"
+		suffix := filepath.FromSlash(".skaffold/config")
 		if !strings.HasSuffix(actual, suffix) {
 			t.Errorf("expecting %q to have suffix %q", actual, suffix)
 		}
