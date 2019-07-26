@@ -17,11 +17,26 @@ limitations under the License.
 package runner
 
 import (
+	"fmt"
 	"io"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 func (r *SkaffoldRunner) createForwarder(out io.Writer) {
-	r.forwarderManager = portforward.NewForwarderManager(out, r.imageList, r.runCtx.Namespaces, r.defaultLabeller.K8sManagedByLabelKeyValueString(), r.runCtx.Opts.PortForward, r.portForwardResources)
+	label := createLabelQuery(r.runCtx.Cfg.Deploy.HelmDeploy, r.defaultLabeller.K8sManagedByLabelKeyValueString())
+	r.forwarderManager = portforward.NewForwarderManager(out, r.imageList, r.runCtx.Namespaces, label, r.runCtx.Opts.PortForward, r.portForwardResources)
+}
+
+func createLabelQuery(helmDeploy *latest.HelmDeploy, label string) string {
+	if helmDeploy == nil {
+		return label
+	}
+	names := make([]string, len(helmDeploy.Releases))
+	for i, release := range helmDeploy.Releases {
+		names[i] = release.Name
+	}
+	return fmt.Sprintf("release in (%s)", strings.Join(names, ","))
 }
