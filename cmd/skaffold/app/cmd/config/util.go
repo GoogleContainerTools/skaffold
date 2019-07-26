@@ -17,8 +17,9 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,20 +41,34 @@ func resolveKubectlContext() {
 	}
 }
 
-func getOrCreateConfigForKubectx() (*ContextConfig, error) {
+func getConfigForKubectxOrDefault() (*config.ContextConfig, error) {
+	cfg, err := getConfigForKubectx()
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg == nil {
+		cfg = &config.ContextConfig{}
+		if !global {
+			cfg.Kubecontext = kubecontext
+		}
+	}
+
+	return cfg, nil
+}
+
+func getConfigForKubectx() (*config.ContextConfig, error) {
 	resolveKubectlContext()
-	cfg, err := readConfig()
+
+	if kubecontext == "" && global == false {
+		return nil, fmt.Errorf("missing `--kube-context` or `--global`")
+	}
+
+	cfg, err := config.ReadConfigFile(configFile)
 	if err != nil {
 		return nil, err
 	}
 	if global {
-		if cfg.Global == nil {
-			newCfg := &ContextConfig{}
-			cfg.Global = newCfg
-			if err := writeFullConfig(cfg); err != nil {
-				return nil, err
-			}
-		}
 		return cfg.Global, nil
 	}
 	for _, contextCfg := range cfg.ContextConfigs {
@@ -61,14 +76,5 @@ func getOrCreateConfigForKubectx() (*ContextConfig, error) {
 			return contextCfg, nil
 		}
 	}
-	newCfg := &ContextConfig{
-		Kubecontext: kubecontext,
-	}
-	cfg.ContextConfigs = append(cfg.ContextConfigs, newCfg)
-
-	if err := writeFullConfig(cfg); err != nil {
-		return nil, err
-	}
-
-	return newCfg, nil
+	return nil, nil
 }
