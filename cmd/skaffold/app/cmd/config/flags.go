@@ -19,13 +19,26 @@ package config
 import "github.com/spf13/pflag"
 
 var (
-	configFile, kubecontext string
-	showAll, global         bool
+	configFile         string
+	kubecontext        string
+	configMetadataName string
+	skaffoldYamlFile   string
+	showAll, global    bool
 )
 
 func AddCommonFlags(f *pflag.FlagSet) {
-	f.StringVarP(&configFile, "config", "c", "", "Path to Skaffold config")
+	addConfigFileFlag(f)
 	f.StringVarP(&kubecontext, "kube-context", "k", "", "Kubectl context to set values against")
+}
+
+func AddSetKubeconfigFlags(f *pflag.FlagSet) {
+	addConfigFileFlag(f)
+	f.StringVarP(&configMetadataName, "skaffold-config", "s", "", "Metadata.name of the skaffold.yaml")
+	f.StringVarP(&skaffoldYamlFile, "filename", "f", "", "Filename or URL to the pipeline file")
+}
+
+func addConfigFileFlag(f *pflag.FlagSet) {
+	f.StringVarP(&configFile, "config", "c", "", "Path to Skaffold config")
 }
 
 func AddListFlags(f *pflag.FlagSet) {

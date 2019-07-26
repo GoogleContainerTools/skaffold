@@ -236,6 +236,9 @@ Examples:
   # Disable pushing images for a given Kubernetes context
   skaffold config set --kube-context <mycluster> local-cluster true
 
+Available Commands:
+  default-context Set a default kube-context for a named skaffold.yaml
+
 Options:
   -c, --config='': Path to Skaffold config
   -g, --global=false: Set value for global config
@@ -244,6 +247,7 @@ Options:
 Usage:
   skaffold config set [options]
 
+Use "skaffold <command> --help" for more information about a given command.
 Use "skaffold options" for a list of global command-line options (applies to all commands).
 
 
@@ -253,6 +257,38 @@ Env vars:
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_GLOBAL` (same as `--global`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
+
+### skaffold config set default-context
+
+Set a default kube-context for a named skaffold.yaml
+
+```
+
+
+Examples:
+  # Use given kube-context when running current skaffold.yaml
+  skaffold config set default-context <kube-context>
+
+  # Use given kube-context for config with the given metadata.name
+  skaffold config set default-context --skaffold-config <name> <kube-context>
+
+Options:
+  -c, --config='': Path to Skaffold config
+  -f, --filename='': Filename or URL to the pipeline file
+  -s, --skaffold-config='': Metadata.name of the skaffold.yaml
+
+Usage:
+  skaffold config set default-context [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+Env vars:
+
+* `SKAFFOLD_CONFIG` (same as `--config`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_SKAFFOLD_CONFIG` (same as `--skaffold-config`)
 
 ### skaffold config unset
 

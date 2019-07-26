@@ -35,7 +35,7 @@ func NewCmdConfig() *cobra.Command {
 }
 
 func NewCmdSet() *cobra.Command {
-	return NewCmd("set").
+	cmd := NewCmd("set").
 		WithDescription("Set a value in the global Skaffold config").
 		WithExample("Mark a registry as insecure", "config set insecure-registries <insecure1.io>").
 		WithExample("Globally set the default image repository", "config set default-repo <myrepo>").
@@ -45,6 +45,19 @@ func NewCmdSet() *cobra.Command {
 			config.AddSetUnsetFlags(f)
 		}).
 		ExactArgs(2, config.Set)
+	cmd.AddCommand(NewCmdSetKubeContext())
+	return cmd
+}
+
+func NewCmdSetKubeContext() *cobra.Command {
+	return NewCmd("default-context").
+		WithDescription("Set a default kube-context for a named skaffold.yaml").
+		WithExample("Use given kube-context when running current skaffold.yaml", "config set default-context <kube-context>").
+		WithExample("Use given kube-context for config with the given metadata.name", "config set default-context --skaffold-config <name> <kube-context>").
+		WithFlags(func(f *pflag.FlagSet) {
+			config.AddSetKubeconfigFlags(f)
+		}).
+		ExactArgs(1, config.SetKubeContext)
 }
 
 func NewCmdUnset() *cobra.Command {
