@@ -18,9 +18,11 @@ package config
 
 import (
 	"fmt"
+
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/sirupsen/logrus"
 )
 
 func resolveKubectlContext() {
@@ -60,7 +62,7 @@ func getConfigForKubectxOrDefault() (*config.ContextConfig, error) {
 func getConfigForKubectx() (*config.ContextConfig, error) {
 	resolveKubectlContext()
 
-	if kubecontext == "" && global == false {
+	if kubecontext == "" && !global {
 		return nil, fmt.Errorf("missing `--kube-context` or `--global`")
 	}
 
