@@ -36,6 +36,7 @@ import (
 const (
 	defaultConfigDir  = ".skaffold"
 	defaultConfigFile = "config"
+	wildcardContext   = "*"
 )
 
 var (
@@ -193,6 +194,10 @@ func GetKubeContext(configFile, skaffoldConfigName, cliValue string) (string, er
 	}
 
 	if kubecontext, ok := cfg.SkaffoldConfigs[skaffoldConfigName]; ok {
+		return kubecontext, nil
+	}
+
+	if kubecontext, ok := cfg.SkaffoldConfigs[wildcardContext]; ok {
 		return kubecontext, nil
 	}
 

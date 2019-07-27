@@ -217,7 +217,7 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 	}
 }
 
-func TestResolveDefaultKubeContext(t *testing.T) {
+func TestGetKubeContext(t *testing.T) {
 	const (
 		someKubeContext    = "this_is_a_context"
 		skaffoldConfigName = "skaffold-config-name"
@@ -235,7 +235,10 @@ func TestResolveDefaultKubeContext(t *testing.T) {
 			contextCLI: someKubeContext,
 			configName: skaffoldConfigName,
 			cfg: &GlobalConfig{
-				SkaffoldConfigs: map[string]string{skaffoldConfigName: "other_context"},
+				SkaffoldConfigs: map[string]string{
+					skaffoldConfigName: "other_context",
+					wildcardContext:    "yet_another_context",
+				},
 			},
 			expectedContext: someKubeContext,
 		},
@@ -243,7 +246,10 @@ func TestResolveDefaultKubeContext(t *testing.T) {
 			name:       "when mapping is found",
 			configName: skaffoldConfigName,
 			cfg: &GlobalConfig{
-				SkaffoldConfigs: map[string]string{skaffoldConfigName: someKubeContext},
+				SkaffoldConfigs: map[string]string{
+					skaffoldConfigName: someKubeContext,
+					wildcardContext:    "yet_another_context",
+				},
 			},
 			expectedContext: someKubeContext,
 		},
@@ -254,6 +260,17 @@ func TestResolveDefaultKubeContext(t *testing.T) {
 				SkaffoldConfigs: map[string]string{"other-config-name": someKubeContext},
 			},
 			expectedContext: "",
+		},
+		{
+			name:       "fall back to wildcard context",
+			configName: skaffoldConfigName,
+			cfg: &GlobalConfig{
+				SkaffoldConfigs: map[string]string{
+					"other-config-name": "yet_another_context",
+					wildcardContext:     someKubeContext,
+				},
+			},
+			expectedContext: someKubeContext,
 		},
 		{
 			name:            "when SkaffoldConfigs is not set",
