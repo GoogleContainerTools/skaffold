@@ -27,6 +27,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
+const wildcardConfigName = "*"
+
 func SetKubeContext(out io.Writer, args []string) error {
 	if err := setKubeContext(args[0]); err != nil {
 		return err
@@ -69,6 +71,11 @@ func setKubeContext(kubeContext string) error {
 func resolveConfigName() error {
 	if skaffoldYamlFile != "" && configMetadataName != "" {
 		return fmt.Errorf("options `--skaffold-config` and `--filename` cannot be given at the same time")
+	}
+
+	if global {
+		configMetadataName = wildcardConfigName
+		return nil
 	}
 
 	if configMetadataName != "" {

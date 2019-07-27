@@ -33,12 +33,9 @@ func AddCommonFlags(f *pflag.FlagSet) {
 
 func AddSetKubeconfigFlags(f *pflag.FlagSet) {
 	addConfigFileFlag(f)
+	addGlobalFlag(f)
 	f.StringVarP(&configMetadataName, "skaffold-config", "s", "", "Metadata.name of the skaffold.yaml")
 	f.StringVarP(&skaffoldYamlFile, "filename", "f", "", "Filename or URL to the pipeline file")
-}
-
-func addConfigFileFlag(f *pflag.FlagSet) {
-	f.StringVarP(&configFile, "config", "c", "", "Path to Skaffold config")
 }
 
 func AddListFlags(f *pflag.FlagSet) {
@@ -46,5 +43,13 @@ func AddListFlags(f *pflag.FlagSet) {
 }
 
 func AddSetUnsetFlags(f *pflag.FlagSet) {
+	addGlobalFlag(f)
+}
+
+func addConfigFileFlag(f *pflag.FlagSet) {
+	f.StringVarP(&configFile, "config", "c", "", "Path to Skaffold config")
+}
+
+func addGlobalFlag(f *pflag.FlagSet) {
 	f.BoolVarP(&global, "global", "g", false, "Set value for global config")
 }

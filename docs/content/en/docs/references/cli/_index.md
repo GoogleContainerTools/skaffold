@@ -272,9 +272,13 @@ Examples:
   # Use given kube-context for config with the given metadata.name
   skaffold config set default-context --skaffold-config <name> <kube-context>
 
+  # Use given kube-context for every config
+  skaffold config set default-context --global <kube-context>
+
 Options:
   -c, --config='': Path to Skaffold config
   -f, --filename='': Filename or URL to the pipeline file
+  -g, --global=false: Set value for global config
   -s, --skaffold-config='': Metadata.name of the skaffold.yaml
 
 Usage:
@@ -288,6 +292,7 @@ Env vars:
 
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_GLOBAL` (same as `--global`)
 * `SKAFFOLD_SKAFFOLD_CONFIG` (same as `--skaffold-config`)
 
 ### skaffold config unset
@@ -333,9 +338,13 @@ Examples:
   # Unset the default kube-context for config with the given metadata.name
   skaffold config unset default-context --skaffold-config <name>
 
+  # Unset the wildcard default kube-context
+  skaffold config unset default-context --global
+
 Options:
   -c, --config='': Path to Skaffold config
   -f, --filename='': Filename or URL to the pipeline file
+  -g, --global=false: Set value for global config
   -s, --skaffold-config='': Metadata.name of the skaffold.yaml
 
 Usage:
@@ -349,6 +358,7 @@ Env vars:
 
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_GLOBAL` (same as `--global`)
 * `SKAFFOLD_SKAFFOLD_CONFIG` (same as `--skaffold-config`)
 
 ### skaffold debug

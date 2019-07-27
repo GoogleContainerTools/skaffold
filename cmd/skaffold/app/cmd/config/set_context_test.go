@@ -34,6 +34,7 @@ func TestSetKubeContext(t *testing.T) {
 		skaffoldYaml       *latest.SkaffoldConfig
 		configMetadataName string
 		arg                string
+		global             bool
 		shouldErr          bool
 	}{
 		{
@@ -87,6 +88,25 @@ func TestSetKubeContext(t *testing.T) {
 			expectedCfg: &config.GlobalConfig{},
 			shouldErr:   true,
 		},
+		{
+			name:   "wildcard default context",
+			arg:    "this_is_a_context",
+			global: true,
+			expectedCfg: &config.GlobalConfig{
+				SkaffoldConfigs: map[string]string{"*": "this_is_a_context"},
+				ContextConfigs:  []*config.ContextConfig{},
+			},
+		},
+		{
+			name:               "wildcard default context ignores explicit config-name",
+			arg:                "this_is_a_context",
+			configMetadataName: "ignored",
+			global:             true,
+			expectedCfg: &config.GlobalConfig{
+				SkaffoldConfigs: map[string]string{"*": "this_is_a_context"},
+				ContextConfigs:  []*config.ContextConfig{},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
@@ -95,13 +115,15 @@ func TestSetKubeContext(t *testing.T) {
 
 			t.Override(&config.ReadConfigFile, config.ReadConfigFileNoCache)
 			t.Override(&configFile, cfg)
+			t.Override(&global, test.global)
 			t.Override(&configMetadataName, test.configMetadataName)
 
+			var skaffoldYaml string
 			if test.skaffoldYaml != nil {
 				c, _ := yaml.Marshal(*test.skaffoldYaml)
-				skaffoldYaml := t.TempFile("skaffold-yaml", c)
-				t.Override(&skaffoldYamlFile, skaffoldYaml)
+				skaffoldYaml = t.TempFile("skaffold-yaml", c)
 			}
+			t.Override(&skaffoldYamlFile, skaffoldYaml)
 
 			// set specified value
 			err := SetKubeContext(ioutil.Discard, []string{test.arg})
