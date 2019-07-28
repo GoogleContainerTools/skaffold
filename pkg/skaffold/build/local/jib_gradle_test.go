@@ -64,9 +64,7 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			api := &testutil.FakeAPIClient{
-				TagToImageID: map[string]string{"img:tag": "imageID"},
-			}
+			api := (&testutil.FakeAPIClient{}).Add("img:tag", "imageID")
 
 			t.Override(&util.DefaultExecCommand, test.cmd)
 			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {

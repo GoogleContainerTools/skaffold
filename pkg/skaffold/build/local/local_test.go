@@ -45,7 +45,7 @@ func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error)
 func TestLocalRun(t *testing.T) {
 	tests := []struct {
 		description      string
-		api              testutil.FakeAPIClient
+		api              *testutil.FakeAPIClient
 		tags             tag.ImageTags
 		artifacts        []*latest.Artifact
 		expected         []build.Artifact
@@ -63,7 +63,7 @@ func TestLocalRun(t *testing.T) {
 				}},
 			},
 			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			api:        testutil.FakeAPIClient{},
+			api:        &testutil.FakeAPIClient{},
 			pushImages: false,
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
@@ -79,7 +79,7 @@ func TestLocalRun(t *testing.T) {
 				}},
 			},
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			api: testutil.FakeAPIClient{
+			api: &testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
 			shouldErr: true,
@@ -93,7 +93,7 @@ func TestLocalRun(t *testing.T) {
 				}},
 			},
 			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			api:        testutil.FakeAPIClient{},
+			api:        &testutil.FakeAPIClient{},
 			pushImages: true,
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
@@ -110,7 +110,7 @@ func TestLocalRun(t *testing.T) {
 				}},
 			},
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			api: testutil.FakeAPIClient{
+			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
 			shouldErr: true,
@@ -125,7 +125,7 @@ func TestLocalRun(t *testing.T) {
 			},
 			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			pushImages: true,
-			api: testutil.FakeAPIClient{
+			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
 			shouldErr: true,
@@ -133,6 +133,7 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "unknown artifact type",
 			artifacts:   []*latest.Artifact{{}},
+			api:         &testutil.FakeAPIClient{},
 			shouldErr:   true,
 		},
 		{
@@ -145,12 +146,7 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api: testutil.FakeAPIClient{
-				TagToImageID: map[string]string{
-					"pull1": "imageID1",
-					"pull2": "imageID2",
-				},
-			},
+			api:  (&testutil.FakeAPIClient{}).Add("pull1", "imageID1").Add("pull2", "imageID2"),
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
@@ -167,9 +163,7 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api: testutil.FakeAPIClient{
-				TagToImageID: map[string]string{"pull1": "imageid", "pull2": "anotherimageid"},
-			},
+			api:  (&testutil.FakeAPIClient{}).Add("pull1", "imageid").Add("pull2", "anotherimageid"),
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
@@ -186,10 +180,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api: testutil.FakeAPIClient{
+			api: (&testutil.FakeAPIClient{
 				ErrImagePull: true,
-				TagToImageID: map[string]string{"pull1": ""},
-			},
+			}).Add("pull1", ""),
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
@@ -207,7 +200,7 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api: testutil.FakeAPIClient{
+			api: &testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
 			tags:      tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
@@ -220,7 +213,7 @@ func TestLocalRun(t *testing.T) {
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
-				return docker.NewLocalDaemon(&test.api, nil, false, nil), nil
+				return docker.NewLocalDaemon(test.api, nil, false, nil), nil
 			})
 
 			event.InitializeState(latest.BuildConfig{

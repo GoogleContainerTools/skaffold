@@ -68,9 +68,7 @@ func TestLookupLocal(t *testing.T) {
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
-			api: &testutil.FakeAPIClient{
-				TagToImageID: map[string]string{"tag": "imageID"},
-			},
+			api:      (&testutil.FakeAPIClient{}).Add("tag", "imageID"),
 			expected: found{hash: "hash"},
 		},
 		{
@@ -78,12 +76,7 @@ func TestLookupLocal(t *testing.T) {
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
-			api: &testutil.FakeAPIClient{
-				TagToImageID: map[string]string{
-					"othertag": "imageID",
-					"tag":      "otherImageID",
-				},
-			},
+			api:      (&testutil.FakeAPIClient{}).Add("tag", "otherImageID").Add("othertag", "imageID"),
 			expected: needsLocalTagging{hash: "hash", tag: "tag", imageID: "imageID"},
 		},
 		{
@@ -91,11 +84,7 @@ func TestLookupLocal(t *testing.T) {
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
-			api: &testutil.FakeAPIClient{
-				TagToImageID: map[string]string{
-					"tag": "otherImageID",
-				},
-			},
+			api:      (&testutil.FakeAPIClient{}).Add("tag", "otherImageID"),
 			expected: needsBuilding{hash: "hash"},
 		},
 	}
@@ -152,11 +141,7 @@ func TestLookupRemote(t *testing.T) {
 			cache: map[string]ImageDetails{
 				"hash": {ID: "imageID"},
 			},
-			api: &testutil.FakeAPIClient{
-				TagToImageID: map[string]string{
-					"tag": "imageID",
-				},
-			},
+			api:      (&testutil.FakeAPIClient{}).Add("tag", "imageID"),
 			expected: needsPushing{hash: "hash", tag: "tag", imageID: "imageID"},
 		},
 		{
