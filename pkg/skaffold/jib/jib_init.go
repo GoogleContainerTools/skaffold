@@ -27,6 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/sirupsen/logrus"
 )
 
 // For testing
@@ -153,9 +154,11 @@ func ValidateJibConfig(path string) []Jib {
 
 	results := make([]Jib, len(matches))
 	for i, match := range matches {
+		// Escape windows path separators
 		line := bytes.Replace(match[1], []byte(`\`), []byte(`\\`), -1)
 		parsedJSON := jibJSON{}
 		if err := json.Unmarshal(line, &parsedJSON); err != nil {
+			logrus.Warnf("failed to parse jib json: %s", err.Error())
 			return nil
 		}
 

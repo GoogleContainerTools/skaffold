@@ -363,28 +363,10 @@ func TestAutoSelectBuilders(t *testing.T) {
 		description            string
 		builderConfigs         []InitBuilder
 		images                 []string
-		enableJibInit          bool
 		expectedPairs          []builderImagePair
 		expectedBuildersLeft   []InitBuilder
 		expectedFilteredImages []string
 	}{
-		{
-			description: "no automatic matches (backwards compatibility)",
-			builderConfigs: []InitBuilder{
-				docker.Docker{File: "Dockerfile"},
-				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle"},
-				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "not a k8s image"},
-			},
-			images:        []string{"image1", "image2"},
-			enableJibInit: false,
-			expectedPairs: nil,
-			expectedBuildersLeft: []InitBuilder{
-				docker.Docker{File: "Dockerfile"},
-				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle"},
-				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "not a k8s image"},
-			},
-			expectedFilteredImages: []string{"image1", "image2"},
-		},
 		{
 			description: "no automatic matches",
 			builderConfigs: []InitBuilder{
@@ -393,7 +375,6 @@ func TestAutoSelectBuilders(t *testing.T) {
 				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "not a k8s image"},
 			},
 			images:        []string{"image1", "image2"},
-			enableJibInit: true,
 			expectedPairs: nil,
 			expectedBuildersLeft: []InitBuilder{
 				docker.Docker{File: "Dockerfile"},
@@ -409,8 +390,7 @@ func TestAutoSelectBuilders(t *testing.T) {
 				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
 				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image2"},
 			},
-			images:        []string{"image1", "image2", "image3"},
-			enableJibInit: true,
+			images: []string{"image1", "image2", "image3"},
 			expectedPairs: []builderImagePair{
 				{
 					jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
@@ -431,7 +411,6 @@ func TestAutoSelectBuilders(t *testing.T) {
 				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image1"},
 			},
 			images:        []string{"image1", "image2"},
-			enableJibInit: true,
 			expectedPairs: nil,
 			expectedBuildersLeft: []InitBuilder{
 				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
@@ -444,7 +423,7 @@ func TestAutoSelectBuilders(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 
-			pairs, builderConfigs, filteredImages := autoSelectBuilders(test.enableJibInit, test.builderConfigs, test.images)
+			pairs, builderConfigs, filteredImages := autoSelectBuilders(test.builderConfigs, test.images)
 
 			t.CheckDeepEqual(test.expectedPairs, pairs)
 			t.CheckDeepEqual(test.expectedBuildersLeft, builderConfigs)
