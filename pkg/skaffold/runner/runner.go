@@ -35,11 +35,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
 	"github.com/pkg/errors"
@@ -114,6 +113,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	tester := getTester(runCtx)
+	syncer := getSyncer(runCtx)
 
 	deployer, err := getDeployer(runCtx)
 	if err != nil {
@@ -144,7 +144,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		Tester:   tester,
 		Deployer: deployer,
 		Tagger:   tagger,
-		Syncer:   kubectl.NewSyncer(runCtx.Namespaces),
+		Syncer:   syncer,
 		monitor:  monitor,
 		listener: &SkaffoldListener{
 			Monitor:    monitor,
@@ -244,6 +244,10 @@ func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 
 func getTester(runCtx *runcontext.RunContext) test.Tester {
 	return test.NewTester(runCtx)
+}
+
+func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
+	return sync.NewSyncer(runCtx)
 }
 
 func getDeployer(runCtx *runcontext.RunContext) (deploy.Deployer, error) {

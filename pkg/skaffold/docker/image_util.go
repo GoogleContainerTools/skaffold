@@ -20,7 +20,7 @@ import (
 	"context"
 	"strings"
 
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"

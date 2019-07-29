@@ -25,7 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

@@ -23,7 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	homedir "github.com/mitchellh/go-homedir"

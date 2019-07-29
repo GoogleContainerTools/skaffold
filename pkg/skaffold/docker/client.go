@@ -30,7 +30,7 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/docker/docker/api"
