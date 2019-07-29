@@ -39,7 +39,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
 	"github.com/pkg/errors"
@@ -248,7 +247,7 @@ func getTester(runCtx *runcontext.RunContext) test.Tester {
 }
 
 func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
-	return kubectl.NewSyncer(runCtx)
+	return sync.NewSyncer(runCtx)
 }
 
 func getDeployer(runCtx *runcontext.RunContext) (deploy.Deployer, error) {

@@ -14,53 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubectl
+package sync
 
 import (
 	"context"
 	"io"
 	"os/exec"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 )
 
-type Syncer struct {
-	namespaces []string
-}
-
-func NewSyncer(runCtx *runcontext.RunContext) *Syncer {
-	return &Syncer{
-		namespaces: runCtx.Namespaces,
-	}
-}
-
-func (k *Syncer) Sync(ctx context.Context, s *sync.Item) error {
-	if len(s.Copy) > 0 {
-		logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
-
-		if err := sync.Perform(ctx, s.Image, s.Copy, copyFileFn, k.namespaces); err != nil {
-			return errors.Wrap(err, "copying files")
-		}
-	}
-
-	if len(s.Delete) > 0 {
-		logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
-
-		if err := sync.Perform(ctx, s.Image, s.Delete, deleteFileFn, k.namespaces); err != nil {
-			return errors.Wrap(err, "deleting files")
-		}
-	}
-
-	return nil
-}
-
 func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files map[string][]string) []*exec.Cmd {
-	// "kubectl" is below...
 	deleteCmd := []string{"exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "--", "rm", "-rf", "--"}
 	args := make([]string, 0, len(deleteCmd)+len(files))
 	args = append(args, deleteCmd...)

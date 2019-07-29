@@ -43,20 +43,6 @@ var (
 	WorkingDir = docker.RetrieveWorkingDir
 )
 
-type Syncer interface {
-	Sync(context.Context, *Item) error
-}
-
-type syncMap map[string][]string
-
-type Item struct {
-	Image  string
-	Copy   map[string][]string
-	Delete map[string][]string
-}
-
-type DestinationProvider func() (map[string][]string, error)
-
 func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool, destProvider DestinationProvider) (*Item, error) {
 	if !e.HasChanged() || a.Sync == nil {
 		return nil, nil
@@ -206,6 +192,26 @@ func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) (
 		dsts = append(dsts, path.Join(wd, r.Dest, subPath))
 	}
 	return dsts, nil
+}
+
+func (k *podSyncer) Sync(ctx context.Context, s *Item) error {
+	if len(s.Copy) > 0 {
+		logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
+
+		if err := Perform(ctx, s.Image, s.Copy, copyFileFn, k.namespaces); err != nil {
+			return errors.Wrap(err, "copying files")
+		}
+	}
+
+	if len(s.Delete) > 0 {
+		logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
+
+		if err := Perform(ctx, s.Image, s.Delete, deleteFileFn, k.namespaces); err != nil {
+			return errors.Wrap(err, "deleting files")
+		}
+	}
+
+	return nil
 }
 
 func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd, namespaces []string) error {
