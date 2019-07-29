@@ -21,6 +21,7 @@ import (
 	"io"
 	"os/exec"
 
+	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
@@ -32,9 +33,9 @@ type Syncer struct {
 	namespaces []string
 }
 
-func NewSyncer(namespaces []string) *Syncer {
+func NewSyncer(runCtx *runcontext.RunContext) *Syncer {
 	return &Syncer{
-		namespaces: namespaces,
+		namespaces: runCtx.Namespaces,
 	}
 }
 

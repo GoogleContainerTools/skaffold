@@ -114,6 +114,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	tester := getTester(runCtx)
+	syncer := getSyncer(runCtx)
 
 	deployer, err := getDeployer(runCtx)
 	if err != nil {
@@ -144,7 +145,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		Tester:   tester,
 		Deployer: deployer,
 		Tagger:   tagger,
-		Syncer:   kubectl.NewSyncer(runCtx.Namespaces),
+		Syncer:   syncer,
 		monitor:  monitor,
 		listener: &SkaffoldListener{
 			Monitor:    monitor,
@@ -244,6 +245,10 @@ func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 
 func getTester(runCtx *runcontext.RunContext) test.Tester {
 	return test.NewTester(runCtx)
+}
+
+func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
+	return kubectl.NewSyncer(runCtx)
 }
 
 func getDeployer(runCtx *runcontext.RunContext) (deploy.Deployer, error) {
