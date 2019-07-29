@@ -32,7 +32,7 @@ func TestNewBuildOutputFlag(t *testing.T) {
 }
 
 func TestBuildOutputSet(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description         string
 		files               map[string]string
 		shouldErr           bool

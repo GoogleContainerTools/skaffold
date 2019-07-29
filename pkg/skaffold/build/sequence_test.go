@@ -31,7 +31,7 @@ import (
 )
 
 func TestInSequence(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description       string
 		buildArtifact     artifactBuilder
 		tags              tag.ImageTags
@@ -89,7 +89,7 @@ func TestInSequence(t *testing.T) {
 }
 
 func TestInSequenceResultsOrder(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		images      []string
 		expected    []Artifact

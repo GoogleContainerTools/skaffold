@@ -9,6 +9,7 @@
 
     <properties>
         <java.version>1.8</java.version>
+        <jib.maven-plugin-version>1.4.0</jib.maven-plugin-version>
     </properties>
 
     <parent>
@@ -34,7 +35,7 @@
             <plugin>
                 <groupId>com.google.cloud.tools</groupId>
                 <artifactId>jib-maven-plugin</artifactId>
-                <version>1.3.0</version>
+                <version>${jib.maven-plugin-version}</version>
                 <configuration>
                     <container>
                         <jvmFlags>

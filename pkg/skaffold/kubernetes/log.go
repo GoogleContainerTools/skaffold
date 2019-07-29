@@ -49,6 +49,7 @@ type LogAggregator struct {
 	sinceTime         time.Time
 	cancel            context.CancelFunc
 	trackedContainers trackedContainers
+	outputLock        sync.Mutex
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
@@ -163,8 +164,12 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 
 func (a *LogAggregator) printLogLine(headerColor color.Color, prefix, text string) {
 	if !a.IsMuted() {
+		a.outputLock.Lock()
+
 		headerColor.Fprintf(a.output, "%s ", prefix)
 		fmt.Fprint(a.output, text)
+
+		a.outputLock.Unlock()
 	}
 }
 
@@ -186,7 +191,7 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Col
 			// Read up to newline
 			line, err := r.ReadString('\n')
 			if err == io.EOF {
-				a.printLogLine(headerColor, prefix, "<Exited>\n")
+				a.printLogLine(headerColor, prefix, "<Container was Terminated>\n")
 				return nil
 			}
 			if err != nil {

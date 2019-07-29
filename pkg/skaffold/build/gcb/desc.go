@@ -19,7 +19,6 @@ package gcb
 import (
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
@@ -27,11 +26,8 @@ import (
 
 func (b *Builder) buildDescription(artifact *latest.Artifact, tag, bucket, object string) (*cloudbuild.Build, error) {
 	tags := []string{tag}
-	if artifact.WorkspaceHash != "" {
-		tags = append(tags, cache.HashTag(artifact))
-	}
 
-	steps, err := b.buildSteps(artifact, tags)
+	steps, err := b.buildSteps(artifact, tag)
 	if err != nil {
 		return nil, err
 	}
@@ -54,20 +50,20 @@ func (b *Builder) buildDescription(artifact *latest.Artifact, tag, bucket, objec
 	}, nil
 }
 
-func (b *Builder) buildSteps(artifact *latest.Artifact, tags []string) ([]*cloudbuild.BuildStep, error) {
+func (b *Builder) buildSteps(artifact *latest.Artifact, tag string) ([]*cloudbuild.BuildStep, error) {
 	switch {
 	case artifact.DockerArtifact != nil:
-		return b.dockerBuildSteps(artifact.DockerArtifact, tags)
+		return b.dockerBuildSteps(artifact.DockerArtifact, tag)
 
 	case artifact.BazelArtifact != nil:
 		return nil, errors.New("skaffold can't build a bazel artifact with Google Cloud Build")
 
 		// TODO: build multiple tagged images with jib in GCB (priyawadhwa@)
 	case artifact.JibMavenArtifact != nil:
-		return b.jibMavenBuildSteps(artifact.JibMavenArtifact, tags[0]), nil
+		return b.jibMavenBuildSteps(artifact.JibMavenArtifact, tag), nil
 
 	case artifact.JibGradleArtifact != nil:
-		return b.jibGradleBuildSteps(artifact.JibGradleArtifact, tags[0]), nil
+		return b.jibGradleBuildSteps(artifact.JibGradleArtifact, tag), nil
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)

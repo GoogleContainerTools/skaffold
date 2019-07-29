@@ -32,7 +32,7 @@ import (
 )
 
 func TestGetBuild(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		buildArtifact artifactBuilder
 		tags          tag.ImageTags
@@ -85,7 +85,7 @@ func TestGetBuild(t *testing.T) {
 }
 
 func TestCollectResults(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		artifacts   []*latest.Artifact
 		expected    []Artifact
@@ -194,7 +194,7 @@ func TestCollectResults(t *testing.T) {
 }
 
 func TestInParallel(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		buildFunc   artifactBuilder
 		expected    string
@@ -243,7 +243,7 @@ And new lines
 }
 
 func TestInParallelForArgs(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		inSeqFunc     func(context.Context, io.Writer, tag.ImageTags, []*latest.Artifact, artifactBuilder) ([]Artifact, error)
 		buildArtifact artifactBuilder
@@ -296,7 +296,7 @@ func TestInParallelForArgs(t *testing.T) {
 }
 
 func TestColoredOutput(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		isTerminal    func(w io.Writer) bool
 		exceptedColor bool

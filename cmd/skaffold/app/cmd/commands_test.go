@@ -41,6 +41,18 @@ func TestNewCmdLongDescription(t *testing.T) {
 	testutil.CheckDeepEqual(t, "long description", cmd.Long)
 }
 
+func TestNewCmdExample(t *testing.T) {
+	cmd := NewCmd("").WithExample("comment1", "dev --flag1").NoArgs(nil)
+
+	testutil.CheckDeepEqual(t, "  # comment1\n  skaffold dev --flag1\n", cmd.Example)
+}
+
+func TestNewCmdExamples(t *testing.T) {
+	cmd := NewCmd("").WithExample("comment1", "run --flag1").WithExample("comment2", "run --flag2").NoArgs(nil)
+
+	testutil.CheckDeepEqual(t, "  # comment1\n  skaffold run --flag1\n\n  # comment2\n  skaffold run --flag2\n", cmd.Example)
+}
+
 func TestNewCmdNoArgs(t *testing.T) {
 	cmd := NewCmd("").NoArgs(nil)
 
@@ -99,6 +111,14 @@ func TestNewCmdWithCommonFlags(t *testing.T) {
 	if _, present := flags["profile"]; !present {
 		t.Error("Expected flag `profile` to be added")
 	}
+}
+
+func TestNewCmdHidden(t *testing.T) {
+	cmd := NewCmd("").NoArgs(nil)
+	testutil.CheckDeepEqual(t, false, cmd.Hidden)
+
+	cmd = NewCmd("").Hidden().NoArgs(nil)
+	testutil.CheckDeepEqual(t, true, cmd.Hidden)
 }
 
 func listFlags(set *pflag.FlagSet) map[string]*pflag.Flag {

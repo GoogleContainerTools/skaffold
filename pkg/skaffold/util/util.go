@@ -20,11 +20,8 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -235,16 +232,6 @@ func NonEmptyLines(input []byte) []string {
 		}
 	}
 	return result
-}
-
-// SHA256 returns the shasum of the contents of r
-func SHA256(r io.Reader) (string, error) {
-	hasher := sha256.New()
-	_, err := io.Copy(hasher, r)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(hasher.Sum(make([]byte, 0, hasher.Size()))), nil
 }
 
 // CloneThroughJSON marshals the old interface into the new one

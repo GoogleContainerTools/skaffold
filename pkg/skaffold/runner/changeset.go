@@ -22,28 +22,51 @@ import (
 )
 
 type changeSet struct {
-	needsRebuild  []*latest.Artifact
-	needsResync   []*sync.Item
-	needsRedeploy bool
-	needsReload   bool
+	needsRebuild   []*latest.Artifact
+	rebuildTracker map[string]*latest.Artifact
+	needsResync    []*sync.Item
+	resyncTracker  map[string]*sync.Item
+	needsRedeploy  bool
+	needsReload    bool
 }
 
 func (c *changeSet) AddRebuild(a *latest.Artifact) {
+	if _, ok := c.rebuildTracker[a.ImageName]; ok {
+		return
+	}
+	c.rebuildTracker[a.ImageName] = a
 	c.needsRebuild = append(c.needsRebuild, a)
 }
 
 func (c *changeSet) AddResync(s *sync.Item) {
+	if _, ok := c.resyncTracker[s.Image]; ok {
+		return
+	}
+	c.resyncTracker[s.Image] = s
 	c.needsResync = append(c.needsResync, s)
 }
 
-func (c *changeSet) reset() {
+func (c *changeSet) resetBuild() {
+	c.rebuildTracker = make(map[string]*latest.Artifact)
 	c.needsRebuild = nil
-	c.needsResync = nil
+}
 
-	c.needsRedeploy = false
+func (c *changeSet) resetSync() {
+	c.resyncTracker = make(map[string]*sync.Item)
+	c.needsResync = nil
+}
+
+func (c *changeSet) resetReload() {
 	c.needsReload = false
 }
 
-func (c *changeSet) needsAction() bool {
-	return c.needsReload || len(c.needsRebuild) > 0 || c.needsRedeploy
+func (c *changeSet) resetDeploy() {
+	c.needsRedeploy = false
+}
+
+func (c *changeSet) reset() {
+	c.resetBuild()
+	c.resetSync()
+	c.resetReload()
+	c.resetDeploy()
 }

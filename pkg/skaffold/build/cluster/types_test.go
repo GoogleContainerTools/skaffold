@@ -103,14 +103,11 @@ func TestSyncMapNotSupported(t *testing.T) {
 }
 
 func stubRunContext(clusterDetails *latest.ClusterDetails, insecureRegistries map[string]bool) *runcontext.RunContext {
+	pipeline := latest.Pipeline{}
+	pipeline.Build.BuildType.Cluster = clusterDetails
+
 	return &runcontext.RunContext{
+		Cfg:                pipeline,
 		InsecureRegistries: insecureRegistries,
-		Cfg: &latest.Pipeline{
-			Build: latest.BuildConfig{
-				BuildType: latest.BuildType{
-					Cluster: clusterDetails,
-				},
-			},
-		},
 	}
 }

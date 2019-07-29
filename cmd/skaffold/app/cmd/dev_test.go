@@ -95,10 +95,10 @@ func TestDoDev(t *testing.T) {
 				hasDeployed: test.hasDeployed,
 				errDev:      context.Canceled,
 			}
-			t.Override(&createRunner, func(*config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+			t.Override(&createRunner, func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
 				return mockRunner, &latest.SkaffoldConfig{}, nil
 			})
-			t.Override(&opts, &config.SkaffoldOptions{
+			t.Override(&opts, config.SkaffoldOptions{
 				Cleanup: true,
 				NoPrune: false,
 			})
@@ -109,4 +109,56 @@ func TestDoDev(t *testing.T) {
 			t.CheckDeepEqual(true, err == context.Canceled)
 		})
 	}
+}
+
+type mockConfigChangeRunner struct {
+	runner.Runner
+	cycles int
+}
+
+func (m *mockConfigChangeRunner) Dev(context.Context, io.Writer, []*latest.Artifact) error {
+	m.cycles++
+	if m.cycles == 1 {
+		// pass through the first cycle with a config reload
+		return runner.ErrorConfigurationChanged
+	}
+	return context.Canceled
+}
+
+func (m *mockConfigChangeRunner) HasBuilt() bool {
+	return true
+}
+
+func (m *mockConfigChangeRunner) HasDeployed() bool {
+	return true
+}
+
+func (m *mockConfigChangeRunner) Prune(context.Context, io.Writer) error {
+	return nil
+}
+
+func (m *mockConfigChangeRunner) Cleanup(context.Context, io.Writer) error {
+	return nil
+}
+
+func TestDevConfigChange(t *testing.T) {
+	testutil.Run(t, "test config change", func(t *testutil.T) {
+		mockRunner := &mockConfigChangeRunner{}
+
+		t.Override(&createRunner, func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+			return mockRunner, &latest.SkaffoldConfig{}, nil
+		})
+		t.Override(&opts, config.SkaffoldOptions{
+			Cleanup: true,
+			NoPrune: false,
+		})
+
+		err := doDev(context.Background(), ioutil.Discard)
+
+		// ensure that we received the context.Cancled error (and not ErrorConfigurationChanged)
+		// also ensure that the we run through dev cycles (since we reloaded on the first),
+		// and exit after a real error is received
+		t.CheckDeepEqual(true, err == context.Canceled)
+		t.CheckDeepEqual(mockRunner.cycles, 2)
+	})
 }

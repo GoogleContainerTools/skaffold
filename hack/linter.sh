@@ -23,18 +23,36 @@ if ! [ -x "$(command -v golangci-lint)" ]; then
 	${DIR}/install_golint.sh -b $GOPATH/bin v1.17.1
 fi
 
-golangci-lint run \
+VERBOSE=""
+if [[ "${TRAVIS}" == "true" ]]; then
+    # Use less memory on Travis
+    # See https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
+    export GOGC=10
+    VERBOSE="-v --print-resources-usage"
+fi
+
+golangci-lint run ${VERBOSE} \
+	--deadline=4m \
 	--no-config \
-	-E bodyclose \
-	-E goconst \
-	-E goimports \
-	-E gocritic \
-	-E golint \
-	-E interfacer \
-	-E maligned \
-	-E misspell \
-	-E stylecheck \
-	-E unconvert \
-	-E unparam \
-	-D errcheck \
-  --skip-dirs vendor
+    --disable-all \
+    -E bodyclose \
+    -E deadcode \
+    -E goconst \
+    -E gocritic \
+    -E goimports \
+    -E golint \
+    -E gosimple \
+    -E govet \
+    -E ineffassign \
+    -E interfacer \
+    -E maligned \
+    -E misspell \
+    -E staticcheck \
+    -E structcheck \
+    -E stylecheck \
+    -E typecheck \
+    -E unconvert \
+    -E unparam \
+    -E unused \
+    -E varcheck \
+	--skip-dirs vendor | awk '/out of memory/ || /Deadline exceeded/ {failed = 1}; {print}; END {exit failed}'

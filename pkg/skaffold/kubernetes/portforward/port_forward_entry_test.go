@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestPortForwardEntryKey(t *testing.T) {
@@ -55,7 +56,7 @@ func TestPortForwardEntryKey(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			acutalKey := test.pfe.key()
 
 			if acutalKey != test.expected {
@@ -93,7 +94,7 @@ func TestAutomaticPodForwardingKey(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			acutalKey := test.pfe.key()
 
 			if acutalKey != test.expected {

@@ -98,7 +98,7 @@ func bazelBin(ctx context.Context, workspace string, a *latest.BazelArtifact) (s
 }
 
 func trimTarget(buildTarget string) string {
-	//TODO(r2d4): strip off leading //:, bad
+	// TODO(r2d4): strip off leading //:, bad
 	trimmedTarget := strings.TrimPrefix(buildTarget, "//")
 	// Useful if root target "//:target"
 	trimmedTarget = strings.TrimPrefix(trimmedTarget, ":")
@@ -117,7 +117,7 @@ func buildImageTag(buildTarget string) string {
 	imageTag := trimTarget(buildTarget)
 	imageTag = strings.TrimPrefix(imageTag, ":")
 
-	//TODO(r2d4): strip off trailing .tar, even worse
+	// TODO(r2d4): strip off trailing .tar, even worse
 	imageTag = strings.TrimSuffix(imageTag, ".tar")
 
 	if strings.Contains(imageTag, ":") {

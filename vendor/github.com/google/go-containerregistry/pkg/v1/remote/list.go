@@ -20,7 +20,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 )
@@ -30,10 +29,15 @@ type tags struct {
 	Tags []string `json:"tags"`
 }
 
-// List calls /tags/list for the given repository.
-func List(repo name.Repository, auth authn.Authenticator, t http.RoundTripper) ([]string, error) {
+// List calls /tags/list for the given repository, returning the list of tags
+// in the "tags" property.
+func List(repo name.Repository, options ...Option) ([]string, error) {
+	o, err := makeOptions(repo.Registry, options...)
+	if err != nil {
+		return nil, err
+	}
 	scopes := []string{repo.Scope(transport.PullScope)}
-	tr, err := transport.New(repo.Registry, auth, t, scopes)
+	tr, err := transport.New(repo.Registry, o.auth, o.transport, scopes)
 	if err != nil {
 		return nil, err
 	}

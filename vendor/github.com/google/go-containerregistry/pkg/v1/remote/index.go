@@ -33,9 +33,8 @@ type remoteIndex struct {
 	mediaType    types.MediaType
 }
 
-// Index provides access to a remote index reference, applying functional options
-// to the underlying imageOpener before resolving the reference into a v1.ImageIndex.
-func Index(ref name.Reference, options ...ImageOption) (v1.ImageIndex, error) {
+// Index provides access to a remote index reference.
+func Index(ref name.Reference, options ...Option) (v1.ImageIndex, error) {
 	acceptable := []types.MediaType{
 		types.DockerManifestList,
 		types.OCIImageIndex,
@@ -120,7 +119,7 @@ func (r *remoteIndex) imageByPlatform(platform v1.Platform) (v1.Image, error) {
 	return desc.Image()
 }
 
-// This naively matches the first manifest with matching Architecture and OS.
+// This naively matches the first manifest with matching platform attributes.
 //
 // We should probably use this instead:
 //	 github.com/containerd/containerd/platforms
@@ -139,7 +138,7 @@ func (r *remoteIndex) childByPlatform(platform v1.Platform) (*Descriptor, error)
 			p = *childDesc.Platform
 		}
 
-		if platform.Architecture == p.Architecture && platform.OS == p.OS {
+		if matchesPlatform(p, platform) {
 			return r.childDescriptor(childDesc, platform)
 		}
 	}
@@ -182,4 +181,50 @@ func (r *remoteIndex) childDescriptor(child v1.Descriptor, platform v1.Platform)
 		Descriptor: *desc,
 		platform:   platform,
 	}, nil
+}
+
+// matchesPlatform checks if the given platform matches the required platforms.
+// The given platform matches the required platform if
+// - architecture and OS are identical.
+// - OS version and variant are identical if provided.
+// - features and OS features of the required platform are subsets of those of the given platform.
+func matchesPlatform(given, required v1.Platform) bool {
+	// Required fields that must be identical.
+	if given.Architecture != required.Architecture || given.OS != required.OS {
+		return false
+	}
+
+	// Optional fields that may be empty, but must be identical if provided.
+	if required.OSVersion != "" && given.OSVersion != required.OSVersion {
+		return false
+	}
+	if required.Variant != "" && given.Variant != required.Variant {
+		return false
+	}
+
+	// Verify required platform's features are a subset of given platform's features.
+	if !isSubset(given.OSFeatures, required.OSFeatures) {
+		return false
+	}
+	if !isSubset(given.Features, required.Features) {
+		return false
+	}
+
+	return true
+}
+
+// isSubset checks if the required array of strings is a subset of the given lst.
+func isSubset(lst, required []string) bool {
+	set := make(map[string]bool)
+	for _, value := range lst {
+		set[value] = true
+	}
+
+	for _, value := range required {
+		if _, ok := set[value]; !ok {
+			return false
+		}
+	}
+
+	return true
 }

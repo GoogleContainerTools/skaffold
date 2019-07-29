@@ -280,11 +280,11 @@ type ClusterDetails struct {
 // DockerConfig contains information about the docker `config.json` to mount.
 type DockerConfig struct {
 	// Path is the path to the docker `config.json`.
-	Path string `yaml:"path,omitempty" yamltags:"oneOf=dockerSecret"`
+	Path string `yaml:"path,omitempty"`
 
 	// SecretName is the Kubernetes secret that contains the `config.json` Docker configuration.
 	// Note that the expected secret type is not 'kubernetes.io/dockerconfigjson' but 'Opaque'.
-	SecretName string `yaml:"secretName,omitempty" yamltags:"oneOf=dockerSecret"`
+	SecretName string `yaml:"secretName,omitempty"`
 }
 
 // ResourceRequirements describes the resource requirements for the kaniko pod.
@@ -509,8 +509,6 @@ type Artifact struct {
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
-
-	WorkspaceHash string `yaml:"-,omitempty"`
 }
 
 // Sync *alpha* specifies what files to sync into the container.

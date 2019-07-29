@@ -30,13 +30,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
@@ -65,30 +66,34 @@ type SkaffoldRunner struct {
 	test.Tester
 	tag.Tagger
 	sync.Syncer
-	monitor  filemon.Monitor
-	listener Listener
+	monitor          filemon.Monitor
+	listener         Listener
+	forwarderManager *portforward.ForwarderManager
 
 	logger               *kubernetes.LogAggregator
-	cache                *cache.Cache
+	cache                cache.Cache
 	changeSet            *changeSet
 	runCtx               *runcontext.RunContext
 	labellers            []deploy.Labeller
 	defaultLabeller      *deploy.DefaultLabeller
 	portForwardResources []*latest.PortForwardResource
 	builds               []build.Artifact
-	hasBuilt             bool
-	hasDeployed          bool
 	imageList            *kubernetes.ImageList
+
+	hasBuilt    bool
+	hasDeployed bool
+
+	intents *intents
 }
 
-// NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
-func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*SkaffoldRunner, error) {
-	runCtx, err := runcontext.GetRunContext(opts, &cfg.Pipeline)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting run context")
-	}
+// for testing
+var (
+	statusCheck = deploy.StatusCheck
+)
 
-	tagger, err := getTagger(cfg.Build.TagPolicy, opts.CustomTag)
+// NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
+func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
+	tagger, err := getTagger(runCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing tag config")
 	}
@@ -97,7 +102,16 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing build config")
 	}
-	artifactCache := cache.NewCache(builder, runCtx)
+
+	imagesAreLocal := false
+	if localBuilder, ok := builder.(*local.Builder); ok {
+		imagesAreLocal = !localBuilder.PushImages()
+	}
+
+	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, builder)
+	if err != nil {
+		return nil, errors.Wrap(err, "initializing cache")
+	}
 
 	tester := getTester(runCtx)
 
@@ -107,10 +121,10 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 	}
 
 	defaultLabeller := deploy.NewLabeller("")
-	labellers := []deploy.Labeller{opts, builder, deployer, tagger, defaultLabeller}
+	labellers := []deploy.Labeller{&runCtx.Opts, builder, deployer, tagger, defaultLabeller}
 
-	builder, tester, deployer = WithTimings(builder, tester, deployer, opts.CacheArtifacts)
-	if opts.Notification {
+	builder, tester, deployer = WithTimings(builder, tester, deployer, runCtx.Opts.CacheArtifacts)
+	if runCtx.Opts.Notification {
 		deployer = WithNotification(deployer)
 	}
 
@@ -123,7 +137,9 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 
 	monitor := filemon.NewMonitor()
 
-	return &SkaffoldRunner{
+	intentChan := make(chan bool, 1)
+
+	r := &SkaffoldRunner{
 		Builder:  builder,
 		Tester:   tester,
 		Deployer: deployer,
@@ -131,17 +147,80 @@ func NewForConfig(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) (*Sk
 		Syncer:   kubectl.NewSyncer(runCtx.Namespaces),
 		monitor:  monitor,
 		listener: &SkaffoldListener{
-			Monitor: monitor,
-			Trigger: trigger,
+			Monitor:    monitor,
+			Trigger:    trigger,
+			intentChan: intentChan,
 		},
-		changeSet:            &changeSet{},
+		changeSet: &changeSet{
+			rebuildTracker: make(map[string]*latest.Artifact),
+			resyncTracker:  make(map[string]*sync.Item),
+		},
 		labellers:            labellers,
 		defaultLabeller:      defaultLabeller,
-		portForwardResources: cfg.PortForward,
+		portForwardResources: runCtx.Cfg.PortForward,
 		imageList:            kubernetes.NewImageList(),
 		cache:                artifactCache,
 		runCtx:               runCtx,
-	}, nil
+		intents:              newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy),
+	}
+
+	if err := r.setupTriggerCallbacks(intentChan); err != nil {
+		return nil, errors.Wrapf(err, "setting up trigger callbacks")
+	}
+
+	return r, nil
+}
+
+func (r *SkaffoldRunner) setupTriggerCallbacks(c chan bool) error {
+	if err := r.setupTriggerCallback("build", c); err != nil {
+		return err
+	}
+	if err := r.setupTriggerCallback("sync", c); err != nil {
+		return err
+	}
+	if err := r.setupTriggerCallback("deploy", c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *SkaffoldRunner) setupTriggerCallback(triggerName string, c chan<- bool) error {
+	var (
+		setIntent      func(bool)
+		trigger        bool
+		serverCallback func(func())
+	)
+
+	switch triggerName {
+	case "build":
+		setIntent = r.intents.setBuild
+		trigger = r.runCtx.Opts.AutoBuild
+		serverCallback = server.SetBuildCallback
+	case "sync":
+		setIntent = r.intents.setSync
+		trigger = r.runCtx.Opts.AutoSync
+		serverCallback = server.SetSyncCallback
+	case "deploy":
+		setIntent = r.intents.setDeploy
+		trigger = r.runCtx.Opts.AutoDeploy
+		serverCallback = server.SetDeployCallback
+	default:
+		return fmt.Errorf("unsupported trigger type when setting callbacks: %s", triggerName)
+	}
+
+	setIntent(true)
+
+	// if "auto" is set to false, we're in manual mode
+	if !trigger {
+		setIntent(false) // set the initial value of the intent to false
+		// give the server a callback to set the intent value when a user request is received
+		serverCallback(func() {
+			logrus.Debugf("%s intent received, calling back to runner", triggerName)
+			c <- true
+			setIntent(true)
+		})
+	}
+	return nil
 }
 
 func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
@@ -183,11 +262,13 @@ func getDeployer(runCtx *runcontext.RunContext) (deploy.Deployer, error) {
 	}
 }
 
-func getTagger(t latest.TagPolicy, customTag string) (tag.Tagger, error) {
+func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {
+	t := runCtx.Cfg.Build.TagPolicy
+
 	switch {
-	case customTag != "":
+	case runCtx.Opts.CustomTag != "":
 		return &tag.CustomTag{
-			Tag: customTag,
+			Tag: runCtx.Opts.CustomTag,
 		}, nil
 
 	case t.EnvTemplateTagger != nil:
@@ -220,14 +301,18 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	if err != nil {
 		return err
 	}
-	return r.performStatusCheck(out)
+	return r.performStatusCheck(ctx, out)
 }
 
-func (r *SkaffoldRunner) performStatusCheck(out io.Writer) error {
+func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
 	if r.runCtx.Opts.StatusCheck {
 		fmt.Fprintln(out, "Waiting for deployments to stabilize")
-		// TODO : Actually perform status check
+		err := statusCheck(ctx, r.defaultLabeller, r.runCtx)
+		if err != nil {
+			fmt.Fprintln(out, err.Error())
+		}
+		return err
 	}
 	return nil
 }

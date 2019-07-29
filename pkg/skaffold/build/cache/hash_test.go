@@ -18,35 +18,18 @@ package cache
 
 import (
 	"context"
-	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-type mockBuilder struct {
+type stubDependencyLister struct {
 	dependencies []string
 }
 
-func (m *mockBuilder) Labels() map[string]string { return nil }
-
-func (m *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	return nil, nil
-}
-
-func (m *mockBuilder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+func (m *stubDependencyLister) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 	return m.dependencies, nil
-}
-
-func (m *mockBuilder) Prune(ctx context.Context, out io.Writer) error {
-	return nil
-}
-
-func (m *mockBuilder) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
-	return nil, nil
 }
 
 var mockCacheHasher = func(s string) (string, error) {
@@ -73,8 +56,8 @@ func TestGetHashForArtifact(t *testing.T) {
 			t.Override(&hashFunction, mockCacheHasher)
 
 			for _, d := range test.dependencies {
-				builder := &mockBuilder{dependencies: d}
-				actual, err := getHashForArtifact(context.Background(), builder, nil)
+				depLister := &stubDependencyLister{dependencies: d}
+				actual, err := getHashForArtifact(context.Background(), depLister, nil)
 
 				t.CheckNoError(err)
 				t.CheckDeepEqual(test.expected, actual)
@@ -129,9 +112,9 @@ func TestCacheHasher(t *testing.T) {
 				Write(originalFile, originalContents)
 
 			path := originalFile
-			builder := &mockBuilder{dependencies: []string{tmpDir.Path(originalFile)}}
+			depLister := &stubDependencyLister{dependencies: []string{tmpDir.Path(originalFile)}}
 
-			oldHash, err := getHashForArtifact(context.Background(), builder, nil)
+			oldHash, err := getHashForArtifact(context.Background(), depLister, nil)
 			t.CheckNoError(err)
 
 			test.update(originalFile, tmpDir)
@@ -139,8 +122,8 @@ func TestCacheHasher(t *testing.T) {
 				path = test.newFilename
 			}
 
-			builder.dependencies = []string{tmpDir.Path(path)}
-			newHash, err := getHashForArtifact(context.Background(), builder, nil)
+			depLister = &stubDependencyLister{dependencies: []string{tmpDir.Path(path)}}
+			newHash, err := getHashForArtifact(context.Background(), depLister, nil)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(false, test.differentHash && oldHash == newHash)

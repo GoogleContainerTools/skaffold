@@ -100,7 +100,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		err = Set(cfg)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("", cfg.Build.Cluster.DockerConfig.SecretName)
+		t.CheckDeepEqual("docker-cfg", cfg.Build.Cluster.DockerConfig.SecretName)
 		t.CheckDeepEqual("/path", cfg.Build.Cluster.DockerConfig.Path)
 
 		// docker config with secret name
@@ -175,6 +175,6 @@ func TestSetPortForwardLocalPort(t *testing.T) {
 	}
 	err := Set(cfg)
 	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, int32(8080), cfg.PortForward[0].LocalPort)
-	testutil.CheckDeepEqual(t, int32(9000), cfg.PortForward[1].LocalPort)
+	testutil.CheckDeepEqual(t, 8080, cfg.PortForward[0].LocalPort)
+	testutil.CheckDeepEqual(t, 9000, cfg.PortForward[1].LocalPort)
 }

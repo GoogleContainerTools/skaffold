@@ -37,16 +37,6 @@ func compareText(t *testing.T, expected, actual string, expectedN int, actualN i
 	}
 }
 
-func TestFprint(t *testing.T) {
-	reset := ForceColors()
-	defer reset()
-
-	var b bytes.Buffer
-	n, err := Green.Fprint(&b, "It's not easy being")
-
-	compareText(t, "\033[32mIt's not easy being\033[0m", b.String(), 28, n, err)
-}
-
 func TestFprintln(t *testing.T) {
 	reset := ForceColors()
 	defer reset()
@@ -71,23 +61,16 @@ type nopCloser struct{ io.Writer }
 
 func (n *nopCloser) Close() error { return nil }
 
-func TestFprintOnColoredWriter(t *testing.T) {
+func TestFprintlnOnColoredWriter(t *testing.T) {
 	var b bytes.Buffer
 
 	coloredWriter := ColoredWriteCloser{
 		WriteCloser: &nopCloser{Writer: &b},
 	}
 
-	n, err := Green.Fprint(coloredWriter, "It's not easy being")
+	n, err := Green.Fprintln(coloredWriter, "It's not easy being")
 
-	compareText(t, "\033[32mIt's not easy being\033[0m", b.String(), 28, n, err)
-}
-
-func TestFprintNoTTY(t *testing.T) {
-	var b bytes.Buffer
-	expected := "It's not easy being"
-	n, err := Green.Fprint(&b, expected)
-	compareText(t, expected, b.String(), 19, n, err)
+	compareText(t, "\033[32mIt's not easy being\033[0m\n", b.String(), 29, n, err)
 }
 
 func TestFprintlnNoTTY(t *testing.T) {

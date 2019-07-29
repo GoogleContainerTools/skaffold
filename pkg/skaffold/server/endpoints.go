@@ -41,7 +41,24 @@ func (s *server) Handle(ctx context.Context, e *proto.Event) (*empty.Empty, erro
 	return &empty.Empty{}, nil
 }
 
-func (s *server) Build(context.Context, *empty.Empty) (*empty.Empty, error) {
-	s.trigger <- true
+func (s *server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (*empty.Empty, error) {
+	if intent.GetIntent().GetBuild() {
+		go func() {
+			s.buildIntentCallback()
+		}()
+	}
+
+	if intent.GetIntent().GetDeploy() {
+		go func() {
+			s.deployIntentCallback()
+		}()
+	}
+
+	if intent.GetIntent().GetSync() {
+		go func() {
+			s.syncIntentCallback()
+		}()
+	}
+
 	return &empty.Empty{}, nil
 }
