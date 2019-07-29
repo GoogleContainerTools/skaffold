@@ -214,11 +214,12 @@ func (k *podSyncer) Sync(ctx context.Context, s *Item) error {
 	return nil
 }
 
-func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd, namespaces []string) error {
-	errs, ctx := errgroup.WithContext(ctx)
+func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, syncMap) []*exec.Cmd, namespaces []string) error {
 	if len(files) == 0 {
 		return nil
 	}
+
+	errs, ctx := errgroup.WithContext(ctx)
 
 	client, err := kubernetes.Client()
 	if err != nil {

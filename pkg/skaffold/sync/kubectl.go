@@ -22,33 +22,38 @@ import (
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 )
 
-func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files map[string][]string) []*exec.Cmd {
-	deleteCmd := []string{"exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "--", "rm", "-rf", "--"}
-	args := make([]string, 0, len(deleteCmd)+len(files))
-	args = append(args, deleteCmd...)
+func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files syncMap) []*exec.Cmd {
+	args := []string{"exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name,
+		"--", "rm", "-rf", "--"}
+
 	for _, dsts := range files {
 		args = append(args, dsts...)
 	}
+
 	delete := exec.CommandContext(ctx, "kubectl", args...)
+
 	return []*exec.Cmd{delete}
 }
 
-func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files map[string][]string) []*exec.Cmd {
+func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files syncMap) []*exec.Cmd {
+	args := []string{"exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "-i",
+		"--", "tar", "xmf", "-", "-C", "/", "--no-same-owner"}
+
 	// Use "m" flag to touch the files as they are copied.
 	reader, writer := io.Pipe()
-	copy := exec.CommandContext(ctx, "kubectl", "exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "-i",
-		"--", "tar", "xmf", "-", "-C", "/", "--no-same-owner")
-	copy.Stdin = reader
 	go func() {
-		defer writer.Close()
-
 		if err := util.CreateMappedTar(writer, "/", files); err != nil {
-			logrus.Errorln("Error creating tar archive:", err)
+			writer.CloseWithError(err)
+		} else {
+			writer.Close()
 		}
 	}()
+
+	copy := exec.CommandContext(ctx, "kubectl", args...)
+	copy.Stdin = reader
+
 	return []*exec.Cmd{copy}
 }
