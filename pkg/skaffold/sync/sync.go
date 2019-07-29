@@ -214,7 +214,7 @@ func (k *podSyncer) Sync(ctx context.Context, s *Item) error {
 	return nil
 }
 
-func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, syncMap) []*exec.Cmd, namespaces []string) error {
+func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, syncMap) *exec.Cmd, namespaces []string) error {
 	if len(files) == 0 {
 		return nil
 	}
@@ -245,14 +245,12 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 					continue
 				}
 
-				cmds := cmdFn(ctx, p, c, files)
-				for _, cmd := range cmds {
-					errs.Go(func() error {
-						_, err := util.RunCmdOut(cmd)
-						return err
-					})
-					numSynced++
-				}
+				cmd := cmdFn(ctx, p, c, files)
+				errs.Go(func() error {
+					_, err := util.RunCmdOut(cmd)
+					return err
+				})
+				numSynced++
 			}
 		}
 	}

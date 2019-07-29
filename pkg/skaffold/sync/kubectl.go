@@ -25,7 +25,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files syncMap) []*exec.Cmd {
+func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files syncMap) *exec.Cmd {
 	args := []string{"exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name,
 		"--", "rm", "-rf", "--"}
 
@@ -34,11 +34,10 @@ func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files
 	}
 
 	delete := exec.CommandContext(ctx, "kubectl", args...)
-
-	return []*exec.Cmd{delete}
+	return delete
 }
 
-func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files syncMap) []*exec.Cmd {
+func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files syncMap) *exec.Cmd {
 	args := []string{"exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "-i",
 		"--", "tar", "xmf", "-", "-C", "/", "--no-same-owner"}
 
@@ -54,6 +53,5 @@ func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files s
 
 	copy := exec.CommandContext(ctx, "kubectl", args...)
 	copy.Stdin = reader
-
-	return []*exec.Cmd{copy}
+	return copy
 }
