@@ -215,10 +215,10 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 	runner, err := NewForConfig(runCtx)
 	t.CheckNoError(err)
 
-	runner.Builder = testBench
-	runner.Syncer = testBench
-	runner.Tester = testBench
-	runner.Deployer = testBench
+	runner.builder = testBench
+	runner.syncer = testBench
+	runner.tester = testBench
+	runner.deployer = testBench
 	runner.listener = testBench
 	runner.monitor = monitor
 
@@ -341,9 +341,9 @@ func TestNewForConfig(t *testing.T) {
 			if cfg != nil {
 				b, _t, d := WithTimings(test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
 
-				t.CheckErrorAndTypeEquality(test.shouldErr, err, b, cfg.Builder)
-				t.CheckErrorAndTypeEquality(test.shouldErr, err, _t, cfg.Tester)
-				t.CheckErrorAndTypeEquality(test.shouldErr, err, d, cfg.Deployer)
+				t.CheckErrorAndTypeEquality(test.shouldErr, err, b, cfg.builder)
+				t.CheckErrorAndTypeEquality(test.shouldErr, err, _t, cfg.tester)
+				t.CheckErrorAndTypeEquality(test.shouldErr, err, d, cfg.deployer)
 			}
 		})
 	}
