@@ -28,14 +28,13 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-	yamlv2 "gopkg.in/yaml.v2"
-	"k8s.io/api/core/v1"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	yamlv2 "gopkg.in/yaml.v2"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -171,7 +170,7 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 					},
 				},
 			},
-			Steps: []v1.Container{
+			Steps: []corev1.Container{
 				{
 					Name:       "run-build",
 					Image:      "gcr.io/k8s-skaffold/skaffold:v0.34.0",
@@ -210,7 +209,7 @@ func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) 
 					},
 				},
 			},
-			Steps: []v1.Container{
+			Steps: []corev1.Container{
 				{
 					Name:       "run-deploy",
 					Image:      "gcr.io/k8s-skaffold/skaffold:v0.34.0",
@@ -292,22 +291,22 @@ func createSkaffoldProfile(config *latest.SkaffoldConfig) error {
 	if profileExists {
 		fmt.Println("profile \"oncluster\" found!")
 		return nil
-	} else {
-	confirmLoop:
-		for {
-			fmt.Print("No profile \"oncluster\" found. Create one? [y/n]: ")
-			response, err := inputReader.ReadString('\n')
-			if err != nil {
-				return errors.Wrap(err, "reading user confirmation")
-			}
+	}
 
-			response = strings.ToLower(strings.TrimSpace(response))
-			switch response {
-			case "y", "yes":
-				break confirmLoop
-			case "n", "no":
-				return nil
-			}
+confirmLoop:
+	for {
+		fmt.Print("No profile \"oncluster\" found. Create one? [y/n]: ")
+		response, err := inputReader.ReadString('\n')
+		if err != nil {
+			return errors.Wrap(err, "reading user confirmation")
+		}
+
+		response = strings.ToLower(strings.TrimSpace(response))
+		switch response {
+		case "y", "yes":
+			break confirmLoop
+		case "n", "no":
+			return nil
 		}
 	}
 
@@ -355,6 +354,10 @@ func createSkaffoldProfile(config *latest.SkaffoldConfig) error {
 }
 
 func generateProfile(config *latest.SkaffoldConfig) (*latest.Profile, error) {
+	if len(config.Build.Artifacts) == 0 {
+		return nil, errors.New("No Artifacts to add to profile")
+	}
+
 	profile := &latest.Profile{
 		Name: "oncluster",
 		Pipeline: latest.Pipeline{

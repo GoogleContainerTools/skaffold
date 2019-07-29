@@ -18,11 +18,11 @@ package cmd
 
 import (
 	"context"
-	"github.com/pkg/errors"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
