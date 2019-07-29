@@ -505,6 +505,8 @@ type HelmFQNConfig struct {
 
 // HelmConventionConfig is the image config in the syntax of image.repository and image.tag.
 type HelmConventionConfig struct {
+	// ExplicitRegistry enables passing a value for `registry` to Helm.
+	ExplicitRegistry bool `yaml:"explicitRegistry,omitempty"`
 }
 
 // Artifact are the items that need to be built, along with the context in which
