@@ -114,6 +114,29 @@ var testDeployHelmStyleConfig = latest.HelmDeploy{
 	}},
 }
 
+var testDeployHelmExplicitRegistryStyleConfig = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{
+		{
+			Name:      "skaffold-helm",
+			ChartPath: "examples/test",
+			Values: map[string]string{
+				"image": "skaffold-helm",
+			},
+			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+			SetValues: map[string]string{
+				"some.key": "somevalue",
+			},
+			ImageStrategy: latest.HelmImageStrategy{
+				HelmImageConfig: latest.HelmImageConfig{
+					HelmConventionConfig: &latest.HelmConventionConfig{
+						ExplicitRegistry: true,
+					},
+				},
+			},
+		},
+	},
+}
+
 var testDeployConfigParameterUnmatched = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
@@ -350,6 +373,30 @@ func TestHelmDeploy(t *testing.T) {
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
 			runContext: makeRunContext(testDeployHelmStyleConfig, false),
+			builds:     testBuilds,
+		},
+		{
+			description: "helm image strategy with explicit registry should set the Helm registry value",
+			cmd: &MockHelm{
+				t:         t,
+				getResult: fmt.Errorf("not found"),
+				installMatcher: func(cmd *exec.Cmd) bool {
+					dockerRef, err := docker.ParseReference(testBuilds[0].Tag)
+					if err != nil {
+						return false
+					}
+
+					expected := fmt.Sprintf("image.registry=%s,image.repository=%s,image.tag=%s", dockerRef.Domain, dockerRef.Path, dockerRef.Tag)
+					for _, arg := range cmd.Args {
+						if expected == arg {
+							return true
+						}
+					}
+					return false
+				},
+				upgradeResult: fmt.Errorf("should not have called upgrade"),
+			},
+			runContext: makeRunContext(testDeployHelmExplicitRegistryStyleConfig, false),
 			builds:     testBuilds,
 		},
 		{
