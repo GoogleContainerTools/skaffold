@@ -49,7 +49,7 @@ func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error)
 }
 
 func TestGetEncodedRegistryAuth(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		image       string
 		authType    AuthConfigHelper

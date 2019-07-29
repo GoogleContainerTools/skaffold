@@ -57,22 +57,24 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 }
 
 func TestGetDependenciesCommand(t *testing.T) {
-	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
-		"echo [\"file1\",\"file2\",\"file3\"]",
-		"[\"file1\",\"file2\",\"file3\"]",
-	))
-	defer reset()
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&util.DefaultExecCommand, t.FakeRunOut(
+			"echo [\"file1\",\"file2\",\"file3\"]",
+			"[\"file1\",\"file2\",\"file3\"]",
+		))
 
-	customArtifact := &latest.CustomArtifact{
-		Dependencies: &latest.CustomDependencies{
-			Command: "echo [\"file1\",\"file2\",\"file3\"]",
-		},
-	}
+		customArtifact := &latest.CustomArtifact{
+			Dependencies: &latest.CustomDependencies{
+				Command: "echo [\"file1\",\"file2\",\"file3\"]",
+			},
+		}
 
-	expected := []string{"file1", "file2", "file3"}
-	deps, err := GetDependencies(context.Background(), "", customArtifact, nil)
+		expected := []string{"file1", "file2", "file3"}
+		deps, err := GetDependencies(context.Background(), "", customArtifact, nil)
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected, deps)
+		t.CheckNoError(err)
+		t.CheckDeepEqual(expected, deps)
+	})
 }
 
 func TestGetDependenciesPaths(t *testing.T) {

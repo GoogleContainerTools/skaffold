@@ -181,17 +181,6 @@ func ServeFile(t *testing.T, content []byte) (url string, tearDown func()) {
 	return ts.URL, ts.Close
 }
 
-// Override sets a dest variable to a given value.
-// Returns the function to call to restore the variable
-// to its original state.
-func Override(t *testing.T, dest, tmp interface{}) func() {
-	f, err := override(t, dest, tmp)
-	if err != nil {
-		t.Errorf("temporary value is invalid: %v", err)
-	}
-	return f
-}
-
 func override(t *testing.T, dest, tmp interface{}) (f func(), err error) {
 	t.Helper()
 

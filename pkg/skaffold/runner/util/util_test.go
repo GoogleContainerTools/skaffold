@@ -27,11 +27,11 @@ import (
 )
 
 func TestGetAllPodNamespaces(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description    string
 		argNamespace   string
 		currentContext string
-		cfg            *latest.Pipeline
+		cfg            latest.Pipeline
 		expected       []string
 	}{
 		{
@@ -52,7 +52,7 @@ func TestGetAllPodNamespaces(t *testing.T) {
 		{
 			description:  "add namespaces for helm",
 			argNamespace: "ns",
-			cfg: &latest.Pipeline{
+			cfg: latest.Pipeline{
 				Deploy: latest.DeployConfig{
 					DeployType: latest.DeployType{
 						HelmDeploy: &latest.HelmDeploy{

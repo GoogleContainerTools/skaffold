@@ -20,14 +20,17 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
 	"4d63.com/tz"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/api/types"
+	"github.com/sirupsen/logrus"
 )
 
 const imageName = "simple-build:"
@@ -85,9 +88,21 @@ func TestBuild(t *testing.T) {
 				defer teardown()
 			}
 
-			// remove image in case it is already present
+			// Run without artifact caching
 			removeImage(t, test.expectImage)
-			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
+			skaffold.Build(append(test.args, "--cache-artifacts=false")...).InDir(test.dir).RunOrFail(t)
+			checkImageExists(t, test.expectImage)
+
+			// Run with artifact caching
+			removeImage(t, test.expectImage)
+			skaffold.Build(append(test.args, "--cache-artifacts=true")...).InDir(test.dir).RunOrFail(t)
+			checkImageExists(t, test.expectImage)
+
+			// Run a second time with artifact caching
+			out := skaffold.Build(append(test.args, "--cache-artifacts=true")...).InDir(test.dir).RunOrFailOutput(t)
+			if strings.Contains(string(out), "Not found. Building") {
+				t.Errorf("images were expected to be found in cache: %s", out)
+			}
 			checkImageExists(t, test.expectImage)
 		})
 	}
@@ -101,7 +116,7 @@ func removeImage(t *testing.T, image string) {
 		return
 	}
 
-	client, err := docker.NewAPIClient(false, nil)
+	client, err := docker.NewAPIClient(&runcontext.RunContext{})
 	failNowIfError(t, err)
 
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
@@ -120,7 +135,7 @@ func checkImageExists(t *testing.T, image string) {
 		return
 	}
 
-	client, err := docker.NewAPIClient(false, nil)
+	client, err := docker.NewAPIClient(&runcontext.RunContext{})
 	failNowIfError(t, err)
 
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
@@ -164,5 +179,40 @@ func nowInChicago() string {
 func failNowIfError(t *testing.T, err error) {
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestExpectedBuildFailures verifies that `skaffold build` fails in expected ways
+func TestExpectedBuildFailures(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	tests := []struct {
+		description string
+		dir         string
+		args        []string
+		expected    string
+	}{
+		{
+			description: "jib is too old",
+			dir:         "testdata/jib",
+			args:        []string{"-p", "old-jib"},
+			expected:    "Could not find goal '_skaffold-fail-if-jib-out-of-date' in plugin com.google.cloud.tools:jib-maven-plugin:1.3.0",
+			// test string will need to be updated for the jib.requiredVersion error text when moving to Jib > 1.4.0
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			if out, err := skaffold.Build(test.args...).InDir(test.dir).RunWithCombinedOutput(t); err == nil {
+				t.Fatal("expected build to fail")
+			} else if !strings.Contains(string(out), test.expected) {
+				logrus.Info("build output: ", string(out))
+				t.Fatalf("build failed but for wrong reason")
+			}
+		})
 	}
 }

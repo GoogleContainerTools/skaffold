@@ -32,8 +32,9 @@ type Listener interface {
 }
 
 type SkaffoldListener struct {
-	Monitor filemon.Monitor
-	Trigger trigger.Trigger
+	Monitor    filemon.Monitor
+	Trigger    trigger.Trigger
+	intentChan <-chan bool
 }
 
 func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
@@ -61,14 +62,30 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-trigger:
-			if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
-				logrus.Warnf("error computing file changes: %s", err.Error())
-				logrus.Warnf("skaffold may not run successfully!")
+		case <-l.intentChan:
+			if err := l.do(ctx, out, devLoop); err != nil {
+				return err
 			}
-			if err := devLoop(ctx, out); err != nil {
-				logrus.Errorf("error running dev loop: %s", err.Error())
+		case <-trigger:
+			if err := l.do(ctx, out, devLoop); err != nil {
+				return err
 			}
 		}
 	}
+}
+
+func (l *SkaffoldListener) do(ctx context.Context, out io.Writer, devLoop func(context.Context, io.Writer) error) error {
+	if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
+		logrus.Warnf("error computing file changes: %s", err.Error())
+		logrus.Warnf("skaffold may not run successfully!")
+	}
+	if err := devLoop(ctx, out); err != nil {
+		// propagating this error up causes a new runner to be created
+		// and a new dev loop to start
+		if errors.Cause(err) == ErrorConfigurationChanged {
+			return err
+		}
+		logrus.Errorf("error running dev loop: %s", err.Error())
+	}
+	return nil
 }

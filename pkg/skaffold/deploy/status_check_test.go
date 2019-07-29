@@ -35,7 +35,7 @@ import (
 
 func TestGetDeployments(t *testing.T) {
 	labeller := NewLabeller("")
-	var tests = []struct {
+	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment
 		deadline    map[string]int32
@@ -196,8 +196,7 @@ func (m *MockRolloutStatus) Executefunc(context.Context, *kubectl.CLI, string) (
 }
 
 func TestPollDeploymentRolloutStatus(t *testing.T) {
-
-	var tests = []struct {
+	tests := []struct {
 		description string
 		mock        *MockRolloutStatus
 		duration    int
@@ -275,7 +274,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 }
 
 func TestGetDeployStatus(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description    string
 		deps           map[string]interface{}
 		expectedErrMsg []string
@@ -327,7 +326,7 @@ func TestGetDeployStatus(t *testing.T) {
 
 func TestGetRollOutStatus(t *testing.T) {
 	rolloutCmd := "kubectl --context kubecontext --namespace test rollout status deployment dep --watch=false"
-	var tests = []struct {
+	tests := []struct {
 		description string
 		command     util.Command
 		expected    string

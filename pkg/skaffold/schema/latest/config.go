@@ -86,10 +86,10 @@ type PortForwardResource struct {
 	Namespace string `yaml:"namespace,omitempty"`
 
 	// Port is the resource port that will be forwarded.
-	Port int32 `yaml:"port,omitempty"`
+	Port int `yaml:"port,omitempty"`
 
 	// LocalPort is the local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
-	LocalPort int32 `yaml:"localPort,omitempty"`
+	LocalPort int `yaml:"localPort,omitempty"`
 }
 
 // BuildConfig contains all the configuration for the build steps.
@@ -295,11 +295,11 @@ type ClusterDetails struct {
 // DockerConfig contains information about the docker `config.json` to mount.
 type DockerConfig struct {
 	// Path is the path to the docker `config.json`.
-	Path string `yaml:"path,omitempty" yamltags:"oneOf=dockerSecret"`
+	Path string `yaml:"path,omitempty"`
 
 	// SecretName is the Kubernetes secret that contains the `config.json` Docker configuration.
 	// Note that the expected secret type is not 'kubernetes.io/dockerconfigjson' but 'Opaque'.
-	SecretName string `yaml:"secretName,omitempty" yamltags:"oneOf=dockerSecret"`
+	SecretName string `yaml:"secretName,omitempty"`
 }
 
 // ResourceRequirements describes the resource requirements for the kaniko pod.
@@ -524,8 +524,6 @@ type Artifact struct {
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
-
-	WorkspaceHash string `yaml:"-,omitempty"`
 }
 
 // Sync *alpha* specifies what files to sync into the container.
@@ -533,6 +531,11 @@ type Artifact struct {
 type Sync struct {
 	// Manual lists manual sync rules indicating the source and destination.
 	Manual []*SyncRule `yaml:"manual,omitempty" yamltags:"oneOf=sync"`
+
+	// Infer lists file patterns which may be synced into the container.
+	// The container destination is inferred by the builder.
+	// Currently only available for docker artifacts.
+	Infer []string `yaml:"infer,omitempty" yamltags:"oneOf=sync"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.

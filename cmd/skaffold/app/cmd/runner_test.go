@@ -29,14 +29,14 @@ func TestCreateNewRunner(t *testing.T) {
 	tests := []struct {
 		description   string
 		config        string
-		options       *config.SkaffoldOptions
+		options       config.SkaffoldOptions
 		shouldErr     bool
 		expectedError string
 	}{
 		{
 			description: "valid config",
 			config:      "",
-			options: &config.SkaffoldOptions{
+			options: config.SkaffoldOptions{
 				ConfigurationFile: "skaffold.yaml",
 				Trigger:           "polling",
 			},
@@ -45,7 +45,7 @@ func TestCreateNewRunner(t *testing.T) {
 		{
 			description: "invalid config",
 			config:      "invalid",
-			options: &config.SkaffoldOptions{
+			options: config.SkaffoldOptions{
 				ConfigurationFile: "skaffold.yaml",
 			},
 			shouldErr: true,
@@ -53,7 +53,7 @@ func TestCreateNewRunner(t *testing.T) {
 		{
 			description: "missing config",
 			config:      "",
-			options: &config.SkaffoldOptions{
+			options: config.SkaffoldOptions{
 				ConfigurationFile: "missing-skaffold.yaml",
 			},
 			shouldErr: true,
@@ -61,7 +61,7 @@ func TestCreateNewRunner(t *testing.T) {
 		{
 			description: "unknown profile",
 			config:      "",
-			options: &config.SkaffoldOptions{
+			options: config.SkaffoldOptions{
 				ConfigurationFile: "skaffold.yaml",
 				Profiles:          []string{"unknown-profile"},
 			},
@@ -71,7 +71,7 @@ func TestCreateNewRunner(t *testing.T) {
 		{
 			description: "unsupported trigger",
 			config:      "",
-			options: &config.SkaffoldOptions{
+			options: config.SkaffoldOptions{
 				ConfigurationFile: "skaffold.yaml",
 				Trigger:           "unknown trigger",
 			},

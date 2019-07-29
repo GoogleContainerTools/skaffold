@@ -26,13 +26,29 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// for testing
 var (
-	// for testing
 	getInsecureRegistryImpl = getInsecureRegistry
 	getRemoteImageImpl      = getRemoteImage
+	RemoteDigest            = getRemoteDigest
 )
 
-func RemoteDigest(identifier string, insecureRegistries map[string]bool) (string, error) {
+func AddRemoteTag(src, target string, insecureRegistries map[string]bool) error {
+	logrus.Debugf("attempting to add tag %s to src %s", target, src)
+	img, err := remoteImage(src, insecureRegistries)
+	if err != nil {
+		return errors.Wrap(err, "getting image")
+	}
+
+	targetRef, err := name.ParseReference(target, name.WeakValidation)
+	if err != nil {
+		return errors.Wrap(err, "getting target reference")
+	}
+
+	return remote.Write(targetRef, img, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+}
+
+func getRemoteDigest(identifier string, insecureRegistries map[string]bool) (string, error) {
 	img, err := remoteImage(identifier, insecureRegistries)
 	if err != nil {
 		return "", errors.Wrap(err, "getting image")
@@ -72,7 +88,7 @@ func Push(tarPath, tag string, insecureRegistries map[string]bool) (string, erro
 		return "", errors.Wrapf(err, "writing image %q", t)
 	}
 
-	return RemoteDigest(tag, insecureRegistries)
+	return getRemoteDigest(tag, insecureRegistries)
 }
 
 func remoteImage(identifier string, insecureRegistries map[string]bool) (v1.Image, error) {

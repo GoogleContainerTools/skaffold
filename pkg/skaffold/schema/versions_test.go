@@ -104,12 +104,11 @@ build:
 )
 
 func TestParseConfig(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		apiVersion  string
 		description string
 		config      string
 		expected    util.VersionedConfig
-		badReader   bool
 		shouldErr   bool
 	}{
 		{

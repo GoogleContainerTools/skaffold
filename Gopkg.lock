@@ -340,11 +340,12 @@
   version = "v0.3.0"
 
 [[projects]]
-  digest = "1:f0f433dbe3f167fcc44b0ff88c7e0426377ecb1e0f6e0043444ca4e813165d14"
+  digest = "1:daca75035ea986348b2ae8bb853b1e13f427b91386f725e56659257983af0ec7"
   name = "github.com/google/go-containerregistry"
   packages = [
     "pkg/authn",
     "pkg/internal/retry",
+    "pkg/logs",
     "pkg/name",
     "pkg/v1",
     "pkg/v1/partial",
@@ -356,7 +357,7 @@
     "pkg/v1/v1util",
   ]
   pruneopts = "NUT"
-  revision = "46a3528b82270ecea7c731c14e698ea24aa0bbca"
+  revision = "e8c6a4993fa7c12b6ca56007739116b27ecb84c1"
 
 [[projects]]
   digest = "1:f4f203acd8b11b8747bdcd91696a01dbc95ccb9e2ca2db6abf81c3a4f5e950ce"

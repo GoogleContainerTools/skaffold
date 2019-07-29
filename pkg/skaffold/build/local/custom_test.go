@@ -20,18 +20,23 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestRetrieveEnv(t *testing.T) {
-	extraEnv := []string{"EXTRA_ENV=additional"}
-	fakeClient := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, extraEnv, false, nil)
+	testutil.Run(t, "", func(t *testutil.T) {
+		extraEnv := []string{"EXTRA_ENV=additional"}
+		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, extraEnv, false, nil), nil
+		})
 
-	builder := &Builder{
-		localDocker: fakeClient,
-	}
+		builder, err := NewBuilder(stubRunContext(latest.LocalBuild{}))
+		t.CheckNoError(err)
 
-	actual := builder.retrieveExtraEnv()
-	expected := extraEnv
-	testutil.CheckErrorAndDeepEqual(t, false, nil, expected, actual)
+		actual := builder.retrieveExtraEnv()
+
+		t.CheckDeepEqual(extraEnv, actual)
+	})
 }

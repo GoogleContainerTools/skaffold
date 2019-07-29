@@ -23,11 +23,12 @@ import (
 )
 
 func TestParseReference(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description            string
 		image                  string
 		expectedName           string
 		expectedTag            string
+		expectedDigest         string
 		expectedFullyQualified bool
 	}{
 		{
@@ -62,7 +63,15 @@ func TestParseReference(t *testing.T) {
 			description:            "digest",
 			image:                  "gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
 			expectedName:           "gcr.io/k8s-skaffold/example",
-			expectedTag:            "",
+			expectedDigest:         "sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+			expectedFullyQualified: true,
+		},
+		{
+			description:            "digest and tag",
+			image:                  "gcr.io/k8s-skaffold/example:v1@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+			expectedName:           "gcr.io/k8s-skaffold/example",
+			expectedTag:            "v1",
+			expectedDigest:         "sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
 			expectedFullyQualified: true,
 		},
 		{
@@ -80,6 +89,7 @@ func TestParseReference(t *testing.T) {
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedName, parsed.BaseName)
 			t.CheckDeepEqual(test.expectedTag, parsed.Tag)
+			t.CheckDeepEqual(test.expectedDigest, parsed.Digest)
 			t.CheckDeepEqual(test.expectedFullyQualified, parsed.FullyQualified)
 		})
 	}

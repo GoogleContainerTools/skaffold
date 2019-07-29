@@ -32,21 +32,29 @@ import (
 type FakeAPIClient struct {
 	client.CommonAPIClient
 
-	TagToImageID    map[string]string
-	ImageSummaries  []types.ImageSummary
-	RepoDigests     []string
+	tagToImageID    map[string]string
 	ErrImageBuild   bool
 	ErrImageInspect bool
-	ErrImageTag     bool
 	ErrImagePush    bool
 	ErrImagePull    bool
 	ErrStream       bool
 
-	nextImageID  int
-	Tagged       []string
-	Pushed       []string
-	Built        []types.ImageBuildOptions
-	PushedImages []string
+	nextImageID int
+	Pushed      []string
+	Built       []types.ImageBuildOptions
+}
+
+func (f *FakeAPIClient) Add(tag, imageID string) *FakeAPIClient {
+	if f.tagToImageID == nil {
+		f.tagToImageID = make(map[string]string)
+	}
+
+	f.tagToImageID[imageID] = imageID
+	f.tagToImageID[tag] = imageID
+	if !strings.Contains(tag, ":") {
+		f.tagToImageID[tag+":latest"] = imageID
+	}
+	return f
 }
 
 type notFoundError struct {
@@ -74,19 +82,11 @@ func (f *FakeAPIClient) ImageBuild(_ context.Context, _ io.Reader, options types
 		return types.ImageBuildResponse{}, fmt.Errorf("")
 	}
 
-	if f.TagToImageID == nil {
-		f.TagToImageID = make(map[string]string)
-	}
-
 	f.nextImageID++
 	imageID := fmt.Sprintf("sha256:%d", f.nextImageID)
-	f.TagToImageID[imageID] = imageID
 
 	for _, tag := range options.Tags {
-		f.TagToImageID[tag] = imageID
-		if !strings.Contains(tag, ":") {
-			f.TagToImageID[tag+":latest"] = imageID
-		}
+		f.Add(tag, imageID)
 	}
 
 	f.Built = append(f.Built, options)
@@ -101,13 +101,12 @@ func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, ref string) (type
 		return types.ImageInspect{}, nil, fmt.Errorf("")
 	}
 
-	for tag, imageID := range f.TagToImageID {
+	for tag, imageID := range f.tagToImageID {
 		if tag == ref || imageID == ref {
 			rawConfig := []byte(fmt.Sprintf(`{"Config":{"Image":"%s"}}`, imageID))
 
 			return types.ImageInspect{
-				ID:          imageID,
-				RepoDigests: f.RepoDigests,
+				ID: imageID,
 			}, rawConfig, nil
 		}
 	}
@@ -116,20 +115,12 @@ func (f *FakeAPIClient) ImageInspectWithRaw(_ context.Context, ref string) (type
 }
 
 func (f *FakeAPIClient) ImageTag(_ context.Context, image, ref string) error {
-	if f.ErrImageTag {
-		return fmt.Errorf("")
-	}
-
-	imageID, ok := f.TagToImageID[image]
+	imageID, ok := f.tagToImageID[image]
 	if !ok {
-		return fmt.Errorf("image %s not found. fake registry contents: %s", image, f.TagToImageID)
+		return fmt.Errorf("image %s not found", image)
 	}
 
-	if f.TagToImageID == nil {
-		f.TagToImageID = make(map[string]string)
-	}
-	f.TagToImageID[ref] = imageID
-	f.Tagged = append(f.Tagged, ref)
+	f.Add(ref, imageID)
 	return nil
 }
 
@@ -138,9 +129,13 @@ func (f *FakeAPIClient) ImagePush(_ context.Context, ref string, _ types.ImagePu
 		return nil, fmt.Errorf("")
 	}
 
-	digest := fmt.Sprintf("sha256:%x", sha256.New().Sum([]byte(f.TagToImageID[ref])))
+	sha256Digester := sha256.New()
+	if _, err := sha256Digester.Write([]byte(f.tagToImageID[ref])); err != nil {
+		return nil, err
+	}
+
+	digest := "sha256:" + fmt.Sprintf("%x", sha256Digester.Sum(nil))[0:64]
 	f.Pushed = append(f.Pushed, digest)
-	f.PushedImages = append(f.PushedImages, ref)
 
 	return f.body(digest), nil
 }
@@ -157,10 +152,6 @@ func (f *FakeAPIClient) Info(context.Context) (types.Info, error) {
 	return types.Info{
 		IndexServerAddress: registry.IndexServer,
 	}, nil
-}
-
-func (f *FakeAPIClient) ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error) {
-	return f.ImageSummaries, nil
 }
 
 func (f *FakeAPIClient) Close() error { return nil }

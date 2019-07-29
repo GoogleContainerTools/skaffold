@@ -36,17 +36,19 @@ import (
 )
 
 func TestNewSyncItem(t *testing.T) {
-	var tests = []struct {
-		description string
-		artifact    *latest.Artifact
-		evt         filemon.Events
-		builds      []build.Artifact
-		shouldErr   bool
-		expected    *Item
-		workingDir  string
+	tests := []struct {
+		description  string
+		artifact     *latest.Artifact
+		dependencies map[string][]string
+		evt          filemon.Events
+		builds       []build.Artifact
+		shouldErr    bool
+		expected     *Item
+		workingDir   string
 	}{
+		// manual sync cases
 		{
-			description: "match copy",
+			description: "manual: match copy",
 			artifact: &latest.Artifact{
 				ImageName: "test",
 				Sync: &latest.Sync{
@@ -72,7 +74,7 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
-			description: "no tag for image",
+			description: "manual: no tag for image",
 			artifact: &latest.Artifact{
 				ImageName: "notbuildyet",
 				Sync: &latest.Sync{
@@ -92,7 +94,7 @@ func TestNewSyncItem(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "multiple sync patterns",
+			description: "manual: multiple sync patterns",
 			artifact: &latest.Artifact{
 				ImageName: "test",
 				Sync: &latest.Sync{
@@ -127,7 +129,7 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
-			description: "recursive glob patterns",
+			description: "manual: recursive glob patterns",
 			artifact: &latest.Artifact{
 				ImageName: "test",
 				Sync: &latest.Sync{
@@ -156,7 +158,7 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
-			description: "sync all",
+			description: "manual: sync all",
 			artifact: &latest.Artifact{
 				ImageName: "test",
 				Sync: &latest.Sync{
@@ -189,7 +191,7 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
-			description: "not copy syncable",
+			description: "manual: not copy syncable",
 			artifact: &latest.Artifact{
 				Sync: &latest.Sync{
 					Manual: []*latest.SyncRule{
@@ -209,7 +211,7 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
-			description: "not delete syncable",
+			description: "manual: not delete syncable",
 			artifact: &latest.Artifact{
 				Sync: &latest.Sync{
 					Manual: []*latest.SyncRule{
@@ -229,7 +231,7 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
-			description: "err bad pattern",
+			description: "manual: err bad pattern",
 			artifact: &latest.Artifact{
 				Sync: &latest.Sync{
 					Manual: []*latest.SyncRule{
@@ -245,7 +247,7 @@ func TestNewSyncItem(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "no change no sync",
+			description: "manual: no change no sync",
 			artifact: &latest.Artifact{
 				Sync: &latest.Sync{
 					Manual: []*latest.SyncRule{
@@ -262,7 +264,7 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
-			description: "slashes in glob pattern",
+			description: "manual: slashes in glob pattern",
 			artifact: &latest.Artifact{
 				ImageName: "test",
 				Sync: &latest.Sync{
@@ -291,7 +293,7 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
-			description: "sync subtrees",
+			description: "manual: sync subtrees",
 			artifact: &latest.Artifact{
 				ImageName: "test",
 				Sync: &latest.Sync{
@@ -320,7 +322,7 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
-			description: "multiple matches",
+			description: "manual: multiple matches",
 			artifact: &latest.Artifact{
 				ImageName: "test",
 				Sync: &latest.Sync{
@@ -350,7 +352,7 @@ func TestNewSyncItem(t *testing.T) {
 			},
 		},
 		{
-			description: "stars work with absolute paths",
+			description: "manual: stars work with absolute paths",
 			artifact: &latest.Artifact{
 				ImageName: "test",
 				Sync: &latest.Sync{
@@ -383,6 +385,254 @@ func TestNewSyncItem(t *testing.T) {
 				Delete: map[string][]string{},
 			},
 		},
+
+		// auto-sync cases
+		{
+			description: "infer: match copy",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Infer: []string{"*.html"},
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"index.html"},
+			},
+			dependencies: map[string][]string{"index.html": {"/index.html"}},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string][]string{
+					"index.html": {"/index.html"},
+				},
+			},
+		},
+		{
+			description: "infer: not auto-syncable",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Infer: []string{"*.html"},
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"index.html"},
+			},
+			dependencies: map[string][]string{},
+		},
+		{
+			description: "infer: file not specified for syncing",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Infer: []string{"*.js"},
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"index.html"},
+			},
+			dependencies: map[string][]string{"index.html": {"/index.html"}},
+		},
+		{
+			description: "infer: no tag for image",
+			artifact: &latest.Artifact{
+				ImageName: "notbuildyet",
+				Sync: &latest.Sync{
+					Infer: []string{"*.html"},
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"index.html"},
+			},
+			dependencies: map[string][]string{"index.html": {"/index.html"}},
+			shouldErr:    true,
+		},
+		{
+			description: "infer: multiple sync patterns",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Infer: []string{"*.js", "*.html", "*.json"},
+				},
+				Workspace: "node",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added:    []string{filepath.Join("node", "index.html")},
+				Modified: []string{filepath.Join("node", "server.js")},
+			},
+			dependencies: map[string][]string{"index.html": {"/index.html"}, "server.js": {"/server.js"}},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string][]string{
+					filepath.Join("node", "server.js"):  {"/server.js"},
+					filepath.Join("node", "index.html"): {"/index.html"},
+				},
+			},
+		},
+		{
+			description: "infer: recursive glob patterns",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Infer: []string{"src/**/*.js"},
+				},
+				Workspace: "node",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Modified: []string{filepath.Join("node", "src", "app", "server", "server.js")},
+			},
+			dependencies: map[string][]string{filepath.Join("src", "app", "server", "server.js"): {"/dest/server.js"}},
+			workingDir:   "/",
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string][]string{
+					filepath.Join("node", "src", "app", "server", "server.js"): {"/dest/server.js"},
+				},
+			},
+		},
+		{
+			description: "infer: sync all",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Infer: []string{"*"},
+				},
+				Workspace: "node",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added:    []string{filepath.Join("node", "index.html")},
+				Modified: []string{filepath.Join("node", "server.js")},
+			},
+			dependencies: map[string][]string{"index.html": {"/index.html"}, "server.js": {"/server.js"}},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string][]string{
+					filepath.Join("node", "server.js"):  {"/server.js"},
+					filepath.Join("node", "index.html"): {"/index.html"},
+				},
+			},
+		},
+		{
+			description: "infer: delete not syncable",
+			artifact: &latest.Artifact{
+				Sync: &latest.Sync{
+					Infer: []string{"*"},
+				},
+				Workspace: ".",
+			},
+			evt: filemon.Events{
+				Added:   []string{"index.html"},
+				Deleted: []string{"server.html"},
+			},
+			dependencies: map[string][]string{"index.html": {"/index.html"}, "server.html": {"/server.html"}},
+			builds: []build.Artifact{
+				{
+					Tag: "placeholder",
+				},
+			},
+		},
+		{
+			description: "infer: err bad pattern",
+			artifact: &latest.Artifact{
+				Sync: &latest.Sync{
+					Infer: []string{"[*.html"},
+				},
+				Workspace: ".",
+			},
+			evt: filemon.Events{
+				Added: []string{"index.html"},
+			},
+			dependencies: map[string][]string{"index.html": {"/index.html"}},
+			shouldErr:    true,
+		},
+		{
+			description: "infer: no change no sync",
+			artifact: &latest.Artifact{
+				Sync: &latest.Sync{
+					Infer: []string{"*.html"},
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			dependencies: map[string][]string{"index.html": {"/index.html"}},
+		},
+		{
+			description: "infer: slashes in glob pattern",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Infer: []string{"**/**/*.js"},
+				},
+				Workspace: ".",
+			},
+			workingDir: "/some",
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{filepath.Join("dir1", "dir2", "node.js")},
+			},
+			dependencies: map[string][]string{filepath.Join("dir1", "dir2", "node.js"): {"/some/node.js"}},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string][]string{
+					filepath.Join("dir1", "dir2", "node.js"): {"/some/node.js"},
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -390,7 +640,8 @@ func TestNewSyncItem(t *testing.T) {
 				return test.workingDir, nil
 			})
 
-			actual, err := NewItem(test.artifact, test.evt, test.builds, map[string]bool{})
+			provider := func() (map[string][]string, error) { return test.dependencies, nil }
+			actual, err := NewItem(test.artifact, test.evt, test.builds, nil, provider)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
@@ -398,7 +649,7 @@ func TestNewSyncItem(t *testing.T) {
 }
 
 func TestIntersect(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		syncRules   []*latest.SyncRule
 		files       []string
@@ -479,16 +730,16 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files map[string][]string) []*exec.Cmd {
-	cmds := make([]*exec.Cmd, len(files))
-	i := 0
+func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files syncMap) *exec.Cmd {
+	var args []string
+
 	for src, dsts := range files {
 		for _, dst := range dsts {
-			cmds[i] = exec.CommandContext(ctx, "copy", src, dst)
-			i++
+			args = append(args, src, dst)
 		}
 	}
-	return cmds
+
+	return exec.CommandContext(ctx, "copy", args...)
 }
 
 var pod = &v1.Pod{
@@ -532,12 +783,12 @@ var nonRunningPod = &v1.Pod{
 }
 
 func TestPerform(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		image       string
 		files       syncMap
 		pod         *v1.Pod
-		cmdFn       func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd
+		cmdFn       func(context.Context, v1.Pod, v1.Container, syncMap) *exec.Cmd
 		cmdErr      error
 		clientErr   error
 		expected    []string

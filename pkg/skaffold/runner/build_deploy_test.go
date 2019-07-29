@@ -28,7 +28,7 @@ import (
 )
 
 func TestBuildTestDeploy(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description     string
 		testBench       *TestBench
 		shouldErr       bool

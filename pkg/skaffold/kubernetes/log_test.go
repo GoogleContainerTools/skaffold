@@ -17,15 +17,19 @@ limitations under the License.
 package kubernetes
 
 import (
+	"bytes"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 )
 
 func TestSinceSeconds(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		duration    time.Duration
 		expected    int64
@@ -52,9 +56,8 @@ func TestSinceSeconds(t *testing.T) {
 }
 
 func TestSelect(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
-		images        []string
 		podSpec       v1.PodSpec
 		expectedMatch bool
 	}{
@@ -87,4 +90,32 @@ func TestSelect(t *testing.T) {
 			t.CheckDeepEqual(test.expectedMatch, selected)
 		})
 	}
+}
+
+func TestPrintLogLine(t *testing.T) {
+	testutil.Run(t, "verify lines are not intermixed", func(t *testutil.T) {
+		var buf bytes.Buffer
+
+		logger := &LogAggregator{
+			output: &buf,
+		}
+
+		var wg sync.WaitGroup
+		for i := 0; i < 5; i++ {
+			wg.Add(1)
+
+			go func() {
+				for i := 0; i < 100; i++ {
+					logger.printLogLine(color.Default, "PREFIX", "TEXT\n")
+				}
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+
+		lines := strings.Split(buf.String(), "\n")
+		for i := 0; i < 5*100; i++ {
+			t.CheckDeepEqual("PREFIX TEXT", lines[i])
+		}
+	})
 }
