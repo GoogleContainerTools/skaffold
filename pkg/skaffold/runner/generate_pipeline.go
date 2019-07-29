@@ -49,7 +49,7 @@ type StringReader interface {
 }
 
 func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, config *latest.SkaffoldConfig, fileOut string) error {
-	err := createSkaffoldProfile(config, "skaffold.yaml")
+	err := createSkaffoldProfile(config)
 	if err != nil {
 		return errors.Wrap(err, "setting up profile")
 	}
@@ -278,7 +278,7 @@ func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
 	return pipeline, nil
 }
 
-func createSkaffoldProfile(config *latest.SkaffoldConfig, fileOut string) error {
+func createSkaffoldProfile(config *latest.SkaffoldConfig) error {
 	fmt.Println("Checking for oncluster skaffold profile...")
 	profileExists := false
 	for _, profile := range config.Profiles {
@@ -347,7 +347,7 @@ func createSkaffoldProfile(config *latest.SkaffoldConfig, fileOut string) error 
 
 	fileContents = []byte((strings.Join(fileStrings, "\n")))
 
-	if err := ioutil.WriteFile(fileOut, fileContents, 0644); err != nil {
+	if err := ioutil.WriteFile("skaffold.yaml", fileContents, 0644); err != nil {
 		return errors.Wrap(err, "writing profile to skaffold.yaml")
 	}
 
