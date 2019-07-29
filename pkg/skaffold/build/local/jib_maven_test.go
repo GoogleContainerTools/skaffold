@@ -69,14 +69,11 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.cmd)
-
-			api := &testutil.FakeAPIClient{
-				TagToImageID: map[string]string{"img:tag": "imageID"},
-			}
+			api := (&testutil.FakeAPIClient{}).Add("img:tag", "imageID")
 			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 				return docker.NewLocalDaemon(api, nil, false, nil), nil
 			})
+			t.Override(&util.DefaultExecCommand, test.cmd)
 
 			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
 				Push: util.BoolPtr(false),
