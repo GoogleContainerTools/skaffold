@@ -260,15 +260,16 @@ func CloneThroughYAML(old interface{}, new interface{}) error {
 
 // AbsolutePaths prepends each path in paths with workspace if the path isn't absolute
 func AbsolutePaths(workspace string, paths []string) []string {
-	var p []string
+	var list []string
+
 	for _, path := range paths {
-		// TODO(dgageot): this is only done for jib builder.
 		if !filepath.IsAbs(path) {
 			path = filepath.Join(workspace, path)
 		}
-		p = append(p, path)
+		list = append(list, path)
 	}
-	return p
+
+	return list
 }
 
 // IsHiddenDir returns if a directory is hidden.
