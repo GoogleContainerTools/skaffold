@@ -32,7 +32,7 @@ if [[ "${TRAVIS}" == "true" ]]; then
 fi
 
 golangci-lint run ${VERBOSE} \
-	--deadline=4m \
+	--deadline=1m \
 	--no-config \
     --disable-all \
     -E bodyclose \
