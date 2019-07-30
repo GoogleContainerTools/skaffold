@@ -199,7 +199,16 @@ func (r *SkaffoldRunner) WithMonitor(m filemon.Monitor) *SkaffoldRunner {
 }
 
 func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) *SkaffoldRunner {
-	cfg := &latest.SkaffoldConfig{}
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				TagPolicy: latest.TagPolicy{
+					// Use the fastest tagger
+					ShaTagger: &latest.ShaTagger{},
+				},
+			},
+		},
+	}
 	defaults.Set(cfg)
 
 	runCtx := &runcontext.RunContext{

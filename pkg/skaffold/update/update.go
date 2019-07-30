@@ -28,6 +28,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Fot testing
+var (
+	GetLatestAndCurrentVersion = getLatestAndCurrentVersion
+)
+
 const latestVersionURL = "https://storage.googleapis.com/skaffold/releases/latest/VERSION"
 
 // IsUpdateCheckEnabled returns whether or not the update check is enabled
@@ -42,9 +47,9 @@ func IsUpdateCheckEnabled() bool {
 	return v == "" || strings.ToLower(v) == "true"
 }
 
-// GetLatestAndCurrentVersion uses a VERSION file stored on GCS to determine the latest released version
+// getLatestAndCurrentVersion uses a VERSION file stored on GCS to determine the latest released version
 // and returns it with the current version of Skaffold
-func GetLatestAndCurrentVersion() (semver.Version, semver.Version, error) {
+func getLatestAndCurrentVersion() (semver.Version, semver.Version, error) {
 	none := semver.Version{}
 	resp, err := http.Get(latestVersionURL)
 	if err != nil {

@@ -331,6 +331,8 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Parallel()
+
 			tmpDir := t.NewTempDir()
 			test.createGitRepo(tmpDir.Root())
 			workspace := tmpDir.Path(test.subDir)

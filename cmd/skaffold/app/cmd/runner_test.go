@@ -22,7 +22,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/blang/semver"
 )
 
 func TestCreateNewRunner(t *testing.T) {
@@ -81,6 +83,9 @@ func TestCreateNewRunner(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&update.GetLatestAndCurrentVersion, func() (semver.Version, semver.Version, error) {
+				return semver.Version{}, semver.Version{}, nil
+			})
 			t.NewTempDir().
 				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, test.config)).
 				Chdir()
