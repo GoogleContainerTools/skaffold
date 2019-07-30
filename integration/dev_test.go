@@ -18,6 +18,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -106,17 +107,7 @@ func TestDevAPITriggers(t *testing.T) {
 	client, shutdown := setupRPCClient(t, rpcAddr)
 	defer shutdown()
 
-	// read the event log stream from the skaffold grpc server
-	var stream proto.SkaffoldService_EventLogClient
-	var err error
-	for i := 0; i < readRetries; i++ {
-		stream, err = client.EventLog(context.Background())
-		if err != nil {
-			t.Logf("waiting for connection...")
-			time.Sleep(waitTime)
-			continue
-		}
-	}
+	stream, err := readEventAPIStream(client, t, readRetries)
 	if stream == nil {
 		t.Fatalf("error retrieving event log: %v\n", err)
 	}
@@ -235,6 +226,72 @@ func TestDevPortForward(t *testing.T) {
 	testutil.CheckError(t, false, err)
 }
 
+func TestDevPortForwardGKELoadBalancer(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if !ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("testdata/gke_loadbalancer").RunOrFail(t)
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	rpcAddr := randomPort()
+	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
+	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("testdata/gke_loadbalancer").InNs(ns.Name).WithEnv(env)
+	stop := cmd.RunBackground(t)
+	defer stop()
+
+	client, shutdown := setupRPCClient(t, rpcAddr)
+	defer shutdown()
+
+	// create a grpc connection. Increase number of reties for helm.
+	stream, err := readEventAPIStream(client, t, 20)
+	if stream == nil {
+		t.Fatalf("error retrieving event log: %v\n", err)
+	}
+
+	// read entries from the log
+	entries := make(chan *proto.LogEntry)
+	go func() {
+		for {
+			entry, _ := stream.Recv()
+			if entry != nil {
+				entries <- entry
+			}
+		}
+	}()
+
+	body := []byte{}
+	err = wait.PollImmediate(time.Millisecond*500, 5*time.Minute, func() (bool, error) {
+		e := <-entries
+		switch e.Event.GetEventType().(type) {
+		case *proto.Event_PortEvent:
+			if e.Event.GetPortEvent().ResourceName == "gke-loadbalancer" &&
+				e.Event.GetPortEvent().ResourceType == "service" {
+				port := e.Event.GetPortEvent().LocalPort
+				t.Logf("Detected service/gke-loadbalancer is forwarded to port %d", port)
+				resp, err := http.Get(fmt.Sprintf("http://localhost:%d", port))
+				if err != nil {
+					t.Errorf("could not get service/gke-loadbalancer due to %s", err)
+				}
+				defer resp.Body.Close()
+				body, err = ioutil.ReadAll(resp.Body)
+				return true, err
+			}
+			return false, nil
+		default:
+			return false, nil
+		}
+	})
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, string(body), "hello!!\n")
+}
+
 func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, error) {
 	fInfo, err := os.Stat(filepath)
 	if err != nil {
@@ -250,4 +307,20 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 	err = ioutil.WriteFile(filepath, []byte(newContents), 0)
 
 	return original, fInfo.Mode(), err
+}
+
+func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retries int) (proto.SkaffoldService_EventLogClient, error) {
+	t.Helper()
+	// read the event log stream from the skaffold grpc server
+	var stream proto.SkaffoldService_EventLogClient
+	var err error
+	for i := 0; i < retries; i++ {
+		stream, err = client.EventLog(context.Background())
+		if err != nil {
+			t.Logf("waiting for connection...")
+			time.Sleep(waitTime)
+			continue
+		}
+	}
+	return stream, err
 }
