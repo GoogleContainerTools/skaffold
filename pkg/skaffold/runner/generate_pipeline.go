@@ -139,7 +139,7 @@ func generateGitResource() (*tekton.PipelineResource, error) {
 		},
 		Spec: tekton.PipelineResourceSpec{
 			Type: tekton.PipelineResourceTypeGit,
-			Params: []tekton.Param{
+			Params: []tekton.ResourceParam{
 				{
 					Name:  "url",
 					Value: string(gitRepo),
