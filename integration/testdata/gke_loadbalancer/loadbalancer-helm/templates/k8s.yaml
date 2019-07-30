@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: gke-container
-          image: gcr.io/k8s-skaffold/gke-loadbalancer
+          image: {{ .Values.image }}
           ports:
             - containerPort: 3000
 ---

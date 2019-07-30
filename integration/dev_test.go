@@ -107,7 +107,7 @@ func TestDevAPITriggers(t *testing.T) {
 	client, shutdown := setupRPCClient(t, rpcAddr)
 	defer shutdown()
 
-	stream, err := readEventAPIStream(client, t)
+	stream, err := readEventAPIStream(client, t, readRetries)
 	if stream == nil {
 		t.Fatalf("error retrieving event log: %v\n", err)
 	}
@@ -241,15 +241,16 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 	defer deleteNs()
 
 	rpcAddr := randomPort()
-	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("testdata/gke_loadbalancer").InNs(ns.Name)
+	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
+	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("testdata/gke_loadbalancer").InNs(ns.Name).WithEnv(env)
 	stop := cmd.RunBackground(t)
 	defer stop()
 
 	client, shutdown := setupRPCClient(t, rpcAddr)
 	defer shutdown()
 
-	// create a grpc connection
-	stream, err := readEventAPIStream(client, t)
+	// create a grpc connection. Increase number of reties for helm.
+	stream, err := readEventAPIStream(client, t, 20)
 	if stream == nil {
 		t.Fatalf("error retrieving event log: %v\n", err)
 	}
@@ -308,12 +309,12 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 	return original, fInfo.Mode(), err
 }
 
-func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T) (proto.SkaffoldService_EventLogClient, error) {
+func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retries int) (proto.SkaffoldService_EventLogClient, error) {
 	t.Helper()
 	// read the event log stream from the skaffold grpc server
 	var stream proto.SkaffoldService_EventLogClient
 	var err error
-	for i := 0; i < readRetries; i++ {
+	for i := 0; i < retries; i++ {
 		stream, err = client.EventLog(context.Background())
 		if err != nil {
 			t.Logf("waiting for connection...")
