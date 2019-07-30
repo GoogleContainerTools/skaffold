@@ -68,7 +68,16 @@ func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
 
 	gcp.AutoConfigureGCRCredentialHelper(cf, registry)
 
-	return cf.GetAuthConfig(registry)
+	cfg, err := cf.GetAuthConfig(registry)
+	return types.AuthConfig{
+		Username:      cfg.Username,
+		Password:      cfg.Password,
+		Auth:          cfg.Auth,
+		Email:         cfg.Email,
+		ServerAddress: cfg.ServerAddress,
+		IdentityToken: cfg.IdentityToken,
+		RegistryToken: cfg.RegistryToken,
+	}, err
 }
 
 func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
@@ -79,7 +88,20 @@ func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 
 	// TODO(dgageot): this is really slow because it has to run all the credential helpers.
 	// return cf.GetAllCredentials()
-	return cf.GetCredentialsStore("").GetAll()
+	cfgs, err := cf.GetCredentialsStore("").GetAll()
+	newCfgs := map[string]types.AuthConfig{}
+	for k, cfg := range cfgs {
+		newCfgs[k] = types.AuthConfig{
+			Username:      cfg.Username,
+			Password:      cfg.Password,
+			Auth:          cfg.Auth,
+			Email:         cfg.Email,
+			ServerAddress: cfg.ServerAddress,
+			IdentityToken: cfg.IdentityToken,
+			RegistryToken: cfg.RegistryToken,
+		}
+	}
+	return newCfgs, err
 }
 
 func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {

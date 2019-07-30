@@ -9,35 +9,49 @@ import (
 	"unicode/utf8"
 )
 
+// ErrBadPattern indicates a pattern was malformed.
 var ErrBadPattern = path.ErrBadPattern
 
 // Split a path on the given separator, respecting escaping.
-func splitPathOnSeparator(path string, separator rune) []string {
-	// if the separator is '\\', then we can just split...
+func splitPathOnSeparator(path string, separator rune) (ret []string) {
+	idx := 0
 	if separator == '\\' {
-		return strings.Split(path, string(separator))
+		// if the separator is '\\', then we can just split...
+		ret = strings.Split(path, string(separator))
+		idx = len(ret)
+	} else {
+		// otherwise, we need to be careful of situations where the separator was escaped
+		cnt := strings.Count(path, string(separator))
+		if cnt == 0 {
+			return []string{path}
+		}
+
+		ret = make([]string, cnt+1)
+		pathlen := len(path)
+		separatorLen := utf8.RuneLen(separator)
+		emptyEnd := false
+		for start := 0; start < pathlen; {
+			end := indexRuneWithEscaping(path[start:], separator)
+			if end == -1 {
+				emptyEnd = false
+				end = pathlen
+			} else {
+				emptyEnd = true
+				end += start
+			}
+			ret[idx] = path[start:end]
+			start = end + separatorLen
+			idx++
+		}
+
+		// If the last rune is a path separator, we need to append an empty string to
+		// represent the last, empty path component. By default, the strings from
+		// make([]string, ...) will be empty, so we just need to icrement the count
+		if emptyEnd {
+			idx++
+		}
 	}
 
-	// otherwise, we need to be careful of situations where the separator was escaped
-	cnt := strings.Count(path, string(separator))
-	if cnt == 0 {
-		return []string{path}
-	}
-	ret := make([]string, cnt+1)
-	pathlen := len(path)
-	separatorLen := utf8.RuneLen(separator)
-	idx := 0
-	for start := 0; start < pathlen; {
-		end := indexRuneWithEscaping(path[start:], separator)
-		if end == -1 {
-			end = pathlen
-		} else {
-			end += start
-		}
-		ret[idx] = path[start:end]
-		start = end + separatorLen
-		idx++
-	}
 	return ret[:idx]
 }
 
@@ -65,8 +79,8 @@ func indexRuneWithEscaping(s string, r rune) int {
 //    { term }
 //  term:
 //    '*'         matches any sequence of non-path-separators
-//              '**'        matches any sequence of characters, including
-//                          path separators.
+//    '**'        matches any sequence of characters, including
+//                path separators.
 //    '?'         matches any single non-path-separator character
 //    '[' [ '^' ] { character-range } ']'
 //          character class (must be non-empty)
@@ -160,13 +174,14 @@ func doMatching(patternComponents, nameComponents []string) (matched bool, err e
 				}
 			}
 			return false, nil
-		} else {
-			// try matching components
-			matched, err = matchComponent(patternComponents[patIdx], nameComponents[nameIdx])
-			if !matched || err != nil {
-				return
-			}
 		}
+
+		// try matching components
+		matched, err = matchComponent(patternComponents[patIdx], nameComponents[nameIdx])
+		if !matched || err != nil {
+			return
+		}
+
 		patIdx++
 		nameIdx++
 	}

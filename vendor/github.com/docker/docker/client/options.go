@@ -45,9 +45,8 @@ func FromEnv(c *Client) error {
 	}
 
 	if version := os.Getenv("DOCKER_API_VERSION"); version != "" {
-		if err := WithVersion(version)(c); err != nil {
-			return err
-		}
+		c.version = version
+		c.manualOverride = true
 	}
 	return nil
 }
@@ -140,7 +139,6 @@ func WithTLSClientConfig(cacertPath, certPath, keyPath string) func(*Client) err
 func WithVersion(version string) func(*Client) error {
 	return func(c *Client) error {
 		c.version = version
-		c.manualOverride = true
 		return nil
 	}
 }

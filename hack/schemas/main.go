@@ -32,7 +32,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/pkg/errors"
-	blackfriday "gopkg.in/russross/blackfriday.v2"
+	"github.com/russross/blackfriday"
 )
 
 const (
@@ -256,7 +256,7 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 	def.Description = description
 
 	// Convert to HTML
-	html := string(blackfriday.Run([]byte(description), blackfriday.WithNoExtensions()))
+	html := string(blackfriday.MarkdownBasic([]byte(description)))
 	def.HTMLDescription = strings.TrimSpace(pTags.ReplaceAllString(html, ""))
 
 	return def
