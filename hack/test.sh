@@ -44,11 +44,11 @@ for s in "${scripts[@]}"; do
     ./$s
     result=$?
     set -e
-    if [[ $result  -eq 1 ]]; then
+    if [[ $result -eq 0 ]]; then
+        echo -e "${GREEN}PASSED${RESET} ${s}"
+    else
         echo -e "${RED}FAILED${RESET} ${s}"
         fail=1
-    else
-        echo -e "${GREEN}PASSED${RESET} ${s}"
     fi
 done
 exit $fail
