@@ -17,18 +17,23 @@ limitations under the License.
 package integration
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func TestDev(t *testing.T) {
@@ -235,6 +240,47 @@ func TestDevPortForward(t *testing.T) {
 	testutil.CheckError(t, false, err)
 }
 
+func TestDevPortForwardGKELoadBalancer(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("testdata/gke_loadbalancer").RunOrFail(t)
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	out := newCapturingPassThroughWriter(os.Stdout)
+	cmd := skaffold.Dev("--port-forward").InDir("testdata/gke_loadbalancer").InNs(ns.Name).WithStdout(out)
+	stop := cmd.RunBackground(t)
+	defer stop()
+
+	body := []byte{}
+	err := wait.PollImmediate(time.Millisecond*500, 5*time.Minute, func() (bool, error) {
+		output := string(out.Bytes())
+		re := regexp.MustCompile(`.*Port forwarded service/gke-loadbalancer from remote port 80 to local port\s+(\d+)(.*)`)
+		if s := re.FindStringSubmatch(output); s != nil {
+			port := s[1]
+			t.Logf("Detected service/gke-loadbalancer is forwarded to port %s", port)
+
+			resp, err := http.Get(fmt.Sprintf("http://localhost:%s", port))
+			if err != nil {
+				t.Errorf("could not get service/gke-loadbalancer due to %s", err)
+			}
+			defer resp.Body.Close()
+			body, err = ioutil.ReadAll(resp.Body)
+			return true, err
+		}
+		return false, nil
+	})
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, string(body), "hello!!\n")
+}
+
 func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, error) {
 	fInfo, err := os.Stat(filepath)
 	if err != nil {
@@ -250,4 +296,28 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 	err = ioutil.WriteFile(filepath, []byte(newContents), 0)
 
 	return original, fInfo.Mode(), err
+}
+
+// capturingPassThroughWriter is a writer that remembers
+// data written to it and passes it to w
+type capturingPassThroughWriter struct {
+	buf bytes.Buffer
+	w   io.Writer
+}
+
+// newCapturingPassThroughWriter creates new capturingPassThroughWriter
+func newCapturingPassThroughWriter(w io.Writer) *capturingPassThroughWriter {
+	return &capturingPassThroughWriter{
+		w: w,
+	}
+}
+
+func (w *capturingPassThroughWriter) Write(d []byte) (int, error) {
+	w.buf.Write(d)
+	return w.w.Write(d)
+}
+
+// Bytes returns bytes written to the writer
+func (w *capturingPassThroughWriter) Bytes() []byte {
+	return w.buf.Bytes()
 }
