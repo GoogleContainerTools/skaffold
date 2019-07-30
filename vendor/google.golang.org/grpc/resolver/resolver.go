@@ -104,12 +104,11 @@ type BuildOption struct {
 
 // State contains the current Resolver state relevant to the ClientConn.
 type State struct {
-	Addresses []Address // Resolved addresses for the target
-	// ServiceConfig is the parsed service config; obtained from
-	// serviceconfig.Parse.
-	ServiceConfig serviceconfig.Config
+	Addresses     []Address // Resolved addresses for the target
+	ServiceConfig string    // JSON representation of the service config
 
 	// TODO: add Err error
+	// TODO: add ParsedServiceConfig interface{}
 }
 
 // ClientConn contains the callbacks for resolver to notify any updates

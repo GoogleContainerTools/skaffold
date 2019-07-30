@@ -746,10 +746,10 @@ type BazelArtifact struct {
 // [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
 type JibMavenArtifact struct {
 	// Module selects which Maven module to build, for a multi module project.
-	Module string `yaml:"module"`
+	Module string `yaml:"module,omitempty"`
 
 	// Profile selects which Maven profile to activate.
-	Profile string `yaml:"profile"`
+	Profile string `yaml:"profile,omitempty"`
 
 	// Flags are additional build flags passed to Maven.
 	// For example: `["-x", "-DskipTests"]`.
@@ -760,7 +760,7 @@ type JibMavenArtifact struct {
 // [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
 type JibGradleArtifact struct {
 	// Project selects which Gradle project to build.
-	Project string `yaml:"project"`
+	Project string `yaml:"project,omitempty"`
 
 	// Flags are additional build flags passed to Gradle.
 	// For example: `["--no-build-cache"]`.

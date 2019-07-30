@@ -87,13 +87,6 @@ func AuthOptionsFromEnv() (gophercloud.AuthOptions, error) {
 		return nilOptions, err
 	}
 
-	if domainID == "" && domainName == "" && tenantID == "" && tenantName != "" {
-		err := gophercloud.ErrMissingEnvironmentVariable{
-			EnvironmentVariable: "OS_PROJECT_ID",
-		}
-		return nilOptions, err
-	}
-
 	if applicationCredentialID == "" && applicationCredentialName != "" && applicationCredentialSecret != "" {
 		if userID == "" && username == "" {
 			return nilOptions, gophercloud.ErrMissingAnyoneOfEnvironmentVariables{

@@ -8,10 +8,9 @@ package chacha20
 
 import "encoding/binary"
 
-const (
-	bufSize = 256
-	haveAsm = true
-)
+var haveAsm = true
+
+const bufSize = 256
 
 //go:noescape
 func chaCha20_ctr32_vmx(out, inp *byte, len int, key *[8]uint32, counter *uint32)

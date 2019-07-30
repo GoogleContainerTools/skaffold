@@ -22,7 +22,6 @@ package balancer
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"net"
 	"strings"
@@ -283,7 +282,7 @@ type Balancer interface {
 	// non-nil error to gRPC.
 	//
 	// Deprecated: if V2Balancer is implemented by the Balancer,
-	// UpdateClientConnState will be called instead.
+	// UpdateResolverState will be called instead.
 	HandleResolvedAddrs([]resolver.Address, error)
 	// Close closes the balancer. The balancer is not required to call
 	// ClientConn.RemoveSubConn for its existing SubConns.
@@ -296,23 +295,14 @@ type SubConnState struct {
 	// TODO: add last connection error
 }
 
-// ClientConnState describes the state of a ClientConn relevant to the
-// balancer.
-type ClientConnState struct {
-	ResolverState resolver.State
-	// The parsed load balancing configuration returned by the builder's
-	// ParseConfig method, if implemented.
-	BalancerConfig serviceconfig.LoadBalancingConfig
-}
-
 // V2Balancer is defined for documentation purposes.  If a Balancer also
-// implements V2Balancer, its UpdateClientConnState method will be called
-// instead of HandleResolvedAddrs and its UpdateSubConnState will be called
-// instead of HandleSubConnStateChange.
+// implements V2Balancer, its UpdateResolverState method will be called instead
+// of HandleResolvedAddrs and its UpdateSubConnState will be called instead of
+// HandleSubConnStateChange.
 type V2Balancer interface {
-	// UpdateClientConnState is called by gRPC when the state of the ClientConn
+	// UpdateResolverState is called by gRPC when the state of the resolver
 	// changes.
-	UpdateClientConnState(ClientConnState)
+	UpdateResolverState(resolver.State)
 	// UpdateSubConnState is called by gRPC when the state of a SubConn
 	// changes.
 	UpdateSubConnState(SubConn, SubConnState)

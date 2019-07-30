@@ -260,16 +260,7 @@ type jsonSC struct {
 	HealthCheckConfig   *healthCheckConfig
 }
 
-func init() {
-	internal.ParseServiceConfig = func(sc string) (interface{}, error) {
-		return parseServiceConfig(sc)
-	}
-}
-
 func parseServiceConfig(js string) (*ServiceConfig, error) {
-	if len(js) == 0 {
-		return nil, fmt.Errorf("no JSON service config provided")
-	}
 	var rsc jsonSC
 	err := json.Unmarshal([]byte(js), &rsc)
 	if err != nil {
@@ -283,33 +274,8 @@ func parseServiceConfig(js string) (*ServiceConfig, error) {
 		healthCheckConfig: rsc.HealthCheckConfig,
 		rawJSONString:     js,
 	}
-	if rsc.LoadBalancingConfig != nil {
-		for i, lbcfg := range *rsc.LoadBalancingConfig {
-			if len(lbcfg) != 1 {
-				err := fmt.Errorf("invalid loadBalancingConfig: entry %v does not contain exactly 1 policy/config pair: %q", i, lbcfg)
-				grpclog.Warningf(err.Error())
-				return nil, err
-			}
-			var name string
-			var jsonCfg json.RawMessage
-			for name, jsonCfg = range lbcfg {
-			}
-			builder := balancer.Get(name)
-			if builder == nil {
-				continue
-			}
-			sc.lbConfig = &lbConfig{name: name}
-			if parser, ok := builder.(balancer.ConfigParser); ok {
-				var err error
-				sc.lbConfig.cfg, err = parser.ParseConfig(jsonCfg)
-				if err != nil {
-					return nil, fmt.Errorf("error parsing loadBalancingConfig for policy %q: %v", name, err)
-				}
-			} else if string(jsonCfg) != "{}" {
-				grpclog.Warningf("non-empty balancer configuration %q, but balancer does not implement ParseConfig", string(jsonCfg))
-			}
-			break
-		}
+	if rsc.MethodConfig == nil {
+		return &sc, nil
 	}
 
 	if rsc.MethodConfig == nil {
@@ -355,11 +321,11 @@ func parseServiceConfig(js string) (*ServiceConfig, error) {
 	}
 
 	if sc.retryThrottling != nil {
-		if mt := sc.retryThrottling.MaxTokens; mt <= 0 || mt > 1000 {
-			return nil, fmt.Errorf("invalid retry throttling config: maxTokens (%v) out of range (0, 1000]", mt)
-		}
-		if tr := sc.retryThrottling.TokenRatio; tr <= 0 {
-			return nil, fmt.Errorf("invalid retry throttling config: tokenRatio (%v) may not be negative", tr)
+		if sc.retryThrottling.MaxTokens <= 0 ||
+			sc.retryThrottling.MaxTokens > 1000 ||
+			sc.retryThrottling.TokenRatio <= 0 {
+			// Illegal throttling config; disable throttling.
+			sc.retryThrottling = nil
 		}
 	}
 	return &sc, nil

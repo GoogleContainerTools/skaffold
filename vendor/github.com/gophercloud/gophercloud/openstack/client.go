@@ -150,7 +150,7 @@ func v2auth(client *gophercloud.ProviderClient, endpoint string, options gopherc
 		// with the token and reauth func zeroed out. combined with setting `AllowReauth` to `false`,
 		// this should retry authentication only once
 		tac := *client
-		tac.SetThrowaway(true)
+		tac.IsThrowaway = true
 		tac.ReauthFunc = nil
 		tac.SetTokenAndAuthResult(nil)
 		tao := options
@@ -204,7 +204,7 @@ func v3auth(client *gophercloud.ProviderClient, endpoint string, opts tokens3.Au
 		// with the token and reauth func zeroed out. combined with setting `AllowReauth` to `false`,
 		// this should retry authentication only once
 		tac := *client
-		tac.SetThrowaway(true)
+		tac.IsThrowaway = true
 		tac.ReauthFunc = nil
 		tac.SetTokenAndAuthResult(nil)
 		var tao tokens3.AuthOptionsBuilder

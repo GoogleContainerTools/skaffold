@@ -294,6 +294,8 @@ type OtherChannelzSecurityValue struct {
 	Value proto.Message
 }
 
+func (*OtherChannelzSecurityValue) isChannelzSecurityValue() {}
+
 var cipherSuiteLookup = map[uint16]string{
 	tls.TLS_RSA_WITH_RC4_128_SHA:                "TLS_RSA_WITH_RC4_128_SHA",
 	tls.TLS_RSA_WITH_3DES_EDE_CBC_SHA:           "TLS_RSA_WITH_3DES_EDE_CBC_SHA",

@@ -73,15 +73,10 @@ type ProviderClient struct {
 	// authentication functions for different Identity service versions.
 	ReauthFunc func() error
 
-	// Throwaway determines whether if this client is a throw-away client. It's a copy of user's provider client
+	// IsThrowaway determines whether if this client is a throw-away client. It's a copy of user's provider client
 	// with the token and reauth func zeroed. Such client can be used to perform reauthorization.
-	Throwaway bool
+	IsThrowaway bool
 
-	// Context is the context passed to the HTTP request.
-	Context context.Context
-
-	// mut is a mutex for the client. It protects read and write access to client attributes such as getting
-	// and setting the TokenID.
 	mut *sync.RWMutex
 
 	// reauthmut is a mutex for reauthentication it attempts to ensure that only one reauthentication
@@ -102,7 +97,7 @@ type reauthlock struct {
 // AuthenticatedHeaders returns a map of HTTP headers that are common for all
 // authenticated service requests. Blocks if Reauthenticate is in progress.
 func (client *ProviderClient) AuthenticatedHeaders() (m map[string]string) {
-	if client.IsThrowaway() {
+	if client.IsThrowaway {
 		return
 	}
 	if client.reauthmut != nil {
@@ -185,39 +180,6 @@ func (client *ProviderClient) SetTokenAndAuthResult(r AuthResult) error {
 	return nil
 }
 
-// CopyTokenFrom safely copies the token from another ProviderClient into the
-// this one.
-func (client *ProviderClient) CopyTokenFrom(other *ProviderClient) {
-	if client.mut != nil {
-		client.mut.Lock()
-		defer client.mut.Unlock()
-	}
-	if other.mut != nil && other.mut != client.mut {
-		other.mut.RLock()
-		defer other.mut.RUnlock()
-	}
-	client.TokenID = other.TokenID
-	client.authResult = other.authResult
-}
-
-// IsThrowaway safely reads the value of the client Throwaway field.
-func (client *ProviderClient) IsThrowaway() bool {
-	if client.reauthmut != nil {
-		client.reauthmut.RLock()
-		defer client.reauthmut.RUnlock()
-	}
-	return client.Throwaway
-}
-
-// SetThrowaway safely sets the value of the client Throwaway field.
-func (client *ProviderClient) SetThrowaway(v bool) {
-	if client.reauthmut != nil {
-		client.reauthmut.Lock()
-		defer client.reauthmut.Unlock()
-	}
-	client.Throwaway = v
-}
-
 // Reauthenticate calls client.ReauthFunc in a thread-safe way. If this is
 // called because of a 401 response, the caller may pass the previous token. In
 // this case, the reauthentication can be skipped if another thread has already
@@ -242,6 +204,9 @@ func (client *ProviderClient) Reauthenticate(previousToken string) (err error) {
 		return err
 	}
 	client.reauthmut.Unlock()
+
+	client.mut.Lock()
+	defer client.mut.Unlock()
 
 	client.reauthmut.Lock()
 	client.reauthmut.reauthing = true

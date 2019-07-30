@@ -22,7 +22,6 @@
 package transport
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -140,9 +139,8 @@ type recvBufferReader struct {
 	ctx         context.Context
 	ctxDone     <-chan struct{} // cache of ctx.Done() (for performance).
 	recv        *recvBuffer
-	last        *bytes.Buffer // Stores the remaining data in the previous calls.
+	last        []byte // Stores the remaining data in the previous calls.
 	err         error
-	freeBuffer  func(*bytes.Buffer)
 }
 
 // Read reads the next len(p) bytes from last. If last is drained, it tries to
@@ -152,13 +150,10 @@ func (r *recvBufferReader) Read(p []byte) (n int, err error) {
 	if r.err != nil {
 		return 0, r.err
 	}
-	if r.last != nil {
+	if r.last != nil && len(r.last) > 0 {
 		// Read remaining data left in last call.
-		copied, _ := r.last.Read(p)
-		if r.last.Len() == 0 {
-			r.freeBuffer(r.last)
-			r.last = nil
-		}
+		copied := copy(p, r.last)
+		r.last = r.last[copied:]
 		return copied, nil
 	}
 	if r.closeStream != nil {
@@ -176,6 +171,30 @@ func (r *recvBufferReader) read(p []byte) (n int, err error) {
 	case m := <-r.recv.get():
 		return r.readAdditional(m, p)
 	}
+}
+
+func (r *recvBufferReader) readClient(p []byte) (n int, err error) {
+	// If the context is canceled, then closes the stream with nil metadata.
+	// closeStream writes its error parameter to r.recv as a recvMsg.
+	// r.readAdditional acts on that message and returns the necessary error.
+	select {
+	case <-r.ctxDone:
+		r.closeStream(ContextErr(r.ctx.Err()))
+		m := <-r.recv.get()
+		return r.readAdditional(m, p)
+	case m := <-r.recv.get():
+		return r.readAdditional(m, p)
+	}
+}
+
+func (r *recvBufferReader) readAdditional(m recvMsg, p []byte) (n int, err error) {
+	r.recv.load()
+	if m.err != nil {
+		return 0, m.err
+	}
+	copied := copy(p, m.data)
+	r.last = m.data[copied:]
+	return copied, nil
 }
 
 func (r *recvBufferReader) readClient(p []byte) (n int, err error) {
