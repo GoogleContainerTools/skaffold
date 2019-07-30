@@ -92,6 +92,10 @@ func Diagnose(args ...string) *RunBuilder {
 	return &RunBuilder{command: "diagnose", args: args}
 }
 
+func GeneratePipeline(args ...string) *RunBuilder {
+	return &RunBuilder{command: "generate-pipeline", args: args}
+}
+
 // InDir sets the directory in which skaffold is running.
 func (b *RunBuilder) InDir(dir string) *RunBuilder {
 	b.dir = dir
