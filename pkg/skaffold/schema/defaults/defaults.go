@@ -206,18 +206,18 @@ func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
 		return nil
 	}
 
-	if cluster.DockerConfig.Path != "" {
-		absPath, err := homedir.Expand(cluster.DockerConfig.Path)
-		if err != nil {
-			return fmt.Errorf("unable to expand dockerConfig.path %s", cluster.DockerConfig.Path)
-		}
+	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
 
-		cluster.DockerConfig.Path = absPath
+	if cluster.DockerConfig.Path == "" {
 		return nil
 	}
 
-	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
+	absPath, err := homedir.Expand(cluster.DockerConfig.Path)
+	if err != nil {
+		return fmt.Errorf("unable to expand dockerConfig.path %s", cluster.DockerConfig.Path)
+	}
 
+	cluster.DockerConfig.Path = absPath
 	return nil
 }
 

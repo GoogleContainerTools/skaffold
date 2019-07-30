@@ -473,8 +473,6 @@ type Artifact struct {
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
-
-	WorkspaceHash string `yaml:"-,omitempty"`
 }
 
 // Sync *alpha* specifies what files to sync into the container.

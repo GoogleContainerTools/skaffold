@@ -65,16 +65,6 @@ var (
 	Default = Blue
 )
 
-// Fprint wraps the operands in c's ANSI escape codes, and outputs the result to
-// out. If out is not a terminal, the escape codes will not be added.
-// It returns the number of bytes written and any errors encountered.
-func (c Color) Fprint(out io.Writer, a ...interface{}) (n int, err error) {
-	if IsTerminal(out) {
-		return fmt.Fprintf(out, "\033[%dm%s\033[0m", c, fmt.Sprint(a...))
-	}
-	return fmt.Fprint(out, a...)
-}
-
 // Fprintln wraps the operands in c's ANSI escape codes, and outputs the result to
 // out, followed by a newline. If out is not a terminal, the escape codes will not be added.
 // It returns the number of bytes written and any errors encountered.

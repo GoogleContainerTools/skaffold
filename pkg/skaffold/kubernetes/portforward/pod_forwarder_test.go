@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"reflect"
-	"sync"
 	"testing"
 	"time"
 
@@ -38,18 +37,18 @@ import (
 )
 
 func TestAutomaticPortForwardPod(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description     string
 		pods            []*v1.Pod
 		forwarder       *testForwarder
-		expectedPorts   map[int32]bool
+		expectedPorts   map[int]struct{}
 		expectedEntries map[string]*portForwardEntry
 		availablePorts  []int
 		shouldErr       bool
 	}{
 		{
 			description:    "single container port",
-			expectedPorts:  map[int32]bool{8080: true},
+			expectedPorts:  map[int]struct{}{8080: {}},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
@@ -93,7 +92,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:   "unavailable container port",
-			expectedPorts: map[int32]bool{9000: true},
+			expectedPorts: map[int]struct{}{9000: {}},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
 					resourceVersion: 1,
@@ -137,7 +136,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:     "bad resource version",
-			expectedPorts:   map[int32]bool{},
+			expectedPorts:   map[int]struct{}{},
 			shouldErr:       true,
 			expectedEntries: map[string]*portForwardEntry{},
 			availablePorts:  []int{8080},
@@ -166,7 +165,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "forward error",
-			expectedPorts:  map[int32]bool{8080: true},
+			expectedPorts:  map[int]struct{}{8080: {}},
 			forwarder:      newTestForwarder(fmt.Errorf("")),
 			shouldErr:      true,
 			availablePorts: []int{8080},
@@ -212,7 +211,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "two different container ports",
-			expectedPorts:  map[int32]bool{8080: true, 50051: true},
+			expectedPorts:  map[int]struct{}{8080: {}, 50051: {}},
 			availablePorts: []int{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
@@ -291,7 +290,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "two same container ports",
-			expectedPorts:  map[int32]bool{8080: true, 9000: true},
+			expectedPorts:  map[int]struct{}{8080: {}, 9000: {}},
 			availablePorts: []int{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
@@ -370,7 +369,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "updated pod gets port forwarded",
-			expectedPorts:  map[int32]bool{8080: true},
+			expectedPorts:  map[int]struct{}{8080: {}},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"containername-namespace-portname-8080": {
@@ -443,8 +442,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 
 			entryManager := EntryManager{
 				output:             ioutil.Discard,
-				forwardedPorts:     &sync.Map{},
-				forwardedResources: &sync.Map{},
+				forwardedPorts:     newForwardedPorts(),
+				forwardedResources: newForwardedResources(),
 			}
 			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), nil)
 			if test.forwarder == nil {
@@ -457,16 +456,15 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 				t.CheckError(test.shouldErr, err)
 			}
 
-			actualPorts := generateActualPortsMap(test.forwarder.forwardedPorts)
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
-			if !reflect.DeepEqual(test.expectedPorts, actualPorts) {
-				t.Errorf("Expected differs from actual entries. Expected: %v, Actual: %v", test.expectedPorts, actualPorts)
+			if !reflect.DeepEqual(test.expectedPorts, test.forwarder.forwardedPorts.ports) {
+				t.Errorf("Expected differs from actual entries. Expected: %v, Actual: %v", test.expectedPorts, test.forwarder.forwardedPorts.ports)
 			}
 
-			actualForwardedEntries := generateActualForwardedEntriesMap(test.forwarder.forwardedEntries)
+			actualForwardedResources := test.forwarder.forwardedResources.resources
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
-			if !reflect.DeepEqual(test.expectedEntries, actualForwardedEntries) {
-				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %v", test.expectedEntries, actualForwardedEntries)
+			if !reflect.DeepEqual(test.expectedEntries, actualForwardedResources) {
+				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %v", test.expectedEntries, actualForwardedResources)
 			}
 		})
 	}
@@ -497,14 +495,14 @@ func TestStartPodForwarder(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(latest.BuildConfig{})
 			client := fakekubeclientset.NewSimpleClientset(&v1.Pod{})
 			fakeWatcher := watch.NewRaceFreeFake()
 			client.PrependWatchReactor("*", testutil.SetupFakeWatcher(fakeWatcher))
 
 			waitForWatcher := make(chan bool)
-			testutil.Override(t, &aggregatePodWatcher, func(_ []string, aggregate chan<- watch.Event) (func(), error) {
+			t.Override(&aggregatePodWatcher, func(_ []string, aggregate chan<- watch.Event) (func(), error) {
 				go func() {
 					waitForWatcher <- true
 					for msg := range fakeWatcher.ResultChan() {
@@ -555,7 +553,7 @@ func TestStartPodForwarder(t *testing.T) {
 
 			// poll for 2 seconds for the pod resource to be forwarded
 			err := wait.PollImmediate(time.Second, 2*time.Second, func() (bool, error) {
-				_, ok := fakeForwarder.forwardedEntries.Load("mycontainer-default-myport-8080")
+				_, ok := fakeForwarder.forwardedResources.Load("mycontainer-default-myport-8080")
 				return ok, nil
 			})
 			if err != nil && test.entryExpected {
@@ -563,22 +561,4 @@ func TestStartPodForwarder(t *testing.T) {
 			}
 		})
 	}
-}
-
-func generateActualPortsMap(sm *sync.Map) map[int32]bool {
-	m := make(map[int32]bool)
-	sm.Range(func(k, v interface{}) bool {
-		m[k.(int32)] = v.(bool)
-		return true
-	})
-	return m
-}
-
-func generateActualForwardedEntriesMap(sm *sync.Map) map[string]*portForwardEntry {
-	m := make(map[string]*portForwardEntry)
-	sm.Range(func(k, v interface{}) bool {
-		m[k.(string)] = v.(*portForwardEntry)
-		return true
-	})
-	return m
 }

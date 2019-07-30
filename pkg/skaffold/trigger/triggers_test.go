@@ -22,47 +22,39 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestNewTrigger(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
-		opts        *config.SkaffoldOptions
+		opts        config.SkaffoldOptions
 		expected    Trigger
 		shouldErr   bool
 	}{
 		{
 			description: "polling trigger",
-			opts:        &config.SkaffoldOptions{Trigger: "polling", WatchPollInterval: 1},
+			opts:        config.SkaffoldOptions{Trigger: "polling", WatchPollInterval: 1},
 			expected: &pollTrigger{
 				Interval: time.Duration(1) * time.Millisecond,
 			},
 		},
 		{
 			description: "notify trigger",
-			opts:        &config.SkaffoldOptions{Trigger: "notify", WatchPollInterval: 1},
+			opts:        config.SkaffoldOptions{Trigger: "notify", WatchPollInterval: 1},
 			expected: &fsNotifyTrigger{
 				Interval: time.Duration(1) * time.Millisecond,
 			},
 		},
 		{
 			description: "manual trigger",
-			opts:        &config.SkaffoldOptions{Trigger: "manual"},
+			opts:        config.SkaffoldOptions{Trigger: "manual"},
 			expected:    &manualTrigger{},
 		},
 		{
-			description: "api trigger",
-			opts:        &config.SkaffoldOptions{Trigger: "api"},
-			expected: &apiTrigger{
-				Trigger: server.Trigger,
-			},
-		},
-		{
 			description: "unknown trigger",
-			opts:        &config.SkaffoldOptions{Trigger: "unknown"},
+			opts:        config.SkaffoldOptions{Trigger: "unknown"},
 			shouldErr:   true,
 		},
 	}

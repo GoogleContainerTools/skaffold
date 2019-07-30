@@ -45,6 +45,9 @@ type SkaffoldOptions struct {
 	NoPrune            bool
 	NoPruneChildren    bool
 	StatusCheck        bool
+	AutoBuild          bool
+	AutoSync           bool
+	AutoDeploy         bool
 	PortForward        PortForwardOptions
 	CustomTag          string
 	Namespace          string

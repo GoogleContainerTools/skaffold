@@ -24,7 +24,7 @@ import (
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -50,13 +50,9 @@ type Builder struct {
 
 var getLocalCluster = configutil.GetLocalCluster
 
-var getLocalDocker = func(runCtx *runcontext.RunContext) (docker.LocalDaemon, error) {
-	return docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
-}
-
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
-	localDocker, err := getLocalDocker(runCtx)
+	localDocker, err := docker.NewAPIClient(runCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
@@ -85,6 +81,10 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 		pruneChildren:      !runCtx.Opts.NoPruneChildren,
 		insecureRegistries: runCtx.InsecureRegistries,
 	}, nil
+}
+
+func (b *Builder) PushImages() bool {
+	return b.pushImages
 }
 
 // Labels are labels specific to local builder.

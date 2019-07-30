@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package context
+package runcontext
 
 import (
 	"os"
@@ -29,8 +29,8 @@ import (
 )
 
 type RunContext struct {
-	Opts *config.SkaffoldOptions
-	Cfg  *latest.Pipeline
+	Opts config.SkaffoldOptions
+	Cfg  latest.Pipeline
 
 	DefaultRepo        string
 	KubeContext        string
@@ -39,7 +39,7 @@ type RunContext struct {
 	InsecureRegistries map[string]bool
 }
 
-func GetRunContext(opts *config.SkaffoldOptions, cfg *latest.Pipeline) (*RunContext, error) {
+func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContext, error) {
 	kubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting current cluster context")

@@ -331,10 +331,12 @@
   version = "v0.2.0"
 
 [[projects]]
-  digest = "1:89b8adf786b463014ba1866cfd5f1d97c6abb6db72407b740a704551f649438b"
+  digest = "1:daca75035ea986348b2ae8bb853b1e13f427b91386f725e56659257983af0ec7"
   name = "github.com/google/go-containerregistry"
   packages = [
     "pkg/authn",
+    "pkg/internal/retry",
+    "pkg/logs",
     "pkg/name",
     "pkg/v1",
     "pkg/v1/partial",
@@ -346,7 +348,7 @@
     "pkg/v1/v1util",
   ]
   pruneopts = "NUT"
-  revision = "7d6d1d3cd63b486f713ddf83be5956744f4e1bb3"
+  revision = "e8c6a4993fa7c12b6ca56007739116b27ecb84c1"
 
 [[projects]]
   digest = "1:f4f203acd8b11b8747bdcd91696a01dbc95ccb9e2ca2db6abf81c3a4f5e950ce"
@@ -1341,6 +1343,7 @@
     "golang.org/x/crypto/ssh/terminal",
     "golang.org/x/oauth2",
     "golang.org/x/oauth2/google",
+    "golang.org/x/sync/errgroup",
     "google.golang.org/api/cloudbuild/v1",
     "google.golang.org/api/googleapi",
     "google.golang.org/api/iterator",

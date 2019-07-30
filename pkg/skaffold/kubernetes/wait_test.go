@@ -50,7 +50,7 @@ func TestWaitForPodSucceeded(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			pod := &v1.Pod{}
 			client := fakekubeclientset.NewSimpleClientset(pod)
 
@@ -75,14 +75,13 @@ func TestWaitForPodSucceeded(t *testing.T) {
 				time.Sleep(time.Second)
 			}
 			err := <-errChan
-			testutil.CheckError(t, test.shouldErr, err)
+
+			t.CheckError(test.shouldErr, err)
 		})
 	}
-
 }
 
 func TestIsPodSucceeded(t *testing.T) {
-
 	tests := []struct {
 		description string
 		podName     string
@@ -118,7 +117,7 @@ func TestIsPodSucceeded(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			pod := &v1.Pod{
 				Status: v1.PodStatus{
 					Phase: test.phase,
@@ -128,8 +127,10 @@ func TestIsPodSucceeded(t *testing.T) {
 				Type:   "dummyEvent",
 				Object: pod,
 			}
+
 			actual, err := isPodSucceeded(test.podName)(dummyEvent)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, actual, test.expected)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, actual, test.expected)
 		})
 	}
 }

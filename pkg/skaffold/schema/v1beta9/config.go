@@ -475,8 +475,6 @@ type Artifact struct {
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
-
-	WorkspaceHash string `yaml:"-,omitempty"`
 }
 
 // Profile *beta* profiles are used to override any `build`, `test` or `deploy` configuration.

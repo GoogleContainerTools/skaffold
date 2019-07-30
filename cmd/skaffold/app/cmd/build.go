@@ -17,13 +17,12 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"io/ioutil"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -35,17 +34,25 @@ import (
 var (
 	quietFlag       bool
 	buildFormatFlag = flags.NewTemplateFlag("{{json .}}", flags.BuildOutput{})
+	buildOutputFlag string
 )
 
 // NewCmdBuild describes the CLI command to build artifacts.
 func NewCmdBuild() *cobra.Command {
 	return NewCmd("build").
 		WithDescription("Build the artifacts").
+		WithLongDescription("Build, test and tag the artifacts").
+		WithExample("Build all the artifacts", "build").
+		WithExample("Build artifacts with a profile activated", "build -p <profile>").
+		WithExample("Build artifacts whose image name contains <db>", "build -b <db>").
+		WithExample("Quietly build artifacts and output the image names as json", "build -q > build_result.json").
+		WithExample("Build the artifacts and then deploy them", "build -q > skaffold deploy").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
 			f.BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
 			f.VarP(buildFormatFlag, "output", "o", "Used in conjunction with --quiet flag. "+buildFormatFlag.Usage())
+			f.StringVar(&buildOutputFlag, "file-output", "", "Filename to write build images to")
 		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doBuild))
 }
@@ -56,18 +63,26 @@ func doBuild(ctx context.Context, out io.Writer) error {
 		buildOut = ioutil.Discard
 	}
 
-	start := time.Now()
-	defer func() {
-		color.Default.Fprintln(buildOut, "Complete in", time.Since(start))
-	}()
-
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
 		bRes, err := r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
 
-		if quietFlag {
+		if quietFlag || buildOutputFlag != "" {
 			cmdOut := flags.BuildOutput{Builds: bRes}
-			if err := buildFormatFlag.Template().Execute(out, cmdOut); err != nil {
+			var buildOutput bytes.Buffer
+			if err := buildFormatFlag.Template().Execute(&buildOutput, cmdOut); err != nil {
 				return errors.Wrap(err, "executing template")
+			}
+
+			if quietFlag {
+				if _, err := out.Write(buildOutput.Bytes()); err != nil {
+					return errors.Wrap(err, "writing build output")
+				}
+			}
+
+			if buildOutputFlag != "" {
+				if err := ioutil.WriteFile(buildOutputFlag, buildOutput.Bytes(), 0644); err != nil {
+					return errors.Wrap(err, "writing build output to file")
+				}
 			}
 		}
 
@@ -75,7 +90,7 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	})
 }
 
-func targetArtifacts(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) []*latest.Artifact {
+func targetArtifacts(opts config.SkaffoldOptions, cfg *latest.SkaffoldConfig) []*latest.Artifact {
 	var targetArtifacts []*latest.Artifact
 
 	for _, artifact := range cfg.Build.Artifacts {

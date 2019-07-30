@@ -48,6 +48,20 @@ func (e *Error) Error() string {
 	}
 }
 
+// Temporary returns whether the request that preceded the error is temporary.
+func (e *Error) Temporary() bool {
+	if len(e.Errors) == 0 {
+		return false
+	}
+	for _, d := range e.Errors {
+		// TODO: Include other error types.
+		if d.Code != BlobUploadInvalidErrorCode {
+			return false
+		}
+	}
+	return true
+}
+
 // Diagnostic represents a single error returned by a Docker registry interaction.
 type Diagnostic struct {
 	Code    ErrorCode   `json:"code"`

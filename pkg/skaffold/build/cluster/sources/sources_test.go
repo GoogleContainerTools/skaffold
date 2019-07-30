@@ -283,9 +283,10 @@ func TestSetProxy(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual := setProxy(test.clusterDetails, test.env)
-			testutil.CheckErrorAndDeepEqual(t, false, nil, test.expectedArgs, actual)
+
+			t.CheckDeepEqual(test.expectedArgs, actual)
 		})
 	}
 }

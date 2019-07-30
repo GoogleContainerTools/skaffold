@@ -21,20 +21,18 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/pkg/errors"
-
-	"github.com/google/go-cmp/cmp"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
+	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
 )
 
 type testAuthHelper struct{}
@@ -45,9 +43,9 @@ func (t testAuthHelper) GetAuthConfig(string) (types.AuthConfig, error) {
 func (t testAuthHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
 
 func TestLocalRun(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description      string
-		api              testutil.FakeAPIClient
+		api              *testutil.FakeAPIClient
 		tags             tag.ImageTags
 		artifacts        []*latest.Artifact
 		expected         []build.Artifact
@@ -65,7 +63,7 @@ func TestLocalRun(t *testing.T) {
 				}},
 			},
 			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			api:        testutil.FakeAPIClient{},
+			api:        &testutil.FakeAPIClient{},
 			pushImages: false,
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
@@ -81,7 +79,7 @@ func TestLocalRun(t *testing.T) {
 				}},
 			},
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			api: testutil.FakeAPIClient{
+			api: &testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
 			shouldErr: true,
@@ -95,13 +93,13 @@ func TestLocalRun(t *testing.T) {
 				}},
 			},
 			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			api:        testutil.FakeAPIClient{},
+			api:        &testutil.FakeAPIClient{},
 			pushImages: true,
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
-				Tag:       "gcr.io/test/image:tag@sha256:7368613235363a31e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+				Tag:       "gcr.io/test/image:tag@sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165",
 			}},
-			expectedPushed: []string{"sha256:7368613235363a31e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+			expectedPushed: []string{"sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165"},
 		},
 		{
 			description: "error build",
@@ -112,7 +110,7 @@ func TestLocalRun(t *testing.T) {
 				}},
 			},
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
-			api: testutil.FakeAPIClient{
+			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
 			shouldErr: true,
@@ -127,7 +125,7 @@ func TestLocalRun(t *testing.T) {
 			},
 			tags:       tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			pushImages: true,
-			api: testutil.FakeAPIClient{
+			api: &testutil.FakeAPIClient{
 				ErrImageBuild: true,
 			},
 			shouldErr: true,
@@ -135,6 +133,7 @@ func TestLocalRun(t *testing.T) {
 		{
 			description: "unknown artifact type",
 			artifacts:   []*latest.Artifact{{}},
+			api:         &testutil.FakeAPIClient{},
 			shouldErr:   true,
 		},
 		{
@@ -147,12 +146,7 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api: testutil.FakeAPIClient{
-				TagToImageID: map[string]string{
-					"pull1": "imageID1",
-					"pull2": "imageID2",
-				},
-			},
+			api:  (&testutil.FakeAPIClient{}).Add("pull1", "imageID1").Add("pull2", "imageID2"),
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
@@ -169,9 +163,7 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api: testutil.FakeAPIClient{
-				TagToImageID: map[string]string{"pull1": "imageid", "pull2": "anotherimageid"},
-			},
+			api:  (&testutil.FakeAPIClient{}).Add("pull1", "imageid").Add("pull2", "anotherimageid"),
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
@@ -188,10 +180,9 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api: testutil.FakeAPIClient{
+			api: (&testutil.FakeAPIClient{
 				ErrImagePull: true,
-				TagToImageID: map[string]string{"pull1": ""},
-			},
+			}).Add("pull1", ""),
 			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			expected: []build.Artifact{{
 				ImageName: "gcr.io/test/image",
@@ -209,7 +200,7 @@ func TestLocalRun(t *testing.T) {
 					},
 				}},
 			},
-			api: testutil.FakeAPIClient{
+			api: &testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
 			tags:      tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
@@ -221,6 +212,9 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
+			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+				return docker.NewLocalDaemon(test.api, nil, false, nil), nil
+			})
 
 			event.InitializeState(latest.BuildConfig{
 				BuildType: latest.BuildType{
@@ -228,13 +222,12 @@ func TestLocalRun(t *testing.T) {
 				},
 			})
 
-			l := Builder{
-				cfg:         &latest.LocalBuild{},
-				localDocker: docker.NewLocalDaemon(&test.api, nil, false, map[string]bool{}),
-				pushImages:  test.pushImages,
-			}
+			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
+				Push: util.BoolPtr(test.pushImages),
+			}))
+			t.CheckNoError(err)
 
-			res, err := l.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
+			res, err := builder.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, res)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
@@ -250,34 +243,30 @@ type dummyLocalDaemon struct {
 func TestNewBuilder(t *testing.T) {
 	dummyDaemon := dummyLocalDaemon{}
 
-	pFalse := false
-
 	tests := []struct {
 		description     string
 		shouldErr       bool
-		localBuild      *latest.LocalBuild
+		localBuild      latest.LocalBuild
 		expectedBuilder *Builder
 		localClusterFn  func() (bool, error)
 		localDockerFn   func(*runcontext.RunContext) (docker.LocalDaemon, error)
 	}{
 		{
 			description: "failed to get docker client",
-			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
-				e = errors.New("dummy docker error")
-				return
+			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+				return nil, errors.New("dummy docker error")
 			},
 			shouldErr: true,
-		}, {
+		},
+		{
 			description: "pushImages becomes !localCluster when local:push is not defined",
-			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
-				daemon = dummyDaemon
-				return
+			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+				return dummyDaemon, nil
 			},
 			localClusterFn: func() (b bool, e error) {
 				b = false //because this is false and localBuild.push is nil
 				return
 			},
-
 			shouldErr: false,
 			expectedBuilder: &Builder{
 				cfg:                &latest.LocalBuild{},
@@ -290,24 +279,24 @@ func TestNewBuilder(t *testing.T) {
 				pruneChildren:      true,
 				insecureRegistries: nil,
 			},
-		}, {
+		},
+		{
 			description: "pushImages defined in config (local:push)",
-			localDockerFn: func(runContext *runcontext.RunContext) (daemon docker.LocalDaemon, e error) {
-				daemon = dummyDaemon
-				return
+			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+				return dummyDaemon, nil
 			},
 			localClusterFn: func() (b bool, e error) {
 				b = false
 				return
 			},
-			localBuild: &latest.LocalBuild{
-				Push: &pFalse, //because this is false
+			localBuild: latest.LocalBuild{
+				Push: util.BoolPtr(false),
 			},
 			shouldErr: false,
 			expectedBuilder: &Builder{
 				pushImages: false, //this will be false too
 				cfg: &latest.LocalBuild{ // and the config is inherited
-					Push: &pFalse,
+					Push: util.BoolPtr(false),
 				},
 				kubeContext:  "",
 				localDocker:  dummyDaemon,
@@ -323,7 +312,7 @@ func TestNewBuilder(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			if test.localDockerFn != nil {
-				t.Override(&getLocalDocker, test.localDockerFn)
+				t.Override(&docker.NewAPIClient, test.localDockerFn)
 			}
 			if test.localClusterFn != nil {
 				t.Override(&getLocalCluster, test.localClusterFn)
@@ -339,23 +328,11 @@ func TestNewBuilder(t *testing.T) {
 	}
 }
 
-func stubRunContext(localBuild *latest.LocalBuild) *runcontext.RunContext {
-	if localBuild == nil {
-		localBuild = &latest.LocalBuild{}
-	}
-	return &runcontext.RunContext{
-		Cfg: &latest.Pipeline{
-			Build: latest.BuildConfig{
-				BuildType: latest.BuildType{
-					LocalBuild: localBuild,
-				},
-			},
-		},
-		Opts: &config.SkaffoldOptions{
-			NoPrune:        false,
-			CacheArtifacts: false,
-			SkipTests:      false,
-		},
-	}
+func stubRunContext(localBuild latest.LocalBuild) *runcontext.RunContext {
+	pipeline := latest.Pipeline{}
+	pipeline.Build.BuildType.LocalBuild = &localBuild
 
+	return &runcontext.RunContext{
+		Cfg: pipeline,
+	}
 }

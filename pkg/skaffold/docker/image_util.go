@@ -20,6 +20,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -33,7 +34,8 @@ func RetrieveWorkingDir(tagged string, insecureRegistries map[string]bool) (stri
 		return "/", nil
 	}
 
-	localDocker, err := NewAPIClient(false, nil)
+	// TODO: use the proper RunContext
+	localDocker, err := NewAPIClient(&runcontext.RunContext{})
 	if err == nil {
 		cf, err = localDocker.ConfigFile(context.Background(), tagged)
 	}

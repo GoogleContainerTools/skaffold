@@ -99,9 +99,13 @@ func (c *FakeCmd) WithRunErr(command string, err error) *FakeCmd {
 }
 
 func (c *FakeCmd) WithRunOut(command string, output string) *FakeCmd {
+	b := []byte{}
+	if output != "" {
+		b = []byte(output)
+	}
 	return c.addRun(run{
 		command: command,
-		output:  []byte(output),
+		output:  b,
 	})
 }
 

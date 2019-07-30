@@ -304,6 +304,7 @@ Resolution: This is an implementation detail.
 
 - **implementation step 3** Set up automatic destination syncing and delete a local input file.
   Expect that the input file is also deleted in the container.
+  _Update_: This expectation cannot be met, because a deleted file is no longer contained in the inferred syncmap. Thus file deletion with inferred sync mode must trigger a rebuild.
 
 - **implementation step 4** Add a test case that that features builder plugin sync patterns.
 

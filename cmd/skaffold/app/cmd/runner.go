@@ -18,12 +18,13 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
 
-	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -49,16 +50,17 @@ func withRunner(ctx context.Context, action func(runner.Runner, *latest.Skaffold
 }
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
-func createNewRunner(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
 	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
 	if err != nil {
+		if os.IsNotExist(errors.Cause(err)) {
+			return nil, nil, fmt.Errorf("[%s] not found. You might need to run `skaffold init`", opts.ConfigurationFile)
+		}
+
 		// If the error is NOT that the file doesn't exist, then we warn the user
 		// that maybe they are using an outdated version of Skaffold that's unable to read
 		// the configuration.
-		if !os.IsNotExist(err) {
-			warnIfUpdateIsAvailable()
-		}
-
+		warnIfUpdateIsAvailable()
 		return nil, nil, errors.Wrap(err, "parsing skaffold config")
 	}
 
@@ -76,14 +78,14 @@ func createNewRunner(opts *config.SkaffoldOptions) (runner.Runner, *latest.Skaff
 		return nil, nil, errors.Wrap(err, "invalid skaffold config")
 	}
 
-	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
+	runCtx, err := runcontext.GetRunContext(opts, config.Pipeline)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting default repo")
+		return nil, nil, errors.Wrap(err, "getting run context")
 	}
 
-	applyDefaultRepoSubstitution(config, defaultRepo)
+	applyDefaultRepoSubstitution(config, runCtx.DefaultRepo)
 
-	runner, err := runner.NewForConfig(opts, config)
+	runner, err := runner.NewForConfig(runCtx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "creating runner")
 	}

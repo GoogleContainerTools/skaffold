@@ -3,38 +3,23 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.skaffold</groupId>
-    <artifactId>hello-spring-boot</artifactId>
+    <artifactId>hello-java</artifactId>
     <version>0.1.0</version>
-    <description>Spring Boot with Skaffold and Jib</description>
+    <description>Simple Java server with Skaffold and Jib</description>
 
     <properties>
-        <java.version>1.8</java.version>
+        <jib.maven-plugin-version>1.4.0</jib.maven-plugin-version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
-
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.0.5.RELEASE</version>
-    </parent>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-web</artifactId>
-        </dependency>
-    </dependencies>
 
     <build>
         <finalName>hello</finalName>
         <plugins>
             <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
                 <groupId>com.google.cloud.tools</groupId>
                 <artifactId>jib-maven-plugin</artifactId>
-                <version>1.3.0</version>
+                <version>${jib.maven-plugin-version}</version>
                 <configuration>
                     <container>
                         <jvmFlags>

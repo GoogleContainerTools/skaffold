@@ -33,19 +33,36 @@ import (
 	"google.golang.org/grpc"
 )
 
-// Trigger TODO(dgageot): this was a global variable carried by the runCtx.
-// I changed it to a plain global variable to fix an issue.
-// This needs to be better addressed.
-var Trigger = make(chan bool)
+var srv *server
 
 type server struct {
-	trigger chan bool
+	buildIntentCallback  func()
+	syncIntentCallback   func()
+	deployIntentCallback func()
+}
+
+func SetBuildCallback(callback func()) {
+	if srv != nil {
+		srv.buildIntentCallback = callback
+	}
+}
+
+func SetDeployCallback(callback func()) {
+	if srv != nil {
+		srv.deployIntentCallback = callback
+	}
+}
+
+func SetSyncCallback(callback func()) {
+	if srv != nil {
+		srv.syncIntentCallback = callback
+	}
 }
 
 // Initialize creates the gRPC and HTTP servers for serving the state and event log.
 // It returns a shutdown callback for tearing down the grpc server,
 // which the runner is responsible for calling.
-func Initialize(opts *config.SkaffoldOptions) (func() error, error) {
+func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 	if !opts.EnableRPC {
 		return func() error { return nil }, nil
 	}
@@ -99,9 +116,12 @@ func newGRPCServer(port int) (func() error, error) {
 	logrus.Infof("starting gRPC server on port %d", port)
 
 	s := grpc.NewServer()
-	proto.RegisterSkaffoldServiceServer(s, &server{
-		trigger: Trigger,
-	})
+	srv = &server{
+		buildIntentCallback:  func() {},
+		deployIntentCallback: func() {},
+		syncIntentCallback:   func() {},
+	}
+	proto.RegisterSkaffoldServiceServer(s, srv)
 
 	go func() {
 		if err := s.Serve(l); err != nil {
