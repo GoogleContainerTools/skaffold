@@ -28,20 +28,119 @@ import (
 
 func TestGeneratePipeline(t *testing.T) {
 	var tests = []struct {
-		description string
-		tasks       []*tekton.Task
-		shouldErr   bool
+		description      string
+		tasks            []*tekton.Task
+		expectedPipeline *tekton.Pipeline
+		shouldErr        bool
 	}{
 		{
 			description: "successful tekton pipeline generation",
 			tasks: []*tekton.Task{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "test-task",
+						Name: "test",
+					},
+				},
+			},
+			expectedPipeline: &tekton.Pipeline{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Pipeline",
+					APIVersion: "tekton.dev/v1alpha1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "skaffold-pipeline",
+				},
+				Spec: tekton.PipelineSpec{
+					Resources: []tekton.PipelineDeclaredResource{
+						{
+							Name: "source-repo",
+							Type: tekton.PipelineResourceTypeGit,
+						},
+					},
+					Tasks: []tekton.PipelineTask{
+						{
+							Name: "test-task",
+							TaskRef: tekton.TaskRef{
+								Name: "test",
+							},
+							RunAfter: []string{},
+							Resources: &tekton.PipelineTaskResources{
+								Inputs: []tekton.PipelineTaskInputResource{
+									{
+										Name:     "source",
+										Resource: "source-repo",
+									},
+								},
+							},
+						},
 					},
 				},
 			},
 			shouldErr: false,
+		},
+		{
+			description: "successful multiple tasks",
+			tasks: []*tekton.Task{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test1",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "test2",
+					},
+				},
+			},
+			expectedPipeline: &tekton.Pipeline{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Pipeline",
+					APIVersion: "tekton.dev/v1alpha1",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "skaffold-pipeline",
+				},
+				Spec: tekton.PipelineSpec{
+					Resources: []tekton.PipelineDeclaredResource{
+						{
+							Name: "source-repo",
+							Type: tekton.PipelineResourceTypeGit,
+						},
+					},
+					Tasks: []tekton.PipelineTask{
+						{
+							Name: "test1-task",
+							TaskRef: tekton.TaskRef{
+								Name: "test1",
+							},
+							RunAfter: []string{},
+							Resources: &tekton.PipelineTaskResources{
+								Inputs: []tekton.PipelineTaskInputResource{
+									{
+										Name:     "source",
+										Resource: "source-repo",
+									},
+								},
+							},
+						},
+						{
+							Name: "test2-task",
+							TaskRef: tekton.TaskRef{
+								Name: "test2",
+							},
+							RunAfter: []string{"test1-task"},
+							Resources: &tekton.PipelineTaskResources{
+								Inputs: []tekton.PipelineTaskInputResource{
+									{
+										Name:     "source",
+										Resource: "source-repo",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 		{
 			description: "fail generating tekton pipeline",
@@ -52,9 +151,8 @@ func TestGeneratePipeline(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := generatePipeline(test.tasks)
-
-			t.CheckError(test.shouldErr, err)
+			pipeline, err := generatePipeline(test.tasks)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPipeline, pipeline)
 		})
 	}
 }

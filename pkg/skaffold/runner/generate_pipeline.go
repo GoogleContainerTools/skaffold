@@ -28,9 +28,10 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	yamlv2 "gopkg.in/yaml.v2"
