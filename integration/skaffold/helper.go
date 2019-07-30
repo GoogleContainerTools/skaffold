@@ -40,7 +40,6 @@ type RunBuilder struct {
 	args       []string
 	env        []string
 	stdin      []byte
-	stdout     io.Writer
 }
 
 // Dev runs `skaffold dev` with the given arguments.
@@ -108,12 +107,6 @@ func (b *RunBuilder) WithConfig(configFile string) *RunBuilder {
 // WithStdin sets the stdin.
 func (b *RunBuilder) WithStdin(input []byte) *RunBuilder {
 	b.stdin = input
-	return b
-}
-
-// WithStdout sets the stdout.
-func (b *RunBuilder) WithStdout(output io.Writer) *RunBuilder {
-	b.stdout = output
 	return b
 }
 
@@ -239,9 +232,6 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 		cmd.Dir = b.dir
 	}
 
-	if b.stdout == nil {
-		b.stdout = os.Stdout
-	}
 	// If the test is killed by a timeout, go test will wait for
 	// os.Stderr and os.Stdout to close as a result.
 	//
@@ -253,7 +243,7 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	// circuit and forcing cmd.Run to use another pipe and goroutine
 	// to pass along stderr and stdout.
 	// See https://github.com/golang/go/issues/23019
-	cmd.Stdout = struct{ io.Writer }{b.stdout}
+	cmd.Stdout = struct{ io.Writer }{os.Stdout}
 	cmd.Stderr = struct{ io.Writer }{os.Stderr}
 
 	return cmd

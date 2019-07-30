@@ -17,23 +17,19 @@ limitations under the License.
 package integration
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func TestDev(t *testing.T) {
@@ -111,17 +107,7 @@ func TestDevAPITriggers(t *testing.T) {
 	client, shutdown := setupRPCClient(t, rpcAddr)
 	defer shutdown()
 
-	// read the event log stream from the skaffold grpc server
-	var stream proto.SkaffoldService_EventLogClient
-	var err error
-	for i := 0; i < readRetries; i++ {
-		stream, err = client.EventLog(context.Background())
-		if err != nil {
-			t.Logf("waiting for connection...")
-			time.Sleep(waitTime)
-			continue
-		}
-	}
+	stream, err := readEventAPIStream(client, t)
 	if stream == nil {
 		t.Fatalf("error retrieving event log: %v\n", err)
 	}
@@ -254,28 +240,52 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	out := newCapturingPassThroughWriter(os.Stdout)
-	cmd := skaffold.Dev("--port-forward").InDir("testdata/gke_loadbalancer").InNs(ns.Name).WithStdout(out)
+	rpcAddr := randomPort()
+	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("testdata/gke_loadbalancer").InNs(ns.Name)
 	stop := cmd.RunBackground(t)
 	defer stop()
 
-	body := []byte{}
-	err := wait.PollImmediate(time.Millisecond*500, 5*time.Minute, func() (bool, error) {
-		output := string(out.Bytes())
-		re := regexp.MustCompile(`.*Port forwarded service/gke-loadbalancer from remote port 80 to local port\s+(\d+)(.*)`)
-		if s := re.FindStringSubmatch(output); s != nil {
-			port := s[1]
-			t.Logf("Detected service/gke-loadbalancer is forwarded to port %s", port)
+	client, shutdown := setupRPCClient(t, rpcAddr)
+	defer shutdown()
 
-			resp, err := http.Get(fmt.Sprintf("http://localhost:%s", port))
-			if err != nil {
-				t.Errorf("could not get service/gke-loadbalancer due to %s", err)
+	// create a grpc connection
+	stream, err := readEventAPIStream(client, t)
+	if stream == nil {
+		t.Fatalf("error retrieving event log: %v\n", err)
+	}
+
+	// read entries from the log
+	entries := make(chan *proto.LogEntry)
+	go func() {
+		for {
+			entry, _ := stream.Recv()
+			if entry != nil {
+				entries <- entry
 			}
-			defer resp.Body.Close()
-			body, err = ioutil.ReadAll(resp.Body)
-			return true, err
 		}
-		return false, nil
+	}()
+
+	body := []byte{}
+	err = wait.PollImmediate(time.Millisecond*500, 5*time.Minute, func() (bool, error) {
+		e := <-entries
+		switch e.Event.GetEventType().(type) {
+		case *proto.Event_PortEvent:
+			if e.Event.GetPortEvent().ResourceName == "gke-loadbalancer" &&
+				e.Event.GetPortEvent().ResourceType == "service" {
+				port := e.Event.GetPortEvent().LocalPort
+				t.Logf("Detected service/gke-loadbalancer is forwarded to port %d", port)
+				resp, err := http.Get(fmt.Sprintf("http://localhost:%d", port))
+				if err != nil {
+					t.Errorf("could not get service/gke-loadbalancer due to %s", err)
+				}
+				defer resp.Body.Close()
+				body, err = ioutil.ReadAll(resp.Body)
+				return true, err
+			}
+			return false, nil
+		default:
+			return false, nil
+		}
 	})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, string(body), "hello!!\n")
@@ -298,26 +308,18 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 	return original, fInfo.Mode(), err
 }
 
-// capturingPassThroughWriter is a writer that remembers
-// data written to it and passes it to w
-type capturingPassThroughWriter struct {
-	buf bytes.Buffer
-	w   io.Writer
-}
-
-// newCapturingPassThroughWriter creates new capturingPassThroughWriter
-func newCapturingPassThroughWriter(w io.Writer) *capturingPassThroughWriter {
-	return &capturingPassThroughWriter{
-		w: w,
+func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T) (proto.SkaffoldService_EventLogClient, error) {
+	t.Helper()
+	// read the event log stream from the skaffold grpc server
+	var stream proto.SkaffoldService_EventLogClient
+	var err error
+	for i := 0; i < readRetries; i++ {
+		stream, err = client.EventLog(context.Background())
+		if err != nil {
+			t.Logf("waiting for connection...")
+			time.Sleep(waitTime)
+			continue
+		}
 	}
-}
-
-func (w *capturingPassThroughWriter) Write(d []byte) (int, error) {
-	w.buf.Write(d)
-	return w.w.Write(d)
-}
-
-// Bytes returns bytes written to the writer
-func (w *capturingPassThroughWriter) Bytes() []byte {
-	return w.buf.Bytes()
+	return stream, err
 }
