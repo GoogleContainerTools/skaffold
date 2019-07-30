@@ -230,7 +230,7 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
-	if ShouldRunGCPOnlyTests() {
+	if !ShouldRunGCPOnlyTests() {
 		t.Skip("skipping test that is not gcp only")
 	}
 
