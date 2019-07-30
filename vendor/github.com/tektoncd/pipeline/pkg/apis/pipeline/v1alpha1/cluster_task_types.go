@@ -17,27 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"context"
-
-	"github.com/knative/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
-
-func (t *ClusterTask) TaskSpec() TaskSpec {
-	return t.Spec
-}
-
-func (t *ClusterTask) TaskMetadata() metav1.ObjectMeta {
-	return t.ObjectMeta
-}
-
-func (t *ClusterTask) Copy() TaskInterface {
-	return t.DeepCopy()
-}
-
-func (t *ClusterTask) SetDefaults(ctx context.Context) {
-	t.Spec.SetDefaults(ctx)
-}
 
 // Check that Task may be validated and defaulted.
 var _ apis.Validatable = (*ClusterTask)(nil)
@@ -69,4 +51,16 @@ type ClusterTaskList struct {
 	// +optional
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []ClusterTask `json:"items"`
+}
+
+func (t *ClusterTask) TaskSpec() TaskSpec {
+	return t.Spec
+}
+
+func (t *ClusterTask) TaskMetadata() metav1.ObjectMeta {
+	return t.ObjectMeta
+}
+
+func (t *ClusterTask) Copy() TaskInterface {
+	return t.DeepCopy()
 }

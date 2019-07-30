@@ -36,4 +36,13 @@ func (ts *TaskSpec) SetDefaults(ctx context.Context) {
 			}
 		}
 	}
+	if ts.Inputs != nil {
+		ts.Inputs.SetDefaults(ctx)
+	}
+}
+
+func (inputs *Inputs) SetDefaults(ctx context.Context) {
+	for i := range inputs.Params {
+		inputs.Params[i].SetDefaults(ctx)
+	}
 }

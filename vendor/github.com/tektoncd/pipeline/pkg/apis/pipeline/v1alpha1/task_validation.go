@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/knative/pkg/apis"
 	"github.com/tektoncd/pipeline/pkg/merge"
 	"github.com/tektoncd/pipeline/pkg/templating"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/util/validation"
+	"knative.dev/pkg/apis"
 )
 
 func (t *Task) Validate(ctx context.Context) *apis.FieldError {
@@ -80,6 +80,9 @@ func (ts *TaskSpec) Validate(ctx context.Context) *apis.FieldError {
 		if err := checkForDuplicates(ts.Inputs.Resources, "taskspec.Inputs.Resources.Name"); err != nil {
 			return err
 		}
+		if err := validateInputParameterTypes(ts.Inputs); err != nil {
+			return err
+		}
 	}
 	if ts.Outputs != nil {
 		for _, resource := range ts.Outputs.Resources {
@@ -94,7 +97,7 @@ func (ts *TaskSpec) Validate(ctx context.Context) *apis.FieldError {
 
 	// Validate task step names
 	for _, step := range ts.Steps {
-		if errs := validation.IsDNS1123Label(step.Name); len(errs) > 0 {
+		if errs := validation.IsDNS1123Label(step.Name); step.Name != "" && len(errs) > 0 {
 			return &apis.FieldError{
 				Message: fmt.Sprintf("invalid value %q", step.Name),
 				Paths:   []string{"taskspec.steps.name"},
@@ -143,14 +146,51 @@ func validateSteps(steps []corev1.Container) *apis.FieldError {
 	return nil
 }
 
+func validateInputParameterTypes(inputs *Inputs) *apis.FieldError {
+	for _, p := range inputs.Params {
+		// Ensure param has a valid type.
+		validType := false
+		for _, allowedType := range AllParamTypes {
+			if p.Type == allowedType {
+				validType = true
+			}
+		}
+		if !validType {
+			return apis.ErrInvalidValue(p.Type, fmt.Sprintf("taskspec.inputs.params.%s.type", p.Name))
+		}
+
+		// If a default value is provided, ensure its type matches param's declared type.
+		if (p.Default != nil) && (p.Default.Type != p.Type) {
+			return &apis.FieldError{
+				Message: fmt.Sprintf(
+					"\"%v\" type does not match default value's type: \"%v\"", p.Type, p.Default.Type),
+				Paths: []string{
+					fmt.Sprintf("taskspec.inputs.params.%s.type", p.Name),
+					fmt.Sprintf("taskspec.inputs.params.%s.default.type", p.Name),
+				},
+			}
+		}
+	}
+	return nil
+}
+
 func validateInputParameterVariables(steps []corev1.Container, inputs *Inputs) *apis.FieldError {
 	parameterNames := map[string]struct{}{}
+	arrayParameterNames := map[string]struct{}{}
+
 	if inputs != nil {
 		for _, p := range inputs.Params {
 			parameterNames[p.Name] = struct{}{}
+			if p.Type == ParamTypeArray {
+				arrayParameterNames[p.Name] = struct{}{}
+			}
 		}
 	}
-	return validateVariables(steps, "params", parameterNames)
+
+	if err := validateVariables(steps, "params", parameterNames); err != nil {
+		return err
+	}
+	return validateArrayUsage(steps, "params", arrayParameterNames)
 }
 
 func validateResourceVariables(steps []corev1.Container, inputs *Inputs, outputs *Outputs) *apis.FieldError {
@@ -171,6 +211,47 @@ func validateResourceVariables(steps []corev1.Container, inputs *Inputs, outputs
 		}
 	}
 	return validateVariables(steps, "resources", resourceNames)
+}
+
+func validateArrayUsage(steps []corev1.Container, prefix string, vars map[string]struct{}) *apis.FieldError {
+	for _, step := range steps {
+		if err := validateTaskNoArrayReferenced("name", step.Name, prefix, vars); err != nil {
+			return err
+		}
+		if err := validateTaskNoArrayReferenced("image", step.Image, prefix, vars); err != nil {
+			return err
+		}
+		if err := validateTaskNoArrayReferenced("workingDir", step.WorkingDir, prefix, vars); err != nil {
+			return err
+		}
+		for i, cmd := range step.Command {
+			if err := validateTaskArraysIsolated(fmt.Sprintf("command[%d]", i), cmd, prefix, vars); err != nil {
+				return err
+			}
+		}
+		for i, arg := range step.Args {
+			if err := validateTaskArraysIsolated(fmt.Sprintf("arg[%d]", i), arg, prefix, vars); err != nil {
+				return err
+			}
+		}
+		for _, env := range step.Env {
+			if err := validateTaskNoArrayReferenced(fmt.Sprintf("env[%s]", env.Name), env.Value, prefix, vars); err != nil {
+				return err
+			}
+		}
+		for i, v := range step.VolumeMounts {
+			if err := validateTaskNoArrayReferenced(fmt.Sprintf("volumeMount[%d].Name", i), v.Name, prefix, vars); err != nil {
+				return err
+			}
+			if err := validateTaskNoArrayReferenced(fmt.Sprintf("volumeMount[%d].MountPath", i), v.MountPath, prefix, vars); err != nil {
+				return err
+			}
+			if err := validateTaskNoArrayReferenced(fmt.Sprintf("volumeMount[%d].SubPath", i), v.SubPath, prefix, vars); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func validateVariables(steps []corev1.Container, prefix string, vars map[string]struct{}) *apis.FieldError {
@@ -216,6 +297,14 @@ func validateVariables(steps []corev1.Container, prefix string, vars map[string]
 
 func validateTaskVariable(name, value, prefix string, vars map[string]struct{}) *apis.FieldError {
 	return templating.ValidateVariable(name, value, prefix, "(?:inputs|outputs).", "step", "taskspec.steps", vars)
+}
+
+func validateTaskNoArrayReferenced(name, value, prefix string, arrayNames map[string]struct{}) *apis.FieldError {
+	return templating.ValidateVariableProhibited(name, value, prefix, "(?:inputs|outputs).", "step", "taskspec.steps", arrayNames)
+}
+
+func validateTaskArraysIsolated(name, value, prefix string, arrayNames map[string]struct{}) *apis.FieldError {
+	return templating.ValidateVariableIsolated(name, value, prefix, "(?:inputs|outputs).", "step", "taskspec.steps", arrayNames)
 }
 
 func checkForDuplicates(resources []TaskResource, path string) *apis.FieldError {

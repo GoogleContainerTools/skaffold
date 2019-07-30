@@ -19,8 +19,19 @@ package apis
 import (
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/validation"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	// CreatorAnnotationSuffix is the suffix of the annotation key to describe
+	// the user that created the resource.
+	CreatorAnnotationSuffix = "/creator"
+
+	// UpdaterAnnotationSuffix is the suffix of the annotation key to describe
+	// the user who last modified the resource.
+	UpdaterAnnotationSuffix = "/lastModifier"
 )
 
 // ValidateObjectMetadata validates that `metadata` stanza of the
@@ -59,4 +70,20 @@ func ValidateObjectMetadata(meta metav1.Object) *FieldError {
 	}
 
 	return nil
+}
+
+// ValidateCreatorAndModifier validates `metadata.annotation`
+func ValidateCreatorAndModifier(oldSpec, newSpec interface{}, oldAnnotation, newAnnotation map[string]string, groupName string) *FieldError {
+	var errs *FieldError
+	if oldAnnotation[groupName+CreatorAnnotationSuffix] != newAnnotation[groupName+CreatorAnnotationSuffix] {
+		errs = errs.Also(&FieldError{
+			Message: "annotation value is immutable",
+			Paths:   []string{groupName + CreatorAnnotationSuffix},
+		})
+	}
+
+	if equality.Semantic.DeepEqual(oldSpec, newSpec) && oldAnnotation[groupName+UpdaterAnnotationSuffix] != newAnnotation[groupName+UpdaterAnnotationSuffix] {
+		errs = errs.Also(ErrInvalidValue(newAnnotation[groupName+UpdaterAnnotationSuffix], groupName+UpdaterAnnotationSuffix))
+	}
+	return errs
 }

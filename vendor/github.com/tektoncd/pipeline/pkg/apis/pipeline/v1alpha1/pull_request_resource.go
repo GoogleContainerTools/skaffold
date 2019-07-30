@@ -138,3 +138,7 @@ func (s *PullRequestResource) getContainerSpec(mode string) ([]corev1.Container,
 func (s *PullRequestResource) SetDestinationDirectory(dir string) {
 	s.DestinationDir = dir
 }
+
+func (s *PullRequestResource) GetUploadVolumeSpec(spec *TaskSpec) ([]corev1.Volume, error) {
+	return nil, nil
+}

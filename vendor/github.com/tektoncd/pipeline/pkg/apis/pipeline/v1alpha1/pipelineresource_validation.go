@@ -20,8 +20,8 @@ import (
 	"context"
 	"strings"
 
-	"github.com/knative/pkg/apis"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/pkg/apis"
 )
 
 func (r *PipelineResource) Validate(ctx context.Context) *apis.FieldError {

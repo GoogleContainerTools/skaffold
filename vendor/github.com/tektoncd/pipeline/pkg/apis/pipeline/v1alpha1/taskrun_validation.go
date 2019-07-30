@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/knative/pkg/apis"
 	"k8s.io/apimachinery/pkg/api/equality"
+	"knative.dev/pkg/apis"
 )
 
 // Validate taskrun
@@ -49,6 +49,13 @@ func (ts *TaskRunSpec) Validate(ctx context.Context) *apis.FieldError {
 		return apis.ErrMissingField("spec.taskref.name", "spec.taskspec")
 	}
 
+	// Validate TaskSpec if it's present
+	if ts.TaskSpec != nil {
+		if err := ts.TaskSpec.Validate(ctx); err != nil {
+			return err
+		}
+	}
+
 	// check for input resources
 	if err := ts.Inputs.Validate(ctx, "spec.Inputs"); err != nil {
 		return err
@@ -63,6 +70,13 @@ func (ts *TaskRunSpec) Validate(ctx context.Context) *apis.FieldError {
 	if ts.Results != nil {
 		if err := ts.Results.Validate(ctx, "spec.results"); err != nil {
 			return err
+		}
+	}
+
+	if ts.Timeout != nil {
+		// timeout should be a valid duration of at least 0.
+		if ts.Timeout.Duration < 0 {
+			return apis.ErrInvalidValue(fmt.Sprintf("%s should be >= 0", ts.Timeout.Duration.String()), "spec.timeout")
 		}
 	}
 

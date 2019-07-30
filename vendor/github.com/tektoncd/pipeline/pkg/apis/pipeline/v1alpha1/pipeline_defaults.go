@@ -28,4 +28,7 @@ func (ps *PipelineSpec) SetDefaults(ctx context.Context) {
 			pt.TaskRef.Kind = NamespacedTaskKind
 		}
 	}
+	for i := range ps.Params {
+		ps.Params[i].SetDefaults(ctx)
+	}
 }

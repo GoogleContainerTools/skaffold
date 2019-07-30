@@ -101,3 +101,7 @@ func (s ImageResource) String() string {
 	json, _ := json.Marshal(s)
 	return string(json)
 }
+
+func (s *ImageResource) GetUploadVolumeSpec(spec *TaskSpec) ([]corev1.Volume, error) {
+	return nil, nil
+}

@@ -19,12 +19,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/internal/retry"
-	"github.com/google/go-containerregistry/pkg/logs"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
@@ -298,7 +298,7 @@ func (w *writer) uploadOne(l v1.Layer) error {
 			return err
 		}
 		if existing {
-			logs.Progress.Printf("existing blob: %v", h)
+			log.Printf("existing blob: %v", h)
 			return nil
 		}
 
@@ -319,7 +319,7 @@ func (w *writer) uploadOne(l v1.Layer) error {
 			if err != nil {
 				return err
 			}
-			logs.Progress.Printf("mounted blob: %s", h.String())
+			log.Printf("mounted blob: %s", h.String())
 			return nil
 		}
 
@@ -341,7 +341,7 @@ func (w *writer) uploadOne(l v1.Layer) error {
 		if err := w.commitBlob(location, digest); err != nil {
 			return err
 		}
-		logs.Progress.Printf("pushed blob: %s", digest)
+		log.Printf("pushed blob: %s", digest)
 		return nil
 	}
 
@@ -392,7 +392,7 @@ func (w *writer) commitImage(man manifest) error {
 	}
 
 	// The image was successfully pushed!
-	logs.Progress.Printf("%v: digest: %v size: %d", w.ref, digest, len(raw))
+	log.Printf("%v: digest: %v size: %d", w.ref, digest, len(raw))
 	return nil
 }
 
@@ -453,7 +453,7 @@ func WriteIndex(ref name.Reference, ii v1.ImageIndex, options ...Option) error {
 			return err
 		}
 		if exists {
-			logs.Progress.Printf("existing manifest: %v", desc.Digest)
+			log.Printf("existing manifest: %v", desc.Digest)
 			continue
 		}
 

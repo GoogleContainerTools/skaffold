@@ -16,8 +16,8 @@ package v1alpha1
 import (
 	"strings"
 
-	"github.com/knative/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 const maxLength = 63

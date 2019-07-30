@@ -19,6 +19,7 @@ package config
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 )
@@ -27,6 +28,7 @@ const (
 	// ConfigName is the name of the configmap
 	DefaultsConfigName       = "config-defaults"
 	DefaultTimeoutMinutes    = 60
+	NoTimeoutDuration        = 0 * time.Minute
 	defaultTimeoutMinutesKey = "default-timeout-minutes"
 )
 

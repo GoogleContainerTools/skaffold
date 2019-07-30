@@ -18,9 +18,8 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
-
-	"github.com/knative/pkg/apis"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 func (t *Task) TaskSpec() TaskSpec {

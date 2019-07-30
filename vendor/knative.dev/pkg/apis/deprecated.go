@@ -81,8 +81,8 @@ func CheckDeprecatedUpdate(ctx context.Context, obj interface{}, original interf
 }
 
 func getPrefixedNamedFieldValues(prefix string, obj interface{}) (map[string]reflect.Value, map[string]interface{}) {
-	fields := make(map[string]reflect.Value, 0)
-	inlined := make(map[string]interface{}, 0)
+	fields := map[string]reflect.Value{}
+	inlined := map[string]interface{}{}
 
 	objValue := reflect.Indirect(reflect.ValueOf(obj))
 

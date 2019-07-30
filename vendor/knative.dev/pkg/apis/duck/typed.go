@@ -60,7 +60,7 @@ func (dif *TypedInformerFactory) Get(gvr schema.GroupVersionResource) (cache.Sha
 	go inf.Run(dif.StopChannel)
 
 	if ok := cache.WaitForCacheSync(dif.StopChannel, inf.HasSynced); !ok {
-		return nil, nil, fmt.Errorf("Failed starting shared index informer for %v with type %T", gvr, dif.Type)
+		return nil, nil, fmt.Errorf("failed starting shared index informer for %v with type %T", gvr, dif.Type)
 	}
 
 	return inf, lister, nil

@@ -17,9 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"fmt"
 	"strings"
 
 	"golang.org/x/xerrors"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type PipelineResourceStorageType string
@@ -54,4 +56,33 @@ func NewStorageResource(r *PipelineResource) (PipelineStorageResourceInterface, 
 		}
 	}
 	return nil, xerrors.Errorf("StoreResource: Cannot create a storage resource without type %s in spec", r.Name)
+}
+
+func getStorageUploadVolumeSpec(s PipelineStorageResourceInterface, spec *TaskSpec) ([]corev1.Volume, error) {
+	var storageVol []corev1.Volume
+	mountedSecrets := map[string]string{}
+
+	for _, volume := range spec.Volumes {
+		mountedSecrets[volume.Name] = ""
+	}
+
+	// Map holds list of secrets that are mounted as volumes
+	for _, secretParam := range s.GetSecretParams() {
+		volName := fmt.Sprintf("volume-%s-%s", s.GetName(), secretParam.SecretName)
+
+		gcsSecretVolume := corev1.Volume{
+			Name: volName,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: secretParam.SecretName,
+				},
+			},
+		}
+
+		if _, ok := mountedSecrets[volName]; !ok {
+			storageVol = append(storageVol, gcsSecretVolume)
+			mountedSecrets[volName] = ""
+		}
+	}
+	return storageVol, nil
 }

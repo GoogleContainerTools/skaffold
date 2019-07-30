@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	"context"
 
-	"github.com/knative/pkg/apis"
+	"knative.dev/pkg/apis"
 )
 
 func (t *ClusterTask) Validate(ctx context.Context) *apis.FieldError {

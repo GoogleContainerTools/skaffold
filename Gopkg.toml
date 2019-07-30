@@ -9,7 +9,7 @@
 
 [[constraint]]
   name = "github.com/google/go-containerregistry"
-  revision = "e8c6a4993fa7c12b6ca56007739116b27ecb84c1"
+  revision = "46a3528b82270ecea7c731c14e698ea24aa0bbca"
 
 [[constraint]]
   name = "github.com/sirupsen/logrus"
@@ -86,7 +86,7 @@
 
 [[constraint]]
   name = "github.com/tektoncd/pipeline"
-  version = "0.5.2"
+  revision = "cea4f325005446c62be038540d49aa45ea6c08d5"
 
 [[constraint]]
   name = "github.com/ghodss/yaml"

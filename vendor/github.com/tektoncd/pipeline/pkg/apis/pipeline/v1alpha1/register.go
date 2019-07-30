@@ -48,6 +48,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&Task{},
 		&TaskList{},
+		&Condition{},
+		&ConditionList{},
 		&ClusterTask{},
 		&ClusterTaskList{},
 		&TaskRun{},

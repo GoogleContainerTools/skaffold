@@ -20,11 +20,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/knative/pkg/apis"
-	duckv1beta1 "github.com/knative/pkg/apis/duck/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"knative.dev/pkg/apis"
+	duckv1beta1 "knative.dev/pkg/apis/duck/v1beta1"
 )
 
 var (
@@ -62,6 +62,11 @@ type PipelineRunSpec struct {
 	// Refer to Go's ParseDuration documentation for expected format: https://golang.org/pkg/time/#ParseDuration
 	// +optional
 	Timeout *metav1.Duration `json:"timeout,omitempty"`
+
+	// PodTemplate holds pod specific configuration
+	PodTemplate PodTemplate `json:"podTemplate,omitempty"`
+
+	// FIXME(vdemeester) Deprecated
 	// NodeSelector is a selector which must be true for the pod to fit on a node.
 	// Selector which must match a node's labels for the pod to be scheduled on that node.
 	// More info: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
@@ -131,6 +136,17 @@ type PipelineRunTaskRunStatus struct {
 	// Status is the TaskRunStatus for the corresponding TaskRun
 	// +optional
 	Status *TaskRunStatus `json:"status,omitempty"`
+	// ConditionChecks maps the name of a condition check to its Status
+	// +optional
+	ConditionChecks map[string]*PipelineRunConditionCheckStatus `json:"conditionChecks,omitempty"`
+}
+
+type PipelineRunConditionCheckStatus struct {
+	// ConditionName is the name of the Condition
+	ConditionName string `json:"conditionName,omitempty"`
+	// Status is the ConditionCheckStatus for the corresponding ConditionCheck
+	// +optional
+	Status *ConditionCheckStatus `json:"status,omitempty"`
 }
 
 var pipelineRunCondSet = apis.NewBatchConditionSet()

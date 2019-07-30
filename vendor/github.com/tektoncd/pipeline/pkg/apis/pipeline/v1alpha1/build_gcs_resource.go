@@ -173,3 +173,7 @@ func getArtifactType(val string) (GCSArtifactType, error) {
 	}
 	return "", xerrors.Errorf("Invalid ArtifactType %s. Should be one of %s", aType, strings.Join(valid, ","))
 }
+
+func (s *BuildGCSResource) GetUploadVolumeSpec(spec *TaskSpec) ([]corev1.Volume, error) {
+	return getStorageUploadVolumeSpec(s, spec)
+}

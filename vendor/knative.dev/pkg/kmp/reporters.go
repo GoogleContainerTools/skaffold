@@ -112,7 +112,7 @@ func (r *ShortDiffReporter) Report(rs cmp.Result) {
 	var diff string
 	// Prefix struct values with the types to add clarity in output
 	if !vx.IsValid() && !vy.IsValid() {
-		r.err = fmt.Errorf("Unable to diff %+v and %+v on path %#v", vx, vy, r.path)
+		r.err = fmt.Errorf("unable to diff %+v and %+v on path %#v", vx, vy, r.path)
 	} else {
 		diff = fmt.Sprintf("%#v:\n", r.path)
 		if vx.IsValid() {

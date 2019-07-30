@@ -17,10 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/knative/pkg/apis"
 	"golang.org/x/xerrors"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"knative.dev/pkg/apis"
 )
 
 // PipelineResourceType represents the type of endpoint the pipelineResource is, so that the
@@ -55,6 +55,7 @@ type PipelineResourceInterface interface {
 	Replacements() map[string]string
 	GetDownloadContainerSpec() ([]corev1.Container, error)
 	GetUploadContainerSpec() ([]corev1.Container, error)
+	GetUploadVolumeSpec(spec *TaskSpec) ([]corev1.Volume, error)
 	SetDestinationDirectory(string)
 }
 
@@ -68,7 +69,7 @@ type SecretParam struct {
 // PipelineResourceSpec defines  an individual resources used in the pipeline.
 type PipelineResourceSpec struct {
 	Type   PipelineResourceType `json:"type"`
-	Params []Param              `json:"params"`
+	Params []ResourceParam      `json:"params"`
 	// Secrets to fetch to populate some of resource fields
 	// +optional
 	SecretParams []SecretParam `json:"secrets,omitempty"`

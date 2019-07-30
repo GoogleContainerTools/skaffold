@@ -150,3 +150,7 @@ func (s *GCSResource) GetDownloadContainerSpec() ([]corev1.Container, error) {
 			VolumeMounts: secretVolumeMount,
 		}}, nil
 }
+
+func (s *GCSResource) GetUploadVolumeSpec(spec *TaskSpec) ([]corev1.Volume, error) {
+	return getStorageUploadVolumeSpec(s, spec)
+}
