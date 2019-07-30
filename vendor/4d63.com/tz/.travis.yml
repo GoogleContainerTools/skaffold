@@ -1,0 +1,12 @@
+language: go
+
+go:
+  - "1.x"
+
+go_import_path: 4d63.com/tz
+
+script:
+  - go test -coverprofile=coverage.txt
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)

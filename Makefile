@@ -13,6 +13,7 @@
 # limitations under the License.
 GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
+GO111MODULE = on
 BUILD_DIR ?= ./out
 ORG := github.com/GoogleContainerTools
 PROJECT := skaffold
@@ -65,7 +66,7 @@ $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
 $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
+	GO111MODULE=$(GO111MODULE) GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -mod=vendor -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
 	docker build --build-arg PROJECT=$(REPOPATH) \
@@ -95,15 +96,15 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 
 .PHONY: test
 test: $(BUILD_DIR)
-	@ ./hack/test.sh
+	@ GO111MODULE=$(GO111MODULE) ./hack/test.sh
 
 .PHONY: quicktest
 quicktest:
-	go test -short -timeout=60s ./...
+	GO111MODULE=$(GO111MODULE) go test -mod=vendor -short -timeout=60s ./...
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
+	GO111MODULE=$(GO111MODULE) GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -mod=vendor -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
 integration: install
@@ -114,7 +115,7 @@ ifeq ($(GCP_ONLY),true)
 		--project $(GCP_PROJECT)
 endif
 	kubectl get nodes -oyaml
-	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
+	GO111MODULE=$(GO111MODULE) GCP_ONLY=$(GCP_ONLY) go test -mod=vendor -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
