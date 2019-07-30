@@ -98,7 +98,7 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 		newArtifacts = append(newArtifacts, newArtifact)
 	}
 
-	var newBuildType = next.BuildType{}
+	newBuildType := next.BuildType{}
 	if config.Build.GoogleCloudBuild != nil {
 		newBuildType.GoogleCloudBuild = &next.GoogleCloudBuild{
 			ProjectID: config.Build.GoogleCloudBuild.ProjectID,

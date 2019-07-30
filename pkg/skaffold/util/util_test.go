@@ -25,7 +25,7 @@ import (
 )
 
 func TestSupportedKubernetesFormats(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		in          string
 		out         bool
@@ -61,7 +61,7 @@ func TestSupportedKubernetesFormats(t *testing.T) {
 }
 
 func TestExpandPathsGlob(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		in          []string
 		out         []string
@@ -102,7 +102,7 @@ func TestExpandPathsGlob(t *testing.T) {
 }
 
 func TestExpand(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		text        string
 		key         string
@@ -180,7 +180,7 @@ func TestAbsFile(t *testing.T) {
 }
 
 func TestNonEmptyLines(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		in  string
 		out []string
 	}{

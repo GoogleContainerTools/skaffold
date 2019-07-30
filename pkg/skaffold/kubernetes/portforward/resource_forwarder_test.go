@@ -26,41 +26,44 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type testForwarder struct {
-	forwardedEntries *sync.Map
-	forwardedPorts   *sync.Map
+	forwardedResources forwardedResources
+	forwardedPorts     forwardedPorts
 
 	forwardErr error
 }
 
 func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) error {
-	f.forwardedEntries.Store(pfe.key(), pfe)
+	f.forwardedResources.Store(pfe.key(), pfe)
 	f.forwardedPorts.Store(pfe.localPort, true)
 	return f.forwardErr
 }
 
+func (f *testForwarder) Monitor(_ *portForwardEntry, _ func()) {}
+
 func (f *testForwarder) Terminate(pfe *portForwardEntry) {
-	f.forwardedEntries.Delete(pfe.key())
+	f.forwardedResources.Delete(pfe.key())
 	f.forwardedPorts.Delete(pfe.resource.Port)
 }
 
 func newTestForwarder(forwardErr error) *testForwarder {
 	return &testForwarder{
-		forwardedEntries: &sync.Map{},
-		forwardedPorts:   &sync.Map{},
-		forwardErr:       forwardErr,
+		forwardedResources: newForwardedResources(),
+		forwardedPorts:     newForwardedPorts(),
+		forwardErr:         forwardErr,
 	}
 }
 
-func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int, *sync.Map) int {
+func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int, util.ForwardedPorts) int {
 	// Return first available port in ports that isn't taken
 	lock := sync.Mutex{}
-	return func(int, *sync.Map) int {
+	return func(int, util.ForwardedPorts) int {
 		for _, p := range availablePorts {
 			lock.Lock()
 			if _, ok := taken[p]; ok {
@@ -129,10 +132,10 @@ func TestStart(t *testing.T) {
 			}
 			// poll up to 10 seconds for the resources to be forwarded
 			err := wait.PollImmediate(time.Second, 10*time.Second, func() (bool, error) {
-				return len(test.expected) == lengthSyncMap(fakeForwarder.forwardedEntries), nil
+				return len(test.expected) == fakeForwarder.forwardedResources.Length(), nil
 			})
 			if err != nil {
-				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expected, fakeForwarder.forwardedEntries)
+				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expected, fakeForwarder.forwardedResources)
 			}
 		})
 	}
@@ -188,7 +191,10 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			expectedEntry.resource = test.resource
 
 			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "", nil)
-			rf.forwardedResources = generateSyncMap(test.forwardedResources)
+			rf.forwardedResources = forwardedResources{
+				resources: test.forwardedResources,
+				lock:      &sync.Mutex{},
+			}
 
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
 
@@ -240,27 +246,10 @@ func TestUserDefinedResources(t *testing.T) {
 		}
 		// poll up to 10 seconds for the resources to be forwarded
 		err := wait.PollImmediate(time.Second, 10*time.Second, func() (bool, error) {
-			return len(expected) == lengthSyncMap(fakeForwarder.forwardedEntries), nil
+			return len(expected) == fakeForwarder.forwardedResources.Length(), nil
 		})
 		if err != nil {
-			t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", expected, fakeForwarder.forwardedEntries)
+			t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", expected, fakeForwarder.forwardedResources.resources)
 		}
 	})
-}
-
-func generateSyncMap(m map[string]*portForwardEntry) *sync.Map {
-	sm := &sync.Map{}
-	for k, v := range m {
-		sm.Store(k, v)
-	}
-	return sm
-}
-
-func lengthSyncMap(m *sync.Map) int {
-	count := 0
-	m.Range(func(key, value interface{}) bool {
-		count++
-		return true
-	})
-	return count
 }

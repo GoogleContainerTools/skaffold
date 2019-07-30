@@ -75,6 +75,16 @@ message LogEntry {
   string entry = 3;
 }
 
+message UserIntentRequest {
+  Intent intent = 1;
+}
+
+message Intent {
+  bool build = 1;
+  bool sync = 2;
+  bool deploy = 3;
+}
+
 service SkaffoldService {
   rpc GetState(google.protobuf.Empty) returns (State) {
     option (google.api.http) = {
@@ -101,10 +111,10 @@ service SkaffoldService {
     };
   }
 
-  rpc Build(google.protobuf.Empty) returns (google.protobuf.Empty) {
+  rpc Execute(UserIntentRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      post: "/v1/build"
-      body: "*"
+      post: "/v1/execute"
+      body: "intent"
     };
   }
 }

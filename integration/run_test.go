@@ -100,6 +100,10 @@ func TestRun(t *testing.T) {
 			deployments: []string{"leeroy-app", "leeroy-web"},
 			gcpOnly:     true,
 		}, {
+			description: "jib",
+			dir:         "testdata/jib",
+			deployments: []string{"web"},
+		}, {
 			description: "jib in googlecloudbuild",
 			dir:         "testdata/jib",
 			args:        []string{"-p", "gcb"},

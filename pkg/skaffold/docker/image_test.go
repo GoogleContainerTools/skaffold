@@ -34,7 +34,7 @@ import (
 )
 
 func TestPush(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description    string
 		imageName      string
 		api            testutil.FakeAPIClient
@@ -84,7 +84,7 @@ func TestPush(t *testing.T) {
 }
 
 func TestBuild(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		env           map[string]string
 		api           *testutil.FakeAPIClient
@@ -190,7 +190,7 @@ func TestBuild(t *testing.T) {
 }
 
 func TestImageID(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		ref         string
 		api         testutil.FakeAPIClient

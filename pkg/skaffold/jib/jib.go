@@ -73,7 +73,6 @@ func getDependencies(workspace string, cmd exec.Cmd, projectName string) ([]stri
 		if err := refreshDependencyList(&files, cmd); err != nil {
 			return nil, errors.Wrap(err, "initial Jib dependency refresh failed")
 		}
-
 	} else if err := walkFiles(workspace, files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
 		// Walk build files to check for changes
 		if val, ok := files.BuildFileTimes[path]; !ok || info.ModTime() != val {
@@ -110,7 +109,7 @@ func getDependencies(workspace string, cmd exec.Cmd, projectName string) ([]stri
 func refreshDependencyList(files *filesLists, cmd exec.Cmd) error {
 	stdout, err := util.RunCmdOut(&cmd)
 	if err != nil {
-		return errors.Wrap(err, "failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+)")
+		return errors.Wrap(err, "failed to get Jib dependencies")
 	}
 
 	// Search for Jib's output JSON. Jib's Maven/Gradle output takes the following form:

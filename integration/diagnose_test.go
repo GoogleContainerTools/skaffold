@@ -37,7 +37,7 @@ func TestDiagnose(t *testing.T) {
 	}{
 		{name: "kaniko builder", dir: "examples/kaniko"},
 		{name: "docker builder", dir: "examples/nodejs"},
-		{name: "jib maven builder", dir: "examples/jib-multimodule"},
+		{name: "jib maven builder", dir: "testdata/jib"},
 		{name: "bazel builder", dir: "examples/bazel"},
 		// todo add test cases for "jib gradle builder" and "custom builder"
 	}

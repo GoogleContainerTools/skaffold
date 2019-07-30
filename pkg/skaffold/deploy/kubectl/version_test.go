@@ -27,7 +27,7 @@ import (
 )
 
 func TestCheckVersion(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		command     util.Command
 		shouldErr   bool

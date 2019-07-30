@@ -17,6 +17,7 @@ limitations under the License.
 package portforward
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -29,8 +30,10 @@ type portForwardEntry struct {
 	podName                string
 	containerName          string
 	portName               string
-	localPort              int32
+	localPort              int
 	automaticPodForwarding bool
+
+	logBuffer *bytes.Buffer
 
 	cancel context.CancelFunc
 }

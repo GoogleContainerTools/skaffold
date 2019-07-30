@@ -133,7 +133,7 @@ func TestEventLogRPC(t *testing.T) {
 }
 
 func TestEventLogHTTP(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		endpoint    string
 	}{
@@ -373,4 +373,33 @@ func checkBuildAndDeployComplete(state proto.State) bool {
 		}
 	}
 	return state.DeployState.Status == event.Complete
+}
+
+func setupRPCClient(t *testing.T, port string) (proto.SkaffoldServiceClient, func()) {
+	// start a grpc client
+	var (
+		conn   *grpc.ClientConn
+		err    error
+		client proto.SkaffoldServiceClient
+	)
+
+	// connect to the skaffold grpc server
+	for i := 0; i < connectionRetries; i++ {
+		conn, err = grpc.Dial(fmt.Sprintf(":%s", port), grpc.WithInsecure())
+		if err != nil {
+			t.Logf("unable to establish skaffold grpc connection: retrying...")
+			time.Sleep(waitTime)
+			continue
+		}
+
+		client = proto.NewSkaffoldServiceClient(conn)
+		break
+	}
+
+	if client == nil {
+		t.Fatalf("error establishing skaffold grpc connection")
+	}
+	return client, func() {
+		conn.Close()
+	}
 }

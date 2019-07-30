@@ -52,6 +52,7 @@ var (
 	executeRolloutStatus = getRollOutStatus
 )
 
+
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	client, err := kubernetesutil.GetClientset()
 	if err != nil {

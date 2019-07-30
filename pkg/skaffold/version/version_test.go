@@ -24,7 +24,7 @@ import (
 )
 
 func TestParseVersion(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		in          string
 		out         semver.Version
@@ -56,10 +56,12 @@ func TestParseVersion(t *testing.T) {
 }
 
 func TestUserAgent(t *testing.T) {
-	testutil.Override(t, &platform, "osx")
-	testutil.Override(t, &version, "1.0")
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&platform, "osx")
+		t.Override(&version, "1.0")
 
-	userAgent := UserAgent()
+		userAgent := UserAgent()
 
-	testutil.CheckDeepEqual(t, "skaffold/osx/1.0", userAgent)
+		t.CheckDeepEqual("skaffold/osx/1.0", userAgent)
+	})
 }

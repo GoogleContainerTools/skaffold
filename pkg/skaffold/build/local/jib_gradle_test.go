@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -29,7 +30,7 @@ import (
 )
 
 func TestBuildJibGradleToDocker(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		artifact      *latest.JibGradleArtifact
 		cmd           util.Command
@@ -39,22 +40,22 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 		{
 			description: "build",
 			artifact:    &latest.JibGradleArtifact{},
-			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain :jibDockerBuild --image=img:tag"),
+			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion="+jib.MinimumJibGradleVersion+" :jibDockerBuild --image=img:tag"),
 		},
 		{
 			description: "build with additional flags",
 			artifact:    &latest.JibGradleArtifact{Flags: []string{"--flag1", "--flag2"}},
-			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain :jibDockerBuild --image=img:tag --flag1 --flag2"),
+			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion="+jib.MinimumJibGradleVersion+" :jibDockerBuild --image=img:tag --flag1 --flag2"),
 		},
 		{
 			description: "build with project",
 			artifact:    &latest.JibGradleArtifact{Project: "project"},
-			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain :project:jibDockerBuild --image=img:tag"),
+			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion="+jib.MinimumJibGradleVersion+" :project:jibDockerBuild --image=img:tag"),
 		},
 		{
 			description:   "fail build",
 			artifact:      &latest.JibGradleArtifact{},
-			cmd:           testutil.FakeRunErr(t, "gradle -Djib.console=plain :jibDockerBuild --image=img:tag", errors.New("BUG")),
+			cmd:           testutil.FakeRunErr(t, "gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion="+jib.MinimumJibGradleVersion+" :jibDockerBuild --image=img:tag", errors.New("BUG")),
 			shouldErr:     true,
 			expectedError: "gradle build failed",
 		},
@@ -85,7 +86,7 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 }
 
 func TestBuildJibGradleToRegistry(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		artifact      *latest.JibGradleArtifact
 		cmd           util.Command
@@ -95,22 +96,22 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 		{
 			description: "remote build",
 			artifact:    &latest.JibGradleArtifact{},
-			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain :jib --image=img:tag"),
+			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion="+jib.MinimumJibGradleVersion+" :jib --image=img:tag"),
 		},
 		{
 			description: "build with additional flags",
 			artifact:    &latest.JibGradleArtifact{Flags: []string{"--flag1", "--flag2"}},
-			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain :jib --image=img:tag --flag1 --flag2"),
+			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion="+jib.MinimumJibGradleVersion+" :jib --image=img:tag --flag1 --flag2"),
 		},
 		{
 			description: "build with project",
 			artifact:    &latest.JibGradleArtifact{Project: "project"},
-			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain :project:jib --image=img:tag"),
+			cmd:         testutil.FakeRun(t, "gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion="+jib.MinimumJibGradleVersion+" :project:jib --image=img:tag"),
 		},
 		{
 			description:   "fail build",
 			artifact:      &latest.JibGradleArtifact{},
-			cmd:           testutil.FakeRunErr(t, "gradle -Djib.console=plain :jib --image=img:tag", errors.New("BUG")),
+			cmd:           testutil.FakeRunErr(t, "gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion="+jib.MinimumJibGradleVersion+" :jib --image=img:tag", errors.New("BUG")),
 			shouldErr:     true,
 			expectedError: "gradle build failed",
 		},

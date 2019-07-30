@@ -25,7 +25,7 @@ import (
 )
 
 func TestRelativize(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		path        string
 		roots       []string

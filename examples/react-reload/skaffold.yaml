@@ -1,12 +1,10 @@
-apiVersion: skaffold/v1beta12
+apiVersion: skaffold/v1beta13
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/react-reload
     context: app
     sync:
-      manual:
-      - src: 'src/components/*'
-        dest: .
-      - src: 'src/styles/*'
-        dest: .
+      infer:
+      - 'src/components/*'
+      - 'src/styles/*'

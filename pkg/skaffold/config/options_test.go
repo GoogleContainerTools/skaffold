@@ -119,7 +119,7 @@ func TestLabels(t *testing.T) {
 }
 
 func TestIsTargetImage(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
 		targetImages  []string
 		expectedMatch bool

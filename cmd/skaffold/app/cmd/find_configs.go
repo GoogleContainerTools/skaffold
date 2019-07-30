@@ -17,18 +17,15 @@ limitations under the License.
 package cmd
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/karrick/godirwalk"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -40,7 +37,7 @@ var (
 
 // NewCmdFindConfigs list the skaffold config files in the specified directory.
 func NewCmdFindConfigs() *cobra.Command {
-	cmd := NewCmd("find-configs").
+	return NewCmd("find-configs").
 		WithDescription("Find in a given directory all skaffold yamls files that are parseable or upgradeable with their versions.").
 		WithFlags(func(f *pflag.FlagSet) {
 			// Default to current directory
@@ -48,68 +45,53 @@ func NewCmdFindConfigs() *cobra.Command {
 			// Output format of this Command
 			f.StringVarP(&format, "output", "o", "table", "Result format, default to table. [(-o|--output=)json|table]")
 		}).
+		Hidden().
 		NoArgs(doFindConfigs)
-	cmd.Hidden = true
-	return cmd
 }
 
 func doFindConfigs(out io.Writer) error {
 	pathToVersion, err := findConfigs(directory)
-
 	if err != nil {
 		return err
 	}
 
 	switch format {
 	case "json":
-		jsonBytes, err := json.Marshal(pathToVersion)
-		if err != nil {
-			return err
-		}
+		encoder := json.NewEncoder(out)
+		encoder.SetIndent("", "\t")
+		return encoder.Encode(pathToVersion)
 
-		var prettyJSON bytes.Buffer
-		err = json.Indent(&prettyJSON, jsonBytes, "", "\t")
-		if err != nil {
-			return err
-		}
-		fmt.Fprintln(out, prettyJSON.String())
 	case "table":
 		pathOutLen, versionOutLen := 70, 30
 		for p, v := range pathToVersion {
-			var c color.Color
-			if v == latest.Version {
-				c = color.Default
-			} else {
+			c := color.Default
+			if v != latest.Version {
 				c = color.Green
 			}
 			c.Fprintf(out, fmt.Sprintf("%%-%ds\t%%-%ds\n", pathOutLen, versionOutLen), p, v)
 		}
-	default:
-		return errors.New("unsupported template")
-	}
 
-	return nil
+		return nil
+
+	default:
+		return fmt.Errorf("unsupported template: %s", format)
+	}
 }
 
 func findConfigs(directory string) (map[string]string, error) {
 	pathToVersion := make(map[string]string)
 
-	err := filepath.Walk(directory,
-		func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				fmt.Println(err)
-				return err
-			}
-
+	err := godirwalk.Walk(directory, &godirwalk.Options{
+		Callback: func(path string, info *godirwalk.Dirent) error {
 			// Find files ending in ".yaml" and parseable to skaffold config in the specified root directory recursively.
-			if !info.IsDir() && (strings.Contains(path, ".yaml") || strings.Contains(path, ".yml")) {
-				cfg, err := schema.ParseConfig(path, false)
-				if err == nil {
+			if !info.IsDir() && (strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
+				if cfg, err := schema.ParseConfig(path, false); err == nil {
 					pathToVersion[path] = cfg.GetVersion()
 				}
 			}
 			return nil
-		})
+		},
+	})
 
 	return pathToVersion, err
 }

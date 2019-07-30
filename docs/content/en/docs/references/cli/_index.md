@@ -432,7 +432,7 @@ Options:
       --skip-tests=false: Whether to skip the tests after building
       --tail=true: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
-      --trigger='notify': How are changes detected? (polling, manual or notify)
+      --trigger='notify': How is change detection triggered? (polling, notify, or manual)
   -w, --watch-image=[]: Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
   -i, --watch-poll-interval=1000: Interval (in ms) between two checks for file changes
 
