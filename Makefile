@@ -13,7 +13,6 @@
 # limitations under the License.
 GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
-GO111MODULE = on
 BUILD_DIR ?= ./out
 ORG := github.com/GoogleContainerTools
 PROJECT := skaffold
@@ -39,6 +38,11 @@ ifeq "$(strip $(VERSION))" ""
  override VERSION = $(shell git describe --always --tags --dirty)
 endif
 
+# Force using Go Modules and always read the dependencies from
+# the `vendor` folder.
+export GO111MODULE = on
+export GOFLAGS = -mod=vendor
+
 GO_GCFLAGS := "all=-trimpath=${PWD}"
 GO_ASMFLAGS := "all=-trimpath=${PWD}"
 
@@ -49,7 +53,6 @@ LDFLAGS_windows =
 GO_BUILD_TAGS_linux := "osusergo netgo static_build"
 GO_BUILD_TAGS_darwin := ""
 GO_BUILD_TAGS_windows := ""
-
 
 GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
@@ -66,7 +69,7 @@ $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
 $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	GO111MODULE=$(GO111MODULE) GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -mod=vendor -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
 	docker build --build-arg PROJECT=$(REPOPATH) \
@@ -96,15 +99,15 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 
 .PHONY: test
 test: $(BUILD_DIR)
-	@ GO111MODULE=$(GO111MODULE) ./hack/test.sh
+	@ ./hack/test.sh
 
 .PHONY: quicktest
 quicktest:
-	GO111MODULE=$(GO111MODULE) go test -mod=vendor -short -timeout=60s ./...
+	go test -short -timeout=60s ./...
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
-	GO111MODULE=$(GO111MODULE) GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -mod=vendor -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
 integration: install
@@ -115,7 +118,7 @@ ifeq ($(GCP_ONLY),true)
 		--project $(GCP_PROJECT)
 endif
 	kubectl get nodes -oyaml
-	GO111MODULE=$(GO111MODULE) GCP_ONLY=$(GCP_ONLY) go test -mod=vendor -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
+	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION

@@ -45,7 +45,6 @@ COPY --from=download-hugo /hugo /usr/local/bin/
 COPY --from=download-kubectl /kubectl /usr/local/bin/
 
 FROM golang:1.12 as webhook
-ENV GO111MODULE on
 WORKDIR /skaffold
 COPY . .
 RUN go build -mod=vendor -o /webhook webhook/webhook.go
