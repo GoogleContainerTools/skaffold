@@ -1,22 +1,22 @@
 package ssh_config
 
 import (
-	"bytes"
+	"io"
+
+	buffruneio "github.com/pelletier/go-buffruneio"
 )
 
 // Define state functions
 type sshLexStateFn func() sshLexStateFn
 
 type sshLexer struct {
-	inputIdx int
-	input    []rune // Textual source
-
-	buffer        []rune // Runes composing the current token
+	input         *buffruneio.Reader // Textual source
+	buffer        []rune             // Runes composing the current token
 	tokens        chan token
-	line          int
-	col           int
-	endbufferLine int
-	endbufferCol  int
+	line          uint32
+	col           uint16
+	endbufferLine uint32
+	endbufferCol  uint16
 }
 
 func (s *sshLexer) lexComment(previousState sshLexStateFn) sshLexStateFn {
@@ -114,14 +114,16 @@ func (s *sshLexer) lexRvalue() sshLexStateFn {
 }
 
 func (s *sshLexer) read() rune {
-	r := s.peek()
+	r, _, err := s.input.ReadRune()
+	if err != nil {
+		panic(err)
+	}
 	if r == '\n' {
 		s.endbufferLine++
 		s.endbufferCol = 1
 	} else {
 		s.endbufferCol++
 	}
-	s.inputIdx++
 	return r
 }
 
@@ -195,22 +197,21 @@ func (s *sshLexer) emitWithValue(t tokenType, value string) {
 }
 
 func (s *sshLexer) peek() rune {
-	if s.inputIdx >= len(s.input) {
-		return eof
+	r, _, err := s.input.ReadRune()
+	if err != nil {
+		panic(err)
 	}
-
-	r := s.input[s.inputIdx]
+	s.input.UnreadRune()
 	return r
 }
 
 func (s *sshLexer) follow(next string) bool {
-	inputIdx := s.inputIdx
 	for _, expectedRune := range next {
-		if inputIdx >= len(s.input) {
-			return false
+		r, _, err := s.input.ReadRune()
+		defer s.input.UnreadRune()
+		if err != nil {
+			panic(err)
 		}
-		r := s.input[inputIdx]
-		inputIdx++
 		if expectedRune != r {
 			return false
 		}
@@ -225,10 +226,10 @@ func (s *sshLexer) run() {
 	close(s.tokens)
 }
 
-func lexSSH(input []byte) chan token {
-	runes := bytes.Runes(input)
+func lexSSH(input io.Reader) chan token {
+	bufferedInput := buffruneio.NewReader(input)
 	l := &sshLexer{
-		input:         runes,
+		input:         bufferedInput,
 		tokens:        make(chan token),
 		line:          1,
 		col:           1,

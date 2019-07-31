@@ -151,11 +151,9 @@ func (ccb *ccBalancerWrapper) watcher() {
 			for acbw := range scs {
 				ccb.cc.removeAddrConn(acbw.getAddrConn(), errConnDrain)
 			}
-			ccb.UpdateBalancerState(connectivity.Connecting, nil)
 			return
 		default:
 		}
-		ccb.cc.firstResolveEvent.Fire()
 	}
 }
 
@@ -193,7 +191,7 @@ func (ccb *ccBalancerWrapper) updateResolverState(s resolver.State) {
 		}
 	}
 	select {
-	case <-ccb.ccUpdateCh:
+	case <-ccb.resolverUpdateCh:
 	default:
 	}
 	ccb.resolverUpdateCh <- &s

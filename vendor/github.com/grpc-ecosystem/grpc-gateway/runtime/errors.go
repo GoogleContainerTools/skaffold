@@ -37,8 +37,7 @@ func HTTPStatusFromCode(code codes.Code) int {
 	case codes.ResourceExhausted:
 		return http.StatusTooManyRequests
 	case codes.FailedPrecondition:
-		// Note, this deliberately doesn't translate to the similarly named '412 Precondition Failed' HTTP response status.
-		return http.StatusBadRequest
+		return http.StatusPreconditionFailed
 	case codes.Aborted:
 		return http.StatusConflict
 	case codes.OutOfRange:

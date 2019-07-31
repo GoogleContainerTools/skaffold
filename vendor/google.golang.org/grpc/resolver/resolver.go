@@ -20,10 +20,6 @@
 // All APIs in this package are experimental.
 package resolver
 
-import (
-	"google.golang.org/grpc/serviceconfig"
-)
-
 var (
 	// m is a map from scheme to resolver builder.
 	m = make(map[string]Builder)

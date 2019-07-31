@@ -90,7 +90,7 @@ type Server struct {
 
 	mu     sync.Mutex // guards following
 	lis    map[net.Listener]bool
-	conns  map[transport.ServerTransport]bool
+	conns  map[io.Closer]bool
 	serve  bool
 	drain  bool
 	cv     *sync.Cond          // signaled when connections close for GracefulStop
@@ -386,7 +386,7 @@ func NewServer(opt ...ServerOption) *Server {
 	s := &Server{
 		lis:    make(map[net.Listener]bool),
 		opts:   opts,
-		conns:  make(map[transport.ServerTransport]bool),
+		conns:  make(map[io.Closer]bool),
 		m:      make(map[string]*service),
 		quit:   make(chan struct{}),
 		done:   make(chan struct{}),
@@ -786,27 +786,27 @@ func (s *Server) traceInfo(st transport.ServerTransport, stream *transport.Strea
 	return trInfo
 }
 
-func (s *Server) addConn(st transport.ServerTransport) bool {
+func (s *Server) addConn(c io.Closer) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.conns == nil {
-		st.Close()
+		c.Close()
 		return false
 	}
 	if s.drain {
 		// Transport added after we drained our existing conns: drain it
 		// immediately.
-		st.Drain()
+		c.(transport.ServerTransport).Drain()
 	}
-	s.conns[st] = true
+	s.conns[c] = true
 	return true
 }
 
-func (s *Server) removeConn(st transport.ServerTransport) {
+func (s *Server) removeConn(c io.Closer) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.conns != nil {
-		delete(s.conns, st)
+		delete(s.conns, c)
 		s.cv.Broadcast()
 	}
 }
@@ -1423,8 +1423,8 @@ func (s *Server) GracefulStop() {
 	}
 	s.lis = nil
 	if !s.drain {
-		for st := range s.conns {
-			st.Drain()
+		for c := range s.conns {
+			c.(transport.ServerTransport).Drain()
 		}
 		s.drain = true
 	}

@@ -39,32 +39,10 @@ import (
 	"google.golang.org/grpc/tap"
 )
 
-type bufferPool struct {
-	pool sync.Pool
-}
-
-func newBufferPool() *bufferPool {
-	return &bufferPool{
-		pool: sync.Pool{
-			New: func() interface{} {
-				return new(bytes.Buffer)
-			},
-		},
-	}
-}
-
-func (p *bufferPool) get() *bytes.Buffer {
-	return p.pool.Get().(*bytes.Buffer)
-}
-
-func (p *bufferPool) put(b *bytes.Buffer) {
-	p.pool.Put(b)
-}
-
 // recvMsg represents the received msg from the transport. All transport
 // protocol specific info has been removed.
 type recvMsg struct {
-	buffer *bytes.Buffer
+	data []byte
 	// nil: received some data
 	// io.EOF: stream is completed. data is nil.
 	// other non-nil error: transport failure. data is nil.
@@ -194,35 +172,6 @@ func (r *recvBufferReader) readAdditional(m recvMsg, p []byte) (n int, err error
 	}
 	copied := copy(p, m.data)
 	r.last = m.data[copied:]
-	return copied, nil
-}
-
-func (r *recvBufferReader) readClient(p []byte) (n int, err error) {
-	// If the context is canceled, then closes the stream with nil metadata.
-	// closeStream writes its error parameter to r.recv as a recvMsg.
-	// r.readAdditional acts on that message and returns the necessary error.
-	select {
-	case <-r.ctxDone:
-		r.closeStream(ContextErr(r.ctx.Err()))
-		m := <-r.recv.get()
-		return r.readAdditional(m, p)
-	case m := <-r.recv.get():
-		return r.readAdditional(m, p)
-	}
-}
-
-func (r *recvBufferReader) readAdditional(m recvMsg, p []byte) (n int, err error) {
-	r.recv.load()
-	if m.err != nil {
-		return 0, m.err
-	}
-	copied, _ := m.buffer.Read(p)
-	if m.buffer.Len() == 0 {
-		r.freeBuffer(m.buffer)
-		r.last = nil
-	} else {
-		r.last = m.buffer
-	}
 	return copied, nil
 }
 

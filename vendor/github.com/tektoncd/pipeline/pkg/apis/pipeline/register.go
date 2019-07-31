@@ -16,12 +16,25 @@ limitations under the License.
 
 package pipeline
 
-// GroupName is the Kubernetes resource group name for Pipeline types.
 const (
-	GroupName            = "tekton.dev"
-	TaskLabelKey         = "/task"
-	TaskRunLabelKey      = "/taskRun"
-	PipelineLabelKey     = "/pipeline"
-	PipelineRunLabelKey  = "/pipelineRun"
+	// GroupName is the Kubernetes resource group name for Pipeline types.
+	GroupName = "tekton.dev"
+
+	// TaskLabelKey is used as the label identifier for a task
+	TaskLabelKey = "/task"
+
+	// TaskRunLabelKey is used as the label identifier for a TaskRun
+	TaskRunLabelKey = "/taskRun"
+
+	// PipelineLabelKey is used as the label identifier for a Pipeline
+	PipelineLabelKey = "/pipeline"
+
+	// PipelineRunLabelKey is used as the label identifier for a PipelineRun
+	PipelineRunLabelKey = "/pipelineRun"
+
+	// PipelineRunLabelKey is used as the label identifier for a PipelineTask
 	PipelineTaskLabelKey = "/pipelineTask"
+
+	// ConditionCheck is used as the label identifier for a ConditionCheck
+	ConditionCheckKey = "/conditionCheck"
 )

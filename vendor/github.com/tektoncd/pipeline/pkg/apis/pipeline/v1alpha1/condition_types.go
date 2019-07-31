@@ -98,3 +98,13 @@ func NewConditionCheck(tr *TaskRun) *ConditionCheck {
 	cc := ConditionCheck(*tr)
 	return &cc
 }
+
+// IsDone returns true if the ConditionCheck's status indicates that it is done.
+func (cc *ConditionCheck) IsDone() bool {
+	return !cc.Status.GetCondition(apis.ConditionSucceeded).IsUnknown()
+}
+
+// IsSuccessful returns true if the ConditionCheck's status indicates that it is done.
+func (cc *ConditionCheck) IsSuccessful() bool {
+	return cc.Status.GetCondition(apis.ConditionSucceeded).IsTrue()
+}

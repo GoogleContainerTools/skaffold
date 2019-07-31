@@ -17,7 +17,6 @@ package godirwalk
 //        fmt.Printf("%s %s\n", child.ModeType, child.Name)
 //    }
 func ReadDirents(osDirname string, scratchBuffer []byte) (Dirents, error) {
-	// Invokes build flag enabled version of this function.
 	return readdirents(osDirname, scratchBuffer)
 }
 
@@ -44,6 +43,5 @@ func ReadDirents(osDirname string, scratchBuffer []byte) (Dirents, error) {
 //        fmt.Printf("%s\n", child)
 //    }
 func ReadDirnames(osDirname string, scratchBuffer []byte) ([]string, error) {
-	// Invokes build flag enabled version of this function.
 	return readdirnames(osDirname, scratchBuffer)
 }

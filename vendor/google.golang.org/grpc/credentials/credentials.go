@@ -278,18 +278,18 @@ type ChannelzSecurityValue interface {
 // TLSChannelzSecurityValue defines the struct that TLS protocol should return
 // from GetSecurityValue(), containing security info like cipher and certificate used.
 type TLSChannelzSecurityValue struct {
-	ChannelzSecurityValue
 	StandardName      string
 	LocalCertificate  []byte
 	RemoteCertificate []byte
 }
+
+func (*TLSChannelzSecurityValue) isChannelzSecurityValue() {}
 
 // OtherChannelzSecurityValue defines the struct that non-TLS protocol should return
 // from GetSecurityValue(), which contains protocol specific security info. Note
 // the Value field will be sent to users of channelz requesting channel info, and
 // thus sensitive info should better be avoided.
 type OtherChannelzSecurityValue struct {
-	ChannelzSecurityValue
 	Name  string
 	Value proto.Message
 }
