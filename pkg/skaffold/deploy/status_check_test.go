@@ -28,10 +28,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	utilpointer "k8s.io/utils/pointer"
 )
 
 func TestGetDeployments(t *testing.T) {
@@ -39,8 +39,8 @@ func TestGetDeployments(t *testing.T) {
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment
-		deadline    map[string]int32
-		expected    map[string]int32
+		deadline    map[string]time.Duration
+		expected    map[string]time.Duration
 		shouldErr   bool
 	}{
 		{
@@ -55,6 +55,7 @@ func TestGetDeployments(t *testing.T) {
 							"random":            "foo",
 						},
 					},
+					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(10)},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -64,12 +65,27 @@ func TestGetDeployments(t *testing.T) {
 							K8ManagedByLabelKey: labeller.skaffoldVersion(),
 						},
 					},
+					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(20)},
 				},
 			},
-			deadline: map[string]int32{"dep1": 10, "dep2": 20},
-			expected: map[string]int32{"dep1": 10, "dep2": 20},
-		},
-		{
+			expected: map[string]time.Duration{"dep1": time.Duration(10) * time.Second, "dep2": time.Duration(20) * time.Second},
+		}, {
+			description: "multiple deployments in same namespace",
+			deps: []*appsv1.Deployment{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "dep1",
+						Namespace: "test",
+						Labels: map[string]string{
+							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							"random":            "foo",
+						},
+					},
+					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(300)},
+				},
+			},
+			expected: map[string]time.Duration{"dep1": time.Duration(200) * time.Second},
+		}, {
 			description: "multiple deployments with no progress deadline set",
 			deps: []*appsv1.Deployment{
 				{
@@ -80,6 +96,7 @@ func TestGetDeployments(t *testing.T) {
 							K8ManagedByLabelKey: labeller.skaffoldVersion(),
 						},
 					},
+					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -91,12 +108,12 @@ func TestGetDeployments(t *testing.T) {
 					},
 				},
 			},
-			deadline: map[string]int32{"dep1": 100},
-			expected: map[string]int32{"dep1": 100, "dep2": 600},
+			expected: map[string]time.Duration{"dep1": time.Duration(100) * time.Second,
+				"dep2": time.Duration(200) * time.Second},
 		},
 		{
 			description: "no deployments",
-			expected:    map[string]int32{},
+			expected:    map[string]time.Duration{},
 		},
 		{
 			description: "multiple deployments in different namespaces",
@@ -109,6 +126,7 @@ func TestGetDeployments(t *testing.T) {
 							K8ManagedByLabelKey: labeller.skaffoldVersion(),
 						},
 					},
+					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -118,10 +136,10 @@ func TestGetDeployments(t *testing.T) {
 							K8ManagedByLabelKey: labeller.skaffoldVersion(),
 						},
 					},
+					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			deadline: map[string]int32{"dep1": 100, "dep2": 100},
-			expected: map[string]int32{"dep1": 100},
+			expected: map[string]time.Duration{"dep1": time.Duration(100) * time.Second},
 		},
 		{
 			description: "deployment in correct namespace but not deployed by skaffold",
@@ -134,13 +152,13 @@ func TestGetDeployments(t *testing.T) {
 							"some-other-tool": "helm",
 						},
 					},
+					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			deadline: map[string]int32{"dep1": 100},
-			expected: map[string]int32{},
+			expected: map[string]time.Duration{},
 		},
 		{
-			description: "deployment in correct namespace  deployed by skaffold but previous version",
+			description: "deployment in correct namespace deployed by skaffold but previous version",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -150,10 +168,10 @@ func TestGetDeployments(t *testing.T) {
 							K8ManagedByLabelKey: "skaffold-0.26.0",
 						},
 					},
+					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			deadline: map[string]int32{"dep1": 100},
-			expected: map[string]int32{},
+			expected: map[string]time.Duration{},
 		},
 	}
 
@@ -161,15 +179,10 @@ func TestGetDeployments(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			objs := make([]runtime.Object, len(test.deps))
 			for i, dep := range test.deps {
-				if v, ok := test.deadline[dep.Name]; ok {
-					i := new(int32)
-					*i = v
-					dep.Spec.ProgressDeadlineSeconds = i
-				}
 				objs[i] = dep
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
-			actual, err := getDeployments(client, "test", labeller)
+			actual, err := getDeployments(client, "test", labeller, time.Duration(200)*time.Second)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}

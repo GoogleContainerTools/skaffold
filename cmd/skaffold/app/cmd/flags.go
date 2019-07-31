@@ -18,9 +18,11 @@ package cmd
 
 import (
 	"reflect"
+	"time"
+
+	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/spf13/pflag"
 )
 
 // Flag defines a Skaffold CLI flag which contains a list of
@@ -228,6 +230,14 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
 	},
+	{
+		Name:          "status-check-timeout",
+		Usage:         "Duration to wait for deployment to stabilize",
+		Value:         &opts.StatusCheckTimeout,
+		DefValue:      time.Minute * 10,
+		FlagAddMethod: "DurationVar",
+		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
+	},
 }
 
 var commandFlags []*pflag.Flag
@@ -265,6 +275,7 @@ func AddFlags(fs *pflag.FlagSet, cmdName string) {
 		}
 	}
 	fs.MarkHidden("status-check")
+	fs.MarkHidden("status-check-timeout")
 }
 
 func hasCmdAnnotation(cmdName string, annotations []string) bool {

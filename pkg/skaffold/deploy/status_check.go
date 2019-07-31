@@ -34,10 +34,6 @@ import (
 )
 
 var (
-	// TODO: Move this to a flag or global config.
-	// Default deadline set to 10 minutes. This is default value for progressDeadlineInSeconds
-	// See: https://github.com/kubernetes/kubernetes/blob/master/staging/src/k8s.io/api/apps/v1/types.go#L305
-	defaultStatusCheckDeadlineInSeconds int32 = 600
 	// Poll period for checking set to 100 milliseconds
 	defaultPollPeriodInMilliseconds = 100
 
@@ -50,7 +46,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	if err != nil {
 		return err
 	}
-	dMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller)
+	dMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, runCtx.Opts.StatusCheckTimeout)
 	if err != nil {
 		return errors.Wrap(err, "could not fetch deployments")
 	}
@@ -60,8 +56,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	syncMap := &sync.Map{}
 	kubeCtl := kubectl.NewFromRunContext(runCtx)
 
-	for dName, deadline := range dMap {
-		deadlineDuration := time.Duration(deadline) * time.Second
+	for dName, deadlineDuration := range dMap {
 		wg.Add(1)
 		go func(dName string, deadlineDuration time.Duration) {
 			defer wg.Done()
@@ -74,7 +69,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	return getSkaffoldDeployStatus(syncMap)
 }
 
-func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) (map[string]int32, error) {
+func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) (map[string]time.Duration, error) {
 	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
 		LabelSelector: l.K8sManagedByLabelKeyValueString(),
 	})
@@ -82,15 +77,18 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller) 
 		return nil, errors.Wrap(err, "could not fetch deployments")
 	}
 
-	depMap := map[string]int32{}
+	depMap := map[string]time.Duration{}
 
 	for _, d := range deps.Items {
-		var deadline int32
+		var deadline time.Duration
 		if d.Spec.ProgressDeadlineSeconds == nil {
-			logrus.Debugf("no progressDeadlineSeconds config found for deployment %s. Setting deadline to %d seconds", d.Name, defaultStatusCheckDeadlineInSeconds)
-			deadline = defaultStatusCheckDeadlineInSeconds
+			logrus.Debugf("no progressDeadlineSeconds config found for deployment %s. Setting deadline to %s", d.Name, deadlineDuration)
+			deadline = deadlineDuration
+		} else if *d.Spec.ProgressDeadlineSeconds < int32(deadlineDuration.Seconds()) {
+			logrus.Debugf("progressDeadlineSeconds for deployment %s is %ds greater than %s on command line. Setting deadline to %s", d.Name, d.Spec.ProgressDeadlineSeconds, deadlineDuration, deadlineDuration)
+			deadline = deadlineDuration
 		} else {
-			deadline = *d.Spec.ProgressDeadlineSeconds
+			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
 		}
 		depMap[d.Name] = deadline
 	}

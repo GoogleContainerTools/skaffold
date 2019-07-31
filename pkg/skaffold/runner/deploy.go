@@ -18,11 +18,12 @@ package runner
 
 import (
 	"context"
-	"fmt"
 	"io"
 
 	cfg "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+
 	"github.com/pkg/errors"
 )
 
@@ -45,10 +46,10 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
 	if r.runCtx.Opts.StatusCheck {
-		fmt.Fprintln(out, "Waiting for deployments to stabilize")
+		color.Default.Fprintln(out, "Waiting for deployments to stabilize")
 		err := statusCheck(ctx, r.defaultLabeller, r.runCtx)
 		if err != nil {
-			fmt.Fprintln(out, err.Error())
+			color.Default.Fprintln(out, err.Error())
 		}
 		return err
 	}

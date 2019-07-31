@@ -53,7 +53,6 @@ github.com/docker/distribution/registry/storage/cache
 github.com/docker/distribution/registry/storage/cache/memory
 github.com/docker/distribution/metrics
 # github.com/docker/docker v0.7.3-0.20190327010347-be7ac8be2ae0
-github.com/docker/docker/api
 github.com/docker/docker/api/types
 github.com/docker/docker/builder/dockerignore
 github.com/docker/docker/client
@@ -70,6 +69,7 @@ github.com/docker/docker/api/types/mount
 github.com/docker/docker/api/types/network
 github.com/docker/docker/api/types/registry
 github.com/docker/docker/api/types/swarm
+github.com/docker/docker/api
 github.com/docker/docker/api/types/events
 github.com/docker/docker/api/types/image
 github.com/docker/docker/api/types/time
@@ -652,6 +652,7 @@ k8s.io/kubectl/pkg/util/templates
 k8s.io/kubectl/pkg/util/term
 k8s.io/kubectl/pkg/util/interrupt
 # k8s.io/utils v0.0.0-20190221042446-c2654d5206da
+k8s.io/utils/pointer
 k8s.io/utils/integer
 # sigs.k8s.io/yaml v1.1.0
 sigs.k8s.io/yaml

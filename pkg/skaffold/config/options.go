@@ -18,6 +18,7 @@ package config
 
 import (
 	"strings"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -45,6 +46,7 @@ type SkaffoldOptions struct {
 	NoPrune            bool
 	NoPruneChildren    bool
 	StatusCheck        bool
+	StatusCheckTimeout time.Duration
 	AutoBuild          bool
 	AutoSync           bool
 	AutoDeploy         bool
