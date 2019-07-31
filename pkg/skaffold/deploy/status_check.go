@@ -46,7 +46,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	if err != nil {
 		return err
 	}
-	dMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, runCtx.Opts.StatusCheckTimeout)
+	dMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, runCtx.Opts.StatusCheckDeadline)
 	if err != nil {
 		return errors.Wrap(err, "could not fetch deployments")
 	}
@@ -84,7 +84,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 		if d.Spec.ProgressDeadlineSeconds == nil {
 			logrus.Debugf("no progressDeadlineSeconds config found for deployment %s. Setting deadline to %s", d.Name, deadlineDuration)
 			deadline = deadlineDuration
-		} else if *d.Spec.ProgressDeadlineSeconds < int32(deadlineDuration.Seconds()) {
+		} else if *d.Spec.ProgressDeadlineSeconds > int32(deadlineDuration.Seconds()) {
 			logrus.Debugf("progressDeadlineSeconds for deployment %s is %ds greater than %s on command line. Setting deadline to %s", d.Name, d.Spec.ProgressDeadlineSeconds, deadlineDuration, deadlineDuration)
 			deadline = deadlineDuration
 		} else {
