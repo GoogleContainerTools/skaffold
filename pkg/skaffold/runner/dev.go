@@ -33,7 +33,7 @@ import (
 var ErrorConfigurationChanged = errors.New("configuration changed")
 
 func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
-	r.logger.Mute()
+	actionPerformed := false
 
 	// acquire the intents
 	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
@@ -41,6 +41,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	if (r.changeSet.needsRedeploy && deployIntent) ||
 		(len(r.changeSet.needsRebuild) > 0 && buildIntent) ||
 		(len(r.changeSet.needsResync) > 0 && syncIntent) {
+		r.logger.Mute()
 		// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
 		defer r.monitor.Reset()
 		defer r.listener.LogWatchToUser(out)
@@ -55,6 +56,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			r.changeSet.resetSync()
 			r.intents.resetSync()
 		}()
+		actionPerformed = true
 		for _, s := range r.changeSet.needsResync {
 			color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
 
@@ -69,6 +71,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			r.changeSet.resetBuild()
 			r.intents.resetBuild()
 		}()
+		// this linter apparently doesn't understand fallthroughs
+		//nolint:ineffassign
+		actionPerformed = true
 		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
 			r.changeSet.reset()
 			logrus.Warnln("Skipping deploy due to error:", err)
@@ -82,6 +87,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			r.logger.Unmute()
 			return nil
 		}
+		actionPerformed = true
 		r.forwarderManager.Stop()
 		defer func() {
 			r.changeSet.reset()
@@ -96,7 +102,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		}
 	}
 
-	r.logger.Unmute()
+	if actionPerformed {
+		r.logger.Unmute()
+	}
 	return nil
 }
 
