@@ -17,10 +17,11 @@ limitations under the License.
 package v1beta8
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta9"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
 // Upgrade upgrades a configuration to the next version.
@@ -30,56 +31,25 @@ import (
 // 2. Removed all schemas associated with builder plugins
 // 3. No updates
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
-	// convert Deploy (should be the same)
-	var newDeploy next.DeployConfig
-	if err := pkgutil.CloneThroughJSON(config.Deploy, &newDeploy); err != nil {
-		return nil, errors.Wrap(err, "converting deploy config")
+	var newConfig next.SkaffoldConfig
+
+	if err := pkgutil.CloneThroughJSON(config, &newConfig); err != nil {
+		return nil, err
+	}
+	newConfig.APIVersion = next.Version
+
+	if err := util.UpgradePipelines(config, &newConfig, upgradeOnePipeline); err != nil {
+		return nil, err
 	}
 
-	// convert Profiles (should be the same)
-	var newProfiles []next.Profile
-	if config.Profiles != nil {
-		if err := pkgutil.CloneThroughJSON(config.Profiles, &newProfiles); err != nil {
-			return nil, errors.Wrap(err, "converting new profile")
-		}
-	}
-
-	for i, p := range config.Profiles {
-		if err := updateBuild(&p.Pipeline.Build, &newProfiles[i].Pipeline.Build); err != nil {
-			return nil, errors.Wrapf(err, "updating build for profile %s", p.Name)
-		}
-	}
-
-	// convert Build (should be same)
-	var newBuild next.BuildConfig
-	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
-		return nil, errors.Wrap(err, "converting new build")
-	}
-
-	if err := updateBuild(&config.Build, &newBuild); err != nil {
-		return nil, errors.Wrap(err, "updating build")
-	}
-
-	// convert Test (should be the same)
-	var newTest []*next.TestCase
-	if err := pkgutil.CloneThroughJSON(config.Test, &newTest); err != nil {
-		return nil, errors.Wrap(err, "converting new test")
-	}
-
-	return &next.SkaffoldConfig{
-		APIVersion: next.Version,
-		Kind:       config.Kind,
-		Pipeline: next.Pipeline{
-			Build:  newBuild,
-			Test:   newTest,
-			Deploy: newDeploy,
-		},
-		Profiles: newProfiles,
-	}, nil
+	return &newConfig, nil
 }
 
-func updateBuild(config *BuildConfig, newBuild *next.BuildConfig) error {
-	for i, a := range config.Artifacts {
+func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldBuild := &oldPipeline.(*Pipeline).Build
+	newBuild := &newPipeline.(*next.Pipeline).Build
+
+	for i, a := range oldBuild.Artifacts {
 		if a.BuilderPlugin == nil {
 			continue
 		}
@@ -99,7 +69,7 @@ func updateBuild(config *BuildConfig, newBuild *next.BuildConfig) error {
 		}
 	}
 
-	if c := config.ExecutionEnvironment; c != nil {
+	if c := oldBuild.ExecutionEnvironment; c != nil {
 		if c.Name == "googleCloudBuild" {
 			var gcb *next.GoogleCloudBuild
 			if err := pkgutil.CloneThroughYAML(c.Properties, &gcb); err != nil {
