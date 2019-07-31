@@ -41,12 +41,8 @@ import (
 
 var (
 	// for testing
-	inputReader = bufio.NewReader(os.Stdin)
+	reader = bufio.NewReader(os.Stdin)
 )
-
-type StringReader interface {
-	ReadString(delim byte) (string, error)
-}
 
 func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, config *latest.SkaffoldConfig, fileOut string) error {
 	err := createSkaffoldProfile(config)
@@ -122,10 +118,14 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 
 func generateGitResource() (*tekton.PipelineResource, error) {
 	// Get git repo url
-	getGitRepo := exec.Command("git", "config", "--get", "remote.origin.url")
-	gitRepo, err := getGitRepo.Output()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting git repo from git config")
+	gitRepo := os.Getenv("SKAFFOLD_GIT_URL")
+	if gitRepo == "" {
+		getGitRepo := exec.Command("git", "config", "--get", "remote.origin.url")
+		bGitRepo, err := getGitRepo.Output()
+		if err != nil {
+			return nil, errors.Wrap(err, "getting git repo from git config")
+		}
+		gitRepo = string(bGitRepo)
 	}
 
 	// Create git resource for pipeline from users current git repo
@@ -142,7 +142,7 @@ func generateGitResource() (*tekton.PipelineResource, error) {
 			Params: []tekton.ResourceParam{
 				{
 					Name:  "url",
-					Value: string(gitRepo),
+					Value: gitRepo,
 				},
 			},
 		},
@@ -297,7 +297,7 @@ func createSkaffoldProfile(config *latest.SkaffoldConfig) error {
 confirmLoop:
 	for {
 		fmt.Print("No profile \"oncluster\" found. Create one? [y/n]: ")
-		response, err := inputReader.ReadString('\n')
+		response, err := reader.ReadString('\n')
 		if err != nil {
 			return errors.Wrap(err, "reading user confirmation")
 		}
