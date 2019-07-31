@@ -311,7 +311,7 @@ func TestIsSkaffoldDeployInError(t *testing.T) {
 			for k, v := range test.deps {
 				syncMap.Store(k, v)
 			}
-			t.CheckDeepEqual(test.shouldErr, m(syncMap))
+			t.CheckDeepEqual(test.shouldErr, isSkaffoldDeployInError(syncMap))
 		})
 	}
 }

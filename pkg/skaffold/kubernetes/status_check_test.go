@@ -54,6 +54,8 @@ func TestGetPodDetails(t *testing.T) {
 					Namespace: "test",
 				},
 				Status: v1.PodStatus{
+					Phase:      v1.PodPending,
+					Conditions: []v1.PodCondition{{Status: v1.ConditionFalse}},
 					ContainerStatuses: []v1.ContainerStatus{
 						{
 							Name: "foo-containter",
@@ -78,6 +80,8 @@ func TestGetPodDetails(t *testing.T) {
 					Namespace: "test",
 				},
 				Status: v1.PodStatus{
+					Phase:      v1.PodReasonUnschedulable,
+					Conditions: []v1.PodCondition{{Status: v1.ConditionFalse}},
 					ContainerStatuses: []v1.ContainerStatus{
 						{
 							Name: "foo-containter",
@@ -101,6 +105,7 @@ func TestGetPodDetails(t *testing.T) {
 					Namespace: "test",
 				},
 				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{{Status: v1.ConditionFalse}},
 					ContainerStatuses: []v1.ContainerStatus{
 						{
 							Name:  "foo-containter",
@@ -120,12 +125,7 @@ func TestGetPodDetails(t *testing.T) {
 					Namespace: "test",
 				},
 				Status: v1.PodStatus{
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name:  "foo-containter",
-							State: v1.ContainerState{Terminated: &v1.ContainerStateTerminated{Reason: "could not find secret"}},
-						},
-					},
+					Conditions: []v1.PodCondition{{Status: v1.ConditionTrue}},
 				},
 			},
 		}, {
@@ -137,6 +137,7 @@ func TestGetPodDetails(t *testing.T) {
 					Namespace: "test",
 				},
 				Status: v1.PodStatus{
+					Conditions: []v1.PodCondition{{Status: v1.ConditionTrue}},
 					ContainerStatuses: []v1.ContainerStatus{
 						{
 							Name:  "foo-containter",

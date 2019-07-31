@@ -52,7 +52,6 @@ var (
 	executeRolloutStatus = getRollOutStatus
 )
 
-
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	client, err := kubernetesutil.GetClientset()
 	if err != nil {
@@ -109,7 +108,7 @@ func StatusCheckDeployments(ctx context.Context, client kubernetes.Interface, de
 		go func(dName string, deadlineDuration time.Duration) {
 			defer func() {
 				atomic.AddInt32(&ops, -1)
-				printResourceStatus("deployment", dName, syncMap, atomic.LoadInt32(&ops), out)
+				printResourceStatus("deployment", dName, syncMap, atomic.LoadInt32(&ops), numDeps, out)
 				wg.Done()
 			}()
 			pollDeploymentRolloutStatus(ctx, kubeCtl, dName, deadlineDuration, syncMap)
@@ -191,7 +190,7 @@ func StatusCheckPods(ctx context.Context, client kubernetes.Interface, defaultLa
 		go func(po v1.Pod) {
 			defer func() {
 				atomic.AddInt32(&ops, -1)
-				printResourceStatus("pod", po.Name, syncMap, atomic.LoadInt32(&ops), out)
+				printResourceStatus("pod", po.Name, syncMap, atomic.LoadInt32(&ops), numPods, out)
 				wg.Done()
 			}()
 			getPodStatus(ctx, podInterface, client, &po, defaultPodStatusDeadline, syncMap)
@@ -239,14 +238,15 @@ func getResourceStatus(m *sync.Map, resource string) error {
 	return nil
 }
 
-func printResourceStatus(resourcetype string, name string, m *sync.Map, numLeft int32, out io.Writer) {
+func printResourceStatus(resourcetype string, name string, m *sync.Map, numLeft int32, total int32, out io.Writer) {
 	resource := fmt.Sprintf("%s/%s", resourcetype, name)
-	if err := getResourceStatus(m, resource); err != nil {
-		color.Default.Fprintln(out, fmt.Sprintf("\n%s failed due to %s", resource, err.Error()))
-	} else {
-		color.Default.Fprintln(out, fmt.Sprintf("\n%s is ready", resource))
+	waitingMsg := fmt.Sprintf("(%d/%d %s still pending)", numLeft, total, resourcetype)
+	if numLeft == 0 {
+		waitingMsg = "(All pods verified)"
 	}
-	if numLeft > 0 {
-		color.Default.Fprintln(out, fmt.Sprintf("Waiting on %d %ss", numLeft, resourcetype))
+	if err := getResourceStatus(m, resource); err != nil {
+		color.Default.Fprintln(out, fmt.Sprintf("\n%s failed due to %s. %s", resource, err.Error(), waitingMsg))
+	} else {
+		color.Default.Fprintln(out, fmt.Sprintf("\n%s is ready. %s", resource, waitingMsg))
 	}
 }
