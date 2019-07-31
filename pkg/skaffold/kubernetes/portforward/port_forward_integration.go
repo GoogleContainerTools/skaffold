@@ -35,7 +35,7 @@ func WhiteBoxPortForwardCycle(namespace string, t *testing.T) {
 	em := NewEntryManager(os.Stdout)
 	portForwardEventHandler := portForwardEvent
 	defer func() { portForwardEvent = portForwardEventHandler }()
-	portForwardEvent = func(entry *portForwardEntry) {}
+	portForwardEvent = func(entry *portForwardEntry, terminated bool) {}
 	ctx := context.Background()
 	localPort := retrieveAvailablePort(9000, em.forwardedPorts)
 	pfe := &portForwardEntry{

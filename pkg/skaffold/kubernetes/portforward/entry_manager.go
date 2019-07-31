@@ -31,7 +31,7 @@ import (
 var (
 	// For testing
 	forwardingTimeoutTime = time.Minute
-	portForwardEvent      = func(entry *portForwardEntry) {
+	portForwardEvent      = func(entry *portForwardEntry, terminated bool) {
 		// TODO priyawadhwa@, change event API to accept ports of type int
 		event.PortForwarded(
 			int32(entry.localPort),
@@ -41,7 +41,8 @@ var (
 			entry.resource.Namespace,
 			entry.portName,
 			string(entry.resource.Type),
-			entry.resource.Name)
+			entry.resource.Name,
+			terminated)
 	}
 )
 
@@ -182,7 +183,7 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 
 	color.Default.Fprintln(b.output, fmt.Sprintf("Port forwarded %s/%s from remote port %d to local port %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort))
 
-	portForwardEvent(entry)
+	portForwardEvent(entry, false)
 	return nil
 }
 
@@ -198,6 +199,7 @@ func (b *EntryManager) Terminate(p *portForwardEntry) {
 	b.forwardedResources.Delete(p.key())
 	b.forwardedPorts.Delete(p.localPort)
 	b.EntryForwarder.Terminate(p)
+	portForwardEvent(p, true)
 }
 
 func (b *EntryManager) Retry(ctx context.Context, p *portForwardEntry) error {

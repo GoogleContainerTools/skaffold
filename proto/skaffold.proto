@@ -67,6 +67,7 @@ message PortEvent {
   string portName = 6;
   string resourceType=7;
   string resourceName=8;
+  bool terminated=9;
 }
 
 message LogEntry {

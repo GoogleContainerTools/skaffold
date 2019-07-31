@@ -57,6 +57,10 @@ func TestStop(t *testing.T) {
 		localPort: 9001,
 	}
 
+	portForwardEventHandler := portForwardEvent
+	defer func() { portForwardEvent = portForwardEventHandler }()
+	portForwardEvent = func(entry *portForwardEntry, terminated bool) {}
+
 	em := NewEntryManager(ioutil.Discard)
 
 	em.forwardedResources = newForwardedResources()
