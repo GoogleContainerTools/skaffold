@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/docker/docker/api/types"
 )
 
 type depLister struct {
@@ -82,6 +83,11 @@ func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.
 
 	return built, nil
 }
+
+type stubAuth struct{}
+
+func (t stubAuth) GetAuthConfig(string) (types.AuthConfig, error)          { return types.AuthConfig{}, nil }
+func (t stubAuth) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
 
 func TestCacheBuildLocal(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
@@ -183,7 +189,7 @@ func TestCacheBuildRemote(t *testing.T) {
 		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
-
+		t.Override(&docker.DefaultAuthHelper, stubAuth{})
 		t.Override(&docker.RemoteDigest, func(ref string, _ map[string]bool) (string, error) {
 			switch ref {
 			case "artifact1:tag1":
