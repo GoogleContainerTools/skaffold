@@ -19,6 +19,7 @@ package cluster
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -27,6 +28,9 @@ import (
 func TestRetrieveEnv(t *testing.T) {
 	builder, err := NewBuilder(&runcontext.RunContext{
 		KubeContext: "kubecontext",
+		Opts: config.SkaffoldOptions{
+			Namespace: "test-namespace",
+		},
 		Cfg: latest.Pipeline{
 			Build: latest.BuildConfig{
 				BuildType: latest.BuildType{

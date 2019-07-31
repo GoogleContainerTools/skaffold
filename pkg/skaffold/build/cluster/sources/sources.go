@@ -20,12 +20,13 @@ import (
 	"context"
 	"io"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // BuildContextSource is the generic type for the different build context sources the kaniko builder can use
@@ -37,11 +38,12 @@ type BuildContextSource interface {
 }
 
 // Retrieve returns the correct build context based on the config
-func Retrieve(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoArtifact) BuildContextSource {
+func Retrieve(cli *kubectl.CLI, clusterDetails *latest.ClusterDetails, artifact *latest.KanikoArtifact) BuildContextSource {
 	if artifact.BuildContext.LocalDir != nil {
 		return &LocalDir{
 			clusterDetails: clusterDetails,
 			artifact:       artifact,
+			kubectl:        cli,
 		}
 	}
 

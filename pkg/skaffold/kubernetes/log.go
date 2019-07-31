@@ -21,17 +21,17 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os/exec"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 )
 
 // Client is for tests
@@ -41,6 +41,7 @@ var DynamicClient = GetDynamicClient
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
 	output      io.Writer
+	kubectlcli  *kubectl.CLI
 	podSelector PodSelector
 	namespaces  []string
 	colorPicker ColorPicker
@@ -53,9 +54,10 @@ type LogAggregator struct {
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, baseImageNames []string, podSelector PodSelector, namespaces []string) *LogAggregator {
+func NewLogAggregator(out io.Writer, cli *kubectl.CLI, baseImageNames []string, podSelector PodSelector, namespaces []string) *LogAggregator {
 	return &LogAggregator{
 		output:      out,
+		kubectlcli:  cli,
 		podSelector: podSelector,
 		namespaces:  namespaces,
 		colorPicker: NewColorPicker(baseImageNames),
@@ -148,11 +150,11 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	sinceSeconds := fmt.Sprintf("--since=%ds", sinceSeconds(time.Since(a.sinceTime)))
 
 	tr, tw := io.Pipe()
-	cmd := exec.CommandContext(ctx, "kubectl", "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
-	cmd.Stdout = tw
 	go func() {
-		util.RunCmd(cmd)
-		tw.Close()
+		if err := a.kubectlcli.Run(ctx, nil, tw, "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace); err != nil {
+			logrus.Warn(err)
+		}
+		_ = tw.Close()
 	}()
 
 	headerColor := a.colorPicker.Pick(pod)

@@ -18,13 +18,22 @@ package cluster
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/google/go-cmp/cmp"
+)
+
+const (
+	kubeContext = "test-kubeContext"
+	namespace   = "test-namespace"
 )
 
 func TestNewBuilder(t *testing.T) {
@@ -55,6 +64,11 @@ func TestNewBuilder(t *testing.T) {
 				},
 				timeout:            100 * time.Second,
 				insecureRegistries: nil,
+				kubeContext:        kubeContext,
+				kubectlcli: &kubectl.CLI{
+					KubeContext: kubeContext,
+					Namespace:   namespace,
+				},
 			},
 		},
 		{
@@ -71,6 +85,11 @@ func TestNewBuilder(t *testing.T) {
 				},
 				timeout:            100 * time.Second,
 				insecureRegistries: map[string]bool{"insecure-reg1": true},
+				kubeContext:        kubeContext,
+				kubectlcli: &kubectl.CLI{
+					KubeContext: kubeContext,
+					Namespace:   namespace,
+				},
 			},
 		},
 	}
@@ -80,7 +99,7 @@ func TestNewBuilder(t *testing.T) {
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
-				t.CheckDeepEqual(test.expectedBuilder, builder, cmp.AllowUnexported(Builder{}))
+				t.CheckDeepEqual(test.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, kubectl.CLI{}, sync.Once{}, sync.Mutex{}))
 			}
 		})
 	}
@@ -108,5 +127,9 @@ func stubRunContext(clusterDetails *latest.ClusterDetails, insecureRegistries ma
 	return &runcontext.RunContext{
 		Cfg:                pipeline,
 		InsecureRegistries: insecureRegistries,
+		KubeContext:        kubeContext,
+		Opts: config.SkaffoldOptions{
+			Namespace: namespace,
+		},
 	}
 }

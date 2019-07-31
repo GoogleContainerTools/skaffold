@@ -22,18 +22,20 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 func TestNewEntryManager(t *testing.T) {
 	out := ioutil.Discard
+	cli := &kubectl.CLI{}
 	expected := EntryManager{
 		output:             out,
 		forwardedPorts:     newForwardedPorts(),
 		forwardedResources: newForwardedResources(),
-		EntryForwarder:     &KubectlForwarder{},
+		EntryForwarder:     &KubectlForwarder{kubectl: cli},
 	}
-	actual := NewEntryManager(out)
+	actual := NewEntryManager(out, cli)
 	if !reflect.DeepEqual(expected, actual) {
 		t.Errorf("Expected result different from actual result. Expected: %v, Actual: %v", expected, actual)
 	}
@@ -57,7 +59,7 @@ func TestStop(t *testing.T) {
 		localPort: 9001,
 	}
 
-	em := NewEntryManager(ioutil.Discard)
+	em := NewEntryManager(ioutil.Discard, nil)
 
 	em.forwardedResources = newForwardedResources()
 	em.forwardedResources.Store("pod-resource-default-0", pfe1)

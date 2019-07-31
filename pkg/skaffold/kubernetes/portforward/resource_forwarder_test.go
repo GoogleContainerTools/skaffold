@@ -23,13 +23,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/google/go-cmp/cmp"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type testForwarder struct {
@@ -119,7 +120,7 @@ func TestStart(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(latest.BuildConfig{})
 			fakeForwarder := newTestForwarder(nil)
-			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "", nil)
+			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), "", nil)
 			rf.EntryForwarder = fakeForwarder
 
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
@@ -190,7 +191,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			expectedEntry := test.expected
 			expectedEntry.resource = test.resource
 
-			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "", nil)
+			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), "", nil)
 			rf.forwardedResources = forwardedResources{
 				resources: test.forwardedResources,
 				lock:      &sync.Mutex{},
@@ -233,7 +234,7 @@ func TestUserDefinedResources(t *testing.T) {
 	testutil.Run(t, "one service and one user defined pod", func(t *testutil.T) {
 		event.InitializeState(latest.BuildConfig{})
 		fakeForwarder := newTestForwarder(nil)
-		rf := NewResourceForwarder(NewEntryManager(ioutil.Discard), "", []*latest.PortForwardResource{pod})
+		rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), "", []*latest.PortForwardResource{pod})
 		rf.EntryForwarder = fakeForwarder
 
 		t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, []int{8080, 9000}))
