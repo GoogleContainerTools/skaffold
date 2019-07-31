@@ -110,6 +110,16 @@ func TestRun(t *testing.T) {
 			deployments: []string{"web"},
 			gcpOnly:     true,
 		}, {
+			description: "jib gradle",
+			dir:         "testdata/jib-gradle",
+			deployments: []string{"web"},
+		}, {
+			description: "jib gradle in googlecloudbuild",
+			dir:         "testdata/jib-gradle",
+			args:        []string{"-p", "gcb"},
+			deployments: []string{"web"},
+			gcpOnly:     true,
+		}, {
 			description: "custom builder",
 			dir:         "testdata/custom",
 			pods:        []string{"bazel"},
