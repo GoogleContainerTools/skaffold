@@ -1,0 +1,27 @@
+run:
+  deadline: 6m
+  modules-download-mode: vendor
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - deadcode
+    - goconst
+    - gocritic
+    - goimports
+    - golint
+    - gosimple
+    - govet
+    - ineffassign
+    - interfacer
+    - maligned
+    - misspell
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck

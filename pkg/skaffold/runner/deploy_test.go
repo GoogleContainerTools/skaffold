@@ -60,14 +60,10 @@ func TestDeploy(t *testing.T) {
 	dummyStatusCheck := func(ctx context.Context, l *deploy.DefaultLabeller, runCtx *runcontext.RunContext) error {
 		return nil
 	}
-	originalStatusCheck := deploy.StatusCheck
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
-			// Figure out why i can't use t.Override.
-			// Using t.Override throws an error "reflect: call of reflect.Value.Elem on func Value"
-			statusCheck = dummyStatusCheck
-			defer func() { statusCheck = originalStatusCheck }()
+			t.Override(&statusCheck, dummyStatusCheck)
 
 			runner := createRunner(t, test.testBench, nil)
 			runner.runCtx.Opts.StatusCheck = test.statusCheck

@@ -210,7 +210,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 				responses: []string{"dep successfully rolled out"},
 			},
 			exactCalls: 1,
-			duration:   500,
+			duration:   50,
 		},
 		{
 			description: "rollout returns error in the first attempt",
@@ -219,7 +219,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			},
 			shouldErr:  true,
 			exactCalls: 1,
-			duration:   500,
+			duration:   50,
 		},
 		{
 			description: "rollout returns success before time out",
@@ -229,7 +229,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 					"Waiting for rollout to finish: 0 of 1 updated replicas are available...",
 					"deployment.apps/dep successfully rolled out"},
 			},
-			duration:   800,
+			duration:   80,
 			exactCalls: 3,
 		},
 		{
@@ -240,22 +240,15 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 					"Waiting for rollout to finish: 1 of 3 updated replicas are available...",
 					"Waiting for rollout to finish: 2 of 3 updated replicas are available..."},
 			},
-			duration:  1000,
+			duration:  100,
 			shouldErr: true,
 			timedOut:  true,
 		},
 	}
-	originalPollingPeriod := defaultPollPeriodInMilliseconds
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			mock := test.mock
-			// Figure out why i can't use t.Override.
-			// Using t.Override throws an error "reflect: call of reflect.Value.Elem on func Value"
-			executeRolloutStatus = mock.Executefunc
-			defer func() { executeRolloutStatus = getRollOutStatus }()
-
-			defaultPollPeriodInMilliseconds = 100
-			defer func() { defaultPollPeriodInMilliseconds = originalPollingPeriod }()
+			t.Override(&executeRolloutStatus, test.mock.Executefunc)
+			t.Override(&defaultPollPeriodInMilliseconds, 10)
 
 			actual := &sync.Map{}
 			pollDeploymentRolloutStatus(context.Background(), &kubectl.CLI{}, "dep", time.Duration(test.duration)*time.Millisecond, actual)
@@ -267,7 +260,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			t.CheckError(test.shouldErr, err)
 			// Check number of calls only if command did not timeout since there could be n-1 or n or n+1 calls when command timed out
 			if !test.timedOut {
-				t.CheckDeepEqual(test.exactCalls, mock.called)
+				t.CheckDeepEqual(test.exactCalls, test.mock.called)
 			}
 		})
 	}
