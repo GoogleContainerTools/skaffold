@@ -21,8 +21,7 @@ import (
 	"testing"
 	"time"
 
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
@@ -103,14 +102,11 @@ func TestSyncMapNotSupported(t *testing.T) {
 }
 
 func stubRunContext(clusterDetails *latest.ClusterDetails, insecureRegistries map[string]bool) *runcontext.RunContext {
+	pipeline := latest.Pipeline{}
+	pipeline.Build.BuildType.Cluster = clusterDetails
+
 	return &runcontext.RunContext{
+		Cfg:                pipeline,
 		InsecureRegistries: insecureRegistries,
-		Cfg: &latest.Pipeline{
-			Build: latest.BuildConfig{
-				BuildType: latest.BuildType{
-					Cluster: clusterDetails,
-				},
-			},
-		},
 	}
 }

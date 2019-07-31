@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -198,24 +199,35 @@ func (r *SkaffoldRunner) WithMonitor(m filemon.Monitor) *SkaffoldRunner {
 }
 
 func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) *SkaffoldRunner {
-	opts := &config.SkaffoldOptions{
-		Trigger:           "polling",
-		WatchPollInterval: 100,
-		AutoBuild:         true,
-		AutoSync:          true,
-		AutoDeploy:        true,
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				TagPolicy: latest.TagPolicy{
+					// Use the fastest tagger
+					ShaTagger: &latest.ShaTagger{},
+				},
+			},
+		},
 	}
-
-	cfg := &latest.SkaffoldConfig{}
 	defaults.Set(cfg)
 
-	runner, err := NewForConfig(opts, cfg)
+	runCtx := &runcontext.RunContext{
+		Cfg: cfg.Pipeline,
+		Opts: config.SkaffoldOptions{
+			Trigger:           "polling",
+			WatchPollInterval: 100,
+			AutoBuild:         true,
+			AutoSync:          true,
+			AutoDeploy:        true,
+		},
+	}
+	runner, err := NewForConfig(runCtx)
 	t.CheckNoError(err)
 
-	runner.Builder = testBench
-	runner.Syncer = testBench
-	runner.Tester = testBench
-	runner.Deployer = testBench
+	runner.builder = testBench
+	runner.syncer = testBench
+	runner.tester = testBench
+	runner.deployer = testBench
 	runner.listener = testBench
 	runner.monitor = monitor
 
@@ -237,7 +249,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 func TestNewForConfig(t *testing.T) {
 	tests := []struct {
 		description      string
-		config           *latest.SkaffoldConfig
+		pipeline         latest.Pipeline
 		shouldErr        bool
 		cacheArtifacts   bool
 		expectedBuilder  build.Builder
@@ -246,18 +258,16 @@ func TestNewForConfig(t *testing.T) {
 	}{
 		{
 			description: "local builder config",
-			config: &latest.SkaffoldConfig{
-				Pipeline: latest.Pipeline{
-					Build: latest.BuildConfig{
-						TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
-						BuildType: latest.BuildType{
-							LocalBuild: &latest.LocalBuild{},
-						},
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: &latest.KubectlDeploy{},
-						},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			},
@@ -267,46 +277,24 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "bad tagger config",
-			config: &latest.SkaffoldConfig{
-				Pipeline: latest.Pipeline{
-					Build: latest.BuildConfig{
-						TagPolicy: latest.TagPolicy{},
-						BuildType: latest.BuildType{
-							LocalBuild: &latest.LocalBuild{},
-						},
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: &latest.KubectlDeploy{},
-						},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			},
 			shouldErr: true,
 		},
 		{
-			description: "unknown builder",
-			config: &latest.SkaffoldConfig{
-				Pipeline: latest.Pipeline{
-					Build: latest.BuildConfig{},
-				},
-			},
-			shouldErr:        true,
-			expectedBuilder:  &local.Builder{},
-			expectedTester:   &test.FullTester{},
-			expectedDeployer: &deploy.KubectlDeployer{},
-		},
-		{
-			description: "unknown tagger",
-			config: &latest.SkaffoldConfig{
-				Pipeline: latest.Pipeline{
-					Build: latest.BuildConfig{
-						TagPolicy: latest.TagPolicy{},
-						BuildType: latest.BuildType{
-							LocalBuild: &latest.LocalBuild{},
-						},
-					},
-				}},
+			description:      "unknown builder and tagger",
+			pipeline:         latest.Pipeline{},
 			shouldErr:        true,
 			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
@@ -314,13 +302,11 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "unknown deployer",
-			config: &latest.SkaffoldConfig{
-				Pipeline: latest.Pipeline{
-					Build: latest.BuildConfig{
-						TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
-						BuildType: latest.BuildType{
-							LocalBuild: &latest.LocalBuild{},
-						},
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
 				},
 			},
@@ -328,18 +314,16 @@ func TestNewForConfig(t *testing.T) {
 		},
 		{
 			description: "no artifacts, cache",
-			config: &latest.SkaffoldConfig{
-				Pipeline: latest.Pipeline{
-					Build: latest.BuildConfig{
-						TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
-						BuildType: latest.BuildType{
-							LocalBuild: &latest.LocalBuild{},
-						},
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: &latest.KubectlDeploy{},
-						},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			},
@@ -353,17 +337,22 @@ func TestNewForConfig(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 
-			cfg, err := NewForConfig(&config.SkaffoldOptions{
-				Trigger: "polling",
-			}, test.config)
+			runCtx := &runcontext.RunContext{
+				Cfg: test.pipeline,
+				Opts: config.SkaffoldOptions{
+					Trigger: "polling",
+				},
+			}
+
+			cfg, err := NewForConfig(runCtx)
 
 			t.CheckError(test.shouldErr, err)
 			if cfg != nil {
 				b, _t, d := WithTimings(test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
 
-				t.CheckErrorAndTypeEquality(test.shouldErr, err, b, cfg.Builder)
-				t.CheckErrorAndTypeEquality(test.shouldErr, err, _t, cfg.Tester)
-				t.CheckErrorAndTypeEquality(test.shouldErr, err, d, cfg.Deployer)
+				t.CheckErrorAndTypeEquality(test.shouldErr, err, b, cfg.builder)
+				t.CheckErrorAndTypeEquality(test.shouldErr, err, _t, cfg.tester)
+				t.CheckErrorAndTypeEquality(test.shouldErr, err, d, cfg.deployer)
 			}
 		})
 	}
@@ -419,29 +408,30 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			opts := &config.SkaffoldOptions{
+			opts := config.SkaffoldOptions{
 				Trigger:           "polling",
 				WatchPollInterval: 100,
 				AutoBuild:         test.autoBuild,
 				AutoSync:          test.autoSync,
 				AutoDeploy:        test.autoDeploy,
 			}
-			defaultConfig := &latest.SkaffoldConfig{
-				Pipeline: latest.Pipeline{
-					Build: latest.BuildConfig{
-						TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
-						BuildType: latest.BuildType{
-							LocalBuild: &latest.LocalBuild{},
-						},
+			pipeline := latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
 					},
-					Deploy: latest.DeployConfig{
-						DeployType: latest.DeployType{
-							KubectlDeploy: &latest.KubectlDeploy{},
-						},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy: &latest.KubectlDeploy{},
 					},
 				},
 			}
-			r, _ := NewForConfig(opts, defaultConfig)
+			r, _ := NewForConfig(&runcontext.RunContext{
+				Opts: opts,
+				Cfg:  pipeline,
+			})
 
 			r.intents.resetBuild()
 			r.intents.resetSync()

@@ -27,7 +27,7 @@ import (
 )
 
 // Skaffold-Jib depends on functionality introduced with Jib-Maven 1.4.0
-const MinimumJibMavenVersion = "[1.4.0,)"
+const MinimumJibMavenVersion = "1.4.0"
 
 // MavenCommand stores Maven executable and wrapper name
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}

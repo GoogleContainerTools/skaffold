@@ -17,22 +17,33 @@ limitations under the License.
 package gcb
 
 import (
+	"strings"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
-// TODO(dgageot): check that `package` is bound to `jib:build`
-func (b *Builder) jibMavenBuildSteps(artifact *latest.JibMavenArtifact, tag string) []*cloudbuild.BuildStep {
-	return []*cloudbuild.BuildStep{{
-		Name: b.MavenImage,
-		Args: jib.GenerateMavenArgs("dockerBuild", tag, artifact, b.skipTests),
-	}}
+func (b *Builder) jibMavenBuildSpec(artifact *latest.JibMavenArtifact, tag string) cloudbuild.Build {
+	return cloudbuild.Build{
+		Steps: []*cloudbuild.BuildStep{{
+			Name:       b.MavenImage,
+			Entrypoint: "sh",
+			Args:       fixHome("mvn", jib.GenerateMavenArgs("build", tag, artifact, b.skipTests)),
+		}},
+	}
 }
 
-func (b *Builder) jibGradleBuildSteps(artifact *latest.JibGradleArtifact, tag string) []*cloudbuild.BuildStep {
-	return []*cloudbuild.BuildStep{{
-		Name: b.GradleImage,
-		Args: jib.GenerateGradleArgs("jibDockerBuild", tag, artifact, b.skipTests),
-	}}
+func (b *Builder) jibGradleBuildSpec(artifact *latest.JibGradleArtifact, tag string) cloudbuild.Build {
+	return cloudbuild.Build{
+		Steps: []*cloudbuild.BuildStep{{
+			Name:       b.GradleImage,
+			Entrypoint: "sh",
+			Args:       fixHome("gradle", jib.GenerateGradleArgs("jib", tag, artifact, b.skipTests)),
+		}},
+	}
+}
+
+func fixHome(command string, args []string) []string {
+	return []string{"-c", command + " -Duser.home=$$HOME " + strings.Join(args, " ")}
 }

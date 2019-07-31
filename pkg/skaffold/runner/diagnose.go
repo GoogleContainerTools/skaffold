@@ -47,11 +47,11 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(out io.Writer) error {
 			fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
 		}
 
-		timeDeps1, deps, err := timeToListDependencies(ctx, r.Builder, artifact)
+		timeDeps1, deps, err := timeToListDependencies(ctx, r.builder, artifact)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
-		timeDeps2, _, err := timeToListDependencies(ctx, r.Builder, artifact)
+		timeDeps2, _, err := timeToListDependencies(ctx, r.builder, artifact)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
@@ -59,13 +59,13 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(out io.Writer) error {
 		fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
 		fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
 
-		timeSyncMap1, err := timeToConstructSyncMap(ctx, r.Builder, artifact)
+		timeSyncMap1, err := timeToConstructSyncMap(ctx, r.builder, artifact)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return errors.Wrap(err, "construct artifact dependencies")
 			}
 		}
-		timeSyncMap2, err := timeToConstructSyncMap(ctx, r.Builder, artifact)
+		timeSyncMap2, err := timeToConstructSyncMap(ctx, r.builder, artifact)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return errors.Wrap(err, "construct artifact dependencies")

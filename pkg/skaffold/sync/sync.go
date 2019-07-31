@@ -43,20 +43,6 @@ var (
 	WorkingDir = docker.RetrieveWorkingDir
 )
 
-type Syncer interface {
-	Sync(context.Context, *Item) error
-}
-
-type syncMap map[string][]string
-
-type Item struct {
-	Image  string
-	Copy   map[string][]string
-	Delete map[string][]string
-}
-
-type DestinationProvider func() (map[string][]string, error)
-
 func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool, destProvider DestinationProvider) (*Item, error) {
 	if !e.HasChanged() || a.Sync == nil {
 		return nil, nil
@@ -208,11 +194,32 @@ func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) (
 	return dsts, nil
 }
 
-func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd, namespaces []string) error {
-	errs, ctx := errgroup.WithContext(ctx)
+func (k *podSyncer) Sync(ctx context.Context, s *Item) error {
+	if len(s.Copy) > 0 {
+		logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
+
+		if err := Perform(ctx, s.Image, s.Copy, copyFileFn, k.namespaces); err != nil {
+			return errors.Wrap(err, "copying files")
+		}
+	}
+
+	if len(s.Delete) > 0 {
+		logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
+
+		if err := Perform(ctx, s.Image, s.Delete, deleteFileFn, k.namespaces); err != nil {
+			return errors.Wrap(err, "deleting files")
+		}
+	}
+
+	return nil
+}
+
+func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, syncMap) *exec.Cmd, namespaces []string) error {
 	if len(files) == 0 {
 		return nil
 	}
+
+	errs, ctx := errgroup.WithContext(ctx)
 
 	client, err := kubernetes.Client()
 	if err != nil {
@@ -238,14 +245,12 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 					continue
 				}
 
-				cmds := cmdFn(ctx, p, c, files)
-				for _, cmd := range cmds {
-					errs.Go(func() error {
-						_, err := util.RunCmdOut(cmd)
-						return err
-					})
-					numSynced++
-				}
+				cmd := cmdFn(ctx, p, c, files)
+				errs.Go(func() error {
+					_, err := util.RunCmdOut(cmd)
+					return err
+				})
+				numSynced++
 			}
 		}
 	}

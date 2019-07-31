@@ -18,11 +18,13 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
@@ -41,13 +43,13 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 
 		r.hasBuilt = true
 
-		bRes, err := r.Builder.Build(ctx, out, tags, artifacts)
+		bRes, err := r.builder.Build(ctx, out, tags, artifacts)
 		if err != nil {
 			return nil, errors.Wrap(err, "build failed")
 		}
 
 		if !r.runCtx.Opts.SkipTests {
-			if err = r.Tester.Test(ctx, out, bRes); err != nil {
+			if err = r.tester.Test(ctx, out, bRes); err != nil {
 				return nil, errors.Wrap(err, "test failed")
 			}
 		}
@@ -97,4 +99,53 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	<-ctx.Done()
 
 	return nil
+}
+
+type tagErr struct {
+	tag string
+	err error
+}
+
+// imageTags generates tags for a list of artifacts
+func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
+	start := time.Now()
+	color.Default.Fprintln(out, "Generating tags...")
+
+	tagErrs := make([]chan tagErr, len(artifacts))
+
+	for i := range artifacts {
+		tagErrs[i] = make(chan tagErr, 1)
+
+		i := i
+		go func() {
+			tag, err := r.tagger.GenerateFullyQualifiedImageName(artifacts[i].Workspace, artifacts[i].ImageName)
+			tagErrs[i] <- tagErr{tag: tag, err: err}
+		}()
+	}
+
+	imageTags := make(tag.ImageTags, len(artifacts))
+
+	for i, artifact := range artifacts {
+		imageName := artifact.ImageName
+		color.Default.Fprintf(out, " - %s -> ", imageName)
+
+		select {
+		case <-ctx.Done():
+			return nil, context.Canceled
+
+		case t := <-tagErrs[i]:
+			tag := t.tag
+			err := t.err
+			if err != nil {
+				return nil, errors.Wrapf(err, "generating tag for %s", imageName)
+			}
+
+			fmt.Fprintln(out, tag)
+
+			imageTags[imageName] = tag
+		}
+	}
+
+	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
+	return imageTags, nil
 }

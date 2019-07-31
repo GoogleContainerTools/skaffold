@@ -38,6 +38,11 @@ ifeq "$(strip $(VERSION))" ""
  override VERSION = $(shell git describe --always --tags --dirty)
 endif
 
+# Force using Go Modules and always read the dependencies from
+# the `vendor` folder.
+export GO111MODULE = on
+export GOFLAGS = -mod=vendor
+
 GO_GCFLAGS := "all=-trimpath=${PWD}"
 GO_ASMFLAGS := "all=-trimpath=${PWD}"
 
@@ -48,7 +53,6 @@ LDFLAGS_windows =
 GO_BUILD_TAGS_linux := "osusergo netgo static_build"
 GO_BUILD_TAGS_darwin := ""
 GO_BUILD_TAGS_windows := ""
-
 
 GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')

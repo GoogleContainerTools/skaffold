@@ -24,7 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -177,7 +177,7 @@ func TestKubectlDeploy(t *testing.T) {
 
 			k := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
-				Cfg: &latest.Pipeline{
+				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KubectlDeploy: test.cfg,
@@ -185,7 +185,7 @@ func TestKubectlDeploy(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
+				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 					Force:     test.forceDeploy,
 				},
@@ -251,7 +251,7 @@ func TestKubectlCleanup(t *testing.T) {
 
 			k := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
-				Cfg: &latest.Pipeline{
+				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KubectlDeploy: test.cfg,
@@ -259,7 +259,7 @@ func TestKubectlCleanup(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
+				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
 			})
@@ -319,7 +319,7 @@ spec:
 		}
 		deployer := NewKubectlDeployer(&runcontext.RunContext{
 			WorkingDir: tmpDir.Root(),
-			Cfg: &latest.Pipeline{
+			Cfg: latest.Pipeline{
 				Deploy: latest.DeployConfig{
 					DeployType: latest.DeployType{
 						KubectlDeploy: cfg,
@@ -327,7 +327,7 @@ spec:
 				},
 			},
 			KubeContext: testKubeContext,
-			Opts: &config.SkaffoldOptions{
+			Opts: config.SkaffoldOptions{
 				Namespace: testNamespace,
 			},
 		})

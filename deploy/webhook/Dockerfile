@@ -45,9 +45,9 @@ COPY --from=download-hugo /hugo /usr/local/bin/
 COPY --from=download-kubectl /kubectl /usr/local/bin/
 
 FROM golang:1.12 as webhook
-WORKDIR $GOPATH/src/github.com/GoogleContainerTools/skaffold
+WORKDIR /skaffold
 COPY . .
-RUN go build -o /webhook webhook/webhook.go
+RUN go build -mod=vendor -o /webhook webhook/webhook.go
 
 FROM runtime_deps
 COPY --from=webhook /webhook /webhook

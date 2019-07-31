@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -83,7 +84,7 @@ type Config struct {
 	Force         bool
 	Analyze       bool
 	EnableJibInit bool // TODO: Remove this parameter
-	Opts          *config.SkaffoldOptions
+	Opts          config.SkaffoldOptions
 }
 
 // builderImagePair defines a builder and the image it builds
@@ -105,7 +106,7 @@ func DoInit(out io.Writer, c Config) error {
 		}
 	}
 
-	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, detectBuilders)
+	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, c.EnableJibInit, detectBuilders)
 	if err != nil {
 		return err
 	}
@@ -131,7 +132,7 @@ func DoInit(out io.Writer, c Config) error {
 	// conditionally generate build artifacts
 	if !c.SkipBuild {
 		if len(builderConfigs) == 0 {
-			return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least Dockerfile and try again or run `skaffold init --skip-build`")
+			return errors.New("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
 		}
 
 		if c.CliArtifacts != nil {
@@ -221,7 +222,19 @@ func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builde
 	return pairs, builderConfigs, unresolvedImages
 }
 
-func detectBuilders(path string) ([]InitBuilder, error) {
+func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, error) {
+	// TODO: Remove backwards compatibility if statement (not entire block)
+	if enableJibInit {
+		// Check for jib
+		if builders := jib.ValidateJibConfigFunc(path); builders != nil {
+			results := make([]InitBuilder, len(builders))
+			for i := range builders {
+				results[i] = builders[i]
+			}
+			return results, filepath.SkipDir
+		}
+	}
+
 	// Check for Dockerfile
 	if docker.ValidateDockerfileFunc(path) {
 		results := []InitBuilder{docker.Docker{File: path}}
@@ -241,6 +254,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 			return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
 		}
 
+		// TODO: Allow passing Jib config via CLI
 		pairs = append(pairs, builderImagePair{
 			Builder:   docker.Docker{File: parts[0]},
 			ImageName: parts[1],
@@ -434,7 +448,7 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 	return err
 }
 
-func walk(dir string, force bool, validateBuildFile func(string) ([]InitBuilder, error)) ([]string, []InitBuilder, error) {
+func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, string) ([]InitBuilder, error)) ([]string, []InitBuilder, error) {
 	var potentialConfigs []string
 	var foundBuilders []InitBuilder
 	err := filepath.Walk(dir, func(path string, f os.FileInfo, e error) error {
@@ -457,7 +471,7 @@ func walk(dir string, force bool, validateBuildFile func(string) ([]InitBuilder,
 			return nil
 		}
 		// try and parse build file
-		if builderConfigs, err := validateBuildFile(path); builderConfigs != nil {
+		if builderConfigs, err := validateBuildFile(enableJibInit, path); builderConfigs != nil {
 			for _, buildConfig := range builderConfigs {
 				logrus.Infof("existing builder found: %s", buildConfig.Describe())
 				foundBuilders = append(foundBuilders, buildConfig)

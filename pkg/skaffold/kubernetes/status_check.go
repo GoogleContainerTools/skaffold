@@ -25,9 +25,7 @@ import (
 )
 
 func GetPodDetails(pods corev1.PodInterface, podName string) error {
-	pod, err := pods.Get(podName, meta_v1.GetOptions{
-		IncludeUninitialized: true,
-	})
+	pod, err := pods.Get(podName, meta_v1.GetOptions{})
 	if err != nil {
 		return err
 	}
@@ -57,7 +55,11 @@ func getContainerStatus(pod *v1.Pod) string {
 			if reason == "" {
 				reason = "unknown"
 			}
-			return fmt.Sprintf("container %s is still waiting due to reason %s. Detail: %s ", c.Name, reason, c.State.Waiting.Message)
+			msg := ""
+			if c.State.Waiting.Message != ""{
+			  msg = fmt.Sprintf(" Detail: %s", msg)
+			}
+			return fmt.Sprintf("container %s is still waiting due to reason %s.%s", c.Name, reason, msg)
 		}
 	}
 	return ""

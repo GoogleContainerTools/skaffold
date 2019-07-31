@@ -31,28 +31,5 @@ if [[ "${TRAVIS}" == "true" ]]; then
     VERBOSE="-v --print-resources-usage"
 fi
 
-golangci-lint run ${VERBOSE} \
-	--deadline=4m \
-	--no-config \
-    --disable-all \
-    -E bodyclose \
-    -E deadcode \
-    -E goconst \
-    -E gocritic \
-    -E goimports \
-    -E golint \
-    -E gosimple \
-    -E govet \
-    -E ineffassign \
-    -E interfacer \
-    -E maligned \
-    -E misspell \
-    -E staticcheck \
-    -E structcheck \
-    -E stylecheck \
-    -E typecheck \
-    -E unconvert \
-    -E unparam \
-    -E unused \
-    -E varcheck \
-	--skip-dirs vendor | awk '/out of memory/ || /Deadline exceeded/ {failed = 1}; {print}; END {exit failed}'
+golangci-lint run ${VERBOSE} -c ${DIR}/golangci.yml \
+    | awk '/out of memory/ || /Deadline exceeded/ {failed = 1}; {print}; END {exit failed}'

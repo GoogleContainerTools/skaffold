@@ -58,7 +58,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		for _, s := range r.changeSet.needsResync {
 			color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
 
-			if err := r.Syncer.Sync(ctx, s); err != nil {
+			if err := r.syncer.Sync(ctx, s); err != nil {
 				r.changeSet.reset()
 				logrus.Warnln("Skipping deploy due to sync error:", err)
 				return nil
@@ -117,9 +117,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 
 		if err := r.monitor.Register(
-			func() ([]string, error) { return r.Builder.DependenciesForArtifact(ctx, artifact) },
+			func() ([]string, error) { return r.builder.DependenciesForArtifact(ctx, artifact) },
 			func(e filemon.Events) {
-				syncMap := func() (map[string][]string, error) { return r.SyncMap(ctx, artifact) }
+				syncMap := func() (map[string][]string, error) { return r.builder.SyncMap(ctx, artifact) }
 				s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries, syncMap)
 				switch {
 				case err != nil:
@@ -137,7 +137,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Watch test configuration
 	if err := r.monitor.Register(
-		r.Tester.TestDependencies,
+		r.tester.TestDependencies,
 		func(filemon.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
 		return errors.Wrap(err, "watching test files")
@@ -145,7 +145,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Watch deployment configuration
 	if err := r.monitor.Register(
-		r.Deployer.Dependencies,
+		r.deployer.Dependencies,
 		func(filemon.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
 		return errors.Wrap(err, "watching files for deployer")

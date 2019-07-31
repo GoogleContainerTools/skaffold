@@ -197,13 +197,6 @@ func (s *AppsService) FindRepositoryInstallation(ctx context.Context, owner, rep
 	return s.getInstallation(ctx, fmt.Sprintf("repos/%v/%v/installation", owner, repo))
 }
 
-// FindRepositoryInstallationByID finds the repository's installation information.
-//
-// Note: FindRepositoryInstallationByID uses the undocumented GitHub API endpoint /repositories/:id/installation.
-func (s *AppsService) FindRepositoryInstallationByID(ctx context.Context, id int64) (*Installation, *Response, error) {
-	return s.getInstallation(ctx, fmt.Sprintf("repositories/%d/installation", id))
-}
-
 // FindUserInstallation finds the user's installation information.
 //
 // GitHub API docs: https://developer.github.com/v3/apps/#find-repository-installation

@@ -106,7 +106,7 @@ func (*KubectlForwarder) Monitor(p *portForwardEntry, retryFunc func()) {
 		s, _ := p.logBuffer.ReadString(byte('\n'))
 		if s != "" {
 			logrus.Tracef("[port-forward] %s", s)
-			if strings.Contains(s, "error forwarding port") {
+			if strings.Contains(s, "error forwarding port") || strings.Contains(s, "unable to forward") {
 				// kubectl is having an error. retry the command
 				logrus.Infof("retrying kubectl port-forward due to error: %s", s)
 				go retryFunc()

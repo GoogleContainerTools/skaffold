@@ -30,14 +30,18 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/docker/docker/api"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+)
+
+// For testing
+var (
+	NewAPIClient = NewAPIClientImpl
 )
 
 var (
@@ -46,17 +50,11 @@ var (
 	dockerAPIClientErr  error
 )
 
-// NewAPIClient guesses the docker client to use based on current kubernetes context.
-func NewAPIClient(forceRemove bool, insecureRegistries map[string]bool) (LocalDaemon, error) {
+// NewAPIClientImpl guesses the docker client to use based on current kubernetes context.
+func NewAPIClientImpl(runCtx *runcontext.RunContext) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
-		kubeConfig, err := kubectx.CurrentConfig()
-		if err != nil {
-			dockerAPIClientErr = errors.Wrap(err, "getting current cluster context")
-			return
-		}
-
-		env, apiClient, err := newAPIClient(kubeConfig.CurrentContext)
-		dockerAPIClient = NewLocalDaemon(apiClient, env, forceRemove, insecureRegistries)
+		env, apiClient, err := newAPIClient(runCtx.KubeContext)
+		dockerAPIClient = NewLocalDaemon(apiClient, env, runCtx.Opts.Prune(), runCtx.InsecureRegistries)
 		dockerAPIClientErr = err
 	})
 
@@ -118,16 +116,15 @@ func newMinikubeAPIClient() ([]string, client.CommonAPIClient, error) {
 	if host == "" {
 		host = client.DefaultDockerHost
 	}
-	version := env["DOCKER_API_VERSION"]
-	if version == "" {
-		version = api.DefaultVersion
-	}
 
 	api, err := client.NewClientWithOpts(
 		client.WithHost(host),
-		client.WithVersion(version),
 		client.WithHTTPClient(httpclient),
 		client.WithHTTPHeaders(getUserAgentHeader()))
+
+	if api != nil {
+		api.NegotiateAPIVersion(context.Background())
+	}
 
 	// Keep the minikube environment variables
 	var environment []string

@@ -90,7 +90,7 @@ func doBuild(ctx context.Context, out io.Writer) error {
 	})
 }
 
-func targetArtifacts(opts *config.SkaffoldOptions, cfg *latest.SkaffoldConfig) []*latest.Artifact {
+func targetArtifacts(opts config.SkaffoldOptions, cfg *latest.SkaffoldConfig) []*latest.Artifact {
 	var targetArtifacts []*latest.Artifact
 
 	for _, artifact := range cfg.Build.Artifacts {

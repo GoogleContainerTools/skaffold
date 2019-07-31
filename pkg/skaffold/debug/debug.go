@@ -22,16 +22,15 @@ import (
 	"context"
 	"strings"
 
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
-	"k8s.io/apimachinery/pkg/runtime"
-	serializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
-	"k8s.io/client-go/kubernetes/scheme"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/runtime"
+	serializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 var (
@@ -99,7 +98,10 @@ func findArtifact(image string, builds []build.Artifact) *build.Artifact {
 // retrieveImageConfiguration retrieves the image container configuration for
 // the given build artifact
 func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact, insecureRegistries map[string]bool) (imageConfiguration, error) {
-	apiClient, err := docker.NewAPIClient(false, insecureRegistries)
+	// TODO: use the proper RunContext
+	apiClient, err := docker.NewAPIClient(&runcontext.RunContext{
+		InsecureRegistries: insecureRegistries,
+	})
 	if err != nil {
 		return imageConfiguration{}, errors.Wrap(err, "could not connect to local docker daemon")
 	}

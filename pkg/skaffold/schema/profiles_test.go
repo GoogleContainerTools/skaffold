@@ -57,7 +57,7 @@ profiles:
 		t.CheckNoError(err)
 
 		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
-		err = ApplyProfiles(skaffoldConfig, &cfg.SkaffoldOptions{
+		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
 			Profiles: []string{"patches"},
 		})
 
@@ -87,7 +87,7 @@ profiles:
 		t.CheckNoError(err)
 
 		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
-		err = ApplyProfiles(skaffoldConfig, &cfg.SkaffoldOptions{
+		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
 			Profiles: []string{"patches"},
 		})
 
@@ -126,7 +126,7 @@ func TestApplyProfiles(t *testing.T) {
 								GoogleCloudBuild: &latest.GoogleCloudBuild{
 									ProjectID:   "my-project",
 									DockerImage: "gcr.io/cloud-builders/docker",
-									MavenImage:  "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b",
+									MavenImage:  "gcr.io/cloud-builders/mvn",
 									GradleImage: "gcr.io/cloud-builders/gradle",
 								},
 							},
@@ -306,7 +306,7 @@ func TestApplyProfiles(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := ApplyProfiles(test.config, &cfg.SkaffoldOptions{
+			err := ApplyProfiles(test.config, cfg.SkaffoldOptions{
 				Profiles: []string{test.profile},
 			})
 
@@ -323,13 +323,13 @@ func TestActivatedProfiles(t *testing.T) {
 	tests := []struct {
 		description string
 		profiles    []latest.Profile
-		opts        *cfg.SkaffoldOptions
+		opts        cfg.SkaffoldOptions
 		expected    []string
 		shouldErr   bool
 	}{
 		{
 			description: "Selected on the command line",
-			opts: &cfg.SkaffoldOptions{
+			opts: cfg.SkaffoldOptions{
 				Command:  "dev",
 				Profiles: []string{"activated", "also-activated"},
 			},
@@ -341,7 +341,7 @@ func TestActivatedProfiles(t *testing.T) {
 			expected: []string{"activated", "also-activated"},
 		}, {
 			description: "Auto-activated by command",
-			opts: &cfg.SkaffoldOptions{
+			opts: cfg.SkaffoldOptions{
 				Command: "dev",
 			},
 			profiles: []latest.Profile{
@@ -354,7 +354,6 @@ func TestActivatedProfiles(t *testing.T) {
 			expected: []string{"dev-profile", "non-run-profile", "run-or-dev-profile"},
 		}, {
 			description: "Auto-activated by env variable",
-			opts:        &cfg.SkaffoldOptions{},
 			profiles: []latest.Profile{
 				{Name: "activated", Activation: []latest.Activation{{Env: "KEY=VALUE"}}},
 				{Name: "not-activated", Activation: []latest.Activation{{Env: "KEY=OTHER"}}},
@@ -364,14 +363,13 @@ func TestActivatedProfiles(t *testing.T) {
 			expected: []string{"activated", "also-activated", "regex-activated"},
 		}, {
 			description: "Invalid env variable",
-			opts:        &cfg.SkaffoldOptions{},
+			opts:        cfg.SkaffoldOptions{},
 			profiles: []latest.Profile{
 				{Name: "activated", Activation: []latest.Activation{{Env: "KEY:VALUE"}}},
 			},
 			shouldErr: true,
 		}, {
 			description: "Auto-activated by kube context",
-			opts:        &cfg.SkaffoldOptions{},
 			profiles: []latest.Profile{
 				{Name: "activated", Activation: []latest.Activation{{KubeContext: "prod-context"}}},
 				{Name: "not-activated", Activation: []latest.Activation{{KubeContext: "dev-context"}}},
@@ -383,7 +381,7 @@ func TestActivatedProfiles(t *testing.T) {
 			expected: []string{"activated", "also-activated", "activated-regexp"},
 		}, {
 			description: "AND between activation criteria",
-			opts: &cfg.SkaffoldOptions{
+			opts: cfg.SkaffoldOptions{
 				Command: "dev",
 			},
 			profiles: []latest.Profile{
@@ -405,7 +403,7 @@ func TestActivatedProfiles(t *testing.T) {
 			expected: []string{"activated"},
 		}, {
 			description: "OR between activations",
-			opts: &cfg.SkaffoldOptions{
+			opts: cfg.SkaffoldOptions{
 				Command: "dev",
 			},
 			profiles: []latest.Profile{

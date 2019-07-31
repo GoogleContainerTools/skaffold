@@ -58,7 +58,7 @@ func TestWaitForPodSucceeded(t *testing.T) {
 
 			errChan := make(chan error)
 			go func() {
-				errChan <- WaitForPodSucceeded(context.TODO(), fakePods, "", 5*time.Second)
+				errChan <- WaitForPodSucceeded(context.TODO(), fakePods, "", 50*time.Millisecond)
 			}()
 
 			for _, phase := range test.phases {
@@ -70,7 +70,7 @@ func TestWaitForPodSucceeded(t *testing.T) {
 						Phase: phase,
 					},
 				})
-				time.Sleep(time.Second)
+				time.Sleep(10 * time.Millisecond)
 			}
 			err := <-errChan
 

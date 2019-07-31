@@ -641,7 +641,7 @@ func TestNewSyncItem(t *testing.T) {
 			})
 
 			provider := func() (map[string][]string, error) { return test.dependencies, nil }
-			actual, err := NewItem(test.artifact, test.evt, test.builds, map[string]bool{}, provider)
+			actual, err := NewItem(test.artifact, test.evt, test.builds, nil, provider)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
@@ -730,16 +730,16 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files map[string][]string) []*exec.Cmd {
-	cmds := make([]*exec.Cmd, len(files))
-	i := 0
+func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files syncMap) *exec.Cmd {
+	var args []string
+
 	for src, dsts := range files {
 		for _, dst := range dsts {
-			cmds[i] = exec.CommandContext(ctx, "copy", src, dst)
-			i++
+			args = append(args, src, dst)
 		}
 	}
-	return cmds
+
+	return exec.CommandContext(ctx, "copy", args...)
 }
 
 var pod = &v1.Pod{
@@ -788,7 +788,7 @@ func TestPerform(t *testing.T) {
 		image       string
 		files       syncMap
 		pod         *v1.Pod
-		cmdFn       func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd
+		cmdFn       func(context.Context, v1.Pod, v1.Container, syncMap) *exec.Cmd
 		cmdErr      error
 		clientErr   error
 		expected    []string

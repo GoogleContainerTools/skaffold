@@ -437,7 +437,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			event.InitializeState(latest.BuildConfig{})
 			taken := map[int]struct{}{}
 
-			forwardingTimeoutTime = time.Second
+			t.Override(&forwardingTimeoutTime, 500*time.Millisecond)
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
 
 			entryManager := EntryManager{
@@ -481,14 +481,17 @@ func TestStartPodForwarder(t *testing.T) {
 			description:   "pod modified event",
 			entryExpected: true,
 			event:         watch.Modified,
-		}, {
+		},
+		{
 			description: "pod error event",
 			event:       watch.Error,
-		}, {
+		},
+		{
 			description: "event isn't for a pod",
 			obj:         &v1.Service{},
 			event:       watch.Modified,
-		}, {
+		},
+		{
 			description: "event is deleted",
 			event:       watch.Deleted,
 		},
@@ -551,8 +554,8 @@ func TestStartPodForwarder(t *testing.T) {
 
 			fakeWatcher.Action(test.event, obj)
 
-			// poll for 2 seconds for the pod resource to be forwarded
-			err := wait.PollImmediate(time.Second, 2*time.Second, func() (bool, error) {
+			// wait for the pod resource to be forwarded
+			err := wait.PollImmediate(10*time.Millisecond, 100*time.Millisecond, func() (bool, error) {
 				_, ok := fakeForwarder.forwardedResources.Load("mycontainer-default-myport-8080")
 				return ok, nil
 			})

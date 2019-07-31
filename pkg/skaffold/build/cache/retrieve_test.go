@@ -27,9 +27,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/docker/docker/api/types"
 )
 
 type depLister struct {
@@ -83,6 +84,11 @@ func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.
 	return built, nil
 }
 
+type stubAuth struct{}
+
+func (t stubAuth) GetAuthConfig(string) (types.AuthConfig, error)          { return types.AuthConfig{}, nil }
+func (t stubAuth) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
+
 func TestCacheBuildLocal(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().
@@ -92,7 +98,7 @@ func TestCacheBuildLocal(t *testing.T) {
 			Chdir()
 
 		runCtx := &runcontext.RunContext{
-			Opts: &config.SkaffoldOptions{
+			Opts: config.SkaffoldOptions{
 				CacheArtifacts: true,
 				CacheFile:      tmpDir.Path("cache"),
 			},
@@ -114,7 +120,7 @@ func TestCacheBuildLocal(t *testing.T) {
 
 		// Mock Docker
 		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
-		t.Override(&newDockerClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
 
@@ -158,7 +164,7 @@ func TestCacheBuildRemote(t *testing.T) {
 			Chdir()
 
 		runCtx := &runcontext.RunContext{
-			Opts: &config.SkaffoldOptions{
+			Opts: config.SkaffoldOptions{
 				CacheArtifacts: true,
 				CacheFile:      tmpDir.Path("cache"),
 			},
@@ -180,10 +186,10 @@ func TestCacheBuildRemote(t *testing.T) {
 
 		// Mock Docker
 		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
-		t.Override(&newDockerClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 			return dockerDaemon, nil
 		})
-
+		t.Override(&docker.DefaultAuthHelper, stubAuth{})
 		t.Override(&docker.RemoteDigest, func(ref string, _ map[string]bool) (string, error) {
 			switch ref {
 			case "artifact1:tag1":

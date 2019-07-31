@@ -23,7 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -72,7 +72,7 @@ func TestKustomizeDeploy(t *testing.T) {
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
-				Cfg: &latest.Pipeline{
+				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: test.cfg,
@@ -80,7 +80,7 @@ func TestKustomizeDeploy(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
+				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 					Force:     test.forceDeploy,
 				},
@@ -136,7 +136,7 @@ func TestKustomizeCleanup(t *testing.T) {
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: tmpDir.Root(),
-				Cfg: &latest.Pipeline{
+				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: test.cfg,
@@ -144,7 +144,7 @@ func TestKustomizeCleanup(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
+				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
 			})
@@ -305,7 +305,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 			}
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
-				Cfg: &latest.Pipeline{
+				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: &latest.KustomizeDeploy{
@@ -315,7 +315,6 @@ func TestDependenciesForKustomization(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts:        &config.SkaffoldOptions{},
 			})
 			deps, err := k.Dependencies()
 
