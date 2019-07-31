@@ -26,7 +26,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/pkg/errors"
@@ -91,15 +91,14 @@ func StatusCheckDeployments(ctx context.Context, client kubernetes.Interface, de
 		syncMap.Store("could not fetch deployments", err)
 		return
 	}
+
 	wg := &sync.WaitGroup{}
 	defer wg.Wait()
-	kubeCtl := &kubectl.CLI{
-		Namespace:   runCtx.Opts.Namespace,
-		KubeContext: runCtx.KubeContext,
-	}
+	kubeCtl := kubectl.NewFromRunContext(runCtx)
 	numDeps := int32(len(dMap))
 	var ops int32
 	atomic.StoreInt32(&ops, numDeps)
+
 
 	fmt.Fprintln(out, fmt.Sprintf("Waiting on %d of %d deployments", atomic.LoadInt32(&ops), numDeps))
 	for dName, deadline := range dMap {
@@ -166,8 +165,7 @@ func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName stri
 }
 
 func getRollOutStatus(ctx context.Context, k *kubectl.CLI, dName string) (string, error) {
-	b, err := k.RunOut(ctx, nil, "rollout", []string{"status", "deployment", dName},
-		"--watch=false")
+	b, err := k.RunOut(ctx, "rollout", "status", "deployment", dName, "--watch=false")
 	return string(b), err
 }
 

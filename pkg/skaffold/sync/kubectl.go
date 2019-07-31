@@ -25,22 +25,16 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-func deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files syncMap) *exec.Cmd {
-	args := []string{"exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name,
-		"--", "rm", "-rf", "--"}
-
+func (s *podSyncer) deleteFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files syncMap) *exec.Cmd {
+	args := make([]string, 0, 9+len(files))
+	args = append(args, pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "--", "rm", "-rf", "--")
 	for _, dsts := range files {
 		args = append(args, dsts...)
 	}
-
-	delete := exec.CommandContext(ctx, "kubectl", args...)
-	return delete
+	return s.kubectl.Command(ctx, "exec", args...)
 }
 
-func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files syncMap) *exec.Cmd {
-	args := []string{"exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "-i",
-		"--", "tar", "xmf", "-", "-C", "/", "--no-same-owner"}
-
+func (s *podSyncer) copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files syncMap) *exec.Cmd {
 	// Use "m" flag to touch the files as they are copied.
 	reader, writer := io.Pipe()
 	go func() {
@@ -51,7 +45,7 @@ func copyFileFn(ctx context.Context, pod v1.Pod, container v1.Container, files s
 		}
 	}()
 
-	copy := exec.CommandContext(ctx, "kubectl", args...)
-	copy.Stdin = reader
-	return copy
+	copyCmd := s.kubectl.Command(ctx, "exec", pod.Name, "--namespace", pod.Namespace, "-c", container.Name, "-i", "--", "tar", "xmf", "-", "-C", "/", "--no-same-owner")
+	copyCmd.Stdin = reader
+	return copyCmd
 }

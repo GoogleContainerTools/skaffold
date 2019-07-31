@@ -157,8 +157,8 @@ func TestKubectlDeploy(t *testing.T) {
 			},
 			command: testutil.NewFakeCmd(t).
 				WithRunOut("kubectl version --client -ojson", kubectlVersion).
-				WithRunOut("kubectl --context kubecontext --namespace testNamespace -v=0 create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
-				WithRunErr("kubectl --context kubecontext --namespace testNamespace -v=0 apply --overwrite=true -f -", fmt.Errorf("")),
+				WithRunOut("kubectl --context kubecontext --namespace testNamespace create -v=0 --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
+				WithRunErr("kubectl --context kubecontext --namespace testNamespace apply -v=0 --overwrite=true -f -", fmt.Errorf("")),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
@@ -238,8 +238,8 @@ func TestKubectlCleanup(t *testing.T) {
 				},
 			},
 			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl --context kubecontext --namespace testNamespace -v=0 create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
-				WithRun("kubectl --context kubecontext --namespace testNamespace -v=0 delete --grace-period=1 --ignore-not-found=true -f -"),
+				WithRunOut("kubectl --context kubecontext --namespace testNamespace create -v=0 --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
+				WithRun("kubectl --context kubecontext --namespace testNamespace delete -v=0 --grace-period=1 --ignore-not-found=true -f -"),
 		},
 	}
 	for _, test := range tests {
