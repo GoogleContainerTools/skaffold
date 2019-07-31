@@ -208,7 +208,6 @@ func getPods(pi corev1.PodInterface, l *DefaultLabeller) ([]v1.Pod, error) {
 
 func getPodStatus(ctx context.Context, pi corev1.PodInterface, client kubernetes.Interface, po *v1.Pod, deadline time.Duration, syncMap *sync.Map) {
 	err := kubernetesutil.WaitForPodToStabilize(ctx, pi, po.Name, deadline)
-	fmt.Println("in go ", po.Name)
 	if err == nil {
 		syncMap.Store(fmt.Sprintf("pod/%s", po.Name), nil)
 		return
@@ -243,11 +242,11 @@ func getResourceStatus(m *sync.Map, resource string) error {
 func printResourceStatus(resourcetype string, name string, m *sync.Map, numLeft int32, out io.Writer) {
 	resource := fmt.Sprintf("%s/%s", resourcetype, name)
 	if err := getResourceStatus(m, resource); err != nil {
-		color.Default.Fprintln(out, fmt.Sprintf("%s failed due to %s", resource, err.Error()))
+		color.Default.Fprintln(out, fmt.Sprintf("\n%s failed due to %s", resource, err.Error()))
 	} else {
-		color.Default.Fprintln(out, fmt.Sprintf("%s is ready", resource))
+		color.Default.Fprintln(out, fmt.Sprintf("\n%s is ready", resource))
 	}
 	if numLeft > 0 {
-		color.Default.Fprintln(out, fmt.Sprintf("Waiting on %d of %ss", numLeft, resourcetype))
+		color.Default.Fprintln(out, fmt.Sprintf("Waiting on %d %ss", numLeft, resourcetype))
 	}
 }
