@@ -11,8 +11,6 @@ You must install these tools:
 1. [`go`](https://golang.org/doc/install): The language skaffold is
    built in (version >= go 1.12)
 1. [`git`](https://help.github.com/articles/set-up-git/): For source control
-1. [`dep`](https://github.com/golang/dep): For managing external Go
-   dependencies. - Please Install dep v0.5.0 or greater.
 1. [`make`](https://www.gnu.org/software/make/): For building skaffold.
 1. [`golangci-lint`](https://github.com/golangci/golangci-lint): You can use the
    helper [script](./hack/install_golint.sh) to get golangci-lint.
@@ -43,19 +41,12 @@ You may also be interested in [contributing to the docs](#contributing-to-skaffo
 
 ## Checkout your fork
 
-The Go tools require that you clone the repository to the `src/github.com/GoogleContainerTools/skaffold` directory
-in your [`GOPATH`](https://github.com/golang/go/wiki/SettingGOPATH).
+To make local changes to skaffold and eventually submit a pull request to the repo,
+we recommend [creating your own fork](https://help.github.com/articles/fork-a-repo/).
 
-To check out this repository:
-
-1. Create your own [fork of this
-  repo](https://help.github.com/articles/fork-a-repo/)
-
-1. Clone it to your machine:
+Once you've done this, clone your fork to your local machine:
 
    ```shell
-   mkdir -p ${GOPATH}/src/github.com/GoogleContainerTools
-   cd ${GOPATH}/src/github.com/GoogleContainerTools
    git clone git@github.com:${YOUR_GITHUB_USERNAME}/skaffold.git
    cd skaffold
    git remote add upstream git@github.com:GoogleContainerTools/skaffold.git
@@ -116,7 +107,7 @@ To build with your local changes you have two options:
    ```
 
    This will install skaffold via `go install` (note that if you have [manually downloaded
-   and installed skaffold to `/usr/local/bin`](README.md#install), this is will probably
+   and installed skaffold to `/usr/local/bin`](README.md#install), this will probably
    take precedence in your path over your `$GOPATH/bin`).
 
    _If you are unsure if you are running a released or locally built version of skaffold, you
@@ -142,8 +133,6 @@ The unit tests live with the code they test and can be run with:
 make test
 ```
 
-_These tests will not run correctly unless you have [checked out your fork into your `$GOPATH`](#checkout-your-fork)._
-
 In case you see a linter error such as:
 
 ```shell
@@ -168,7 +157,7 @@ used by every Builder and Deployer, such as kubectl, bazel, java, kustomize..._
 A way to run the integration tests without installing those tools
 and without depending on a Kubernetes cluster is to install
 [kind](https://github.com/kubernetes-sigs/kind#installation-and-usage)
-ane run:
+and run:
 
 ```shell
 make integration-in-kind
@@ -234,12 +223,6 @@ To test a release on your own project:
 
 ```
 gcloud builds submit --config deploy/cloudbuild-release.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,TAG_NAME=testrelease_v1234 --project <personalproject>
-```
-
-Note: if gcloud submit fails with something similar to the error message below, run `dep ensure && dep prune` to remove the broken symlinks
-```
-ERROR: gcloud crashed (OSError): [Errno 2] No such file or directory: './vendor/github.com/karrick/godirwalk/testdata/symlinks/file-symlink'
-
 ```
 
 To just run a release without Google Cloud Build only using your local Docker daemon, you can run:

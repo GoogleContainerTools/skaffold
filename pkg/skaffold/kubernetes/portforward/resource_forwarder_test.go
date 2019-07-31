@@ -131,7 +131,7 @@ func TestStart(t *testing.T) {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
 			// poll up to 10 seconds for the resources to be forwarded
-			err := wait.PollImmediate(time.Second, 10*time.Second, func() (bool, error) {
+			err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
 				return len(test.expected) == fakeForwarder.forwardedResources.Length(), nil
 			})
 			if err != nil {
@@ -245,7 +245,7 @@ func TestUserDefinedResources(t *testing.T) {
 			t.Fatalf("error starting resource forwarder: %v", err)
 		}
 		// poll up to 10 seconds for the resources to be forwarded
-		err := wait.PollImmediate(time.Second, 10*time.Second, func() (bool, error) {
+		err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
 			return len(expected) == fakeForwarder.forwardedResources.Length(), nil
 		})
 		if err != nil {

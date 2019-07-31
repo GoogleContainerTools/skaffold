@@ -33,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/docker/docker/api"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/pkg/errors"
@@ -117,16 +116,15 @@ func newMinikubeAPIClient() ([]string, client.CommonAPIClient, error) {
 	if host == "" {
 		host = client.DefaultDockerHost
 	}
-	version := env["DOCKER_API_VERSION"]
-	if version == "" {
-		version = api.DefaultVersion
-	}
 
 	api, err := client.NewClientWithOpts(
 		client.WithHost(host),
-		client.WithVersion(version),
 		client.WithHTTPClient(httpclient),
 		client.WithHTTPHeaders(getUserAgentHeader()))
+
+	if api != nil {
+		api.NegotiateAPIVersion(context.Background())
+	}
 
 	// Keep the minikube environment variables
 	var environment []string

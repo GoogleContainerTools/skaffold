@@ -25,70 +25,92 @@ import (
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
-func TestJibMavenBuildSteps(t *testing.T) {
+func TestJibMavenBuildSpec(t *testing.T) {
 	tests := []struct {
-		skipTests bool
-		args      []string
+		description  string
+		skipTests    bool
+		expectedArgs []string
 	}{
-		{false, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + jib.MinimumJibMavenVersion, "--non-recursive", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
-		{true, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + jib.MinimumJibMavenVersion, "--non-recursive", "-DskipTests=true", "prepare-package", "jib:dockerBuild", "-Dimage=img"}},
+		{
+			description:  "skip tests",
+			skipTests:    true,
+			expectedArgs: []string{"-c", "mvn -Duser.home=$$HOME -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --non-recursive -DskipTests=true prepare-package jib:build -Dimage=img"},
+		},
+		{
+			description:  "do not skip tests",
+			skipTests:    false,
+			expectedArgs: []string{"-c", "mvn -Duser.home=$$HOME -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --non-recursive prepare-package jib:build -Dimage=img"},
+		},
 	}
 	for _, test := range tests {
-		artifact := &latest.Artifact{
-			ArtifactType: latest.ArtifactType{
-				JibMavenArtifact: &latest.JibMavenArtifact{},
-			},
-		}
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			artifact := &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					JibMavenArtifact: &latest.JibMavenArtifact{},
+				},
+			}
 
-		builder := Builder{
-			GoogleCloudBuild: &latest.GoogleCloudBuild{
+			builder := newBuilder(latest.GoogleCloudBuild{
 				MavenImage: "maven:3.6.0",
-			},
-			skipTests: test.skipTests,
-		}
+			})
+			builder.skipTests = test.skipTests
 
-		steps, err := builder.buildSteps(artifact, "img")
-		testutil.CheckError(t, false, err)
+			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
+			t.CheckNoError(err)
 
-		expected := []*cloudbuild.BuildStep{{
-			Name: "maven:3.6.0",
-			Args: test.args,
-		}}
+			expected := []*cloudbuild.BuildStep{{
+				Entrypoint: "sh",
+				Name:       "maven:3.6.0",
+				Args:       test.expectedArgs,
+			}}
 
-		testutil.CheckDeepEqual(t, expected, steps)
+			t.CheckDeepEqual(expected, buildSpec.Steps)
+			t.CheckDeepEqual(0, len(buildSpec.Images))
+		})
 	}
 }
 
-func TestJibGradleBuildSteps(t *testing.T) {
+func TestJibGradleBuildSpec(t *testing.T) {
 	tests := []struct {
-		skipTests bool
-		args      []string
+		description  string
+		skipTests    bool
+		expectedArgs []string
 	}{
-		{false, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + jib.MinimumJibGradleVersion, ":jibDockerBuild", "--image=img"}},
-		{true, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + jib.MinimumJibGradleVersion, ":jibDockerBuild", "--image=img", "-x", "test"}},
+		{
+			description:  "skip tests",
+			skipTests:    true,
+			expectedArgs: []string{"-c", "gradle -Duser.home=$$HOME -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + jib.MinimumJibGradleVersion + " :jib --image=img -x test"},
+		},
+		{
+			description:  "do not skip tests",
+			skipTests:    false,
+			expectedArgs: []string{"-c", "gradle -Duser.home=$$HOME -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + jib.MinimumJibGradleVersion + " :jib --image=img"},
+		},
 	}
 	for _, test := range tests {
-		artifact := &latest.Artifact{
-			ArtifactType: latest.ArtifactType{
-				JibGradleArtifact: &latest.JibGradleArtifact{},
-			},
-		}
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			artifact := &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					JibGradleArtifact: &latest.JibGradleArtifact{},
+				},
+			}
 
-		builder := Builder{
-			GoogleCloudBuild: &latest.GoogleCloudBuild{
+			builder := newBuilder(latest.GoogleCloudBuild{
 				GradleImage: "gradle:5.1.1",
-			},
-			skipTests: test.skipTests,
-		}
+			})
+			builder.skipTests = test.skipTests
 
-		steps, err := builder.buildSteps(artifact, "img")
-		testutil.CheckError(t, false, err)
+			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
+			t.CheckNoError(err)
 
-		expected := []*cloudbuild.BuildStep{{
-			Name: "gradle:5.1.1",
-			Args: test.args,
-		}}
+			expected := []*cloudbuild.BuildStep{{
+				Entrypoint: "sh",
+				Name:       "gradle:5.1.1",
+				Args:       test.expectedArgs,
+			}}
 
-		testutil.CheckDeepEqual(t, expected, steps)
+			t.CheckDeepEqual(expected, buildSpec.Steps)
+			t.CheckDeepEqual(0, len(buildSpec.Images))
+		})
 	}
 }

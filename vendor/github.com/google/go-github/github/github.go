@@ -375,9 +375,7 @@ type Response struct {
 	FirstPage int
 	LastPage  int
 
-	// Explicitly specify the Rate type so Rate's String() receiver doesn't
-	// propagate to Response.
-	Rate Rate
+	Rate
 }
 
 // newResponse creates a new Response for the provided http.Response.

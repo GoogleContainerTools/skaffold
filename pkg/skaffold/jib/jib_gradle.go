@@ -28,7 +28,7 @@ import (
 )
 
 // Skaffold-Jib depends on functionality introduced with Jib-Gradle 1.4.0
-const MinimumJibGradleVersion = "[1.4.0,)"
+const MinimumJibGradleVersion = "1.4.0"
 
 // GradleCommand stores Gradle executable and wrapper name
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
