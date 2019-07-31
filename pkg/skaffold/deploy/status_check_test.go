@@ -39,7 +39,6 @@ func TestGetDeployments(t *testing.T) {
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment
-		deadline    map[string]time.Duration
 		expected    map[string]time.Duration
 		shouldErr   bool
 	}{
