@@ -240,13 +240,13 @@ func getResourceStatus(m *sync.Map, resource string) error {
 
 func printResourceStatus(resourcetype string, name string, m *sync.Map, numLeft int32, total int32, out io.Writer) {
 	resource := fmt.Sprintf("%s/%s", resourcetype, name)
-	waitingMsg := fmt.Sprintf("(%d/%d %s still pending)", numLeft, total, resourcetype)
+	waitingMsg := fmt.Sprintf("[%d/%d %s(s) still pending]", numLeft, total, resourcetype)
 	if numLeft == 0 {
-		waitingMsg = "(All pods verified)"
+		waitingMsg = fmt.Sprintf("[Status check complete for all %ss]", resourcetype)
 	}
 	if err := getResourceStatus(m, resource); err != nil {
-		color.Default.Fprintln(out, fmt.Sprintf("\n%s failed due to %s. %s", resource, err.Error(), waitingMsg))
+		color.Default.Fprintln(out, fmt.Sprintf("%s failed %s. Error: %s.", resource, waitingMsg, err.Error()))
 	} else {
-		color.Default.Fprintln(out, fmt.Sprintf("\n%s is ready. %s", resource, waitingMsg))
+		color.Default.Fprintln(out, fmt.Sprintf("%s is ready. %s", resource, waitingMsg))
 	}
 }

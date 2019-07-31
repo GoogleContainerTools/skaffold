@@ -33,14 +33,14 @@ func GetPodDetails(pods corev1.PodInterface, podName string) error {
 		if c.Status == v1.ConditionFalse {
 			reason := c.Reason
 			if reason == "" {
-				reason = "could not determine."
+				reason = "could not determine"
 			}
 			if details := c.Message; details != "" {
 				reason = fmt.Sprintf("%s. Detail: %s", reason, details)
 			}
 			moreDetails := getContainerStatus(pod)
 			if moreDetails != "" {
-				moreDetails = fmt.Sprintf("\nMore Details: %s", moreDetails)
+				moreDetails = fmt.Sprintf("\n\tMore Details: %s", moreDetails)
 			}
 			return fmt.Errorf("pod in phase %s due to reason %s. %s", pod.Status.Phase, reason, moreDetails)
 		}
@@ -56,8 +56,8 @@ func getContainerStatus(pod *v1.Pod) string {
 				reason = "unknown"
 			}
 			msg := ""
-			if c.State.Waiting.Message != ""{
-			  msg = fmt.Sprintf(" Detail: %s", msg)
+			if c.State.Waiting.Message != "" {
+				msg = fmt.Sprintf(" Detail: %s", c.State.Waiting.Message)
 			}
 			return fmt.Sprintf("container %s is still waiting due to reason %s.%s", c.Name, reason, msg)
 		}
