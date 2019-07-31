@@ -254,11 +254,11 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 			return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
 		}
 
-		// Parses JSON in the form of: {"name":"Name of Builder","payload": {...}}
-		// Parse name field first to determine builder type
+		// Parses JSON in the form of: {"name":"Name of Builder","payload": {...}}. The
+		// name field is parsed first to determine the builder type, and the payload is parsed
+		// afterwards once the type is determined.
 		nameCheck := struct {
-			Name    string      `json:"name"`
-			Payload interface{} `json:"payload"`
+			Name string `json:"name"`
 		}{}
 		if err := json.Unmarshal([]byte(parts[0]), &nameCheck); err != nil {
 			// Not JSON, use backwards compatible method
@@ -270,34 +270,31 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 		}
 
 		// Use builder type to parse payload
-		pair := builderImagePair{ImageName: parts[1]}
 		switch nameCheck.Name {
 		case docker.Name:
 			parsed := struct {
-				Name    string        `json:"name"`
 				Payload docker.Docker `json:"payload"`
 			}{}
 			if err := json.Unmarshal([]byte(parts[0]), &parsed); err != nil {
 				return nil, err
 			}
-			pair.Builder = parsed.Payload
+			pair := builderImagePair{Builder: parsed.Payload, ImageName: parts[1]}
+			pairs = append(pairs, pair)
 
 		case jib.JibGradle, jib.JibMaven:
 			parsed := struct {
-				Name    string  `json:"name"`
 				Payload jib.Jib `json:"payload"`
 			}{}
 			if err := json.Unmarshal([]byte(parts[0]), &parsed); err != nil {
 				return nil, err
 			}
-			parsed.Payload.BuilderName = parsed.Name
-			pair.Builder = parsed.Payload
+			parsed.Payload.BuilderName = nameCheck.Name
+			pair := builderImagePair{Builder: parsed.Payload, ImageName: parts[1]}
+			pairs = append(pairs, pair)
 
 		default:
 			return nil, errors.New("unknown builder type in CLI artifacts")
 		}
-
-		pairs = append(pairs, pair)
 	}
 	return pairs, nil
 }
