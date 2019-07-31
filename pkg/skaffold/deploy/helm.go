@@ -176,12 +176,24 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	var setOpts []string
 	for k, v := range params {
 		setOpts = append(setOpts, "--set")
-		if r.ImageStrategy.HelmImageConfig.HelmConventionConfig != nil {
+		helmConventionConfig := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
+		if helmConventionConfig != nil {
 			dockerRef, err := docker.ParseReference(v.Tag)
 			if err != nil {
 				return nil, errors.Wrapf(err, "cannot parse the docker image reference %s", v.Tag)
 			}
-			imageRepositoryTag := fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, dockerRef.BaseName, k, dockerRef.Tag)
+			var imageRepositoryTag string
+			if helmConventionConfig.ExplicitRegistry {
+				if dockerRef.Domain == "" {
+					return nil, errors.Wrapf(err, "cannot parse the docker image reference %s into parts", v.Tag)
+				}
+				imageRepositoryTag = fmt.Sprintf(
+					"%s.registry=%s,%s.repository=%s,%s.tag=%s",
+					k, dockerRef.Domain, k, dockerRef.Path, k, dockerRef.Tag,
+				)
+			} else {
+				imageRepositoryTag = fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, dockerRef.BaseName, k, dockerRef.Tag)
+			}
 			setOpts = append(setOpts, imageRepositoryTag)
 		} else {
 			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v.Tag))

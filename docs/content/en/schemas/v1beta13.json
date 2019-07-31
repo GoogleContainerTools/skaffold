@@ -868,6 +868,18 @@
       "x-intellij-html-description": "<em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/docs/\">Google Cloud Build</a>. Docker and Jib artifacts can be built on Cloud Build. The <code>projectId</code> needs to be provided and the currently logged in user should be given permissions to trigger new builds."
     },
     "HelmConventionConfig": {
+      "properties": {
+        "explicitRegistry": {
+          "type": "boolean",
+          "description": "separates `image.registry` to the image config syntax. Useful for some charts e.g. `postgresql`.",
+          "x-intellij-html-description": "separates <code>image.registry</code> to the image config syntax. Useful for some charts e.g. <code>postgresql</code>.",
+          "default": "false"
+        }
+      },
+      "preferredOrder": [
+        "explicitRegistry"
+      ],
+      "additionalProperties": false,
       "description": "image config in the syntax of image.repository and image.tag.",
       "x-intellij-html-description": "image config in the syntax of image.repository and image.tag."
     },
