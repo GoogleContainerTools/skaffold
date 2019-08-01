@@ -59,8 +59,6 @@ To edit this file above edit index_header - the rest of the file is autogenerate
 
 
 ```
-
-
 End-to-end pipelines:
   run               Run a pipeline
   dev               Run a pipeline in development mode
@@ -69,6 +67,7 @@ End-to-end pipelines:
 Pipeline building blocks for CI/CD:
   build             Build the artifacts
   deploy            Deploy pre-built artifacts
+  integrationtest Run integrations tests in pod
   delete            Delete the deployed application
 
 Getting started with a new project:
@@ -83,8 +82,6 @@ Other Commands:
 
 Use "skaffold <command> --help" for more information about a given command.
 Use "skaffold options" for a list of global command-line options (applies to all commands).
-
-
 ```
 Env vars:
 
@@ -565,6 +562,33 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_SKIP_BUILD` (same as `--skip-build`)
+
+### skaffold integrationtest
+
+Run integrations tests in pod
+
+```
+
+
+Options:
+  -d, --default-repo='': Default repository value (overrides global config)
+  -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
+  -n, --namespace='': Run deployments in the specified namespace
+  -p, --profile=[]: Activate profiles by name
+
+Usage:
+  skaffold integrationtest [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+Env vars:
+
+* `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_PROFILE` (same as `--profile`)
 
 ### skaffold options
 

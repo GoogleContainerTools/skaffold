@@ -62,7 +62,8 @@ type Pipeline struct {
 	// Deploy describes how images are deployed.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
 
-	IntegrationTest IntegrationTestConfig `yaml:integrationtest,omitempty`
+	// IntegrationTest describes how integration tests will be run.
+	IntegrationTest IntegrationTestConfig `yaml:"integrationtest,omitempty"`
 
 	// PortForward describes user defined resources to port-forward.
 	PortForward []*PortForwardResource `yaml:"portForward,omitempty"`
@@ -773,8 +774,11 @@ type JibGradleArtifact struct {
 	Flags []string `yaml:"args,omitempty"`
 }
 
-
+// IntegrationTestConfig *alpha* describes an integration test to be run in a pod.
 type IntegrationTestConfig struct {
-	PodSelector string `yaml:"podSelector,omitempty" yamltags:"required"`
-	TestCommand string `yaml:"testCommand,omitempty" yamltags:"required"`
+	// PodSelector defines the pod where tests will be executed in.
+	PodSelector string `yaml:"podSelector,omitempty"`
+
+	// TestCommand defines the command that will be run.
+	TestCommand string `yaml:"testCommand,omitempty"`
 }

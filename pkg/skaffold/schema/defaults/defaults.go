@@ -72,6 +72,8 @@ func Set(c *latest.SkaffoldConfig) error {
 		setDefaultLocalPort(pf)
 	}
 
+	setDefaultIntegrationTest(c)
+
 	return nil
 }
 
@@ -280,4 +282,9 @@ func setDefaultLocalPort(pf *latest.PortForwardResource) {
 
 func setDefaultPortForwardNamespace(pf *latest.PortForwardResource) {
 	pf.Namespace = valueOrDefault(pf.Namespace, constants.DefaultPortForwardNamespace)
+}
+
+func setDefaultIntegrationTest(c *latest.SkaffoldConfig) {
+	c.IntegrationTest.PodSelector = valueOrDefault(c.IntegrationTest.PodSelector, "")
+	c.IntegrationTest.TestCommand = valueOrDefault(c.IntegrationTest.TestCommand, "")
 }

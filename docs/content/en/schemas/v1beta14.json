@@ -868,6 +868,18 @@
       "x-intellij-html-description": "<em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/docs/\">Google Cloud Build</a>. Docker and Jib artifacts can be built on Cloud Build. The <code>projectId</code> needs to be provided and the currently logged in user should be given permissions to trigger new builds."
     },
     "HelmConventionConfig": {
+      "properties": {
+        "explicitRegistry": {
+          "type": "boolean",
+          "description": "separates `image.registry` to the image config syntax. Useful for some charts e.g. `postgresql`.",
+          "x-intellij-html-description": "separates <code>image.registry</code> to the image config syntax. Useful for some charts e.g. <code>postgresql</code>.",
+          "default": "false"
+        }
+      },
+      "preferredOrder": [
+        "explicitRegistry"
+      ],
+      "additionalProperties": false,
       "description": "image config in the syntax of image.repository and image.tag.",
       "x-intellij-html-description": "image config in the syntax of image.repository and image.tag."
     },
@@ -1136,6 +1148,27 @@
       "additionalProperties": false,
       "description": "describes a helm release to be deployed.",
       "x-intellij-html-description": "describes a helm release to be deployed."
+    },
+    "IntegrationTestConfig": {
+      "properties": {
+        "podSelector": {
+          "type": "string",
+          "description": "defines the pod where tests will be executed in.",
+          "x-intellij-html-description": "defines the pod where tests will be executed in."
+        },
+        "testCommand": {
+          "type": "string",
+          "description": "defines the command that will be run.",
+          "x-intellij-html-description": "defines the command that will be run."
+        }
+      },
+      "preferredOrder": [
+        "podSelector",
+        "testCommand"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* describes an integration test to be run in a pod.",
+      "x-intellij-html-description": "<em>alpha</em> describes an integration test to be run in a pod."
     },
     "JSONPatch": {
       "required": [
@@ -1568,6 +1601,11 @@
           "description": "describes how images are deployed.",
           "x-intellij-html-description": "describes how images are deployed."
         },
+        "integrationtest": {
+          "$ref": "#/definitions/IntegrationTestConfig",
+          "description": "describes how integration tests will be run.",
+          "x-intellij-html-description": "describes how integration tests will be run."
+        },
         "name": {
           "type": "string",
           "description": "a unique profile name.",
@@ -1606,6 +1644,7 @@
         "build",
         "test",
         "deploy",
+        "integrationtest",
         "portForward",
         "patches",
         "activation"
@@ -1692,6 +1731,11 @@
           "description": "describes how images are deployed.",
           "x-intellij-html-description": "describes how images are deployed."
         },
+        "integrationtest": {
+          "$ref": "#/definitions/IntegrationTestConfig",
+          "description": "describes how integration tests will be run.",
+          "x-intellij-html-description": "describes how integration tests will be run."
+        },
         "kind": {
           "type": "string",
           "description": "always `Config`.",
@@ -1735,6 +1779,7 @@
         "build",
         "test",
         "deploy",
+        "integrationtest",
         "portForward",
         "profiles"
       ],
