@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -59,9 +60,9 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 			fmt.Sprintf("%d:%d", pfe.localPort, pfe.resource.Port),
 			"--namespace", pfe.resource.Namespace,
 		)
-		pfe.logBuffer = &bytes.Buffer{}
-		cmd.Stdout = pfe.logBuffer
-		cmd.Stderr = pfe.logBuffer
+		buf := &bytes.Buffer{}
+		cmd.Stdout = buf
+		cmd.Stderr = buf
 
 		if err := cmd.Start(); err != nil {
 			if ctx.Err() == context.Canceled {
@@ -69,24 +70,20 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 				return
 			}
 			//retry on exit at Start()
-			logrus.Debugf("error starting port forwarding %v: %s, output: %s", pfe, err, pfe.logBuffer.String())
+			logrus.Debugf("error starting port forwarding %v: %s, output: %s", pfe, err, buf.String())
 			time.Sleep(500 * time.Millisecond)
 			continue
 		}
 
-		//retry on kubectl port-forward error logs
-		go k.monitorErrorLogs(ctx, pfe, func() {
-			if err := cmd.Process.Kill(); err != nil {
-				logrus.Errorf("failed to kill pf %v, err: %s", pfe, err)
-			}
-		})
+		//kill kubectl on port forwarding error logs
+		go k.monitorErrorLogs(ctx, buf, cmd, pfe)
 
 		if err := cmd.Wait(); err != nil {
 			if ctx.Err() == context.Canceled {
 				logrus.Debugf("terminated %v due to context cancellation", pfe)
 				return
 			}
-			logrus.Debugf("port forwarding %v got terminated: %s, output: %s", pfe, err, pfe.logBuffer.String())
+			logrus.Debugf("port forwarding %v got terminated: %s, output: %s", pfe, err, buf.String())
 		}
 	}
 }
@@ -103,14 +100,14 @@ func (*KubectlForwarder) Terminate(p *portForwardEntry) {
 // Monitor monitors the logs for a kubectl port forward command
 // If it sees an error, it calls back to the EntryManager to
 // retry the entire port forward operation.
-func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, p *portForwardEntry, cancel func()) {
+func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, buf *bytes.Buffer, cmd *exec.Cmd, p *portForwardEntry) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
 			time.Sleep(1 * time.Second)
-			s, _ := p.logBuffer.ReadString(byte('\n'))
+			s, _ := buf.ReadString(byte('\n'))
 			if s != "" {
 				logrus.Tracef("[port-forward] %s", s)
 
@@ -118,8 +115,10 @@ func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, p *portForwardEnt
 					strings.Contains(s, "unable to forward") ||
 					strings.Contains(s, "error upgrading connection") {
 					// kubectl is having an error. retry the command
-					logrus.Infof("error in kubectl port-forward logs: %s", s)
-					cancel()
+					logrus.Tracef("killing port forwarding %v", p)
+					if err := cmd.Process.Kill(); err != nil {
+						logrus.Errorf("failed to kill port forwarding %v, err: %s", p, err)
+					}
 					return
 				}
 			}
