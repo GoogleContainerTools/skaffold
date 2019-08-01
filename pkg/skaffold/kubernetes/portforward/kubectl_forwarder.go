@@ -78,10 +78,6 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		}
 
 		ctx, cancel := context.WithCancel(parentCtx)
-		// when retrying a portforwarding entry, it might already have a context running
-		if pfe.cancel != nil {
-			pfe.cancel()
-		}
 		pfe.cancel = cancel
 
 		cmd := k.kubectl.Command(ctx,
@@ -108,12 +104,13 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 
 		//kill kubectl on port forwarding error logs
 		go k.monitorErrorLogs(ctx, buf, cmd, pfe)
-
 		if err := cmd.Wait(); err != nil {
 			if ctx.Err() == context.Canceled {
 				logrus.Debugf("terminated %v due to context cancellation", pfe)
 				return
 			}
+			//to make sure that the log monitor gets cleared up
+			cancel()
 			logrus.Debugf("port forwarding %v got terminated: %s, output: %s", pfe, err, buf.String())
 			time.Sleep(500 * time.Millisecond)
 		}
