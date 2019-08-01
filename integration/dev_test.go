@@ -186,7 +186,7 @@ func TestDevPortForward(t *testing.T) {
 	stop := skaffold.Dev("--port-forward").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
 	defer stop()
 
-	err := wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+	err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 		resp, err := http.Get("http://localhost:50053")
 		if err != nil {
 			return false, nil
@@ -210,7 +210,7 @@ func TestDevPortForward(t *testing.T) {
 		}
 	}()
 
-	err = wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+	err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 		resp, err := http.Get("http://localhost:50053")
 		if err != nil {
 			return false, nil
