@@ -63,7 +63,10 @@ func TestGeneratePipeline(t *testing.T) {
 			}
 			defer ioutil.WriteFile(test.dir+"/skaffold.yaml", originalConfig, 0755)
 
-			skaffoldEnv := []string{"SKAFFOLD_GIT_URL=this-is-a-test"}
+			skaffoldEnv := []string{
+				"PIPELINE_GIT_URL=this-is-a-test",
+				"PIPELINE_SKAFFOLD_VERSION=test-version",
+			}
 			skaffold.GeneratePipeline().WithStdin([]byte("y\n")).WithEnv(skaffoldEnv).InDir(test.dir).RunOrFail(t)
 
 			checkFileContents(t, test.dir+"/expectedSkaffold.yaml", test.dir+"/skaffold.yaml")
@@ -83,6 +86,6 @@ func checkFileContents(t *testing.T, wantFile, gotFile string) {
 	}
 
 	if !bytes.Equal(wantContents, gotContents) {
-		t.Errorf("Contents of %s did not match those of %s", gotFile, wantFile)
+		t.Errorf("Contents of %s did not match those of %s\ngot:%s\nwant:%s", gotFile, wantFile, string(gotContents), string(wantContents))
 	}
 }

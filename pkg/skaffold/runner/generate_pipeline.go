@@ -116,7 +116,7 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 
 func generateGitResource() (*tekton.PipelineResource, error) {
 	// Get git repo url
-	gitRepo := os.Getenv("SKAFFOLD_GIT_URL")
+	gitRepo := os.Getenv("PIPELINE_GIT_URL")
 	if gitRepo == "" {
 		getGitRepo := exec.Command("git", "config", "--get", "remote.origin.url")
 		bGitRepo, err := getGitRepo.Output()
@@ -152,6 +152,11 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 		return nil, errors.New("no artifacts to build")
 	}
 
+	skaffoldVersion := os.Getenv("PIPELINE_SKAFFOLD_VERSION")
+	if skaffoldVersion == "" {
+		skaffoldVersion = version.Get().Version
+	}
+
 	return &tekton.Task{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Task",
@@ -172,7 +177,7 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 			Steps: []corev1.Container{
 				{
 					Name:       "run-build",
-					Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", version.Get().Version),
+					Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),
 					WorkingDir: "/workspace/source",
 					Command:    []string{"skaffold"},
 					Args: []string{"build",
@@ -189,6 +194,11 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) {
 	if deployConfig.HelmDeploy == nil && deployConfig.KubectlDeploy == nil && deployConfig.KustomizeDeploy == nil {
 		return nil, errors.New("no Helm/Kubectl/Kustomize deploy config")
+	}
+
+	skaffoldVersion := os.Getenv("PIPELINE_SKAFFOLD_VERSION")
+	if skaffoldVersion == "" {
+		skaffoldVersion = version.Get().Version
 	}
 
 	return &tekton.Task{
@@ -211,7 +221,7 @@ func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) 
 			Steps: []corev1.Container{
 				{
 					Name:       "run-deploy",
-					Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", version.Get().Version),
+					Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),
 					WorkingDir: "/workspace/source",
 					Command:    []string{"skaffold"},
 					Args: []string{
