@@ -267,26 +267,38 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 	}()
 
 	body := []byte{}
-	err = wait.PollImmediate(time.Millisecond*500, 5*time.Minute, func() (bool, error) {
-		e := <-entries
-		switch e.Event.GetEventType().(type) {
-		case *proto.Event_PortEvent:
-			if e.Event.GetPortEvent().ResourceName == "gke-loadbalancer" &&
-				e.Event.GetPortEvent().ResourceType == "service" {
-				port := e.Event.GetPortEvent().LocalPort
-				t.Logf("Detected service/gke-loadbalancer is forwarded to port %d", port)
-				resp, err := http.Get(fmt.Sprintf("http://localhost:%d", port))
-				if err != nil {
-					t.Errorf("could not get service/gke-loadbalancer due to %s", err)
+	var port int32
+	timeout := time.After(1 * time.Minute)
+
+portForwardEvent:
+	for {
+		select {
+		case <-timeout:
+			t.Errorf("timed out waiting for port forwarding event")
+			break portForwardEvent
+		case e := <-entries:
+			switch e.Event.GetEventType().(type) {
+			case *proto.Event_PortEvent:
+				if e.Event.GetPortEvent().ResourceName == "gke-loadbalancer" &&
+					e.Event.GetPortEvent().ResourceType == "service" {
+					port = e.Event.GetPortEvent().LocalPort
+					t.Logf("Detected service/gke-loadbalancer is forwarded to port %d", port)
+					break portForwardEvent
 				}
-				defer resp.Body.Close()
-				body, err = ioutil.ReadAll(resp.Body)
-				return true, err
+			default:
+				t.Logf("event received %v", e)
 			}
-			return false, nil
-		default:
+		}
+	}
+	err = wait.PollImmediate(time.Millisecond*500, 3*time.Minute, func() (bool, error) {
+		resp, err := http.Get(fmt.Sprintf("http://localhost:%d", port))
+		if err != nil {
+			t.Logf("could not get service/gke-loadbalancer due to %s", err)
 			return false, nil
 		}
+		defer resp.Body.Close()
+		body, err = ioutil.ReadAll(resp.Body)
+		return true, err
 	})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, string(body), "hello!!\n")
