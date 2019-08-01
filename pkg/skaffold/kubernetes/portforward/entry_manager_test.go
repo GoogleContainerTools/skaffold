@@ -17,13 +17,19 @@ limitations under the License.
 package portforward
 
 import (
+	"fmt"
 	"io/ioutil"
+	"net"
 	"reflect"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 func TestNewEntryManager(t *testing.T) {
@@ -127,4 +133,40 @@ func TestForwardedResources(t *testing.T) {
 		}
 	}()
 	pf.Store("resource2", "not port forward entry")
+}
+
+//This is the same behavior
+func TestGetAvailablePortOnForwardedPorts(t *testing.T) {
+	AssertCompetingProcessesCanSucceed(newForwardedPorts(), t)
+}
+
+//TODO this is copy pasted to portforward.forwardedPorts testing as well - it should go away when we introduce port brokering
+// https://github.com/GoogleContainerTools/skaffold/issues/2503
+func AssertCompetingProcessesCanSucceed(ports util.ForwardedPorts, t *testing.T) {
+	t.Helper()
+	N := 100
+	var (
+		errors int32
+		wg     sync.WaitGroup
+	)
+	wg.Add(N)
+	for i := 0; i < N; i++ {
+		go func() {
+
+			port := util.GetAvailablePort(4503, ports)
+
+			l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
+			if err != nil {
+				atomic.AddInt32(&errors, 1)
+			} else {
+				l.Close()
+			}
+			time.Sleep(2 * time.Second)
+			wg.Done()
+		}()
+	}
+	wg.Wait()
+	if atomic.LoadInt32(&errors) > 0 {
+		t.Fatalf("A port that was available couldn't be used %d times", errors)
+	}
 }

@@ -67,7 +67,11 @@ func (f forwardedPorts) LoadOrStore(key, _ interface{}) (interface{}, bool) {
 	}
 	// this map is only used as a set of keys, we don't care about the values
 	_, exists := f.ports[k]
-	return dummy(), exists
+	val := dummy()
+	if !exists {
+		f.ports[k] = val
+	}
+	return val, exists
 }
 
 func dummy() struct{} {

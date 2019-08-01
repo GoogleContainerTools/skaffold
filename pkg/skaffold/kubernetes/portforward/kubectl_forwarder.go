@@ -55,10 +55,13 @@ func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEn
 func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEntry) {
 	var notifiedUser bool
 	for {
-		if parentCtx.Err() == context.Canceled {
-			logrus.Debugf("port forwarding %v cancelled...", pfe)
+		pfe.terminationLock.Lock()
+		if pfe.terminated {
+			logrus.Debugf("port forwarding %v was cancelled...", pfe)
 			return
 		}
+		pfe.terminationLock.Unlock()
+
 		if !util.IsPortFree(pfe.localPort) {
 			//assuming that Skaffold brokered ports don't overlap, this has to be an external process that started
 			//since the dev loop kicked off. We are notifying the user in the hope that they can fix it
@@ -79,6 +82,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 			pfe.cancel()
 		}
 		pfe.cancel = cancel
+
 		cmd := k.kubectl.Command(ctx,
 			"port-forward",
 			"--pod-running-timeout", "1s",
@@ -119,9 +123,13 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 func (*KubectlForwarder) Terminate(p *portForwardEntry) {
 	logrus.Debugf("Terminating port-forward %v", p)
 
+	p.terminationLock.Lock()
+	defer p.terminationLock.Unlock()
+
 	if p.cancel != nil {
 		p.cancel()
 	}
+	p.terminated = true
 }
 
 // Monitor monitors the logs for a kubectl port forward command

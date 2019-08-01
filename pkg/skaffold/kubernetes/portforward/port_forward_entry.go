@@ -19,6 +19,7 @@ package portforward
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -32,7 +33,9 @@ type portForwardEntry struct {
 	localPort              int
 	automaticPodForwarding bool
 
-	cancel context.CancelFunc
+	terminationLock *sync.Mutex
+	cancel          context.CancelFunc
+	terminated      bool
 }
 
 // key is an identifier for the lock on a port during the skaffold dev cycle.
