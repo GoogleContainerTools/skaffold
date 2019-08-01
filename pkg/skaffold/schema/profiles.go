@@ -153,9 +153,9 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 		APIVersion: config.APIVersion,
 		Kind:       config.Kind,
 		Pipeline: latest.Pipeline{
-			Build:  overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
-			Deploy: overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
-			Test:   overlayProfileField(config.Test, profile.Test).([]*latest.TestCase),
+			Build:           overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
+			Deploy:          overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
+			Test:            overlayProfileField(config.Test, profile.Test).([]*latest.TestCase),
 			IntegrationTest: overlayProfileField(config.IntegrationTest, profile.IntegrationTest).(latest.IntegrationTestConfig),
 		},
 	}

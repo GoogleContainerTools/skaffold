@@ -19,14 +19,14 @@ package runner
 import (
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/integrationtest"
-	"io"
-	"time"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/integrationtest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
+	"io"
+	"time"
 )
 
 // BuildAndTest builds and tests a list of artifacts.
