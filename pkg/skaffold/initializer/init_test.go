@@ -446,7 +446,7 @@ func TestProcessCliArtifacts(t *testing.T) {
 		},
 		{
 			description: "Invalid builder",
-			artifacts:   []string{`{"name":"Not real","payload":{}}=image`},
+			artifacts:   []string{`{"builder":"Not real","payload":{},"image":"image"}`},
 			shouldErr:   true,
 		},
 		{
@@ -469,9 +469,9 @@ func TestProcessCliArtifacts(t *testing.T) {
 		{
 			description: "Valid",
 			artifacts: []string{
-				`{"name":"Docker","payload":{"path":"/path/to/Dockerfile"}}=image1`,
-				`{"name":"Jib Gradle Plugin","payload":{"path":"/path/to/build.gradle"}}=image2`,
-				`{"name":"Jib Maven Plugin","payload":{"path":"/path/to/pom.xml","project":"project-name"}}=image3`,
+				`{"builder":"Docker","payload":{"path":"/path/to/Dockerfile"},"image":"image1"}`,
+				`{"builder":"Jib Gradle Plugin","payload":{"path":"/path/to/build.gradle"},"image":"image2"}`,
+				`{"builder":"Jib Maven Plugin","payload":{"path":"/path/to/pom.xml","project":"project-name","image":"testImage"},"image":"image3"}`,
 			},
 			expectedPairs: []builderImagePair{
 				{
@@ -483,7 +483,7 @@ func TestProcessCliArtifacts(t *testing.T) {
 					ImageName: "image2",
 				},
 				{
-					Builder:   jib.Jib{BuilderName: "Jib Maven Plugin", FilePath: "/path/to/pom.xml", Project: "project-name"},
+					Builder:   jib.Jib{BuilderName: "Jib Maven Plugin", FilePath: "/path/to/pom.xml", Project: "project-name", Image: "testImage"},
 					ImageName: "image3",
 				},
 			},

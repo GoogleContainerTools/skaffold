@@ -249,18 +249,19 @@ func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, error) {
 func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 	var pairs []builderImagePair
 	for _, artifact := range artifacts {
-		parts := strings.Split(artifact, "=")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
-		}
-
-		// Parses JSON in the form of: {"name":"Name of Builder","payload": {...}}. The
-		// name field is parsed first to determine the builder type, and the payload is parsed
+		// Parses JSON in the form of: {"builder":"Name of Builder","payload":{...},"image":"image.name"}.
+		// The builder field is parsed first to determine the builder type, and the payload is parsed
 		// afterwards once the type is determined.
-		nameCheck := struct {
-			Name string `json:"name"`
+		a := struct {
+			Name  string `json:"builder"`
+			Image string `json:"image"`
 		}{}
-		if err := json.Unmarshal([]byte(parts[0]), &nameCheck); err != nil {
+		if err := json.Unmarshal([]byte(artifact), &a); err != nil {
+			parts := strings.Split(artifact, "=")
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
+			}
+
 			// Not JSON, use backwards compatible method
 			pairs = append(pairs, builderImagePair{
 				Builder:   docker.Docker{File: parts[0]},
@@ -270,26 +271,26 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 		}
 
 		// Use builder type to parse payload
-		switch nameCheck.Name {
+		switch a.Name {
 		case docker.Name:
 			parsed := struct {
 				Payload docker.Docker `json:"payload"`
 			}{}
-			if err := json.Unmarshal([]byte(parts[0]), &parsed); err != nil {
+			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
 			}
-			pair := builderImagePair{Builder: parsed.Payload, ImageName: parts[1]}
+			pair := builderImagePair{Builder: parsed.Payload, ImageName: a.Image}
 			pairs = append(pairs, pair)
 
 		case jib.JibGradle, jib.JibMaven:
 			parsed := struct {
 				Payload jib.Jib `json:"payload"`
 			}{}
-			if err := json.Unmarshal([]byte(parts[0]), &parsed); err != nil {
+			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
 			}
-			parsed.Payload.BuilderName = nameCheck.Name
-			pair := builderImagePair{Builder: parsed.Payload, ImageName: parts[1]}
+			parsed.Payload.BuilderName = a.Name
+			pair := builderImagePair{Builder: parsed.Payload, ImageName: a.Image}
 			pairs = append(pairs, pair)
 
 		default:
