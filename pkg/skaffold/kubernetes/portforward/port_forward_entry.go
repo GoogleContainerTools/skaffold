@@ -32,10 +32,9 @@ type portForwardEntry struct {
 	portName               string
 	localPort              int
 	automaticPodForwarding bool
-
-	terminationLock *sync.Mutex
-	cancel          context.CancelFunc
-	terminated      bool
+	terminated             bool
+	terminationLock        *sync.Mutex
+	cancel                 context.CancelFunc
 }
 
 // key is an identifier for the lock on a port during the skaffold dev cycle.
