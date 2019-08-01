@@ -775,6 +775,6 @@ type JibGradleArtifact struct {
 
 
 type IntegrationTestConfig struct {
-	PodSelector string `yaml:"podSelector"`
-	TestCommand string `yaml:"testCommand"`
+	PodSelector string `yaml:"podSelector,omitempty" yamltags:"required"`
+	TestCommand string `yaml:"testCommand,omitempty" yamltags:"required"`
 }
