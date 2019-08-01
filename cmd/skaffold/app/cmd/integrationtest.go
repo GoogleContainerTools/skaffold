@@ -18,10 +18,11 @@ package cmd
 
 import (
 	"context"
+	"io"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/spf13/cobra"
-	"io"
 )
 
 func NewCmdIntegrationTest() *cobra.Command {
