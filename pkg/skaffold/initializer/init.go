@@ -257,12 +257,11 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 			Image string `json:"image"`
 		}{}
 		if err := json.Unmarshal([]byte(artifact), &a); err != nil {
+			// Not JSON, use backwards compatible method
 			parts := strings.Split(artifact, "=")
 			if len(parts) != 2 {
 				return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
 			}
-
-			// Not JSON, use backwards compatible method
 			pairs = append(pairs, builderImagePair{
 				Builder:   docker.Docker{File: parts[0]},
 				ImageName: parts[1],
