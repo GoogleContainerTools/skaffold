@@ -1378,20 +1378,10 @@
           "description": "the Kubernetes yaml or json manifests.",
           "x-intellij-html-description": "the Kubernetes yaml or json manifests.",
           "default": "[\"k8s/*.yaml\"]"
-        },
-        "remoteManifests": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "Kubernetes manifests in remote clusters.",
-          "x-intellij-html-description": "Kubernetes manifests in remote clusters.",
-          "default": "[]"
         }
       },
       "preferredOrder": [
         "manifests",
-        "remoteManifests",
         "flags"
       ],
       "additionalProperties": false,

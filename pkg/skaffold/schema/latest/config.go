@@ -360,9 +360,6 @@ type KubectlDeploy struct {
 	// Defaults to `["k8s/*.yaml"]`.
 	Manifests []string `yaml:"manifests,omitempty"`
 
-	// RemoteManifests lists Kubernetes manifests in remote clusters.
-	RemoteManifests []string `yaml:"remoteManifests,omitempty"`
-
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
 }
