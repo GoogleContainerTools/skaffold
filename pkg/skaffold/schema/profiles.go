@@ -156,6 +156,7 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 			Build:  overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
 			Deploy: overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
 			Test:   overlayProfileField(config.Test, profile.Test).([]*latest.TestCase),
+			IntegrationTest: overlayProfileField(config.IntegrationTest, profile.IntegrationTest).(latest.IntegrationTestConfig),
 		},
 	}
 
@@ -287,6 +288,11 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 		return v.Interface()
 	case reflect.Int:
 		if v.Interface() == reflect.Zero(v.Type()).Interface() {
+			return config
+		}
+		return v.Interface()
+	case reflect.String:
+		if v.Len() == 0 {
 			return config
 		}
 		return v.Interface()
