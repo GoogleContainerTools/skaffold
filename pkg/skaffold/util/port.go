@@ -77,6 +77,10 @@ func getPortIfAvailable(p int, forwardedPorts ForwardedPorts) bool {
 		return false
 	}
 
+	return IsPortFree(p)
+}
+
+func IsPortFree(p int) bool {
 	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", Loopback, p))
 	if err != nil {
 		return false

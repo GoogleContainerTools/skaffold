@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -41,14 +43,18 @@ type KubectlForwarder struct {
 // Forward port-forwards a pod using kubectl port-forward in the background
 // It kills the command on errors in the kubectl port-forward log
 // It restarts the command if it was not cancelled by skaffold
+// It retries in case the port is taken
 func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) {
 	go k.forward(parentCtx, pfe)
 }
 
 func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEntry) {
 	for {
-		//TODO: we should check for bound port otherwise a competing process might steal it, and
-		// kubectl port-forward will just run silently in that case
+		if !util.IsPortFree(pfe.localPort) {
+			logrus.Errorf("failed to port forward %v, port %d is taken, retrying...", pfe, pfe.localPort)
+			time.Sleep(5 * time.Second)
+			continue
+		}
 
 		ctx, cancel := context.WithCancel(parentCtx)
 		// when retrying a portforwarding entry, it might already have a context running
