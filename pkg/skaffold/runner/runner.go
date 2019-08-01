@@ -41,6 +41,7 @@ type Runner interface {
 	DeployAndLog(context.Context, io.Writer, []build.Artifact) error
 	GeneratePipeline(context.Context, io.Writer, *latest.SkaffoldConfig, string) error
 	DeployAndIntegrationTest(context.Context, io.Writer, []build.Artifact) error
+	ExecIntegrationTest(context.Context, io.Writer) error
 	Cleanup(context.Context, io.Writer) error
 	Prune(context.Context, io.Writer) error
 	HasDeployed() bool
