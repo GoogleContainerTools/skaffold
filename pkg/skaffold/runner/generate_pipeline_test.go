@@ -17,9 +17,9 @@ limitations under the License.
 package runner
 
 import (
+	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/integration/examples/bazel/bazel-bazel/external/go_sdk/src/io/ioutil"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 
