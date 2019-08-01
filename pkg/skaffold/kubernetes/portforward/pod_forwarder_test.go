@@ -163,53 +163,6 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 				},
 			},
 		},
-		//todo instead test retry?
-		//{
-		//	description:    "forward error",
-		//	expectedPorts:  map[int]struct{}{8080: {}},
-		//	forwarder:      newTestForwarder(),
-		//	shouldErr:      false,
-		//	availablePorts: []int{8080},
-		//	expectedEntries: map[string]*portForwardEntry{
-		//		"containername-namespace-portname-8080": {
-		//			resourceVersion: 1,
-		//			podName:         "podname",
-		//			containerName:   "containername",
-		//			portName:        "portname",
-		//			resource: latest.PortForwardResource{
-		//				Type:      "pod",
-		//				Name:      "podname",
-		//				Namespace: "namespace",
-		//				Port:      8080,
-		//				LocalPort: 8080,
-		//			},
-		//			automaticPodForwarding: true,
-		//			localPort:              8080,
-		//		},
-		//	},
-		//	pods: []*v1.Pod{
-		//		{
-		//			ObjectMeta: metav1.ObjectMeta{
-		//				Name:            "podname",
-		//				ResourceVersion: "1",
-		//				Namespace:       "namespace",
-		//			},
-		//			Spec: v1.PodSpec{
-		//				Containers: []v1.Container{
-		//					{
-		//						Name: "containername",
-		//						Ports: []v1.ContainerPort{
-		//							{
-		//								ContainerPort: 8080,
-		//								Name:          "portname",
-		//							},
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	},
-		//},
 		{
 			description:    "two different container ports",
 			expectedPorts:  map[int]struct{}{8080: {}, 50051: {}},
