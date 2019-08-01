@@ -125,9 +125,8 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 					p.Terminate(prevEntry)
 				}
 			}
-			if err := p.forwardPortForwardEntry(ctx, entry); err != nil {
-				return err
-			}
+			p.forwardPortForwardEntry(ctx, entry)
+
 		}
 	}
 	return nil

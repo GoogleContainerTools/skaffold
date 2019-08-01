@@ -50,9 +50,7 @@ func WhiteBoxPortForwardCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace s
 	}
 
 	defer em.Stop()
-	if err := em.forwardPortForwardEntry(ctx, pfe); err != nil {
-		t.Fatalf("failed to forward %s: %s", pfe.String(), err)
-	}
+	em.forwardPortForwardEntry(ctx, pfe)
 	em.Stop()
 
 	logrus.Info("waiting for the same port to become available...")
@@ -67,7 +65,5 @@ func WhiteBoxPortForwardCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace s
 		t.Fatalf("port is not released after portforwarding stopped: %d", localPort)
 	}
 
-	if err := em.forwardPortForwardEntry(ctx, pfe); err != nil {
-		t.Fatalf("failed to forward %s: %s", pfe.String(), err)
-	}
+	em.forwardPortForwardEntry(ctx, pfe)
 }

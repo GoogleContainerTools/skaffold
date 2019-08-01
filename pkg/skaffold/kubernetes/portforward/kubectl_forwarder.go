@@ -47,6 +47,9 @@ func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEn
 
 func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEntry) {
 	for {
+		//TODO: we should check for bound port otherwise a competing process might steal it, and
+		// kubectl port-forward will just run silently in that case
+
 		ctx, cancel := context.WithCancel(parentCtx)
 		// when retrying a portforwarding entry, it might already have a context running
 		if pfe.cancel != nil {
@@ -84,6 +87,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 				return
 			}
 			logrus.Debugf("port forwarding %v got terminated: %s, output: %s", pfe, err, buf.String())
+			time.Sleep(500 * time.Millisecond)
 		}
 	}
 }

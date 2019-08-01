@@ -156,10 +156,10 @@ func NewEntryManager(out io.Writer, cli *kubectl.CLI) EntryManager {
 	}
 }
 
-func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portForwardEntry) error {
+func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portForwardEntry) {
 	// Check if this resource has already been forwarded
 	if _, ok := b.forwardedResources.Load(entry.key()); ok {
-		return nil
+		return
 	}
 	b.forwardedResources.Store(entry.key(), entry)
 
@@ -173,7 +173,6 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 			entry.resource.Port,
 			entry.localPort))
 	portForwardEvent(entry)
-	return nil
 }
 
 // Stop terminates all kubectl port-forward commands.
@@ -188,9 +187,4 @@ func (b *EntryManager) Terminate(p *portForwardEntry) {
 	b.forwardedResources.Delete(p.key())
 	b.forwardedPorts.Delete(p.localPort)
 	b.EntryForwarder.Terminate(p)
-}
-
-func (b *EntryManager) Retry(ctx context.Context, p *portForwardEntry) error {
-	b.Terminate(p)
-	return b.forwardPortForwardEntry(ctx, p)
 }
