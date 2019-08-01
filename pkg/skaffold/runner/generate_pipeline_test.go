@@ -19,6 +19,7 @@ package runner
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/integration/examples/bazel/bazel-bazel/external/go_sdk/src/io/ioutil"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 
@@ -271,7 +272,7 @@ func TestGenerateProfile(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			profile, err := generateProfile(test.skaffoldConfig)
+			profile, err := generateProfile(ioutil.Discard, test.skaffoldConfig)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedProfile, profile)
 		})
 	}

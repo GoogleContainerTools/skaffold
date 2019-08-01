@@ -31,7 +31,9 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	yamlv2 "gopkg.in/yaml.v2"
@@ -45,12 +47,12 @@ var (
 )
 
 func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, config *latest.SkaffoldConfig, fileOut string) error {
-	err := createSkaffoldProfile(config)
+	err := createSkaffoldProfile(out, config, r.runCtx.Opts.ConfigurationFile)
 	if err != nil {
 		return errors.Wrap(err, "setting up profile")
 	}
 
-	fmt.Println("Generating Pipeline...")
+	color.Default.Fprintln(out, "Generating Pipeline...")
 
 	// Generate git resource for pipeline
 	gitResource, err := generateGitResource()
@@ -109,11 +111,7 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 	}
 
 	// write all yaml pieces to output
-	if err := ioutil.WriteFile(fileOut, output.Bytes(), 0755); err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(fileOut, output.Bytes(), 0755)
 }
 
 func generateGitResource() (*tekton.PipelineResource, error) {
@@ -151,7 +149,7 @@ func generateGitResource() (*tekton.PipelineResource, error) {
 
 func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 	if len(buildConfig.Artifacts) == 0 {
-		return nil, errors.New("No artifacts to build")
+		return nil, errors.New("no artifacts to build")
 	}
 
 	return &tekton.Task{
@@ -174,7 +172,7 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 			Steps: []corev1.Container{
 				{
 					Name:       "run-build",
-					Image:      "gcr.io/k8s-skaffold/skaffold:v0.34.0",
+					Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", version.Get().Version),
 					WorkingDir: "/workspace/source",
 					Command:    []string{"skaffold"},
 					Args: []string{"build",
@@ -190,7 +188,7 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 
 func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) {
 	if deployConfig.HelmDeploy == nil && deployConfig.KubectlDeploy == nil && deployConfig.KustomizeDeploy == nil {
-		return nil, errors.New("No Helm/Kubectl/Kustomize deploy config")
+		return nil, errors.New("no Helm/Kubectl/Kustomize deploy config")
 	}
 
 	return &tekton.Task{
@@ -213,7 +211,7 @@ func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) 
 			Steps: []corev1.Container{
 				{
 					Name:       "run-deploy",
-					Image:      "gcr.io/k8s-skaffold/skaffold:v0.34.0",
+					Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", version.Get().Version),
 					WorkingDir: "/workspace/source",
 					Command:    []string{"skaffold"},
 					Args: []string{
@@ -278,8 +276,8 @@ func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
 	return pipeline, nil
 }
 
-func createSkaffoldProfile(config *latest.SkaffoldConfig) error {
-	fmt.Println("Checking for oncluster skaffold profile...")
+func createSkaffoldProfile(out io.Writer, config *latest.SkaffoldConfig, configFile string) error {
+	color.Default.Fprintln(out, "Checking for oncluster skaffold profile...")
 	profileExists := false
 	for _, profile := range config.Profiles {
 		if profile.Name == "oncluster" {
@@ -290,13 +288,13 @@ func createSkaffoldProfile(config *latest.SkaffoldConfig) error {
 
 	// Check for existing oncluster profile, if none exists then prompt to create one
 	if profileExists {
-		fmt.Println("profile \"oncluster\" found!")
+		color.Default.Fprintln(out, "profile \"oncluster\" found!")
 		return nil
 	}
 
 confirmLoop:
 	for {
-		fmt.Print("No profile \"oncluster\" found. Create one? [y/n]: ")
+		color.Default.Fprintf(out, "No profile \"oncluster\" found. Create one? [y/n]: ")
 		response, err := reader.ReadString('\n')
 		if err != nil {
 			return errors.Wrap(err, "reading user confirmation")
@@ -311,8 +309,8 @@ confirmLoop:
 		}
 	}
 
-	fmt.Println("Creating skaffold profile \"oncluster\"...")
-	profile, err := generateProfile(config)
+	color.Default.Fprintln(out, "Creating skaffold profile \"oncluster\"...")
+	profile, err := generateProfile(out, config)
 	if err != nil {
 		return errors.Wrap(err, "generating profile \"oncluster\"")
 	}
@@ -322,7 +320,7 @@ confirmLoop:
 		return errors.Wrap(err, "marshaling new profile")
 	}
 
-	fileContents, err := ioutil.ReadFile("skaffold.yaml")
+	fileContents, err := ioutil.ReadFile(configFile)
 	if err != nil {
 		return errors.Wrap(err, "reading file contents")
 	}
@@ -347,14 +345,14 @@ confirmLoop:
 
 	fileContents = []byte((strings.Join(fileStrings, "\n")))
 
-	if err := ioutil.WriteFile("skaffold.yaml", fileContents, 0644); err != nil {
-		return errors.Wrap(err, "writing profile to skaffold.yaml")
+	if err := ioutil.WriteFile(configFile, fileContents, 0644); err != nil {
+		return errors.Wrap(err, "writing profile to skaffold config")
 	}
 
 	return nil
 }
 
-func generateProfile(config *latest.SkaffoldConfig) (*latest.Profile, error) {
+func generateProfile(out io.Writer, config *latest.SkaffoldConfig) (*latest.Profile, error) {
 	if len(config.Build.Artifacts) == 0 {
 		return nil, errors.New("No Artifacts to add to profile")
 	}
@@ -374,7 +372,7 @@ func generateProfile(config *latest.SkaffoldConfig) (*latest.Profile, error) {
 	for _, artifact := range profile.Build.Artifacts {
 		artifact.ImageName = fmt.Sprintf("%s-pipeline", artifact.ImageName)
 		if artifact.DockerArtifact != nil {
-			fmt.Printf("Cannot use Docker to build %s on cluster. Adding config for building with Kaniko.\n", artifact.ImageName)
+			color.Default.Fprintf(out, "Cannot use Docker to build %s on cluster. Adding config for building with Kaniko.\n", artifact.ImageName)
 			artifact.DockerArtifact = nil
 			artifact.KanikoArtifact = &latest.KanikoArtifact{
 				BuildContext: &latest.KanikoBuildContext{
