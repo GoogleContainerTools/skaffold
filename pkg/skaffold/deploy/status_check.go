@@ -99,7 +99,6 @@ func StatusCheckDeployments(ctx context.Context, client kubernetes.Interface, de
 	var ops int32
 	atomic.StoreInt32(&ops, numDeps)
 
-
 	fmt.Fprintln(out, fmt.Sprintf("Waiting on %d of %d deployments", atomic.LoadInt32(&ops), numDeps))
 	for dName, deadline := range dMap {
 		deadlineDuration := time.Duration(deadline) * time.Second
