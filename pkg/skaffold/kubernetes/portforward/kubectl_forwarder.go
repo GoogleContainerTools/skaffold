@@ -58,6 +58,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		pfe.terminationLock.Lock()
 		if pfe.terminated {
 			logrus.Debugf("port forwarding %v was cancelled...", pfe)
+			pfe.terminationLock.Unlock()
 			return
 		}
 		pfe.terminationLock.Unlock()
