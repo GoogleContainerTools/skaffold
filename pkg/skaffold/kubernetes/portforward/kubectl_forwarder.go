@@ -20,9 +20,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 
@@ -38,6 +41,7 @@ type EntryForwarder interface {
 
 type KubectlForwarder struct {
 	kubectl *kubectl.CLI
+	out     io.Writer
 }
 
 // Forward port-forwards a pod using kubectl port-forward in the background
@@ -49,11 +53,24 @@ func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEn
 }
 
 func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEntry) {
+	var notifiedUser bool
 	for {
+		if parentCtx.Err() == context.Canceled {
+			logrus.Debugf("port forwarding %v cancelled...", pfe)
+			return
+		}
 		if !util.IsPortFree(pfe.localPort) {
-			logrus.Errorf("failed to port forward %v, port %d is taken, retrying...", pfe, pfe.localPort)
+			//assuming that Skaffold brokered ports don't overlap, this has to be an external process that started
+			//since the dev loop kicked off. We are notifying the user in the hope that they can fix it
+			color.Red.Fprintf(k.out, "failed to port forward %v, port %d is taken, retrying...\n", pfe, pfe.localPort)
+			notifiedUser = true
 			time.Sleep(5 * time.Second)
 			continue
+		}
+
+		if notifiedUser {
+			color.Green.Fprintf(k.out, "port forwarding %v recovered on port %d\n", pfe, pfe.localPort)
+			notifiedUser = false
 		}
 
 		ctx, cancel := context.WithCancel(parentCtx)
@@ -127,7 +144,7 @@ func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, buf *bytes.Buffer
 					// kubectl is having an error. retry the command
 					logrus.Tracef("killing port forwarding %v", p)
 					if err := cmd.Process.Kill(); err != nil {
-						logrus.Errorf("failed to kill port forwarding %v, err: %s", p, err)
+						logrus.Tracef("failed to kill port forwarding %v, err: %s", p, err)
 					}
 					return
 				}
