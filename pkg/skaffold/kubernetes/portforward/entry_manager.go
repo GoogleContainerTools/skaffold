@@ -20,11 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"runtime"
 	"sync"
-	"time"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -167,14 +163,15 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 	}
 	b.forwardedResources.Store(entry.key(), entry)
 
-	b.Forward(ctx, entry, func() {
-		time.Sleep(1 * time.Second)
-		logrus.Infof("Restarting port forwarding %s/%s from remote port %d to local port %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort)
-		b.Retry(ctx, entry)
-	})
+	b.Forward(ctx, entry)
 
-	color.Default.Fprintln(b.output, fmt.Sprintf("Establishing port forwarding %s/%s from remote port %d to local port %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort))
-	logrus.Tracef("number of goroutines: %d", runtime.NumGoroutine())
+	color.Default.Fprintln(
+		b.output,
+		fmt.Sprintf("Port forwarding %s/%s from remote port %d to local port %d",
+			entry.resource.Type,
+			entry.resource.Name,
+			entry.resource.Port,
+			entry.localPort))
 	portForwardEvent(entry)
 	return nil
 }

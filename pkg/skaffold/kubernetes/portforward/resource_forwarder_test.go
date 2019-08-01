@@ -38,7 +38,7 @@ type testForwarder struct {
 	forwardedPorts     forwardedPorts
 }
 
-func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry, retryFunc func()) {
+func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) {
 	f.forwardedResources.Store(pfe.key(), pfe)
 	f.forwardedPorts.Store(pfe.localPort, true)
 }
