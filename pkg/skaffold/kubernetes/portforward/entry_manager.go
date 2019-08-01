@@ -20,10 +20,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"runtime"
 	"sync"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -31,9 +32,7 @@ import (
 )
 
 var (
-	// For testing
-	forwardingTimeoutTime = time.Minute
-	portForwardEvent      = func(entry *portForwardEntry) {
+	portForwardEvent = func(entry *portForwardEntry) {
 		// TODO priyawadhwa@, change event API to accept ports of type int
 		event.PortForwarded(
 			int32(entry.localPort),
@@ -167,23 +166,15 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 		return nil
 	}
 	b.forwardedResources.Store(entry.key(), entry)
-	err := wait.PollImmediate(time.Second, forwardingTimeoutTime, func() (bool, error) {
-		if err := b.Forward(ctx, entry); err != nil {
-			return false, nil
-		}
-		return true, nil
-	})
 
-	go b.Monitor(entry, func() {
+	b.Forward(ctx, entry, func() {
+		time.Sleep(1 * time.Second)
+		logrus.Infof("Restarting port forwarding %s/%s from remote port %d to local port %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort)
 		b.Retry(ctx, entry)
 	})
 
-	if err != nil {
-		return err
-	}
-
-	color.Default.Fprintln(b.output, fmt.Sprintf("Port forwarded %s/%s from remote port %d to local port %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort))
-
+	color.Default.Fprintln(b.output, fmt.Sprintf("Establishing port forwarding %s/%s from remote port %d to local port %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort))
+	logrus.Tracef("number of goroutines: %d", runtime.NumGoroutine())
 	portForwardEvent(entry)
 	return nil
 }

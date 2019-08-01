@@ -36,14 +36,11 @@ import (
 type testForwarder struct {
 	forwardedResources forwardedResources
 	forwardedPorts     forwardedPorts
-
-	forwardErr error
 }
 
-func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) error {
+func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry, retryFunc func()) {
 	f.forwardedResources.Store(pfe.key(), pfe)
 	f.forwardedPorts.Store(pfe.localPort, true)
-	return f.forwardErr
 }
 
 func (f *testForwarder) Monitor(_ *portForwardEntry, _ func()) {}
@@ -53,11 +50,10 @@ func (f *testForwarder) Terminate(pfe *portForwardEntry) {
 	f.forwardedPorts.Delete(pfe.resource.Port)
 }
 
-func newTestForwarder(forwardErr error) *testForwarder {
+func newTestForwarder() *testForwarder {
 	return &testForwarder{
 		forwardedResources: newForwardedResources(),
 		forwardedPorts:     newForwardedPorts(),
-		forwardErr:         forwardErr,
 	}
 }
 
@@ -119,7 +115,7 @@ func TestStart(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(latest.BuildConfig{})
-			fakeForwarder := newTestForwarder(nil)
+			fakeForwarder := newTestForwarder()
 			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), "", nil)
 			rf.EntryForwarder = fakeForwarder
 
@@ -233,7 +229,7 @@ func TestUserDefinedResources(t *testing.T) {
 
 	testutil.Run(t, "one service and one user defined pod", func(t *testutil.T) {
 		event.InitializeState(latest.BuildConfig{})
-		fakeForwarder := newTestForwarder(nil)
+		fakeForwarder := newTestForwarder()
 		rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), "", []*latest.PortForwardResource{pod})
 		rf.EntryForwarder = fakeForwarder
 

@@ -69,7 +69,7 @@ func TestStop(t *testing.T) {
 	em.forwardedPorts.Store(9000, struct{}{})
 	em.forwardedPorts.Store(9001, struct{}{})
 
-	fakeForwarder := newTestForwarder(nil)
+	fakeForwarder := newTestForwarder()
 	fakeForwarder.forwardedResources = em.forwardedResources
 	em.EntryForwarder = fakeForwarder
 
