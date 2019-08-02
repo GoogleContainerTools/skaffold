@@ -212,7 +212,7 @@ func TestDevPortForward(t *testing.T) {
 	originalResponse := "leeroooooy app!!"
 	replacementResponse := "test string"
 
-	waitForPortForwardEvent(t, entries, "leeroy-app", "service", originalResponse + "\n")
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", originalResponse+"\n")
 
 	original, perms, fErr := replaceInFile(originalResponse, replacementResponse, "examples/microservices/leeroy-app/app.go")
 	if fErr != nil {
@@ -224,7 +224,7 @@ func TestDevPortForward(t *testing.T) {
 		}
 	}()
 
-	waitForPortForwardEvent(t, entries, "leeroy-app", "service", replacementResponse + "\n")
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", replacementResponse+"\n")
 }
 
 func TestDevPortForwardGKELoadBalancer(t *testing.T) {
