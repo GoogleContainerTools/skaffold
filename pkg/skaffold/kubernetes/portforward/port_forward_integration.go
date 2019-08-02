@@ -19,6 +19,7 @@ package portforward
 import (
 	"context"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -45,19 +46,20 @@ func WhiteBoxPortForwardCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace s
 			Namespace: namespace,
 			Port:      8080,
 		},
-		containerName: "dummy container",
-		localPort:     localPort,
+		containerName:   "dummy container",
+		localPort:       localPort,
+		terminationLock: &sync.Mutex{},
 	}
 
 	defer em.Stop()
-	if err := em.forwardPortForwardEntry(ctx, pfe); err != nil {
-		t.Fatalf("failed to forward %s: %s", pfe.String(), err)
-	}
+	em.forwardPortForwardEntry(ctx, pfe)
 	em.Stop()
 
 	logrus.Info("waiting for the same port to become available...")
 	if err := wait.Poll(100*time.Millisecond, 5*time.Second, func() (done bool, err error) {
 		nextPort := retrieveAvailablePort(localPort, em.forwardedPorts)
+
+		logrus.Infof("next port %d", nextPort)
 
 		// theoretically we should be able to bind to the very same port
 		// this might get flaky when multiple tests are ran. However
@@ -67,7 +69,5 @@ func WhiteBoxPortForwardCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace s
 		t.Fatalf("port is not released after portforwarding stopped: %d", localPort)
 	}
 
-	if err := em.forwardPortForwardEntry(ctx, pfe); err != nil {
-		t.Fatalf("failed to forward %s: %s", pfe.String(), err)
-	}
+	em.forwardPortForwardEntry(ctx, pfe)
 }
