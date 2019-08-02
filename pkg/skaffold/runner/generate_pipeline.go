@@ -32,13 +32,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/pipeline"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	yamlv2 "gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -116,35 +116,17 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 
 func generateGitResource() (*tekton.PipelineResource, error) {
 	// Get git repo url
-	gitRepo := os.Getenv("PIPELINE_GIT_URL")
-	if gitRepo == "" {
+	gitURL := os.Getenv("PIPELINE_GIT_URL")
+	if gitURL == "" {
 		getGitRepo := exec.Command("git", "config", "--get", "remote.origin.url")
 		bGitRepo, err := getGitRepo.Output()
 		if err != nil {
 			return nil, errors.Wrap(err, "getting git repo from git config")
 		}
-		gitRepo = string(bGitRepo)
+		gitURL = string(bGitRepo)
 	}
 
-	// Create git resource for pipeline from users current git repo
-	return &tekton.PipelineResource{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "PipelineResource",
-			APIVersion: "tekton.dev/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "source-git",
-		},
-		Spec: tekton.PipelineResourceSpec{
-			Type: tekton.PipelineResourceTypeGit,
-			Params: []tekton.ResourceParam{
-				{
-					Name:  "url",
-					Value: gitRepo,
-				},
-			},
-		},
-	}, nil
+	return pipeline.NewGitResource("source-git", gitURL), nil
 }
 
 func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
@@ -157,38 +139,27 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 		skaffoldVersion = version.Get().Version
 	}
 
-	return &tekton.Task{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Task",
-			APIVersion: "tekton.dev/v1alpha1",
+	resources := []tekton.TaskResource{
+		{
+			Name: "source",
+			Type: tekton.PipelineResourceTypeGit,
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "skaffold-build",
-		},
-		Spec: tekton.TaskSpec{
-			Inputs: &tekton.Inputs{
-				Resources: []tekton.TaskResource{
-					{
-						Name: "source",
-						Type: tekton.PipelineResourceTypeGit,
-					},
-				},
-			},
-			Steps: []corev1.Container{
-				{
-					Name:       "run-build",
-					Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),
-					WorkingDir: "/workspace/source",
-					Command:    []string{"skaffold"},
-					Args: []string{"build",
-						"--filename", "skaffold.yaml",
-						"--profile", "oncluster",
-						"--file-output", "build.out",
-					},
-				},
+	}
+	steps := []corev1.Container{
+		{
+			Name:       "run-build",
+			Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),
+			WorkingDir: "/workspace/source",
+			Command:    []string{"skaffold"},
+			Args: []string{"build",
+				"--filename", "skaffold.yaml",
+				"--profile", "oncluster",
+				"--file-output", "build.out",
 			},
 		},
-	}, nil
+	}
+
+	return pipeline.NewTask("skaffold-build", resources, steps), nil
 }
 
 func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) {
@@ -201,39 +172,28 @@ func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) 
 		skaffoldVersion = version.Get().Version
 	}
 
-	return &tekton.Task{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Task",
-			APIVersion: "tekton.dev/v1alpha1",
+	resources := []tekton.TaskResource{
+		{
+			Name: "source",
+			Type: tekton.PipelineResourceTypeGit,
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "skaffold-deploy",
-		},
-		Spec: tekton.TaskSpec{
-			Inputs: &tekton.Inputs{
-				Resources: []tekton.TaskResource{
-					{
-						Name: "source",
-						Type: tekton.PipelineResourceTypeGit,
-					},
-				},
-			},
-			Steps: []corev1.Container{
-				{
-					Name:       "run-deploy",
-					Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),
-					WorkingDir: "/workspace/source",
-					Command:    []string{"skaffold"},
-					Args: []string{
-						"deploy",
-						"--filename", "skaffold.yaml",
-						"--profile", "oncluster",
-						"--build-artifacts", "build.out",
-					},
-				},
+	}
+	steps := []corev1.Container{
+		{
+			Name:       "run-deploy",
+			Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),
+			WorkingDir: "/workspace/source",
+			Command:    []string{"skaffold"},
+			Args: []string{
+				"deploy",
+				"--filename", "skaffold.yaml",
+				"--profile", "oncluster",
+				"--build-artifacts", "build.out",
 			},
 		},
-	}, nil
+	}
+
+	return pipeline.NewTask("skaffold-deploy", resources, steps), nil
 }
 
 func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
@@ -241,26 +201,14 @@ func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
 		return nil, errors.New("no tasks to add to pipeline")
 	}
 
-	// Create pipeline to tie together all tasks
-	pipeline := &tekton.Pipeline{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Pipeline",
-			APIVersion: "tekton.dev/v1alpha1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "skaffold-pipeline",
-		},
-		Spec: tekton.PipelineSpec{
-			Resources: []tekton.PipelineDeclaredResource{
-				{
-					Name: "source-repo",
-					Type: tekton.PipelineResourceTypeGit,
-				},
-			},
-			Tasks: []tekton.PipelineTask{},
+	resources := []tekton.PipelineDeclaredResource{
+		{
+			Name: "source-repo",
+			Type: tekton.PipelineResourceTypeGit,
 		},
 	}
 	// Create tasks in pipeline spec for all corresponding tasks
+	pipelineTasks := make([]tekton.PipelineTask, 0)
 	for i, task := range tasks {
 		pipelineTask := tekton.PipelineTask{
 			Name: fmt.Sprintf("%s-task", task.Name),
@@ -278,12 +226,12 @@ func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
 			},
 		}
 		if i > 0 {
-			pipelineTask.RunAfter = []string{pipeline.Spec.Tasks[i-1].Name}
+			pipelineTask.RunAfter = []string{pipelineTasks[i-1].Name}
 		}
-		pipeline.Spec.Tasks = append(pipeline.Spec.Tasks, pipelineTask)
+		pipelineTasks = append(pipelineTasks, pipelineTask)
 	}
 
-	return pipeline, nil
+	return pipeline.NewPipeline("skaffold-pipeline", resources, pipelineTasks), nil
 }
 
 func createSkaffoldProfile(out io.Writer, config *latest.SkaffoldConfig, configFile string) error {

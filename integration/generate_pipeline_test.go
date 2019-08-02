@@ -35,7 +35,6 @@ func TestGeneratePipeline(t *testing.T) {
 	tests := []struct {
 		description string
 		dir         string
-		args        []string
 		responses   []byte
 	}{
 		{

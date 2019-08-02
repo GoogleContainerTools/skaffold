@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -41,7 +42,7 @@ func doGeneratePipeline(ctx context.Context, out io.Writer) error {
 		if err := r.GeneratePipeline(ctx, out, config, "pipeline.yaml"); err != nil {
 			return errors.Wrap(err, "generating ")
 		}
-		out.Write([]byte("Pipeline config written to pipeline.yaml!\n"))
+		color.Default.Fprintln(out, "Pipeline config written to pipeline.yaml!")
 		return nil
 	})
 }
