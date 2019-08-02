@@ -69,7 +69,7 @@ func TestGetDeployments(t *testing.T) {
 			},
 			expected: map[string]time.Duration{"dep1": time.Duration(10) * time.Second, "dep2": time.Duration(20) * time.Second},
 		}, {
-			description: "multiple deployments in same namespace",
+			description: "command flag deadline is less than deployment spec.",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{

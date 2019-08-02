@@ -81,18 +81,11 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 
 	for _, d := range deps.Items {
 		var deadline time.Duration
-		switch d.Spec.ProgressDeadlineSeconds {
-		case nil:
-			logrus.Debugf("no progressDeadlineSeconds config found for deployment %s. Setting deadline to %s", d.Name, deadlineDuration)
-			deadline = deadlineDuration
-		default:
-			if *d.Spec.ProgressDeadlineSeconds > int32(deadlineDuration.Seconds()) {
-				logrus.Debugf("progressDeadlineSeconds for deployment %s is %ds greater than %s on command line. Setting deadline to %s", d.Name, d.Spec.ProgressDeadlineSeconds, deadlineDuration, deadlineDuration)
-				deadline = deadlineDuration
-			} else {
+		if d.Spec.ProgressDeadlineSeconds != nil || *d.Spec.ProgressDeadlineSeconds > int32(deadlineDuration.Seconds()){
+		  deadline = deadlineDuration
+		} else {
 				deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
 			}
-		}
 		depMap[d.Name] = deadline
 	}
 
