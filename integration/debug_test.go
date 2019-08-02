@@ -17,8 +17,9 @@ limitations under the License.
 package integration
 
 import (
-	"github.com/cGoogleContainerTools/skaffold/integration/skaffold"
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
 func TestDebug(t *testing.T) {
@@ -39,13 +40,12 @@ func TestDebug(t *testing.T) {
 		{
 			description: "kubectl",
 			dir:         "testdata/debug",
-			args:        []string{"--no-prune=true"},
 			deployments: []string{"jib"},
 			pods:        []string{"nodejs", "npm", "python3"},
 		},
 		{
 			description: "kustomize",
-			args:        []string{"--profile", "kustomize", "--no-prune=true"},
+			args:        []string{"--profile", "kustomize"},
 			dir:         "testdata/debug",
 			deployments: []string{"jib"},
 			pods:        []string{"nodejs", "npm", "python3"},

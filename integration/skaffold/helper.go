@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -128,7 +127,8 @@ func (b *RunBuilder) WithEnv(env []string) *RunBuilder {
 func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 	t.Helper()
 
-	cmd := b.cmd(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	cmd := b.cmd(ctx)
 	logrus.Infoln(cmd.Args)
 
 	start := time.Now()
@@ -142,7 +142,7 @@ func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 	}()
 
 	return func() {
-		cmd.Process.Signal(syscall.SIGTERM)
+		cancel()
 		cmd.Wait()
 	}
 }
@@ -151,8 +151,8 @@ func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 // if the command returns an error.
 func (b *RunBuilder) RunOrFail(t *testing.T) {
 	t.Helper()
-	if output, err := b.RunWithCombinedOutput(t); err != nil {
-		t.Fatalf("%v \n %s", string(output), err)
+	if err := b.Run(t); err != nil {
+		t.Fatal(err)
 	}
 }
 

@@ -157,7 +157,7 @@ func TestEventLogHTTP(t *testing.T) {
 			}
 
 			httpAddr := randomPort()
-			teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr, "--no-prune=true")
+			teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
 			defer teardown()
 			time.Sleep(500 * time.Millisecond) // give skaffold time to process all events
 
