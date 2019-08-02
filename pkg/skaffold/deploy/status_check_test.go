@@ -51,8 +51,8 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
-							"random":            "foo",
+							K8sManagedByLabelKey: labeller.skaffoldVersion(),
+							"random":             "foo",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(10)},
@@ -62,7 +62,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep2",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							K8sManagedByLabelKey: labeller.skaffoldVersion(),
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(20)},
@@ -93,7 +93,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							K8sManagedByLabelKey: labeller.skaffoldVersion(),
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -103,7 +103,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep2",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							K8sManagedByLabelKey: labeller.skaffoldVersion(),
 						},
 					},
 				},
@@ -123,7 +123,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							K8sManagedByLabelKey: labeller.skaffoldVersion(),
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -133,7 +133,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep2",
 						Namespace: "test1",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							K8sManagedByLabelKey: labeller.skaffoldVersion(),
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -165,7 +165,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: "skaffold-0.26.0",
+							K8sManagedByLabelKey: "skaffold-0.26.0",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},

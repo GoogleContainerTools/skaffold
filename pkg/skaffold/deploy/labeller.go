@@ -19,40 +19,46 @@ package deploy
 import (
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 const (
-	K8ManagedByLabelKey = "app.kubernetes.io/managed-by"
-	UnknownVersion      = "unknown"
-	Empty               = ""
+	K8sManagedByLabelKey = "app.kubernetes.io/managed-by"
+	UuidRunIdLabel       = "skaffold.dev/run-id"
+	unknownVersion       = "unknown"
+	empty                = ""
 )
 
-// DefaultLabeller adds K9 style managed-by label
+// DefaultLabeller adds K8s style managed-by label and a run-specific UUID label
 type DefaultLabeller struct {
 	version string
+	uuid    string
 }
 
 func NewLabeller(verStr string) *DefaultLabeller {
-	if verStr == Empty {
+	if verStr == empty {
 		verStr = version.Get().Version
 	}
-	if verStr == Empty {
-		verStr = UnknownVersion
+	if verStr == empty {
+		verStr = unknownVersion
 	}
 	return &DefaultLabeller{
 		version: verStr,
+		uuid:    uuid.New().String(),
 	}
 }
 
 func (d *DefaultLabeller) Labels() map[string]string {
 	return map[string]string{
-		K8ManagedByLabelKey: d.skaffoldVersion(),
+		K8sManagedByLabelKey: d.skaffoldVersion(),
+		UuidRunIdLabel:       d.uuid,
 	}
 }
 
 func (d *DefaultLabeller) K8sManagedByLabelKeyValueString() string {
-	return fmt.Sprintf("%s=%s", K8ManagedByLabelKey, d.skaffoldVersion())
+	return fmt.Sprintf("%s=%s", K8sManagedByLabelKey, d.skaffoldVersion())
 }
 
 func (d *DefaultLabeller) skaffoldVersion() string {
