@@ -142,7 +142,7 @@ func sinceSeconds(d time.Duration) int64 {
 }
 
 func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, container v1.ContainerStatus) {
-	logrus.Infof("Stream logs from pod: %s container: %s", pod.Name, container.Name)
+	logrus.Infof("Streaming logs from pod: %s container: %s", pod.Name, container.Name)
 
 	// In theory, it's more precise to use --since-time='' but there can be a time
 	// difference between the user's machine and the server.
