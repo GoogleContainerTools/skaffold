@@ -5,6 +5,8 @@ build:
   - image: gcr.io/k8s-skaffold/react-reload
     context: app
     sync:
-      infer:
-      - 'src/components/*'
-      - 'src/styles/*'
+      manual:
+      - src: 'src/components/*'
+        dest: .
+      - src: 'src/styles/*'
+        dest: .
