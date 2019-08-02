@@ -19,6 +19,7 @@ package portforward
 import (
 	"context"
 	"strconv"
+	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -125,9 +126,8 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 					p.Terminate(prevEntry)
 				}
 			}
-			if err := p.forwardPortForwardEntry(ctx, entry); err != nil {
-				return err
-			}
+			p.forwardPortForwardEntry(ctx, entry)
+
 		}
 	}
 	return nil
@@ -145,6 +145,7 @@ func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName
 		containerName:          containerName,
 		portName:               portName,
 		automaticPodForwarding: true,
+		terminationLock:        &sync.Mutex{},
 	}
 
 	// If we have, return the current entry

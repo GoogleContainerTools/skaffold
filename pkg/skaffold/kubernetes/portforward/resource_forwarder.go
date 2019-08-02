@@ -18,13 +18,13 @@ package portforward
 
 import (
 	"context"
+	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -67,24 +67,23 @@ func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources 
 	for _, r := range resources {
 		r := r
 		go func() {
-			if err := p.portForwardResource(ctx, *r); err != nil {
-				logrus.Warnf("Unable to port forward %s/%s: %v", r.Type, r.Name, err)
-			}
+			p.portForwardResource(ctx, *r)
 		}()
 	}
 }
 
-func (p *ResourceForwarder) portForwardResource(ctx context.Context, resource latest.PortForwardResource) error {
+func (p *ResourceForwarder) portForwardResource(ctx context.Context, resource latest.PortForwardResource) {
 	// Get port forward entry for this resource
 	entry := p.getCurrentEntry(resource)
 	// Forward the entry
-	return p.forwardPortForwardEntry(ctx, entry)
+	p.forwardPortForwardEntry(ctx, entry)
 }
 
 func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource) *portForwardEntry {
 	// determine if we have seen this before
 	entry := &portForwardEntry{
-		resource: resource,
+		resource:        resource,
+		terminationLock: &sync.Mutex{},
 	}
 	// If we have, return the current entry
 	oldEntry, ok := p.forwardedResources.Load(entry.key())
