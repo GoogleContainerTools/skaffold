@@ -57,6 +57,10 @@ func (d *DefaultLabeller) Labels() map[string]string {
 	}
 }
 
+func (d *DefaultLabeller) RunIdKeyValueString() string {
+	return fmt.Sprintf("%s=%s", UuidRunIdLabel, d.uuid)
+}
+
 func (d *DefaultLabeller) K8sManagedByLabelKeyValueString() string {
 	return fmt.Sprintf("%s=%s", K8sManagedByLabelKey, d.skaffoldVersion())
 }
