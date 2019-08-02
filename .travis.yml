@@ -22,6 +22,9 @@ jobs:
         - bash <(curl -s https://codecov.io/bash)
     - os: osx
       name: "OSX unit"
+      env:
+        - GO111MODULE=on
+        - GOFLAGS="-mod=vendor"
       script:
         - go build -o out/skaffold cmd/skaffold/skaffold.go
         - go test -short -timeout 60s ./...
