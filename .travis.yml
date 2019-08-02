@@ -7,6 +7,10 @@ go_import_path: /skaffold
 git:
   submodules: false
 
+branches:
+  only:
+    - master
+
 jobs:
   include:
     - os: linux
