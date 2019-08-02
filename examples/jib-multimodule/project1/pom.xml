@@ -36,16 +36,6 @@
                         </jvmFlags>
                     </container>
                 </configuration>
-                <executions>
-                    <!-- Skaffold multi-module with Jib requires a jib:xxx goal be bound to the package phase -->
-                    <execution>
-                        <id>default-package</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>build</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
