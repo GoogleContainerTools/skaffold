@@ -357,7 +357,7 @@ func TestGetDependencies(t *testing.T) {
 			description: "dockerignore with context in parent directory",
 			dockerfile:  copyDirectory,
 			workspace:   "docker/..",
-			ignore:      "bar\ndocker/*\n*.go",
+			ignore:      "bar\ndocker\n*.go",
 			expected:    []string{".dot", "Dockerfile", "file", "test.conf"},
 		},
 		{
@@ -483,6 +483,20 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("{{")},
 			shouldErr:   true,
+		},
+		{
+			description: "ignore with whitelisting",
+			dockerfile:  copyAll,
+			workspace:   ".",
+			ignore:      "**\n!docker/**",
+			expected:    []string{"Dockerfile", filepath.Join("docker", "bar"), filepath.Join("docker", "nginx.conf")},
+		},
+		{
+			description: "ignore with whitelisting files",
+			dockerfile:  copyAll,
+			workspace:   ".",
+			ignore:      "**\n!server.go",
+			expected:    []string{"Dockerfile", "server.go"},
 		},
 	}
 
