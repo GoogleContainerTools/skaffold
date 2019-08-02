@@ -178,29 +178,43 @@ func TestDevPortForward(t *testing.T) {
 	}
 
 	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
+	skaffold.Build("--cache-artifacts=true").InDir("examples/microservices").RunOrFail(t)
 
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	stop := skaffold.Dev("--port-forward").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
+	rpcAddr := randomPort()
+	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
+	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr, "--cache-artifacts=true").InDir("examples/microservices").InNs(ns.Name).WithEnv(env)
+	stop := cmd.RunBackground(t)
 	defer stop()
 
-	err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-		resp, err := http.Get("http://localhost:50053")
-		if err != nil {
-			return false, nil
-		}
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return false, nil
-		}
-		return "leeroooooy app!!\n" == string(body), nil
-	})
-	testutil.CheckError(t, false, err)
+	client, shutdown := setupRPCClient(t, rpcAddr)
+	defer shutdown()
 
-	original, perms, fErr := replaceInFile("leeroooooy app!!", "test string", "examples/microservices/leeroy-app/app.go")
+	// create a grpc connection. Increase number of reties for helm.
+	stream, err := readEventAPIStream(client, t, 20)
+	if stream == nil {
+		t.Fatalf("error retrieving event log: %v\n", err)
+	}
+
+	// read entries from the log
+	entries := make(chan *proto.LogEntry)
+	go func() {
+		for {
+			entry, _ := stream.Recv()
+			if entry != nil {
+				entries <- entry
+			}
+		}
+	}()
+
+	originalResponse := "leeroooooy app!!"
+	replacementResponse := "test string"
+
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", originalResponse + "\n")
+
+	original, perms, fErr := replaceInFile(originalResponse, replacementResponse, "examples/microservices/leeroy-app/app.go")
 	if fErr != nil {
 		t.Error(fErr)
 	}
@@ -210,20 +224,7 @@ func TestDevPortForward(t *testing.T) {
 		}
 	}()
 
-	err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
-		resp, err := http.Get("http://localhost:50053")
-		if err != nil {
-			return false, nil
-		}
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return false, nil
-		}
-		return "test string\n" == string(body), nil
-	})
-
-	testutil.CheckError(t, false, err)
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", replacementResponse + "\n")
 }
 
 func TestDevPortForwardGKELoadBalancer(t *testing.T) {
@@ -266,10 +267,12 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 		}
 	}()
 
-	body := []byte{}
-	var port int32
-	timeout := time.After(1 * time.Minute)
+	waitForPortForwardEvent(t, entries, "gke-loadbalancer", "service", "hello!!\n")
+}
 
+func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, expected string) {
+	timeout := time.After(1 * time.Minute)
+	var port int32
 portForwardEvent:
 	for {
 		select {
@@ -279,10 +282,10 @@ portForwardEvent:
 		case e := <-entries:
 			switch e.Event.GetEventType().(type) {
 			case *proto.Event_PortEvent:
-				if e.Event.GetPortEvent().ResourceName == "gke-loadbalancer" &&
-					e.Event.GetPortEvent().ResourceType == "service" {
+				if e.Event.GetPortEvent().ResourceName == resourceName &&
+					e.Event.GetPortEvent().ResourceType == resourceType {
 					port = e.Event.GetPortEvent().LocalPort
-					t.Logf("Detected service/gke-loadbalancer is forwarded to port %d", port)
+					t.Logf("Detected %s/%s is forwarded to port %d", resourceType, resourceName, port)
 					break portForwardEvent
 				}
 			default:
@@ -290,18 +293,20 @@ portForwardEvent:
 			}
 		}
 	}
-	err = wait.PollImmediate(time.Millisecond*500, 3*time.Minute, func() (bool, error) {
+	var body []byte
+	err := wait.PollImmediate(time.Millisecond*2000, 1*time.Minute, func() (bool, error) {
 		resp, err := http.Get(fmt.Sprintf("http://localhost:%d", port))
 		if err != nil {
-			t.Logf("could not get service/gke-loadbalancer due to %s", err)
+			t.Logf("could not get %s/%s due to %s", resourceType, resourceName, err)
 			return false, nil
 		}
 		defer resp.Body.Close()
 		body, err = ioutil.ReadAll(resp.Body)
-		return true, err
+		t.Logf("got %s from port %d but wanted %s", string(body), port, expected)
+		return string(body) == expected, err
 	})
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, string(body), "hello!!\n")
+	testutil.CheckErrorAndDeepEqual(t, false, err, string(body), expected)
 }
 
 func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, error) {
