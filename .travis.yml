@@ -14,7 +14,7 @@ branches:
 jobs:
   include:
     - os: linux
-      name: "Linux unit"
+      name: "Linux unit + checks"
       script:
         - make
         - make test
@@ -22,9 +22,12 @@ jobs:
         - bash <(curl -s https://codecov.io/bash)
     - os: osx
       name: "OSX unit"
+      env:
+        - GO111MODULE=on
+        - GOFLAGS="-mod=vendor"
       script:
-        - make
-        - make test
+        - go build -o out/skaffold cmd/skaffold/skaffold.go
+        - go test -short -timeout 60s ./...
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - os: windows
