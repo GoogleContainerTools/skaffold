@@ -198,7 +198,7 @@ func (k *podSyncer) Sync(ctx context.Context, s *Item) error {
 	if len(s.Copy) > 0 {
 		logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
 
-		if err := Perform(ctx, s.Image, s.Copy, copyFileFn, k.namespaces); err != nil {
+		if err := Perform(ctx, s.Image, s.Copy, k.copyFileFn, k.namespaces); err != nil {
 			return errors.Wrap(err, "copying files")
 		}
 	}
@@ -206,7 +206,7 @@ func (k *podSyncer) Sync(ctx context.Context, s *Item) error {
 	if len(s.Delete) > 0 {
 		logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
 
-		if err := Perform(ctx, s.Image, s.Delete, deleteFileFn, k.namespaces); err != nil {
+		if err := Perform(ctx, s.Image, s.Delete, k.deleteFileFn, k.namespaces); err != nil {
 			return errors.Wrap(err, "deleting files")
 		}
 	}

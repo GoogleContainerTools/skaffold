@@ -24,16 +24,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestAutomaticPortForwardPod(t *testing.T) {
@@ -518,7 +519,7 @@ func TestStartPodForwarder(t *testing.T) {
 			imageList := kubernetes.NewImageList()
 			imageList.Add("image")
 
-			p := NewWatchingPodForwarder(NewEntryManager(ioutil.Discard), imageList, nil)
+			p := NewWatchingPodForwarder(NewEntryManager(ioutil.Discard, nil), imageList, nil)
 			fakeForwarder := newTestForwarder(nil)
 			p.EntryForwarder = fakeForwarder
 			p.Start(context.Background())

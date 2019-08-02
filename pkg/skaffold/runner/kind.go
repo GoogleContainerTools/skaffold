@@ -23,10 +23,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
 // loadImagesInKindNodes loads a list of artifact images into every node of kind cluster.
@@ -47,7 +49,8 @@ func (r *SkaffoldRunner) loadImagesInKindNodes(ctx context.Context, out io.Write
 		// Only `kind load` the images that are unknown to the node
 		if knownImages == nil {
 			var err error
-			if knownImages, err = findKnownImages(ctx); err != nil {
+			kubectlCLI := kubectl.NewFromRunContext(r.runCtx)
+			if knownImages, err = findKnownImages(ctx, kubectlCLI); err != nil {
 				return errors.Wrapf(err, "unable to retrieve node's images")
 			}
 		}
@@ -69,9 +72,8 @@ func (r *SkaffoldRunner) loadImagesInKindNodes(ctx context.Context, out io.Write
 	return nil
 }
 
-func findKnownImages(ctx context.Context) ([]string, error) {
-	cmdNodeGet := exec.CommandContext(ctx, "kubectl", "get", "nodes", `-ojsonpath='{@.items[*].status.images[*].names[*]}'`)
-	nodeGetOut, err := util.RunCmdOut(cmdNodeGet)
+func findKnownImages(ctx context.Context, cli *kubectl.CLI) ([]string, error) {
+	nodeGetOut, err := cli.RunOut(ctx, "get", "nodes", `-ojsonpath='{@.items[*].status.images[*].names[*]}'`)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to inspect the nodes")
 	}

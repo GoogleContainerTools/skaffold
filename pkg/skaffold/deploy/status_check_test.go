@@ -24,13 +24,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGetDeployments(t *testing.T) {
@@ -347,10 +348,7 @@ func TestGetRollOutStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.command)
-			cli := &kubectl.CLI{
-				Namespace:   "test",
-				KubeContext: testKubeContext,
-			}
+			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
 			actual, err := getRollOutStatus(context.Background(), cli, "dep")
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
