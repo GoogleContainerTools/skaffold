@@ -7,35 +7,36 @@ go_import_path: /skaffold
 git:
   submodules: false
 
+branches:
+  only:
+    - master
+
 jobs:
   include:
     - os: linux
-      env:
-        - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
+      name: "Linux unit"
       script:
         - make
         - make test
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - os: osx
-      env:
-        - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
+      name: "OSX unit"
       script:
         - make
         - make test
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - os: windows
+      name: "Windows unit"
       env:
-        - TEST_TYPE=unit # this is not used, just purely for nice UI distinction on Travis
         - GO111MODULE=on
         - GOFLAGS="-mod=vendor"
       script:
         - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
         - go test -short -timeout 60s ./...
     - os: linux
-      env:
-        - TEST_TYPE=integration # this is not used, just purely for nice UI distinction on Travis
+      name: "integration"
       before_install:
         - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
         - chmod +x ${HOME}/bin/kind

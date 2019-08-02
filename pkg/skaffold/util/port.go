@@ -72,11 +72,15 @@ func GetAvailablePort(port int, forwardedPorts ForwardedPorts) int {
 }
 
 func getPortIfAvailable(p int, forwardedPorts ForwardedPorts) bool {
-	alreadyUsed, loaded := forwardedPorts.LoadOrStore(p, true)
-	if loaded && alreadyUsed.(bool) {
+	_, loaded := forwardedPorts.LoadOrStore(p, struct{}{})
+	if loaded {
 		return false
 	}
 
+	return IsPortFree(p)
+}
+
+func IsPortFree(p int) bool {
 	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", Loopback, p))
 	if err != nil {
 		return false

@@ -17,9 +17,9 @@ limitations under the License.
 package portforward
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -32,10 +32,9 @@ type portForwardEntry struct {
 	portName               string
 	localPort              int
 	automaticPodForwarding bool
-
-	logBuffer *bytes.Buffer
-
-	cancel context.CancelFunc
+	terminated             bool
+	terminationLock        *sync.Mutex
+	cancel                 context.CancelFunc
 }
 
 // key is an identifier for the lock on a port during the skaffold dev cycle.
