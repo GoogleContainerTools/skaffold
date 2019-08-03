@@ -48,10 +48,19 @@ func TestDefaultLabeller(t *testing.T) {
 				"skaffold.dev/run-id":          l.runID,
 			}
 			t.CheckDeepEqual(expected, labels)
-			if l.runID == "" {
-				t.Error("run-id label should not be empty")
-			}
 		})
+	}
+}
+
+func TestDefaultLabeller_TwoInstancesHaveSameRunID(t *testing.T) {
+	first := NewLabeller("v1.0.0")
+	second := NewLabeller("v2.0.0")
+
+	if first.RunIDKeyValueString() != second.RunIDKeyValueString() {
+		t.Errorf("expected the run-id to be the same for two instances")
+	}
+	if first.runID == "" {
+		t.Error("run-id label should not be empty")
 	}
 }
 
