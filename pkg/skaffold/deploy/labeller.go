@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/google/uuid"
 
@@ -26,18 +27,26 @@ import (
 
 const (
 	K8sManagedByLabelKey = "app.kubernetes.io/managed-by"
-	UuidRunIdLabel       = "skaffold.dev/run-id"
+	RunIDLabel           = "skaffold.dev/run-id"
 	unknownVersion       = "unknown"
 	empty                = ""
+)
+
+var (
+	runID     string
+	runIDOnce sync.Once
 )
 
 // DefaultLabeller adds K8s style managed-by label and a run-specific UUID label
 type DefaultLabeller struct {
 	version string
-	uuid    string
+	runID   string
 }
 
 func NewLabeller(verStr string) *DefaultLabeller {
+	runIDOnce.Do(func() {
+		runID = uuid.New().String()
+	})
 	if verStr == empty {
 		verStr = version.Get().Version
 	}
@@ -46,19 +55,19 @@ func NewLabeller(verStr string) *DefaultLabeller {
 	}
 	return &DefaultLabeller{
 		version: verStr,
-		uuid:    uuid.New().String(),
+		runID:   runID,
 	}
 }
 
 func (d *DefaultLabeller) Labels() map[string]string {
 	return map[string]string{
 		K8sManagedByLabelKey: d.skaffoldVersion(),
-		UuidRunIdLabel:       d.uuid,
+		RunIDLabel:           d.runID,
 	}
 }
 
-func (d *DefaultLabeller) RunIdKeyValueString() string {
-	return fmt.Sprintf("%s=%s", UuidRunIdLabel, d.uuid)
+func (d *DefaultLabeller) RunIDKeyValueString() string {
+	return fmt.Sprintf("%s=%s", RunIDLabel, d.runID)
 }
 
 func (d *DefaultLabeller) K8sManagedByLabelKeyValueString() string {

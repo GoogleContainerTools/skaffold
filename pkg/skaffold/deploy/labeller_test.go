@@ -45,10 +45,10 @@ func TestDefaultLabeller(t *testing.T) {
 
 			expected := map[string]string{
 				"app.kubernetes.io/managed-by": test.expected,
-				"skaffold.dev/run-id":          l.uuid,
+				"skaffold.dev/run-id":          l.runID,
 			}
 			t.CheckDeepEqual(expected, labels)
-			if l.uuid == "" {
+			if l.runID == "" {
 				t.Error("run-id label should not be empty")
 			}
 		})

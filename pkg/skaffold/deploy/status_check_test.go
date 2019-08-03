@@ -51,8 +51,8 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							UuidRunIdLabel: labeller.uuid,
-							"random":       "foo",
+							RunIDLabel: labeller.runID,
+							"random":   "foo",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(10)},
@@ -62,7 +62,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep2",
 						Namespace: "test",
 						Labels: map[string]string{
-							UuidRunIdLabel: labeller.uuid,
+							RunIDLabel: labeller.runID,
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(20)},
@@ -77,7 +77,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							UuidRunIdLabel: labeller.uuid,
+							RunIDLabel: labeller.runID,
 							"random":   "foo",
 						},
 					},
@@ -93,7 +93,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							UuidRunIdLabel: labeller.uuid,
+							RunIDLabel: labeller.runID,
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -103,7 +103,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep2",
 						Namespace: "test",
 						Labels: map[string]string{
-							UuidRunIdLabel: labeller.uuid,
+							RunIDLabel: labeller.runID,
 						},
 					},
 				},
@@ -123,7 +123,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							UuidRunIdLabel: labeller.uuid,
+							RunIDLabel: labeller.runID,
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -133,7 +133,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep2",
 						Namespace: "test1",
 						Labels: map[string]string{
-							UuidRunIdLabel: labeller.uuid,
+							RunIDLabel: labeller.runID,
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -165,7 +165,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							UuidRunIdLabel: "9876-6789",
+							RunIDLabel: "9876-6789",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
