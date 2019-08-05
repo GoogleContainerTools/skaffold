@@ -33,6 +33,9 @@ var (
 	ValidateDockerfileFunc = ValidateDockerfile
 )
 
+// Name is the name of the Docker builder
+var Name = "Docker"
+
 // Docker is the path to a dockerfile. Implements the InitBuilder interface.
 type Docker struct {
 	File string `json:"path"`
@@ -40,7 +43,7 @@ type Docker struct {
 
 // Name returns the name of the builder, "Docker"
 func (d Docker) Name() string {
-	return "Docker"
+	return Name
 }
 
 // Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.

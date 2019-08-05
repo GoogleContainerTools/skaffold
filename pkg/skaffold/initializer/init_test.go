@@ -431,3 +431,70 @@ func TestAutoSelectBuilders(t *testing.T) {
 		})
 	}
 }
+
+func TestProcessCliArtifacts(t *testing.T) {
+	tests := []struct {
+		description   string
+		artifacts     []string
+		shouldErr     bool
+		expectedPairs []builderImagePair
+	}{
+		{
+			description: "Invalid pairs",
+			artifacts:   []string{"invalid"},
+			shouldErr:   true,
+		},
+		{
+			description: "Invalid builder",
+			artifacts:   []string{`{"builder":"Not real","payload":{},"image":"image"}`},
+			shouldErr:   true,
+		},
+		{
+			description: "Valid (backwards compatibility)",
+			artifacts: []string{
+				`/path/to/Dockerfile=image1`,
+				`/path/to/Dockerfile2=image2`,
+			},
+			expectedPairs: []builderImagePair{
+				{
+					Builder:   docker.Docker{File: "/path/to/Dockerfile"},
+					ImageName: "image1",
+				},
+				{
+					Builder:   docker.Docker{File: "/path/to/Dockerfile2"},
+					ImageName: "image2",
+				},
+			},
+		},
+		{
+			description: "Valid",
+			artifacts: []string{
+				`{"builder":"Docker","payload":{"path":"/path/to/Dockerfile"},"image":"image1"}`,
+				`{"builder":"Jib Gradle Plugin","payload":{"path":"/path/to/build.gradle"},"image":"image2"}`,
+				`{"builder":"Jib Maven Plugin","payload":{"path":"/path/to/pom.xml","project":"project-name","image":"testImage"},"image":"image3"}`,
+			},
+			expectedPairs: []builderImagePair{
+				{
+					Builder:   docker.Docker{File: "/path/to/Dockerfile"},
+					ImageName: "image1",
+				},
+				{
+					Builder:   jib.Jib{BuilderName: "Jib Gradle Plugin", FilePath: "/path/to/build.gradle"},
+					ImageName: "image2",
+				},
+				{
+					Builder:   jib.Jib{BuilderName: "Jib Maven Plugin", FilePath: "/path/to/pom.xml", Project: "project-name", Image: "testImage"},
+					ImageName: "image3",
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			pairs, err := processCliArtifacts(test.artifacts)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, pairs)
+		})
+	}
+}
