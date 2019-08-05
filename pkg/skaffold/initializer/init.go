@@ -249,16 +249,52 @@ func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, error) {
 func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 	var pairs []builderImagePair
 	for _, artifact := range artifacts {
-		parts := strings.Split(artifact, "=")
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
+		// Parses JSON in the form of: {"builder":"Name of Builder","payload":{...},"image":"image.name"}.
+		// The builder field is parsed first to determine the builder type, and the payload is parsed
+		// afterwards once the type is determined.
+		a := struct {
+			Name  string `json:"builder"`
+			Image string `json:"image"`
+		}{}
+		if err := json.Unmarshal([]byte(artifact), &a); err != nil {
+			// Not JSON, use backwards compatible method
+			parts := strings.Split(artifact, "=")
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
+			}
+			pairs = append(pairs, builderImagePair{
+				Builder:   docker.Docker{File: parts[0]},
+				ImageName: parts[1],
+			})
+			continue
 		}
 
-		// TODO: Allow passing Jib config via CLI
-		pairs = append(pairs, builderImagePair{
-			Builder:   docker.Docker{File: parts[0]},
-			ImageName: parts[1],
-		})
+		// Use builder type to parse payload
+		switch a.Name {
+		case docker.Name:
+			parsed := struct {
+				Payload docker.Docker `json:"payload"`
+			}{}
+			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
+				return nil, err
+			}
+			pair := builderImagePair{Builder: parsed.Payload, ImageName: a.Image}
+			pairs = append(pairs, pair)
+
+		case jib.JibGradle, jib.JibMaven:
+			parsed := struct {
+				Payload jib.Jib `json:"payload"`
+			}{}
+			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
+				return nil, err
+			}
+			parsed.Payload.BuilderName = a.Name
+			pair := builderImagePair{Builder: parsed.Payload, ImageName: a.Image}
+			pairs = append(pairs, pair)
+
+		default:
+			return nil, errors.New("unknown builder type in CLI artifacts")
+		}
 	}
 	return pairs, nil
 }
@@ -366,13 +402,13 @@ func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePa
 	}{Images: unresolvedImages}
 
 	for _, pair := range pairs {
-		if pair.Builder.Name() == "Docker" {
+		if pair.Builder.Name() == docker.Name {
 			a.Dockerfiles = append(a.Dockerfiles, pair.Builder.Path())
 		}
 		a.Images = append(a.Images, pair.ImageName)
 	}
 	for _, config := range unresolvedBuilders {
-		if config.Name() == "Docker" {
+		if config.Name() == docker.Name {
 			a.Dockerfiles = append(a.Dockerfiles, config.Path())
 		}
 	}

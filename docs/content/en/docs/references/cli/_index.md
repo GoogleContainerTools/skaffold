@@ -551,8 +551,8 @@ Generate configuration for deploying an application
 
 Options:
       --analyze=false: Print all discoverable Dockerfiles and images in JSON format to stdout
-  -a, --artifact=[]: '='-delimited dockerfile/image pair to generate build artifact
-(example: --artifact=/web/Dockerfile.web=gcr.io/web-project/image)
+  -a, --artifact=[]: '='-delimited Dockerfile/image pair, or JSON string, to generate build artifact
+(example: --artifact='{"builder":"Docker","payload":{"path":"/web/Dockerfile.web"},"image":"gcr.io/web-project/image"}')
       --compose-file='': Initialize from a docker-compose file
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
       --force=false: Force the generation of the Skaffold config

@@ -287,9 +287,7 @@ Skaffold will pass in the following additional environment variables for the fol
 To use a custom build script, add a `custom` field to each corresponding artifact in the `build` section of the skaffold.yaml.
 Currently, this only works with the `local` and `cluster` build types. Supported schema for `custom` includes:
 
-
 {{< schema root="CustomArtifact" >}}
-
 
 `buildCommand` is *required* and points skaffold to the custom build script which will be executed to build the artifact.
 
@@ -297,10 +295,10 @@ Currently, this only works with the `local` and `cluster` build types. Supported
 
 `dependencies` tells the skaffold file watcher which files should be watched to trigger rebuilds and file syncs.  Supported schema for `dependencies` includes:
 
-
 {{< schema root="CustomDependencies" >}}
 
 ##### Paths and Ignore
+
 `Paths` and `Ignore` are arrays used to list dependencies. 
 Any paths in `Ignore` will be ignored by the skaffold file watcher, even if they are also specified in `Paths`.
 `Ignore` will only work in conjunction with `Paths`, and with none of the other custom artifact dependency types.
@@ -316,8 +314,8 @@ custom:
     - vendor/**
 ```
 
-
 ##### Dockerfile
+
 Skaffold can calculate dependencies from a Dockerfile for a custom artifact.
 Passing in the path to the Dockerfile and any build args, if necessary, will allow skaffold to do dependency calculation.
 
@@ -334,6 +332,7 @@ custom:
 ```
 
 ##### Getting dependencies from a command
+
 Sometimes you might have a builder that can provide the dependencies for a given artifact.
 For example bazel has the `bazel query deps` command.
 Custom artifact builders can ask Skaffold to execute a custom command, which Skaffold can use to get the dependencies for the artifact for file watching.
@@ -350,10 +349,12 @@ custom:
 ```
 
 #### Custom Build Scripts and File Sync
+
 Syncable files must be included in both the `paths` section of `dependencies`, so that the skaffold file watcher knows to watch them, and the `sync` section, so that skaffold knows to sync them.  
 
 #### Custom Build Scripts and Logging
-STDOUT and STDERR from the custom build script will be redirected and displayed within skaffold logs.
+
+`STDOUT` and `STDERR` from the custom build script will be redirected and displayed within skaffold logs.
 
 
 ### Example

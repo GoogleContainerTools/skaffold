@@ -18,22 +18,23 @@ package portforward
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestAutomaticPortForwardPod(t *testing.T) {
@@ -65,6 +66,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					automaticPodForwarding: true,
 					portName:               "portname",
 					localPort:              8080,
+					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -108,6 +110,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					containerName:          "containername",
 					portName:               "portname",
 					localPort:              9000,
+					terminationLock:        &sync.Mutex{},
 				},
 			},
 			availablePorts: []int{9000},
@@ -164,52 +167,6 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description:    "forward error",
-			expectedPorts:  map[int]struct{}{8080: {}},
-			forwarder:      newTestForwarder(fmt.Errorf("")),
-			shouldErr:      true,
-			availablePorts: []int{8080},
-			expectedEntries: map[string]*portForwardEntry{
-				"containername-namespace-portname-8080": {
-					resourceVersion: 1,
-					podName:         "podname",
-					containerName:   "containername",
-					portName:        "portname",
-					resource: latest.PortForwardResource{
-						Type:      "pod",
-						Name:      "podname",
-						Namespace: "namespace",
-						Port:      8080,
-						LocalPort: 8080,
-					},
-					automaticPodForwarding: true,
-					localPort:              8080,
-				},
-			},
-			pods: []*v1.Pod{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            "podname",
-						ResourceVersion: "1",
-						Namespace:       "namespace",
-					},
-					Spec: v1.PodSpec{
-						Containers: []v1.Container{
-							{
-								Name: "containername",
-								Ports: []v1.ContainerPort{
-									{
-										ContainerPort: 8080,
-										Name:          "portname",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
 			description:    "two different container ports",
 			expectedPorts:  map[int]struct{}{8080: {}, 50051: {}},
 			availablePorts: []int{8080, 50051},
@@ -228,6 +185,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					portName:               "portname",
 					automaticPodForwarding: true,
 					localPort:              8080,
+					terminationLock:        &sync.Mutex{},
 				},
 				"containername2-namespace2-portname2-50051": {
 					resourceVersion: 1,
@@ -243,6 +201,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					portName:               "portname2",
 					automaticPodForwarding: true,
 					localPort:              50051,
+					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -307,6 +266,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					},
 					automaticPodForwarding: true,
 					localPort:              8080,
+					terminationLock:        &sync.Mutex{},
 				},
 				"containername2-namespace2-portname2-8080": {
 					resourceVersion: 1,
@@ -322,6 +282,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					},
 					automaticPodForwarding: true,
 					localPort:              9000,
+					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -386,6 +347,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					},
 					automaticPodForwarding: true,
 					localPort:              8080,
+					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -437,7 +399,6 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			event.InitializeState(latest.BuildConfig{})
 			taken := map[int]struct{}{}
 
-			t.Override(&forwardingTimeoutTime, 500*time.Millisecond)
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
 
 			entryManager := EntryManager{
@@ -447,7 +408,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			}
 			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), nil)
 			if test.forwarder == nil {
-				test.forwarder = newTestForwarder(nil)
+				test.forwarder = newTestForwarder()
 			}
 			p.EntryForwarder = test.forwarder
 
@@ -518,8 +479,8 @@ func TestStartPodForwarder(t *testing.T) {
 			imageList := kubernetes.NewImageList()
 			imageList.Add("image")
 
-			p := NewWatchingPodForwarder(NewEntryManager(ioutil.Discard), imageList, nil)
-			fakeForwarder := newTestForwarder(nil)
+			p := NewWatchingPodForwarder(NewEntryManager(ioutil.Discard, nil), imageList, nil)
+			fakeForwarder := newTestForwarder()
 			p.EntryForwarder = fakeForwarder
 			p.Start(context.Background())
 

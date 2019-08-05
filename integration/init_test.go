@@ -40,11 +40,19 @@ func TestInit(t *testing.T) {
 			dir:  "testdata/init/hello",
 		},
 		{
+			name: "microservices (backwards compatibility)",
+			dir:  "testdata/init/microservices",
+			args: []string{
+				"-a", `leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app`,
+				"-a", `leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web`,
+			},
+		},
+		{
 			name: "microservices",
 			dir:  "testdata/init/microservices",
 			args: []string{
-				"-a", "leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app",
-				"-a", "leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web",
+				"-a", `{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
+				"-a", `{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
 			},
 		},
 		{

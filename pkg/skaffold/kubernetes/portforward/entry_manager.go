@@ -21,17 +21,14 @@ import (
 	"fmt"
 	"io"
 	"sync"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 )
 
 var (
-	// For testing
-	forwardingTimeoutTime = time.Minute
-	portForwardEvent      = func(entry *portForwardEntry) {
+	portForwardEvent = func(entry *portForwardEntry) {
 		// TODO priyawadhwa@, change event API to accept ports of type int
 		event.PortForwarded(
 			int32(entry.localPort),
@@ -70,7 +67,11 @@ func (f forwardedPorts) LoadOrStore(key, _ interface{}) (interface{}, bool) {
 	}
 	// this map is only used as a set of keys, we don't care about the values
 	_, exists := f.ports[k]
-	return dummy(), exists
+	val := dummy()
+	if !exists {
+		f.ports[k] = val
+	}
+	return val, exists
 }
 
 func dummy() struct{} {
@@ -150,40 +151,33 @@ type EntryManager struct {
 
 // NewEntryManager returns a new port forward entry manager to keep track
 // of forwarded ports and resources
-func NewEntryManager(out io.Writer) EntryManager {
+func NewEntryManager(out io.Writer, cli *kubectl.CLI) EntryManager {
 	return EntryManager{
 		output:             out,
 		forwardedPorts:     newForwardedPorts(),
 		forwardedResources: newForwardedResources(),
-		EntryForwarder:     &KubectlForwarder{},
+		EntryForwarder:     &KubectlForwarder{kubectl: cli, out: out},
 	}
 }
 
-func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portForwardEntry) error {
+func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portForwardEntry) {
 	// Check if this resource has already been forwarded
 	if _, ok := b.forwardedResources.Load(entry.key()); ok {
-		return nil
+		return
 	}
 	b.forwardedResources.Store(entry.key(), entry)
-	err := wait.PollImmediate(time.Second, forwardingTimeoutTime, func() (bool, error) {
-		if err := b.Forward(ctx, entry); err != nil {
-			return false, nil
-		}
-		return true, nil
-	})
 
-	go b.Monitor(entry, func() {
-		b.Retry(ctx, entry)
-	})
+	b.Forward(ctx, entry)
 
-	if err != nil {
-		return err
-	}
-
-	color.Default.Fprintln(b.output, fmt.Sprintf("Port forwarded %s/%s from remote port %d to local port %d", entry.resource.Type, entry.resource.Name, entry.resource.Port, entry.localPort))
-
+	color.Green.Fprintln(
+		b.output,
+		fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %d -> local port %d",
+			entry.resource.Type,
+			entry.resource.Name,
+			entry.resource.Namespace,
+			entry.resource.Port,
+			entry.localPort))
 	portForwardEvent(entry)
-	return nil
 }
 
 // Stop terminates all kubectl port-forward commands.
@@ -198,9 +192,4 @@ func (b *EntryManager) Terminate(p *portForwardEntry) {
 	b.forwardedResources.Delete(p.key())
 	b.forwardedPorts.Delete(p.localPort)
 	b.EntryForwarder.Terminate(p)
-}
-
-func (b *EntryManager) Retry(ctx context.Context, p *portForwardEntry) error {
-	b.Terminate(p)
-	return b.forwardPortForwardEntry(ctx, p)
 }

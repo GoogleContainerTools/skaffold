@@ -1,8 +1,49 @@
-# v0.XX.X Release - MM/DD/YYYY
+# v0.35.0 Release - 08/02/2019
 
 *Note for Jib users*: The Jib binding has changed and projects are now required to use
         Jib v1.4.0 or later.  Maven multi-module projects no longer require
         binding `jib:build` or `jib:dockerBuild` to the _package_ phase and should be removed.
+
+New Features:
+
+* Add Jib detection to skaffold init [#2276](https://github.com/GoogleContainerTools/skaffold/pull/2276)
+* Add ability to pass an explicit registry value to Helm charts [#2188](https://github.com/GoogleContainerTools/skaffold/pull/2188)
+
+Bug Fixes:
+
+* Make sure we mute/unmute logs at the correct times [#2592](https://github.com/GoogleContainerTools/skaffold/pull/2592)
+* Fix handling of whitelisted directories in dockerignore [#2589](https://github.com/GoogleContainerTools/skaffold/pull/2589)
+* Cleaner kubectl `port-forward` retry logic [#2593](https://github.com/GoogleContainerTools/skaffold/pull/2593)
+* Negotiate docker API version when creating minikube docker client [#2577](https://github.com/GoogleContainerTools/skaffold/pull/2577)
+* Retry port forwarding when we see forwarding-related errors from kubectl [#2566](https://github.com/GoogleContainerTools/skaffold/pull/2566)
+
+Updates & Refactors:
+
+* Refactor: Use new `kubectl.CLI` util to shell out to `kubectl` [#2509](https://github.com/GoogleContainerTools/skaffold/pull/2509)
+* Remove duplication around Go modules settings [#2580](https://github.com/GoogleContainerTools/skaffold/pull/2580)
+* Faster tests [#2570](https://github.com/GoogleContainerTools/skaffold/pull/2570)
+* [linters] Use vendored dependencies. Don’t download them. [#2579](https://github.com/GoogleContainerTools/skaffold/pull/2579)
+* Improve Jib support on gcb [#2548](https://github.com/GoogleContainerTools/skaffold/pull/2548)
+* Bring back applying labels to services deployed with helm [#2568](https://github.com/GoogleContainerTools/skaffold/pull/2568)
+* Fix linter deadline [#2572](https://github.com/GoogleContainerTools/skaffold/pull/2572)
+* Go Modules [#2541](https://github.com/GoogleContainerTools/skaffold/pull/2541)
+* Make all embedded fields on runner private [#2565](https://github.com/GoogleContainerTools/skaffold/pull/2565)
+* Simplify FakeAPIClient [#2563](https://github.com/GoogleContainerTools/skaffold/pull/2563)
+* Minor changes to kubectl and kustomize deployers [#2537](https://github.com/GoogleContainerTools/skaffold/pull/2537)
+* Simplify Sync code [#2564](https://github.com/GoogleContainerTools/skaffold/pull/2564)
+* Starting a refactoring around RunContext and Docker local/remote Api [#2497](https://github.com/GoogleContainerTools/skaffold/pull/2497)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Balint Pato
+- Cornelius Weig
+- David Gageot
+- Michael Beaumont
+- Nick Kubala
+- Priya Wadhwa
+- Tad Cordle
+- Tejal Desai
+
 
 
 # v0.34.1 Release - 07/25/2019

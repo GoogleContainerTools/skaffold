@@ -19,10 +19,14 @@ package integration
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
 func TestPortForward(t *testing.T) {
@@ -32,10 +36,25 @@ func TestPortForward(t *testing.T) {
 	if ShouldRunGCPOnlyTests() {
 		t.Skip("skipping test that is not gcp only")
 	}
+
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
+
 	dir := "examples/microservices"
 	skaffold.Run().InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
-	logrus.SetLevel(logrus.DebugLevel)
-	portforward.WhiteBoxPortForwardCycle(ns.Name, t)
+
+	cfg, err := kubectx.CurrentConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	kubectlCLI := kubectl.NewFromRunContext(&runcontext.RunContext{
+		KubeContext: cfg.CurrentContext,
+		Opts: config.SkaffoldOptions{
+			Namespace: ns.Name,
+		},
+	})
+
+	logrus.SetLevel(logrus.TraceLevel)
+	portforward.WhiteBoxPortForwardCycle(t, kubectlCLI, ns.Name)
 }
