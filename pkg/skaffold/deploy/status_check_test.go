@@ -24,14 +24,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	utilpointer "k8s.io/utils/pointer"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGetDeployments(t *testing.T) {
@@ -187,94 +188,55 @@ func TestGetDeployments(t *testing.T) {
 	}
 }
 
-type MockRolloutStatus struct {
-	called    int
-	responses []string
-	err       error
-}
-
-func (m *MockRolloutStatus) Executefunc(context.Context, *kubectl.CLI, string) (string, error) {
-	var resp string
-	if m.err != nil {
-		m.called++
-		return "", m.err
-	}
-	if m.called >= len(m.responses) {
-		resp = m.responses[len(m.responses)-1]
-	} else {
-		resp = m.responses[m.called]
-	}
-	m.called++
-	return resp, m.err
-}
-
 func TestPollDeploymentRolloutStatus(t *testing.T) {
+	rolloutCmd := "kubectl --context kubecontext --namespace test rollout status deployment dep --watch=false"
 	tests := []struct {
 		description string
-		mock        *MockRolloutStatus
+		command     util.Command
 		duration    int
-		exactCalls  int
 		shouldErr   bool
-		timedOut    bool
 	}{
 		{
 			description: "rollout returns success",
-			mock: &MockRolloutStatus{
-				responses: []string{"dep successfully rolled out"},
-			},
-			exactCalls: 1,
-			duration:   50,
-		},
-		{
+			command: testutil.NewFakeCmd(t).
+				WithRunOut(rolloutCmd, "dep successfully rolled out"),
+			duration: 50,
+		}, {
 			description: "rollout returns error in the first attempt",
-			mock: &MockRolloutStatus{
-				err: errors.New("deployment.apps/dep could not be found"),
-			},
-			shouldErr:  true,
-			exactCalls: 1,
-			duration:   50,
-		},
-		{
-			description: "rollout returns success before time out",
-			mock: &MockRolloutStatus{
-				responses: []string{
-					"Waiting for rollout to finish: 0 of 1 updated replicas are available...",
-					"Waiting for rollout to finish: 0 of 1 updated replicas are available...",
-					"deployment.apps/dep successfully rolled out"},
-			},
-			duration:   80,
-			exactCalls: 3,
-		},
-		{
-			description: "rollout returns did not stabilize within the given timeout",
-			mock: &MockRolloutStatus{
-				responses: []string{
-					"Waiting for rollout to finish: 1 of 3 updated replicas are available...",
-					"Waiting for rollout to finish: 1 of 3 updated replicas are available...",
-					"Waiting for rollout to finish: 2 of 3 updated replicas are available..."},
-			},
-			duration:  100,
+			command: testutil.NewFakeCmd(t).
+				WithRunOutErr(rolloutCmd, "could not find", errors.New("deployment.apps/dep could not be found")),
 			shouldErr: true,
-			timedOut:  true,
+			duration:  50,
+		}, {
+			description: "rollout returns success before time out",
+			command: testutil.NewFakeCmd(t).
+				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 0 of 1 updated replicas are available...").
+				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 0 of 1 updated replicas are available...").
+				WithRunOut(rolloutCmd, "deployment.apps/dep successfully rolled out"),
+			duration: 80,
+		}, {
+			description: "rollout returns did not stabilize within the given timeout",
+			command: testutil.NewFakeCmd(t).
+				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 1 of 3 updated replicas are available...").
+				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 1 of 3 updated replicas are available...").
+				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 2 of 3 updated replicas are available..."),
+			duration:  20,
+			shouldErr: true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&executeRolloutStatus, test.mock.Executefunc)
 			t.Override(&defaultPollPeriodInMilliseconds, 10)
+			t.Override(&util.DefaultExecCommand, test.command)
 
 			actual := &sync.Map{}
-			pollDeploymentRolloutStatus(context.Background(), &kubectl.CLI{}, "dep", time.Duration(test.duration)*time.Millisecond, actual)
-
+			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
+			pollDeploymentRolloutStatus(context.Background(), cli, "dep", time.Duration(test.duration)*time.Millisecond, actual)
 			if _, ok := actual.Load("dep"); !ok {
 				t.Error("expected result for deployment dep. But found none")
 			}
 			err := getSkaffoldDeployStatus(actual)
 			t.CheckError(test.shouldErr, err)
-			// Check number of calls only if command did not timeout since there could be n-1 or n or n+1 calls when command timed out
-			if !test.timedOut {
-				t.CheckDeepEqual(test.exactCalls, test.mock.called)
-			}
 		})
 	}
 }

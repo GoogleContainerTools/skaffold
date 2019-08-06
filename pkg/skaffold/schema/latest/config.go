@@ -336,7 +336,9 @@ type TestCase struct {
 
 // DeployConfig contains all the configuration needed by the deploy steps.
 type DeployConfig struct {
-	DeployType `yaml:",inline"`
+	// StatusCheckDeadline *beta* is the deadline for deployments to stabilize. Accepts any input valid for time.ParseDuration e.g. 10m for 10 minutes.
+	StatusCheckDeadline string `yaml:"statusCheckDeadline,omitempty"`
+	DeployType          `yaml:",inline"`
 }
 
 // DeployType contains the specific implementation and parameters needed

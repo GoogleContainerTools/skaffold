@@ -34,6 +34,8 @@ import (
 )
 
 var (
+	defaultStatusCheckDeadline = time.Duration(10) * time.Minute
+
 	// Poll period for checking set to 100 milliseconds
 	defaultPollPeriodInMilliseconds = 100
 
@@ -46,7 +48,9 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	if err != nil {
 		return err
 	}
-	dMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, runCtx.Opts.StatusCheckDeadline)
+	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadline)
+
+	dMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)
 	if err != nil {
 		return errors.Wrap(err, "could not fetch deployments")
 	}
@@ -81,11 +85,11 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 
 	for _, d := range deps.Items {
 		var deadline time.Duration
-		if d.Spec.ProgressDeadlineSeconds != nil || *d.Spec.ProgressDeadlineSeconds > int32(deadlineDuration.Seconds()){
-		  deadline = deadlineDuration
+		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds > int32(deadlineDuration.Seconds()) {
+			deadline = deadlineDuration
 		} else {
-				deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
-			}
+			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
+		}
 		depMap[d.Name] = deadline
 	}
 
@@ -135,4 +139,13 @@ func getSkaffoldDeployStatus(m *sync.Map) error {
 func getRollOutStatus(ctx context.Context, k *kubectl.CLI, dName string) (string, error) {
 	b, err := k.RunOut(ctx, "rollout", "status", "deployment", dName, "--watch=false")
 	return string(b), err
+}
+
+func getDeadline(s string) time.Duration {
+	if strings.TrimSpace(s) != "" {
+		if d, err := time.ParseDuration(s); err != nil {
+			return d
+		}
+	}
+	return defaultStatusCheckDeadline
 }

@@ -18,6 +18,8 @@ package schema
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -114,6 +116,15 @@ func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 		cfg, err = upgradeToLatest(cfg)
 		if err != nil {
 			return nil, err
+		}
+	}
+
+	if cfg.GetVersion() == latest.Version {
+		latestConfig := cfg.(*latest.SkaffoldConfig)
+		if strings.TrimSpace(latestConfig.Deploy.StatusCheckDeadline) != "" {
+			if _, err := time.ParseDuration(strings.TrimSpace(latestConfig.Deploy.StatusCheckDeadline)); err != nil {
+				return nil, fmt.Errorf("could not parse deploy config statusCheckDeadline. %s is not valid input for time.ParseDuration", latestConfig.Deploy.StatusCheckDeadline)
+			}
 		}
 	}
 
