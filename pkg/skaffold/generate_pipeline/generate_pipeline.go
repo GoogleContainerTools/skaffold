@@ -17,21 +17,83 @@ limitations under the License.
 package generatepipeline
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/pipeline"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
-func GenerateGitResource() (*tekton.PipelineResource, error) {
+func Yaml(out io.Writer, config *latest.SkaffoldConfig) (*bytes.Buffer, error) {
+	// Generate git resource for pipeline
+	gitResource, err := generateGitResource()
+	if err != nil {
+		return nil, errors.Wrap(err, "generating git resource for pipeline")
+	}
+
+	// Generate build task for pipeline
+	var tasks []*tekton.Task
+	taskBuild, err := generateBuildTask(config.Pipeline.Build)
+	if err != nil {
+		return nil, errors.Wrap(err, "generating build task")
+	}
+	tasks = append(tasks, taskBuild)
+
+	// Generate deploy task for pipeline
+	taskDeploy, err := generateDeployTask(config.Pipeline.Deploy)
+	if err != nil {
+		return nil, errors.Wrap(err, "generating deploy task")
+	}
+	tasks = append(tasks, taskDeploy)
+
+	// Generate pipeline from git resource and tasks
+	pipeline, err := generatePipeline(tasks)
+	if err != nil {
+		return nil, errors.Wrap(err, "generating tekton pipeline")
+	}
+
+	// json.Marshal all pieces of pipeline, then convert all jsons to yamls
+	var jsons [][]byte
+	bGitResource, err := json.Marshal(gitResource)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshaling git resource")
+	}
+	jsons = append(jsons, bGitResource)
+	for _, task := range tasks {
+		bTask, err := json.Marshal(task)
+		if err != nil {
+			return nil, errors.Wrap(err, "marshaling task")
+		}
+		jsons = append(jsons, bTask)
+	}
+	bPipeline, err := json.Marshal(pipeline)
+	if err != nil {
+		return nil, errors.Wrap(err, "marshaling pipeline")
+	}
+	jsons = append(jsons, bPipeline)
+
+	output := bytes.NewBuffer([]byte{})
+	for _, item := range jsons {
+		itemYaml, err := yaml.JSONToYAML(item)
+		if err != nil {
+			return nil, errors.Wrap(err, "converting jsons to yamls")
+		}
+		output.Write(append(itemYaml, []byte("---\n")...))
+	}
+	return output, nil
+}
+
+func generateGitResource() (*tekton.PipelineResource, error) {
 	// Get git repo url
 	gitURL := os.Getenv("PIPELINE_GIT_URL")
 	if gitURL == "" {
@@ -46,7 +108,7 @@ func GenerateGitResource() (*tekton.PipelineResource, error) {
 	return pipeline.NewGitResource("source-git", gitURL), nil
 }
 
-func GenerateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
+func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 	if len(buildConfig.Artifacts) == 0 {
 		return nil, errors.New("no artifacts to build")
 	}
@@ -79,7 +141,7 @@ func GenerateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 	return pipeline.NewTask("skaffold-build", resources, steps), nil
 }
 
-func GenerateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) {
+func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) {
 	if deployConfig.HelmDeploy == nil && deployConfig.KubectlDeploy == nil && deployConfig.KustomizeDeploy == nil {
 		return nil, errors.New("no Helm/Kubectl/Kustomize deploy config")
 	}
@@ -113,7 +175,7 @@ func GenerateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) 
 	return pipeline.NewTask("skaffold-deploy", resources, steps), nil
 }
 
-func GeneratePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
+func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
 	if len(tasks) == 0 {
 		return nil, errors.New("no tasks to add to pipeline")
 	}

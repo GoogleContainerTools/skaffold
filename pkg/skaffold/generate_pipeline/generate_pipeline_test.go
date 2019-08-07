@@ -151,7 +151,7 @@ func TestGeneratePipeline(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pipeline, err := GeneratePipeline(test.tasks)
+			pipeline, err := generatePipeline(test.tasks)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPipeline, pipeline)
 		})
 	}
@@ -185,7 +185,7 @@ func TestGenerateBuildTask(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := GenerateBuildTask(test.buildConfig)
+			_, err := generateBuildTask(test.buildConfig)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -221,7 +221,7 @@ func TestGenerateDeployTask(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := GenerateDeployTask(test.deployConfig)
+			_, err := generateDeployTask(test.deployConfig)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
