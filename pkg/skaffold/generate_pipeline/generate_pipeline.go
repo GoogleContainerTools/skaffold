@@ -24,11 +24,12 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/pipeline"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	corev1 "k8s.io/api/core/v1"

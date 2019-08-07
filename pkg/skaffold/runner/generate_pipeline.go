@@ -18,7 +18,6 @@ package runner
 
 import (
 	"context"
-
 	"io"
 	"io/ioutil"
 

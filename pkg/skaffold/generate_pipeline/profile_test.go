@@ -64,6 +64,18 @@ func TestGenerateProfile(t *testing.T) {
 			},
 			shouldErr: false,
 		},
+		{
+			description: "failed profile generation",
+			skaffoldConfig: &latest.SkaffoldConfig{
+				Pipeline: latest.Pipeline{
+					Build: latest.BuildConfig{
+						Artifacts: []*latest.Artifact{},
+					},
+				},
+			},
+			expectedProfile: nil,
+			shouldErr:       true,
+		},
 	}
 
 	for _, test := range tests {
