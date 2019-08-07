@@ -18,8 +18,10 @@ package schema
 
 import (
 	"fmt"
-	"strings"
-	"time"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -42,9 +44,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta8"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta9"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 )
 
 type APIVersion struct {
@@ -116,15 +115,6 @@ func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 		cfg, err = upgradeToLatest(cfg)
 		if err != nil {
 			return nil, err
-		}
-	}
-
-	if cfg.GetVersion() == latest.Version {
-		latestConfig := cfg.(*latest.SkaffoldConfig)
-		if strings.TrimSpace(latestConfig.Deploy.StatusCheckDeadline) != "" {
-			if _, err := time.ParseDuration(strings.TrimSpace(latestConfig.Deploy.StatusCheckDeadline)); err != nil {
-				return nil, fmt.Errorf("could not parse deploy config statusCheckDeadline. %s is not valid input for time.ParseDuration", latestConfig.Deploy.StatusCheckDeadline)
-			}
 		}
 	}
 

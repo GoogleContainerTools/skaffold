@@ -104,11 +104,11 @@ build:
 
 	invalidStatusCheckConfig = `
 deploy:
-  statusCheckDeadline: 1 s
+  statusCheckDeadlineSeconds: s
 `
 	validStatusCheckConfig = `
 deploy:
-  statusCheckDeadline: 1s
+  statusCheckDeadlineSeconds: 10
 `
 )
 
@@ -225,7 +225,7 @@ func TestParseConfig(t *testing.T) {
 					withGitTagger(),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
-				withStatusCheckDeadline("1s"),
+				withStatusCheckDeadline(10),
 			),
 		},
 	}
@@ -405,9 +405,9 @@ func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldConfig) {
 	}
 }
 
-func withStatusCheckDeadline(deadline string) func(*latest.SkaffoldConfig) {
+func withStatusCheckDeadline(deadline int) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
-		cfg.Deploy.StatusCheckDeadline = deadline
+		cfg.Deploy.StatusCheckDeadlineSeconds = deadline
 	}
 }
 

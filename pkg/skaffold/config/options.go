@@ -18,7 +18,6 @@ package config
 
 import (
 	"strings"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -33,37 +32,36 @@ type PortForwardOptions struct {
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
-	ConfigurationFile   string
-	Cleanup             bool
-	Notification        bool
-	Tail                bool
-	TailDev             bool
-	SkipTests           bool
-	CacheArtifacts      bool
-	EnableRPC           bool
-	Force               bool
-	ForceDev            bool
-	NoPrune             bool
-	NoPruneChildren     bool
-	StatusCheck         bool
-	StatusCheckDeadline time.Duration
-	AutoBuild           bool
-	AutoSync            bool
-	AutoDeploy          bool
-	PortForward         PortForwardOptions
-	CustomTag           string
-	Namespace           string
-	CacheFile           string
-	Trigger             string
-	WatchPollInterval   int
-	DefaultRepo         string
-	CustomLabels        []string
-	TargetImages        []string
-	Profiles            []string
-	InsecureRegistries  []string
-	Command             string
-	RPCPort             int
-	RPCHTTPPort         int
+	ConfigurationFile  string
+	Cleanup            bool
+	Notification       bool
+	Tail               bool
+	TailDev            bool
+	SkipTests          bool
+	CacheArtifacts     bool
+	EnableRPC          bool
+	Force              bool
+	ForceDev           bool
+	NoPrune            bool
+	NoPruneChildren    bool
+	StatusCheck        bool
+	AutoBuild          bool
+	AutoSync           bool
+	AutoDeploy         bool
+	PortForward        PortForwardOptions
+	CustomTag          string
+	Namespace          string
+	CacheFile          string
+	Trigger            string
+	WatchPollInterval  int
+	DefaultRepo        string
+	CustomLabels       []string
+	TargetImages       []string
+	Profiles           []string
+	InsecureRegistries []string
+	Command            string
+	RPCPort            int
+	RPCHTTPPort        int
 }
 
 // Labels returns a map of labels to be applied to all deployed

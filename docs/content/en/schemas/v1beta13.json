@@ -623,14 +623,14 @@
       "anyOf": [
         {
           "properties": {
-            "statusCheckDeadline": {
-              "type": "string",
-              "description": "*beta* deadline for deployments to stabilize. Accepts any input valid for time.ParseDuration e.g. 10m for 10 minutes.",
-              "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize. Accepts any input valid for time.ParseDuration e.g. 10m for 10 minutes."
+            "statusCheckDeadlineSeconds": {
+              "type": "integer",
+              "description": "*beta* deadline for deployments to stabilize in seconds.",
+              "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize in seconds."
             }
           },
           "preferredOrder": [
-            "statusCheckDeadline"
+            "statusCheckDeadlineSeconds"
           ],
           "additionalProperties": false
         },
@@ -641,14 +641,14 @@
               "description": "*beta* uses the `helm` CLI to apply the charts to the cluster.",
               "x-intellij-html-description": "<em>beta</em> uses the <code>helm</code> CLI to apply the charts to the cluster."
             },
-            "statusCheckDeadline": {
-              "type": "string",
-              "description": "*beta* deadline for deployments to stabilize. Accepts any input valid for time.ParseDuration e.g. 10m for 10 minutes.",
-              "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize. Accepts any input valid for time.ParseDuration e.g. 10m for 10 minutes."
+            "statusCheckDeadlineSeconds": {
+              "type": "integer",
+              "description": "*beta* deadline for deployments to stabilize in seconds.",
+              "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize in seconds."
             }
           },
           "preferredOrder": [
-            "statusCheckDeadline",
+            "statusCheckDeadlineSeconds",
             "helm"
           ],
           "additionalProperties": false
@@ -660,14 +660,14 @@
               "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
               "x-intellij-html-description": "<em>beta</em> uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster."
             },
-            "statusCheckDeadline": {
-              "type": "string",
-              "description": "*beta* deadline for deployments to stabilize. Accepts any input valid for time.ParseDuration e.g. 10m for 10 minutes.",
-              "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize. Accepts any input valid for time.ParseDuration e.g. 10m for 10 minutes."
+            "statusCheckDeadlineSeconds": {
+              "type": "integer",
+              "description": "*beta* deadline for deployments to stabilize in seconds.",
+              "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize in seconds."
             }
           },
           "preferredOrder": [
-            "statusCheckDeadline",
+            "statusCheckDeadlineSeconds",
             "kubectl"
           ],
           "additionalProperties": false
@@ -679,14 +679,14 @@
               "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
               "x-intellij-html-description": "<em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
             },
-            "statusCheckDeadline": {
-              "type": "string",
-              "description": "*beta* deadline for deployments to stabilize. Accepts any input valid for time.ParseDuration e.g. 10m for 10 minutes.",
-              "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize. Accepts any input valid for time.ParseDuration e.g. 10m for 10 minutes."
+            "statusCheckDeadlineSeconds": {
+              "type": "integer",
+              "description": "*beta* deadline for deployments to stabilize in seconds.",
+              "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize in seconds."
             }
           },
           "preferredOrder": [
-            "statusCheckDeadline",
+            "statusCheckDeadlineSeconds",
             "kustomize"
           ],
           "additionalProperties": false

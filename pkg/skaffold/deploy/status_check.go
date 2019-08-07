@@ -48,7 +48,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	if err != nil {
 		return err
 	}
-	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadline)
+	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds)
 
 	dMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)
 	if err != nil {
@@ -141,11 +141,9 @@ func getRollOutStatus(ctx context.Context, k *kubectl.CLI, dName string) (string
 	return string(b), err
 }
 
-func getDeadline(s string) time.Duration {
-	if strings.TrimSpace(s) != "" {
-		if d, err := time.ParseDuration(s); err != nil {
-			return d
-		}
+func getDeadline(d int) time.Duration {
+	if d > 0 {
+		return time.Duration(d) * time.Second
 	}
 	return defaultStatusCheckDeadline
 }

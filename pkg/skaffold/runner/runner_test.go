@@ -207,7 +207,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 					ShaTagger: &latest.ShaTagger{},
 				},
 			},
-			Deploy: latest.DeployConfig{StatusCheckDeadline: "1m"},
+			Deploy: latest.DeployConfig{StatusCheckDeadlineSeconds: 60},
 		},
 	}
 	defaults.Set(cfg)
@@ -267,7 +267,6 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 				Deploy: latest.DeployConfig{
-					StatusCheckDeadline: "1s",
 					DeployType: latest.DeployType{
 						KubectlDeploy: &latest.KubectlDeploy{},
 					},
@@ -287,7 +286,6 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 				Deploy: latest.DeployConfig{
-					StatusCheckDeadline: "1s",
 					DeployType: latest.DeployType{
 						KubectlDeploy: &latest.KubectlDeploy{},
 					},
@@ -312,7 +310,7 @@ func TestNewForConfig(t *testing.T) {
 						LocalBuild: &latest.LocalBuild{},
 					},
 				},
-				Deploy: latest.DeployConfig{StatusCheckDeadline: "1s"},
+				Deploy: latest.DeployConfig{},
 			},
 			shouldErr: true,
 		},
@@ -326,7 +324,6 @@ func TestNewForConfig(t *testing.T) {
 					},
 				},
 				Deploy: latest.DeployConfig{
-					StatusCheckDeadline: "1s",
 					DeployType: latest.DeployType{
 						KubectlDeploy: &latest.KubectlDeploy{},
 					},
@@ -428,7 +425,6 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 					},
 				},
 				Deploy: latest.DeployConfig{
-					StatusCheckDeadline: "1s",
 					DeployType: latest.DeployType{
 						KubectlDeploy: &latest.KubectlDeploy{},
 					},
