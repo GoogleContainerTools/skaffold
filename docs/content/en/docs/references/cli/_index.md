@@ -62,24 +62,25 @@ To edit this file above edit index_header - the rest of the file is autogenerate
 
 
 End-to-end pipelines:
-  run          Run a pipeline
-  dev          Run a pipeline in development mode
-  debug        Run a pipeline in debug mode
+  run               Run a pipeline
+  dev               Run a pipeline in development mode
+  debug             Run a pipeline in debug mode
 
 Pipeline building blocks for CI/CD:
-  build        Build the artifacts
-  deploy       Deploy pre-built artifacts
-  delete       Delete the deployed application
+  build             Build the artifacts
+  deploy            Deploy pre-built artifacts
+  delete            Delete the deployed application
 
 Getting started with a new project:
-  init         Generate configuration for deploying an application
-  fix          Update old configuration to newest schema version
+  init              Generate configuration for deploying an application
+  fix               Update old configuration to newest schema version
 
 Other Commands:
-  completion   Output shell completion for the given shell (bash or zsh)
-  config       Interact with the Skaffold configuration
-  diagnose     Run a diagnostic on Skaffold
-  version      Print the version information
+  completion        Output shell completion for the given shell (bash or zsh)
+  config            Interact with the Skaffold configuration
+  diagnose          Run a diagnostic on Skaffold
+  generate-pipeline Generate tekton pipeline from skaffold.yaml
+  version           Print the version information
 
 Use "skaffold <command> --help" for more information about a given command.
 Use "skaffold options" for a list of global command-line options (applies to all commands).
@@ -513,6 +514,33 @@ Env vars:
 
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_OVERWRITE` (same as `--overwrite`)
+
+### skaffold generate-pipeline
+
+Generate tekton pipeline from skaffold.yaml
+
+```
+
+
+Options:
+  -d, --default-repo='': Default repository value (overrides global config)
+  -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
+  -n, --namespace='': Run deployments in the specified namespace
+  -p, --profile=[]: Activate profiles by name
+
+Usage:
+  skaffold generate-pipeline [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+Env vars:
+
+* `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_PROFILE` (same as `--profile`)
 
 ### skaffold init
 
