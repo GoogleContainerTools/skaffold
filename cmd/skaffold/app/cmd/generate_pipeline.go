@@ -31,7 +31,8 @@ import (
 
 func NewCmdGeneratePipeline() *cobra.Command {
 	return NewCmd("generate-pipeline").
-		WithDescription("Generate tekton pipeline from skaffold.yaml").
+		Hidden().
+		WithDescription("[ALPHA] Generate tekton pipeline from skaffold.yaml").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {}).
 		NoArgs(cancelWithCtrlC(context.Background(), doGeneratePipeline))
