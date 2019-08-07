@@ -79,7 +79,6 @@ Other Commands:
   completion        Output shell completion for the given shell (bash or zsh)
   config            Interact with the Skaffold configuration
   diagnose          Run a diagnostic on Skaffold
-  generate-pipeline Generate tekton pipeline from skaffold.yaml
   version           Print the version information
 
 Use "skaffold <command> --help" for more information about a given command.
@@ -514,33 +513,6 @@ Env vars:
 
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_OVERWRITE` (same as `--overwrite`)
-
-### skaffold generate-pipeline
-
-Generate tekton pipeline from skaffold.yaml
-
-```
-
-
-Options:
-  -d, --default-repo='': Default repository value (overrides global config)
-  -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
-  -n, --namespace='': Run deployments in the specified namespace
-  -p, --profile=[]: Activate profiles by name
-
-Usage:
-  skaffold generate-pipeline [options]
-
-Use "skaffold options" for a list of global command-line options (applies to all commands).
-
-
-```
-Env vars:
-
-* `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
-* `SKAFFOLD_FILENAME` (same as `--filename`)
-* `SKAFFOLD_NAMESPACE` (same as `--namespace`)
-* `SKAFFOLD_PROFILE` (same as `--profile`)
 
 ### skaffold init
 
