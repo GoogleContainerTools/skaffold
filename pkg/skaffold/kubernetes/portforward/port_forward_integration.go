@@ -18,25 +18,41 @@ package portforward
 
 import (
 	"context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"os"
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/wait"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
+
+func NewPortForwardEntry(em EntryManager, resource latest.PortForwardResource) *portForwardEntry {
+	localPort := retrieveAvailablePort(9000, em.forwardedPorts)
+	return &portForwardEntry{
+		resource:        resource,
+		localPort:       localPort,
+		terminationLock: &sync.Mutex{},
+	}
+}
+
+func ForwardPortForwardEntry(em EntryManager, pfe *portForwardEntry) {
+	em.forwardPortForwardEntry(context.Background(), pfe)
+}
+
+func OverridePortForwardEvent() func() {
+	portForwardEventHandler := portForwardEvent
+	portForwardEvent = func(entry *portForwardEntry) {}
+	return func() { portForwardEvent = portForwardEventHandler }
+}
 
 // For WhiteBox testing only
 // This is testing a port forward + stop + restart in a simulated dev cycle
 func WhiteBoxPortForwardCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
 	em := NewEntryManager(os.Stdout, kubectlCLI)
-	portForwardEventHandler := portForwardEvent
-	defer func() { portForwardEvent = portForwardEventHandler }()
-	portForwardEvent = func(entry *portForwardEntry) {}
+	cleanup := OverridePortForwardEvent()
+	defer cleanup()
 	ctx := context.Background()
 	localPort := retrieveAvailablePort(9000, em.forwardedPorts)
 	pfe := &portForwardEntry{
