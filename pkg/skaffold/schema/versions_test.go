@@ -101,6 +101,15 @@ build:
       path: /kaniko/.docker
 `
 	badConfig = "bad config"
+
+	invalidStatusCheckConfig = `
+deploy:
+  statusCheckDeadlineSeconds: s
+`
+	validStatusCheckConfig = `
+deploy:
+  statusCheckDeadlineSeconds: 10
+`
 )
 
 func TestParseConfig(t *testing.T) {
@@ -200,6 +209,24 @@ func TestParseConfig(t *testing.T) {
 			description: "ApiVersion not specified",
 			config:      minimalConfig,
 			shouldErr:   true,
+		},
+		{
+			apiVersion:  latest.Version,
+			description: "invalid statusCheckDeadline",
+			config:      invalidStatusCheckConfig,
+			shouldErr:   true,
+		},
+		{
+			apiVersion:  latest.Version,
+			description: "valid statusCheckDeadline",
+			config:      validStatusCheckConfig,
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withStatusCheckDeadline(10),
+			),
 		},
 	}
 	for _, test := range tests {
@@ -375,6 +402,12 @@ func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldConfig) {
 func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Test = testCases
+	}
+}
+
+func withStatusCheckDeadline(deadline int) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.Deploy.StatusCheckDeadlineSeconds = deadline
 	}
 }
 

@@ -19,6 +19,10 @@ package schema
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -40,9 +44,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta8"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta9"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 )
 
 type APIVersion struct {

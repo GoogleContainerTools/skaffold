@@ -19,8 +19,9 @@ package cmd
 import (
 	"reflect"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/spf13/pflag"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 // Flag defines a Skaffold CLI flag which contains a list of

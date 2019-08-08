@@ -19,6 +19,9 @@ package runner
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster"
@@ -35,8 +38,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig

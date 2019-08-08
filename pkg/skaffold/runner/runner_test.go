@@ -207,6 +207,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 					ShaTagger: &latest.ShaTagger{},
 				},
 			},
+			Deploy: latest.DeployConfig{StatusCheckDeadlineSeconds: 60},
 		},
 	}
 	defaults.Set(cfg)
@@ -309,6 +310,7 @@ func TestNewForConfig(t *testing.T) {
 						LocalBuild: &latest.LocalBuild{},
 					},
 				},
+				Deploy: latest.DeployConfig{},
 			},
 			shouldErr: true,
 		},
