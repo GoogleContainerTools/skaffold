@@ -23,7 +23,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewTrigger(t *testing.T) {
@@ -45,6 +47,10 @@ func TestNewTrigger(t *testing.T) {
 			opts:        config.SkaffoldOptions{Trigger: "notify", WatchPollInterval: 1},
 			expected: &fsNotifyTrigger{
 				Interval: time.Duration(1) * time.Millisecond,
+				workspaces: map[string]struct{}{
+					"../workspace":            {},
+					"../some/other/workspace": {},
+				},
 			},
 		},
 		{
@@ -62,11 +68,26 @@ func TestNewTrigger(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			runCtx := &runcontext.RunContext{
 				Opts: test.opts,
+				Cfg: latest.Pipeline{
+					Build: latest.BuildConfig{
+						Artifacts: []*latest.Artifact{
+							{
+								Workspace: "../workspace",
+							}, {
+								Workspace: "../workspace",
+							}, {
+								Workspace: "../some/other/workspace",
+							},
+						},
+					},
+				},
 			}
 
 			got, err := NewTrigger(runCtx)
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
+			t.CheckError(test.shouldErr, err)
+			if !test.shouldErr {
+				t.CheckDeepEqual(test.expected, got, cmp.AllowUnexported(fsNotifyTrigger{}))
+			}
 		})
 	}
 }

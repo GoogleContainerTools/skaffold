@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -47,13 +48,22 @@ func NewTrigger(runctx *runcontext.RunContext) (Trigger, error) {
 			Interval: time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
 		}, nil
 	case "notify":
-		return &fsNotifyTrigger{
-			Interval: time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
-		}, nil
+		return newFSNotifyTrigger(runctx), nil
 	case "manual":
 		return &manualTrigger{}, nil
 	default:
 		return nil, fmt.Errorf("unsupported trigger: %s", runctx.Opts.Trigger)
+	}
+}
+
+func newFSNotifyTrigger(runctx *runcontext.RunContext) *fsNotifyTrigger {
+	workspaces := map[string]struct{}{}
+	for _, a := range runctx.Cfg.Build.Artifacts {
+		workspaces[a.Workspace] = struct{}{}
+	}
+	return &fsNotifyTrigger{
+		Interval:   time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
+		workspaces: workspaces,
 	}
 }
 
@@ -134,7 +144,8 @@ func (t *manualTrigger) Start(ctx context.Context) (<-chan bool, error) {
 
 // notifyTrigger watches for changes with fsnotify
 type fsNotifyTrigger struct {
-	Interval time.Duration
+	Interval   time.Duration
+	workspaces map[string]struct{}
 }
 
 // Debounce tells the watcher to not debounce rapid sequence of changes.
@@ -154,6 +165,13 @@ func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	// Watch current directory recursively
 	if err := notify.Watch("./...", c, notify.All); err != nil {
 		return nil, err
+	}
+
+	// Watch all workspaces recursively
+	for w := range t.workspaces {
+		if err := notify.Watch(filepath.Join(w, "..."), c, notify.All); err != nil {
+			return nil, err
+		}
 	}
 
 	// Since the file watcher runs in a separate go routine
