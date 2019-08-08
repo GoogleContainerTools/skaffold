@@ -33,13 +33,16 @@ func TestGenerateProfile(t *testing.T) {
 		shouldErr       bool
 	}{
 		{
-			description: "successful profile generation",
+			description: "successful profile generation docker",
 			skaffoldConfig: &latest.SkaffoldConfig{
 				Pipeline: latest.Pipeline{
 					Build: latest.BuildConfig{
 						Artifacts: []*latest.Artifact{
 							{
 								ImageName: "test",
+								ArtifactType: latest.ArtifactType{
+									DockerArtifact: &latest.DockerArtifact{},
+								},
 							},
 						},
 					},
@@ -52,11 +55,58 @@ func TestGenerateProfile(t *testing.T) {
 						Artifacts: []*latest.Artifact{
 							{
 								ImageName: "test-pipeline",
+								ArtifactType: latest.ArtifactType{
+									KanikoArtifact: &latest.KanikoArtifact{
+										BuildContext: &latest.KanikoBuildContext{
+											GCSBucket: "skaffold-kaniko",
+										},
+									},
+								},
 							},
 						},
 						BuildType: latest.BuildType{
 							Cluster: &latest.ClusterDetails{
 								PullSecretName: "kaniko-secret",
+							},
+						},
+					},
+				},
+			},
+			shouldErr: false,
+		},
+		{
+			description: "successful profile generation jib",
+			skaffoldConfig: &latest.SkaffoldConfig{
+				Pipeline: latest.Pipeline{
+					Build: latest.BuildConfig{
+						Artifacts: []*latest.Artifact{
+							{
+								ImageName: "test",
+								ArtifactType: latest.ArtifactType{
+									JibMavenArtifact: &latest.JibMavenArtifact{
+										Module:  "test-module",
+										Profile: "test-profile",
+									},
+									DockerArtifact: nil,
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedProfile: &latest.Profile{
+				Name: "oncluster",
+				Pipeline: latest.Pipeline{
+					Build: latest.BuildConfig{
+						Artifacts: []*latest.Artifact{
+							{
+								ImageName: "test-pipeline",
+								ArtifactType: latest.ArtifactType{
+									JibMavenArtifact: &latest.JibMavenArtifact{
+										Module:  "test-module",
+										Profile: "test-profile",
+									},
+								},
 							},
 						},
 					},

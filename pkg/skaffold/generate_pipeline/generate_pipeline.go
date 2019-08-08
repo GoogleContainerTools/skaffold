@@ -35,7 +35,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func Yaml(out io.Writer, config *latest.SkaffoldConfig) (*bytes.Buffer, error) {
+func Yaml(out io.Writer, config *latest.SkaffoldConfig, profile *latest.Profile) (*bytes.Buffer, error) {
 	// Generate git resource for pipeline
 	gitResource, err := generateGitResource()
 	if err != nil {
@@ -44,7 +44,7 @@ func Yaml(out io.Writer, config *latest.SkaffoldConfig) (*bytes.Buffer, error) {
 
 	// Generate build task for pipeline
 	var tasks []*tekton.Task
-	taskBuild, err := generateBuildTask(config.Pipeline.Build)
+	taskBuild, err := generateBuildTask(profile.Pipeline.Build)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating build task")
 	}
@@ -139,7 +139,33 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 		},
 	}
 
-	return pipeline.NewTask("skaffold-build", resources, steps), nil
+	var volumes []corev1.Volume
+	if buildConfig.Artifacts[0].KanikoArtifact != nil {
+		volumes = []corev1.Volume{
+			{
+				Name: "kaniko-secret",
+				VolumeSource: corev1.VolumeSource{
+					Secret: &corev1.SecretVolumeSource{
+						SecretName: "kaniko-secret",
+					},
+				},
+			},
+		}
+		steps[0].VolumeMounts = []corev1.VolumeMount{
+			{
+				Name:      "kaniko-secret",
+				MountPath: "/secret",
+			},
+		}
+		steps[0].Env = []corev1.EnvVar{
+			{
+				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+				Value: "/secret/kaniko-secret",
+			},
+		}
+	}
+
+	return pipeline.NewTask("skaffold-build", resources, steps, volumes), nil
 }
 
 func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) {
@@ -167,13 +193,12 @@ func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) 
 			Args: []string{
 				"deploy",
 				"--filename", "skaffold.yaml",
-				"--profile", "oncluster",
 				"--build-artifacts", "build.out",
 			},
 		},
 	}
 
-	return pipeline.NewTask("skaffold-deploy", resources, steps), nil
+	return pipeline.NewTask("skaffold-deploy", resources, steps, nil), nil
 }
 
 func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
