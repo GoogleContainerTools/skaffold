@@ -48,7 +48,7 @@ func NewTrigger(runctx *runcontext.RunContext) (Trigger, error) {
 			Interval: time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
 		}, nil
 	case "notify":
-		return newFSNotifyTrigger(runctx)
+		return newFSNotifyTrigger(runctx), nil
 	case "manual":
 		return &manualTrigger{}, nil
 	default:
@@ -56,7 +56,7 @@ func NewTrigger(runctx *runcontext.RunContext) (Trigger, error) {
 	}
 }
 
-func newFSNotifyTrigger(runctx *runcontext.RunContext) (*fsNotifyTrigger, error) {
+func newFSNotifyTrigger(runctx *runcontext.RunContext) *fsNotifyTrigger {
 	workspaces := map[string]struct{}{}
 	for _, a := range runctx.Cfg.Build.Artifacts {
 		workspaces[a.Workspace] = struct{}{}
@@ -64,7 +64,7 @@ func newFSNotifyTrigger(runctx *runcontext.RunContext) (*fsNotifyTrigger, error)
 	return &fsNotifyTrigger{
 		Interval:   time.Duration(runctx.Opts.WatchPollInterval) * time.Millisecond,
 		workspaces: workspaces,
-	}, nil
+	}
 }
 
 // pollTrigger watches for changes on a given interval of time.
