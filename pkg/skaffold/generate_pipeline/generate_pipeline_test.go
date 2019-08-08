@@ -14,10 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package generatepipeline
 
 import (
-	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -224,56 +223,6 @@ func TestGenerateDeployTask(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			_, err := generateDeployTask(test.deployConfig)
 			t.CheckError(test.shouldErr, err)
-		})
-	}
-}
-
-func TestGenerateProfile(t *testing.T) {
-	var tests = []struct {
-		description     string
-		skaffoldConfig  *latest.SkaffoldConfig
-		expectedProfile *latest.Profile
-		responses       []string
-		shouldErr       bool
-	}{
-		{
-			description: "successful profile generation",
-			skaffoldConfig: &latest.SkaffoldConfig{
-				Pipeline: latest.Pipeline{
-					Build: latest.BuildConfig{
-						Artifacts: []*latest.Artifact{
-							{
-								ImageName: "test",
-							},
-						},
-					},
-				},
-			},
-			expectedProfile: &latest.Profile{
-				Name: "oncluster",
-				Pipeline: latest.Pipeline{
-					Build: latest.BuildConfig{
-						Artifacts: []*latest.Artifact{
-							{
-								ImageName: "test-pipeline",
-							},
-						},
-						BuildType: latest.BuildType{
-							Cluster: &latest.ClusterDetails{
-								PullSecretName: "kaniko-secret",
-							},
-						},
-					},
-				},
-			},
-			shouldErr: false,
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			profile, err := generateProfile(ioutil.Discard, test.skaffoldConfig)
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedProfile, profile)
 		})
 	}
 }
