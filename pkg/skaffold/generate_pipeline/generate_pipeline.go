@@ -143,24 +143,24 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 	if buildConfig.Artifacts[0].KanikoArtifact != nil {
 		volumes = []corev1.Volume{
 			{
-				Name: "kaniko-secret",
+				Name: defaultKanikoSecretName,
 				VolumeSource: corev1.VolumeSource{
 					Secret: &corev1.SecretVolumeSource{
-						SecretName: "kaniko-secret",
+						SecretName: defaultKanikoSecretName,
 					},
 				},
 			},
 		}
 		steps[0].VolumeMounts = []corev1.VolumeMount{
 			{
-				Name:      "kaniko-secret",
+				Name:      defaultKanikoSecretName,
 				MountPath: "/secret",
 			},
 		}
 		steps[0].Env = []corev1.EnvVar{
 			{
 				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-				Value: "/secret/kaniko-secret",
+				Value: "/secret/" + defaultKanikoSecretName,
 			},
 		}
 	}
