@@ -281,6 +281,7 @@ func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry
 		case e := <-entries:
 			switch e.Event.GetEventType().(type) {
 			case *proto.Event_PortEvent:
+				t.Logf("event received %v", e)
 				if e.Event.GetPortEvent().ResourceName == resourceName &&
 					e.Event.GetPortEvent().ResourceType == resourceType {
 					port := e.Event.GetPortEvent().LocalPort
@@ -301,6 +302,7 @@ func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourc
 
 // assertResponseFromPort waits for two minutes for the expected response at port.
 func assertResponseFromPort(t *testing.T, port int, expected string) {
+	logrus.Infof("Waiting for response %s from port %d", expected, port)
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancelTimeout()
 
@@ -308,9 +310,7 @@ func assertResponseFromPort(t *testing.T, port int, expected string) {
 		select {
 		case <-ctx.Done():
 			t.Fatalf("Timed out waiting for response from port %d", port)
-
-		default:
-			time.Sleep(1 * time.Second)
+		case <-time.After(1 * time.Second):
 			resp, err := http.Get(fmt.Sprintf("http://%s:%d", util.Loopback, port))
 			if err != nil {
 				logrus.Infof("error getting response from port %d: %v", port, err)

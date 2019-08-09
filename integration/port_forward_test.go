@@ -79,7 +79,7 @@ func TestPortForwardDeletePod(t *testing.T) {
 
 	rpcAddr := randomPort()
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	cmd := skaffold.Dev("--cache-artifacts=true", "--port-forward", "--rpc-port", rpcAddr, "-v=trace").InDir("examples/microservices").InNs(ns.Name).WithEnv(env)
+	cmd := skaffold.Dev("--cache-artifacts=true", "--port-forward", "--rpc-port", rpcAddr, "-v=info").InDir("examples/microservices").InNs(ns.Name).WithEnv(env)
 	stop := cmd.RunBackground(t)
 	defer stop()
 
@@ -107,8 +107,8 @@ func TestPortForwardDeletePod(t *testing.T) {
 	assertResponseFromPort(t, localPort, constants.LeeroyAppResponse)
 
 	// now, delete all pods in this namespace.
+	logrus.Infof("Deleting all pods in namespace %s", ns.Name)
 	kubectlCLI := getKubectlCLI(t, ns.Name)
-
 	killPodsCmd := kubectlCLI.Command(context.Background(),
 		"delete",
 		"pods", "--all",
