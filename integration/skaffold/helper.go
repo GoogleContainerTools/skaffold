@@ -155,8 +155,8 @@ func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 // if the command returns an error.
 func (b *RunBuilder) RunOrFail(t *testing.T) {
 	t.Helper()
-	if err := b.Run(t); err != nil {
-		t.Fatal(err)
+	if output, err := b.RunWithCombinedOutput(t); err != nil {
+		t.Fatalf("%v \n %s", err, string(output))
 	}
 }
 
