@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -125,6 +126,8 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 			Type: tekton.PipelineResourceTypeGit,
 		},
 	}
+	inputs := &tekton.Inputs{Resources: resources}
+	outputs := &tekton.Outputs{Resources: resources}
 	steps := []corev1.Container{
 		{
 			Name:       "run-build",
@@ -165,7 +168,7 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 		}
 	}
 
-	return pipeline.NewTask("skaffold-build", resources, steps, volumes), nil
+	return pipeline.NewTask("skaffold-build", inputs, outputs, steps, volumes), nil
 }
 
 func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) {
@@ -184,6 +187,7 @@ func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) 
 			Type: tekton.PipelineResourceTypeGit,
 		},
 	}
+	inputs := &tekton.Inputs{Resources: resources}
 	steps := []corev1.Container{
 		{
 			Name:       "run-deploy",
@@ -198,7 +202,7 @@ func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) 
 		},
 	}
 
-	return pipeline.NewTask("skaffold-deploy", resources, steps, nil), nil
+	return pipeline.NewTask("skaffold-deploy", inputs, nil, steps, nil), nil
 }
 
 func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
@@ -220,7 +224,6 @@ func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
 			TaskRef: tekton.TaskRef{
 				Name: task.Name,
 			},
-			RunAfter: []string{},
 			Resources: &tekton.PipelineTaskResources{
 				Inputs: []tekton.PipelineTaskInputResource{
 					{
@@ -230,9 +233,18 @@ func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
 				},
 			},
 		}
-		if i > 0 {
-			pipelineTask.RunAfter = []string{pipelineTasks[i-1].Name}
+		// Add output for build tasks, input for deploy task
+		if strings.Contains(task.Name, "build") {
+			pipelineTask.Resources.Outputs = []tekton.PipelineTaskOutputResource{
+				{
+					Name:     "source",
+					Resource: "source-repo",
+				},
+			}
+		} else {
+			pipelineTask.Resources.Inputs[0].From = []string{pipelineTasks[i-1].Name}
 		}
+
 		pipelineTasks = append(pipelineTasks, pipelineTask)
 	}
 

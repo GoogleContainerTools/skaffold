@@ -22,7 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func NewTask(taskName string, inResources []tekton.TaskResource, steps []corev1.Container, volumes []corev1.Volume) *tekton.Task {
+func NewTask(taskName string, inputs *tekton.Inputs, outputs *tekton.Outputs, steps []corev1.Container, volumes []corev1.Volume) *tekton.Task {
 	return &tekton.Task{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Task",
@@ -32,9 +32,8 @@ func NewTask(taskName string, inResources []tekton.TaskResource, steps []corev1.
 			Name: taskName,
 		},
 		Spec: tekton.TaskSpec{
-			Inputs: &tekton.Inputs{
-				Resources: inResources,
-			},
+			Inputs:  inputs,
+			Outputs: outputs,
 			Steps:   steps,
 			Volumes: volumes,
 		},
