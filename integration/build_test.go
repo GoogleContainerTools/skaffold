@@ -200,7 +200,7 @@ func TestExpectedBuildFailures(t *testing.T) {
 		{
 			description: "jib is too old",
 			dir:         "testdata/jib",
-			args:        []string{"-p", "old-jib", "--cache-artifacts=false"},
+			args:        []string{"-p", "old-jib"},
 			expected:    "Could not find goal '_skaffold-fail-if-jib-out-of-date' in plugin com.google.cloud.tools:jib-maven-plugin:1.3.0",
 			// test string will need to be updated for the jib.requiredVersion error text when moving to Jib > 1.4.0
 		},
