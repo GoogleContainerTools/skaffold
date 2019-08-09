@@ -44,13 +44,28 @@ func NewFromRunContext(runCtx *runcontext.RunContext) *CLI {
 
 // Command creates the underlying exec.CommandContext. This allows low-level control of the executed command.
 func (c *CLI) Command(ctx context.Context, command string, arg ...string) *exec.Cmd {
-	args := c.args(command, arg...)
+	args := c.args(command, "", arg...)
+	return exec.CommandContext(ctx, "kubectl", args...)
+}
+
+// Command creates the underlying exec.CommandContext with namespace. This allows low-level control of the executed command.
+func (c *CLI) CommandWithNamespaceArg(ctx context.Context, command string, namespace string, arg ...string) *exec.Cmd {
+	args := c.args(command, namespace, arg...)
 	return exec.CommandContext(ctx, "kubectl", args...)
 }
 
 // Run shells out kubectl CLI.
 func (c *CLI) Run(ctx context.Context, in io.Reader, out io.Writer, command string, arg ...string) error {
 	cmd := c.Command(ctx, command, arg...)
+	cmd.Stdin = in
+	cmd.Stdout = out
+	cmd.Stderr = out
+	return util.RunCmd(cmd)
+}
+
+// Run shells out kubectl CLI with given namespace
+func (c *CLI) RunInNamespace(ctx context.Context, in io.Reader, out io.Writer, command string, namespace string, arg ...string) error {
+	cmd := c.CommandWithNamespaceArg(ctx, command, namespace, arg...)
 	cmd.Stdin = in
 	cmd.Stdout = out
 	cmd.Stderr = out
@@ -65,12 +80,21 @@ func (c *CLI) RunOut(ctx context.Context, command string, arg ...string) ([]byte
 
 // args builds an argument list for calling kubectl and consistently
 // adds the `--context` and `--namespace` flags.
-func (c *CLI) args(command string, arg ...string) []string {
+func (c *CLI) args(command string, namespace string, arg ...string) []string {
 	args := []string{"--context", c.KubeContext}
-	if c.Namespace != "" {
-		args = append(args, "--namespace", c.Namespace)
+	namespace = c.resolveNamespace(namespace)
+	if namespace != "" {
+		args = append(args, "--namespace", namespace)
 	}
 	args = append(args, command)
 	args = append(args, arg...)
 	return args
+}
+
+
+func (c *CLI) resolveNamespace(ns string) string{
+	if ns != "" {
+		return ns
+	}
+	return c.Namespace
 }

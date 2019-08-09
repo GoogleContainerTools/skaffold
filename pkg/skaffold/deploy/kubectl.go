@@ -144,7 +144,7 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	}
 
 	// pull remote manifests
-	var rm kubectl.ManifestList
+	var rm deploy.ManifestList
 	for _, m := range k.RemoteManifests {
 		manifest, err := k.readRemoteManifest(ctx, m)
 		if err != nil {
@@ -224,14 +224,15 @@ func (k *KubectlDeployer) readManifests(ctx context.Context) (deploy.ManifestLis
 // context in the specified namespace and for the specified type
 func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) ([]byte, error) {
 	var args []string
+	ns := ""
 	if parts := strings.Split(name, ":"); len(parts) > 1 {
-		args = append(args, "--namespace", parts[0])
+		ns = parts[0]
 		name = parts[1]
 	}
 	args = append(args, name, "-o", "yaml")
 
 	var manifest bytes.Buffer
-	err := k.kubectl.Run(ctx, nil, &manifest, "get", nil, args...)
+	err := k.kubectl.RunInNamespace(ctx, nil, &manifest, "get", ns, args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting manifest")
 	}
