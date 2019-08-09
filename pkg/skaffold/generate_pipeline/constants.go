@@ -17,5 +17,5 @@ limitations under the License.
 package generatepipeline
 
 const (
-	defaultKanikoSecretName = "kaniko-secret"
+	kanikoSecretName = "kaniko-secret"
 )
