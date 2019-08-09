@@ -19,10 +19,11 @@ package integration
 import (
 	"context"
 	"fmt"
+	"testing"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/sirupsen/logrus"
-	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"

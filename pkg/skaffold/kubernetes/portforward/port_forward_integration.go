@@ -18,14 +18,15 @@ package portforward
 
 import (
 	"context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/wait"
 	"os"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // For WhiteBox testing only
