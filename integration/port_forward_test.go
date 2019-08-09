@@ -20,12 +20,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/sirupsen/logrus"
-	"io/ioutil"
-	"net/http"
-	"os"
 	"testing"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -33,8 +30,6 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 func TestPortForward(t *testing.T) {
@@ -74,88 +69,68 @@ func TestPortForwardDeletePod(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
-	if ShouldRunGCPOnlyTests() {
+	if !ShouldRunGCPOnlyTests() {
 		t.Skip("skipping test that is not gcp only")
 	}
 
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	dir := "examples/microservices"
-	skaffold.Run().InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
+	rpcAddr := randomPort()
+	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
+	cmd := skaffold.Dev("--cache-artifacts=true", "--port-forward", "--rpc-port", rpcAddr, "-v=trace").InDir("examples/microservices").InNs(ns.Name).WithEnv(env)
+	stop := cmd.RunBackground(t)
+	defer stop()
 
+	client, shutdown := setupRPCClient(t, rpcAddr)
+	defer shutdown()
+
+	// create a grpc connection. Increase number of reties for helm.
+	stream, err := readEventAPIStream(client, t, 20)
+	if stream == nil {
+		t.Fatalf("error retrieving event log: %v\n", err)
+	}
+
+	// read entries from the log
+	entries := make(chan *proto.LogEntry)
+	go func() {
+		for {
+			entry, _ := stream.Recv()
+			if entry != nil {
+				entries <- entry
+			}
+		}
+	}()
+
+	localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service")
+	assertResponseFromPort(t, localPort, constants.LeeroyAppResponse)
+
+	// now, delete all pods in this namespace.
+	kubectlCLI := getKubectlCLI(t, ns.Name)
+
+	killPodsCmd := kubectlCLI.Command(context.Background(),
+		"delete",
+		"pods", "--all",
+		"-n", ns.Name,
+	)
+
+	if output, err := killPodsCmd.CombinedOutput(); err != nil {
+		t.Fatalf("error deleting all pods: %v \n %s", err, string(output))
+	}
+	// port forwarding should come up again on the same port
+	assertResponseFromPort(t, localPort, constants.LeeroyAppResponse)
+}
+
+func getKubectlCLI(t *testing.T, ns string) *kubectl.CLI {
 	cfg, err := kubectx.CurrentConfig()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	kubectlCLI := kubectl.NewFromRunContext(&runcontext.RunContext{
+	return kubectl.NewFromRunContext(&runcontext.RunContext{
 		KubeContext: cfg.CurrentContext,
 		Opts: config.SkaffoldOptions{
-			Namespace: ns.Name,
+			Namespace: ns,
 		},
 	})
-
-	em := portforward.NewEntryManager(os.Stdout, kubectlCLI)
-	defer em.Stop()
-
-	pfe := portforward.NewPortForwardEntry(em, latest.PortForwardResource{
-		Type:      "deployment",
-		Name:      "leeroy-web",
-		Namespace: ns.Name,
-		Port:      8080,
-	})
-
-	cleanup := portforward.OverridePortForwardEvent()
-	defer cleanup()
-
-	logrus.SetLevel(logrus.TraceLevel)
-
-	// Start port forwarding
-	portforward.ForwardPortForwardEntry(em, pfe)
-
-	waitForResponseFromPort(t, pfe.LocalPort(), constants.LeeroyAppResponse)
-
-	// now, delete all pods in this namespace.
-	cmd := kubectlCLI.Command(context.Background(),
-		"delete",
-		"pods", "--all",
-		"-n", ns.Name,
-	)
-	if output, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("error deleting all pods: %v \n %s", err, string(output))
-	}
-	// port forwarding should come up again on the same port
-	waitForResponseFromPort(t, pfe.LocalPort(), constants.LeeroyAppResponse)
-}
-
-// waitForResponseFromPort waits for two minutes for the expected response at port.
-func waitForResponseFromPort(t *testing.T, port int, expected string) {
-	ctx, cancelTimeout := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancelTimeout()
-
-	for {
-		select {
-		case <-ctx.Done():
-			t.Fatalf("Timed out waiting for response from port %d", port)
-
-		default:
-			time.Sleep(1 * time.Second)
-			resp, err := http.Get(fmt.Sprintf("http://%s:%d", util.Loopback, port))
-			if err != nil {
-				logrus.Infof("error getting response from port %d: %v", port, err)
-				continue
-			}
-			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				logrus.Infof("error reading response: %v", err)
-				continue
-			}
-			if string(body) == expected {
-				return
-			}
-			logrus.Infof("didn't get expected response from port. got: %s, expected: %s", string(body), expected)
-		}
-	}
 }

@@ -37,10 +37,6 @@ type portForwardEntry struct {
 	cancel                 context.CancelFunc
 }
 
-func (p *portForwardEntry) LocalPort() int {
-	return p.localPort
-}
-
 // key is an identifier for the lock on a port during the skaffold dev cycle.
 // if automaticPodForwarding is set, we return a key that doesn't include podName, since we want the key
 // to be the same whenever pods restart

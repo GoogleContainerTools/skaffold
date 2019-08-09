@@ -28,31 +28,13 @@ import (
 	"time"
 )
 
-func NewPortForwardEntry(em EntryManager, resource latest.PortForwardResource) *portForwardEntry {
-	localPort := retrieveAvailablePort(9000, em.forwardedPorts)
-	return &portForwardEntry{
-		resource:        resource,
-		localPort:       localPort,
-		terminationLock: &sync.Mutex{},
-	}
-}
-
-func ForwardPortForwardEntry(em EntryManager, pfe *portForwardEntry) {
-	em.forwardPortForwardEntry(context.Background(), pfe)
-}
-
-func OverridePortForwardEvent() func() {
-	portForwardEventHandler := portForwardEvent
-	portForwardEvent = func(entry *portForwardEntry) {}
-	return func() { portForwardEvent = portForwardEventHandler }
-}
-
 // For WhiteBox testing only
 // This is testing a port forward + stop + restart in a simulated dev cycle
 func WhiteBoxPortForwardCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace string) {
 	em := NewEntryManager(os.Stdout, kubectlCLI)
-	cleanup := OverridePortForwardEvent()
-	defer cleanup()
+	portForwardEventHandler := portForwardEvent
+	defer func() { portForwardEvent = portForwardEventHandler }()
+	portForwardEvent = func(entry *portForwardEntry) {}
 	ctx := context.Background()
 	localPort := retrieveAvailablePort(9000, em.forwardedPorts)
 	pfe := &portForwardEntry{

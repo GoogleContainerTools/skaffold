@@ -27,8 +27,10 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 )
 
@@ -270,43 +272,62 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 	waitForPortForwardEvent(t, entries, "gke-loadbalancer", "service", "hello!!\n")
 }
 
-func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, expected string) {
+func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType string) int {
 	timeout := time.After(1 * time.Minute)
-	var port int32
-portForwardEvent:
 	for {
 		select {
 		case <-timeout:
-			t.Errorf("timed out waiting for port forwarding event")
-			break portForwardEvent
+			t.Fatalf("timed out waiting for port forwarding event")
 		case e := <-entries:
 			switch e.Event.GetEventType().(type) {
 			case *proto.Event_PortEvent:
 				if e.Event.GetPortEvent().ResourceName == resourceName &&
 					e.Event.GetPortEvent().ResourceType == resourceType {
-					port = e.Event.GetPortEvent().LocalPort
+					port := e.Event.GetPortEvent().LocalPort
 					t.Logf("Detected %s/%s is forwarded to port %d", resourceType, resourceName, port)
-					break portForwardEvent
+					return int(port)
 				}
 			default:
 				t.Logf("event received %v", e)
 			}
 		}
 	}
-	var body []byte
-	err := wait.PollImmediate(time.Millisecond*2000, 1*time.Minute, func() (bool, error) {
-		resp, err := http.Get(fmt.Sprintf("http://localhost:%d", port))
-		if err != nil {
-			t.Logf("could not get %s/%s due to %s", resourceType, resourceName, err)
-			return false, nil
-		}
-		defer resp.Body.Close()
-		body, err = ioutil.ReadAll(resp.Body)
-		t.Logf("got %s from port %d but wanted %s", string(body), port, expected)
-		return string(body) == expected, err
-	})
+}
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, string(body), expected)
+func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, expected string) {
+	port := getLocalPortFromPortForwardEvent(t, entries, resourceName, resourceType)
+	assertResponseFromPort(t, port, expected)
+}
+
+// assertResponseFromPort waits for two minutes for the expected response at port.
+func assertResponseFromPort(t *testing.T, port int, expected string) {
+	ctx, cancelTimeout := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancelTimeout()
+
+	for {
+		select {
+		case <-ctx.Done():
+			t.Fatalf("Timed out waiting for response from port %d", port)
+
+		default:
+			time.Sleep(1 * time.Second)
+			resp, err := http.Get(fmt.Sprintf("http://%s:%d", util.Loopback, port))
+			if err != nil {
+				logrus.Infof("error getting response from port %d: %v", port, err)
+				continue
+			}
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logrus.Infof("error reading response: %v", err)
+				continue
+			}
+			if string(body) == expected {
+				return
+			}
+			logrus.Infof("didn't get expected response from port. got: %s, expected: %s", string(body), expected)
+		}
+	}
 }
 
 func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, error) {
