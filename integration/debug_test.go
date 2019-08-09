@@ -40,13 +40,12 @@ func TestDebug(t *testing.T) {
 		{
 			description: "kubectl",
 			dir:         "testdata/debug",
-			args:        []string{"--cache-artifacts=false"},
 			deployments: []string{"jib"},
 			pods:        []string{"nodejs", "npm", "python3"},
 		},
 		{
 			description: "kustomize",
-			args:        []string{"--profile", "kustomize", "--cache-artifacts=false"},
+			args:        []string{"--profile", "kustomize"},
 			dir:         "testdata/debug",
 			deployments: []string{"jib"},
 			pods:        []string{"nodejs", "npm", "python3"},
