@@ -275,12 +275,11 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 		description string
 		cfg         *latest.KubectlDeploy
 		command     util.Command
-		shouldErr   bool
 	}{
 		{
 			description: "cleanup success",
 			cfg: &latest.KubectlDeploy{
-			 RemoteManifests: []string{"pod/leeroy-web"},
+				RemoteManifests: []string{"pod/leeroy-web"},
 			},
 			command: testutil.NewFakeCmd(t).
 				WithRun("kubectl --context kubecontext --namespace testNamespace get pod/leeroy-web -o yaml").

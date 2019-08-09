@@ -91,8 +91,7 @@ func (c *CLI) args(command string, namespace string, arg ...string) []string {
 	return args
 }
 
-
-func (c *CLI) resolveNamespace(ns string) string{
+func (c *CLI) resolveNamespace(ns string) string {
 	if ns != "" {
 		return ns
 	}
