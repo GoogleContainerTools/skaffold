@@ -31,12 +31,13 @@ import (
 
 func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, config *latest.SkaffoldConfig, fileOut string) error {
 	color.Default.Fprintln(out, "Running profile setup...")
-	if err := pipeline.CreateSkaffoldProfile(out, config, r.runCtx.Opts.ConfigurationFile); err != nil {
+	profile, err := pipeline.CreateSkaffoldProfile(out, config, r.runCtx.Opts.ConfigurationFile)
+	if err != nil {
 		return errors.Wrap(err, "setting up profile")
 	}
 
 	color.Default.Fprintln(out, "Generating Pipeline...")
-	pipelineYaml, err := pipeline.Yaml(out, config)
+	pipelineYaml, err := pipeline.Yaml(out, config, profile)
 	if err != nil {
 		return errors.Wrap(err, "generating pipeline yaml contents")
 	}
