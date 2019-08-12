@@ -214,7 +214,7 @@ func TestDevPortForward(t *testing.T) {
 	originalResponse := "leeroooooy app!!"
 	replacementResponse := "test string"
 
-	waitForPortForwardEvent(t, entries, "leeroy-app", "service", originalResponse+"\n", ns.Name)
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, originalResponse+"\n")
 
 	original, perms, fErr := replaceInFile(originalResponse, replacementResponse, "examples/microservices/leeroy-app/app.go")
 	if fErr != nil {
@@ -226,7 +226,7 @@ func TestDevPortForward(t *testing.T) {
 		}
 	}()
 
-	waitForPortForwardEvent(t, entries, "leeroy-app", "service", replacementResponse+"\n", ns.Name)
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, replacementResponse+"\n")
 }
 
 func TestDevPortForwardGKELoadBalancer(t *testing.T) {
@@ -269,7 +269,7 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 		}
 	}()
 
-	waitForPortForwardEvent(t, entries, "gke-loadbalancer", "service", "hello!!\n", ns.Name)
+	waitForPortForwardEvent(t, entries, "gke-loadbalancer", "service", ns.Name, "hello!!\n")
 }
 
 func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace string) int {
