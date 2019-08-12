@@ -22,17 +22,21 @@ spec:
       outputImageDir: ""
       targetPath: ""
       type: git
+  outputs:
+    resources:
+    - name: source
+      outputImageDir: ""
+      targetPath: ""
+      type: git
   steps:
   - args:
-    - build
-    - --filename
-    - skaffold.yaml
     - --profile
     - oncluster
     - --file-output
     - build.out
     command:
     - skaffold
+    - build
     env:
     - name: GOOGLE_APPLICATION_CREDENTIALS
       value: /secret/kaniko-secret
@@ -62,13 +66,11 @@ spec:
       type: git
   steps:
   - args:
-    - deploy
-    - --filename
-    - skaffold.yaml
     - --build-artifacts
     - build.out
     command:
     - skaffold
+    - deploy
     image: gcr.io/k8s-skaffold/skaffold:test-version
     name: run-deploy
     resources: {}
@@ -89,15 +91,18 @@ spec:
       inputs:
       - name: source
         resource: source-repo
+      outputs:
+      - name: source
+        resource: source-repo
     taskRef:
       name: skaffold-build
   - name: skaffold-deploy-task
     resources:
       inputs:
-      - name: source
+      - from:
+        - skaffold-build-task
+        name: source
         resource: source-repo
-    runAfter:
-    - skaffold-build-task
     taskRef:
       name: skaffold-deploy
 status: {}
