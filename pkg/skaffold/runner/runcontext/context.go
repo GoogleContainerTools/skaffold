@@ -87,7 +87,6 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 	}, nil
 }
 
-
 func (r *RunContext) UpdateNamespaces(ns []string) {
 	if len(ns) == 0 {
 		return
@@ -100,8 +99,8 @@ func (r *RunContext) UpdateNamespaces(ns []string) {
 
 	// Update RunContext Namespace
 	updated := make([]string, len(nsMap))
-	i :=0
-	for k, _ := range(nsMap) {
+	i := 0
+	for k := range nsMap {
 		updated[i] = k
 		i++
 	}

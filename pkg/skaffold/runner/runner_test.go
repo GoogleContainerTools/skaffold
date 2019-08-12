@@ -85,7 +85,6 @@ func (t *TestBench) WithDeployNamespaces(ns []string) *TestBench {
 	return t
 }
 
-
 func (t *TestBench) WithTestErrors(testErrors []error) *TestBench {
 	t.testErrors = testErrors
 	return t
@@ -158,7 +157,7 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []build.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ []deploy.Labeller) *deploy.DeployResult {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ []deploy.Labeller) *deploy.Result {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]

@@ -157,9 +157,8 @@ func DeployFailed(err error) {
 
 // DeployEvent notifies that a deployment of non fatal errors during deploy w
 func DeployInfoEvent(err error) {
-	handler.handleDeployEvent(&proto.DeployEvent{Status: Info , Err: err.Error()})
+	handler.handleDeployEvent(&proto.DeployEvent{Status: Info, Err: err.Error()})
 }
-
 
 // DeployComplete notifies that a deployment has completed.
 func DeployComplete() {

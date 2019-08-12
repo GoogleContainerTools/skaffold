@@ -36,7 +36,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 
 	deployResult := r.deployer.Deploy(ctx, out, artifacts, r.labellers)
 	r.hasDeployed = true
-	if isErr, err := deployResult.InError(); isErr {
+	if isErr, err := deployResult.IsError(); isErr {
 		return err
 	}
 	r.runCtx.UpdateNamespaces(deployResult.Namespaces())

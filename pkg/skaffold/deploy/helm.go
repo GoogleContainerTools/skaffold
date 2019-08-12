@@ -29,6 +29,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -37,10 +42,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	homedir "github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 )
 
 type HelmDeployer struct {
@@ -70,10 +71,11 @@ func (h *HelmDeployer) Labels() map[string]string {
 	}
 }
 
-func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *DeployResult {
+func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
 	var dRes []Artifact
 
 	event.DeployInProgress()
+	nsMap := map[string]bool{}
 
 	for _, r := range h.Releases {
 		results, err := h.deployRelease(ctx, out, r, builds)
@@ -82,6 +84,10 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 
 			event.DeployFailed(err)
 			return NewDeployErrorResult(errors.Wrapf(err, "deploying %s", releaseName))
+		}
+		// collect namespaces
+		for _, r := range results {
+			nsMap[r.Namespace] = true
 		}
 
 		dRes = append(dRes, results...)
@@ -92,7 +98,15 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 	labels := merge(labellers...)
 	labelDeployResults(labels, dRes)
 
-	return NewDeploySuccessResult(nil)
+	// Collect namespaces in a string
+	namespaces := make([]string, len(nsMap))
+	i := 0
+	for k := range nsMap {
+		namespaces[i] = k
+		i++
+	}
+
+	return NewDeploySuccessResult(namespaces)
 }
 
 func (h *HelmDeployer) Dependencies() ([]string, error) {
@@ -390,7 +404,7 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 
 func (h *HelmDeployer) getReleaseInfo(ctx context.Context, release string) (*bufio.Reader, error) {
 	var releaseInfo bytes.Buffer
-	if err := h.helm(ctx, &releaseInfo, false, "get", "manifest", release); err != nil {
+	if err := h.helm(ctx, &releaseInfo, false, "get", release); err != nil {
 		return nil, fmt.Errorf("error retrieving helm deployment info: %s", releaseInfo.String())
 	}
 	return bufio.NewReader(&releaseInfo), nil

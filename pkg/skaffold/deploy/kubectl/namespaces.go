@@ -32,7 +32,7 @@ func (l *ManifestList) CollectNamespaces() ([]string, error) {
 	}
 	namespaces := make([]string, len(replacer.namespaces))
 	i := 0
-	for ns, _ := range replacer.namespaces {
+	for ns := range replacer.namespaces {
 		namespaces[i] = ns
 		i++
 	}

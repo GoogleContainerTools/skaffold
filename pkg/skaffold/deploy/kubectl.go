@@ -71,7 +71,7 @@ func (k *KubectlDeployer) Labels() map[string]string {
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *DeployResult {
+func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
 	color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		color.Default.Fprintln(out, err)
@@ -108,8 +108,8 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	event.DeployInProgress()
 
 	namespaces, err := manifests.CollectNamespaces()
-	if err != nil{
-		event.DeployInfoEvent(errors.Wrap(err, "could not fetch deployed resource namespace." +
+	if err != nil {
+		event.DeployInfoEvent(errors.Wrap(err, "could not fetch deployed resource namespace."+
 			"This might cause port-forward and deploy health-check to fail."))
 	}
 
@@ -139,7 +139,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	}
 
 	event.DeployComplete()
-	return  NewDeploySuccessResult(namespaces)
+	return NewDeploySuccessResult(namespaces)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.

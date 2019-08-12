@@ -30,7 +30,7 @@ type Deployer interface {
 
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Deploy(context.Context, io.Writer, []build.Artifact, []Labeller) *DeployResult
+	Deploy(context.Context, io.Writer, []build.Artifact, []Labeller) *Result
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered
@@ -40,28 +40,27 @@ type Deployer interface {
 	Cleanup(context.Context, io.Writer) error
 }
 
-
-type DeployResult struct{
-	err error
+type Result struct {
+	err        error
 	namespaces []string
 }
 
-func NewDeployErrorResult(err error) *DeployResult {
-	return &DeployResult{err : err}
+func NewDeployErrorResult(err error) *Result {
+	return &Result{err: err}
 }
 
-func NewDeploySuccessResult(namespaces []string) *DeployResult {
-	return &DeployResult{namespaces: namespaces}
+func NewDeploySuccessResult(namespaces []string) *Result {
+	return &Result{namespaces: namespaces}
 }
 
-func (d *DeployResult) Namespaces() []string {
+func (d *Result) Namespaces() []string {
 	return d.namespaces
 }
 
-func (d *DeployResult) InError() (bool, error) {
-	return d.err!=nil, d.err
+func (d *Result) IsError() (bool, error) {
+	return d.err != nil, d.err
 }
 
-func (d *DeployResult) GetError() error {
+func (d *Result) GetError() error {
 	return d.err
 }

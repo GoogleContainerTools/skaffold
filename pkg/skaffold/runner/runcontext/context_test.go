@@ -24,40 +24,40 @@ import (
 
 func TestRunContext_UpdateNamespaces(t *testing.T) {
 	tests := []struct {
-		description      string
-	  runContext *RunContext
-		namespaces []string
-		expected   []string
+		description string
+		runContext  *RunContext
+		namespaces  []string
+		expected    []string
 	}{
 		{
 			description: "update namespace when not present in runContext",
-			runContext: &RunContext{Namespaces: []string{"test"}},
-			namespaces: []string{"another"},
-			expected: []string{"another", "test"},
+			runContext:  &RunContext{Namespaces: []string{"test"}},
+			namespaces:  []string{"another"},
+			expected:    []string{"another", "test"},
 		},
 		{
 			description: "update namespace with duplicates should not return duplicate",
-			runContext: &RunContext{Namespaces: []string{"test", "foo"}},
-			namespaces: []string{"another", "foo", "another"},
-			expected: []string{"another", "foo", "test"},
+			runContext:  &RunContext{Namespaces: []string{"test", "foo"}},
+			namespaces:  []string{"another", "foo", "another"},
+			expected:    []string{"another", "foo", "test"},
 		},
 		{
-			description:  "update namespaces when namespaces is empty",
-			runContext: &RunContext{Namespaces: []string{"test", "foo"}},
-			namespaces: []string{},
-			expected: []string{"test", "foo"},
+			description: "update namespaces when namespaces is empty",
+			runContext:  &RunContext{Namespaces: []string{"test", "foo"}},
+			namespaces:  []string{},
+			expected:    []string{"test", "foo"},
 		},
 		{
 			description: "update namespaces when runcontext namespaces is empty",
-			runContext: &RunContext{Namespaces: []string{}},
-			namespaces: []string{"test", "another"},
-			expected: []string{"another", "test"},
+			runContext:  &RunContext{Namespaces: []string{}},
+			namespaces:  []string{"test", "another"},
+			expected:    []string{"another", "test"},
 		},
 		{
 			description: "update namespaces when both namespaces and runcontext namespaces is empty",
-			runContext: &RunContext{Namespaces: []string{}},
-			namespaces: []string{},
-			expected: []string{},
+			runContext:  &RunContext{Namespaces: []string{}},
+			namespaces:  []string{},
+			expected:    []string{},
 		},
 	}
 	for _, test := range tests {
