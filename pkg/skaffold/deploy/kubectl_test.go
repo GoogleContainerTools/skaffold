@@ -195,7 +195,7 @@ func TestKubectlDeploy(t *testing.T) {
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedDependencies, dependencies)
 
-			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, nil).GetError()
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -392,21 +392,21 @@ spec:
 		err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-		}, labellers)
+		}, labellers).GetError()
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, labellers)
+		}, labellers).GetError()
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, labellers)
+		}, labellers).GetError()
 		t.CheckNoError(err)
 	})
 }

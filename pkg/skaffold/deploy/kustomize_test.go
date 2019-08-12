@@ -85,7 +85,7 @@ func TestKustomizeDeploy(t *testing.T) {
 					Force:     test.forceDeploy,
 				},
 			})
-			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil).GetError()
 
 			t.CheckError(test.shouldErr, err)
 		})

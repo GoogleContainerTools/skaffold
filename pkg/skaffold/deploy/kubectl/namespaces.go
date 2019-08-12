@@ -18,10 +18,9 @@ package kubectl
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
-
-	"github.com/GoogleContainerTools/skaffold/integration/examples/bazel/bazel-bazel/external/go_sdk/src/strings"
 )
 
 // CollectNamespaces returns all the namespaces in the manifests.
@@ -32,8 +31,10 @@ func (l *ManifestList) CollectNamespaces() ([]string, error) {
 		return nil, errors.Wrap(err, "collecting namespaces")
 	}
 	namespaces := make([]string, len(replacer.namespaces))
+	i := 0
 	for ns, _ := range replacer.namespaces {
-		namespaces = append(namespaces, ns)
+		namespaces[i] = ns
+		i++
 	}
 	sort.Strings(namespaces)
 	return namespaces, nil

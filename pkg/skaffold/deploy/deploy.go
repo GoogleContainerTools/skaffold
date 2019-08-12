@@ -61,3 +61,7 @@ func (d *DeployResult) Namespaces() []string {
 func (d *DeployResult) InError() (bool, error) {
 	return d.err!=nil, d.err
 }
+
+func (d *DeployResult) GetError() error {
+	return d.err
+}

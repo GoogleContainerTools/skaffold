@@ -17,7 +17,6 @@ limitations under the License.
 package kubectl
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -65,7 +64,7 @@ spec:
   - image: gcr.io/k8s-skaffold/example
     name: example
 `)},
-			expected: []string{"test-foo", "test-bar"},
+			expected: []string{"test-bar", "test-foo"},
 		}, {
 			description: "multiple manifest but same namespace",
 			manifests: ManifestList{[]byte(`
@@ -119,7 +118,6 @@ spec:
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual, err := test.manifests.CollectNamespaces()
-			fmt.Println(actual)
 			t.CheckErrorAndDeepEqual(false, err, test.expected, actual)
 		})
 	}
