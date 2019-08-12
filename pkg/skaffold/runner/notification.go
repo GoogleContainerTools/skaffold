@@ -43,7 +43,7 @@ type withNotification struct {
 
 func (w withNotification) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []deploy.Labeller) *deploy.Result {
 	dr := w.Deployer.Deploy(ctx, out, builds, labellers)
-	if isErr, _ := dr.IsError(); isErr {
+	if isErr, _ := dr.IsError(); !isErr {
 		fmt.Fprint(out, terminalBell)
 	}
 	return dr

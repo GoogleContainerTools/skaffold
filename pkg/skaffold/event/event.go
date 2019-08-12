@@ -150,7 +150,7 @@ func DeployInProgress() {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: InProgress})
 }
 
-// DeployFailed notifies that a deployment has failed.
+// DeployFailed notifies that non-fatal errors were encountered during a deployment.
 func DeployFailed(err error) {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error()})
 }

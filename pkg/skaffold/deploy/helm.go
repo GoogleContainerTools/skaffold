@@ -99,11 +99,9 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 	labelDeployResults(labels, dRes)
 
 	// Collect namespaces in a string
-	namespaces := make([]string, len(nsMap))
-	i := 0
-	for k := range nsMap {
-		namespaces[i] = k
-		i++
+	namespaces := make([]string, 0, len(nsMap))
+	for ns := range nsMap {
+		namespaces = append(namespaces, ns)
 	}
 
 	return NewDeploySuccessResult(namespaces)

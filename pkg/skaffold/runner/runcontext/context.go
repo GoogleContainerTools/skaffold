@@ -98,11 +98,9 @@ func (r *RunContext) UpdateNamespaces(ns []string) {
 	}
 
 	// Update RunContext Namespace
-	updated := make([]string, len(nsMap))
-	i := 0
+	updated := make([]string, 0, len(nsMap))
 	for k := range nsMap {
-		updated[i] = k
-		i++
+		updated = append(updated, k)
 	}
 	sort.Strings(updated)
 	r.Namespaces = updated

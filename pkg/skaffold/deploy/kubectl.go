@@ -86,7 +86,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	for _, m := range k.RemoteManifests {
 		manifest, err := k.readRemoteManifest(ctx, m)
 		if err != nil {
-			return errors.Wrap(err, "get remote manifests")
+			return NewDeployErrorResult(errors.Wrap(err, "get remote manifests"))
 		}
 
 		manifests = append(manifests, manifest)
@@ -95,7 +95,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	if len(k.originalImages) == 0 {
 		k.originalImages, err = manifests.GetImages()
 		if err != nil {
-			return errors.Wrap(err, "get images from manifests")
+			return NewDeployErrorResult(errors.Wrap(err, "get images from manifests"))
 		}
 	}
 
@@ -109,7 +109,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 
 	namespaces, err := manifests.CollectNamespaces()
 	if err != nil {
-		event.DeployInfoEvent(errors.Wrap(err, "could not fetch deployed resource namespace."+
+		event.DeployInfoEvent(errors.Wrap(err, "could not fetch deployed resource namespace. "+
 			"This might cause port-forward and deploy health-check to fail."))
 	}
 
