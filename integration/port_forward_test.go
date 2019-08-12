@@ -70,7 +70,7 @@ func TestPortForwardDeletePod(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
-	if !ShouldRunGCPOnlyTests() {
+	if ShouldRunGCPOnlyTests() {
 		t.Skip("skipping test that is not gcp only")
 	}
 
@@ -103,7 +103,7 @@ func TestPortForwardDeletePod(t *testing.T) {
 		}
 	}()
 
-	localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service")
+	localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)
 	assertResponseFromPort(t, localPort, constants.LeeroyAppResponse)
 
 	// now, delete all pods in this namespace.

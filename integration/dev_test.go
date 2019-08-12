@@ -214,7 +214,7 @@ func TestDevPortForward(t *testing.T) {
 	originalResponse := "leeroooooy app!!"
 	replacementResponse := "test string"
 
-	waitForPortForwardEvent(t, entries, "leeroy-app", "service", originalResponse+"\n")
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", originalResponse+"\n", ns.Name)
 
 	original, perms, fErr := replaceInFile(originalResponse, replacementResponse, "examples/microservices/leeroy-app/app.go")
 	if fErr != nil {
@@ -226,7 +226,7 @@ func TestDevPortForward(t *testing.T) {
 		}
 	}()
 
-	waitForPortForwardEvent(t, entries, "leeroy-app", "service", replacementResponse+"\n")
+	waitForPortForwardEvent(t, entries, "leeroy-app", "service", replacementResponse+"\n", ns.Name)
 }
 
 func TestDevPortForwardGKELoadBalancer(t *testing.T) {
@@ -269,10 +269,10 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 		}
 	}()
 
-	waitForPortForwardEvent(t, entries, "gke-loadbalancer", "service", "hello!!\n")
+	waitForPortForwardEvent(t, entries, "gke-loadbalancer", "service", "hello!!\n", ns.Name)
 }
 
-func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType string) int {
+func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace string) int {
 	timeout := time.After(1 * time.Minute)
 	for {
 		select {
@@ -283,7 +283,8 @@ func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry
 			case *proto.Event_PortEvent:
 				t.Logf("event received %v", e)
 				if e.Event.GetPortEvent().ResourceName == resourceName &&
-					e.Event.GetPortEvent().ResourceType == resourceType {
+					e.Event.GetPortEvent().ResourceType == resourceType &&
+					e.Event.GetPortEvent().Namespace == namespace {
 					port := e.Event.GetPortEvent().LocalPort
 					t.Logf("Detected %s/%s is forwarded to port %d", resourceType, resourceName, port)
 					return int(port)
@@ -295,8 +296,8 @@ func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry
 	}
 }
 
-func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, expected string) {
-	port := getLocalPortFromPortForwardEvent(t, entries, resourceName, resourceType)
+func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace, expected string) {
+	port := getLocalPortFromPortForwardEvent(t, entries, resourceName, resourceType, namespace)
 	assertResponseFromPort(t, port, expected)
 }
 
