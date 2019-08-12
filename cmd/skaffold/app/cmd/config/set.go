@@ -36,12 +36,11 @@ func Set(out io.Writer, args []string) error {
 	return nil
 }
 
-func setConfigValue(name string, value string) error {
+func setConfigValue(name, value string) error {
 	cfg, err := getOrCreateConfigForKubectx()
 	if err != nil {
 		return err
 	}
-
 	fieldName := getFieldName(cfg, name)
 	if fieldName == "" {
 		return fmt.Errorf("%s is not a valid config field", name)

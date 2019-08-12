@@ -17,15 +17,18 @@ limitations under the License.
 package update
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // Fot testing
@@ -51,7 +54,14 @@ func IsUpdateCheckEnabled() bool {
 // and returns it with the current version of Skaffold
 func getLatestAndCurrentVersion() (semver.Version, semver.Version, error) {
 	none := semver.Version{}
-	resp, err := http.Get(latestVersionURL)
+	client := &http.Client{}
+	uuid, err := config.GetInstallationID()
+	if err != nil {
+		logrus.Debug("unable to retrieve installation id; metrics may not be collected successfully")
+	}
+	req, _ := http.NewRequest("GET", latestVersionURL, nil)
+	req.Header.Set("User-Agent", fmt.Sprintf("skaffold/%s", uuid))
+	resp, err := client.Do(req)
 	if err != nil {
 		return none, none, errors.Wrap(err, "getting latest version info from GCS")
 	}

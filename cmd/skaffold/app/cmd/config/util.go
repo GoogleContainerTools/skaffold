@@ -20,11 +20,13 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 
+	"github.com/google/uuid"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -33,6 +35,8 @@ import (
 
 const defaultConfigDir = ".skaffold"
 const defaultConfigFile = "config"
+
+var globalCfgLock = &sync.Mutex{}
 
 func resolveKubectlContext() {
 	if kubecontext != "" {
@@ -108,9 +112,17 @@ func GetConfigForKubectx() (*ContextConfig, error) {
 
 // GetGlobalConfig returns the global config values
 func GetGlobalConfig() (*ContextConfig, error) {
+	globalCfgLock.Lock()
+	defer globalCfgLock.Unlock()
 	cfg, err := readConfig()
 	if err != nil {
 		return nil, err
+	}
+	if cfg.Global == nil {
+		cfg.Global = &ContextConfig{}
+		if err := writeFullConfig(cfg); err != nil {
+			return nil, err
+		}
 	}
 	return cfg.Global, nil
 }
@@ -224,6 +236,28 @@ func GetInsecureRegistries() ([]string, error) {
 	}
 
 	return registries, nil
+}
+
+func GetInstallationID() (string, error) {
+	cfg, err := GetGlobalConfig()
+	if err != nil {
+		return "", errors.Wrap(err, "retrieving global config")
+	}
+	if cfg.InstallID != "" {
+		return cfg.InstallID, nil
+	}
+	id := uuid.New().String()
+
+	// force global for installation id
+	oldGlobal := global
+	global = true
+	defer func() {
+		global = oldGlobal
+	}()
+	if err = setConfigValue("uuid", id); err != nil {
+		return "", errors.Wrap(err, "setting uuid in global config")
+	}
+	return id, nil
 }
 
 func isDefaultLocal(kubeContext string) bool {
