@@ -109,7 +109,7 @@ func TestNewTask(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pipeline := NewTask(test.taskName, test.resources, test.steps)
+			pipeline := NewTask(test.taskName, test.resources, test.steps, nil)
 			t.CheckDeepEqual(test.expected, pipeline)
 		})
 	}

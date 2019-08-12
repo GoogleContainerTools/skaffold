@@ -32,22 +32,16 @@ import (
 	yamlv2 "gopkg.in/yaml.v2"
 )
 
-func CreateSkaffoldProfile(out io.Writer, config *latest.SkaffoldConfig, configFile string) error {
+func CreateSkaffoldProfile(out io.Writer, config *latest.SkaffoldConfig, configFile string) (*latest.Profile, error) {
 	reader := bufio.NewReader(os.Stdin)
 
+	// Check for existing oncluster profile, if none exists then prompt to create one
 	color.Default.Fprintln(out, "Checking for oncluster skaffold profile...")
-	profileExists := false
 	for _, profile := range config.Profiles {
 		if profile.Name == "oncluster" {
-			profileExists = true
-			break
+			color.Default.Fprintln(out, "profile \"oncluster\" found")
+			return &profile, nil
 		}
-	}
-
-	// Check for existing oncluster profile, if none exists then prompt to create one
-	if profileExists {
-		color.Default.Fprintln(out, "profile \"oncluster\" found!")
-		return nil
 	}
 
 confirmLoop:
@@ -55,7 +49,7 @@ confirmLoop:
 		color.Default.Fprintf(out, "No profile \"oncluster\" found. Create one? [y/n]: ")
 		response, err := reader.ReadString('\n')
 		if err != nil {
-			return errors.Wrap(err, "reading user confirmation")
+			return nil, errors.Wrap(err, "reading user confirmation")
 		}
 
 		response = strings.ToLower(strings.TrimSpace(response))
@@ -63,24 +57,24 @@ confirmLoop:
 		case "y", "yes":
 			break confirmLoop
 		case "n", "no":
-			return nil
+			return nil, nil
 		}
 	}
 
 	color.Default.Fprintln(out, "Creating skaffold profile \"oncluster\"...")
 	profile, err := generateProfile(out, config)
 	if err != nil {
-		return errors.Wrap(err, "generating profile \"oncluster\"")
+		return nil, errors.Wrap(err, "generating profile \"oncluster\"")
 	}
 
 	bProfile, err := yamlv2.Marshal([]*latest.Profile{profile})
 	if err != nil {
-		return errors.Wrap(err, "marshaling new profile")
+		return nil, errors.Wrap(err, "marshaling new profile")
 	}
 
 	fileContents, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		return errors.Wrap(err, "reading file contents")
+		return nil, errors.Wrap(err, "reading file contents")
 	}
 	fileStrings := strings.Split(strings.TrimSpace(string(fileContents)), "\n")
 
@@ -104,10 +98,10 @@ confirmLoop:
 	fileContents = []byte((strings.Join(fileStrings, "\n")))
 
 	if err := ioutil.WriteFile(configFile, fileContents, 0644); err != nil {
-		return errors.Wrap(err, "writing profile to skaffold config")
+		return nil, errors.Wrap(err, "writing profile to skaffold config")
 	}
 
-	return nil
+	return profile, nil
 }
 
 func generateProfile(out io.Writer, config *latest.SkaffoldConfig) (*latest.Profile, error) {
@@ -122,11 +116,9 @@ func generateProfile(out io.Writer, config *latest.SkaffoldConfig) (*latest.Prof
 			Deploy: latest.DeployConfig{},
 		},
 	}
-	profile.Build.Cluster = &latest.ClusterDetails{
-		PullSecretName: "kaniko-secret",
-	}
-	profile.Build.LocalBuild = nil
+
 	// Add kaniko build config for artifacts
+	addKaniko := false
 	for _, artifact := range profile.Build.Artifacts {
 		artifact.ImageName = fmt.Sprintf("%s-pipeline", artifact.ImageName)
 		if artifact.DockerArtifact != nil {
@@ -137,7 +129,15 @@ func generateProfile(out io.Writer, config *latest.SkaffoldConfig) (*latest.Prof
 					GCSBucket: "skaffold-kaniko",
 				},
 			}
+			addKaniko = true
 		}
+	}
+	// Add kaniko config to build config if needed
+	if addKaniko {
+		profile.Build.Cluster = &latest.ClusterDetails{
+			PullSecretName: "kaniko-secret",
+		}
+		profile.Build.LocalBuild = nil
 	}
 
 	return profile, nil

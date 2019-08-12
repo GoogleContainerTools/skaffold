@@ -157,12 +157,13 @@ func TestKustomizeCleanup(t *testing.T) {
 
 func TestDependenciesForKustomization(t *testing.T) {
 	tests := []struct {
-		description string
-		yaml        string
-		expected    []string
-		shouldErr   bool
-		createFiles map[string]string
-		configName  string
+		description        string
+		yaml               string
+		expected           []string
+		shouldErr          bool
+		skipConfigCreation bool
+		createFiles        map[string]string
+		configName         string
 	}{
 		{
 			description: "resources",
@@ -272,23 +273,21 @@ func TestDependenciesForKustomization(t *testing.T) {
 		{
 			description: "mixture of config names",
 			yaml:        `resources: [app.yaml, base1, base2]`,
-			expected:    []string{"Kustomization", "app.yaml", "base1/kustomization.yml", "base1/app.yaml", "base2/Kustomization", "base2/app.yaml"},
+			expected:    []string{"Kustomization", "app.yaml", "base1/kustomization.yml", "base1/app.yaml", "base2/kustomization.yaml", "base2/app.yaml"},
 			createFiles: map[string]string{
-				"app.yaml":                "",
-				"base1/kustomization.yml": `resources: [app.yaml]`,
-				"base1/app.yaml":          "",
-				"base2/Kustomization":     `resources: [app.yaml]`,
-				"base2/app.yaml":          "",
+				"app.yaml":                 "",
+				"base1/kustomization.yml":  `resources: [app.yaml]`,
+				"base1/app.yaml":           "",
+				"base2/kustomization.yaml": `resources: [app.yaml]`,
+				"base2/app.yaml":           "",
 			},
 			configName: "Kustomization",
 		},
 		{
-			description: "no kustomization config",
-			yaml:        `resources: [foo]`,
-			shouldErr:   true,
-			createFiles: map[string]string{
-				"foo/invalid-config-name": "",
-			},
+			description:        "remote or missing root kustomization config",
+			expected:           []string{},
+			configName:         "missing-or-remote-root-config",
+			skipConfigCreation: true,
 		},
 	}
 	for _, test := range tests {
@@ -297,8 +296,11 @@ func TestDependenciesForKustomization(t *testing.T) {
 				test.configName = "kustomization.yaml"
 			}
 
-			tmpDir := t.NewTempDir().
-				Write(test.configName, test.yaml)
+			tmpDir := t.NewTempDir()
+
+			if !test.skipConfigCreation {
+				tmpDir.Write(test.configName, test.yaml)
+			}
 
 			for path, contents := range test.createFiles {
 				tmpDir.Write(path, contents)

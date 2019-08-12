@@ -33,10 +33,20 @@ spec:
     - build.out
     command:
     - skaffold
+    env:
+    - name: GOOGLE_APPLICATION_CREDENTIALS
+      value: /secret/kaniko-secret
     image: gcr.io/k8s-skaffold/skaffold:test-version
     name: run-build
     resources: {}
+    volumeMounts:
+    - mountPath: /secret
+      name: kaniko-secret
     workingDir: /workspace/source
+  volumes:
+  - name: kaniko-secret
+    secret:
+      secretName: kaniko-secret
 ---
 apiVersion: tekton.dev/v1alpha1
 kind: Task
@@ -55,8 +65,6 @@ spec:
     - deploy
     - --filename
     - skaffold.yaml
-    - --profile
-    - oncluster
     - --build-artifacts
     - build.out
     command:

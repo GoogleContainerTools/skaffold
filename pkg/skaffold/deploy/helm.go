@@ -189,10 +189,13 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 				}
 				imageRepositoryTag = fmt.Sprintf(
 					"%s.registry=%s,%s.repository=%s,%s.tag=%s",
-					k, dockerRef.Domain, k, dockerRef.Path, k, dockerRef.Tag,
+					k, dockerRef.Domain, k, dockerRef.Path, k, extractTag(v.Tag),
 				)
 			} else {
-				imageRepositoryTag = fmt.Sprintf("%s.repository=%s,%s.tag=%s", k, dockerRef.BaseName, k, dockerRef.Tag)
+				imageRepositoryTag = fmt.Sprintf(
+					"%s.repository=%s,%s.tag=%s",
+					k, dockerRef.BaseName, k, extractTag(v.Tag),
+				)
 			}
 			setOpts = append(setOpts, imageRepositoryTag)
 		} else {
