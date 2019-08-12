@@ -67,6 +67,8 @@ const (
 	DefaultRPCHTTPPort = 50052
 
 	DefaultPortForwardNamespace = "default"
+
+	LeeroyAppResponse = "leeroooooy app!!\n"
 )
 
 var (
