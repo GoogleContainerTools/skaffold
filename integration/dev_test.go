@@ -101,7 +101,7 @@ func TestDevAPITriggers(t *testing.T) {
 
 	rpcAddr := randomPort()
 
-	stop := skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+	stop := skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 	defer stop()
 
 	client, shutdown := setupRPCClient(t, rpcAddr)
