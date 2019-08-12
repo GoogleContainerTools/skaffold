@@ -93,6 +93,7 @@ func TestLookupLocal(t *testing.T) {
 			t.Override(&hashForArtifact, func(context.Context, DependencyLister, *latest.Artifact) (string, error) {
 				return "hash", nil
 			})
+			t.Override(&buildInProgress, func(_ string) {})
 
 			cache := &cache{
 				imagesAreLocal: true,
@@ -168,6 +169,7 @@ func TestLookupRemote(t *testing.T) {
 					return "", errors.New("unknown remote tag")
 				}
 			})
+			t.Override(&buildInProgress, func(_ string) {})
 
 			cache := &cache{
 				imagesAreLocal: false,

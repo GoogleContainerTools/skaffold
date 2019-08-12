@@ -30,6 +30,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	// For testing
+	buildComplete = event.BuildComplete
+)
+
 func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildAndTest BuildAndTestFn) ([]build.Artifact, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -82,7 +87,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		}
 
 		// Image is already built
-		event.BuildComplete(artifact.ImageName)
+		buildComplete(artifact.ImageName)
 		entry := c.artifactCache[result.Hash()]
 		var uniqueTag string
 		if c.imagesAreLocal {

@@ -31,6 +31,7 @@ import (
 var (
 	// For testing
 	hashForArtifact = getHashForArtifact
+	buildInProgress = event.BuildInProgress
 )
 
 func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifacts []*latest.Artifact) []cacheDetails {
@@ -42,7 +43,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 
 		i := i
 		go func() {
-			event.BuildInProgress(artifacts[i].ImageName)
+			buildInProgress(artifacts[i].ImageName)
 			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName])
 			wg.Done()
 		}()
