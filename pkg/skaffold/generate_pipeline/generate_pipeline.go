@@ -133,15 +133,15 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 			Name:       "run-build",
 			Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),
 			WorkingDir: "/workspace/source",
-			Command:    []string{"skaffold"},
-			Args: []string{"build",
-				"--filename", "skaffold.yaml",
+			Command:    []string{"skaffold", "build"},
+			Args: []string{
 				"--profile", "oncluster",
 				"--file-output", "build.out",
 			},
 		},
 	}
 
+	// Add secret volume mounting for artifacts that need to be built with kaniko
 	var volumes []corev1.Volume
 	if buildConfig.Artifacts[0].KanikoArtifact != nil {
 		volumes = []corev1.Volume{
@@ -193,10 +193,8 @@ func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) 
 			Name:       "run-deploy",
 			Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),
 			WorkingDir: "/workspace/source",
-			Command:    []string{"skaffold"},
+			Command:    []string{"skaffold", "deploy"},
 			Args: []string{
-				"deploy",
-				"--filename", "skaffold.yaml",
 				"--build-artifacts", "build.out",
 			},
 		},
@@ -233,7 +231,7 @@ func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
 				},
 			},
 		}
-		// Add output for build tasks, input for deploy task
+		// Add output resource for build tasks, input for deploy task
 		if strings.Contains(task.Name, "build") {
 			pipelineTask.Resources.Outputs = []tekton.PipelineTaskOutputResource{
 				{
