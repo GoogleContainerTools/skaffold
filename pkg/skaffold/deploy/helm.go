@@ -168,7 +168,10 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		color.Red.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 		isInstalled = false
 	}
-	params, err := h.joinTagsToBuildResult(builds, r.Values)
+	params := map[string]build.Artifact{}
+	if len(builds) != 0 {
+		params, err = h.joinTagsToBuildResult(builds, r.Values)
+	}
 	if err != nil {
 		return nil, errors.Wrap(err, "matching build results to chart values")
 	}
@@ -432,12 +435,7 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 		newImageName := util.SubstituteDefaultRepoIntoImage(h.defaultRepo, imageName)
 		b, ok := imageToBuildResult[newImageName]
 		if !ok {
-			if len(builds) == 0 {
-				logrus.Debugf("no build artifacts present. Assuming skaffold deploy. Continuing with %s", imageName)
-				b = build.Artifact{ImageName: imageName, Tag: imageName}
-			} else {
-				return nil, fmt.Errorf("no build present for %s", imageName)
-			}
+			return nil, fmt.Errorf("no build present for %s", imageName)
 		}
 		paramToBuildResult[param] = b
 	}
