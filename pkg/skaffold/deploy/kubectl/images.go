@@ -17,13 +17,13 @@ limitations under the License.
 package kubectl
 
 import (
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 // ReplaceImages replaces image names in a list of manifests.
@@ -39,6 +39,38 @@ func (l *ManifestList) ReplaceImages(builds []build.Artifact, defaultRepo string
 	logrus.Debugln("manifests with tagged images", updated.String())
 
 	return updated, nil
+}
+
+// GetImages gathers a map of base image names to the image with its tag
+func (l *ManifestList) GetImages() ([]build.Artifact, error) {
+	s := &imageSaver{}
+	_, err := l.Visit(s)
+	return s.Images, err
+}
+
+type imageSaver struct {
+	Images []build.Artifact
+}
+
+func (is *imageSaver) Matches(key string) bool {
+	return key == "image"
+}
+
+func (is *imageSaver) NewValue(old interface{}) (bool, interface{}) {
+	image, ok := old.(string)
+	if !ok {
+		return false, nil
+	}
+	parsed, err := docker.ParseReference(image)
+	if err != nil {
+		return false, err
+	}
+
+	is.Images = append(is.Images, build.Artifact{
+		Tag:       image,
+		ImageName: parsed.BaseName,
+	})
+	return false, nil
 }
 
 type imageReplacer struct {
@@ -82,6 +114,8 @@ func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
 	return found, tag
 }
 
+// parseAndReplace takes an image from a manifest and if that image matches
+// a built image it will update the tag
 func (r *imageReplacer) parseAndReplace(image string) (bool, interface{}) {
 	parsed, err := docker.ParseReference(image)
 	if err != nil {

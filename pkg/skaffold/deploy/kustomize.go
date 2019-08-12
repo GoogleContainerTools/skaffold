@@ -164,7 +164,8 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 
 	path, err := findKustomizationConfig(dir)
 	if err != nil {
-		return nil, err
+		// No kustomiization config found so assume it's remote and stop traversing
+		return deps, nil
 	}
 
 	buf, err := ioutil.ReadFile(path)
@@ -217,7 +218,7 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 	return deps, nil
 }
 
-// A kustomization config must be at the root of the direectory. Kustomize will
+// A Kustomization config must be at the root of the directory. Kustomize will
 // error if more than one of these files exists so order doesn't matter.
 func findKustomizationConfig(dir string) (string, error) {
 	candidates := []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
