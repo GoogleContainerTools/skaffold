@@ -50,7 +50,7 @@ func TestRetrieveLabel(t *testing.T) {
 }
 
 func TestDocsLabelExists(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		labels      []*github.Label
 		expected    bool

@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
@@ -58,9 +59,6 @@ type fromTo struct {
 }
 
 var (
-	// WorkingDir is overridden for unit testing
-	WorkingDir = RetrieveWorkingDir
-
 	// RetrieveImage is overridden for unit testing
 	RetrieveImage = retrieveImage
 )
@@ -177,6 +175,10 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, e
 }
 
 func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegistries map[string]bool) ([]*copyCommand, error) {
+	stages := map[string]bool{
+		"scratch": true,
+	}
+
 	slex := shell.NewLex('\\')
 	var copied []*copyCommand
 
@@ -185,11 +187,26 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegis
 	for _, node := range nodes {
 		switch node.Value {
 		case command.From:
-			wd, err := WorkingDir(node.Next.Value, insecureRegistries)
-			if err != nil {
-				return nil, err
+			from := fromInstruction(node)
+			if from.as != "" {
+				// Stage names are case insensitive
+				stages[strings.ToLower(from.as)] = true
 			}
-			workdir = wd
+
+			// If `from` references a previous stage, then the `workdir`
+			// was already changed.
+			if !stages[strings.ToLower(from.image)] {
+				img, err := RetrieveImage(from.image, insecureRegistries)
+				if err != nil {
+					return nil, err
+				}
+
+				workdir = img.Config.WorkingDir
+				if workdir == "" {
+					workdir = "/"
+				}
+			}
+
 			if onlyLastImage {
 				copied = nil
 			}
@@ -296,13 +313,12 @@ func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[stri
 }
 
 func parseOnbuild(image string, insecureRegistries map[string]bool) ([]*parser.Node, error) {
-	logrus.Debugf("Checking base image %s for ONBUILD triggers.", image)
+	logrus.Tracef("Checking base image %s for ONBUILD triggers.", image)
 
 	// Image names are case SENSITIVE
 	img, err := RetrieveImage(image, insecureRegistries)
 	if err != nil {
-		logrus.Warnf("Error processing base image (%s) for ONBUILD triggers: %s. Dependencies may be incomplete.", image, err)
-		return []*parser.Node{}, nil
+		return nil, fmt.Errorf("processing base image (%s) for ONBUILD triggers: %s", image, err)
 	}
 
 	if len(img.Config.OnBuild) == 0 {
@@ -332,7 +348,10 @@ func fromInstruction(node *parser.Node) from {
 }
 
 func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {
-	localDaemon, err := NewAPIClient(false, insecureRegistries) // Cached after first call
+	// TODO: use the proper RunContext
+	localDaemon, err := NewAPIClient(&runcontext.RunContext{
+		InsecureRegistries: insecureRegistries,
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker client")
 	}

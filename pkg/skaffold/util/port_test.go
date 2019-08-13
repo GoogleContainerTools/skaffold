@@ -22,21 +22,27 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestGetAvailablePort(t *testing.T) {
-	N := 100
+	AssertCompetingProcessesCanSucceed(&sync.Map{}, t)
+}
 
+//TODO this is copy pasted to portforward.forwardedPorts testing as well - it should go away when we introduce port brokering
+// https://github.com/GoogleContainerTools/skaffold/issues/2503
+func AssertCompetingProcessesCanSucceed(ports ForwardedPorts, t *testing.T) {
+	t.Helper()
+	N := 100
 	var (
-		ports  sync.Map
 		errors int32
 		wg     sync.WaitGroup
 	)
 	wg.Add(N)
-
 	for i := 0; i < N; i++ {
 		go func() {
-			port := GetAvailablePort(4503, &ports)
+
+			port := GetAvailablePort(4503, ports)
 
 			l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", Loopback, port))
 			if err != nil {
@@ -44,13 +50,11 @@ func TestGetAvailablePort(t *testing.T) {
 			} else {
 				l.Close()
 			}
-
+			time.Sleep(2 * time.Second)
 			wg.Done()
 		}()
 	}
-
 	wg.Wait()
-
 	if atomic.LoadInt32(&errors) > 0 {
 		t.Fatalf("A port that was available couldn't be used %d times", errors)
 	}

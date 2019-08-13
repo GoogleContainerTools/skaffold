@@ -38,6 +38,11 @@ ifeq "$(strip $(VERSION))" ""
  override VERSION = $(shell git describe --always --tags --dirty)
 endif
 
+# Force using Go Modules and always read the dependencies from
+# the `vendor` folder.
+export GO111MODULE = on
+export GOFLAGS = -mod=vendor
+
 GO_GCFLAGS := "all=-trimpath=${PWD}"
 GO_ASMFLAGS := "all=-trimpath=${PWD}"
 
@@ -48,7 +53,6 @@ LDFLAGS_windows =
 GO_BUILD_TAGS_linux := "osusergo netgo static_build"
 GO_BUILD_TAGS_darwin := ""
 GO_BUILD_TAGS_windows := ""
-
 
 GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
@@ -95,7 +99,11 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 
 .PHONY: test
 test: $(BUILD_DIR)
-	@ ./test.sh
+	@ ./hack/test.sh
+
+.PHONY: quicktest
+quicktest:
+	go test -short -timeout=60s ./...
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
@@ -109,16 +117,17 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 15m $(INTEGRATION_TEST_ARGS)
+	kubectl get nodes -oyaml
+	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
 	docker build \
-        		-f deploy/skaffold/Dockerfile \
-        		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
-        		--build-arg VERSION=$(VERSION) \
-        		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
-        		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
+		-f deploy/skaffold/Dockerfile \
+		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		--build-arg VERSION=$(VERSION) \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_RELEASE_PATH)/
 	gsutil -m cp $(BUILD_DIR)/VERSION $(GSC_RELEASE_PATH)/VERSION
 	gsutil -m cp -r $(GSC_RELEASE_PATH)/* $(GSC_RELEASE_LATEST)
@@ -126,10 +135,10 @@ release: cross $(BUILD_DIR)/VERSION
 .PHONY: release-in-docker
 release-in-docker:
 	docker build \
-    		-f deploy/skaffold/Dockerfile \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
-    		--target builder \
-    		.
+		-f deploy/skaffold/Dockerfile \
+		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		--target builder \
+		.
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
@@ -138,20 +147,20 @@ release-in-docker:
 .PHONY: release-build
 release-build: cross
 	docker build \
-    		-f deploy/skaffold/Dockerfile \
-    		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
+		-f deploy/skaffold/Dockerfile \
+		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_BUILD_PATH)/
 	gsutil -m cp -r $(GSC_BUILD_PATH)/* $(GSC_BUILD_LATEST)
 
 .PHONY: release-build-in-docker
 release-build-in-docker:
 	docker build \
-    		-f deploy/skaffold/Dockerfile \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
-    		--target builder \
-    		.
+		-f deploy/skaffold/Dockerfile \
+		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		--target builder \
+		.
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
@@ -163,7 +172,7 @@ clean:
 
 .PHONY: kind-cluster
 kind-cluster:
-	kind get clusters | grep -q kind || kind create cluster
+	kind get clusters | grep -q kind || kind create cluster --image=kindest/node:v1.13.7@sha256:f3f1cfc2318d1eb88d91253a9c5fa45f6e9121b6b1e65aea6c7ef59f1549aaaf
 
 .PHONY: skaffold-builder
 skaffold-builder:

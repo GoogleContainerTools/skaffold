@@ -27,7 +27,7 @@ import (
 )
 
 func TestGetCommand(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description       string
 		defaultExecutable string
 		wrapperExecutable string

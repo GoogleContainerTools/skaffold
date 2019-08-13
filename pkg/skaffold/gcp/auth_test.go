@@ -26,7 +26,7 @@ import (
 )
 
 func TestAutoConfigureGCRCredentialHelper(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description  string
 		registry     string
 		helperInPath bool

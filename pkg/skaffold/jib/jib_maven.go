@@ -26,6 +26,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Skaffold-Jib depends on functionality introduced with Jib-Maven 1.4.0
+const MinimumJibMavenVersion = "1.4.0"
+
 // MavenCommand stores Maven executable and wrapper name
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
@@ -62,8 +65,8 @@ func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact
 		// single-module project
 		args = append(args, "prepare-package", "jib:"+goal)
 	} else {
-		// multi-module project: we assume `package` is bound to `jib:<goal>`
-		args = append(args, "package")
+		// multi-module project: instruct jib to containerize only the given module
+		args = append(args, "package", "jib:"+goal, "-Djib.containerize="+a.Module)
 	}
 
 	args = append(args, "-Dimage="+imageName)
@@ -72,8 +75,7 @@ func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact
 }
 
 func mavenArgs(a *latest.JibMavenArtifact) []string {
-	var args []string
-
+	args := []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion}
 	args = append(args, a.Flags...)
 
 	if a.Profile != "" {

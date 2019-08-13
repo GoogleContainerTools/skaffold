@@ -1,4 +1,4 @@
-FROM golang:1.12.5-alpine3.9 as builder
+FROM golang:1.12.6-alpine3.9 as builder
 COPY app.go .
 RUN go build -o /app .
 

@@ -52,6 +52,8 @@ func TestRun(t *testing.T) {
 		}, {
 			description: "microservices",
 			dir:         "examples/microservices",
+			// See https://github.com/GoogleContainerTools/skaffold/issues/2372
+			args:        []string{"--status-check=false"},
 			deployments: []string{"leeroy-app", "leeroy-web"},
 		}, {
 			description: "envTagger",
@@ -98,8 +100,22 @@ func TestRun(t *testing.T) {
 			deployments: []string{"leeroy-app", "leeroy-web"},
 			gcpOnly:     true,
 		}, {
+			description: "jib",
+			dir:         "testdata/jib",
+			deployments: []string{"web"},
+		}, {
 			description: "jib in googlecloudbuild",
 			dir:         "testdata/jib",
+			args:        []string{"-p", "gcb"},
+			deployments: []string{"web"},
+			gcpOnly:     true,
+		}, {
+			description: "jib gradle",
+			dir:         "testdata/jib-gradle",
+			deployments: []string{"web"},
+		}, {
+			description: "jib gradle in googlecloudbuild",
+			dir:         "testdata/jib-gradle",
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
 			gcpOnly:     true,

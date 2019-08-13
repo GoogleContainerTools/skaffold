@@ -808,7 +808,7 @@
     "GoogleCloudBuild": {
       "properties": {
         "diskSizeGb": {
-          "type": "number",
+          "type": "integer",
           "description": "disk size of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
           "x-intellij-html-description": "disk size of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>."
         },
@@ -1513,11 +1513,11 @@
       },
       "preferredOrder": [
         "name",
-        "patches",
-        "activation",
         "build",
         "test",
-        "deploy"
+        "deploy",
+        "patches",
+        "activation"
       ],
       "additionalProperties": false,
       "description": "*beta* profiles are used to override any `build`, `test` or `deploy` configuration.",
@@ -1622,10 +1622,10 @@
       "preferredOrder": [
         "apiVersion",
         "kind",
-        "profiles",
         "build",
         "test",
-        "deploy"
+        "deploy",
+        "profiles"
       ],
       "additionalProperties": false,
       "description": "holds the fields parsed from the Skaffold configuration file (skaffold.yaml).",

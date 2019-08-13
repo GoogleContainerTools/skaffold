@@ -18,7 +18,6 @@ package util
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"strings"
 	"text/template"
@@ -34,19 +33,14 @@ var (
 
 // ParseEnvTemplate is a simple wrapper to parse an env template
 func ParseEnvTemplate(t string) (*template.Template, error) {
-	tmpl, err := template.New("envTemplate").Parse(t)
-	return tmpl, err
+	return template.New("envTemplate").Parse(t)
 }
 
 // ExecuteEnvTemplate executes an envTemplate based on OS environment variables and a custom map
 func ExecuteEnvTemplate(envTemplate *template.Template, customMap map[string]string) (string, error) {
-	var buf bytes.Buffer
 	envMap := map[string]string{}
 	for _, env := range OSEnviron() {
 		kvp := strings.SplitN(env, "=", 2)
-		if len(kvp) != 2 {
-			return "", fmt.Errorf("error parsing environment variables, %s does not contain an =", kvp)
-		}
 		envMap[kvp[0]] = kvp[1]
 	}
 
@@ -54,6 +48,7 @@ func ExecuteEnvTemplate(envTemplate *template.Template, customMap map[string]str
 		envMap[k] = v
 	}
 
+	var buf bytes.Buffer
 	logrus.Debugf("Executing template %v with environment %v", envTemplate, envMap)
 	if err := envTemplate.Execute(&buf, envMap); err != nil {
 		return "", errors.Wrap(err, "executing template")

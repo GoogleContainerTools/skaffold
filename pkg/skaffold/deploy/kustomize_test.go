@@ -23,7 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -31,7 +31,7 @@ import (
 )
 
 func TestKustomizeDeploy(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		cfg         *latest.KustomizeDeploy
 		builds      []build.Artifact
@@ -72,7 +72,7 @@ func TestKustomizeDeploy(t *testing.T) {
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
-				Cfg: &latest.Pipeline{
+				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: test.cfg,
@@ -80,7 +80,7 @@ func TestKustomizeDeploy(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
+				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 					Force:     test.forceDeploy,
 				},
@@ -96,7 +96,7 @@ func TestKustomizeCleanup(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		cfg         *latest.KustomizeDeploy
 		command     util.Command
@@ -136,7 +136,7 @@ func TestKustomizeCleanup(t *testing.T) {
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: tmpDir.Root(),
-				Cfg: &latest.Pipeline{
+				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: test.cfg,
@@ -144,7 +144,7 @@ func TestKustomizeCleanup(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
+				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
 			})
@@ -157,19 +157,31 @@ func TestKustomizeCleanup(t *testing.T) {
 
 func TestDependenciesForKustomization(t *testing.T) {
 	tests := []struct {
-		description string
-		yaml        string
-		expected    []string
-		shouldErr   bool
+		description        string
+		yaml               string
+		expected           []string
+		shouldErr          bool
+		skipConfigCreation bool
+		createFiles        map[string]string
+		configName         string
 	}{
 		{
 			description: "resources",
 			yaml:        `resources: [pod1.yaml, path/pod2.yaml]`,
 			expected:    []string{"kustomization.yaml", "pod1.yaml", "path/pod2.yaml"},
+			createFiles: map[string]string{
+				"pod1.yaml":      "",
+				"path/pod2.yaml": "",
+			},
 		},
 		{
 			description: "paches",
 			yaml:        `patches: [patch1.yaml, path/patch2.yaml]`,
+			expected:    []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
+		},
+		{
+			description: "patchesStrategicMerge",
+			yaml:        `patchesStrategicMerge: [patch1.yaml, path/patch2.yaml]`,
 			expected:    []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
 		},
 		{
@@ -199,18 +211,103 @@ func TestDependenciesForKustomization(t *testing.T) {
 			expected: []string{"kustomization.yaml", "secret1.file", "secret2.file", "secret3.file"},
 		},
 		{
-			description: "unknown base",
-			yaml:        `bases: [other]`,
-			shouldErr:   true,
+			description: "base exists locally",
+			yaml:        `bases: [base]`,
+			expected:    []string{"kustomization.yaml", "base/kustomization.yaml", "base/app.yaml"},
+			createFiles: map[string]string{
+				"base/kustomization.yaml": `resources: [app.yaml]`,
+				"base/app.yaml":           "",
+			},
+		},
+		{
+			description: "missing base locally",
+			yaml:        `bases: [missing-or-remote-base]`,
+			expected:    []string{"kustomization.yaml"},
+		},
+		{
+			description: "local kustomization resource",
+			yaml:        `resources: [app.yaml, base]`,
+			expected:    []string{"kustomization.yaml", "app.yaml", "base/kustomization.yaml", "base/app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml":                "",
+				"base/kustomization.yaml": `resources: [app.yaml]`,
+				"base/app.yaml":           "",
+			},
+		},
+		{
+			description: "missing local kustomization resource",
+			yaml:        `resources: [app.yaml, missing-or-remote-base]`,
+			expected:    []string{"kustomization.yaml", "app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml": "",
+			},
+		},
+		{
+			description: "mixed resource types",
+			yaml:        `resources: [app.yaml, missing-or-remote-base, base]`,
+			expected:    []string{"kustomization.yaml", "app.yaml", "base/kustomization.yaml", "base/app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml":                "",
+				"base/kustomization.yaml": `resources: [app.yaml]`,
+				"base/app.yaml":           "",
+			},
+		},
+		{
+			description: "alt config name: kustomization.yml",
+			yaml:        `resources: [app.yaml]`,
+			expected:    []string{"kustomization.yml", "app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml": "",
+			},
+			configName: "kustomization.yml",
+		},
+		{
+			description: "alt config name: Kustomization",
+			yaml:        `resources: [app.yaml]`,
+			expected:    []string{"Kustomization", "app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml": "",
+			},
+			configName: "Kustomization",
+		},
+		{
+			description: "mixture of config names",
+			yaml:        `resources: [app.yaml, base1, base2]`,
+			expected:    []string{"Kustomization", "app.yaml", "base1/kustomization.yml", "base1/app.yaml", "base2/kustomization.yaml", "base2/app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml":                 "",
+				"base1/kustomization.yml":  `resources: [app.yaml]`,
+				"base1/app.yaml":           "",
+				"base2/kustomization.yaml": `resources: [app.yaml]`,
+				"base2/app.yaml":           "",
+			},
+			configName: "Kustomization",
+		},
+		{
+			description:        "remote or missing root kustomization config",
+			expected:           []string{},
+			configName:         "missing-or-remote-root-config",
+			skipConfigCreation: true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().
-				Write("kustomization.yaml", test.yaml)
+			if test.configName == "" {
+				test.configName = "kustomization.yaml"
+			}
+
+			tmpDir := t.NewTempDir()
+
+			if !test.skipConfigCreation {
+				tmpDir.Write(test.configName, test.yaml)
+			}
+
+			for path, contents := range test.createFiles {
+				tmpDir.Write(path, contents)
+			}
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
-				Cfg: &latest.Pipeline{
+				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: &latest.KustomizeDeploy{
@@ -220,7 +317,6 @@ func TestDependenciesForKustomization(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts:        &config.SkaffoldOptions{},
 			})
 			deps, err := k.Dependencies()
 

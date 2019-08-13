@@ -25,89 +25,54 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-var (
-	invalidFileName     = "invalid-skaffold.yaml"
-	validFileName       = "valid-skaffold.yaml"
-	upgradeableFileName = "upgradeable-skaffold.yaml"
-)
-
 func TestFindConfigs(t *testing.T) {
-	testutil.Run(t, "", func(tt *testutil.T) {
-		latestVersion := latest.Version
-		upgradeableVersion := v1beta7.Version
-		tmpDir1, tmpDir2 := setUpTempFiles(tt, latestVersion, upgradeableVersion)
-
-		tests := []struct {
-			flagDir                *testutil.TempDir
-			resultCounts           int
-			shouldContainsMappings map[string]string
-		}{
-			{
-				flagDir:                tmpDir1,
-				resultCounts:           2,
-				shouldContainsMappings: map[string]string{validFileName: latestVersion, upgradeableFileName: upgradeableVersion},
+	tests := []struct {
+		files    map[string]string
+		expected map[string]string
+	}{
+		{
+			files: map[string]string{
+				"valid.yml":        validYaml(latest.Version),
+				"upgradeable.yaml": validYaml(v1beta7.Version),
+				"invalid.yaml":     invalidYaml(),
 			},
-			{
-				flagDir:                tmpDir2,
-				resultCounts:           1,
-				shouldContainsMappings: map[string]string{validFileName: latestVersion},
+			expected: map[string]string{
+				"valid.yml":        latest.Version,
+				"upgradeable.yaml": v1beta7.Version,
 			},
-		}
-		for _, test := range tests {
-			pathToVersion, err := findConfigs(test.flagDir.Root())
+		},
+		{
+			files: map[string]string{
+				"valid.yaml":   validYaml(latest.Version),
+				"invalid.yaml": invalidYaml(),
+			},
+			expected: map[string]string{
+				"valid.yaml": latest.Version,
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			tmpDir := t.NewTempDir().WriteFiles(test.files)
 
-			tt.CheckErrorAndDeepEqual(false, err, len(test.shouldContainsMappings), len(pathToVersion))
-			for f, v := range test.shouldContainsMappings {
-				version, ok := pathToVersion[test.flagDir.Path(f)]
-				tt.CheckDeepEqual(true, ok)
-				tt.CheckDeepEqual(version, v)
+			pathToVersion, err := findConfigs(tmpDir.Root())
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(len(test.expected), len(pathToVersion))
+
+			for f, v := range test.expected {
+				version := pathToVersion[tmpDir.Path(f)]
+
+				t.CheckDeepEqual(version, v)
 			}
-		}
-	})
+		})
+	}
 }
 
-/*
-This helper function will generate the following file tree for testing purpose
-...
-├── tmpDir1
-│   ├── valid-skaffold.yaml
-|   ├── upgradeable-skaffold.yaml
-│   └── invalid-skaffold.yaml
-└── tmpDir2
-	├── valid-skaffold.yaml
-	└── invalid-skaffold.yaml
-*/
-func setUpTempFiles(t *testutil.T, latestVersion, upgradeableVersion string) (*testutil.TempDir, *testutil.TempDir) {
-	validYaml := fmt.Sprintf(`apiVersion: %s
-kind: Config
-build:
-  artifacts:
-  - image: docker/image
-    docker:
-      dockerfile: dockerfile.test
-`, latestVersion)
+func validYaml(version string) string {
+	return fmt.Sprintf("apiVersion: %s\nkind: Config", version)
+}
 
-	upgradeableYaml := fmt.Sprintf(`apiVersion: %s
-kind: Config
-build:
-  artifacts:
-  - image: docker/image
-    docker:
-      dockerfile: dockerfile.test
-`, upgradeableVersion)
-
-	invalidYaml := `This is invalid`
-
-	tmpDir1 := t.NewTempDir().WriteFiles(map[string]string{
-		invalidFileName:     invalidYaml,
-		validFileName:       validYaml,
-		upgradeableFileName: upgradeableYaml,
-	})
-
-	tmpDir2 := t.NewTempDir().WriteFiles(map[string]string{
-		invalidFileName: invalidYaml,
-		validFileName:   validYaml,
-	})
-
-	return tmpDir1, tmpDir2
+func invalidYaml() string {
+	return "This is invalid"
 }

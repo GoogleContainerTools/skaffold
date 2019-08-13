@@ -1,0 +1,10 @@
+# Test for #2330
+apiVersion: skaffold/v1beta11
+kind: Config
+build:
+  artifacts:
+  - image: image
+    kaniko: {}
+  cluster:
+    dockerConfig:
+      path: C:\Users\prashant\.docker\config.json

@@ -25,82 +25,48 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
-var (
-	once     sync.Once
-	callback func() error
-	err      error
-)
-
-// Trigger TODO(dgageot): this was a global variable carried by the runCtx.
-// I changed it to a plain global variable to fix an issue.
-// This needs to be better addressed.
-var Trigger = make(chan bool)
+var srv *server
 
 type server struct {
-	trigger chan bool
+	buildIntentCallback  func()
+	syncIntentCallback   func()
+	deployIntentCallback func()
 }
 
-func newGRPCServer(port int) (func() error, error) {
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
-	if err != nil {
-		return func() error { return nil }, errors.Wrap(err, "creating listener")
+func SetBuildCallback(callback func()) {
+	if srv != nil {
+		srv.buildIntentCallback = callback
 	}
-	logrus.Infof("starting gRPC server on port %d", port)
-
-	s := grpc.NewServer()
-	proto.RegisterSkaffoldServiceServer(s, &server{
-		trigger: Trigger,
-	})
-
-	go func() {
-		if err := s.Serve(l); err != nil {
-			logrus.Errorf("failed to start grpc server: %s", err)
-		}
-	}()
-	return func() error {
-		s.Stop()
-		return l.Close()
-	}, nil
 }
 
-func newHTTPServer(port, proxyPort int) (func() error, error) {
-	mux := runtime.NewServeMux()
-	opts := []grpc.DialOption{grpc.WithInsecure()}
-	err := proto.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
-	if err != nil {
-		return func() error { return nil }, err
+func SetDeployCallback(callback func()) {
+	if srv != nil {
+		srv.deployIntentCallback = callback
 	}
+}
 
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
-	if err != nil {
-		return func() error { return nil }, errors.Wrap(err, "creating listener")
+func SetSyncCallback(callback func()) {
+	if srv != nil {
+		srv.syncIntentCallback = callback
 	}
-	logrus.Infof("starting gRPC HTTP server on port %d", port)
-
-	go http.Serve(l, mux)
-
-	return l.Close, nil
 }
 
 // Initialize creates the gRPC and HTTP servers for serving the state and event log.
 // It returns a shutdown callback for tearing down the grpc server,
 // which the runner is responsible for calling.
-func Initialize(opts *config.SkaffoldOptions) (func() error, error) {
-	once.Do(func() {
-		callback, err = initialize(opts)
-	})
-	return callback, err
-}
+func Initialize(opts config.SkaffoldOptions) (func() error, error) {
+	if !opts.EnableRPC {
+		return func() error { return nil }, nil
+	}
 
-func initialize(opts *config.SkaffoldOptions) (func() error, error) {
 	originalRPCPort := opts.RPCPort
 	if originalRPCPort == -1 {
 		return func() error { return nil }, nil
@@ -138,5 +104,51 @@ func initialize(opts *config.SkaffoldOptions) (func() error, error) {
 	if err != nil {
 		return callback, errors.Wrap(err, "starting HTTP server")
 	}
+
 	return callback, nil
+}
+
+func newGRPCServer(port int) (func() error, error) {
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
+	if err != nil {
+		return func() error { return nil }, errors.Wrap(err, "creating listener")
+	}
+	logrus.Infof("starting gRPC server on port %d", port)
+
+	s := grpc.NewServer()
+	srv = &server{
+		buildIntentCallback:  func() {},
+		deployIntentCallback: func() {},
+		syncIntentCallback:   func() {},
+	}
+	proto.RegisterSkaffoldServiceServer(s, srv)
+
+	go func() {
+		if err := s.Serve(l); err != nil {
+			logrus.Errorf("failed to start grpc server: %s", err)
+		}
+	}()
+	return func() error {
+		s.Stop()
+		return l.Close()
+	}, nil
+}
+
+func newHTTPServer(port, proxyPort int) (func() error, error) {
+	mux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+	err := proto.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
+	if err != nil {
+		return func() error { return nil }, err
+	}
+
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
+	if err != nil {
+		return func() error { return nil }, errors.Wrap(err, "creating listener")
+	}
+	logrus.Infof("starting gRPC HTTP server on port %d", port)
+
+	go http.Serve(l, mux)
+
+	return l.Close, nil
 }

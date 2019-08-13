@@ -17,18 +17,27 @@ limitations under the License.
 package util
 
 import (
+	"sort"
+
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
-func GetAllPodNamespaces(configNamespace string) ([]string, error) {
-	// We also get the default namespace.
+// GetAllPodNamespaces lists the namespaces that should be watched.
+// + The namespace passed on the command line
+// + Current kube context's namespace
+// + Namespaces referenced in Helm releases
+func GetAllPodNamespaces(configNamespace string, cfg latest.Pipeline) ([]string, error) {
 	nsMap := make(map[string]bool)
+
 	if configNamespace == "" {
+		// Get current kube context's namespace
 		config, err := kubectx.CurrentConfig()
 		if err != nil {
 			return nil, errors.Wrap(err, "getting k8s configuration")
 		}
+
 		context, ok := config.Contexts[config.CurrentContext]
 		if ok {
 			nsMap[context.Namespace] = true
@@ -39,12 +48,29 @@ func GetAllPodNamespaces(configNamespace string) ([]string, error) {
 		nsMap[configNamespace] = true
 	}
 
-	// FIXME: Set additional namespaces from the selected yamls.
+	// Set additional namespaces each helm release referenced
+	for _, namespace := range collectHelmReleasesNamespaces(cfg) {
+		nsMap[namespace] = true
+	}
 
 	// Collate the slice of namespaces.
 	namespaces := make([]string, 0, len(nsMap))
 	for ns := range nsMap {
 		namespaces = append(namespaces, ns)
 	}
+
+	sort.Strings(namespaces)
 	return namespaces, nil
+}
+
+func collectHelmReleasesNamespaces(cfg latest.Pipeline) []string {
+	var namespaces []string
+
+	if cfg.Deploy.HelmDeploy != nil {
+		for _, release := range cfg.Deploy.HelmDeploy.Releases {
+			namespaces = append(namespaces, release.Namespace)
+		}
+	}
+
+	return namespaces
 }

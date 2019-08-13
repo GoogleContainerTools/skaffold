@@ -33,7 +33,7 @@ func TestDockerContext(t *testing.T) {
 			t.Override(&RetrieveImage, imageFetcher.fetch)
 			t.NewTempDir().
 				Write(dir+"/.dockerignore", "**/ignored.txt\nalsoignored.txt").
-				Write(dir+"/Dockerfile", "FROM alpine\nCOPY ./files /files").
+				Write(dir+"/Dockerfile", "FROM busybox\nCOPY ./files /files").
 				Touch(dir + "/files/ignored.txt").
 				Touch(dir + "/files/included.txt").
 				Touch(dir + "/ignored.txt").
@@ -46,7 +46,7 @@ func TestDockerContext(t *testing.T) {
 
 			reader, writer := io.Pipe()
 			go func() {
-				err := CreateDockerTarContext(context.Background(), writer, dir, artifact, map[string]bool{})
+				err := CreateDockerTarContext(context.Background(), writer, dir, artifact, nil)
 				if err != nil {
 					writer.CloseWithError(err)
 				} else {

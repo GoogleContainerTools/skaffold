@@ -19,7 +19,6 @@ package util
 import (
 	"fmt"
 	"net"
-	"sync"
 
 	"github.com/sirupsen/logrus"
 )
@@ -28,13 +27,18 @@ import (
 // unless we really want to expose something to the network.
 const Loopback = "127.0.0.1"
 
+type ForwardedPorts interface {
+	Store(key, value interface{})
+	LoadOrStore(key, value interface{}) (actual interface{}, loaded bool)
+}
+
 // First, check if the provided port is available. If so, use it.
 // If not, check if any of the next 10 subsequent ports are available.
 // If not, check if any of ports 4503-4533 are available.
 // If not, return a random port, which hopefully won't collide with any future containers
 
 // See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt,
-func GetAvailablePort(port int, forwardedPorts *sync.Map) int {
+func GetAvailablePort(port int, forwardedPorts ForwardedPorts) int {
 	if getPortIfAvailable(port, forwardedPorts) {
 		return port
 	}
@@ -50,6 +54,7 @@ func GetAvailablePort(port int, forwardedPorts *sync.Map) int {
 
 	for port = 4503; port <= 4533; port++ {
 		if getPortIfAvailable(port, forwardedPorts) {
+			logrus.Debugf("found open port: %d", port)
 			return port
 		}
 	}
@@ -66,12 +71,16 @@ func GetAvailablePort(port int, forwardedPorts *sync.Map) int {
 	return p
 }
 
-func getPortIfAvailable(p int, forwardedPorts *sync.Map) bool {
-	alreadyUsed, loaded := forwardedPorts.LoadOrStore(p, true)
-	if loaded && alreadyUsed.(bool) {
+func getPortIfAvailable(p int, forwardedPorts ForwardedPorts) bool {
+	_, loaded := forwardedPorts.LoadOrStore(p, struct{}{})
+	if loaded {
 		return false
 	}
 
+	return IsPortFree(p)
+}
+
+func IsPortFree(p int) bool {
 	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", Loopback, p))
 	if err != nil {
 		return false

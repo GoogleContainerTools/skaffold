@@ -26,17 +26,19 @@ import (
 )
 
 func TestBazelBin(t *testing.T) {
-	reset := testutil.Override(t, &util.DefaultExecCommand, testutil.FakeRunOut(t,
-		"bazel info bazel-bin --arg1 --arg2",
-		"/absolute/path/bin\n",
-	))
-	defer reset()
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&util.DefaultExecCommand, t.FakeRunOut(
+			"bazel info bazel-bin --arg1 --arg2",
+			"/absolute/path/bin\n",
+		))
 
-	bazelBin, err := bazelBin(context.Background(), ".", &latest.BazelArtifact{
-		BuildArgs: []string{"--arg1", "--arg2"},
+		bazelBin, err := bazelBin(context.Background(), ".", &latest.BazelArtifact{
+			BuildArgs: []string{"--arg1", "--arg2"},
+		})
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("/absolute/path/bin", bazelBin)
 	})
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, "/absolute/path/bin", bazelBin)
 }
 
 func TestBuildTarPath(t *testing.T) {

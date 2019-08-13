@@ -36,6 +36,10 @@ func printMan(stdout, stderr io.Writer) {
 }
 
 func printCommand(out io.Writer, command *cobra.Command) {
+	if command.Hidden {
+		return
+	}
+
 	command.DisableFlagsInUseLine = true
 
 	fmt.Fprintf(out, "\n### %s\n", command.CommandPath())
@@ -46,7 +50,9 @@ func printCommand(out io.Writer, command *cobra.Command) {
 		fmt.Fprint(out, "Env vars:\n\n")
 
 		command.LocalFlags().VisitAll(func(flag *pflag.Flag) {
-			fmt.Fprintf(out, "* `%s` (same as `--%s`)\n", cmd.FlagToEnvVarName(flag), flag.Name)
+			if !flag.Hidden {
+				fmt.Fprintf(out, "* `%s` (same as `--%s`)\n", cmd.FlagToEnvVarName(flag), flag.Name)
+			}
 		})
 	}
 

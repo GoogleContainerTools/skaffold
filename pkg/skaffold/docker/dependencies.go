@@ -146,9 +146,28 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 					}
 
 					if info.IsDir() {
-						if ignored {
+						if !ignored {
+							return nil
+						}
+						// exclusion handling closely follows vendor/github.com/docker/docker/pkg/archive/archive.go
+						// No exceptions (!...) in patterns so just skip dir
+						if !pExclude.Exclusions() {
 							return filepath.SkipDir
 						}
+
+						dirSlash := relPath + string(filepath.Separator)
+
+						for _, pat := range pExclude.Patterns() {
+							if !pat.Exclusion() {
+								continue
+							}
+							if strings.HasPrefix(pat.String()+string(filepath.Separator), dirSlash) {
+								// found a match - so can't skip this dir
+								return nil
+							}
+						}
+
+						return filepath.SkipDir
 					} else if !ignored {
 						files[relPath] = true
 					}

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	re "regexp"
 	"strings"
 
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -34,7 +35,7 @@ import (
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
-func ApplyProfiles(c *latest.SkaffoldConfig, opts *cfg.SkaffoldOptions) error {
+func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 	byName := profilesByName(c.Profiles)
 
 	profiles, err := activatedProfiles(c.Profiles, opts)
@@ -56,7 +57,7 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts *cfg.SkaffoldOptions) error {
 	return nil
 }
 
-func activatedProfiles(profiles []latest.Profile, opts *cfg.SkaffoldOptions) ([]string, error) {
+func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, error) {
 	activated := opts.Profiles
 
 	// Auto-activated profiles
@@ -99,7 +100,7 @@ func isEnv(env string) (bool, error) {
 	return satisfies(value, os.Getenv(key)), nil
 }
 
-func isCommand(command string, opts *cfg.SkaffoldOptions) bool {
+func isCommand(command string, opts cfg.SkaffoldOptions) bool {
 	if command == "" {
 		return true
 	}
@@ -122,9 +123,26 @@ func isKubeContext(kubeContext string) (bool, error) {
 
 func satisfies(expected, actual string) bool {
 	if strings.HasPrefix(expected, "!") {
-		return actual != expected[1:]
+		notExpected := expected[1:]
+
+		return !matches(notExpected, actual)
 	}
-	return actual == expected
+
+	return matches(expected, actual)
+}
+
+func matches(expected, actual string) bool {
+	if actual == expected {
+		return true
+	}
+
+	matcher, err := re.Compile(expected)
+	if err != nil {
+		logrus.Infof("profile activation criteria '%s' is not a valid regexp, falling back to string", expected)
+		return false
+	}
+
+	return matcher.MatchString(actual)
 }
 
 func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {

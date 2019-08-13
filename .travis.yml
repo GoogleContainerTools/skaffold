@@ -1,43 +1,47 @@
+dist: xenial
+
 language: go
+go: "1.12.x"
+go_import_path: /skaffold
 
 git:
   submodules: false
 
-go_import_path: github.com/GoogleContainerTools/skaffold
+branches:
+  only:
+    - master
 
 jobs:
   include:
     - os: linux
-      go: "1.11.x"
+      name: "Linux unit + checks"
       script:
         - make
         - make test
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - os: osx
-      go: "1.11.x"
+      name: "OSX unit"
+      env:
+        - GO111MODULE=on
+        - GOFLAGS="-mod=vendor"
       script:
-        - make
-        - make test
+        - go build -o out/skaffold cmd/skaffold/skaffold.go
+        - go test -short -timeout 60s ./...
       after_success:
         - bash <(curl -s https://codecov.io/bash)
-    - os: linux
-      go: "1.12.x"
-      script:
-        - make
-    - os: osx
-      go: "1.12.x"
-      script:
-        - make
     - os: windows
-      go: "1.11.x"
+      name: "Windows unit"
+      env:
+        - GO111MODULE=on
+        - GOFLAGS="-mod=vendor"
       script:
         - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
         - go test -short -timeout 60s ./...
-    - stage: integration
-      os: linux
-      go: "1.11.x"
+    - os: linux
+      name: "integration"
       before_install:
-        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.3.0/kind-linux-amd64
+        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
         - chmod +x ${HOME}/bin/kind
-      script: make integration-in-kind
+      script:
+        - make integration-in-kind

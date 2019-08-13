@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/sirupsen/logrus"
 )
 
@@ -56,7 +57,7 @@ const (
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
 	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
-	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b"
+	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
 	DefaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
 
 	DefaultSkaffoldDir = ".skaffold"
@@ -64,13 +65,15 @@ const (
 
 	DefaultRPCPort     = 50051
 	DefaultRPCHTTPPort = 50052
+
+	DefaultPortForwardNamespace = "default"
+
+	LeeroyAppResponse = "leeroooooy app!!\n"
 )
 
-// ResourceType describes the Kubernetes resource types used for port forwarding
-type ResourceType string
-
 var (
-	Pod ResourceType = "pod"
+	Pod     latest.ResourceType = "pod"
+	Service latest.ResourceType = "service"
 )
 
 var (

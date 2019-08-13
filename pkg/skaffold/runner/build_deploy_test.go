@@ -28,7 +28,7 @@ import (
 )
 
 func TestBuildTestDeploy(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description     string
 		testBench       *TestBench
 		shouldErr       bool
@@ -76,7 +76,7 @@ func TestBuildTestDeploy(t *testing.T) {
 				ImageName: "img",
 			}}
 
-			runner := createRunner(t, test.testBench)
+			runner := createRunner(t, test.testBench, nil)
 			bRes, err := runner.BuildAndTest(ctx, ioutil.Discard, artifacts)
 			if err == nil {
 				err = runner.DeployAndLog(ctx, ioutil.Discard, bRes)

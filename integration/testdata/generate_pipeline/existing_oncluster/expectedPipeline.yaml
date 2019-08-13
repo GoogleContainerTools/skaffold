@@ -1,0 +1,104 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  creationTimestamp: null
+  name: source-git
+spec:
+  params:
+  - name: url
+    value: this-is-a-test
+  type: git
+status: {}
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  creationTimestamp: null
+  name: skaffold-build
+spec:
+  inputs:
+    resources:
+    - name: source
+      outputImageDir: ""
+      targetPath: ""
+      type: git
+  steps:
+  - args:
+    - build
+    - --filename
+    - skaffold.yaml
+    - --profile
+    - oncluster
+    - --file-output
+    - build.out
+    command:
+    - skaffold
+    env:
+    - name: GOOGLE_APPLICATION_CREDENTIALS
+      value: /secret/kaniko-secret
+    image: gcr.io/k8s-skaffold/skaffold:test-version
+    name: run-build
+    resources: {}
+    volumeMounts:
+    - mountPath: /secret
+      name: kaniko-secret
+    workingDir: /workspace/source
+  volumes:
+  - name: kaniko-secret
+    secret:
+      secretName: kaniko-secret
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  creationTimestamp: null
+  name: skaffold-deploy
+spec:
+  inputs:
+    resources:
+    - name: source
+      outputImageDir: ""
+      targetPath: ""
+      type: git
+  steps:
+  - args:
+    - deploy
+    - --filename
+    - skaffold.yaml
+    - --build-artifacts
+    - build.out
+    command:
+    - skaffold
+    image: gcr.io/k8s-skaffold/skaffold:test-version
+    name: run-deploy
+    resources: {}
+    workingDir: /workspace/source
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  creationTimestamp: null
+  name: skaffold-pipeline
+spec:
+  resources:
+  - name: source-repo
+    type: git
+  tasks:
+  - name: skaffold-build-task
+    resources:
+      inputs:
+      - name: source
+        resource: source-repo
+    taskRef:
+      name: skaffold-build
+  - name: skaffold-deploy-task
+    resources:
+      inputs:
+      - name: source
+        resource: source-repo
+    runAfter:
+    - skaffold-build-task
+    taskRef:
+      name: skaffold-deploy
+status: {}
+---

@@ -20,11 +20,8 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -237,16 +234,6 @@ func NonEmptyLines(input []byte) []string {
 	return result
 }
 
-// SHA256 returns the shasum of the contents of r
-func SHA256(r io.Reader) (string, error) {
-	hasher := sha256.New()
-	_, err := io.Copy(hasher, r)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(hasher.Sum(make([]byte, 0, hasher.Size()))), nil
-}
-
 // CloneThroughJSON marshals the old interface into the new one
 func CloneThroughJSON(old interface{}, new interface{}) error {
 	o, err := json.Marshal(old)
@@ -273,15 +260,16 @@ func CloneThroughYAML(old interface{}, new interface{}) error {
 
 // AbsolutePaths prepends each path in paths with workspace if the path isn't absolute
 func AbsolutePaths(workspace string, paths []string) []string {
-	var p []string
+	var list []string
+
 	for _, path := range paths {
-		// TODO(dgageot): this is only done for jib builder.
 		if !filepath.IsAbs(path) {
 			path = filepath.Join(workspace, path)
 		}
-		p = append(p, path)
+		list = append(list, path)
 	}
-	return p
+
+	return list
 }
 
 // IsHiddenDir returns if a directory is hidden.

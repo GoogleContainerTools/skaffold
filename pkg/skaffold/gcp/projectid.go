@@ -29,7 +29,7 @@ import (
 func ExtractProjectID(imageName string) (string, error) {
 	ref, err := name.ParseReference(imageName, name.WeakValidation)
 	if err != nil {
-		return "", errors.Wrap(err, "parsing image name")
+		return "", errors.Wrapf(err, "parsing image name [%s]", imageName)
 	}
 
 	registry := ref.Context().Registry.Name()

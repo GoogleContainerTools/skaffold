@@ -17,14 +17,19 @@ limitations under the License.
 package kubernetes
 
 import (
+	"bytes"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+	v1 "k8s.io/api/core/v1"
 )
 
 func TestSinceSeconds(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		duration    time.Duration
 		expected    int64
@@ -48,4 +53,69 @@ func TestSinceSeconds(t *testing.T) {
 			t.CheckDeepEqual(test.expected, since)
 		})
 	}
+}
+
+func TestSelect(t *testing.T) {
+	tests := []struct {
+		description   string
+		podSpec       v1.PodSpec
+		expectedMatch bool
+	}{
+		{
+			description:   "match container",
+			podSpec:       v1.PodSpec{Containers: []v1.Container{{Image: "image1"}}},
+			expectedMatch: true,
+		},
+		{
+			description:   "match init container",
+			podSpec:       v1.PodSpec{InitContainers: []v1.Container{{Image: "image2"}}},
+			expectedMatch: true,
+		},
+		{
+			description:   "no match",
+			podSpec:       v1.PodSpec{Containers: []v1.Container{{Image: "image3"}}},
+			expectedMatch: false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			list := NewImageList()
+			list.Add("image1")
+			list.Add("image2")
+
+			selected := list.Select(&v1.Pod{
+				Spec: test.podSpec,
+			})
+
+			t.CheckDeepEqual(test.expectedMatch, selected)
+		})
+	}
+}
+
+func TestPrintLogLine(t *testing.T) {
+	testutil.Run(t, "verify lines are not intermixed", func(t *testutil.T) {
+		var buf bytes.Buffer
+
+		logger := &LogAggregator{
+			output: &buf,
+		}
+
+		var wg sync.WaitGroup
+		for i := 0; i < 5; i++ {
+			wg.Add(1)
+
+			go func() {
+				for i := 0; i < 100; i++ {
+					logger.printLogLine(color.Default, "PREFIX", "TEXT\n")
+				}
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+
+		lines := strings.Split(buf.String(), "\n")
+		for i := 0; i < 5*100; i++ {
+			t.CheckDeepEqual("PREFIX TEXT", lines[i])
+		}
+	})
 }

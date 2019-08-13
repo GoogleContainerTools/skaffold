@@ -101,15 +101,23 @@ build:
       path: /kaniko/.docker
 `
 	badConfig = "bad config"
+
+	invalidStatusCheckConfig = `
+deploy:
+  statusCheckDeadlineSeconds: s
+`
+	validStatusCheckConfig = `
+deploy:
+  statusCheckDeadlineSeconds: 10
+`
 )
 
 func TestParseConfig(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		apiVersion  string
 		description string
 		config      string
 		expected    util.VersionedConfig
-		badReader   bool
 		shouldErr   bool
 	}{
 		{
@@ -202,6 +210,24 @@ func TestParseConfig(t *testing.T) {
 			config:      minimalConfig,
 			shouldErr:   true,
 		},
+		{
+			apiVersion:  latest.Version,
+			description: "invalid statusCheckDeadline",
+			config:      invalidStatusCheckConfig,
+			shouldErr:   true,
+		},
+		{
+			apiVersion:  latest.Version,
+			description: "valid statusCheckDeadline",
+			config:      validStatusCheckConfig,
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withStatusCheckDeadline(10),
+			),
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -246,7 +272,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 		b := latest.BuildConfig{BuildType: latest.BuildType{GoogleCloudBuild: &latest.GoogleCloudBuild{
 			ProjectID:   id,
 			DockerImage: "gcr.io/cloud-builders/docker",
-			MavenImage:  "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b",
+			MavenImage:  "gcr.io/cloud-builders/mvn",
 			GradleImage: "gcr.io/cloud-builders/gradle",
 		}}}
 		for _, op := range ops {
@@ -376,6 +402,12 @@ func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldConfig) {
 func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Test = testCases
+	}
+}
+
+func withStatusCheckDeadline(deadline int) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.Deploy.StatusCheckDeadlineSeconds = deadline
 	}
 }
 

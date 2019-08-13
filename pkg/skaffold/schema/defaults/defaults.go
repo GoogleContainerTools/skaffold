@@ -19,17 +19,17 @@ package defaults
 import (
 	"fmt"
 
+	"github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	homedir "github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Set makes sure default values are set on a SkaffoldConfig.
 func Set(c *latest.SkaffoldConfig) error {
-
 	defaultToLocalBuild(c)
 	defaultToKubectlDeploy(c)
 	setDefaultTagger(c)
@@ -65,6 +65,11 @@ func Set(c *latest.SkaffoldConfig) error {
 		setDefaultWorkspace(a)
 		defaultToDockerArtifact(a)
 		setDefaultDockerfile(a)
+	}
+
+	for _, pf := range c.PortForward {
+		setDefaultPortForwardNamespace(pf)
+		setDefaultLocalPort(pf)
 	}
 
 	return nil
@@ -204,16 +209,16 @@ func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
 
 	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
 
-	if cluster.DockerConfig.Path != "" {
-		absPath, err := homedir.Expand(cluster.DockerConfig.Path)
-		if err != nil {
-			return fmt.Errorf("unable to expand dockerConfig.path %s", cluster.DockerConfig.Path)
-		}
-
-		cluster.DockerConfig.Path = absPath
+	if cluster.DockerConfig.Path == "" {
 		return nil
 	}
 
+	absPath, err := homedir.Expand(cluster.DockerConfig.Path)
+	if err != nil {
+		return fmt.Errorf("unable to expand dockerConfig.path %s", cluster.DockerConfig.Path)
+	}
+
+	cluster.DockerConfig.Path = absPath
 	return nil
 }
 
@@ -265,4 +270,14 @@ func currentNamespace() (string, error) {
 	}
 
 	return "default", nil
+}
+
+func setDefaultLocalPort(pf *latest.PortForwardResource) {
+	if pf.LocalPort == 0 {
+		pf.LocalPort = pf.Port
+	}
+}
+
+func setDefaultPortForwardNamespace(pf *latest.PortForwardResource) {
+	pf.Namespace = valueOrDefault(pf.Namespace, constants.DefaultPortForwardNamespace)
 }

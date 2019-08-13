@@ -33,11 +33,9 @@ func TestDebug(t *testing.T) {
 	tests := []struct {
 		description string
 		dir         string
-		filename    string
 		args        []string
 		deployments []string
 		pods        []string
-		env         []string
 	}{
 		{
 			description: "kubectl",
@@ -55,23 +53,24 @@ func TestDebug(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			// Run skaffold build first to fail quickly on a build failure
+			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
+
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			stop := skaffold.Debug(test.args...).WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunBackground(t)
+			stop := skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 			defer stop()
 
 			client.WaitForPodsReady(test.pods...)
-			client.WaitForDeploymentsToStabilize(test.deployments...)
 			for _, depName := range test.deployments {
 				deploy := client.GetDeployment(depName)
+
 				annotations := deploy.Spec.Template.GetAnnotations()
 				if _, found := annotations["debug.cloud.google.com/config"]; !found {
 					t.Errorf("deployment missing debug annotation: %v", annotations)
 				}
 			}
-
-			skaffold.Delete().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})
 	}
 }

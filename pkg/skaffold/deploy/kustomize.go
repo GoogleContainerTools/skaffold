@@ -18,33 +18,37 @@ package deploy
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
 // kustomization is the content of a kustomization.yaml file.
 type kustomization struct {
-	Bases              []string             `yaml:"bases"`
-	Resources          []string             `yaml:"resources"`
-	Patches            []string             `yaml:"patches"`
-	CRDs               []string             `yaml:"crds"`
-	PatchesJSON6902    []patchJSON6902      `yaml:"patchesJson6902"`
-	ConfigMapGenerator []configMapGenerator `yaml:"configMapGenerator"`
-	SecretGenerator    []secretGenerator    `yaml:"secretGenerator"`
+	Bases                 []string             `yaml:"bases"`
+	Resources             []string             `yaml:"resources"`
+	Patches               []string             `yaml:"patches"`
+	PatchesStrategicMerge []string             `yaml:"patchesStrategicMerge"`
+	CRDs                  []string             `yaml:"crds"`
+	PatchesJSON6902       []patchJSON6902      `yaml:"patchesJson6902"`
+	ConfigMapGenerator    []configMapGenerator `yaml:"configMapGenerator"`
+	SecretGenerator       []secretGenerator    `yaml:"secretGenerator"`
 }
 
 type patchJSON6902 struct {
@@ -63,7 +67,7 @@ type secretGenerator struct {
 type KustomizeDeployer struct {
 	*latest.KustomizeDeploy
 
-	kubectl            kubectl.CLI
+	kubectl            deploy.CLI
 	defaultRepo        string
 	insecureRegistries map[string]bool
 }
@@ -71,9 +75,8 @@ type KustomizeDeployer struct {
 func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 	return &KustomizeDeployer{
 		KustomizeDeploy: runCtx.Cfg.Deploy.KustomizeDeploy,
-		kubectl: kubectl.CLI{
-			Namespace:   runCtx.Opts.Namespace,
-			KubeContext: runCtx.KubeContext,
+		kubectl: deploy.CLI{
+			CLI:         kubectl.NewFromRunContext(runCtx),
 			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
 			ForceDeploy: runCtx.Opts.ForceDeploy(),
 		},
@@ -123,12 +126,12 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 	for _, transform := range manifestTransforms {
 		manifests, err = transform(manifests, builds, k.insecureRegistries)
 		if err != nil {
+			event.DeployFailed(err)
 			return errors.Wrap(err, "unable to transform manifests")
 		}
 	}
 
-	err = k.kubectl.Apply(ctx, out, manifests)
-	if err != nil {
+	if err := k.kubectl.Apply(ctx, out, manifests); err != nil {
 		event.DeployFailed(err)
 		return errors.Wrap(err, "kubectl error")
 	}
@@ -151,10 +154,20 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
+// Dependencies lists all the files that can change what needs to be deployed.
+func (k *KustomizeDeployer) Dependencies() ([]string, error) {
+	return dependenciesForKustomization(k.KustomizePath)
+}
+
 func dependenciesForKustomization(dir string) ([]string, error) {
 	var deps []string
 
-	path := filepath.Join(dir, "kustomization.yaml")
+	path, err := findKustomizationConfig(dir)
+	if err != nil {
+		// No kustomiization config found so assume it's remote and stop traversing
+		return deps, nil
+	}
+
 	buf, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -165,48 +178,70 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 		return nil, err
 	}
 
-	for _, base := range content.Bases {
-		baseDeps, err := dependenciesForKustomization(filepath.Join(dir, base))
-		if err != nil {
-			return nil, err
+	deps = append(deps, path)
+
+	candidates := append(content.Bases, content.Resources...)
+
+	for _, candidate := range candidates {
+		// If the file  doesn't exist locally, we can assume it's a remote file and
+		// skip it, since we can't monitor remote files. Kustomize itself will
+		// handle invalid/missing files.
+		local, mode := pathExistsLocally(candidate, dir)
+		if !local {
+			continue
 		}
 
-		deps = append(deps, baseDeps...)
+		if mode.IsDir() {
+			candidateDeps, err := dependenciesForKustomization(filepath.Join(dir, candidate))
+			if err != nil {
+				return nil, err
+			}
+			deps = append(deps, candidateDeps...)
+		} else {
+			deps = append(deps, filepath.Join(dir, candidate))
+		}
 	}
 
-	deps = append(deps, path)
-	deps = append(deps, joinPaths(dir, content.Resources)...)
-	deps = append(deps, joinPaths(dir, content.Patches)...)
-	deps = append(deps, joinPaths(dir, content.CRDs)...)
+	deps = append(deps, util.AbsolutePaths(dir, content.Patches)...)
+	deps = append(deps, util.AbsolutePaths(dir, content.PatchesStrategicMerge)...)
+	deps = append(deps, util.AbsolutePaths(dir, content.CRDs)...)
 	for _, patch := range content.PatchesJSON6902 {
 		deps = append(deps, filepath.Join(dir, patch.Path))
 	}
 	for _, generator := range content.ConfigMapGenerator {
-		deps = append(deps, joinPaths(dir, generator.Files)...)
+		deps = append(deps, util.AbsolutePaths(dir, generator.Files)...)
 	}
 	for _, generator := range content.SecretGenerator {
-		deps = append(deps, joinPaths(dir, generator.Files)...)
+		deps = append(deps, util.AbsolutePaths(dir, generator.Files)...)
 	}
 
 	return deps, nil
 }
 
-func joinPaths(root string, paths []string) []string {
-	var list []string
-
-	for _, path := range paths {
-		list = append(list, filepath.Join(root, path))
+// A Kustomization config must be at the root of the directory. Kustomize will
+// error if more than one of these files exists so order doesn't matter.
+func findKustomizationConfig(dir string) (string, error) {
+	candidates := []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
+	for _, candidate := range candidates {
+		if local, _ := pathExistsLocally(candidate, dir); local {
+			return filepath.Join(dir, candidate), nil
+		}
 	}
-
-	return list
+	return "", fmt.Errorf("no Kustomization configuration found in directory: %s", dir)
 }
 
-// Dependencies lists all the files that can change what needs to be deployed.
-func (k *KustomizeDeployer) Dependencies() ([]string, error) {
-	return dependenciesForKustomization(k.KustomizePath)
+func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {
+	path := filename
+	if !filepath.IsAbs(filename) {
+		path = filepath.Join(workingDir, filename)
+	}
+	if f, err := os.Stat(path); err == nil {
+		return true, f.Mode()
+	}
+	return false, 0
 }
 
-func (k *KustomizeDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
+func (k *KustomizeDeployer) readManifests(ctx context.Context) (deploy.ManifestList, error) {
 	cmd := exec.CommandContext(ctx, "kustomize", "build", k.KustomizePath)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
@@ -217,7 +252,7 @@ func (k *KustomizeDeployer) readManifests(ctx context.Context) (kubectl.Manifest
 		return nil, nil
 	}
 
-	var manifests kubectl.ManifestList
+	var manifests deploy.ManifestList
 	manifests.Append(out)
 	return manifests, nil
 }

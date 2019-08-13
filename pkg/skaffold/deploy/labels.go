@@ -19,11 +19,8 @@ package deploy
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -34,6 +31,9 @@ import (
 	patch "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
 
 // Artifact contains all information about a completed deployment
@@ -111,12 +111,6 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 	}
 	name := accessor.GetName()
 
-	kind := modifiedObj.GetObjectKind().GroupVersionKind().Kind
-	if strings.EqualFold(kind, "Service") {
-		logrus.Debugf("Labels are not applied to service [%s] because of issue: https://github.com/GoogleContainerTools/skaffold/issues/887", name)
-		return nil
-	}
-
 	addLabels(labels, accessor)
 
 	modifiedJSON, _ := json.Marshal(modifiedObj)
@@ -139,7 +133,7 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 	}
 	logrus.Debugln("Patching", name, "in namespace", ns)
 
-	if _, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p, metav1.UpdateOptions{}); err != nil {
+	if _, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
 		return errors.Wrapf(err, "patching resource %s/%s", namespace, name)
 	}
 

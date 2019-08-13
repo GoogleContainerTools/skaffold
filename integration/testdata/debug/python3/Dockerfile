@@ -1,4 +1,4 @@
-FROM python:3
+FROM python:3.7.3-alpine3.9
 
 EXPOSE 5000
 CMD ["python3", "app.py"]

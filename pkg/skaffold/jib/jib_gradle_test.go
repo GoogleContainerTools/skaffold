@@ -31,6 +31,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+func TestMinimumGradleVersion(t *testing.T) {
+	testutil.CheckDeepEqual(t, "1.4.0", MinimumJibGradleVersion)
+}
+
 func TestGradleWrapperDefinition(t *testing.T) {
 	testutil.CheckDeepEqual(t, "gradle", GradleCommand.Executable)
 	testutil.CheckDeepEqual(t, "gradlew", GradleCommand.Wrapper)
@@ -47,7 +51,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 
 	ctx := context.Background()
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		stdout      string
 		modTime     time.Time
@@ -93,7 +97,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 
 			deps, err := GetDependenciesGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"})
 			if test.err != nil {
-				t.CheckErrorAndDeepEqual(true, err, "getting jibGradle dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+): "+test.err.Error(), err.Error())
+				t.CheckErrorAndDeepEqual(true, err, "getting jibGradle dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies: "+test.err.Error(), err.Error())
 			} else {
 				t.CheckDeepEqual(test.expected, deps)
 			}
@@ -104,7 +108,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 func TestGetCommandGradle(t *testing.T) {
 	ctx := context.Background()
 
-	var tests = []struct {
+	tests := []struct {
 		description       string
 		jibGradleArtifact latest.JibGradleArtifact
 		filesInWorkspace  []string
@@ -115,7 +119,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFilesV2", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":_jibSkaffoldFilesV2", "-q"})
 			},
 		},
 		{
@@ -123,7 +127,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
 			filesInWorkspace:  []string{},
 			expectedCmd: func(workspace string) exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFilesV2", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:_jibSkaffoldFilesV2", "-q"})
 			},
 		},
 		{
@@ -131,7 +135,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{},
 			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{":_jibSkaffoldFilesV2", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":_jibSkaffoldFilesV2", "-q"})
 			},
 		},
 		{
@@ -139,7 +143,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
 			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{":project:_jibSkaffoldFilesV2", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:_jibSkaffoldFilesV2", "-q"})
 			},
 		},
 	}
@@ -159,16 +163,16 @@ func TestGetCommandGradle(t *testing.T) {
 }
 
 func TestGenerateGradleArgs(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		in        latest.JibGradleArtifact
 		skipTests bool
 		out       []string
 	}{
-		{latest.JibGradleArtifact{}, false, []string{"-Djib.console=plain", ":task", "--image=image"}},
-		{latest.JibGradleArtifact{Flags: []string{"-extra", "args"}}, false, []string{"-Djib.console=plain", ":task", "--image=image", "-extra", "args"}},
-		{latest.JibGradleArtifact{}, true, []string{"-Djib.console=plain", ":task", "--image=image", "-x", "test"}},
-		{latest.JibGradleArtifact{Project: "project"}, false, []string{"-Djib.console=plain", ":project:task", "--image=image"}},
-		{latest.JibGradleArtifact{Project: "project"}, true, []string{"-Djib.console=plain", ":project:task", "--image=image", "-x", "test"}},
+		{latest.JibGradleArtifact{}, false, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image"}},
+		{latest.JibGradleArtifact{Flags: []string{"-extra", "args"}}, false, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image", "-extra", "args"}},
+		{latest.JibGradleArtifact{}, true, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image", "-x", "test"}},
+		{latest.JibGradleArtifact{Project: "project"}, false, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "--image=image"}},
+		{latest.JibGradleArtifact{Project: "project"}, true, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "--image=image", "-x", "test"}},
 	}
 	for _, test := range tests {
 		command := GenerateGradleArgs("task", "image", &test.in, test.skipTests)

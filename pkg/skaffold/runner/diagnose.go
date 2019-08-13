@@ -24,10 +24,11 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/pkg/errors"
 )
 
@@ -46,11 +47,11 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(out io.Writer) error {
 			fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
 		}
 
-		timeDeps1, deps, err := timeToListDependencies(ctx, r.Builder, artifact)
+		timeDeps1, deps, err := timeToListDependencies(ctx, r.builder, artifact)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
-		timeDeps2, _, err := timeToListDependencies(ctx, r.Builder, artifact)
+		timeDeps2, _, err := timeToListDependencies(ctx, r.builder, artifact)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
@@ -58,13 +59,13 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(out io.Writer) error {
 		fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
 		fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
 
-		timeSyncMap1, err := timeToConstructSyncMap(ctx, r.Builder, artifact)
+		timeSyncMap1, err := timeToConstructSyncMap(ctx, r.builder, artifact)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return errors.Wrap(err, "construct artifact dependencies")
 			}
 		}
-		timeSyncMap2, err := timeToConstructSyncMap(ctx, r.Builder, artifact)
+		timeSyncMap2, err := timeToConstructSyncMap(ctx, r.builder, artifact)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return errors.Wrap(err, "construct artifact dependencies")
@@ -103,7 +104,7 @@ func typeOfArtifact(a *latest.Artifact) string {
 	}
 }
 
-func timeToListDependencies(ctx context.Context, builder build.Builder, a *latest.Artifact) (time.Duration, []string, error) {
+func timeToListDependencies(ctx context.Context, builder cache.DependencyLister, a *latest.Artifact) (time.Duration, []string, error) {
 	start := time.Now()
 	paths, err := builder.DependenciesForArtifact(ctx, a)
 	return time.Since(start), paths, err
@@ -118,7 +119,7 @@ func timeToConstructSyncMap(ctx context.Context, builder build.Builder, a *lates
 func timeToComputeMTimes(deps []string) (time.Duration, error) {
 	start := time.Now()
 
-	if _, err := watch.Stat(func() ([]string, error) { return deps, nil }); err != nil {
+	if _, err := filemon.Stat(func() ([]string, error) { return deps, nil }); err != nil {
 		return 0, errors.Wrap(err, "computing modTimes")
 	}
 

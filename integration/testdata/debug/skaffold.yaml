@@ -6,7 +6,7 @@ build:
     context: jib
     jibMaven:
       args:
-      - -q
+      - --no-transfer-progress
   - image: gcr.io/k8s-skaffold/skaffold-debug-npm
     context: npm
   - image: gcr.io/k8s-skaffold/skaffold-debug-nodejs

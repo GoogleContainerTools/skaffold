@@ -20,7 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta11"
+const Version string = "skaffold/v1beta13"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -35,11 +35,20 @@ type SkaffoldConfig struct {
 	// Kind is always `Config`. Defaults to `Config`.
 	Kind string `yaml:"kind" yamltags:"required"`
 
+	// Metadata holds additional information about the config.
+	Metadata Metadata `yaml:"metadata,omitempty"`
+
 	// Pipeline defines the Build/Test/Deploy phases.
 	Pipeline `yaml:",inline"`
 
 	// Profiles *beta* can override be used to `build`, `test` or `deploy` configuration.
 	Profiles []Profile `yaml:"profiles,omitempty"`
+}
+
+// Metadata holds an optional name of the project.
+type Metadata struct {
+	// Name is an identifier for the project.
+	Name string `yaml:"name,omitempty"`
 }
 
 // Pipeline describes a Skaffold pipeline.
@@ -52,10 +61,35 @@ type Pipeline struct {
 
 	// Deploy describes how images are deployed.
 	Deploy DeployConfig `yaml:"deploy,omitempty"`
+
+	// PortForward describes user defined resources to port-forward.
+	PortForward []*PortForwardResource `yaml:"portForward,omitempty"`
 }
 
 func (c *SkaffoldConfig) GetVersion() string {
 	return c.APIVersion
+}
+
+// ResourceType describes the Kubernetes resource types used for port forwarding.
+type ResourceType string
+
+// PortForwardResource describes a resource to port forward.
+type PortForwardResource struct {
+	// Type is the Kubernetes type that should be port forwarded.
+	// Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.
+	Type ResourceType `yaml:"resourceType,omitempty"`
+
+	// Name is the name of the Kubernetes resource to port forward.
+	Name string `yaml:"resourceName,omitempty"`
+
+	// Namespace is the namespace of the resource to port forward.
+	Namespace string `yaml:"namespace,omitempty"`
+
+	// Port is the resource port that will be forwarded.
+	Port int `yaml:"port,omitempty"`
+
+	// LocalPort is the local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
+	LocalPort int `yaml:"localPort,omitempty"`
 }
 
 // BuildConfig contains all the configuration for the build steps.
@@ -228,6 +262,12 @@ type KanikoCache struct {
 
 // ClusterDetails *beta* describes how to do an on-cluster build.
 type ClusterDetails struct {
+	// HTTPProxy for kaniko pod.
+	HTTPProxy string `yaml:"HTTP_PROXY,omitempty"`
+
+	// HTTPSProxy for kaniko pod.
+	HTTPSProxy string `yaml:"HTTPS_PROXY,omitempty"`
+
 	// PullSecret is the path to the Google Cloud service account secret key file.
 	PullSecret string `yaml:"pullSecret,omitempty"`
 
@@ -255,11 +295,11 @@ type ClusterDetails struct {
 // DockerConfig contains information about the docker `config.json` to mount.
 type DockerConfig struct {
 	// Path is the path to the docker `config.json`.
-	Path string `yaml:"path,omitempty" yamltags:"oneOf=dockerSecret"`
+	Path string `yaml:"path,omitempty"`
 
 	// SecretName is the Kubernetes secret that contains the `config.json` Docker configuration.
 	// Note that the expected secret type is not 'kubernetes.io/dockerconfigjson' but 'Opaque'.
-	SecretName string `yaml:"secretName,omitempty" yamltags:"oneOf=dockerSecret"`
+	SecretName string `yaml:"secretName,omitempty"`
 }
 
 // ResourceRequirements describes the resource requirements for the kaniko pod.
@@ -296,7 +336,9 @@ type TestCase struct {
 
 // DeployConfig contains all the configuration needed by the deploy steps.
 type DeployConfig struct {
-	DeployType `yaml:",inline"`
+	// StatusCheckDeadlineSeconds *beta* is the deadline for deployments to stabilize in seconds.
+	StatusCheckDeadlineSeconds int `yaml:"statusCheckDeadlineSeconds,omitempty"`
+	DeployType                 `yaml:",inline"`
 }
 
 // DeployType contains the specific implementation and parameters needed
@@ -465,6 +507,8 @@ type HelmFQNConfig struct {
 
 // HelmConventionConfig is the image config in the syntax of image.repository and image.tag.
 type HelmConventionConfig struct {
+	// ExplicitRegistry separates `image.registry` to the image config syntax. Useful for some charts e.g. `postgresql`.
+	ExplicitRegistry bool `yaml:"explicitRegistry,omitempty"`
 }
 
 // Artifact are the items that need to be built, along with the context in which
@@ -484,8 +528,6 @@ type Artifact struct {
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
-
-	WorkspaceHash string `yaml:"-,omitempty"`
 }
 
 // Sync *alpha* specifies what files to sync into the container.
@@ -493,6 +535,11 @@ type Artifact struct {
 type Sync struct {
 	// Manual lists manual sync rules indicating the source and destination.
 	Manual []*SyncRule `yaml:"manual,omitempty" yamltags:"oneOf=sync"`
+
+	// Infer lists file patterns which may be synced into the container.
+	// The container destination is inferred by the builder.
+	// Currently only available for docker artifacts.
+	Infer []string `yaml:"infer,omitempty" yamltags:"oneOf=sync"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.
@@ -653,6 +700,9 @@ type KanikoArtifact struct {
 	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
 	// use a remote cache which will speed up builds.
 	Cache *KanikoCache `yaml:"cache,omitempty"`
+
+	// Reproducible is used to strip timestamps out of the built image.
+	Reproducible bool `yaml:"reproducible,omitempty"`
 }
 
 // DockerArtifact *beta* describes an artifact built from a Dockerfile,
@@ -700,10 +750,10 @@ type BazelArtifact struct {
 // [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
 type JibMavenArtifact struct {
 	// Module selects which Maven module to build, for a multi module project.
-	Module string `yaml:"module"`
+	Module string `yaml:"module,omitempty"`
 
 	// Profile selects which Maven profile to activate.
-	Profile string `yaml:"profile"`
+	Profile string `yaml:"profile,omitempty"`
 
 	// Flags are additional build flags passed to Maven.
 	// For example: `["-x", "-DskipTests"]`.
@@ -714,7 +764,7 @@ type JibMavenArtifact struct {
 // [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
 type JibGradleArtifact struct {
 	// Project selects which Gradle project to build.
-	Project string `yaml:"project"`
+	Project string `yaml:"project,omitempty"`
 
 	// Flags are additional build flags passed to Gradle.
 	// For example: `["--no-build-cache"]`.

@@ -359,7 +359,7 @@
     "GoogleCloudBuild": {
       "properties": {
         "diskSizeGb": {
-          "type": "number"
+          "type": "integer"
         },
         "dockerImage": {
           "type": "string"

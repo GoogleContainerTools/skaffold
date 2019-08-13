@@ -23,7 +23,7 @@ Getting started with a new project:
 * [skaffold init](#skaffold-init) - to bootstrap Skaffold config
 * [skaffold fix](#skaffold-fix) - to upgrade from
 
-Utilities:
+Other Commands:
 
 * [skaffold help](#skaffold-help) - print help
 * [skaffold version](#skaffold-version) - get Skaffold version

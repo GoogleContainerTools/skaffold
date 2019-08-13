@@ -19,8 +19,9 @@ package cmd
 import (
 	"reflect"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/spf13/pflag"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 // Flag defines a Skaffold CLI flag which contains a list of
@@ -83,7 +84,7 @@ var FlagRegistry = []Flag{
 		Name:          "cache-artifacts",
 		Usage:         "Set to true to enable caching of artifacts",
 		Value:         &opts.CacheArtifacts,
-		DefValue:      false,
+		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug"},
 	},
@@ -215,10 +216,18 @@ var FlagRegistry = []Flag{
 	{
 		Name:          "port-forward",
 		Usage:         "Port-forward exposed container ports within pods",
-		Value:         &opts.PortForward,
+		Value:         &opts.PortForward.Enabled,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug"},
+	},
+	{
+		Name:          "status-check",
+		Usage:         "Wait for deployed resources to stabilize",
+		Value:         &opts.StatusCheck,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
 	},
 }
 
@@ -256,6 +265,7 @@ func AddFlags(fs *pflag.FlagSet, cmdName string) {
 			fs.AddFlag(f)
 		}
 	}
+	fs.MarkHidden("status-check")
 }
 
 func hasCmdAnnotation(cmdName string, annotations []string) bool {
