@@ -194,24 +194,6 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 				DefaultRepo:        "my-public-registry",
 			},
 		},
-		/* todo(corneliusweig): this behavior can be enabled with `mergo.WithAppendSlice` -> clarify requirements
-		{
-			name:        "merge global and context-specific insecure-registries",
-			kubecontext: someKubeContext,
-			cfg: &GlobalConfig{
-				Global:         &ContextConfig{
-					InsecureRegistries: []string{"good.io", "better.io"},
-				},
-				ContextConfigs: []*ContextConfig{{
-					Kubecontext: someKubeContext,
-					InsecureRegistries: []string{"bad.io", "worse.io"},
-				}},
-			},
-			expectedConfig: &ContextConfig{
-				Kubecontext:        someKubeContext,
-				InsecureRegistries: []string{"bad.io", "worse.io", "good.io", "better.io"},
-			},
-		},*/
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
