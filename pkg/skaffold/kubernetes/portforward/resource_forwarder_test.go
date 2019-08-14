@@ -326,6 +326,20 @@ func TestRetrieveServices(t *testing.T) {
 					Spec: v1.ServiceSpec{Ports: []v1.ServicePort{{Port: 8080}}},
 				},
 			},
+		}, {
+			description: "services present but does not expose any port",
+			namespaces:  []string{"test"},
+			services: []*v1.Service{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "svc1",
+						Namespace: "test",
+						Labels: map[string]string{
+							deploy.RunIDLabel: "9876-6789",
+						},
+					},
+				},
+			},
 		},
 	}
 
