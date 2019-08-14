@@ -154,10 +154,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 				Port: 8080,
 			},
 			availablePorts: []int{8080},
-			expected: &portForwardEntry{
-				localPort:       8080,
-				terminationLock: &sync.Mutex{},
-			},
+			expected:       NewPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", 8080, false),
 		}, {
 			description: "port forward existing deployment",
 			resource: latest.PortForwardResource{
@@ -177,10 +174,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 					localPort: 9000,
 				},
 			},
-			expected: &portForwardEntry{
-				localPort:       9000,
-				terminationLock: &sync.Mutex{},
-			},
+			expected: NewPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", 9000, false),
 		},
 	}
 

@@ -48,22 +48,17 @@ func TestNewEntryManager(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	pfe1 := &portForwardEntry{
-		resource: latest.PortForwardResource{
-			Type:      constants.Pod,
-			Name:      "resource",
-			Namespace: "default",
-		},
-		localPort: 9000,
-	}
-	pfe2 := &portForwardEntry{
-		resource: latest.PortForwardResource{
-			Type:      constants.Pod,
-			Name:      "resource2",
-			Namespace: "default",
-		},
-		localPort: 9001,
-	}
+	pfe1 := NewPortForwardEntry(0, latest.PortForwardResource{
+		Type:      constants.Pod,
+		Name:      "resource",
+		Namespace: "default",
+	}, "", "", "", 9000, false)
+
+	pfe2 := NewPortForwardEntry(0, latest.PortForwardResource{
+		Type:      constants.Pod,
+		Name:      "resource2",
+		Namespace: "default",
+	}, "", "", "", 9001, false)
 
 	em := NewEntryManager(ioutil.Discard, nil)
 
