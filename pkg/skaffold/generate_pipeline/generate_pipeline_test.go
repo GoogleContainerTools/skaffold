@@ -38,7 +38,7 @@ func TestGeneratePipeline(t *testing.T) {
 			tasks: []*tekton.Task{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "test",
+						Name: "test-build",
 					},
 				},
 			},
@@ -59,13 +59,18 @@ func TestGeneratePipeline(t *testing.T) {
 					},
 					Tasks: []tekton.PipelineTask{
 						{
-							Name: "test-task",
+							Name: "test-build-task",
 							TaskRef: tekton.TaskRef{
-								Name: "test",
+								Name: "test-build",
 							},
-							RunAfter: []string{},
 							Resources: &tekton.PipelineTaskResources{
 								Inputs: []tekton.PipelineTaskInputResource{
+									{
+										Name:     "source",
+										Resource: "source-repo",
+									},
+								},
+								Outputs: []tekton.PipelineTaskOutputResource{
 									{
 										Name:     "source",
 										Resource: "source-repo",
@@ -83,12 +88,12 @@ func TestGeneratePipeline(t *testing.T) {
 			tasks: []*tekton.Task{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "test1",
+						Name: "test-build",
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "test2",
+						Name: "test-deploy",
 					},
 				},
 			},
@@ -109,13 +114,18 @@ func TestGeneratePipeline(t *testing.T) {
 					},
 					Tasks: []tekton.PipelineTask{
 						{
-							Name: "test1-task",
+							Name: "test-build-task",
 							TaskRef: tekton.TaskRef{
-								Name: "test1",
+								Name: "test-build",
 							},
-							RunAfter: []string{},
 							Resources: &tekton.PipelineTaskResources{
 								Inputs: []tekton.PipelineTaskInputResource{
+									{
+										Name:     "source",
+										Resource: "source-repo",
+									},
+								},
+								Outputs: []tekton.PipelineTaskOutputResource{
 									{
 										Name:     "source",
 										Resource: "source-repo",
@@ -124,16 +134,16 @@ func TestGeneratePipeline(t *testing.T) {
 							},
 						},
 						{
-							Name: "test2-task",
+							Name: "test-deploy-task",
 							TaskRef: tekton.TaskRef{
-								Name: "test2",
+								Name: "test-deploy",
 							},
-							RunAfter: []string{"test1-task"},
 							Resources: &tekton.PipelineTaskResources{
 								Inputs: []tekton.PipelineTaskInputResource{
 									{
 										Name:     "source",
 										Resource: "source-repo",
+										From:     []string{"test-build-task"},
 									},
 								},
 							},
