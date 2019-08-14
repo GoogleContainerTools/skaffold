@@ -116,11 +116,11 @@ func TestStart(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(latest.BuildConfig{})
 			fakeForwarder := newTestForwarder()
-			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), "", nil)
+			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", nil)
 			rf.EntryForwarder = fakeForwarder
 
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
-			t.Override(&retrieveServices, func(string) ([]*latest.PortForwardResource, error) {
+			t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
 				return test.resources, nil
 			})
 
@@ -189,7 +189,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 			expectedEntry := test.expected
 			expectedEntry.resource = test.resource
 
-			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), "", nil)
+			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", nil)
 			rf.forwardedResources = forwardedResources{
 				resources: test.forwardedResources,
 				lock:      &sync.Mutex{},
@@ -232,11 +232,11 @@ func TestUserDefinedResources(t *testing.T) {
 	testutil.Run(t, "one service and one user defined pod", func(t *testutil.T) {
 		event.InitializeState(latest.BuildConfig{})
 		fakeForwarder := newTestForwarder()
-		rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), "", []*latest.PortForwardResource{pod})
+		rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", []*latest.PortForwardResource{pod})
 		rf.EntryForwarder = fakeForwarder
 
 		t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, []int{8080, 9000}))
-		t.Override(&retrieveServices, func(string) ([]*latest.PortForwardResource, error) {
+		t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
 			return []*latest.PortForwardResource{svc}, nil
 		})
 
