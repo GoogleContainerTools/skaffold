@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -33,6 +34,7 @@ import (
 type ResourceForwarder struct {
 	EntryManager
 	userDefinedResources []*latest.PortForwardResource
+	namespaces           []string
 	label                string
 }
 
@@ -43,18 +45,19 @@ var (
 )
 
 // NewResourceForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewResourceForwarder(em EntryManager, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
+func NewResourceForwarder(em EntryManager, label string, userDefinedResources []*latest.PortForwardResource, namespaces []string) *ResourceForwarder {
 	return &ResourceForwarder{
 		EntryManager:         em,
 		userDefinedResources: userDefinedResources,
 		label:                label,
+		namespaces:           namespaces,
 	}
 }
 
 // Start gets a list of services deployed by skaffold as []latest.PortForwardResource and
 // forwards them.
 func (p *ResourceForwarder) Start(ctx context.Context) error {
-	serviceResources, err := retrieveServices(p.label)
+	serviceResources, err := retrieveServices(p.label, p.namespaces)
 	if err != nil {
 		return errors.Wrap(err, "retrieving services for automatic port forwarding")
 	}
@@ -100,19 +103,26 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 
 // retrieveServiceResources retrieves all services in the cluster matching the given label
 // as a list of PortForwardResources
-func retrieveServiceResources(label string) ([]*latest.PortForwardResource, error) {
+func retrieveServiceResources(label string, namespaces []string) ([]*latest.PortForwardResource, error) {
 	clientset, err := kubernetes.GetClientset()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting clientset")
 	}
-	services, err := clientset.CoreV1().Services("").List(metav1.ListOptions{
-		LabelSelector: label,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "selecting services by label %s", label)
+
+	var services []v1.Service
+
+	for _, ns := range namespaces {
+		s, err := clientset.CoreV1().Services(ns).List(metav1.ListOptions{
+			LabelSelector: label,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "selecting services by label %s", label)
+		}
+		services = append(services, s.Items...)
 	}
+
 	var resources []*latest.PortForwardResource
-	for _, s := range services.Items {
+	for _, s := range services {
 		for _, p := range s.Spec.Ports {
 			resources = append(resources, &latest.PortForwardResource{
 				Type:      constants.Service,

@@ -68,6 +68,19 @@ func TestGetAllPodNamespaces(t *testing.T) {
 			},
 			expected: []string{"", "ns", "ns2", "ns3"},
 		},
+		{
+			description:  "add namespaces via port forwarding",
+			argNamespace: "ns",
+			cfg: latest.Pipeline{
+				PortForward: []*latest.PortForwardResource{
+					{Namespace: "default"},
+					{Namespace: "test"},
+					{Namespace: "test"},
+					{Namespace: "test2"},
+				},
+			},
+			expected: []string{"default", "ns", "test", "test2"},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {

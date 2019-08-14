@@ -28,6 +28,7 @@ import (
 // + The namespace passed on the command line
 // + Current kube context's namespace
 // + Namespaces referenced in Helm releases
+// + Namespaces referenced in port forwarding
 func GetAllPodNamespaces(configNamespace string, cfg latest.Pipeline) ([]string, error) {
 	nsMap := make(map[string]bool)
 
@@ -51,6 +52,10 @@ func GetAllPodNamespaces(configNamespace string, cfg latest.Pipeline) ([]string,
 	// Set additional namespaces each helm release referenced
 	for _, namespace := range collectHelmReleasesNamespaces(cfg) {
 		nsMap[namespace] = true
+	}
+
+	for _, pfr := range cfg.PortForward {
+		nsMap[pfr.Namespace] = true
 	}
 
 	// Collate the slice of namespaces.
