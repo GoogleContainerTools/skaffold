@@ -28,7 +28,7 @@ func (r *SkaffoldRunner) createForwarder(out io.Writer, kubectlCLI *kubectl.CLI)
 		kubectlCLI,
 		r.imageList,
 		r.runCtx.Namespaces,
-		r.defaultLabeller.K8sManagedByLabelKeyValueString(),
+		r.defaultLabeller.RunIDKeyValueString(),
 		r.runCtx.Opts.PortForward,
 		r.portForwardResources)
 }

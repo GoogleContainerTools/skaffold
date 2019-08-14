@@ -51,8 +51,8 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
-							"random":            "foo",
+							RunIDLabel: labeller.runID,
+							"random":   "foo",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(10)},
@@ -62,7 +62,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep2",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							RunIDLabel: labeller.runID,
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(20)},
@@ -77,8 +77,8 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
-							"random":            "foo",
+							RunIDLabel: labeller.runID,
+							"random":   "foo",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(300)},
@@ -93,7 +93,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							RunIDLabel: labeller.runID,
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -103,7 +103,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep2",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							RunIDLabel: labeller.runID,
 						},
 					},
 				},
@@ -123,7 +123,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							RunIDLabel: labeller.runID,
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -133,7 +133,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep2",
 						Namespace: "test1",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							RunIDLabel: labeller.runID,
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -158,14 +158,14 @@ func TestGetDeployments(t *testing.T) {
 			expected: map[string]time.Duration{},
 		},
 		{
-			description: "deployment in correct namespace deployed by skaffold but previous version",
+			description: "deployment in correct namespace deployed by skaffold but different run",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: "skaffold-0.26.0",
+							RunIDLabel: "9876-6789",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
