@@ -34,6 +34,7 @@ type run struct {
 	command string
 	input   []byte
 	output  []byte
+	env     []string
 	err     error
 }
 
@@ -117,6 +118,14 @@ func (c *FakeCmd) WithRunOutErr(command string, output string, err error) *FakeC
 	})
 }
 
+// WithRunEnv registers a command that requires the given env variables to be set.
+func (c *FakeCmd) WithRunEnv(command string, env []string) *FakeCmd {
+	return c.addRun(run{
+		command: command,
+		env:     env,
+	})
+}
+
 func (c *FakeCmd) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	command := strings.Join(cmd.Args, " ")
 
@@ -128,6 +137,8 @@ func (c *FakeCmd) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	if r.command != command {
 		c.t.Errorf("expected: %s. Got: %s", r.command, command)
 	}
+
+	c.assertCmdEnv(r.env, cmd.Env)
 
 	if r.output == nil {
 		c.t.Errorf("expected RunCmd(%s) to be called. Got RunCmdOut(%s)", r.command, command)
@@ -152,6 +163,8 @@ func (c *FakeCmd) RunCmd(cmd *exec.Cmd) error {
 		c.t.Errorf("expected RunCmdOut(%s) to be called. Got RunCmd(%s)", r.command, command)
 	}
 
+	c.assertCmdEnv(r.env, cmd.Env)
+
 	if r.input != nil {
 		if cmd.Stdin == nil {
 			c.t.Error("expected to run the command with a custom stdin", command)
@@ -170,4 +183,23 @@ func (c *FakeCmd) RunCmd(cmd *exec.Cmd) error {
 	}
 
 	return r.err
+}
+
+// assertCmdEnv ensures that actualEnv contains all values from requiredEnv
+func (c *FakeCmd) assertCmdEnv(requiredEnv, actualEnv []string) {
+	if requiredEnv == nil {
+		return
+	}
+	c.t.Helper()
+
+	envs := make(map[string]struct{}, len(actualEnv))
+	for _, e := range actualEnv {
+		envs[e] = struct{}{}
+	}
+
+	for _, e := range requiredEnv {
+		if _, ok := envs[e]; !ok {
+			c.t.Errorf("expected env variable with value %q", e)
+		}
+	}
 }
