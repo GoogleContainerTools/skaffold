@@ -20,53 +20,32 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"k8s.io/client-go/tools/clientcmd/api"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
-func TestGetAllPodNamespaces(t *testing.T) {
+func TestGetDeployNamespace(t *testing.T) {
 	tests := []struct {
 		description    string
 		argNamespace   string
 		currentContext string
-		cfg            latest.Pipeline
-		expected       []string
+		expected       string
 	}{
 		{
 			description:  "namespace provided on the command line",
 			argNamespace: "ns",
-			expected:     []string{"ns"},
+			expected:     "ns",
 		},
 		{
 			description:    "kube context's namespace",
 			currentContext: "prod-context",
-			expected:       []string{"prod"},
+			expected:      "prod",
 		},
 		{
 			description:    "default namespace",
 			currentContext: "unknown context",
-			expected:       []string{""},
-		},
-		{
-			description:  "add namespaces for helm",
-			argNamespace: "ns",
-			cfg: latest.Pipeline{
-				Deploy: latest.DeployConfig{
-					DeployType: latest.DeployType{
-						HelmDeploy: &latest.HelmDeploy{
-							Releases: []latest.HelmRelease{
-								{Namespace: "ns3"},
-								{Namespace: ""},
-								{Namespace: ""},
-								{Namespace: "ns2"},
-							},
-						},
-					},
-				},
-			},
-			expected: []string{"", "ns", "ns2", "ns3"},
+			expected:       "default",
 		},
 	}
 	for _, test := range tests {
@@ -80,7 +59,7 @@ func TestGetAllPodNamespaces(t *testing.T) {
 				}, nil
 			})
 
-			namespaces, err := GetAllPodNamespaces(test.argNamespace, test.cfg)
+			namespaces, err := GetDeployNamespace(test.argNamespace)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, namespaces)

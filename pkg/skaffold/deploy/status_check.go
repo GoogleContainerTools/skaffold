@@ -50,7 +50,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	}
 	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds)
 
-	dMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)
+	dMap, err := getDeployments(client, runCtx.Namespaces, defaultLabeller, deadline)
 	if err != nil {
 		return errors.Wrap(err, "could not fetch deployments")
 	}
@@ -73,26 +73,26 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	return getSkaffoldDeployStatus(syncMap)
 }
 
-func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) (map[string]time.Duration, error) {
-	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
-		LabelSelector: l.RunIDKeyValueString(),
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "could not fetch deployments")
-	}
-
+func getDeployments(client kubernetes.Interface, namespaces []string, l *DefaultLabeller, deadlineDuration time.Duration) (map[string]time.Duration, error) {
 	depMap := map[string]time.Duration{}
-
-	for _, d := range deps.Items {
-		var deadline time.Duration
-		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds > int32(deadlineDuration.Seconds()) {
-			deadline = deadlineDuration
-		} else {
-			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
+	for _, ns := range namespaces {
+		deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
+			LabelSelector: l.RunIDKeyValueString(),
+		})
+		if err != nil {
+			return nil, errors.Wrap(err, "could not fetch deployments")
 		}
-		depMap[d.Name] = deadline
-	}
 
+		for _, d := range deps.Items {
+			var deadline time.Duration
+			if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds > int32(deadlineDuration.Seconds()) {
+				deadline = deadlineDuration
+			} else {
+				deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
+			}
+			depMap[d.Name] = deadline
+		}
+	}
 	return depMap, nil
 }
 

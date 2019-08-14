@@ -36,6 +36,7 @@ type RunContext struct {
 	DefaultRepo        string
 	KubeContext        string
 	WorkingDir         string
+	deployNamespace       string
 	Namespaces         []string
 	InsecureRegistries map[string]bool
 }
@@ -54,9 +55,9 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		return nil, errors.Wrap(err, "finding current directory")
 	}
 
-	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace, cfg)
+	deployNamespace, err := runnerutil.GetDeployNamespace(opts.Namespace)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting namespace list")
+		return nil, errors.Wrap(err, "resolving runNamespace")
 	}
 
 	defaultRepo, err := config.GetDefaultRepo(opts.GlobalConfig, opts.DefaultRepo)
@@ -82,7 +83,8 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		WorkingDir:         cwd,
 		DefaultRepo:        defaultRepo,
 		KubeContext:        kubeContext,
-		Namespaces:         namespaces,
+		Namespaces:         []string{deployNamespace},
+		deployNamespace:    deployNamespace,
 		InsecureRegistries: insecureRegistries,
 	}, nil
 }
@@ -104,4 +106,9 @@ func (r *RunContext) UpdateNamespaces(ns []string) {
 	}
 	sort.Strings(updated)
 	r.Namespaces = updated
+}
+
+// DeployNamespace is the namespace to which  `skaffold` deploys resources.
+func (r *RunContext) DeployNamespace() string{
+	return r.deployNamespace
 }

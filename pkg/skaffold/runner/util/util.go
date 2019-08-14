@@ -17,60 +17,32 @@ limitations under the License.
 package util
 
 import (
-	"sort"
+	"strings"
 
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
 
-// GetAllPodNamespaces lists the namespaces that should be watched.
+
+// GetDeployNamespace gets the namespace the current skaffold command will deploy resources into
+// Resolution order is:
 // + The namespace passed on the command line
 // + Current kube context's namespace
-// + Namespaces referenced in Helm releases
-func GetAllPodNamespaces(configNamespace string, cfg latest.Pipeline) ([]string, error) {
-	nsMap := make(map[string]bool)
-
-	if configNamespace == "" {
-		// Get current kube context's namespace
+// + default if none is present.
+func GetDeployNamespace(cmdNamespace string) (string, error) {
+	if ns := strings.TrimSpace(cmdNamespace); ns != "" {
+		return ns, nil
+	}
+	// Get current kube context's namespace
 		config, err := kubectx.CurrentConfig()
 		if err != nil {
-			return nil, errors.Wrap(err, "getting k8s configuration")
+			return "", errors.Wrap(err, "getting k8s configuration")
 		}
 
-		context, ok := config.Contexts[config.CurrentContext]
-		if ok {
-			nsMap[context.Namespace] = true
-		} else {
-			nsMap[""] = true
+		current, ok := config.Contexts[config.CurrentContext]
+		if ok && strings.TrimSpace(current.Namespace) != "" {
+			return strings.TrimSpace(current.Namespace), nil
 		}
-	} else {
-		nsMap[configNamespace] = true
-	}
-
-	// Set additional namespaces each helm release referenced
-	for _, namespace := range collectHelmReleasesNamespaces(cfg) {
-		nsMap[namespace] = true
-	}
-
-	// Collate the slice of namespaces.
-	namespaces := make([]string, 0, len(nsMap))
-	for ns := range nsMap {
-		namespaces = append(namespaces, ns)
-	}
-
-	sort.Strings(namespaces)
-	return namespaces, nil
+		return "default", nil
 }
 
-func collectHelmReleasesNamespaces(cfg latest.Pipeline) []string {
-	var namespaces []string
-
-	if cfg.Deploy.HelmDeploy != nil {
-		for _, release := range cfg.Deploy.HelmDeploy.Releases {
-			namespaces = append(namespaces, release.Namespace)
-		}
-	}
-
-	return namespaces
-}

@@ -182,7 +182,7 @@ func TestGetDeployments(t *testing.T) {
 				objs[i] = dep
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
-			actual, err := getDeployments(client, "test", labeller, time.Duration(200)*time.Second)
+			actual, err := getDeployments(client, []string{"test"}, labeller, time.Duration(200)*time.Second)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}

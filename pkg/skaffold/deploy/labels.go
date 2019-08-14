@@ -33,7 +33,6 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
 
 // Artifact contains all information about a completed deployment
@@ -120,41 +119,15 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 		return errors.Wrap(err, "getting group version resource from obj")
 	}
 
-	var namespace string
-	if accessor.GetNamespace() != "" {
-		namespace = accessor.GetNamespace()
-	} else {
-		namespace = res.Namespace
-	}
+	logrus.Debugln("Patching", name, "in namespace", res.Namespace)
 
-	ns, err := resolveNamespace(namespace)
-	if err != nil {
-		return errors.Wrap(err, "resolving namespace")
-	}
-	logrus.Debugln("Patching", name, "in namespace", ns)
-
-	if _, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
-		return errors.Wrapf(err, "patching resource %s/%s", namespace, name)
+	if _, err := client.Resource(gvr).Namespace(res.Namespace).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
+		return errors.Wrapf(err, "patching resource %s/%s", res.Namespace, name)
 	}
 
 	return nil
 }
 
-func resolveNamespace(ns string) (string, error) {
-	if ns != "" {
-		return ns, nil
-	}
-	cfg, err := kubectx.CurrentConfig()
-	if err != nil {
-		return "", errors.Wrap(err, "getting kubeconfig")
-	}
-
-	current, present := cfg.Contexts[cfg.CurrentContext]
-	if present && current.Namespace != "" {
-		return current.Namespace, nil
-	}
-	return "default", nil
-}
 
 func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
 	resources, err := disco.ServerResourcesForGroupVersion(gvk.GroupVersion().String())

@@ -38,7 +38,7 @@ type CLI struct {
 func NewFromRunContext(runCtx *runcontext.RunContext) *CLI {
 	return &CLI{
 		KubeContext: runCtx.KubeContext,
-		Namespace:   runCtx.Opts.Namespace,
+		Namespace:   runCtx.DeployNamespace(),
 	}
 }
 
