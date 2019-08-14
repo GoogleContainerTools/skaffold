@@ -41,7 +41,7 @@ var (
 	// For testing
 	retrieveAvailablePort = util.GetAvailablePort
 	retrieveServices      = retrieveServiceResources
-	kClientSet            = kubernetes.GetClientset
+	getClientSet          = kubernetes.GetClientset
 )
 
 // NewResourceForwarder returns a struct that tracks and port-forwards pods as they are created and modified
@@ -104,7 +104,7 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 // retrieveServiceResources retrieves all services in the cluster matching the given label
 // as a list of PortForwardResources
 func retrieveServiceResources(label string, namespaces []string) ([]*latest.PortForwardResource, error) {
-	clientset, err := kClientSet()
+	clientset, err := getClientSet()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting clientset")
 	}

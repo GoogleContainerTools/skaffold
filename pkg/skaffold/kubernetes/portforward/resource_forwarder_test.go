@@ -350,7 +350,7 @@ func TestRetrieveServices(t *testing.T) {
 				objs[i] = s
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
-			t.Override(&kClientSet, mockClient(client))
+			t.Override(&getClientSet, mockClient(client))
 			actual, err := retrieveServiceResources(fmt.Sprintf("%s=9876-6789", deploy.RunIDLabel), test.namespaces)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
