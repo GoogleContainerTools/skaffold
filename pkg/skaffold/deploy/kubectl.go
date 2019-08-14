@@ -71,7 +71,7 @@ func (k *KubectlDeployer) Labels() map[string]string {
 
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) error {
+func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
 	color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		color.Default.Fprintln(out, err)
@@ -80,13 +80,13 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
 		event.DeployFailed(err)
-		return errors.Wrap(err, "reading manifests")
+		return NewDeployErrorResult(errors.Wrap(err, "reading manifests"))
 	}
 
 	for _, m := range k.RemoteManifests {
 		manifest, err := k.readRemoteManifest(ctx, m)
 		if err != nil {
-			return errors.Wrap(err, "get remote manifests")
+			return NewDeployErrorResult(errors.Wrap(err, "get remote manifests"))
 		}
 
 		manifests = append(manifests, manifest)
@@ -95,45 +95,51 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	if len(k.originalImages) == 0 {
 		k.originalImages, err = manifests.GetImages()
 		if err != nil {
-			return errors.Wrap(err, "get images from manifests")
+			return NewDeployErrorResult(errors.Wrap(err, "get images from manifests"))
 		}
 	}
 
 	logrus.Debugln("manifests", manifests.String())
 
 	if len(manifests) == 0 {
-		return nil
+		return NewDeploySuccessResult(nil)
 	}
 
 	event.DeployInProgress()
 
+	namespaces, err := manifests.CollectNamespaces()
+	if err != nil {
+		event.DeployInfoEvent(errors.Wrap(err, "could not fetch deployed resource namespace. "+
+			"This might cause port-forward and deploy health-check to fail."))
+	}
+
 	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
 	if err != nil {
 		event.DeployFailed(err)
-		return errors.Wrap(err, "replacing images in manifests")
+		return NewDeployErrorResult(errors.Wrap(err, "replacing images in manifests"))
 	}
 
 	manifests, err = manifests.SetLabels(merge(labellers...))
 	if err != nil {
 		event.DeployFailed(err)
-		return errors.Wrap(err, "setting labels in manifests")
+		return NewDeployErrorResult(errors.Wrap(err, "setting labels in manifests"))
 	}
 
 	for _, transform := range manifestTransforms {
 		manifests, err = transform(manifests, builds, k.insecureRegistries)
 		if err != nil {
 			event.DeployFailed(err)
-			return errors.Wrap(err, "unable to transform manifests")
+			return NewDeployErrorResult(errors.Wrap(err, "unable to transform manifests"))
 		}
 	}
 
 	if err := k.kubectl.Apply(ctx, out, manifests); err != nil {
 		event.DeployFailed(err)
-		return errors.Wrap(err, "kubectl error")
+		return NewDeployErrorResult(errors.Wrap(err, "kubectl error"))
 	}
 
 	event.DeployComplete()
-	return nil
+	return NewDeploySuccessResult(namespaces)
 }
 
 // Cleanup deletes what was deployed by calling Deploy.

@@ -18,6 +18,7 @@ package runcontext
 
 import (
 	"os"
+	"sort"
 
 	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -84,4 +85,23 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
 	}, nil
+}
+
+func (r *RunContext) UpdateNamespaces(ns []string) {
+	if len(ns) == 0 {
+		return
+	}
+
+	nsMap := map[string]bool{}
+	for _, ns := range append(ns, r.Namespaces...) {
+		nsMap[ns] = true
+	}
+
+	// Update RunContext Namespace
+	updated := make([]string, 0, len(nsMap))
+	for k := range nsMap {
+		updated = append(updated, k)
+	}
+	sort.Strings(updated)
+	r.Namespaces = updated
 }

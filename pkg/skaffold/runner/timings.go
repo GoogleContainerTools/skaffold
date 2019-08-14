@@ -82,16 +82,15 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Art
 	return nil
 }
 
-func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []deploy.Labeller) error {
+func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []deploy.Labeller) *deploy.Result {
 	start := time.Now()
 	color.Default.Fprintln(out, "Starting deploy...")
 
-	if err := w.Deployer.Deploy(ctx, out, builds, labellers); err != nil {
-		return err
+	dr := w.Deployer.Deploy(ctx, out, builds, labellers)
+	if err := dr.GetError(); err != nil {
+		color.Default.Fprintln(out, "Deploy complete in", time.Since(start))
 	}
-
-	color.Default.Fprintln(out, "Deploy complete in", time.Since(start))
-	return nil
+	return dr
 }
 
 func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {

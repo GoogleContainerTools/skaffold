@@ -29,6 +29,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -37,10 +42,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	homedir "github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 )
 
 type HelmDeployer struct {
@@ -70,10 +71,11 @@ func (h *HelmDeployer) Labels() map[string]string {
 	}
 }
 
-func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) error {
+func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
 	var dRes []Artifact
 
 	event.DeployInProgress()
+	nsMap := map[string]struct{}{}
 
 	for _, r := range h.Releases {
 		results, err := h.deployRelease(ctx, out, r, builds)
@@ -81,7 +83,13 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 			releaseName, _ := evaluateReleaseName(r.Name)
 
 			event.DeployFailed(err)
-			return errors.Wrapf(err, "deploying %s", releaseName)
+			return NewDeployErrorResult(errors.Wrapf(err, "deploying %s", releaseName))
+		}
+		// collect namespaces
+		for _, r := range results {
+			if trimmed := strings.TrimSpace(r.Namespace); trimmed != "" {
+				nsMap[trimmed] = struct{}{}
+			}
 		}
 
 		dRes = append(dRes, results...)
@@ -92,7 +100,13 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 	labels := merge(labellers...)
 	labelDeployResults(labels, dRes)
 
-	return nil
+	// Collect namespaces in a string
+	namespaces := make([]string, 0, len(nsMap))
+	for ns := range nsMap {
+		namespaces = append(namespaces, ns)
+	}
+
+	return NewDeploySuccessResult(namespaces)
 }
 
 func (h *HelmDeployer) Dependencies() ([]string, error) {
