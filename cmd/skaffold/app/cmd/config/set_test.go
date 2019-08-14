@@ -17,69 +17,20 @@ limitations under the License.
 package config
 
 import (
+	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	yaml "gopkg.in/yaml.v2"
 )
-
-var baseConfig = &Config{
-	Global: &ContextConfig{
-		DefaultRepo: "test-repository",
-	},
-	ContextConfigs: []*ContextConfig{
-		{
-			Kubecontext: "test-context",
-			DefaultRepo: "context-local-repository",
-		},
-	},
-}
-
-var emptyConfig = &Config{}
-
-func TestReadConfig(t *testing.T) {
-	tests := []struct {
-		description string
-		filename    string
-		expectedCfg *Config
-		shouldErr   bool
-	}{
-		{
-			description: "valid config",
-			filename:    "config",
-			expectedCfg: baseConfig,
-			shouldErr:   false,
-		},
-		{
-			description: "missing config",
-			filename:    "",
-			shouldErr:   true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().
-				Chdir()
-
-			if test.filename != "" {
-				c, _ := yaml.Marshal(*baseConfig)
-				tmpDir.Write(test.filename, string(c))
-			}
-
-			cfg, err := ReadConfigForFile(test.filename)
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedCfg, cfg)
-		})
-	}
-}
 
 func TestSetAndUnsetConfig(t *testing.T) {
 	dummyContext := "dummy_context"
 
 	tests := []struct {
-		expectedSetCfg   *Config
-		expectedUnsetCfg *Config
+		expectedSetCfg   *config.GlobalConfig
+		expectedUnsetCfg *config.GlobalConfig
 		description      string
 		key              string
 		value            string
@@ -92,16 +43,16 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			key:         "default-repo",
 			value:       "value",
 			kubecontext: "this_is_a_context",
-			expectedSetCfg: &Config{
-				ContextConfigs: []*ContextConfig{
+			expectedSetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
 					{
 						Kubecontext: "this_is_a_context",
 						DefaultRepo: "value",
 					},
 				},
 			},
-			expectedUnsetCfg: &Config{
-				ContextConfigs: []*ContextConfig{
+			expectedUnsetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
 					{
 						Kubecontext: "this_is_a_context",
 					},
@@ -113,16 +64,16 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			key:         "local-cluster",
 			value:       "false",
 			kubecontext: "this_is_a_context",
-			expectedSetCfg: &Config{
-				ContextConfigs: []*ContextConfig{
+			expectedSetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
 					{
 						Kubecontext:  "this_is_a_context",
 						LocalCluster: util.BoolPtr(false),
 					},
 				},
 			},
-			expectedUnsetCfg: &Config{
-				ContextConfigs: []*ContextConfig{
+			expectedUnsetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
 					{
 						Kubecontext: "this_is_a_context",
 					},
@@ -130,44 +81,32 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			},
 		},
 		{
-			description: "set invalid local cluster",
-			key:         "local-cluster",
-			shouldErr:   true,
-			value:       "not-a-bool",
-			expectedSetCfg: &Config{
-				ContextConfigs: []*ContextConfig{
-					{
-						Kubecontext: dummyContext,
-					},
-				},
-			},
+			description:    "set invalid local cluster",
+			key:            "local-cluster",
+			shouldErr:      true,
+			value:          "not-a-bool",
+			expectedSetCfg: &config.GlobalConfig{},
 		},
 		{
-			description: "set fake value",
-			key:         "not_a_real_value",
-			shouldErr:   true,
-			expectedSetCfg: &Config{
-				ContextConfigs: []*ContextConfig{
-					{
-						Kubecontext: dummyContext,
-					},
-				},
-			},
+			description:    "set fake value",
+			key:            "not_a_real_value",
+			shouldErr:      true,
+			expectedSetCfg: &config.GlobalConfig{},
 		},
 		{
 			description: "set global default repo",
 			key:         "default-repo",
 			value:       "global",
 			global:      true,
-			expectedSetCfg: &Config{
-				Global: &ContextConfig{
+			expectedSetCfg: &config.GlobalConfig{
+				Global: &config.ContextConfig{
 					DefaultRepo: "global",
 				},
-				ContextConfigs: []*ContextConfig{},
+				ContextConfigs: []*config.ContextConfig{},
 			},
-			expectedUnsetCfg: &Config{
-				Global:         &ContextConfig{},
-				ContextConfigs: []*ContextConfig{},
+			expectedUnsetCfg: &config.GlobalConfig{
+				Global:         &config.ContextConfig{},
+				ContextConfigs: []*config.ContextConfig{},
 			},
 		},
 		{
@@ -175,15 +114,15 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			key:         "local-cluster",
 			value:       "true",
 			global:      true,
-			expectedSetCfg: &Config{
-				Global: &ContextConfig{
+			expectedSetCfg: &config.GlobalConfig{
+				Global: &config.ContextConfig{
 					LocalCluster: util.BoolPtr(true),
 				},
-				ContextConfigs: []*ContextConfig{},
+				ContextConfigs: []*config.ContextConfig{},
 			},
-			expectedUnsetCfg: &Config{
-				Global:         &ContextConfig{},
-				ContextConfigs: []*ContextConfig{},
+			expectedUnsetCfg: &config.GlobalConfig{
+				Global:         &config.ContextConfig{},
+				ContextConfigs: []*config.ContextConfig{},
 			},
 		},
 		{
@@ -191,16 +130,16 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			key:         "insecure-registries",
 			value:       "my.insecure.registry",
 			kubecontext: "this_is_a_context",
-			expectedSetCfg: &Config{
-				ContextConfigs: []*ContextConfig{
+			expectedSetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
 					{
 						Kubecontext:        "this_is_a_context",
 						InsecureRegistries: []string{"my.insecure.registry"},
 					},
 				},
 			},
-			expectedUnsetCfg: &Config{
-				ContextConfigs: []*ContextConfig{
+			expectedUnsetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
 					{
 						Kubecontext: "this_is_a_context",
 					},
@@ -210,33 +149,32 @@ func TestSetAndUnsetConfig(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&kubecontext, dummyContext)
-
 			// create new config file
-			c, _ := yaml.Marshal(*emptyConfig)
+			cfg := t.TempFile("config", nil)
 
-			cfg := t.TempFile("config", c)
-
+			t.Override(&config.ReadConfigFile, config.ReadConfigFileNoCache)
 			t.Override(&configFile, cfg)
 			t.Override(&global, test.global)
 			if test.kubecontext != "" {
 				t.Override(&kubecontext, test.kubecontext)
+			} else {
+				t.Override(&kubecontext, dummyContext)
 			}
 
 			// set specified value
-			err := setConfigValue(test.key, test.value)
-			actualConfig, cfgErr := readConfig()
+			err := Set(ioutil.Discard, []string{test.key, test.value})
+			actualConfig, cfgErr := config.ReadConfigFile(cfg)
 			t.CheckNoError(cfgErr)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedSetCfg, actualConfig)
 
 			if test.shouldErr {
-				// if we expect an error when setting, don't try and unset
+				// if we expect an error when setting, don't try to unset
 				return
 			}
 
 			// unset the value
-			err = unsetConfigValue(test.key)
-			newConfig, cfgErr := readConfig()
+			err = Unset(ioutil.Discard, []string{test.key})
+			newConfig, cfgErr := config.ReadConfigFile(cfg)
 			t.CheckNoError(cfgErr)
 
 			t.CheckNoError(err)

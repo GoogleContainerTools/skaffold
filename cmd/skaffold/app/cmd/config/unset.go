@@ -22,7 +22,6 @@ import (
 )
 
 func Unset(out io.Writer, args []string) error {
-	resolveKubectlContext()
 	if err := unsetConfigValue(args[0]); err != nil {
 		return err
 	}

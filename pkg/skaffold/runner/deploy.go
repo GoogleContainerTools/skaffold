@@ -20,14 +20,15 @@ import (
 	"context"
 	"io"
 
-	cfg "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/pkg/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
 
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
-	if cfg.IsKindCluster(r.runCtx.KubeContext) {
+	if config.IsKindCluster(r.runCtx.KubeContext) {
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
 		if err := r.loadImagesInKindNodes(ctx, out, artifacts); err != nil {
 			return errors.Wrapf(err, "loading images into kind nodes")

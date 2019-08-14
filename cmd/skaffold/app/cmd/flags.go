@@ -229,6 +229,15 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
 	},
+	{
+		Name:          "config",
+		Shorthand:     "c",
+		Usage:         "File for global configurations (defaults to $HOME/.skaffold/config)",
+		Value:         &opts.GlobalConfig,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"run", "dev", "debug", "build", "deploy", "delete", "diagnose"},
+	},
 }
 
 var commandFlags []*pflag.Flag

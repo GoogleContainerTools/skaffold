@@ -33,6 +33,7 @@ type PortForwardOptions struct {
 // in the config file itself
 type SkaffoldOptions struct {
 	ConfigurationFile  string
+	GlobalConfig       string
 	Cleanup            bool
 	Notification       bool
 	Tail               bool
