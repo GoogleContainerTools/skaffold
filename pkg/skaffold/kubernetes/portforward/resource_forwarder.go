@@ -18,7 +18,6 @@ package portforward
 
 import (
 	"context"
-	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -81,10 +80,8 @@ func (p *ResourceForwarder) portForwardResource(ctx context.Context, resource la
 
 func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource) *portForwardEntry {
 	// determine if we have seen this before
-	entry := &portForwardEntry{
-		resource:        resource,
-		terminationLock: &sync.Mutex{},
-	}
+	entry := newPortForwardEntry(0, resource, "", "", "", 0, false)
+
 	// If we have, return the current entry
 	oldEntry, ok := p.forwardedResources.Load(entry.key())
 
