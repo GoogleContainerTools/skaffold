@@ -37,8 +37,8 @@ type portForwardEntry struct {
 	cancel                 context.CancelFunc
 }
 
-// NewPortForwardEntry returns a port forward entry.
-func NewPortForwardEntry(resourceVersion int, resource latest.PortForwardResource, podName, containerName, portName string, localPort int, automaticPodForwarding bool) *portForwardEntry {
+// newPortForwardEntry returns a port forward entry.
+func newPortForwardEntry(resourceVersion int, resource latest.PortForwardResource, podName, containerName, portName string, localPort int, automaticPodForwarding bool) *portForwardEntry {
 	return &portForwardEntry{
 		resourceVersion:        resourceVersion,
 		resource:               resource,

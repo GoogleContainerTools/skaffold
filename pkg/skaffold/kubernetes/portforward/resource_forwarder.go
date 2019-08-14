@@ -80,7 +80,7 @@ func (p *ResourceForwarder) portForwardResource(ctx context.Context, resource la
 
 func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource) *portForwardEntry {
 	// determine if we have seen this before
-	entry := NewPortForwardEntry(0, resource, "", "", "", 0, false)
+	entry := newPortForwardEntry(0, resource, "", "", "", 0, false)
 
 	// If we have, return the current entry
 	oldEntry, ok := p.forwardedResources.Load(entry.key())

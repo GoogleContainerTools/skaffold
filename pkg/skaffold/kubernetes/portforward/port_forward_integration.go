@@ -37,7 +37,7 @@ func WhiteBoxPortForwardCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace s
 	portForwardEvent = func(entry *portForwardEntry) {}
 	ctx := context.Background()
 	localPort := retrieveAvailablePort(9000, em.forwardedPorts)
-	pfe := NewPortForwardEntry(0, latest.PortForwardResource{
+	pfe := newPortForwardEntry(0, latest.PortForwardResource{
 		Type:      "deployment",
 		Name:      "leeroy-web",
 		Namespace: namespace,
