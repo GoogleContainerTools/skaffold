@@ -57,10 +57,6 @@ func (d *Result) Namespaces() []string {
 	return d.namespaces
 }
 
-func (d *Result) IsError() (bool, error) {
-	return d.err != nil, d.err
-}
-
 func (d *Result) GetError() error {
 	return d.err
 }

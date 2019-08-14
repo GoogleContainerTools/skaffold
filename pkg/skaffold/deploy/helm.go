@@ -75,7 +75,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 	var dRes []Artifact
 
 	event.DeployInProgress()
-	nsMap := map[string]bool{}
+	nsMap := map[string]struct{}{}
 
 	for _, r := range h.Releases {
 		results, err := h.deployRelease(ctx, out, r, builds)
@@ -88,7 +88,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		// collect namespaces
 		for _, r := range results {
 			if trimmed := strings.TrimSpace(r.Namespace); trimmed != "" {
-				nsMap[trimmed] = true
+				nsMap[trimmed] = struct{}{}
 			}
 		}
 

@@ -87,7 +87,7 @@ func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.A
 	color.Default.Fprintln(out, "Starting deploy...")
 
 	dr := w.Deployer.Deploy(ctx, out, builds, labellers)
-	if isErr, _ := dr.IsError(); !isErr {
+	if err := dr.GetError(); err != nil {
 		color.Default.Fprintln(out, "Deploy complete in", time.Since(start))
 	}
 	return dr
