@@ -23,6 +23,7 @@ import (
 	"io"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -42,18 +43,32 @@ type EntryForwarder interface {
 type KubectlForwarder struct {
 	kubectl *kubectl.CLI
 	out     io.Writer
+	testing bool
+	wg      *sync.WaitGroup
 }
+
+var (
+	// For testing
+	isPortFree     = util.IsPortFree
+	portForwardCmd = portForwardCommand
+)
 
 // Forward port-forwards a pod using kubectl port-forward in the background
 // It kills the command on errors in the kubectl port-forward log
 // It restarts the command if it was not cancelled by skaffold
 // It retries in case the port is taken
 func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) {
+	if k.testing {
+		k.wg.Add(1)
+	}
 	go k.forward(parentCtx, pfe)
 }
 
 func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEntry) {
 	var notifiedUser bool
+	if k.testing {
+		defer k.wg.Done()
+	}
 	for {
 		pfe.terminationLock.Lock()
 		if pfe.terminated {
@@ -63,7 +78,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		}
 		pfe.terminationLock.Unlock()
 
-		if !util.IsPortFree(pfe.localPort) {
+		if !isPortFree(pfe.localPort) {
 			//assuming that Skaffold brokered ports don't overlap, this has to be an external process that started
 			//since the dev loop kicked off. We are notifying the user in the hope that they can fix it
 			color.Red.Fprintf(k.out, "failed to port forward %v, port %d is taken, retrying...\n", pfe, pfe.localPort)
@@ -80,16 +95,8 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		ctx, cancel := context.WithCancel(parentCtx)
 		pfe.cancel = cancel
 
-		cmd := k.kubectl.Command(ctx,
-			"port-forward",
-			"--pod-running-timeout", "1s",
-			fmt.Sprintf("%s/%s", pfe.resource.Type, pfe.resource.Name),
-			fmt.Sprintf("%d:%d", pfe.localPort, pfe.resource.Port),
-			"--namespace", pfe.resource.Namespace,
-		)
 		buf := &bytes.Buffer{}
-		cmd.Stdout = buf
-		cmd.Stderr = buf
+		cmd := portForwardCmd(ctx, k.kubectl, pfe, buf)
 
 		if err := cmd.Start(); err != nil {
 			if ctx.Err() == context.Canceled {
@@ -115,6 +122,19 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 			time.Sleep(500 * time.Millisecond)
 		}
 	}
+}
+
+func portForwardCommand(ctx context.Context, k *kubectl.CLI, pfe *portForwardEntry, buf io.Writer) *exec.Cmd {
+	cmd := k.Command(ctx,
+		"port-forward",
+		"--pod-running-timeout", "1s",
+		fmt.Sprintf("%s/%s", pfe.resource.Type, pfe.resource.Name),
+		fmt.Sprintf("%d:%d", pfe.localPort, pfe.resource.Port),
+		"--namespace", pfe.resource.Namespace,
+	)
+	cmd.Stdout = buf
+	cmd.Stderr = buf
+	return cmd
 }
 
 // Terminate terminates an existing kubectl port-forward command using SIGTERM
