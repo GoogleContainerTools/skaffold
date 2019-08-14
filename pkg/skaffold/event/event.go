@@ -44,7 +44,7 @@ type eventHandler struct {
 	state     proto.State
 	stateLock sync.Mutex
 
-	listeners []listener
+	listeners []*listener
 }
 
 type listener struct {
@@ -100,7 +100,7 @@ func (ev *eventHandler) logEvent(entry proto.LogEntry) {
 }
 
 func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error {
-	listener := listener{
+	listener := &listener{
 		callback: callback,
 		errors:   make(chan error),
 	}
