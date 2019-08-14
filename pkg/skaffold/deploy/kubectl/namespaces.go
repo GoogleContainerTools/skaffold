@@ -30,7 +30,7 @@ func (l *ManifestList) CollectNamespaces() ([]string, error) {
 	if _, err := l.Visit(replacer); err != nil {
 		return nil, errors.Wrap(err, "collecting namespaces")
 	}
-	
+
 	namespaces := make([]string, 0, len(replacer.namespaces))
 	for ns := range replacer.namespaces {
 		namespaces = append(namespaces, ns)

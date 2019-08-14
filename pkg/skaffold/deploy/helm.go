@@ -87,7 +87,9 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		}
 		// collect namespaces
 		for _, r := range results {
-			nsMap[r.Namespace] = true
+			if trimmed := strings.TrimSpace(r.Namespace); trimmed != "" {
+				nsMap[trimmed] = true
+			}
 		}
 
 		dRes = append(dRes, results...)

@@ -27,7 +27,7 @@ require (
 	github.com/gogo/protobuf v1.1.1 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.3.2
-	github.com/google/go-cmp v0.3.0
+	github.com/google/go-cmp v0.3.1
 	github.com/google/go-containerregistry v0.0.0-20190717132004-e8c6a4993fa7
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
@@ -79,6 +79,7 @@ require (
 	k8s.io/apimachinery v0.0.0-20190620073744-d16981aedf33
 	k8s.io/client-go v0.0.0-20190620074045-585a16d2e773
 	k8s.io/kubectl v0.0.0-20190622051205-955b067cc6d3
+	k8s.io/utils v0.0.0-20190221042446-c2654d5206da
 	knative.dev/pkg v0.0.0-20190730155243-972acd413fb9 // indirect
 )
 
