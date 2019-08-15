@@ -35,6 +35,10 @@ type T struct {
 	teardownActions []func()
 }
 
+func (t *T) NewFakeCmd() *FakeCmd {
+	return NewFakeCmd(t.T)
+}
+
 func (t *T) FakeRun(command string) *FakeCmd {
 	return FakeRun(t.T, command)
 }

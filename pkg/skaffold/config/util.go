@@ -135,7 +135,7 @@ func getConfigForKubeContextWithGlobalDefaults(cfg *GlobalConfig, kubeContext st
 	if cfg.Global != nil {
 		// if values are unset for the current context, retrieve
 		// the global config and use its values as a fallback.
-		if err := mergo.Merge(&mergedConfig, cfg.Global); err != nil {
+		if err := mergo.Merge(&mergedConfig, cfg.Global, mergo.WithAppendSlice); err != nil {
 			return nil, errors.Wrapf(err, "merging context-specific and global config")
 		}
 	}

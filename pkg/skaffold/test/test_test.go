@@ -87,66 +87,63 @@ func TestNoTest(t *testing.T) {
 }
 
 func TestTestSuccess(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir()
+		tmpDir.Touch("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 
-	tmpDir.Touch("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
+		fakeCmd := t.NewFakeCmd().
+			WithRun("container-structure-test test -v warn --image TAG --config " + tmpDir.Path("tests/test1.yaml") + " --config " + tmpDir.Path("tests/test2.yaml")).
+			WithRun("container-structure-test test -v warn --image TAG --config " + tmpDir.Path("test3.yaml"))
+		t.Override(&util.DefaultExecCommand, fakeCmd)
 
-	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.
-		NewFakeCmd(t).
-		WithRun("container-structure-test test -v warn --image TAG --config " + tmpDir.Path("tests/test1.yaml") + " --config " + tmpDir.Path("tests/test2.yaml")).
-		WithRun("container-structure-test test -v warn --image TAG --config " + tmpDir.Path("test3.yaml"))
-
-	runCtx := &runcontext.RunContext{
-		WorkingDir: tmpDir.Root(),
-		Cfg: latest.Pipeline{
-			Test: []*latest.TestCase{
-				{
-					ImageName:      "image",
-					StructureTests: []string{"./tests/*"},
-				},
-				{},
-				{
-					ImageName:      "image",
-					StructureTests: []string{"test3.yaml"},
+		runCtx := &runcontext.RunContext{
+			WorkingDir: tmpDir.Root(),
+			Cfg: latest.Pipeline{
+				Test: []*latest.TestCase{
+					{
+						ImageName:      "image",
+						StructureTests: []string{"./tests/*"},
+					},
+					{},
+					{
+						ImageName:      "image",
+						StructureTests: []string{"test3.yaml"},
+					},
 				},
 			},
-		},
-	}
+		}
 
-	err := NewTester(runCtx).Test(context.Background(), ioutil.Discard, []build.Artifact{{
-		ImageName: "image",
-		Tag:       "TAG",
-	}})
+		err := NewTester(runCtx).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+			ImageName: "image",
+			Tag:       "TAG",
+		}})
 
-	testutil.CheckError(t, false, err)
+		t.CheckError(false, err)
+	})
 }
 
 func TestTestFailure(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir()
+		tmpDir.Touch("test.yaml")
 
-	tmpDir.Touch("test.yaml")
+		fakeCmd := t.NewFakeCmd().
+			WithRunErr("container-structure-test test -v warn --image broken-image --config "+tmpDir.Path("test.yaml"), errors.New("FAIL"))
+		t.Override(&util.DefaultExecCommand, fakeCmd)
 
-	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.
-		NewFakeCmd(t).
-		WithRunErr("container-structure-test test -v warn --image broken-image --config "+tmpDir.Path("test.yaml"), errors.New("FAIL"))
-
-	runCtx := &runcontext.RunContext{
-		WorkingDir: tmpDir.Root(),
-		Cfg: latest.Pipeline{
-			Test: []*latest.TestCase{
-				{
-					ImageName:      "broken-image",
-					StructureTests: []string{"test.yaml"},
+		runCtx := &runcontext.RunContext{
+			WorkingDir: tmpDir.Root(),
+			Cfg: latest.Pipeline{
+				Test: []*latest.TestCase{
+					{
+						ImageName:      "broken-image",
+						StructureTests: []string{"test.yaml"},
+					},
 				},
 			},
-		},
-	}
+		}
 
-	err := NewTester(runCtx).Test(context.Background(), ioutil.Discard, []build.Artifact{{}})
-
-	testutil.CheckError(t, true, err)
+		err := NewTester(runCtx).Test(context.Background(), ioutil.Discard, []build.Artifact{{}})
+		t.CheckError(true, err)
+	})
 }

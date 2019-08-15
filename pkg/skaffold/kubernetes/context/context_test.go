@@ -22,14 +22,51 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+const validKubeConfig = `
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: https://foo.com
+  name: cluster-foo
+- cluster:
+    server: https://bar.com
+  name: cluster-bar
+contexts:
+- context:
+    cluster: cluster-foo
+    user: user1
+  name: cluster-foo
+- context:
+    cluster: cluster-bar
+    user: user1
+  name: cluster-bar
+current-context: cluster-foo
+users:
+- name: user1
+  user:
+    password: secret
+    username: user
+`
+
 func TestCurrentContext(t *testing.T) {
 	testutil.Run(t, "valid context", func(t *testutil.T) {
-		resetKubeConfig(t, "apiVersion: v1\nkind: Config\ncurrent-context: cluster1\n")
+		resetKubeConfig(t, validKubeConfig)
 
 		config, err := CurrentConfig()
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("cluster1", config.CurrentContext)
+		t.CheckDeepEqual("cluster-foo", config.CurrentContext)
+	})
+
+	testutil.Run(t, "valid with override context", func(t *testutil.T) {
+		resetKubeConfig(t, validKubeConfig)
+
+		kubeContext = "cluster-bar"
+		config, err := CurrentConfig()
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("cluster-bar", config.CurrentContext)
 	})
 
 	testutil.Run(t, "invalid context", func(t *testutil.T) {
@@ -41,8 +78,38 @@ func TestCurrentContext(t *testing.T) {
 	})
 }
 
+func TestGetRestClientConfig(t *testing.T) {
+	testutil.Run(t, "valid context", func(t *testutil.T) {
+		resetKubeConfig(t, validKubeConfig)
+
+		cfg, err := GetRestClientConfig()
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("https://foo.com", cfg.Host)
+	})
+
+	testutil.Run(t, "valid context with override", func(t *testutil.T) {
+		resetKubeConfig(t, validKubeConfig)
+
+		kubeContext = "cluster-bar"
+		cfg, err := GetRestClientConfig()
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("https://bar.com", cfg.Host)
+	})
+
+	testutil.Run(t, "invalid context", func(t *testutil.T) {
+		resetKubeConfig(t, "invalid")
+
+		_, err := GetRestClientConfig()
+
+		t.CheckError(true, err)
+	})
+}
+
 func resetKubeConfig(t *testutil.T, content string) {
 	kubeConfig := t.TempFile("config", []byte(content))
+	kubeContext = ""
 	t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
-	ResetCurrentConfig()
+	resetConfig()
 }

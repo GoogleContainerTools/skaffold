@@ -19,7 +19,6 @@ package portforward
 import (
 	"context"
 	"os"
-	"sync"
 	"testing"
 	"time"
 
@@ -38,18 +37,12 @@ func WhiteBoxPortForwardCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace s
 	portForwardEvent = func(entry *portForwardEntry) {}
 	ctx := context.Background()
 	localPort := retrieveAvailablePort(9000, em.forwardedPorts)
-	pfe := &portForwardEntry{
-		resource: latest.PortForwardResource{
-			Type:      "deployment",
-			Name:      "leeroy-web",
-			Namespace: namespace,
-			Port:      8080,
-		},
-		containerName:   "dummy container",
-		localPort:       localPort,
-		terminationLock: &sync.Mutex{},
-	}
-
+	pfe := newPortForwardEntry(0, latest.PortForwardResource{
+		Type:      "deployment",
+		Name:      "leeroy-web",
+		Namespace: namespace,
+		Port:      8080,
+	}, "", "dummy container", "", localPort, false)
 	defer em.Stop()
 	em.forwardPortForwardEntry(ctx, pfe)
 	em.Stop()

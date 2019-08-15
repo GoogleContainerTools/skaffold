@@ -157,8 +157,8 @@ There are several levels of granularity to allow insecure communication with som
 1. Per user via Skaffold's global config
 
     ```bash
-    skaffold config set insecure-registries insecure1.io
-    skaffold config set insecure-registries insecure2.io
+    skaffold config set insecure-registries insecure1.io           # for the current kube-context
+    skaffold config set --global insecure-registries insecure2.io  # for any kube-context
     ```
     
     Note that multiple set commands _add_ to the existing list of insecure registries.

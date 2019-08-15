@@ -54,7 +54,7 @@ func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes
 
 	ForwarderManager := &ForwarderManager{
 		output:     out,
-		Forwarders: []Forwarder{NewResourceForwarder(em, label, userDefined)},
+		Forwarders: []Forwarder{NewResourceForwarder(em, namespaces, label, userDefined)},
 	}
 
 	if opts.ForwardPods {
