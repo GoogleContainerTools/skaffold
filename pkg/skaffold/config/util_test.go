@@ -102,10 +102,9 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 		DefaultRepo:        "my-private-registry",
 	}
 	sampleConfig2 := &ContextConfig{
-		Kubecontext:        "another_context",
-		InsecureRegistries: []string{"good.io", "better.io"},
-		LocalCluster:       util.BoolPtr(false),
-		DefaultRepo:        "my-public-registry",
+		Kubecontext:  "another_context",
+		LocalCluster: util.BoolPtr(false),
+		DefaultRepo:  "my-public-registry",
 	}
 
 	tests := []struct {
@@ -177,10 +176,9 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 				},
 			},
 			expectedConfig: &ContextConfig{
-				Kubecontext:        someKubeContext,
-				InsecureRegistries: []string{"good.io", "better.io"},
-				LocalCluster:       util.BoolPtr(false),
-				DefaultRepo:        "my-public-registry",
+				Kubecontext:  someKubeContext,
+				LocalCluster: util.BoolPtr(false),
+				DefaultRepo:  "my-public-registry",
 			},
 		},
 		{
@@ -188,10 +186,26 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			kubecontext: someKubeContext,
 			cfg:         &GlobalConfig{Global: sampleConfig2},
 			expectedConfig: &ContextConfig{
+				Kubecontext:  someKubeContext,
+				LocalCluster: util.BoolPtr(false),
+				DefaultRepo:  "my-public-registry",
+			},
+		},
+		{
+			name:        "merge global and context-specific insecure-registries",
+			kubecontext: someKubeContext,
+			cfg: &GlobalConfig{
+				Global: &ContextConfig{
+					InsecureRegistries: []string{"good.io", "better.io"},
+				},
+				ContextConfigs: []*ContextConfig{{
+					Kubecontext:        someKubeContext,
+					InsecureRegistries: []string{"bad.io", "worse.io"},
+				}},
+			},
+			expectedConfig: &ContextConfig{
 				Kubecontext:        someKubeContext,
-				InsecureRegistries: []string{"good.io", "better.io"},
-				LocalCluster:       util.BoolPtr(false),
-				DefaultRepo:        "my-public-registry",
+				InsecureRegistries: []string{"bad.io", "worse.io", "good.io", "better.io"},
 			},
 		},
 	}
