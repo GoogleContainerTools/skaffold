@@ -29,6 +29,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/AlecAivazis/survey.v1"
+	"gopkg.in/yaml.v2"
+
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -38,10 +43,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	survey "gopkg.in/AlecAivazis/survey.v1"
-	yaml "gopkg.in/yaml.v2"
 )
 
 // For testing
@@ -391,9 +392,15 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
 
+	name, err := suggestConfigName()
+	if err != nil {
+		warnings.Printf("Couldn't generate default config name: %s", err.Error())
+	}
+
 	cfg := &latest.SkaffoldConfig{
 		APIVersion: latest.Version,
 		Kind:       "Config",
+		Metadata:   latest.Metadata{Name: name},
 	}
 	if err := defaults.Set(cfg); err != nil {
 		return nil, errors.Wrap(err, "generating default pipeline")
@@ -408,6 +415,22 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 	}
 
 	return pipelineStr, nil
+}
+
+func suggestConfigName() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	base := filepath.Base(cwd)
+
+	// give up for edge cases
+	if base == "." || base == string(filepath.Separator) {
+		return "", nil
+	}
+
+	return base, nil
 }
 
 func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
