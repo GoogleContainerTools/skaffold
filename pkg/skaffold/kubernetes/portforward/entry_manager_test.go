@@ -48,22 +48,17 @@ func TestNewEntryManager(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	pfe1 := &portForwardEntry{
-		resource: latest.PortForwardResource{
-			Type:      constants.Pod,
-			Name:      "resource",
-			Namespace: "default",
-		},
-		localPort: 9000,
-	}
-	pfe2 := &portForwardEntry{
-		resource: latest.PortForwardResource{
-			Type:      constants.Pod,
-			Name:      "resource2",
-			Namespace: "default",
-		},
-		localPort: 9001,
-	}
+	pfe1 := newPortForwardEntry(0, latest.PortForwardResource{
+		Type:      constants.Pod,
+		Name:      "resource",
+		Namespace: "default",
+	}, "", "", "", 9000, false)
+
+	pfe2 := newPortForwardEntry(0, latest.PortForwardResource{
+		Type:      constants.Pod,
+		Name:      "resource2",
+		Namespace: "default",
+	}, "", "", "", 9001, false)
 
 	em := NewEntryManager(ioutil.Discard, nil)
 
@@ -99,6 +94,14 @@ func TestForwardedPorts(t *testing.T) {
 	// Try to load the port
 	if _, ok := pf.LoadOrStore(9000, struct{}{}); !ok {
 		t.Fatal("didn't load port 9000 correctly")
+	}
+
+	if _, ok := pf.LoadOrStore(4000, struct{}{}); ok {
+		t.Fatal("didn't store port 4000 correctly")
+	}
+
+	if _, ok := pf.LoadOrStore(4000, struct{}{}); !ok {
+		t.Fatal("didn't load port 4000 correctly")
 	}
 
 	// Try to store a non int, catch panic

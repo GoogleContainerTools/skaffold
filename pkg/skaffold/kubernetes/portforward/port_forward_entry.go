@@ -37,6 +37,20 @@ type portForwardEntry struct {
 	cancel                 context.CancelFunc
 }
 
+// newPortForwardEntry returns a port forward entry.
+func newPortForwardEntry(resourceVersion int, resource latest.PortForwardResource, podName, containerName, portName string, localPort int, automaticPodForwarding bool) *portForwardEntry {
+	return &portForwardEntry{
+		resourceVersion:        resourceVersion,
+		resource:               resource,
+		podName:                podName,
+		containerName:          containerName,
+		portName:               portName,
+		localPort:              localPort,
+		automaticPodForwarding: automaticPodForwarding,
+		terminationLock:        &sync.Mutex{},
+	}
+}
+
 // key is an identifier for the lock on a port during the skaffold dev cycle.
 // if automaticPodForwarding is set, we return a key that doesn't include podName, since we want the key
 // to be the same whenever pods restart

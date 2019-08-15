@@ -32,25 +32,21 @@ func TestPortForwardEntryKey(t *testing.T) {
 	}{
 		{
 			description: "entry for pod",
-			pfe: &portForwardEntry{
-				resource: latest.PortForwardResource{
-					Type:      "pod",
-					Name:      "podName",
-					Namespace: "default",
-					Port:      8080,
-				},
-			},
+			pfe: newPortForwardEntry(0, latest.PortForwardResource{
+				Type:      "pod",
+				Name:      "podName",
+				Namespace: "default",
+				Port:      8080,
+			}, "", "", "", 0, false),
 			expected: "pod-podName-default-8080",
 		}, {
 			description: "entry for deploy",
-			pfe: &portForwardEntry{
-				resource: latest.PortForwardResource{
-					Type:      "deployment",
-					Name:      "depName",
-					Namespace: "namespace",
-					Port:      9000,
-				},
-			},
+			pfe: newPortForwardEntry(0, latest.PortForwardResource{
+				Type:      "deployment",
+				Name:      "depName",
+				Namespace: "namespace",
+				Port:      9000,
+			}, "", "", "", 0, false),
 			expected: "deployment-depName-namespace-9000",
 		},
 	}
@@ -78,17 +74,12 @@ func TestAutomaticPodForwardingKey(t *testing.T) {
 	}{
 		{
 			description: "entry for automatically port forwarded pod",
-			pfe: &portForwardEntry{
-				containerName: "containerName",
-				portName:      "portName",
-				resource: latest.PortForwardResource{
-					Type:      "pod",
-					Name:      "podName",
-					Namespace: "default",
-					Port:      8080,
-				},
-				automaticPodForwarding: true,
-			},
+			pfe: newPortForwardEntry(0, latest.PortForwardResource{
+				Type:      "pod",
+				Name:      "podName",
+				Namespace: "default",
+				Port:      8080,
+			}, "", "containerName", "portName", 0, true),
 			expected: "containerName-default-portName-8080",
 		},
 	}

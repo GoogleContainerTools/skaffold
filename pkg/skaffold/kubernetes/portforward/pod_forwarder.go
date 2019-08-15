@@ -19,7 +19,6 @@ package portforward
 import (
 	"context"
 	"strconv"
-	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -138,15 +137,7 @@ func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName
 	if err != nil {
 		return nil, errors.Wrap(err, "converting resource version to integer")
 	}
-	entry := &portForwardEntry{
-		resource:               resource,
-		resourceVersion:        rv,
-		podName:                resource.Name,
-		containerName:          containerName,
-		portName:               portName,
-		automaticPodForwarding: true,
-		terminationLock:        &sync.Mutex{},
-	}
+	entry := newPortForwardEntry(rv, resource, resource.Name, containerName, portName, 0, true)
 
 	// If we have, return the current entry
 	oldEntry, ok := p.forwardedResources.Load(entry.key())

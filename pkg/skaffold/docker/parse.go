@@ -325,7 +325,7 @@ func parseOnbuild(image string, insecureRegistries map[string]bool) ([]*parser.N
 		return []*parser.Node{}, nil
 	}
 
-	logrus.Debugf("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, image)
+	logrus.Tracef("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, image)
 
 	obRes, err := parser.Parse(strings.NewReader(strings.Join(img.Config.OnBuild, "\n")))
 	if err != nil {

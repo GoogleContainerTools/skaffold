@@ -44,6 +44,7 @@ type Tester interface {
 type FullTester struct {
 	testCases  []*latest.TestCase
 	workingDir string
+	extraEnv   []string
 }
 
 // Runner is the lowest-level test executor in Skaffold, responsible for

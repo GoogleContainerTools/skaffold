@@ -18,7 +18,6 @@ package portforward
 
 import (
 	"context"
-	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -32,6 +31,7 @@ import (
 // services deployed by skaffold.
 type ResourceForwarder struct {
 	EntryManager
+	namespaces           []string
 	userDefinedResources []*latest.PortForwardResource
 	label                string
 }
@@ -40,12 +40,14 @@ var (
 	// For testing
 	retrieveAvailablePort = util.GetAvailablePort
 	retrieveServices      = retrieveServiceResources
+	getClientSet          = kubernetes.GetClientset
 )
 
 // NewResourceForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewResourceForwarder(em EntryManager, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
+func NewResourceForwarder(em EntryManager, namespaces []string, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
 	return &ResourceForwarder{
 		EntryManager:         em,
+		namespaces:           namespaces,
 		userDefinedResources: userDefinedResources,
 		label:                label,
 	}
@@ -54,7 +56,7 @@ func NewResourceForwarder(em EntryManager, label string, userDefinedResources []
 // Start gets a list of services deployed by skaffold as []latest.PortForwardResource and
 // forwards them.
 func (p *ResourceForwarder) Start(ctx context.Context) error {
-	serviceResources, err := retrieveServices(p.label)
+	serviceResources, err := retrieveServices(p.label, p.namespaces)
 	if err != nil {
 		return errors.Wrap(err, "retrieving services for automatic port forwarding")
 	}
@@ -81,10 +83,8 @@ func (p *ResourceForwarder) portForwardResource(ctx context.Context, resource la
 
 func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource) *portForwardEntry {
 	// determine if we have seen this before
-	entry := &portForwardEntry{
-		resource:        resource,
-		terminationLock: &sync.Mutex{},
-	}
+	entry := newPortForwardEntry(0, resource, "", "", "", 0, false)
+
 	// If we have, return the current entry
 	oldEntry, ok := p.forwardedResources.Load(entry.key())
 
@@ -100,27 +100,30 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 
 // retrieveServiceResources retrieves all services in the cluster matching the given label
 // as a list of PortForwardResources
-func retrieveServiceResources(label string) ([]*latest.PortForwardResource, error) {
-	clientset, err := kubernetes.GetClientset()
+func retrieveServiceResources(label string, namespaces []string) ([]*latest.PortForwardResource, error) {
+	clientset, err := getClientSet()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting clientset")
 	}
-	services, err := clientset.CoreV1().Services("").List(metav1.ListOptions{
-		LabelSelector: label,
-	})
-	if err != nil {
-		return nil, errors.Wrapf(err, "selecting services by label %s", label)
-	}
+
 	var resources []*latest.PortForwardResource
-	for _, s := range services.Items {
-		for _, p := range s.Spec.Ports {
-			resources = append(resources, &latest.PortForwardResource{
-				Type:      constants.Service,
-				Name:      s.Name,
-				Namespace: s.Namespace,
-				Port:      int(p.Port),
-				LocalPort: int(p.Port),
-			})
+	for _, ns := range namespaces {
+		services, err := clientset.CoreV1().Services(ns).List(metav1.ListOptions{
+			LabelSelector: label,
+		})
+		if err != nil {
+			return nil, errors.Wrapf(err, "selecting services by label %s", label)
+		}
+		for _, s := range services.Items {
+			for _, p := range s.Spec.Ports {
+				resources = append(resources, &latest.PortForwardResource{
+					Type:      constants.Service,
+					Name:      s.Name,
+					Namespace: s.Namespace,
+					Port:      int(p.Port),
+					LocalPort: int(p.Port),
+				})
+			}
 		}
 	}
 	return resources, nil
