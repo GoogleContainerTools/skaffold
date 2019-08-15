@@ -285,6 +285,11 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 			return config
 		}
 		return v.Interface()
+	case reflect.Int:
+		if v.Interface() == reflect.Zero(v.Type()).Interface() {
+			return config
+		}
+		return v.Interface()
 	default:
 		logrus.Warnf("unknown field type in profile overlay: %s. falling back to original config values", v.Kind())
 		return config
