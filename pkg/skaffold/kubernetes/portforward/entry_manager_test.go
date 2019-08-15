@@ -39,7 +39,7 @@ func TestNewEntryManager(t *testing.T) {
 		output:             out,
 		forwardedPorts:     newForwardedPorts(),
 		forwardedResources: newForwardedResources(),
-		EntryForwarder:     &KubectlForwarder{kubectl: cli, out: out},
+		EntryForwarder:     NewKubectlForwarder(out, cli),
 	}
 	actual := NewEntryManager(out, cli)
 	if !reflect.DeepEqual(expected, actual) {

@@ -33,6 +33,9 @@ func TestUnavailablePort(t *testing.T) {
 	original := isPortFree
 	defer func() { isPortFree = original }()
 
+	// Return that the port is false, while also
+	// adding a sync group so we know when isPortFree
+	// has been called
 	portFreeWG := &sync.WaitGroup{}
 	portFreeWG.Add(1)
 	isPortFree = func(_ int) bool {
@@ -40,12 +43,17 @@ func TestUnavailablePort(t *testing.T) {
 		return false
 	}
 
+	// Create a wait group that will only be
+	// fulfilled when the forward function returns
+	forwardFunctionWG := &sync.WaitGroup{}
+	forwardFunctionWG.Add(1)
+	originalDefer := deferFunc
+	defer func() { deferFunc = originalDefer }()
+	deferFunc = func() { defer forwardFunctionWG.Done() }
+
 	buf := bytes.NewBuffer([]byte{})
-	wg := &sync.WaitGroup{}
 	k := KubectlForwarder{
-		out:     buf,
-		testing: true,
-		wg:      wg,
+		out: buf,
 	}
 	pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", 8080, false)
 	k.Forward(context.Background(), pfe)
@@ -53,13 +61,13 @@ func TestUnavailablePort(t *testing.T) {
 	// wait for isPortFree to be called
 	portFreeWG.Wait()
 
-	// then, end port forwarding
+	// then, end port forwarding and wait for the forward function to return.
 	pfe.terminationLock.Lock()
 	pfe.terminated = true
 	pfe.terminationLock.Unlock()
-	wg.Wait()
+	forwardFunctionWG.Wait()
 
-	// read output to make sure ports are expected
+	// read output to make sure logs are expected
 	output := buf.String()
 	if !strings.Contains(output, "port 8080 is taken") {
 		t.Fatalf("port wasn't available but didn't get warning, got: \n%s", output)
@@ -93,7 +101,7 @@ func TestMonitorErrorLogs(t *testing.T) {
 			input:       "some random logs",
 			cmdRunning:  true,
 		}, {
-			description: "a match on 'error forwarding port'",
+			description: "match on 'error forwarding port'",
 			input:       "error forwarding port 8080",
 		}, {
 			description: "match on 'unable to forward'",

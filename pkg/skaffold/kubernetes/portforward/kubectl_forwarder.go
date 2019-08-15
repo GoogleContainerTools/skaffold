@@ -23,7 +23,6 @@ import (
 	"io"
 	"os/exec"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -43,14 +42,21 @@ type EntryForwarder interface {
 type KubectlForwarder struct {
 	kubectl *kubectl.CLI
 	out     io.Writer
-	testing bool
-	wg      *sync.WaitGroup
+}
+
+// NewKubectlForwarder returns a new KubectlForwarder
+func NewKubectlForwarder(out io.Writer, cli *kubectl.CLI) *KubectlForwarder {
+	return &KubectlForwarder{
+		out:     out,
+		kubectl: cli,
+	}
 }
 
 var (
 	// For testing
 	isPortFree     = util.IsPortFree
 	portForwardCmd = portForwardCommand
+	deferFunc      = func() {}
 )
 
 // Forward port-forwards a pod using kubectl port-forward in the background
@@ -58,17 +64,13 @@ var (
 // It restarts the command if it was not cancelled by skaffold
 // It retries in case the port is taken
 func (k *KubectlForwarder) Forward(parentCtx context.Context, pfe *portForwardEntry) {
-	if k.testing {
-		k.wg.Add(1)
-	}
 	go k.forward(parentCtx, pfe)
 }
 
 func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEntry) {
 	var notifiedUser bool
-	if k.testing {
-		defer k.wg.Done()
-	}
+	defer deferFunc()
+
 	for {
 		pfe.terminationLock.Lock()
 		if pfe.terminated {
