@@ -96,6 +96,14 @@ func TestForwardedPorts(t *testing.T) {
 		t.Fatal("didn't load port 9000 correctly")
 	}
 
+	if _, ok := pf.LoadOrStore(4000, struct{}{}); ok {
+		t.Fatal("didn't store port 4000 correctly")
+	}
+
+	if _, ok := pf.LoadOrStore(4000, struct{}{}); !ok {
+		t.Fatal("didn't load port 4000 correctly")
+	}
+
 	// Try to store a non int, catch panic
 	defer func() {
 		if r := recover(); r == nil {
