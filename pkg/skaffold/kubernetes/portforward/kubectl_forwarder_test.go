@@ -24,6 +24,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 func TestUnavailablePort(t *testing.T) {
@@ -45,7 +47,7 @@ func TestUnavailablePort(t *testing.T) {
 		testing: true,
 		wg:      wg,
 	}
-	pfe := &portForwardEntry{localPort: 8080, terminationLock: &sync.Mutex{}}
+	pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", 8080, false)
 	k.Forward(context.Background(), pfe)
 
 	// wait for isPortFree to be called
@@ -61,6 +63,22 @@ func TestUnavailablePort(t *testing.T) {
 	output := buf.String()
 	if !strings.Contains(output, "port 8080 is taken") {
 		t.Fatalf("port wasn't available but didn't get warning, got: \n%s", output)
+	}
+}
+
+func TestTerminate(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", 8080, false)
+	pfe.cancel = cancel
+
+	k := &KubectlForwarder{}
+	k.Terminate(pfe)
+	if pfe.terminated != true {
+		t.Fatalf("expected pfe.terminated to be true after termination")
+	}
+	if ctx.Err() != context.Canceled {
+		t.Fatalf("expected cancel to be called")
 	}
 }
 
