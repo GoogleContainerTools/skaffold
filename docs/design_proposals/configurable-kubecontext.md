@@ -3,7 +3,7 @@
 * Author(s): Cornelius Weig (@corneliusweig)
 * Design Shepherd: Balint Pato (@balopat)
 * Date: 29 June 2019
-* Status: [Reviewed/Cancelled/Under implementation/Complete]
+* Status: Under implementation
 
 ## Background
 
@@ -155,47 +155,48 @@ Currently, the Skaffold config uses the kubecontext as identifier.
 
 There are two possibilities to add the relation:
 
-- Reverse the mapping project/kubecontext and save as list under `kube-context` entries:
-  ```yaml
-  kubecontexts:
-  - kube-context: my-context
-    skaffoldConfigs:
-    - config-name
-  ```
-  The drawback here is that the data structure does not forbid conflicting entries, such as this:
-  ```yaml
-  kubecontexts:
-  - kube-context: context1
-    skaffoldConfigs:
-    - my-project
-  - kube-context: context2
-    skaffoldConfigs:
-    - my-project
-  ```
-- Add a new top-level entry in Skaffold config:
-  ```yaml
-  global: {}
-  kubecontexts: []
-  projects:
-    my-project: # project name as the key
-      kube-context: context1
-  ```
-  This option will be more complex to implement wrt `skaffold config`.
+1. Reverse the mapping project/kubecontext and save as list under `kube-context` entries:
+   ```yaml
+   kubecontexts:
+   - kube-context: my-context
+     skaffoldConfigs:
+     - config-name
+   ```
+   The drawback here is that the data structure does not forbid conflicting entries, such as:
+   ```yaml
+   kubecontexts:
+   - kube-context: context1
+     skaffoldConfigs:
+     - my-project
+   - kube-context: context2
+     skaffoldConfigs:
+     - my-project
+   ```
+2. Add a new top-level entry in Skaffold config:
+   ```yaml
+   global: {}
+   kubecontexts: []
+   skaffoldConfigs:
+     my-project: my-context
+     my-other-project: my-other-context
+     '*': default-context
+   ```
+   This option will be more complex to implement wrt `skaffold config`.
 
 ### Open Issues/Questions
 
 **\<What Skaffold config structure has the best tradeoffs?\>**
 
-Resolution: __Not Yet Resolved__
+Resolution: The top-level entry (option 2) overall has the better trade-offs.
 
 ## Implementation plan
-1. Implement the CLI flag and env var variant first. This should also be the most important for the IDE integration.
-2. Implement `skaffold.yaml` variant.
-3. Implement the global Skaffold config variant to override a kubecontext for a skaffold config (`kubecontexts[*].skaffoldConfigs`).
-4. Implement the global Skaffold config variant to set a default kubecontext (`global.default-context`).
-~~5. Implement the namespace functionality.~~ (out of scope)
+1. Implement the CLI flag and env var variant first. This should also be the most important for the IDE integration. [#2447](https://github.com/GoogleContainerTools/skaffold/pull/2447)
+2. Implement `skaffold.yaml` variant. [#2510](https://github.com/GoogleContainerTools/skaffold/pull/2510)
+3. Implement the global Skaffold config variant to override a kubecontext for a skaffold config (`skaffoldConfigs`). [#2558](https://github.com/GoogleContainerTools/skaffold/pull/2558)
+4. Implement the global Skaffold config variant to set a default kubecontext (`skaffoldConfigs['*']`). [#2558](https://github.com/GoogleContainerTools/skaffold/pull/2558)
+5. ~~Implement the namespace functionality.~~ (out of scope)
 
 ## Integration test plan
 
-A single test covers the overall kubecontext override functionality sufficiently.
+A single test covers the overall kubecontext override functionality sufficiently (part of [#2447](https://github.com/GoogleContainerTools/skaffold/pull/2447)).
 Other test-cases such as precedence of the different variants and error cases should be covered by unit tests.
