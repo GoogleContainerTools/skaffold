@@ -135,7 +135,7 @@ func emptyState(build latest.BuildConfig) proto.State {
 		DeployState: &proto.DeployState{
 			Status: NotStarted,
 		},
-		ForwardedPorts: make(map[string]*proto.PortEvent),
+		ForwardedPorts: make(map[int32]*proto.PortEvent),
 	}
 }
 
@@ -267,7 +267,7 @@ func (ev *eventHandler) handle(event *proto.Event) {
 	case *proto.Event_PortEvent:
 		pe := e.PortEvent
 		ev.stateLock.Lock()
-		ev.state.ForwardedPorts[pe.ContainerName] = pe
+		ev.state.ForwardedPorts[pe.LocalPort] = pe
 		ev.stateLock.Unlock()
 		logEntry.Entry = fmt.Sprintf("Forwarding container %s to local port %d", pe.ContainerName, pe.LocalPort)
 	default:
