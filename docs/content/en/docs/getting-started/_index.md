@@ -22,9 +22,7 @@ In this quickstart, you will:
 * [Install Docker](https://www.docker.com/get-started)
 * [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 * Configure `kubectl` to connect to a Kubernetes cluster. You can use
-    * any Kubernetes platform with Skaffold; see [Picking the Right Solution](https://kubernetes.io/docs/setup/pick-right-solution/)
-    from Kubernetes documentation for instructions on choosing the
-    right platform.
+    * any Kubernetes platform with Skaffold.
     * [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine/)
     is a hosted Kubernetes solution. To set up `kubectl` with Google Kubernetes Engine,
     see [Kubernetes Engine Quickstart](https://cloud.google.com/kubernetes-engine/docs/quickstart).
