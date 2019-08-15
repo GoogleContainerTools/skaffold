@@ -1,3 +1,66 @@
+# v0.36.0 Release - 08/15/2019
+
+New Features:
+
+* Add CLI option `--kube-context` to override the kubecontext in Skaffold [#2447](https://github.com/GoogleContainerTools/skaffold/pull/2447)
+* Set artifact caching on by default [#2621](https://github.com/GoogleContainerTools/skaffold/pull/2621)
+* Add flag `status-check-deadline` instead of default 10 minutes [#2591](https://github.com/GoogleContainerTools/skaffold/pull/2591)
+* skaffold generate-pipeline command (experimental) [#2567](https://github.com/GoogleContainerTools/skaffold/pull/2567)
+
+Bug Fixes:
+
+* Pass minikube docker configuration to container-structure-test [#2597](https://github.com/GoogleContainerTools/skaffold/pull/2597)
+* Use pointers for connection listeners so they can be closed properly [#2652](https://github.com/GoogleContainerTools/skaffold/pull/2652)
+* Don't look up services in all namespaces. [#2651](https://github.com/GoogleContainerTools/skaffold/pull/2651)
+* Add CLI flag `--config` for configuring the global config location [#2555](https://github.com/GoogleContainerTools/skaffold/pull/2555)
+* Fix kaniko permissions with generate-pipeline command [#2622](https://github.com/GoogleContainerTools/skaffold/pull/2622)
+* Fix remoteManifests [#2258](https://github.com/GoogleContainerTools/skaffold/pull/2258)
+* docker auth: use GetAllCredentials() to use credHelpers [#2573](https://github.com/GoogleContainerTools/skaffold/pull/2573)
+* Add missing digest when setting helm image tag [#2624](https://github.com/GoogleContainerTools/skaffold/pull/2624)
+* Make sure we mute/unmute logs at the correct times [#2602](https://github.com/GoogleContainerTools/skaffold/pull/2602)
+
+
+Updates & Refactors:
+
+* Merge global and context-specific array settings in Skaffold config [#2590](https://github.com/GoogleContainerTools/skaffold/pull/2590)
+* Add unit test for LoadOrStore  [#2649](https://github.com/GoogleContainerTools/skaffold/pull/2649)
+* Add constructor for creating portForwardEntry [#2648](https://github.com/GoogleContainerTools/skaffold/pull/2648)
+* Link task resources in generate-pipeline output [#2638](https://github.com/GoogleContainerTools/skaffold/pull/2638)
+* Select resources by UUID label [#2609](https://github.com/GoogleContainerTools/skaffold/pull/2609)
+* Collect namespaces of deployed resources. [#2640](https://github.com/GoogleContainerTools/skaffold/pull/2640)
+* Add port forwarding integration test [#2623](https://github.com/GoogleContainerTools/skaffold/pull/2623)
+* Fix issue with remote Kustomizations in dev mode. (#2581) [#2611](https://github.com/GoogleContainerTools/skaffold/pull/2611)
+* Watch all artifact workspaces, including those outside of the working directory [#2614](https://github.com/GoogleContainerTools/skaffold/pull/2614)
+* Make skaffold-generate pipeline command hidden [#2616](https://github.com/GoogleContainerTools/skaffold/pull/2616)
+* refactor code used by pkg/skaffold/runner/generate_pipeline.go [#2617](https://github.com/GoogleContainerTools/skaffold/pull/2617)
+* Update skaffold init --artifact to use JSON structs instead of paths [#2364](https://github.com/GoogleContainerTools/skaffold/pull/2364)
+* fix travis build + docs whitespaces to trigger build [#2610](https://github.com/GoogleContainerTools/skaffold/pull/2610)
+* Update .travis.yml [#2600](https://github.com/GoogleContainerTools/skaffold/pull/2600)
+* build master only on travis CI [#2607](https://github.com/GoogleContainerTools/skaffold/pull/2607)
+
+Docs: 
+
+* Design proposal for configurable kubecontext [#2384](https://github.com/GoogleContainerTools/skaffold/pull/2384)
+* Removed broken link, since the page doesn't exists anymore [#2644](https://github.com/GoogleContainerTools/skaffold/pull/2644)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Balint Pato
+- bpopovschi
+- Chanseok Oh
+- Cornelius Weig
+- Filip Krakowski
+- Jason McClellan
+- Marlon Gamez
+- Matt Brown
+- Nick Kubala
+- Priya Wadhwa
+- Tad Cordle
+- Tanner Bruce
+- Tejal Desai
+
+
 # v0.35.0 Release - 08/02/2019
 
 *Note for Jib users*: The Jib binding has changed and projects are now required to use
