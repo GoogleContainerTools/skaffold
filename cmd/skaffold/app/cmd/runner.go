@@ -66,9 +66,9 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 		return nil, nil, errors.Wrap(err, "parsing skaffold config")
 	}
 
-	config := parsed.(*latest.SkaffoldConfig)
+	cfg := parsed.(*latest.SkaffoldConfig)
 
-	if kubeContext, err := pkgconfig.GetKubeContext(opts.GlobalConfig, config.Metadata.Name, opts.KubeContext); err != nil {
+	if kubeContext, err := config.GetKubeContext(opts.GlobalConfig, cfg.Metadata.Name, opts.KubeContext); err != nil {
 		return nil, nil, errors.Wrap(err, "resolving kubeContext from config")
 	} else {
 		// Do this before profile application, in order to
@@ -76,31 +76,31 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 		kubectx.UseKubeContext(kubeContext)
 	}
 
-	if err = schema.ApplyProfiles(config, opts); err != nil {
+	if err = schema.ApplyProfiles(cfg, opts); err != nil {
 		return nil, nil, errors.Wrap(err, "applying profiles")
 	}
 
-	if err := defaults.Set(config); err != nil {
+	if err := defaults.Set(cfg); err != nil {
 		return nil, nil, errors.Wrap(err, "setting default values")
 	}
 
-	if err := validation.Process(config); err != nil {
+	if err := validation.Process(cfg); err != nil {
 		return nil, nil, errors.Wrap(err, "invalid skaffold config")
 	}
 
-	runCtx, err := runcontext.GetRunContext(opts, config.Pipeline)
+	runCtx, err := runcontext.GetRunContext(opts, cfg.Pipeline)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting run context")
 	}
 
-	applyDefaultRepoSubstitution(config, runCtx.DefaultRepo)
+	applyDefaultRepoSubstitution(cfg, runCtx.DefaultRepo)
 
 	runner, err := runner.NewForConfig(runCtx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "creating runner")
 	}
 
-	return runner, config, nil
+	return runner, cfg, nil
 }
 
 func warnIfUpdateIsAvailable() {
