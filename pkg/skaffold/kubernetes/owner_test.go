@@ -21,6 +21,9 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
+	batchv1 "k8s.io/api/batch/v1"
+	batchv1beta1 "k8s.io/api/batch/v1beta1"
+
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -165,6 +168,106 @@ func TestOwnerMetaObject(t *testing.T) {
 			expected: &appsv1.ReplicaSet{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "rs",
+					Namespace: "ns",
+				},
+			},
+		}, {
+			description: "getting a job",
+			or: metav1.OwnerReference{
+				Kind: "Job",
+				Name: "job",
+			},
+			objects: []runtime.Object{
+				&batchv1.Job{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "job",
+						Namespace: "ns",
+					},
+				},
+			},
+			expected: &batchv1.Job{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "job",
+					Namespace: "ns",
+				},
+			},
+		}, {
+			description: "getting a cronjob",
+			or: metav1.OwnerReference{
+				Kind: "CronJob",
+				Name: "cj",
+			},
+			objects: []runtime.Object{
+				&batchv1beta1.CronJob{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "cj",
+						Namespace: "ns",
+					},
+				},
+			},
+			expected: &batchv1beta1.CronJob{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "cj",
+					Namespace: "ns",
+				},
+			},
+		}, {
+			description: "getting a statefulset",
+			or: metav1.OwnerReference{
+				Kind: "StatefulSet",
+				Name: "ss",
+			},
+			objects: []runtime.Object{
+				&appsv1.StatefulSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "ss",
+						Namespace: "ns",
+					},
+				},
+			},
+			expected: &appsv1.StatefulSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ss",
+					Namespace: "ns",
+				},
+			},
+		}, {
+			description: "getting a replicationcontroller",
+			or: metav1.OwnerReference{
+				Kind: "ReplicationController",
+				Name: "rc",
+			},
+			objects: []runtime.Object{
+				&v1.ReplicationController{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "rc",
+						Namespace: "ns",
+					},
+				},
+			},
+			expected: &v1.ReplicationController{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "rc",
+					Namespace: "ns",
+				},
+			},
+		}, {
+			description: "getting a pod",
+			or: metav1.OwnerReference{
+				Kind: "Pod",
+				Name: "po",
+			},
+			objects: []runtime.Object{
+				&v1.Pod{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "po",
+						Namespace: "ns",
+					},
+				},
+			},
+			expected: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "po",
 					Namespace: "ns",
 				},
 			},
