@@ -37,12 +37,24 @@ func IntegrationTest(ctx context.Context, defaultLabeller *deploy.DefaultLabelle
 	}
 	kubeCtl := kubectl.NewFromRunContext(runCtx)
 
-	pod, err := getPod(client, runCtx.Opts.Namespace, runCtx.Cfg.IntegrationTest.PodSelector)
+	podSelector := runCtx.Cfg.IntegrationTest.PodSelector
+
+	if len(podSelector) == 0 {
+		return "", errors.Errorf("no PodSelector defined")
+	}
+
+	pod, err := getPod(client, podSelector)
 	if err != nil {
 		return "", errors.Wrap(err, "getting pod for integration test")
 	}
 
-	output, err := executeIntegrationTest(ctx, kubeCtl, pod, runCtx.Cfg.IntegrationTest.TestCommand)
+	testCommand := runCtx.Cfg.IntegrationTest.TestCommand
+
+	if len(testCommand) == 0 {
+		return "", errors.Errorf("no TestCommand defined")
+	}
+
+	output, err := executeIntegrationTest(ctx, kubeCtl, pod, testCommand)
 	return output, err
 }
 
@@ -53,12 +65,11 @@ func executeIntegrationTest(ctx context.Context, k *kubectl.CLI, podName string,
 
 	err := k.Run(ctx, nil, &buf, "exec", arguments...)
 
-	//b, err := k.RunOut(ctx, "exec", arguments...)
 	return buf.String(), err
 }
 
-func getPod(client kubernetes.Interface, ns string, selector string) (string, error) {
-	pods, err := client.CoreV1().Pods(ns).List(metav1.ListOptions{
+func getPod(client kubernetes.Interface, selector string) (string, error) {
+	pods, err := client.CoreV1().Pods("").List(metav1.ListOptions{
 		LabelSelector: selector,
 	})
 	if err != nil {

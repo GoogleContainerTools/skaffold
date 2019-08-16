@@ -153,6 +153,6 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 func (r *SkaffoldRunner) ExecIntegrationTest(ctx context.Context, out io.Writer) error {
 	output, err := integrationtest.IntegrationTest(ctx, r.defaultLabeller, r.runCtx)
-	fmt.Printf("%+v\n", output)
+	color.Default.Fprintf(out, "%+v\n", output)
 	return err
 }

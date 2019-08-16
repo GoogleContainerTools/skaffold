@@ -59,6 +59,8 @@ To edit this file above edit index_header - the rest of the file is autogenerate
 
 
 ```
+
+
 End-to-end pipelines:
   run               Run a pipeline
   dev               Run a pipeline in development mode
@@ -67,7 +69,7 @@ End-to-end pipelines:
 Pipeline building blocks for CI/CD:
   build             Build the artifacts
   deploy            Deploy pre-built artifacts
-  integrationtest Run integrations tests in pod
+  integrationtest   Run integrations tests in pod
   delete            Delete the deployed application
 
 Getting started with a new project:
@@ -82,6 +84,8 @@ Other Commands:
 
 Use "skaffold <command> --help" for more information about a given command.
 Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
 ```
 Env vars:
 
