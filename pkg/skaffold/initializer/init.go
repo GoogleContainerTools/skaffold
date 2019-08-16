@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -430,7 +431,18 @@ func suggestConfigName() (string, error) {
 		return "", nil
 	}
 
-	return base, nil
+	return canonicalizeName(base), nil
+}
+
+// canonicalizeName converts a given string to a valid k8s name string.
+// See https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names for details
+func canonicalizeName(name string) string {
+	forbidden := regexp.MustCompile(`[^-.a-z]+`)
+	canonicalized := forbidden.ReplaceAllString(strings.ToLower(name), "-")
+	if len(canonicalized) <= 253 {
+		return canonicalized
+	}
+	return canonicalized[:253]
 }
 
 func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
