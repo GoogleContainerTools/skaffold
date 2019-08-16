@@ -158,9 +158,9 @@ func TestPortForwarded(t *testing.T) {
 		state: emptyState(latest.BuildConfig{}),
 	}
 
-	wait(t, func() bool { return handler.getState().ForwardedPorts["container"] == nil })
+	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] == nil })
 	PortForwarded(8080, 8888, "pod", "container", "ns", "portname", "resourceType", "resourceName")
-	wait(t, func() bool { return handler.getState().ForwardedPorts["container"] != nil })
+	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] != nil })
 }
 
 func wait(t *testing.T, condition func() bool) {
