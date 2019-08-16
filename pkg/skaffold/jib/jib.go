@@ -28,9 +28,11 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
 const (
@@ -228,4 +230,16 @@ func relativize(path string, roots ...string) (string, error) {
 		}
 	}
 	return "", errors.New("could not relativize path")
+}
+
+// isOnInsecureRegistry checks if the given image specifies an insecure registry
+func isOnInsecureRegistry(image string, insecureRegistries map[string]bool) bool {
+	ref, err := name.ParseReference(image)
+	if err != nil {
+		// ignore the error as the image should have been validated before this
+		return false
+	}
+
+	registry := ref.Context().Registry.Name()
+	return docker.IsInsecure(registry, insecureRegistries)
 }

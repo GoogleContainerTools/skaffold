@@ -51,11 +51,17 @@ func getCommandGradle(ctx context.Context, workspace string, a *latest.JibGradle
 }
 
 // GenerateGradleArgs generates the arguments to Gradle for building the project as an image.
-func GenerateGradleArgs(task string, imageName string, a *latest.JibGradleArtifact, skipTests bool) []string {
+func GenerateGradleArgs(task string, imageName string, a *latest.JibGradleArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
 	// disable jib's rich progress footer; we could use `--console=plain`
 	// but it also disables colour which can be helpful
 	args := []string{"-Djib.console=plain"}
 	args = append(args, gradleCommand(a, task)...)
+
+	if isOnInsecureRegistry(imageName, insecureRegistries) {
+		// jib doesn't support marking specific registries as insecure
+		args = append(args, "-Djib.allowInsecureRegistries=true")
+	}
+
 	args = append(args, "--image="+imageName)
 	if skipTests {
 		args = append(args, "-x", "test")

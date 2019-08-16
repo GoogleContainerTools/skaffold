@@ -51,7 +51,7 @@ func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenAr
 }
 
 // GenerateMavenArgs generates the arguments to Maven for building the project as an image.
-func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact, skipTests bool) []string {
+func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
 	// disable jib's rich progress footer on builds; we could use --batch-mode
 	// but it also disables colour which can be helpful
 	args := []string{"-Djib.console=plain"}
@@ -69,6 +69,10 @@ func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact
 		args = append(args, "package", "jib:"+goal, "-Djib.containerize="+a.Module)
 	}
 
+	if isOnInsecureRegistry(imageName, insecureRegistries) {
+		// jib doesn't support marking specific registries as insecure
+		args = append(args, "-Djib.allowInsecureRegistries=true")
+	}
 	args = append(args, "-Dimage="+imageName)
 
 	return args
