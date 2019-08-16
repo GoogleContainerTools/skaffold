@@ -645,6 +645,7 @@ profiles:
 		})
 
 		t.CheckNoError(err)
+		// a side-effect of profile activation is that kubectx.CurrentConfig() reports a changed current context
 		cfg, err := kubectx.CurrentConfig()
 		t.CheckNoError(err)
 		t.CheckDeepEqual("prod-context", cfg.CurrentContext)

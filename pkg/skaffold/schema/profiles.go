@@ -59,19 +59,21 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 		}
 	}
 
-	if opts.KubeContext != "" {
+	return enableEffectiveKubecontext(isContextSpecific, opts.KubeContext, c.Deploy.KubeContext)
+}
+
+func enableEffectiveKubecontext(contextMustNotChange bool, cliContext, effectiveContext string) error {
+	// cli flag takes precedence
+	if cliContext != "" {
 		return nil
 	}
 
-	return enableEffectiveKubecontext(isContextSpecific, c.Deploy.KubeContext)
-}
-
-func enableEffectiveKubecontext(contextMustNotChange bool, effectiveContext string) error {
 	kubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
 		return errors.Wrap(err, "getting current cluster context")
 	}
 
+	// nothing to do
 	if effectiveContext == "" || effectiveContext == kubeConfig.CurrentContext {
 		return nil
 	}
