@@ -77,21 +77,19 @@ func TestTopLevelOwnerKey(t *testing.T) {
 		objects       []runtime.Object
 		expected      string
 	}{
-		// {
-		// 	description:   "owner is two levels up",
-		// 	initialObject: pod,
-		// 	kind:          "Pod",
-		// 	objects:       []runtime.Object{pod, rs, deployment},
-		// 	expected:      "Deployment-dep",
-		// },
 		{
+			description:   "owner is two levels up",
+			initialObject: pod,
+			kind:          "Pod",
+			objects:       []runtime.Object{pod, rs, deployment},
+			expected:      "Deployment-dep",
+		}, {
 			description:   "object is owner",
 			initialObject: deployment,
 			kind:          "Deployment",
 			objects:       []runtime.Object{pod, rs, deployment},
 			expected:      "Deployment-dep",
-		},
-		{
+		}, {
 			description:   "error, owner doesn't exist",
 			initialObject: pod,
 			kind:          "Pod",
