@@ -23,15 +23,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	fieldMainPipeline    = "Pipeline"
-	fieldProfilePipeline = "Pipeline"
-	fieldProfile         = "Profiles"
-)
-
 type pipelineUpgrader struct {
-	oldConfig, newConfig reflect.Value
-	upgrade              func(o, n interface{}) error
+	oldConfig reflect.Value
+	newConfig reflect.Value
+	upgrade   func(o, n interface{}) error
 }
 
 func UpgradePipelines(oldConfig, newConfig interface{}, upgrade func(o, n interface{}) error) (err error) {
@@ -62,6 +57,8 @@ func UpgradePipelines(oldConfig, newConfig interface{}, upgrade func(o, n interf
 }
 
 func (u *pipelineUpgrader) mainPipeline() error {
+	const fieldMainPipeline = "Pipeline"
+
 	oldPipeline := u.oldConfig.FieldByName(fieldMainPipeline).Addr().Interface()
 	newPipeline := u.newConfig.FieldByName(fieldMainPipeline).Addr().Interface()
 
@@ -70,8 +67,13 @@ func (u *pipelineUpgrader) mainPipeline() error {
 }
 
 func (u *pipelineUpgrader) profiles() error {
-	profilesOld := u.oldConfig.FieldByName(fieldProfile)
-	profilesNew := u.newConfig.FieldByName(fieldProfile)
+	const (
+		fieldProfilePipeline = "Pipeline"
+		fieldProfiles        = "Profiles"
+	)
+
+	profilesOld := u.oldConfig.FieldByName(fieldProfiles)
+	profilesNew := u.newConfig.FieldByName(fieldProfiles)
 
 	if profilesOld.Len() != profilesNew.Len() {
 		return fmt.Errorf("lengths of old and new profiles differ")
