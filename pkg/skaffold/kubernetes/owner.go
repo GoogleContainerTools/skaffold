@@ -46,28 +46,28 @@ func TopLevelOwnerKey(obj metav1.Object, kind string) string {
 	}
 }
 
-func ownerMetaObject(ns string, or metav1.OwnerReference) (metav1.Object, error) {
+func ownerMetaObject(ns string, owner metav1.OwnerReference) (metav1.Object, error) {
 	client, err := getClientSet()
 	if err != nil {
 		return nil, err
 	}
 
-	switch or.Kind {
+	switch owner.Kind {
 	case "Deployment":
-		return client.AppsV1().Deployments(ns).Get(or.Name, metav1.GetOptions{})
+		return client.AppsV1().Deployments(ns).Get(owner.Name, metav1.GetOptions{})
 	case "ReplicaSet":
-		return client.AppsV1().ReplicaSets(ns).Get(or.Name, metav1.GetOptions{})
+		return client.AppsV1().ReplicaSets(ns).Get(owner.Name, metav1.GetOptions{})
 	case "Job":
-		return client.BatchV1().Jobs(ns).Get(or.Name, metav1.GetOptions{})
+		return client.BatchV1().Jobs(ns).Get(owner.Name, metav1.GetOptions{})
 	case "CronJob":
-		return client.BatchV1beta1().CronJobs(ns).Get(or.Name, metav1.GetOptions{})
+		return client.BatchV1beta1().CronJobs(ns).Get(owner.Name, metav1.GetOptions{})
 	case "StatefulSet":
-		return client.AppsV1().StatefulSets(ns).Get(or.Name, metav1.GetOptions{})
+		return client.AppsV1().StatefulSets(ns).Get(owner.Name, metav1.GetOptions{})
 	case "ReplicationController":
-		return client.CoreV1().ReplicationControllers(ns).Get(or.Name, metav1.GetOptions{})
+		return client.CoreV1().ReplicationControllers(ns).Get(owner.Name, metav1.GetOptions{})
 	case "Pod":
-		return client.CoreV1().Pods(ns).Get(or.Name, metav1.GetOptions{})
+		return client.CoreV1().Pods(ns).Get(owner.Name, metav1.GetOptions{})
 	default:
-		return nil, fmt.Errorf("kind %s is not supported", or.Kind)
+		return nil, fmt.Errorf("kind %s is not supported", owner.Kind)
 	}
 }
