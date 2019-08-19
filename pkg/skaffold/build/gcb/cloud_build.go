@@ -124,7 +124,7 @@ watch:
 			if err == nil {
 				return true, nil
 			}
-			if strings.Contains(err.Error(), "Quota exceeded") {
+			if strings.Contains(err.Error(), "Error 429: Quota exceeded for quota metric 'cloudbuild.googleapis.com/get_requests'") {
 				// if we hit the rate limit, continue to retry
 				return false, nil
 			}
