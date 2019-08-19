@@ -14,10 +14,14 @@ branches:
 jobs:
   include:
     - os: linux
-      name: "Linux unit + checks"
+      name: "checks"
+      script:
+        - make checks
+    - os: linux
+      name: "Linux unit"
       script:
         - make
-        - make test
+        - make quicktest
       after_success:
         - bash <(curl -s https://codecov.io/bash)
     - os: osx

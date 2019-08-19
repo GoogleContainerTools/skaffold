@@ -101,6 +101,10 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 test: $(BUILD_DIR)
 	@ ./hack/test.sh
 
+.PHONY: checks
+checks: $(BUILD_DIR)
+	@ ./hack/checks.sh
+
 .PHONY: quicktest
 quicktest:
 	go test -short -timeout=60s ./...
