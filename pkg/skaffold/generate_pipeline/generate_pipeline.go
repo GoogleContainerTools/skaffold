@@ -36,7 +36,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func Yaml(out io.Writer, config *latest.SkaffoldConfig, profile *latest.Profile) (*bytes.Buffer, error) {
+// Struct keeps track of config files and their corresponding SkaffoldConfigs and generated Profiles
+type ConfigFile struct {
+	Name    string
+	Config  *latest.SkaffoldConfig
+	Profile *latest.Profile
+}
+
+func Yaml(out io.Writer, configFile *ConfigFile) (*bytes.Buffer, error) {
 	// Generate git resource for pipeline
 	gitResource, err := generateGitResource()
 	if err != nil {
@@ -45,14 +52,14 @@ func Yaml(out io.Writer, config *latest.SkaffoldConfig, profile *latest.Profile)
 
 	// Generate build task for pipeline
 	var tasks []*tekton.Task
-	taskBuild, err := generateBuildTask(profile.Pipeline.Build)
+	taskBuild, err := generateBuildTask(configFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating build task")
 	}
 	tasks = append(tasks, taskBuild)
 
 	// Generate deploy task for pipeline
-	taskDeploy, err := generateDeployTask(config.Pipeline.Deploy)
+	taskDeploy, err := generateDeployTask(configFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating deploy task")
 	}
@@ -110,7 +117,8 @@ func generateGitResource() (*tekton.PipelineResource, error) {
 	return pipeline.NewGitResource("source-git", gitURL), nil
 }
 
-func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
+func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
+	buildConfig := configFile.Profile.Build
 	if len(buildConfig.Artifacts) == 0 {
 		return nil, errors.New("no artifacts to build")
 	}
@@ -135,6 +143,7 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 			WorkingDir: "/workspace/source",
 			Command:    []string{"skaffold", "build"},
 			Args: []string{
+				"--filename", "/workspace/" + configFile.Name,
 				"--profile", "oncluster",
 				"--file-output", "build.out",
 			},
@@ -171,7 +180,8 @@ func generateBuildTask(buildConfig latest.BuildConfig) (*tekton.Task, error) {
 	return pipeline.NewTask("skaffold-build", inputs, outputs, steps, volumes), nil
 }
 
-func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) {
+func generateDeployTask(configFile *ConfigFile) (*tekton.Task, error) {
+	deployConfig := configFile.Config.Deploy
 	if deployConfig.HelmDeploy == nil && deployConfig.KubectlDeploy == nil && deployConfig.KustomizeDeploy == nil {
 		return nil, errors.New("no Helm/Kubectl/Kustomize deploy config")
 	}
@@ -195,6 +205,7 @@ func generateDeployTask(deployConfig latest.DeployConfig) (*tekton.Task, error) 
 			WorkingDir: "/workspace/source",
 			Command:    []string{"skaffold", "deploy"},
 			Args: []string{
+				"--filename", "/workspace/" + configFile.Name,
 				"--build-artifacts", "build.out",
 			},
 		},

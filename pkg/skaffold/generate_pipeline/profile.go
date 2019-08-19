@@ -32,15 +32,16 @@ import (
 	yamlv2 "gopkg.in/yaml.v2"
 )
 
-func CreateSkaffoldProfile(out io.Writer, config *latest.SkaffoldConfig, configFile string) (*latest.Profile, error) {
+func CreateSkaffoldProfile(out io.Writer, configFile *ConfigFile) error {
 	reader := bufio.NewReader(os.Stdin)
 
 	// Check for existing oncluster profile, if none exists then prompt to create one
-	color.Default.Fprintln(out, "Checking for oncluster skaffold profile...")
-	for _, profile := range config.Profiles {
+	color.Default.Fprintf(out, "Checking for oncluster skaffold profile in %s...\n", configFile.Name)
+	for _, profile := range configFile.Config.Profiles {
 		if profile.Name == "oncluster" {
 			color.Default.Fprintln(out, "profile \"oncluster\" found")
-			return &profile, nil
+			configFile.Profile = &profile
+			return nil
 		}
 	}
 
@@ -49,7 +50,7 @@ confirmLoop:
 		color.Default.Fprintf(out, "No profile \"oncluster\" found. Create one? [y/n]: ")
 		response, err := reader.ReadString('\n')
 		if err != nil {
-			return nil, errors.Wrap(err, "reading user confirmation")
+			return errors.Wrap(err, "reading user confirmation")
 		}
 
 		response = strings.ToLower(strings.TrimSpace(response))
@@ -57,29 +58,29 @@ confirmLoop:
 		case "y", "yes":
 			break confirmLoop
 		case "n", "no":
-			return nil, nil
+			return nil
 		}
 	}
 
 	color.Default.Fprintln(out, "Creating skaffold profile \"oncluster\"...")
-	profile, err := generateProfile(out, config)
+	profile, err := generateProfile(out, configFile.Config)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating profile \"oncluster\"")
+		return errors.Wrap(err, "generating profile \"oncluster\"")
 	}
 
 	bProfile, err := yamlv2.Marshal([]*latest.Profile{profile})
 	if err != nil {
-		return nil, errors.Wrap(err, "marshaling new profile")
+		return errors.Wrap(err, "marshaling new profile")
 	}
 
-	fileContents, err := ioutil.ReadFile(configFile)
+	fileContents, err := ioutil.ReadFile(configFile.Name)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading file contents")
+		return errors.Wrap(err, "reading file contents")
 	}
 	fileStrings := strings.Split(strings.TrimSpace(string(fileContents)), "\n")
 
 	var profilePos int
-	if len(config.Profiles) == 0 {
+	if len(configFile.Config.Profiles) == 0 {
 		// Create new profiles section
 		fileStrings = append(fileStrings, "profiles:")
 		profilePos = len(fileStrings)
@@ -97,11 +98,12 @@ confirmLoop:
 
 	fileContents = []byte((strings.Join(fileStrings, "\n")))
 
-	if err := ioutil.WriteFile(configFile, fileContents, 0644); err != nil {
-		return nil, errors.Wrap(err, "writing profile to skaffold config")
+	if err := ioutil.WriteFile(configFile.Name, fileContents, 0644); err != nil {
+		return errors.Wrap(err, "writing profile to skaffold config")
 	}
 
-	return profile, nil
+	configFile.Profile = profile
+	return nil
 }
 
 func generateProfile(out io.Writer, config *latest.SkaffoldConfig) (*latest.Profile, error) {
