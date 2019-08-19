@@ -276,11 +276,7 @@ func TestOwnerMetaObject(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			objs := make([]runtime.Object, len(test.objects))
-			for i, s := range test.objects {
-				objs[i] = s
-			}
-			client := fakekubeclientset.NewSimpleClientset(objs...)
+			client := fakekubeclientset.NewSimpleClientset(test.objects...)
 			t.Override(&getClientSet, mockClient(client))
 			actual, err := ownerMetaObject("ns", test.or)
 			t.CheckNoError(err)
