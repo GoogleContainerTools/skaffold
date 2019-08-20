@@ -30,14 +30,21 @@ import (
 )
 
 func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, config *latest.SkaffoldConfig, fileOut string) error {
+	// Keep track of files, configs, and profiles. This will be used to know which files to write
+	// profiles to and what flags to add to task commands
+	configFile := &pipeline.ConfigFile{
+		Path:    r.runCtx.Opts.ConfigurationFile,
+		Config:  config,
+		Profile: nil,
+	}
+
 	color.Default.Fprintln(out, "Running profile setup...")
-	profile, err := pipeline.CreateSkaffoldProfile(out, config, r.runCtx.Opts.ConfigurationFile)
-	if err != nil {
-		return errors.Wrap(err, "setting up profile")
+	if err := pipeline.CreateSkaffoldProfile(out, configFile); err != nil {
+		return errors.Wrap(err, "seeting up profile")
 	}
 
 	color.Default.Fprintln(out, "Generating Pipeline...")
-	pipelineYaml, err := pipeline.Yaml(out, config, profile)
+	pipelineYaml, err := pipeline.Yaml(out, configFile)
 	if err != nil {
 		return errors.Wrap(err, "generating pipeline yaml contents")
 	}
