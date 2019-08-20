@@ -23,6 +23,56 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func TestGenerateBuildTasks(t *testing.T) {
+	var tests = []struct {
+		description string
+		configFiles []*ConfigFile
+		shouldErr   bool
+	}{
+		{
+			description: "successfully generate build tasks",
+			configFiles: []*ConfigFile{
+				{
+					Path: "test1",
+					Profile: &latest.Profile{
+						Pipeline: latest.Pipeline{
+							Build: latest.BuildConfig{
+								Artifacts: []*latest.Artifact{
+									{
+										ImageName: "testArtifact1",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Path: "test2",
+					Profile: &latest.Profile{
+						Pipeline: latest.Pipeline{
+							Build: latest.BuildConfig{
+								Artifacts: []*latest.Artifact{
+									{
+										ImageName: "testArtifact2",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			shouldErr: false,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			_, err := generateBuildTasks(test.configFiles)
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
 func TestGenerateBuildTask(t *testing.T) {
 	var tests = []struct {
 		description string
@@ -60,6 +110,52 @@ func TestGenerateBuildTask(t *testing.T) {
 				},
 			}
 			_, err := generateBuildTask(configFile)
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
+func TestGenerateDeployTasks(t *testing.T) {
+	var tests = []struct {
+		description string
+		configFiles []*ConfigFile
+		shouldErr   bool
+	}{
+		{
+			description: "successfully generate deploy tasks",
+			configFiles: []*ConfigFile{
+				{
+					Path: "test1",
+					Config: &latest.SkaffoldConfig{
+						Pipeline: latest.Pipeline{
+							Deploy: latest.DeployConfig{
+								DeployType: latest.DeployType{
+									HelmDeploy: &latest.HelmDeploy{},
+								},
+							},
+						},
+					},
+				},
+				{
+					Path: "test2",
+					Config: &latest.SkaffoldConfig{
+						Pipeline: latest.Pipeline{
+							Deploy: latest.DeployConfig{
+								DeployType: latest.DeployType{
+									HelmDeploy: &latest.HelmDeploy{},
+								},
+							},
+						},
+					},
+				},
+			},
+			shouldErr: false,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			_, err := generateDeployTasks(test.configFiles)
 			t.CheckError(test.shouldErr, err)
 		})
 	}

@@ -109,7 +109,7 @@ func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
 func generateDeployTasks(configFiles []*ConfigFile) ([]*tekton.Task, error) {
 	var tasks []*tekton.Task
 	for _, configFile := range configFiles {
-		task, err := generateBuildTask(configFile)
+		task, err := generateDeployTask(configFile)
 		if err != nil {
 			return nil, err
 		}
