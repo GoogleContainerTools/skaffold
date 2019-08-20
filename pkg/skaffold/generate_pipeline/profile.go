@@ -36,7 +36,7 @@ func CreateSkaffoldProfile(out io.Writer, configFile *ConfigFile) error {
 	reader := bufio.NewReader(os.Stdin)
 
 	// Check for existing oncluster profile, if none exists then prompt to create one
-	color.Default.Fprintf(out, "Checking for oncluster skaffold profile in %s...\n", configFile.Name)
+	color.Default.Fprintf(out, "Checking for oncluster skaffold profile in %s...\n", configFile.Path)
 	for _, profile := range configFile.Config.Profiles {
 		if profile.Name == "oncluster" {
 			color.Default.Fprintln(out, "profile \"oncluster\" found")
@@ -73,7 +73,7 @@ confirmLoop:
 		return errors.Wrap(err, "marshaling new profile")
 	}
 
-	fileContents, err := ioutil.ReadFile(configFile.Name)
+	fileContents, err := ioutil.ReadFile(configFile.Path)
 	if err != nil {
 		return errors.Wrap(err, "reading file contents")
 	}
@@ -98,7 +98,7 @@ confirmLoop:
 
 	fileContents = []byte((strings.Join(fileStrings, "\n")))
 
-	if err := ioutil.WriteFile(configFile.Name, fileContents, 0644); err != nil {
+	if err := ioutil.WriteFile(configFile.Path, fileContents, 0644); err != nil {
 		return errors.Wrap(err, "writing profile to skaffold config")
 	}
 

@@ -34,7 +34,7 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 	// profiles to and what flags to add to task commands
 	configFiles := []*pipeline.ConfigFile{
 		{
-			Name:    r.runCtx.Opts.ConfigurationFile,
+			Path:    r.runCtx.Opts.ConfigurationFile,
 			Config:  config,
 			Profile: nil,
 		},

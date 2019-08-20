@@ -34,9 +34,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// Struct keeps track of config files and their corresponding SkaffoldConfigs and generated Profiles
+// ConfigFile keeps track of config files and their corresponding SkaffoldConfigs and generated Profiles
 type ConfigFile struct {
-	Name    string
+	Path    string
 	Config  *latest.SkaffoldConfig
 	Profile *latest.Profile
 }
