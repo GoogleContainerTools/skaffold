@@ -41,7 +41,7 @@ type ConfigFile struct {
 	Profile *latest.Profile
 }
 
-func Yaml(out io.Writer, configFile *ConfigFile) (*bytes.Buffer, error) {
+func Yaml(out io.Writer, configFiles []*ConfigFile) (*bytes.Buffer, error) {
 	// Generate git resource for pipeline
 	gitResource, err := generateGitResource()
 	if err != nil {
@@ -50,18 +50,18 @@ func Yaml(out io.Writer, configFile *ConfigFile) (*bytes.Buffer, error) {
 
 	// Generate build task for pipeline
 	var tasks []*tekton.Task
-	taskBuild, err := generateBuildTask(configFile)
+	buildTasks, err := generateBuildTasks(configFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating build task")
 	}
-	tasks = append(tasks, taskBuild)
+	tasks = append(tasks, buildTasks...)
 
 	// Generate deploy task for pipeline
-	taskDeploy, err := generateDeployTask(configFile)
+	deployTasks, err := generateDeployTasks(configFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating deploy task")
 	}
-	tasks = append(tasks, taskDeploy)
+	tasks = append(tasks, deployTasks...)
 
 	// Generate pipeline from git resource and tasks
 	pipeline, err := generatePipeline(tasks)

@@ -29,6 +29,20 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+func generateBuildTasks(configFiles []*ConfigFile) ([]*tekton.Task, error) {
+	var tasks []*tekton.Task
+	for _, configFile := range configFiles {
+		task, err := generateBuildTask(configFile)
+		if err != nil {
+			return nil, err
+		}
+
+		tasks = append(tasks, task)
+	}
+
+	return tasks, nil
+}
+
 func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
 	buildConfig := configFile.Profile.Build
 	if len(buildConfig.Artifacts) == 0 {
@@ -90,6 +104,20 @@ func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
 	}
 
 	return pipeline.NewTask("skaffold-build", inputs, outputs, steps, volumes), nil
+}
+
+func generateDeployTasks(configFiles []*ConfigFile) ([]*tekton.Task, error) {
+	var tasks []*tekton.Task
+	for _, configFile := range configFiles {
+		task, err := generateBuildTask(configFile)
+		if err != nil {
+			return nil, err
+		}
+
+		tasks = append(tasks, task)
+	}
+
+	return tasks, nil
 }
 
 func generateDeployTask(configFile *ConfigFile) (*tekton.Task, error) {
