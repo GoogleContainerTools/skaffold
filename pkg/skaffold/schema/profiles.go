@@ -27,6 +27,7 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 	yamlpatch "github.com/krishicks/yaml-patch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -153,9 +154,9 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 		APIVersion: config.APIVersion,
 		Kind:       config.Kind,
 		Pipeline: latest.Pipeline{
-			Build:  overlayProfileField("Build", config.Build, profile.Build).(latest.BuildConfig),
-			Deploy: overlayProfileField("Deploy", config.Deploy, profile.Deploy).(latest.DeployConfig),
-			Test:   overlayProfileField("Test", config.Test, profile.Test).([]*latest.TestCase),
+			Build:  overlayProfileField("build", config.Build, profile.Build).(latest.BuildConfig),
+			Deploy: overlayProfileField("deploy", config.Deploy, profile.Deploy).(latest.DeployConfig),
+			Test:   overlayProfileField("test", config.Test, profile.Test).([]*latest.TestCase),
 		},
 	}
 
@@ -256,7 +257,7 @@ func overlayStructField(config interface{}, profile interface{}) interface{} {
 
 	for i := 0; i < profileValue.NumField(); i++ {
 		fieldType := t.Field(i)
-		overlay := overlayProfileField(fieldType.Name, configValue.Field(i).Interface(), profileValue.Field(i).Interface())
+		overlay := overlayProfileField(yamltags.YamlName(fieldType), configValue.Field(i).Interface(), profileValue.Field(i).Interface())
 		finalConfig.Elem().FieldByName(fieldType.Name).Set(reflect.ValueOf(overlay))
 	}
 	return reflect.Indirect(finalConfig).Interface() // since finalConfig is a pointer, dereference it
@@ -291,7 +292,7 @@ func overlayProfileField(fieldName string, config interface{}, profile interface
 		}
 		return v.Interface()
 	default:
-		logrus.Warnf("Type mismatch in profile overlay for field %s of type %s; falling back to original config values", fieldName, v.Kind())
+		logrus.Warnf("Type mismatch in profile overlay for field '%s' with type %s; falling back to original config values", fieldName, v.Kind())
 		return config
 	}
 }
