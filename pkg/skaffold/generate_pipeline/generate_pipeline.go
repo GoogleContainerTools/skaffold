@@ -28,12 +28,10 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 
+	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/pipeline"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-
-	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 )
 
 // Struct keeps track of config files and their corresponding SkaffoldConfigs and generated Profiles
@@ -115,103 +113,6 @@ func generateGitResource() (*tekton.PipelineResource, error) {
 	}
 
 	return pipeline.NewGitResource("source-git", gitURL), nil
-}
-
-func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
-	buildConfig := configFile.Profile.Build
-	if len(buildConfig.Artifacts) == 0 {
-		return nil, errors.New("no artifacts to build")
-	}
-
-	skaffoldVersion := os.Getenv("PIPELINE_SKAFFOLD_VERSION")
-	if skaffoldVersion == "" {
-		skaffoldVersion = version.Get().Version
-	}
-
-	resources := []tekton.TaskResource{
-		{
-			Name: "source",
-			Type: tekton.PipelineResourceTypeGit,
-		},
-	}
-	inputs := &tekton.Inputs{Resources: resources}
-	outputs := &tekton.Outputs{Resources: resources}
-	steps := []corev1.Container{
-		{
-			Name:       "run-build",
-			Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),
-			WorkingDir: "/workspace/source",
-			Command:    []string{"skaffold", "build"},
-			Args: []string{
-				"--filename", configFile.Name,
-				"--profile", "oncluster",
-				"--file-output", "build.out",
-			},
-		},
-	}
-
-	// Add secret volume mounting for artifacts that need to be built with kaniko
-	var volumes []corev1.Volume
-	if buildConfig.Artifacts[0].KanikoArtifact != nil {
-		volumes = []corev1.Volume{
-			{
-				Name: kanikoSecretName,
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: kanikoSecretName,
-					},
-				},
-			},
-		}
-		steps[0].VolumeMounts = []corev1.VolumeMount{
-			{
-				Name:      kanikoSecretName,
-				MountPath: "/secret",
-			},
-		}
-		steps[0].Env = []corev1.EnvVar{
-			{
-				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-				Value: "/secret/" + kanikoSecretName,
-			},
-		}
-	}
-
-	return pipeline.NewTask("skaffold-build", inputs, outputs, steps, volumes), nil
-}
-
-func generateDeployTask(configFile *ConfigFile) (*tekton.Task, error) {
-	deployConfig := configFile.Config.Deploy
-	if deployConfig.HelmDeploy == nil && deployConfig.KubectlDeploy == nil && deployConfig.KustomizeDeploy == nil {
-		return nil, errors.New("no Helm/Kubectl/Kustomize deploy config")
-	}
-
-	skaffoldVersion := os.Getenv("PIPELINE_SKAFFOLD_VERSION")
-	if skaffoldVersion == "" {
-		skaffoldVersion = version.Get().Version
-	}
-
-	resources := []tekton.TaskResource{
-		{
-			Name: "source",
-			Type: tekton.PipelineResourceTypeGit,
-		},
-	}
-	inputs := &tekton.Inputs{Resources: resources}
-	steps := []corev1.Container{
-		{
-			Name:       "run-deploy",
-			Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),
-			WorkingDir: "/workspace/source",
-			Command:    []string{"skaffold", "deploy"},
-			Args: []string{
-				"--filename", configFile.Name,
-				"--build-artifacts", "build.out",
-			},
-		},
-	}
-
-	return pipeline.NewTask("skaffold-deploy", inputs, nil, steps, nil), nil
 }
 
 func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
