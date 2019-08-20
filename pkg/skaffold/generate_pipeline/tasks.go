@@ -69,7 +69,7 @@ func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
 			WorkingDir: "/workspace/source",
 			Command:    []string{"skaffold", "build"},
 			Args: []string{
-				"--filename", configFile.Name,
+				"--filename", configFile.Path,
 				"--profile", "oncluster",
 				"--file-output", "build.out",
 			},
@@ -145,7 +145,7 @@ func generateDeployTask(configFile *ConfigFile) (*tekton.Task, error) {
 			WorkingDir: "/workspace/source",
 			Command:    []string{"skaffold", "deploy"},
 			Args: []string{
-				"--filename", configFile.Name,
+				"--filename", configFile.Path,
 				"--build-artifacts", "build.out",
 			},
 		},
