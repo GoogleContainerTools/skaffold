@@ -36,9 +36,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// Struct keeps track of config files and their corresponding SkaffoldConfigs and generated Profiles
+// ConfigFile keeps track of config files and their corresponding SkaffoldConfigs and generated Profiles
 type ConfigFile struct {
-	Name    string
+	Path    string
 	Config  *latest.SkaffoldConfig
 	Profile *latest.Profile
 }
@@ -143,7 +143,7 @@ func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
 			WorkingDir: "/workspace/source",
 			Command:    []string{"skaffold", "build"},
 			Args: []string{
-				"--filename", configFile.Name,
+				"--filename", configFile.Path,
 				"--profile", "oncluster",
 				"--file-output", "build.out",
 			},
@@ -205,7 +205,7 @@ func generateDeployTask(configFile *ConfigFile) (*tekton.Task, error) {
 			WorkingDir: "/workspace/source",
 			Command:    []string{"skaffold", "deploy"},
 			Args: []string{
-				"--filename", configFile.Name,
+				"--filename", configFile.Path,
 				"--build-artifacts", "build.out",
 			},
 		},

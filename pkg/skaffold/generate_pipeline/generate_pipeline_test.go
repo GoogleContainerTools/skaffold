@@ -196,7 +196,7 @@ func TestGenerateBuildTask(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			configFile := &ConfigFile{
-				Name: "test",
+				Path: "test",
 				Profile: &latest.Profile{
 					Pipeline: latest.Pipeline{
 						Build: test.buildConfig,
@@ -240,7 +240,7 @@ func TestGenerateDeployTask(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			configFile := &ConfigFile{
-				Name: "test",
+				Path: "test",
 				Config: &latest.SkaffoldConfig{
 					Pipeline: latest.Pipeline{
 						Deploy: test.deployConfig,

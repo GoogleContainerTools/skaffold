@@ -33,7 +33,7 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 	// Keep track of files, configs, and profiles. This will be used to know which files to write
 	// profiles to and what flags to add to task commands
 	configFile := &pipeline.ConfigFile{
-		Name:    r.runCtx.Opts.ConfigurationFile,
+		Path:    r.runCtx.Opts.ConfigurationFile,
 		Config:  config,
 		Profile: nil,
 	}
