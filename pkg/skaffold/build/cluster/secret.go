@@ -30,7 +30,6 @@ import (
 )
 
 func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
-	color.Default.Fprintf(out, "Creating kaniko secret [%s]...\n", b.PullSecretName)
 
 	client, err := kubernetes.GetClientset()
 	if err != nil {
@@ -49,6 +48,14 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 		return func() {}, nil
 	}
 
+	if exist, _ := secrets.Get(b.PullSecretName, metav1.GetOptions{}); exist != nil {
+        logrus.Info("Deleting existing %s secret", b.PullSecretName)
+        if err := secrets.Delete(b.PullSecretName, &metav1.DeleteOptions{}); err != nil {
+			logrus.Warnf("deleting pull secret")
+		}
+    }
+
+	color.Default.Fprintf(out, "Creating kaniko secret [%s]...\n", b.PullSecretName)
 	secretData, err := ioutil.ReadFile(b.PullSecret)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading pull secret")
@@ -80,8 +87,6 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 		return func() {}, nil
 	}
 
-	color.Default.Fprintf(out, "Creating docker config secret [%s]...\n", b.DockerConfig.SecretName)
-
 	client, err := kubernetes.GetClientset()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting kubernetes client")
@@ -99,6 +104,14 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 		return func() {}, nil
 	}
 
+	if exist, _ := secrets.Get(b.PullSecretName, metav1.GetOptions{}); exist != nil {
+        logrus.Info("Deleting existing %s secret", b.PullSecretName)
+        if err := secrets.Delete(b.PullSecretName, &metav1.DeleteOptions{}); err != nil {
+			logrus.Warnf("deleting pull secret")
+		}
+    }
+
+	color.Default.Fprintf(out, "Creating docker config secret [%s]...\n", b.DockerConfig.SecretName)
 	secretData, err := ioutil.ReadFile(b.DockerConfig.Path)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading docker config")
