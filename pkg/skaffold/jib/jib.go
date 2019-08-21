@@ -27,12 +27,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
 const (
