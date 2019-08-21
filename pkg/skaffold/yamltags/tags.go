@@ -52,7 +52,7 @@ func YamlName(field reflect.StructField) string {
 		tags := strings.Split(yamltags, ",")
 		if len(tags) > 0 && tags[0] != "" {
 			return tags[0]
-		} 
+		}
 	}
 	return field.Name
 }

@@ -189,8 +189,8 @@ func TestIsZeroValue(t *testing.T) {
 
 func TestYamlName(t *testing.T) {
 	object := struct {
-		Empty string `yaml:",omitempty"`
-		Named string `yaml:"named,omitempty"`
+		Empty   string `yaml:",omitempty"`
+		Named   string `yaml:"named,omitempty"`
 		Missing string
 	}{}
 	testutil.CheckDeepEqual(t, "Empty", YamlName(reflect.TypeOf(object).Field(0)))
