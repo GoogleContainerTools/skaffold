@@ -27,6 +27,7 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 	yamlpatch "github.com/krishicks/yaml-patch"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -153,9 +154,9 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 		APIVersion: config.APIVersion,
 		Kind:       config.Kind,
 		Pipeline: latest.Pipeline{
-			Build:  overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
-			Deploy: overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
-			Test:   overlayProfileField(config.Test, profile.Test).([]*latest.TestCase),
+			Build:  overlayProfileField("build", config.Build, profile.Build).(latest.BuildConfig),
+			Deploy: overlayProfileField("deploy", config.Deploy, profile.Deploy).(latest.DeployConfig),
+			Test:   overlayProfileField("test", config.Test, profile.Test).([]*latest.TestCase),
 		},
 	}
 
@@ -256,16 +257,16 @@ func overlayStructField(config interface{}, profile interface{}) interface{} {
 
 	for i := 0; i < profileValue.NumField(); i++ {
 		fieldType := t.Field(i)
-		overlay := overlayProfileField(configValue.Field(i).Interface(), profileValue.Field(i).Interface())
+		overlay := overlayProfileField(yamltags.YamlName(fieldType), configValue.Field(i).Interface(), profileValue.Field(i).Interface())
 		finalConfig.Elem().FieldByName(fieldType.Name).Set(reflect.ValueOf(overlay))
 	}
 	return reflect.Indirect(finalConfig).Interface() // since finalConfig is a pointer, dereference it
 }
 
-func overlayProfileField(config interface{}, profile interface{}) interface{} {
+func overlayProfileField(fieldName string, config interface{}, profile interface{}) interface{} {
 	v := reflect.ValueOf(profile) // the profile itself
 	t := reflect.TypeOf(profile)  // the type of the profile, used for getting struct field types
-	logrus.Debugf("overlaying profile on config for field %s", t.Name())
+	logrus.Debugf("overlaying profile on config for field %s", fieldName)
 	switch v.Kind() {
 	case reflect.Struct:
 		// check the first field of the struct for a oneOf yamltag.
@@ -291,7 +292,7 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 		}
 		return v.Interface()
 	default:
-		logrus.Warnf("unknown field type in profile overlay: %s. falling back to original config values", v.Kind())
+		logrus.Warnf("Type mismatch in profile overlay for field '%s' with type %s; falling back to original config values", fieldName, v.Kind())
 		return config
 	}
 }
