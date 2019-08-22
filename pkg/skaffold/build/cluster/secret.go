@@ -49,9 +49,9 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 	}
 
 	if exist, _ := secrets.Get(b.PullSecretName, metav1.GetOptions{}); exist != nil {
-        logrus.Info("Deleting existing %s secret", b.PullSecretName)
+        logrus.Infof("Deleting existing %s secret", b.PullSecretName)
         if err := secrets.Delete(b.PullSecretName, &metav1.DeleteOptions{}); err != nil {
-			logrus.Warnf("deleting pull secret")
+			logrus.Warnf("error deleting pull secret %s, %s", b.PullSecretName, err)
 		}
     }
 
@@ -105,7 +105,7 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 	}
 
 	if exist, _ := secrets.Get(b.PullSecretName, metav1.GetOptions{}); exist != nil {
-        logrus.Info("Deleting existing %s secret", b.PullSecretName)
+        logrus.Infof("Deleting existing %s secret", b.PullSecretName)
         if err := secrets.Delete(b.PullSecretName, &metav1.DeleteOptions{}); err != nil {
 			logrus.Warnf("deleting pull secret")
 		}
