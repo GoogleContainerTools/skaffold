@@ -100,6 +100,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		buf := &bytes.Buffer{}
 		cmd := portForwardCmd(ctx, k.kubectl, pfe, buf)
 
+		logrus.Debugf("Running command: %s", cmd.Args)
 		if err := cmd.Start(); err != nil {
 			if ctx.Err() == context.Canceled {
 				logrus.Debugf("couldn't start %v due to context cancellation", pfe)
