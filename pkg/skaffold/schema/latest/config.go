@@ -412,7 +412,7 @@ type KustomizeDeploy struct {
 	// Defaults to `.`.
 	KustomizePath string `yaml:"path,omitempty"`
 
-	// Build are additional flags passedto (`kustomize build`).
+	// Build are additional flags passed to (`kustomize build`).
 	Build []string `yaml:"build,omitempty"`
 
 	// Flags are additional flags passed to `kubectl`.
