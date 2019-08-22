@@ -57,7 +57,7 @@ func GenerateGradleArgs(task string, imageName string, a *latest.JibGradleArtifa
 	args := []string{"-Djib.console=plain"}
 	args = append(args, gradleCommand(a, task)...)
 
-	if isOnInsecureRegistry(imageName, insecureRegistries) {
+	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err != nil && insecure {
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
 	}

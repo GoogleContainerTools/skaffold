@@ -233,13 +233,12 @@ func relativize(path string, roots ...string) (string, error) {
 }
 
 // isOnInsecureRegistry checks if the given image specifies an insecure registry
-func isOnInsecureRegistry(image string, insecureRegistries map[string]bool) bool {
+func isOnInsecureRegistry(image string, insecureRegistries map[string]bool) (bool, error) {
 	ref, err := name.ParseReference(image)
 	if err != nil {
-		// ignore the error as the image should have been validated before this
-		return false
+		return false, err
 	}
 
 	registry := ref.Context().Registry.Name()
-	return docker.IsInsecure(registry, insecureRegistries)
+	return docker.IsInsecure(registry, insecureRegistries), nil
 }
