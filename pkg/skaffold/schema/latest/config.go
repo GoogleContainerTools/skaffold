@@ -221,6 +221,11 @@ type GoogleCloudBuild struct {
 	// Defaults to `gcr.io/cloud-builders/docker`.
 	DockerImage string `yaml:"dockerImage,omitempty"`
 
+	// KanikoImage is the image that runs a Kaniko build.
+	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
+	// Defaults to `gcr.io/kaniko-project/executor`.
+	KanikoImage string `yaml:"kanikoImage,omitempty"`
+
 	// MavenImage is the image that runs a Maven build.
 	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
 	// Defaults to `gcr.io/cloud-builders/mvn`.

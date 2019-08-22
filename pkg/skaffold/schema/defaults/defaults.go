@@ -40,11 +40,13 @@ func Set(c *latest.SkaffoldConfig) error {
 		SetDefaultCloudBuildDockerImage,
 		setDefaultCloudBuildMavenImage,
 		setDefaultCloudBuildGradleImage,
+		setDefaultCloudBuildKanikoImage,
 	)
 
-	if c.Build.Cluster != nil {
-		// All artifacts should be built with kaniko
-		for _, a := range c.Build.Artifacts {
+	for _, a := range c.Build.Artifacts {
+		// Set Kaniko as default if Cluster is specified
+		// or set defaults if KanikoArtifact is specified
+		if c.Build.Cluster != nil || a.KanikoArtifact != nil {
 			setDefaultKanikoArtifact(a)
 			setDefaultKanikoArtifactImage(a)
 			setDefaultKanikoArtifactBuildContext(a)
@@ -112,6 +114,10 @@ func setDefaultCloudBuildMavenImage(gcb *latest.GoogleCloudBuild) {
 
 func setDefaultCloudBuildGradleImage(gcb *latest.GoogleCloudBuild) {
 	gcb.GradleImage = valueOrDefault(gcb.GradleImage, constants.DefaultCloudBuildGradleImage)
+}
+
+func setDefaultCloudBuildKanikoImage(gcb *latest.GoogleCloudBuild) {
+	gcb.KanikoImage = valueOrDefault(gcb.KanikoImage, constants.DefaultCloudBuildKanikoImage)
 }
 
 func setDefaultTagger(c *latest.SkaffoldConfig) {
