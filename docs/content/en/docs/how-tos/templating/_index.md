@@ -16,6 +16,9 @@ List of fields that support templating:
 
 * `build.tagPolicy.envTemplate.template` (see [envTemplate tagger](/docs/how-tos/taggers/##envtemplate-using-values-of-environment-variables-as-tags))
 * `deploy.helm.releases.setValueTemplates` (see [Deploying with helm](/docs/how-tos/deployers/#deploying-with-helm))
+* `deploy.helm.releases.name` (see [Deploying with helm](/docs/how-tos/deployers/#deploying-with-helm))
+
+_Please note, this list is not exhaustive_
 
 List of variables that are available for templating:
 
