@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-control" content="no-cache">
+    <title>Skaffold Event and Control API</title>
+    <script src="js/jquery-3.4.1.min.js" type="application/javascript"></script>
+    <script src="js/oboe-browser.min.js" type="application/javascript"></script>
+    <script src="/config.js" type="application/javascript"></script>
+    <link type="text/css" rel="stylesheet" href="css/dash.css"/>
+</head>
+<body>
+
+<div class="subsection">Forwarded resources</div>
+<div id="pfes"></div>
+
+<div class="subsection">Control API</div>
+<div id="control">
+    <input id="checkboxBuild" type="checkbox" name="build" value="build" checked disabled> Build <br>
+    <input id="checkboxSync" type="checkbox" name="sync" value="sync" checked disabled> Sync <br>
+    <input id="checkboxDeploy" type="checkbox" name="deploy" value="deploy" checked disabled> Deploy <br>
+    <button id="trigger" disabled onclick="onTrigger()">Trigger</button>
+</div>
+
+<div class="subsection">State</div>
+<div id="state"></div>
+
+<div class="subsection">Events</div>
+<table>
+    <thead>
+    <tr>
+        <th>timestamp</th>
+        <th>desc</th>
+        <th>event</th>
+    </tr>
+    </thead>
+    <tbody id="events">
+
+    </tbody>
+</table>
+
+<script src="js/dash.js" type="application/javascript"></script>
+</body>
+</html>

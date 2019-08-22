@@ -1,0 +1,27 @@
+table {
+    width: 100%;
+    margin: 20px 0;
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid #cdcdcd;
+}
+
+table th, table td {
+    padding: 5px;
+    text-align: left;
+}
+
+body {
+    font-family: monospace;
+    font-size: 11px;
+    background: white;
+    color: black;
+}
+
+div.subsection {
+    font-weight: bold;
+    margin: 5px 0px 5px 0px;
+    font-size: 11px;
+}

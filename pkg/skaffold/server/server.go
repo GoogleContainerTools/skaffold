@@ -19,9 +19,13 @@ package server
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
+	"os"
 	"sync"
+
+	"github.com/rakyll/statik/fs"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -31,6 +35,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+
+	//required for rakyll/statik embedded content
+	_ "github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/statik"
 )
 
 var srv *server
@@ -88,7 +95,7 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 		logrus.Warnf("provided port %d already in use: using %d instead", originalHTTPPort, httpPort)
 	}
 
-	httpCallback, err := newHTTPServer(httpPort, rpcPort)
+	httpCallback, err := newHTTPServer(httpPort, rpcPort, opts)
 	callback := func() error {
 		httpErr := httpCallback()
 		grpcErr := grpcCallback()
@@ -134,10 +141,10 @@ func newGRPCServer(port int) (func() error, error) {
 	}, nil
 }
 
-func newHTTPServer(port, proxyPort int) (func() error, error) {
-	mux := runtime.NewServeMux()
-	opts := []grpc.DialOption{grpc.WithInsecure()}
-	err := proto.RegisterSkaffoldServiceHandlerFromEndpoint(context.Background(), mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
+func newHTTPServer(port, proxyPort int, opts config.SkaffoldOptions) (func() error, error) {
+	mux := http.NewServeMux()
+
+	gw, err := newGateway(context.TODO(), proxyPort)
 	if err != nil {
 		return func() error { return nil }, err
 	}
@@ -148,7 +155,47 @@ func newHTTPServer(port, proxyPort int) (func() error, error) {
 	}
 	logrus.Infof("starting gRPC HTTP server on port %d", port)
 
+	var fileSystem http.FileSystem
+	dir := os.Getenv("SKAFFOLD_DASH_DEV_DIR")
+
+	if dir != "" {
+		logrus.Debugf("using local dir for dashboard: %s", dir)
+		fileSystem = http.Dir(dir)
+	} else {
+		logrus.Debugf("using binary embedded dashboard")
+		statikFS, err := fs.New()
+		if err != nil {
+			log.Fatal(err)
+		}
+		fileSystem = statikFS
+	}
+
+	dashContext := "/dash/"
+	mux.Handle(dashContext, http.StripPrefix(dashContext, http.FileServer(fileSystem)))
+
+	configJsTemplate := `var autoBuild = %t;
+var autoSync = %t;
+var autoDeploy = %t;`
+	configJs := fmt.Sprintf(configJsTemplate, opts.AutoBuild, opts.AutoSync, opts.AutoDeploy)
+	mux.HandleFunc("/config.js", func(writer http.ResponseWriter, request *http.Request) {
+		writer.Write(([]byte)(configJs))
+	})
+
+	mux.Handle("/", gw)
+
 	go http.Serve(l, mux)
 
 	return l.Close, nil
+}
+
+func newGateway(ctx context.Context, proxyPort int) (http.Handler, error) {
+
+	mux := runtime.NewServeMux()
+
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+	err := proto.RegisterSkaffoldServiceHandlerFromEndpoint(ctx, mux, fmt.Sprintf("%s:%d", util.Loopback, proxyPort), opts)
+	if err != nil {
+		return nil, err
+	}
+	return mux, nil
 }

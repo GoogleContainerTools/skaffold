@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2019 The Skaffold Authors
 #
@@ -14,28 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "Running validation scripts..."
-scripts=(
-    "hack/boilerplate.sh"
-    "hack/gofmt.sh"
-    "hack/linter.sh"
-    "hack/check-samples.sh"
-    "hack/check-docs.sh"
-    "hack/test-generated-proto.sh"
-    "hack/test-generated-dash.sh"
-)
-fail=0
-for s in "${scripts[@]}"; do
-    echo "RUN ${s}"
-    set +e
-    ./$s
-    result=$?
-    set -e
-    if [[ $result -eq 0 ]]; then
-        echo -e "${GREEN}PASSED${RESET} ${s}"
-    else
-        echo -e "${RED}FAILED${RESET} ${s}"
-        fail=1
-    fi
-done
-exit $fail
+if [[ "${TRAVIS}" == "true" ]] && [[ "${TRAVIS_OS_NAME}" != "linux" ]]; then
+    printf "On Travis CI, we only test proto generation on Linux\n"
+    exit 0
+fi
+
+./hack/generate-dash.sh
+
+readonly DASH_CHANGES=`git diff | grep "statik.go" | wc -l`
+
+if [[ ${DASH_CHANGES} -gt 0 ]]; then
+  echo "There are changes in skaffold-dash, please run hack/generate-dash.sh and commit the resutls!"
+  git diff
+  exit 1
+fi
+
+exit 0

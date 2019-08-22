@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # Copyright 2019 The Skaffold Authors
 #
@@ -14,28 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "Running validation scripts..."
-scripts=(
-    "hack/boilerplate.sh"
-    "hack/gofmt.sh"
-    "hack/linter.sh"
-    "hack/check-samples.sh"
-    "hack/check-docs.sh"
-    "hack/test-generated-proto.sh"
-    "hack/test-generated-dash.sh"
-)
-fail=0
-for s in "${scripts[@]}"; do
-    echo "RUN ${s}"
-    set +e
-    ./$s
-    result=$?
-    set -e
-    if [[ $result -eq 0 ]]; then
-        echo -e "${GREEN}PASSED${RESET} ${s}"
-    else
-        echo -e "${RED}FAILED${RESET} ${s}"
-        fail=1
-    fi
-done
-exit $fail
+
+test `which statik` || GOFLAGS='' go get github.com/rakyll/statik
+statik -m -src=./pkg/skaffold/server/public -dest=./pkg/skaffold/server
