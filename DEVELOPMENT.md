@@ -119,7 +119,7 @@ To build with your local changes you have two options:
 If you are iterating on skaffold and want to see your changes in action, you can:
 
 1. [Build skaffold](#building-skaffold)
-2. [Use the quickstart example](README.md#iterative-development)
+2. [Use the quickstart example](examples/getting-started/README.md)
 
 ## Testing skaffold
 
