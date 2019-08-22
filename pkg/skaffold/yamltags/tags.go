@@ -46,6 +46,17 @@ func ValidateStruct(s interface{}) error {
 	return nil
 }
 
+// YamlName returns the YAML name of the given field
+func YamlName(field reflect.StructField) string {
+	if yamltags, ok := field.Tag.Lookup("yaml"); ok {
+		tags := strings.Split(yamltags, ",")
+		if len(tags) > 0 && tags[0] != "" {
+			return tags[0]
+		}
+	}
+	return field.Name
+}
+
 func processTags(yamltags string, val reflect.Value, parentStruct reflect.Value, field reflect.StructField) error {
 	tags := strings.Split(yamltags, ",")
 	for _, tag := range tags {

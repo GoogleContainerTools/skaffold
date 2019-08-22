@@ -186,3 +186,14 @@ func TestIsZeroValue(t *testing.T) {
 	nonZeroMap := make(map[string]string)
 	testutil.CheckDeepEqual(t, false, isZeroValue(reflect.ValueOf(nonZeroMap)))
 }
+
+func TestYamlName(t *testing.T) {
+	object := struct {
+		Empty   string `yaml:",omitempty"`
+		Named   string `yaml:"named,omitempty"`
+		Missing string
+	}{}
+	testutil.CheckDeepEqual(t, "Empty", YamlName(reflect.TypeOf(object).Field(0)))
+	testutil.CheckDeepEqual(t, "named", YamlName(reflect.TypeOf(object).Field(1)))
+	testutil.CheckDeepEqual(t, "Missing", YamlName(reflect.TypeOf(object).Field(2)))
+}

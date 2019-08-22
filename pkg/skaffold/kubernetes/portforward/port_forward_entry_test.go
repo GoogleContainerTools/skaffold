@@ -37,7 +37,7 @@ func TestPortForwardEntryKey(t *testing.T) {
 				Name:      "podName",
 				Namespace: "default",
 				Port:      8080,
-			}, "", "", "", 0, false),
+			}, "", "", "", "", 0, false),
 			expected: "pod-podName-default-8080",
 		}, {
 			description: "entry for deploy",
@@ -46,7 +46,7 @@ func TestPortForwardEntryKey(t *testing.T) {
 				Name:      "depName",
 				Namespace: "namespace",
 				Port:      9000,
-			}, "", "", "", 0, false),
+			}, "", "", "", "", 0, false),
 			expected: "deployment-depName-namespace-9000",
 		},
 	}
@@ -79,8 +79,8 @@ func TestAutomaticPodForwardingKey(t *testing.T) {
 				Name:      "podName",
 				Namespace: "default",
 				Port:      8080,
-			}, "", "containerName", "portName", 0, true),
-			expected: "containerName-default-portName-8080",
+			}, "", "containerName", "portName", "owner", 0, true),
+			expected: "owner-containerName-default-portName-8080",
 		},
 	}
 

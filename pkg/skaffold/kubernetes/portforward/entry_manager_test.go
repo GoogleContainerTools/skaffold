@@ -39,7 +39,7 @@ func TestNewEntryManager(t *testing.T) {
 		output:             out,
 		forwardedPorts:     newForwardedPorts(),
 		forwardedResources: newForwardedResources(),
-		EntryForwarder:     &KubectlForwarder{kubectl: cli, out: out},
+		EntryForwarder:     NewKubectlForwarder(out, cli),
 	}
 	actual := NewEntryManager(out, cli)
 	if !reflect.DeepEqual(expected, actual) {
@@ -52,13 +52,13 @@ func TestStop(t *testing.T) {
 		Type:      constants.Pod,
 		Name:      "resource",
 		Namespace: "default",
-	}, "", "", "", 9000, false)
+	}, "", "", "", "", 9000, false)
 
 	pfe2 := newPortForwardEntry(0, latest.PortForwardResource{
 		Type:      constants.Pod,
 		Name:      "resource2",
 		Namespace: "default",
-	}, "", "", "", 9001, false)
+	}, "", "", "", "", 9001, false)
 
 	em := NewEntryManager(ioutil.Discard, nil)
 
