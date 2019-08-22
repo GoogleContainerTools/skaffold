@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
@@ -40,6 +41,7 @@ import (
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // Build builds a list of artifacts with Google Cloud Build.
@@ -112,9 +114,25 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	offset := int64(0)
 watch:
 	for {
+		var cb *cloudbuild.Build
+		var err error
 		logrus.Debugf("current offset %d", offset)
-		cb, err := cbclient.Projects.Builds.Get(projectID, remoteID).Do()
-		if err != nil {
+		backoff := NewStatusBackoff()
+		if waitErr := wait.Poll(backoff.Duration, RetryTimeout, func() (bool, error) {
+			backoff.Step()
+			cb, err = cbclient.Projects.Builds.Get(projectID, remoteID).Do()
+			if err == nil {
+				return true, nil
+			}
+			if strings.Contains(err.Error(), "Error 429: Quota exceeded for quota metric 'cloudbuild.googleapis.com/get_requests'") {
+				// if we hit the rate limit, continue to retry
+				return false, nil
+			}
+			return false, err
+		}); waitErr != nil {
+			return "", errors.Wrap(waitErr, "getting build status")
+		}
+		if cb == nil {
 			return "", errors.Wrap(err, "getting build status")
 		}
 
