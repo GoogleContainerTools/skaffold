@@ -1467,6 +1467,15 @@
     },
     "KustomizeDeploy": {
       "properties": {
+        "build": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passedto (`kustomize build`).",
+          "x-intellij-html-description": "additional flags passedto (<code>kustomize build</code>).",
+          "default": "[]"
+        },
         "flags": {
           "$ref": "#/definitions/KubectlFlags",
           "description": "additional flags passed to `kubectl`.",
@@ -1481,6 +1490,7 @@
       },
       "preferredOrder": [
         "path",
+        "build",
         "flags"
       ],
       "additionalProperties": false,

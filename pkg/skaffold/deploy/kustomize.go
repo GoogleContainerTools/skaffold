@@ -24,9 +24,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -247,7 +248,18 @@ func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {
 }
 
 func (k *KustomizeDeployer) readManifests(ctx context.Context) (deploy.ManifestList, error) {
-	cmd := exec.CommandContext(ctx, "kustomize", "build", k.KustomizePath)
+	var args []string
+	args = append(args, "build")
+	if k.Build != nil {
+		for _, v := range k.Build {
+			parts := strings.Split(v, " ")
+			args = append(args, parts...)
+		}
+	}
+	args = append(args, k.KustomizePath)
+
+	cmd := exec.CommandContext(ctx, "kustomize", args...)
+
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "kustomize build")
