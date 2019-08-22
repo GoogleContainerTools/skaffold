@@ -274,6 +274,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 			DockerImage: "gcr.io/cloud-builders/docker",
 			MavenImage:  "gcr.io/cloud-builders/mvn",
 			GradleImage: "gcr.io/cloud-builders/gradle",
+			KanikoImage: "gcr.io/kaniko-project/executor",
 		}}}
 		for _, op := range ops {
 			op(&b)
