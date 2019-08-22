@@ -63,7 +63,7 @@ GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
 GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
 GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
-GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./metrics-server/*")
 
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
@@ -240,3 +240,9 @@ build-docs-preview:
 .PHONY: generate-schemas
 generate-schemas:
 	go run hack/schemas/main.go
+
+
+# metrics server
+METRICS_GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*" -path "./metrics-server/*")
+$(BUILD_DIR)/metrics-server: $(METRICS_GO_FILES)
+	CGO_ENABLED=1 go build -v -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(REPOPATH)/metrics-server
