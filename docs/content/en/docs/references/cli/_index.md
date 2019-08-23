@@ -116,7 +116,7 @@ Examples:
 
 Options:
   -b, --build-image=[]: Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
-      --cache-artifacts=false: Set to false to disable default caching of artifacts
+      --cache-artifacts=true: Set to true to enable caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
@@ -287,7 +287,7 @@ Run a pipeline in debug mode
 
 
 Options:
-      --cache-artifacts=false: Set to false to disable default caching of artifacts
+      --cache-artifacts=true: Set to true to enable caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
@@ -429,7 +429,7 @@ Run a pipeline in development mode
 
 
 Options:
-      --cache-artifacts=false: Set to false to disable default caching of artifacts
+      --cache-artifacts=true: Set to true to enable caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
@@ -594,7 +594,7 @@ Examples:
   skaffold run -p <profile>
 
 Options:
-      --cache-artifacts=false: Set to false to disable default caching of artifacts
+      --cache-artifacts=true: Set to true to enable caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
