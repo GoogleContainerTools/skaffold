@@ -20,7 +20,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
 // Upgrade upgrades a configuration to the next version.
@@ -43,16 +42,13 @@ import (
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
-	if err := pkgutil.CloneThroughJSON(config.Deploy, &newDeploy); err != nil {
-		return nil, errors.Wrap(err, "converting deploy config")
-	}
+	pkgutil.CloneThroughJSON(config.Deploy, &newDeploy)
 
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
 	if config.Profiles != nil {
-		if err := pkgutil.CloneThroughJSON(config.Profiles, &newProfiles); err != nil {
-			return nil, errors.Wrap(err, "converting new profile")
-		}
+		pkgutil.CloneThroughJSON(config.Profiles, &newProfiles)
+
 		for i, oldProfile := range config.Profiles {
 			convertBuild(oldProfile.Build, newProfiles[i].Build)
 		}
@@ -61,9 +57,7 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Build (should be the same)
 	var newBuild next.BuildConfig
 	oldBuild := config.Build
-	if err := pkgutil.CloneThroughJSON(oldBuild, &newBuild); err != nil {
-		return nil, errors.Wrap(err, "converting new build")
-	}
+	pkgutil.CloneThroughJSON(oldBuild, &newBuild)
 	convertBuild(oldBuild, newBuild)
 
 	return &next.SkaffoldConfig{

@@ -234,28 +234,34 @@ func NonEmptyLines(input []byte) []string {
 	return result
 }
 
-// CloneThroughJSON marshals the old interface into the new one
-func CloneThroughJSON(old interface{}, new interface{}) error {
+// CloneThroughJSON clones an `old` object into a `new` one
+// using json marshalling and unmarshalling.
+// Since the object can be marshalled, it's almost sure it can be
+// unmarshalled. So we prefer to panic instead of returning an error
+// that would create an untestable branch on the call site.
+func CloneThroughJSON(old interface{}, new interface{}) {
 	o, err := json.Marshal(old)
 	if err != nil {
-		return errors.Wrap(err, "marshalling old")
+		panic(fmt.Sprintf("marshalling old: %v", err))
 	}
-	if err := json.Unmarshal(o, &new); err != nil {
-		return errors.Wrap(err, "unmarshalling new")
+	if err := json.Unmarshal(o, new); err != nil {
+		panic(fmt.Sprintf("unmarshalling new: %v", err))
 	}
-	return nil
 }
 
-// CloneThroughYAML marshals the old interface into the new one
-func CloneThroughYAML(old interface{}, new interface{}) error {
+// CloneThroughYAML clones an `old` object into a `new` one
+// using yaml marshalling and unmarshalling.
+// Since the object can be marshalled, it's almost sure it can be
+// unmarshalled. So we prefer to panic instead of returning an error
+// that would create an untestable branch on the call site.
+func CloneThroughYAML(old interface{}, new interface{}) {
 	contents, err := yaml.Marshal(old)
 	if err != nil {
-		return errors.Wrap(err, "unmarshalling properties")
+		panic(fmt.Sprintf("marshalling old: %v", err))
 	}
 	if err := yaml.Unmarshal(contents, new); err != nil {
-		return errors.Wrap(err, "unmarshalling bazel artifact")
+		panic(fmt.Sprintf("unmarshalling new: %v", err))
 	}
-	return nil
 }
 
 // AbsolutePaths prepends each path in paths with workspace if the path isn't absolute
