@@ -69,7 +69,7 @@ func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact
 		args = append(args, "package", "jib:"+goal, "-Djib.containerize="+a.Module)
 	}
 
-	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err != nil && insecure {
+	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
 	}
