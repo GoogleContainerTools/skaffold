@@ -19,6 +19,8 @@ package generatepipeline
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -28,6 +30,7 @@ func TestGenerateBuildTasks(t *testing.T) {
 		description string
 		configFiles []*ConfigFile
 		shouldErr   bool
+		runCtx      *runcontext.RunContext
 	}{
 		{
 			description: "successfully generate build tasks",
@@ -61,13 +64,18 @@ func TestGenerateBuildTasks(t *testing.T) {
 					},
 				},
 			},
+			runCtx: &runcontext.RunContext{
+				Opts: config.SkaffoldOptions{
+					Namespace: "test-ns",
+				},
+			},
 			shouldErr: false,
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := generateBuildTasks(test.configFiles)
+			_, err := generateBuildTasks(test.runCtx, test.configFiles)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -120,6 +128,7 @@ func TestGenerateDeployTasks(t *testing.T) {
 		description string
 		configFiles []*ConfigFile
 		shouldErr   bool
+		runCtx      *runcontext.RunContext
 	}{
 		{
 			description: "successfully generate deploy tasks",
@@ -149,13 +158,18 @@ func TestGenerateDeployTasks(t *testing.T) {
 					},
 				},
 			},
+			runCtx: &runcontext.RunContext{
+				Opts: config.SkaffoldOptions{
+					Namespace: "test-ns",
+				},
+			},
 			shouldErr: false,
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := generateDeployTasks(test.configFiles)
+			_, err := generateDeployTasks(test.runCtx, test.configFiles)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
