@@ -325,10 +325,10 @@ func TestColoredOutput(t *testing.T) {
 	}
 }
 
-func setUpChannels(n int) []chan []byte {
-	outputs := make([]chan []byte, n)
+func setUpChannels(n int) []chan string {
+	outputs := make([]chan string, n)
 	for i := 0; i < n; i++ {
-		outputs[i] = make(chan []byte, 10)
+		outputs[i] = make(chan string, 10)
 		close(outputs[i])
 	}
 	return outputs
