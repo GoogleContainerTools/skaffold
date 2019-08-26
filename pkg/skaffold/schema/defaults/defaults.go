@@ -43,8 +43,11 @@ func Set(c *latest.SkaffoldConfig) error {
 	)
 
 	if c.Build.Cluster != nil {
-		// All artifacts should be built with kaniko
+		// All artifacts should be built with kaniko or a custom command
 		for _, a := range c.Build.Artifacts {
+			if a.CustomArtifact != nil {
+				continue
+			}
 			setDefaultKanikoArtifact(a)
 			setDefaultKanikoArtifactImage(a)
 			setDefaultKanikoArtifactBuildContext(a)
