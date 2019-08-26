@@ -76,30 +76,32 @@ func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
 		},
 	}
 
-	// Add secret volume mounting for artifacts that need to be built with kaniko
+	// Add secret volume mounting if any artifacts in config need to be built with kaniko
 	var volumes []corev1.Volume
-	if buildConfig.Artifacts[0].KanikoArtifact != nil {
-		volumes = []corev1.Volume{
-			{
-				Name: kanikoSecretName,
-				VolumeSource: corev1.VolumeSource{
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: kanikoSecretName,
+	for _, artifact := range buildConfig.Artifacts {
+		if artifact.KanikoArtifact != nil {
+			volumes = []corev1.Volume{
+				{
+					Name: kanikoSecretName,
+					VolumeSource: corev1.VolumeSource{
+						Secret: &corev1.SecretVolumeSource{
+							SecretName: kanikoSecretName,
+						},
 					},
 				},
-			},
-		}
-		steps[0].VolumeMounts = []corev1.VolumeMount{
-			{
-				Name:      kanikoSecretName,
-				MountPath: "/secret",
-			},
-		}
-		steps[0].Env = []corev1.EnvVar{
-			{
-				Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-				Value: "/secret/" + kanikoSecretName,
-			},
+			}
+			steps[0].VolumeMounts = []corev1.VolumeMount{
+				{
+					Name:      kanikoSecretName,
+					MountPath: "/secret",
+				},
+			}
+			steps[0].Env = []corev1.EnvVar{
+				{
+					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+					Value: "/secret/" + kanikoSecretName,
+				},
+			}
 		}
 	}
 
