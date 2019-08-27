@@ -84,22 +84,45 @@ func StrSliceInsert(sl []string, index int, insert []string) []string {
 	return newSlice
 }
 
+// fileList holds a list of files, with no duplicate.
+type fileList struct {
+	files []string
+	seen  map[string]bool
+}
+
+func (l *fileList) Add(file string) {
+	if l.seen[file] {
+		return
+	}
+
+	if l.seen == nil {
+		l.seen = make(map[string]bool)
+	}
+	l.seen[file] = true
+
+	l.files = append(l.files, file)
+}
+
+func (l *fileList) Files() []string {
+	return l.files
+}
+
 // ExpandPathsGlob expands paths according to filepath.Glob patterns
 // Returns a list of unique files that match the glob patterns passed in.
 func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
-	expandedPaths := make(map[string]bool)
+	var list fileList
+
 	for _, p := range paths {
 		if filepath.IsAbs(p) {
 			// This is a absolute file reference
-			expandedPaths[p] = true
+			list.Add(p)
 			continue
 		}
 
 		path := filepath.Join(workingDir, p)
-
 		if _, err := os.Stat(path); err == nil {
 			// This is a file reference, so just add it
-			expandedPaths[path] = true
+			list.Add(path)
 			continue
 		}
 
@@ -112,25 +135,27 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 		}
 
 		for _, f := range files {
-			err := filepath.Walk(f, func(path string, info os.FileInfo, err error) error {
+			var filesInDirectory []string
+
+			if err := filepath.Walk(f, func(path string, info os.FileInfo, err error) error {
 				if !info.IsDir() {
-					expandedPaths[path] = true
+					filesInDirectory = append(filesInDirectory, path)
 				}
 
 				return nil
-			})
-			if err != nil {
+			}); err != nil {
 				return nil, errors.Wrap(err, "filepath walk")
+			}
+
+			// Make sure files inside a directory are listed in a consistent order
+			sort.Strings(filesInDirectory)
+			for _, file := range filesInDirectory {
+				list.Add(file)
 			}
 		}
 	}
 
-	var ret []string
-	for k := range expandedPaths {
-		ret = append(ret, k)
-	}
-	sort.Strings(ret)
-	return ret, nil
+	return list.Files(), nil
 }
 
 // BoolPtr returns a pointer to a bool
