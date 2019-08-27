@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 
 	"github.com/pkg/errors"
@@ -29,16 +30,18 @@ import (
 	pipeline "github.com/GoogleContainerTools/skaffold/pkg/skaffold/generate_pipeline"
 )
 
-func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, config *latest.SkaffoldConfig, fileOut string) error {
+func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, config *latest.SkaffoldConfig, configPaths []string, fileOut string) error {
 	// Keep track of files, configs, and profiles. This will be used to know which files to write
 	// profiles to and what flags to add to task commands
-	configFiles := []*pipeline.ConfigFile{
+	baseConfig := []*pipeline.ConfigFile{
 		{
 			Path:    r.runCtx.Opts.ConfigurationFile,
 			Config:  config,
 			Profile: nil,
 		},
 	}
+	configFiles, err := setupConfigFiles(configPaths)
+	configFiles = append(baseConfig, configFiles...)
 
 	// Will run the profile setup multiple times and require user input for each specified config
 	color.Default.Fprintln(out, "Running profile setup...")
@@ -56,4 +59,28 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 
 	// write all yaml pieces to output
 	return ioutil.WriteFile(fileOut, pipelineYaml.Bytes(), 0755)
+}
+
+func setupConfigFiles(configPaths []string) ([]*pipeline.ConfigFile, error) {
+	if configPaths == nil {
+		return []*pipeline.ConfigFile{}, nil
+	}
+
+	// Read all given config files to read contents into SkaffoldConfig
+	var configFiles []*pipeline.ConfigFile
+	for _, path := range configPaths {
+		parsed, err := schema.ParseConfig(path, true)
+		if err != nil {
+			return nil, errors.Wrapf(err, "parsing config %s", path)
+		}
+		config := parsed.(*latest.SkaffoldConfig)
+
+		configFile := &pipeline.ConfigFile{
+			Path:   path,
+			Config: config,
+		}
+		configFiles = append(configFiles, configFile)
+	}
+
+	return configFiles, nil
 }
