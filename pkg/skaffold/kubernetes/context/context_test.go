@@ -17,6 +17,8 @@ limitations under the License.
 package context
 
 import (
+	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -37,6 +39,26 @@ contexts:
     cluster: cluster-foo
     user: user1
   name: cluster-foo
+- context:
+    cluster: cluster-bar
+    user: user1
+  name: cluster-bar
+current-context: cluster-foo
+users:
+- name: user1
+  user:
+    password: secret
+    username: user
+`
+
+const changedKubeConfig = `
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: https://changed-url.com
+  name: cluster-bar
+contexts:
 - context:
     cluster: cluster-bar
     user: user1
@@ -104,6 +126,28 @@ func TestGetRestClientConfig(t *testing.T) {
 		_, err := GetRestClientConfig()
 
 		t.CheckError(true, err)
+	})
+
+	testutil.Run(t, "context immutability", func(t *testutil.T) {
+		logrus.SetLevel(logrus.InfoLevel)
+		kubeConfig := t.TempFile("config", []byte(validKubeConfig))
+		kubeContext = "cluster-bar"
+		t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
+		resetConfig()
+
+		cfg, err := GetRestClientConfig()
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("https://bar.com", cfg.Host)
+
+		if err = ioutil.WriteFile(kubeConfig, []byte(changedKubeConfig), 0644); err != nil {
+			t.Error(err)
+		}
+
+		cfg, err = GetRestClientConfig()
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("https://bar.com", cfg.Host)
 	})
 }
 

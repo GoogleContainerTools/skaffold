@@ -50,12 +50,7 @@ func UseKubeContext(overrideKubeContext string) {
 // If UseKubeContext was called before, the CurrentContext will be overridden.
 // The result will be cached after the first call.
 func GetRestClientConfig() (*restclient.Config, error) {
-	rawConfig, err := getRawKubeConfig()
-	if err != nil {
-		return nil, err
-	}
-	clientConfig := clientcmd.NewNonInteractiveClientConfig(rawConfig, kubeContext, &clientcmd.ConfigOverrides{CurrentContext: kubeContext}, nil)
-	restConfig, err := clientConfig.ClientConfig()
+	restConfig, err := getKubeConfig().ClientConfig()
 	return restConfig, errors.Wrap(err, "error creating REST client config")
 }
 
@@ -70,15 +65,19 @@ func getCurrentConfig() (clientcmdapi.Config, error) {
 	return cfg, err
 }
 
-// getRawKubeConfig retrieves and caches the raw kubeConfig. The cache ensures that Skaffold always works with the identical kubeconfig,
-// even if it was changed on disk.
-func getRawKubeConfig() (clientcmdapi.Config, error) {
+func getKubeConfig() clientcmd.ClientConfig {
 	kubeConfigOnce.Do(func() {
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 		kubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{
 			CurrentContext: kubeContext,
 		})
 	})
-	rawConfig, err := kubeConfig.RawConfig()
+	return kubeConfig
+}
+
+// getRawKubeConfig retrieves and caches the raw kubeConfig. The cache ensures that Skaffold always works with the identical kubeconfig,
+// even if it was changed on disk.
+func getRawKubeConfig() (clientcmdapi.Config, error) {
+	rawConfig, err := getKubeConfig().RawConfig()
 	return rawConfig, errors.Wrap(err, "loading kubeconfig")
 }
