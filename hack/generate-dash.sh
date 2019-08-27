@@ -16,4 +16,4 @@
 
 
 test `which statik` || GOFLAGS='' go get github.com/rakyll/statik
-statik -m -src=./pkg/skaffold/server/public -dest=./pkg/skaffold/server
+statik -m -Z -src=./pkg/skaffold/server/public -dest=./pkg/skaffold/server
