@@ -43,7 +43,7 @@ func TestDiagnose(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			skaffold.Diagnose().InDir(test.dir).RunOrFailOutput(t)
+			skaffold.Diagnose().InDir(test.dir).RunOrFail(t)
 		})
 	}
 }
