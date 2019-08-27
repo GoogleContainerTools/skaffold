@@ -42,7 +42,7 @@ func WhiteBoxPortForwardCycle(t *testing.T, kubectlCLI *kubectl.CLI, namespace s
 		Name:      "leeroy-web",
 		Namespace: namespace,
 		Port:      8080,
-	}, "", "dummy container", "", localPort, false)
+	}, "", "dummy container", "", "", localPort, false)
 	defer em.Stop()
 	em.forwardPortForwardEntry(ctx, pfe)
 	em.Stop()

@@ -47,6 +47,11 @@ func Set(c *latest.SkaffoldConfig) error {
 		// Set Kaniko as default if Cluster is specified
 		// or set defaults if KanikoArtifact is specified
 		if c.Build.Cluster != nil || a.KanikoArtifact != nil {
+			// must be either custom or kaniko build
+			if a.CustomArtifact != nil {
+				continue
+			}
+
 			setDefaultKanikoArtifact(a)
 			setDefaultKanikoArtifactImage(a)
 			setDefaultKanikoArtifactBuildContext(a)

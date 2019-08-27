@@ -220,9 +220,35 @@ func TestCloneThroughJSON(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := CloneThroughJSON(test.old, test.new)
+			CloneThroughJSON(test.old, test.new)
 
-			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, test.new)
+		})
+	}
+}
+
+func TestCloneThroughYAML(t *testing.T) {
+	tests := []struct {
+		description string
+		old         interface{}
+		new         interface{}
+		expected    interface{}
+	}{
+		{
+			description: "google cloud build",
+			old: map[string]string{
+				"projectId": "unit-test",
+			},
+			new: &latest.GoogleCloudBuild{},
+			expected: &latest.GoogleCloudBuild{
+				ProjectID: "unit-test",
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			CloneThroughYAML(test.old, test.new)
+
 			t.CheckDeepEqual(test.expected, test.new)
 		})
 	}

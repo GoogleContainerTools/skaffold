@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 const (
@@ -58,7 +59,25 @@ const (
 
 	// RetryDelay is the time to wait in between polling the status of the cloud build
 	RetryDelay = 1 * time.Second
+
+	// BackoffFactor is the exponent for exponential backoff during build status polling
+	BackoffFactor = 1.5
+
+	// BackoffSteps is the number of times we increase the backoff time during exponential backoff
+	BackoffSteps = 10
+
+	// RetryTimeout is the max amount of time to retry getting the status of the build before erroring
+	RetryTimeout = 3 * time.Minute
 )
+
+func NewStatusBackoff() *wait.Backoff {
+	return &wait.Backoff{
+		Duration: RetryDelay,
+		Factor:   float64(BackoffFactor),
+		Steps:    BackoffSteps,
+		Cap:      60 * time.Second,
+	}
+}
 
 // Builder builds artifacts with Google Cloud Build.
 type Builder struct {

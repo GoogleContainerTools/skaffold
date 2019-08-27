@@ -115,6 +115,33 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 	})
 }
 
+func TestCustomBuildWithCluster(t *testing.T) {
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				Artifacts: []*latest.Artifact{
+					{
+						ImageName: "image",
+						ArtifactType: latest.ArtifactType{
+							CustomArtifact: &latest.CustomArtifact{
+								BuildCommand: "./build.sh",
+							},
+						},
+					},
+				},
+				BuildType: latest.BuildType{
+					Cluster: &latest.ClusterDetails{},
+				},
+			},
+		},
+	}
+
+	err := Set(cfg)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, (*latest.KanikoArtifact)(nil), cfg.Build.Artifacts[0].KanikoArtifact)
+}
+
 func TestSetDefaultsOnCloudBuild(t *testing.T) {
 	cfg := &latest.SkaffoldConfig{
 		Pipeline: latest.Pipeline{

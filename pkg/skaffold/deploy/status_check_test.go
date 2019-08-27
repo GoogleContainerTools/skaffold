@@ -208,13 +208,6 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			shouldErr: true,
 			duration:  50,
 		}, {
-			description: "rollout returns success before time out",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 0 of 1 updated replicas are available...").
-				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 0 of 1 updated replicas are available...").
-				WithRunOut(rolloutCmd, "deployment.apps/dep successfully rolled out"),
-			duration: 80,
-		}, {
 			description: "rollout returns did not stabilize within the given timeout",
 			command: testutil.NewFakeCmd(t).
 				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 1 of 3 updated replicas are available...").

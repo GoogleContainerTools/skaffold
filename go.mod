@@ -37,7 +37,7 @@ require (
 	github.com/gorilla/mux v1.6.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.8.5
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
-	github.com/imdario/mergo v0.3.6 // indirect
+	github.com/imdario/mergo v0.3.6
 	github.com/karrick/godirwalk v1.7.5
 	github.com/knative/pkg v0.0.0-20190730155243-972acd413fb9 // indirect
 	github.com/krishicks/yaml-patch v0.0.10

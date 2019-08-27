@@ -195,7 +195,15 @@ func TestGenerateBuildTask(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := generateBuildTask(test.buildConfig)
+			configFile := &ConfigFile{
+				Path: "test",
+				Profile: &latest.Profile{
+					Pipeline: latest.Pipeline{
+						Build: test.buildConfig,
+					},
+				},
+			}
+			_, err := generateBuildTask(configFile)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -231,7 +239,16 @@ func TestGenerateDeployTask(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := generateDeployTask(test.deployConfig)
+			configFile := &ConfigFile{
+				Path: "test",
+				Config: &latest.SkaffoldConfig{
+					Pipeline: latest.Pipeline{
+						Deploy: test.deployConfig,
+					},
+				},
+			}
+
+			_, err := generateDeployTask(configFile)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
