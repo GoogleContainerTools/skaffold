@@ -9,7 +9,7 @@ to deploy your app to a Kubernetes cluster.
 
 When Skaffold deploys an application the following steps happen:
 
-* the Skaffold deployer _renders_ the final kubernetes manifests: Skaffold replaces the image names in the kubernetes manifests with the final tagged image names.
+* the Skaffold deployer _renders_ the final kubernetes manifests: Skaffold replaces untagged image names in the kubernetes manifests with the final tagged image names.
 Also, in case of the more complicated deployers the rendering step involves expanding templates (in case of helm) or calculating overlays (in case of kustomize).
 * the Skaffold deployer _deploys_ the final kubernetes manifests to the cluster
 
