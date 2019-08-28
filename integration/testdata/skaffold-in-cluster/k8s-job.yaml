@@ -1,0 +1,16 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: skaffold-in-cluster
+spec:
+  template:
+    metadata:
+      name: skaffold-in-cluster
+    spec:
+      serviceAccountName: admin-serviceaccount
+      containers:
+      - name: skaffold-in-cluster
+        image: gcr.io/k8s-skaffold/skaffold-in-cluster
+      imagePullSecrets:
+        - name: e2esecret
+      restartPolicy: Never

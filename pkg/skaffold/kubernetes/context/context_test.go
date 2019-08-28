@@ -24,6 +24,9 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+const clusterFooContext = "cluster-foo"
+const clusterBarContext = "cluster-bar"
+
 const validKubeConfig = `
 apiVersion: v1
 kind: Config
@@ -78,7 +81,8 @@ func TestCurrentContext(t *testing.T) {
 		config, err := CurrentConfig()
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("cluster-foo", config.CurrentContext)
+
+		t.CheckDeepEqual(clusterFooContext, config.CurrentContext)
 	})
 
 	testutil.Run(t, "valid with override context", func(t *testutil.T) {
@@ -88,7 +92,7 @@ func TestCurrentContext(t *testing.T) {
 		config, err := CurrentConfig()
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("cluster-bar", config.CurrentContext)
+		t.CheckDeepEqual(clusterBarContext, config.CurrentContext)
 	})
 
 	testutil.Run(t, "invalid context", func(t *testutil.T) {
@@ -113,7 +117,7 @@ func TestGetRestClientConfig(t *testing.T) {
 	testutil.Run(t, "valid context with override", func(t *testutil.T) {
 		resetKubeConfig(t, validKubeConfig)
 
-		kubeContext = "cluster-bar"
+		kubeContext = clusterBarContext
 		cfg, err := GetRestClientConfig()
 
 		t.CheckNoError(err)
@@ -131,7 +135,7 @@ func TestGetRestClientConfig(t *testing.T) {
 	testutil.Run(t, "context immutability", func(t *testutil.T) {
 		logrus.SetLevel(logrus.InfoLevel)
 		kubeConfig := t.TempFile("config", []byte(validKubeConfig))
-		kubeContext = "cluster-bar"
+		kubeContext = clusterBarContext
 		t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
 		resetConfig()
 

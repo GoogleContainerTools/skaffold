@@ -108,6 +108,15 @@ func TestBuild(t *testing.T) {
 	}
 }
 
+//this is a little bit mad.
+//we use a skaffold process to drive from outside the cluster building an image
+//that contains the compiled skaffold binary, which is then executing a build of the
+//very same image but a different tag _as a pod_
+func TestBuildInCluster(t *testing.T) {
+	skaffold.Run(
+		"-f", "integration/testdata/skaffold-in-cluster/skaffold.yaml").InDir(".").RunOrFail(t)
+}
+
 // removeImage removes the given image if present.
 func removeImage(t *testing.T, image string) {
 	t.Helper()
