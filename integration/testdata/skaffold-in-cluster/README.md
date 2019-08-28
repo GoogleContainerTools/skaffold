@@ -14,7 +14,7 @@ The build target that the buildstep is building using kaniko is a simple `Docker
 
 The flow of the integration test is thus: 
 
-`buildtest -> skaffold run -p create-build-step -> creates job -> creates pod -> skaffold build -p build-step` 
+`buildtest -> skaffold run -p create-build-step -> creates job -> creates pod -> skaffold build -p build-step -> kicks off kaniko pod to build test-build` 
 
 Thus at the end we should have a successfully completed job.    
  
