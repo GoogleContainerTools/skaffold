@@ -39,6 +39,35 @@ const (
 	dotDotSlash = ".." + string(filepath.Separator)
 )
 
+// BuilderType is an enum for the different builders supported by Jib.
+type BuilderType int
+
+const (
+	JibMaven BuilderType = iota
+	JibGradle
+)
+
+// String returns the identifier for the respective builder type, used in YAML.
+func (t BuilderType) String() string {
+	switch t {
+	case JibMaven:
+		return "maven"
+	case JibGradle:
+		return "gradle"
+	}
+	panic("Unknown Jib Builder Type: " + string(t))
+}
+
+func (t BuilderType) Name() string {
+	switch t {
+	case JibMaven:
+		return "Jib Maven Plugin"
+	case JibGradle:
+		return "Jib Gradle Plugin"
+	}
+	panic("Unknown Jib Builder Type: " + string(t))
+}
+
 // filesLists contains cached build/input dependencies
 type filesLists struct {
 	// BuildDefinitions lists paths to build definitions that trigger a call out to Jib to refresh the pathMap, as well as a rebuild, upon changing
