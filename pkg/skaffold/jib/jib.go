@@ -39,7 +39,7 @@ const (
 	dotDotSlash = ".." + string(filepath.Separator)
 )
 
-// PluginType is an enum for the different Jib plugins supported.
+// PluginType is an enum for the different supported Jib plugins.
 type PluginType int
 
 // Define the different plugin types supported by Jib.
@@ -48,7 +48,7 @@ const (
 	JibGradle
 )
 
-// ID returns the identifier for a plugin type, suited for use in YAML.
+// ID returns the identifier for a Jib plugin type, suitable for external references (YAML, JSON, command-line, etc).
 func (t PluginType) ID() string {
 	switch t {
 	case JibMaven:
