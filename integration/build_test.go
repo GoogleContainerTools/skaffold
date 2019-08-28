@@ -108,10 +108,7 @@ func TestBuild(t *testing.T) {
 	}
 }
 
-//this is a little bit mad.
-//we use a skaffold process to drive from outside the cluster building an image
-//that contains the compiled skaffold binary, which is then executing a build of the
-//very same image but a different tag _as a pod_
+//see integration/testdata/README.md for details
 func TestBuildInCluster(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
