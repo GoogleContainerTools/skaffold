@@ -292,7 +292,7 @@ func overlayProfileField(fieldName string, config interface{}, profile interface
 		}
 		return v.Interface()
 	default:
-		logrus.Warnf("Type mismatch in profile overlay for field '%s' with type %s; falling back to original config values", fieldName, v.Kind())
+		logrus.Fatalf("Type mismatch in profile overlay for field '%s' with type %s; falling back to original config values", fieldName, v.Kind())
 		return config
 	}
 }

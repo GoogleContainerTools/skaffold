@@ -149,22 +149,27 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	// pull remote manifests
-	var rm deploy.ManifestList
-	for _, m := range k.RemoteManifests {
-		manifest, err := k.readRemoteManifest(ctx, m)
-		if err != nil {
-			return errors.Wrap(err, "get remote manifests")
+	// revert remote manifests
+	// TODO(dgageot): That seems super dangerous and I don't understand
+	// why we need to update resources just before we delete them.
+	if len(k.RemoteManifests) > 0 {
+		var rm deploy.ManifestList
+		for _, m := range k.RemoteManifests {
+			manifest, err := k.readRemoteManifest(ctx, m)
+			if err != nil {
+				return errors.Wrap(err, "get remote manifests")
+			}
+			rm = append(rm, manifest)
 		}
-		rm = append(rm, manifest)
+		upd, err := rm.ReplaceImages(k.originalImages, k.defaultRepo)
+		if err != nil {
+			return errors.Wrap(err, "replacing with originals")
+		}
+		if err := k.kubectl.Apply(ctx, out, upd); err != nil {
+			return errors.Wrap(err, "apply original")
+		}
 	}
-	upd, err := rm.ReplaceImages(k.originalImages, k.defaultRepo)
-	if err != nil {
-		return errors.Wrap(err, "replacing with originals")
-	}
-	if err := k.kubectl.Apply(ctx, out, upd); err != nil {
-		return errors.Wrap(err, "apply original")
-	}
+
 	if err := k.kubectl.Delete(ctx, out, manifests); err != nil {
 		return errors.Wrap(err, "delete")
 	}

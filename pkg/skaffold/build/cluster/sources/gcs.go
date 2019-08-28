@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 )
@@ -61,7 +62,7 @@ func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.A
 
 // Pod returns the pod template for this builder
 func (g *GCSBucket) Pod(args []string) *v1.Pod {
-	return podTemplate(g.clusterDetails, g.artifact, args)
+	return podTemplate(g.clusterDetails, g.artifact, args, version.Get().Version)
 }
 
 // ModifyPod does nothing here, since we just need to let kaniko run to completion

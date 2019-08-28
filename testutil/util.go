@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -58,6 +59,13 @@ func (t *T) Override(dest, tmp interface{}) {
 		return
 	}
 	t.teardownActions = append(t.teardownActions, teardown)
+}
+
+func (t *T) CheckMatches(pattern, actual string) {
+	t.T.Helper()
+	if matches, _ := regexp.MatchString(pattern, actual); !matches {
+		t.Errorf("expected output %s to match: %s", actual, pattern)
+	}
 }
 
 func (t *T) CheckContains(expected, actual string) {
