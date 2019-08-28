@@ -84,13 +84,13 @@ func StrSliceInsert(sl []string, index int, insert []string) []string {
 	return newSlice
 }
 
-// fileList holds a list of files, with no duplicate.
-type fileList struct {
+// orderedFileSet holds an ordered set of file paths.
+type orderedFileSet struct {
 	files []string
 	seen  map[string]bool
 }
 
-func (l *fileList) Add(file string) {
+func (l *orderedFileSet) Add(file string) {
 	if l.seen[file] {
 		return
 	}
@@ -103,26 +103,26 @@ func (l *fileList) Add(file string) {
 	l.files = append(l.files, file)
 }
 
-func (l *fileList) Files() []string {
+func (l *orderedFileSet) Files() []string {
 	return l.files
 }
 
 // ExpandPathsGlob expands paths according to filepath.Glob patterns
 // Returns a list of unique files that match the glob patterns passed in.
 func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
-	var list fileList
+	var set orderedFileSet
 
 	for _, p := range paths {
 		if filepath.IsAbs(p) {
 			// This is a absolute file reference
-			list.Add(p)
+			set.Add(p)
 			continue
 		}
 
 		path := filepath.Join(workingDir, p)
 		if _, err := os.Stat(path); err == nil {
 			// This is a file reference, so just add it
-			list.Add(path)
+			set.Add(path)
 			continue
 		}
 
@@ -150,12 +150,12 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 			// Make sure files inside a directory are listed in a consistent order
 			sort.Strings(filesInDirectory)
 			for _, file := range filesInDirectory {
-				list.Add(file)
+				set.Add(file)
 			}
 		}
 	}
 
-	return list.Files(), nil
+	return set.Files(), nil
 }
 
 // BoolPtr returns a pointer to a bool
