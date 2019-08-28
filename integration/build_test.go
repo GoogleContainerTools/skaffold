@@ -20,6 +20,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -125,9 +126,23 @@ func TestBuildInCluster(t *testing.T) {
 	if !ShouldRunGCPOnlyTests() {
 		t.Skip("skipping test that is gcp only")
 	}
-	if written, err := fileutils.CopyFile("../out/skaffold-linux-amd64", "./testdata/skaffold-in-cluster/skaffold"); written <= 0 || err != nil {
-		t.Errorf("failed to copy skaffold binary for test case: %s", err)
+
+	// copy the skaffold binary to the test case folder
+	skaffoldSrc := "../out/skaffold"
+	if runtime.GOOS != "linux" {
+		skaffoldSrc = "../out/skaffold-linux-amd64"
 	}
+	skaffoldDst := "./testdata/skaffold-in-cluster/skaffold"
+	if written, err := fileutils.CopyFile(skaffoldSrc, skaffoldDst); written <= 0 || err != nil {
+		t.Errorf("failed to copy skaffold binary for test case: %s", err)
+	} else {
+		defer func() {
+			if err := os.Remove(skaffoldDst); err != nil {
+				t.Errorf("failed to remove skaffold binary: %s", err)
+			}
+		}()
+	}
+
 	ns, nsClient, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
