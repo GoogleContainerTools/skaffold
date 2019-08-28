@@ -21,9 +21,7 @@ jobs:
       name: "Linux unit"
       script:
         - make
-        - make quicktest
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
+        - make coverage
     - os: osx
       name: "OSX unit"
       script:
