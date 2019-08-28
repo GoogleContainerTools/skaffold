@@ -26,10 +26,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestBuilderType(t *testing.T) {
-	testutil.CheckDeepEqual(t, "maven", JibMaven.String())
+func TestPluginType(t *testing.T) {
+	testutil.CheckDeepEqual(t, "maven", JibMaven.ID())
 	testutil.CheckDeepEqual(t, "Jib Maven Plugin", JibMaven.Name())
-	testutil.CheckDeepEqual(t, "gradle", JibGradle.String())
+	testutil.CheckDeepEqual(t, "gradle", JibGradle.ID())
 	testutil.CheckDeepEqual(t, "Jib Gradle Plugin", JibGradle.Name())
 }
 

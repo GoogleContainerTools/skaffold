@@ -112,7 +112,7 @@ type jibJSON struct {
 // ValidateJibConfig checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
 func ValidateJibConfig(path string) []Jib {
 	// Determine whether maven or gradle
-	var builderType BuilderType
+	var builderType PluginType
 	var executable, wrapper, taskName string
 	switch {
 	case strings.HasSuffix(path, "pom.xml"):

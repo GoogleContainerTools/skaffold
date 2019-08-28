@@ -39,33 +39,35 @@ const (
 	dotDotSlash = ".." + string(filepath.Separator)
 )
 
-// BuilderType is an enum for the different builders supported by Jib.
-type BuilderType int
+// PluginType is an enum for the different Jib plugins supported.
+type PluginType int
 
+// Define the different plugin types supported by Jib.
 const (
-	JibMaven BuilderType = iota
+	JibMaven PluginType = iota
 	JibGradle
 )
 
-// String returns the identifier for the respective builder type, used in YAML.
-func (t BuilderType) String() string {
+// ID returns the identifier for a plugin type, suited for use in YAML.
+func (t PluginType) ID() string {
 	switch t {
 	case JibMaven:
 		return "maven"
 	case JibGradle:
 		return "gradle"
 	}
-	panic("Unknown Jib Builder Type: " + string(t))
+	panic("Unknown Jib Plugin Type: " + string(t))
 }
 
-func (t BuilderType) Name() string {
+// Name provides a human-oriented label for a plugin type.
+func (t PluginType) Name() string {
 	switch t {
 	case JibMaven:
 		return "Jib Maven Plugin"
 	case JibGradle:
 		return "Jib Gradle Plugin"
 	}
-	panic("Unknown Jib Builder Type: " + string(t))
+	panic("Unknown Jib Plugin Type: " + string(t))
 }
 
 // filesLists contains cached build/input dependencies
