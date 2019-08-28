@@ -1,8 +1,6 @@
 FROM gcr.io/gcp-runtimes/ubuntu_16_0_4
 
-COPY ./out/skaffold /usr/bin/skaffold
-COPY ./out/skaffold /app/out/skaffold
-COPY ./integration/testdata/skaffold-in-cluster /app/integration/testdata/skaffold-in-cluster
+COPY ./skaffold /usr/bin/skaffold
 
 ENV KUBECTL_VERSION v1.12.8
 ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl

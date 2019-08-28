@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/pkg/fileutils"
+
 	"4d63.com/tz"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -115,6 +117,9 @@ func TestBuildInCluster(t *testing.T) {
 	}
 	if !ShouldRunGCPOnlyTests() {
 		t.Skip("skipping test that is gcp only")
+	}
+	if written, err := fileutils.CopyFile("../out/skaffold", "integration/testdata/skaffold-in-cluster/"); written <= 0 || err != nil {
+		t.Errorf("failed to copy skaffold binary for test case: %s", err)
 	}
 	skaffold.Run(
 		"-p", "create-build-step",
