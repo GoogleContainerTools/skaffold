@@ -3,7 +3,7 @@ kind: Pod
 metadata:
   name: skaffold-in-cluster
 spec:
-    serviceAccountName: admin-serviceaccount
+#    serviceAccountName: admin-serviceaccount
     containers:
     - name: skaffold-in-cluster
       image: gcr.io/k8s-skaffold/skaffold-in-cluster-builder

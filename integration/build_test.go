@@ -24,8 +24,12 @@ import (
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	rbacv1 "k8s.io/api/rbac/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/docker/docker/pkg/fileutils"
 
@@ -64,7 +68,7 @@ func TestBuild(t *testing.T) {
 			dir:         "testdata/tagPolicy",
 			args:        []string{"-p", "gitCommit"},
 			setup:       setupGitRepo,
-			expectImage: imageName + "v1",
+			expectImage: imageName + "corev1",
 		},
 		{
 			description: "sha256 tagger",
@@ -127,6 +131,33 @@ func TestBuildInCluster(t *testing.T) {
 	ns, nsClient, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
+	bindings := nsClient.client.RbacV1().ClusterRoleBindings()
+	binding, err := bindings.Create(&rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "skaffold-in-cluster-test:",
+		},
+		RoleRef: rbacv1.RoleRef{
+			Name:     "cluster-admin",
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      "default",
+				Namespace: ns.Name,
+			},
+		},
+	})
+	if err != nil {
+		t.Errorf("failed to create role binding: %s", err)
+	}
+	defer func() {
+		if err := bindings.Delete(binding.Name, &metav1.DeleteOptions{}); err != nil {
+			t.Errorf("failed to cleanup role binding: %s", err)
+		}
+	}()
+
 	skaffold.Run("-p", "create-build-step").InDir("./testdata/skaffold-in-cluster").InNs(ns.Name).RunOrFail(t)
 	defer func() {
 		if output, err := skaffold.Delete("-p", "create-build-step").InNs(ns.Name).InDir("./testdata/skaffold-in-cluster").RunWithCombinedOutput(t); err != nil {
@@ -138,7 +169,7 @@ func TestBuildInCluster(t *testing.T) {
 
 	if err := kubernetes.WaitForPodSucceeded(context.TODO(), podsClient, "skaffold-in-cluster", 2*time.Minute); err != nil {
 		t.Errorf("in-cluster build pod failed: %s", err)
-		logs, err := podsClient.GetLogs("skaffold-in-cluster", &v1.PodLogOptions{}).DoRaw()
+		logs, err := podsClient.GetLogs("skaffold-in-cluster", &corev1.PodLogOptions{}).DoRaw()
 		if err != nil {
 			t.Errorf("error getting logs for pod: %s", err)
 			t.Fail()
@@ -187,7 +218,7 @@ func checkImageExists(t *testing.T, image string) {
 	}
 }
 
-// setupGitRepo sets up a clean repo with tag v1
+// setupGitRepo sets up a clean repo with tag corev1
 func setupGitRepo(t *testing.T, dir string) func() {
 	gitArgs := [][]string{
 		{"init"},
@@ -195,7 +226,7 @@ func setupGitRepo(t *testing.T, dir string) func() {
 		{"config", "user.name", "John Doe"},
 		{"add", "."},
 		{"commit", "-m", "Initial commit"},
-		{"tag", "v1"},
+		{"tag", "corev1"},
 	}
 
 	for _, args := range gitArgs {
