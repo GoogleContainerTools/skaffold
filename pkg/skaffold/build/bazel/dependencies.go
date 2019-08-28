@@ -58,7 +58,7 @@ func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) (
 		return nil, errors.Wrapf(err, "unable to find absolute path for %s", dir)
 	}
 
-	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no")
+	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no", "--output=label")
 	cmd.Dir = dir
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
