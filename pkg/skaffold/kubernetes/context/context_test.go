@@ -17,9 +17,10 @@ limitations under the License.
 package context
 
 import (
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )

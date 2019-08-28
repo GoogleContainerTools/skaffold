@@ -12,4 +12,7 @@ RUN mv kubectl /usr/bin/kubectl
 
 WORKDIR /app
 
-CMD ["skaffold","build", "-f", "./integration/testdata/skaffold-in-cluster/skaffold.yaml", "--cache-artifacts=false"]
+CMD ["skaffold", "build",
+        "-f", "./integration/testdata/skaffold-in-cluster/skaffold.yaml",
+        "--cache-artifacts=false",
+        "-p", "in-cluster"]
