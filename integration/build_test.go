@@ -20,14 +20,9 @@ import (
 	"context"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	rbacv1 "k8s.io/api/rbac/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	corev1 "k8s.io/api/core/v1"
@@ -128,13 +123,13 @@ func TestBuildInCluster(t *testing.T) {
 	}
 
 	// copy the skaffold binary to the test case folder
-	skaffoldSrc := "../out/skaffold"
-	if runtime.GOOS != "linux" {
-		skaffoldSrc = "../out/skaffold-linux-amd64"
-	}
+	// this is geared towards the in-docker setup: the fresh built binary is here
+	// for manual testing, we can override this temporarily
+	skaffoldSrc := "/usr/bin/skaffold"
 	skaffoldDst := "./testdata/skaffold-in-cluster/skaffold"
 	if written, err := fileutils.CopyFile(skaffoldSrc, skaffoldDst); written <= 0 || err != nil {
 		t.Errorf("failed to copy skaffold binary for test case: %s", err)
+		t.Fail()
 	} else {
 		defer func() {
 			if err := os.Remove(skaffoldDst); err != nil {
@@ -145,35 +140,6 @@ func TestBuildInCluster(t *testing.T) {
 
 	ns, nsClient, deleteNs := SetupNamespace(t)
 	defer deleteNs()
-
-	//this is pointing at a gap in Skaffold's functionality - for objects where namespace is mandatory
-	//we don't have a good solution to generate for the given namespace, hence I'm relying on "templating"
-	bindings := nsClient.client.RbacV1().ClusterRoleBindings()
-	binding, err := bindings.Create(&rbacv1.ClusterRoleBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "skaffold-in-cluster-test:",
-		},
-		RoleRef: rbacv1.RoleRef{
-			Name:     "cluster-admin",
-			APIGroup: "rbac.authorization.k8s.io",
-			Kind:     "ClusterRole",
-		},
-		Subjects: []rbacv1.Subject{
-			{
-				Kind:      "ServiceAccount",
-				Name:      "default",
-				Namespace: ns.Name,
-			},
-		},
-	})
-	if err != nil {
-		t.Errorf("failed to create role binding: %s", err)
-	}
-	defer func() {
-		if err := bindings.Delete(binding.Name, &metav1.DeleteOptions{}); err != nil {
-			t.Errorf("failed to cleanup role binding: %s", err)
-		}
-	}()
 
 	skaffold.Run("-p", "create-build-step").InDir("./testdata/skaffold-in-cluster").InNs(ns.Name).RunOrFail(t)
 	defer func() {
