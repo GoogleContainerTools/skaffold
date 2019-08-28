@@ -121,7 +121,7 @@ func TestBuildInCluster(t *testing.T) {
 	}
 	skaffold.Run(
 		"-p", "create-build-step",
-		"-f", "integration/testdata/skaffold-in-cluster/skaffold.yaml").InDir(".").RunOrFail(t)
+		"-f", "integration/testdata/skaffold-in-cluster/skaffold.yaml").InDir("..").RunOrFail(t)
 
 }
 

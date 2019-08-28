@@ -10,23 +10,23 @@ profiles:
             buildContext:
               localDir: {}
             cache: {}
-        cluster:
-          pullSecretName: e2esecret
-          namespace: default
+      cluster:
+        pullSecretName: e2esecret
+        namespace: default
   - name: create-build-step
-      build:
-        artifacts:
-          - image: gcr.io/k8s-skaffold/skaffold-in-cluster-builder
-            kaniko:
-              dockerfile: integration/testdata/skaffold-in-cluster/Dockerfile
-              buildContext:
-                localDir: {}
-              cache: {}
-        cluster:
-          pullSecretName: e2esecret
-          namespace: default
-      deploy:
-        kubectl:
-          manifests:
-            - integration/testdata/skaffold-in-cluster/build-step/k8s-*
+    build:
+      artifacts:
+        - image: gcr.io/k8s-skaffold/skaffold-in-cluster-builder
+          kaniko:
+            dockerfile: integration/testdata/skaffold-in-cluster/Dockerfile
+            buildContext:
+              localDir: {}
+            cache: {}
+      cluster:
+        pullSecretName: e2esecret
+        namespace: default
+    deploy:
+      kubectl:
+        manifests:
+          - integration/testdata/skaffold-in-cluster/build-step/k8s-*
 
