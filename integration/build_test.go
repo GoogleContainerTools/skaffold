@@ -116,8 +116,8 @@ func TestBuildInCluster(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if !ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is gcp only")
 	}
 	skaffold.Run(
 		"-p", "create-build-step",
