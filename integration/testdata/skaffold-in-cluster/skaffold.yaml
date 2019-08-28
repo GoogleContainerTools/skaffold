@@ -1,32 +1,32 @@
 apiVersion: skaffold/v1beta13
 kind: Config
+build:
+  tagPolicy:
+    sha256: {}
 profiles:
   - name: build-target
     build:
       artifacts:
         - image: gcr.io/k8s-skaffold/test-build-in-cluster
           kaniko:
-            dockerfile: integration/testdata/skaffold-in-cluster/test-build/Dockerfile
+            dockerfile: test-build/Dockerfile
             buildContext:
               localDir: {}
             cache: {}
       cluster:
         pullSecretName: e2esecret
-        namespace: default
   - name: create-build-step
     build:
       artifacts:
         - image: gcr.io/k8s-skaffold/skaffold-in-cluster-builder
           kaniko:
-            dockerfile: integration/testdata/skaffold-in-cluster/Dockerfile
             buildContext:
               localDir: {}
             cache: {}
       cluster:
         pullSecretName: e2esecret
-        namespace: default
     deploy:
       kubectl:
         manifests:
-          - integration/testdata/skaffold-in-cluster/build-step/k8s-*
+          - build-step/k8s-*
 

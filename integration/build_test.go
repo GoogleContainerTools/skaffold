@@ -24,6 +24,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/docker/docker/pkg/fileutils"
 
 	"4d63.com/tz"
@@ -118,13 +121,33 @@ func TestBuildInCluster(t *testing.T) {
 	if !ShouldRunGCPOnlyTests() {
 		t.Skip("skipping test that is gcp only")
 	}
-	if written, err := fileutils.CopyFile("../out/skaffold", "integration/testdata/skaffold-in-cluster/"); written <= 0 || err != nil {
+	if written, err := fileutils.CopyFile("../out/skaffold-linux-amd64", "./testdata/skaffold-in-cluster/skaffold"); written <= 0 || err != nil {
 		t.Errorf("failed to copy skaffold binary for test case: %s", err)
 	}
-	skaffold.Run(
-		"-p", "create-build-step",
-		"-f", "integration/testdata/skaffold-in-cluster/skaffold.yaml").InDir("..").RunOrFail(t)
+	ns, nsClient, deleteNs := SetupNamespace(t)
+	defer deleteNs()
 
+	skaffold.Run("-p", "create-build-step").InDir("./testdata/skaffold-in-cluster").InNs(ns.Name).RunOrFail(t)
+	defer func() {
+		if output, err := skaffold.Delete("-p", "create-build-step").InNs(ns.Name).InDir("./testdata/skaffold-in-cluster").RunWithCombinedOutput(t); err != nil {
+			t.Logf("failed to cleanup skaffold-in-cluster: %s, output: %s", err, output)
+		}
+	}()
+
+	podsClient := nsClient.client.CoreV1().Pods(ns.Name)
+
+	if err := kubernetes.WaitForPodSucceeded(context.TODO(), podsClient, "skaffold-in-cluster", 2*time.Minute); err != nil {
+		t.Errorf("in-cluster build pod failed: %s", err)
+		logs, err := podsClient.GetLogs("skaffold-in-cluster", &v1.PodLogOptions{}).DoRaw()
+		if err != nil {
+			t.Errorf("error getting logs for pod: %s", err)
+			t.Fail()
+			return
+		}
+
+		t.Errorf("logs: %s", logs)
+		t.Fail()
+	}
 }
 
 // removeImage removes the given image if present.
