@@ -58,6 +58,13 @@ func TestDockerCLIBuild(t *testing.T) {
 			extraEnv:    []string{"OTHER=VALUE"},
 			expectedEnv: []string{"KEY=VALUE", "OTHER=VALUE", "DOCKER_BUILDKIT=1"},
 		},
+		{
+			description: "env var collisions",
+			localBuild:  latest.LocalBuild{UseBuildkit: true},
+			extraEnv:    []string{"KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0"},
+			// env var collisions are handled by cmd.Run(). Last one wins.
+			expectedEnv: []string{"KEY=VALUE", "KEY=OTHER_VALUE", "DOCKER_BUILDKIT=0", "DOCKER_BUILDKIT=1"},
+		},
 	}
 
 	for _, test := range tests {
