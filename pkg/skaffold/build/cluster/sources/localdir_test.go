@@ -30,6 +30,9 @@ func TestPod(t *testing.T) {
 	env := []v1.EnvVar{{
 		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 		Value: "/secret/kaniko-secret",
+	}, {
+		Name:  "UPSTREAM_CLIENT_TYPE",
+		Value: "UpstreamClient(skaffold-)",
 	}}
 	reqs := &latest.ResourceRequirements{
 		Requests: &latest.ResourceRequirement{

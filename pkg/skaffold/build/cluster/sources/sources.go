@@ -18,6 +18,7 @@ package sources
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	v1 "k8s.io/api/core/v1"
@@ -53,10 +54,16 @@ func Retrieve(cli *kubectl.CLI, clusterDetails *latest.ClusterDetails, artifact 
 	}
 }
 
-func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoArtifact, args []string) *v1.Pod {
+func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoArtifact, args []string, version string) *v1.Pod {
+	userAgent := fmt.Sprintf("UpstreamClient(skaffold-%s)", version)
+
 	env := []v1.EnvVar{{
 		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 		Value: "/secret/kaniko-secret",
+	}, {
+		// This should be same https://github.com/GoogleContainerTools/kaniko/blob/77cfb912f3483c204bfd09e1ada44fd200b15a78/pkg/executor/push.go#L49
+		Name:  "UPSTREAM_CLIENT_TYPE",
+		Value: userAgent,
 	}}
 
 	env = setProxy(clusterDetails, env)
