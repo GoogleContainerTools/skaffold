@@ -100,6 +100,7 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 .PHONY: test
 test: $(BUILD_DIR)
 	@ ./hack/test.sh
+	@ ./hack/checks.sh
 
 .PHONY: checks
 checks: $(BUILD_DIR)
