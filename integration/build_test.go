@@ -131,6 +131,8 @@ func TestBuildInCluster(t *testing.T) {
 	ns, nsClient, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
+	//this is pointing at a gap in Skaffold's functionality - for objects where namespace is mandatory
+	//we don't have a good solution to generate for the given namespace, hence I'm relying on "templating"
 	bindings := nsClient.client.RbacV1().ClusterRoleBindings()
 	binding, err := bindings.Create(&rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
