@@ -124,31 +124,13 @@ func TestBuildInCluster(t *testing.T) {
 		t.Skip("skipping test that is gcp only")
 	}
 
-	// copy the skaffold binary to the test case folder
-	// this is geared towards the in-docker setup: the fresh built binary is here
-	// for manual testing, we can override this temporarily
-	skaffoldSrc := "/usr/bin/skaffold"
-	skaffoldDst := "./testdata/skaffold-in-cluster/skaffold"
-	if written, err := fileutils.CopyFile(skaffoldSrc, skaffoldDst); written <= 0 || err != nil {
-		t.Errorf("failed to copy skaffold binary for test case: %s", err)
-		t.FailNow()
-	} else {
-		defer func() {
-			if err := os.Remove(skaffoldDst); err != nil {
-				t.Errorf("failed to remove skaffold binary: %s", err)
-			}
-		}()
-	}
-
-	client, err := kubernetes.Client()
-	if err != nil {
-		t.Errorf("failed to get k8s client: %s", err)
-		t.FailNow()
-	}
+	cleanupSkaffoldBinary := copySkaffoldBinary(t)
+	defer cleanupSkaffoldBinary()
 
 	suffix := uuid.New().String()
 	podName := fmt.Sprintf("skaffold-in-cluster-%s", suffix)
-	setupSuffixKustomization(suffix, t)
+	cleanupKustomization := setupSuffixKustomization(suffix, t)
+	defer cleanupKustomization()
 
 	const namespace = "default"
 
@@ -160,6 +142,11 @@ func TestBuildInCluster(t *testing.T) {
 		}
 	}()
 
+	client, err := kubernetes.Client()
+	if err != nil {
+		t.Errorf("failed to get k8s client: %s", err)
+		t.FailNow()
+	}
 	podsClient := client.CoreV1().Pods(namespace)
 
 	if err := kubernetes.WaitForPodSucceeded(context.TODO(), podsClient, podName, 2*time.Minute); err != nil {
@@ -175,24 +162,43 @@ func TestBuildInCluster(t *testing.T) {
 	}
 }
 
-func setupSuffixKustomization(suffix string, t *testing.T) {
-	kustomization := fmt.Sprintf(`nameSuffix: -%s
-	resources:
-	  - k8s-job.yaml`, suffix)
-	f, err := os.OpenFile("testdata/skaffold-in-cluster/build-step/kustomization.yaml", os.O_WRONLY|os.O_CREATE, 0666)
+func copySkaffoldBinary(t *testing.T) func() {
+	// copy the skaffold binary to the test case folder
+	// this is geared towards the in-docker setup: the fresh built binary is here
+	// for manual testing, we can override this temporarily
+	skaffoldSrc := "/usr/bin/skaffold"
+	skaffoldDst := "./testdata/skaffold-in-cluster/skaffold"
+	if written, err := fileutils.CopyFile(skaffoldSrc, skaffoldDst); written <= 0 || err != nil {
+		t.Errorf("failed to copy skaffold binary for test case: %s", err)
+		t.FailNow()
+	}
+	return func() {
+		if err := os.Remove(skaffoldDst); err != nil {
+			t.Errorf("failed to remove skaffold binary: %s", err)
+		}
+	}
+}
+
+func setupSuffixKustomization(suffix string, t *testing.T) func() {
+	kustomization := fmt.Sprintf(
+		`nameSuffix: -%s
+resources:
+ - k8s-job.yaml`, suffix)
+	f, err := os.OpenFile("./testdata/skaffold-in-cluster/build-step/kustomization.yaml", os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		t.Errorf("failed opening kustomziation file for writing: %s", err)
 		t.FailNow()
 	}
-	defer func() {
-		f.Close()
-		os.Remove("testdata/skaffold-in-cluster/build-step/kustomization.yaml")
-	}()
+
 	if _, err := f.WriteString(kustomization); err != nil {
 		t.Errorf("failed writing kustomziation: %s", err)
 		t.FailNow()
 	}
 	f.Sync()
+	return func() {
+		f.Close()
+		os.Remove("testdata/skaffold-in-cluster/build-step/kustomization.yaml")
+	}
 }
 
 // removeImage removes the given image if present.
