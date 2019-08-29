@@ -232,7 +232,7 @@ func TestDev(t *testing.T) {
 				{
 					Built:    []string{"img2:2"},
 					Tested:   []string{"img2:2"},
-					Deployed: []string{"img2:2", "img1:1"},
+					Deployed: []string{"img1:1", "img2:2"},
 				},
 			},
 		},
