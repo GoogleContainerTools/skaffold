@@ -3,8 +3,8 @@
 Skaffold aims to be used as a buildstep in CI/CD pipelines. 
 What if this pipeline step is running inside a K8s cluster?
  
-In that case Skaffold needs to be able to work with an in-cluster k8s context to be able to setup the secret and create the pod for a kaniko build for example. 
-This test case is testing that flow.   
+In that case Skaffold needs to be able to work with an in-cluster k8s context to setup the secret and to create the pod for a kaniko build. 
+This test case is testing that flow.
  
 The `skaffold.yaml` describes _both_ the creation of an imaginary buildstep.
 The buildstep is implemented with a k8s Job under  `build-step` and an image,

@@ -26,6 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/docker/docker/pkg/fileutils"
 
@@ -129,7 +130,7 @@ func TestBuildInCluster(t *testing.T) {
 	skaffoldDst := "./testdata/skaffold-in-cluster/skaffold"
 	if written, err := fileutils.CopyFile(skaffoldSrc, skaffoldDst); written <= 0 || err != nil {
 		t.Errorf("failed to copy skaffold binary for test case: %s", err)
-		t.Fail()
+		t.FailNow()
 	} else {
 		defer func() {
 			if err := os.Remove(skaffoldDst); err != nil {
@@ -141,7 +142,22 @@ func TestBuildInCluster(t *testing.T) {
 	ns, nsClient, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	skaffold.Run("-p", "create-build-step").InDir("./testdata/skaffold-in-cluster").InNs(ns.Name).RunOrFail(t)
+	coreClient := nsClient.client.CoreV1()
+	secret, err := coreClient.Secrets("default").Get("e2esecret", metav1.GetOptions{})
+	if err != nil {
+		t.Errorf("failed to get e2esecret: %s", err)
+		t.FailNow()
+	}
+	secret.Namespace = ns.Name
+	secret.ResourceVersion = ""
+	secret, err = coreClient.Secrets(ns.Name).Create(secret)
+	if err != nil {
+		t.Errorf("failed to create e2esecret in namespace %s: %s", ns.Name, err)
+		t.FailNow()
+	}
+
+	logs := skaffold.Run("-p", "create-build-step", "--cache-artifacts=true").InDir("./testdata/skaffold-in-cluster").InNs(ns.Name).RunOrFailOutput(t)
+	t.Logf("create-build-step logs: \n%s", logs)
 	defer func() {
 		if output, err := skaffold.Delete("-p", "create-build-step").InNs(ns.Name).InDir("./testdata/skaffold-in-cluster").RunWithCombinedOutput(t); err != nil {
 			t.Logf("failed to cleanup skaffold-in-cluster: %s, output: %s", err, output)
@@ -155,7 +171,7 @@ func TestBuildInCluster(t *testing.T) {
 		logs, err := podsClient.GetLogs("skaffold-in-cluster", &corev1.PodLogOptions{}).DoRaw()
 		if err != nil {
 			t.Errorf("error getting logs for pod: %s", err)
-			t.Fail()
+			t.FailNow()
 			return
 		}
 
