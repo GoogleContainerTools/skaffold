@@ -4,17 +4,6 @@ build:
   tagPolicy:
     sha256: {}
 profiles:
-  - name: build-target
-    build:
-      artifacts:
-        - image: gcr.io/k8s-skaffold/test-build-in-cluster
-          kaniko:
-            dockerfile: test-build/Dockerfile
-            buildContext:
-              localDir: {}
-            cache: {}
-      cluster:
-        pullSecretName: e2esecret
   - name: create-build-step
     build:
       artifacts:
@@ -26,7 +15,17 @@ profiles:
       cluster:
         pullSecretName: e2esecret
     deploy:
-      kubectl:
-        manifests:
-          - build-step/k8s-*
+      kustomize:
+        path: build-step
+  - name: build-target
+    build:
+      artifacts:
+        - image: gcr.io/k8s-skaffold/test-build-in-cluster
+          kaniko:
+            dockerfile: test-build/Dockerfile
+            buildContext:
+              localDir: {}
+            cache: {}
+      cluster:
+        pullSecretName: e2esecret
 

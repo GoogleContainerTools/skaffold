@@ -18,6 +18,8 @@ package integration
 
 import (
 	"context"
+	"fmt"
+	"github.com/google/uuid"
 	"os"
 	"os/exec"
 	"strings"
@@ -25,10 +27,8 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/docker/docker/pkg/fileutils"
+	corev1 "k8s.io/api/core/v1"
 
 	"4d63.com/tz"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -139,34 +139,43 @@ func TestBuildInCluster(t *testing.T) {
 		}()
 	}
 
-	ns, nsClient, deleteNs := SetupNamespace(t)
-	defer deleteNs()
-
-	coreClient := nsClient.client.CoreV1()
-	secret, err := coreClient.Secrets("default").Get("e2esecret", metav1.GetOptions{})
+	client, err := kubernetes.Client()
 	if err != nil {
-		t.Errorf("failed to get e2esecret: %s", err)
-		t.FailNow()
-	}
-	secret.Namespace = ns.Name
-	secret.ResourceVersion = ""
-	secret, err = coreClient.Secrets(ns.Name).Create(secret)
-	if err != nil {
-		t.Errorf("failed to create e2esecret in namespace %s: %s", ns.Name, err)
+		t.Errorf("failed to get k8s client: %s", err)
 		t.FailNow()
 	}
 
-	logs := skaffold.Run("-p", "create-build-step", "--cache-artifacts=true").InDir("./testdata/skaffold-in-cluster").InNs(ns.Name).RunOrFailOutput(t)
+	suffix := uuid.New().String()
+	kustomization := fmt.Sprintf(`nameSuffix: -%s
+resources:
+  - k8s-job.yaml`, suffix)
+	podName := fmt.Sprintf("skaffold-in-cluster-%s", suffix)
+
+	f, err := os.OpenFile("testdata/skaffold-in-cluster/build-step/kustomization.yaml", os.O_WRONLY|os.O_CREATE, 0666)
+	defer func() {
+		f.Close()
+		os.Remove("testdata/skaffold-in-cluster/build-step/kustomization.yaml")
+	}()
+
+	if _, err := f.WriteString(kustomization); err != nil {
+		t.Errorf("failed writing kustomziation: %s", err)
+		t.FailNow()
+	}
+	f.Sync()
+
+	const namespace = "default"
+
+	logs := skaffold.Run("-p", "create-build-step", "--cache-artifacts=true").InDir("./testdata/skaffold-in-cluster").InNs(namespace).RunOrFailOutput(t)
 	t.Logf("create-build-step logs: \n%s", logs)
 	defer func() {
-		if output, err := skaffold.Delete("-p", "create-build-step").InNs(ns.Name).InDir("./testdata/skaffold-in-cluster").RunWithCombinedOutput(t); err != nil {
+		if output, err := skaffold.Delete("-p", "create-build-step").InNs(namespace).InDir("./testdata/skaffold-in-cluster").RunWithCombinedOutput(t); err != nil {
 			t.Logf("failed to cleanup skaffold-in-cluster: %s, output: %s", err, output)
 		}
 	}()
 
-	podsClient := nsClient.client.CoreV1().Pods(ns.Name)
+	podsClient := client.CoreV1().Pods(namespace)
 
-	if err := kubernetes.WaitForPodSucceeded(context.TODO(), podsClient, "skaffold-in-cluster", 2*time.Minute); err != nil {
+	if err := kubernetes.WaitForPodSucceeded(context.TODO(), podsClient, podName, 2*time.Minute); err != nil {
 		t.Errorf("in-cluster build pod failed: %s", err)
 		logs, err := podsClient.GetLogs("skaffold-in-cluster", &corev1.PodLogOptions{}).DoRaw()
 		if err != nil {
