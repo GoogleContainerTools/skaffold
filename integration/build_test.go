@@ -66,7 +66,7 @@ func TestBuild(t *testing.T) {
 			dir:         "testdata/tagPolicy",
 			args:        []string{"-p", "gitCommit"},
 			setup:       setupGitRepo,
-			expectImage: imageName + "corev1",
+			expectImage: imageName + "v1",
 		},
 		{
 			description: "sha256 tagger",
