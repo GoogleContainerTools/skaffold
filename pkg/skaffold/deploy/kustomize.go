@@ -250,8 +250,8 @@ func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {
 func (k *KustomizeDeployer) readManifests(ctx context.Context) (deploy.ManifestList, error) {
 	var args []string
 	args = append(args, "build")
-	if k.Build != nil {
-		for _, v := range k.Build {
+	if k.BuildArgs != nil {
+		for _, v := range k.BuildArgs {
 			parts := strings.Split(v, " ")
 			args = append(args, parts...)
 		}
