@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/segmentio/textio"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -133,7 +134,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		}
 	}
 
-	if err := k.kubectl.Apply(ctx, out, manifests); err != nil {
+	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		event.DeployFailed(err)
 		return NewDeployErrorResult(errors.Wrap(err, "kubectl error"))
 	}
