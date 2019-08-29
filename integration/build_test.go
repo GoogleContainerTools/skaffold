@@ -19,12 +19,13 @@ package integration
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/docker/docker/pkg/fileutils"
@@ -146,22 +147,8 @@ func TestBuildInCluster(t *testing.T) {
 	}
 
 	suffix := uuid.New().String()
-	kustomization := fmt.Sprintf(`nameSuffix: -%s
-resources:
-  - k8s-job.yaml`, suffix)
 	podName := fmt.Sprintf("skaffold-in-cluster-%s", suffix)
-
-	f, err := os.OpenFile("testdata/skaffold-in-cluster/build-step/kustomization.yaml", os.O_WRONLY|os.O_CREATE, 0666)
-	defer func() {
-		f.Close()
-		os.Remove("testdata/skaffold-in-cluster/build-step/kustomization.yaml")
-	}()
-
-	if _, err := f.WriteString(kustomization); err != nil {
-		t.Errorf("failed writing kustomziation: %s", err)
-		t.FailNow()
-	}
-	f.Sync()
+	setupSuffixKustomization(suffix, t)
 
 	const namespace = "default"
 
@@ -177,16 +164,35 @@ resources:
 
 	if err := kubernetes.WaitForPodSucceeded(context.TODO(), podsClient, podName, 2*time.Minute); err != nil {
 		t.Errorf("in-cluster build pod failed: %s", err)
-		logs, err := podsClient.GetLogs("skaffold-in-cluster", &corev1.PodLogOptions{}).DoRaw()
+		logs, err := podsClient.GetLogs(podName, &corev1.PodLogOptions{}).DoRaw()
 		if err != nil {
 			t.Errorf("error getting logs for pod: %s", err)
 			t.FailNow()
 			return
 		}
-
 		t.Errorf("logs: %s", logs)
 		t.Fail()
 	}
+}
+
+func setupSuffixKustomization(suffix string, t *testing.T) {
+	kustomization := fmt.Sprintf(`nameSuffix: -%s
+	resources:
+	  - k8s-job.yaml`, suffix)
+	f, err := os.OpenFile("testdata/skaffold-in-cluster/build-step/kustomization.yaml", os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		t.Errorf("failed opening kustomziation file for writing: %s", err)
+		t.FailNow()
+	}
+	defer func() {
+		f.Close()
+		os.Remove("testdata/skaffold-in-cluster/build-step/kustomization.yaml")
+	}()
+	if _, err := f.WriteString(kustomization); err != nil {
+		t.Errorf("failed writing kustomziation: %s", err)
+		t.FailNow()
+	}
+	f.Sync()
 }
 
 // removeImage removes the given image if present.
