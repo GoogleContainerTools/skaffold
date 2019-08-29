@@ -41,6 +41,9 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 		},
 	}
 	configFiles, err := setupConfigFiles(configPaths)
+	if err != nil {
+		return errors.Wrap(err, "setting up ConfigFiles")
+	}
 	configFiles = append(baseConfig, configFiles...)
 
 	// Will run the profile setup multiple times and require user input for each specified config

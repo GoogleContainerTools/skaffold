@@ -31,11 +31,12 @@ import (
 
 func generateBuildTasks(configFiles []*ConfigFile) ([]*tekton.Task, error) {
 	var tasks []*tekton.Task
-	for _, configFile := range configFiles {
+	for i, configFile := range configFiles {
 		task, err := generateBuildTask(configFile)
 		if err != nil {
 			return nil, err
 		}
+		task.Spec.Steps[0].Name = fmt.Sprintf("%s-%d", task.Spec.Steps[0].Name, i)
 
 		tasks = append(tasks, task)
 	}
@@ -110,11 +111,12 @@ func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
 
 func generateDeployTasks(configFiles []*ConfigFile) ([]*tekton.Task, error) {
 	var tasks []*tekton.Task
-	for _, configFile := range configFiles {
+	for i, configFile := range configFiles {
 		task, err := generateDeployTask(configFile)
 		if err != nil {
 			return nil, err
 		}
+		task.Spec.Steps[0].Name = fmt.Sprintf("%s-%d", task.Spec.Steps[0].Name, i)
 
 		tasks = append(tasks, task)
 	}
