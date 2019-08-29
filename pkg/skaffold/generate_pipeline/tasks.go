@@ -36,7 +36,7 @@ func generateBuildTasks(configFiles []*ConfigFile) ([]*tekton.Task, error) {
 		if err != nil {
 			return nil, err
 		}
-		task.Spec.Steps[0].Name = fmt.Sprintf("%s-%d", task.Spec.Steps[0].Name, i)
+		task.Name = fmt.Sprintf("%s-%d", task.Name, i)
 
 		tasks = append(tasks, task)
 	}
@@ -116,7 +116,7 @@ func generateDeployTasks(configFiles []*ConfigFile) ([]*tekton.Task, error) {
 		if err != nil {
 			return nil, err
 		}
-		task.Spec.Steps[0].Name = fmt.Sprintf("%s-%d", task.Spec.Steps[0].Name, i)
+		task.Name = fmt.Sprintf("%s-%d", task.Name, i)
 
 		tasks = append(tasks, task)
 	}
