@@ -112,14 +112,8 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 			return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 		}
 	}
-	if a.JibMavenArtifact != nil {
-		paths, err = jib.GetDependenciesMaven(ctx, a.Workspace, a.JibMavenArtifact)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
-		}
-	}
-	if a.JibGradleArtifact != nil {
-		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
+	if a.JibArtifact != nil {
+		paths, err = jib.GetDependencies(ctx, a.Workspace, a.JibArtifact)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 		}

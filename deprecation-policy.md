@@ -54,8 +54,7 @@ However the **behavior** of individual component might suffer breaking changes d
 - Artifact types:
   - Dockerfile: beta
   - Bazel: beta
-  - jibMaven: alpha
-  - jibGradle: alpha
+  - Jib: alpha
 - Filesync: alpha
 - Port-forwarding: alpha
 - Taggers: beta

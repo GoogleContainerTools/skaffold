@@ -18,6 +18,7 @@ package jib
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -28,6 +29,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/karrick/godirwalk"
@@ -87,6 +89,41 @@ type filesLists struct {
 
 // watchedFiles maps from project name to watched files
 var watchedFiles = map[string]filesLists{}
+
+// GetDependencies returns a list of files to watch for changes to rebuild
+func GetDependencies(ctx context.Context, workspace string, artifact *latest.JibArtifact) ([]string, error) {
+	switch DetermineJibPluginType(workspace, artifact) {
+	case JibMaven:
+		return getDependenciesMaven(ctx, workspace, artifact)
+	case JibGradle:
+		return getDependenciesGradle(ctx, workspace, artifact)
+	default:
+		return nil, errors.Errorf("Unable to determine Jib builder type for %s", workspace)
+	}
+}
+
+func DetermineJibPluginType(workspace string, artifact *latest.JibArtifact) PluginType {
+	// see if explicitly specified
+	switch artifact.Type {
+	case JibGradle.ID():
+		return JibGradle
+	case JibMaven.ID():
+		return JibMaven
+	}
+	// check for typical gradle files
+	for _, gradleFile := range []string{"build.gradle", "gradle.properties", "settings.gradle", "gradlew", "gradlew.bat", "gradlew.cmd"} {
+		if exists(filepath.Join(workspace, gradleFile)) {
+			return JibGradle
+		}
+	}
+	return JibMaven
+}
+
+// exists returns true if the file with the given name exists
+func exists(name string) bool {
+	_, err := os.Stat(name)
+	return err == nil || !os.IsNotExist(err) // err could be permission-related
+}
 
 // getDependencies returns a list of files to watch for changes to rebuild
 func getDependencies(workspace string, cmd exec.Cmd, projectName string) ([]string, error) {

@@ -70,24 +70,24 @@ func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 	}
 
 	if j.BuilderName == JibMaven.Name() {
-		jibMaven := &latest.JibMavenArtifact{}
+		jibMaven := &latest.JibArtifact{Type: JibMaven.ID()}
 		if j.Project != "" {
-			jibMaven.Module = j.Project
+			jibMaven.Project = j.Project
 		}
 		if j.Image == "" {
 			jibMaven.Flags = []string{"-Dimage=" + manifestImage}
 		}
-		a.ArtifactType = latest.ArtifactType{JibMavenArtifact: jibMaven}
+		a.ArtifactType = latest.ArtifactType{JibArtifact: jibMaven}
 
 	} else if j.BuilderName == JibGradle.Name() {
-		jibGradle := &latest.JibGradleArtifact{}
+		jibGradle := &latest.JibArtifact{Type: JibGradle.ID()}
 		if j.Project != "" {
 			jibGradle.Project = j.Project
 		}
 		if j.Image == "" {
 			jibGradle.Flags = []string{"-Dimage=" + manifestImage}
 		}
-		a.ArtifactType = latest.ArtifactType{JibGradleArtifact: jibGradle}
+		a.ArtifactType = latest.ArtifactType{JibArtifact: jibGradle}
 	}
 
 	return a
@@ -114,6 +114,7 @@ func ValidateJibConfig(path string) []Jib {
 	// Determine whether maven or gradle
 	var builderType PluginType
 	var executable, wrapper, taskName string
+	// FIXME: use DeterminePluginType
 	switch {
 	case strings.HasSuffix(path, "pom.xml"):
 		builderType = JibMaven

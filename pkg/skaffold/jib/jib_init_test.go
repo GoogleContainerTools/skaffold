@@ -155,7 +155,7 @@ func TestCreateArtifact(t *testing.T) {
 				ImageName: "image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibGradleArtifact: &latest.JibGradleArtifact{Project: "project"},
+					JibArtifact: &latest.JibArtifact{Project: "project", Type: JibGradle.ID()},
 				},
 			},
 		},
@@ -167,9 +167,7 @@ func TestCreateArtifact(t *testing.T) {
 				ImageName: "different-image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibGradleArtifact: &latest.JibGradleArtifact{
-						Flags: []string{"-Dimage=different-image"},
-					},
+					JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: JibGradle.ID()},
 				},
 			},
 		},
@@ -178,11 +176,9 @@ func TestCreateArtifact(t *testing.T) {
 			config:        Jib{BuilderName: JibMaven.Name(), FilePath: filepath.Join("path", "to", "pom.xml"), Image: "image", Project: "project"},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
-				ImageName: "image",
-				Workspace: filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{
-					JibMavenArtifact: &latest.JibMavenArtifact{Module: "project"},
-				},
+				ImageName:    "image",
+				Workspace:    filepath.Join("path", "to"),
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project", Type: JibMaven.ID()}},
 			},
 		},
 		{
@@ -193,9 +189,7 @@ func TestCreateArtifact(t *testing.T) {
 				ImageName: "different-image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibMavenArtifact: &latest.JibMavenArtifact{
-						Flags: []string{"-Dimage=different-image"},
-					},
+					JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: JibMaven.ID()},
 				},
 			},
 		},
@@ -205,7 +199,7 @@ func TestCreateArtifact(t *testing.T) {
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName:    "image",
-				ArtifactType: latest.ArtifactType{JibGradleArtifact: &latest.JibGradleArtifact{}},
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Type: JibGradle.ID()}},
 			},
 		},
 	}

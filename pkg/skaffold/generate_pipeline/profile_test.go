@@ -83,8 +83,8 @@ func TestGenerateProfile(t *testing.T) {
 							{
 								ImageName: "test",
 								ArtifactType: latest.ArtifactType{
-									JibMavenArtifact: &latest.JibMavenArtifact{
-										Module:  "test-module",
+									JibArtifact: &latest.JibArtifact{
+										Project: "test-module",
 										Profile: "test-profile",
 									},
 									DockerArtifact: nil,
@@ -102,8 +102,8 @@ func TestGenerateProfile(t *testing.T) {
 							{
 								ImageName: "test-pipeline",
 								ArtifactType: latest.ArtifactType{
-									JibMavenArtifact: &latest.JibMavenArtifact{
-										Module:  "test-module",
+									JibArtifact: &latest.JibArtifact{
+										Project: "test-module",
 										Profile: "test-profile",
 									},
 								},

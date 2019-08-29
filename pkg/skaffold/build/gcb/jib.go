@@ -21,26 +21,30 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/pkg/errors"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
-func (b *Builder) jibMavenBuildSpec(artifact *latest.JibMavenArtifact, tag string) cloudbuild.Build {
-	return cloudbuild.Build{
-		Steps: []*cloudbuild.BuildStep{{
-			Name:       b.MavenImage,
-			Entrypoint: "sh",
-			Args:       fixHome("mvn", jib.GenerateMavenArgs("build", tag, artifact, b.skipTests, b.insecureRegistries)),
-		}},
-	}
-}
-
-func (b *Builder) jibGradleBuildSpec(artifact *latest.JibGradleArtifact, tag string) cloudbuild.Build {
-	return cloudbuild.Build{
-		Steps: []*cloudbuild.BuildStep{{
-			Name:       b.GradleImage,
-			Entrypoint: "sh",
-			Args:       fixHome("gradle", jib.GenerateGradleArgs("jib", tag, artifact, b.skipTests, b.insecureRegistries)),
-		}},
+func (b *Builder) jibBuildSpec(artifact *latest.Artifact, tag string) (cloudbuild.Build, error) {
+	switch jib.DetermineJibPluginType(artifact.Workspace, artifact.JibArtifact) {
+	case jib.JibMaven:
+		return cloudbuild.Build{
+			Steps: []*cloudbuild.BuildStep{{
+				Name:       b.MavenImage,
+				Entrypoint: "sh",
+				Args:       fixHome("mvn", jib.GenerateMavenArgs("build", tag, artifact.JibArtifact, b.skipTests, b.insecureRegistries)),
+			}},
+		}, nil
+	case jib.JibGradle:
+		return cloudbuild.Build{
+			Steps: []*cloudbuild.BuildStep{{
+				Name:       b.GradleImage,
+				Entrypoint: "sh",
+				Args:       fixHome("gradle", jib.GenerateGradleArgs("jib", tag, artifact.JibArtifact, b.skipTests, b.insecureRegistries)),
+			}},
+		}, nil
+	default:
+		return cloudbuild.Build{}, errors.New("skaffold can't build a bazel artifact with Google Cloud Build")
 	}
 }
 

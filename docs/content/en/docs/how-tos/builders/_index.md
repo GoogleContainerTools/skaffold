@@ -161,7 +161,7 @@ Skaffold requires using Jib v1.4.0 or later.
 
 ### Configuration
 
-To use Jib, add a `jibMaven` or `jibGradle` field to each artifact you specify in the
+To use Jib, add a `jib` field to each artifact you specify in the
 `artifacts` part of the `build` section. `context` should be a path to
 your Maven or Gradle project.  
 
@@ -169,13 +169,9 @@ your Maven or Gradle project.
 Your project must be configured to use Jib already.
 {{< /alert >}}
 
-The `jibMaven` type offers the following options:
+The `jib` type offers the following options:
 
-{{< schema root="JibMavenArtifact" >}}
-
-The `jibGradle` type offers the following options:
-
-{{< schema root="JibGradleArtifact" >}}
+{{< schema root="JibArtifact" >}}
 
 ### Example
 
@@ -190,13 +186,13 @@ each produce a separate container image.
 
 #### Maven
 
-To build a Maven multi-module project, first identify the modules that should
-produce a container image. Then for each such module:
+To build a Maven multi-module project, first identify the sub-projects (also called _modules_
+in Maven) that should produce a container image. Then for each such sub-project:
 
   - Create a Skaffold `artifact` in the `skaffold.yaml`:
   - Set the `artifact`'s `context` field to the root project location.
-  - Add a `jibMaven` element and set its `module` field to the module's
-    `:artifactId`, `groupId:artifactId`, or the relative path to the module
+  - Add a `jib` element and set its `project` field to the sub-project's
+    `:artifactId`, `groupId:artifactId`, or the relative path to the sub-project
     _within the project_.
 
 {{% alert title="Updating from earlier versions" %}}
@@ -208,7 +204,7 @@ no longer required with Jib 1.4.0 and should be removed.
 #### Gradle
 
 To build a multi-module project with Gradle, specify each sub-project as a separate
-Skaffold artifact. For each artifact, add a `jibGradle` field with a `project` field
+Skaffold artifact. For each artifact, add a `jib` field with a `project` field
 containing the sub-project's name (the directory, by default). Each artifact's `context` field
 should point to the root project location.
 

@@ -81,11 +81,8 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 	case artifact.BazelArtifact != nil:
 		return b.buildBazel(ctx, out, artifact, tag)
 
-	case artifact.JibMavenArtifact != nil:
-		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact.JibMavenArtifact, tag)
-
-	case artifact.JibGradleArtifact != nil:
-		return b.buildJibGradle(ctx, out, artifact.Workspace, artifact.JibGradleArtifact, tag)
+	case artifact.JibArtifact != nil:
+		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact.JibArtifact, tag)
 
 	case artifact.CustomArtifact != nil:
 		return b.buildCustom(ctx, out, artifact, tag)
@@ -107,11 +104,8 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 	case a.BazelArtifact != nil:
 		paths, err = bazel.GetDependencies(ctx, a.Workspace, a.BazelArtifact)
 
-	case a.JibMavenArtifact != nil:
-		paths, err = jib.GetDependenciesMaven(ctx, a.Workspace, a.JibMavenArtifact)
-
-	case a.JibGradleArtifact != nil:
-		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
+	case a.JibArtifact != nil:
+		paths, err = jib.GetDependencies(ctx, a.Workspace, a.JibArtifact)
 
 	case a.CustomArtifact != nil:
 		paths, err = custom.GetDependencies(ctx, a.Workspace, a.CustomArtifact, b.insecureRegistries)
