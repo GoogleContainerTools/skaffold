@@ -82,7 +82,6 @@ func TestCurrentContext(t *testing.T) {
 		config, err := CurrentConfig()
 
 		t.CheckNoError(err)
-
 		t.CheckDeepEqual(clusterFooContext, config.CurrentContext)
 	})
 
