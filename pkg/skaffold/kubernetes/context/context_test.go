@@ -132,7 +132,7 @@ func TestGetRestClientConfig(t *testing.T) {
 		t.CheckError(true, err)
 	})
 
-	testutil.Run(t, "context immutability", func(t *testutil.T) {
+	testutil.Run(t, "kube-config immutability", func(t *testutil.T) {
 		logrus.SetLevel(logrus.InfoLevel)
 		kubeConfig := t.TempFile("config", []byte(validKubeConfig))
 		kubeContext = clusterBarContext

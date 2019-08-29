@@ -68,7 +68,7 @@ func TestBuild(t *testing.T) {
 			dir:         "testdata/tagPolicy",
 			args:        []string{"-p", "gitCommit"},
 			setup:       setupGitRepo,
-			expectImage: imageName + "corev1",
+			expectImage: imageName + "v1",
 		},
 		{
 			description: "sha256 tagger",
@@ -223,7 +223,7 @@ func checkImageExists(t *testing.T, image string) {
 	}
 }
 
-// setupGitRepo sets up a clean repo with tag corev1
+// setupGitRepo sets up a clean repo with tag v1
 func setupGitRepo(t *testing.T, dir string) func() {
 	gitArgs := [][]string{
 		{"init"},
@@ -231,7 +231,7 @@ func setupGitRepo(t *testing.T, dir string) func() {
 		{"config", "user.name", "John Doe"},
 		{"add", "."},
 		{"commit", "-m", "Initial commit"},
-		{"tag", "corev1"},
+		{"tag", "v1"},
 	}
 
 	for _, args := range gitArgs {
