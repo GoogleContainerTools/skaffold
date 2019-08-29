@@ -19,18 +19,21 @@ package generatepipeline
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
+
+	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestGenerateBuildTasks(t *testing.T) {
 	var tests = []struct {
-		description string
-		configFiles []*ConfigFile
-		shouldErr   bool
-		runCtx      *runcontext.RunContext
+		description   string
+		configFiles   []*ConfigFile
+		shouldErr     bool
+		namespace     string
+		expectedTasks []*tekton.Task
 	}{
 		{
 			description: "successfully generate build tasks",
@@ -64,19 +67,100 @@ func TestGenerateBuildTasks(t *testing.T) {
 					},
 				},
 			},
-			runCtx: &runcontext.RunContext{
-				Opts: config.SkaffoldOptions{
-					Namespace: "test-ns",
+			namespace: "",
+			shouldErr: false,
+			expectedTasks: []*tekton.Task{
+				{
+					TypeMeta:   metav1.TypeMeta{Kind: "Task", APIVersion: "tekton.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: "skaffold-build"},
+					Spec: tekton.TaskSpec{
+						Inputs:  &tekton.Inputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
+						Outputs: &tekton.Outputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
+						Steps: []corev1.Container{
+							{
+								Name:       "run-build",
+								Image:      "gcr.io/k8s-skaffold/skaffold:",
+								Command:    []string{"skaffold", "build"},
+								Args:       []string{"--filename", "test1", "--profile", "oncluster", "--file-output", "build.out"},
+								WorkingDir: "/workspace/source",
+							},
+						},
+					},
+				},
+				{
+					TypeMeta:   metav1.TypeMeta{Kind: "Task", APIVersion: "tekton.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: "skaffold-build"},
+					Spec: tekton.TaskSpec{
+						Inputs:  &tekton.Inputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
+						Outputs: &tekton.Outputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
+						Steps: []corev1.Container{
+							{
+								Name:       "run-build",
+								Image:      "gcr.io/k8s-skaffold/skaffold:",
+								Command:    []string{"skaffold", "build"},
+								Args:       []string{"--filename", "test2", "--profile", "oncluster", "--file-output", "build.out"},
+								WorkingDir: "/workspace/source",
+							},
+						},
+					},
 				},
 			},
+		},
+		{
+			description: "build task with namespace",
+			configFiles: []*ConfigFile{
+				{
+					Path: "test1",
+					Profile: &latest.Profile{
+						Pipeline: latest.Pipeline{
+							Build: latest.BuildConfig{
+								Artifacts: []*latest.Artifact{
+									{
+										ImageName: "testArtifact1",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			namespace: "test-ns",
 			shouldErr: false,
+			expectedTasks: []*tekton.Task{
+				{
+					TypeMeta:   metav1.TypeMeta{Kind: "Task", APIVersion: "tekton.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: "skaffold-build"},
+					Spec: tekton.TaskSpec{
+						Inputs:  &tekton.Inputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
+						Outputs: &tekton.Outputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
+						Steps: []corev1.Container{
+							{
+								Name:    "run-build",
+								Image:   "gcr.io/k8s-skaffold/skaffold:",
+								Command: []string{"skaffold", "build"},
+								Args: []string{
+									"--filename",
+									"test1",
+									"--profile",
+									"oncluster",
+									"--file-output",
+									"build.out",
+									"--namespace",
+									"test-ns",
+								},
+								WorkingDir: "/workspace/source",
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := generateBuildTasks(test.runCtx, test.configFiles)
-			t.CheckError(test.shouldErr, err)
+			got, err := generateBuildTasks(test.namespace, test.configFiles)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedTasks, got)
 		})
 	}
 }
@@ -125,10 +209,11 @@ func TestGenerateBuildTask(t *testing.T) {
 
 func TestGenerateDeployTasks(t *testing.T) {
 	var tests = []struct {
-		description string
-		configFiles []*ConfigFile
-		shouldErr   bool
-		runCtx      *runcontext.RunContext
+		description   string
+		configFiles   []*ConfigFile
+		shouldErr     bool
+		namespace     string
+		expectedTasks []*tekton.Task
 	}{
 		{
 			description: "successfully generate deploy tasks",
@@ -158,19 +243,93 @@ func TestGenerateDeployTasks(t *testing.T) {
 					},
 				},
 			},
-			runCtx: &runcontext.RunContext{
-				Opts: config.SkaffoldOptions{
-					Namespace: "test-ns",
+			namespace: "",
+			shouldErr: false,
+			expectedTasks: []*tekton.Task{
+				{
+					TypeMeta:   metav1.TypeMeta{Kind: "Task", APIVersion: "tekton.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: "skaffold-deploy"},
+					Spec: tekton.TaskSpec{
+						Inputs: &tekton.Inputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
+						Steps: []corev1.Container{
+							{
+								Name:       "run-deploy",
+								Image:      "gcr.io/k8s-skaffold/skaffold:",
+								Command:    []string{"skaffold", "deploy"},
+								Args:       []string{"--filename", "test1", "--build-artifacts", "build.out"},
+								WorkingDir: "/workspace/source",
+							},
+						},
+					},
+				},
+				{
+					TypeMeta:   metav1.TypeMeta{Kind: "Task", APIVersion: "tekton.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: "skaffold-deploy"},
+					Spec: tekton.TaskSpec{
+						Inputs: &tekton.Inputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
+						Steps: []corev1.Container{
+							{
+								Name:       "run-deploy",
+								Image:      "gcr.io/k8s-skaffold/skaffold:",
+								Command:    []string{"skaffold", "deploy"},
+								Args:       []string{"--filename", "test2", "--build-artifacts", "build.out"},
+								WorkingDir: "/workspace/source",
+							},
+						},
+					},
 				},
 			},
+		},
+		{
+			description: "deploy task with namespace",
+			configFiles: []*ConfigFile{
+				{
+					Path: "test1",
+					Config: &latest.SkaffoldConfig{
+						Pipeline: latest.Pipeline{
+							Deploy: latest.DeployConfig{
+								DeployType: latest.DeployType{
+									HelmDeploy: &latest.HelmDeploy{},
+								},
+							},
+						},
+					},
+				},
+			},
+			namespace: "test-ns",
 			shouldErr: false,
+			expectedTasks: []*tekton.Task{
+				{
+					TypeMeta:   metav1.TypeMeta{Kind: "Task", APIVersion: "tekton.dev/v1alpha1"},
+					ObjectMeta: metav1.ObjectMeta{Name: "skaffold-deploy"},
+					Spec: tekton.TaskSpec{
+						Inputs: &tekton.Inputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
+						Steps: []corev1.Container{
+							{
+								Name:    "run-deploy",
+								Image:   "gcr.io/k8s-skaffold/skaffold:",
+								Command: []string{"skaffold", "deploy"},
+								Args: []string{
+									"--filename",
+									"test1",
+									"--build-artifacts",
+									"build.out",
+									"--namespace",
+									"test-ns",
+								},
+								WorkingDir: "/workspace/source",
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := generateDeployTasks(test.runCtx, test.configFiles)
-			t.CheckError(test.shouldErr, err)
+			got, err := generateDeployTasks(test.namespace, test.configFiles)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedTasks, got)
 		})
 	}
 }
