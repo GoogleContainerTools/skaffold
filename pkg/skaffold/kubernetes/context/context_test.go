@@ -153,6 +153,16 @@ func TestGetRestClientConfig(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckDeepEqual("https://bar.com", cfg.Host)
 	})
+
+	testutil.Run(t, "change context after first execution", func(t *testutil.T) {
+		resetKubeConfig(t, validKubeConfig)
+
+		cfg, err := GetRestClientConfig()
+		kubeContext = clusterBarContext
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("https://bar.com", cfg.Host)
+	})
 }
 
 func resetKubeConfig(t *testutil.T, content string) {

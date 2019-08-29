@@ -19,8 +19,7 @@ package testutil
 import (
 	"errors"
 	"fmt"
-	"io"
-	"log"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -65,19 +64,11 @@ func (t *T) Override(dest, tmp interface{}) {
 }
 
 func (t *T) CopyFile(src, dst string) {
-	from, err := os.Open(src)
+	content, err := ioutil.ReadFile(src)
 	if err != nil {
-		log.Fatal(err)
+		t.Fatalf("can't read source file: %s: %s", src, err)
 	}
-	defer from.Close()
-
-	to, err := os.OpenFile(dst, os.O_RDWR|os.O_CREATE, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer to.Close()
-
-	_, err = io.Copy(to, from)
+	err = ioutil.WriteFile(dst, content, 0666)
 	if err != nil {
 		t.Fatalf("failed to copy file %s to %s: %s", src, dst, err)
 	}

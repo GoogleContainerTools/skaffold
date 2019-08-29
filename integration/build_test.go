@@ -26,20 +26,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
-
-	"github.com/google/uuid"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	corev1 "k8s.io/api/core/v1"
-
 	"4d63.com/tz"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const imageName = "simple-build:"
