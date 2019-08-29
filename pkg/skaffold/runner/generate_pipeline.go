@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 
 	"github.com/pkg/errors"
@@ -77,6 +78,10 @@ func setupConfigFiles(configPaths []string) ([]*pipeline.ConfigFile, error) {
 			return nil, errors.Wrapf(err, "parsing config %s", path)
 		}
 		config := parsed.(*latest.SkaffoldConfig)
+
+		if err := defaults.Set(config); err != nil {
+			return nil, errors.Wrap(err, "setting default values for extra configs")
+		}
 
 		configFile := &pipeline.ConfigFile{
 			Path:   path,
