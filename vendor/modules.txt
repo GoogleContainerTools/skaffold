@@ -255,6 +255,8 @@ github.com/prometheus/procfs/internal/util
 github.com/rjeczalik/notify
 # github.com/russross/blackfriday v1.5.2
 github.com/russross/blackfriday
+# github.com/segmentio/textio v1.2.0
+github.com/segmentio/textio
 # github.com/sergi/go-diff v1.0.0
 github.com/sergi/go-diff/diffmatchpatch
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
@@ -320,16 +322,16 @@ golang.org/x/net/http2
 golang.org/x/net/trace
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/proxy
+golang.org/x/net/context
 golang.org/x/net/http/httpguts
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
 golang.org/x/net/internal/timeseries
-golang.org/x/net/context
 golang.org/x/net/internal/socks
 # golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 golang.org/x/oauth2
-golang.org/x/oauth2/internal
 golang.org/x/oauth2/google
+golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
 # golang.org/x/sync v0.0.0-20190423024810-112230192c58
@@ -361,16 +363,16 @@ google.golang.org/api/internal
 google.golang.org/api/googleapi/transport
 google.golang.org/api/transport/http/internal/propagation
 # google.golang.org/appengine v1.6.1
+google.golang.org/appengine
 google.golang.org/appengine/urlfetch
 google.golang.org/appengine/internal
+google.golang.org/appengine/internal/app_identity
+google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/urlfetch
-google.golang.org/appengine
 google.golang.org/appengine/internal/base
 google.golang.org/appengine/internal/datastore
 google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
-google.golang.org/appengine/internal/app_identity
-google.golang.org/appengine/internal/modules
 # google.golang.org/genproto v0.0.0-20190716160619-c506a9f90610
 google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/iam/v1
@@ -512,6 +514,7 @@ k8s.io/api/storage/v1beta1
 # k8s.io/apimachinery v0.0.0-20190620073744-d16981aedf33
 k8s.io/apimachinery/pkg/apis/meta/v1
 k8s.io/apimachinery/pkg/api/resource
+k8s.io/apimachinery/pkg/util/wait
 k8s.io/apimachinery/pkg/api/meta
 k8s.io/apimachinery/pkg/runtime
 k8s.io/apimachinery/pkg/runtime/serializer/json
@@ -522,7 +525,6 @@ k8s.io/apimachinery/pkg/util/yaml
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/fields
 k8s.io/apimachinery/pkg/watch
-k8s.io/apimachinery/pkg/util/wait
 k8s.io/apimachinery/pkg/labels
 k8s.io/apimachinery/pkg/util/intstr
 k8s.io/apimachinery/pkg/conversion
