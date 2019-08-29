@@ -26,6 +26,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func TestPluginType(t *testing.T) {
+	testutil.CheckDeepEqual(t, "maven", JibMaven.ID())
+	testutil.CheckDeepEqual(t, "Jib Maven Plugin", JibMaven.Name())
+	testutil.CheckDeepEqual(t, "gradle", JibGradle.ID())
+	testutil.CheckDeepEqual(t, "Jib Gradle Plugin", JibGradle.Name())
+}
+
 func TestGetDependencies(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
