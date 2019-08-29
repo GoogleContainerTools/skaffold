@@ -71,7 +71,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	defaultLabeller := deploy.NewLabeller("")
-	labellers := []deploy.Labeller{&runCtx.Opts, builder, deployer, tagger, defaultLabeller}
+	// runCtx.Opts is last to let users override/remove any label
+	labellers := []deploy.Labeller{builder, deployer, tagger, defaultLabeller, &runCtx.Opts}
 
 	builder, tester, deployer = WithTimings(builder, tester, deployer, runCtx.Opts.CacheArtifacts)
 	if runCtx.Opts.Notification {
