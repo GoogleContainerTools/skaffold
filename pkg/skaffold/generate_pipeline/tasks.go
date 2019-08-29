@@ -23,14 +23,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/pipeline"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 )
 
-func generateBuildTasks(runCtx *runcontext.RunContext, configFiles []*ConfigFile) ([]*tekton.Task, error) {
+func generateBuildTasks(namespace string, configFiles []*ConfigFile) ([]*tekton.Task, error) {
 	var tasks []*tekton.Task
 	for _, configFile := range configFiles {
 		task, err := generateBuildTask(configFile)
@@ -38,9 +37,9 @@ func generateBuildTasks(runCtx *runcontext.RunContext, configFiles []*ConfigFile
 			return nil, err
 		}
 
-		if runCtx.Opts.Namespace != "" {
-			nameSpace := []string{"--namespace", runCtx.Opts.Namespace}
-			task.Spec.Steps[0].Args = append(task.Spec.Steps[0].Args, nameSpace...)
+		if namespace != "" {
+			nsFlag := []string{"--namespace", namespace}
+			task.Spec.Steps[0].Args = append(task.Spec.Steps[0].Args, nsFlag...)
 		}
 
 		tasks = append(tasks, task)
@@ -112,7 +111,7 @@ func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
 	return pipeline.NewTask("skaffold-build", inputs, outputs, steps, volumes), nil
 }
 
-func generateDeployTasks(runCtx *runcontext.RunContext, configFiles []*ConfigFile) ([]*tekton.Task, error) {
+func generateDeployTasks(namespace string, configFiles []*ConfigFile) ([]*tekton.Task, error) {
 	var tasks []*tekton.Task
 	for _, configFile := range configFiles {
 		task, err := generateDeployTask(configFile)
@@ -120,9 +119,9 @@ func generateDeployTasks(runCtx *runcontext.RunContext, configFiles []*ConfigFil
 			return nil, err
 		}
 
-		if runCtx.Opts.Namespace != "" {
-			nameSpace := []string{"--namespace", runCtx.Opts.Namespace}
-			task.Spec.Steps[0].Args = append(task.Spec.Steps[0].Args, nameSpace...)
+		if namespace != "" {
+			nsFlag := []string{"--namespace", namespace}
+			task.Spec.Steps[0].Args = append(task.Spec.Steps[0].Args, nsFlag...)
 		}
 
 		tasks = append(tasks, task)

@@ -51,14 +51,14 @@ func Yaml(out io.Writer, runCtx *runcontext.RunContext, configFiles []*ConfigFil
 
 	// Generate build task for pipeline
 	var tasks []*tekton.Task
-	buildTasks, err := generateBuildTasks(runCtx, configFiles)
+	buildTasks, err := generateBuildTasks(runCtx.Opts.Namespace, configFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating build task")
 	}
 	tasks = append(tasks, buildTasks...)
 
 	// Generate deploy task for pipeline
-	deployTasks, err := generateDeployTasks(runCtx, configFiles)
+	deployTasks, err := generateDeployTasks(runCtx.Opts.Namespace, configFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating deploy task")
 	}
