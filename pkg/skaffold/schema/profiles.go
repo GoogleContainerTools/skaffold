@@ -149,16 +149,20 @@ func matches(expected, actual string) bool {
 func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 	logrus.Infof("applying profile: %s", profile.Name)
 
-	// this intentionally removes the Profiles field from the returned config
-	*config = latest.SkaffoldConfig{
-		APIVersion: config.APIVersion,
-		Kind:       config.Kind,
-		Pipeline: latest.Pipeline{
-			Build:  overlayProfileField("build", config.Build, profile.Build).(latest.BuildConfig),
-			Deploy: overlayProfileField("deploy", config.Deploy, profile.Deploy).(latest.DeployConfig),
-			Test:   overlayProfileField("test", config.Test, profile.Test).([]*latest.TestCase),
-		},
+	// Apply profile, field by field
+	mergedV := reflect.Indirect(reflect.ValueOf(&config.Pipeline))
+	configV := reflect.ValueOf(config.Pipeline)
+	profileV := reflect.ValueOf(profile.Pipeline)
+
+	profileT := profileV.Type()
+	for i := 0; i < profileT.NumField(); i++ {
+		name := profileT.Field(i).Name
+		merged := overlayProfileField(name, configV.FieldByName(name).Interface(), profileV.FieldByName(name).Interface())
+		mergedV.FieldByName(name).Set(reflect.ValueOf(merged))
 	}
+
+	// Remove the Profiles field from the returned config
+	config.Profiles = nil
 
 	if len(profile.Patches) == 0 {
 		return nil

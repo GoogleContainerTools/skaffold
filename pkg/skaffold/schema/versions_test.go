@@ -405,6 +405,12 @@ func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldConfig) {
 	}
 }
 
+func withPortForward(portForward ...*latest.PortForwardResource) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.PortForward = portForward
+	}
+}
+
 func withStatusCheckDeadline(deadline int) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Deploy.StatusCheckDeadlineSeconds = deadline
