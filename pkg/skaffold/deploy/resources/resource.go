@@ -19,9 +19,14 @@ package resources
 import (
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+)
+
+const (
+	TabHeader = " -"
 )
 
 type ResourceObj struct {
@@ -43,8 +48,8 @@ func (r *ResourceObj) UpdateStatus(msg string, reason string, err error) {
 	newStatus := Status{details: msg, reason: reason, err: err}
 	if !r.status.Equal(&newStatus) {
 		r.status.err = err
-		r.status.details = msg
-		r.status.reason = reason
+		r.status.details = strings.TrimSuffix(msg, "\n")
+		r.status.reason = strings.TrimSuffix(reason, "\n")
 		r.status.lastUpdated = time.Now().UnixNano()
 	}
 }
@@ -74,7 +79,7 @@ func (r *ResourceObj) ReportSinceLastUpdated(out io.Writer) {
 		return
 	}
 	r.status.lastReported = time.Now().UnixNano()
-	color.Default.Fprintln(out, fmt.Sprintf("%s %s", r.String(), r.status.String()))
+	color.Default.Fprintln(out, fmt.Sprintf("%s %s %s", TabHeader, r.String(), r.status.String()))
 }
 
 type Status struct {
@@ -91,13 +96,18 @@ func (rs *Status) Error() error {
 }
 
 func (rs *Status) Equal(other *Status) bool {
-	return rs.reason == other.reason && rs.err == other.err
-
+	if rs.reason == other.reason {
+		return true
+	}
+	if rs.err != nil && other.err != nil {
+		return rs.err.Error() == other.err.Error()
+	}
+	return false
 }
 
 func (rs *Status) String() string {
 	if rs.err != nil {
-		return fmt.Sprintf("is pending due to %s", rs.err.Error())
+		return fmt.Sprintf("is pending due to %s", strings.TrimSuffix(rs.err.Error(), "\n"))
 	}
 	return fmt.Sprintf("is pending due to %s", rs.details)
 }

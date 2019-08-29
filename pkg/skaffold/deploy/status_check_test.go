@@ -29,7 +29,6 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	utilpointer "k8s.io/utils/pointer"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -42,7 +41,7 @@ func TestFetchDeployments(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
-			description: "multiple deployments in same namespace",
+			description: "multiple resources.Deployments in same namespace",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -71,7 +70,7 @@ func TestFetchDeployments(t *testing.T) {
 				resources.NewDeployment("dep2", "test", 20*time.Second),
 			},
 		}, {
-			description: "command flag deadline is less than deployment spec.",
+			description: "command flag deadline is less than resources.Deployment spec.",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -88,7 +87,7 @@ func TestFetchDeployments(t *testing.T) {
 			expected: []*resources.Deployment{resources.NewDeployment("dep1", "test", 200*time.Second)},
 		},
 		{
-			description: "multiple deployments with 1 no progress deadline set",
+			description: "multiple resources.Deployments with 1 no progress deadline set",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -116,11 +115,11 @@ func TestFetchDeployments(t *testing.T) {
 			},
 		},
 		{
-			description: "no deployments",
+			description: "no resources.Deployments",
 			expected:    []*resources.Deployment{},
 		},
 		{
-			description: "multiple deployments in different namespaces",
+			description: "multiple resources.Deployments in different namespaces",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -148,7 +147,7 @@ func TestFetchDeployments(t *testing.T) {
 			},
 		},
 		{
-			description: "deployment in correct namespace but not deployed by skaffold",
+			description: "resources.Deployment in correct namespace but not deployed by skaffold",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -164,7 +163,7 @@ func TestFetchDeployments(t *testing.T) {
 			expected: []*resources.Deployment{},
 		},
 		{
-			description: "deployment in correct namespace deployed by skaffold but different run",
+			description: "resources.Deployment in correct namespace deployed by skaffold but different run",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -231,40 +230,6 @@ func TestIsSkaffoldDeployInError(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			checker := Checker{}
 			t.CheckDeepEqual(test.shouldErr, checker.isSkaffoldDeployInError(test.resources))
-		})
-	}
-}
-
-func TestCheckResourceStatus(t *testing.T) {
-	rolloutCmd := "kubectl --context kubecontext --namespace test rollout status deployment dep --watch=false"
-	var tests = []struct {
-		description string
-		command     util.Command
-		expected    string
-		shouldErr   bool
-	}{
-		{
-			description: "some output",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(rolloutCmd, "Waiting for replicas to be available"),
-			expected: "Waiting for replicas to be available",
-		},
-		{
-			description: "no output",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(rolloutCmd, ""),
-		},
-		{
-			description: "rollout status error",
-			command: testutil.NewFakeCmd(t).
-				WithRunOutErr(rolloutCmd, "", fmt.Errorf("error")),
-			shouldErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-
 		})
 	}
 }

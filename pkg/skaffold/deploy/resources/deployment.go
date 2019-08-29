@@ -26,7 +26,9 @@ import (
 )
 
 const (
-	DeploymentType = "deployment"
+	DeploymentType    = "deployment"
+	KubectlKilled     = "Killed"
+	KubectlConnection = "KubectlConnection"
 )
 
 type Deployment struct {
@@ -45,8 +47,9 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 	kubeCtl := kubectl.NewFromRunContext(runCtx)
 	b, err := kubeCtl.RunOut(ctx, "rollout", "status", "deployment", d.name, "--namespace", d.namespace, "--watch=false")
 	if err != nil {
-		d.UpdateStatus("", err.Error(), err)
-		if !strings.Contains(err.Error(), "Unable to connect to the server") {
+		reason, details := parseKubectlError(err.Error())
+		d.UpdateStatus(details, reason, err)
+		if reason != KubectlConnection {
 			d.checkComplete()
 		}
 		return
@@ -64,6 +67,17 @@ func (d *Deployment) Deadline() time.Duration {
 }
 
 func (d *Deployment) WithError(err error) *Deployment {
-	d.UpdateStatus("", "", err)
+	d.UpdateStatus("", err.Error(), err)
 	return d
+}
+
+func parseKubectlError(errMsg string) (string, string) {
+	errMsg = strings.TrimSuffix(errMsg, "\n")
+	if strings.Contains(errMsg, "Unable to connect to the server") {
+		return KubectlConnection, errMsg
+	}
+	if strings.Contains(errMsg, "signal: killed") {
+		return KubectlKilled, "kubectl killed due to timeout"
+	}
+	return errMsg, errMsg
 }

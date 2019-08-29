@@ -57,9 +57,7 @@ type Checker struct {
 	labeller      *DefaultLabeller
 	client        kubernetes.Interface
 	numDeps       int
-	numPods       int
 	processedDeps int32
-	processedPods int32
 }
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
@@ -105,7 +103,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Retrieve pending resource states
 	go func() {
-		checker.printResourceStatus(rs)
+		checker.printResourceStatus(rs, deadline)
 	}()
 
 	// Wait for all resource status to be fetched
@@ -158,11 +156,13 @@ func (c *Checker) CheckResourceStatus(r Resource) {
 }
 
 // Print resource statuses until all status check are completed or context is cancelled.
-func (c *Checker) printResourceStatus(rs []Resource) {
+func (c *Checker) printResourceStatus(rs []Resource, deadline int32) {
+	timeoutContext, cancel := context.WithTimeout(c.context, time.Duration(deadline)*time.Second)
+	defer cancel()
 	for {
 		allResourcesCheckComplete := true
 		select {
-		case <-c.context.Done():
+		case <-timeoutContext.Done():
 			return
 		case <-time.After(reportStatusTime):
 			for _, r := range rs {
@@ -201,11 +201,11 @@ func (c *Checker) printStatusCheckSummary(r Resource) {
 			fmt.Sprintf("%s failed %s. Error: %s.",
 				r.String(),
 				waitingMsg,
-				strings.TrimRight(err.Error(), "\n"),
+				strings.TrimSuffix(err.Error(), "\n"),
 			),
 		)
 	} else {
-		color.Default.Fprintln(c.out, fmt.Sprintf("%s is ready. %s", r.String(), waitingMsg))
+		color.Default.Fprintln(c.out, fmt.Sprintf("%s %s is ready. %s", resources.TabHeader, r.String(), waitingMsg))
 	}
 }
 

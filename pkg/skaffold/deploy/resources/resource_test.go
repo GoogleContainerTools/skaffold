@@ -53,12 +53,13 @@ func TestReportSinceLastUpdated(t *testing.T) {
 	}{
 		{
 			description: "updating an error status",
+			message:     "cannot pull image",
 			err:         fmt.Errorf("cannot pull image"),
-			expected:    "deployment/test is pending due to cannot pull image\n",
+			expected:    " - deployment/test is pending due to cannot pull image\n",
 		}, {
 			description: "updating a non error status",
 			message:     "is waiting for container",
-			expected:    "deployment/test is pending due to is waiting for container\n",
+			expected:    " - deployment/test is pending due to is waiting for container\n",
 		},
 	}
 	for _, test := range tests {
@@ -81,7 +82,7 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 		{
 			description: "report first time should write to out",
 			times:       1,
-			expected:    "deployment/test is pending due to cannot pull image\n",
+			expected:    " - deployment/test is pending due to cannot pull image\n",
 		}, {
 			description: "report 2nd time should not write to out",
 			times:       2,
@@ -118,23 +119,23 @@ func TestUpdateStatus(t *testing.T) {
 			old:         Status{details: "same", reason: "same", err: nil},
 			new:         Status{details: "same", reason: "same", err: nil},
 		}, {
-			description: "updateTimestamp should not change for same statuses if details change",
-			old:         Status{details: "same", reason: "same", err: nil},
-			new:         Status{details: "another", reason: "same", err: nil},
-		}, {
 			description:  "updateTimestamp should change if reason change",
 			old:          Status{details: "same", reason: "same", err: nil},
 			new:          Status{details: "same", reason: "another", err: nil},
 			expectChange: true,
 		}, {
-			description:  "updateTimestamp should change if error change",
+			description: "updateTimestamp should not change if reason son",
+			old:         Status{details: "same", reason: "same", err: nil},
+			new:         Status{details: "same", reason: "same", err: fmt.Errorf("see this error")},
+		}, {
+			description:  "updateTimestamp should change if reason and err change",
 			old:          Status{details: "same", reason: "same", err: nil},
-			new:          Status{details: "same", reason: "same", err: fmt.Errorf("see this error")},
+			new:          Status{details: "same", reason: "another", err: fmt.Errorf("see this error")},
 			expectChange: true,
 		}, {
-			description:  "updateTimestamp should change if both reason and error change",
+			description:  "updateTimestamp should change if both reason and details change",
 			old:          Status{details: "same", reason: "same", err: nil},
-			new:          Status{reason: "error", err: fmt.Errorf("cannot pull image")},
+			new:          Status{details: "error", reason: "error", err: nil},
 			expectChange: true,
 		},
 	}

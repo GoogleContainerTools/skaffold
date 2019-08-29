@@ -61,7 +61,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 			description: "rollout kubectl client connection error",
 			command: testutil.NewFakeCmd(t).
 				WithRunOutErr(rolloutCmd, "", fmt.Errorf("Unable to connect to the server")),
-			expectedReason: "Unable to connect to the server",
+			expectedReason: "KubectlConnection",
 		},
 	}
 
