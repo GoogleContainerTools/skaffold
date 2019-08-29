@@ -66,11 +66,6 @@ func (d *Deployment) Deadline() time.Duration {
 	return d.deadline
 }
 
-func (d *Deployment) WithError(err error) *Deployment {
-	d.UpdateStatus("", err.Error(), err)
-	return d
-}
-
 func parseKubectlError(errMsg string) (string, string) {
 	errMsg = strings.TrimSuffix(errMsg, "\n")
 	if strings.Contains(errMsg, "Unable to connect to the server") {
@@ -80,4 +75,14 @@ func parseKubectlError(errMsg string) (string, string) {
 		return KubectlKilled, "kubectl killed due to timeout"
 	}
 	return errMsg, errMsg
+}
+
+func (d *Deployment) WithError(err error) *Deployment {
+	d.UpdateStatus("", err.Error(), err)
+	return d
+}
+
+func (d *Deployment) WithStatus(status Status) *Deployment {
+	d.status = status
+	return d
 }

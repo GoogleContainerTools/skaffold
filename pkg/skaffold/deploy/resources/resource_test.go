@@ -25,23 +25,16 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-const (
-	ZeroTimestamp int64 = 0
-)
-
 func TestUpdateTimestamp(t *testing.T) {
 	dep := NewDeployment("test", "test-ns", time.Millisecond)
 
-	// Check both updated and reported timestamp are 0
-	testutil.CheckDeepEqual(t, dep.status.lastUpdated, ZeroTimestamp)
-	testutil.CheckDeepEqual(t, dep.status.lastReported, ZeroTimestamp)
+	// Check both updated is false
+	testutil.CheckDeepEqual(t, false, dep.status.updated)
 
 	// Update the status
 	dep.UpdateStatus("success", "success", nil)
 	// Check the updated timestamp is present
-	if dep.status.lastUpdated == ZeroTimestamp {
-		t.Errorf("expeceted lastUpdated timestamp to be non zero. Got %d", dep.status.lastUpdated)
-	}
+	testutil.CheckDeepEqual(t, true, dep.status.updated)
 }
 
 func TestReportSinceLastUpdated(t *testing.T) {
@@ -97,10 +90,8 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 			for i := 0; i < test.times; i++ {
 				out = new(bytes.Buffer)
 				dep.ReportSinceLastUpdated(out)
-				// Check reported timestamp is present
-				if dep.status.lastReported == ZeroTimestamp {
-					t.Errorf("expeceted lastReported timestamp to be non zero. Got %d", dep.status.lastReported)
-				}
+				// Check reported timestamp is set to false
+				t.CheckDeepEqual(false, dep.status.updated)
 			}
 			t.CheckDeepEqual(test.expected, out.String())
 		})
@@ -115,37 +106,41 @@ func TestUpdateStatus(t *testing.T) {
 		expectChange bool
 	}{
 		{
-			description: "updateTimestamp should not change for same statuses",
-			old:         Status{details: "same", reason: "same", err: nil},
-			new:         Status{details: "same", reason: "same", err: nil},
+			description:  "updated should be false for same statuses",
+			old:          Status{details: "Waiting for 0/1 replicas to be available...", reason: "Waiting for 0/1 replicas to be available...", err: nil},
+			new:          Status{details: "Waiting for 0/1 replicas to be available...", reason: "Waiting for 0/1 replicas to be available...", err: nil},
+			expectChange: false,
 		}, {
-			description:  "updateTimestamp should change if reason change",
+			description:  "updated should be true if reason changes",
 			old:          Status{details: "same", reason: "same", err: nil},
 			new:          Status{details: "same", reason: "another", err: nil},
 			expectChange: true,
 		}, {
-			description: "updateTimestamp should not change if reason son",
+			description: "updated should be false if reason is same",
 			old:         Status{details: "same", reason: "same", err: nil},
 			new:         Status{details: "same", reason: "same", err: fmt.Errorf("see this error")},
 		}, {
-			description:  "updateTimestamp should change if reason and err change",
+			description:  "updated should be true if reason and err change",
 			old:          Status{details: "same", reason: "same", err: nil},
 			new:          Status{details: "same", reason: "another", err: fmt.Errorf("see this error")},
 			expectChange: true,
 		}, {
-			description:  "updateTimestamp should change if both reason and details change",
+			description:  "updated should be true if both reason and details change",
 			old:          Status{details: "same", reason: "same", err: nil},
 			new:          Status{details: "error", reason: "error", err: nil},
 			expectChange: true,
+		}, {
+			description:  "updated should be false if both reason has a new line",
+			old:          Status{details: "same", reason: "same\n", err: nil},
+			new:          Status{details: "same", reason: "same", err: nil},
+			expectChange: false,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			dep := NewDeployment("test", "test-ns", time.Millisecond)
-			dep.UpdateStatus(test.old.details, test.old.reason, test.old.err)
-			oldUpdateTimestamp := dep.Status().lastUpdated
+			dep := NewDeployment("test", "test-ns", time.Millisecond).WithStatus(test.old)
 			dep.UpdateStatus(test.new.details, test.new.reason, test.new.err)
-			t.CheckDeepEqual(test.expectChange, oldUpdateTimestamp != dep.status.lastUpdated)
+			t.CheckDeepEqual(test.expectChange, dep.status.updated)
 		})
 	}
 }

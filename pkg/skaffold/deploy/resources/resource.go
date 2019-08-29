@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 )
@@ -46,11 +45,11 @@ func (r *ResourceObj) Type() string {
 
 func (r *ResourceObj) UpdateStatus(msg string, reason string, err error) {
 	newStatus := Status{details: msg, reason: reason, err: err}
-	if !r.status.Equal(&newStatus) {
+	if !r.status.Equals(&newStatus) {
 		r.status.err = err
 		r.status.details = strings.TrimSuffix(msg, "\n")
 		r.status.reason = strings.TrimSuffix(reason, "\n")
-		r.status.lastUpdated = time.Now().UnixNano()
+		r.status.updated = true
 	}
 }
 
@@ -75,34 +74,27 @@ func (r *ResourceObj) IsStatusCheckComplete() bool {
 }
 
 func (r *ResourceObj) ReportSinceLastUpdated(out io.Writer) {
-	if r.status.lastUpdated <= r.status.lastReported {
+	if !r.status.updated {
 		return
 	}
-	r.status.lastReported = time.Now().UnixNano()
+	r.status.updated = false
 	color.Default.Fprintln(out, fmt.Sprintf("%s %s %s", TabHeader, r.String(), r.status.String()))
 }
 
 type Status struct {
-	err          error
-	reason       string
-	details      string
-	lastUpdated  int64
-	lastReported int64
-	completed    bool
+	err       error
+	reason    string
+	details   string
+	updated   bool
+	completed bool
 }
 
 func (rs *Status) Error() error {
 	return rs.err
 }
 
-func (rs *Status) Equal(other *Status) bool {
-	if rs.reason == other.reason {
-		return true
-	}
-	if rs.err != nil && other.err != nil {
-		return rs.err.Error() == other.err.Error()
-	}
-	return false
+func (rs *Status) Equals(other *Status) bool {
+	return strings.TrimSuffix(rs.reason, "\n") == strings.TrimSuffix(other.reason, "\n")
 }
 
 func (rs *Status) String() string {
