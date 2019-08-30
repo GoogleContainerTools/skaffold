@@ -65,6 +65,24 @@ var testDeployConfig = latest.HelmDeploy{
 	}},
 }
 
+var testDeployConfigTemplated = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+		Values: map[string]string{
+			"image": "skaffold-helm",
+		},
+		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+		SetValueTemplates: map[string]string{
+			"some.key":    "somevalue",
+			"other.key":   "{{.FOO}}",
+			"missing.key": "{{.MISSING}}",
+			"image.name":  "{{.IMAGE_NAME}}",
+			"image.tag":   "{{.DIGEST}}",
+		},
+	}},
+}
+
 var testDeployRecreatePodsConfig = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
@@ -115,26 +133,24 @@ var testDeployHelmStyleConfig = latest.HelmDeploy{
 }
 
 var testDeployHelmExplicitRegistryStyleConfig = latest.HelmDeploy{
-	Releases: []latest.HelmRelease{
-		{
-			Name:      "skaffold-helm",
-			ChartPath: "examples/test",
-			Values: map[string]string{
-				"image": "skaffold-helm",
-			},
-			Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
-			SetValues: map[string]string{
-				"some.key": "somevalue",
-			},
-			ImageStrategy: latest.HelmImageStrategy{
-				HelmImageConfig: latest.HelmImageConfig{
-					HelmConventionConfig: &latest.HelmConventionConfig{
-						ExplicitRegistry: true,
-					},
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+		Values: map[string]string{
+			"image": "skaffold-helm",
+		},
+		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+		SetValues: map[string]string{
+			"some.key": "somevalue",
+		},
+		ImageStrategy: latest.HelmImageStrategy{
+			HelmImageConfig: latest.HelmImageConfig{
+				HelmConventionConfig: &latest.HelmConventionConfig{
+					ExplicitRegistry: true,
 				},
 			},
 		},
-	},
+	}},
 }
 
 var testDeployConfigParameterUnmatched = latest.HelmDeploy{
@@ -439,15 +455,31 @@ func TestHelmDeploy(t *testing.T) {
 			runContext:  makeRunContext(testDeployWithTemplatedName, false),
 			builds:      testBuilds,
 		},
+		{
+			description: "deploy with templated values",
+			cmd: &MockHelm{
+				upgradeMatcher: func(cmd *exec.Cmd) bool {
+					return util.StrSliceContains(cmd.Args, "other.key=FOOBAR") &&
+						util.StrSliceContains(cmd.Args, "missing.key=<no value>") &&
+						util.StrSliceContains(cmd.Args, "image.name=skaffold-helm") &&
+						util.StrSliceContains(cmd.Args, "image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184")
+				},
+			},
+			runContext: makeRunContext(testDeployConfigTemplated, false),
+			builds:     testBuilds,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.cmd.ForTest(t))
 
 			event.InitializeState(test.runContext.Cfg.Build)
-			err := NewHelmDeployer(test.runContext).Deploy(context.Background(), ioutil.Discard, test.builds, nil).GetError()
 
-			t.CheckError(test.shouldErr, err)
+			deployer := NewHelmDeployer(test.runContext)
+			result := deployer.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+
+			t.CheckError(test.shouldErr, result.GetError())
 		})
 	}
 }
