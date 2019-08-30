@@ -18,6 +18,7 @@ package initializer
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -94,13 +95,13 @@ type builderImagePair struct {
 }
 
 // DoInit executes the `skaffold init` flow.
-func DoInit(out io.Writer, c Config) error {
+func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	rootDir := "."
 
 	if c.ComposeFile != "" {
 		// run kompose first to generate k8s manifests, then run skaffold init
 		logrus.Infof("running 'kompose convert' for file %s", c.ComposeFile)
-		komposeCmd := exec.Command("kompose", "convert", "-f", c.ComposeFile)
+		komposeCmd := exec.CommandContext(ctx, "kompose", "convert", "-f", c.ComposeFile)
 		if err := util.RunCmd(komposeCmd); err != nil {
 			return errors.Wrap(err, "running kompose")
 		}
