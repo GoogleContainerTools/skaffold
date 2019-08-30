@@ -43,7 +43,7 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 	// Will run the profile setup multiple times and require user input for each specified config
 	color.Default.Fprintln(out, "Running profile setup...")
 	for _, configFile := range configFiles {
-		if err := pipeline.CreateSkaffoldProfile(out, configFile); err != nil {
+		if err := pipeline.CreateSkaffoldProfile(out, r.runCtx, configFile); err != nil {
 			return errors.Wrap(err, "setting up profile")
 		}
 	}
