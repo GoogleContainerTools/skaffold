@@ -22,7 +22,6 @@ import (
 	"io"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -98,7 +97,6 @@ func (b *ArtifactBuilder) retrieveEnv(a *latest.Artifact, tag string) ([]string,
 	}
 	envs = append(envs, b.additionalEnv...)
 	envs = append(envs, util.OSEnviron()...)
-	sort.Strings(envs)
 	return envs, nil
 }
 

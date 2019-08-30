@@ -43,24 +43,24 @@ func TestRetrieveEnv(t *testing.T) {
 			tag:          "gcr.io/image/tag:mytag",
 			environ:      nil,
 			buildContext: "/some/path",
-			expected:     []string{"BUILD_CONTEXT=/some/path", "IMAGES=gcr.io/image/tag:mytag", "PUSH_IMAGE=false"},
+			expected:     []string{"IMAGES=gcr.io/image/tag:mytag", "PUSH_IMAGE=false", "BUILD_CONTEXT=/some/path"},
 		}, {
 			description:  "make sure environ is correctly applied",
 			tag:          "gcr.io/image/tag:anothertag",
 			environ:      []string{"PATH=/path", "HOME=/root"},
 			buildContext: "/some/path",
-			expected:     []string{"BUILD_CONTEXT=/some/path", "HOME=/root", "IMAGES=gcr.io/image/tag:anothertag", "PATH=/path", "PUSH_IMAGE=false"},
+			expected:     []string{"IMAGES=gcr.io/image/tag:anothertag", "PUSH_IMAGE=false", "BUILD_CONTEXT=/some/path", "PATH=/path", "HOME=/root"},
 		}, {
 			description: "push image is true",
 			tag:         "gcr.io/image/push:tag",
 			pushImages:  true,
-			expected:    []string{"BUILD_CONTEXT=", "IMAGES=gcr.io/image/push:tag", "PUSH_IMAGE=true"},
+			expected:    []string{"IMAGES=gcr.io/image/push:tag", "PUSH_IMAGE=true", "BUILD_CONTEXT="},
 		}, {
 			description:   "add additional env",
 			tag:           "gcr.io/image/push:tag",
 			pushImages:    true,
 			additionalEnv: []string{"KUBECONTEXT=mycluster"},
-			expected:      []string{"BUILD_CONTEXT=", "IMAGES=gcr.io/image/push:tag", "KUBECONTEXT=mycluster", "PUSH_IMAGE=true"},
+			expected:      []string{"IMAGES=gcr.io/image/push:tag", "PUSH_IMAGE=true", "BUILD_CONTEXT=", "KUBECONTEXT=mycluster"},
 		},
 	}
 	for _, test := range tests {
@@ -95,7 +95,7 @@ func TestRetrieveCmd(t *testing.T) {
 				},
 			},
 			tag:      "image:tag",
-			expected: expectedCmd("./build.sh", "workspace", nil, []string{"BUILD_CONTEXT=workspace", "IMAGES=image:tag", "PUSH_IMAGE=false"}),
+			expected: expectedCmd("./build.sh", "workspace", nil, []string{"IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace"}),
 		}, {
 			description: "buildcommand with multiple args",
 			artifact: &latest.Artifact{
@@ -106,7 +106,7 @@ func TestRetrieveCmd(t *testing.T) {
 				},
 			},
 			tag:      "image:tag",
-			expected: expectedCmd("./build.sh", "", []string{"--flag", "--anotherflag"}, []string{"BUILD_CONTEXT=", "IMAGES=image:tag", "PUSH_IMAGE=false"}),
+			expected: expectedCmd("./build.sh", "", []string{"--flag", "--anotherflag"}, []string{"IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT="}),
 		},
 	}
 	for _, test := range tests {
