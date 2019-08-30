@@ -92,9 +92,9 @@ roleRef:
   kind: ClusterRole
   name: admin
 subjects:
-  - name: default
-    kind: ServiceAccount
-    namespace: default`,
+- name: default
+  kind: ServiceAccount
+  namespace: default`,
 			images:    []string{},
 			shouldErr: false,
 		},
