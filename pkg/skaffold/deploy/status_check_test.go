@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resources"
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
@@ -191,6 +192,116 @@ func TestFetchDeployments(t *testing.T) {
 			actual, err := fetchDeployments(client, "test", labeller, 200)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual,
 				cmp.AllowUnexported(resources.Deployment{}, resources.ResourceObj{}, resources.Status{}))
+		})
+	}
+}
+
+func TestFetchPods(t *testing.T) {
+	labeller := NewLabeller("")
+	var tests = []struct {
+		description string
+		pods        []*v1.Pod
+		expected    []*resources.Pod
+		shouldErr   bool
+	}{
+		{
+			description: "multiple podInterface in same namespace",
+			pods: []*v1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "test",
+						Labels: map[string]string{
+							RunIDLabel: labeller.runID,
+							"random":            "foo",
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "test",
+						Labels: map[string]string{
+							RunIDLabel: labeller.runID,
+						},
+					},
+				},
+			},
+			expected: []*resources.Pod{
+				resources.NewPod("pod1", "test"),
+				resources.NewPod("pod2", "test"),
+			},
+		},
+		{
+			description: "no podInterface",
+		},
+		{
+			description: "multiple podInterface in different namespaces",
+			pods: []*v1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "test",
+						Labels: map[string]string{
+							RunIDLabel: labeller.runID,
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod2",
+						Namespace: "test1",
+						Labels: map[string]string{
+							RunIDLabel: labeller.runID,
+						},
+					},
+				},
+			},
+			expected: []*resources.Pod{
+				resources.NewPod("pod1", "test"),
+			},
+		},
+		{
+			description: "pod in correct namespace but not deployed by skaffold",
+			pods: []*v1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "test",
+						Labels: map[string]string{
+							"some-other-tool": "helm",
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "pod in correct namespace  deployed by skaffold but previous version",
+			pods: []*v1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "pod1",
+						Namespace: "test",
+						Labels: map[string]string{
+							RunIDLabel: labeller.runID,
+						},
+					},
+				},
+			},
+			expected: []*resources.Pod{},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			objs := make([]runtime.Object, len(test.pods))
+			for i, dep := range test.pods {
+				objs[i] = dep
+			}
+			client := fakekubeclientset.NewSimpleClientset(objs...)
+			actual, err := fetchPods(client, "test", labeller)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual,
+				cmp.AllowUnexported(resources.Pod{}, resources.ResourceObj{}, resources.Status{}))
 		})
 	}
 }

@@ -56,7 +56,9 @@ type Checker struct {
 	out           io.Writer
 	labeller      *DefaultLabeller
 	client        kubernetes.Interface
+	numPods       int
 	numDeps       int
+	processedPods int32
 	processedDeps int32
 }
 
@@ -190,6 +192,10 @@ func (c *Checker) isSkaffoldDeployInError(rs []Resource) bool {
 func (c *Checker) printStatusCheckSummary(r Resource) {
 	waitingMsg := ""
 	stats := make([]string, 0, 2)
+	if numLeft := c.numPods - int(c.processedPods); numLeft >0 {
+		stats = append(stats, fmt.Sprintf("%d/%d pods", numLeft, c.numPods))
+	}
+
 	if numLeft := c.numDeps - int(c.processedDeps); numLeft > 0 {
 		stats = append(stats, fmt.Sprintf("%d/%d deployment(s)", numLeft, c.numDeps))
 	}
@@ -214,4 +220,20 @@ func getDeadline(d int32) int32 {
 		return d
 	}
 	return defaultStatusCheckDeadline
+}
+
+func fetchPods(c kubernetes.Interface, ns string, labeller *DefaultLabeller) ([]*resources.Pod, error) {
+	pi := c.CoreV1().Pods(ns)
+	pods, err := pi.List(metav1.ListOptions{
+		LabelSelector: labeller.K8sManagedByLabelKeyValueString(),
+	})
+	if err != nil{
+		return nil, err
+	}
+	podResources := make([]*resources.Pod, len(pods.Items))
+
+	for i, p := range pods.Items {
+		podResources[i] = resources.NewPod(p.Name, p.Namespace)
+	}
+	return podResources, nil
 }
