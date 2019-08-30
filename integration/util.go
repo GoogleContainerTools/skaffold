@@ -96,7 +96,8 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelTimeout()
 
-	w, err := k.client.CoreV1().Pods(k.ns).Watch(meta_v1.ListOptions{})
+	pods := k.client.CoreV1().Pods(k.ns)
+	w, err := pods.Watch(meta_v1.ListOptions{})
 	if err != nil {
 		k.t.Fatalf("Unable to watch pods: %v", err)
 	}
@@ -116,7 +117,13 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 		case event := <-w.ResultChan():
 			pod := event.Object.(*v1.Pod)
 			logrus.Infoln("Pod", pod.Name, "is", pod.Status.Phase)
-
+			if pod.Status.Phase == v1.PodFailed {
+				logs, err := pods.GetLogs(pod.Name, &v1.PodLogOptions{}).DoRaw()
+				if err != nil {
+					k.t.Fatalf("failed to get logs for failed pod %s: %s", pod.Name, err)
+				}
+				k.t.Fatalf("pod %s failed. Logs:\n %s", pod.Name, logs)
+			}
 			phases[pod.Name] = pod.Status.Phase
 
 			for _, podName := range podNames {

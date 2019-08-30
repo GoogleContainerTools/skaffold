@@ -16,9 +16,8 @@ profiles:
               localDir: {}
             cache: {}
     deploy:
-      kubectl:
-        manifests:
-          - build-step/*.yaml
+      kustomize:
+        path: build-step
   - name: build-target
     build:
       artifacts:

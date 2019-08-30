@@ -17,3 +17,15 @@ The flow of the integration test is thus:
 `buildtest -> skaffold run -p create-build-step -> creates job -> creates pod -> skaffold build -p build-step -> kicks off kaniko pod to build test-build` 
 
 Thus at the end we should have a successfully completed job.
+
+## Careful with changes when manually testing 
+
+The test does some mutations in the file system, that you don't want to accidentally commit: 
+ - copies the latest skaffold binary 
+ - replaces the cluster namespace in the skaffold.yaml 
+ - replaces the cluster namespace in the build-step/kustomization.yaml 
+ 
+ 
+## On templating the cluster namespace 
+
+This is admittedly ugly. We need to come up with a nice way to express overrides for cluster namespace. 

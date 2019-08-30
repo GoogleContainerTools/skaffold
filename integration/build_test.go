@@ -138,16 +138,10 @@ func TestBuildInCluster(t *testing.T) {
 
 		// TODO: until https://github.com/GoogleContainerTools/skaffold/issues/2757 is resolved, this is the simplest
 		// way to override the build.cluster.namespace
-		skaffoldConfigFile := "./testdata/skaffold-in-cluster/skaffold.yaml"
-		origSkaffoldYaml, err := ioutil.ReadFile(skaffoldConfigFile)
-		if err != nil {
-			t.Fatalf("failed reading skaffold.yaml: %s", err)
-		}
-		namespacedYaml := strings.ReplaceAll(string(origSkaffoldYaml), "VAR_CLUSTER_NAMESPACE", ns.Name)
-		if err := ioutil.WriteFile(skaffoldConfigFile, []byte(namespacedYaml), 0666); err != nil {
-			t.Fatalf("failed to write skaffold.yaml: %s", err)
-		}
-		defer ioutil.WriteFile(skaffoldConfigFile, origSkaffoldYaml, 0666)
+		revert := replaceNamespace("./testdata/skaffold-in-cluster/skaffold.yaml", t, ns)
+		defer revert()
+		revert = replaceNamespace("./testdata/skaffold-in-cluster/build-step/kustomization.yaml", t, ns)
+		defer revert()
 
 		//we have to copy the e2esecret from default ns -> temporary namespace for kaniko
 		secret, err := k8sClient.client.CoreV1().Secrets("default").Get("e2esecret", metav1.GetOptions{})
@@ -166,6 +160,20 @@ func TestBuildInCluster(t *testing.T) {
 
 		k8sClient.WaitForPodsInPhase(corev1.PodSucceeded, "skaffold-in-cluster")
 	})
+}
+
+func replaceNamespace(fileName string, t *testutil.T, ns *corev1.Namespace) func() {
+	origSkaffoldYaml, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		t.Fatalf("failed reading %s: %s", fileName, err)
+	}
+	namespacedYaml := strings.ReplaceAll(string(origSkaffoldYaml), "VAR_CLUSTER_NAMESPACE", ns.Name)
+	if err := ioutil.WriteFile(fileName, []byte(namespacedYaml), 0666); err != nil {
+		t.Fatalf("failed to write %s: %s", fileName, err)
+	}
+	return func() {
+		ioutil.WriteFile(fileName, origSkaffoldYaml, 0666)
+	}
 }
 
 // removeImage removes the given image if present.
