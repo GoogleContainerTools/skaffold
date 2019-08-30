@@ -64,7 +64,7 @@ func (l *ManifestList) Append(buf []byte) {
 
 	for _, line := range strings.Split(yaml, "\n") {
 		// Not a top level key.
-		if strings.HasPrefix(line, " ") || !strings.Contains(line, ":") {
+		if strings.HasPrefix(line, "-") || strings.HasPrefix(line, " ") || !strings.Contains(line, ":") {
 			part += "\n" + line
 			continue
 		}
