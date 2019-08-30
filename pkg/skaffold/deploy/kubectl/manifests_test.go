@@ -17,7 +17,6 @@ limitations under the License.
 package kubectl
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -134,7 +133,6 @@ func TestAppendServiceAndRoleBinding(t *testing.T) {
 
 	manifests.Append([]byte(roleBinding + "\n" + service))
 
-	fmt.Println(manifests.String())
 	testutil.CheckDeepEqual(t, 2, len(manifests))
 	testutil.CheckDeepEqual(t, roleBinding, string(manifests[0]))
 	testutil.CheckDeepEqual(t, service, string(manifests[1]))
