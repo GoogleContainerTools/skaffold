@@ -30,7 +30,6 @@ import (
 	"4d63.com/tz"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -170,17 +169,7 @@ func TestBuildInCluster(t *testing.T) {
 			}
 		}()
 
-		podsClient := k8sClient.client.CoreV1().Pods(ns.Name)
-		podName := "skaffold-in-cluster"
-		if err := kubernetes.WaitForPodSucceeded(context.TODO(), podsClient, podName, 2*time.Minute); err != nil {
-			t.Errorf("in-cluster build pod failed: %s", err)
-			logs, err := podsClient.GetLogs(podName, &corev1.PodLogOptions{}).DoRaw()
-			if err != nil {
-				t.Fatalf("error getting logs for pod: %s", err)
-				return
-			}
-			t.Fatalf("logs: %s", logs)
-		}
+		k8sClient.WaitForPodsInPhase(corev1.PodSucceeded, "skaffold-in-cluster")
 	})
 }
 

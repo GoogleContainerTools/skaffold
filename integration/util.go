@@ -82,6 +82,11 @@ type NSKubernetesClient struct {
 
 // WaitForPodsReady waits for a list of pods to become ready.
 func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
+	k.WaitForPodsInPhase(v1.PodRunning, podNames...)
+}
+
+// WaitForPodsReady waits for a list of pods to become ready.
+func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNames ...string) {
 	if len(podNames) == 0 {
 		return
 	}
@@ -115,7 +120,7 @@ func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
 			phases[pod.Name] = pod.Status.Phase
 
 			for _, podName := range podNames {
-				if phases[podName] != v1.PodRunning {
+				if phases[podName] != expectedPhase {
 					break waitLoop
 				}
 			}
