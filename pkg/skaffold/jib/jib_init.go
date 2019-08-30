@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -68,8 +69,8 @@ func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 		a.Workspace = workspace
 	}
 
-	if j.BuilderName == JibMaven.Name() {
-		jibMaven := &latest.JibArtifact{Type: JibMaven.ID()}
+	if j.BuilderName == PluginName(latest.JibMaven) {
+		jibMaven := &latest.JibArtifact{Type: latest.JibMaven}
 		if j.Project != "" {
 			jibMaven.Project = j.Project
 		}
@@ -78,8 +79,8 @@ func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 		}
 		a.ArtifactType = latest.ArtifactType{JibArtifact: jibMaven}
 
-	} else if j.BuilderName == JibGradle.Name() {
-		jibGradle := &latest.JibArtifact{Type: JibGradle.ID()}
+	} else if j.BuilderName == PluginName(latest.JibGradle) {
+		jibGradle := &latest.JibArtifact{Type: latest.JibGradle}
 		if j.Project != "" {
 			jibGradle.Project = j.Project
 		}
@@ -111,20 +112,16 @@ type jibJSON struct {
 // ValidateJibConfig checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
 func ValidateJibConfig(path string) []Jib {
 	// Determine whether maven or gradle
-	var builderType PluginType
+	var builderType latest.JibPluginType
 	var executable, wrapper, taskName string
-	t, err := DeterminePluginType(path, nil)
-	if err != nil {
-		return nil
-	}
-	switch t {
-	case JibMaven:
-		builderType = JibMaven
+	switch {
+	case strings.HasSuffix(path, "pom.xml"):
+		builderType = latest.JibMaven
 		executable = "mvn"
 		wrapper = "mvnw"
 		taskName = "jib:_skaffold-init"
-	case JibGradle:
-		builderType = JibGradle
+	case strings.HasSuffix(path, "build.gradle"):
+		builderType = latest.JibGradle
 		executable = "gradle"
 		wrapper = "gradlew"
 		taskName = "_jibSkaffoldInit"
@@ -159,7 +156,7 @@ func ValidateJibConfig(path string) []Jib {
 			return nil
 		}
 
-		results[i] = Jib{BuilderName: builderType.Name(), Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
+		results[i] = Jib{BuilderName: PluginName(builderType), Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
 	}
 	return results
 }

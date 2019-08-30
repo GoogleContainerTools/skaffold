@@ -41,32 +41,12 @@ const (
 	dotDotSlash = ".." + string(filepath.Separator)
 )
 
-// PluginType is an enum for the different supported Jib plugins.
-type PluginType int
-
-// Define the different plugin types supported by Jib.
-const (
-	JibMaven PluginType = iota
-	JibGradle
-)
-
-// ID returns the identifier for a Jib plugin type, suitable for external references (YAML, JSON, command-line, etc).
-func (t PluginType) ID() string {
-	switch t {
-	case JibMaven:
-		return "maven"
-	case JibGradle:
-		return "gradle"
-	}
-	panic("Unknown Jib Plugin Type: " + string(t))
-}
-
 // Name provides a human-oriented label for a plugin type.
-func (t PluginType) Name() string {
+func PluginName(t latest.JibPluginType) string {
 	switch t {
-	case JibMaven:
+	case latest.JibMaven:
 		return "Jib Maven Plugin"
-	case JibGradle:
+	case latest.JibGradle:
 		return "Jib Gradle Plugin"
 	}
 	panic("Unknown Jib Plugin Type: " + string(t))
@@ -97,11 +77,11 @@ func GetDependencies(ctx context.Context, workspace string, artifact *latest.Jib
 	if err != nil {
 		return nil, err
 	}
-	
+
 	switch t {
-	case JibMaven:
+	case latest.JibMaven:
 		return getDependenciesMaven(ctx, workspace, artifact)
-	case JibGradle:
+	case latest.JibGradle:
 		return getDependenciesGradle(ctx, workspace, artifact)
 	default:
 		return nil, errors.Errorf("Unable to determine Jib builder type for %s", workspace)
@@ -109,31 +89,21 @@ func GetDependencies(ctx context.Context, workspace string, artifact *latest.Jib
 }
 
 // DeterminePluginType tries to determine the Jib plugin type for the given artifact.
-func DeterminePluginType(workspace string, artifact *latest.JibArtifact) (PluginType, error) {
+func DeterminePluginType(workspace string, artifact *latest.JibArtifact) (latest.JibPluginType, error) {
 	// check if explicitly specified
-	if artifact != nil {
-		switch artifact.Type {
-		case JibMaven.ID():
-			return JibMaven, nil
-		case JibGradle.ID():
-			return JibGradle, nil
-		case "": // unspecified so we ignore 
-			break
-		default:
-			// ideally we should test this when unmarshalling except it leads to circular dependencies
-			return -1, errors.Errorf("Unable to determine Jib plugin type for %s", artifact.Type)
-		}
+	if artifact != nil && artifact.Type.IsKnown() {
+		return artifact.Type, nil
 	}
-	
+
 	// check for typical gradle files
 	for _, gradleFile := range []string{"build.gradle", "gradle.properties", "settings.gradle", "gradlew", "gradlew.bat", "gradlew.cmd"} {
 		if util.IsFile(filepath.Join(workspace, gradleFile)) {
-			return JibGradle, nil
+			return latest.JibGradle, nil
 		}
 	}
 	// check for typical maven files; .mvn is a directory used for polyglot maven
 	if util.IsFile(filepath.Join(workspace, "pom.xml")) || util.IsDir(filepath.Join(workspace, ".mvn")) {
-		return JibMaven, nil
+		return latest.JibMaven, nil
 	}
 	return -1, errors.Errorf("Unable to determine Jib plugin type for %s", workspace)
 }

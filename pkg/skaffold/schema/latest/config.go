@@ -18,6 +18,7 @@ package latest
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	"github.com/pkg/errors"
 )
 
 const Version string = "skaffold/v1beta14"
@@ -756,5 +757,56 @@ type JibArtifact struct {
 	Flags []string `yaml:"args,omitempty"`
 
 	// Type explicitly configures the Jib builder type (`gradle` or `maven`).
-	Type string `yaml:"type,omitempty"`
+	Type JibPluginType `yaml:"type,omitempty"`
+}
+
+// JibPluginType is an enum for the different supported Jib plugins.
+// Defined here to avoid circular package imports.
+type JibPluginType int
+
+// Define the different plugin types supported by Jib.
+const (
+	// use `iota+1` so that 0 is an invalid value
+	JibMaven JibPluginType = iota + 1
+	JibGradle
+)
+
+// IsKnown checks that the num value is a known value (vs 0 or an unknown value).
+func (t JibPluginType) IsKnown() bool {
+	switch t {
+	case JibMaven, JibGradle:
+		return true
+	}
+	return false
+}
+
+// MarshalYAML implements YAML marshalling by including the value as an inline yaml fragment.
+func (t JibPluginType) MarshalYAML() ([]byte, error) {
+	switch t {
+	case JibMaven:
+		return []byte("maven"), nil
+	case JibGradle:
+		return []byte("gradle"), nil
+	default:
+		return nil, errors.Errorf("unknown JibPluginType %v", t)
+	}
+}
+
+// UnmarshalYAML implements YAML unmarshalling by reading an inline yaml fragment.
+func (t *JibPluginType) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	var v string
+	unmarshal(&v)
+	switch v {
+	case "maven":
+		*t = JibMaven
+		return nil
+	case "gradle":
+		*t = JibGradle
+		return nil
+	case "":
+		t = nil
+		return nil
+	default:
+		return errors.Errorf("unknown jib plugin type '%v': expected 'maven' or 'gradle'", v)
+	}
 }

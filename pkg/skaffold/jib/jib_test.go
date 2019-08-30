@@ -22,16 +22,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
-
-func TestPluginType(t *testing.T) {
-	testutil.CheckDeepEqual(t, "maven", JibMaven.ID())
-	testutil.CheckDeepEqual(t, "Jib Maven Plugin", JibMaven.Name())
-	testutil.CheckDeepEqual(t, "gradle", JibGradle.ID())
-	testutil.CheckDeepEqual(t, "Jib Gradle Plugin", JibGradle.Name())
-}
 
 func TestGetDependencies(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
@@ -143,14 +137,35 @@ func TestGetUpdatedDependencies(t *testing.T) {
 	})
 }
 
+func TestPluginName(t *testing.T) {
+	testutil.CheckDeepEqual(t, "Jib Maven Plugin", PluginName(latest.JibMaven))
+	testutil.CheckDeepEqual(t, "Jib Gradle Plugin", PluginName(latest.JibGradle))
+}
+
+func TestJibPluginType_IsKnown(t *testing.T) {
+	tests := []struct {
+		value latest.JibPluginType
+		known bool
+	}{
+		{latest.JibMaven, true},
+		{latest.JibGradle, true},
+		{latest.JibPluginType(0), false},
+		{latest.JibPluginType(-1), false},
+		{latest.JibPluginType(3), false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, string(test.value), func(t *testutil.T) {
+			t.CheckDeepEqual(test.known, test.value.IsKnown())
+		})
+	}
+}
 
 func TestDeterminePluginType(t *testing.T) {
 	tests := []struct {
 		description  string
 		skipTests    bool
 		expectedArgs []string
-	}{
-	}
+	}{}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 		})

@@ -306,13 +306,13 @@ func AbsolutePaths(workspace string, paths []string) []string {
 func IsFile(path string) bool {
 	info, err := os.Stat(path)
 	// err could be permission-related
-	return (err == nil || !os.IsNotExist(err)) && info.Mode().IsRegular() 
+	return (err == nil || !os.IsNotExist(err)) && info.Mode().IsRegular()
 }
 
 func IsDir(path string) bool {
 	info, err := os.Stat(path)
 	// err could be permission-related
-	return (err == nil || !os.IsNotExist(err)) && info.IsDir() 
+	return (err == nil || !os.IsNotExist(err)) && info.IsDir()
 }
 
 // IsHiddenDir returns if a directory is hidden.
