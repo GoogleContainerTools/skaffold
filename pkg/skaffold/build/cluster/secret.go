@@ -30,7 +30,7 @@ import (
 )
 
 func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
-	color.Default.Fprintf(out, "Creating kaniko secret [%s]...\n", b.PullSecretName)
+	color.Default.Fprintf(out, "Creating kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
 
 	client, err := kubernetes.GetClientset()
 	if err != nil {

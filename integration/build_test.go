@@ -18,19 +18,24 @@ package integration
 
 import (
 	"context"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"4d63.com/tz"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
 )
 
 const imageName = "simple-build:"
@@ -105,6 +110,69 @@ func TestBuild(t *testing.T) {
 			}
 			checkImageExists(t, test.expectImage)
 		})
+	}
+}
+
+//see integration/testdata/README.md for details
+func TestBuildInCluster(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if !ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is gcp only")
+	}
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		// copy the skaffold binary to the test case folder
+		// this is geared towards the in-docker setup: the fresh built binary is here
+		// for manual testing, we can override this temporarily
+		skaffoldSrc, err := exec.LookPath("skaffold")
+		if err != nil {
+			t.Fatalf("failed to find skaffold binary: %s", err)
+		}
+		skaffoldDst := "./testdata/skaffold-in-cluster/skaffold"
+		t.CopyFile(skaffoldSrc, skaffoldDst)
+
+		ns, k8sClient, cleanupNs := SetupNamespace(t.T)
+		defer cleanupNs()
+
+		// TODO: until https://github.com/GoogleContainerTools/skaffold/issues/2757 is resolved, this is the simplest
+		// way to override the build.cluster.namespace
+		revert := replaceNamespace("./testdata/skaffold-in-cluster/skaffold.yaml", t, ns)
+		defer revert()
+		revert = replaceNamespace("./testdata/skaffold-in-cluster/build-step/kustomization.yaml", t, ns)
+		defer revert()
+
+		//we have to copy the e2esecret from default ns -> temporary namespace for kaniko
+		secret, err := k8sClient.client.CoreV1().Secrets("default").Get("e2esecret", metav1.GetOptions{})
+		if err != nil {
+			t.Fatalf("failed reading default/e2escret: %s", err)
+		}
+		secret.Namespace = ns.Name
+		secret.ResourceVersion = ""
+		_, err = k8sClient.client.CoreV1().Secrets(ns.Name).Create(secret)
+		if err != nil {
+			t.Fatalf("failed creating %s/e2escret: %s", ns.Name, err)
+		}
+
+		logs := skaffold.Run("-p", "create-build-step", "--cache-artifacts=true").InDir("./testdata/skaffold-in-cluster").InNs(ns.Name).RunOrFailOutput(t.T)
+		t.Logf("create-build-step logs: \n%s", logs)
+
+		k8sClient.WaitForPodsInPhase(corev1.PodSucceeded, "skaffold-in-cluster")
+	})
+}
+
+func replaceNamespace(fileName string, t *testutil.T, ns *corev1.Namespace) func() {
+	origSkaffoldYaml, err := ioutil.ReadFile(fileName)
+	if err != nil {
+		t.Fatalf("failed reading %s: %s", fileName, err)
+	}
+	namespacedYaml := strings.ReplaceAll(string(origSkaffoldYaml), "VAR_CLUSTER_NAMESPACE", ns.Name)
+	if err := ioutil.WriteFile(fileName, []byte(namespacedYaml), 0666); err != nil {
+		t.Fatalf("failed to write %s: %s", fileName, err)
+	}
+	return func() {
+		ioutil.WriteFile(fileName, origSkaffoldYaml, 0666)
 	}
 }
 
