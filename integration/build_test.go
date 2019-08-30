@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"4d63.com/tz"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -135,14 +137,29 @@ func TestBuildInCluster(t *testing.T) {
 		ns, k8sClient, cleanupNs := SetupNamespace(t.T)
 		defer cleanupNs()
 
+		// TODO: until https://github.com/GoogleContainerTools/skaffold/issues/2757 is resolved, this is the simplest
+		// way to override the build.cluster.namespace
 		skaffoldConfigFile := "./testdata/skaffold-in-cluster/skaffold.yaml"
-		skaffoldYaml, err := ioutil.ReadFile(skaffoldConfigFile)
+		origSkaffoldYaml, err := ioutil.ReadFile(skaffoldConfigFile)
 		if err != nil {
 			t.Fatalf("failed reading skaffold.yaml: %s", err)
 		}
-		namespacedYaml := strings.ReplaceAll(string(skaffoldYaml), "VAR_CLUSTER_NAMESPACE", ns.Name)
+		namespacedYaml := strings.ReplaceAll(string(origSkaffoldYaml), "VAR_CLUSTER_NAMESPACE", ns.Name)
 		if err := ioutil.WriteFile(skaffoldConfigFile, []byte(namespacedYaml), 666); err != nil {
 			t.Fatalf("failed to write skaffold.yaml: %s", err)
+		}
+		defer ioutil.WriteFile(skaffoldConfigFile, origSkaffoldYaml, 666)
+
+		//we have to copy the e2esecret from default ns -> temporary namespace for kaniko
+		secret, err := k8sClient.client.CoreV1().Secrets("default").Get("e2esecret", metav1.GetOptions{})
+		if err != nil {
+			t.Fatalf("failed reading default/e2escret: %s", err)
+		}
+		secret.Namespace = ns.Name
+		secret.ResourceVersion = ""
+		_, err = k8sClient.client.CoreV1().Secrets(ns.Name).Create(secret)
+		if err != nil {
+			t.Fatalf("failed creating %s/e2escret: %s", ns.Name, err)
 		}
 
 		logs := skaffold.Run("-p", "create-build-step", "--cache-artifacts=true").InDir("./testdata/skaffold-in-cluster").InNs(ns.Name).RunOrFailOutput(t.T)
