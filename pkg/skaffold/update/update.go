@@ -32,7 +32,7 @@ import (
 // Fot testing
 var (
 	GetLatestAndCurrentVersion = getLatestAndCurrentVersion
-	readConfig                 = config.ReadConfigFileNoCache
+	isConfigUpdateCheckEnabled = config.IsUpdateCheckEnabled
 	getEnv                     = os.Getenv
 )
 
@@ -53,11 +53,7 @@ func isUpdateCheckEnabledByEnvOrConfig(configfile string) bool {
 	if v := getEnv(constants.UpdateCheckEnvironmentVariable); v != "" {
 		return strings.ToLower(v) == "true"
 	}
-	cfg, err := readConfig(configfile)
-	if err != nil {
-		return true
-	}
-	return cfg == nil || cfg.Global == nil || cfg.Global.UpdateCheck == nil || *cfg.Global.UpdateCheck
+	return isConfigUpdateCheckEnabled(configfile)
 }
 
 // getLatestAndCurrentVersion uses a VERSION file stored on GCS to determine the latest released version

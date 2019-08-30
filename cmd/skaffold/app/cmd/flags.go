@@ -250,8 +250,8 @@ var FlagRegistry = []Flag{
 
 var commandFlags []*pflag.Flag
 
-// SetUpFlags creates pflag.Flag for all registered flags
-func SetUpFlags() {
+// SetupFlags creates pflag.Flag for all registered flags
+func SetupFlags() {
 	commandFlags = make([]*pflag.Flag, len(FlagRegistry))
 	for i, fl := range FlagRegistry {
 		fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
@@ -275,7 +275,7 @@ func SetUpFlags() {
 
 func AddFlags(fs *pflag.FlagSet, cmdName string) {
 	if len(commandFlags) == 0 {
-		SetUpFlags()
+		SetupFlags()
 	}
 	for _, f := range commandFlags {
 		if hasCmdAnnotation(cmdName, f.Annotations["cmds"]) {
