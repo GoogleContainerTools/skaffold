@@ -28,4 +28,5 @@ profiles:
             cache: {}
       cluster:
         pullSecretName: e2esecret
+        namespace: VAR_CLUSTER_NAMESPACE
 

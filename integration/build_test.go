@@ -18,7 +18,6 @@ package integration
 
 import (
 	"context"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -34,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -134,27 +132,29 @@ func TestBuildInCluster(t *testing.T) {
 		skaffoldDst := "./testdata/skaffold-in-cluster/skaffold"
 		t.CopyFile(skaffoldSrc, skaffoldDst)
 
-		suffix := uuid.New().String()
-		cleanupKustomization := setupSuffixKustomization(suffix, t)
-		defer cleanupKustomization()
+		ns, k8sClient, cleanupNs := SetupNamespace(t.T)
+		defer cleanupNs()
 
-		const namespace = "default"
+		skaffoldConfigFile := "./testdata/skaffold-in-cluster/skaffold.yaml"
+		skaffoldYaml, err := ioutil.ReadFile(skaffoldConfigFile)
+		if err != nil {
+			t.Fatalf("failed reading skaffold.yaml: %s", err)
+		}
+		namespacedYaml := strings.ReplaceAll(string(skaffoldYaml), "VAR_CLUSTER_NAMESPACE", ns.Name)
+		if err := ioutil.WriteFile(skaffoldConfigFile, []byte(namespacedYaml), 666); err != nil {
+			t.Fatalf("failed to write skaffold.yaml: %s", err)
+		}
 
-		logs := skaffold.Run("-p", "create-build-step", "--cache-artifacts=true").InDir("./testdata/skaffold-in-cluster").InNs(namespace).RunOrFailOutput(t.T)
+		logs := skaffold.Run("-p", "create-build-step", "--cache-artifacts=true").InDir("./testdata/skaffold-in-cluster").InNs(ns.Name).RunOrFailOutput(t.T)
 		t.Logf("create-build-step logs: \n%s", logs)
 		defer func() {
-			if output, err := skaffold.Delete("-p", "create-build-step").InNs(namespace).InDir("./testdata/skaffold-in-cluster").RunWithCombinedOutput(t.T); err != nil {
+			if output, err := skaffold.Delete("-p", "create-build-step").InNs(ns.Name).InDir("./testdata/skaffold-in-cluster").RunWithCombinedOutput(t.T); err != nil {
 				t.Logf("failed to cleanup skaffold-in-cluster: %s, output: %s", err, output)
 			}
 		}()
 
-		client, err := kubernetes.Client()
-		if err != nil {
-			t.Fatalf("failed to get k8s client: %s", err)
-		}
-		podsClient := client.CoreV1().Pods(namespace)
-
-		podName := fmt.Sprintf("skaffold-in-cluster-%s", suffix)
+		podsClient := k8sClient.client.CoreV1().Pods(ns.Name)
+		podName := "skaffold-in-cluster"
 		if err := kubernetes.WaitForPodSucceeded(context.TODO(), podsClient, podName, 2*time.Minute); err != nil {
 			t.Errorf("in-cluster build pod failed: %s", err)
 			logs, err := podsClient.GetLogs(podName, &corev1.PodLogOptions{}).DoRaw()
@@ -165,22 +165,6 @@ func TestBuildInCluster(t *testing.T) {
 			t.Fatalf("logs: %s", logs)
 		}
 	})
-}
-
-func setupSuffixKustomization(suffix string, t *testutil.T) func() {
-	kustomization := fmt.Sprintf(
-		`nameSuffix: -%s
-resources:
- - k8s-job.yaml`, suffix)
-
-	if err := ioutil.WriteFile("./testdata/skaffold-in-cluster/build-step/kustomization.yaml", []byte(kustomization), 0666); err != nil {
-		t.Fatalf("failed writing kustomization: %s", err)
-	}
-	return func() {
-		if err := os.Remove("testdata/skaffold-in-cluster/build-step/kustomization.yaml"); err != nil {
-			t.Errorf("failed to cleanup kustomization.yaml: %s", err)
-		}
-	}
 }
 
 // removeImage removes the given image if present.
