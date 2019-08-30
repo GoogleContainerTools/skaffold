@@ -22,6 +22,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/blang/semver"
@@ -31,20 +32,32 @@ import (
 // Fot testing
 var (
 	GetLatestAndCurrentVersion = getLatestAndCurrentVersion
+	readConfig                 = config.ReadConfigFileNoCache
+	getEnv                     = os.Getenv
 )
 
 const latestVersionURL = "https://storage.googleapis.com/skaffold/releases/latest/VERSION"
 
 // IsUpdateCheckEnabled returns whether or not the update check is enabled
 // It is true by default, but setting it to any other value than true will disable the check
-func IsUpdateCheckEnabled() bool {
+func IsUpdateCheckEnabled(configfile string) bool {
 	// Don't perform a version check on dirty trees
 	if version.Get().GitTreeState == "dirty" {
 		return false
 	}
 
-	v := os.Getenv(constants.UpdateCheckEnvironmentVariable)
-	return v == "" || strings.ToLower(v) == "true"
+	return isUpdateCheckEnabledByEnvOrConfig(configfile)
+}
+
+func isUpdateCheckEnabledByEnvOrConfig(configfile string) bool {
+	if v := getEnv(constants.UpdateCheckEnvironmentVariable); v != "" {
+		return strings.ToLower(v) == "true"
+	}
+	cfg, err := readConfig(configfile)
+	if err != nil {
+		return true
+	}
+	return cfg == nil || cfg.Global == nil || cfg.Global.UpdateCheck == nil || *cfg.Global.UpdateCheck
 }
 
 // getLatestAndCurrentVersion uses a VERSION file stored on GCS to determine the latest released version
