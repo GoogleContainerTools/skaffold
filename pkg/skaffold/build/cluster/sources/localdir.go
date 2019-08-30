@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 
@@ -86,7 +87,7 @@ func (g *LocalDir) Pod(args []string) *v1.Pod {
 		Resources:    resourceRequirements(g.clusterDetails.Resources),
 	}
 
-	p := podTemplate(g.clusterDetails, g.artifact, args)
+	p := podTemplate(g.clusterDetails, g.artifact, args, version.Get().Version)
 	p.Spec.InitContainers = []v1.Container{ic}
 	p.Spec.Containers[0].VolumeMounts = append(p.Spec.Containers[0].VolumeMounts, vm)
 	p.Spec.Volumes = append(p.Spec.Volumes, v)

@@ -120,28 +120,38 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	defer r.forwarderManager.Stop()
 
 	// Watch artifacts
+	start := time.Now()
+	color.Default.Fprintln(out, "Listing files to watch...")
+
 	for i := range artifacts {
 		artifact := artifacts[i]
 		if !r.runCtx.Opts.IsTargetImage(artifact) {
 			continue
 		}
 
-		if err := r.monitor.Register(
-			func() ([]string, error) { return r.builder.DependenciesForArtifact(ctx, artifact) },
-			func(e filemon.Events) {
-				syncMap := func() (map[string][]string, error) { return r.builder.SyncMap(ctx, artifact) }
-				s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries, syncMap)
-				switch {
-				case err != nil:
-					logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
-				case s != nil:
-					r.changeSet.AddResync(s)
-				default:
-					r.changeSet.AddRebuild(artifact)
-				}
-			},
-		); err != nil {
-			return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
+		color.Default.Fprintf(out, " - %s\n", artifact.ImageName)
+
+		select {
+		case <-ctx.Done():
+			return context.Canceled
+		default:
+			if err := r.monitor.Register(
+				func() ([]string, error) { return r.builder.DependenciesForArtifact(ctx, artifact) },
+				func(e filemon.Events) {
+					syncMap := func() (map[string][]string, error) { return r.builder.SyncMap(ctx, artifact) }
+					s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries, syncMap)
+					switch {
+					case err != nil:
+						logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
+					case s != nil:
+						r.changeSet.AddResync(s)
+					default:
+						r.changeSet.AddRebuild(artifact)
+					}
+				},
+			); err != nil {
+				return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
+			}
 		}
 	}
 
@@ -168,6 +178,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	); err != nil {
 		return errors.Wrapf(err, "watching skaffold configuration %s", r.runCtx.Opts.ConfigurationFile)
 	}
+
+	color.Default.Fprintln(out, "List generated in", time.Since(start))
 
 	// First build
 	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {

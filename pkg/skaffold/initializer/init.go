@@ -281,7 +281,8 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 			pair := builderImagePair{Builder: parsed.Payload, ImageName: a.Image}
 			pairs = append(pairs, pair)
 
-		case jib.JibGradle, jib.JibMaven:
+		// FIXME: shouldn't use a human-readable name?
+		case jib.JibGradle.Name(), jib.JibMaven.Name():
 			parsed := struct {
 				Payload jib.Jib `json:"payload"`
 			}{}

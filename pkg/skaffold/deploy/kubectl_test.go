@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -56,32 +57,17 @@ spec:
 
 func TestKubectlDeploy(t *testing.T) {
 	tests := []struct {
-		description          string
-		cfg                  *latest.KubectlDeploy
-		builds               []build.Artifact
-		command              util.Command
-		shouldErr            bool
-		forceDeploy          bool
-		expectedDependencies []string
+		description string
+		cfg         *latest.KubectlDeploy
+		builds      []build.Artifact
+		command     util.Command
+		shouldErr   bool
+		forceDeploy bool
 	}{
 		{
 			description: "no manifest",
 			cfg:         &latest.KubectlDeploy{},
 			command:     testutil.FakeRunOut(t, "kubectl version --client -ojson", kubectlVersion),
-		},
-		{
-			description: "missing manifest file",
-			cfg: &latest.KubectlDeploy{
-				Manifests: []string{"missing.yaml"},
-			},
-			command: testutil.FakeRunOut(t, "kubectl version --client -ojson", kubectlVersion),
-		},
-		{
-			description: "ignore non-manifest",
-			cfg: &latest.KubectlDeploy{
-				Manifests: []string{"*.ignored"},
-			},
-			command: testutil.FakeRunOut(t, "kubectl version --client -ojson", kubectlVersion),
 		},
 		{
 			description: "deploy success (forced)",
@@ -96,8 +82,7 @@ func TestKubectlDeploy(t *testing.T) {
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
 			}},
-			forceDeploy:          true,
-			expectedDependencies: []string{"deployment.yaml"},
+			forceDeploy: true,
 		},
 		{
 			description: "deploy success",
@@ -112,7 +97,6 @@ func TestKubectlDeploy(t *testing.T) {
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
 			}},
-			expectedDependencies: []string{"deployment.yaml"},
 		},
 		{
 			description: "http manifest",
@@ -127,7 +111,6 @@ func TestKubectlDeploy(t *testing.T) {
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
 			}},
-			expectedDependencies: []string{"deployment.yaml"},
 		},
 		{
 			description: "deploy command error",
@@ -142,8 +125,7 @@ func TestKubectlDeploy(t *testing.T) {
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
 			}},
-			shouldErr:            true,
-			expectedDependencies: []string{"deployment.yaml"},
+			shouldErr: true,
 		},
 		{
 			description: "additional flags",
@@ -163,8 +145,7 @@ func TestKubectlDeploy(t *testing.T) {
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
 			}},
-			shouldErr:            true,
-			expectedDependencies: []string{"deployment.yaml"},
+			shouldErr: true,
 		},
 	}
 	for _, test := range tests {
@@ -191,11 +172,8 @@ func TestKubectlDeploy(t *testing.T) {
 				},
 			})
 
-			dependencies, err := k.Dependencies()
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expectedDependencies, dependencies)
+			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil).GetError()
 
-			err = k.Deploy(context.Background(), ioutil.Discard, test.builds, nil).GetError()
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -409,4 +387,73 @@ spec:
 		}, labellers).GetError()
 		t.CheckNoError(err)
 	})
+}
+
+func TestDependencies(t *testing.T) {
+	tests := []struct {
+		description string
+		manifests   []string
+		expected    []string
+	}{
+		{
+			description: "no manifest",
+			manifests:   []string(nil),
+			expected:    []string(nil),
+		},
+		{
+			description: "missing manifest file",
+			manifests:   []string{"missing.yaml"},
+			expected:    []string(nil),
+		},
+		{
+			description: "ignore non-manifest",
+			manifests:   []string{"*.ignored"},
+			expected:    []string(nil),
+		},
+		{
+			description: "single manifest",
+			manifests:   []string{"deployment.yaml"},
+			expected:    []string{"deployment.yaml"},
+		},
+		{
+			description: "keep manifests order",
+			manifests:   []string{"01_name.yaml", "00_service.yaml"},
+			expected:    []string{"01_name.yaml", "00_service.yaml"},
+		},
+		{
+			description: "sort children",
+			manifests:   []string{"01/*.yaml", "00/*.yaml"},
+			expected:    []string{filepath.Join("01", "a.yaml"), filepath.Join("01", "b.yaml"), filepath.Join("00", "a.yaml"), filepath.Join("00", "b.yaml")},
+		},
+		{
+			description: "http manifest",
+			manifests:   []string{"deployment.yaml", "http://remote.yaml"},
+			expected:    []string{"deployment.yaml"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().
+				Touch("deployment.yaml", "01_name.yaml", "00_service.yaml", "empty.ignored").
+				Touch("01/a.yaml", "01/b.yaml").
+				Touch("00/b.yaml", "00/a.yaml").
+				Chdir()
+
+			k := NewKubectlDeployer(&runcontext.RunContext{
+				Cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KubectlDeploy: &latest.KubectlDeploy{
+								Manifests: test.manifests,
+							},
+						},
+					},
+				},
+			})
+			dependencies, err := k.Dependencies()
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, dependencies)
+		})
+	}
 }

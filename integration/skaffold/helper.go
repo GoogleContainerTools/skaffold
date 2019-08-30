@@ -154,10 +154,7 @@ func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 // RunOrFail runs the skaffold command and fails the test
 // if the command returns an error.
 func (b *RunBuilder) RunOrFail(t *testing.T) {
-	t.Helper()
-	if err := b.Run(t); err != nil {
-		t.Fatal(err)
-	}
+	b.RunOrFailOutput(t)
 }
 
 // Run runs the skaffold command.
