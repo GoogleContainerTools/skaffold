@@ -136,5 +136,5 @@ func TestAppendServiceAndRoleBinding(t *testing.T) {
 	testutil.CheckDeepEqual(t, 2, len(manifests))
 	testutil.CheckDeepEqual(t, roleBinding, string(manifests[0]))
 	testutil.CheckDeepEqual(t, service, string(manifests[1]))
-	testutil.CheckDeepEqual(t, manifests.String(), roleBinding  + "\n---\n" + service)
+	testutil.CheckDeepEqual(t, manifests.String(), roleBinding+"\n---\n"+service)
 }
