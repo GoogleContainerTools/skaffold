@@ -163,11 +163,6 @@ func TestBuildInCluster(t *testing.T) {
 
 		logs := skaffold.Run("-p", "create-build-step", "--cache-artifacts=true").InDir("./testdata/skaffold-in-cluster").InNs(ns.Name).RunOrFailOutput(t.T)
 		t.Logf("create-build-step logs: \n%s", logs)
-		defer func() {
-			if output, err := skaffold.Delete("-p", "create-build-step").InNs(ns.Name).InDir("./testdata/skaffold-in-cluster").RunWithCombinedOutput(t.T); err != nil {
-				t.Logf("failed to cleanup skaffold-in-cluster: %s, output: %s", err, output)
-			}
-		}()
 
 		k8sClient.WaitForPodsInPhase(corev1.PodSucceeded, "skaffold-in-cluster")
 	})
