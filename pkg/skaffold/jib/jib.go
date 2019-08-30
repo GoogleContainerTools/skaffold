@@ -92,7 +92,13 @@ var watchedFiles = map[string]filesLists{}
 
 // GetDependencies returns a list of files to watch for changes to rebuild
 func GetDependencies(ctx context.Context, workspace string, artifact *latest.JibArtifact) ([]string, error) {
-	switch DetermineJibPluginType(workspace, artifact) {
+	// otherewise guess from artifacgt workspace
+	t, err := DeterminePluginType(workspace, artifact)
+	if err != nil {
+		return nil, err
+	}
+	
+	switch t {
 	case JibMaven:
 		return getDependenciesMaven(ctx, workspace, artifact)
 	case JibGradle:
@@ -102,27 +108,34 @@ func GetDependencies(ctx context.Context, workspace string, artifact *latest.Jib
 	}
 }
 
-func DetermineJibPluginType(workspace string, artifact *latest.JibArtifact) PluginType {
-	// see if explicitly specified
-	switch artifact.Type {
-	case JibGradle.ID():
-		return JibGradle
-	case JibMaven.ID():
-		return JibMaven
-	}
-	// check for typical gradle files
-	for _, gradleFile := range []string{"build.gradle", "gradle.properties", "settings.gradle", "gradlew", "gradlew.bat", "gradlew.cmd"} {
-		if exists(filepath.Join(workspace, gradleFile)) {
-			return JibGradle
+// DeterminePluginType tries to determine the Jib plugin type for the given artifact.
+func DeterminePluginType(workspace string, artifact *latest.JibArtifact) (PluginType, error) {
+	// check if explicitly specified
+	if artifact != nil {
+		switch artifact.Type {
+		case JibMaven.ID():
+			return JibMaven, nil
+		case JibGradle.ID():
+			return JibGradle, nil
+		case "": // unspecified so we ignore 
+			break
+		default:
+			// ideally we should test this when unmarshalling except it leads to circular dependencies
+			return -1, errors.Errorf("Unable to determine Jib plugin type for %s", artifact.Type)
 		}
 	}
-	return JibMaven
-}
-
-// exists returns true if the file with the given name exists
-func exists(name string) bool {
-	_, err := os.Stat(name)
-	return err == nil || !os.IsNotExist(err) // err could be permission-related
+	
+	// check for typical gradle files
+	for _, gradleFile := range []string{"build.gradle", "gradle.properties", "settings.gradle", "gradlew", "gradlew.bat", "gradlew.cmd"} {
+		if util.IsFile(filepath.Join(workspace, gradleFile)) {
+			return JibGradle, nil
+		}
+	}
+	// check for typical maven files; .mvn is a directory used for polyglot maven
+	if util.IsFile(filepath.Join(workspace, "pom.xml")) || util.IsDir(filepath.Join(workspace, ".mvn")) {
+		return JibMaven, nil
+	}
+	return -1, errors.Errorf("Unable to determine Jib plugin type for %s", workspace)
 }
 
 // getDependencies returns a list of files to watch for changes to rebuild

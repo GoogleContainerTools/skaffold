@@ -23,7 +23,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -114,14 +113,17 @@ func ValidateJibConfig(path string) []Jib {
 	// Determine whether maven or gradle
 	var builderType PluginType
 	var executable, wrapper, taskName string
-	// FIXME: use DeterminePluginType
-	switch {
-	case strings.HasSuffix(path, "pom.xml"):
+	t, err := DeterminePluginType(path, nil)
+	if err != nil {
+		return nil
+	}
+	switch t {
+	case JibMaven:
 		builderType = JibMaven
 		executable = "mvn"
 		wrapper = "mvnw"
 		taskName = "jib:_skaffold-init"
-	case strings.HasSuffix(path, "build.gradle"):
+	case JibGradle:
 		builderType = JibGradle
 		executable = "gradle"
 		wrapper = "gradlew"

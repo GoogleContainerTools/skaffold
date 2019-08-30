@@ -142,3 +142,17 @@ func TestGetUpdatedDependencies(t *testing.T) {
 		t.CheckNoError(err)
 	})
 }
+
+
+func TestDeterminePluginType(t *testing.T) {
+	tests := []struct {
+		description  string
+		skipTests    bool
+		expectedArgs []string
+	}{
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+		})
+	}
+}

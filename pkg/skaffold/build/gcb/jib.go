@@ -26,7 +26,12 @@ import (
 )
 
 func (b *Builder) jibBuildSpec(artifact *latest.Artifact, tag string) (cloudbuild.Build, error) {
-	switch jib.DetermineJibPluginType(artifact.Workspace, artifact.JibArtifact) {
+	t, err := jib.DeterminePluginType(artifact.Workspace, artifact.JibArtifact)
+	if err != nil {
+		return cloudbuild.Build{}, err
+	}
+	
+	switch t {
 	case jib.JibMaven:
 		return cloudbuild.Build{
 			Steps: []*cloudbuild.BuildStep{{

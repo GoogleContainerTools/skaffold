@@ -334,3 +334,22 @@ func TestStrSliceInsert(t *testing.T) {
 	testutil.CheckDeepEqual(t, []string{"a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 0, nil))
 	testutil.CheckDeepEqual(t, []string{"a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 1, nil))
 }
+
+func TestAbsFile(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Touch("file")
+
+	expectedFile, err := filepath.Abs(filepath.Join(tmpDir.Root(), "file"))
+	testutil.CheckError(t, false, err)
+
+	file, err := AbsFile(tmpDir.Root(), "file")
+	testutil.CheckErrorAndDeepEqual(t, false, err, expectedFile, file)
+
+	_, err = AbsFile(tmpDir.Root(), "")
+	testutil.CheckErrorAndDeepEqual(t, true, err, tmpDir.Root()+" is a directory", err.Error())
+
+	_, err = AbsFile(tmpDir.Root(), "does-not-exist")
+	testutil.CheckError(t, true, err)
+}
+
