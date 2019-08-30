@@ -5,6 +5,9 @@ build:
     sha256: {}
   artifacts:
     - image: gcr.io/k8s-skaffold/skaffold-helm
+      sync:
+        infer:
+          - "static/**.html"
 deploy:
   helm:
     releases:
