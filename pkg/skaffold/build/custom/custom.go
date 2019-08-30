@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
@@ -54,29 +53,34 @@ func NewArtifactBuilder(pushImages bool, additionalEnv []string) *ArtifactBuilde
 // Build builds a custom artifact
 // It returns true if the image is expected to exist remotely, or false if it is expected to exist locally
 func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) error {
-	cmd, err := b.retrieveCmd(ctx, a, tag)
+	cmd, err := b.retrieveCmd(ctx, out, a, tag)
 	if err != nil {
 		return errors.Wrap(err, "retrieving cmd")
 	}
+
 	return cmd.Run()
 }
 
-func (b *ArtifactBuilder) retrieveCmd(ctx context.Context, a *latest.Artifact, tag string) (*exec.Cmd, error) {
+func (b *ArtifactBuilder) retrieveCmd(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
 	artifact := a.CustomArtifact
 	split := strings.Split(artifact.BuildCommand, " ")
+
 	cmd := exec.CommandContext(ctx, split[0], split[1:]...)
+	cmd.Stdout = out
+	cmd.Stderr = out
+
 	env, err := b.retrieveEnv(a, tag)
 	if err != nil {
 		return nil, errors.Wrapf(err, "retrieving env variables for %s", a.ImageName)
 	}
 	cmd.Env = env
+
 	dir, err := buildContext(a.Workspace)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting context for artifact")
 	}
 	cmd.Dir = dir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+
 	return cmd, nil
 }
 

@@ -18,9 +18,8 @@ package custom
 
 import (
 	"context"
-	"os"
+	"io/ioutil"
 	"os/exec"
-	"reflect"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -116,13 +115,12 @@ func TestRetrieveCmd(t *testing.T) {
 			t.Override(&buildContext, func(string) (string, error) { return test.artifact.Workspace, nil })
 
 			builder := NewArtifactBuilder(false, nil)
-			cmd, err := builder.retrieveCmd(context.Background(), test.artifact, test.tag)
+			cmd, err := builder.retrieveCmd(context.Background(), ioutil.Discard, test.artifact, test.tag)
 
 			t.CheckNoError(err)
-			// cmp.Diff cannot access unexported fields in *exec.Cmd, so use reflect.DeepEqual here directly
-			if !reflect.DeepEqual(test.expected, cmd) {
-				t.Errorf("Expected result different from actual result. Expected: \n%v, \nActual: \n%v", test.expected, cmd)
-			}
+			t.CheckDeepEqual(test.expected.Args, cmd.Args)
+			t.CheckDeepEqual(test.expected.Dir, cmd.Dir)
+			t.CheckDeepEqual(test.expected.Env, cmd.Env)
 		})
 	}
 }
@@ -131,7 +129,5 @@ func expectedCmd(buildCommand, dir string, args, env []string) *exec.Cmd {
 	cmd := exec.CommandContext(context.Background(), buildCommand, args...)
 	cmd.Dir = dir
 	cmd.Env = env
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 	return cmd
 }
