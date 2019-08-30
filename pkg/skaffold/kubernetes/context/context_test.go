@@ -159,9 +159,22 @@ func TestGetRestClientConfig(t *testing.T) {
 
 		cfg, err := GetRestClientConfig()
 		kubeContext = clusterBarContext
+		cfg, err = GetRestClientConfig()
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("https://bar.com", cfg.Host)
+	})
+
+	testutil.Run(t, "REST client in-cluster", func(t *testutil.T) {
+		logrus.SetLevel(logrus.DebugLevel)
+		t.SetEnvs(map[string]string{"KUBECONFIG": "non-valid"})
+		resetConfig()
+
+		_, err := getRestClientConfig("")
+
+		if err == nil {
+			t.Errorf("expected error outside the cluster")
+		}
 	})
 }
 
