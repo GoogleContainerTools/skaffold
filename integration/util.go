@@ -104,7 +104,7 @@ func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
 		select {
 		case <-ctx.Done():
 			k.printDiskFreeSpace()
-			k.debug("nodes")
+			//k.debug("nodes")
 			k.debug("pods")
 			k.t.Fatalf("Timed out waiting for pods %v ready in namespace %s", podNames, k.ns)
 
@@ -161,7 +161,7 @@ func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 		select {
 		case <-ctx.Done():
 			k.printDiskFreeSpace()
-			k.debug("nodes")
+			//k.debug("nodes")
 			k.debug("deployments.apps")
 			k.debug("pods")
 			k.t.Fatalf("Timed out waiting for deployments %v to stabilize in namespace %s", depNames, k.ns)
