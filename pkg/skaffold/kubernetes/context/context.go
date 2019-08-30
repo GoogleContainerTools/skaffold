@@ -17,8 +17,9 @@ limitations under the License.
 package context
 
 import (
-	"github.com/sirupsen/logrus"
 	"sync"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/pkg/errors"
 	restclient "k8s.io/client-go/rest"
@@ -70,7 +71,7 @@ func getRestClientConfig(kctx string) (*restclient.Config, error) {
 		return restConfig, errors.Wrap(err, "error creating REST client config in-cluster")
 	}
 
-	return restConfig, errors.Wrapf(err,"error creating REST client config for kubeContext '%s'", kctx)
+	return restConfig, errors.Wrapf(err, "error creating REST client config for kubeContext '%s'", kctx)
 }
 
 // getCurrentConfig retrieves the kubeconfig file. If UseKubeContext was called before, the CurrentContext will be overridden.
