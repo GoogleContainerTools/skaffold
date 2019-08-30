@@ -158,6 +158,7 @@ func TestGetRestClientConfig(t *testing.T) {
 		resetKubeConfig(t, validKubeConfig)
 
 		cfg, err := GetRestClientConfig()
+		t.CheckNoError(err)
 		kubeContext = clusterBarContext
 		cfg, err = GetRestClientConfig()
 
