@@ -274,9 +274,6 @@ func SetupFlags() {
 }
 
 func AddFlags(fs *pflag.FlagSet, cmdName string) {
-	if len(commandFlags) == 0 {
-		SetupFlags()
-	}
 	for _, f := range commandFlags {
 		if hasCmdAnnotation(cmdName, f.Annotations["cmds"]) {
 			fs.AddFlag(f)
@@ -292,4 +289,8 @@ func hasCmdAnnotation(cmdName string, annotations []string) bool {
 		}
 	}
 	return false
+}
+
+func init() {
+	SetupFlags()
 }

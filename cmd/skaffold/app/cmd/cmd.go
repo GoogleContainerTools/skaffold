@@ -96,8 +96,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			logrus.Infof("Skaffold %+v", version)
 			event.LogSkaffoldMetadata(version)
 
-			SetupFlags()
-
 			if quietFlag {
 				logrus.Debugf("Update check is disabled because of quiet mode")
 			} else {
