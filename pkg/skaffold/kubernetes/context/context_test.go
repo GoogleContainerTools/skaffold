@@ -157,10 +157,10 @@ func TestGetRestClientConfig(t *testing.T) {
 	testutil.Run(t, "change context after first execution", func(t *testutil.T) {
 		resetKubeConfig(t, validKubeConfig)
 
-		cfg, err := GetRestClientConfig()
+		_, err := GetRestClientConfig()
 		t.CheckNoError(err)
 		kubeContext = clusterBarContext
-		cfg, err = GetRestClientConfig()
+		cfg, err := GetRestClientConfig()
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("https://bar.com", cfg.Host)

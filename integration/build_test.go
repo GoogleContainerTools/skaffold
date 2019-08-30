@@ -145,10 +145,10 @@ func TestBuildInCluster(t *testing.T) {
 			t.Fatalf("failed reading skaffold.yaml: %s", err)
 		}
 		namespacedYaml := strings.ReplaceAll(string(origSkaffoldYaml), "VAR_CLUSTER_NAMESPACE", ns.Name)
-		if err := ioutil.WriteFile(skaffoldConfigFile, []byte(namespacedYaml), 666); err != nil {
+		if err := ioutil.WriteFile(skaffoldConfigFile, []byte(namespacedYaml), 0666); err != nil {
 			t.Fatalf("failed to write skaffold.yaml: %s", err)
 		}
-		defer ioutil.WriteFile(skaffoldConfigFile, origSkaffoldYaml, 666)
+		defer ioutil.WriteFile(skaffoldConfigFile, origSkaffoldYaml, 0666)
 
 		//we have to copy the e2esecret from default ns -> temporary namespace for kaniko
 		secret, err := k8sClient.client.CoreV1().Secrets("default").Get("e2esecret", metav1.GetOptions{})
