@@ -14,54 +14,50 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package update
 
 import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/spf13/cobra"
 )
 
-func TestHasCmdAnnotation(t *testing.T) {
+func TestIsUpdateCheckEnabledByEnvOrConfig(t *testing.T) {
 	tests := []struct {
 		description string
-		cmd         string
-		definedOn   []string
+		envVariable string
+		configCheck bool
 		expected    bool
 	}{
 		{
-			description: "flag has command annotations",
-			cmd:         "build",
-			definedOn:   []string{"build", "events"},
+			description: "env variable is set to true",
+			envVariable: "true",
 			expected:    true,
 		},
 		{
-			description: "flag does not have command annotations",
-			cmd:         "build",
-			definedOn:   []string{"some"},
+			description: "env variable is set to false",
+			envVariable: "false",
 		},
 		{
-			description: "flag has all annotations",
-			cmd:         "build",
-			definedOn:   []string{"all"},
+			description: "env variable is set to random string",
+			envVariable: "foo",
+		},
+		{
+			description: "env variable is empty and config is enabled",
+			configCheck: true,
 			expected:    true,
+		},
+		{
+			description: "env variable is false but Global update-check config is true",
+			envVariable: "false",
+			configCheck: true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			hasAnnotation := hasCmdAnnotation(test.cmd, test.definedOn)
-
-			t.CheckDeepEqual(test.expected, hasAnnotation)
+			t.Override(&isConfigUpdateCheckEnabled, func(string) bool { return test.configCheck })
+			t.Override(&getEnv, func(string) string { return test.envVariable })
+			t.CheckDeepEqual(test.expected, isUpdateCheckEnabledByEnvOrConfig("dummyconfig"))
 		})
 	}
-}
-
-func TestAddFlagsSmoke(t *testing.T) {
-	testCmd := &cobra.Command{
-		Use:   "test",
-		Short: "Test commanf for smoke testing",
-	}
-	SetupFlags()
-	AddFlags(testCmd.Flags(), "test")
 }

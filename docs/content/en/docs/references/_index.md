@@ -8,4 +8,5 @@ weight: 100
 |----------|
 | [CLI](/docs/references/cli) |
 | [skaffold.yaml](/docs/references/yaml) |
+| [Privacy Settings] (/docs/references/privacy) |
 
