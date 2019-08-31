@@ -74,8 +74,7 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 		return "", errors.Wrap(err, "modifying kaniko pod")
 	}
 
-	waitForLogs := streamLogs(out, pod.Name, pods)
-
+	waitForLogs := b.streamLogs(ctx, out, b.Namespace, pod.Name)
 	err = kubernetes.WaitForPodSucceeded(ctx, pods, pod.Name, b.timeout)
 	waitForLogs()
 	if err != nil {
