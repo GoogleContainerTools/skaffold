@@ -4,25 +4,13 @@ build:
   tagPolicy:
     sha256: {}
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-helm
+    - image: gcr.io/k8s-skaffold/skaffold-helm
 deploy:
   helm:
     releases:
-    - name: skaffold-helm
-      chartPath: skaffold-helm
-      #wait: true
-      #valuesFiles:
-      #- helm-skaffold-values.yaml
-      skipBuildDependencies: true # Skip helm dep build
-      values:
-        image: gcr.io/k8s-skaffold/skaffold-helm
-        "skaffold-helm-subchart.image": gcr.io/k8s-skaffold/skaffold-helm
-      #recreatePods will pass --recreate-pods to helm upgrade
-      #recreatePods: true
-      #overrides builds an override values.yaml file to run with the helm deploy
-      #overrides:
-      # some:
-      #   key: someValue
-      #setValues get appended to the helm deploy with --set.  
-      #setValues:
-        #some.key: someValue
+      - name: skaffold-helm
+        chartPath: skaffold-helm
+        skipBuildDependencies: true
+        values:
+          image: gcr.io/k8s-skaffold/skaffold-helm
+          "skaffold-helm-subchart.image": gcr.io/k8s-skaffold/skaffold-helm
