@@ -179,9 +179,29 @@ func TestGetRestClientConfig(t *testing.T) {
 	})
 }
 
+func TestChangeKubeContext(t *testing.T) {
+	testutil.Run(t, "change context before locking", func(t *testutil.T) {
+		ChangeKubeContext("initial")
+		ChangeKubeContext("changed")
+
+		t.CheckDeepEqual("changed", kubeContext)
+		isKubeContextLocked = false // cleanup
+	})
+
+	testutil.Run(t, "change context after locking", func(t *testutil.T) {
+		ChangeKubeContext("initial")
+		LockKubeContext()
+		ChangeKubeContext("changed")
+
+		t.CheckDeepEqual("initial", kubeContext)
+		isKubeContextLocked = false // cleanup
+	})
+}
+
 func resetKubeConfig(t *testutil.T, content string) {
 	kubeConfig := t.TempFile("config", []byte(content))
 	kubeContext = ""
+	isKubeContextLocked = false
 	t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
 	resetConfig()
 }

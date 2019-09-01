@@ -33,9 +33,10 @@ var (
 )
 
 var (
-	kubeConfigOnce sync.Once
-	kubeConfig     clientcmd.ClientConfig
-	kubeContext    string
+	kubeConfigOnce      sync.Once
+	kubeConfig          clientcmd.ClientConfig
+	kubeContext         string
+	isKubeContextLocked bool
 )
 
 // resetConfig is used by tests
@@ -43,13 +44,23 @@ func resetConfig() {
 	kubeConfigOnce = sync.Once{}
 }
 
-// UseKubeContext sets an override for the current context in the k8s config.
-func UseKubeContext(overrideKubeContext string) {
+// ChangeKubeContext sets an override for the current context in the k8s config.
+// Changing the kube-context of a running Skaffold process is not supported, so
+// the kube-context will be locked after profile activation.
+func ChangeKubeContext(overrideKubeContext string) {
+	if isKubeContextLocked {
+		logrus.Warnf("The kubecontext (%q) is locked and may not be changed", kubeContext)
+		return
+	}
 	kubeContext = overrideKubeContext
 }
 
+func LockKubeContext() {
+	isKubeContextLocked = true
+}
+
 // GetRestClientConfig returns a REST client config for API calls against the Kubernetes API.
-// If UseKubeContext was called before, the CurrentContext will be overridden.
+// If ChangeKubeContext was called before, the CurrentContext will be overridden.
 // The kubeconfig used will be cached for the life of the skaffold process after the first call.
 // If the CurrentContext is empty and the resulting config is empty, this method attempts to
 // create a RESTClient with an in-cluster config.
@@ -74,7 +85,7 @@ func getRestClientConfig(kctx string) (*restclient.Config, error) {
 	return restConfig, errors.Wrapf(err, "error creating REST client config for kubeContext '%s'", kctx)
 }
 
-// getCurrentConfig retrieves the kubeconfig file. If UseKubeContext was called before, the CurrentContext will be overridden.
+// getCurrentConfig retrieves the kubeconfig file. If ChangeKubeContext was called before, the CurrentContext will be overridden.
 // The result will be cached after the first call.
 func getCurrentConfig() (clientcmdapi.Config, error) {
 	cfg, err := getRawKubeConfig()

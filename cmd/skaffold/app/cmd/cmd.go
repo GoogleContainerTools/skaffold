@@ -72,7 +72,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			color.OverwriteDefault(color.Color(defaultColor))
 			cmd.Root().SetOutput(out)
 
-			kubectx.UseKubeContext(opts.KubeContext)
+			kubectx.ChangeKubeContext(opts.KubeContext)
 
 			// Setup logs
 			if err := setUpLogs(err, v); err != nil {

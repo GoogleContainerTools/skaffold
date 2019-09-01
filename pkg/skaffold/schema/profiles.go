@@ -35,7 +35,7 @@ import (
 )
 
 var (
-	enableKubeContext = kubectx.UseKubeContext
+	enableKubeContext = kubectx.ChangeKubeContext
 )
 
 // ApplyProfiles returns configuration modified by the application
@@ -62,7 +62,7 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 	return enableEffectiveKubecontext(isContextSpecific, opts.KubeContext, c.Deploy.KubeContext)
 }
 
-func enableEffectiveKubecontext(contextMustNotChange bool, cliContext, effectiveContext string) error {
+func enableEffectiveKubecontext(isContextImmutable bool, cliContext, effectiveContext string) error {
 	// cli flag takes precedence
 	if cliContext != "" {
 		return nil
@@ -78,7 +78,7 @@ func enableEffectiveKubecontext(contextMustNotChange bool, cliContext, effective
 		return nil
 	}
 
-	if contextMustNotChange {
+	if isContextImmutable {
 		return fmt.Errorf("some activated profile contains kubecontext specific settings for a different than the effective kubecontext, please revise your profile activations")
 	}
 
