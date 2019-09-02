@@ -313,7 +313,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 			envMap[k+suffix] = v
 		}
 	}
-	color.Default.Fprintf(out, "EnvVarMap: %#v\n", envMap)
+	logrus.Debugf("EnvVarMap: %#v\n", envMap)
 
 	for k, v := range r.SetValueTemplates {
 		t, err := util.ParseEnvTemplate(v)

@@ -38,7 +38,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/sirupsen/logrus"
 )
 
 var testBuilds = []build.Artifact{{
@@ -286,12 +285,6 @@ service:
 HOOKS:
 MANIFEST:
 `
-
-// TestMain disables logrus output before running tests.
-func TestMain(m *testing.M) {
-	logrus.SetOutput(ioutil.Discard)
-	os.Exit(m.Run())
-}
 
 func TestHelmDeploy(t *testing.T) {
 	tests := []struct {
