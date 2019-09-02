@@ -74,7 +74,7 @@ GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
 .PHONY: generate
 generate:
-	go generate ./pkg/skaffold/server
+	go generate ./...
 
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
