@@ -30,11 +30,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -43,6 +38,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+	"github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 )
 
 type HelmDeployer struct {
@@ -241,9 +241,6 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		args = append(args, "--namespace", ns)
 	}
 
-	// TODO(dgageot): we should merge `Values`, `SetValues` and `SetValueTemplates`
-	// as much as possible.
-
 	// Overrides.Values
 	if len(r.Overrides.Values) != 0 {
 		overrides, err := yaml.Marshal(r.Overrides)
@@ -266,11 +263,16 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		args = append(args, "-f", valuesFile)
 	}
 
+	// TODO(dgageot): we should merge `Values`, `SetValues` and `SetValueTemplates`
+	// as much as possible.
+
 	// Values
 	params, err := h.joinTagsToBuildResult(builds, r.Values)
 	if err != nil {
 		return nil, errors.Wrap(err, "matching build results to chart values")
 	}
+
+	valuesSet := make(map[string]bool)
 
 	for k, v := range params {
 		var value string
@@ -294,11 +296,13 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 			value = fmt.Sprintf("%s=%s", k, v.Tag)
 		}
 
+		valuesSet[v.Tag] = true
 		args = append(args, "--set", value)
 	}
 
 	// SetValues
 	for k, v := range r.SetValues {
+		valuesSet[v] = true
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
 	}
 
@@ -326,7 +330,18 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 			return nil, errors.Wrapf(err, "failed to generate setValueTemplates")
 		}
 
+		valuesSet[v] = true
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
+	}
+
+	// Let's make sure that every image tag is set with `--set`.
+	// Otherwise, templates have no way to use the images that were built.
+	for _, build := range builds {
+		if !valuesSet[build.Tag] {
+			warnings.Printf("image [%s] is not used.", build.Tag)
+			warnings.Printf("image [%s] is used instead.", build.ImageName)
+			warnings.Printf("See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml")
+		}
 	}
 
 	if r.Wait {

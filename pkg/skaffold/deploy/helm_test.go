@@ -36,6 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	schemautil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	homedir "github.com/mitchellh/go-homedir"
 )
@@ -192,8 +193,11 @@ var testDeployWithTemplatedName = latest.HelmDeploy{
 
 var testDeploySkipBuildDependencies = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
-		Name:                  "skaffold-helm",
-		ChartPath:             "stable/chartmuseum",
+		Name:      "skaffold-helm",
+		ChartPath: "stable/chartmuseum",
+		Values: map[string]string{
+			"image.tag": "skaffold-helm",
+		},
 		SkipBuildDependencies: true,
 	}},
 }
@@ -203,6 +207,13 @@ var testDeployRemoteChart = latest.HelmDeploy{
 		Name:                  "skaffold-helm-remote",
 		ChartPath:             "stable/chartmuseum",
 		SkipBuildDependencies: false,
+	}},
+}
+
+var testDeployWithoutTags = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
 	}},
 }
 
@@ -288,11 +299,12 @@ MANIFEST:
 
 func TestHelmDeploy(t *testing.T) {
 	tests := []struct {
-		description string
-		commands    *MockHelm
-		runContext  *runcontext.RunContext
-		builds      []build.Artifact
-		shouldErr   bool
+		description      string
+		commands         *MockHelm
+		runContext       *runcontext.RunContext
+		builds           []build.Artifact
+		shouldErr        bool
+		expectedWarnings []string
 	}{
 		{
 			description: "deploy success",
@@ -461,9 +473,22 @@ func TestHelmDeploy(t *testing.T) {
 			runContext: makeRunContext(testDeployConfigTemplated, false),
 			builds:     testBuilds,
 		},
+		{
+			description: "deploy without actual tags",
+			commands:    &MockHelm{},
+			runContext:  makeRunContext(testDeployWithoutTags, false),
+			builds:      testBuilds,
+			expectedWarnings: []string{
+				"See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml",
+				"image [docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184] is not used.",
+				"image [skaffold-helm] is used instead.",
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			fakeWarner := &warnings.Collect{}
+			t.Override(&warnings.Printf, fakeWarner.Warnf)
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
 
@@ -473,6 +498,7 @@ func TestHelmDeploy(t *testing.T) {
 			result := deployer.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
 			t.CheckError(test.shouldErr, result.GetError())
+			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}
 }
