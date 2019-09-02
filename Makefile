@@ -28,6 +28,8 @@ GCP_PROJECT ?= k8s-skaffold
 GKE_CLUSTER_NAME ?= integration-tests
 GKE_ZONE ?= us-central1-a
 
+DEV_DASH ?= false
+
 SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
@@ -50,14 +52,19 @@ LDFLAGS_linux = -static
 LDFLAGS_darwin =
 LDFLAGS_windows =
 
-GO_BUILD_TAGS_linux := "osusergo netgo static_build"
-GO_BUILD_TAGS_darwin := ""
-GO_BUILD_TAGS_windows := ""
+GO_BUILD_TAGS_linux = osusergo netgo static_build
+GO_BUILD_TAGS_darwin =
+GO_BUILD_TAGS_windows =
 
 GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitCommit=$(COMMIT)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTreeState=$(if $(shell git status --porcelain),dirty,clean)
+
+ifeq "$(DEV_DASH)" "true"
+ GO_LDFLAGS += -X $(REPOPATH)/pkg/skaffold/server/statik.webDir=${PWD}/pkg/skaffold/server/public
+ GO_BUILD_TAGS_$(GOOS) +=  dev
+endif
 
 GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
 GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
@@ -65,11 +72,15 @@ GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 
+.PHONY: generate
+generate:
+	go generate ./pkg/skaffold/server
+
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
-$(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
+$(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): $(GO_FILES) $(BUILD_DIR) generate
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags "$(GO_BUILD_TAGS_$(GOOS))" -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
 	docker build --build-arg PROJECT=$(REPOPATH) \
@@ -110,8 +121,8 @@ quicktest:
 	go test -short -timeout=60s ./...
 
 .PHONY: install
-install: $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
+install: $(GO_FILES) $(BUILD_DIR) generate
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -tags "$(GO_BUILD_TAGS_$(GOOS))" -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
 integration: install

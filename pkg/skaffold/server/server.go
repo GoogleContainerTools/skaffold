@@ -19,16 +19,13 @@ package server
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"net/http"
-	"os"
 	"sync"
-
-	"github.com/rakyll/statik/fs"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/statik"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -39,6 +36,8 @@ import (
 	//required for rakyll/statik embedded content
 	_ "github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/statik"
 )
+
+//go:generate go run ./statik/gen/gen.go -src=./public -tags !dev
 
 var srv *server
 
@@ -155,23 +154,7 @@ func newHTTPServer(port, proxyPort int, opts config.SkaffoldOptions) (func() err
 	}
 	logrus.Infof("starting gRPC HTTP server on port %d", port)
 
-	var fileSystem http.FileSystem
-	dir := os.Getenv("SKAFFOLD_DASH_DEV_DIR")
-
-	if dir != "" {
-		logrus.Debugf("using local dir for dashboard: %s", dir)
-		fileSystem = http.Dir(dir)
-	} else {
-		logrus.Debugf("using binary embedded dashboard")
-		statikFS, err := fs.New()
-		if err != nil {
-			log.Fatal(err)
-		}
-		fileSystem = statikFS
-	}
-
-	dashContext := "/dash/"
-	mux.Handle(dashContext, http.StripPrefix(dashContext, http.FileServer(fileSystem)))
+	mux.Handle("/dash/", http.StripPrefix("/dash/", http.FileServer(statik.FileSystem)))
 
 	configJsTemplate := `var autoBuild = %t;
 var autoSync = %t;
