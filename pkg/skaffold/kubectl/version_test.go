@@ -29,37 +29,37 @@ import (
 func TestCheckVersion(t *testing.T) {
 	tests := []struct {
 		description     string
-		command         util.Command
+		commands        util.Command
 		shouldErr       bool
 		warnings        []string
 		expectedVersion string
 	}{
 		{
 			description:     "1.12 is valid",
-			command:         testutil.FakeRunOut(t, "kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"12"}}`),
+			commands:        testutil.CmdRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"12"}}`),
 			expectedVersion: "1.12",
 		},
 		{
 			description:     "1.12+ is valid",
-			command:         testutil.FakeRunOut(t, "kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"12+"}}`),
+			commands:        testutil.CmdRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"12+"}}`),
 			expectedVersion: "1.12+",
 		},
 		{
 			description:     "1.11 is too old",
-			command:         testutil.FakeRunOut(t, "kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"11"}}`),
+			commands:        testutil.CmdRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"11"}}`),
 			shouldErr:       true,
 			expectedVersion: "1.11",
 		},
 		{
 			description:     "invalid version",
-			command:         testutil.FakeRunOut(t, "kubectl version --client -ojson", `not json`),
+			commands:        testutil.CmdRunOut("kubectl version --client -ojson", `not json`),
 			shouldErr:       true,
 			warnings:        []string{"unable to parse client version: invalid character 'o' in literal null (expecting 'u')"},
 			expectedVersion: "unknown",
 		},
 		{
 			description:     "cli not found",
-			command:         testutil.FakeRunOutErr(t, "kubectl version --client -ojson", ``, errors.New("not found")),
+			commands:        testutil.CmdRunOutErr("kubectl version --client -ojson", ``, errors.New("not found")),
 			shouldErr:       true,
 			warnings:        []string{"unable to get kubectl client version: not found"},
 			expectedVersion: "unknown",
@@ -69,7 +69,7 @@ func TestCheckVersion(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			t.Override(&util.DefaultExecCommand, test.command)
+			t.Override(&util.DefaultExecCommand, test.commands)
 
 			cli := CLI{}
 

@@ -35,7 +35,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		description string
 		cfg         *latest.KustomizeDeploy
 		builds      []build.Artifact
-		command     util.Command
+		commands    util.Command
 		shouldErr   bool
 		forceDeploy bool
 	}{
@@ -44,19 +44,19 @@ func TestKustomizeDeploy(t *testing.T) {
 			cfg: &latest.KustomizeDeploy{
 				KustomizePath: ".",
 			},
-			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl version --client -ojson", kubectlVersion).
-				WithRunOut("kustomize build .", ""),
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				AndRunOut("kustomize build .", ""),
 		},
 		{
 			description: "deploy success",
 			cfg: &latest.KustomizeDeploy{
 				KustomizePath: ".",
 			},
-			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl version --client -ojson", kubectlVersion).
-				WithRunOut("kustomize build .", deploymentWebYAML).
-				WithRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force"),
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				AndRunOut("kustomize build .", deploymentWebYAML).
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
@@ -66,7 +66,7 @@ func TestKustomizeDeploy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.command)
+			t.Override(&util.DefaultExecCommand, test.commands)
 			t.NewTempDir().
 				Chdir()
 
@@ -99,7 +99,7 @@ func TestKustomizeCleanup(t *testing.T) {
 	tests := []struct {
 		description string
 		cfg         *latest.KustomizeDeploy
-		command     util.Command
+		commands    util.Command
 		shouldErr   bool
 	}{
 		{
@@ -107,18 +107,18 @@ func TestKustomizeCleanup(t *testing.T) {
 			cfg: &latest.KustomizeDeploy{
 				KustomizePath: tmpDir.Root(),
 			},
-			command: testutil.NewFakeCmd(t).
-				WithRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
-				WithRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
+			commands: testutil.
+				CmdRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
+				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
 		},
 		{
 			description: "cleanup error",
 			cfg: &latest.KustomizeDeploy{
 				KustomizePath: tmpDir.Root(),
 			},
-			command: testutil.NewFakeCmd(t).
-				WithRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
-				WithRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
+			commands: testutil.
+				CmdRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
+				AndRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
 		{
@@ -126,13 +126,17 @@ func TestKustomizeCleanup(t *testing.T) {
 			cfg: &latest.KustomizeDeploy{
 				KustomizePath: tmpDir.Root(),
 			},
-			command:   testutil.FakeRunOutErr(t, "kustomize build "+tmpDir.Root(), ``, errors.New("BUG")),
+			commands: testutil.CmdRunOutErr(
+				"kustomize build "+tmpDir.Root(),
+				"",
+				errors.New("BUG"),
+			),
 			shouldErr: true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.command)
+			t.Override(&util.DefaultExecCommand, test.commands)
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: tmpDir.Root(),
