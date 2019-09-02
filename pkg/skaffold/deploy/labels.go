@@ -69,13 +69,13 @@ func labelDeployResults(labels map[string]string, results []Artifact) {
 	// use the kubectl client to update all k8s objects with a skaffold watermark
 	dynClient, err := kubernetes.DynamicClient()
 	if err != nil {
-		logrus.Warnf("error retrieving kubernetes dynamic client: %s", err.Error())
+		logrus.Warnf("error getting kubernetes dynamic client: %s", err.Error())
 		return
 	}
 
-	client, err := kubernetes.GetClientset()
+	client, err := kubernetes.Client()
 	if err != nil {
-		logrus.Warnf("error retrieving kubernetes client: %s", err.Error())
+		logrus.Warnf("error getting kubernetes client: %s", err.Error())
 		return
 	}
 

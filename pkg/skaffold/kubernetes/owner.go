@@ -23,11 +23,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	// For testing
-	getClientSet = GetClientset
-)
-
 // TopLevelOwnerKey returns a key associated with the top level
 // owner of a Kubernetes resource in the form Kind-Name
 func TopLevelOwnerKey(obj metav1.Object, kind string) string {
@@ -47,7 +42,7 @@ func TopLevelOwnerKey(obj metav1.Object, kind string) string {
 }
 
 func ownerMetaObject(ns string, owner metav1.OwnerReference) (metav1.Object, error) {
-	client, err := getClientSet()
+	client, err := Client()
 	if err != nil {
 		return nil, err
 	}
