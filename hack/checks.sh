@@ -14,6 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+RESET='\033[0m'
+
 echo "Running validation scripts..."
 scripts=(
     "hack/boilerplate.sh"
@@ -26,10 +30,10 @@ scripts=(
 fail=0
 for s in "${scripts[@]}"; do
     echo "RUN ${s}"
-    set +e
+
     ./$s
     result=$?
-    set -e
+
     if [[ $result -eq 0 ]]; then
         echo -e "${GREEN}PASSED${RESET} ${s}"
     else

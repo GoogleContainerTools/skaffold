@@ -27,7 +27,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -36,6 +38,37 @@ import (
 const (
 	dotDotSlash = ".." + string(filepath.Separator)
 )
+
+// PluginType is an enum for the different supported Jib plugins.
+type PluginType int
+
+// Define the different plugin types supported by Jib.
+const (
+	JibMaven PluginType = iota
+	JibGradle
+)
+
+// ID returns the identifier for a Jib plugin type, suitable for external references (YAML, JSON, command-line, etc).
+func (t PluginType) ID() string {
+	switch t {
+	case JibMaven:
+		return "maven"
+	case JibGradle:
+		return "gradle"
+	}
+	panic("Unknown Jib Plugin Type: " + string(t))
+}
+
+// Name provides a human-oriented label for a plugin type.
+func (t PluginType) Name() string {
+	switch t {
+	case JibMaven:
+		return "Jib Maven Plugin"
+	case JibGradle:
+		return "Jib Gradle Plugin"
+	}
+	panic("Unknown Jib Plugin Type: " + string(t))
+}
 
 // filesLists contains cached build/input dependencies
 type filesLists struct {
@@ -228,4 +261,15 @@ func relativize(path string, roots ...string) (string, error) {
 		}
 	}
 	return "", errors.New("could not relativize path")
+}
+
+// isOnInsecureRegistry checks if the given image specifies an insecure registry
+func isOnInsecureRegistry(image string, insecureRegistries map[string]bool) (bool, error) {
+	ref, err := name.ParseReference(image)
+	if err != nil {
+		return false, err
+	}
+
+	registry := ref.Context().Registry.Name()
+	return docker.IsInsecure(registry, insecureRegistries), nil
 }

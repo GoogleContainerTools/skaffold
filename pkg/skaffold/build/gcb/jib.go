@@ -29,7 +29,7 @@ func (b *Builder) jibMavenBuildSpec(artifact *latest.JibMavenArtifact, tag strin
 		Steps: []*cloudbuild.BuildStep{{
 			Name:       b.MavenImage,
 			Entrypoint: "sh",
-			Args:       fixHome("mvn", jib.GenerateMavenArgs("build", tag, artifact, b.skipTests)),
+			Args:       fixHome("mvn", jib.GenerateMavenArgs("build", tag, artifact, b.skipTests, b.insecureRegistries)),
 		}},
 	}
 }
@@ -39,7 +39,7 @@ func (b *Builder) jibGradleBuildSpec(artifact *latest.JibGradleArtifact, tag str
 		Steps: []*cloudbuild.BuildStep{{
 			Name:       b.GradleImage,
 			Entrypoint: "sh",
-			Args:       fixHome("gradle", jib.GenerateGradleArgs("jib", tag, artifact, b.skipTests)),
+			Args:       fixHome("gradle", jib.GenerateGradleArgs("jib", tag, artifact, b.skipTests, b.insecureRegistries)),
 		}},
 	}
 }

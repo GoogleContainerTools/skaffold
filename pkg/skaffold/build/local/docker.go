@@ -73,8 +73,9 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	}
 
 	cmd := exec.CommandContext(ctx, "docker", args...)
+	cmd.Env = append(util.OSEnviron(), b.retrieveExtraEnv()...)
 	if b.cfg.UseBuildkit {
-		cmd.Env = append(util.OSEnviron(), "DOCKER_BUILDKIT=1")
+		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}
 	cmd.Stdout = out
 	cmd.Stderr = out

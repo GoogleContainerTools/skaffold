@@ -70,7 +70,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 		case needsBuilding:
 			color.Yellow.Fprintln(out, "Not found. Building")
-			hashByName[artifact.ImageName] = result.hash
+			hashByName[artifact.ImageName] = result.Hash()
 			needToBuild = append(needToBuild, artifact)
 			continue
 

@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
@@ -33,6 +34,7 @@ var (
 // Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
 func Process(config *latest.SkaffoldConfig) error {
 	errs := visitStructs(config, validateYamltags)
+	errs = append(errs, validateImageNames(config.Build.Artifacts)...)
 	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
 	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
 	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
@@ -47,6 +49,27 @@ func Process(config *latest.SkaffoldConfig) error {
 		messages = append(messages, err.Error())
 	}
 	return fmt.Errorf(strings.Join(messages, " | "))
+}
+
+// validateImageNames makes sure the artifact image names are valid base names,
+// without tags nor digests.
+func validateImageNames(artifacts []*latest.Artifact) (errs []error) {
+	for _, a := range artifacts {
+		parsed, err := docker.ParseReference(a.ImageName)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("invalid imageName '%s': %v", a.ImageName, err))
+			continue
+		}
+
+		if parsed.Tag != "" {
+			errs = append(errs, fmt.Errorf("invalid imageName '%s': no tag should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))
+		}
+
+		if parsed.Digest != "" {
+			errs = append(errs, fmt.Errorf("invalid imageName '%s': no digest should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))
+		}
+	}
+	return
 }
 
 // validateDockerNetworkMode makes sure that networkMode is one of `bridge`, `none`, or `host` if set.

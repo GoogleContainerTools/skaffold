@@ -72,13 +72,16 @@ func (b *Builder) buildArtifactWithCustomBuilder(ctx context.Context, out io.Wri
 }
 
 func (b *Builder) retrieveExtraEnv() []string {
-	return []string{
+	env := []string{
 		fmt.Sprintf("%s=%s", constants.KubeContext, b.kubeContext),
 		fmt.Sprintf("%s=%s", constants.Namespace, b.ClusterDetails.Namespace),
 		fmt.Sprintf("%s=%s", constants.PullSecretName, b.ClusterDetails.PullSecretName),
-		fmt.Sprintf("%s=%s", constants.DockerConfigSecretName, b.ClusterDetails.DockerConfig.SecretName),
 		fmt.Sprintf("%s=%s", constants.Timeout, b.ClusterDetails.Timeout),
 	}
+	if b.ClusterDetails.DockerConfig != nil {
+		env = append(env, fmt.Sprintf("%s=%s", constants.DockerConfigSecretName, b.ClusterDetails.DockerConfig.SecretName))
+	}
+	return env
 }
 
 func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {

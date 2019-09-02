@@ -111,6 +111,13 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 .PHONY: test
 test: $(BUILD_DIR)
 	@ ./hack/test.sh
+	@ ./hack/checks.sh
+
+.PHONY: coverage
+coverage: $(BUILD_DIR)
+	@ ./hack/test.sh
+	@ curl -s https://codecov.io/bash > $(BUILD_DIR)/upload_coverage
+	@ bash $(BUILD_DIR)/upload_coverage
 
 .PHONY: checks
 checks: $(BUILD_DIR)
@@ -132,7 +139,7 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	kubectl get nodes -oyaml
+#	kubectl get nodes -oyaml
 	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release

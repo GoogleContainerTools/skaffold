@@ -1,3 +1,4 @@
+bin/
 out/
 examples/bazel/bazel-*
 integration/examples/bazel/bazel-*

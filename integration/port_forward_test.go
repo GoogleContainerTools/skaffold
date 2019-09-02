@@ -45,7 +45,7 @@ func TestPortForward(t *testing.T) {
 	defer deleteNs()
 
 	dir := "examples/microservices"
-	skaffold.Run().InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
+	skaffold.Run().InDir(dir).InNs(ns.Name).RunOrFail(t)
 
 	cfg, err := kubectx.CurrentConfig()
 	if err != nil {

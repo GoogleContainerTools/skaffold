@@ -237,7 +237,7 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 	if !ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+		t.Skip("skipping test that is gcp only")
 	}
 
 	// Run skaffold build first to fail quickly on a build failure
@@ -389,7 +389,7 @@ func TestDev_WithKubecontextOverride(t *testing.T) {
 		env := []string{fmt.Sprintf("KUBECONFIG=%s", kubeconfig)}
 
 		// n.b. for the sake of this test the namespace must not be given explicitly
-		skaffold.Run("--kube-context", kubecontext).InDir(dir).WithEnv(env).RunOrFailOutput(t.T)
+		skaffold.Run("--kube-context", kubecontext).InDir(dir).WithEnv(env).RunOrFail(t.T)
 
 		client.WaitForPodsReady(pods...)
 

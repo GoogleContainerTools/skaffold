@@ -17,8 +17,6 @@ limitations under the License.
 package v1beta8
 
 import (
-	"github.com/pkg/errors"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta9"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -33,9 +31,7 @@ import (
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 
-	if err := pkgutil.CloneThroughJSON(config, &newConfig); err != nil {
-		return nil, err
-	}
+	pkgutil.CloneThroughJSON(config, &newConfig)
 	newConfig.APIVersion = next.Version
 
 	if err := util.UpgradePipelines(config, &newConfig, upgradeOnePipeline); err != nil {
@@ -55,16 +51,14 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 		}
 		if a.BuilderPlugin.Name == "bazel" {
 			var ba *next.BazelArtifact
-			if err := pkgutil.CloneThroughYAML(a.BuilderPlugin.Properties, &ba); err != nil {
-				return errors.Wrap(err, "converting bazel artifact")
-			}
+			pkgutil.CloneThroughYAML(a.BuilderPlugin.Properties, &ba)
+
 			newBuild.Artifacts[i].BazelArtifact = ba
 		}
 		if a.BuilderPlugin.Name == "docker" {
 			var da *next.DockerArtifact
-			if err := pkgutil.CloneThroughYAML(a.BuilderPlugin.Properties, &da); err != nil {
-				return errors.Wrap(err, "converting docker artifact")
-			}
+			pkgutil.CloneThroughYAML(a.BuilderPlugin.Properties, &da)
+
 			newBuild.Artifacts[i].DockerArtifact = da
 		}
 	}
@@ -72,16 +66,14 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 	if c := oldBuild.ExecutionEnvironment; c != nil {
 		if c.Name == "googleCloudBuild" {
 			var gcb *next.GoogleCloudBuild
-			if err := pkgutil.CloneThroughYAML(c.Properties, &gcb); err != nil {
-				return errors.Wrap(err, "converting gcb artifact")
-			}
+			pkgutil.CloneThroughYAML(c.Properties, &gcb)
+
 			newBuild.GoogleCloudBuild = gcb
 		}
 		if c.Name == "local" {
 			var local *next.LocalBuild
-			if err := pkgutil.CloneThroughYAML(c.Properties, &local); err != nil {
-				return errors.Wrap(err, "converting local artifact")
-			}
+			pkgutil.CloneThroughYAML(c.Properties, &local)
+
 			newBuild.LocalBuild = local
 		}
 	}
