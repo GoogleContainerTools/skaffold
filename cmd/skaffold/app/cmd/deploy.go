@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
@@ -47,11 +48,34 @@ E.g. build.out created by running skaffold build --quiet {{json .}} > build.out`
 }
 
 func doDeploy(ctx context.Context, out io.Writer) error {
-	return withRunner(ctx, func(r runner.Runner, _ *latest.SkaffoldConfig) error {
-		// If the BuildArtifacts contains an image in the preBuilt list,
-		// use image from BuildArtifacts instead
-		deployArtifacts := build.MergeWithPreviousBuilds(buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts())
+	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
+		deployed, err := getDeployedArtifacts(buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
+		if err != nil {
+			return err
+		}
 
-		return r.DeployAndLog(ctx, out, deployArtifacts)
+		return r.DeployAndLog(ctx, out, deployed)
 	})
+}
+
+func getDeployedArtifacts(fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	var deployed []build.Artifact
+	for _, artifact := range artifacts {
+		deployed = append(deployed, build.Artifact{
+			ImageName: artifact.ImageName,
+		})
+	}
+
+	// Tags provided by file take precedence over those provided on the command line
+	deployed = build.MergeWithPreviousBuilds(fromCLI, deployed)
+	deployed = build.MergeWithPreviousBuilds(fromFile, deployed)
+
+	// Check that every image has a non empty tag
+	for _, d := range deployed {
+		if d.Tag == "" {
+			return nil, fmt.Errorf("no tag provided for image [%s]", d.ImageName)
+		}
+	}
+
+	return deployed, nil
 }
