@@ -178,3 +178,36 @@ func TestRunIdempotent(t *testing.T) {
 		t.Errorf("both artifacts should be in cache: %s", secondOut)
 	}
 }
+
+func TestRunUnstableChecked(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	output, err := skaffold.Run("--status-check=true").InDir("testdata/unstable-deployment").InNs(ns.Name).RunWithCombinedOutput(t)
+	if err == nil {
+		t.Errorf("expected to see an error since the deployment is not stable: %s", output)
+	} else if !strings.Contains(string(output), "deployment unstable-deployment failed") {
+		t.Errorf("failed without saying the reason: %s", output)
+	}
+}
+
+func TestRunUnstableNotChecked(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	skaffold.Run().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
+}
