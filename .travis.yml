@@ -30,6 +30,7 @@ jobs:
         - GO111MODULE=on
         - GOFLAGS="-mod=vendor"
       script:
+        - go generate github.com/GoogleContainerTools/skaffold/pkg/skaffold/server
         - go build -o out/skaffold cmd/skaffold/skaffold.go
         - go test -short -timeout 60s ./...
       after_success:
@@ -40,6 +41,7 @@ jobs:
         - GO111MODULE=on
         - GOFLAGS="-mod=vendor"
       script:
+        - go generate github.com/GoogleContainerTools/skaffold/pkg/skaffold/server
         - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
         - go test -short -timeout 60s ./...
     - os: linux

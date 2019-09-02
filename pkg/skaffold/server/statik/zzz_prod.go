@@ -21,7 +21,7 @@ package statik
 import (
 	"net/http"
 
-	"github.com/rakyll/statik/fs"
+	"github.com/balopat/statik/fs"
 )
 
 var FileSystem http.FileSystem

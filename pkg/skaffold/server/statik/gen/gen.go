@@ -17,42 +17,9 @@ limitations under the License.
 package main
 
 import (
-	"fmt"
-	"os"
-	"os/exec"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/balopat/statik/cmd"
 )
 
-//this file basically does this:
-// test `which statik` || GOFLAGS='' go get github.com/rakyll/statik
 func main() {
-	_, err := exec.LookPath("statik")
-
-	if err != nil {
-		switch err := err.(type) {
-		case *exec.Error:
-			if exec.ErrNotFound == err.Err {
-				fmt.Println("Couldn't find statik, downloading...")
-				os.Setenv("GOFLAGS", "")
-				cmd := exec.Command("go", "get", "github.com/rakyll/statik")
-				fmt.Printf("Running %s\n", cmd.Args)
-				out, err := util.RunCmdOut(cmd)
-				if err != nil {
-					panic(fmt.Sprintf("error getting statik: %s, %s", err, out))
-				}
-			} else {
-				panic(fmt.Sprintf("can't find statik: %s vs %s", err.Err, os.ErrNotExist))
-			}
-		default:
-			panic(fmt.Sprintf("can't find statik: %s", err))
-		}
-	}
-
-	cmd := exec.Command("statik", os.Args...)
-	fmt.Printf("Running %v\n", cmd.Args)
-	err = cmd.Run()
-	if err != nil {
-		panic(fmt.Sprintf("error running statik: %s", err))
-	}
+	cmd.Main()
 }
