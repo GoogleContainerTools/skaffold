@@ -468,7 +468,6 @@ func concretize(s string) (string, error) {
 		return "", errors.Wrap(err, "parsing template")
 	}
 
-	tmpl.Option("missingkey=error")
 	return util.ExecuteEnvTemplate(tmpl, nil)
 }
 

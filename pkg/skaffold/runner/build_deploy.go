@@ -33,7 +33,7 @@ import (
 func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	tags, err := r.imageTags(ctx, out, artifacts)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating tag")
+		return nil, err
 	}
 
 	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
