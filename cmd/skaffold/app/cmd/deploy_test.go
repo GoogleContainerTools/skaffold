@@ -85,7 +85,7 @@ func TestGetDeployedArtifacts(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployed, err := getDeployedArtifacts(ioutil.Discard, test.fromFile, test.fromCLI, test.artifacts)
+			deployed, err := getArtifactsToDeploy(ioutil.Discard, test.fromFile, test.fromCLI, test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deployed)
 		})

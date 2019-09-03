@@ -50,7 +50,7 @@ E.g. build.out created by running skaffold build --quiet {{json .}} > build.out`
 
 func doDeploy(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		deployed, err := getDeployedArtifacts(out, buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
+		deployed, err := getArtifactsToDeploy(out, buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
 		if err != nil {
 			return err
 		}
@@ -59,7 +59,7 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 	})
 }
 
-func getDeployedArtifacts(out io.Writer, fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func getArtifactsToDeploy(out io.Writer, fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var deployed []build.Artifact
 	for _, artifact := range artifacts {
 		deployed = append(deployed, build.Artifact{
