@@ -22,6 +22,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -49,7 +50,7 @@ E.g. build.out created by running skaffold build --quiet {{json .}} > build.out`
 
 func doDeploy(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		deployed, err := getDeployedArtifacts(buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
+		deployed, err := getDeployedArtifacts(out, buildOutputFile.BuildArtifacts(), preBuiltImages.Artifacts(), config.Build.Artifacts)
 		if err != nil {
 			return err
 		}
@@ -58,7 +59,7 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 	})
 }
 
-func getDeployedArtifacts(fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+func getDeployedArtifacts(out io.Writer, fromFile, fromCLI []build.Artifact, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	var deployed []build.Artifact
 	for _, artifact := range artifacts {
 		deployed = append(deployed, build.Artifact{
@@ -73,6 +74,7 @@ func getDeployedArtifacts(fromFile, fromCLI []build.Artifact, artifacts []*lates
 	// Check that every image has a non empty tag
 	for _, d := range deployed {
 		if d.Tag == "" {
+			tips.PrintUseRunVsDeploy(out)
 			return nil, fmt.Errorf("no tag provided for image [%s]", d.ImageName)
 		}
 	}
