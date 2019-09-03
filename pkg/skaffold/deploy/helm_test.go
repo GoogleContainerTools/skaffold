@@ -320,13 +320,7 @@ func TestHelmDeploy(t *testing.T) {
 			builds:      testBuilds,
 		},
 		{
-			description: "deploy should not error for unmatched parameter when no builds present",
-			commands:    &MockHelm{},
-			runContext:  makeRunContext(testDeployConfigParameterUnmatched, false),
-			builds:      nil,
-		},
-		{
-			description: "deploy should error for unmatched parameter when builds present",
+			description: "deploy should error for unmatched parameter",
 			commands:    &MockHelm{},
 			runContext:  makeRunContext(testDeployConfigParameterUnmatched, false),
 			builds:      testBuilds,
