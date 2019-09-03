@@ -113,6 +113,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		cache:                artifactCache,
 		runCtx:               runCtx,
 		intents:              newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy),
+		imagesAreLocal:       imagesAreLocal,
 	}
 
 	if err := r.setupTriggerCallbacks(intentChan); err != nil {
