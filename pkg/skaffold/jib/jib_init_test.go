@@ -99,8 +99,14 @@ BEGIN JIB JSON
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, t.FakeRunOut(test.command, test.stdout))
-			t.CheckDeepEqual(test.expectedConfig, ValidateJibConfig(test.path))
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+				test.command,
+				test.stdout,
+			))
+
+			validated := ValidateJibConfig(test.path)
+
+			t.CheckDeepEqual(test.expectedConfig, validated)
 		})
 	}
 }
