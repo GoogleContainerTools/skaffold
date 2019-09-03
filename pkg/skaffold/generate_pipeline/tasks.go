@@ -29,12 +29,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func generateBuildTasks(configFiles []*ConfigFile) ([]*tekton.Task, error) {
+func generateBuildTasks(namespace string, configFiles []*ConfigFile) ([]*tekton.Task, error) {
 	var tasks []*tekton.Task
 	for _, configFile := range configFiles {
 		task, err := generateBuildTask(configFile)
 		if err != nil {
 			return nil, err
+		}
+
+		if namespace != "" {
+			nsFlag := []string{"--namespace", namespace}
+			task.Spec.Steps[0].Args = append(task.Spec.Steps[0].Args, nsFlag...)
 		}
 
 		tasks = append(tasks, task)
@@ -108,12 +113,17 @@ func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
 	return pipeline.NewTask("skaffold-build", inputs, outputs, steps, volumes), nil
 }
 
-func generateDeployTasks(configFiles []*ConfigFile) ([]*tekton.Task, error) {
+func generateDeployTasks(namespace string, configFiles []*ConfigFile) ([]*tekton.Task, error) {
 	var tasks []*tekton.Task
 	for _, configFile := range configFiles {
 		task, err := generateDeployTask(configFile)
 		if err != nil {
 			return nil, err
+		}
+
+		if namespace != "" {
+			nsFlag := []string{"--namespace", namespace}
+			task.Spec.Steps[0].Args = append(task.Spec.Steps[0].Args, nsFlag...)
 		}
 
 		tasks = append(tasks, task)
