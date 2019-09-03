@@ -28,12 +28,12 @@ import (
 func TestUpdateTimestamp(t *testing.T) {
 	dep := NewDeployment("test", "test-ns", time.Millisecond)
 
-	// Check both updated is false
+	// Check updated bool is false
 	testutil.CheckDeepEqual(t, false, dep.status.updated)
 
 	// Update the status
 	dep.UpdateStatus("success", "success", nil)
-	// Check the updated timestamp is present
+	// Check the updated bool is true
 	testutil.CheckDeepEqual(t, true, dep.status.updated)
 }
 
