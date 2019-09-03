@@ -32,6 +32,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 		env              []string
 		expected         string
 		expectedWarnings []string
+		shouldErr        bool
 	}{
 		{
 			description: "empty env",
@@ -45,6 +46,11 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 			env:         []string{"FOO=BAR", "BAZ=BAT"},
 			imageName:   "foo",
 			expected:    "BAR-BAT:latest",
+		},
+		{
+			description: "missing env",
+			template:    "{{.FOO}}:latest",
+			shouldErr:   true,
 		},
 		{
 			description: "opts precedence",
@@ -100,8 +106,7 @@ func TestEnvTemplateTagger_GenerateFullyQualifiedImageName(t *testing.T) {
 
 			got, err := c.GenerateFullyQualifiedImageName("", test.imageName)
 
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, got)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, got)
 			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}

@@ -51,7 +51,7 @@ func (t *envTemplateTagger) Labels() map[string]string {
 
 // GenerateFullyQualifiedImageName tags an image with the custom tag
 func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
-	tag, err := util.ExecuteEnvTemplate(t.Template, map[string]string{
+	tag, err := util.ExecuteEnvTemplate(t.Template.Option("missingkey=error"), map[string]string{
 		"IMAGE_NAME":  imageName,
 		"DIGEST":      "_DEPRECATED_DIGEST_",
 		"DIGEST_ALGO": "_DEPRECATED_DIGEST_ALGO_",
