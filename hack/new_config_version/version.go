@@ -18,11 +18,20 @@ package main
 
 import (
 	"bufio"
+	"context"
+	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/google/go-github/github"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 )
@@ -30,9 +39,39 @@ import (
 // Before: prev -> current (latest)
 // After:  prev -> current -> new (latest)
 func main() {
+	logrus.SetLevel(logrus.DebugLevel)
 	new := os.Args[1]
-	current := strings.TrimPrefix(schema.SchemaVersions[len(schema.SchemaVersions)-1].APIVersion, "skaffold/")
+	current := latest.Version
+	fmt.Printf("current version: %s", current)
 	prev := strings.TrimPrefix(schema.SchemaVersions[len(schema.SchemaVersions)-2].APIVersion, "skaffold/")
+	logrus.Infof("previous version: %s", prev)
+
+	logrus.Infof("checking for released status of %s...", prev)
+	client := github.NewClient(nil)
+
+	releases, _, _ := client.Repositories.ListReleases(context.Background(), "GoogleContainerTools", "skaffold", &github.ListOptions{})
+	lastTag := *releases[0].TagName
+
+	logrus.Infof("last release tag: %s", lastTag)
+
+	configURL := fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag)
+	resp, err := http.Get(configURL)
+	if err != nil {
+		logrus.Fatalf("can't determine latest released config lastReleasedVersion, failed to download %s: %s", configURL, err)
+	}
+
+	config, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logrus.Fatalf("failed to read during download %s, err: %s", configURL, err)
+	}
+	versionPattern := regexp.MustCompile("const Version string = \"(skaffold/.*)\"")
+	lastReleasedVersion := versionPattern.FindStringSubmatch(string(config))[1]
+
+	logrus.Infof("last released version: %s", lastReleasedVersion)
+
+	if lastReleasedVersion != current {
+		logrus.Fatalf("There is no need to create a new version, %s is still not released", current)
+	}
 
 	// Create a package for current version
 	walk(path("latest"), func(file string, info os.FileInfo) {
