@@ -59,11 +59,13 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("can't determine latest released config version, failed to download %s: %s", configURL, err)
 	}
+	defer resp.Body.Close()
 
 	config, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		logrus.Fatalf("failed to read during download %s, err: %s", configURL, err)
 	}
+
 	versionPattern := regexp.MustCompile("const Version string = \"(skaffold/.*)\"")
 	lastReleased := versionPattern.FindStringSubmatch(string(config))[1]
 
