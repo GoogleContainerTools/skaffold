@@ -130,20 +130,3 @@ func TestDeployWithInCorrectConfigWithNoStatusCheck(t *testing.T) {
 
 	skaffold.Deploy().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
 }
-
-func TestDeployOtherK8Manifests(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-
-	ns, client, deleteNs := SetupNamespace(t)
-	defer deleteNs()
-
-	skaffold.Deploy().InDir("testdata/service-with-other-k8-manifests").InNs(ns.Name).RunOrFail(t)
-
-	dep := client.GetDeployment("deploy-hello")
-	testutil.CheckDeepEqual(t, "gcr.io/k8s-skaffold/hello-service:latest", dep.Spec.Template.Spec.Containers[0].Image)
-	// Make sure service exists.
-	client.GetService("hello-service")
-	skaffold.Delete().InDir("examples/service-with-other-k8-manifests").InNs(ns.Name).RunOrFail(t)
-}

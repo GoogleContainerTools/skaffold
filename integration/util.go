@@ -203,13 +203,3 @@ func (k *NSKubernetesClient) printDiskFreeSpace() {
 func isStable(dp *appsv1.Deployment) bool {
 	return dp.Generation <= dp.Status.ObservedGeneration && *(dp.Spec.Replicas) == dp.Status.Replicas
 }
-
-// GetService gets a deployment by name.
-func (k *NSKubernetesClient) GetService(name string) *v1.Service {
-
-	svc, err := k.client.CoreV1().Services(k.ns).Get(name, meta_v1.GetOptions{})
-	if err != nil {
-		k.t.Fatalf("Could not find service: %s in namespace %s", svc, k.ns)
-	}
-	return svc
-}

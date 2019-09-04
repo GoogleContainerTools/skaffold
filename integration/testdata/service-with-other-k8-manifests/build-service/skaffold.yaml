@@ -1,8 +1,0 @@
-apiVersion: skaffold/v1beta8
-kind: Config
-build:
-  artifacts:
-  - image: gcr.io/k8s-skaffold/hello-service
-  tagPolicy:
-    envTemplate:
-      template: "{{.IMAGE_NAME}}:latest"

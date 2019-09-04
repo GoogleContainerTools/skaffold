@@ -1,8 +1,0 @@
-kind: Service
-apiVersion: v1
-metadata:
-  name: hello-service
-spec:
-  selector:
-    app: hello
-  clusterIP: None
