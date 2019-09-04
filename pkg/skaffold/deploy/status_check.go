@@ -59,7 +59,6 @@ type Checker struct {
 	processedDeps int32
 }
 
-
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
@@ -85,7 +84,6 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		out:      out,
 		numDeps:  len(dMap),
 	}
-
 
 	for dName, deadlineDuration := range dMap {
 		wg.Add(1)

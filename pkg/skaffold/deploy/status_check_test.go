@@ -231,8 +231,8 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			actual := &sync.Map{}
 			checker := Checker{
 				context: context.Background(),
-				client: &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"},
-				out: ioutil.Discard,
+				client:  &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"},
+				out:     ioutil.Discard,
 			}
 			checker.pollDeploymentRolloutStatus("dep", time.Duration(test.duration)*time.Millisecond, actual)
 			if _, ok := actual.Load("dep"); !ok {
@@ -341,47 +341,45 @@ func TestGetRollOutStatus(t *testing.T) {
 	}
 }
 
-
 func TestPrintSummaryStatus(t *testing.T) {
 	tests := []struct {
 		description string
-		num int
-		msg string
+		num         int
+		msg         string
 		expected    string
 	}{
 		{
 			description: "no deployment left and current is in success",
-			num: 1,
-			msg: "",
-			expected:  " - deployment/dep is ready.\n",
+			num:         1,
+			msg:         "",
+			expected:    " - deployment/dep is ready.\n",
 		},
 		{
 			description: "no deployment left and current is in error",
-			num: 1,
-			msg: "context deadline expired",
-			expected:  " - deployment/dep failed. Error: context deadline expired.\n",
+			num:         1,
+			msg:         "context deadline expired",
+			expected:    " - deployment/dep failed. Error: context deadline expired.\n",
 		},
 		{
 			description: "more than 1 deployment left and current is in success",
-			num: 5,
-			msg: "",
-			expected:  " - deployment/dep is ready. [4/5 deployment(s) still pending]\n",
+			num:         5,
+			msg:         "",
+			expected:    " - deployment/dep is ready. [4/5 deployment(s) still pending]\n",
 		},
 		{
 			description: "more than 1 deployment left and current is in error",
-			num: 10,
-			msg: "context deadline expired",
-			expected:  " - deployment/dep failed [9/10 deployment(s) still pending]. Error: context deadline expired.\n",
+			num:         10,
+			msg:         "context deadline expired",
+			expected:    " - deployment/dep failed [9/10 deployment(s) still pending]. Error: context deadline expired.\n",
 		},
-
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
 			c := Checker{
-				numDeps: test.num,
-				out:   out,
+				numDeps:       test.num,
+				out:           out,
 				processedDeps: 1,
 			}
 			c.printStatusCheckSummary("dep", test.msg)
