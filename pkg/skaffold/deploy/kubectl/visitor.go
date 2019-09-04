@@ -27,8 +27,6 @@ type Replacer interface {
 
 	SetKind(key string)
 
-	GetKind() (string, error)
-
 	NewValue(old interface{}) (bool, interface{})
 
 	ReplaceRecursive() bool
@@ -83,11 +81,12 @@ func recursiveVisit(i interface{}, replacer Replacer, recurse bool) {
 				recursiveVisit(v, replacer, replacer.ReplaceRecursive())
 				continue
 			}
-			if replacer.ShouldReplaceForKind() {
-				ok, newValue := replacer.NewValue(v)
-				if ok {
-					t[k] = newValue
-				}
+			if !replacer.ShouldReplaceForKind() {
+				continue
+			}
+			ok, newValue := replacer.NewValue(v)
+			if ok {
+				t[k] = newValue
 			}
 		}
 	}

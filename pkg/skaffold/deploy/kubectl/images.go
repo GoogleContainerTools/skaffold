@@ -139,10 +139,7 @@ func (r *imageReplacer) ReplaceRecursive() bool {
 }
 
 func (r *imageReplacer) ShouldReplaceForKind() bool {
-	if _, ok := map[string]bool {"POD": true}[r.kind]; ok{
-		return true
-	}
-	return false
+	return map[string]bool {"POD": true}[r.kind]
 }
 
 func (r *imageReplacer) parseAndReplace(image string) (bool, interface{}) {
