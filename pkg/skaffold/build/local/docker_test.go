@@ -71,7 +71,10 @@ func TestDockerCLIBuild(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
-			t.Override(&util.DefaultExecCommand, t.NewFakeCmd().WithRunEnv("docker build . --file "+dockerfilePath+" -t tag --force-rm", test.expectedEnv))
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunEnv(
+				"docker build . --file "+dockerfilePath+" -t tag --force-rm",
+				test.expectedEnv,
+			))
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
 			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 				return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, test.extraEnv, false, nil), nil

@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -108,13 +109,13 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
+		description    string
 		kubecontext    string
 		cfg            *GlobalConfig
 		expectedConfig *ContextConfig
 	}{
 		{
-			name: "global config when kubecontext is empty",
+			description: "global config when kubecontext is empty",
 			cfg: &GlobalConfig{
 				Global: &ContextConfig{
 					InsecureRegistries: []string{"mediocre.io"},
@@ -135,12 +136,12 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			},
 		},
 		{
-			name:           "no global config and no kubecontext",
+			description:    "no global config and no kubecontext",
 			cfg:            &GlobalConfig{},
 			expectedConfig: &ContextConfig{},
 		},
 		{
-			name:        "config for unknown kubecontext",
+			description: "config for unknown kubecontext",
 			kubecontext: someKubeContext,
 			cfg:         &GlobalConfig{},
 			expectedConfig: &ContextConfig{
@@ -148,7 +149,7 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			},
 		},
 		{
-			name:        "config for kubecontext when globals are empty",
+			description: "config for kubecontext when globals are empty",
 			kubecontext: someKubeContext,
 			cfg: &GlobalConfig{
 				ContextConfigs: []*ContextConfig{sampleConfig2, sampleConfig1},
@@ -156,7 +157,7 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			expectedConfig: sampleConfig1,
 		},
 		{
-			name:        "config for kubecontext without merged values",
+			description: "config for kubecontext without merged values",
 			kubecontext: someKubeContext,
 			cfg: &GlobalConfig{
 				Global:         sampleConfig2,
@@ -165,7 +166,7 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			expectedConfig: sampleConfig1,
 		},
 		{
-			name:        "config for kubecontext with merged values",
+			description: "config for kubecontext with merged values",
 			kubecontext: someKubeContext,
 			cfg: &GlobalConfig{
 				Global: sampleConfig2,
@@ -182,7 +183,7 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			},
 		},
 		{
-			name:        "config for unknown kubecontext with merged values",
+			description: "config for unknown kubecontext with merged values",
 			kubecontext: someKubeContext,
 			cfg:         &GlobalConfig{Global: sampleConfig2},
 			expectedConfig: &ContextConfig{
@@ -192,7 +193,7 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 			},
 		},
 		{
-			name:        "merge global and context-specific insecure-registries",
+			description: "merge global and context-specific insecure-registries",
 			kubecontext: someKubeContext,
 			cfg: &GlobalConfig{
 				Global: &ContextConfig{
@@ -210,9 +211,51 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		testutil.Run(t, test.name, func(t *testutil.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual, err := getConfigForKubeContextWithGlobalDefaults(test.cfg, test.kubecontext)
 			t.CheckErrorAndDeepEqual(false, err, test.expectedConfig, actual)
+		})
+	}
+}
+
+func TestIsUpdateCheckEnabled(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         *ContextConfig
+		readErr     error
+		expected    bool
+	}{
+		{
+			description: "config update-check is nil returns true",
+			cfg:         &ContextConfig{},
+			expected:    true,
+		},
+		{
+			description: "config update-check is true",
+			cfg:         &ContextConfig{UpdateCheck: util.BoolPtr(true)},
+			expected:    true,
+		},
+		{
+			description: "config update-check is false",
+			cfg:         &ContextConfig{UpdateCheck: util.BoolPtr(false)},
+		},
+		{
+			description: "config is nil",
+			cfg:         nil,
+			expected:    true,
+		},
+		{
+			description: "config has err",
+			cfg:         nil,
+			readErr:     fmt.Errorf("error while reading"),
+			expected:    true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, test.readErr })
+			actual := IsUpdateCheckEnabled("dummyconfig")
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }

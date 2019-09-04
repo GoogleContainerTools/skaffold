@@ -30,6 +30,7 @@ func TestGenerateProfile(t *testing.T) {
 		skaffoldConfig  *latest.SkaffoldConfig
 		expectedProfile *latest.Profile
 		responses       []string
+		namespace       string
 		shouldErr       bool
 	}{
 		{
@@ -48,6 +49,7 @@ func TestGenerateProfile(t *testing.T) {
 					},
 				},
 			},
+			namespace: "",
 			expectedProfile: &latest.Profile{
 				Name: "oncluster",
 				Pipeline: latest.Pipeline{
@@ -94,6 +96,7 @@ func TestGenerateProfile(t *testing.T) {
 					},
 				},
 			},
+			namespace: "",
 			expectedProfile: &latest.Profile{
 				Name: "oncluster",
 				Pipeline: latest.Pipeline{
@@ -107,6 +110,50 @@ func TestGenerateProfile(t *testing.T) {
 										Profile: "test-profile",
 									},
 								},
+							},
+						},
+					},
+				},
+			},
+			shouldErr: false,
+		},
+		{
+			description: "kaniko artifact with namespace",
+			skaffoldConfig: &latest.SkaffoldConfig{
+				Pipeline: latest.Pipeline{
+					Build: latest.BuildConfig{
+						Artifacts: []*latest.Artifact{
+							{
+								ImageName: "test",
+								ArtifactType: latest.ArtifactType{
+									DockerArtifact: &latest.DockerArtifact{},
+								},
+							},
+						},
+					},
+				},
+			},
+			namespace: "test-ns",
+			expectedProfile: &latest.Profile{
+				Name: "oncluster",
+				Pipeline: latest.Pipeline{
+					Build: latest.BuildConfig{
+						Artifacts: []*latest.Artifact{
+							{
+								ImageName: "test-pipeline",
+								ArtifactType: latest.ArtifactType{
+									KanikoArtifact: &latest.KanikoArtifact{
+										BuildContext: &latest.KanikoBuildContext{
+											GCSBucket: "skaffold-kaniko",
+										},
+									},
+								},
+							},
+						},
+						BuildType: latest.BuildType{
+							Cluster: &latest.ClusterDetails{
+								PullSecretName: "kaniko-secret",
+								Namespace:      "test-ns",
 							},
 						},
 					},
@@ -130,7 +177,7 @@ func TestGenerateProfile(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			profile, err := generateProfile(ioutil.Discard, test.skaffoldConfig)
+			profile, err := generateProfile(ioutil.Discard, test.namespace, test.skaffoldConfig)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedProfile, profile)
 		})
 	}

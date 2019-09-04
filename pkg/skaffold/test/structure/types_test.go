@@ -33,9 +33,10 @@ func TestNewRunner(t *testing.T) {
 
 	testutil.Run(t, "", func(t *testutil.T) {
 		extraEnv := []string{"SOME=env_var", "OTHER=env_value"}
-		fakeCmd := t.NewFakeCmd().
-			WithRunEnv("container-structure-test test -v warn --image "+imageName+" --config "+structureTestName, extraEnv)
-		t.Override(&util.DefaultExecCommand, fakeCmd)
+		t.Override(&util.DefaultExecCommand, testutil.CmdRunEnv(
+			"container-structure-test test -v warn --image "+imageName+" --config "+structureTestName,
+			extraEnv,
+		))
 
 		testRunner := NewRunner([]string{structureTestName}, extraEnv)
 		err := testRunner.Test(context.Background(), ioutil.Discard, imageName)

@@ -19,7 +19,6 @@ package generatepipeline
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
@@ -163,93 +162,6 @@ func TestGeneratePipeline(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			pipeline, err := generatePipeline(test.tasks)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPipeline, pipeline)
-		})
-	}
-}
-
-func TestGenerateBuildTask(t *testing.T) {
-	var tests = []struct {
-		description string
-		buildConfig latest.BuildConfig
-		shouldErr   bool
-	}{
-		{
-			description: "successfully generate build task",
-			buildConfig: latest.BuildConfig{
-				Artifacts: []*latest.Artifact{
-					{
-						ImageName: "testArtifact",
-					},
-				},
-			},
-			shouldErr: false,
-		},
-		{
-			description: "fail generating build task",
-			buildConfig: latest.BuildConfig{
-				Artifacts: []*latest.Artifact{},
-			},
-			shouldErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			configFile := &ConfigFile{
-				Path: "test",
-				Profile: &latest.Profile{
-					Pipeline: latest.Pipeline{
-						Build: test.buildConfig,
-					},
-				},
-			}
-			_, err := generateBuildTask(configFile)
-			t.CheckError(test.shouldErr, err)
-		})
-	}
-}
-
-func TestGenerateDeployTask(t *testing.T) {
-	var tests = []struct {
-		description  string
-		deployConfig latest.DeployConfig
-		shouldErr    bool
-	}{
-		{
-			description: "successfully generate deploy task",
-			deployConfig: latest.DeployConfig{
-				DeployType: latest.DeployType{
-					HelmDeploy: &latest.HelmDeploy{},
-				},
-			},
-			shouldErr: false,
-		},
-		{
-			description: "fail generating deploy task",
-			deployConfig: latest.DeployConfig{
-				DeployType: latest.DeployType{
-					HelmDeploy:      nil,
-					KubectlDeploy:   nil,
-					KustomizeDeploy: nil,
-				},
-			},
-			shouldErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			configFile := &ConfigFile{
-				Path: "test",
-				Config: &latest.SkaffoldConfig{
-					Pipeline: latest.Pipeline{
-						Deploy: test.deployConfig,
-					},
-				},
-			}
-
-			_, err := generateDeployTask(configFile)
-			t.CheckError(test.shouldErr, err)
 		})
 	}
 }

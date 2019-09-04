@@ -303,6 +303,39 @@ func TestApplyProfiles(t *testing.T) {
 				}),
 			),
 		},
+		{
+			description: "port forwarding",
+			profile:     "profile",
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Pipeline: latest.Pipeline{
+						PortForward: []*latest.PortForwardResource{{
+							Namespace: "ns",
+							Name:      "name",
+							Type:      "service",
+							Port:      8080,
+							LocalPort: 8888,
+						}},
+					},
+				}),
+			),
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withPortForward(&latest.PortForwardResource{
+					Namespace: "ns",
+					Name:      "name",
+					Type:      "service",
+					Port:      8080,
+					LocalPort: 8888,
+				}),
+			),
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

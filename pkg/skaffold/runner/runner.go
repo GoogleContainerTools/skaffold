@@ -66,11 +66,10 @@ type SkaffoldRunner struct {
 	portForwardResources []*latest.PortForwardResource
 	builds               []build.Artifact
 	imageList            *kubernetes.ImageList
-
-	hasBuilt    bool
-	hasDeployed bool
-
-	intents *intents
+	imagesAreLocal       bool
+	hasBuilt             bool
+	hasDeployed          bool
+	intents              *intents
 }
 
 // for testing

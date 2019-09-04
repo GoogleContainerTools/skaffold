@@ -91,10 +91,9 @@ func TestTestSuccess(t *testing.T) {
 		tmpDir := t.NewTempDir()
 		tmpDir.Touch("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 
-		fakeCmd := t.NewFakeCmd().
-			WithRun("container-structure-test test -v warn --image TAG --config " + tmpDir.Path("tests/test1.yaml") + " --config " + tmpDir.Path("tests/test2.yaml")).
-			WithRun("container-structure-test test -v warn --image TAG --config " + tmpDir.Path("test3.yaml"))
-		t.Override(&util.DefaultExecCommand, fakeCmd)
+		t.Override(&util.DefaultExecCommand, testutil.
+			CmdRun("container-structure-test test -v warn --image TAG --config "+tmpDir.Path("tests/test1.yaml")+" --config "+tmpDir.Path("tests/test2.yaml")).
+			AndRun("container-structure-test test -v warn --image TAG --config "+tmpDir.Path("test3.yaml")))
 
 		runCtx := &runcontext.RunContext{
 			WorkingDir: tmpDir.Root(),
@@ -124,12 +123,12 @@ func TestTestSuccess(t *testing.T) {
 
 func TestTestFailure(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		tmpDir := t.NewTempDir()
-		tmpDir.Touch("test.yaml")
+		tmpDir := t.NewTempDir().Touch("test.yaml")
 
-		fakeCmd := t.NewFakeCmd().
-			WithRunErr("container-structure-test test -v warn --image broken-image --config "+tmpDir.Path("test.yaml"), errors.New("FAIL"))
-		t.Override(&util.DefaultExecCommand, fakeCmd)
+		t.Override(&util.DefaultExecCommand, testutil.CmdRunErr(
+			"container-structure-test test -v warn --image broken-image --config "+tmpDir.Path("test.yaml"),
+			errors.New("FAIL"),
+		))
 
 		runCtx := &runcontext.RunContext{
 			WorkingDir: tmpDir.Root(),

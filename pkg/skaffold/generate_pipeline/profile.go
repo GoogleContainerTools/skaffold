@@ -27,12 +27,13 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 
 	yamlv2 "gopkg.in/yaml.v2"
 )
 
-func CreateSkaffoldProfile(out io.Writer, configFile *ConfigFile) error {
+func CreateSkaffoldProfile(out io.Writer, runCtx *runcontext.RunContext, configFile *ConfigFile) error {
 	reader := bufio.NewReader(os.Stdin)
 
 	// Check for existing oncluster profile, if none exists then prompt to create one
@@ -63,7 +64,7 @@ confirmLoop:
 	}
 
 	color.Default.Fprintln(out, "Creating skaffold profile \"oncluster\"...")
-	profile, err := generateProfile(out, configFile.Config)
+	profile, err := generateProfile(out, runCtx.Opts.Namespace, configFile.Config)
 	if err != nil {
 		return errors.Wrap(err, "generating profile \"oncluster\"")
 	}
@@ -106,7 +107,7 @@ confirmLoop:
 	return nil
 }
 
-func generateProfile(out io.Writer, config *latest.SkaffoldConfig) (*latest.Profile, error) {
+func generateProfile(out io.Writer, namespace string, config *latest.SkaffoldConfig) (*latest.Profile, error) {
 	if len(config.Build.Artifacts) == 0 {
 		return nil, errors.New("No Artifacts to add to profile")
 	}
@@ -140,6 +141,12 @@ func generateProfile(out io.Writer, config *latest.SkaffoldConfig) (*latest.Prof
 			PullSecretName: "kaniko-secret",
 		}
 		profile.Build.LocalBuild = nil
+	}
+	if namespace != "" {
+		if profile.Build.Cluster == nil {
+			profile.Build.Cluster = &latest.ClusterDetails{}
+		}
+		profile.Build.Cluster.Namespace = namespace
 	}
 
 	return profile, nil

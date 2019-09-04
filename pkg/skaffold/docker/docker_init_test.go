@@ -128,6 +128,7 @@ func TestCreateArtifact(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := test.dockerfile.CreateArtifact(test.manifestImage)
+
 			t.CheckDeepEqual(test.expectedArtifact, *artifact)
 		})
 	}

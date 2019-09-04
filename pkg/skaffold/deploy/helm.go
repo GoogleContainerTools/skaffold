@@ -22,17 +22,13 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -42,6 +38,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+	"github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 )
 
 type HelmDeployer struct {
@@ -172,49 +173,15 @@ func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, useSecrets bool,
 }
 
 func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact) ([]Artifact, error) {
-	isInstalled := true
-
 	releaseName, err := evaluateReleaseName(r.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse the release name template")
 	}
-	if err := h.helm(ctx, out, false, "get", releaseName); err != nil {
-		color.Red.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
-		isInstalled = false
-	}
-	params, err := h.joinTagsToBuildResult(builds, r.Values)
-	if err != nil {
-		return nil, errors.Wrap(err, "matching build results to chart values")
-	}
 
-	var setOpts []string
-	for k, v := range params {
-		setOpts = append(setOpts, "--set")
-		helmConventionConfig := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
-		if helmConventionConfig != nil {
-			dockerRef, err := docker.ParseReference(v.Tag)
-			if err != nil {
-				return nil, errors.Wrapf(err, "cannot parse the docker image reference %s", v.Tag)
-			}
-			var imageRepositoryTag string
-			if helmConventionConfig.ExplicitRegistry {
-				if dockerRef.Domain == "" {
-					return nil, errors.Wrapf(err, "cannot parse the docker image reference %s into parts", v.Tag)
-				}
-				imageRepositoryTag = fmt.Sprintf(
-					"%s.registry=%s,%s.repository=%s,%s.tag=%s",
-					k, dockerRef.Domain, k, dockerRef.Path, k, extractTag(v.Tag),
-				)
-			} else {
-				imageRepositoryTag = fmt.Sprintf(
-					"%s.repository=%s,%s.tag=%s",
-					k, dockerRef.BaseName, k, extractTag(v.Tag),
-				)
-			}
-			setOpts = append(setOpts, imageRepositoryTag)
-		} else {
-			setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v.Tag))
-		}
+	isInstalled := true
+	if err := h.helm(ctx, ioutil.Discard, false, "get", releaseName); err != nil {
+		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
+		isInstalled = false
 	}
 
 	// Dependency builds should be skipped when trying to install a chart
@@ -273,98 +240,135 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	if ns != "" {
 		args = append(args, "--namespace", ns)
 	}
+
+	// Overrides.Values
 	if len(r.Overrides.Values) != 0 {
 		overrides, err := yaml.Marshal(r.Overrides)
 		if err != nil {
 			return nil, errors.Wrap(err, "cannot marshal overrides to create overrides values.yaml")
 		}
-		overridesFile, err := os.Create(constants.HelmOverridesFilename)
-		if err != nil {
+
+		if err := ioutil.WriteFile(constants.HelmOverridesFilename, overrides, 0666); err != nil {
 			return nil, errors.Wrapf(err, "cannot create file %s", constants.HelmOverridesFilename)
 		}
 		defer func() {
-			overridesFile.Close()
 			os.Remove(constants.HelmOverridesFilename)
 		}()
-		if _, err := overridesFile.WriteString(string(overrides)); err != nil {
-			return nil, errors.Wrapf(err, "failed to write file %s", constants.HelmOverridesFilename)
-		}
+
 		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
+
+	// ValuesFiles
 	for _, valuesFile := range expandPaths(r.ValuesFiles) {
 		args = append(args, "-f", valuesFile)
 	}
 
-	setValues := r.SetValues
-	if setValues == nil {
-		setValues = map[string]string{}
+	// TODO(dgageot): we should merge `Values`, `SetValues` and `SetValueTemplates`
+	// as much as possible.
+
+	// Values
+	params, err := h.joinTagsToBuildResult(builds, r.Values)
+	if err != nil {
+		return nil, errors.Wrap(err, "matching build results to chart values")
 	}
-	if len(r.SetValueTemplates) != 0 {
-		envMap := map[string]string{}
-		for idx, b := range builds {
-			suffix := ""
-			if idx > 0 {
-				suffix = strconv.Itoa(idx + 1)
-			}
-			m := createEnvVarMap(b.ImageName, extractTag(b.Tag))
-			for k, v := range m {
-				envMap[k+suffix] = v
-			}
-			color.Default.Fprintf(out, "EnvVarMap: %#v\n", envMap)
-		}
-		for k, v := range r.SetValueTemplates {
-			t, err := util.ParseEnvTemplate(v)
+
+	valuesSet := make(map[string]bool)
+
+	for k, v := range params {
+		var value string
+
+		if cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig; cfg != nil {
+			dockerRef, err := docker.ParseReference(v.Tag)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to parse setValueTemplates")
+				return nil, errors.Wrapf(err, "cannot parse the image reference %s", v.Tag)
 			}
-			result, err := util.ExecuteEnvTemplate(t, envMap)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to generate setValueTemplates")
+
+			if cfg.ExplicitRegistry {
+				if dockerRef.Domain == "" {
+					return nil, errors.Wrapf(err, "image reference %s has no domain", v.Tag)
+				}
+
+				value = fmt.Sprintf("%[1]s.registry=%s,%[1]s.repository=%s,%[1]s.tag=%s", k, dockerRef.Domain, dockerRef.Path, v.Tag)
+			} else {
+				value = fmt.Sprintf("%[1]s.repository=%s,%[1]s.tag=%s", k, dockerRef.BaseName, v.Tag)
 			}
-			setValues[k] = result
+		} else {
+			value = fmt.Sprintf("%s=%s", k, v.Tag)
+		}
+
+		valuesSet[v.Tag] = true
+		args = append(args, "--set", value)
+	}
+
+	// SetValues
+	for k, v := range r.SetValues {
+		valuesSet[v] = true
+		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
+	}
+
+	envMap := map[string]string{}
+	for idx, b := range builds {
+		suffix := ""
+		if idx > 0 {
+			suffix = strconv.Itoa(idx + 1)
+		}
+
+		for k, v := range createEnvVarMap(b.ImageName, b.Tag) {
+			envMap[k+suffix] = v
 		}
 	}
-	for k, v := range setValues {
-		setOpts = append(setOpts, "--set")
-		setOpts = append(setOpts, fmt.Sprintf("%s=%s", k, v))
+	logrus.Debugf("EnvVarMap: %#v\n", envMap)
+
+	for k, v := range r.SetValueTemplates {
+		t, err := util.ParseEnvTemplate(v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse setValueTemplates")
+		}
+
+		v, err := util.ExecuteEnvTemplate(t, envMap)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate setValueTemplates")
+		}
+
+		valuesSet[v] = true
+		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
 	}
+
+	// Let's make sure that every image tag is set with `--set`.
+	// Otherwise, templates have no way to use the images that were built.
+	for _, build := range builds {
+		if !valuesSet[build.Tag] {
+			warnings.Printf("image [%s] is not used.", build.Tag)
+			warnings.Printf("image [%s] is used instead.", build.ImageName)
+			warnings.Printf("See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml")
+		}
+	}
+
 	if r.Wait {
 		args = append(args, "--wait")
 	}
-	args = append(args, setOpts...)
 
 	helmErr := h.helm(ctx, out, r.UseHelmSecrets, args...)
+
 	return h.getDeployResults(ctx, ns, releaseName), helmErr
 }
 
-func createEnvVarMap(imageName string, digest string) map[string]string {
-	customMap := map[string]string{}
-	customMap["IMAGE_NAME"] = imageName
-	customMap["DIGEST"] = digest
-	if digest != "" {
-		names := strings.SplitN(digest, ":", 2)
+func createEnvVarMap(imageName string, fqn string) map[string]string {
+	customMap := map[string]string{
+		"IMAGE_NAME": imageName,
+		"DIGEST":     fqn, // The `DIGEST` name is kept for compatibility reasons
+	}
+	if fqn != "" {
+		// DIGEST_ALGO and DIGEST_HEX are deprecated and will contain non sense values
+		names := strings.SplitN(fqn, ":", 2)
 		if len(names) >= 2 {
 			customMap["DIGEST_ALGO"] = names[0]
 			customMap["DIGEST_HEX"] = names[1]
 		} else {
-			customMap["DIGEST_HEX"] = digest
+			customMap["DIGEST_HEX"] = fqn
 		}
 	}
 	return customMap
-}
-
-// imageName if the given string includes a fully qualified docker image name then lets trim just the tag part out
-func extractTag(imageName string) string {
-	idx := strings.LastIndex(imageName, "/")
-	if idx < 0 {
-		return imageName
-	}
-	tag := imageName[idx+1:]
-	idx = strings.Index(tag, ":")
-	if idx > 0 {
-		return tag[idx+1:]
-	}
-	return tag
 }
 
 // packageChart packages the chart and returns path to the chart archive file.
@@ -442,19 +446,18 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 	}
 
 	paramToBuildResult := map[string]build.Artifact{}
+
 	for param, imageName := range params {
 		newImageName := util.SubstituteDefaultRepoIntoImage(h.defaultRepo, imageName)
+
 		b, ok := imageToBuildResult[newImageName]
 		if !ok {
-			if len(builds) == 0 {
-				logrus.Debugf("no build artifacts present. Assuming skaffold deploy. Continuing with %s", imageName)
-				b = build.Artifact{ImageName: imageName, Tag: imageName}
-			} else {
-				return nil, fmt.Errorf("no build present for %s", imageName)
-			}
+			return nil, fmt.Errorf("no build present for %s", imageName)
 		}
+
 		paramToBuildResult[param] = b
 	}
+
 	return paramToBuildResult, nil
 }
 
@@ -475,7 +478,6 @@ func concretize(s string) (string, error) {
 		return "", errors.Wrap(err, "parsing template")
 	}
 
-	tmpl.Option("missingkey=error")
 	return util.ExecuteEnvTemplate(tmpl, nil)
 }
 

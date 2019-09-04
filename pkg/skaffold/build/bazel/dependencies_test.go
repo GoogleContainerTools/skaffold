@@ -76,7 +76,10 @@ func TestGetDependencies(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, t.FakeRunOut(test.expectedQuery, test.output))
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+				test.expectedQuery,
+				test.output,
+			))
 			t.NewTempDir().WriteFiles(test.files).Chdir()
 
 			deps, err := GetDependencies(context.Background(), test.workspace, &latest.BazelArtifact{

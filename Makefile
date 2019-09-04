@@ -128,7 +128,7 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	kubectl get nodes -oyaml
+#	kubectl get nodes -oyaml
 	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
@@ -183,7 +183,7 @@ clean:
 
 .PHONY: kind-cluster
 kind-cluster:
-	kind get clusters | grep -q kind || kind create cluster --image=kindest/node:v1.13.7@sha256:f3f1cfc2318d1eb88d91253a9c5fa45f6e9121b6b1e65aea6c7ef59f1549aaaf
+	kind get clusters | grep -q kind || kind create cluster --image=kindest/node:v1.13.10@sha256:2f5f882a6d0527a2284d29042f3a6a07402e1699d792d0d5a9b9a48ef155fa2a
 
 .PHONY: skaffold-builder
 skaffold-builder:

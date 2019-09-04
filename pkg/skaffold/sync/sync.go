@@ -223,7 +223,7 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 
 	client, err := kubernetes.Client()
 	if err != nil {
-		return errors.Wrap(err, "getting k8s client")
+		return errors.Wrap(err, "getting kubernetes client")
 	}
 
 	numSynced := 0
@@ -234,9 +234,7 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 		}
 
 		for _, p := range pods.Items {
-
 			if p.Status.Phase != v1.PodRunning {
-				logrus.Infof("Skipping sync with pod %s because it's not running", p.Name)
 				continue
 			}
 

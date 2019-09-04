@@ -454,6 +454,11 @@
           "description": "for kaniko pod.",
           "x-intellij-html-description": "for kaniko pod."
         },
+        "concurrency": {
+          "type": "integer",
+          "description": "how many artifacts can be built concurrently. 0 means \"no-limit\" Defaults to 0.",
+          "x-intellij-html-description": "how many artifacts can be built concurrently. 0 means &quot;no-limit&quot; Defaults to 0."
+        },
         "dockerConfig": {
           "$ref": "#/definitions/DockerConfig",
           "description": "describes how to mount the local Docker configuration into a pod.",
@@ -494,7 +499,8 @@
         "namespace",
         "timeout",
         "dockerConfig",
-        "resources"
+        "resources",
+        "concurrency"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build.",
@@ -808,6 +814,11 @@
     },
     "GoogleCloudBuild": {
       "properties": {
+        "concurrency": {
+          "type": "integer",
+          "description": "how many artifacts can be built concurrently. 0 means \"no-limit\" Defaults to 0.",
+          "x-intellij-html-description": "how many artifacts can be built concurrently. 0 means &quot;no-limit&quot; Defaults to 0."
+        },
         "diskSizeGb": {
           "type": "integer",
           "description": "disk size of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
@@ -854,7 +865,8 @@
         "timeout",
         "dockerImage",
         "mavenImage",
-        "gradleImage"
+        "gradleImage",
+        "concurrency"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/docs/). Docker and Jib artifacts can be built on Cloud Build. The `projectId` needs to be provided and the currently logged in user should be given permissions to trigger new builds.",

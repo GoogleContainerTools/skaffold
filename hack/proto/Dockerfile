@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Install protoc
-FROM alpine:3.9 AS protoc
+FROM alpine:3.10 AS protoc
 RUN apk add --no-cache unzip
 
 ENV PROTOC_VERSION=3.8.0
@@ -21,7 +21,7 @@ RUN wget -O protoc.zip https://github.com/google/protobuf/releases/download/v${P
 RUN unzip protoc.zip -d protoc
 
 # Install protoc-gen-go and grpc-gateway binaries; then generate files.
-FROM golang:1.12.5-alpine3.9 AS generateFiles
+FROM golang:1.12.9-alpine3.10 AS generateFiles
 RUN apk add --no-cache protobuf=3.6.1-r1 git
 
 COPY --from=protoc /protoc/include /usr/local/include

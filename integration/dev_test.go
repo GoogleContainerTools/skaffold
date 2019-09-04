@@ -237,7 +237,7 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 	if !ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+		t.Skip("skipping test that is gcp only")
 	}
 
 	// Run skaffold build first to fail quickly on a build failure
