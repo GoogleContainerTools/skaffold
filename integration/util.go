@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	core_v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
 	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
@@ -78,6 +80,14 @@ type NSKubernetesClient struct {
 	t      *testing.T
 	client kubernetes.Interface
 	ns     string
+}
+
+func (k *NSKubernetesClient) Pods() core_v1.PodInterface {
+	return k.client.CoreV1().Pods(k.ns)
+}
+
+func (k *NSKubernetesClient) Secrets() core_v1.SecretInterface {
+	return k.client.CoreV1().Secrets(k.ns)
 }
 
 // WaitForPodsReady waits for a list of pods to become ready.

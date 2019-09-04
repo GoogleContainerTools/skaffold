@@ -150,7 +150,7 @@ func TestBuildInCluster(t *testing.T) {
 		}
 		secret.Namespace = ns.Name
 		secret.ResourceVersion = ""
-		_, err = k8sClient.client.CoreV1().Secrets(ns.Name).Create(secret)
+		_, err = k8sClient.Secrets().Create(secret)
 		if err != nil {
 			t.Fatalf("failed creating %s/e2escret: %s", ns.Name, err)
 		}
@@ -159,6 +159,11 @@ func TestBuildInCluster(t *testing.T) {
 		t.Logf("create-build-step logs: \n%s", logs)
 
 		k8sClient.WaitForPodsInPhase(corev1.PodSucceeded, "skaffold-in-cluster")
+		logs, err = k8sClient.Pods().GetLogs("skaffold-in-cluster", &corev1.PodLogOptions{}).DoRaw()
+		if err != nil {
+			t.Fatalf("failed to get logs for failed pod %s: %s", "skaffold-in-cluster", err)
+		}
+		t.Logf("pod logs:\n %s", logs)
 	})
 }
 
