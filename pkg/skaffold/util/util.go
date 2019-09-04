@@ -321,3 +321,7 @@ func IsHiddenFile(filename string) bool {
 func hasHiddenPrefix(s string) bool {
 	return strings.HasPrefix(s, hiddenPrefix)
 }
+
+func Trim(msg string) string {
+	return strings.TrimSuffix(msg, "\n")
+}

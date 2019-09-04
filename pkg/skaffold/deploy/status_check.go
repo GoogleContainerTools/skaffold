@@ -19,10 +19,14 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,9 +45,22 @@ var (
 
 	// For testing
 	executeRolloutStatus = getRollOutStatus
+
+	TabHeader = " -"
 )
 
-func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext) error {
+type Checker struct {
+	context       context.Context
+	runCtx        *runcontext.RunContext
+	out           io.Writer
+	labeller      *DefaultLabeller
+	client        *kubectl.CLI
+	numDeps       int
+	processedDeps int32
+}
+
+
+func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
@@ -59,13 +76,22 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	wg := sync.WaitGroup{}
 	// Its safe to use sync.Map without locks here as each subroutine adds a different key to the map.
 	syncMap := &sync.Map{}
-	kubeCtl := kubectl.NewFromRunContext(runCtx)
+
+	checker := &Checker{
+		context:  ctx,
+		runCtx:   runCtx,
+		labeller: defaultLabeller,
+		client:   kubectl.NewFromRunContext(runCtx),
+		out:      out,
+		numDeps:  len(dMap),
+	}
+
 
 	for dName, deadlineDuration := range dMap {
 		wg.Add(1)
 		go func(dName string, deadlineDuration time.Duration) {
 			defer wg.Done()
-			pollDeploymentRolloutStatus(ctx, kubeCtl, dName, deadlineDuration, syncMap)
+			checker.pollDeploymentRolloutStatus(dName, deadlineDuration, syncMap)
 		}(dName, deadlineDuration)
 	}
 
@@ -97,10 +123,10 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	return depMap, nil
 }
 
-func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName string, deadline time.Duration, syncMap *sync.Map) {
+func (c *Checker) pollDeploymentRolloutStatus(dName string, deadline time.Duration, syncMap *sync.Map) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
-	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollDuration)
+	timeoutContext, cancel := context.WithTimeout(c.context, deadline+pollDuration)
 	logrus.Debugf("checking rollout status %s", dName)
 	defer cancel()
 	for {
@@ -109,15 +135,20 @@ func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName stri
 			syncMap.Store(dName, errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", deadline)))
 			return
 		case <-time.After(pollDuration):
-			status, err := executeRolloutStatus(timeoutContext, k, dName)
+			status, err := executeRolloutStatus(timeoutContext, c.client, dName)
 			if err != nil {
 				syncMap.Store(dName, err)
+				atomic.AddInt32(&c.processedDeps, 1)
+				c.printStatusCheckSummary(dName, err.Error())
 				return
 			}
 			if strings.Contains(status, "successfully rolled out") {
 				syncMap.Store(dName, nil)
+				atomic.AddInt32(&c.processedDeps, 1)
+				c.printStatusCheckSummary(dName, "")
 				return
 			}
+			syncMap.Store(dName, status)
 		}
 	}
 }
@@ -147,4 +178,24 @@ func getDeadline(d int) time.Duration {
 		return time.Duration(d) * time.Second
 	}
 	return defaultStatusCheckDeadline
+}
+
+func (c *Checker) printStatusCheckSummary(dName string, msg string) {
+	waitingMsg := ""
+	if numLeft := c.numDeps - int(c.processedDeps); numLeft > 0 {
+		waitingMsg = fmt.Sprintf(" [%d/%d deployment(s) still pending]", numLeft, c.numDeps)
+	}
+	dName = fmt.Sprintf("deployment/%s", dName)
+	if msg != "" {
+		color.Default.Fprintln(c.out,
+			fmt.Sprintf("%s %s failed%s. Error: %s.",
+				TabHeader,
+				dName,
+				util.Trim(waitingMsg),
+				util.Trim(msg),
+			),
+		)
+	} else {
+		color.Default.Fprintln(c.out, fmt.Sprintf("%s %s is ready.%s", TabHeader, dName, waitingMsg))
+	}
 }
