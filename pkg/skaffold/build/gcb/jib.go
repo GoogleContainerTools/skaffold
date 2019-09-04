@@ -32,7 +32,7 @@ func (b *Builder) jibBuildSpec(artifact *latest.Artifact, tag string) (cloudbuil
 	}
 
 	switch t {
-	case latest.JibMaven:
+	case jib.JibMaven:
 		return cloudbuild.Build{
 			Steps: []*cloudbuild.BuildStep{{
 				Name:       b.MavenImage,
@@ -40,7 +40,7 @@ func (b *Builder) jibBuildSpec(artifact *latest.Artifact, tag string) (cloudbuil
 				Args:       fixHome("mvn", jib.GenerateMavenArgs("build", tag, artifact.JibArtifact, b.skipTests, b.insecureRegistries)),
 			}},
 		}, nil
-	case latest.JibGradle:
+	case jib.JibGradle:
 		return cloudbuild.Build{
 			Steps: []*cloudbuild.BuildStep{{
 				Name:       b.GradleImage,

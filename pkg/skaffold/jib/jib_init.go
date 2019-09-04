@@ -69,8 +69,8 @@ func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 		a.Workspace = workspace
 	}
 
-	if j.BuilderName == PluginName(latest.JibMaven) {
-		jibMaven := &latest.JibArtifact{Type: latest.JibMaven}
+	if j.BuilderName == PluginName(JibMaven) {
+		jibMaven := &latest.JibArtifact{Type: int(JibMaven)}
 		if j.Project != "" {
 			jibMaven.Project = j.Project
 		}
@@ -79,8 +79,8 @@ func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 		}
 		a.ArtifactType = latest.ArtifactType{JibArtifact: jibMaven}
 
-	} else if j.BuilderName == PluginName(latest.JibGradle) {
-		jibGradle := &latest.JibArtifact{Type: latest.JibGradle}
+	} else if j.BuilderName == PluginName(JibGradle) {
+		jibGradle := &latest.JibArtifact{Type: int(JibGradle)}
 		if j.Project != "" {
 			jibGradle.Project = j.Project
 		}
@@ -112,16 +112,16 @@ type jibJSON struct {
 // ValidateJibConfig checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
 func ValidateJibConfig(path string) []Jib {
 	// Determine whether maven or gradle
-	var builderType latest.JibPluginType
+	var builderType PluginType
 	var executable, wrapper, taskName string
 	switch {
 	case strings.HasSuffix(path, "pom.xml"):
-		builderType = latest.JibMaven
+		builderType = JibMaven
 		executable = "mvn"
 		wrapper = "mvnw"
 		taskName = "jib:_skaffold-init"
 	case strings.HasSuffix(path, "build.gradle"):
-		builderType = latest.JibGradle
+		builderType = JibGradle
 		executable = "gradle"
 		wrapper = "gradlew"
 		taskName = "_jibSkaffoldInit"

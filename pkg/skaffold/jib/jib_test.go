@@ -138,20 +138,20 @@ func TestGetUpdatedDependencies(t *testing.T) {
 }
 
 func TestPluginName(t *testing.T) {
-	testutil.CheckDeepEqual(t, "Jib Maven Plugin", PluginName(latest.JibMaven))
-	testutil.CheckDeepEqual(t, "Jib Gradle Plugin", PluginName(latest.JibGradle))
+	testutil.CheckDeepEqual(t, "Jib Maven Plugin", PluginName(JibMaven))
+	testutil.CheckDeepEqual(t, "Jib Gradle Plugin", PluginName(JibGradle))
 }
 
-func TestJibPluginType_IsKnown(t *testing.T) {
+func TestPluginType_IsKnown(t *testing.T) {
 	tests := []struct {
-		value latest.JibPluginType
+		value PluginType
 		known bool
 	}{
-		{latest.JibMaven, true},
-		{latest.JibGradle, true},
-		{latest.JibPluginType(0), false},
-		{latest.JibPluginType(-1), false},
-		{latest.JibPluginType(3), false},
+		{JibMaven, true},
+		{JibGradle, true},
+		{PluginType(0), false},
+		{PluginType(-1), false},
+		{PluginType(3), false},
 	}
 	for _, test := range tests {
 		testutil.Run(t, string(test.value), func(t *testutil.T) {
@@ -162,12 +162,30 @@ func TestJibPluginType_IsKnown(t *testing.T) {
 
 func TestDeterminePluginType(t *testing.T) {
 	tests := []struct {
-		description  string
-		skipTests    bool
-		expectedArgs []string
-	}{}
+		description string
+		files       []string
+		artifact    *latest.JibArtifact
+		shouldErr   bool
+		PluginType  PluginType
+	}{
+		{"empty", []string{}, nil, true, PluginType(-1)},
+		{"gradle-2", []string{"gradle.properties"}, nil, false, JibGradle},
+		{"gradle-3", []string{"gradlew"}, nil, false, JibGradle},
+		{"gradle-4", []string{"gradlew.bat"}, nil, false, JibGradle},
+		{"gradle-5", []string{"gradlew.cmd"}, nil, false, JibGradle},
+		{"gradle-6", []string{"settings.gradle"}, nil, false, JibGradle},
+		{"maven-1", []string{"pom.xml"}, nil, false, JibMaven},
+		{"maven-2", []string{".mvn/maven.config"}, nil, false, JibMaven},
+		{"maven-2", []string{".mvn/extensions.xml"}, nil, false, JibMaven},
+		{"gradle override", []string{"pom.xml"}, &latest.JibArtifact{Type: int(JibGradle)}, false, JibGradle},
+		{"maven override", []string{"build.gradle"}, &latest.JibArtifact{Type: int(JibMaven)}, false, JibMaven},
+	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			buildDir := t.NewTempDir()
+			buildDir.Touch(test.files...)
+			PluginType, err := DeterminePluginType(buildDir.Root(), test.artifact)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.PluginType, PluginType)
 		})
 	}
 }

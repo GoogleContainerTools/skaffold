@@ -41,12 +41,30 @@ const (
 	dotDotSlash = ".." + string(filepath.Separator)
 )
 
-// Name provides a human-oriented label for a plugin type.
-func PluginName(t latest.JibPluginType) string {
+// PluginType defines the different supported Jib plugins.
+type PluginType int
+
+const (
+	// use `iota+1` so that 0 is an invalid value
+	JibMaven PluginType = iota + 1
+	JibGradle
+)
+
+// IsKnown checks that the num value is a known value (vs 0 or an unknown value).
+func (t PluginType) IsKnown() bool {
 	switch t {
-	case latest.JibMaven:
+	case JibMaven, JibGradle:
+		return true
+	}
+	return false
+}
+
+// Name provides a human-oriented label for a plugin type.
+func PluginName(t PluginType) string {
+	switch t {
+	case JibMaven:
 		return "Jib Maven Plugin"
-	case latest.JibGradle:
+	case JibGradle:
 		return "Jib Gradle Plugin"
 	}
 	panic("Unknown Jib Plugin Type: " + string(t))
@@ -79,9 +97,9 @@ func GetDependencies(ctx context.Context, workspace string, artifact *latest.Jib
 	}
 
 	switch t {
-	case latest.JibMaven:
+	case JibMaven:
 		return getDependenciesMaven(ctx, workspace, artifact)
-	case latest.JibGradle:
+	case JibGradle:
 		return getDependenciesGradle(ctx, workspace, artifact)
 	default:
 		return nil, errors.Errorf("Unable to determine Jib builder type for %s", workspace)
@@ -89,21 +107,23 @@ func GetDependencies(ctx context.Context, workspace string, artifact *latest.Jib
 }
 
 // DeterminePluginType tries to determine the Jib plugin type for the given artifact.
-func DeterminePluginType(workspace string, artifact *latest.JibArtifact) (latest.JibPluginType, error) {
+func DeterminePluginType(workspace string, artifact *latest.JibArtifact) (PluginType, error) {
 	// check if explicitly specified
-	if artifact != nil && artifact.Type.IsKnown() {
-		return artifact.Type, nil
+	if artifact != nil {
+		if t := PluginType(artifact.Type); t.IsKnown() {
+			return t, nil
+		}
 	}
 
 	// check for typical gradle files
 	for _, gradleFile := range []string{"build.gradle", "gradle.properties", "settings.gradle", "gradlew", "gradlew.bat", "gradlew.cmd"} {
 		if util.IsFile(filepath.Join(workspace, gradleFile)) {
-			return latest.JibGradle, nil
+			return JibGradle, nil
 		}
 	}
 	// check for typical maven files; .mvn is a directory used for polyglot maven
 	if util.IsFile(filepath.Join(workspace, "pom.xml")) || util.IsDir(filepath.Join(workspace, ".mvn")) {
-		return latest.JibMaven, nil
+		return JibMaven, nil
 	}
 	return -1, errors.Errorf("Unable to determine Jib plugin type for %s", workspace)
 }
