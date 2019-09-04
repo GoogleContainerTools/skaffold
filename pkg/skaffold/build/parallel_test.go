@@ -23,7 +23,9 @@ import (
 	"io"
 	"io/ioutil"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -235,9 +237,65 @@ And new lines
 			}
 			initializeEvents()
 
-			InParallel(context.Background(), out, tags, artifacts, test.buildFunc)
+			InParallel(context.Background(), out, tags, artifacts, test.buildFunc, 0)
 
 			t.CheckDeepEqual(test.expected, out.String())
+		})
+	}
+}
+
+func TestInParallelConcurrency(t *testing.T) {
+	tests := []struct {
+		artifacts      int
+		limit          int
+		maxConcurrency int
+	}{
+		{
+			artifacts:      10,
+			limit:          0, // default - no limit
+			maxConcurrency: 10,
+		},
+		{
+			artifacts:      100,
+			limit:          1,
+			maxConcurrency: 1,
+		},
+		{
+			artifacts:      100,
+			limit:          10,
+			maxConcurrency: 10,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, fmt.Sprintf("%d artifacts, max concurrency=%d", test.artifacts, test.limit), func(t *testutil.T) {
+			var artifacts []*latest.Artifact
+			tags := tag.ImageTags{}
+
+			for i := 0; i < test.artifacts; i++ {
+				imageName := fmt.Sprintf("skaffold/image%d", i)
+				tag := fmt.Sprintf("skaffold/image%d:tag", i)
+
+				artifacts = append(artifacts, &latest.Artifact{ImageName: imageName})
+				tags[imageName] = tag
+			}
+
+			var actualConcurrency int32
+
+			builder := func(_ context.Context, _ io.Writer, _ *latest.Artifact, tag string) (string, error) {
+				if atomic.AddInt32(&actualConcurrency, 1) > int32(test.maxConcurrency) {
+					return "", fmt.Errorf("only %d build can run at a time", test.maxConcurrency)
+				}
+				time.Sleep(10 * time.Millisecond)
+				atomic.AddInt32(&actualConcurrency, -1)
+
+				return tag, nil
+			}
+
+			initializeEvents()
+			results, err := InParallel(context.Background(), ioutil.Discard, tags, artifacts, builder, test.limit)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.artifacts, len(results))
 		})
 	}
 }
@@ -288,7 +346,7 @@ func TestInParallelForArgs(t *testing.T) {
 				t.Override(&runInSequence, test.inSeqFunc)
 			}
 			initializeEvents()
-			actual, _ := InParallel(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact)
+			actual, _ := InParallel(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, 0)
 
 			t.CheckDeepEqual(test.expected, actual)
 		})

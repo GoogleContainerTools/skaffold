@@ -230,6 +230,10 @@ type GoogleCloudBuild struct {
 	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
 	// Defaults to `gcr.io/cloud-builders/gradle`.
 	GradleImage string `yaml:"gradleImage,omitempty"`
+
+	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
+	// Defaults to 0.
+	Concurrency int `yaml:"concurrency,omitempty"`
 }
 
 // LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
@@ -290,6 +294,10 @@ type ClusterDetails struct {
 
 	// Resources define the resource requirements for the kaniko pod.
 	Resources *ResourceRequirements `yaml:"resources,omitempty"`
+
+	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
+	// Defaults to 0.
+	Concurrency int `yaml:"concurrency,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
