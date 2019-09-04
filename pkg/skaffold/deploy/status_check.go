@@ -29,7 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
@@ -44,10 +44,11 @@ var (
 )
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext) error {
-	client, err := kubernetesutil.GetClientset()
+	client, err := pkgkubernetes.Client()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "getting kubernetes client")
 	}
+
 	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds)
 
 	dMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)

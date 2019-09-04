@@ -51,12 +51,12 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	}
 
 	// Create pod
-	client, err := kubernetes.GetClientset()
+	client, err := kubernetes.Client()
 	if err != nil {
-		return "", errors.Wrap(err, "")
+		return "", errors.Wrap(err, "getting kubernetes client")
 	}
-	pods := client.CoreV1().Pods(b.Namespace)
 
+	pods := client.CoreV1().Pods(b.Namespace)
 	podSpec := s.Pod(args)
 	pod, err := pods.Create(podSpec)
 	if err != nil {
