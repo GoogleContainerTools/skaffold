@@ -50,7 +50,7 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 	if r.runCtx.Opts.StatusCheck {
 		start := time.Now()
 		color.Default.Fprintln(out, "Waiting for deployments to stabilize")
-		err := statusCheck(ctx, r.defaultLabeller, r.runCtx)
+		err := statusCheck(ctx, r.defaultLabeller, r.runCtx, out)
 		if err != nil {
 			return err
 		}
