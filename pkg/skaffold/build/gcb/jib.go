@@ -49,7 +49,7 @@ func (b *Builder) jibBuildSpec(artifact *latest.Artifact, tag string) (cloudbuil
 			}},
 		}, nil
 	default:
-		return cloudbuild.Build{}, errors.New("skaffold can't build a bazel artifact with Google Cloud Build")
+		return cloudbuild.Build{}, errors.New("skaffold can't determine Jib artifact type for Google Cloud Build")
 	}
 }
 
