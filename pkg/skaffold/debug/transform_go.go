@@ -66,7 +66,8 @@ func (t dlvTransformer) IsApplicable(config imageConfiguration) bool {
 	}
 	if len(config.entrypoint) > 0 {
 		return isLaunchingDlv(config.entrypoint)
-	} else if len(config.arguments) > 0 {
+	} 
+	if len(config.arguments) > 0 {
 		return isLaunchingDlv(config.arguments)
 	}
 	return false
