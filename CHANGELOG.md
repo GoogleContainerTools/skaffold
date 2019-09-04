@@ -1,3 +1,9 @@
+# v0.37.1 Release - 09/04/2019
+
+This is a minor release for a privacy policy update:
+
+* add privacy notice and command to set update check false [#2774](https://github.com/GoogleContainerTools/skaffold/pull/2774)
+
 # v0.37.0 Release - 08/29/2019
 
 No new features in this release!
