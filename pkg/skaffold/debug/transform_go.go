@@ -83,7 +83,7 @@ func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration
 
 	// try to find existing `dlv` command
 	spec := retrieveDlvSpec(config)
-	// todo: find existing containerPort "dap" (debug-adapter protocol) and use port. But what if it conflicts with command-line spec?
+	// todo: find existing containerPort "dlv" and use port. But what if it conflicts with command-line spec?
 
 	if spec == nil {
 		newSpec := newDlvSpec(uint16(portAlloc(defaultDlvPort)))
@@ -110,7 +110,6 @@ func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration
 	return map[string]interface{}{
 		"runtime": "go",
 		"dlv":     spec.port,
-		//"dap":     spec.port,
 	}
 }
 
@@ -140,7 +139,7 @@ arguments:
 			spec.headless = true
 		case arg == "--log":
 			spec.log = true
-		case strings.Index(arg, "--listen=") == 0:
+		case strings.HasPrefix(arg, "--listen="):
 			address := strings.SplitN(arg, "=", 2)[1]
 			split := strings.SplitN(address, ":", 2)
 			switch len(split) {
@@ -155,7 +154,7 @@ arguments:
 				p, _ := strconv.ParseUint(split[1], 10, 16)
 				spec.port = uint16(p)
 			}
-		case strings.Index(arg, "--api-version=") == 0:
+		case strings.HasPrefix(arg, "--api-version="):
 			address := strings.SplitN(arg, "=", 2)[1]
 			version, _ := strconv.ParseInt(address, 10, 16)
 			spec.apiVersion = int(version)
@@ -181,6 +180,7 @@ func (spec dlvSpec) asArguments() []string {
 	if spec.headless {
 		args = append(args, "--headless")
 	}
+	args = append(args, "--continue", "--accept-multiclient")
 	host := "localhost"
 	if spec.host != "" {
 		host = spec.host
