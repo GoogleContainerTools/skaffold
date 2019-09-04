@@ -45,11 +45,11 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	}
 	defer s.Cleanup(ctx)
 
-	args, err := args(artifact.KanikoArtifact, context, tag)
+	args, err := b.args(artifact.KanikoArtifact, context, tag)
 	if err != nil {
 		return "", errors.Wrap(err, "building args list")
 	}
-
+	logrus.Debugf("running kaniko with args: %s", args)
 	// Create pod
 	client, err := kubernetes.Client()
 	if err != nil {
@@ -85,7 +85,7 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
 
-func args(artifact *latest.KanikoArtifact, context, tag string) ([]string, error) {
+func (b *Builder) args(artifact *latest.KanikoArtifact, context, tag string) ([]string, error) {
 	// Create pod spec
 	args := []string{
 		"--dockerfile", artifact.DockerfilePath,
@@ -137,6 +137,18 @@ func args(artifact *latest.KanikoArtifact, context, tag string) ([]string, error
 
 	if artifact.Reproducible {
 		args = append(args, "--reproducible")
+	}
+
+	//TODO: understand this better
+	//TODO: write integration test
+	if len(b.insecureRegistries) > 0 {
+		for reg := range b.insecureRegistries {
+			args = append(args, "--insecure-registry", reg)
+		}
+		args = append(args, "--insecure",
+			"--insecure-pull",
+			"--skip-tls-verify",
+			"--skip-tls-verify-pull")
 	}
 
 	return args, nil

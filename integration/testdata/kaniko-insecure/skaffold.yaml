@@ -1,0 +1,22 @@
+apiVersion: skaffold/v1beta14
+kind: Config
+profiles:
+  - name: deploy-reg
+    build:
+      artifacts:
+      - image: gcr.io/k8s-skaffold/devreg
+        context: reg
+    deploy:
+      kubectl:
+        manifests:
+        - reg-k8s/reg.yaml
+  - name: kaniko-test
+    build:
+      artifacts:
+        - image: gcr.io/k8s-skaffold/devreg
+          context: reg
+          kaniko:
+            buildContext:
+              localDir: {}
+      cluster:
+        pullSecretName: e2esecret

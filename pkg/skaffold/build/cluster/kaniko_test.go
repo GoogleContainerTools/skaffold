@@ -28,6 +28,7 @@ func TestArgs(t *testing.T) {
 	tests := []struct {
 		description  string
 		artifact     *latest.KanikoArtifact
+		builder      *Builder
 		shouldErr    bool
 		expectedArgs []string
 	}{
@@ -95,6 +96,22 @@ func TestArgs(t *testing.T) {
 			expectedArgs: []string{"--build-arg", "empty_key=", "--build-arg", "nil_key", "--build-arg", "value_key=value"},
 		},
 		{
+			description: "insecure registries args",
+			builder: &Builder{
+				insecureRegistries: map[string]bool{"http://privaterepo1:5000": true, "http://privaterepo2:5000": true},
+			},
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+			},
+			expectedArgs: []string{
+				"--insecure-registry", "http://privaterepo1:5000",
+				"--insecure-registry", "http://privaterepo2:5000",
+				"--insecure",
+				"--insecure-pull",
+				"--skip-tls-verify",
+				"--skip-tls-verify-pull"},
+		},
+		{
 			description: "invalid build args",
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
@@ -109,7 +126,10 @@ func TestArgs(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			commonArgs := []string{"--dockerfile", "Dockerfile", "--context", "context", "--destination", "tag", "-v", "info"}
 
-			args, err := args(test.artifact, "context", "tag")
+			if test.builder == nil {
+				test.builder = &Builder{}
+			}
+			args, err := test.builder.args(test.artifact, "context", "tag")
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
