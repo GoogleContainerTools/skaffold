@@ -1,7 +1,7 @@
 ---
 title: "Global configuration"
 linkTitle: "Global configuration"
-weight: 20
+weight: 50
 ---
 
 This section discusses global configuration options for Skaffold (`~/.skaffold/config`). These options are saved per user and apply to all Skaffold pipelines.

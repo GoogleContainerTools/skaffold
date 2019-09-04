@@ -1,7 +1,7 @@
 ---
 title: "Operating modes"
 linkTitle: "Operating modes"
-weight: 60
+weight: 30
 ---
 
 This page discusses various operating modes of Skaffold.

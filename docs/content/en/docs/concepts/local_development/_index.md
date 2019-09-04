@@ -1,7 +1,7 @@
 ---
 title: "Local development"
 linkTitle: "Local development"
-weight: 70
+weight: 60
 ---
 
 This page discusses how to develop locally with Skaffold.

@@ -1,7 +1,7 @@
 ---
 title: "Skaffold pipeline"
 linkTitle: "Skaffold pipeline"
-weight: 10
+weight: 40
 ---
 
 This page discusses the Skaffold pipeline config (`skaffold.yaml`) on a high level.

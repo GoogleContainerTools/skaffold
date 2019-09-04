@@ -9,10 +9,10 @@ understanding of Skaffold.
 
 | Skaffold Concepts | |
 |----------|---|
-| [Skaffold pipeline](/docs/concepts/pipeline) | General structure of a Skaffold pipeline |
-| [Skaffold config](/docs/concepts/config) | Global configuration options |
 | [Workflow](/docs/concepts/workflow) | Understand the Skaffold workflow |
-| [Image repository handling](/docs/concepts/image_repositories) | Understand the image repository handling |
 | [Architecture](/docs/concepts/architecture) | Overview over the architecture of Skaffold |
 | [Operating modes](/docs/concepts/modes) | Understand the operating modes of Skaffold |
+| [Skaffold pipeline](/docs/concepts/pipeline) | General structure of a Skaffold pipeline |
+| [Skaffold config](/docs/concepts/config) | Global configuration options |
 | [Local development](/docs/concepts/local_development) | Understand how to develop locally with Skaffold |
+| [Image repository handling](/docs/concepts/image_repositories) | Understand the image repository handling |

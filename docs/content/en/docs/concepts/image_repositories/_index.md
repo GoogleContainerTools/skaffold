@@ -1,7 +1,7 @@
 ---
 title: "Image repository handling"
 linkTitle: "Image repository handling"
-weight: 40
+weight: 70
 ---
 
 This page discusses how Skaffold handles image repositories. In particular, how to work with insecure repositories.

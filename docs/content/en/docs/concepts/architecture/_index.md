@@ -1,7 +1,7 @@
 ---
 title: "Architecture"
 linkTitle: "Architecture"
-weight: 50
+weight: 20
 ---
 
 This page discusses the pluggable architecture of Skaffold.

@@ -1,7 +1,7 @@
 ---
 title: "Workflow"
 linkTitle: "Workflow"
-weight: 30
+weight: 10
 ---
 
 This page discusses the development workflow with Skaffold.
