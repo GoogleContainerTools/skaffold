@@ -17,8 +17,6 @@ limitations under the License.
 package kubectl
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -37,7 +35,7 @@ func (l *ManifestList) Visit(replacer Replacer) (ManifestList, error) {
 	var updated ManifestList
 
 	for _, manifest := range *l {
-		m := yaml.MapSlice{}
+		m := make(map[interface{}]interface{})
 		if err := yaml.Unmarshal(manifest, &m); err != nil {
 			return nil, errors.Wrap(err, "reading kubernetes YAML")
 		}
@@ -46,7 +44,7 @@ func (l *ManifestList) Visit(replacer Replacer) (ManifestList, error) {
 			continue
 		}
 
-		recursiveVisit(&m, replacer)
+		recursiveVisit(m, replacer)
 
 		updatedManifest, err := yaml.Marshal(m)
 		if err != nil {
@@ -60,66 +58,28 @@ func (l *ManifestList) Visit(replacer Replacer) (ManifestList, error) {
 }
 
 func recursiveVisit(i interface{}, replacer Replacer) {
-	fmt.Printf("\n%T -> %v\n", i, i)
 	switch t := i.(type) {
 	case []interface{}:
 		for _, v := range t {
 			recursiveVisit(v, replacer)
 		}
-	case yaml.MapSlice:
-		for _, mi := range t {
-			recursiveVisit(&mi, replacer)
-		}
-	case *yaml.MapSlice:
-		for _, mi := range *t {
-				recursiveVisit(&mi, replacer)
-		}
-	case *yaml.MapItem:
-		key := t.Key.(string)
-		switch {
-		case replacer.ObjMatcher() != nil && replacer.ObjMatcher().IsMatchKey(key):
-			if !replacer.ObjMatcher().Matches(t.Value) {
-				return
+	case map[interface{}]interface{}:
+		for k, v := range t {
+			key := k.(string)
+			switch {
+			case replacer.ObjMatcher() != nil && replacer.ObjMatcher().IsMatchKey(key):
+				if !replacer.ObjMatcher().Matches(v) {
+					return
+				}
+			case replacer.Matches(key):
+				ok, newValue := replacer.NewValue(v)
+				if ok {
+					t[k] = newValue
+				}
+			default:
+				recursiveVisit(v, replacer)
 			}
-		case replacer.Matches(key):
-			fmt.Println("\nnnnnn came here")
-			ok, newValue := replacer.NewValue(t.Value)
-			if ok {
-				fmt.Println("changed")
-				t.Value = newValue
-			}
-		default:
-			recursiveVisit(t.Value, replacer)
+
 		}
 	}
-
-
-	//	for i, mi := range ms {
-	//	k := mi.Key
-	//	switch v := mi.Value.(type) {
-	//	case []interface{}:
-	//		for _, ms := range v {
-	//			switch v := ms.(type) {
-	//			case yaml.MapSlice:
-	//				recursiveVisit(v, replacer)
-	//			}
-	//		}
-	//	case yaml.MapSlice:
-	//		recursiveVisit(v, replacer)
-	//	case interface{}:
-	//			key := k.(string)
-	//			switch {
-	//			case replacer.ObjMatcher() != nil && replacer.ObjMatcher().IsMatchKey(key):
-	//				if !replacer.ObjMatcher().Matches(v) {
-	//					return
-	//				}
-	//			case replacer.Matches(key):
-	//				ok, newValue := replacer.NewValue(v)
-	//				if ok {
-	//					(&ms[i]).Value = newValue
-	//				}
-	//			default:
-	//			}
-	//	}
-	//}
 }

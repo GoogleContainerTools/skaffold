@@ -47,7 +47,7 @@ type mockMatcher struct {
 
 func (m mockMatcher) Matches(value interface{}) bool {
 	for _, v := range m.matchValues {
-		if v == value.(string) {
+		if v == value {
 			return true
 		}
 	}
@@ -64,6 +64,7 @@ func TestVisitReplaced(t *testing.T) {
 		matchValues []string
 		manifests   ManifestList
 		expected    ManifestList
+		shouldErr   bool
 	}{
 		{
 			description: "single manifest in the list with matched key and string value",
@@ -167,48 +168,6 @@ func TestVisit(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual, err := test.manifests.Visit(&dummyReplacer{nil})
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected.String(), actual.String())
-		})
-	}
-}
-
-
-func TestVisitDifferentMatchKey(t *testing.T) {
-	tests := []struct {
-		description string
-		manifests   ManifestList
-		expected    ManifestList
-	}{
-		{
-			description: "replace-key is repeated",
-			manifests:   ManifestList{[]byte(`
-match-key: match
-repeated:
-- replace-key: foo
-- replace-key: bar`)},
-			expected:    ManifestList{[]byte(`
-match-key: match
-repeated:
-- replace-key: replaced
-- replace-key: replaced`)},
-		},
-//		{
-//			description: "replace-key is an array",
-//			manifests:   ManifestList{[]byte(`
-//match-key: match
-//replace-key:
-//- 1
-//- 2`)},
-//			expected:    ManifestList{[]byte(`
-//match-key: match
-//replace-key:
-//- replaced
-//- replaced`)},
-//		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual, _ := test.manifests.Visit(&dummyReplacer{mockMatcher{[]string{"match"}}})
-			t.CheckDeepEqual(test.expected.String(), actual.String())
 		})
 	}
 }
