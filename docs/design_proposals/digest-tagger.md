@@ -35,7 +35,8 @@ There are multiple issues:
  + we introduce a `latest` tagger tag tags images with `:latest`.
  + the `latest` tagger is used by default instead of the `git` tagger.
  + `sha256` is completely changed to use a digest of the artifact's inputs as the tag.
- + `envTemplate` is left as is and better documented.
+ + `envTemplate` learns how to replace `{{.DIGEST}}` with a digest of the artifact's
+    inputs as the tag.
 
 ## Open Issues/Questions
 
