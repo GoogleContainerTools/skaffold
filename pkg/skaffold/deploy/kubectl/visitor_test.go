@@ -171,3 +171,42 @@ func TestVisit(t *testing.T) {
 		})
 	}
 }
+
+func TestVisitDifferentMatchKey(t *testing.T) {
+	tests := []struct {
+		description string
+		manifests   ManifestList
+		expected    ManifestList
+	}{
+		{
+			description: "replace-key is repeated and before match key.",
+			manifests: ManifestList{[]byte(`
+repeated:
+- replace-key: foo
+  match-key: match
+- replace-key: bar`)},
+			expected: ManifestList{[]byte(`
+repeated:
+- match-key: match
+  replace-key: replaced
+- replace-key: replaced`)},
+		},
+		{
+			description: "replace-key is not substituted in an array",
+			manifests: ManifestList{[]byte(`
+spec:
+- replace-key
+- replace-key`)},
+			expected: ManifestList{[]byte(`
+spec:
+- replace-key
+- replace-key`)},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual, _ := test.manifests.Visit(&dummyReplacer{mockMatcher{[]string{"match"}}})
+			t.CheckDeepEqual(test.expected.String(), actual.String())
+		})
+	}
+}

@@ -88,7 +88,6 @@ func recursiveVisit(i interface{}, replacer Replacer) {
 			default:
 				recursiveVisit(v, replacer)
 			}
-
 		}
 	}
 }
