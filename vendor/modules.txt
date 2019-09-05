@@ -26,7 +26,7 @@ github.com/Microsoft/go-winio
 github.com/beorn7/perks/quantile
 # github.com/blang/semver v3.5.1+incompatible
 github.com/blang/semver
-# github.com/bmatcuk/doublestar v1.1.1
+# github.com/bmatcuk/doublestar v1.1.5
 github.com/bmatcuk/doublestar
 # github.com/containerd/continuity v0.0.0-20181027224239-bea7585dbfac
 github.com/containerd/continuity/pathdriver
