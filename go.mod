@@ -4,7 +4,7 @@ go 1.12
 
 require (
 	4d63.com/tz v0.0.0-20190311034157-bd6cee76f731
-	cloud.google.com/go v0.43.0
+	cloud.google.com/go v0.45.1
 	github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e // indirect
 	github.com/Microsoft/go-winio v0.4.11 // indirect
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b // indirect
@@ -65,11 +65,12 @@ require (
 	github.com/spf13/pflag v1.0.3
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
 	golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5
+	golang.org/x/exp v0.0.0-20190829153037-c13cbed26979 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7 // indirect
-	google.golang.org/api v0.7.0
-	google.golang.org/genproto v0.0.0-20190716160619-c506a9f90610
+	golang.org/x/tools v0.0.0-20190905035308-adb45749da8e // indirect
+	google.golang.org/api v0.9.0
+	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
 	google.golang.org/grpc v1.21.1
 	gopkg.in/AlecAivazis/survey.v1 v1.6.1
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -77,6 +78,7 @@ require (
 	gopkg.in/src-d/go-billy.v4 v4.3.0 // indirect
 	gopkg.in/src-d/go-git.v4 v4.11.0
 	gopkg.in/yaml.v2 v2.2.2
+	honnef.co/go/tools v0.0.1-2019.2.3 // indirect
 	k8s.io/api v0.0.0-20190620073856-dcce3486da33
 	k8s.io/apimachinery v0.0.0-20190620073744-d16981aedf33
 	k8s.io/client-go v0.0.0-20190620074045-585a16d2e773
