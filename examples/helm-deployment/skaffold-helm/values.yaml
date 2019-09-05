@@ -1,7 +1,7 @@
 replicaCount: 1
 service:
   name: nginx
-  type: ClusterIP
+  type: NodePort
   externalPort: 80
   internalPort: 80
 ingress:
