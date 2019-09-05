@@ -101,9 +101,9 @@ func (rs *Status) Equals(other *Status) bool {
 
 func (rs *Status) String() string {
 	if rs.err != nil {
-		return fmt.Sprintf("%s", util.Trim(rs.err.Error()))
+		return util.Trim(rs.err.Error())
 	}
-	return fmt.Sprintf("%s", rs.details)
+	return rs.details
 }
 
 func NewResource(name string, ns string) *ResourceObj {

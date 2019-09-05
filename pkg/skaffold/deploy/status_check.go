@@ -49,13 +49,12 @@ var (
 )
 
 type Checker struct {
-	context       context.Context
-	runCtx        *runcontext.RunContext
-	out           io.Writer
-	labeller      *DefaultLabeller
-	client        *kubectl.CLI
-	numDeps       int
-	processedDeps int32
+	context  context.Context
+	runCtx   *runcontext.RunContext
+	out      io.Writer
+	labeller *DefaultLabeller
+	client   *kubectl.CLI
+	numDeps  int
 }
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
