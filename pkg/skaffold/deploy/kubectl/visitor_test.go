@@ -64,7 +64,6 @@ func TestVisitReplaced(t *testing.T) {
 		matchValues []string
 		manifests   ManifestList
 		expected    ManifestList
-		shouldErr   bool
 	}{
 		{
 			description: "single manifest in the list with matched key and string value",
