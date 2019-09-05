@@ -1,5 +1,4 @@
 replicaCount: 1
-image: nginx:stable
 service:
   name: nginx
   type: ClusterIP
