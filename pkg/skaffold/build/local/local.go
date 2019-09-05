@@ -99,9 +99,9 @@ func (b *Builder) buildJib(ctx context.Context, out io.Writer, artifact *latest.
 
 	switch t {
 	case jib.JibMaven:
-		return b.buildJibMaven(ctx,out, artifact.Workspace, artifact.JibArtifact, tag)
+		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact.JibArtifact, tag)
 	case jib.JibGradle:
-		return b.buildJibGradle(ctx,out, artifact.Workspace, artifact.JibArtifact, tag)
+		return b.buildJibGradle(ctx, out, artifact.Workspace, artifact.JibArtifact, tag)
 	default:
 		return "", errors.Errorf("Unable to determine Jib builder type for %s", artifact.Workspace)
 	}
