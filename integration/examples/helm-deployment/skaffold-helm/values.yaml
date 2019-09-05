@@ -2,7 +2,6 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 replicaCount: 1
-image: nginx:stable
 # This is the helm convention on declaring images
 # image:
 #   repository: nginx
@@ -10,7 +9,7 @@ image: nginx:stable
 #   pullPolicy: IfNotPresent
 service:
   name: nginx
-  type: ClusterIP
+  type: NodePort
   externalPort: 80
   internalPort: 80
 ingress:
