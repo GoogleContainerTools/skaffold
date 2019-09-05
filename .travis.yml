@@ -1,5 +1,8 @@
 dist: xenial
 
+services:
+  - docker
+
 language: go
 go: "1.12.x"
 go_import_path: /skaffold
@@ -42,3 +45,16 @@ jobs:
         - chmod +x ${HOME}/bin/kind
       script:
         - make integration-in-kind
+    - name: Fuzz regression
+      go: 1.12.x
+      dist: bionic
+      script:
+         - cd fuzz
+         - ./fuzzit.sh local-regression
+    - name: Fuzz
+      if: branch = master AND type IN (push)
+      go: 1.12.x
+      dist: bionic
+      script:
+        - cd fuzz
+        - ./fuzzit.sh fuzzing

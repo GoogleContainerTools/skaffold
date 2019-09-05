@@ -39,6 +39,7 @@ type server struct {
 	buildIntentCallback  func()
 	syncIntentCallback   func()
 	deployIntentCallback func()
+	httpPort             int
 }
 
 func SetBuildCallback(callback func()) {
@@ -57,6 +58,10 @@ func SetSyncCallback(callback func()) {
 	if srv != nil {
 		srv.syncIntentCallback = callback
 	}
+}
+
+func GetHTTPPort() int {
+	return srv.httpPort
 }
 
 // Initialize creates the gRPC and HTTP servers for serving the state and event log.
@@ -87,6 +92,7 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 	if httpPort != originalHTTPPort {
 		logrus.Warnf("port %d for gRPC HTTP server already in use: using %d instead", originalHTTPPort, httpPort)
 	}
+	srv.httpPort = httpPort
 
 	httpCallback, err := newHTTPServer(httpPort, rpcPort)
 	callback := func() error {

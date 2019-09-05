@@ -6,6 +6,7 @@
 [![Build Status](https://travis-ci.org/GoogleContainerTools/skaffold.svg?branch=master)](https://travis-ci.org/GoogleContainerTools/skaffold)
 [![Code Coverage](https://codecov.io/gh/GoogleContainerTools/skaffold/branch/master/graph/badge.svg)](https://codecov.io/gh/GoogleContainerTools/skaffold)
 [![Go Report Card](https://goreportcard.com/badge/GoogleContainerTools/skaffold)](https://goreportcard.com/report/GoogleContainerTools/skaffold)
+[![Fuzzit Status](https://app.fuzzit.dev/badge?org_id=skaffold)](https://app.fuzzit.dev/orgs/skaffold/dashboard)
 [![LICENSE](https://img.shields.io/github/license/GoogleContainerTools/skaffold.svg)](https://github.com/GoogleContainerTools/skaffold/blob/master/LICENSE)
 [![Releases](https://img.shields.io/github/release-pre/GoogleContainerTools/skaffold.svg)](https://github.com/GoogleContainerTools/skaffold/releases)
 
