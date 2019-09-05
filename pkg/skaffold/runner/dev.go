@@ -91,13 +91,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			r.intents.resetDeploy()
 		}()
 
-		r.forwarderManager.Stop()
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			return nil
-		}
-		if err := r.forwarderManager.Start(ctx); err != nil {
-			logrus.Warnln("Port forwarding failed:", err)
 		}
 	}
 
