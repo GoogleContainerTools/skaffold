@@ -82,13 +82,30 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return b.buildBazel(ctx, out, artifact, tag)
 
 	case artifact.JibArtifact != nil:
-		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact.JibArtifact, tag)
+		return b.buildJib(ctx, out, artifact, tag)
 
 	case artifact.CustomArtifact != nil:
 		return b.buildCustom(ctx, out, artifact, tag)
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}
+}
+
+func (b *Builder) buildJib(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	t, err := jib.DeterminePluginType(artifact.Workspace, artifact.JibArtifact)
+	if err != nil {
+		return "", err
+	}
+
+	switch t {
+	case jib.JibMaven:
+		return b.buildJibMaven(ctx,out, artifact.Workspace, artifact.JibArtifact, tag)
+	case jib.JibGradle:
+		return b.buildJibGradle(ctx,out, artifact.Workspace, artifact.JibArtifact, tag)
+	default:
+		return "", errors.Errorf("Unable to determine Jib builder type for %s", artifact.Workspace)
+	}
+
 }
 
 func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
