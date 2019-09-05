@@ -35,6 +35,7 @@ There are multiple issues:
  + we introduce a `latest` tagger tag tags images with `:latest`.
  + the `latest` tagger is used by default instead of the `git` tagger.
  + `sha256` is completely changed to use a digest of the artifact's inputs as the tag.
+   Something like https://github.com/GoogleContainerTools/skaffold/pull/2301
  + `envTemplate` learns how to replace `{{.DIGEST}}` with a digest of the artifact's
     inputs as the tag.
 
