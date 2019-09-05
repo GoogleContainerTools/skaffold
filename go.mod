@@ -14,7 +14,7 @@ require (
 	github.com/containerd/continuity v0.0.0-20181027224239-bea7585dbfac // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/docker/cli v0.0.0-20181026145426-51668a30f262
-	github.com/docker/distribution v0.0.0-20180327202408-83389a148052
+	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v0.7.3-0.20190327010347-be7ac8be2ae0
 	github.com/docker/docker-credential-helpers v0.6.1 // indirect
 	github.com/docker/go-connections v0.4.0

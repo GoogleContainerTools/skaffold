@@ -39,7 +39,7 @@ github.com/docker/cli/cli/config
 github.com/docker/cli/cli/config/configfile
 github.com/docker/cli/cli/config/credentials
 github.com/docker/cli/opts
-# github.com/docker/distribution v0.0.0-20180327202408-83389a148052
+# github.com/docker/distribution v2.7.1+incompatible
 github.com/docker/distribution
 github.com/docker/distribution/digestset
 github.com/docker/distribution/metrics
