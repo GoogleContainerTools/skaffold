@@ -60,13 +60,6 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 			),
 		},
 		{
-			description: "build with module and profile",
-			artifact:    &latest.JibArtifact{Project: "module", Profile: "profile"},
-			commands: testutil.CmdRun(
-				"mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --activate-profiles profile --projects module --also-make package jib:dockerBuild -Djib.containerize=module -Dimage=img:tag",
-			),
-		},
-		{
 			description: "fail build",
 			artifact:    &latest.JibArtifact{},
 			commands: testutil.CmdRunErr(
@@ -130,13 +123,6 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 			artifact:    &latest.JibArtifact{Project: "module"},
 			commands: testutil.CmdRun(
 				"mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --projects module --also-make package jib:build -Djib.containerize=module -Dimage=img:tag",
-			),
-		},
-		{
-			description: "build with module and profile",
-			artifact:    &latest.JibArtifact{Project: "module", Profile: "profile"},
-			commands: testutil.CmdRun(
-				"mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --activate-profiles profile --projects module --also-make package jib:build -Djib.containerize=module -Dimage=img:tag",
 			),
 		},
 		{

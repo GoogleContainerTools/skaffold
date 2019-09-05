@@ -82,10 +82,6 @@ func mavenArgs(a *latest.JibArtifact) []string {
 	args := []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion}
 	args = append(args, a.Flags...)
 
-	if a.Profile != "" {
-		args = append(args, "--activate-profiles", a.Profile)
-	}
-
 	if a.Project == "" {
 		// single-module project
 		args = append(args, "--non-recursive")

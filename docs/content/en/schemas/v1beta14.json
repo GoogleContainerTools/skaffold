@@ -1208,11 +1208,6 @@
             "[\"--no-build-cache\"]"
           ]
         },
-        "profile": {
-          "type": "string",
-          "description": "selects which Maven profile to activate *(Maven-only)*.",
-          "x-intellij-html-description": "selects which Maven profile to activate <em>(Maven-only)</em>."
-        },
         "project": {
           "type": "string",
           "description": "selects which sub-project to build for multi-module builds.",
@@ -1221,7 +1216,6 @@
       },
       "preferredOrder": [
         "project",
-        "profile",
         "args"
       ],
       "additionalProperties": false,

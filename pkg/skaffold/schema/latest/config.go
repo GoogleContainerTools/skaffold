@@ -756,9 +756,6 @@ type JibArtifact struct {
 	// Project selects which sub-project to build for multi-module builds.
 	Project string `yaml:"project,omitempty"`
 
-	// Profile selects which Maven profile to activate *(Maven-only)*.
-	Profile string `yaml:"profile,omitempty"`
-
 	// Flags are additional build flags passed to the builder.
 	// For example: `["--no-build-cache"]`.
 	Flags []string `yaml:"args,omitempty"`

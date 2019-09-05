@@ -29,6 +29,7 @@ import (
 // 2. Removals:
 // jibMaven builder
 // jibGradle builder
+// jibMaven profile removed
 // 3. No updates
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
@@ -49,10 +50,13 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 	for i, a := range oldBuild.Artifacts {
 		switch {
 		case a.JibMavenArtifact != nil:
+			flags := a.JibMavenArtifact.Flags
+			if a.JibMavenArtifact.Profile != "" {
+				flags = append(flags, "--activate-profiles", a.JibMavenArtifact.Profile)
+			}
 			newBuild.Artifacts[i].JibArtifact = &next.JibArtifact{
 				Project: a.JibMavenArtifact.Module,
-				Profile: a.JibMavenArtifact.Profile,
-				Flags:   a.JibMavenArtifact.Flags,
+				Flags:   flags,
 			}
 		case a.JibGradleArtifact != nil:
 			newBuild.Artifacts[i].JibArtifact = &next.JibArtifact{

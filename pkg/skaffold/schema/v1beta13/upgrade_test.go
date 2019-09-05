@@ -38,6 +38,7 @@ build:
   - image: gcr.io/k8s-skaffold/jib-maven
     jibMaven:
       args: ['-v']
+      profile: prof
   - image: gcr.io/k8s-skaffold/jib-gradle
     jibGradle:
       args: ['-v']
@@ -96,7 +97,7 @@ build:
       target: //mytarget
   - image: gcr.io/k8s-skaffold/jib-maven
     jib:
-      args: ['-v']
+      args: ['-v', '--activate-profiles', 'prof']
   - image: gcr.io/k8s-skaffold/jib-gradle
     jib:
       args: ['-v']
