@@ -197,7 +197,7 @@ github.com/inconshreveable/mousetrap
 github.com/jbenet/go-context/io
 # github.com/json-iterator/go v1.1.6
 github.com/json-iterator/go
-# github.com/karrick/godirwalk v1.7.5
+# github.com/karrick/godirwalk v1.10.12
 github.com/karrick/godirwalk
 # github.com/kevinburke/ssh_config v0.0.0-20180830205328-81db2a75821e
 github.com/kevinburke/ssh_config
