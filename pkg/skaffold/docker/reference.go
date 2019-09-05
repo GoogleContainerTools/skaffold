@@ -35,34 +35,25 @@ func ParseReference(image string) (*ImageReference, error) {
 		return nil, err
 	}
 
-	baseName := image
-	var domain string
-	var path string
-	if n, ok := r.(reference.Named); ok {
-		baseName = n.Name()
-		domain = reference.Domain(n)
-		path = reference.Path(n)
+	parsed := &ImageReference{
+		BaseName: image,
 	}
 
-	fullyQualified := false
-	tag := ""
-	digest := ""
+	if n, ok := r.(reference.Named); ok {
+		parsed.BaseName = n.Name()
+		parsed.Domain = reference.Domain(n)
+		parsed.Path = reference.Path(n)
+	}
 
 	if n, ok := r.(reference.Tagged); ok {
-		tag = n.Tag()
-		fullyQualified = n.Tag() != "latest"
-	}
-	if n, ok := r.(reference.Digested); ok {
-		fullyQualified = true
-		digest = n.Digest().String()
+		parsed.Tag = n.Tag()
+		parsed.FullyQualified = n.Tag() != "latest"
 	}
 
-	return &ImageReference{
-		BaseName:       baseName,
-		Domain:         domain,
-		Path:           path,
-		Tag:            tag,
-		Digest:         digest,
-		FullyQualified: fullyQualified,
-	}, nil
+	if n, ok := r.(reference.Digested); ok {
+		parsed.Digest = n.Digest().String()
+		parsed.FullyQualified = true
+	}
+
+	return parsed, nil
 }

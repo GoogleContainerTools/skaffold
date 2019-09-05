@@ -33,12 +33,12 @@ import (
 // CreateService creates a service for the deployment to bind to
 // and returns the external IP of the service
 func CreateService(pr *github.PullRequestEvent) (*v1.Service, error) {
-	clientset, err := kubernetes.GetClientset()
+	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting clientset")
+		return nil, errors.Wrap(err, "getting kubernetes client")
 	}
-	l := labels.GenerateLabelsFromPR(pr.GetNumber())
 
+	l := labels.GenerateLabelsFromPR(pr.GetNumber())
 	key, val := labels.RetrieveLabel(pr.GetNumber())
 	selector := map[string]string{key: val}
 
@@ -57,7 +57,7 @@ func CreateService(pr *github.PullRequestEvent) (*v1.Service, error) {
 			Selector: selector,
 		},
 	}
-	return clientset.CoreV1().Services(constants.Namespace).Create(svc)
+	return client.CoreV1().Services(constants.Namespace).Create(svc)
 }
 
 // GetExternalIP polls the service until an external IP is available and returns it
@@ -82,9 +82,10 @@ func serviceName(prNumber int) string {
 }
 
 func getService(svc *v1.Service) (*v1.Service, error) {
-	clientset, err := kubernetes.GetClientset()
+	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting clientset")
+		return nil, errors.Wrap(err, "getting kubernetes client")
 	}
-	return clientset.CoreV1().Services(svc.Namespace).Get(svc.Name, metav1.GetOptions{})
+
+	return client.CoreV1().Services(svc.Namespace).Get(svc.Name, metav1.GetOptions{})
 }
