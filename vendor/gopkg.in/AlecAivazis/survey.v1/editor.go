@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"runtime"
 
+	shellquote "github.com/kballard/go-shellquote"
 	"gopkg.in/AlecAivazis/survey.v1/core"
 	"gopkg.in/AlecAivazis/survey.v1/terminal"
 )
@@ -71,7 +72,20 @@ func init() {
 	}
 }
 
+func (e *Editor) PromptAgain(invalid interface{}, err error) (interface{}, error) {
+	initialValue := invalid.(string)
+	return e.prompt(initialValue)
+}
+
 func (e *Editor) Prompt() (interface{}, error) {
+	initialValue := ""
+	if e.Default != "" && e.AppendDefault {
+		initialValue = e.Default
+	}
+	return e.prompt(initialValue)
+}
+
+func (e *Editor) prompt(initialValue string) (interface{}, error) {
 	// render the template
 	err := e.Render(
 		EditorQuestionTemplate,
@@ -133,11 +147,9 @@ func (e *Editor) Prompt() (interface{}, error) {
 		return "", err
 	}
 
-	// write default value
-	if e.Default != "" && e.AppendDefault {
-		if _, err := f.WriteString(e.Default); err != nil {
-			return "", err
-		}
+	// write initial value
+	if _, err := f.WriteString(initialValue); err != nil {
+		return "", err
 	}
 
 	// close the fd to prevent the editor unable to save file
@@ -152,8 +164,14 @@ func (e *Editor) Prompt() (interface{}, error) {
 
 	stdio := e.Stdio()
 
+	args, err := shellquote.Split(editor)
+	if err != nil {
+		return "", err
+	}
+	args = append(args, f.Name())
+
 	// open the editor
-	cmd := exec.Command(editor, f.Name())
+	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = stdio.In
 	cmd.Stdout = stdio.Out
 	cmd.Stderr = stdio.Err

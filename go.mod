@@ -42,10 +42,9 @@ require (
 	github.com/knative/pkg v0.0.0-20190730155243-972acd413fb9 // indirect
 	github.com/krishicks/yaml-patch v0.0.10
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
-	github.com/mattn/go-colorable v0.0.9 // indirect
-	github.com/mattn/go-isatty v0.0.4 // indirect
+	github.com/mattn/go-colorable v0.1.2 // indirect
+	github.com/mattn/go-isatty v0.0.9 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
-	github.com/mgutz/ansi v0.0.0-20170206155736-9520e82c474b // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.3.3
 	github.com/morikuni/aec v0.0.0-20170113033406-39771216ff4c // indirect
@@ -73,7 +72,7 @@ require (
 	google.golang.org/api v0.9.0
 	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
 	google.golang.org/grpc v1.21.1
-	gopkg.in/AlecAivazis/survey.v1 v1.6.1
+	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/russross/blackfriday.v2 v2.0.1
 	gopkg.in/src-d/go-billy.v4 v4.3.0 // indirect
