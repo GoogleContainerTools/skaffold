@@ -64,13 +64,22 @@ func recursiveVisit(i interface{}, replacer Replacer) {
 			recursiveVisit(v, replacer)
 		}
 	case map[interface{}]interface{}:
+		// If a ObjMatcher is present:
+		// 1. First iterate through all keys.
+		// 2. If key is present and does not match the matcher return to
+		//    skip replacing the entire Object.
+		if replacer.ObjMatcher() != nil {
+			for k, v := range t {
+				key := k.(string)
+				if replacer.ObjMatcher().IsMatchKey(key) && !replacer.ObjMatcher().Matches(v) {
+					return
+				}
+			}
+		}
+		// Now do the actual replacement.
 		for k, v := range t {
 			key := k.(string)
 			switch {
-			case replacer.ObjMatcher() != nil && replacer.ObjMatcher().IsMatchKey(key):
-				if !replacer.ObjMatcher().Matches(v) {
-					return
-				}
 			case replacer.Matches(key):
 				ok, newValue := replacer.NewValue(v)
 				if ok {

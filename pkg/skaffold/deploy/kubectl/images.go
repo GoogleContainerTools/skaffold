@@ -116,7 +116,6 @@ func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
 	return found, tag
 }
 
-
 func (r *imageReplacer) parseAndReplace(image string) (bool, interface{}) {
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
