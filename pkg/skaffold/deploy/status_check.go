@@ -49,12 +49,9 @@ var (
 )
 
 type Checker struct {
-	context  context.Context
-	runCtx   *runcontext.RunContext
-	out      io.Writer
-	labeller *DefaultLabeller
-	client   *kubectl.CLI
-	numDeps  int
+	context context.Context
+	out     io.Writer
+	numDeps int
 }
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
@@ -76,12 +73,9 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	kubeCtl := kubectl.NewFromRunContext(runCtx)
 
 	checker := &Checker{
-		context:  ctx,
-		runCtx:   runCtx,
-		labeller: defaultLabeller,
-		client:   kubectl.NewFromRunContext(runCtx),
-		out:      out,
-		numDeps:  len(rsMap),
+		context: ctx,
+		out:     out,
+		numDeps: len(rsMap),
 	}
 
 	rs := make([]*resources.ResourceObj, 0, len(rsMap))
