@@ -189,7 +189,7 @@ each produce a separate container image.
 To build a Maven multi-module project, first identify the sub-projects (also called _modules_
 in Maven) that should produce a container image. Then for each such sub-project:
 
-  - Create a Skaffold `artifact` in the `skaffold.yaml`:
+  - Create a Skaffold `artifact` in the `skaffold.yaml`.
   - Set the `artifact`'s `context` field to the root project location.
   - Add a `jib` element and set its `project` field to the sub-project's
     `:artifactId`, `groupId:artifactId`, or the relative path to the sub-project
@@ -203,10 +203,12 @@ no longer required with Jib 1.4.0 and should be removed.
 
 #### Gradle
 
-To build a multi-module project with Gradle, specify each sub-project as a separate
-Skaffold artifact. For each artifact, add a `jib` field with a `project` field
-containing the sub-project's name (the directory, by default). Each artifact's `context` field
-should point to the root project location.
+To build a multi-module project with Gradle, first identify the sub-projects that should produce
+a container image.  Then for each such sub-project:
+
+  - Create a Skaffold `artifact` in the `skaffold.yaml`.
+  - Set the `artifact`'s `context` field to the root project location.
+  - Add a `jib` element and set its `project` field to the sub-project's name (the directory, by default).
 
 ## Jib Maven and Gradle remotely with Google Cloud Build
 
