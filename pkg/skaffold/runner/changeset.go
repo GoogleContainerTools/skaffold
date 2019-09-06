@@ -64,10 +64,3 @@ func (c *changeSet) resetReload() {
 func (c *changeSet) resetDeploy() {
 	c.needsRedeploy = false
 }
-
-func (c *changeSet) reset() {
-	c.resetBuild()
-	c.resetSync()
-	c.resetReload()
-	c.resetDeploy()
-}
