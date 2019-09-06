@@ -16,14 +16,7 @@
 
 set -e
 
-NEW_VERSION=$1
-
-if [[ "" == "$NEW_VERSION" ]]; then
-echo "Please enter new config version:"
-read NEW_VERSION
-fi
-
-go run ./hack/new_config_version/version.go ${NEW_VERSION}
+go run ./hack/new_config_version/version.go $@
 
 goimports -w ./pkg/skaffold/schema
 make generate-schemas
