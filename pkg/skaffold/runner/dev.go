@@ -79,7 +79,6 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			return nil
 		}
-		r.changeSet.needsRedeploy = true
 		if !deployIntent {
 			break
 		}
