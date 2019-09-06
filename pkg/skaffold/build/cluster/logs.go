@@ -28,14 +28,11 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-// logLevel makes sure kaniko logs at least at Info level and at most Debug level (trace doesn't work with Kaniko)
+// logLevel makes sure kaniko logs at least at Info level.
 func logLevel() logrus.Level {
 	level := logrus.GetLevel()
 	if level < logrus.InfoLevel {
 		return logrus.InfoLevel
-	}
-	if level > logrus.DebugLevel {
-		return logrus.DebugLevel
 	}
 	return level
 }
