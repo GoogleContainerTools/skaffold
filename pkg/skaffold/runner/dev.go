@@ -61,7 +61,6 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
 
 			if err := r.syncer.Sync(ctx, s); err != nil {
-				r.changeSet.reset()
 				logrus.Warnln("Skipping deploy due to sync error:", err)
 				return nil
 			}
@@ -75,7 +74,6 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		}()
 
 		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
-			r.changeSet.reset()
 			logrus.Warnln("Skipping deploy due to error:", err)
 			return nil
 		}
