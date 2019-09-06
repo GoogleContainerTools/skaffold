@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -306,7 +305,7 @@ func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourc
 
 // assertResponseFromPort waits for two minutes for the expected response at port.
 func assertResponseFromPort(t *testing.T, port int, expected string) {
-	logrus.Infof("Waiting for response %s from port %d", expected, port)
+	t.Logf("Waiting for response %s from port %d", expected, port)
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancelTimeout()
 
@@ -317,19 +316,19 @@ func assertResponseFromPort(t *testing.T, port int, expected string) {
 		case <-time.After(1 * time.Second):
 			resp, err := http.Get(fmt.Sprintf("http://%s:%d", util.Loopback, port))
 			if err != nil {
-				logrus.Infof("error getting response from port %d: %v", port, err)
+				t.Logf("error getting response from port %d: %v", port, err)
 				continue
 			}
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				logrus.Infof("error reading response: %v", err)
+				t.Logf("error reading response: %v", err)
 				continue
 			}
 			if string(body) == expected {
 				return
 			}
-			logrus.Infof("didn't get expected response from port. got: %s, expected: %s", string(body), expected)
+			t.Logf("didn't get expected response from port. got: %s, expected: %s", string(body), expected)
 		}
 	}
 }
