@@ -3,8 +3,17 @@
 * Author(s): Dominic Werner (@daddz)
 * Design Shepherd: Tejal Desai (@tejal29) 
 * Date: 2019-08-16
-* Status: Under implementation
-
+* Status: Cancelled
+* Reason: 
+  
+  We discussed this proposal in Skaffold Community Hours and decided at this
+  moment, the design proposal is just an entry point for running a script.
+  It is not built up on Skaffold's run knowledge so far.
+  With that said, the core team agrees Skaffold does not a solution
+  for [#2561](https://github.com/GoogleContainerTools/skaffold/issues/2561)
+  and [#992](https://github.com/GoogleContainerTools/skaffold/issues/992) and we want to
+  explore this space.
+          
 ## Background
 
 Currently, skaffold has no support for running integration/unit tests 
