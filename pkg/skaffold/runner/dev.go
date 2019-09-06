@@ -51,8 +51,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	defer r.monitor.Reset()
 	defer r.listener.LogWatchToUser(out)
 
-	switch {
-	case needsSync:
+	if needsSync {
 		defer func() {
 			r.changeSet.resetSync()
 			r.intents.resetSync()
@@ -67,8 +66,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 				return nil
 			}
 		}
+	}
 
-	case needsBuild:
+	if needsBuild {
 		defer func() {
 			r.changeSet.resetBuild()
 			r.intents.resetBuild()
@@ -79,12 +79,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			return nil
 		}
-		if !deployIntent {
-			break
-		}
-		fallthrough // redeploy after a successful build
+	}
 
-	case needsDeploy:
+	if needsDeploy {
 		defer func() {
 			r.changeSet.reset()
 			r.intents.resetDeploy()
