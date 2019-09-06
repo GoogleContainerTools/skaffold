@@ -19,6 +19,7 @@ package deploy
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"strings"
 
@@ -250,4 +251,8 @@ func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) (
 	}
 
 	return manifest.Bytes(), nil
+}
+
+func (k *KubectlDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {
+	return fmt.Errorf("not yet implemented")
 }
