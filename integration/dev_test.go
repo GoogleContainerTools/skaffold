@@ -305,7 +305,8 @@ func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourc
 
 // assertResponseFromPort waits for two minutes for the expected response at port.
 func assertResponseFromPort(t *testing.T, port int, expected string) {
-	t.Logf("Waiting for response %s from port %d", expected, port)
+	url := fmt.Sprintf("http://%s:%d", util.Loopback, port)
+	t.Logf("Waiting on %s to return: %s", url, expected)
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancelTimeout()
 
@@ -314,21 +315,22 @@ func assertResponseFromPort(t *testing.T, port int, expected string) {
 		case <-ctx.Done():
 			t.Fatalf("Timed out waiting for response from port %d", port)
 		case <-time.After(1 * time.Second):
-			resp, err := http.Get(fmt.Sprintf("http://%s:%d", util.Loopback, port))
+			client := http.Client{Timeout: 1 * time.Second}
+			resp, err := client.Get(url)
 			if err != nil {
-				t.Logf("error getting response from port %d: %v", port, err)
+				t.Logf("[retriable error]: %v", err)
 				continue
 			}
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				t.Logf("error reading response: %v", err)
+				t.Logf("[retriable error] reading response: %v", err)
 				continue
 			}
 			if string(body) == expected {
 				return
 			}
-			t.Logf("didn't get expected response from port. got: %s, expected: %s", string(body), expected)
+			t.Logf("[retriable error] didn't get expected response from port. got: %s, expected: %s", string(body), expected)
 		}
 	}
 }
