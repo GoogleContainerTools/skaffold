@@ -14,13 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "Current skaffold config version: " $(sed -n 's;.*Version.*"skaffold/\(.*\)";\1;p' pkg/skaffold/schema/latest/config.go)
+set -e
 
-echo
-echo "Please enter new config version:"
-read NEW_VERSION
-
-go run ./hack/new_config_version/version.go ${NEW_VERSION}
+go run ./hack/new_config_version/version.go $@
 
 goimports -w ./pkg/skaffold/schema
 make generate-schemas
