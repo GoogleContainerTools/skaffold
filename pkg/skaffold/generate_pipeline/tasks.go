@@ -31,12 +31,11 @@ import (
 
 func generateBuildTasks(namespace string, configFiles []*ConfigFile) ([]*tekton.Task, error) {
 	var tasks []*tekton.Task
-	for i, configFile := range configFiles {
+	for _, configFile := range configFiles {
 		task, err := generateBuildTask(configFile)
 		if err != nil {
 			return nil, err
 		}
-		task.Name = fmt.Sprintf("%s-%d", task.Name, i)
 
 		if namespace != "" {
 			nsFlag := []string{"--namespace", namespace}
@@ -116,12 +115,11 @@ func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
 
 func generateDeployTasks(namespace string, configFiles []*ConfigFile) ([]*tekton.Task, error) {
 	var tasks []*tekton.Task
-	for i, configFile := range configFiles {
+	for _, configFile := range configFiles {
 		task, err := generateDeployTask(configFile)
 		if err != nil {
 			return nil, err
 		}
-		task.Name = fmt.Sprintf("%s-%d", task.Name, i)
 
 		if namespace != "" {
 			nsFlag := []string{"--namespace", namespace}
