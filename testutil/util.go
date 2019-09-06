@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path"
 	"reflect"
 	"regexp"
 	"strings"
@@ -70,6 +71,33 @@ func (t *T) CopyFile(src, dst string) {
 			t.Errorf("failed to remove %s: %s", dst, err)
 		}
 	})
+}
+
+func (t *T) CopyDir(src string, dst string) {
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		t.Fatalf("failed to copy dir %s->%s: %s ", src, dst, err)
+	}
+
+	if err = os.MkdirAll(dst, srcInfo.Mode()); err != nil {
+		t.Fatalf("failed to copy dir %s->%s: %s ", src, dst, err)
+	}
+
+	files, err := ioutil.ReadDir(src)
+	if err != nil {
+		t.Fatalf("failed to copy dir %s->%s: %s ", src, dst, err)
+	}
+
+	for _, f := range files {
+		srcfp := path.Join(src, f.Name())
+		dstfp := path.Join(dst, f.Name())
+
+		if f.IsDir() {
+			t.CopyDir(srcfp, dstfp)
+		} else {
+			t.CopyFile(srcfp, dstfp)
+		}
+	}
 }
 
 func (t *T) CheckMatches(pattern, actual string) {
