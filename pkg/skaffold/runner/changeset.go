@@ -56,10 +56,6 @@ func (c *changeSet) resetSync() {
 	c.needsResync = nil
 }
 
-func (c *changeSet) resetReload() {
-	c.needsReload = false
-}
-
 func (c *changeSet) resetDeploy() {
 	c.needsRedeploy = false
 }
@@ -67,6 +63,5 @@ func (c *changeSet) resetDeploy() {
 func (c *changeSet) reset() {
 	c.resetBuild()
 	c.resetSync()
-	c.resetReload()
 	c.resetDeploy()
 }
