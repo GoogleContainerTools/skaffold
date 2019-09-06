@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -123,6 +124,13 @@ func TestBuildInCluster(t *testing.T) {
 	}
 
 	testutil.Run(t, "", func(t *testutil.T) {
+		//this workaround is to ensure there is no overlap between testcases on kokoro
+		//see https://github.com/GoogleContainerTools/skaffold/issues/2781#issuecomment-527770537
+		tmpDir := t.NewTempDir()
+		testCaseDir := "testdata/skaffold-in-cluster"
+		workDir := path.Join(tmpDir.Root(), "testdata/skaffold-in-cluster")
+		t.CopyDir(testCaseDir, workDir)
+
 		// copy the skaffold binary to the test case folder
 		// this is geared towards the in-docker setup: the fresh built binary is here
 		// for manual testing, we can override this temporarily
@@ -130,7 +138,7 @@ func TestBuildInCluster(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to find skaffold binary: %s", err)
 		}
-		skaffoldDst := "./testdata/skaffold-in-cluster/skaffold"
+		skaffoldDst := path.Join(workDir, "skaffold")
 		t.CopyFile(skaffoldSrc, skaffoldDst)
 
 		ns, k8sClient, cleanupNs := SetupNamespace(t.T)
@@ -138,9 +146,9 @@ func TestBuildInCluster(t *testing.T) {
 
 		// TODO: until https://github.com/GoogleContainerTools/skaffold/issues/2757 is resolved, this is the simplest
 		// way to override the build.cluster.namespace
-		revert := replaceNamespace("./testdata/skaffold-in-cluster/skaffold.yaml", t, ns)
+		revert := replaceNamespace(path.Join(workDir, "skaffold.yaml"), t, ns)
 		defer revert()
-		revert = replaceNamespace("./testdata/skaffold-in-cluster/build-step/kustomization.yaml", t, ns)
+		revert = replaceNamespace(path.Join(workDir, "build-step/kustomization.yaml"), t, ns)
 		defer revert()
 
 		//we have to copy the e2esecret from default ns -> temporary namespace for kaniko
@@ -150,12 +158,12 @@ func TestBuildInCluster(t *testing.T) {
 		}
 		secret.Namespace = ns.Name
 		secret.ResourceVersion = ""
-		_, err = k8sClient.client.CoreV1().Secrets(ns.Name).Create(secret)
+		_, err = k8sClient.Secrets().Create(secret)
 		if err != nil {
 			t.Fatalf("failed creating %s/e2escret: %s", ns.Name, err)
 		}
 
-		logs := skaffold.Run("-p", "create-build-step", "--cache-artifacts=true").InDir("./testdata/skaffold-in-cluster").InNs(ns.Name).RunOrFailOutput(t.T)
+		logs := skaffold.Run("-p", "create-build-step", "--cache-artifacts=true").InDir(workDir).InNs(ns.Name).RunOrFailOutput(t.T)
 		t.Logf("create-build-step logs: \n%s", logs)
 
 		k8sClient.WaitForPodsInPhase(corev1.PodSucceeded, "skaffold-in-cluster")
