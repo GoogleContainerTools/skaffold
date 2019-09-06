@@ -29,18 +29,24 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
+var (
+	configFiles []string
+)
+
 func NewCmdGeneratePipeline() *cobra.Command {
 	return NewCmd("generate-pipeline").
 		Hidden().
 		WithDescription("[ALPHA] Generate tekton pipeline from skaffold.yaml").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {}).
+		WithFlags(func(f *pflag.FlagSet) {
+			f.StringSliceVar(&configFiles, "config-files", nil, "Select additional files whose artifacts to use when generating pipeline.")
+		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doGeneratePipeline))
 }
 
 func doGeneratePipeline(ctx context.Context, out io.Writer) error {
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
-		if err := r.GeneratePipeline(ctx, out, config, "pipeline.yaml"); err != nil {
+		if err := r.GeneratePipeline(ctx, out, config, configFiles, "pipeline.yaml"); err != nil {
 			return errors.Wrap(err, "generating ")
 		}
 		color.Default.Fprintln(out, "Pipeline config written to pipeline.yaml!")
