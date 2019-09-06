@@ -714,6 +714,25 @@ func TestExpandPaths(t *testing.T) {
 	}
 }
 
+func TestHelmRender(t *testing.T) {
+	tests := []struct {
+		description string
+		shouldErr   bool
+	}{
+		{
+			description: "calling render returns error",
+			shouldErr:   true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			deployer := NewHelmDeployer(&runcontext.RunContext{})
+			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, "tmp/dir")
+			t.CheckError(test.shouldErr, actual)
+		})
+	}
+}
+
 func makeRunContext(deploy latest.HelmDeploy, force bool) *runcontext.RunContext {
 	pipeline := latest.Pipeline{}
 	pipeline.Deploy.DeployType.HelmDeploy = &deploy

@@ -461,6 +461,10 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 	return paramToBuildResult, nil
 }
 
+func (k *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {
+	return fmt.Errorf("not yet implemented")
+}
+
 func evaluateReleaseName(nameTemplate string) (string, error) {
 	tmpl, err := util.ParseEnvTemplate(nameTemplate)
 	if err != nil {

@@ -170,6 +170,10 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Art
 	return deploy.NewDeploySuccessResult(t.namespaces)
 }
 
+func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ string) error {
+	return fmt.Errorf("not yet implemented")
+}
+
 func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
