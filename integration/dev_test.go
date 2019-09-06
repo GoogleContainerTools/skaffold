@@ -182,14 +182,14 @@ func TestDevPortForward(t *testing.T) {
 	}
 
 	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build("--cache-artifacts=true").InDir("examples/microservices").RunOrFail(t)
+	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
 
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
 	rpcAddr := randomPort()
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr, "--cache-artifacts=true").InDir("examples/microservices").InNs(ns.Name).WithEnv(env)
+	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).WithEnv(env)
 	stop := cmd.RunBackground(t)
 	defer stop()
 
