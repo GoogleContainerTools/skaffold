@@ -66,6 +66,11 @@ func TestGeneratePipeline(t *testing.T) {
 			input:       []byte{'y', '\n', 'y', '\n'},
 			configFiles: []string{"sub-app/skaffold.yaml"},
 		},
+		{
+			description: "user example",
+			dir:         "examples/generate-pipeline",
+			input:       []byte("y\n"),
+		},
 	}
 
 	for _, test := range tests {
@@ -123,11 +128,11 @@ func writeOriginalContents(contents []configContents) {
 func checkFileContents(t *testing.T, wantFile, gotFile string) {
 	wantContents, err := ioutil.ReadFile(wantFile)
 	if err != nil {
-		t.Errorf("Error while reading contents of file %s", wantFile)
+		t.Errorf("Error while reading contents of file %s: %s", wantFile, err)
 	}
 	gotContents, err := ioutil.ReadFile(gotFile)
 	if err != nil {
-		t.Errorf("Error while reading contents of file %s", gotFile)
+		t.Errorf("Error while reading contents of file %s: %s", gotFile, err)
 	}
 
 	if !bytes.Equal(wantContents, gotContents) {
