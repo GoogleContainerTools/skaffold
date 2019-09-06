@@ -163,7 +163,7 @@ func TestBuildInCluster(t *testing.T) {
 			t.Fatalf("failed creating %s/e2escret: %s", ns.Name, err)
 		}
 
-		logs := skaffold.Run("-p", "create-build-step", "--cache-artifacts=true", "-v", "trace").InDir(workDir).InNs(ns.Name).RunOrFailOutput(t.T)
+		logs := skaffold.Run("-p", "create-build-step", "--cache-artifacts=true").InDir(workDir).InNs(ns.Name).RunOrFailOutput(t.T)
 		t.Logf("create-build-step logs: \n%s", logs)
 
 		k8sClient.WaitForPodsInPhase(corev1.PodSucceeded, "skaffold-in-cluster")

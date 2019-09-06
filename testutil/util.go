@@ -67,7 +67,7 @@ func (t *T) CopyFile(src, dst string) {
 		t.Fatalf("failed to copy file %s to %s: %s", src, dst, err)
 	}
 	t.teardownActions = append(t.teardownActions, func() {
-		if err := os.Remove(dst); err != nil {
+		if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
 			t.Errorf("failed to remove %s: %s", dst, err)
 		}
 	})
@@ -98,6 +98,12 @@ func (t *T) CopyDir(src string, dst string) {
 			t.CopyFile(srcfp, dstfp)
 		}
 	}
+	t.teardownActions = append(t.teardownActions, func() {
+		//by the time this callback is called, all the files should be removed
+		if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
+			t.Errorf("failed to remove dir %s: %s", dst, err)
+		}
+	})
 }
 
 func (t *T) CheckMatches(pattern, actual string) {
