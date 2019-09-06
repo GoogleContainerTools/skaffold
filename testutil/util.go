@@ -19,11 +19,8 @@ package testutil
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"os"
-	"path"
 	"reflect"
 	"regexp"
 	"strings"
@@ -55,55 +52,6 @@ func (t *T) Override(dest, tmp interface{}) {
 	}
 
 	t.teardownActions = append(t.teardownActions, teardown)
-}
-
-func (t *T) CopyFile(src, dst string) {
-	content, err := ioutil.ReadFile(src)
-	if err != nil {
-		t.Fatalf("can't read source file: %s: %s", src, err)
-	}
-	err = ioutil.WriteFile(dst, content, 0666)
-	if err != nil {
-		t.Fatalf("failed to copy file %s to %s: %s", src, dst, err)
-	}
-	t.teardownActions = append(t.teardownActions, func() {
-		if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
-			t.Errorf("failed to remove %s: %s", dst, err)
-		}
-	})
-}
-
-func (t *T) CopyDir(src string, dst string) {
-	srcInfo, err := os.Stat(src)
-	if err != nil {
-		t.Fatalf("failed to copy dir %s->%s: %s ", src, dst, err)
-	}
-
-	if err = os.MkdirAll(dst, srcInfo.Mode()); err != nil {
-		t.Fatalf("failed to copy dir %s->%s: %s ", src, dst, err)
-	}
-
-	files, err := ioutil.ReadDir(src)
-	if err != nil {
-		t.Fatalf("failed to copy dir %s->%s: %s ", src, dst, err)
-	}
-
-	for _, f := range files {
-		srcfp := path.Join(src, f.Name())
-		dstfp := path.Join(dst, f.Name())
-
-		if f.IsDir() {
-			t.CopyDir(srcfp, dstfp)
-		} else {
-			t.CopyFile(srcfp, dstfp)
-		}
-	}
-	t.teardownActions = append(t.teardownActions, func() {
-		//by the time this callback is called, all the files should be removed
-		if err := os.Remove(dst); err != nil && !os.IsNotExist(err) {
-			t.Errorf("failed to remove dir %s: %s", dst, err)
-		}
-	})
 }
 
 func (t *T) CheckMatches(pattern, actual string) {
