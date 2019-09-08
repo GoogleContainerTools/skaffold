@@ -552,6 +552,55 @@ func TestActivatedProfiles(t *testing.T) {
 	}
 }
 
+func TestYamlAlias(t *testing.T) {
+	config := `
+.activation_common: &activation_common
+  env: ABC=common
+build:
+  artifacts:
+  - image: example
+profiles:
+- name: simple1
+  activation:
+  - *activation_common
+  - env: ABC=1
+  build:
+    artifacts:
+    - image: simpleimage1
+- name: simple2
+  activation:
+  - *activation_common
+  - env: ABC=2
+  build:
+    artifacts:
+    - image: simpleimage2
+`
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().
+			Write("skaffold.yaml", addVersion(config))
+
+		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"), false)
+		t.RequireNoError(err)
+
+		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+
+		t.CheckDeepEqual(2, len(skaffoldConfig.Profiles))
+		t.CheckDeepEqual("simple1", skaffoldConfig.Profiles[0].Name)
+		t.CheckDeepEqual([]latest.Activation{{Env: "ABC=common"}, {Env: "ABC=1"}}, skaffoldConfig.Profiles[0].Activation)
+		t.CheckDeepEqual("simple2", skaffoldConfig.Profiles[1].Name)
+		t.CheckDeepEqual([]latest.Activation{{Env: "ABC=common"}, {Env: "ABC=2"}}, skaffoldConfig.Profiles[1].Activation)
+
+		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
+			Profiles: []string{"simple1"},
+		})
+		t.CheckNoError(err)
+
+		t.CheckDeepEqual(1, len(skaffoldConfig.Build.Artifacts))
+		t.CheckDeepEqual(latest.Artifact{ImageName: "simpleimage1"}, *skaffoldConfig.Build.Artifacts[0])
+	})
+}
+
 func str(value string) *interface{} {
 	var v interface{} = value
 	return &v
