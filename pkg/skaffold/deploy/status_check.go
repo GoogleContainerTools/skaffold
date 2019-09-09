@@ -51,9 +51,7 @@ var (
 
 type Checker struct {
 	context       context.Context
-	runCtx        *runcontext.RunContext
 	out           io.Writer
-	labeller      *DefaultLabeller
 	client        *kubectl.CLI
 	numDeps       int
 	processedDeps int32
@@ -77,12 +75,10 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	syncMap := &sync.Map{}
 
 	checker := &Checker{
-		context:  ctx,
-		runCtx:   runCtx,
-		labeller: defaultLabeller,
-		client:   kubectl.NewFromRunContext(runCtx),
-		out:      out,
-		numDeps:  len(dMap),
+		context: ctx,
+		out:     out,
+		client:  kubectl.NewFromRunContext(runCtx),
+		numDeps: len(dMap),
 	}
 
 	for dName, deadlineDuration := range dMap {
