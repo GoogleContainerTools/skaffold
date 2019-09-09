@@ -51,7 +51,7 @@ const (
 )
 
 type counter struct {
-	total   int
+	total     int
 	processed int
 }
 
@@ -78,10 +78,10 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		wg.Add(1)
 		go func(dName string, deadlineDuration time.Duration) {
 			defer wg.Done()
-			err := c.pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), dName, deadlineDuration)
+			err := pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), dName, deadlineDuration)
 			syncMap.Store(dName, err)
 			c.increment(1)
-			c.printStatusCheckSummary(dName, err, out)
+			printStatusCheckSummary(dName, c, err, out)
 		}(dName, deadlineDuration)
 	}
 
@@ -113,7 +113,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	return depMap, nil
 }
 
-func (c *counter) pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName string, deadline time.Duration) error {
+func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName string, deadline time.Duration) error {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollDuration)
@@ -122,7 +122,7 @@ func (c *counter) pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CL
 	for {
 		select {
 		case <-timeoutContext.Done():
-			return errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v",deadline))
+			return errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", deadline))
 		case <-time.After(pollDuration):
 			status, err := executeRolloutStatus(timeoutContext, k, dName)
 			if err != nil || strings.Contains(status, "successfully rolled out") {
@@ -159,7 +159,7 @@ func getDeadline(d int) time.Duration {
 	return defaultStatusCheckDeadline
 }
 
-func (c *counter) printStatusCheckSummary(dName string, err error, out io.Writer) {
+func printStatusCheckSummary(dName string, c *counter, err error, out io.Writer) {
 	status := fmt.Sprintf("%s deployment/%s", tabHeader, dName)
 	if err != nil {
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
@@ -175,7 +175,7 @@ func (c *counter) printStatusCheckSummary(dName string, err error, out io.Writer
 
 func (c *counter) getPendingMessage() string {
 	if pending := c.pending(); pending > 0 {
-		return fmt.Sprintf(" [%d/%d deployment(s) still pending]", pending, c.total)
+		return fmt.Sprintf(" [%d/%d deployment(s) still processed]", pending, c.total)
 	}
 	return ""
 }
@@ -190,11 +190,11 @@ func newCounter(i int) *counter {
 	}
 }
 
-func (c *counter)increment(i int) {
+func (c *counter) increment(i int) {
 	i32 := int32(c.processed)
 	c.processed = int(atomic.AddInt32(&i32, 1))
 }
 
-func (c *counter)pending() int {
+func (c *counter) pending() int {
 	return c.total - c.processed
 }

@@ -21,7 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"sync"
 	"testing"
 	"time"
@@ -228,17 +227,8 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			t.Override(&defaultPollPeriodInMilliseconds, 10)
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			actual := &sync.Map{}
-			checker := counter{
-				context: context.Background(),
-				cli:     &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"},
-				out:     ioutil.Discard,
-			}
-			checker.pollDeploymentRolloutStatus("dep", time.Duration(test.duration)*time.Millisecond, actual)
-			if _, ok := actual.Load("dep"); !ok {
-				t.Error("expected result for deployment dep. But found none")
-			}
-			err := getSkaffoldDeployStatus(actual)
+			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
+			err := pollDeploymentRolloutStatus(context.Background(), cli, "dep", time.Duration(test.duration)*time.Millisecond)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -344,43 +334,44 @@ func TestGetRollOutStatus(t *testing.T) {
 func TestPrintSummaryStatus(t *testing.T) {
 	tests := []struct {
 		description string
-		pending     int
+		processed   int
 		err         error
 		expected    string
 	}{
 		{
 			description: "no deployment left and current is in success",
+			processed:   10,
 			err:         nil,
 			expected:    " - deployment/dep is ready.\n",
 		},
 		{
 			description: "no deployment left and current is in error",
+			processed:   10,
 			err:         errors.New("context deadline expired"),
 			expected:    " - deployment/dep failed. Error: context deadline expired.\n",
 		},
 		{
 			description: "more than 1 deployment left and current is in success",
-			pending:     5,
+			processed:   4,
 			err:         nil,
-			expected:    " - deployment/dep is ready. [5/10 deployment(s) still pending]\n",
+			expected:    " - deployment/dep is ready. [6/10 deployment(s) still processed]\n",
 		},
 		{
 			description: "more than 1 deployment left and current is in error",
-			pending:     5,
+			processed:   8,
 			err:         errors.New("context deadline expired"),
-			expected:    " - deployment/dep failed. [5/10 deployment(s) still pending] Error: context deadline expired.\n",
+			expected:    " - deployment/dep failed. [2/10 deployment(s) still processed] Error: context deadline expired.\n",
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			c := counter{
-				totalDeployments:   10,
-				out:                out,
-				pendingDeployments: int32(test.pending),
+			c := &counter{
+				total:     10,
+				processed: test.processed,
 			}
-			c.printStatusCheckSummary("dep", test.err)
+			printStatusCheckSummary("dep", c, test.err, out)
 			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
