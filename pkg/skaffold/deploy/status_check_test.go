@@ -225,14 +225,8 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&defaultPollPeriodInMilliseconds, 10)
 			t.Override(&util.DefaultExecCommand, test.commands)
-
-			actual := &sync.Map{}
 			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
-			pollDeploymentRolloutStatus(context.Background(), cli, "dep", time.Duration(test.duration)*time.Millisecond, actual)
-			if _, ok := actual.Load("dep"); !ok {
-				t.Error("expected result for deployment dep. But found none")
-			}
-			err := getSkaffoldDeployStatus(actual)
+			err := pollDeploymentRolloutStatus(context.Background(), cli, "dep", time.Duration(test.duration)*time.Millisecond)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
