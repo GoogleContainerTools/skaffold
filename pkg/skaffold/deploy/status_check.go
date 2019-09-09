@@ -65,7 +65,8 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		wg.Add(1)
 		go func(dName string, deadlineDuration time.Duration) {
 			defer wg.Done()
-			pollDeploymentRolloutStatus(ctx, kubeCtl, dName, deadlineDuration, syncMap)
+			err := pollDeploymentRolloutStatus(ctx, kubeCtl, dName, deadlineDuration)
+			syncMap.Store(dName, err)
 		}(dName, deadlineDuration)
 	}
 
@@ -97,7 +98,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	return depMap, nil
 }
 
-func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName string, deadline time.Duration, syncMap *sync.Map) {
+func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName string, deadline time.Duration) error {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollDuration)
@@ -106,17 +107,11 @@ func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName stri
 	for {
 		select {
 		case <-timeoutContext.Done():
-			syncMap.Store(dName, errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", deadline)))
-			return
+			return errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", deadline))
 		case <-time.After(pollDuration):
 			status, err := executeRolloutStatus(timeoutContext, k, dName)
-			if err != nil {
-				syncMap.Store(dName, err)
-				return
-			}
-			if strings.Contains(status, "successfully rolled out") {
-				syncMap.Store(dName, nil)
-				return
+			if err != nil || strings.Contains(status, "successfully rolled out") {
+				return err
 			}
 		}
 	}
