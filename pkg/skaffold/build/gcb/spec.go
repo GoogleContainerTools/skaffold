@@ -50,6 +50,9 @@ func (b *Builder) buildSpec(artifact *latest.Artifact, tag, bucket, object strin
 
 func (b *Builder) buildSpecForArtifact(artifact *latest.Artifact, tag string) (cloudbuild.Build, error) {
 	switch {
+	case artifact.KanikoArtifact != nil:
+		return b.kanikoBuildSpec(artifact.KanikoArtifact, tag)
+
 	case artifact.DockerArtifact != nil:
 		return b.dockerBuildSpec(artifact.DockerArtifact, tag)
 
