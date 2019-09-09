@@ -606,9 +606,13 @@ type JSONPatch struct {
 
 // Activation criteria by which a profile is auto-activated.
 type Activation struct {
-	// Env is a `key=value` pair. The profile is auto-activated if an Environment
-	// Variable `key` has value `value`.
-	// For example: `ENV=production`.
+	// Env is a `key=pattern` pair. The profile is auto-activated if an Environment
+	// Variable `key` matches the pattern. If the pattern starts with `!`, activation
+	// happens if the remaining pattern is _not_ matched. The pattern matches if the
+	// Environment Variable value is exactly `pattern`, or the regex `pattern` is
+	// found in it. An empty `pattern` (e.g. `env: "key="`) always only matches if
+	// the Environment Variable is undefined or empty.
+	// For example: `ENV=production`
 	Env string `yaml:"env,omitempty"`
 
 	// KubeContext is a Kubernetes context for which the profile is auto-activated.
