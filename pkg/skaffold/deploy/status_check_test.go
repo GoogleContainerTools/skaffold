@@ -229,7 +229,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 
 			actual := &sync.Map{}
-			checker := checker{
+			checker := counter{
 				context: context.Background(),
 				cli:     &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"},
 				out:     ioutil.Discard,
@@ -375,7 +375,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			c := checker{
+			c := counter{
 				totalDeployments:   10,
 				out:                out,
 				pendingDeployments: int32(test.pending),

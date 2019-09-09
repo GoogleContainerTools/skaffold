@@ -50,12 +50,9 @@ const (
 	tabHeader = " -"
 )
 
-type checker struct {
-	context            context.Context
-	out                io.Writer
-	cli                *kubectl.CLI
-	totalDeployments   int
-	pendingDeployments int32
+type counter struct {
+	total   int
+	processed int
 }
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
@@ -75,19 +72,16 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	// Its safe to use sync.Map without locks here as each subroutine adds a different key to the map.
 	syncMap := &sync.Map{}
 
-	checker := &checker{
-		context:            ctx,
-		out:                out,
-		cli:                kubectl.NewFromRunContext(runCtx),
-		totalDeployments:   len(dMap),
-		pendingDeployments: int32(len(dMap)),
-	}
+	c := newCounter(len(dMap))
 
 	for dName, deadlineDuration := range dMap {
 		wg.Add(1)
 		go func(dName string, deadlineDuration time.Duration) {
 			defer wg.Done()
-			checker.pollDeploymentRolloutStatus(dName, deadlineDuration, syncMap)
+			err := c.pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), dName, deadlineDuration)
+			syncMap.Store(dName, err)
+			c.increment(1)
+			c.printStatusCheckSummary(dName, err, out)
 		}(dName, deadlineDuration)
 	}
 
@@ -119,26 +113,21 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	return depMap, nil
 }
 
-func (c *checker) pollDeploymentRolloutStatus(dName string, deadline time.Duration, syncMap *sync.Map) {
+func (c *counter) pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, dName string, deadline time.Duration) error {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
-	timeoutContext, cancel := context.WithTimeout(c.context, deadline+pollDuration)
+	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollDuration)
 	logrus.Debugf("checking rollout status %s", dName)
 	defer cancel()
 	for {
 		select {
 		case <-timeoutContext.Done():
-			syncMap.Store(dName, errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", deadline)))
-			return
+			return errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v",deadline))
 		case <-time.After(pollDuration):
-			status, err := executeRolloutStatus(timeoutContext, c.cli, dName)
+			status, err := executeRolloutStatus(timeoutContext, k, dName)
 			if err != nil || strings.Contains(status, "successfully rolled out") {
-				syncMap.Store(dName, err)
-				atomic.AddInt32(&c.pendingDeployments, -1)
-				c.printStatusCheckSummary(dName, err)
-				return
+				return err
 			}
-			syncMap.Store(dName, status)
 		}
 	}
 }
@@ -170,7 +159,7 @@ func getDeadline(d int) time.Duration {
 	return defaultStatusCheckDeadline
 }
 
-func (c *checker) printStatusCheckSummary(dName string, err error) {
+func (c *counter) printStatusCheckSummary(dName string, err error, out io.Writer) {
 	status := fmt.Sprintf("%s deployment/%s", tabHeader, dName)
 	if err != nil {
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
@@ -181,16 +170,31 @@ func (c *checker) printStatusCheckSummary(dName string, err error) {
 	} else {
 		status = fmt.Sprintf("%s is ready.%s", status, c.getPendingMessage())
 	}
-	color.Default.Fprintln(c.out, status)
+	color.Default.Fprintln(out, status)
 }
 
-func (c *checker) getPendingMessage() string {
-	if c.pendingDeployments > 0 {
-		return fmt.Sprintf(" [%d/%d deployment(s) still pending]", c.pendingDeployments, c.totalDeployments)
+func (c *counter) getPendingMessage() string {
+	if pending := c.pending(); pending > 0 {
+		return fmt.Sprintf(" [%d/%d deployment(s) still pending]", pending, c.total)
 	}
 	return ""
 }
 
 func trimNewLine(msg string) string {
 	return strings.TrimSuffix(msg, "\n")
+}
+
+func newCounter(i int) *counter {
+	return &counter{
+		total: i,
+	}
+}
+
+func (c *counter)increment(i int) {
+	i32 := int32(c.processed)
+	c.processed = int(atomic.AddInt32(&i32, 1))
+}
+
+func (c *counter)pending() int {
+	return c.total - c.processed
 }
