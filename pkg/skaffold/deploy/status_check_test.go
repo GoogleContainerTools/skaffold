@@ -21,8 +21,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
-	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -369,41 +367,8 @@ func TestPrintSummaryStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			c := &counter{
-				total:   10,
-				pending: test.pending,
-			}
-			printStatusCheckSummary("dep", c, int(test.pending), test.err, out)
+			printStatusCheckSummary("dep", int(test.pending), 10, test.err, out)
 			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
-}
-
-func TestPrintPendingRace(t *testing.T) {
-	testutil.Run(t, "race test", func(t *testutil.T) {
-		c := newCounter(100000)
-
-		numSeen := sync.Map{}
-		for i := 0; i < c.total; i++ {
-			go func() {
-				pending := c.markProcessed()
-				str := c.getPendingMessage(pending)
-				var reportedPending int
-				pattern := regexp.MustCompile(".*\\[(\\d+)/.*")
-				matches := pattern.FindStringSubmatch(str)
-				if len(matches) < 2 {
-					reportedPending = 0
-				} else {
-					var err error
-					reportedPending, err = strconv.Atoi(matches[1])
-					t.CheckNoError(err)
-				}
-				if _, ok := numSeen.Load(reportedPending); ok {
-					t.Errorf("race detected: saw %d reported twice.", reportedPending)
-					t.FailNow()
-				}
-				numSeen.Store(reportedPending, struct{}{})
-			}()
-		}
-	})
 }

@@ -81,7 +81,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 			err := pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), dName, deadlineDuration)
 			syncMap.Store(dName, err)
 			pending := c.markProcessed()
-			printStatusCheckSummary(dName, c, pending, err, out)
+			printStatusCheckSummary(dName, pending, c.total, err, out)
 		}(dName, deadlineDuration)
 	}
 
@@ -159,23 +159,23 @@ func getDeadline(d int) time.Duration {
 	return defaultStatusCheckDeadline
 }
 
-func printStatusCheckSummary(dName string, c *counter, pending int, err error, out io.Writer) {
+func printStatusCheckSummary(dName string, pending int, total int, err error, out io.Writer) {
 	status := fmt.Sprintf("%s deployment/%s", tabHeader, dName)
 	if err != nil {
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
-			trimNewLine(c.getPendingMessage(pending)),
+			trimNewLine(getPendingMessage(pending, total)),
 			trimNewLine(err.Error()),
 		)
 	} else {
-		status = fmt.Sprintf("%s is ready.%s", status, c.getPendingMessage(pending))
+		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(pending, total))
 	}
 	color.Default.Fprintln(out, status)
 }
 
-func (c *counter) getPendingMessage(pending int) string {
+func getPendingMessage(pending int, total int) string {
 	if pending > 0 {
-		return fmt.Sprintf(" [%d/%d deployment(s) still pending]", pending, c.total)
+		return fmt.Sprintf(" [%d/%d deployment(s) still pending]", pending, total)
 	}
 	return ""
 }
