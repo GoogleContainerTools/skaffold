@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package resource
 
 import (
 	"fmt"
@@ -25,67 +25,65 @@ import (
 )
 
 const (
-	TabHeader      = " -"
-	DeploymentType = "deployment"
+	tabHeader      = " -"
+	deploymentType = "deployment"
 )
 
-type ResourceObj struct {
+type Resource struct {
 	name      string
 	namespace string
 	rType     string
 	status    Status
 }
 
-func (r *ResourceObj) String() string {
+func (r *Resource) String() string {
 	return fmt.Sprintf("%s:%s/%s", r.namespace, r.rType, r.name)
 }
 
-func (r *ResourceObj) Type() string {
+func (r *Resource) Type() string {
 	return r.rType
 }
 
-func (r *ResourceObj) UpdateStatus(msg string, reason string, err error) {
-	newStatus := Status{details: msg, reason: reason, err: err}
+func (r *Resource) UpdateStatus(msg string, err error) {
+	newStatus := Status{details: msg, err: err}
 	if !r.status.Equals(&newStatus) {
 		r.status.err = err
 		r.status.details = util.Trim(msg)
-		r.status.reason = util.Trim(reason)
 		r.status.updated = true
 	}
 }
 
-func (r *ResourceObj) Status() *Status {
+func (r *Resource) Status() *Status {
 	return &r.status
 }
 
-func (r *ResourceObj) Namespace() string {
+func (r *Resource) Namespace() string {
 	return r.namespace
 }
 
-func (r *ResourceObj) Name() string {
+func (r *Resource) Name() string {
 	return r.name
 }
 
-func (r *ResourceObj) MarkCheckComplete() *ResourceObj {
+func (r *Resource) MarkCheckComplete() *Resource {
 	r.status.completed = true
 	return r
 }
 
-func (r *ResourceObj) IsStatusCheckComplete() bool {
+func (r *Resource) IsStatusCheckComplete() bool {
 	return r.status.completed
 }
 
-func (r *ResourceObj) ReportSinceLastUpdated(out io.Writer) {
+func (r *Resource) ReportSinceLastUpdated(out io.Writer) {
 	if !r.status.updated {
 		return
 	}
 	r.status.updated = false
-	color.Default.Fprintln(out, fmt.Sprintf("%s %s %s", TabHeader, r.String(), r.status.String()))
+	color.Default.Fprintln(out, fmt.Sprintf("%s %s %s", tabHeader, r.String(), r.status.String()))
 }
 
 type Status struct {
 	err       error
-	reason    string
 	details   string
 	updated   bool
 	completed bool
@@ -96,7 +94,13 @@ func (rs *Status) Error() error {
 }
 
 func (rs *Status) Equals(other *Status) bool {
-	return util.Trim(rs.reason) == util.Trim(other.reason)
+	if util.Trim(rs.details) != util.Trim(other.details) {
+		return false
+	}
+	if rs.err == other.err {
+		return true
+	}
+	return rs.err.Error() == other.err.Error()
 }
 
 func (rs *Status) String() string {
@@ -106,30 +110,29 @@ func (rs *Status) String() string {
 	return rs.details
 }
 
-func NewResource(name string, ns string) *ResourceObj {
-	return &ResourceObj{
+func NewResource(name string, ns string) *Resource {
+	return &Resource{
 		name:      name,
 		namespace: ns,
-		rType:     DeploymentType,
+		rType:     deploymentType,
 	}
 }
 
-func (r *ResourceObj) WithStatus(status Status) *ResourceObj {
+func (r *Resource) WithStatus(status Status) *Resource {
 	r.status = status
 	return r
 }
 
-// For testing, mimics when a ResourceObj status is updated.
-func (r *ResourceObj) WithUpdatedStatus(status Status) *ResourceObj {
+// For testing, mimics when a Resource status is updated.
+func (r *Resource) WithUpdatedStatus(status Status) *Resource {
 	r.status = status
 	r.status.updated = true
 	return r
 }
 
-func NewStatus(msg string, reason string, err error) Status {
+func NewStatus(msg string, err error) Status {
 	return Status{
 		details: msg,
-		reason:  reason,
 		err:     err,
 	}
 }

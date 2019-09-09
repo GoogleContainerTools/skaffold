@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package resource
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -31,7 +32,7 @@ func TestUpdateTimestamp(t *testing.T) {
 	testutil.CheckDeepEqual(t, false, dep.status.updated)
 
 	// Update the status
-	dep.UpdateStatus("success", "success", nil)
+	dep.UpdateStatus("success", nil)
 
 	// Check the updated bool is true
 	testutil.CheckDeepEqual(t, true, dep.status.updated)
@@ -60,7 +61,7 @@ func TestReportSinceLastUpdated(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			dep := NewResource("test", "test-ns")
 			out := new(bytes.Buffer)
-			dep.UpdateStatus(test.message, test.message, test.err)
+			dep.UpdateStatus(test.message, test.err)
 			dep.ReportSinceLastUpdated(out)
 			t.CheckDeepEqual(test.expected, out.String())
 		})
@@ -87,7 +88,7 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			dep := NewResource("test", "test-ns")
-			dep.UpdateStatus("cannot pull image", "err", nil)
+			dep.UpdateStatus("cannot pull image", nil)
 			var out *bytes.Buffer
 			for i := 0; i < test.times; i++ {
 				out = new(bytes.Buffer)
@@ -109,44 +110,38 @@ func TestUpdateStatus(t *testing.T) {
 	}{
 		{
 			description:  "updated should be false for same statuses",
-			old:          Status{details: "Waiting for 0/1 replicas to be available...", reason: "Waiting for 0/1 replicas to be available...", err: nil},
-			new:          Status{details: "Waiting for 0/1 replicas to be available...", reason: "Waiting for 0/1 replicas to be available...", err: nil},
+			old:          Status{details: "Waiting for 0/1 replicas to be available...", err: nil},
+			new:          Status{details: "Waiting for 0/1 replicas to be available...", err: nil},
 			expectChange: false,
 		},
 		{
-			description:  "updated should be true if reason changes",
-			old:          Status{details: "same", reason: "same", err: nil},
-			new:          Status{details: "same", reason: "another", err: nil},
+			description:  "updated should be true if both details and err change",
+			old:          Status{details: "same", err: nil},
+			new:          Status{details: "another", err: errors.New("see this error")},
 			expectChange: true,
 		},
 		{
-			description: "updated should be false if reason is same",
-			old:         Status{details: "same", reason: "same", err: nil},
-			new:         Status{details: "same", reason: "same", err: fmt.Errorf("see this error")},
-		},
-		{
-			description:  "updated should be true if reason and err change",
-			old:          Status{details: "same", reason: "same", err: nil},
-			new:          Status{details: "same", reason: "another", err: fmt.Errorf("see this error")},
+			description:  "updated should be true if details change",
+			old:          Status{details: "same", err: nil},
+			new:          Status{details: "error", err: nil},
 			expectChange: true,
 		},
 		{
-			description:  "updated should be true if both reason and details change",
-			old:          Status{details: "same", reason: "same", err: nil},
-			new:          Status{details: "error", reason: "error", err: nil},
-			expectChange: true,
+			description: "updated should be false both details and error message is same",
+			old:         Status{details: "same", err: errors.New("see this error")},
+			new:         Status{details: "same", err: errors.New("see this error")},
 		},
 		{
-			description:  "updated should be false if both reason has a new line",
-			old:          Status{details: "same", reason: "same\n", err: nil},
-			new:          Status{details: "same", reason: "same", err: nil},
-			expectChange: false,
+			description:  "updated should be true both details and error message is same",
+			old:          Status{details: "same", err: errors.New("see this error")},
+			new:          Status{details: "same", err: errors.New("see different error")},
+			expectChange: true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			dep := NewResource("test", "test-ns").WithStatus(test.old)
-			dep.UpdateStatus(test.new.details, test.new.reason, test.new.err)
+			dep.UpdateStatus(test.new.details, test.new.err)
 			t.CheckDeepEqual(test.expectChange, dep.status.updated)
 		})
 	}

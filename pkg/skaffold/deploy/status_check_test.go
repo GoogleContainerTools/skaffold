@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resources"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -42,7 +42,7 @@ func TestGetDeployments(t *testing.T) {
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment
-		expected    map[resources.ResourceObj]time.Duration
+		expected    map[resource.Resource]time.Duration
 		shouldErr   bool
 	}{
 		{
@@ -70,9 +70,9 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(20)},
 				},
 			},
-			expected: map[resources.ResourceObj]time.Duration{
-				*resources.NewResource("dep1", "test"): time.Duration(10) * time.Second,
-				*resources.NewResource("dep2", "test"): time.Duration(20) * time.Second,
+			expected: map[resource.Resource]time.Duration{
+				*resource.NewResource("dep1", "test"): time.Duration(10) * time.Second,
+				*resource.NewResource("dep2", "test"): time.Duration(20) * time.Second,
 			},
 		},
 		{
@@ -90,8 +90,8 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(300)},
 				},
 			},
-			expected: map[resources.ResourceObj]time.Duration{
-				*resources.NewResource("dep1", "test"): time.Duration(200) * time.Second,
+			expected: map[resource.Resource]time.Duration{
+				*resource.NewResource("dep1", "test"): time.Duration(200) * time.Second,
 			},
 		},
 		{
@@ -117,14 +117,14 @@ func TestGetDeployments(t *testing.T) {
 					},
 				},
 			},
-			expected: map[resources.ResourceObj]time.Duration{
-				*resources.NewResource("dep1", "test"): time.Duration(100) * time.Second,
-				*resources.NewResource("dep2", "test"): time.Duration(200) * time.Second,
+			expected: map[resource.Resource]time.Duration{
+				*resource.NewResource("dep1", "test"): time.Duration(100) * time.Second,
+				*resource.NewResource("dep2", "test"): time.Duration(200) * time.Second,
 			},
 		},
 		{
 			description: "no deployments",
-			expected:    map[resources.ResourceObj]time.Duration{},
+			expected:    map[resource.Resource]time.Duration{},
 		},
 		{
 			description: "multiple deployments in different namespaces",
@@ -150,8 +150,8 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: map[resources.ResourceObj]time.Duration{
-				*resources.NewResource("dep1", "test"): time.Duration(100) * time.Second,
+			expected: map[resource.Resource]time.Duration{
+				*resource.NewResource("dep1", "test"): time.Duration(100) * time.Second,
 			},
 		},
 		{
@@ -168,7 +168,7 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: map[resources.ResourceObj]time.Duration{},
+			expected: map[resource.Resource]time.Duration{},
 		},
 		{
 			description: "deployment in correct namespace deployed by skaffold but different run",
@@ -184,7 +184,7 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: map[resources.ResourceObj]time.Duration{},
+			expected: map[resource.Resource]time.Duration{},
 		},
 	}
 
@@ -239,14 +239,9 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			t.Override(&defaultPollPeriodInMilliseconds, 10)
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			actual := &sync.Map{}
 			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
-			r := resources.NewResource("dep", "test")
-			pollDeploymentRolloutStatus(context.Background(), cli, r, time.Duration(test.duration)*time.Millisecond, actual)
-			if _, ok := actual.Load("dep"); !ok {
-				t.Error("expected result for deployment dep. But found none")
-			}
-			err := getSkaffoldDeployStatus(actual)
+			r := resource.NewResource("dep", "test")
+			err := pollDeploymentRolloutStatus(context.Background(), cli, r, time.Duration(test.duration)*time.Millisecond)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -352,48 +347,48 @@ func TestGetRollOutStatus(t *testing.T) {
 func TestPrintStatus(t *testing.T) {
 	tests := []struct {
 		description string
-		rs          []*resources.ResourceObj
+		rs          []*resource.Resource
 		expectedOut string
 		expected    bool
 	}{
 		{
 			description: "single resource successful marked complete - skip print",
-			rs: []*resources.ResourceObj{
-				resources.NewResource("r1", "test").WithUpdatedStatus(
-					resources.NewStatus("success", "ready", nil),
+			rs: []*resource.Resource{
+				resource.NewResource("r1", "test").WithUpdatedStatus(
+					resource.NewStatus("success", nil),
 				).MarkCheckComplete(),
 			},
 			expected: true,
 		},
 		{
 			description: "single resource in error marked complete -skip print",
-			rs: []*resources.ResourceObj{
-				resources.NewResource("r1", "test").WithUpdatedStatus(
-					resources.NewStatus("", "error", fmt.Errorf("error")),
+			rs: []*resource.Resource{
+				resource.NewResource("r1", "test").WithUpdatedStatus(
+					resource.NewStatus("", fmt.Errorf("error")),
 				).MarkCheckComplete(),
 			},
 			expected: true,
 		},
 		{
 			description: "multiple resources 1 not complete",
-			rs: []*resources.ResourceObj{
-				resources.NewResource("r1", "test").WithUpdatedStatus(
-					resources.NewStatus("succes", "ready", nil),
+			rs: []*resource.Resource{
+				resource.NewResource("r1", "test").WithUpdatedStatus(
+					resource.NewStatus("succes", nil),
 				).MarkCheckComplete(),
-				resources.NewResource("r2", "test").WithUpdatedStatus(
-					resources.NewStatus("pending", "pending", nil),
+				resource.NewResource("r2", "test").WithUpdatedStatus(
+					resource.NewStatus("pending", nil),
 				),
 			},
 			expectedOut: " - test:deployment/r2 pending\n",
 		},
 		{
 			description: "multiple resources 1 not complete and in error",
-			rs: []*resources.ResourceObj{
-				resources.NewResource("r1", "test").WithUpdatedStatus(
-					resources.NewStatus("succes", "ready", nil),
+			rs: []*resource.Resource{
+				resource.NewResource("r1", "test").WithUpdatedStatus(
+					resource.NewStatus("succes", nil),
 				).MarkCheckComplete(),
-				resources.NewResource("r2", "test").WithUpdatedStatus(
-					resources.NewStatus("", "", fmt.Errorf("context deadline expired")),
+				resource.NewResource("r2", "test").WithUpdatedStatus(
+					resource.NewStatus("", fmt.Errorf("context deadline expired")),
 				),
 			},
 			expectedOut: " - test:deployment/r2 context deadline expired\n",
