@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,12 +48,12 @@ var (
 	TabHeader = " -"
 )
 
-type Checker struct {
-	context       context.Context
-	out           io.Writer
-	client        *kubectl.CLI
-	numDeps       int
-	processedDeps int32
+type checker struct {
+	context              context.Context
+	out                  io.Writer
+	client               *kubectl.CLI
+	totalDeployments     int
+	processedDeployments int32
 }
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
@@ -74,11 +73,11 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	// Its safe to use sync.Map without locks here as each subroutine adds a different key to the map.
 	syncMap := &sync.Map{}
 
-	checker := &Checker{
-		context: ctx,
-		out:     out,
-		client:  kubectl.NewFromRunContext(runCtx),
-		numDeps: len(dMap),
+	checker := &checker{
+		context:          ctx,
+		out:              out,
+		client:           kubectl.NewFromRunContext(runCtx),
+		totalDeployments: len(dMap),
 	}
 
 	for dName, deadlineDuration := range dMap {
@@ -117,7 +116,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	return depMap, nil
 }
 
-func (c *Checker) pollDeploymentRolloutStatus(dName string, deadline time.Duration, syncMap *sync.Map) {
+func (c *checker) pollDeploymentRolloutStatus(dName string, deadline time.Duration, syncMap *sync.Map) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(c.context, deadline+pollDuration)
@@ -130,16 +129,10 @@ func (c *Checker) pollDeploymentRolloutStatus(dName string, deadline time.Durati
 			return
 		case <-time.After(pollDuration):
 			status, err := executeRolloutStatus(timeoutContext, c.client, dName)
-			if err != nil {
+			if err != nil || strings.Contains(status, "successfully rolled out"){
 				syncMap.Store(dName, err)
-				atomic.AddInt32(&c.processedDeps, 1)
-				c.printStatusCheckSummary(dName, err.Error())
-				return
-			}
-			if strings.Contains(status, "successfully rolled out") {
-				syncMap.Store(dName, nil)
-				atomic.AddInt32(&c.processedDeps, 1)
-				c.printStatusCheckSummary(dName, "")
+				atomic.AddInt32(&c.processedDeployments, 1)
+				c.printStatusCheckSummary(dName, err)
 				return
 			}
 			syncMap.Store(dName, status)
@@ -148,7 +141,7 @@ func (c *Checker) pollDeploymentRolloutStatus(dName string, deadline time.Durati
 }
 
 func getSkaffoldDeployStatus(m *sync.Map) error {
-	errorStrings := []string{}
+	var errorStrings []string
 	m.Range(func(k, v interface{}) bool {
 		if t, ok := v.(error); ok {
 			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", k, t.Error()))
@@ -174,22 +167,28 @@ func getDeadline(d int) time.Duration {
 	return defaultStatusCheckDeadline
 }
 
-func (c *Checker) printStatusCheckSummary(dName string, msg string) {
-	waitingMsg := ""
-	if numLeft := c.numDeps - int(c.processedDeps); numLeft > 0 {
-		waitingMsg = fmt.Sprintf(" [%d/%d deployment(s) still pending]", numLeft, c.numDeps)
-	}
-	dName = fmt.Sprintf("deployment/%s", dName)
-	if msg != "" {
-		color.Default.Fprintln(c.out,
-			fmt.Sprintf("%s %s failed%s. Error: %s.",
-				TabHeader,
-				dName,
-				util.Trim(waitingMsg),
-				util.Trim(msg),
-			),
-		)
+func (c *checker) printStatusCheckSummary(dName string, err error) {
+	status := fmt.Sprintf("%s deployment/%s",TabHeader, dName)
+	if err != nil {
+			status = fmt.Sprintf("%s failed.%s Error: %s.",
+				status,
+				trimNewLine(c.getPendingMessage()),
+				trimNewLine(err.Error()),
+			)
 	} else {
-		color.Default.Fprintln(c.out, fmt.Sprintf("%s %s is ready.%s", TabHeader, dName, waitingMsg))
+		status = fmt.Sprintf("%s is ready.%s", status, c.getPendingMessage())
 	}
+	color.Default.Fprintln(c.out, status)
+}
+
+func (c *checker) getPendingMessage() string {
+	if pendingDeployments := c.totalDeployments - int(c.processedDeployments); pendingDeployments > 0 {
+		return fmt.Sprintf(" [%d/%d deployment(s) still pending]", pendingDeployments, c.totalDeployments)
+	}
+	return ""
+}
+
+
+func trimNewLine(msg string) string {
+	return strings.TrimSuffix(msg, "\n")
 }
