@@ -860,12 +860,6 @@
           "x-intellij-html-description": "image that runs a Gradle build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
           "default": "gcr.io/cloud-builders/gradle"
         },
-        "kanikoImage": {
-          "type": "string",
-          "description": "image that runs a Kaniko build. See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).",
-          "x-intellij-html-description": "image that runs a Kaniko build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
-          "default": "gcr.io/kaniko-project/executor"
-        },
         "machineType": {
           "type": "string",
           "description": "type of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
@@ -894,7 +888,6 @@
         "machineType",
         "timeout",
         "dockerImage",
-        "kanikoImage",
         "mavenImage",
         "gradleImage"
       ],
