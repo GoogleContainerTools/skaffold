@@ -17,6 +17,7 @@ limitations under the License.
 package deploy
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -225,6 +226,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&defaultPollPeriodInMilliseconds, 10)
 			t.Override(&util.DefaultExecCommand, test.commands)
+
 			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
 			err := pollDeploymentRolloutStatus(context.Background(), cli, "dep", time.Duration(test.duration)*time.Millisecond)
 			t.CheckError(test.shouldErr, err)
@@ -325,6 +327,48 @@ func TestGetRollOutStatus(t *testing.T) {
 			actual, err := getRollOutStatus(context.Background(), cli, "dep")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
+		})
+	}
+}
+
+func TestPrintSummaryStatus(t *testing.T) {
+	tests := []struct {
+		description string
+		pending     int32
+		err         error
+		expected    string
+	}{
+		{
+			description: "no deployment left and current is in success",
+			pending:     0,
+			err:         nil,
+			expected:    " - deployment/dep is ready.\n",
+		},
+		{
+			description: "no deployment left and current is in error",
+			pending:     0,
+			err:         errors.New("context deadline expired"),
+			expected:    " - deployment/dep failed. Error: context deadline expired.\n",
+		},
+		{
+			description: "more than 1 deployment left and current is in success",
+			pending:     4,
+			err:         nil,
+			expected:    " - deployment/dep is ready. [4/10 deployment(s) still pending]\n",
+		},
+		{
+			description: "more than 1 deployment left and current is in error",
+			pending:     8,
+			err:         errors.New("context deadline expired"),
+			expected:    " - deployment/dep failed. [8/10 deployment(s) still pending] Error: context deadline expired.\n",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			out := new(bytes.Buffer)
+			printStatusCheckSummary("dep", int(test.pending), 10, test.err, out)
+			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
 }
