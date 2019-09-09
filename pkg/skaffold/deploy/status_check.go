@@ -129,7 +129,7 @@ func (c *checker) pollDeploymentRolloutStatus(dName string, deadline time.Durati
 			return
 		case <-time.After(pollDuration):
 			status, err := executeRolloutStatus(timeoutContext, c.client, dName)
-			if err != nil || strings.Contains(status, "successfully rolled out"){
+			if err != nil || strings.Contains(status, "successfully rolled out") {
 				syncMap.Store(dName, err)
 				atomic.AddInt32(&c.processedDeployments, 1)
 				c.printStatusCheckSummary(dName, err)
@@ -168,13 +168,13 @@ func getDeadline(d int) time.Duration {
 }
 
 func (c *checker) printStatusCheckSummary(dName string, err error) {
-	status := fmt.Sprintf("%s deployment/%s",TabHeader, dName)
+	status := fmt.Sprintf("%s deployment/%s", TabHeader, dName)
 	if err != nil {
-			status = fmt.Sprintf("%s failed.%s Error: %s.",
-				status,
-				trimNewLine(c.getPendingMessage()),
-				trimNewLine(err.Error()),
-			)
+		status = fmt.Sprintf("%s failed.%s Error: %s.",
+			status,
+			trimNewLine(c.getPendingMessage()),
+			trimNewLine(err.Error()),
+		)
 	} else {
 		status = fmt.Sprintf("%s is ready.%s", status, c.getPendingMessage())
 	}
@@ -187,7 +187,6 @@ func (c *checker) getPendingMessage() string {
 	}
 	return ""
 }
-
 
 func trimNewLine(msg string) string {
 	return strings.TrimSuffix(msg, "\n")
