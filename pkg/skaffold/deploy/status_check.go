@@ -186,7 +186,7 @@ func trimNewLine(msg string) string {
 
 func newCounter(i int) *counter {
 	return &counter{
-		total: i,
+		total:   i,
 		pending: int32(i),
 	}
 }

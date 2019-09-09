@@ -370,7 +370,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
 			c := &counter{
-				total:     10,
+				total:   10,
 				pending: test.pending,
 			}
 			printStatusCheckSummary("dep", c, int(test.pending), test.err, out)
@@ -384,7 +384,7 @@ func TestPrintPendingRace(t *testing.T) {
 		c := newCounter(100000)
 
 		numSeen := sync.Map{}
-		for i:=0; i <c.total; i++ {
+		for i := 0; i < c.total; i++ {
 			go func() {
 				pending := c.markProcessed()
 				str := c.getPendingMessage(pending)
@@ -402,7 +402,7 @@ func TestPrintPendingRace(t *testing.T) {
 					t.Errorf("race detected: saw %d reported twice.", reportedPending)
 					t.FailNow()
 				}
-				numSeen.Store(reportedPending,struct{}{})
+				numSeen.Store(reportedPending, struct{}{})
 			}()
 		}
 	})
