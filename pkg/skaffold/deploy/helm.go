@@ -461,7 +461,7 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 	return paramToBuildResult, nil
 }
 
-func (k *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {
+func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {
 	return fmt.Errorf("not yet implemented")
 }
 
