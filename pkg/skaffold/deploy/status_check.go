@@ -80,7 +80,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 			defer wg.Done()
 			err := pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), dName, deadlineDuration)
 			syncMap.Store(dName, err)
-			c.increment(1)
+			c.markProcessed()
 			printStatusCheckSummary(dName, c, err, out)
 		}(dName, deadlineDuration)
 	}
@@ -190,7 +190,7 @@ func newCounter(i int) *counter {
 	}
 }
 
-func (c *counter) increment(i int) {
+func (c *counter) markProcessed() {
 	i32 := int32(c.processed)
 	c.processed = int(atomic.AddInt32(&i32, 1))
 }
