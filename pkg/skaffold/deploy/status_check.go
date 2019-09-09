@@ -51,8 +51,8 @@ const (
 )
 
 type counter struct {
-	total     int
-	processed int
+	total   int
+	pending int32
 }
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
@@ -174,8 +174,8 @@ func printStatusCheckSummary(dName string, c *counter, err error, out io.Writer)
 }
 
 func (c *counter) getPendingMessage() string {
-	if pending := c.pending(); pending > 0 {
-		return fmt.Sprintf(" [%d/%d deployment(s) still processed]", pending, c.total)
+	if c.pending > 0 {
+		return fmt.Sprintf(" [%d/%d deployment(s) still pending]", c.pending, c.total)
 	}
 	return ""
 }
@@ -187,14 +187,10 @@ func trimNewLine(msg string) string {
 func newCounter(i int) *counter {
 	return &counter{
 		total: i,
+		pending: int32(i),
 	}
 }
 
 func (c *counter) markProcessed() {
-	i32 := int32(c.processed)
-	c.processed = int(atomic.AddInt32(&i32, 1))
-}
-
-func (c *counter) pending() int {
-	return c.total - c.processed
+	atomic.AddInt32(&c.pending, -1)
 }
