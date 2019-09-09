@@ -51,8 +51,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	defer r.monitor.Reset()
 	defer r.listener.LogWatchToUser(out)
 
-	switch {
-	case needsSync:
+	if needsSync {
 		defer func() {
 			r.changeSet.resetSync()
 			r.intents.resetSync()
@@ -62,32 +61,27 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
 
 			if err := r.syncer.Sync(ctx, s); err != nil {
-				r.changeSet.reset()
 				logrus.Warnln("Skipping deploy due to sync error:", err)
 				return nil
 			}
 		}
+	}
 
-	case needsBuild:
+	if needsBuild {
 		defer func() {
 			r.changeSet.resetBuild()
 			r.intents.resetBuild()
 		}()
 
 		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
-			r.changeSet.reset()
 			logrus.Warnln("Skipping deploy due to error:", err)
 			return nil
 		}
-		r.changeSet.needsRedeploy = true
-		if !deployIntent {
-			break
-		}
-		fallthrough // redeploy after a successful build
+	}
 
-	case needsDeploy:
+	if needsDeploy {
 		defer func() {
-			r.changeSet.reset()
+			r.changeSet.resetDeploy()
 			r.intents.resetDeploy()
 		}()
 
