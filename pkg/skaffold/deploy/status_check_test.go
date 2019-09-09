@@ -192,27 +192,31 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 	rolloutCmd := "kubectl --context kubecontext --namespace test rollout status deployment dep --watch=false"
 	tests := []struct {
 		description string
-		command     util.Command
+		commands    util.Command
 		duration    int
 		shouldErr   bool
 	}{
 		{
 			description: "rollout returns success",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(rolloutCmd, "dep successfully rolled out"),
+			commands: testutil.CmdRunOut(
+				rolloutCmd,
+				"dep successfully rolled out",
+			),
 			duration: 50,
 		}, {
 			description: "rollout returns error in the first attempt",
-			command: testutil.NewFakeCmd(t).
-				WithRunOutErr(rolloutCmd, "could not find", errors.New("deployment.apps/dep could not be found")),
+			commands: testutil.CmdRunOutErr(
+				rolloutCmd, "could not find",
+				errors.New("deployment.apps/dep could not be found"),
+			),
 			shouldErr: true,
 			duration:  50,
 		}, {
 			description: "rollout returns did not stabilize within the given timeout",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 1 of 3 updated replicas are available...").
-				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 1 of 3 updated replicas are available...").
-				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 2 of 3 updated replicas are available..."),
+			commands: testutil.
+				CmdRunOut(rolloutCmd, "Waiting for rollout to finish: 1 of 3 updated replicas are available...").
+				AndRunOut(rolloutCmd, "Waiting for rollout to finish: 1 of 3 updated replicas are available...").
+				AndRunOut(rolloutCmd, "Waiting for rollout to finish: 2 of 3 updated replicas are available..."),
 			duration:  20,
 			shouldErr: true,
 		},
@@ -220,7 +224,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&defaultPollPeriodInMilliseconds, 10)
-			t.Override(&util.DefaultExecCommand, test.command)
+			t.Override(&util.DefaultExecCommand, test.commands)
 
 			actual := &sync.Map{}
 			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
@@ -289,34 +293,43 @@ func TestGetRollOutStatus(t *testing.T) {
 	rolloutCmd := "kubectl --context kubecontext --namespace test rollout status deployment dep --watch=false"
 	tests := []struct {
 		description string
-		command     util.Command
+		commands    util.Command
 		expected    string
 		shouldErr   bool
 	}{
 		{
 			description: "some output",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(rolloutCmd, "Waiting for replicas to be available"),
+			commands: testutil.CmdRunOut(
+				rolloutCmd,
+				"Waiting for replicas to be available",
+			),
 			expected: "Waiting for replicas to be available",
 		},
 		{
 			description: "no output",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(rolloutCmd, ""),
+			commands: testutil.CmdRunOut(
+				rolloutCmd,
+				"",
+			),
 		},
 		{
 			description: "rollout status error",
-			command: testutil.NewFakeCmd(t).
-				WithRunOutErr(rolloutCmd, "", fmt.Errorf("error")),
+			commands: testutil.CmdRunOutErr(
+				rolloutCmd,
+				"",
+				errors.New("error"),
+			),
 			shouldErr: true,
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.command)
+			t.Override(&util.DefaultExecCommand, test.commands)
+
 			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
 			actual, err := getRollOutStatus(context.Background(), cli, "dep")
+
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}

@@ -53,7 +53,7 @@ func TestValidateJibConfig(t *testing.T) {
 {"image":"image","project":"project"}
 `,
 			expectedConfig: []Jib{
-				{BuilderName: JibGradle, FilePath: "path/to/build.gradle", Image: "image", Project: "project"},
+				{BuilderName: JibGradle.Name(), FilePath: "path/to/build.gradle", Image: "image", Project: "project"},
 			},
 		},
 		{
@@ -67,8 +67,8 @@ BEGIN JIB JSON
 {"project":"project2"}
 `,
 			expectedConfig: []Jib{
-				{BuilderName: JibGradle, FilePath: "path/to/build.gradle", Image: "image", Project: "project1"},
-				{BuilderName: JibGradle, FilePath: "path/to/build.gradle", Project: "project2"},
+				{BuilderName: JibGradle.Name(), FilePath: "path/to/build.gradle", Image: "image", Project: "project1"},
+				{BuilderName: JibGradle.Name(), FilePath: "path/to/build.gradle", Project: "project2"},
 			},
 		},
 		{
@@ -78,7 +78,7 @@ BEGIN JIB JSON
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project"}`,
 			expectedConfig: []Jib{
-				{BuilderName: JibMaven, FilePath: "path/to/pom.xml", Image: "image", Project: "project"},
+				{BuilderName: JibMaven.Name(), FilePath: "path/to/pom.xml", Image: "image", Project: "project"},
 			},
 		},
 		{
@@ -92,15 +92,21 @@ BEGIN JIB JSON
 {"project":"project2"}
 `,
 			expectedConfig: []Jib{
-				{BuilderName: JibMaven, FilePath: "path/to/pom.xml", Image: "image", Project: "project1"},
-				{BuilderName: JibMaven, FilePath: "path/to/pom.xml", Project: "project2"},
+				{BuilderName: JibMaven.Name(), FilePath: "path/to/pom.xml", Image: "image", Project: "project1"},
+				{BuilderName: JibMaven.Name(), FilePath: "path/to/pom.xml", Project: "project2"},
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, t.FakeRunOut(test.command, test.stdout))
-			t.CheckDeepEqual(test.expectedConfig, ValidateJibConfig(test.path))
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+				test.command,
+				test.stdout,
+			))
+
+			validated := ValidateJibConfig(test.path)
+
+			t.CheckDeepEqual(test.expectedConfig, validated)
 		})
 	}
 }
@@ -113,22 +119,22 @@ func TestDescribe(t *testing.T) {
 	}{
 		{
 			description:    "gradle without project",
-			config:         Jib{BuilderName: JibGradle, FilePath: "path/to/build.gradle"},
+			config:         Jib{BuilderName: JibGradle.Name(), FilePath: "path/to/build.gradle"},
 			expectedPrompt: "Jib Gradle Plugin (path/to/build.gradle)",
 		},
 		{
 			description:    "gradle with project",
-			config:         Jib{BuilderName: JibGradle, Project: "project", FilePath: "path/to/build.gradle"},
+			config:         Jib{BuilderName: JibGradle.Name(), Project: "project", FilePath: "path/to/build.gradle"},
 			expectedPrompt: "Jib Gradle Plugin (project, path/to/build.gradle)",
 		},
 		{
 			description:    "maven without project",
-			config:         Jib{BuilderName: JibMaven, FilePath: "path/to/pom.xml"},
+			config:         Jib{BuilderName: JibMaven.Name(), FilePath: "path/to/pom.xml"},
 			expectedPrompt: "Jib Maven Plugin (path/to/pom.xml)",
 		},
 		{
 			description:    "maven with project",
-			config:         Jib{BuilderName: JibMaven, Project: "project", FilePath: "path/to/pom.xml"},
+			config:         Jib{BuilderName: JibMaven.Name(), Project: "project", FilePath: "path/to/pom.xml"},
 			expectedPrompt: "Jib Maven Plugin (project, path/to/pom.xml)",
 		},
 	}
@@ -149,7 +155,7 @@ func TestCreateArtifact(t *testing.T) {
 	}{
 		{
 			description:   "jib gradle with image and project",
-			config:        Jib{BuilderName: JibGradle, FilePath: filepath.Join("path", "to", "build.gradle"), Image: "image", Project: "project"},
+			config:        Jib{BuilderName: JibGradle.Name(), FilePath: filepath.Join("path", "to", "build.gradle"), Image: "image", Project: "project"},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName: "image",
@@ -161,7 +167,7 @@ func TestCreateArtifact(t *testing.T) {
 		},
 		{
 			description:   "jib gradle without image and project",
-			config:        Jib{BuilderName: JibGradle, FilePath: filepath.Join("path", "to", "build.gradle")},
+			config:        Jib{BuilderName: JibGradle.Name(), FilePath: filepath.Join("path", "to", "build.gradle")},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName: "different-image",
@@ -175,7 +181,7 @@ func TestCreateArtifact(t *testing.T) {
 		},
 		{
 			description:   "jib maven with image and project",
-			config:        Jib{BuilderName: JibMaven, FilePath: filepath.Join("path", "to", "pom.xml"), Image: "image", Project: "project"},
+			config:        Jib{BuilderName: JibMaven.Name(), FilePath: filepath.Join("path", "to", "pom.xml"), Image: "image", Project: "project"},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName: "image",
@@ -187,7 +193,7 @@ func TestCreateArtifact(t *testing.T) {
 		},
 		{
 			description:   "jib maven without image and project",
-			config:        Jib{BuilderName: JibMaven, FilePath: filepath.Join("path", "to", "pom.xml")},
+			config:        Jib{BuilderName: JibMaven.Name(), FilePath: filepath.Join("path", "to", "pom.xml")},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName: "different-image",
@@ -201,7 +207,7 @@ func TestCreateArtifact(t *testing.T) {
 		},
 		{
 			description:   "ignore workspace",
-			config:        Jib{BuilderName: JibGradle, FilePath: "build.gradle", Image: "image"},
+			config:        Jib{BuilderName: JibGradle.Name(), FilePath: "build.gradle", Image: "image"},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName:    "image",

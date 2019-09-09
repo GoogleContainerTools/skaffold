@@ -55,6 +55,9 @@ func TestPodTemplate(t *testing.T) {
 							Env: []v1.EnvVar{{
 								Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 								Value: "/secret/kaniko-secret",
+							}, {
+								Name:  "UPSTREAM_CLIENT_TYPE",
+								Value: "UpstreamClient(skaffold-test)",
 							}},
 							VolumeMounts: []v1.VolumeMount{{
 								Name:      "kaniko-secret",
@@ -99,6 +102,9 @@ func TestPodTemplate(t *testing.T) {
 						Env: []v1.EnvVar{{
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: "/secret/kaniko-secret",
+						}, {
+							Name:  "UPSTREAM_CLIENT_TYPE",
+							Value: "UpstreamClient(skaffold-test)",
 						}},
 						VolumeMounts: []v1.VolumeMount{
 							{
@@ -163,6 +169,9 @@ func TestPodTemplate(t *testing.T) {
 						Env: []v1.EnvVar{{
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: "/secret/kaniko-secret",
+						}, {
+							Name:  "UPSTREAM_CLIENT_TYPE",
+							Value: "UpstreamClient(skaffold-test)",
 						}},
 						VolumeMounts: []v1.VolumeMount{{
 							Name:      "kaniko-secret",
@@ -208,6 +217,9 @@ func TestPodTemplate(t *testing.T) {
 						Env: []v1.EnvVar{{
 							Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 							Value: "/secret/kaniko-secret",
+						}, {
+							Name:  "UPSTREAM_CLIENT_TYPE",
+							Value: "UpstreamClient(skaffold-test)",
 						}},
 						VolumeMounts: []v1.VolumeMount{{
 							Name:      "kaniko-secret",
@@ -244,7 +256,7 @@ func TestPodTemplate(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := podTemplate(test.initial, test.artifact, test.args)
+			actual := podTemplate(test.initial, test.artifact, test.args, "test")
 
 			t.CheckDeepEqual(test.expected, actual, opt)
 		})

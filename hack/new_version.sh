@@ -14,10 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-echo "Please enter new config version:"
-read NEW_VERSION
+set -e
 
-go run ./hack/new_config_version/version.go ${NEW_VERSION}
+go run ./hack/new_config_version/version.go $@
 
 goimports -w ./pkg/skaffold/schema
 make generate-schemas

@@ -42,6 +42,12 @@ func TestSetDefaults(t *testing.T) {
 							},
 						},
 					},
+					{
+						ImageName: "third",
+						ArtifactType: latest.ArtifactType{
+							CustomArtifact: &latest.CustomArtifact{},
+						},
+					},
 				},
 			},
 		},
@@ -58,6 +64,10 @@ func TestSetDefaults(t *testing.T) {
 	testutil.CheckDeepEqual(t, "second", cfg.Build.Artifacts[1].ImageName)
 	testutil.CheckDeepEqual(t, "folder", cfg.Build.Artifacts[1].Workspace)
 	testutil.CheckDeepEqual(t, "Dockerfile.second", cfg.Build.Artifacts[1].DockerArtifact.DockerfilePath)
+
+	testutil.CheckDeepEqual(t, "third", cfg.Build.Artifacts[2].ImageName)
+	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[2].CustomArtifact.Dependencies.Paths)
+	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[2].CustomArtifact.Dependencies.Ignore)
 }
 
 func TestSetDefaultsOnCluster(t *testing.T) {

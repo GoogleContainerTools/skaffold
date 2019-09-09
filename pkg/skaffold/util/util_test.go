@@ -78,7 +78,7 @@ func TestExpandPathsGlob(t *testing.T) {
 			out:         []string{"dir/sub_dir/file"},
 		},
 		{
-			description: "match top level glob",
+			description: "top level glob",
 			in:          []string{"dir*"},
 			out:         []string{"dir/sub_dir/file", "dir_b/sub_dir_b/file"},
 		},
@@ -86,6 +86,11 @@ func TestExpandPathsGlob(t *testing.T) {
 			description: "invalid pattern",
 			in:          []string{"[]"},
 			shouldErr:   true,
+		},
+		{
+			description: "keep top level order",
+			in:          []string{"dir_b/*", "dir/*"},
+			out:         []string{"dir_b/sub_dir_b/file", "dir/sub_dir/file"},
 		},
 	}
 	for _, test := range tests {

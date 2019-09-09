@@ -67,10 +67,10 @@ weight = 1
 # Everything below this are Site Params
 
 [params]
-#copyright = "Skaffold"
-#privacy_policy = "https://policies.google.com/privacy"
+copyright = "Skaffold Authors"
+privacy_policy = "https://policies.google.com/privacy"
 github_repo = "https://github.com/GoogleContainerTools/skaffold"
-skaffold_version = "skaffold/v1beta13"
+skaffold_version = "skaffold/v1beta14"
 
 # Google Custom Search Engine ID. Remove or comment out to disable search.
 gcs_engine_id = "013756393218025596041:3nojel67sum"

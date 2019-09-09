@@ -54,7 +54,7 @@ func (ule *uncompressedLayerExtender) Compressed() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return v1util.GzipReadCloser(u)
+	return v1util.GzipReadCloser(u), nil
 }
 
 // Digest implements v1.Layer

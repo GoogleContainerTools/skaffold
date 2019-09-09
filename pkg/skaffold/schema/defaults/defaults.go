@@ -19,7 +19,7 @@ package defaults
 import (
 	"fmt"
 
-	"github.com/mitchellh/go-homedir"
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -72,6 +72,7 @@ func Set(c *latest.SkaffoldConfig) error {
 		setDefaultWorkspace(a)
 		defaultToDockerArtifact(a)
 		setDefaultDockerfile(a)
+		setDefaultCustomDependencies(a)
 	}
 
 	for _, pf := range c.PortForward {
@@ -159,6 +160,14 @@ func defaultToDockerArtifact(a *latest.Artifact) {
 func setDefaultDockerfile(a *latest.Artifact) {
 	if a.DockerArtifact != nil {
 		SetDefaultDockerArtifact(a.DockerArtifact)
+	}
+}
+
+func setDefaultCustomDependencies(a *latest.Artifact) {
+	if a.CustomArtifact != nil {
+		if a.CustomArtifact.Dependencies == nil {
+			a.CustomArtifact.Dependencies = &latest.CustomDependencies{}
+		}
 	}
 }
 

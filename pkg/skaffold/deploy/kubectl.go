@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/segmentio/textio"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -72,8 +73,8 @@ func (k *KubectlDeployer) Labels() map[string]string {
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
-	color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
+		color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
 		color.Default.Fprintln(out, err)
 	}
 
@@ -133,7 +134,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		}
 	}
 
-	if err := k.kubectl.Apply(ctx, out, manifests); err != nil {
+	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		event.DeployFailed(err)
 		return NewDeployErrorResult(errors.Wrap(err, "kubectl error"))
 	}
@@ -149,22 +150,27 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	// pull remote manifests
-	var rm deploy.ManifestList
-	for _, m := range k.RemoteManifests {
-		manifest, err := k.readRemoteManifest(ctx, m)
-		if err != nil {
-			return errors.Wrap(err, "get remote manifests")
+	// revert remote manifests
+	// TODO(dgageot): That seems super dangerous and I don't understand
+	// why we need to update resources just before we delete them.
+	if len(k.RemoteManifests) > 0 {
+		var rm deploy.ManifestList
+		for _, m := range k.RemoteManifests {
+			manifest, err := k.readRemoteManifest(ctx, m)
+			if err != nil {
+				return errors.Wrap(err, "get remote manifests")
+			}
+			rm = append(rm, manifest)
 		}
-		rm = append(rm, manifest)
+		upd, err := rm.ReplaceImages(k.originalImages, k.defaultRepo)
+		if err != nil {
+			return errors.Wrap(err, "replacing with originals")
+		}
+		if err := k.kubectl.Apply(ctx, out, upd); err != nil {
+			return errors.Wrap(err, "apply original")
+		}
 	}
-	upd, err := rm.ReplaceImages(k.originalImages, k.defaultRepo)
-	if err != nil {
-		return errors.Wrap(err, "replacing with originals")
-	}
-	if err := k.kubectl.Apply(ctx, out, upd); err != nil {
-		return errors.Wrap(err, "apply original")
-	}
+
 	if err := k.kubectl.Delete(ctx, out, manifests); err != nil {
 		return errors.Wrap(err, "delete")
 	}
