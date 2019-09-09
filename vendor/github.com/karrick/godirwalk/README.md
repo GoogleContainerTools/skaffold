@@ -3,6 +3,8 @@
 `godirwalk` is a library for traversing a directory tree on a file
 system.
 
+[![GoDoc](https://godoc.org/github.com/karrick/godirwalk?status.svg)](https://godoc.org/github.com/karrick/godirwalk) [![Build Status](https://dev.azure.com/microsoft0235/microsoft/_apis/build/status/karrick.godirwalk?branchName=master)](https://dev.azure.com/microsoft0235/microsoft/_build/latest?definitionId=1&branchName=master)
+
 In short, why do I use this library?
 
 1. It's faster than `filepath.Walk`.
@@ -35,9 +37,6 @@ This library not only provides functions for traversing a file system
 directory tree, but also for obtaining a list of immediate descendants
 of a particular directory, typically much more quickly than using
 `os.ReadDir` or `os.ReadDirnames`.
-
-Documentation is available via
-[![GoDoc](https://godoc.org/github.com/karrick/godirwalk?status.svg)](https://godoc.org/github.com/karrick/godirwalk).
 
 ## Description
 

@@ -37,6 +37,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	survey "gopkg.in/AlecAivazis/survey.v1"
@@ -116,7 +117,23 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	if err != nil {
 		return err
 	}
-	images := k.GetImages()
+
+	// Remote tags from image names
+	var images []string
+	for _, image := range k.GetImages() {
+		parsed, err := docker.ParseReference(image)
+		if err != nil {
+			// It's possible that it's a templatized name that can't be parsed as is.
+			warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
+			continue
+		}
+		if parsed.Digest != "" {
+			warnings.Printf("Ignoring image referenced by digest: [%s]", image)
+			continue
+		}
+
+		images = append(images, parsed.BaseName)
+	}
 
 	// Determine which builders/images require prompting
 	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(builderConfigs, images)

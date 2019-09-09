@@ -23,7 +23,6 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	"github.com/google/go-containerregistry/pkg/v1/v1util"
 )
 
 // WithRawConfigFile defines the subset of v1.Image used by these helper methods
@@ -134,15 +133,6 @@ func RawConfigFile(i WithConfigFile) ([]byte, error) {
 type WithUncompressedLayer interface {
 	// UncompressedLayer is like UncompressedBlob, but takes the "diff id".
 	UncompressedLayer(v1.Hash) (io.ReadCloser, error)
-}
-
-// Layer is the same as Blob, but takes the "diff id".
-func Layer(wul WithUncompressedLayer, h v1.Hash) (io.ReadCloser, error) {
-	rc, err := wul.UncompressedLayer(h)
-	if err != nil {
-		return nil, err
-	}
-	return v1util.GzipReadCloser(rc)
 }
 
 // WithRawManifest defines the subset of v1.Image used by these helper methods
@@ -262,22 +252,6 @@ func DiffIDToBlob(wm WithManifestAndConfigFile, h v1.Hash) (v1.Hash, error) {
 		}
 	}
 	return v1.Hash{}, fmt.Errorf("unknown diffID %v", h)
-
-}
-
-// WithBlob defines the subset of v1.Image used by these helper methods
-type WithBlob interface {
-	// Blob returns a ReadCloser for streaming the blob's content.
-	Blob(v1.Hash) (io.ReadCloser, error)
-}
-
-// UncompressedBlob returns a ReadCloser for streaming the blob's content uncompressed.
-func UncompressedBlob(b WithBlob, h v1.Hash) (io.ReadCloser, error) {
-	rc, err := b.Blob(h)
-	if err != nil {
-		return nil, err
-	}
-	return v1util.GunzipReadCloser(rc)
 }
 
 // WithDiffID defines the subset of v1.Layer for exposing the DiffID method.
