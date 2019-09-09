@@ -75,7 +75,14 @@ func TestRun(t *testing.T) {
 			dir:         "testdata/gcb-sub-folder",
 			pods:        []string{"getting-started"},
 			gcpOnly:     true,
-		}, {
+		},
+		{
+			description: "Google Cloud Build with Kaniko",
+			dir:         "examples/gcb-kaniko",
+			pods:        []string{"getting-started-kaniko"},
+			gcpOnly:     true,
+		},
+		{
 			description: "kaniko",
 			dir:         "examples/kaniko",
 			pods:        []string{"getting-started-kaniko"},
