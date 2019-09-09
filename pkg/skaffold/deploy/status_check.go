@@ -19,16 +19,19 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"io"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -44,7 +47,16 @@ var (
 	executeRolloutStatus = getRollOutStatus
 )
 
-func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext) error {
+const (
+	tabHeader = " -"
+)
+
+type counter struct {
+	total   int
+	pending int32
+}
+
+func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
@@ -61,12 +73,16 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	// Its safe to use sync.Map without locks here as each subroutine adds a different key to the map.
 	syncMap := &sync.Map{}
 
+	c := newCounter(len(deployments))
+
 	for _, d := range deployments {
 		wg.Add(1)
 		go func(d *resource.Deployment) {
 			defer wg.Done()
 			err := pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), d)
 			syncMap.Store(d.Name(), err)
+			pending := c.markProcessed()
+			printStatusCheckSummary(d.Name(), pending, c.total, err, out)
 		}(d)
 	}
 
@@ -106,7 +122,9 @@ func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, d *resourc
 	for {
 		select {
 		case <-timeoutContext.Done():
-			return errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", d.Deadline()))
+			err := errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", d.Deadline()))
+			d.UpdateStatus("", err)
+			return err
 		case <-time.After(pollDuration):
 			status, err := executeRolloutStatus(timeoutContext, k, d.Name())
 			d.UpdateStatus(status, err)
@@ -118,7 +136,7 @@ func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, d *resourc
 }
 
 func getSkaffoldDeployStatus(m *sync.Map) error {
-	errorStrings := []string{}
+	var errorStrings []string
 	m.Range(func(k, v interface{}) bool {
 		if t, ok := v.(error); ok {
 			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", k, t.Error()))
@@ -142,4 +160,40 @@ func getDeadline(d int) time.Duration {
 		return time.Duration(d) * time.Second
 	}
 	return defaultStatusCheckDeadline
+}
+
+func printStatusCheckSummary(dName string, pending int, total int, err error, out io.Writer) {
+	status := fmt.Sprintf("%s deployment/%s", tabHeader, dName)
+	if err != nil {
+		status = fmt.Sprintf("%s failed.%s Error: %s.",
+			status,
+			trimNewLine(getPendingMessage(pending, total)),
+			trimNewLine(err.Error()),
+		)
+	} else {
+		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(pending, total))
+	}
+	color.Default.Fprintln(out, status)
+}
+
+func getPendingMessage(pending int, total int) string {
+	if pending > 0 {
+		return fmt.Sprintf(" [%d/%d deployment(s) still pending]", pending, total)
+	}
+	return ""
+}
+
+func trimNewLine(msg string) string {
+	return strings.TrimSuffix(msg, "\n")
+}
+
+func newCounter(i int) *counter {
+	return &counter{
+		total:   i,
+		pending: int32(i),
+	}
+}
+
+func (c *counter) markProcessed() int {
+	return int(atomic.AddInt32(&c.pending, -1))
 }
