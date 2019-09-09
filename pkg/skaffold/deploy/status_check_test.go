@@ -17,7 +17,6 @@ limitations under the License.
 package deploy
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -42,7 +41,7 @@ func TestGetDeployments(t *testing.T) {
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment
-		expected    map[resource.Resource]time.Duration
+		expected    []*resource.Deployment
 		shouldErr   bool
 	}{
 		{
@@ -70,9 +69,9 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(20)},
 				},
 			},
-			expected: map[resource.Resource]time.Duration{
-				*resource.NewResource("dep1", "test"): time.Duration(10) * time.Second,
-				*resource.NewResource("dep2", "test"): time.Duration(20) * time.Second,
+			expected: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
+				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
 			},
 		},
 		{
@@ -90,8 +89,8 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(300)},
 				},
 			},
-			expected: map[resource.Resource]time.Duration{
-				*resource.NewResource("dep1", "test"): time.Duration(200) * time.Second,
+			expected: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Duration(200)*time.Second),
 			},
 		},
 		{
@@ -117,14 +116,14 @@ func TestGetDeployments(t *testing.T) {
 					},
 				},
 			},
-			expected: map[resource.Resource]time.Duration{
-				*resource.NewResource("dep1", "test"): time.Duration(100) * time.Second,
-				*resource.NewResource("dep2", "test"): time.Duration(200) * time.Second,
+			expected: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Duration(100)*time.Second),
+				resource.NewDeployment("dep2", "test", time.Duration(200)*time.Second),
 			},
 		},
 		{
 			description: "no deployments",
-			expected:    map[resource.Resource]time.Duration{},
+			expected:    []*resource.Deployment{},
 		},
 		{
 			description: "multiple deployments in different namespaces",
@@ -150,8 +149,8 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: map[resource.Resource]time.Duration{
-				*resource.NewResource("dep1", "test"): time.Duration(100) * time.Second,
+			expected: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Duration(100)*time.Second),
 			},
 		},
 		{
@@ -168,7 +167,7 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: map[resource.Resource]time.Duration{},
+			expected: []*resource.Deployment{},
 		},
 		{
 			description: "deployment in correct namespace deployed by skaffold but different run",
@@ -184,7 +183,7 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: map[resource.Resource]time.Duration{},
+			expected: []*resource.Deployment{},
 		},
 	}
 
@@ -240,8 +239,8 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 
 			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
-			r := resource.NewResource("dep", "test")
-			err := pollDeploymentRolloutStatus(context.Background(), cli, r, time.Duration(test.duration)*time.Millisecond)
+			r := resource.NewDeployment("dep", "test", time.Duration(test.duration)*time.Millisecond)
+			err := pollDeploymentRolloutStatus(context.Background(), cli, r)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -340,67 +339,6 @@ func TestGetRollOutStatus(t *testing.T) {
 			actual, err := getRollOutStatus(context.Background(), cli, "dep")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
-		})
-	}
-}
-
-func TestPrintStatus(t *testing.T) {
-	tests := []struct {
-		description string
-		rs          []*resource.Resource
-		expectedOut string
-		expected    bool
-	}{
-		{
-			description: "single resource successful marked complete - skip print",
-			rs: []*resource.Resource{
-				resource.NewResource("r1", "test").WithUpdatedStatus(
-					resource.NewStatus("success", nil),
-				).MarkCheckComplete(),
-			},
-			expected: true,
-		},
-		{
-			description: "single resource in error marked complete -skip print",
-			rs: []*resource.Resource{
-				resource.NewResource("r1", "test").WithUpdatedStatus(
-					resource.NewStatus("", fmt.Errorf("error")),
-				).MarkCheckComplete(),
-			},
-			expected: true,
-		},
-		{
-			description: "multiple resources 1 not complete",
-			rs: []*resource.Resource{
-				resource.NewResource("r1", "test").WithUpdatedStatus(
-					resource.NewStatus("succes", nil),
-				).MarkCheckComplete(),
-				resource.NewResource("r2", "test").WithUpdatedStatus(
-					resource.NewStatus("pending", nil),
-				),
-			},
-			expectedOut: " - test:deployment/r2 pending\n",
-		},
-		{
-			description: "multiple resources 1 not complete and in error",
-			rs: []*resource.Resource{
-				resource.NewResource("r1", "test").WithUpdatedStatus(
-					resource.NewStatus("succes", nil),
-				).MarkCheckComplete(),
-				resource.NewResource("r2", "test").WithUpdatedStatus(
-					resource.NewStatus("", fmt.Errorf("context deadline expired")),
-				),
-			},
-			expectedOut: " - test:deployment/r2 context deadline expired\n",
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			out := new(bytes.Buffer)
-			actual := printStatus(test.rs, out)
-			t.CheckDeepEqual(test.expectedOut, out.String())
-			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }

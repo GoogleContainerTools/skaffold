@@ -19,7 +19,6 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"io"
 	"strings"
 	"sync"
 	"time"
@@ -41,14 +40,11 @@ var (
 	// Poll period for checking set to 100 milliseconds
 	defaultPollPeriodInMilliseconds = 100
 
-	// report resource status for pending resources 0.5 second.
-	reportStatusTime = 500 * time.Millisecond
-
 	// For testing
 	executeRolloutStatus = getRollOutStatus
 )
 
-func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
+func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext) error {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
@@ -56,7 +52,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds)
 
-	rsMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)
+	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)
 	if err != nil {
 		return errors.Wrap(err, "could not fetch deployments")
 	}
@@ -65,28 +61,21 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	// Its safe to use sync.Map without locks here as each subroutine adds a different key to the map.
 	syncMap := &sync.Map{}
 
-	rs := make([]*resource.Resource, 0, len(rsMap))
-	for r, deadlineDuration := range rsMap {
-		rs = append(rs, &r)
+	for _, d := range deployments {
 		wg.Add(1)
-		go func(r *resource.Resource, deadlineDuration time.Duration) {
+		go func(d *resource.Deployment) {
 			defer wg.Done()
-			err := pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), r, deadlineDuration)
-			syncMap.Store(r.Name(), err)
-		}(&r, deadlineDuration)
+			err := pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), d)
+			syncMap.Store(d.Name(), err)
+		}(d)
 	}
-
-	// Retrieve pending resource states
-	go func() {
-		printResourceStatus(ctx, rs, deadline, out)
-	}()
 
 	// Wait for all deployment status to be fetched
 	wg.Wait()
 	return getSkaffoldDeployStatus(syncMap)
 }
 
-func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) (map[resource.Resource]time.Duration, error) {
+func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
 	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
 		LabelSelector: l.RunIDKeyValueString(),
 	})
@@ -94,8 +83,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 		return nil, errors.Wrap(err, "could not fetch deployments")
 	}
 
-	depMap := map[resource.Resource]time.Duration{}
-
+	deployments := make([]*resource.Deployment, 0, len(deps.Items))
 	for _, d := range deps.Items {
 		var deadline time.Duration
 		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds > int32(deadlineDuration.Seconds()) {
@@ -103,27 +91,25 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 		} else {
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
 		}
-		r := resource.NewResource(d.Name, d.Namespace)
-		depMap[*r] = deadline
+		deployments = append(deployments, resource.NewDeployment(d.Name, d.Namespace, deadline))
 	}
 
-	return depMap, nil
+	return deployments, nil
 }
 
-func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, r *resource.Resource, deadline time.Duration) error {
+func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, d *resource.Deployment) error {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
-	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollDuration)
-	logrus.Debugf("checking rollout status %s", r.Name())
+	timeoutContext, cancel := context.WithTimeout(ctx, d.Deadline()+pollDuration)
+	logrus.Debugf("checking rollout status %s", d.Name())
 	defer cancel()
 	for {
 		select {
 		case <-timeoutContext.Done():
-			return errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", deadline))
+			return errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", d.Deadline()))
 		case <-time.After(pollDuration):
-			status, err := executeRolloutStatus(timeoutContext, k, r.Name())
-			r.UpdateStatus(status, err)
-			r.MarkCheckComplete()
+			status, err := executeRolloutStatus(timeoutContext, k, d.Name())
+			d.UpdateStatus(status, err)
 			if err != nil || strings.Contains(status, "successfully rolled out") {
 				return err
 			}
@@ -156,33 +142,4 @@ func getDeadline(d int) time.Duration {
 		return time.Duration(d) * time.Second
 	}
 	return defaultStatusCheckDeadline
-}
-
-// Print resource statuses until all status check are completed or context is cancelled.
-func printResourceStatus(ctx context.Context, rs []*resource.Resource, deadline time.Duration, out io.Writer) {
-	timeoutContext, cancel := context.WithTimeout(ctx, deadline)
-	defer cancel()
-	for {
-		var allResourcesCheckComplete bool
-		select {
-		case <-timeoutContext.Done():
-			return
-		case <-time.After(reportStatusTime):
-			allResourcesCheckComplete = printStatus(rs, out)
-		}
-		if allResourcesCheckComplete {
-			return
-		}
-	}
-}
-
-func printStatus(rs []*resource.Resource, out io.Writer) bool {
-	allResourcesCheckComplete := true
-	for _, r := range rs {
-		if !r.IsStatusCheckComplete() {
-			allResourcesCheckComplete = false
-			r.ReportSinceLastUpdated(out)
-		}
-	}
-	return allResourcesCheckComplete
 }
