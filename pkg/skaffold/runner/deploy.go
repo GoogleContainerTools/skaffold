@@ -19,6 +19,7 @@ package runner
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -47,12 +48,13 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
 	if r.runCtx.Opts.StatusCheck {
+		start := time.Now()
 		color.Default.Fprintln(out, "Waiting for deployments to stabilize")
 		err := statusCheck(ctx, r.defaultLabeller, r.runCtx)
 		if err != nil {
-			color.Default.Fprintln(out, err.Error())
+			return err
 		}
-		return err
+		color.Default.Fprintln(out, "Deployments stabilized in", time.Since(start))
 	}
 	return nil
 }
