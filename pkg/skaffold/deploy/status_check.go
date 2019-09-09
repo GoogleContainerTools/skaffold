@@ -44,22 +44,24 @@ var (
 
 	// For testing
 	executeRolloutStatus = getRollOutStatus
+)
 
-	TabHeader = " -"
+const (
+	tabHeader = " -"
 )
 
 type checker struct {
-	context              context.Context
-	out                  io.Writer
-	client               *kubectl.CLI
-	totalDeployments     int
-	processedDeployments int32
+	context            context.Context
+	out                io.Writer
+	cli                *kubectl.CLI
+	totalDeployments   int
+	pendingDeployments int32
 }
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
+		return errors.Wrap(err, "getting kubernetes cli")
 	}
 
 	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds)
@@ -74,10 +76,11 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	syncMap := &sync.Map{}
 
 	checker := &checker{
-		context:          ctx,
-		out:              out,
-		client:           kubectl.NewFromRunContext(runCtx),
-		totalDeployments: len(dMap),
+		context:            ctx,
+		out:                out,
+		cli:                kubectl.NewFromRunContext(runCtx),
+		totalDeployments:   len(dMap),
+		pendingDeployments: int32(len(dMap)),
 	}
 
 	for dName, deadlineDuration := range dMap {
@@ -128,10 +131,10 @@ func (c *checker) pollDeploymentRolloutStatus(dName string, deadline time.Durati
 			syncMap.Store(dName, errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", deadline)))
 			return
 		case <-time.After(pollDuration):
-			status, err := executeRolloutStatus(timeoutContext, c.client, dName)
+			status, err := executeRolloutStatus(timeoutContext, c.cli, dName)
 			if err != nil || strings.Contains(status, "successfully rolled out") {
 				syncMap.Store(dName, err)
-				atomic.AddInt32(&c.processedDeployments, 1)
+				atomic.AddInt32(&c.pendingDeployments, -1)
 				c.printStatusCheckSummary(dName, err)
 				return
 			}
@@ -168,7 +171,7 @@ func getDeadline(d int) time.Duration {
 }
 
 func (c *checker) printStatusCheckSummary(dName string, err error) {
-	status := fmt.Sprintf("%s deployment/%s", TabHeader, dName)
+	status := fmt.Sprintf("%s deployment/%s", tabHeader, dName)
 	if err != nil {
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
@@ -182,8 +185,8 @@ func (c *checker) printStatusCheckSummary(dName string, err error) {
 }
 
 func (c *checker) getPendingMessage() string {
-	if pendingDeployments := c.totalDeployments - int(c.processedDeployments); pendingDeployments > 0 {
-		return fmt.Sprintf(" [%d/%d deployment(s) still pending]", pendingDeployments, c.totalDeployments)
+	if c.pendingDeployments > 0 {
+		return fmt.Sprintf(" [%d/%d deployment(s) still pending]", c.pendingDeployments, c.totalDeployments)
 	}
 	return ""
 }

@@ -231,7 +231,7 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			actual := &sync.Map{}
 			checker := checker{
 				context: context.Background(),
-				client:  &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"},
+				cli:     &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"},
 				out:     ioutil.Discard,
 			}
 			checker.pollDeploymentRolloutStatus("dep", time.Duration(test.duration)*time.Millisecond, actual)
@@ -344,33 +344,31 @@ func TestGetRollOutStatus(t *testing.T) {
 func TestPrintSummaryStatus(t *testing.T) {
 	tests := []struct {
 		description string
-		num         int
+		pending     int
 		err         error
 		expected    string
 	}{
 		{
 			description: "no deployment left and current is in success",
-			num:         1,
 			err:         nil,
 			expected:    " - deployment/dep is ready.\n",
 		},
 		{
 			description: "no deployment left and current is in error",
-			num:         1,
 			err:         errors.New("context deadline expired"),
 			expected:    " - deployment/dep failed. Error: context deadline expired.\n",
 		},
 		{
 			description: "more than 1 deployment left and current is in success",
-			num:         5,
+			pending:     5,
 			err:         nil,
-			expected:    " - deployment/dep is ready. [4/5 deployment(s) still pending]\n",
+			expected:    " - deployment/dep is ready. [5/10 deployment(s) still pending]\n",
 		},
 		{
 			description: "more than 1 deployment left and current is in error",
-			num:         10,
+			pending:     5,
 			err:         errors.New("context deadline expired"),
-			expected:    " - deployment/dep failed. [9/10 deployment(s) still pending] Error: context deadline expired.\n",
+			expected:    " - deployment/dep failed. [5/10 deployment(s) still pending] Error: context deadline expired.\n",
 		},
 	}
 
@@ -378,9 +376,9 @@ func TestPrintSummaryStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
 			c := checker{
-				totalDeployments:     test.num,
-				out:                  out,
-				processedDeployments: 1,
+				totalDeployments:   10,
+				out:                out,
+				pendingDeployments: int32(test.pending),
 			}
 			c.printStatusCheckSummary("dep", test.err)
 			t.CheckDeepEqual(test.expected, out.String())
