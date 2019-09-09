@@ -19,8 +19,8 @@
         },
         "env": {
           "type": "string",
-          "description": "a `key=value` pair. The profile is auto-activated if an Environment Variable `key` has value `value`.",
-          "x-intellij-html-description": "a <code>key=value</code> pair. The profile is auto-activated if an Environment Variable <code>key</code> has value <code>value</code>.",
+          "description": "a `key=pattern` pair. The profile is auto-activated if an Environment Variable `key` matches the pattern. If the pattern starts with `!`, activation happens if the remaining pattern is _not_ matched. The pattern matches if the Environment Variable value is exactly `pattern`, or the regex `pattern` is found in it. An empty `pattern` (e.g. `env: \"key=\"`) always only matches if the Environment Variable is undefined or empty.",
+          "x-intellij-html-description": "a <code>key=pattern</code> pair. The profile is auto-activated if an Environment Variable <code>key</code> matches the pattern. If the pattern starts with <code>!</code>, activation happens if the remaining pattern is <em>not</em> matched. The pattern matches if the Environment Variable value is exactly <code>pattern</code>, or the regex <code>pattern</code> is found in it. An empty <code>pattern</code> (e.g. <code>env: &quot;key=&quot;</code>) always only matches if the Environment Variable is undefined or empty.",
           "examples": [
             "ENV=production"
           ]

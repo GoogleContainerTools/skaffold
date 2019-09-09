@@ -98,7 +98,15 @@ func isEnv(env string) (bool, error) {
 	key := keyValue[0]
 	value := keyValue[1]
 
-	return satisfies(value, os.Getenv(key)), nil
+	envValue := os.Getenv(key)
+
+	// Special case, since otherwise the regex substring check (`re.Compile("").MatchString(envValue)`)
+	// would always match which is most probably not what the user wanted.
+	if value == "" {
+		return envValue == "", nil
+	}
+
+	return satisfies(value, envValue), nil
 }
 
 func isCommand(command string, opts cfg.SkaffoldOptions) bool {
