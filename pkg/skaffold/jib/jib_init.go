@@ -156,7 +156,11 @@ func ValidateJibConfig(path string) []Jib {
 			return nil
 		}
 
-		results[i] = Jib{BuilderName: builderType.Name(), Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
+		results[i] = Jib{BuilderName: builderType.Name(), Image: parsedJSON.Image, FilePath: path}
+		if len(matches) > 1 {
+			// Only apply project if there are multiple modules
+			results[i].Project = parsedJSON.Project
+		}
 	}
 	return results
 }

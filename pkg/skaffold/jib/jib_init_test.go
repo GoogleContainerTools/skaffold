@@ -53,7 +53,7 @@ func TestValidateJibConfig(t *testing.T) {
 {"image":"image","project":"project"}
 `,
 			expectedConfig: []Jib{
-				{BuilderName: JibGradle.Name(), FilePath: "path/to/build.gradle", Image: "image", Project: "project"},
+				{BuilderName: JibGradle.Name(), FilePath: "path/to/build.gradle", Image: "image"},
 			},
 		},
 		{
@@ -78,7 +78,7 @@ BEGIN JIB JSON
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project"}`,
 			expectedConfig: []Jib{
-				{BuilderName: JibMaven.Name(), FilePath: "path/to/pom.xml", Image: "image", Project: "project"},
+				{BuilderName: JibMaven.Name(), FilePath: "path/to/pom.xml", Image: "image"},
 			},
 		},
 		{
