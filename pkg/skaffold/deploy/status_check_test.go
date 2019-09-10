@@ -20,8 +20,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
-	"sync"
 	"testing"
 	"time"
 
@@ -198,7 +196,7 @@ func TestGetDeployments(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(objs...)
 			actual, err := getDeployments(client, "test", labeller, time.Duration(200)*time.Second)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
-				cmp.AllowUnexported(resource.Deployment{}))
+				cmp.AllowUnexported(resource.Deployment{}, resource.Status{}))
 		})
 	}
 }
@@ -243,8 +241,8 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 
 			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
 			d := resource.NewDeployment("dep", "test", time.Duration(test.duration)*time.Millisecond)
-			err := pollDeploymentRolloutStatus(context.Background(), cli, d)
-			t.CheckError(test.shouldErr, err)
+			pollDeploymentRolloutStatus(context.Background(), cli, d)
+			t.CheckError(test.shouldErr, d.Status().Error())
 		})
 	}
 }
@@ -252,46 +250,49 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 func TestGetDeployStatus(t *testing.T) {
 	tests := []struct {
 		description    string
-		deps           map[string]interface{}
+		deps           []*resource.Deployment
 		expectedErrMsg []string
 		shouldErr      bool
 	}{
 		{
 			description: "one error",
-			deps: map[string]interface{}{
-				"dep1": "SUCCESS",
-				"dep2": fmt.Errorf("could not return within default timeout"),
+			deps: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Second).
+					WithStatus("success", nil),
+				resource.NewDeployment("dep2", "test", time.Second).
+					WithStatus("error", errors.New("could not return within default timeout")),
 			},
-			expectedErrMsg: []string{"deployment dep2 failed due to could not return within default timeout"},
+			expectedErrMsg: []string{"dep2 failed due to could not return within default timeout"},
 			shouldErr:      true,
 		},
 		{
 			description: "no error",
-			deps: map[string]interface{}{
-				"dep1": "SUCCESS",
-				"dep2": "RUNNING",
+			deps: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Second).
+					WithStatus("success", nil),
+				resource.NewDeployment("dep2", "test", time.Second).
+					WithStatus("running", nil),
 			},
 		},
 		{
 			description: "multiple errors",
-			deps: map[string]interface{}{
-				"dep1": "SUCCESS",
-				"dep2": fmt.Errorf("could not return within default timeout"),
-				"dep3": fmt.Errorf("ERROR"),
+			deps: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Second).
+					WithStatus("success", nil),
+				resource.NewDeployment("dep2", "test", time.Second).
+					WithStatus("error", errors.New("could not return within default timeout")),
+				resource.NewDeployment("dep3", "test", time.Second).
+					WithStatus("error", errors.New("ERROR")),
 			},
-			expectedErrMsg: []string{"deployment dep2 failed due to could not return within default timeout",
-				"deployment dep3 failed due to ERROR"},
+			expectedErrMsg: []string{"dep2 failed due to could not return within default timeout",
+				"dep3 failed due to ERROR"},
 			shouldErr: true,
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			syncMap := &sync.Map{}
-			for k, v := range test.deps {
-				syncMap.Store(k, v)
-			}
-			err := getSkaffoldDeployStatus(syncMap)
+			err := getSkaffoldDeployStatus(test.deps)
 			t.CheckError(test.shouldErr, err)
 			for _, msg := range test.expectedErrMsg {
 				t.CheckErrorContains(msg, err)

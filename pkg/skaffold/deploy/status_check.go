@@ -70,8 +70,6 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	}
 
 	wg := sync.WaitGroup{}
-	// Its safe to use sync.Map without locks here as each subroutine adds a different key to the map.
-	syncMap := &sync.Map{}
 
 	c := newCounter(len(deployments))
 
@@ -79,8 +77,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		wg.Add(1)
 		go func(d *resource.Deployment) {
 			defer wg.Done()
-			err := pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), d)
-			syncMap.Store(d.String(), err)
+			pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), d)
 			pending := c.markProcessed()
 			printStatusCheckSummary(d, pending, c.total, err, out)
 		}(d)
@@ -88,7 +85,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Wait for all deployment status to be fetched
 	wg.Wait()
-	return getSkaffoldDeployStatus(syncMap)
+	return getSkaffoldDeployStatus(deployments)
 }
 
 func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
@@ -113,7 +110,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	return deployments, nil
 }
 
-func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, d *resource.Deployment) error {
+func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, d *resource.Deployment) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, d.Deadline()+pollDuration)
@@ -123,25 +120,25 @@ func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, d *resourc
 		select {
 		case <-timeoutContext.Done():
 			err := errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", d.Deadline()))
-			return err
+			d.UpdateStatus(err.Error(), err)
+			return
 		case <-time.After(pollDuration):
 			status, err := executeRolloutStatus(timeoutContext, k, d.Name())
+			d.UpdateStatus(status, err)
 			if err != nil || strings.Contains(status, "successfully rolled out") {
-				return err
+				return
 			}
 		}
 	}
 }
 
-func getSkaffoldDeployStatus(m *sync.Map) error {
+func getSkaffoldDeployStatus(deployments []*resource.Deployment) error {
 	var errorStrings []string
-	m.Range(func(k, v interface{}) bool {
-		if t, ok := v.(error); ok {
-			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", k, t.Error()))
+	for _, d := range deployments {
+		if err := d.Status().Error(); err != nil {
+			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", d, err.Error()))
 		}
-		return true
-	})
-
+	}
 	if len(errorStrings) == 0 {
 		return nil
 	}
