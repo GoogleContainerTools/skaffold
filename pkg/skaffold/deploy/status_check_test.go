@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -196,7 +197,8 @@ func TestGetDeployments(t *testing.T) {
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
 			actual, err := getDeployments(client, "test", labeller, time.Duration(200)*time.Second)
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
+				cmp.AllowUnexported(resource.Deployment{}))
 		})
 	}
 }

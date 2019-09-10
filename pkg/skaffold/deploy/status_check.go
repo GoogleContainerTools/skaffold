@@ -123,11 +123,9 @@ func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, d *resourc
 		select {
 		case <-timeoutContext.Done():
 			err := errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", d.Deadline()))
-			d.UpdateStatus("", err)
 			return err
 		case <-time.After(pollDuration):
 			status, err := executeRolloutStatus(timeoutContext, k, d.Name())
-			d.UpdateStatus(status, err)
 			if err != nil || strings.Contains(status, "successfully rolled out") {
 				return err
 			}
