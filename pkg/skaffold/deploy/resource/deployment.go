@@ -30,7 +30,7 @@ type Deployment struct {
 	namespace string
 	rType     string
 	deadline  time.Duration
-	status    *Status
+	status    Status
 }
 
 func (d *Deployment) String() string {
@@ -45,13 +45,12 @@ func (d *Deployment) Deadline() time.Duration {
 	return d.deadline
 }
 
-func (d *Deployment) Status() *Status {
+func (d *Deployment) Status() Status {
 	return d.status
 }
 
 func (d *Deployment) UpdateStatus(details string, err error) {
-	d.status.err = err
-	d.status.details = details
+	d.status = newStatus(details, err)
 }
 
 func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
@@ -60,7 +59,7 @@ func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 		namespace: ns,
 		rType:     deploymentType,
 		deadline:  deadline,
-		status:    NewStatus("", nil),
+		status:    newStatus("", nil),
 	}
 }
 

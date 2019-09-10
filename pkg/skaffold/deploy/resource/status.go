@@ -21,19 +21,19 @@ type Status struct {
 	details string
 }
 
-func (rs *Status) Error() error {
+func (rs Status) Error() error {
 	return rs.err
 }
 
-func (rs *Status) String() string {
+func (rs Status) String() string {
 	if rs.err != nil {
 		return rs.err.Error()
 	}
 	return rs.details
 }
 
-func NewStatus(msg string, err error) *Status {
-	return &Status{
+func newStatus(msg string, err error) Status {
+	return Status{
 		details: msg,
 		err:     err,
 	}
