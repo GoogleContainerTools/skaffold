@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -41,7 +43,7 @@ func TestGetDeployments(t *testing.T) {
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment
-		expected    map[string]time.Duration
+		expected    []*resource.Deployment
 		shouldErr   bool
 	}{
 		{
@@ -69,8 +71,12 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(20)},
 				},
 			},
-			expected: map[string]time.Duration{"dep1": time.Duration(10) * time.Second, "dep2": time.Duration(20) * time.Second},
-		}, {
+			expected: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
+				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
+			},
+		},
+		{
 			description: "command flag deadline is less than deployment spec.",
 			deps: []*appsv1.Deployment{
 				{
@@ -85,8 +91,11 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(300)},
 				},
 			},
-			expected: map[string]time.Duration{"dep1": time.Duration(200) * time.Second},
-		}, {
+			expected: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Duration(200)*time.Second),
+			},
+		},
+		{
 			description: "multiple deployments with no progress deadline set",
 			deps: []*appsv1.Deployment{
 				{
@@ -109,12 +118,14 @@ func TestGetDeployments(t *testing.T) {
 					},
 				},
 			},
-			expected: map[string]time.Duration{"dep1": time.Duration(100) * time.Second,
-				"dep2": time.Duration(200) * time.Second},
+			expected: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Duration(100)*time.Second),
+				resource.NewDeployment("dep2", "test", time.Duration(200)*time.Second),
+			},
 		},
 		{
 			description: "no deployments",
-			expected:    map[string]time.Duration{},
+			expected:    []*resource.Deployment{},
 		},
 		{
 			description: "multiple deployments in different namespaces",
@@ -140,7 +151,9 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: map[string]time.Duration{"dep1": time.Duration(100) * time.Second},
+			expected: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Duration(100)*time.Second),
+			},
 		},
 		{
 			description: "deployment in correct namespace but not deployed by skaffold",
@@ -156,7 +169,7 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: map[string]time.Duration{},
+			expected: []*resource.Deployment{},
 		},
 		{
 			description: "deployment in correct namespace deployed by skaffold but different run",
@@ -172,7 +185,7 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: map[string]time.Duration{},
+			expected: []*resource.Deployment{},
 		},
 	}
 
@@ -184,7 +197,8 @@ func TestGetDeployments(t *testing.T) {
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
 			actual, err := getDeployments(client, "test", labeller, time.Duration(200)*time.Second)
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
+				cmp.AllowUnexported(resource.Deployment{}))
 		})
 	}
 }
@@ -228,7 +242,8 @@ func TestPollDeploymentRolloutStatus(t *testing.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 
 			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
-			err := pollDeploymentRolloutStatus(context.Background(), cli, "dep", time.Duration(test.duration)*time.Millisecond)
+			d := resource.NewDeployment("dep", "test", time.Duration(test.duration)*time.Millisecond)
+			err := pollDeploymentRolloutStatus(context.Background(), cli, d)
 			t.CheckError(test.shouldErr, err)
 		})
 	}
@@ -342,32 +357,32 @@ func TestPrintSummaryStatus(t *testing.T) {
 			description: "no deployment left and current is in success",
 			pending:     0,
 			err:         nil,
-			expected:    " - deployment/dep is ready.\n",
+			expected:    " - test:deployment/dep is ready.\n",
 		},
 		{
 			description: "no deployment left and current is in error",
 			pending:     0,
 			err:         errors.New("context deadline expired"),
-			expected:    " - deployment/dep failed. Error: context deadline expired.\n",
+			expected:    " - test:deployment/dep failed. Error: context deadline expired.\n",
 		},
 		{
 			description: "more than 1 deployment left and current is in success",
 			pending:     4,
 			err:         nil,
-			expected:    " - deployment/dep is ready. [4/10 deployment(s) still pending]\n",
+			expected:    " - test:deployment/dep is ready. [4/10 deployment(s) still pending]\n",
 		},
 		{
 			description: "more than 1 deployment left and current is in error",
 			pending:     8,
 			err:         errors.New("context deadline expired"),
-			expected:    " - deployment/dep failed. [8/10 deployment(s) still pending] Error: context deadline expired.\n",
+			expected:    " - test:deployment/dep failed. [8/10 deployment(s) still pending] Error: context deadline expired.\n",
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			printStatusCheckSummary("dep", int(test.pending), 10, test.err, out)
+			printStatusCheckSummary(resource.NewDeployment("dep", "test", 0), int(test.pending), 10, test.err, out)
 			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}

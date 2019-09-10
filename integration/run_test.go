@@ -200,7 +200,7 @@ func TestRunUnstableChecked(t *testing.T) {
 	output, err := skaffold.Run("--status-check=true").InDir("testdata/unstable-deployment").InNs(ns.Name).RunWithCombinedOutput(t)
 	if err == nil {
 		t.Errorf("expected to see an error since the deployment is not stable: %s", output)
-	} else if !strings.Contains(string(output), "deployment unstable-deployment failed") {
+	} else if !strings.Contains(string(output), "unstable-deployment failed") {
 		t.Errorf("failed without saying the reason: %s", output)
 	}
 }
