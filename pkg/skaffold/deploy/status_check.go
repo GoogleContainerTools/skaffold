@@ -80,9 +80,9 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		go func(d *resource.Deployment) {
 			defer wg.Done()
 			err := pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), d)
-			syncMap.Store(d.Name(), err)
+			syncMap.Store(d.String(), err)
 			pending := c.markProcessed()
-			printStatusCheckSummary(d.Name(), pending, c.total, err, out)
+			printStatusCheckSummary(d, pending, c.total, err, out)
 		}(d)
 	}
 
@@ -117,7 +117,7 @@ func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, d *resourc
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, d.Deadline()+pollDuration)
-	logrus.Debugf("checking rollout status %s", d.Name())
+	logrus.Debugf("checking rollout status %s", d.String())
 	defer cancel()
 	for {
 		select {
@@ -160,8 +160,8 @@ func getDeadline(d int) time.Duration {
 	return defaultStatusCheckDeadline
 }
 
-func printStatusCheckSummary(dName string, pending int, total int, err error, out io.Writer) {
-	status := fmt.Sprintf("%s deployment/%s", tabHeader, dName)
+func printStatusCheckSummary(d *resource.Deployment, pending int, total int, err error, out io.Writer) {
+	status := fmt.Sprintf("%s %s", tabHeader, d.String())
 	if err != nil {
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
