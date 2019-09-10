@@ -161,7 +161,7 @@ func getDeadline(d int) time.Duration {
 }
 
 func printStatusCheckSummary(d *resource.Deployment, pending int, total int, err error, out io.Writer) {
-	status := fmt.Sprintf("%s %s", tabHeader, d.String())
+	status := fmt.Sprintf("%s %s", tabHeader, d)
 	if err != nil {
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
