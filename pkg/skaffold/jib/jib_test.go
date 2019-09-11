@@ -22,16 +22,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
-
-func TestPluginType(t *testing.T) {
-	testutil.CheckDeepEqual(t, "maven", JibMaven.ID())
-	testutil.CheckDeepEqual(t, "Jib Maven Plugin", JibMaven.Name())
-	testutil.CheckDeepEqual(t, "gradle", JibGradle.ID())
-	testutil.CheckDeepEqual(t, "Jib Gradle Plugin", JibGradle.Name())
-}
 
 func TestGetDependencies(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
@@ -144,4 +138,57 @@ func TestGetUpdatedDependencies(t *testing.T) {
 		_, err = getDependencies(tmpDir.Root(), listCmd, projectID)
 		t.CheckNoError(err)
 	})
+}
+
+func TestPluginName(t *testing.T) {
+	testutil.CheckDeepEqual(t, "Jib Maven Plugin", PluginName(JibMaven))
+	testutil.CheckDeepEqual(t, "Jib Gradle Plugin", PluginName(JibGradle))
+}
+
+func TestPluginType_IsKnown(t *testing.T) {
+	tests := []struct {
+		value PluginType
+		known bool
+	}{
+		{JibMaven, true},
+		{JibGradle, true},
+		{PluginType(0), false},
+		{PluginType(-1), false},
+		{PluginType(3), false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, string(test.value), func(t *testutil.T) {
+			t.CheckDeepEqual(test.known, test.value.IsKnown())
+		})
+	}
+}
+
+func TestDeterminePluginType(t *testing.T) {
+	tests := []struct {
+		description string
+		files       []string
+		artifact    *latest.JibArtifact
+		shouldErr   bool
+		PluginType  PluginType
+	}{
+		{"empty", []string{}, nil, true, PluginType(-1)},
+		{"gradle-2", []string{"gradle.properties"}, nil, false, JibGradle},
+		{"gradle-3", []string{"gradlew"}, nil, false, JibGradle},
+		{"gradle-4", []string{"gradlew.bat"}, nil, false, JibGradle},
+		{"gradle-5", []string{"gradlew.cmd"}, nil, false, JibGradle},
+		{"gradle-6", []string{"settings.gradle"}, nil, false, JibGradle},
+		{"maven-1", []string{"pom.xml"}, nil, false, JibMaven},
+		{"maven-2", []string{".mvn/maven.config"}, nil, false, JibMaven},
+		{"maven-2", []string{".mvn/extensions.xml"}, nil, false, JibMaven},
+		{"gradle override", []string{"pom.xml"}, &latest.JibArtifact{Type: int(JibGradle)}, false, JibGradle},
+		{"maven override", []string{"build.gradle"}, &latest.JibArtifact{Type: int(JibMaven)}, false, JibMaven},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			buildDir := t.NewTempDir()
+			buildDir.Touch(test.files...)
+			PluginType, err := DeterminePluginType(buildDir.Root(), test.artifact)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.PluginType, PluginType)
+		})
+	}
 }

@@ -46,7 +46,7 @@ func TestJibMavenBuildSpec(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
-					JibMavenArtifact: &latest.JibMavenArtifact{},
+					JibArtifact: &latest.JibArtifact{Type: int(jib.JibMaven)},
 				},
 			}
 
@@ -91,7 +91,7 @@ func TestJibGradleBuildSpec(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
-					JibGradleArtifact: &latest.JibGradleArtifact{},
+					JibArtifact: &latest.JibArtifact{Type: int(jib.JibGradle)},
 				},
 			}
 
