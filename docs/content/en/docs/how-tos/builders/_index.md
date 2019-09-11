@@ -173,6 +173,15 @@ The `jib` type offers the following options:
 
 {{< schema root="JibArtifact" >}}
 
+Skaffold's jib support chooses the underlying builder (Maven or Gradle) 
+based on the presence of standard build files in the `artifact`'s
+`context` directory:
+
+  - _Maven_: `pom.xml`, or `.mvn` directory.
+  - _Gradle_: `build.gradle`, `gradle.properties`, `settings.gradle`,
+    or the Gradle wrapper script (`gradlew`, `gradlew.bat`, or
+    `gradlew.cmd`).
+
 ### Example
 
 See the [Skaffold-Jib demo project](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/jib/)
