@@ -25,9 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
-	"k8s.io/apimachinery/pkg/runtime"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/kubernetes/scheme"
 )
 
 // ValidSuffixes are the supported file formats for kubernetes manifests
@@ -89,7 +87,7 @@ func parseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 	}
 	r := k8syaml.NewYAMLReader(bufio.NewReader(f))
 
-	objects := []runtime.Object{}
+	yamlsFound := 0
 	images := []string{}
 
 	for {
@@ -100,21 +98,25 @@ func parseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 		if err != nil {
 			return nil, errors.Wrap(err, "reading config file")
 		}
-		d := scheme.Codecs.UniversalDeserializer()
-		obj, _, err := d.Decode(doc, nil, nil)
-		if err != nil {
-			return nil, errors.Wrap(err, "decoding kubernetes yaml")
-		}
 
 		m := make(map[interface{}]interface{})
 		if err := yaml.Unmarshal(doc, &m); err != nil {
 			return nil, errors.Wrap(err, "reading kubernetes YAML")
 		}
 
+		if _, ok := m["apiVersion"]; !ok {
+			logrus.Debugf("'apiVersion' not present in yaml, continuing")
+			continue
+		}
+		if _, ok := m["kind"]; !ok {
+			logrus.Debugf("'kind' not present in yaml, continuing")
+			continue
+		}
+		yamlsFound++
+
 		images = append(images, parseImagesFromYaml(m)...)
-		objects = append(objects, obj)
 	}
-	if len(objects) == 0 {
+	if yamlsFound == 0 {
 		return nil, errors.New("no valid kubernetes objects decoded")
 	}
 	return images, nil
