@@ -71,6 +71,7 @@ func TestDockerCLIBuild(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
+			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunEnv(
 				"docker build . --file "+dockerfilePath+" -t tag --force-rm",
 				test.expectedEnv,
