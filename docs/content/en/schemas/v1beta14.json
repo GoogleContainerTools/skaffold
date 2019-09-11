@@ -19,8 +19,8 @@
         },
         "env": {
           "type": "string",
-          "description": "a `key=value` pair. The profile is auto-activated if an Environment Variable `key` has value `value`.",
-          "x-intellij-html-description": "a <code>key=value</code> pair. The profile is auto-activated if an Environment Variable <code>key</code> has value <code>value</code>.",
+          "description": "a `key=pattern` pair. The profile is auto-activated if an Environment Variable `key` matches the pattern. If the pattern starts with `!`, activation happens if the remaining pattern is _not_ matched. The pattern matches if the Environment Variable value is exactly `pattern`, or the regex `pattern` is found in it. An empty `pattern` (e.g. `env: \"key=\"`) always only matches if the Environment Variable is undefined or empty.",
+          "x-intellij-html-description": "a <code>key=pattern</code> pair. The profile is auto-activated if an Environment Variable <code>key</code> matches the pattern. If the pattern starts with <code>!</code>, activation happens if the remaining pattern is <em>not</em> matched. The pattern matches if the Environment Variable value is exactly <code>pattern</code>, or the regex <code>pattern</code> is found in it. An empty <code>pattern</code> (e.g. <code>env: &quot;key=&quot;</code>) always only matches if the Environment Variable is undefined or empty.",
           "examples": [
             "ENV=production"
           ]
@@ -836,6 +836,12 @@
           "x-intellij-html-description": "image that runs a Gradle build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
           "default": "gcr.io/cloud-builders/gradle"
         },
+        "kanikoImage": {
+          "type": "string",
+          "description": "image that runs a Kaniko build. See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).",
+          "x-intellij-html-description": "image that runs a Kaniko build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
+          "default": "gcr.io/kaniko-project/executor"
+        },
         "machineType": {
           "type": "string",
           "description": "type of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
@@ -864,6 +870,7 @@
         "machineType",
         "timeout",
         "dockerImage",
+        "kanikoImage",
         "mavenImage",
         "gradleImage",
         "concurrency"

@@ -17,13 +17,13 @@ limitations under the License.
 package kubectl
 
 import (
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // GetImages gathers a map of base image names to the image with its tag
@@ -34,6 +34,7 @@ func (l *ManifestList) GetImages() ([]build.Artifact, error) {
 }
 
 type imageSaver struct {
+	ReplaceAny
 	Images []build.Artifact
 }
 
@@ -74,6 +75,7 @@ func (l *ManifestList) ReplaceImages(builds []build.Artifact, defaultRepo string
 }
 
 type imageReplacer struct {
+	ReplaceAny
 	defaultRepo     string
 	tagsByImageName map[string]string
 	found           map[string]bool
@@ -114,8 +116,6 @@ func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
 	return found, tag
 }
 
-// parseAndReplace takes an image from a manifest and if that image matches
-// a built image it will update the tag
 func (r *imageReplacer) parseAndReplace(image string) (bool, interface{}) {
 	parsed, err := docker.ParseReference(image)
 	if err != nil {

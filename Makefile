@@ -105,8 +105,7 @@ test: $(BUILD_DIR)
 .PHONY: coverage
 coverage: $(BUILD_DIR)
 	@ ./hack/test.sh
-	@ curl -s https://codecov.io/bash > $(BUILD_DIR)/upload_coverage
-	@ bash $(BUILD_DIR)/upload_coverage
+	@- curl -s https://codecov.io/bash > $(BUILD_DIR)/upload_coverage && bash $(BUILD_DIR)/upload_coverage
 
 .PHONY: checks
 checks: $(BUILD_DIR)

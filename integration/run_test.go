@@ -75,7 +75,14 @@ func TestRun(t *testing.T) {
 			dir:         "testdata/gcb-sub-folder",
 			pods:        []string{"getting-started"},
 			gcpOnly:     true,
-		}, {
+		},
+		{
+			description: "Google Cloud Build with Kaniko",
+			dir:         "examples/gcb-kaniko",
+			pods:        []string{"getting-started-kaniko"},
+			gcpOnly:     true,
+		},
+		{
 			description: "kaniko",
 			dir:         "examples/kaniko",
 			pods:        []string{"getting-started-kaniko"},
@@ -193,7 +200,7 @@ func TestRunUnstableChecked(t *testing.T) {
 	output, err := skaffold.Run("--status-check=true").InDir("testdata/unstable-deployment").InNs(ns.Name).RunWithCombinedOutput(t)
 	if err == nil {
 		t.Errorf("expected to see an error since the deployment is not stable: %s", output)
-	} else if !strings.Contains(string(output), "deployment unstable-deployment failed") {
+	} else if !strings.Contains(string(output), "unstable-deployment failed") {
 		t.Errorf("failed without saying the reason: %s", output)
 	}
 }

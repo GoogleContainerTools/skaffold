@@ -60,10 +60,7 @@ func (j Jib) Describe() string {
 func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 	workspace := filepath.Dir(j.FilePath)
 
-	a := &latest.Artifact{ImageName: j.Image}
-	if j.Image == "" {
-		a.ImageName = manifestImage
-	}
+	a := &latest.Artifact{ImageName: manifestImage}
 
 	if workspace != "." {
 		a.Workspace = workspace
@@ -74,9 +71,7 @@ func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 		if j.Project != "" {
 			jibMaven.Project = j.Project
 		}
-		if j.Image == "" {
-			jibMaven.Flags = []string{"-Dimage=" + manifestImage}
-		}
+		jibMaven.Flags = []string{"-Dimage=" + manifestImage}
 		a.ArtifactType = latest.ArtifactType{JibArtifact: jibMaven}
 
 	} else if j.BuilderName == PluginName(JibGradle) {
@@ -84,9 +79,7 @@ func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 		if j.Project != "" {
 			jibGradle.Project = j.Project
 		}
-		if j.Image == "" {
-			jibGradle.Flags = []string{"-Dimage=" + manifestImage}
-		}
+		jibGradle.Flags = []string{"-Dimage=" + manifestImage}
 		a.ArtifactType = latest.ArtifactType{JibArtifact: jibGradle}
 	}
 
