@@ -31,7 +31,7 @@ func TestKindIsMatchKey(t *testing.T) {
 		expected    bool
 	}{
 		{
-			description: "returns false for kind key",
+			description: "returns true for kind key",
 			key:         "kind",
 			expected:    true,
 		},

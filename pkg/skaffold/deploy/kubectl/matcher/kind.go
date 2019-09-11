@@ -26,7 +26,7 @@ const (
 	kindKey = "kind"
 )
 
-// Kind matches an object with "Kind" which is not listed in the forbiddenValues.
+// Kind matches the value of "Kind" key with values not listed in the forbiddenValues.
 type Kind struct {
 	forbiddenValues map[string]struct{}
 }
