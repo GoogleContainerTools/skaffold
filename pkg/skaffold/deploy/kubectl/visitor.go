@@ -27,7 +27,7 @@ type Replacer interface {
 
 	NewValue(old interface{}) (bool, interface{})
 
-	ObjMatcher() Matcher
+	ObjIgnorer() Ignorer
 }
 
 // Visit recursively visits a list of manifests and applies transformations of them.
@@ -64,14 +64,14 @@ func recursiveVisit(i interface{}, replacer Replacer) {
 			recursiveVisit(v, replacer)
 		}
 	case map[interface{}]interface{}:
-		// If a ObjMatcher is present:
+		// If a ObjIgnorer is present:
 		// 1. First iterate through all keys.
 		// 2. If key is present and does not match the matcher return to
 		//    skip replacing the entire Object.
-		if replacer.ObjMatcher() != nil {
+		if replacer.ObjIgnorer() != nil {
 			for k, v := range t {
 				key := k.(string)
-				if replacer.ObjMatcher().IsMatchKey(key) && !replacer.ObjMatcher().Matches(v) {
+				if replacer.ObjIgnorer().MatchesKey(key) && replacer.ObjIgnorer().Ignore(v) {
 					return
 				}
 			}

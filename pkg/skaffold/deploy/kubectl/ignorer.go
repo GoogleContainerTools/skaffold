@@ -16,33 +16,17 @@ limitations under the License.
 
 package kubectl
 
-// Matcher is used by Replacer to match object blob to replace based
+// Ignorer is used by Replacer to ignore object blob to replace based
 // on a manifest key in the Manifest
-// Note: If the manifest key is not present, the replacer will replace.
-type Matcher interface {
-	IsMatchKey(key string) bool
-	Matches(v interface{}) bool
+// Note: If the manifest key is not present, the blob will not be ignored.
+type Ignorer interface {
+	MatchesKey(key string) bool
+	Ignore(v interface{}) bool
 }
 
-// anyMatcher matches any object in the yaml manifest.
-type anyMatcher struct{}
+// ReplaceAny is a Replacer which returns nil Ignorer.
+type ReplaceAny struct{}
 
-func (f anyMatcher) Matches(interface{}) bool {
-	return true
-}
-
-func (f anyMatcher) IsMatchKey(key string) bool {
-	return false
-}
-
-// ReplaceAny is a Replacer which returns anyMatcher.
-type ReplaceAny struct {
-	m Matcher
-}
-
-func (r ReplaceAny) ObjMatcher() Matcher {
-	if r.m == nil {
-		r.m = anyMatcher{}
-	}
-	return r.m
+func (r ReplaceAny) ObjIgnorer() Ignorer {
+	return nil
 }

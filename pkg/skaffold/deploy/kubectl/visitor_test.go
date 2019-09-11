@@ -23,9 +23,9 @@ import (
 )
 
 // dummyReplacer is a dummy which replaces "replace-key" with value "replaced"
-// if the manifest contains a key specified in ObjMatcher.
+// if the manifest contains a key specified in ObjIgnorer.
 type dummyReplacer struct {
-	m Matcher
+	m Ignorer
 }
 
 func (r *dummyReplacer) Matches(key string) bool {
@@ -36,17 +36,17 @@ func (r *dummyReplacer) NewValue(old interface{}) (bool, interface{}) {
 	return true, "replaced"
 }
 
-func (r *dummyReplacer) ObjMatcher() Matcher {
+func (r *dummyReplacer) ObjIgnorer() Ignorer {
 	return r.m
 }
 
-// mockMatcher matches objects with match-key present with value in matchValues.
-type mockMatcher struct {
-	matchValues []string
+// mockIgnorer matches objects with ignore-key present with value in ignoreValues.
+type mockIgnorer struct {
+	ignoreValues []string
 }
 
-func (m mockMatcher) Matches(value interface{}) bool {
-	for _, v := range m.matchValues {
+func (m mockIgnorer) Ignore(value interface{}) bool {
+	for _, v := range m.ignoreValues {
 		if v == value {
 			return true
 		}
@@ -54,8 +54,8 @@ func (m mockMatcher) Matches(value interface{}) bool {
 	return false
 }
 
-func (m mockMatcher) IsMatchKey(key string) bool {
-	return key == "match-key"
+func (m mockIgnorer) MatchesKey(key string) bool {
+	return key == "ignore-key"
 }
 
 func TestVisitReplaced(t *testing.T) {
@@ -66,70 +66,70 @@ func TestVisitReplaced(t *testing.T) {
 		expected    ManifestList
 	}{
 		{
-			description: "single manifest in the list with matched key and string value",
+			description: "single manifest in the list with ignored value and string value",
 			manifests: ManifestList{[]byte(`
-match-key: match-value
+ignore-key: ignore-value
 replace-key: not-replaced`)},
-			matchValues: []string{"match-value"},
+			matchValues: []string{"ignore-value"},
 			expected: ManifestList{[]byte(`
-match-key: match-value
+ignore-key: ignore-value
+replace-key: not-replaced`)},
+		},
+		{
+			description: "single manifest in the list with ignored value but not ignored",
+			manifests: ManifestList{[]byte(`
+ignore-key: something-else
+replace-key: not-replaced`)},
+			matchValues: []string{"ignore-value"},
+			expected: ManifestList{[]byte(`
+ignore-key: something-else
 replace-key: replaced`)},
 		},
 		{
-			description: "single manifest in the list with matched key but incorrect value",
-			manifests: ManifestList{[]byte(`
-match-key: something-else
-replace-key: not-replaced`)},
-			matchValues: []string{"match-value"},
-			expected: ManifestList{[]byte(`
-match-key: something-else
-replace-key: not-replaced`)},
-		},
-		{
-			description: "single manifest in the list with no match key but replace-key",
+			description: "single manifest in the list with no ignore key but replace-key",
 			manifests: ManifestList{[]byte(`
 replace-key: not-replaced`)},
-			matchValues: []string{"match-key"},
+			matchValues: []string{"ignore-key"},
 			expected: ManifestList{[]byte(`
 replace-key: replaced`)},
 		},
 		{
-			description: "multiple manifest in the list with matched key and string value",
+			description: "multiple manifest in the list with ignored value and string value",
 			manifests: ManifestList{[]byte(`
-match-key: match-value-1
+ignore-key: ignore-value-1
 replace-key: not-replaced`),
 				[]byte(`
-match-key: match-value-2
+ignore-key: ignore-value-2
 replace-key: not-replaced`)},
-			matchValues: []string{"match-value-1", "match-value-2"},
+			matchValues: []string{"ignore-value-1", "ignore-value-2"},
 			expected: ManifestList{[]byte(`
-match-key: match-value-1
+ignore-key: ignore-value-1
+replace-key: not-replaced`),
+				[]byte(`
+ignore-key: ignore-value-2
+replace-key: not-replaced`)},
+		},
+		{
+			description: "multiple manifest in the list with ignored value matching one obj",
+			manifests: ManifestList{[]byte(`
+ignore-key: not-ignored
+replace-key: not-replaced`),
+				[]byte(`
+ignore-key: ignore-value
+replace-key: not-replaced`)},
+			matchValues: []string{"ignore-value"},
+			expected: ManifestList{[]byte(`
+ignore-key: not-ignored
 replace-key: replaced`),
 				[]byte(`
-match-key: match-value-2
-replace-key: replaced`)},
-		},
-		{
-			description: "multiple manifest in the list with matched key matching one obj",
-			manifests: ManifestList{[]byte(`
-match-key: not-matched
-replace-key: not-replaced`),
-				[]byte(`
-match-key: match-value
+ignore-key: ignore-value
 replace-key: not-replaced`)},
-			matchValues: []string{"match-value"},
-			expected: ManifestList{[]byte(`
-match-key: not-matched
-replace-key: not-replaced`),
-				[]byte(`
-match-key: match-value
-replace-key: replaced`)},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual, _ := test.manifests.Visit(&dummyReplacer{mockMatcher{test.matchValues}})
+			actual, _ := test.manifests.Visit(&dummyReplacer{mockIgnorer{test.matchValues}})
 			t.CheckDeepEqual(test.expected.String(), actual.String())
 		})
 	}
@@ -182,11 +182,11 @@ func TestVisitDifferentMatchKey(t *testing.T) {
 			manifests: ManifestList{[]byte(`
 repeated:
 - replace-key: foo
-  match-key: match
+  ignore-key: not-match
 - replace-key: bar`)},
 			expected: ManifestList{[]byte(`
 repeated:
-- match-key: match
+- ignore-key: not-match
   replace-key: replaced
 - replace-key: replaced`)},
 		},
@@ -204,7 +204,7 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual, _ := test.manifests.Visit(&dummyReplacer{mockMatcher{[]string{"match"}}})
+			actual, _ := test.manifests.Visit(&dummyReplacer{mockIgnorer{[]string{"match"}}})
 			t.CheckDeepEqual(test.expected.String(), actual.String())
 		})
 	}
