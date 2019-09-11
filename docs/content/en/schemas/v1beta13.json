@@ -623,14 +623,6 @@
       "anyOf": [
         {
           "properties": {
-            "kubeContext": {
-              "type": "string",
-              "description": "Kubernetes context that Skaffold should deploy to.",
-              "x-intellij-html-description": "Kubernetes context that Skaffold should deploy to.",
-              "examples": [
-                "minikube"
-              ]
-            },
             "statusCheckDeadlineSeconds": {
               "type": "integer",
               "description": "*beta* deadline for deployments to stabilize in seconds.",
@@ -638,8 +630,7 @@
             }
           },
           "preferredOrder": [
-            "statusCheckDeadlineSeconds",
-            "kubeContext"
+            "statusCheckDeadlineSeconds"
           ],
           "additionalProperties": false
         },
@@ -650,14 +641,6 @@
               "description": "*beta* uses the `helm` CLI to apply the charts to the cluster.",
               "x-intellij-html-description": "<em>beta</em> uses the <code>helm</code> CLI to apply the charts to the cluster."
             },
-            "kubeContext": {
-              "type": "string",
-              "description": "Kubernetes context that Skaffold should deploy to.",
-              "x-intellij-html-description": "Kubernetes context that Skaffold should deploy to.",
-              "examples": [
-                "minikube"
-              ]
-            },
             "statusCheckDeadlineSeconds": {
               "type": "integer",
               "description": "*beta* deadline for deployments to stabilize in seconds.",
@@ -666,21 +649,12 @@
           },
           "preferredOrder": [
             "statusCheckDeadlineSeconds",
-            "kubeContext",
             "helm"
           ],
           "additionalProperties": false
         },
         {
           "properties": {
-            "kubeContext": {
-              "type": "string",
-              "description": "Kubernetes context that Skaffold should deploy to.",
-              "x-intellij-html-description": "Kubernetes context that Skaffold should deploy to.",
-              "examples": [
-                "minikube"
-              ]
-            },
             "kubectl": {
               "$ref": "#/definitions/KubectlDeploy",
               "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
@@ -694,21 +668,12 @@
           },
           "preferredOrder": [
             "statusCheckDeadlineSeconds",
-            "kubeContext",
             "kubectl"
           ],
           "additionalProperties": false
         },
         {
           "properties": {
-            "kubeContext": {
-              "type": "string",
-              "description": "Kubernetes context that Skaffold should deploy to.",
-              "x-intellij-html-description": "Kubernetes context that Skaffold should deploy to.",
-              "examples": [
-                "minikube"
-              ]
-            },
             "kustomize": {
               "$ref": "#/definitions/KustomizeDeploy",
               "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
@@ -722,7 +687,6 @@
           },
           "preferredOrder": [
             "statusCheckDeadlineSeconds",
-            "kubeContext",
             "kustomize"
           ],
           "additionalProperties": false
