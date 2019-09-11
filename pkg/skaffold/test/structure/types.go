@@ -17,12 +17,13 @@ limitations under the License.
 package structure
 
 type Runner struct {
-	testFiles []string
+	testFiles, extraEnv []string
 }
 
 // NewRunner creates a new structure.Runner.
-func NewRunner(files []string) *Runner {
+func NewRunner(files, extraEnv []string) *Runner {
 	return &Runner{
 		testFiles: files,
+		extraEnv:  extraEnv,
 	}
 }

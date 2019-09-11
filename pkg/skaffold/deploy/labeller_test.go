@@ -43,9 +43,24 @@ func TestDefaultLabeller(t *testing.T) {
 			l := NewLabeller(test.version)
 			labels := l.Labels()
 
-			expected := map[string]string{"app.kubernetes.io/managed-by": test.expected}
+			expected := map[string]string{
+				"app.kubernetes.io/managed-by": test.expected,
+				"skaffold.dev/run-id":          l.runID,
+			}
 			t.CheckDeepEqual(expected, labels)
 		})
+	}
+}
+
+func TestDefaultLabeller_TwoInstancesHaveSameRunID(t *testing.T) {
+	first := NewLabeller("v1.0.0")
+	second := NewLabeller("v2.0.0")
+
+	if first.RunIDKeyValueString() != second.RunIDKeyValueString() {
+		t.Errorf("expected the run-id to be the same for two instances")
+	}
+	if first.runID == "" {
+		t.Error("run-id label should not be empty")
 	}
 }
 

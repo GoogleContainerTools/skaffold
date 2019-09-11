@@ -1,3 +1,156 @@
+# v0.37.1 Release - 09/04/2019
+
+This is a minor release for a privacy policy update:
+
+* add privacy notice and command to set update check false [#2774](https://github.com/GoogleContainerTools/skaffold/pull/2774)
+
+# v0.37.0 Release - 08/29/2019
+
+No new features in this release!
+
+Bug Fixes:
+
+* Use active gcloud credentials for executing cloudbuild when available [#2731](https://github.com/GoogleContainerTools/skaffold/pull/2731)
+* Restore original images only if there are no remote manifests [#2746](https://github.com/GoogleContainerTools/skaffold/pull/2746)
+* List manifests in the order given by the user [#2729](https://github.com/GoogleContainerTools/skaffold/pull/2729)
+* Fix 'skaffold diagnose' for custom builder without dependencies [#2724](https://github.com/GoogleContainerTools/skaffold/pull/2724)
+* Don't panic when dockerConfig isn't provided [#2735](https://github.com/GoogleContainerTools/skaffold/pull/2735)
+* Don't set KanikoArtifact if CustomArtifact is set [#2716](https://github.com/GoogleContainerTools/skaffold/pull/2716)
+* [Caching] Artifact’s config is an input to digest calculation [#2728](https://github.com/GoogleContainerTools/skaffold/pull/2728)
+* Don’t fetch images that are aliases for scratch [#2720](https://github.com/GoogleContainerTools/skaffold/pull/2720)
+* Implement exponential backoff for retrieving cloud build status [#2667](https://github.com/GoogleContainerTools/skaffold/pull/2667)
+* Fix call to newPortForwardEntry constructor in kubectl_forwarder_test [#2703](https://github.com/GoogleContainerTools/skaffold/pull/2703)
+* Add information about top level owner to port forward key [#2675](https://github.com/GoogleContainerTools/skaffold/pull/2675)
+* Turn RPC State forwardedPorts into map keyed by the local port [#2659](https://github.com/GoogleContainerTools/skaffold/pull/2659)
+* Show the duration of the deploy phase [#2739](https://github.com/GoogleContainerTools/skaffold/pull/2739)
+* Configure jib.allowInsecureRegistries as required [#2674](https://github.com/GoogleContainerTools/skaffold/pull/2674)
+
+Updates & Refactors:
+
+* Pass extra env to the Docker CLI [#2737](https://github.com/GoogleContainerTools/skaffold/pull/2737)
+* Improve manifest splitting. [#2727](https://github.com/GoogleContainerTools/skaffold/pull/2727)
+* Bazel query should specify --output [#2712](https://github.com/GoogleContainerTools/skaffold/pull/2712)
+* Print the output of failed integration tests [#2725](https://github.com/GoogleContainerTools/skaffold/pull/2725)
+* We must handle every profile field type [#2726](https://github.com/GoogleContainerTools/skaffold/pull/2726)
+* Fix CI scripts [#2736](https://github.com/GoogleContainerTools/skaffold/pull/2736)
+* Directs "Download" button to Quickstart [#2695](https://github.com/GoogleContainerTools/skaffold/pull/2695)
+* Small improvements to code coverage [#2719](https://github.com/GoogleContainerTools/skaffold/pull/2719)
+* Don’t store log lines as mutable slices of bytes [#2721](https://github.com/GoogleContainerTools/skaffold/pull/2721)
+* more debugging for kubectl portforward [#2707](https://github.com/GoogleContainerTools/skaffold/pull/2707)
+* Remove time sensitive tests [#2655](https://github.com/GoogleContainerTools/skaffold/pull/2655)
+* Log a warning and rebuild if needed when caching fails [#2685](https://github.com/GoogleContainerTools/skaffold/pull/2685)
+* Improve logging warning when enountering profile field of unhandled type [#2691](https://github.com/GoogleContainerTools/skaffold/pull/2691)
+* refactor: Add upgrade utility to handle all pipelines in a SkaffoldConfig [#2582](https://github.com/GoogleContainerTools/skaffold/pull/2582)
+* Add struct for generate_pipeline to keep track of related data [#2686](https://github.com/GoogleContainerTools/skaffold/pull/2686)
+* Add unit tests to kubectl forwarder [#2661](https://github.com/GoogleContainerTools/skaffold/pull/2661)
+* separate checks + unit tests [#2676](https://github.com/GoogleContainerTools/skaffold/pull/2676)
+* Add UPSTREAM_CLIENT_TYPE user agent environment variable to kaniko pod [#2723](https://github.com/GoogleContainerTools/skaffold/pull/2723)
+
+Docs: 
+
+* Document Docker buildArgs as templated field [#2696](https://github.com/GoogleContainerTools/skaffold/pull/2696)
+* Update cache-artifacts option usage language to reflect new default [#2711](https://github.com/GoogleContainerTools/skaffold/pull/2711)
+* docs: clarify that tagged images in manifests are not replaced [#2598](https://github.com/GoogleContainerTools/skaffold/pull/2598)
+* fix development guide link [#2710](https://github.com/GoogleContainerTools/skaffold/pull/2710)
+* Update community section of README [#2682](https://github.com/GoogleContainerTools/skaffold/pull/2682)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Aaron Paz
+- Andreas Sommer
+- Appu
+- Balint Pato
+- bpopovschi
+- Brian de Alwis
+- Cedric Kring
+- Chanseok Oh
+- Charles-Henri GUERIN
+- Cornelius Weig
+- David Gageot
+- Dmitri Moore
+- Filip Krakowski
+- Jason McClellan
+- JieJhih Jhang
+- Marlon Gamez
+- Matt Brown
+- Medya Ghazizadeh
+- Michael Beaumont
+- Nick Kubala
+- Prashant Arya
+- Priya Wadhwa
+- Russell Wolf
+- Sébastien Le Gall
+- Sergei Morozov
+- Tad Cordle
+- Tanner Bruce
+- Taylor Barrella
+- Tejal Desai
+- Tom Dickman
+
+
+# v0.36.0 Release - 08/15/2019
+
+New Features:
+
+* Add CLI option `--kube-context` to override the kubecontext in Skaffold [#2447](https://github.com/GoogleContainerTools/skaffold/pull/2447)
+* Set artifact caching on by default [#2621](https://github.com/GoogleContainerTools/skaffold/pull/2621)
+* Add flag `status-check-deadline` instead of default 10 minutes [#2591](https://github.com/GoogleContainerTools/skaffold/pull/2591)
+* skaffold generate-pipeline command (experimental) [#2567](https://github.com/GoogleContainerTools/skaffold/pull/2567)
+
+Bug Fixes:
+
+* Pass minikube docker configuration to container-structure-test [#2597](https://github.com/GoogleContainerTools/skaffold/pull/2597)
+* Use pointers for connection listeners so they can be closed properly [#2652](https://github.com/GoogleContainerTools/skaffold/pull/2652)
+* Don't look up services in all namespaces. [#2651](https://github.com/GoogleContainerTools/skaffold/pull/2651)
+* Add CLI flag `--config` for configuring the global config location [#2555](https://github.com/GoogleContainerTools/skaffold/pull/2555)
+* Fix kaniko permissions with generate-pipeline command [#2622](https://github.com/GoogleContainerTools/skaffold/pull/2622)
+* Fix remoteManifests [#2258](https://github.com/GoogleContainerTools/skaffold/pull/2258)
+* docker auth: use GetAllCredentials() to use credHelpers [#2573](https://github.com/GoogleContainerTools/skaffold/pull/2573)
+* Add missing digest when setting helm image tag [#2624](https://github.com/GoogleContainerTools/skaffold/pull/2624)
+* Make sure we mute/unmute logs at the correct times [#2602](https://github.com/GoogleContainerTools/skaffold/pull/2602)
+
+
+Updates & Refactors:
+
+* Merge global and context-specific array settings in Skaffold config [#2590](https://github.com/GoogleContainerTools/skaffold/pull/2590)
+* Add unit test for LoadOrStore  [#2649](https://github.com/GoogleContainerTools/skaffold/pull/2649)
+* Add constructor for creating portForwardEntry [#2648](https://github.com/GoogleContainerTools/skaffold/pull/2648)
+* Link task resources in generate-pipeline output [#2638](https://github.com/GoogleContainerTools/skaffold/pull/2638)
+* Select resources by UUID label [#2609](https://github.com/GoogleContainerTools/skaffold/pull/2609)
+* Collect namespaces of deployed resources. [#2640](https://github.com/GoogleContainerTools/skaffold/pull/2640)
+* Add port forwarding integration test [#2623](https://github.com/GoogleContainerTools/skaffold/pull/2623)
+* Fix issue with remote Kustomizations in dev mode. (#2581) [#2611](https://github.com/GoogleContainerTools/skaffold/pull/2611)
+* Watch all artifact workspaces, including those outside of the working directory [#2614](https://github.com/GoogleContainerTools/skaffold/pull/2614)
+* Make skaffold-generate pipeline command hidden [#2616](https://github.com/GoogleContainerTools/skaffold/pull/2616)
+* refactor code used by pkg/skaffold/runner/generate_pipeline.go [#2617](https://github.com/GoogleContainerTools/skaffold/pull/2617)
+* Update skaffold init --artifact to use JSON structs instead of paths [#2364](https://github.com/GoogleContainerTools/skaffold/pull/2364)
+* fix travis build + docs whitespaces to trigger build [#2610](https://github.com/GoogleContainerTools/skaffold/pull/2610)
+* Update .travis.yml [#2600](https://github.com/GoogleContainerTools/skaffold/pull/2600)
+* build master only on travis CI [#2607](https://github.com/GoogleContainerTools/skaffold/pull/2607)
+
+Docs: 
+
+* Design proposal for configurable kubecontext [#2384](https://github.com/GoogleContainerTools/skaffold/pull/2384)
+* Removed broken link, since the page doesn't exists anymore [#2644](https://github.com/GoogleContainerTools/skaffold/pull/2644)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Balint Pato
+- bpopovschi
+- Chanseok Oh
+- Cornelius Weig
+- Filip Krakowski
+- Jason McClellan
+- Marlon Gamez
+- Matt Brown
+- Nick Kubala
+- Priya Wadhwa
+- Tad Cordle
+- Tanner Bruce
+- Tejal Desai
+
+
 # v0.35.0 Release - 08/02/2019
 
 *Note for Jib users*: The Jib binding has changed and projects are now required to use

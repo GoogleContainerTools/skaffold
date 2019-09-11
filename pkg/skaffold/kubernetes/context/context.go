@@ -19,7 +19,10 @@ package context
 import (
 	"sync"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/pkg/errors"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
@@ -30,26 +33,67 @@ var (
 )
 
 var (
-	currentConfigOnce sync.Once
-	currentConfig     clientcmdapi.Config
-	currentConfigErr  error
+	kubeConfigOnce sync.Once
+	kubeConfig     clientcmd.ClientConfig
+	kubeContext    string
 )
 
-// ResetCurrentConfig is used by tests
-func ResetCurrentConfig() {
-	currentConfigOnce = sync.Once{}
+// resetConfig is used by tests
+func resetConfig() {
+	kubeConfigOnce = sync.Once{}
 }
 
+// UseKubeContext sets an override for the current context in the k8s config.
+func UseKubeContext(overrideKubeContext string) {
+	kubeContext = overrideKubeContext
+}
+
+// GetRestClientConfig returns a REST client config for API calls against the Kubernetes API.
+// If UseKubeContext was called before, the CurrentContext will be overridden.
+// The kubeconfig used will be cached for the life of the skaffold process after the first call.
+// If the CurrentContext is empty and the resulting config is empty, this method attempts to
+// create a RESTClient with an in-cluster config.
+func GetRestClientConfig() (*restclient.Config, error) {
+	return getRestClientConfig(kubeContext)
+}
+
+func getRestClientConfig(kctx string) (*restclient.Config, error) {
+	logrus.Debugf("getting client config for kubeContext: `%s`", kctx)
+	rawConfig, err := getRawKubeConfig()
+	if err != nil {
+		return nil, err
+	}
+	clientConfig := clientcmd.NewNonInteractiveClientConfig(rawConfig, kctx, &clientcmd.ConfigOverrides{CurrentContext: kctx}, nil)
+	restConfig, err := clientConfig.ClientConfig()
+	if kctx == "" && clientcmd.IsEmptyConfig(err) {
+		logrus.Debug("no kube-context set and no kubeConfig found, attempting in-cluster config")
+		restConfig, err := restclient.InClusterConfig()
+		return restConfig, errors.Wrap(err, "error creating REST client config in-cluster")
+	}
+
+	return restConfig, errors.Wrapf(err, "error creating REST client config for kubeContext '%s'", kctx)
+}
+
+// getCurrentConfig retrieves the kubeconfig file. If UseKubeContext was called before, the CurrentContext will be overridden.
+// The result will be cached after the first call.
 func getCurrentConfig() (clientcmdapi.Config, error) {
-	currentConfigOnce.Do(func() {
+	cfg, err := getRawKubeConfig()
+	if kubeContext != "" {
+		// RawConfig does not respect the override in kubeConfig
+		cfg.CurrentContext = kubeContext
+	}
+	return cfg, err
+}
+
+// getRawKubeConfig retrieves and caches the raw kubeConfig. The cache ensures that Skaffold always works with the identical kubeconfig,
+// even if it was changed on disk.
+func getRawKubeConfig() (clientcmdapi.Config, error) {
+	kubeConfigOnce.Do(func() {
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-		kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
-		cfg, err := kubeConfig.RawConfig()
-		if err != nil {
-			currentConfigErr = errors.Wrap(err, "loading kubeconfig")
-			return
-		}
-		currentConfig = cfg
+		kubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{
+			CurrentContext: kubeContext,
+		})
 	})
-	return currentConfig, currentConfigErr
+	rawConfig, err := kubeConfig.RawConfig()
+	return rawConfig, errors.Wrap(err, "loading kubeconfig")
 }

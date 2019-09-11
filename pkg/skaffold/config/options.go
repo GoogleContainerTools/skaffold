@@ -33,6 +33,7 @@ type PortForwardOptions struct {
 // in the config file itself
 type SkaffoldOptions struct {
 	ConfigurationFile  string
+	GlobalConfig       string
 	Cleanup            bool
 	Notification       bool
 	Tail               bool
@@ -53,6 +54,7 @@ type SkaffoldOptions struct {
 	Namespace          string
 	CacheFile          string
 	Trigger            string
+	KubeContext        string
 	WatchPollInterval  int
 	DefaultRepo        string
 	CustomLabels       []string

@@ -63,7 +63,7 @@ func (c *CLI) Run(ctx context.Context, in io.Reader, out io.Writer, command stri
 	return util.RunCmd(cmd)
 }
 
-// Run shells out kubectl CLI with given namespace
+// RunInNamespace shells out kubectl CLI with given namespace
 func (c *CLI) RunInNamespace(ctx context.Context, in io.Reader, out io.Writer, command string, namespace string, arg ...string) error {
 	cmd := c.CommandWithNamespaceArg(ctx, command, namespace, arg...)
 	cmd.Stdin = in
@@ -72,7 +72,7 @@ func (c *CLI) RunInNamespace(ctx context.Context, in io.Reader, out io.Writer, c
 	return util.RunCmd(cmd)
 }
 
-// Run shells out kubectl CLI.
+// RunOut shells out kubectl CLI.
 func (c *CLI) RunOut(ctx context.Context, command string, arg ...string) ([]byte, error) {
 	cmd := c.Command(ctx, command, arg...)
 	return util.RunCmdOut(cmd)

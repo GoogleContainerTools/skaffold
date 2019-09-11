@@ -30,7 +30,7 @@ func TestNewTask(t *testing.T) {
 	tests := []struct {
 		description string
 		taskName    string
-		resources   []tekton.TaskResource
+		inputs      *tekton.Inputs
 		steps       []corev1.Container
 		expected    *tekton.Task
 	}{
@@ -41,18 +41,18 @@ func TestNewTask(t *testing.T) {
 					Kind:       "Task",
 					APIVersion: "tekton.dev/v1alpha1",
 				},
-				Spec: tekton.TaskSpec{
-					Inputs: &tekton.Inputs{},
-				},
+				Spec: tekton.TaskSpec{},
 			},
 		},
 		{
 			description: "normal params",
 			taskName:    "task-test",
-			resources: []tekton.TaskResource{
-				{
-					Name: "source",
-					Type: tekton.PipelineResourceTypeGit,
+			inputs: &tekton.Inputs{
+				Resources: []tekton.TaskResource{
+					{
+						Name: "source",
+						Type: tekton.PipelineResourceTypeGit,
+					},
 				},
 			},
 			steps: []corev1.Container{
@@ -94,22 +94,20 @@ func TestNewTask(t *testing.T) {
 		{
 			description: "empty params",
 			taskName:    "",
-			resources:   []tekton.TaskResource{},
+			inputs:      &tekton.Inputs{},
 			steps:       []corev1.Container{},
 			expected: &tekton.Task{
 				TypeMeta: metav1.TypeMeta{Kind: "Task", APIVersion: "tekton.dev/v1alpha1"},
 				Spec: tekton.TaskSpec{
-					Inputs: &tekton.Inputs{
-						Resources: []tekton.TaskResource{},
-					},
-					Steps: []corev1.Container{},
+					Inputs: &tekton.Inputs{},
+					Steps:  []corev1.Container{},
 				},
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pipeline := NewTask(test.taskName, test.resources, test.steps, nil)
+			pipeline := NewTask(test.taskName, test.inputs, nil, test.steps, nil)
 			t.CheckDeepEqual(test.expected, pipeline)
 		})
 	}

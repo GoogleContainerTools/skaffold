@@ -86,7 +86,7 @@ func TestGetDependenciesGradle(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, t.FakeRunOutErr(
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunOutErr(
 				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"}).Args, " "),
 				test.stdout,
 				test.err,
@@ -164,18 +164,21 @@ func TestGetCommandGradle(t *testing.T) {
 
 func TestGenerateGradleArgs(t *testing.T) {
 	tests := []struct {
-		in        latest.JibGradleArtifact
-		skipTests bool
-		out       []string
+		in                 latest.JibGradleArtifact
+		image              string
+		skipTests          bool
+		insecureRegistries map[string]bool
+		out                []string
 	}{
-		{latest.JibGradleArtifact{}, false, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image"}},
-		{latest.JibGradleArtifact{Flags: []string{"-extra", "args"}}, false, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image", "-extra", "args"}},
-		{latest.JibGradleArtifact{}, true, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image", "-x", "test"}},
-		{latest.JibGradleArtifact{Project: "project"}, false, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "--image=image"}},
-		{latest.JibGradleArtifact{Project: "project"}, true, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "--image=image", "-x", "test"}},
+		{latest.JibGradleArtifact{}, "image", false, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image"}},
+		{latest.JibGradleArtifact{Flags: []string{"-extra", "args"}}, "image", false, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image", "-extra", "args"}},
+		{latest.JibGradleArtifact{}, "image", true, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image", "-x", "test"}},
+		{latest.JibGradleArtifact{Project: "project"}, "image", false, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "--image=image"}},
+		{latest.JibGradleArtifact{Project: "project"}, "image", true, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "--image=image", "-x", "test"}},
+		{latest.JibGradleArtifact{Project: "project"}, "registry.tld/image", true, map[string]bool{"registry.tld": true}, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "-Djib.allowInsecureRegistries=true", "--image=registry.tld/image", "-x", "test"}},
 	}
 	for _, test := range tests {
-		command := GenerateGradleArgs("task", "image", &test.in, test.skipTests)
+		command := GenerateGradleArgs("task", test.image, &test.in, test.skipTests, test.insecureRegistries)
 
 		testutil.CheckDeepEqual(t, test.out, command)
 	}

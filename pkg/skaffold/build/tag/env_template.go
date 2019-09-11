@@ -22,7 +22,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/pkg/errors"
 )
 
@@ -51,7 +50,7 @@ func (t *envTemplateTagger) Labels() map[string]string {
 
 // GenerateFullyQualifiedImageName tags an image with the custom tag
 func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir, imageName string) (string, error) {
-	tag, err := util.ExecuteEnvTemplate(t.Template, map[string]string{
+	tag, err := util.ExecuteEnvTemplate(t.Template.Option("missingkey=error"), map[string]string{
 		"IMAGE_NAME":  imageName,
 		"DIGEST":      "_DEPRECATED_DIGEST_",
 		"DIGEST_ALGO": "_DEPRECATED_DIGEST_ALGO_",
@@ -64,15 +63,7 @@ func (t *envTemplateTagger) GenerateFullyQualifiedImageName(workingDir, imageNam
 	if strings.Contains(tag, "_DEPRECATED_DIGEST_") ||
 		strings.Contains(tag, "_DEPRECATED_DIGEST_ALGO_") ||
 		strings.Contains(tag, "_DEPRECATED_DIGEST_HEX_") {
-		warnings.Printf("{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags")
-
-		switch {
-		case strings.HasSuffix(tag, "@_DEPRECATED_DIGEST_"):
-			tag = strings.TrimSuffix(tag, "@_DEPRECATED_DIGEST_")
-
-		case strings.HasSuffix(tag, "@_DEPRECATED_DIGEST_ALGO_:_DEPRECATED_DIGEST_HEX_"):
-			tag = strings.TrimSuffix(tag, "@_DEPRECATED_DIGEST_ALGO_:_DEPRECATED_DIGEST_HEX_")
-		}
+		return "", errors.New("{{.DIGEST}}, {{.DIGEST_ALGO}} and {{.DIGEST_HEX}} are deprecated, image digest will now automatically be appended to image tags")
 	}
 
 	return tag, nil

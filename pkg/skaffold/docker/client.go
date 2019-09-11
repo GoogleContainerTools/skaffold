@@ -121,6 +121,9 @@ func newMinikubeAPIClient() ([]string, client.CommonAPIClient, error) {
 		client.WithHost(host),
 		client.WithHTTPClient(httpclient),
 		client.WithHTTPHeaders(getUserAgentHeader()))
+	if err != nil {
+		return nil, nil, err
+	}
 
 	if api != nil {
 		api.NegotiateAPIVersion(context.Background())

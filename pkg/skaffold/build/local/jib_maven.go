@@ -36,7 +36,7 @@ func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace st
 }
 
 func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibMavenArtifact, tag string) (string, error) {
-	args := jib.GenerateMavenArgs("dockerBuild", tag, artifact, b.skipTests)
+	args := jib.GenerateMavenArgs("dockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -45,7 +45,7 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 }
 
 func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibMavenArtifact, tag string) (string, error) {
-	args := jib.GenerateMavenArgs("build", tag, artifact, b.skipTests)
+	args := jib.GenerateMavenArgs("build", tag, artifact, b.skipTests, b.insecureRegistries)
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}

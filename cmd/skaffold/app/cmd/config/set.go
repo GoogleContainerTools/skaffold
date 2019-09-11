@@ -26,6 +26,8 @@ import (
 
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
 
 func Set(out io.Writer, args []string) error {
@@ -37,7 +39,7 @@ func Set(out io.Writer, args []string) error {
 }
 
 func setConfigValue(name string, value string) error {
-	cfg, err := getOrCreateConfigForKubectx()
+	cfg, err := getConfigForKubectxOrDefault()
 	if err != nil {
 		return err
 	}
@@ -58,7 +60,7 @@ func setConfigValue(name string, value string) error {
 	return writeConfig(cfg)
 }
 
-func getFieldName(cfg *ContextConfig, name string) string {
+func getFieldName(cfg *config.ContextConfig, name string) string {
 	cfgValue := reflect.Indirect(reflect.ValueOf(cfg))
 	var fieldName string
 	for i := 0; i < cfgValue.NumField(); i++ {
@@ -96,29 +98,38 @@ func parseAsType(value string, field reflect.Value) (reflect.Value, error) {
 	}
 }
 
-func writeConfig(cfg *ContextConfig) error {
-	fullConfig, err := readConfig()
+func writeConfig(cfg *config.ContextConfig) error {
+	fullConfig, err := config.ReadConfigFile(configFile)
 	if err != nil {
 		return err
 	}
 	if global {
 		fullConfig.Global = cfg
 	} else {
+		found := false
 		for i, contextCfg := range fullConfig.ContextConfigs {
 			if contextCfg.Kubecontext == kubecontext {
 				fullConfig.ContextConfigs[i] = cfg
+				found = true
 			}
+		}
+		if !found {
+			fullConfig.ContextConfigs = append(fullConfig.ContextConfigs, cfg)
 		}
 	}
 	return writeFullConfig(fullConfig)
 }
 
-func writeFullConfig(cfg *Config) error {
+func writeFullConfig(cfg *config.GlobalConfig) error {
 	contents, err := yaml.Marshal(cfg)
 	if err != nil {
 		return errors.Wrap(err, "marshaling config")
 	}
-	err = ioutil.WriteFile(configFile, contents, 0644)
+	configFileOrDefault, err := config.ResolveConfigFile(configFile)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(configFileOrDefault, contents, 0644)
 	if err != nil {
 		return errors.Wrap(err, "writing config file")
 	}

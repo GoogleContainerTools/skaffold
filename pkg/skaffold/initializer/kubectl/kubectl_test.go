@@ -80,6 +80,24 @@ spec:
 			images:    []string{"gcr.io/k8s-skaffold/skaffold-example"},
 			shouldErr: false,
 		},
+		{
+			description: "correct rolebinding yaml with no image",
+			contents: `apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default-admin
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin
+subjects:
+- name: default
+  kind: ServiceAccount
+  namespace: default`,
+			images:    []string{},
+			shouldErr: false,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

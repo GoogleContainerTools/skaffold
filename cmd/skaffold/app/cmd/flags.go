@@ -82,7 +82,7 @@ var FlagRegistry = []Flag{
 	},
 	{
 		Name:          "cache-artifacts",
-		Usage:         "Set to true to enable caching of artifacts",
+		Usage:         "Set to false to disable default caching of artifacts",
 		Value:         &opts.CacheArtifacts,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
@@ -229,12 +229,29 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
 	},
+	{
+		Name:          "config",
+		Shorthand:     "c",
+		Usage:         "File for global configurations (defaults to $HOME/.skaffold/config)",
+		Value:         &opts.GlobalConfig,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"run", "dev", "debug", "build", "deploy", "delete", "diagnose"},
+	},
+	{
+		Name:          "kube-context",
+		Usage:         "Deploy to this kubernetes context",
+		Value:         &opts.KubeContext,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+	},
 }
 
 var commandFlags []*pflag.Flag
 
-// SetUpFlags creates pflag.Flag for all registered flags
-func SetUpFlags() {
+// SetupFlags creates pflag.Flag for all registered flags
+func SetupFlags() {
 	commandFlags = make([]*pflag.Flag, len(FlagRegistry))
 	for i, fl := range FlagRegistry {
 		fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
@@ -257,9 +274,6 @@ func SetUpFlags() {
 }
 
 func AddFlags(fs *pflag.FlagSet, cmdName string) {
-	if len(commandFlags) == 0 {
-		SetUpFlags()
-	}
 	for _, f := range commandFlags {
 		if hasCmdAnnotation(cmdName, f.Annotations["cmds"]) {
 			fs.AddFlag(f)
@@ -275,4 +289,8 @@ func hasCmdAnnotation(cmdName string, annotations []string) bool {
 		}
 	}
 	return false
+}
+
+func init() {
+	SetupFlags()
 }

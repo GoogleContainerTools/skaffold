@@ -17,38 +17,9 @@
 set -e
 
 RED='\033[0;31m'
-GREEN='\033[0;32m'
 RESET='\033[0m'
 
 echo "Running go tests..."
-go test -count=1 -race -cover -short -timeout=60s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." ./... | awk -v FAIL="${RED}FAIL${RESET}" '! /no test files/ { gsub("FAIL", FAIL, $0); print $0 }'
+go test -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." ./... | awk -v FAIL="${RED}FAIL${RESET}" '! /no test files/ { gsub("FAIL", FAIL, $0); print $0 }'
 
-GO_TEST_EXIT_CODE=${PIPESTATUS[0]}
-if [[ $GO_TEST_EXIT_CODE -ne 0 ]]; then
-    exit $GO_TEST_EXIT_CODE
-fi
-
-echo "Running validation scripts..."
-scripts=(
-    "hack/boilerplate.sh"
-    "hack/gofmt.sh"
-    "hack/linter.sh"
-    "hack/check-samples.sh"
-    "hack/check-docs.sh"
-    "hack/test-generated-proto.sh"
-)
-fail=0
-for s in "${scripts[@]}"; do
-    echo "RUN ${s}"
-    set +e
-    ./$s
-    result=$?
-    set -e
-    if [[ $result -eq 0 ]]; then
-        echo -e "${GREEN}PASSED${RESET} ${s}"
-    else
-        echo -e "${RED}FAILED${RESET} ${s}"
-        fail=1
-    fi
-done
-exit $fail
+exit ${PIPESTATUS[0]}

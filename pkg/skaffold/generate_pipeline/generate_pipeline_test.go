@@ -19,7 +19,6 @@ package generatepipeline
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
@@ -38,7 +37,7 @@ func TestGeneratePipeline(t *testing.T) {
 			tasks: []*tekton.Task{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "test",
+						Name: "test-build",
 					},
 				},
 			},
@@ -59,13 +58,18 @@ func TestGeneratePipeline(t *testing.T) {
 					},
 					Tasks: []tekton.PipelineTask{
 						{
-							Name: "test-task",
+							Name: "test-build-task",
 							TaskRef: tekton.TaskRef{
-								Name: "test",
+								Name: "test-build",
 							},
-							RunAfter: []string{},
 							Resources: &tekton.PipelineTaskResources{
 								Inputs: []tekton.PipelineTaskInputResource{
+									{
+										Name:     "source",
+										Resource: "source-repo",
+									},
+								},
+								Outputs: []tekton.PipelineTaskOutputResource{
 									{
 										Name:     "source",
 										Resource: "source-repo",
@@ -83,12 +87,12 @@ func TestGeneratePipeline(t *testing.T) {
 			tasks: []*tekton.Task{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "test1",
+						Name: "test-build",
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name: "test2",
+						Name: "test-deploy",
 					},
 				},
 			},
@@ -109,13 +113,18 @@ func TestGeneratePipeline(t *testing.T) {
 					},
 					Tasks: []tekton.PipelineTask{
 						{
-							Name: "test1-task",
+							Name: "test-build-task",
 							TaskRef: tekton.TaskRef{
-								Name: "test1",
+								Name: "test-build",
 							},
-							RunAfter: []string{},
 							Resources: &tekton.PipelineTaskResources{
 								Inputs: []tekton.PipelineTaskInputResource{
+									{
+										Name:     "source",
+										Resource: "source-repo",
+									},
+								},
+								Outputs: []tekton.PipelineTaskOutputResource{
 									{
 										Name:     "source",
 										Resource: "source-repo",
@@ -124,16 +133,16 @@ func TestGeneratePipeline(t *testing.T) {
 							},
 						},
 						{
-							Name: "test2-task",
+							Name: "test-deploy-task",
 							TaskRef: tekton.TaskRef{
-								Name: "test2",
+								Name: "test-deploy",
 							},
-							RunAfter: []string{"test1-task"},
 							Resources: &tekton.PipelineTaskResources{
 								Inputs: []tekton.PipelineTaskInputResource{
 									{
 										Name:     "source",
 										Resource: "source-repo",
+										From:     []string{"test-build-task"},
 									},
 								},
 							},
@@ -153,76 +162,6 @@ func TestGeneratePipeline(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			pipeline, err := generatePipeline(test.tasks)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPipeline, pipeline)
-		})
-	}
-}
-
-func TestGenerateBuildTask(t *testing.T) {
-	var tests = []struct {
-		description string
-		buildConfig latest.BuildConfig
-		shouldErr   bool
-	}{
-		{
-			description: "successfully generate build task",
-			buildConfig: latest.BuildConfig{
-				Artifacts: []*latest.Artifact{
-					{
-						ImageName: "testArtifact",
-					},
-				},
-			},
-			shouldErr: false,
-		},
-		{
-			description: "fail generating build task",
-			buildConfig: latest.BuildConfig{
-				Artifacts: []*latest.Artifact{},
-			},
-			shouldErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := generateBuildTask(test.buildConfig)
-			t.CheckError(test.shouldErr, err)
-		})
-	}
-}
-
-func TestGenerateDeployTask(t *testing.T) {
-	var tests = []struct {
-		description  string
-		deployConfig latest.DeployConfig
-		shouldErr    bool
-	}{
-		{
-			description: "successfully generate deploy task",
-			deployConfig: latest.DeployConfig{
-				DeployType: latest.DeployType{
-					HelmDeploy: &latest.HelmDeploy{},
-				},
-			},
-			shouldErr: false,
-		},
-		{
-			description: "fail generating deploy task",
-			deployConfig: latest.DeployConfig{
-				DeployType: latest.DeployType{
-					HelmDeploy:      nil,
-					KubectlDeploy:   nil,
-					KustomizeDeploy: nil,
-				},
-			},
-			shouldErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			_, err := generateDeployTask(test.deployConfig)
-			t.CheckError(test.shouldErr, err)
 		})
 	}
 }

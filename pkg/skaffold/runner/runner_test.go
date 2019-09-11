@@ -50,6 +50,7 @@ type TestBench struct {
 	syncErrors   []error
 	testErrors   []error
 	deployErrors []error
+	namespaces   []string
 
 	devLoop        func(context.Context, io.Writer) error
 	firstMonitor   func(bool) error
@@ -76,6 +77,11 @@ func (t *TestBench) WithSyncErrors(syncErrors []error) *TestBench {
 
 func (t *TestBench) WithDeployErrors(deployErrors []error) *TestBench {
 	t.deployErrors = deployErrors
+	return t
+}
+
+func (t *TestBench) WithDeployNamespaces(ns []string) *TestBench {
+	t.namespaces = ns
 	return t
 }
 
@@ -151,17 +157,17 @@ func (t *TestBench) Test(_ context.Context, _ io.Writer, artifacts []build.Artif
 	return nil
 }
 
-func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ []deploy.Labeller) error {
+func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ []deploy.Labeller) *deploy.Result {
 	if len(t.deployErrors) > 0 {
 		err := t.deployErrors[0]
 		t.deployErrors = t.deployErrors[1:]
 		if err != nil {
-			return err
+			return deploy.NewDeployErrorResult(err)
 		}
 	}
 
 	t.currentActions.Deployed = findTags(artifacts)
-	return nil
+	return deploy.NewDeploySuccessResult(t.namespaces)
 }
 
 func (t *TestBench) Actions() []Actions {

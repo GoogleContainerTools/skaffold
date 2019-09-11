@@ -45,7 +45,7 @@ func (l *layer) DiffID() (v1.Hash, error) {
 func (l *layer) Compressed() (io.ReadCloser, error) {
 	rc, err := l.opener()
 	if err == nil && !l.compressed {
-		return v1util.GzipReadCloser(rc)
+		return v1util.GzipReadCloser(rc), nil
 	}
 
 	return rc, err
@@ -132,12 +132,7 @@ func computeDigest(opener Opener, compressed bool) (v1.Hash, int64, error) {
 		return v1.SHA256(rc)
 	}
 
-	reader, err := v1util.GzipReadCloser(ioutil.NopCloser(rc))
-	if err != nil {
-		return v1.Hash{}, 0, err
-	}
-
-	return v1.SHA256(reader)
+	return v1.SHA256(v1util.GzipReadCloser(ioutil.NopCloser(rc)))
 }
 
 func computeDiffID(opener Opener, compressed bool) (v1.Hash, error) {

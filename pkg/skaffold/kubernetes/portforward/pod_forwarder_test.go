@@ -52,7 +52,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			expectedPorts:  map[int]struct{}{8080: {}},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-namespace-portname-8080": {
+				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -63,6 +63,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Port:      8080,
 						LocalPort: 8080,
 					},
+					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					portName:               "portname",
 					localPort:              8080,
@@ -96,7 +97,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			description:   "unavailable container port",
 			expectedPorts: map[int]struct{}{9000: {}},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-namespace-portname-8080": {
+				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					resource: latest.PortForwardResource{
@@ -106,6 +107,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Port:      8080,
 						LocalPort: 8080,
 					},
+					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					containerName:          "containername",
 					portName:               "portname",
@@ -171,7 +173,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			expectedPorts:  map[int]struct{}{8080: {}, 50051: {}},
 			availablePorts: []int{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-namespace-portname-8080": {
+				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -182,12 +184,13 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Port:      8080,
 						LocalPort: 8080,
 					},
+					ownerReference:         "owner",
 					portName:               "portname",
 					automaticPodForwarding: true,
 					localPort:              8080,
 					terminationLock:        &sync.Mutex{},
 				},
-				"containername2-namespace2-portname2-50051": {
+				"owner-containername2-namespace2-portname2-50051": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
@@ -198,6 +201,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Port:      50051,
 						LocalPort: 50051,
 					},
+					ownerReference:         "owner",
 					portName:               "portname2",
 					automaticPodForwarding: true,
 					localPort:              50051,
@@ -252,7 +256,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			expectedPorts:  map[int]struct{}{8080: {}, 9000: {}},
 			availablePorts: []int{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-namespace-portname-8080": {
+				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 1,
 					podName:         "podname",
 					containerName:   "containername",
@@ -264,11 +268,12 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Port:      8080,
 						LocalPort: 8080,
 					},
+					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					localPort:              8080,
 					terminationLock:        &sync.Mutex{},
 				},
-				"containername2-namespace2-portname2-8080": {
+				"owner-containername2-namespace2-portname2-8080": {
 					resourceVersion: 1,
 					podName:         "podname2",
 					containerName:   "containername2",
@@ -280,6 +285,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Port:      8080,
 						LocalPort: 8080,
 					},
+					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					localPort:              9000,
 					terminationLock:        &sync.Mutex{},
@@ -333,7 +339,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			expectedPorts:  map[int]struct{}{8080: {}},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
-				"containername-namespace-portname-8080": {
+				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 2,
 					podName:         "podname",
 					containerName:   "containername",
@@ -345,6 +351,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Port:      8080,
 						LocalPort: 8080,
 					},
+					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					localPort:              8080,
 					terminationLock:        &sync.Mutex{},
@@ -400,6 +407,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			taken := map[int]struct{}{}
 
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
+			t.Override(&topLevelOwnerKey, func(_ metav1.Object, _ string) string { return "owner" })
 
 			entryManager := EntryManager{
 				output:             ioutil.Discard,
@@ -425,7 +433,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			actualForwardedResources := test.forwarder.forwardedResources.resources
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expectedEntries, actualForwardedResources) {
-				t.Errorf("Forwarded entries differs from expected entries. Expected: %s, Actual: %v", test.expectedEntries, actualForwardedResources)
+				t.Errorf("Forwarded entries differs from expected entries. Expected: %v, Actual: %v", test.expectedEntries, actualForwardedResources)
 			}
 		})
 	}
@@ -475,6 +483,7 @@ func TestStartPodForwarder(t *testing.T) {
 				}()
 				return func() {}, nil
 			})
+			t.Override(&topLevelOwnerKey, func(_ metav1.Object, _ string) string { return "owner" })
 
 			imageList := kubernetes.NewImageList()
 			imageList.Add("image")
@@ -517,7 +526,7 @@ func TestStartPodForwarder(t *testing.T) {
 
 			// wait for the pod resource to be forwarded
 			err := wait.PollImmediate(10*time.Millisecond, 100*time.Millisecond, func() (bool, error) {
-				_, ok := fakeForwarder.forwardedResources.Load("mycontainer-default-myport-8080")
+				_, ok := fakeForwarder.forwardedResources.Load("owner-mycontainer-default-myport-8080")
 				return ok, nil
 			})
 			if err != nil && test.entryExpected {

@@ -18,14 +18,15 @@ package runcontext
 
 import (
 	"os"
+	"sort"
 
-	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	runnerutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 type RunContext struct {
@@ -58,13 +59,13 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		return nil, errors.Wrap(err, "getting namespace list")
 	}
 
-	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
+	defaultRepo, err := config.GetDefaultRepo(opts.GlobalConfig, opts.DefaultRepo)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting default repo")
 	}
 
 	// combine all provided lists of insecure registries into a map
-	cfgRegistries, err := configutil.GetInsecureRegistries()
+	cfgRegistries, err := config.GetInsecureRegistries(opts.GlobalConfig)
 	if err != nil {
 		logrus.Warnf("error retrieving insecure registries from global config: push/pull issues may exist...")
 	}
@@ -84,4 +85,23 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
 	}, nil
+}
+
+func (r *RunContext) UpdateNamespaces(ns []string) {
+	if len(ns) == 0 {
+		return
+	}
+
+	nsMap := map[string]bool{}
+	for _, ns := range append(ns, r.Namespaces...) {
+		nsMap[ns] = true
+	}
+
+	// Update RunContext Namespace
+	updated := make([]string, 0, len(nsMap))
+	for k := range nsMap {
+		updated = append(updated, k)
+	}
+	sort.Strings(updated)
+	r.Namespaces = updated
 }

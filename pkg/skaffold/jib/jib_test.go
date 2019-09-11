@@ -26,6 +26,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func TestPluginType(t *testing.T) {
+	testutil.CheckDeepEqual(t, "maven", JibMaven.ID())
+	testutil.CheckDeepEqual(t, "Jib Maven Plugin", JibMaven.Name())
+	testutil.CheckDeepEqual(t, "gradle", JibGradle.ID())
+	testutil.CheckDeepEqual(t, "Jib Gradle Plugin", JibGradle.Name())
+}
+
 func TestGetDependencies(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
@@ -98,7 +105,10 @@ func TestGetDependencies(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, t.FakeRunOut("ignored", test.stdout))
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+				"ignored",
+				test.stdout,
+			))
 
 			results, err := getDependencies(tmpDir.Root(), exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, util.RandomID())
 
@@ -112,10 +122,10 @@ func TestGetUpdatedDependencies(t *testing.T) {
 		tmpDir := t.NewTempDir()
 
 		stdout := fmt.Sprintf("BEGIN JIB JSON\n{\"build\":[\"%s\",\"%s\"],\"inputs\":[],\"ignore\":[]}\n", tmpDir.Path("build.gradle"), tmpDir.Path("settings.gradle"))
-		t.Override(&util.DefaultExecCommand, t.
-			FakeRunOut("ignored", stdout).
-			WithRunOut("ignored", stdout).
-			WithRunOut("ignored", stdout),
+		t.Override(&util.DefaultExecCommand, testutil.
+			CmdRunOut("ignored", stdout).
+			AndRunOut("ignored", stdout).
+			AndRunOut("ignored", stdout),
 		)
 
 		listCmd := exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}

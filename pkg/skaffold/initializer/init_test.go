@@ -38,14 +38,14 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 	}{
 		{
 			description: "builders and images with pairs",
-			pairs:       []builderImagePair{{jib.Jib{BuilderName: jib.JibGradle, Image: "image1", FilePath: "build.gradle", Project: "project"}, "image1"}},
+			pairs:       []builderImagePair{{jib.Jib{BuilderName: jib.JibGradle.Name(), Image: "image1", FilePath: "build.gradle", Project: "project"}, "image1"}},
 			builders:    []InitBuilder{docker.Docker{File: "Dockerfile"}},
 			images:      []string{"image2"},
 			expected:    `{"builders":[{"name":"Jib Gradle Plugin","payload":{"image":"image1","path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":false}]}`,
 		},
 		{
 			description: "builders and images with no pairs",
-			builders:    []InitBuilder{jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Project: "project"}, docker.Docker{File: "Dockerfile"}},
+			builders:    []InitBuilder{jib.Jib{BuilderName: jib.JibGradle.Name(), FilePath: "build.gradle", Project: "project"}, docker.Docker{File: "Dockerfile"}},
 			images:      []string{"image1", "image2"},
 			expected:    `{"builders":[{"name":"Jib Gradle Plugin","payload":{"path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":false}]}`,
 		},
@@ -289,10 +289,10 @@ func fakeValidateDockerfile(path string) bool {
 
 func fakeValidateJibConfig(path string) []jib.Jib {
 	if strings.HasSuffix(path, "build.gradle") {
-		return []jib.Jib{{BuilderName: jib.JibGradle, FilePath: path}}
+		return []jib.Jib{{BuilderName: jib.JibGradle.Name(), FilePath: path}}
 	}
 	if strings.HasSuffix(path, "pom.xml") {
-		return []jib.Jib{{BuilderName: jib.JibMaven, FilePath: path}}
+		return []jib.Jib{{BuilderName: jib.JibMaven.Name(), FilePath: path}}
 	}
 	return nil
 }
@@ -326,7 +326,7 @@ func TestResolveBuilderImages(t *testing.T) {
 		},
 		{
 			description:      "prompt for multiple builders and images",
-			buildConfigs:     []InitBuilder{docker.Docker{File: "Dockerfile1"}, jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle"}, jib.Jib{BuilderName: jib.JibMaven, Project: "project", FilePath: "pom.xml"}},
+			buildConfigs:     []InitBuilder{docker.Docker{File: "Dockerfile1"}, jib.Jib{BuilderName: jib.JibGradle.Name(), FilePath: "build.gradle"}, jib.Jib{BuilderName: jib.JibMaven.Name(), Project: "project", FilePath: "pom.xml"}},
 			images:           []string{"image1", "image2"},
 			shouldMakeChoice: true,
 			expectedPairs: []builderImagePair{
@@ -335,7 +335,7 @@ func TestResolveBuilderImages(t *testing.T) {
 					ImageName: "image1",
 				},
 				{
-					Builder:   jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle"},
+					Builder:   jib.Jib{BuilderName: jib.JibGradle.Name(), FilePath: "build.gradle"},
 					ImageName: "image2",
 				},
 			},
@@ -371,15 +371,15 @@ func TestAutoSelectBuilders(t *testing.T) {
 			description: "no automatic matches",
 			builderConfigs: []InitBuilder{
 				docker.Docker{File: "Dockerfile"},
-				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle"},
-				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "not a k8s image"},
+				jib.Jib{BuilderName: jib.JibGradle.Name(), FilePath: "build.gradle"},
+				jib.Jib{BuilderName: jib.JibMaven.Name(), FilePath: "pom.xml", Image: "not a k8s image"},
 			},
 			images:        []string{"image1", "image2"},
 			expectedPairs: nil,
 			expectedBuildersLeft: []InitBuilder{
 				docker.Docker{File: "Dockerfile"},
-				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle"},
-				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "not a k8s image"},
+				jib.Jib{BuilderName: jib.JibGradle.Name(), FilePath: "build.gradle"},
+				jib.Jib{BuilderName: jib.JibMaven.Name(), FilePath: "pom.xml", Image: "not a k8s image"},
 			},
 			expectedFilteredImages: []string{"image1", "image2"},
 		},
@@ -387,17 +387,17 @@ func TestAutoSelectBuilders(t *testing.T) {
 			description: "automatic jib matches",
 			builderConfigs: []InitBuilder{
 				docker.Docker{File: "Dockerfile"},
-				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
-				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image2"},
+				jib.Jib{BuilderName: jib.JibGradle.Name(), FilePath: "build.gradle", Image: "image1"},
+				jib.Jib{BuilderName: jib.JibMaven.Name(), FilePath: "pom.xml", Image: "image2"},
 			},
 			images: []string{"image1", "image2", "image3"},
 			expectedPairs: []builderImagePair{
 				{
-					jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
+					jib.Jib{BuilderName: jib.JibGradle.Name(), FilePath: "build.gradle", Image: "image1"},
 					"image1",
 				},
 				{
-					jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image2"},
+					jib.Jib{BuilderName: jib.JibMaven.Name(), FilePath: "pom.xml", Image: "image2"},
 					"image2",
 				},
 			},
@@ -407,14 +407,14 @@ func TestAutoSelectBuilders(t *testing.T) {
 		{
 			description: "multiple matches for one image",
 			builderConfigs: []InitBuilder{
-				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
-				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image1"},
+				jib.Jib{BuilderName: jib.JibGradle.Name(), FilePath: "build.gradle", Image: "image1"},
+				jib.Jib{BuilderName: jib.JibMaven.Name(), FilePath: "pom.xml", Image: "image1"},
 			},
 			images:        []string{"image1", "image2"},
 			expectedPairs: nil,
 			expectedBuildersLeft: []InitBuilder{
-				jib.Jib{BuilderName: jib.JibGradle, FilePath: "build.gradle", Image: "image1"},
-				jib.Jib{BuilderName: jib.JibMaven, FilePath: "pom.xml", Image: "image1"},
+				jib.Jib{BuilderName: jib.JibGradle.Name(), FilePath: "build.gradle", Image: "image1"},
+				jib.Jib{BuilderName: jib.JibMaven.Name(), FilePath: "pom.xml", Image: "image1"},
 			},
 			expectedFilteredImages: []string{"image1", "image2"},
 		},

@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 
@@ -25,15 +26,17 @@ import (
 
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 )
 
-func parseRuntimeObject(namespace string, b []byte) (Artifact, error) {
+func parseRuntimeObject(namespace string, b []byte) (*Artifact, error) {
 	d := scheme.Codecs.UniversalDeserializer()
 	obj, _, err := d.Decode(b, nil, nil)
 	if err != nil {
-		return Artifact{}, fmt.Errorf("error decoding parsed yaml: %s", err.Error())
+		return nil, fmt.Errorf("error decoding parsed yaml: %s", err.Error())
 	}
-	return Artifact{
+	return &Artifact{
 		Obj:       obj,
 		Namespace: namespace,
 	}, nil
@@ -51,12 +54,31 @@ func parseReleaseInfo(namespace string, b *bufio.Reader) []Artifact {
 			logrus.Infof("error parsing object from string: %s", err.Error())
 			continue
 		}
-		obj, err := parseRuntimeObject(namespace, doc)
+		objNamespace, err := getObjectNamespaceIfDefined(doc, namespace)
+		if err != nil {
+			logrus.Infof("error parsing object from string: %s", err.Error())
+			continue
+		}
+		obj, err := parseRuntimeObject(objNamespace, doc)
 		if err != nil {
 			logrus.Infof(err.Error())
 		} else {
-			results = append(results, obj)
+			results = append(results, *obj)
 		}
 	}
 	return results
+}
+
+func getObjectNamespaceIfDefined(doc []byte, ns string) (string, error) {
+	if i := bytes.Index(doc, []byte("apiVersion")); i >= 0 {
+		manifests := kubectl.ManifestList{doc[i:]}
+		namespaces, err := manifests.CollectNamespaces()
+		if err != nil {
+			return ns, err
+		}
+		if len(namespaces) > 0 {
+			return namespaces[0], nil
+		}
+	}
+	return ns, nil
 }

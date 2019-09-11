@@ -21,13 +21,14 @@ import (
 	"fmt"
 	"io"
 
-	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Builder uses the host docker daemon to build and tag the image.
@@ -48,7 +49,7 @@ type Builder struct {
 // external dependencies are wrapped
 // into private functions for testability
 
-var getLocalCluster = configutil.GetLocalCluster
+var getLocalCluster = config.GetLocalCluster
 
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
@@ -57,7 +58,7 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
 
-	localCluster, err := getLocalCluster()
+	localCluster, err := getLocalCluster(runCtx.Opts.GlobalConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting localCluster")
 	}

@@ -275,17 +275,14 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 }
 
 func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[string]bool) ([]*parser.Node, error) {
-	onbuildNodesCache := map[string][]*parser.Node{}
+	onbuildNodesCache := map[string][]*parser.Node{
+		"scratch": nil,
+	}
 	var expandedNodes []*parser.Node
 	n := 0
 	for m, node := range nodes {
 		if node.Value == command.From {
 			from := fromInstruction(node)
-
-			// `scratch` is case insensitive
-			if strings.ToLower(from.image) == "scratch" {
-				continue
-			}
 
 			// onbuild should immediately follow the from command
 			expandedNodes = append(expandedNodes, nodes[n:m+1]...)
@@ -325,7 +322,7 @@ func parseOnbuild(image string, insecureRegistries map[string]bool) ([]*parser.N
 		return []*parser.Node{}, nil
 	}
 
-	logrus.Debugf("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, image)
+	logrus.Tracef("Found ONBUILD triggers %v in image %s", img.Config.OnBuild, image)
 
 	obRes, err := parser.Parse(strings.NewReader(strings.Join(img.Config.OnBuild, "\n")))
 	if err != nil {

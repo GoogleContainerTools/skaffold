@@ -573,7 +573,7 @@
       }
     }
   },
-  "revision": "20190606",
+  "revision": "20190702",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ArtifactObjects": {
@@ -1096,12 +1096,6 @@
       "properties": {},
       "type": "object"
     },
-    "CheckSuiteFilter": {
-      "description": "A CheckSuiteFilter is a filter that indicates that we should build on all\ncheck suite events.",
-      "id": "CheckSuiteFilter",
-      "properties": {},
-      "type": "object"
-    },
     "Empty": {
       "description": "A generic empty message that you can re-use to avoid defining duplicated\nempty messages in your APIs. A typical example is to use it as the request\nor the response type of an API method. For instance:\n\n    service Foo {\n      rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);\n    }\n\nThe JSON representation for `Empty` is empty JSON object `{}`.",
       "id": "Empty",
@@ -1126,21 +1120,17 @@
       "description": "GitHubEventsConfig describes the configuration of a trigger that creates a\nbuild whenever a GitHub event is received.\n\nThis message is experimental.",
       "id": "GitHubEventsConfig",
       "properties": {
-        "checkSuite": {
-          "$ref": "CheckSuiteFilter",
-          "description": "Output only. Indicates that a build was generated from a check suite\nevent."
-        },
         "installationId": {
-          "description": "The installationID that emmits the GitHub event.",
+          "description": "The installationID that emits the GitHub event.",
           "format": "int64",
           "type": "string"
         },
         "name": {
-          "description": "Name of the repository.",
+          "description": "Name of the repository. For example: The name for\nhttps://github.com/googlecloudplatform/cloud-builders is \"cloud-builders\".",
           "type": "string"
         },
         "owner": {
-          "description": "Owner of the repository.",
+          "description": "Owner of the repository. For example: The owner for\nhttps://github.com/googlecloudplatform/cloud-builders is\n\"googlecloudplatform\".",
           "type": "string"
         },
         "pullRequest": {

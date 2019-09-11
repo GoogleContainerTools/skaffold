@@ -17,11 +17,23 @@ limitations under the License.
 package gcp
 
 import (
+	"context"
+	"encoding/json"
 	"os/exec"
 	"strings"
+	"sync"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/cli/cli/config/configfile"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/oauth2/google"
+)
+
+var (
+	creds     *google.Credentials
+	credsOnce sync.Once
+	credsErr  error
 )
 
 // AutoConfigureGCRCredentialHelper automatically adds the `gcloud` credential helper
@@ -49,4 +61,35 @@ func AutoConfigureGCRCredentialHelper(cf *configfile.ConfigFile, registry string
 		cf.CredentialHelpers = make(map[string]string)
 	}
 	cf.CredentialHelpers[registry] = "gcloud"
+}
+
+func activeUserCredentials() (*google.Credentials, error) {
+	credsOnce.Do(func() {
+		cmd := exec.Command("gcloud", "auth", "print-access-token", "--format=json")
+		body, err := util.RunCmdOut(cmd)
+		if err != nil {
+			credsErr = errors.Wrap(err, "retrieving gcloud access token")
+			return
+		}
+		jsonCreds := make(map[string]interface{})
+		json.Unmarshal(body, &jsonCreds)
+		jsonCreds["type"] = "authorized_user"
+		body, _ = json.Marshal(jsonCreds)
+
+		c, err := google.CredentialsFromJSON(context.Background(), body)
+		if err != nil {
+			logrus.Infof("unable to retrieve google creds: %v", err)
+			logrus.Infof("falling back to application default credentials")
+			return
+		}
+		_, err = c.TokenSource.Token()
+		if err != nil {
+			logrus.Infof("unable to retrieve token: %v", err)
+			logrus.Infof("falling back to application default credentials")
+			return
+		}
+		creds = c
+	})
+
+	return creds, credsErr
 }

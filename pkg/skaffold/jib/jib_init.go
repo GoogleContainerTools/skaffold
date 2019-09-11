@@ -35,13 +35,6 @@ var (
 	ValidateJibConfigFunc = ValidateJibConfig
 )
 
-const (
-	// JibGradle the name of the Jib Gradle Plugin
-	JibGradle = "Jib Gradle Plugin"
-	// JibMaven the name of the Jib Maven Plugin
-	JibMaven = "Jib Maven Plugin"
-)
-
 // Jib holds information about a Jib project
 type Jib struct {
 	BuilderName string `json:"-"`
@@ -67,33 +60,26 @@ func (j Jib) Describe() string {
 func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 	workspace := filepath.Dir(j.FilePath)
 
-	a := &latest.Artifact{ImageName: j.Image}
-	if j.Image == "" {
-		a.ImageName = manifestImage
-	}
+	a := &latest.Artifact{ImageName: manifestImage}
 
 	if workspace != "." {
 		a.Workspace = workspace
 	}
 
-	if j.BuilderName == JibMaven {
+	if j.BuilderName == JibMaven.Name() {
 		jibMaven := &latest.JibMavenArtifact{}
 		if j.Project != "" {
 			jibMaven.Module = j.Project
 		}
-		if j.Image == "" {
-			jibMaven.Flags = []string{"-Dimage=" + manifestImage}
-		}
+		jibMaven.Flags = []string{"-Dimage=" + manifestImage}
 		a.ArtifactType = latest.ArtifactType{JibMavenArtifact: jibMaven}
 
-	} else if j.BuilderName == JibGradle {
+	} else if j.BuilderName == JibGradle.Name() {
 		jibGradle := &latest.JibGradleArtifact{}
 		if j.Project != "" {
 			jibGradle.Project = j.Project
 		}
-		if j.Image == "" {
-			jibGradle.Flags = []string{"-Dimage=" + manifestImage}
-		}
+		jibGradle.Flags = []string{"-Dimage=" + manifestImage}
 		a.ArtifactType = latest.ArtifactType{JibGradleArtifact: jibGradle}
 	}
 
@@ -119,7 +105,8 @@ type jibJSON struct {
 // ValidateJibConfig checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
 func ValidateJibConfig(path string) []Jib {
 	// Determine whether maven or gradle
-	var builderType, executable, wrapper, taskName string
+	var builderType PluginType
+	var executable, wrapper, taskName string
 	switch {
 	case strings.HasSuffix(path, "pom.xml"):
 		builderType = JibMaven
@@ -162,7 +149,7 @@ func ValidateJibConfig(path string) []Jib {
 			return nil
 		}
 
-		results[i] = Jib{BuilderName: builderType, Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
+		results[i] = Jib{BuilderName: builderType.Name(), Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
 	}
 	return results
 }
