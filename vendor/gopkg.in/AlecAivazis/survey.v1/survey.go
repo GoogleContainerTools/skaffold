@@ -49,6 +49,11 @@ type Prompt interface {
 	Error(error) error
 }
 
+// PromptAgainer Interface for Prompts that support prompting again after invalid input
+type PromptAgainer interface {
+	PromptAgain(invalid interface{}, err error) (interface{}, error)
+}
+
 // AskOpt allows setting optional ask options.
 type AskOpt func(options *AskOptions) error
 
@@ -157,7 +162,11 @@ func Ask(qs []*Question, response interface{}, opts ...AskOpt) error {
 				}
 
 				// ask for more input
-				ans, err = q.Prompt.Prompt()
+				if promptAgainer, ok := q.Prompt.(PromptAgainer); ok {
+					ans, err = promptAgainer.PromptAgain(ans, invalid)
+				} else {
+					ans, err = q.Prompt.Prompt()
+				}
 				// if there was a problem
 				if err != nil {
 					return err

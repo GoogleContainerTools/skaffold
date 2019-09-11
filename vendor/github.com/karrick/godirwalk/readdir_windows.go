@@ -1,23 +1,20 @@
 package godirwalk
 
-import (
-	"os"
-
-	"github.com/pkg/errors"
-)
-
 // The functions in this file are mere wrappers of what is already provided by
 // standard library, in order to provide the same API as this library provides.
 //
-// The scratch buffer argument is ignored by this architecture.
+// The scratch buffer parameter in these functions is the underscore because
+// presently that parameter is ignored by the functions for this architecture.
 //
 // Please send PR or link to article if you know of a more performant way of
 // enumerating directory contents and mode types on Windows.
 
+import "os"
+
 func readdirents(osDirname string, _ []byte) (Dirents, error) {
 	dh, err := os.Open(osDirname)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot Open")
+		return nil, err
 	}
 
 	fileinfos, err := dh.Readdir(0)
@@ -25,7 +22,7 @@ func readdirents(osDirname string, _ []byte) (Dirents, error) {
 		err = er
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot Readdir")
+		return nil, err
 	}
 
 	entries := make(Dirents, len(fileinfos))
@@ -39,7 +36,7 @@ func readdirents(osDirname string, _ []byte) (Dirents, error) {
 func readdirnames(osDirname string, _ []byte) ([]string, error) {
 	dh, err := os.Open(osDirname)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot Open")
+		return nil, err
 	}
 
 	entries, err := dh.Readdirnames(0)
@@ -47,7 +44,7 @@ func readdirnames(osDirname string, _ []byte) ([]string, error) {
 		err = er
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot Readdirnames")
+		return nil, err
 	}
 
 	return entries, nil

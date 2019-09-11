@@ -129,7 +129,7 @@ func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
 	}
 	// Create tasks in pipeline spec for all corresponding tasks
 	pipelineTasks := make([]tekton.PipelineTask, 0)
-	for i, task := range tasks {
+	for _, task := range tasks {
 		pipelineTask := tekton.PipelineTask{
 			Name: fmt.Sprintf("%s-task", task.Name),
 			TaskRef: tekton.TaskRef{
@@ -153,7 +153,9 @@ func generatePipeline(tasks []*tekton.Task) (*tekton.Pipeline, error) {
 				},
 			}
 		} else {
-			pipelineTask.Resources.Inputs[0].From = []string{pipelineTasks[i-1].Name}
+			// Get the git resource for deploy commands from their corresponding build command
+			from := strings.Replace(pipelineTask.Name, "deploy", "build", 1)
+			pipelineTask.Resources.Inputs[0].From = []string{from}
 		}
 
 		pipelineTasks = append(pipelineTasks, pipelineTask)

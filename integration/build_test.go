@@ -21,6 +21,8 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -123,6 +125,16 @@ func TestBuildInCluster(t *testing.T) {
 	}
 
 	testutil.Run(t, "", func(t *testutil.T) {
+		ns, k8sClient, cleanupNs := SetupNamespace(t.T)
+		defer cleanupNs()
+
+		// this workaround is to ensure there is no overlap between testcases on kokoro
+		// see https://github.com/GoogleContainerTools/skaffold/issues/2781#issuecomment-527770537
+		project, err := filepath.Abs("testdata/skaffold-in-cluster")
+		if err != nil {
+			t.Fatalf("failed getting path to project: %s", err)
+		}
+
 		// copy the skaffold binary to the test case folder
 		// this is geared towards the in-docker setup: the fresh built binary is here
 		// for manual testing, we can override this temporarily
@@ -130,49 +142,83 @@ func TestBuildInCluster(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to find skaffold binary: %s", err)
 		}
-		skaffoldDst := "./testdata/skaffold-in-cluster/skaffold"
-		t.CopyFile(skaffoldSrc, skaffoldDst)
 
-		ns, k8sClient, cleanupNs := SetupNamespace(t.T)
-		defer cleanupNs()
+		t.NewTempDir().Chdir()
+		copyDir(t, project, ".")
+		copyFile(t, skaffoldSrc, "skaffold")
 
 		// TODO: until https://github.com/GoogleContainerTools/skaffold/issues/2757 is resolved, this is the simplest
 		// way to override the build.cluster.namespace
-		revert := replaceNamespace("./testdata/skaffold-in-cluster/skaffold.yaml", t, ns)
-		defer revert()
-		revert = replaceNamespace("./testdata/skaffold-in-cluster/build-step/kustomization.yaml", t, ns)
-		defer revert()
+		replaceNamespace(t, "skaffold.yaml", ns)
+		replaceNamespace(t, "build-step/kustomization.yaml", ns)
 
-		//we have to copy the e2esecret from default ns -> temporary namespace for kaniko
+		// we have to copy the e2esecret from default ns -> temporary namespace for kaniko
 		secret, err := k8sClient.client.CoreV1().Secrets("default").Get("e2esecret", metav1.GetOptions{})
 		if err != nil {
-			t.Fatalf("failed reading default/e2escret: %s", err)
+			t.Fatalf("failed reading default/e2esecret: %s", err)
 		}
 		secret.Namespace = ns.Name
 		secret.ResourceVersion = ""
-		_, err = k8sClient.client.CoreV1().Secrets(ns.Name).Create(secret)
-		if err != nil {
-			t.Fatalf("failed creating %s/e2escret: %s", ns.Name, err)
+		if _, err = k8sClient.Secrets().Create(secret); err != nil {
+			t.Fatalf("failed creating %s/e2esecret: %s", ns.Name, err)
 		}
 
-		logs := skaffold.Run("-p", "create-build-step", "--cache-artifacts=true").InDir("./testdata/skaffold-in-cluster").InNs(ns.Name).RunOrFailOutput(t.T)
+		logs := skaffold.Run("-p", "create-build-step").InNs(ns.Name).RunOrFailOutput(t.T)
 		t.Logf("create-build-step logs: \n%s", logs)
 
 		k8sClient.WaitForPodsInPhase(corev1.PodSucceeded, "skaffold-in-cluster")
 	})
 }
 
-func replaceNamespace(fileName string, t *testutil.T, ns *corev1.Namespace) func() {
+func replaceNamespace(t *testutil.T, fileName string, ns *corev1.Namespace) {
 	origSkaffoldYaml, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		t.Fatalf("failed reading %s: %s", fileName, err)
 	}
+
 	namespacedYaml := strings.ReplaceAll(string(origSkaffoldYaml), "VAR_CLUSTER_NAMESPACE", ns.Name)
+
 	if err := ioutil.WriteFile(fileName, []byte(namespacedYaml), 0666); err != nil {
 		t.Fatalf("failed to write %s: %s", fileName, err)
 	}
-	return func() {
-		ioutil.WriteFile(fileName, origSkaffoldYaml, 0666)
+}
+
+func copyFile(t *testutil.T, src, dst string) {
+	content, err := ioutil.ReadFile(src)
+	if err != nil {
+		t.Fatalf("can't read source file: %s: %s", src, err)
+	}
+
+	err = ioutil.WriteFile(dst, content, 0666)
+	if err != nil {
+		t.Fatalf("failed to copy file %s to %s: %s", src, dst, err)
+	}
+}
+
+func copyDir(t *testutil.T, src string, dst string) {
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		t.Fatalf("failed to copy dir %s->%s: %s ", src, dst, err)
+	}
+
+	if err = os.MkdirAll(dst, srcInfo.Mode()); err != nil {
+		t.Fatalf("failed to copy dir %s->%s: %s ", src, dst, err)
+	}
+
+	files, err := ioutil.ReadDir(src)
+	if err != nil {
+		t.Fatalf("failed to copy dir %s->%s: %s ", src, dst, err)
+	}
+
+	for _, f := range files {
+		srcfp := path.Join(src, f.Name())
+		dstfp := path.Join(dst, f.Name())
+
+		if f.IsDir() {
+			copyDir(t, srcfp, dstfp)
+		} else {
+			copyFile(t, srcfp, dstfp)
+		}
 	}
 }
 

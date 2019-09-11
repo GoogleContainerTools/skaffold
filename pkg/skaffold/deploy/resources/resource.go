@@ -24,57 +24,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-const (
-	TabHeader      = " -"
-	DeploymentType = "deployment"
-)
-
-type ResourceObj struct {
-	name      string
-	namespace string
-	rType     string
-	status    Status
-}
-
-func (r *ResourceObj) String() string {
-	return fmt.Sprintf("%s:%s/%s", r.namespace, r.rType, r.name)
-}
-
-func (r *ResourceObj) Type() string {
-	return r.rType
-}
-
-func (r *ResourceObj) UpdateStatus(msg string, reason string, err error) {
-	newStatus := Status{details: msg, reason: reason, err: err}
-	if !r.status.Equals(&newStatus) {
-		r.status.err = err
-		r.status.details = util.Trim(msg)
-		r.status.reason = util.Trim(reason)
-		r.status.updated = true
-	}
-}
-
-func (r *ResourceObj) Status() *Status {
-	return &r.status
-}
-
-func (r *ResourceObj) Namespace() string {
-	return r.namespace
-}
-
-func (r *ResourceObj) Name() string {
-	return r.name
-}
-
-func (r *ResourceObj) MarkCheckComplete() *ResourceObj {
-	r.status.completed = true
-	return r
-}
-
-func (r *ResourceObj) IsStatusCheckComplete() bool {
-	return r.status.completed
-}
-
 func (r *ResourceObj) ReportSinceLastUpdated(out io.Writer) {
 	if !r.status.updated {
 		return
@@ -106,25 +55,6 @@ func (rs *Status) String() string {
 	return rs.details
 }
 
-func NewResource(name string, ns string) *ResourceObj {
-	return &ResourceObj{
-		name:      name,
-		namespace: ns,
-		rType:     DeploymentType,
-	}
-}
-
-func (r *ResourceObj) WithStatus(status Status) *ResourceObj {
-	r.status = status
-	return r
-}
-
-// For testing, mimics when a ResourceObj status is updated.
-func (r *ResourceObj) WithUpdatedStatus(status Status) *ResourceObj {
-	r.status = status
-	r.status.updated = true
-	return r
-}
 
 func NewStatus(msg string, reason string, err error) Status {
 	return Status{

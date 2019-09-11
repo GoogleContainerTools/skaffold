@@ -18,22 +18,42 @@ package main
 
 import (
 	"bufio"
+	"context"
+	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+	"github.com/google/go-github/github"
+	"github.com/sirupsen/logrus"
 )
 
 // Before: prev -> current (latest)
 // After:  prev -> current -> new (latest)
 func main() {
-	new := os.Args[1]
-	current := strings.TrimPrefix(schema.SchemaVersions[len(schema.SchemaVersions)-1].APIVersion, "skaffold/")
+	logrus.SetLevel(logrus.DebugLevel)
 	prev := strings.TrimPrefix(schema.SchemaVersions[len(schema.SchemaVersions)-2].APIVersion, "skaffold/")
+	logrus.Infof("Previous Skaffold version: %s", prev)
+	current := strings.TrimPrefix(latest.Version, "skaffold/")
+	logrus.Infof("Current Skaffold version: %s", current)
+	next := readNextVersion()
 
+	logrus.Infof("checking for released status of %s...", prev)
+	lastReleased := getLastReleasedConfigVersion()
+	logrus.Infof("last released version: %s", lastReleased)
+	if lastReleased != current {
+		logrus.Fatalf("There is no need to create a new version, %s is still not released", current)
+	}
+
+	makeSchemaDir(current)
 	// Create a package for current version
 	walk(path("latest"), func(file string, info os.FileInfo) {
 		if !info.IsDir() {
@@ -44,12 +64,12 @@ func main() {
 
 	// Create code to upgrade from current to new
 	cp(path(prev, "upgrade.go"), path(current, "upgrade.go"))
-	sed(path(current, "upgrade.go"), current, new)
+	sed(path(current, "upgrade.go"), current, next)
 	sed(path(current, "upgrade.go"), prev, current)
 
 	// Create a test for the upgrade from current to new
 	cp(path(prev, "upgrade_test.go"), path(current, "upgrade_test.go"))
-	sed(path(current, "upgrade_test.go"), current, new)
+	sed(path(current, "upgrade_test.go"), current, next)
 	sed(path(current, "upgrade_test.go"), prev, current)
 
 	// Previous version now upgrades to current instead of latest
@@ -57,12 +77,12 @@ func main() {
 	sed(path(prev, "upgrade_test.go"), "latest", current)
 
 	// Latest uses the new version
-	sed(path("latest", "config.go"), current, new)
+	sed(path("latest", "config.go"), current, next)
 
 	// Update skaffold.yaml in integration tests
 	walk("integration", func(path string, info os.FileInfo) {
 		if info.Name() == "skaffold.yaml" {
-			sed(path, current, new)
+			sed(path, current, next)
 		}
 	})
 
@@ -78,7 +98,51 @@ func main() {
 	write(path("versions.go"), []byte(content))
 
 	// Update the docs with the new version
-	sed("docs/config.toml", current, new)
+	sed("docs/config.toml", current, next)
+}
+
+func getLastReleasedConfigVersion() string {
+	client := github.NewClient(nil)
+	releases, _, _ := client.Repositories.ListReleases(context.Background(), "GoogleContainerTools", "skaffold", &github.ListOptions{})
+	lastTag := *releases[0].TagName
+	logrus.Infof("last release tag: %s", lastTag)
+	configURL := fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag)
+	resp, err := http.Get(configURL)
+	if err != nil {
+		logrus.Fatalf("can't determine latest released config version, failed to download %s: %s", configURL, err)
+	}
+	defer resp.Body.Close()
+	config, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logrus.Fatalf("failed to read during download %s, err: %s", configURL, err)
+	}
+	versionPattern := regexp.MustCompile("const Version string = \"skaffold/(.*)\"")
+	lastReleased := versionPattern.FindStringSubmatch(string(config))[1]
+	return lastReleased
+}
+
+func makeSchemaDir(new string) {
+	latestDir, _ := os.Stat(path("latest"))
+	newDirPath := path(new)
+	if err := os.Mkdir(newDirPath, latestDir.Mode()); err != nil {
+		logrus.Fatalf("creating dir %s: %s", newDirPath, err)
+	}
+}
+
+func readNextVersion() string {
+	var new string
+	if len(os.Args) <= 1 {
+		color.Red.Fprintln(os.Stdout, "Please enter new version (e.g. v1beta15): ")
+		reader := bufio.NewReader(os.Stdin)
+		if line, err := reader.ReadString('\n'); err == nil {
+			new = line
+		} else {
+			logrus.Fatalf("error reading input: %s", err)
+		}
+	} else {
+		new = os.Args[1]
+	}
+	return new
 }
 
 func path(elem ...string) string {

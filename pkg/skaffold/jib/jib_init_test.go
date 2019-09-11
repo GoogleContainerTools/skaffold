@@ -158,10 +158,10 @@ func TestCreateArtifact(t *testing.T) {
 			config:        Jib{BuilderName: JibGradle.Name(), FilePath: filepath.Join("path", "to", "build.gradle"), Image: "image", Project: "project"},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
-				ImageName: "image",
+				ImageName: "different-image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibGradleArtifact: &latest.JibGradleArtifact{Project: "project"},
+					JibGradleArtifact: &latest.JibGradleArtifact{Project: "project", Flags: []string{"-Dimage=different-image"}},
 				},
 			},
 		},
@@ -173,9 +173,7 @@ func TestCreateArtifact(t *testing.T) {
 				ImageName: "different-image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibGradleArtifact: &latest.JibGradleArtifact{
-						Flags: []string{"-Dimage=different-image"},
-					},
+					JibGradleArtifact: &latest.JibGradleArtifact{Flags: []string{"-Dimage=different-image"}},
 				},
 			},
 		},
@@ -184,10 +182,10 @@ func TestCreateArtifact(t *testing.T) {
 			config:        Jib{BuilderName: JibMaven.Name(), FilePath: filepath.Join("path", "to", "pom.xml"), Image: "image", Project: "project"},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
-				ImageName: "image",
+				ImageName: "different-image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibMavenArtifact: &latest.JibMavenArtifact{Module: "project"},
+					JibMavenArtifact: &latest.JibMavenArtifact{Module: "project", Flags: []string{"-Dimage=different-image"}},
 				},
 			},
 		},
@@ -199,9 +197,7 @@ func TestCreateArtifact(t *testing.T) {
 				ImageName: "different-image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibMavenArtifact: &latest.JibMavenArtifact{
-						Flags: []string{"-Dimage=different-image"},
-					},
+					JibMavenArtifact: &latest.JibMavenArtifact{Flags: []string{"-Dimage=different-image"}},
 				},
 			},
 		},
@@ -210,8 +206,10 @@ func TestCreateArtifact(t *testing.T) {
 			config:        Jib{BuilderName: JibGradle.Name(), FilePath: "build.gradle", Image: "image"},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
-				ImageName:    "image",
-				ArtifactType: latest.ArtifactType{JibGradleArtifact: &latest.JibGradleArtifact{}},
+				ImageName: "different-image",
+				ArtifactType: latest.ArtifactType{
+					JibGradleArtifact: &latest.JibGradleArtifact{Flags: []string{"-Dimage=different-image"}},
+				},
 			},
 		},
 	}

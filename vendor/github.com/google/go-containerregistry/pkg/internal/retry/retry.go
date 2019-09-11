@@ -19,8 +19,10 @@ package retry
 import (
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/util/wait"
+	"github.com/google/go-containerregistry/pkg/internal/retry/wait"
 )
+
+type Backoff = wait.Backoff
 
 // This is implemented by several errors in the net package as well as our
 // transport.Error.

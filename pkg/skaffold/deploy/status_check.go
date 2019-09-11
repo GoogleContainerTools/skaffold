@@ -22,14 +22,16 @@ import (
 	"io"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resources"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -41,17 +43,17 @@ var (
 	// Poll period for checking set to 100 milliseconds
 	defaultPollPeriodInMilliseconds = 100
 
-	// report resource status for pending resources 0.5 second.
-	reportStatusTime = 500 * time.Millisecond
-
 	// For testing
 	executeRolloutStatus = getRollOutStatus
 )
 
-type Checker struct {
-	context context.Context
-	out     io.Writer
-	numDeps int
+const (
+	tabHeader = " -"
+)
+
+type counter struct {
+	total   int
+	pending int32
 }
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
@@ -62,43 +64,31 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds)
 
-	rsMap, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)
+	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)
 	if err != nil {
 		return errors.Wrap(err, "could not fetch deployments")
 	}
 
 	wg := sync.WaitGroup{}
-	// Its safe to use sync.Map without locks here as each subroutine adds a different key to the map.
-	syncMap := &sync.Map{}
-	kubeCtl := kubectl.NewFromRunContext(runCtx)
 
-	checker := &Checker{
-		context: ctx,
-		out:     out,
-		numDeps: len(rsMap),
-	}
+	c := newCounter(len(deployments))
 
-	rs := make([]*resources.ResourceObj, 0, len(rsMap))
-	for r, deadlineDuration := range rsMap {
-		rs = append(rs, &r)
+	for _, d := range deployments {
 		wg.Add(1)
-		go func(r *resources.ResourceObj, deadlineDuration time.Duration) {
+		go func(d *resource.Deployment) {
 			defer wg.Done()
-			pollDeploymentRolloutStatus(ctx, kubeCtl, r, deadlineDuration, syncMap)
-		}(&r, deadlineDuration)
+			pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), d)
+			pending := c.markProcessed()
+			printStatusCheckSummary(d, pending, c.total, err, out)
+		}(d)
 	}
-
-	// Retrieve pending resource states
-	go func() {
-		checker.printResourceStatus(rs, deadline)
-	}()
 
 	// Wait for all deployment status to be fetched
 	wg.Wait()
-	return getSkaffoldDeployStatus(syncMap)
+	return getSkaffoldDeployStatus(deployments)
 }
 
-func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) (map[resources.ResourceObj]time.Duration, error) {
+func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
 	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
 		LabelSelector: l.RunIDKeyValueString(),
 	})
@@ -106,8 +96,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 		return nil, errors.Wrap(err, "could not fetch deployments")
 	}
 
-	depMap := map[resources.ResourceObj]time.Duration{}
-
+	deployments := make([]*resource.Deployment, 0, len(deps.Items))
 	for _, d := range deps.Items {
 		var deadline time.Duration
 		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds > int32(deadlineDuration.Seconds()) {
@@ -115,52 +104,41 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 		} else {
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
 		}
-		r := resources.NewResource(d.Name, d.Namespace)
-		depMap[*r] = deadline
+		deployments = append(deployments, resource.NewDeployment(d.Name, d.Namespace, deadline))
 	}
 
-	return depMap, nil
+	return deployments, nil
 }
 
-func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, r *resources.ResourceObj, deadline time.Duration, syncMap *sync.Map) {
+func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, d *resource.Deployment) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
-	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollDuration)
-	logrus.Debugf("checking rollout status %s", r.Name())
+	timeoutContext, cancel := context.WithTimeout(ctx, d.Deadline()+pollDuration)
+	logrus.Debugf("checking rollout status %s", d.String())
 	defer cancel()
 	for {
 		select {
 		case <-timeoutContext.Done():
-			syncMap.Store(r.Name(), errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", deadline)))
+			err := errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", d.Deadline()))
+			d.UpdateStatus(err.Error(), err)
 			return
 		case <-time.After(pollDuration):
-			status, err := executeRolloutStatus(timeoutContext, k, r.Name())
-			if err != nil {
-				syncMap.Store(r.Name(), err)
-				r.UpdateStatus("", err.Error(), err)
-				r.MarkCheckComplete()
+			status, err := executeRolloutStatus(timeoutContext, k, d.Name())
+			d.UpdateStatus(status, err)
+			if err != nil || strings.Contains(status, "successfully rolled out") {
 				return
 			}
-			if strings.Contains(status, "successfully rolled out") {
-				syncMap.Store(r.Name(), nil)
-				r.UpdateStatus(status, status, nil)
-				r.MarkCheckComplete()
-				return
-			}
-			r.UpdateStatus(status, status, nil)
 		}
 	}
 }
 
-func getSkaffoldDeployStatus(m *sync.Map) error {
-	errorStrings := []string{}
-	m.Range(func(k, v interface{}) bool {
-		if t, ok := v.(error); ok {
-			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", k, t.Error()))
+func getSkaffoldDeployStatus(deployments []*resource.Deployment) error {
+	var errorStrings []string
+	for _, d := range deployments {
+		if err := d.Status().Error(); err != nil {
+			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", d, err.Error()))
 		}
-		return true
-	})
-
+	}
 	if len(errorStrings) == 0 {
 		return nil
 	}
@@ -179,31 +157,38 @@ func getDeadline(d int) time.Duration {
 	return defaultStatusCheckDeadline
 }
 
-// Print resource statuses until all status check are completed or context is cancelled.
-func (c *Checker) printResourceStatus(rs []*resources.ResourceObj, deadline time.Duration) {
-	timeoutContext, cancel := context.WithTimeout(c.context, deadline)
-	defer cancel()
-	for {
-		var allResourcesCheckComplete bool
-		select {
-		case <-timeoutContext.Done():
-			return
-		case <-time.After(reportStatusTime):
-			allResourcesCheckComplete = printStatus(rs, c.out)
-		}
-		if allResourcesCheckComplete {
-			return
-		}
+func printStatusCheckSummary(d *resource.Deployment, pending int, total int, err error, out io.Writer) {
+	status := fmt.Sprintf("%s %s", tabHeader, d)
+	if err != nil {
+		status = fmt.Sprintf("%s failed.%s Error: %s.",
+			status,
+			trimNewLine(getPendingMessage(pending, total)),
+			trimNewLine(err.Error()),
+		)
+	} else {
+		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(pending, total))
+	}
+	color.Default.Fprintln(out, status)
+}
+
+func getPendingMessage(pending int, total int) string {
+	if pending > 0 {
+		return fmt.Sprintf(" [%d/%d deployment(s) still pending]", pending, total)
+	}
+	return ""
+}
+
+func trimNewLine(msg string) string {
+	return strings.TrimSuffix(msg, "\n")
+}
+
+func newCounter(i int) *counter {
+	return &counter{
+		total:   i,
+		pending: int32(i),
 	}
 }
 
-func printStatus(rs []*resources.ResourceObj, out io.Writer) bool {
-	allResourcesCheckComplete := true
-	for _, r := range rs {
-		if !r.IsStatusCheckComplete() {
-			allResourcesCheckComplete = false
-			r.ReportSinceLastUpdated(out)
-		}
-	}
-	return allResourcesCheckComplete
+func (c *counter) markProcessed() int {
+	return int(atomic.AddInt32(&c.pending, -1))
 }

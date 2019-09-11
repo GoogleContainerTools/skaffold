@@ -272,6 +272,9 @@ type BucketAttrs struct {
 	// "DURABLE_REDUCED_AVAILABILITY". Defaults to "STANDARD", which
 	// is equivalent to "MULTI_REGIONAL" or "REGIONAL" depending on
 	// the bucket's location settings.
+	//
+	// "DURABLE_REDUCED_AVAILABILITY", "MULTI_REGIONAL" and "REGIONAL"
+	// are considered legacy storage classes.
 	StorageClass string
 
 	// Created is the creation time of the bucket.

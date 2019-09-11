@@ -35,6 +35,22 @@ type SockaddrDatalink struct {
 	raw    RawSockaddrDatalink
 }
 
+func direntIno(buf []byte) (uint64, bool) {
+	return readInt(buf, unsafe.Offsetof(Dirent{}.Ino), unsafe.Sizeof(Dirent{}.Ino))
+}
+
+func direntReclen(buf []byte) (uint64, bool) {
+	return readInt(buf, unsafe.Offsetof(Dirent{}.Reclen), unsafe.Sizeof(Dirent{}.Reclen))
+}
+
+func direntNamlen(buf []byte) (uint64, bool) {
+	reclen, ok := direntReclen(buf)
+	if !ok {
+		return 0, false
+	}
+	return reclen - uint64(unsafe.Offsetof(Dirent{}.Name)), true
+}
+
 //sysnb	pipe(p *[2]_C_int) (n int, err error)
 
 func Pipe(p []int) (err error) {
@@ -537,38 +553,8 @@ func Minor(dev uint64) uint32 {
 
 //sys	ioctl(fd int, req uint, arg uintptr) (err error)
 
-func IoctlSetInt(fd int, req uint, value int) (err error) {
-	return ioctl(fd, req, uintptr(value))
-}
-
-func ioctlSetWinsize(fd int, req uint, value *Winsize) (err error) {
-	return ioctl(fd, req, uintptr(unsafe.Pointer(value)))
-}
-
-func ioctlSetTermios(fd int, req uint, value *Termios) (err error) {
-	return ioctl(fd, req, uintptr(unsafe.Pointer(value)))
-}
-
 func IoctlSetTermio(fd int, req uint, value *Termio) (err error) {
 	return ioctl(fd, req, uintptr(unsafe.Pointer(value)))
-}
-
-func IoctlGetInt(fd int, req uint) (int, error) {
-	var value int
-	err := ioctl(fd, req, uintptr(unsafe.Pointer(&value)))
-	return value, err
-}
-
-func IoctlGetWinsize(fd int, req uint) (*Winsize, error) {
-	var value Winsize
-	err := ioctl(fd, req, uintptr(unsafe.Pointer(&value)))
-	return &value, err
-}
-
-func IoctlGetTermios(fd int, req uint) (*Termios, error) {
-	var value Termios
-	err := ioctl(fd, req, uintptr(unsafe.Pointer(&value)))
-	return &value, err
 }
 
 func IoctlGetTermio(fd int, req uint) (*Termio, error) {
