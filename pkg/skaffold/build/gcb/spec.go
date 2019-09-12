@@ -56,11 +56,8 @@ func (b *Builder) buildSpecForArtifact(artifact *latest.Artifact, tag string) (c
 	case artifact.DockerArtifact != nil:
 		return b.dockerBuildSpec(artifact.DockerArtifact, tag)
 
-	case artifact.JibMavenArtifact != nil:
-		return b.jibMavenBuildSpec(artifact.JibMavenArtifact, tag), nil
-
-	case artifact.JibGradleArtifact != nil:
-		return b.jibGradleBuildSpec(artifact.JibGradleArtifact, tag), nil
+	case artifact.JibArtifact != nil:
+		return b.jibBuildSpec(artifact, tag)
 
 	case artifact.BazelArtifact != nil:
 		return cloudbuild.Build{}, errors.New("skaffold can't build a bazel artifact with Google Cloud Build")

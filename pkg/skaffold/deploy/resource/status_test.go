@@ -24,6 +24,41 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func TestString(t *testing.T) {
+	var tests = []struct {
+		description string
+		details     string
+		err         error
+		expected    string
+	}{
+		{
+			description: "should return error string if error is set",
+			err:         errors.New("some error"),
+			expected:    "some error",
+		},
+		{
+			description: "should return error details if error is not set",
+			details:     "details",
+			expected:    "details",
+		},
+		{
+			description: "should return error if both details and error are set",
+			details:     "error details",
+			err:         errors.New("error happened due to something"),
+			expected:    "error happened due to something",
+		},
+		{
+			description: "should return empty string if all empty",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			status := newStatus(test.details, test.err)
+			t.CheckDeepEqual(test.expected, status.String())
+		})
+	}
+}
+
 func TestEqual(t *testing.T) {
 	var tests = []struct {
 		description string

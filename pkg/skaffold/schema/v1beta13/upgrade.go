@@ -24,14 +24,46 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1beta13 to v1beta14
-// 1. No Additions
-// 2. No removals
-// 3. No Updates
+// 1. Additions:
+// single jib builder for local and gcb
+// 2. Removals:
+// jibMaven builder
+// jibGradle builder
+// jibMaven profile removed
+// 3. No updates
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 
 	pkgutil.CloneThroughJSON(config, &newConfig)
+	if err := util.UpgradePipelines(config, &newConfig, upgradeOnePipeline); err != nil {
+		return nil, err
+	}
 	newConfig.APIVersion = next.Version
 
 	return &newConfig, nil
+}
+
+func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldBuild := &oldPipeline.(*Pipeline).Build
+	newBuild := &newPipeline.(*next.Pipeline).Build
+
+	for i, a := range oldBuild.Artifacts {
+		switch {
+		case a.JibMavenArtifact != nil:
+			flags := a.JibMavenArtifact.Flags
+			if a.JibMavenArtifact.Profile != "" {
+				flags = append(flags, "--activate-profiles", a.JibMavenArtifact.Profile)
+			}
+			newBuild.Artifacts[i].JibArtifact = &next.JibArtifact{
+				Project: a.JibMavenArtifact.Module,
+				Flags:   flags,
+			}
+		case a.JibGradleArtifact != nil:
+			newBuild.Artifacts[i].JibArtifact = &next.JibArtifact{
+				Project: a.JibGradleArtifact.Project,
+				Flags:   a.JibGradleArtifact.Flags,
+			}
+		}
+	}
+	return nil
 }
