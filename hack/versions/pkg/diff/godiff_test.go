@@ -144,6 +144,21 @@ type TestStructure struct {
 			shouldErr: false,
 		},
 		{
+			name: "type change of field pointer: not same",
+			a: `package a
+type TestStructure struct {
+	oldField string
+}
+`,
+			b: `package a
+type TestStructure struct {
+	oldField *string
+} 
+`,
+			same:      false,
+			shouldErr: false,
+		},
+		{
 			name: "reordered fields: same",
 			a: `package a
 type TestStructure struct {

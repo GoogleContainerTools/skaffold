@@ -110,7 +110,7 @@ func baseTypeName(x ast.Expr) (name string) {
 	case *ast.ParenExpr:
 		return baseTypeName(t.X)
 	case *ast.StarExpr:
-		return baseTypeName(t.X)
+		return "*" + baseTypeName(t.X)
 	default:
 		panic(fmt.Errorf("not covered %+v %+v ", t, x))
 	}
