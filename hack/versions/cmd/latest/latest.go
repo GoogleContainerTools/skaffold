@@ -29,7 +29,8 @@ import (
 func main() {
 	logrus.SetLevel(logrus.ErrorLevel)
 	latestVersion, isReleased := version.GetLatestVersion()
-	if isReleased {
+	// temporarily swapped for testing a commit impact on Travis
+	if !isReleased {
 		color.Red.Fprintf(os.Stdout, "%s is released, it should NOT be changed!\n", latestVersion)
 	} else {
 		color.Green.Fprintf(os.Stdout, "%s is unreleased, it is safe to change it.\n", latestVersion)
