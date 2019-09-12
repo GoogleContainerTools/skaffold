@@ -31,6 +31,8 @@ import (
 // ValidSuffixes are the supported file formats for kubernetes manifests
 var ValidSuffixes = []string{".yml", ".yaml", ".json"}
 
+var requiredFields = []string{"apiVersion", "kind", "metadata"}
+
 // Kubectl holds parameters to run kubectl.
 type Kubectl struct {
 	configs []string
@@ -77,8 +79,10 @@ func (k *Kubectl) GetImages() []string {
 	return k.images
 }
 
-// parseImagesFromKubernetesYaml attempts to parse k8s objects from a yaml file
-// if successful, it will return the images referenced in the k8s config
+// parseImagesFromKubernetesYaml uses required fields from the k8s spec
+// to determine if a provided yaml file is a valid k8s manifest, as detailed in
+// https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/#required-fields.
+// if so, it will return the images referenced in the k8s config
 // so they can be built by the generated skaffold yaml
 func parseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 	f, err := os.Open(filepath)
@@ -104,14 +108,10 @@ func parseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 			return nil, errors.Wrap(err, "reading kubernetes YAML")
 		}
 
-		if _, ok := m["apiVersion"]; !ok {
-			logrus.Debugf("'apiVersion' not present in yaml, continuing")
+		if !isKubernetesYaml(m) {
 			continue
 		}
-		if _, ok := m["kind"]; !ok {
-			logrus.Debugf("'kind' not present in yaml, continuing")
-			continue
-		}
+
 		yamlsFound++
 
 		images = append(images, parseImagesFromYaml(m)...)
@@ -120,6 +120,16 @@ func parseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 		return nil, errors.New("no valid kubernetes objects decoded")
 	}
 	return images, nil
+}
+
+func isKubernetesYaml(doc map[interface{}]interface{}) bool {
+	for _, field := range requiredFields {
+		if _, ok := doc[field]; !ok {
+			logrus.Debugf("%s not present in yaml, continuing", field)
+			return false
+		}
+	}
+	return true
 }
 
 // adapted from pkg/skaffold/deploy/kubectl/recursiveReplaceImage()
