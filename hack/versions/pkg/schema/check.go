@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package schema_check
+package schema
 
 import (
 	"fmt"
@@ -54,6 +54,9 @@ func RunSchemaCheckOnChangedFiles() error {
 	baseRef := "master"
 	for _, configFile := range changedConfigFiles {
 		content, err := ioutil.ReadFile(configFile)
+		if err != nil {
+			return errors.Wrapf(err, "reading %s", configFile)
+		}
 		changedFile := path.Join(root, "changed.go")
 		if err = ioutil.WriteFile(changedFile, content, 0666); err != nil {
 			return errors.Wrapf(err, "writing changed version of %s", configFile)
@@ -98,7 +101,7 @@ func RunSchemaCheckOnChangedFiles() error {
 		if err != nil {
 			logrus.Errorf("failed to get diff: %s", err)
 		}
-		fmt.Printf(string(changes))
+		fmt.Print(string(changes))
 	}
 
 	if len(filesInError) > 0 {
