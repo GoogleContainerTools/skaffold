@@ -45,9 +45,6 @@ type SkaffoldConfig struct {
 	Profiles []Profile `yaml:"profiles,omitempty"`
 }
 
-//adding it for testing only
-type TestType struct{}
-
 // Metadata holds an optional name of the project.
 type Metadata struct {
 	// Name is an identifier for the project.
