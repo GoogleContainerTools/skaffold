@@ -34,21 +34,21 @@ func TestReportSinceLastUpdated(t *testing.T) {
 			description: "updating an error status",
 			message:     "cannot pull image",
 			err:         errors.New("cannot pull image"),
-			expected:    "test-ns:deployment/test cannot pull image\n",
+			expected:    "test-ns:deployment/test cannot pull image",
 		},
 		{
 			description: "updating a non error status",
 			message:     "is waiting for container",
-			expected:    "test-ns:deployment/test is waiting for container\n",
+			expected:    "test-ns:deployment/test is waiting for container",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			dep := NewDeployment("test", "test-ns", 1)
 			dep.UpdateStatus(test.message, test.err)
+			t.CheckDeepEqual(test.expected, dep.ReportSinceLastUpdated())
 			// Check reported is set to true.
 			t.CheckDeepEqual(true, dep.status.reported)
-			t.CheckDeepEqual(test.expected, dep.ReportSinceLastUpdated())
 		})
 	}
 }
@@ -62,7 +62,7 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 		{
 			description: "report first time should return status",
 			times:       1,
-			expected:    "test-ns:deployment/test cannot pull image\n",
+			expected:    "test-ns:deployment/test cannot pull image",
 		},
 		{
 			description: "report 2nd time should not return",
