@@ -28,14 +28,14 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibMavenArtifact, tag string) (string, error) {
+func (b *Builder) buildJibMaven(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
 	if b.pushImages {
 		return b.buildJibMavenToRegistry(ctx, out, workspace, artifact, tag)
 	}
 	return b.buildJibMavenToDocker(ctx, out, workspace, artifact, tag)
 }
 
-func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibMavenArtifact, tag string) (string, error) {
+func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
 	args := jib.GenerateMavenArgs("dockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
@@ -44,7 +44,7 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 	return b.localDocker.ImageID(ctx, tag)
 }
 
-func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibMavenArtifact, tag string) (string, error) {
+func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
 	args := jib.GenerateMavenArgs("build", tag, artifact, b.skipTests, b.insecureRegistries)
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err

@@ -35,6 +35,14 @@ build:
   - image: gcr.io/k8s-skaffold/bazel
     bazel:
       target: //mytarget
+  - image: gcr.io/k8s-skaffold/jib-maven
+    jibMaven:
+      args: ['-v']
+      profile: prof
+      module: dir
+  - image: gcr.io/k8s-skaffold/jib-gradle
+    jibGradle:
+      args: ['-v']
   googleCloudBuild:
     projectId: test-project
 test:
@@ -88,6 +96,13 @@ build:
   - image: gcr.io/k8s-skaffold/bazel
     bazel:
       target: //mytarget
+  - image: gcr.io/k8s-skaffold/jib-maven
+    jib:
+      args: ['-v', '--activate-profiles', 'prof']
+      project: dir
+  - image: gcr.io/k8s-skaffold/jib-gradle
+    jib:
+      args: ['-v']
   googleCloudBuild:
     projectId: test-project
 test:

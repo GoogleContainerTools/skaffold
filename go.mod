@@ -8,10 +8,11 @@ require (
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.6 // indirect
 	github.com/Azure/azure-sdk-for-go v33.1.0+incompatible // indirect
+	github.com/Azure/go-autorest/autorest v0.9.1 // indirect
 	github.com/Azure/go-autorest/autorest/to v0.3.0 // indirect
 	github.com/Azure/go-autorest/autorest/validation v0.2.0 // indirect
 	github.com/MakeNowJust/heredoc v0.0.0-20171113091838-e9091a26100e // indirect
-	github.com/Microsoft/go-winio v0.4.11 // indirect
+	github.com/Microsoft/go-winio v0.4.14 // indirect
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b // indirect
 	github.com/aws/aws-sdk-go v1.23.15 // indirect
 	github.com/blang/semver v3.5.1+incompatible
@@ -20,9 +21,9 @@ require (
 	github.com/docker/cli v0.0.0-20181026145426-51668a30f262
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v0.7.3-0.20190327010347-be7ac8be2ae0
-	github.com/docker/docker-credential-helpers v0.6.1 // indirect
+	github.com/docker/docker-credential-helpers v0.6.3 // indirect
 	github.com/docker/go-connections v0.4.0
-	github.com/docker/go-metrics v0.0.0-20180209012529-399ea8c73916 // indirect
+	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/docker/go-units v0.3.3 // indirect
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
@@ -35,13 +36,14 @@ require (
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/uuid v1.1.1
-	github.com/googleapis/gnostic v0.2.0 // indirect
+	github.com/googleapis/gnostic v0.2.2 // indirect
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.8.5
+	github.com/grpc-ecosystem/grpc-gateway v1.8.6
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
-	github.com/imdario/mergo v0.3.6
+	github.com/imdario/mergo v0.3.7
 	github.com/karrick/godirwalk v1.10.12
+	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/krishicks/yaml-patch v0.0.10
 	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
@@ -53,6 +55,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/opencontainers/runc v0.1.1 // indirect
 	github.com/pkg/errors v0.8.1
+	github.com/prometheus/procfs v0.0.4 // indirect
 	github.com/rjeczalik/notify v0.9.2
 	github.com/segmentio/textio v1.2.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
@@ -60,6 +63,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
+	go.opencensus.io v0.22.1 // indirect
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.10.0 // indirect
@@ -69,8 +73,9 @@ require (
 	golang.org/x/sys v0.0.0-20190904154756-749cb33beabd // indirect
 	golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7 // indirect
 	google.golang.org/api v0.9.0
+	google.golang.org/appengine v1.6.2 // indirect
 	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
-	google.golang.org/grpc v1.22.1
+	google.golang.org/grpc v1.22.2
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/russross/blackfriday.v2 v2.0.1

@@ -300,7 +300,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 			pairs = append(pairs, pair)
 
 		// FIXME: shouldn't use a human-readable name?
-		case jib.JibGradle.Name(), jib.JibMaven.Name():
+		case jib.PluginName(jib.JibGradle), jib.PluginName(jib.JibMaven):
 			parsed := struct {
 				Payload jib.Jib `json:"payload"`
 			}{}
