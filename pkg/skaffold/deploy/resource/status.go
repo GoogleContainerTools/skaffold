@@ -38,7 +38,7 @@ func (rs Status) Equal(other Status) bool {
 		return false
 	}
 	if rs.err != nil && other.err != nil {
-		return rs.err.Error() == rs.err.Error()
+		return rs.err.Error() == other.err.Error()
 	}
 	return rs.err == other.err
 }
