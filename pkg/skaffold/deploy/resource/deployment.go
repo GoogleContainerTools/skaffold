@@ -31,6 +31,7 @@ type Deployment struct {
 	rType     string
 	deadline  time.Duration
 	status    Status
+	done      bool
 }
 
 func (d *Deployment) String() string {
@@ -56,6 +57,14 @@ func (d *Deployment) UpdateStatus(details string, err error) {
 	}
 }
 
+func (d *Deployment) IsDone() bool {
+	return d.done
+}
+
+func (d *Deployment) MarkDone() {
+	d.done = true
+}
+
 func (d *Deployment) ReportSinceLastUpdated() string {
 	if d.status.reported {
 		return ""
@@ -77,5 +86,11 @@ func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 // For testing
 func (d *Deployment) WithStatus(details string, err error) *Deployment {
 	d.UpdateStatus(details, err)
+	return d
+}
+
+func (d *Deployment) WithDone(details string, err error) *Deployment {
+	d.UpdateStatus(details, err)
+	d.done = true
 	return d
 }
