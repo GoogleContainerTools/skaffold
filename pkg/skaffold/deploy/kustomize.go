@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
@@ -71,6 +72,7 @@ type KustomizeDeployer struct {
 	kubectl            deploy.CLI
 	defaultRepo        string
 	insecureRegistries map[string]bool
+	BuildArgs          []string
 }
 
 func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
@@ -248,7 +250,7 @@ func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {
 }
 
 func (k *KustomizeDeployer) readManifests(ctx context.Context) (deploy.ManifestList, error) {
-	cmd := exec.CommandContext(ctx, "kustomize", "build", k.KustomizePath)
+	cmd := exec.CommandContext(ctx, "kustomize", buildCommandArgs(k.BuildArgs, k.KustomizePath)...)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "kustomize build")
@@ -261,4 +263,22 @@ func (k *KustomizeDeployer) readManifests(ctx context.Context) (deploy.ManifestL
 	var manifests deploy.ManifestList
 	manifests.Append(out)
 	return manifests, nil
+}
+
+func buildCommandArgs(buildArgs []string, kustomizePath string) []string {
+	var args []string
+	args = append(args, "build")
+
+	if len(buildArgs) > 0 {
+		for _, v := range buildArgs {
+			parts := strings.Split(v, " ")
+			args = append(args, parts...)
+		}
+	}
+
+	if len(kustomizePath) > 0 {
+		args = append(args, kustomizePath)
+	}
+
+	return args
 }
