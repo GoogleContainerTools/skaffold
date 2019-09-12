@@ -19,7 +19,7 @@ metadata:
   labels:
     app: leeroy-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: leeroy-app
