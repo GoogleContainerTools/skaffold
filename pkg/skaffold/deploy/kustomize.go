@@ -85,6 +85,7 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 		},
 		defaultRepo:        runCtx.DefaultRepo,
 		insecureRegistries: runCtx.InsecureRegistries,
+		BuildArgs:          runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
 	}
 }
 
