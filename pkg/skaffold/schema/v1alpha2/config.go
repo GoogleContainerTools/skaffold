@@ -30,6 +30,7 @@ func NewSkaffoldConfig() util.VersionedConfig {
 type SkaffoldConfig struct {
 	APIVersion string `yaml:"apiVersion"`
 	Kind       string `yaml:"kind"`
+	TestKind   string `yaml:"kind"`
 
 	Build    BuildConfig  `yaml:"build,omitempty"`
 	Deploy   DeployConfig `yaml:"deploy,omitempty"`
