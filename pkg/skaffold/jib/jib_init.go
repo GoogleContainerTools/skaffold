@@ -66,21 +66,21 @@ func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 		a.Workspace = workspace
 	}
 
-	if j.BuilderName == JibMaven.Name() {
-		jibMaven := &latest.JibMavenArtifact{}
+	if j.BuilderName == PluginName(JibMaven) {
+		jibMaven := &latest.JibArtifact{Type: int(JibMaven)}
 		if j.Project != "" {
-			jibMaven.Module = j.Project
+			jibMaven.Project = j.Project
 		}
 		jibMaven.Flags = []string{"-Dimage=" + manifestImage}
-		a.ArtifactType = latest.ArtifactType{JibMavenArtifact: jibMaven}
+		a.ArtifactType = latest.ArtifactType{JibArtifact: jibMaven}
 
-	} else if j.BuilderName == JibGradle.Name() {
-		jibGradle := &latest.JibGradleArtifact{}
+	} else if j.BuilderName == PluginName(JibGradle) {
+		jibGradle := &latest.JibArtifact{Type: int(JibGradle)}
 		if j.Project != "" {
 			jibGradle.Project = j.Project
 		}
 		jibGradle.Flags = []string{"-Dimage=" + manifestImage}
-		a.ArtifactType = latest.ArtifactType{JibGradleArtifact: jibGradle}
+		a.ArtifactType = latest.ArtifactType{JibArtifact: jibGradle}
 	}
 
 	return a
@@ -149,7 +149,7 @@ func ValidateJibConfig(path string) []Jib {
 			return nil
 		}
 
-		results[i] = Jib{BuilderName: builderType.Name(), Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
+		results[i] = Jib{BuilderName: PluginName(builderType), Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
 	}
 	return results
 }

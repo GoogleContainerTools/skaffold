@@ -18,6 +18,7 @@ package jib
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -28,6 +29,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/karrick/godirwalk"
@@ -39,28 +41,26 @@ const (
 	dotDotSlash = ".." + string(filepath.Separator)
 )
 
-// PluginType is an enum for the different supported Jib plugins.
+// PluginType defines the different supported Jib plugins.
 type PluginType int
 
-// Define the different plugin types supported by Jib.
 const (
-	JibMaven PluginType = iota
+	// use `iota+1` so that 0 is an invalid value
+	JibMaven PluginType = iota + 1
 	JibGradle
 )
 
-// ID returns the identifier for a Jib plugin type, suitable for external references (YAML, JSON, command-line, etc).
-func (t PluginType) ID() string {
+// IsKnown checks that the num value is a known value (vs 0 or an unknown value).
+func (t PluginType) IsKnown() bool {
 	switch t {
-	case JibMaven:
-		return "maven"
-	case JibGradle:
-		return "gradle"
+	case JibMaven, JibGradle:
+		return true
 	}
-	panic("Unknown Jib Plugin Type: " + string(t))
+	return false
 }
 
 // Name provides a human-oriented label for a plugin type.
-func (t PluginType) Name() string {
+func PluginName(t PluginType) string {
 	switch t {
 	case JibMaven:
 		return "Jib Maven Plugin"
@@ -87,6 +87,45 @@ type filesLists struct {
 
 // watchedFiles maps from project name to watched files
 var watchedFiles = map[string]filesLists{}
+
+// GetDependencies returns a list of files to watch for changes to rebuild
+func GetDependencies(ctx context.Context, workspace string, artifact *latest.JibArtifact) ([]string, error) {
+	t, err := DeterminePluginType(workspace, artifact)
+	if err != nil {
+		return nil, err
+	}
+
+	switch t {
+	case JibMaven:
+		return getDependenciesMaven(ctx, workspace, artifact)
+	case JibGradle:
+		return getDependenciesGradle(ctx, workspace, artifact)
+	default:
+		return nil, errors.Errorf("Unable to determine Jib builder type for %s", workspace)
+	}
+}
+
+// DeterminePluginType tries to determine the Jib plugin type for the given artifact.
+func DeterminePluginType(workspace string, artifact *latest.JibArtifact) (PluginType, error) {
+	// check if explicitly specified
+	if artifact != nil {
+		if t := PluginType(artifact.Type); t.IsKnown() {
+			return t, nil
+		}
+	}
+
+	// check for typical gradle files
+	for _, gradleFile := range []string{"build.gradle", "gradle.properties", "settings.gradle", "gradlew", "gradlew.bat", "gradlew.cmd"} {
+		if util.IsFile(filepath.Join(workspace, gradleFile)) {
+			return JibGradle, nil
+		}
+	}
+	// check for typical maven files; .mvn is a directory used for polyglot maven
+	if util.IsFile(filepath.Join(workspace, "pom.xml")) || util.IsDir(filepath.Join(workspace, ".mvn")) {
+		return JibMaven, nil
+	}
+	return -1, errors.Errorf("Unable to determine Jib plugin type for %s", workspace)
+}
 
 // getDependencies returns a list of files to watch for changes to rebuild
 func getDependencies(workspace string, cmd exec.Cmd, projectName string) ([]string, error) {
