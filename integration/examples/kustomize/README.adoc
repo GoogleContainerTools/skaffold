@@ -32,7 +32,7 @@ endif::[]
 === Example: passing arguments to kustomize
 :icons: font
 
-This is an example demonstrating how additional arguments can be passed to kustomize
+This is an example demonstrating how additional arguments can be passed to the `kustomize build` command.
 
 ifndef::env-github[]
 
