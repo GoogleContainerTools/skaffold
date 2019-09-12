@@ -328,3 +328,68 @@ func TestDependenciesForKustomization(t *testing.T) {
 		})
 	}
 }
+
+func TestKustomizeBuildCommandArgs(t *testing.T) {
+	tests := []struct {
+		description   string
+		buildArgs     []string
+		kustomizePath string
+		expectedArgs  []string
+	}{
+		{
+			description:   "no BuildArgs, empty KustomizePath ",
+			buildArgs:     []string{},
+			kustomizePath: "",
+			expectedArgs:  []string{"build"},
+		},
+		{
+			description:   "One BuildArg, empty KustomizePath",
+			buildArgs:     []string{"--foo"},
+			kustomizePath: "",
+			expectedArgs:  []string{"build", "--foo"},
+		},
+		{
+			description:   "no BuildArgs, non-empty KustomizePath",
+			buildArgs:     []string{},
+			kustomizePath: "foo",
+			expectedArgs:  []string{"build", "foo"},
+		},
+		{
+			description:   "One BuildArg, non-empty KustomizePath",
+			buildArgs:     []string{"--foo"},
+			kustomizePath: "bar",
+			expectedArgs:  []string{"build", "--foo", "bar"},
+		},
+		{
+			description:   "Multiple BuildArg, empty KustomizePath",
+			buildArgs:     []string{"--foo", "--bar"},
+			kustomizePath: "",
+			expectedArgs:  []string{"build", "--foo", "--bar"},
+		},
+		{
+			description:   "Multiple BuildArg with spaces, empty KustomizePath",
+			buildArgs:     []string{"--foo bar", "--baz"},
+			kustomizePath: "",
+			expectedArgs:  []string{"build", "--foo", "bar", "--baz"},
+		},
+		{
+			description:   "Multiple BuildArg with spaces, non-empty KustomizePath",
+			buildArgs:     []string{"--foo bar", "--baz"},
+			kustomizePath: "barfoo",
+			expectedArgs:  []string{"build", "--foo", "bar", "--baz", "barfoo"},
+		},
+		{
+			description:   "Multiple BuildArg no spaces, non-empty KustomizePath",
+			buildArgs:     []string{"--foo", "bar", "--baz"},
+			kustomizePath: "barfoo",
+			expectedArgs:  []string{"build", "--foo", "bar", "--baz", "barfoo"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			args := buildCommandArgs(test.buildArgs, test.kustomizePath)
+			t.CheckDeepEqual(test.expectedArgs, args)
+		})
+	}
+}
