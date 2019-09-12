@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-
 	"github.com/google/go-github/github"
 	"github.com/sirupsen/logrus"
 )
