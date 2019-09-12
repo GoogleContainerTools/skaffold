@@ -50,7 +50,18 @@ func (d *Deployment) Status() Status {
 }
 
 func (d *Deployment) UpdateStatus(details string, err error) {
-	d.status = newStatus(details, err)
+	updated := newStatus(details, err)
+	if !d.status.Equal(updated) {
+		d.status = updated
+	}
+}
+
+func (d *Deployment) ReportSinceLastUpdated() string {
+	if d.status.reported {
+		return ""
+	}
+	d.status.reported = true
+	return fmt.Sprintf("%s %s", d, d.status)
 }
 
 func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {

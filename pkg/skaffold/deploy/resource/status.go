@@ -17,8 +17,9 @@ limitations under the License.
 package resource
 
 type Status struct {
-	err     error
-	details string
+	err      error
+	details  string
+	reported bool
 }
 
 func (rs Status) Error() error {
@@ -30,6 +31,16 @@ func (rs Status) String() string {
 		return rs.err.Error()
 	}
 	return rs.details
+}
+
+func (rs Status) Equal(other Status) bool {
+	if rs.details != other.details {
+		return false
+	}
+	if rs.err != nil && other.err != nil {
+		return rs.err.Error() == other.err.Error()
+	}
+	return rs.err == other.err
 }
 
 func newStatus(msg string, err error) Status {
