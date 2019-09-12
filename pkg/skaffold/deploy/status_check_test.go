@@ -384,7 +384,11 @@ func TestPrintSummaryStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			printStatusCheckSummary(resource.NewDeployment("dep", "test", 0), int(test.pending), 10, test.err, out)
+			printStatusCheckSummary(
+				resource.NewDeployment("dep", "test", 0).WithStatus("", test.err),
+				int(test.pending),
+				10,
+				out)
 			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}

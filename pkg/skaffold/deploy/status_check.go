@@ -66,7 +66,6 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	}
 
 	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds)
-
 	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)
 	if err != nil {
 		return errors.Wrap(err, "could not fetch deployments")
@@ -82,7 +81,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 			defer wg.Done()
 			pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), d)
 			pending := c.markProcessed()
-			printStatusCheckSummary(d, pending, c.total, err, out)
+			printStatusCheckSummary(d, pending, c.total, out)
 		}(d)
 	}
 
@@ -167,9 +166,9 @@ func getDeadline(d int) time.Duration {
 	return defaultStatusCheckDeadline
 }
 
-func printStatusCheckSummary(d *resource.Deployment, pending int, total int, err error, out io.Writer) {
+func printStatusCheckSummary(d *resource.Deployment, pending int, total int, out io.Writer) {
 	status := fmt.Sprintf("%s %s", tabHeader, d)
-	if err != nil {
+	if err := d.Status().Error(); err != nil {
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
 			trimNewLine(getPendingMessage(pending, total)),
@@ -202,9 +201,12 @@ func printResourceStatus(ctx context.Context, deps []*resource.Deployment, deadl
 func printStatus(deps []*resource.Deployment, out io.Writer) bool {
 	allResourcesCheckComplete := true
 	for _, d := range deps {
-		if !d.IsDone() {
-			allResourcesCheckComplete = false
-			color.Default.Fprintln(out, tabHeader, d.ReportSinceLastUpdated())
+		if d.IsDone() {
+			continue
+		}
+		allResourcesCheckComplete = false
+		if str := d.ReportSinceLastUpdated(); str != "" {
+			color.Default.Fprintln(out, tabHeader, trimNewLine(str))
 		}
 	}
 	return allResourcesCheckComplete
