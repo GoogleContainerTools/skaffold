@@ -85,7 +85,7 @@ func fieldListString(structType *ast.StructType) string {
 		if field.Tag != nil {
 			tag = field.Tag.Value
 		}
-		fieldListString = fmt.Sprintf("%+v %s type: %s tag: %v",
+		fieldListString = fmt.Sprintf("%s %s type: %s tag: %s",
 			fieldListString,
 			field.Names,
 			baseTypeName(field.Type),

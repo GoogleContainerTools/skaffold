@@ -25,46 +25,7 @@
 # If the change is in latest and it is not released yet, it is fine to make changes.
 
 
-function changeDetected() {
-    echo "--------"
-    echo "Structural change detected in a released config: $1"
-    echo "Please create a new PR first with a new version."
-    echo "You can use 'hack/new_version.sh' to generate the new config version."
-    echo "Admin rights are required to merge this PR!"
-    echo "--------"
-    git diff master -- $1
-}
 
 set +x
-CHANGED_CONFIG_FILES=$(git diff --name-only master -- pkg/skaffold/schema | grep config.go)
 
-if [[ -z "${CHANGED_CONFIG_FILES}" ]]; then
-    exit 0
-fi
-
-result=0
-
-for f in ${CHANGED_CONFIG_FILES}
-do
-    cat ${f} > /tmp/a.go
-    git show master:${f} > /tmp/b.go
-    go run hack/versions/cmd/diff/diff.go -- /tmp/a.go /tmp/b.go > /dev/null 2>&1
-    status=$?
-    if [[ ${status} -ne 0 ]]; then
-        # changes in latest
-        if [[ "${f}" == *"latest"* ]]; then
-            echo "structural changes in latest config, checking on Github if latest is released..."
-            latest=$(go run hack/versions/cmd/latest/latest.go)
-            echo ${latest}
-            if [[ "${latest}" == *"is released"* ]]; then
-                changeDetected ${f}
-                result=1
-            fi
-        else
-            changeDetected ${f}
-            result=1
-        fi
-    fi
-done
-
-exit $result
+go run hack/versions/cmd/schema_check/check.go
