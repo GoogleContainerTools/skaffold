@@ -14,33 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resource
+package deploy
 
 import (
-	"time"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 )
 
-const (
-	deploymentType = "deployment"
-)
-
-type Deployment struct {
-  *Base
-	deadline  time.Duration
-}
-
-func (d *Deployment) Deadline() time.Duration {
-	return d.deadline
-}
-
-func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
-	return &Deployment{
-		Base: &Base{
-			name:      name,
-			namespace: ns,
-			rType:     deploymentType,
-			status:    newStatus("", nil),
-		},
-		deadline:  deadline,
-	}
+type Resource interface {
+	Name() string
+	String() string
+	Status() resource.Status
+	PollStatus()
+	UpdateStatus(string, error)
+	ReportSinceLastUpdated() string
 }
