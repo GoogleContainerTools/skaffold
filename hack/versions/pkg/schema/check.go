@@ -114,10 +114,10 @@ func RunSchemaCheckOnChangedFiles() error {
 func changeDetected(configFile string) string {
 	return fmt.Sprintf(`--------
 Structural change detected in a released config: %s
-Please create a new PR first with a new version."
-You can use 'hack/new_version.sh' to generate the new config version."
+Please create a new PR first with a new version.
+You can use 'hack/new_version.sh' to generate the new config version.
 If you are running this locally, make sure you have the master branch up to date!
-Admin rights are required to merge this PR!"
+Admin rights are required to merge this PR!
 --------
 `, configFile)
 }
