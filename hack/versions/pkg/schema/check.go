@@ -64,6 +64,10 @@ func RunSchemaCheckOnChangedFiles() error {
 
 		content, err = git.getFileFromRef(configFile, baseRef)
 		if err != nil {
+			if strings.Contains(err.Error(), fmt.Sprintf("config.go' exists on disk, but not in '%s'", baseRef)) {
+				logrus.Warnf("Can't find %s in %s. Assuming this PR is for a new version creation, skipping...")
+				continue
+			}
 			return err
 		}
 		baseFile := path.Join(root, "base.go")
