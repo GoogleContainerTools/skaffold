@@ -41,5 +41,5 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 
 // Placeholder for upgrade logic
 func upgradeOnePipeline(_, _ interface{}) error {
-   return nil
+	return nil
 }
