@@ -14,22 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta13
+package v1beta14
 
 import (
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta14"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1beta13 to v1beta14
+// Config changes from v1beta14 to v1beta15
 // 1. Additions:
-// single jib builder for local and gcb
 // 2. Removals:
-// jibMaven builder
-// jibGradle builder
-// jibMaven profile removed
 // 3. No updates
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
@@ -43,27 +39,7 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	return &newConfig, nil
 }
 
-func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
-	oldBuild := &oldPipeline.(*Pipeline).Build
-	newBuild := &newPipeline.(*next.Pipeline).Build
-
-	for i, a := range oldBuild.Artifacts {
-		switch {
-		case a.JibMavenArtifact != nil:
-			flags := a.JibMavenArtifact.Flags
-			if a.JibMavenArtifact.Profile != "" {
-				flags = append(flags, "--activate-profiles", a.JibMavenArtifact.Profile)
-			}
-			newBuild.Artifacts[i].JibArtifact = &next.JibArtifact{
-				Project: a.JibMavenArtifact.Module,
-				Flags:   flags,
-			}
-		case a.JibGradleArtifact != nil:
-			newBuild.Artifacts[i].JibArtifact = &next.JibArtifact{
-				Project: a.JibGradleArtifact.Project,
-				Flags:   a.JibGradleArtifact.Flags,
-			}
-		}
-	}
-	return nil
+// Placeholder for upgrade logic
+func upgradeOnePipeline(_, _ interface{}) error {
+   return nil
 }
