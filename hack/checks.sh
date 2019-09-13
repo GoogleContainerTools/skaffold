@@ -20,6 +20,7 @@ RESET='\033[0m'
 
 echo "Running validation scripts..."
 scripts=(
+    "hack/check-schema-changes.sh"
     "hack/boilerplate.sh"
     "hack/gofmt.sh"
     "hack/linter.sh"
