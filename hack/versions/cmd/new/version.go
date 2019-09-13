@@ -114,7 +114,7 @@ func readNextVersion() string {
 	} else {
 		new = os.Args[1]
 	}
-	return new
+	return strings.TrimSuffix(new, "\n")
 }
 
 func path(elem ...string) string {
