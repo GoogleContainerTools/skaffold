@@ -17,7 +17,6 @@ limitations under the License.
 package custom
 
 import (
-	"context"
 	"io/ioutil"
 	"os/exec"
 	"testing"
@@ -115,7 +114,7 @@ func TestRetrieveCmd(t *testing.T) {
 			t.Override(&buildContext, func(string) (string, error) { return test.artifact.Workspace, nil })
 
 			builder := NewArtifactBuilder(false, nil)
-			cmd, err := builder.retrieveCmd(context.Background(), ioutil.Discard, test.artifact, test.tag)
+			cmd, err := builder.retrieveCmd(ioutil.Discard, test.artifact, test.tag)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected.Args, cmd.Args)
@@ -126,7 +125,7 @@ func TestRetrieveCmd(t *testing.T) {
 }
 
 func expectedCmd(buildCommand, dir string, args, env []string) *exec.Cmd {
-	cmd := exec.CommandContext(context.Background(), buildCommand, args...)
+	cmd := exec.Command(buildCommand, args...)
 	cmd.Dir = dir
 	cmd.Env = env
 	return cmd
