@@ -20,14 +20,18 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -52,19 +56,53 @@ func NewArtifactBuilder(pushImages bool, additionalEnv []string) *ArtifactBuilde
 // Build builds a custom artifact
 // It returns true if the image is expected to exist remotely, or false if it is expected to exist locally
 func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) error {
-	cmd, err := b.retrieveCmd(ctx, out, a, tag)
+	cmd, err := b.retrieveCmd(out, a, tag)
 	if err != nil {
 		return errors.Wrap(err, "retrieving cmd")
 	}
 
-	return cmd.Run()
+	if err := cmd.Start(); err != nil {
+		return errors.Wrap(err, "starting cmd")
+	}
+
+	done := make(chan struct{})
+	go func() {
+		select {
+		case <-ctx.Done():
+			// On windows we can't send specific signals to processes, so we kill the process immediately
+			if runtime.GOOS == "windows" {
+				cmd.Process.Kill()
+				return
+			}
+
+			logrus.Debugf("Sending SIGINT to process %v\n", cmd.Process.Pid)
+			if err := cmd.Process.Signal(os.Interrupt); err != nil {
+				// kill process on error
+				cmd.Process.Kill()
+			}
+
+			// wait 30 seconds or wait for the process to complete
+			select {
+			case <-time.After(30 * time.Second):
+				logrus.Debugf("Killing process %v\n", cmd.Process.Pid)
+				// forcefully kill process after 30 seconds grace period
+				cmd.Process.Kill()
+			case <-done:
+			}
+		case <-done:
+		}
+	}()
+
+	err = cmd.Wait()
+	close(done)
+	return err
 }
 
-func (b *ArtifactBuilder) retrieveCmd(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
+func (b *ArtifactBuilder) retrieveCmd(out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
 	artifact := a.CustomArtifact
 	split := strings.Split(artifact.BuildCommand, " ")
 
-	cmd := exec.CommandContext(ctx, split[0], split[1:]...)
+	cmd := exec.Command(split[0], split[1:]...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 
