@@ -541,7 +541,7 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 	case "get":
 		return m.getResult
 	case "install":
-		if m.upgradeMatcher != nil && !m.installMatcher(c) {
+		if m.installMatcher != nil && !m.installMatcher(c) {
 			m.t.Errorf("install matcher failed to match commands: %+v", c.Args)
 		}
 		return m.installResult
