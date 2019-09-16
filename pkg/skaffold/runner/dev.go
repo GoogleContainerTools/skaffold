@@ -34,78 +34,68 @@ import (
 var ErrorConfigurationChanged = errors.New("configuration changed")
 
 func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
-	actionPerformed := false
-
-	// acquire the intents
-	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
-
-	if (r.changeSet.needsRedeploy && deployIntent) ||
-		(len(r.changeSet.needsRebuild) > 0 && buildIntent) ||
-		(len(r.changeSet.needsResync) > 0 && syncIntent) {
-		r.logger.Mute()
-		// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
-		defer r.monitor.Reset()
-		defer r.listener.LogWatchToUser(out)
+	if r.changeSet.needsReload {
+		return ErrorConfigurationChanged
 	}
 
-	switch {
-	case r.changeSet.needsReload:
-		r.changeSet.resetReload()
-		return ErrorConfigurationChanged
-	case len(r.changeSet.needsResync) > 0 && syncIntent:
+	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
+	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
+	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
+	needsDeploy := deployIntent && r.changeSet.needsRedeploy
+	if !needsSync && !needsBuild && !needsDeploy {
+		return nil
+	}
+
+	r.logger.Mute()
+	// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
+	defer r.monitor.Reset()
+	defer r.listener.LogWatchToUser(out)
+
+	if needsSync {
 		defer func() {
 			r.changeSet.resetSync()
 			r.intents.resetSync()
 		}()
-		actionPerformed = true
+
 		for _, s := range r.changeSet.needsResync {
 			color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
 
 			if err := r.syncer.Sync(ctx, s); err != nil {
-				r.changeSet.reset()
 				logrus.Warnln("Skipping deploy due to sync error:", err)
 				return nil
 			}
 		}
-	case len(r.changeSet.needsRebuild) > 0 && buildIntent:
+	}
+
+	if needsBuild {
 		defer func() {
 			r.changeSet.resetBuild()
 			r.intents.resetBuild()
 		}()
-		// this linter apparently doesn't understand fallthroughs
-		//nolint:ineffassign
-		actionPerformed = true
+
 		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
-			r.changeSet.reset()
 			logrus.Warnln("Skipping deploy due to error:", err)
 			return nil
 		}
-		r.changeSet.needsRedeploy = true
-		fallthrough // always try a redeploy after a successful build
-	case r.changeSet.needsRedeploy && deployIntent:
-		if !deployIntent {
-			// in case we fell through, but haven't received the go ahead to deploy
-			r.logger.Unmute()
-			return nil
-		}
-		actionPerformed = true
-		r.forwarderManager.Stop()
+	}
+
+	if needsDeploy {
 		defer func() {
-			r.changeSet.reset()
+			r.changeSet.resetDeploy()
 			r.intents.resetDeploy()
 		}()
+
+		r.forwarderManager.Stop()
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
 			return nil
 		}
 		if err := r.forwarderManager.Start(ctx); err != nil {
-			logrus.Warnln("Port forwarding failed due to error:", err)
+			logrus.Warnln("Port forwarding failed:", err)
 		}
 	}
 
-	if actionPerformed {
-		r.logger.Unmute()
-	}
+	r.logger.Unmute()
 	return nil
 }
 
@@ -120,28 +110,38 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	defer r.forwarderManager.Stop()
 
 	// Watch artifacts
+	start := time.Now()
+	color.Default.Fprintln(out, "Listing files to watch...")
+
 	for i := range artifacts {
 		artifact := artifacts[i]
 		if !r.runCtx.Opts.IsTargetImage(artifact) {
 			continue
 		}
 
-		if err := r.monitor.Register(
-			func() ([]string, error) { return r.builder.DependenciesForArtifact(ctx, artifact) },
-			func(e filemon.Events) {
-				syncMap := func() (map[string][]string, error) { return r.builder.SyncMap(ctx, artifact) }
-				s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries, syncMap)
-				switch {
-				case err != nil:
-					logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
-				case s != nil:
-					r.changeSet.AddResync(s)
-				default:
-					r.changeSet.AddRebuild(artifact)
-				}
-			},
-		); err != nil {
-			return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
+		color.Default.Fprintf(out, " - %s\n", artifact.ImageName)
+
+		select {
+		case <-ctx.Done():
+			return context.Canceled
+		default:
+			if err := r.monitor.Register(
+				func() ([]string, error) { return r.builder.DependenciesForArtifact(ctx, artifact) },
+				func(e filemon.Events) {
+					syncMap := func() (map[string][]string, error) { return r.builder.SyncMap(ctx, artifact) }
+					s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries, syncMap)
+					switch {
+					case err != nil:
+						logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
+					case s != nil:
+						r.changeSet.AddResync(s)
+					default:
+						r.changeSet.AddRebuild(artifact)
+					}
+				},
+			); err != nil {
+				return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
+			}
 		}
 	}
 
@@ -168,6 +168,8 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	); err != nil {
 		return errors.Wrapf(err, "watching skaffold configuration %s", r.runCtx.Opts.ConfigurationFile)
 	}
+
+	color.Default.Fprintln(out, "List generated in", time.Since(start))
 
 	// First build
 	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {

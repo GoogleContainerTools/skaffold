@@ -41,14 +41,18 @@ func (rr *RuneReader) ReadLine(mask rune) ([]rune, error) {
 
 	// we get the terminal width and height (if resized after this point the property might become invalid)
 	terminalSize, _ := cursor.Size(rr.Buffer())
+	// we set the current location of the cursor once
+	cursorCurrent, _ := cursor.Location(rr.Buffer())
+
 	for {
 		// wait for some input
 		r, _, err := rr.ReadRune()
 		if err != nil {
 			return line, err
 		}
-		// we set the current location of the cursor and update it after every key press
-		cursorCurrent, err := cursor.Location(rr.Buffer())
+		// increment cursor location
+		cursorCurrent.X++
+
 		// if the user pressed enter or some other newline/termination like ctrl+d
 		if r == '\r' || r == '\n' || r == KeyEndTransmission {
 			// delete what's printed out on the console screen (cleanup)

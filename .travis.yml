@@ -21,19 +21,12 @@ jobs:
       name: "Linux unit"
       script:
         - make
-        - make quicktest
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
+        - make coverage
     - os: osx
       name: "OSX unit"
-      env:
-        - GO111MODULE=on
-        - GOFLAGS="-mod=vendor"
       script:
-        - go build -o out/skaffold cmd/skaffold/skaffold.go
-        - go test -short -timeout 60s ./...
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
+        - make
+        - make quicktest
     - os: windows
       name: "Windows unit"
       env:
@@ -45,7 +38,7 @@ jobs:
     - os: linux
       name: "integration"
       before_install:
-        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.4.0/kind-linux-amd64
+        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.5.1/kind-linux-amd64
         - chmod +x ${HOME}/bin/kind
       script:
         - make integration-in-kind

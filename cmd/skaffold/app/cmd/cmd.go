@@ -100,7 +100,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				logrus.Debugf("Update check is disabled because of quiet mode")
 			} else {
 				go func() {
-					if err := updateCheck(updateMsg); err != nil {
+					if err := updateCheck(updateMsg, opts.GlobalConfig); err != nil {
 						logrus.Infof("update check failed: %s", err)
 					}
 				}()
@@ -120,8 +120,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			}
 		},
 	}
-
-	SetUpFlags()
 
 	groups := templates.CommandGroups{
 		{
@@ -183,8 +181,8 @@ func NewCmdOptions() *cobra.Command {
 	return cmd
 }
 
-func updateCheck(ch chan string) error {
-	if !update.IsUpdateCheckEnabled() {
+func updateCheck(ch chan string, configfile string) error {
+	if !update.IsUpdateCheckEnabled(configfile) {
 		logrus.Debugf("Update check not enabled, skipping.")
 		return nil
 	}

@@ -30,4 +30,5 @@ type ContextConfig struct {
 	DefaultRepo        string   `yaml:"default-repo,omitempty"`
 	LocalCluster       *bool    `yaml:"local-cluster,omitempty"`
 	InsecureRegistries []string `yaml:"insecure-registries,omitempty"`
+	UpdateCheck        *bool    `yaml:"update-check,omitempty"`
 }

@@ -37,7 +37,8 @@ Other Commands:
 | Flag | Description |
 |------- |---------------|
 |`-h, --help`| Prints the HELP file for the current command.|
-|`-v, --verbosity LOG-LEVEL` | Uses a specific log level. Available log levels are `info`, `warn`, `error`, `fatal`. Default value is `warn`.|
+|`-v, --verbosity LOG-LEVEL` | Uses a specific log level. Available log levels are `info`, `warn`, `error`, `fatal`, `debug` and `trace`. Default value is `warn`.|
+
 
 ## Global environment variables
 
@@ -116,7 +117,7 @@ Examples:
 
 Options:
   -b, --build-image=[]: Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
-      --cache-artifacts=true: Set to true to enable caching of artifacts
+      --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
@@ -287,7 +288,7 @@ Run a pipeline in debug mode
 
 
 Options:
-      --cache-artifacts=true: Set to true to enable caching of artifacts
+      --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
@@ -429,7 +430,7 @@ Run a pipeline in development mode
 
 
 Options:
-      --cache-artifacts=true: Set to true to enable caching of artifacts
+      --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
@@ -594,7 +595,7 @@ Examples:
   skaffold run -p <profile>
 
 Options:
-      --cache-artifacts=true: Set to true to enable caching of artifacts
+      --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
       --cleanup=true: Delete deployments after dev or debug mode is interrupted
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)

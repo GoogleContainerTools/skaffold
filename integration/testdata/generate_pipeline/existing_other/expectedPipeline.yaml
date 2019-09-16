@@ -14,7 +14,7 @@ apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
   creationTimestamp: null
-  name: skaffold-build
+  name: skaffold-build-0
 spec:
   inputs:
     resources:
@@ -30,6 +30,8 @@ spec:
       type: git
   steps:
   - args:
+    - --filename
+    - skaffold.yaml
     - --profile
     - oncluster
     - --file-output
@@ -56,7 +58,7 @@ apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
   creationTimestamp: null
-  name: skaffold-deploy
+  name: skaffold-deploy-0
 spec:
   inputs:
     resources:
@@ -66,6 +68,8 @@ spec:
       type: git
   steps:
   - args:
+    - --filename
+    - skaffold.yaml
     - --build-artifacts
     - build.out
     command:
@@ -86,7 +90,7 @@ spec:
   - name: source-repo
     type: git
   tasks:
-  - name: skaffold-build-task
+  - name: skaffold-build-0-task
     resources:
       inputs:
       - name: source
@@ -95,15 +99,15 @@ spec:
       - name: source
         resource: source-repo
     taskRef:
-      name: skaffold-build
-  - name: skaffold-deploy-task
+      name: skaffold-build-0
+  - name: skaffold-deploy-0-task
     resources:
       inputs:
       - from:
-        - skaffold-build-task
+        - skaffold-build-0-task
         name: source
         resource: source-repo
     taskRef:
-      name: skaffold-deploy
+      name: skaffold-deploy-0
 status: {}
 ---

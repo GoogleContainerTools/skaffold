@@ -31,7 +31,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"golang.org/x/sync/errgroup"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type manifest interface {
@@ -346,7 +345,7 @@ func (w *writer) uploadOne(l v1.Layer) error {
 	}
 
 	// Try this three times, waiting 1s after first failure, 3s after second.
-	backoff := wait.Backoff{
+	backoff := retry.Backoff{
 		Duration: 1.0 * time.Second,
 		Factor:   3.0,
 		Jitter:   0.1,

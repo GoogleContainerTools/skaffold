@@ -33,35 +33,39 @@ import (
 func TestBuildJibMavenToDocker(t *testing.T) {
 	tests := []struct {
 		description   string
-		artifact      *latest.JibMavenArtifact
-		cmd           util.Command
+		artifact      *latest.JibArtifact
+		commands      util.Command
 		shouldErr     bool
 		expectedError string
 	}{
 		{
 			description: "build",
-			artifact:    &latest.JibMavenArtifact{},
-			cmd:         testutil.FakeRun(t, "mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion="+jib.MinimumJibMavenVersion+" --non-recursive prepare-package jib:dockerBuild -Dimage=img:tag"),
+			artifact:    &latest.JibArtifact{},
+			commands: testutil.CmdRun(
+				"mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --non-recursive prepare-package jib:dockerBuild -Dimage=img:tag",
+			),
 		},
 		{
 			description: "build with additional flags",
-			artifact:    &latest.JibMavenArtifact{Flags: []string{"--flag1", "--flag2"}},
-			cmd:         testutil.FakeRun(t, "mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion="+jib.MinimumJibMavenVersion+" --flag1 --flag2 --non-recursive prepare-package jib:dockerBuild -Dimage=img:tag"),
+			artifact:    &latest.JibArtifact{Flags: []string{"--flag1", "--flag2"}},
+			commands: testutil.CmdRun(
+				"mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --flag1 --flag2 --non-recursive prepare-package jib:dockerBuild -Dimage=img:tag",
+			),
 		},
 		{
 			description: "build with module",
-			artifact:    &latest.JibMavenArtifact{Module: "module"},
-			cmd:         testutil.FakeRun(t, "mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion="+jib.MinimumJibMavenVersion+" --projects module --also-make package jib:dockerBuild -Djib.containerize=module -Dimage=img:tag"),
+			artifact:    &latest.JibArtifact{Project: "module"},
+			commands: testutil.CmdRun(
+				"mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --projects module --also-make package jib:dockerBuild -Djib.containerize=module -Dimage=img:tag",
+			),
 		},
 		{
-			description: "build with module and profile",
-			artifact:    &latest.JibMavenArtifact{Module: "module", Profile: "profile"},
-			cmd:         testutil.FakeRun(t, "mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion="+jib.MinimumJibMavenVersion+" --activate-profiles profile --projects module --also-make package jib:dockerBuild -Djib.containerize=module -Dimage=img:tag"),
-		},
-		{
-			description:   "fail build",
-			artifact:      &latest.JibMavenArtifact{},
-			cmd:           testutil.FakeRunErr(t, "mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion="+jib.MinimumJibMavenVersion+" --non-recursive prepare-package jib:dockerBuild -Dimage=img:tag", errors.New("BUG")),
+			description: "fail build",
+			artifact:    &latest.JibArtifact{},
+			commands: testutil.CmdRunErr(
+				"mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion="+jib.MinimumJibMavenVersion+" --non-recursive prepare-package jib:dockerBuild -Dimage=img:tag",
+				errors.New("BUG"),
+			),
 			shouldErr:     true,
 			expectedError: "maven build failed",
 		},
@@ -73,7 +77,7 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 				return docker.NewLocalDaemon(api, nil, false, nil), nil
 			})
-			t.Override(&util.DefaultExecCommand, test.cmd)
+			t.Override(&util.DefaultExecCommand, test.commands)
 
 			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
 				Push: util.BoolPtr(false),
@@ -95,35 +99,39 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 func TestBuildJibMavenToRegistry(t *testing.T) {
 	tests := []struct {
 		description   string
-		artifact      *latest.JibMavenArtifact
-		cmd           util.Command
+		artifact      *latest.JibArtifact
+		commands      util.Command
 		shouldErr     bool
 		expectedError string
 	}{
 		{
 			description: "build",
-			artifact:    &latest.JibMavenArtifact{},
-			cmd:         testutil.FakeRun(t, "mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion="+jib.MinimumJibMavenVersion+" --non-recursive prepare-package jib:build -Dimage=img:tag"),
+			artifact:    &latest.JibArtifact{},
+			commands: testutil.CmdRun(
+				"mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --non-recursive prepare-package jib:build -Dimage=img:tag",
+			),
 		},
 		{
 			description: "build with additional flags",
-			artifact:    &latest.JibMavenArtifact{Flags: []string{"--flag1", "--flag2"}},
-			cmd:         testutil.FakeRun(t, "mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion="+jib.MinimumJibMavenVersion+" --flag1 --flag2 --non-recursive prepare-package jib:build -Dimage=img:tag"),
+			artifact:    &latest.JibArtifact{Flags: []string{"--flag1", "--flag2"}},
+			commands: testutil.CmdRun(
+				"mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --flag1 --flag2 --non-recursive prepare-package jib:build -Dimage=img:tag",
+			),
 		},
 		{
 			description: "build with module",
-			artifact:    &latest.JibMavenArtifact{Module: "module"},
-			cmd:         testutil.FakeRun(t, "mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion="+jib.MinimumJibMavenVersion+" --projects module --also-make package jib:build -Djib.containerize=module -Dimage=img:tag"),
+			artifact:    &latest.JibArtifact{Project: "module"},
+			commands: testutil.CmdRun(
+				"mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion=" + jib.MinimumJibMavenVersion + " --projects module --also-make package jib:build -Djib.containerize=module -Dimage=img:tag",
+			),
 		},
 		{
-			description: "build with module and profile",
-			artifact:    &latest.JibMavenArtifact{Module: "module", Profile: "profile"},
-			cmd:         testutil.FakeRun(t, "mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion="+jib.MinimumJibMavenVersion+" --activate-profiles profile --projects module --also-make package jib:build -Djib.containerize=module -Dimage=img:tag"),
-		},
-		{
-			description:   "fail build",
-			artifact:      &latest.JibMavenArtifact{},
-			cmd:           testutil.FakeRunErr(t, "mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion="+jib.MinimumJibMavenVersion+" --non-recursive prepare-package jib:build -Dimage=img:tag", errors.New("BUG")),
+			description: "fail build",
+			artifact:    &latest.JibArtifact{},
+			commands: testutil.CmdRunErr(
+				"mvn -Djib.console=plain jib:_skaffold-fail-if-jib-out-of-date -Djib.requiredVersion="+jib.MinimumJibMavenVersion+" --non-recursive prepare-package jib:build -Dimage=img:tag",
+				errors.New("BUG"),
+			),
 			shouldErr:     true,
 			expectedError: "maven build failed",
 		},
@@ -131,7 +139,7 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.cmd)
+			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&docker.RemoteDigest, func(identifier string, _ map[string]bool) (string, error) {
 				if identifier == "img:tag" {
 					return "digest", nil

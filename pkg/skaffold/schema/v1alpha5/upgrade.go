@@ -44,8 +44,8 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 
 	var newConfig next.SkaffoldConfig
 
-	err := pkgutil.CloneThroughJSON(config, &newConfig)
+	pkgutil.CloneThroughJSON(config, &newConfig)
 	newConfig.APIVersion = next.Version
 
-	return &newConfig, err
+	return &newConfig, nil
 }

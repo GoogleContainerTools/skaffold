@@ -20,7 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta13"
+const Version string = "skaffold/v1beta14"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -221,6 +221,11 @@ type GoogleCloudBuild struct {
 	// Defaults to `gcr.io/cloud-builders/docker`.
 	DockerImage string `yaml:"dockerImage,omitempty"`
 
+	// KanikoImage is the image that runs a Kaniko build.
+	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
+	// Defaults to `gcr.io/kaniko-project/executor`.
+	KanikoImage string `yaml:"kanikoImage,omitempty"`
+
 	// MavenImage is the image that runs a Maven build.
 	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
 	// Defaults to `gcr.io/cloud-builders/mvn`.
@@ -230,6 +235,10 @@ type GoogleCloudBuild struct {
 	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
 	// Defaults to `gcr.io/cloud-builders/gradle`.
 	GradleImage string `yaml:"gradleImage,omitempty"`
+
+	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
+	// Defaults to 0.
+	Concurrency int `yaml:"concurrency,omitempty"`
 }
 
 // LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
@@ -290,6 +299,10 @@ type ClusterDetails struct {
 
 	// Resources define the resource requirements for the kaniko pod.
 	Resources *ResourceRequirements `yaml:"resources,omitempty"`
+
+	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
+	// Defaults to 0.
+	Concurrency int `yaml:"concurrency,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
@@ -598,9 +611,13 @@ type JSONPatch struct {
 
 // Activation criteria by which a profile is auto-activated.
 type Activation struct {
-	// Env is a `key=value` pair. The profile is auto-activated if an Environment
-	// Variable `key` has value `value`.
-	// For example: `ENV=production`.
+	// Env is a `key=pattern` pair. The profile is auto-activated if an Environment
+	// Variable `key` matches the pattern. If the pattern starts with `!`, activation
+	// happens if the remaining pattern is _not_ matched. The pattern matches if the
+	// Environment Variable value is exactly `pattern`, or the regex `pattern` is
+	// found in it. An empty `pattern` (e.g. `env: "key="`) always only matches if
+	// the Environment Variable is undefined or empty.
+	// For example: `ENV=production`
 	Env string `yaml:"env,omitempty"`
 
 	// KubeContext is a Kubernetes context for which the profile is auto-activated.
@@ -621,13 +638,9 @@ type ArtifactType struct {
 	// contain [Bazel](https://bazel.build/) configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 
-	// JibMavenArtifact *alpha* builds images using the
-	// [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
-	JibMavenArtifact *JibMavenArtifact `yaml:"jibMaven,omitempty" yamltags:"oneOf=artifact"`
-
-	// JibGradleArtifact *alpha* builds images using the
-	// [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
-	JibGradleArtifact *JibGradleArtifact `yaml:"jibGradle,omitempty" yamltags:"oneOf=artifact"`
+	// JibArtifact *alpha* builds images using the
+	// [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).
+	JibArtifact *JibArtifact `yaml:"jib,omitempty" yamltags:"oneOf=artifact"`
 
 	// KanikoArtifact *alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).
 	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty" yamltags:"oneOf=artifact"`
@@ -746,27 +759,16 @@ type BazelArtifact struct {
 	BuildArgs []string `yaml:"args,omitempty"`
 }
 
-// JibMavenArtifact *alpha* builds images using the
-// [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
-type JibMavenArtifact struct {
-	// Module selects which Maven module to build, for a multi module project.
-	Module string `yaml:"module,omitempty"`
-
-	// Profile selects which Maven profile to activate.
-	Profile string `yaml:"profile,omitempty"`
-
-	// Flags are additional build flags passed to Maven.
-	// For example: `["-x", "-DskipTests"]`.
-	Flags []string `yaml:"args,omitempty"`
-}
-
-// JibGradleArtifact *alpha* builds images using the
-// [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
-type JibGradleArtifact struct {
-	// Project selects which Gradle project to build.
+// JibArtifact *alpha* builds images using the
+// [Jib plugins for Maven and Gradle](https://github.com/GoogleContainerTools/jib/).
+type JibArtifact struct {
+	// Project selects which sub-project to build for multi-module builds.
 	Project string `yaml:"project,omitempty"`
 
-	// Flags are additional build flags passed to Gradle.
+	// Flags are additional build flags passed to the builder.
 	// For example: `["--no-build-cache"]`.
 	Flags []string `yaml:"args,omitempty"`
+
+	// Type the Jib builder type (internal: see jib.PluginType)
+	Type int `yaml:"-"`
 }

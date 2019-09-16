@@ -1,0 +1,4 @@
+resources:
+  - k8s-job.yaml
+  - skaffold-rbac.yaml
+namespace: VAR_CLUSTER_NAMESPACE

@@ -146,6 +146,20 @@ func TestSetAndUnsetConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "set global update-check",
+			key:         "update-check",
+			value:       "true",
+			global:      true,
+			expectedSetCfg: &config.GlobalConfig{
+				Global:         &config.ContextConfig{UpdateCheck: util.BoolPtr(true)},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+			expectedUnsetCfg: &config.GlobalConfig{
+				Global:         &config.ContextConfig{},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

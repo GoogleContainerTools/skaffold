@@ -145,6 +145,16 @@ For the latest **bleeding edge** build:
 
 {{% /tabs %}}
 
+{{< alert title="Note" >}}
+To keep Skaffold up to date, update checks are made to Google servers to see if a new version of
+Skaffold is available.
+
+You can turn this update check off by following <a href=/docs/references/privacy/#update-check>these instructions</a>.
+
+
+Your use of this software is subject to the <a href=https://policies.google.com/privacy>Google Privacy Policy</a>
+{{< /alert >}}
+
 ## Downloading the sample app
 
 1. Clone the Skaffold repository:

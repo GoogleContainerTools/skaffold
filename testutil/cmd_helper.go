@@ -38,10 +38,8 @@ type run struct {
 	err     error
 }
 
-func NewFakeCmd(t *testing.T) *FakeCmd {
-	return &FakeCmd{
-		t: t,
-	}
+func newFakeCmd() *FakeCmd {
+	return &FakeCmd{}
 }
 
 func (c *FakeCmd) addRun(r run) *FakeCmd {
@@ -59,47 +57,57 @@ func (c *FakeCmd) popRun() (*run, error) {
 	return &run, nil
 }
 
-func FakeRun(t *testing.T, command string) *FakeCmd {
-	return NewFakeCmd(t).WithRun(command)
+func (c *FakeCmd) ForTest(t *testing.T) {
+	if c != nil {
+		c.t = t
+	}
 }
 
-func FakeRunInput(t *testing.T, command, input string) *FakeCmd {
-	return NewFakeCmd(t).WithRunInput(command, input)
+func CmdRun(command string) *FakeCmd {
+	return newFakeCmd().AndRun(command)
 }
 
-func FakeRunErr(t *testing.T, command string, err error) *FakeCmd {
-	return NewFakeCmd(t).WithRunErr(command, err)
+func CmdRunInput(command, input string) *FakeCmd {
+	return newFakeCmd().AndRunInput(command, input)
 }
 
-func FakeRunOut(t *testing.T, command string, output string) *FakeCmd {
-	return NewFakeCmd(t).WithRunOut(command, output)
+func CmdRunErr(command string, err error) *FakeCmd {
+	return newFakeCmd().AndRunErr(command, err)
 }
 
-func FakeRunOutErr(t *testing.T, command string, output string, err error) *FakeCmd {
-	return NewFakeCmd(t).WithRunOutErr(command, output, err)
+func CmdRunOut(command string, output string) *FakeCmd {
+	return newFakeCmd().AndRunOut(command, output)
 }
 
-func (c *FakeCmd) WithRun(command string) *FakeCmd {
+func CmdRunOutErr(command string, output string, err error) *FakeCmd {
+	return newFakeCmd().AndRunOutErr(command, output, err)
+}
+
+func CmdRunEnv(command string, env []string) *FakeCmd {
+	return newFakeCmd().AndRunEnv(command, env)
+}
+
+func (c *FakeCmd) AndRun(command string) *FakeCmd {
 	return c.addRun(run{
 		command: command,
 	})
 }
 
-func (c *FakeCmd) WithRunInput(command, input string) *FakeCmd {
+func (c *FakeCmd) AndRunInput(command, input string) *FakeCmd {
 	return c.addRun(run{
 		command: command,
 		input:   []byte(input),
 	})
 }
 
-func (c *FakeCmd) WithRunErr(command string, err error) *FakeCmd {
+func (c *FakeCmd) AndRunErr(command string, err error) *FakeCmd {
 	return c.addRun(run{
 		command: command,
 		err:     err,
 	})
 }
 
-func (c *FakeCmd) WithRunOut(command string, output string) *FakeCmd {
+func (c *FakeCmd) AndRunOut(command string, output string) *FakeCmd {
 	b := []byte{}
 	if output != "" {
 		b = []byte(output)
@@ -110,7 +118,7 @@ func (c *FakeCmd) WithRunOut(command string, output string) *FakeCmd {
 	})
 }
 
-func (c *FakeCmd) WithRunOutErr(command string, output string, err error) *FakeCmd {
+func (c *FakeCmd) AndRunOutErr(command string, output string, err error) *FakeCmd {
 	return c.addRun(run{
 		command: command,
 		output:  []byte(output),
@@ -118,8 +126,7 @@ func (c *FakeCmd) WithRunOutErr(command string, output string, err error) *FakeC
 	})
 }
 
-// WithRunEnv registers a command that requires the given env variables to be set.
-func (c *FakeCmd) WithRunEnv(command string, env []string) *FakeCmd {
+func (c *FakeCmd) AndRunEnv(command string, env []string) *FakeCmd {
 	return c.addRun(run{
 		command: command,
 		env:     env,

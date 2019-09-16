@@ -24,19 +24,19 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 )
 
@@ -161,7 +161,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 				Port: 8080,
 			},
 			availablePorts: []int{8080},
-			expected:       newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", 8080, false),
+			expected:       newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false),
 		}, {
 			description: "port forward existing deployment",
 			resource: latest.PortForwardResource{
@@ -181,7 +181,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 					localPort: 9000,
 				},
 			},
-			expected: newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", 9000, false),
+			expected: newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 9000, false),
 		},
 	}
 
@@ -344,8 +344,10 @@ func TestRetrieveServices(t *testing.T) {
 				objs[i] = s
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
-			t.Override(&getClientSet, mockClient(client))
+			t.Override(&kubernetesutil.Client, mockClient(client))
+
 			actual, err := retrieveServiceResources(fmt.Sprintf("%s=9876-6789", deploy.RunIDLabel), test.namespaces)
+
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual)
 		})

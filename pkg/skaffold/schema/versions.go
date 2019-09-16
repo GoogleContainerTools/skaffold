@@ -21,7 +21,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta10"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta11"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta12"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta13"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta4"
@@ -68,6 +69,7 @@ var SchemaVersions = Versions{
 	{v1beta10.Version, v1beta10.NewSkaffoldConfig},
 	{v1beta11.Version, v1beta11.NewSkaffoldConfig},
 	{v1beta12.Version, v1beta12.NewSkaffoldConfig},
+	{v1beta13.Version, v1beta13.NewSkaffoldConfig},
 	{latest.Version, latest.NewSkaffoldConfig},
 }
 

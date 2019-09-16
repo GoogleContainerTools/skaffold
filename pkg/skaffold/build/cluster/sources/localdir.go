@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 
@@ -86,7 +87,7 @@ func (g *LocalDir) Pod(args []string) *v1.Pod {
 		Resources:    resourceRequirements(g.clusterDetails.Resources),
 	}
 
-	p := podTemplate(g.clusterDetails, g.artifact, args)
+	p := podTemplate(g.clusterDetails, g.artifact, args, version.Get().Version)
 	p.Spec.InitContainers = []v1.Container{ic}
 	p.Spec.Containers[0].VolumeMounts = append(p.Spec.Containers[0].VolumeMounts, vm)
 	p.Spec.Volumes = append(p.Spec.Volumes, v)
@@ -97,10 +98,11 @@ func (g *LocalDir) Pod(args []string) *v1.Pod {
 // Via kubectl exec, we extract the tarball to the empty dir
 // Then, via kubectl exec, create the /tmp/complete file via kubectl exec to complete the init container
 func (g *LocalDir) ModifyPod(ctx context.Context, p *v1.Pod) error {
-	client, err := kubernetes.GetClientset()
+	client, err := kubernetes.Client()
 	if err != nil {
-		return errors.Wrap(err, "getting clientset")
+		return errors.Wrap(err, "getting kubernetes client")
 	}
+
 	if err := kubernetes.WaitForPodInitialized(ctx, client.CoreV1().Pods(p.Namespace), p.Name); err != nil {
 		return errors.Wrap(err, "waiting for pod to initialize")
 	}

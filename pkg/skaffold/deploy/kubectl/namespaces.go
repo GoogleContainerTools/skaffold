@@ -40,6 +40,7 @@ func (l *ManifestList) CollectNamespaces() ([]string, error) {
 }
 
 type namespaceCollector struct {
+	ReplaceAny
 	namespaces map[string]bool
 }
 
