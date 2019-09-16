@@ -404,24 +404,33 @@ func TestPrintStatus(t *testing.T) {
 		{
 			description: "single resource successful marked complete - skip print",
 			rs: []*resource.Deployment{
-				resource.NewDeployment("r1", "test", 1).
-					WithDone("success", nil),
+				withDone(
+					resource.NewDeployment("r1", "test", 1),
+					"success",
+					nil,
+				),
 			},
 			expected: true,
 		},
 		{
 			description: "single resource in error marked complete -skip print",
 			rs: []*resource.Deployment{
-				resource.NewDeployment("r1", "test", 1).
-					WithDone("error", fmt.Errorf("error")),
+				withDone(
+					resource.NewDeployment("r1", "test", 1),
+					"error",
+					fmt.Errorf("error"),
+				),
 			},
 			expected: true,
 		},
 		{
 			description: "multiple resources 1 not complete",
 			rs: []*resource.Deployment{
-				resource.NewDeployment("r1", "test", 1).
-					WithDone("succes", nil),
+				withDone(
+					resource.NewDeployment("r1", "test", 1),
+					"succes",
+					nil,
+				),
 				resource.NewDeployment("r2", "test", 1).
 					WithStatus("pending", nil),
 			},
@@ -430,8 +439,11 @@ func TestPrintStatus(t *testing.T) {
 		{
 			description: "multiple resources 1 not complete and in error",
 			rs: []*resource.Deployment{
-				resource.NewDeployment("r1", "test", 1).
-					WithDone("succes", nil),
+				withDone(
+					resource.NewDeployment("r1", "test", 1),
+					"succes",
+					nil,
+				),
 				resource.NewDeployment("r2", "test", 1).
 					WithStatus("", fmt.Errorf("context deadline expired")),
 			},
@@ -447,4 +459,10 @@ func TestPrintStatus(t *testing.T) {
 			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
+}
+
+func withDone(d *resource.Deployment, details string, err error) *resource.Deployment {
+	d.UpdateStatus(details, err)
+	d.MarkDone()
+	return d
 }

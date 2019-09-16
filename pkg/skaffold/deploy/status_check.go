@@ -87,7 +87,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Retrieve pending resource states
 	go func() {
-		printResourceStatus(ctx, deployments, deadline, out)
+		printResourceStatus(ctx, out, deployments, deadline)
 	}()
 
 	// Wait for all deployment status to be fetched
@@ -181,7 +181,7 @@ func printStatusCheckSummary(d *resource.Deployment, pending int, total int, out
 }
 
 // Print resource statuses until all status check are completed or context is cancelled.
-func printResourceStatus(ctx context.Context, deps []*resource.Deployment, deadline time.Duration, out io.Writer) {
+func printResourceStatus(ctx context.Context, out io.Writer, deps []*resource.Deployment, deadline time.Duration) {
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 	for {
