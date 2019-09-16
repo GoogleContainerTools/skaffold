@@ -288,9 +288,9 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 					return nil, errors.Wrapf(err, "image reference %s has no domain", v.Tag)
 				}
 
-				value = fmt.Sprintf("%[1]s.registry=%[2]s,%[1]s.repository=%[3]s,%[1]s.tag=%[4]s", k, dockerRef.Domain, dockerRef.Path, v.Tag)
+				value = fmt.Sprintf("%[1]s.registry=%[2]s,%[1]s.repository=%[3]s,%[1]s.tag=%[4]s", k, dockerRef.Domain, dockerRef.Path, dockerRef.Tag)
 			} else {
-				value = fmt.Sprintf("%[1]s.repository=%[2]s,%[1]s.tag=%[3]s", k, dockerRef.BaseName, v.Tag)
+				value = fmt.Sprintf("%[1]s.repository=%[2]s,%[1]s.tag=%[3]s", k, dockerRef.BaseName, dockerRef.Tag)
 			}
 		} else {
 			value = fmt.Sprintf("%s=%s", k, v.Tag)
