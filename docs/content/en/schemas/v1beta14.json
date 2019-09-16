@@ -1417,15 +1417,6 @@
     },
     "KustomizeDeploy": {
       "properties": {
-        "buildArgs": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "additional args passed to `kustomize build`.",
-          "x-intellij-html-description": "additional args passed to <code>kustomize build</code>.",
-          "default": "[]"
-        },
         "flags": {
           "$ref": "#/definitions/KubectlFlags",
           "description": "additional flags passed to `kubectl`.",
@@ -1440,8 +1431,7 @@
       },
       "preferredOrder": [
         "path",
-        "flags",
-        "buildArgs"
+        "flags"
       ],
       "additionalProperties": false,
       "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
