@@ -12,39 +12,6 @@ To use buildpacks with Skaffold, please install the following tools:
 * [pack](https://buildpacks.io/docs/install-pack/)
 * [docker](https://docs.docker.com/install/)
 
-Once installed, you must choose a buildpack image to build your artifacts.
-To see a list of available buildpacks, run:
-
-```shell
-$ pack suggest-builders
-```
-
-Choose a buildpack from the list, and set it with:
-
-```shell
-$ pack set-default-builder <insert buildpack image here>
-```
-
-Now, configure your Skaffold config to build artifacts with buildpacks.
-To do this, we will take advantage of the [custom builder](../builders) in Skaffold.
-First, add a `build.sh` file which Skaffold will call to build artifacts:
-
-
-{{% readfile file="samples/buildpacks/build.sh" %}}
-
-
-Then, configure artifacts in your `skaffold.yaml` to build with `build.sh`: 
-
-{{% readfile file="samples/buildpacks/skaffold.yaml" %}}
-
-List the file dependencies for each artifact; in the example above, Skaffold watches all files in the build context.
-For more information about listing dependencies for custom artifacts, see the documentation [here](../builders).
-
-
-You can check buildpacks are properly configured by running `skaffold build`.
-This command should build the artifacts and exit successfully.
-
-
 ## Tutorial
 
 Clone the Skaffold buildpacks [example](https://github.com/GoogleContainerTools/Skaffold/blob/master/examples/buildpacks/) for sample code.
@@ -62,4 +29,42 @@ $ skaffold run --tail --default-repo <your repo>
 ```
 This will deploy Hello World in Go to your cluster.
 
-**Note**:, no Dockerfile was needed, as buildpacks containerized the application from source code.
+**Note**: no Dockerfile was needed, as buildpacks containerized the application from source code.
+
+
+## Adding Buildpacks to Your Skaffold Project
+
+To use buildpacks with your own project, you must choose a buildpack image to build your artifacts.
+To see a list of available buildpacks, run:
+
+```shell
+$ pack suggest-builders
+```
+
+Choose a buildpack from the list, making sure your chosen image can detect the runtime your project is written in.
+Set your default buildpack:
+
+```shell
+$ pack set-default-builder <insert buildpack image here>
+```
+
+Now, configure your Skaffold config to build artifacts with buildpacks.
+To do this, we will take advantage of the [custom builder](../builders) in Skaffold.
+
+First, add a `build.sh` file which Skaffold will call to build artifacts:
+
+{{% readfile file="samples/buildpacks/build.sh" %}}
+
+
+Then, configure artifacts in your `skaffold.yaml` to build with `build.sh`: 
+
+{{% readfile file="samples/buildpacks/skaffold.yaml" %}}
+
+List the file dependencies for each artifact; in the example above, Skaffold watches all files in the build context.
+For more information about listing dependencies for custom artifacts, see the documentation [here](../builders).
+
+
+You can check buildpacks are properly configured by running `skaffold build`.
+This command should build the artifacts and exit successfully.
+
+
