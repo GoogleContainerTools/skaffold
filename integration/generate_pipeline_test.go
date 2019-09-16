@@ -44,6 +44,7 @@ func TestGeneratePipeline(t *testing.T) {
 		input       []byte
 		args        []string
 		configFiles []string
+		skipCheck   bool
 	}{
 		{
 			description: "no profiles",
@@ -70,6 +71,7 @@ func TestGeneratePipeline(t *testing.T) {
 			description: "user example",
 			dir:         "examples/generate-pipeline",
 			input:       []byte("y\n"),
+			skipCheck:   true,
 		},
 	}
 
@@ -95,7 +97,9 @@ func TestGeneratePipeline(t *testing.T) {
 			}
 			skaffold.GeneratePipeline(args...).WithStdin(test.input).WithEnv(skaffoldEnv).InDir(test.dir).RunOrFail(t)
 
-			checkFileContents(t, test.dir+"/expectedSkaffold.yaml", test.dir+"/skaffold.yaml")
+			if !test.skipCheck {
+				checkFileContents(t, test.dir+"/expectedSkaffold.yaml", test.dir+"/skaffold.yaml")
+			}
 			checkFileContents(t, test.dir+"/expectedPipeline.yaml", test.dir+"/pipeline.yaml")
 		})
 	}
