@@ -14,18 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta13
+package v1beta14
 
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta14"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v1beta13
+	yaml := `apiVersion: skaffold/v1beta14
 kind: Config
 build:
   artifacts:
@@ -36,12 +36,11 @@ build:
     bazel:
       target: //mytarget
   - image: gcr.io/k8s-skaffold/jib-maven
-    jibMaven:
-      args: ['-v']
-      profile: prof
-      module: dir
+    jib:
+      args: ['-v', '--activate-profiles', 'prof']
+      project: dir
   - image: gcr.io/k8s-skaffold/jib-gradle
-    jibGradle:
+    jib:
       args: ['-v']
   googleCloudBuild:
     projectId: test-project
@@ -86,7 +85,7 @@ profiles:
         manifests:
         - k8s-*
 `
-	expected := `apiVersion: skaffold/v1beta14
+	expected := `apiVersion: skaffold/v1beta15
 kind: Config
 build:
   artifacts:
