@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -383,8 +384,85 @@ func TestPrintSummaryStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			printStatusCheckSummary(resource.NewDeployment("dep", "test", 0), int(test.pending), 10, test.err, out)
+			printStatusCheckSummary(
+				resource.NewDeployment("dep", "test", 0).WithStatus("", test.err),
+				int(test.pending),
+				10,
+				out)
 			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
+}
+
+func TestPrintStatus(t *testing.T) {
+	tests := []struct {
+		description string
+		rs          []*resource.Deployment
+		expectedOut string
+		expected    bool
+	}{
+		{
+			description: "single resource successful marked complete - skip print",
+			rs: []*resource.Deployment{
+				withDone(
+					resource.NewDeployment("r1", "test", 1),
+					"success",
+					nil,
+				),
+			},
+			expected: true,
+		},
+		{
+			description: "single resource in error marked complete -skip print",
+			rs: []*resource.Deployment{
+				withDone(
+					resource.NewDeployment("r1", "test", 1),
+					"error",
+					fmt.Errorf("error"),
+				),
+			},
+			expected: true,
+		},
+		{
+			description: "multiple resources 1 not complete",
+			rs: []*resource.Deployment{
+				withDone(
+					resource.NewDeployment("r1", "test", 1),
+					"succes",
+					nil,
+				),
+				resource.NewDeployment("r2", "test", 1).
+					WithStatus("pending", nil),
+			},
+			expectedOut: " - test:deployment/r2 pending\n",
+		},
+		{
+			description: "multiple resources 1 not complete and in error",
+			rs: []*resource.Deployment{
+				withDone(
+					resource.NewDeployment("r1", "test", 1),
+					"succes",
+					nil,
+				),
+				resource.NewDeployment("r2", "test", 1).
+					WithStatus("", fmt.Errorf("context deadline expired")),
+			},
+			expectedOut: " - test:deployment/r2 context deadline expired\n",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			out := new(bytes.Buffer)
+			actual := printStatus(test.rs, out)
+			t.CheckDeepEqual(test.expectedOut, out.String())
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+func withDone(d *resource.Deployment, details string, err error) *resource.Deployment {
+	d.UpdateStatus(details, err)
+	d.MarkDone()
+	return d
 }
