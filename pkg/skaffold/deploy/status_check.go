@@ -43,6 +43,9 @@ var (
 	// Poll period for checking set to 100 milliseconds
 	defaultPollPeriodInMilliseconds = 100
 
+	// report resource status for pending resources 0.5 second.
+	reportStatusTime = 500 * time.Millisecond
+
 	// For testing
 	executeRolloutStatus = getRollOutStatus
 )
@@ -63,7 +66,6 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	}
 
 	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds)
-
 	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)
 	if err != nil {
 		return errors.Wrap(err, "could not fetch deployments")
@@ -79,9 +81,14 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 			defer wg.Done()
 			pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), d)
 			pending := c.markProcessed()
-			printStatusCheckSummary(d, pending, c.total, err, out)
+			printStatusCheckSummary(d, pending, c.total, out)
 		}(d)
 	}
+
+	// Retrieve pending resource states
+	go func() {
+		printResourceStatus(ctx, out, deployments, deadline)
+	}()
 
 	// Wait for all deployment status to be fetched
 	wg.Wait()
@@ -121,11 +128,13 @@ func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, d *resourc
 		case <-timeoutContext.Done():
 			err := errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", d.Deadline()))
 			d.UpdateStatus(err.Error(), err)
+			d.MarkDone()
 			return
 		case <-time.After(pollDuration):
 			status, err := executeRolloutStatus(timeoutContext, k, d.Name())
 			d.UpdateStatus(status, err)
 			if err != nil || strings.Contains(status, "successfully rolled out") {
+				d.MarkDone()
 				return
 			}
 		}
@@ -157,9 +166,9 @@ func getDeadline(d int) time.Duration {
 	return defaultStatusCheckDeadline
 }
 
-func printStatusCheckSummary(d *resource.Deployment, pending int, total int, err error, out io.Writer) {
+func printStatusCheckSummary(d *resource.Deployment, pending int, total int, out io.Writer) {
 	status := fmt.Sprintf("%s %s", tabHeader, d)
-	if err != nil {
+	if err := d.Status().Error(); err != nil {
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
 			trimNewLine(getPendingMessage(pending, total)),
@@ -169,6 +178,38 @@ func printStatusCheckSummary(d *resource.Deployment, pending int, total int, err
 		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(pending, total))
 	}
 	color.Default.Fprintln(out, status)
+}
+
+// Print resource statuses until all status check are completed or context is cancelled.
+func printResourceStatus(ctx context.Context, out io.Writer, deps []*resource.Deployment, deadline time.Duration) {
+	timeoutContext, cancel := context.WithTimeout(ctx, deadline)
+	defer cancel()
+	for {
+		var allResourcesCheckComplete bool
+		select {
+		case <-timeoutContext.Done():
+			return
+		case <-time.After(reportStatusTime):
+			allResourcesCheckComplete = printStatus(deps, out)
+		}
+		if allResourcesCheckComplete {
+			return
+		}
+	}
+}
+
+func printStatus(deps []*resource.Deployment, out io.Writer) bool {
+	allResourcesCheckComplete := true
+	for _, d := range deps {
+		if d.IsDone() {
+			continue
+		}
+		allResourcesCheckComplete = false
+		if str := d.ReportSinceLastUpdated(); str != "" {
+			color.Default.Fprintln(out, tabHeader, trimNewLine(str))
+		}
+	}
+	return allResourcesCheckComplete
 }
 
 func getPendingMessage(pending int, total int) string {
