@@ -17,7 +17,6 @@ limitations under the License.
 package integration
 
 import (
-	"os/exec"
 	"strings"
 	"testing"
 
@@ -132,15 +131,9 @@ func TestRun(t *testing.T) {
 			description: "custom builder",
 			dir:         "testdata/custom",
 			pods:        []string{"bazel"},
-		}, {
-			description: "buildpacks",
-			dir:         "examples/buildpacks",
-			pods:        []string{"getting-started"},
 		},
 	}
 	for _, test := range tests {
-		setBuildpacksDefaultBuilder(t)
-
 		t.Run(test.description, func(t *testing.T) {
 			if test.gcpOnly && !ShouldRunGCPOnlyTests() {
 				t.Skip("skipping gcp only test")
@@ -159,13 +152,6 @@ func TestRun(t *testing.T) {
 
 			skaffold.Delete().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})
-	}
-}
-
-func setBuildpacksDefaultBuilder(t *testing.T) {
-	cmd := exec.Command("pack", "set-default-builder", "heroku/buildpacks")
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("error setting default buildpacks builder: %v", err)
 	}
 }
 
