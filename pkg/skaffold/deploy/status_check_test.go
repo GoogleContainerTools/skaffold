@@ -18,7 +18,6 @@ package deploy
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -32,8 +31,6 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	utilpointer "k8s.io/utils/pointer"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -202,62 +199,17 @@ func TestGetDeployments(t *testing.T) {
 	}
 }
 
-func TestPollDeploymentRolloutStatus(t *testing.T) {
-	rolloutCmd := "kubectl --context kubecontext --namespace test rollout status deployment dep --watch=false"
-	tests := []struct {
-		description string
-		commands    util.Command
-		duration    int
-		shouldErr   bool
-	}{
-		{
-			description: "rollout returns success",
-			commands: testutil.CmdRunOut(
-				rolloutCmd,
-				"dep successfully rolled out",
-			),
-			duration: 50,
-		}, {
-			description: "rollout returns error in the first attempt",
-			commands: testutil.CmdRunOutErr(
-				rolloutCmd, "could not find",
-				errors.New("deployment.apps/dep could not be found"),
-			),
-			shouldErr: true,
-			duration:  50,
-		}, {
-			description: "rollout returns did not stabilize within the given timeout",
-			commands: testutil.
-				CmdRunOut(rolloutCmd, "Waiting for rollout to finish: 1 of 3 updated replicas are available...").
-				AndRunOut(rolloutCmd, "Waiting for rollout to finish: 1 of 3 updated replicas are available...").
-				AndRunOut(rolloutCmd, "Waiting for rollout to finish: 2 of 3 updated replicas are available..."),
-			duration:  20,
-			shouldErr: true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&defaultPollPeriodInMilliseconds, 10)
-			t.Override(&util.DefaultExecCommand, test.commands)
-
-			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
-			d := resource.NewDeployment("dep", "test", time.Duration(test.duration)*time.Millisecond)
-			pollDeploymentRolloutStatus(context.Background(), cli, d)
-			t.CheckError(test.shouldErr, d.Status().Error())
-		})
-	}
-}
 
 func TestGetDeployStatus(t *testing.T) {
 	tests := []struct {
 		description    string
-		deps           []*resource.Deployment
+		deps           []Resource
 		expectedErrMsg []string
 		shouldErr      bool
 	}{
 		{
 			description: "one error",
-			deps: []*resource.Deployment{
+			deps: []Resource{
 				withStatus(
 					resource.NewDeployment("dep1", "test", time.Second),
 					"success",
@@ -274,7 +226,7 @@ func TestGetDeployStatus(t *testing.T) {
 		},
 		{
 			description: "no error",
-			deps: []*resource.Deployment{
+			deps: []Resource{
 				withStatus(
 					resource.NewDeployment("dep1", "test", time.Second),
 					"success",
@@ -288,7 +240,7 @@ func TestGetDeployStatus(t *testing.T) {
 		},
 		{
 			description: "multiple errors",
-			deps: []*resource.Deployment{
+			deps: []Resource{
 				withStatus(
 					resource.NewDeployment("dep1", "test", time.Second),
 					"success",
@@ -318,52 +270,6 @@ func TestGetDeployStatus(t *testing.T) {
 			for _, msg := range test.expectedErrMsg {
 				t.CheckErrorContains(msg, err)
 			}
-		})
-	}
-}
-
-func TestGetRollOutStatus(t *testing.T) {
-	rolloutCmd := "kubectl --context kubecontext --namespace test rollout status deployment dep --watch=false"
-	tests := []struct {
-		description string
-		commands    util.Command
-		expected    string
-		shouldErr   bool
-	}{
-		{
-			description: "some output",
-			commands: testutil.CmdRunOut(
-				rolloutCmd,
-				"Waiting for replicas to be available",
-			),
-			expected: "Waiting for replicas to be available",
-		},
-		{
-			description: "no output",
-			commands: testutil.CmdRunOut(
-				rolloutCmd,
-				"",
-			),
-		},
-		{
-			description: "rollout status error",
-			commands: testutil.CmdRunOutErr(
-				rolloutCmd,
-				"",
-				errors.New("error"),
-			),
-			shouldErr: true,
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.commands)
-
-			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
-			actual, err := getRollOutStatus(context.Background(), cli, "dep")
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}
 }
@@ -418,13 +324,13 @@ func TestPrintSummaryStatus(t *testing.T) {
 func TestPrintStatus(t *testing.T) {
 	tests := []struct {
 		description string
-		rs          []*resource.Deployment
+		rs          []Resource
 		expectedOut string
 		expected    bool
 	}{
 		{
 			description: "single resource successful marked complete - skip print",
-			rs: []*resource.Deployment{
+			rs: []Resource{
 				withDone(
 					resource.NewDeployment("r1", "test", 1),
 					"success",
@@ -435,7 +341,7 @@ func TestPrintStatus(t *testing.T) {
 		},
 		{
 			description: "single resource in error marked complete -skip print",
-			rs: []*resource.Deployment{
+			rs: []Resource{
 				withDone(
 					resource.NewDeployment("r1", "test", 1),
 					"error",
@@ -446,7 +352,7 @@ func TestPrintStatus(t *testing.T) {
 		},
 		{
 			description: "multiple resources 1 not complete",
-			rs: []*resource.Deployment{
+			rs: []Resource{
 				withDone(
 					resource.NewDeployment("r1", "test", 1),
 					"succes",
@@ -462,7 +368,7 @@ func TestPrintStatus(t *testing.T) {
 		},
 		{
 			description: "multiple resources 1 not complete and in error",
-			rs: []*resource.Deployment{
+			rs: []Resource{
 				withDone(
 					resource.NewDeployment("r1", "test", 1),
 					"succes",

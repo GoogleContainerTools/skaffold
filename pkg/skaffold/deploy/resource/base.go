@@ -18,6 +18,11 @@ package resource
 
 import (
 	"fmt"
+	"strings"
+)
+
+const (
+	TimeoutExceededError = "resource status could not be fetched within deadline %s"
 )
 
 type Base struct {
@@ -27,7 +32,6 @@ type Base struct {
 	status    Status
 	done      bool
 }
-
 
 func (b *Base) String() string {
 	return fmt.Sprintf("%s:%s/%s", b.namespace, b.rType, b.name)
@@ -46,14 +50,18 @@ func (b *Base) UpdateStatus(details string, err error) {
 	if !b.status.Equal(updated) {
 		b.status = updated
 	}
+	if err != nil && strings.Contains(err.Error(), TimeoutExceededError) {
+		b.done = true
+	}
+}
+
+func (b *Base) DeadlineExpired() {
+	b.UpdateStatus("", fmt.Errorf("resource status deadline expired"))
+	b.done = true
 }
 
 func (b *Base) IsDone() bool {
 	return b.done
-}
-
-func (b *Base) MarkDone() {
-	b.done = true
 }
 
 func (b *Base) ReportSinceLastUpdated() string {
@@ -62,17 +70,4 @@ func (b *Base) ReportSinceLastUpdated() string {
 	}
 	b.status.reported = true
 	return fmt.Sprintf("%s %s", b, b.status)
-}
-
-
-// For testing
-func (b *Base) WithStatus(details string, err error) *Base {
-	b.UpdateStatus(details, err)
-	return b
-}
-
-func (b *Base) WithDone(details string, err error) *Base {
-	b.UpdateStatus(details, err)
-	b.done = true
-	return b
 }

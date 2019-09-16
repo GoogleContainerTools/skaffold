@@ -17,14 +17,21 @@ limitations under the License.
 package deploy
 
 import (
+	"context"
+	"time"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
 type Resource interface {
 	Name() string
 	String() string
 	Status() resource.Status
-	PollStatus()
+	CheckStatus(context.Context, *runcontext.RunContext)
 	UpdateStatus(string, error)
 	ReportSinceLastUpdated() string
+	Deadline() time.Duration
+	DeadlineExpired()
+	IsDone() bool
 }

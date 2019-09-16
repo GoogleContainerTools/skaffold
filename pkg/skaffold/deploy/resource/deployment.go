@@ -17,16 +17,27 @@ limitations under the License.
 package resource
 
 import (
+	"context"
+	"errors"
+	"strings"
 	"time"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
 const (
 	deploymentType = "deployment"
 )
 
+var (
+	kubectlKilledErr     = errors.New("kubectl killed due to timeout")
+	kubectlConnectionErr = errors.New("kubectl connection error")
+)
+
 type Deployment struct {
-  *Base
-	deadline  time.Duration
+	*Base
+	deadline time.Duration
 }
 
 func (d *Deployment) Deadline() time.Duration {
@@ -41,6 +52,41 @@ func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 			rType:     deploymentType,
 			status:    newStatus("", nil),
 		},
-		deadline:  deadline,
+		deadline: deadline,
 	}
+}
+
+func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunContext) {
+	kubeCtl := kubectl.NewFromRunContext(runCtx)
+	b, err := kubeCtl.RunOut(ctx, "rollout", "status", "deployment", d.name, "--namespace", d.namespace, "--watch=false")
+	details := string(b)
+	err = parseKubectlError(err)
+	d.UpdateStatus(details, err)
+	if strings.Contains(details, "successfully rolled out") || isErrAndNotRetriable(err) {
+		d.done = true
+	}
+}
+
+func parseKubectlError(err error) error {
+	if err == nil {
+		return err
+	}
+	if strings.Contains(err.Error(), "Unable to connect to the server") {
+		return kubectlConnectionErr
+	}
+	if strings.Contains(err.Error(), "signal: killed") {
+		return kubectlKilledErr
+	}
+	return err
+}
+
+func isErrAndNotRetriable(err error) bool {
+	if err == nil {
+		return false
+	}
+	return err != kubectlConnectionErr
+}
+
+func (d *Deployment) MarkDone() {
+	d.done = true
 }

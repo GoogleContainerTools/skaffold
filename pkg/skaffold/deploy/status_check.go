@@ -32,7 +32,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
@@ -45,9 +44,6 @@ var (
 
 	// report resource status for pending resources 0.5 second.
 	reportStatusTime = 500 * time.Millisecond
-
-	// For testing
-	executeRolloutStatus = getRollOutStatus
 )
 
 const (
@@ -77,9 +73,9 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	for _, d := range deployments {
 		wg.Add(1)
-		go func(d *resource.Deployment) {
+		go func(d Resource) {
 			defer wg.Done()
-			pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), d)
+			pollResourceStatus(ctx, runCtx, d)
 			pending := c.markProcessed()
 			printStatusCheckSummary(out, d, pending, c.total)
 		}(d)
@@ -95,7 +91,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	return getSkaffoldDeployStatus(deployments)
 }
 
-func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
+func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]Resource, error) {
 	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
 		LabelSelector: l.RunIDKeyValueString(),
 	})
@@ -103,7 +99,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 		return nil, errors.Wrap(err, "could not fetch deployments")
 	}
 
-	deployments := make([]*resource.Deployment, 0, len(deps.Items))
+	deployments := make([]Resource, 0, len(deps.Items))
 	for _, d := range deps.Items {
 		var deadline time.Duration
 		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds > int32(deadlineDuration.Seconds()) {
@@ -117,46 +113,37 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	return deployments, nil
 }
 
-func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, d *resource.Deployment) {
+func pollResourceStatus(ctx context.Context, runCtx *runcontext.RunContext, r Resource) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
-	timeoutContext, cancel := context.WithTimeout(ctx, d.Deadline()+pollDuration)
-	logrus.Debugf("checking rollout status %s", d.String())
+	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
+	logrus.Debugf("checking status %s", r.String())
 	defer cancel()
 	for {
 		select {
 		case <-timeoutContext.Done():
-			err := errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", d.Deadline()))
-			d.UpdateStatus(err.Error(), err)
-			d.MarkDone()
+			r.DeadlineExpired()
 			return
 		case <-time.After(pollDuration):
-			status, err := executeRolloutStatus(timeoutContext, k, d.Name())
-			d.UpdateStatus(status, err)
-			if err != nil || strings.Contains(status, "successfully rolled out") {
-				d.MarkDone()
+			r.CheckStatus(timeoutContext, runCtx)
+			if r.IsDone() {
 				return
 			}
 		}
 	}
 }
 
-func getSkaffoldDeployStatus(deployments []*resource.Deployment) error {
+func getSkaffoldDeployStatus(resources []Resource) error {
 	var errorStrings []string
-	for _, d := range deployments {
-		if err := d.Status().Error(); err != nil {
-			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", d, err.Error()))
+	for _, r := range resources {
+		if err := r.Status().Error(); err != nil {
+			errorStrings = append(errorStrings, fmt.Sprintf("resource %s failed due to %s", r, err.Error()))
 		}
 	}
 	if len(errorStrings) == 0 {
 		return nil
 	}
-	return fmt.Errorf("following deployments are not stable:\n%s", strings.Join(errorStrings, "\n"))
-}
-
-func getRollOutStatus(ctx context.Context, k *kubectl.CLI, dName string) (string, error) {
-	b, err := k.RunOut(ctx, "rollout", "status", "deployment", dName, "--watch=false")
-	return string(b), err
+	return fmt.Errorf("following resources are not stable:\n%s", strings.Join(errorStrings, "\n"))
 }
 
 func getDeadline(d int) time.Duration {
@@ -166,9 +153,9 @@ func getDeadline(d int) time.Duration {
 	return defaultStatusCheckDeadline
 }
 
-func printStatusCheckSummary(out io.Writer, d *resource.Deployment, pending int, total int) {
-	status := fmt.Sprintf("%s %s", tabHeader, d)
-	if err := d.Status().Error(); err != nil {
+func printStatusCheckSummary(out io.Writer, r Resource, pending int, total int) {
+	status := fmt.Sprintf("%s %s", tabHeader, r)
+	if err := r.Status().Error(); err != nil {
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
 			trimNewLine(getPendingMessage(pending, total)),
@@ -181,7 +168,7 @@ func printStatusCheckSummary(out io.Writer, d *resource.Deployment, pending int,
 }
 
 // Print resource statuses until all status check are completed or context is cancelled.
-func printResourceStatus(ctx context.Context, out io.Writer, deps []*resource.Deployment, deadline time.Duration) {
+func printResourceStatus(ctx context.Context, out io.Writer, resources []Resource, deadline time.Duration) {
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 	for {
@@ -190,7 +177,7 @@ func printResourceStatus(ctx context.Context, out io.Writer, deps []*resource.De
 		case <-timeoutContext.Done():
 			return
 		case <-time.After(reportStatusTime):
-			allResourcesCheckComplete = printStatus(deps, out)
+			allResourcesCheckComplete = printStatus(resources, out)
 		}
 		if allResourcesCheckComplete {
 			return
@@ -198,14 +185,14 @@ func printResourceStatus(ctx context.Context, out io.Writer, deps []*resource.De
 	}
 }
 
-func printStatus(deps []*resource.Deployment, out io.Writer) bool {
+func printStatus(resources []Resource, out io.Writer) bool {
 	allResourcesCheckComplete := true
-	for _, d := range deps {
-		if d.IsDone() {
+	for _, r := range resources {
+		if r.IsDone() {
 			continue
 		}
 		allResourcesCheckComplete = false
-		if str := d.ReportSinceLastUpdated(); str != "" {
+		if str := r.ReportSinceLastUpdated(); str != "" {
 			color.Default.Fprintln(out, tabHeader, trimNewLine(str))
 		}
 	}
