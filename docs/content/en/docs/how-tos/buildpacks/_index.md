@@ -9,8 +9,8 @@ Buildpacks enable building language-based containers from source code, without t
 
 To use buildpacks with Skaffold, please install the following tools:
 
-* [pack](https://github.com/buildpack/pack)
-* [docker](https://www.docker.com/)
+* [pack](https://buildpacks.io/docs/install-pack/)
+* [docker](https://docs.docker.com/install/)
 
 Once installed, you must choose a buildpack image to build your artifacts.
 To see a list of available buildpacks, run:
@@ -28,6 +28,7 @@ $ pack set-default-builder <insert buildpack image here>
 Now, configure your Skaffold config to build artifacts with buildpacks.
 To do this, we will take advantage of the [custom builder](../builders) in Skaffold.
 First, add a `build.sh` file which Skaffold will call to build artifacts:
+
 
 {{% readfile file="samples/buildpacks/build.sh" %}}
 
@@ -57,7 +58,7 @@ $ pack set-default-builder heroku/buildpacks
 Now, you should be able to use Skaffold:
 
 ```shell
-$ skaffold run --tail
+$ skaffold run --tail --default-repo <your repo>
 ```
 This will deploy Hello World in Go to your cluster.
-Note, no Dockerfile was needed, as buildpacks containerized the application from source code.
+**Note**, no Dockerfile was needed, as buildpacks containerized the application from source code.
