@@ -55,7 +55,8 @@ func TestUnavailablePort(t *testing.T) {
 	k := KubectlForwarder{
 		out: buf,
 	}
-	pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", 8080, false)
+	pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false)
+
 	k.Forward(context.Background(), pfe)
 
 	// wait for isPortFree to be called
@@ -77,7 +78,7 @@ func TestUnavailablePort(t *testing.T) {
 func TestTerminate(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 
-	pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", 8080, false)
+	pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false)
 	pfe.cancel = cancel
 
 	k := &KubectlForwarder{}

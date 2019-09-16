@@ -25,7 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
 )
 
 var (
@@ -56,7 +55,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string) cacheDetails {
 	hash, err := hashForArtifact(ctx, c.dependencies, a)
 	if err != nil {
-		return failed{err: errors.Wrapf(err, "getting hash for artifact %s", a.ImageName)}
+		return failed{err: fmt.Errorf("getting hash for artifact %s: %v", a.ImageName, err)}
 	}
 
 	entry, cacheHit := c.artifactCache[hash]

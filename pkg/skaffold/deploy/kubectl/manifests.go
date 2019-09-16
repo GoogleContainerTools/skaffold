@@ -38,17 +38,53 @@ func (l *ManifestList) String() string {
 }
 
 // Append appends the yaml manifests defined in the given buffer.
+// `buf` can contain concatenated manifests without `---` separators
+// because `kubectl create --dry-run -oyaml` produces such output.
 func (l *ManifestList) Append(buf []byte) {
-	// `kubectl create --dry-run -oyaml` outputs manifests without --- separator
-	// But we can rely on `apiVersion:` being here as a "separator".
-	buf = regexp.
-		MustCompile("\n(|---\n)apiVersion: ").
-		ReplaceAll(buf, []byte("\n---\napiVersion: "))
 
-	parts := bytes.Split(buf, []byte("\n---\n"))
-	for _, part := range parts {
-		*l = append(*l, part)
+	// If there's at most one `apiVersion` field, then append the `buf` as is.
+	if len(regexp.MustCompile("(?m)^apiVersion:").FindAll(buf, -1)) <= 1 {
+		*l = append(*l, buf)
+		return
 	}
+
+	// If there are `---` separators, then append each individual manifest as is.
+	parts := bytes.Split(buf, []byte("\n---\n"))
+	if len(parts) > 1 {
+		*l = append(*l, parts...)
+		return
+	}
+
+	// There are no `---` separators, let's identify each individual manifest
+	// based on the top level keys lexicographical order.
+	yaml := string(buf)
+
+	var part string
+	var previousKey = ""
+
+	for _, line := range strings.Split(yaml, "\n") {
+		// Not a top level key.
+		if strings.HasPrefix(line, "-") || strings.HasPrefix(line, " ") || !strings.Contains(line, ":") {
+			part += "\n" + line
+			continue
+		}
+
+		// Top level key.
+		key := line[0:strings.Index(line, ":")]
+		if strings.Compare(key, previousKey) > 0 {
+			if part != "" {
+				part += "\n"
+			}
+			part += line
+		} else {
+			*l = append(*l, []byte(part))
+			part = line
+		}
+
+		previousKey = key
+	}
+
+	*l = append(*l, []byte(part))
 }
 
 // Diff computes the list of manifests that have changed.

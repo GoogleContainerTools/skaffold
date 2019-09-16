@@ -28,15 +28,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibGradleArtifact, tag string) (string, error) {
+func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
 	if b.pushImages {
 		return b.buildJibGradleToRegistry(ctx, out, workspace, artifact, tag)
 	}
 	return b.buildJibGradleToDocker(ctx, out, workspace, artifact, tag)
 }
 
-func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibGradleArtifact, tag string) (string, error) {
-	args := jib.GenerateGradleArgs("jibDockerBuild", tag, artifact, b.skipTests)
+func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
+	args := jib.GenerateGradleArgs("jibDockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -44,8 +44,8 @@ func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, wor
 	return b.localDocker.ImageID(ctx, tag)
 }
 
-func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibGradleArtifact, tag string) (string, error) {
-	args := jib.GenerateGradleArgs("jib", tag, artifact, b.skipTests)
+func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
+	args := jib.GenerateGradleArgs("jib", tag, artifact, b.skipTests, b.insecureRegistries)
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}

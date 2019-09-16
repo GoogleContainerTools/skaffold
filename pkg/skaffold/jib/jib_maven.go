@@ -32,18 +32,18 @@ const MinimumJibMavenVersion = "1.4.0"
 // MavenCommand stores Maven executable and wrapper name
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
-// GetDependenciesMaven finds the source dependencies for the given jib-maven artifact.
+// getDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
-func GetDependenciesMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) ([]string, error) {
-	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a), a.Module)
+func getDependenciesMaven(ctx context.Context, workspace string, a *latest.JibArtifact) ([]string, error) {
+	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a), a.Project)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting jibMaven dependencies")
+		return nil, errors.Wrapf(err, "getting jib-maven dependencies")
 	}
-	logrus.Debugf("Found dependencies for jibMaven artifact: %v", deps)
+	logrus.Debugf("Found dependencies for jib maven artifact: %v", deps)
 	return deps, nil
 }
 
-func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenArtifact) exec.Cmd {
+func getCommandMaven(ctx context.Context, workspace string, a *latest.JibArtifact) exec.Cmd {
 	args := mavenArgs(a)
 	args = append(args, "jib:_skaffold-files-v2", "--quiet")
 
@@ -51,7 +51,7 @@ func getCommandMaven(ctx context.Context, workspace string, a *latest.JibMavenAr
 }
 
 // GenerateMavenArgs generates the arguments to Maven for building the project as an image.
-func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact, skipTests bool) []string {
+func GenerateMavenArgs(goal string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
 	// disable jib's rich progress footer on builds; we could use --batch-mode
 	// but it also disables colour which can be helpful
 	args := []string{"-Djib.console=plain"}
@@ -61,33 +61,33 @@ func GenerateMavenArgs(goal string, imageName string, a *latest.JibMavenArtifact
 		args = append(args, "-DskipTests=true")
 	}
 
-	if a.Module == "" {
+	if a.Project == "" {
 		// single-module project
 		args = append(args, "prepare-package", "jib:"+goal)
 	} else {
 		// multi-module project: instruct jib to containerize only the given module
-		args = append(args, "package", "jib:"+goal, "-Djib.containerize="+a.Module)
+		args = append(args, "package", "jib:"+goal, "-Djib.containerize="+a.Project)
 	}
 
+	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
+		// jib doesn't support marking specific registries as insecure
+		args = append(args, "-Djib.allowInsecureRegistries=true")
+	}
 	args = append(args, "-Dimage="+imageName)
 
 	return args
 }
 
-func mavenArgs(a *latest.JibMavenArtifact) []string {
+func mavenArgs(a *latest.JibArtifact) []string {
 	args := []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion}
 	args = append(args, a.Flags...)
 
-	if a.Profile != "" {
-		args = append(args, "--activate-profiles", a.Profile)
-	}
-
-	if a.Module == "" {
+	if a.Project == "" {
 		// single-module project
 		args = append(args, "--non-recursive")
 	} else {
 		// multi-module project
-		args = append(args, "--projects", a.Module, "--also-make")
+		args = append(args, "--projects", a.Project, "--also-make")
 	}
 
 	return args

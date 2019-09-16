@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -59,7 +60,7 @@ func TestDeploy(t *testing.T) {
 		},
 	}
 
-	dummyStatusCheck := func(ctx context.Context, l *deploy.DefaultLabeller, runCtx *runcontext.RunContext) error {
+	dummyStatusCheck := func(context.Context, *deploy.DefaultLabeller, *runcontext.RunContext, io.Writer) error {
 		return nil
 	}
 	for _, test := range tests {
@@ -109,7 +110,7 @@ func TestDeployNamespace(t *testing.T) {
 		},
 	}
 
-	dummyStatusCheck := func(ctx context.Context, l *deploy.DefaultLabeller, runCtx *runcontext.RunContext) error {
+	dummyStatusCheck := func(context.Context, *deploy.DefaultLabeller, *runcontext.RunContext, io.Writer) error {
 		return nil
 	}
 	for _, test := range tests {

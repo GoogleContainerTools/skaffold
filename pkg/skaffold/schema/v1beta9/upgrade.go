@@ -46,9 +46,7 @@ var (
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 
-	if err := pkgutil.CloneThroughJSON(config, &newConfig); err != nil {
-		return nil, err
-	}
+	pkgutil.CloneThroughJSON(config, &newConfig)
 	newConfig.APIVersion = next.Version
 
 	if err := util.UpgradePipelines(config, &newConfig, upgradeOnePipeline); err != nil {

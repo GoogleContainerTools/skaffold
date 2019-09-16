@@ -49,6 +49,25 @@ func TestRetrieveEnv(t *testing.T) {
 	testutil.CheckError(t, false, err)
 
 	actual := builder.retrieveExtraEnv()
-	expected := []string{"KUBE_CONTEXT=kubecontext", "NAMESPACE=namespace", "PULL_SECRET_NAME=pullSecret", "DOCKER_CONFIG_SECRET_NAME=dockerconfig", "TIMEOUT=2m"}
+	expected := []string{"KUBE_CONTEXT=kubecontext", "NAMESPACE=namespace", "PULL_SECRET_NAME=pullSecret", "TIMEOUT=2m", "DOCKER_CONFIG_SECRET_NAME=dockerconfig"}
+	testutil.CheckDeepEqual(t, expected, actual)
+}
+
+func TestRetrieveEnvMinimal(t *testing.T) {
+	builder, err := NewBuilder(&runcontext.RunContext{
+		Cfg: latest.Pipeline{
+			Build: latest.BuildConfig{
+				BuildType: latest.BuildType{
+					Cluster: &latest.ClusterDetails{
+						Timeout: "20m",
+					},
+				},
+			},
+		},
+	})
+	testutil.CheckError(t, false, err)
+
+	actual := builder.retrieveExtraEnv()
+	expected := []string{"KUBE_CONTEXT=", "NAMESPACE=", "PULL_SECRET_NAME=", "TIMEOUT=20m"}
 	testutil.CheckDeepEqual(t, expected, actual)
 }

@@ -95,10 +95,6 @@ Skaffold supports the following tools:
   * Jib Maven/Gradle locally
 * Test
   * with container-structure-test
-* Deploy
-  * Kubernetes Command-Line Interface (`kubectl`)
-  * Helm
-  * kustomize
 * Tag
   * tag by git commit
   * tag by current date&time
@@ -106,6 +102,10 @@ Skaffold supports the following tools:
 * Push
   * don't push - keep the image on the local daemon
   * push to registry
+* Deploy
+  * Kubernetes Command-Line Interface (`kubectl`)
+  * Helm
+  * kustomize
 
 ![architecture](docs/static/images/architecture.png)
 

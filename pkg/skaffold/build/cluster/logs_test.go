@@ -28,6 +28,7 @@ func TestLogLevel(t *testing.T) {
 		logrusLevel logrus.Level
 		expected    logrus.Level
 	}{
+		{logrusLevel: logrus.TraceLevel, expected: logrus.DebugLevel},
 		{logrusLevel: logrus.DebugLevel, expected: logrus.DebugLevel},
 		{logrusLevel: logrus.InfoLevel, expected: logrus.InfoLevel},
 		{logrusLevel: logrus.WarnLevel, expected: logrus.InfoLevel},

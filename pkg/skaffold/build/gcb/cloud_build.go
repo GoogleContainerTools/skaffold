@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
@@ -34,27 +35,26 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/iterator"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // Build builds a list of artifacts with Google Cloud Build.
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithCloudBuild)
+	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifactWithCloudBuild, b.GoogleCloudBuild.Concurrency)
 }
 
 func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	cbclient, err := cloudbuild.NewService(ctx)
+	cbclient, err := gcp.CloudBuildClient()
 	if err != nil {
 		return "", errors.Wrap(err, "getting cloudbuild client")
 	}
-	cbclient.UserAgent = version.UserAgent()
 
-	c, err := cstorage.NewClient(ctx)
+	c, err := gcp.CloudStorageClient()
 	if err != nil {
 		return "", errors.Wrap(err, "getting cloud storage client")
 	}
@@ -73,10 +73,10 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	cbBucket := fmt.Sprintf("%s%s", projectID, constants.GCSBucketSuffix)
 	buildObject := fmt.Sprintf("source/%s-%s.tar.gz", projectID, util.RandomID())
 
-	if err := b.createBucketIfNotExists(ctx, projectID, cbBucket); err != nil {
+	if err := b.createBucketIfNotExists(ctx, c, projectID, cbBucket); err != nil {
 		return "", errors.Wrap(err, "creating bucket if not exists")
 	}
-	if err := b.checkBucketProjectCorrect(ctx, projectID, cbBucket); err != nil {
+	if err := b.checkBucketProjectCorrect(ctx, c, projectID, cbBucket); err != nil {
 		return "", errors.Wrap(err, "checking bucket is in correct project")
 	}
 
@@ -86,7 +86,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	}
 
 	color.Default.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
-	if err := sources.UploadToGCS(ctx, artifact, cbBucket, buildObject, dependencies); err != nil {
+	if err := sources.UploadToGCS(ctx, c, artifact, cbBucket, buildObject, dependencies); err != nil {
 		return "", errors.Wrap(err, "uploading source tarball")
 	}
 
@@ -112,13 +112,29 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	offset := int64(0)
 watch:
 	for {
+		var cb *cloudbuild.Build
+		var err error
 		logrus.Debugf("current offset %d", offset)
-		cb, err := cbclient.Projects.Builds.Get(projectID, remoteID).Do()
-		if err != nil {
+		backoff := NewStatusBackoff()
+		if waitErr := wait.Poll(backoff.Duration, RetryTimeout, func() (bool, error) {
+			backoff.Step()
+			cb, err = cbclient.Projects.Builds.Get(projectID, remoteID).Do()
+			if err == nil {
+				return true, nil
+			}
+			if strings.Contains(err.Error(), "Error 429: Quota exceeded for quota metric 'cloudbuild.googleapis.com/get_requests'") {
+				// if we hit the rate limit, continue to retry
+				return false, nil
+			}
+			return false, err
+		}); waitErr != nil {
+			return "", errors.Wrap(waitErr, "getting build status")
+		}
+		if cb == nil {
 			return "", errors.Wrap(err, "getting build status")
 		}
 
-		r, err := b.getLogs(ctx, offset, cbBucket, logsObject)
+		r, err := b.getLogs(ctx, c, offset, cbBucket, logsObject)
 		if err != nil {
 			return "", errors.Wrap(err, "getting logs")
 		}
@@ -180,13 +196,7 @@ func getDigest(b *cloudbuild.Build, defaultToTag string) (string, error) {
 	return docker.RemoteDigest(defaultToTag, nil)
 }
 
-func (b *Builder) getLogs(ctx context.Context, offset int64, bucket, objectName string) (io.ReadCloser, error) {
-	c, err := cstorage.NewClient(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting storage client")
-	}
-	defer c.Close()
-
+func (b *Builder) getLogs(ctx context.Context, c *cstorage.Client, offset int64, bucket, objectName string) (io.ReadCloser, error) {
 	r, err := c.Bucket(bucket).Object(objectName).NewRangeReader(ctx, offset, -1)
 	if err != nil {
 		if gerr, ok := err.(*googleapi.Error); ok {
@@ -206,11 +216,7 @@ func (b *Builder) getLogs(ctx context.Context, offset int64, bucket, objectName 
 	return r, nil
 }
 
-func (b *Builder) checkBucketProjectCorrect(ctx context.Context, projectID, bucket string) error {
-	c, err := cstorage.NewClient(ctx)
-	if err != nil {
-		return errors.Wrap(err, "getting storage client")
-	}
+func (b *Builder) checkBucketProjectCorrect(ctx context.Context, c *cstorage.Client, projectID, bucket string) error {
 	it := c.Buckets(ctx, projectID)
 	// Set the prefix to the bucket we're looking for to only return that bucket and buckets with that prefix
 	// that we'll filter further later on
@@ -230,12 +236,8 @@ func (b *Builder) checkBucketProjectCorrect(ctx context.Context, projectID, buck
 	}
 }
 
-func (b *Builder) createBucketIfNotExists(ctx context.Context, projectID, bucket string) error {
-	c, err := cstorage.NewClient(ctx)
-	if err != nil {
-		return errors.Wrap(err, "getting storage client")
-	}
-	defer c.Close()
+func (b *Builder) createBucketIfNotExists(ctx context.Context, c *cstorage.Client, projectID, bucket string) error {
+	var err error
 
 	_, err = c.Bucket(bucket).Attrs(ctx)
 

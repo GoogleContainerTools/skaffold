@@ -41,12 +41,12 @@ var (
 )
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder, concurrency int) ([]Artifact, error) {
 	if len(artifacts) == 0 {
 		return nil, nil
 	}
 
-	if len(artifacts) == 1 {
+	if len(artifacts) == 1 || concurrency == 1 {
 		return runInSequence(ctx, out, tags, artifacts, buildArtifact)
 	}
 
@@ -57,21 +57,30 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	defer cancel()
 
 	results := new(sync.Map)
-	outputs := make([]chan []byte, len(artifacts))
+	outputs := make([]chan string, len(artifacts))
+
+	if concurrency == 0 {
+		concurrency = len(artifacts)
+	}
+	sem := make(chan bool, concurrency)
 
 	// Run builds in //
 	wg.Add(len(artifacts))
 	for i := range artifacts {
-		outputs[i] = make(chan []byte, buffSize)
+		outputs[i] = make(chan string, buffSize)
 		r, w := io.Pipe()
 		cw := setUpColorWriter(w, out)
 
 		// Run build and write output/logs to piped writer and store build result in
 		// sync.Map
 		go func(i int) {
+			sem <- true
 			runBuild(ctx, cw, tags, artifacts[i], results, buildArtifact)
+			<-sem
+
 			wg.Done()
 		}(i)
+
 		// Read build output/logs and write to buffered channel
 		go readOutputAndWriteToChannel(r, outputs[i])
 	}
@@ -95,10 +104,10 @@ func runBuild(ctx context.Context, cw io.WriteCloser, tags tag.ImageTags, artifa
 	cw.Close()
 }
 
-func readOutputAndWriteToChannel(r io.Reader, lines chan []byte) {
+func readOutputAndWriteToChannel(r io.Reader, lines chan string) {
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
-		lines <- scanner.Bytes()
+		lines <- scanner.Text()
 	}
 	close(lines)
 }
@@ -119,7 +128,7 @@ func getBuildResult(ctx context.Context, cw io.Writer, tags tag.ImageTags, artif
 	return build(ctx, cw, artifact, tag)
 }
 
-func collectResults(out io.Writer, artifacts []*latest.Artifact, results *sync.Map, outputs []chan []byte) ([]Artifact, error) {
+func collectResults(out io.Writer, artifacts []*latest.Artifact, results *sync.Map, outputs []chan string) ([]Artifact, error) {
 	var built []Artifact
 	for i, artifact := range artifacts {
 		// Wait for build to complete.
@@ -140,9 +149,8 @@ func collectResults(out io.Writer, artifacts []*latest.Artifact, results *sync.M
 	return built, nil
 }
 
-func printResult(out io.Writer, output chan []byte) {
+func printResult(out io.Writer, output chan string) {
 	for line := range output {
-		out.Write(line)
-		fmt.Fprintln(out)
+		fmt.Fprintln(out, line)
 	}
 }

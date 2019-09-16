@@ -33,17 +33,17 @@ func TestDiagnose(t *testing.T) {
 	tests := []struct {
 		name string
 		dir  string
-		args []string
 	}{
 		{name: "kaniko builder", dir: "examples/kaniko"},
 		{name: "docker builder", dir: "examples/nodejs"},
 		{name: "jib maven builder", dir: "testdata/jib"},
+		{name: "jib gradle builder", dir: "testdata/jib-gradle"},
 		{name: "bazel builder", dir: "examples/bazel"},
-		// todo add test cases for "jib gradle builder" and "custom builder"
+		{name: "custom builder", dir: "testdata/custom"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			skaffold.Diagnose(test.args...).InDir(test.dir).RunOrFailOutput(t)
+			skaffold.Diagnose().InDir(test.dir).RunOrFail(t)
 		})
 	}
 }

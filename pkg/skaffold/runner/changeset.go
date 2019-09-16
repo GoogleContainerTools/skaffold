@@ -36,6 +36,7 @@ func (c *changeSet) AddRebuild(a *latest.Artifact) {
 	}
 	c.rebuildTracker[a.ImageName] = a
 	c.needsRebuild = append(c.needsRebuild, a)
+	c.needsRedeploy = true
 }
 
 func (c *changeSet) AddResync(s *sync.Item) {
@@ -56,17 +57,6 @@ func (c *changeSet) resetSync() {
 	c.needsResync = nil
 }
 
-func (c *changeSet) resetReload() {
-	c.needsReload = false
-}
-
 func (c *changeSet) resetDeploy() {
 	c.needsRedeploy = false
-}
-
-func (c *changeSet) reset() {
-	c.resetBuild()
-	c.resetSync()
-	c.resetReload()
-	c.resetDeploy()
 }

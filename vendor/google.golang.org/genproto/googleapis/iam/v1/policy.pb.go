@@ -147,7 +147,7 @@ type Policy struct {
 	// ensure that their change will be applied to the same version of the policy.
 	//
 	// If no `etag` is provided in the call to `setIamPolicy`, then the existing
-	// policy is overwritten blindly.
+	// policy is overwritten.
 	Etag                 []byte   `protobuf:"bytes,3,opt,name=etag,proto3" json:"etag,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -215,7 +215,7 @@ type Binding struct {
 	//    who is authenticated with a Google account or a service account.
 	//
 	// * `user:{emailid}`: An email address that represents a specific Google
-	//    account. For example, `alice@gmail.com` .
+	//    account. For example, `alice@example.com` .
 	//
 	//
 	// * `serviceAccount:{emailid}`: An email address that represents a service
@@ -350,8 +350,8 @@ type BindingDelta struct {
 	// Follows the same format of Binding.members.
 	// Required
 	Member string `protobuf:"bytes,3,opt,name=member,proto3" json:"member,omitempty"`
-	// Unimplemented. The condition that is associated with this binding.
-	// This field is logged only for Cloud Audit Logging.
+	// The condition that is associated with this binding. This field is logged
+	// only for Cloud Audit Logging.
 	Condition            *expr.Expr `protobuf:"bytes,4,opt,name=condition,proto3" json:"condition,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}   `json:"-"`
 	XXX_unrecognized     []byte     `json:"-"`

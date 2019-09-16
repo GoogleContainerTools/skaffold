@@ -62,6 +62,6 @@ func TestAddFlagsSmoke(t *testing.T) {
 		Use:   "test",
 		Short: "Test commanf for smoke testing",
 	}
-	SetUpFlags()
+	SetupFlags()
 	AddFlags(testCmd.Flags(), "test")
 }

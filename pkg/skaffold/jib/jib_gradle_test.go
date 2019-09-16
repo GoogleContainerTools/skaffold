@@ -86,8 +86,8 @@ func TestGetDependenciesGradle(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, t.FakeRunOutErr(
-				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"}).Args, " "),
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunOutErr(
+				strings.Join(getCommandGradle(ctx, tmpDir.Root(), &latest.JibArtifact{Project: "gradle-test"}).Args, " "),
 				test.stdout,
 				test.err,
 			))
@@ -95,9 +95,9 @@ func TestGetDependenciesGradle(t *testing.T) {
 			// Change build file mod time
 			os.Chtimes(build, test.modTime, test.modTime)
 
-			deps, err := GetDependenciesGradle(ctx, tmpDir.Root(), &latest.JibGradleArtifact{Project: "gradle-test"})
+			deps, err := getDependenciesGradle(ctx, tmpDir.Root(), &latest.JibArtifact{Project: "gradle-test"})
 			if test.err != nil {
-				t.CheckErrorAndDeepEqual(true, err, "getting jibGradle dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies: "+test.err.Error(), err.Error())
+				t.CheckErrorAndDeepEqual(true, err, "getting jib-gradle dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies: "+test.err.Error(), err.Error())
 			} else {
 				t.CheckDeepEqual(test.expected, deps)
 			}
@@ -109,39 +109,39 @@ func TestGetCommandGradle(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		description       string
-		jibGradleArtifact latest.JibGradleArtifact
-		filesInWorkspace  []string
-		expectedCmd       func(workspace string) exec.Cmd
+		description      string
+		jibArtifact      latest.JibArtifact
+		filesInWorkspace []string
+		expectedCmd      func(workspace string) exec.Cmd
 	}{
 		{
-			description:       "gradle default",
-			jibGradleArtifact: latest.JibGradleArtifact{},
-			filesInWorkspace:  []string{},
+			description:      "gradle default",
+			jibArtifact:      latest.JibArtifact{},
+			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":_jibSkaffoldFilesV2", "-q"})
 			},
 		},
 		{
-			description:       "gradle default with project",
-			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
-			filesInWorkspace:  []string{},
+			description:      "gradle default with project",
+			jibArtifact:      latest.JibArtifact{Project: "project"},
+			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:_jibSkaffoldFilesV2", "-q"})
 			},
 		},
 		{
-			description:       "gradle with wrapper",
-			jibGradleArtifact: latest.JibGradleArtifact{},
-			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
+			description:      "gradle with wrapper",
+			jibArtifact:      latest.JibArtifact{},
+			filesInWorkspace: []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":_jibSkaffoldFilesV2", "-q"})
 			},
 		},
 		{
-			description:       "gradle with wrapper and project",
-			jibGradleArtifact: latest.JibGradleArtifact{Project: "project"},
-			filesInWorkspace:  []string{"gradlew", "gradlew.cmd"},
+			description:      "gradle with wrapper and project",
+			jibArtifact:      latest.JibArtifact{Project: "project"},
+			filesInWorkspace: []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:_jibSkaffoldFilesV2", "-q"})
 			},
@@ -152,7 +152,7 @@ func TestGetCommandGradle(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Touch(test.filesInWorkspace...)
 
-			cmd := getCommandGradle(ctx, tmpDir.Root(), &test.jibGradleArtifact)
+			cmd := getCommandGradle(ctx, tmpDir.Root(), &test.jibArtifact)
 
 			expectedCmd := test.expectedCmd(tmpDir.Root())
 			t.CheckDeepEqual(expectedCmd.Path, cmd.Path)
@@ -164,18 +164,21 @@ func TestGetCommandGradle(t *testing.T) {
 
 func TestGenerateGradleArgs(t *testing.T) {
 	tests := []struct {
-		in        latest.JibGradleArtifact
-		skipTests bool
-		out       []string
+		in                 latest.JibArtifact
+		image              string
+		skipTests          bool
+		insecureRegistries map[string]bool
+		out                []string
 	}{
-		{latest.JibGradleArtifact{}, false, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image"}},
-		{latest.JibGradleArtifact{Flags: []string{"-extra", "args"}}, false, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image", "-extra", "args"}},
-		{latest.JibGradleArtifact{}, true, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image", "-x", "test"}},
-		{latest.JibGradleArtifact{Project: "project"}, false, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "--image=image"}},
-		{latest.JibGradleArtifact{Project: "project"}, true, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "--image=image", "-x", "test"}},
+		{latest.JibArtifact{}, "image", false, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image"}},
+		{latest.JibArtifact{Flags: []string{"-extra", "args"}}, "image", false, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image", "-extra", "args"}},
+		{latest.JibArtifact{}, "image", true, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image", "-x", "test"}},
+		{latest.JibArtifact{Project: "project"}, "image", false, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "--image=image"}},
+		{latest.JibArtifact{Project: "project"}, "image", true, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "--image=image", "-x", "test"}},
+		{latest.JibArtifact{Project: "project"}, "registry.tld/image", true, map[string]bool{"registry.tld": true}, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "-Djib.allowInsecureRegistries=true", "--image=registry.tld/image", "-x", "test"}},
 	}
 	for _, test := range tests {
-		command := GenerateGradleArgs("task", "image", &test.in, test.skipTests)
+		command := GenerateGradleArgs("task", test.image, &test.in, test.skipTests, test.insecureRegistries)
 
 		testutil.CheckDeepEqual(t, test.out, command)
 	}

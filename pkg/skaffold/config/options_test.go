@@ -130,12 +130,12 @@ func TestIsTargetImage(t *testing.T) {
 			expectedMatch: true,
 		},
 		{
-			description:   "match full name",
+			description:   "match full description",
 			targetImages:  []string{"domain/image"},
 			expectedMatch: true,
 		},
 		{
-			description:   "match partial name",
+			description:   "match partial description",
 			targetImages:  []string{"image"},
 			expectedMatch: true,
 		},

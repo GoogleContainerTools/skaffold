@@ -30,9 +30,13 @@ import (
 )
 
 func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
-	color.Default.Fprintf(out, "Creating kaniko secret [%s]...\n", b.PullSecretName)
+	if b.PullSecret == "" && b.PullSecretName == "" {
+		return func() {}, nil
+	}
 
-	client, err := kubernetes.GetClientset()
+	color.Default.Fprintf(out, "Creating kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
+
+	client, err := kubernetes.Client()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting kubernetes client")
 	}
@@ -82,7 +86,7 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 
 	color.Default.Fprintf(out, "Creating docker config secret [%s]...\n", b.DockerConfig.SecretName)
 
-	client, err := kubernetes.GetClientset()
+	client, err := kubernetes.Client()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting kubernetes client")
 	}

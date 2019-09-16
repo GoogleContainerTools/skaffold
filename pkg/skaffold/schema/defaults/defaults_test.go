@@ -42,6 +42,12 @@ func TestSetDefaults(t *testing.T) {
 							},
 						},
 					},
+					{
+						ImageName: "third",
+						ArtifactType: latest.ArtifactType{
+							CustomArtifact: &latest.CustomArtifact{},
+						},
+					},
 				},
 			},
 		},
@@ -58,6 +64,10 @@ func TestSetDefaults(t *testing.T) {
 	testutil.CheckDeepEqual(t, "second", cfg.Build.Artifacts[1].ImageName)
 	testutil.CheckDeepEqual(t, "folder", cfg.Build.Artifacts[1].Workspace)
 	testutil.CheckDeepEqual(t, "Dockerfile.second", cfg.Build.Artifacts[1].DockerArtifact.DockerfilePath)
+
+	testutil.CheckDeepEqual(t, "third", cfg.Build.Artifacts[2].ImageName)
+	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[2].CustomArtifact.Dependencies.Paths)
+	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[2].CustomArtifact.Dependencies.Ignore)
 }
 
 func TestSetDefaultsOnCluster(t *testing.T) {
@@ -113,6 +123,33 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		t.CheckDeepEqual("secret", cfg.Build.Cluster.DockerConfig.SecretName)
 		t.CheckDeepEqual("", cfg.Build.Cluster.DockerConfig.Path)
 	})
+}
+
+func TestCustomBuildWithCluster(t *testing.T) {
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				Artifacts: []*latest.Artifact{
+					{
+						ImageName: "image",
+						ArtifactType: latest.ArtifactType{
+							CustomArtifact: &latest.CustomArtifact{
+								BuildCommand: "./build.sh",
+							},
+						},
+					},
+				},
+				BuildType: latest.BuildType{
+					Cluster: &latest.ClusterDetails{},
+				},
+			},
+		},
+	}
+
+	err := Set(cfg)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, (*latest.KanikoArtifact)(nil), cfg.Build.Artifacts[0].KanikoArtifact)
 }
 
 func TestSetDefaultsOnCloudBuild(t *testing.T) {

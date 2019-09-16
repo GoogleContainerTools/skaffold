@@ -19,11 +19,10 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/internal/retry"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // Sleep for 0.1, 0.3, 0.9, 2.7 seconds. This should cover networking blips.
-var defaultBackoff = wait.Backoff{
+var defaultBackoff = retry.Backoff{
 	Duration: 100 * time.Millisecond,
 	Factor:   3.0,
 	Jitter:   0.1,
@@ -35,7 +34,7 @@ var _ http.RoundTripper = (*retryTransport)(nil)
 // retryTransport wraps a RoundTripper and retries temporary network errors.
 type retryTransport struct {
 	inner     http.RoundTripper
-	backoff   wait.Backoff
+	backoff   retry.Backoff
 	predicate retry.Predicate
 }
 
@@ -43,12 +42,12 @@ type retryTransport struct {
 type Option func(*options)
 
 type options struct {
-	backoff   wait.Backoff
+	backoff   retry.Backoff
 	predicate retry.Predicate
 }
 
 // WithRetryBackoff sets the backoff for retry operations.
-func WithRetryBackoff(backoff wait.Backoff) Option {
+func WithRetryBackoff(backoff retry.Backoff) Option {
 	return func(o *options) {
 		o.backoff = backoff
 	}
