@@ -473,8 +473,27 @@ func generateGetFilesArgs(m map[string]string, valuesSet map[string]bool) []stri
 	return args
 }
 
-func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {
-	return errors.New("not yet implemented")
+func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, filepath string) error {
+	manifestOut := out
+	if filepath != "" {
+		f, err := os.Open(filepath)
+		if err != nil {
+			return errors.Wrap(err, "opening file for writing manifests")
+		}
+		manifestOut = bufio.NewWriter(f)
+	}
+
+	for _, r := range h.Releases {
+		releaseName, err := evaluateReleaseName(r.Name)
+		if err != nil {
+			return errors.Wrap(err, "evaluating release name")
+		}
+		if err := h.helm(ctx, manifestOut, false, "install", "--dry-run", "--debug", releaseName); err != nil {
+			return errors.Wrap(err, "templating helm manifests")
+		}
+	}
+
+	return nil
 }
 
 func evaluateReleaseName(nameTemplate string) (string, error) {

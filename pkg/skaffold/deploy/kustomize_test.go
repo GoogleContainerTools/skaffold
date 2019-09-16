@@ -415,7 +415,7 @@ func TestKustomizeRender(t *testing.T) {
 					},
 				},
 			})
-			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, "tmp/dir")
+			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, []Labeller{}, "tmp/dir")
 			t.CheckError(test.shouldErr, actual)
 		})
 	}

@@ -230,6 +230,14 @@ var FlagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
 	},
 	{
+		Name:          "render-only",
+		Usage:         "Print rendered kubernetes manifests instead of deploying them",
+		Value:         &opts.RenderOnly,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "run"},
+	},
+	{
 		Name:          "config",
 		Shorthand:     "c",
 		Usage:         "File for global configurations (defaults to $HOME/.skaffold/config)",

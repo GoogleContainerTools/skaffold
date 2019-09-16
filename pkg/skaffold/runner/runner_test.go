@@ -18,7 +18,6 @@ package runner
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -171,8 +170,8 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Art
 	return deploy.NewDeploySuccessResult(t.namespaces)
 }
 
-func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ string) error {
-	return errors.New("not yet implemented")
+func (t *TestBench) Render(_ context.Context, _ io.Writer, _ []build.Artifact, _ []deploy.Labeller, _ string) error {
+	return nil
 }
 
 func (t *TestBench) Actions() []Actions {
