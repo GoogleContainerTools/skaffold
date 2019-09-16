@@ -88,9 +88,3 @@ func (d *Deployment) WithStatus(details string, err error) *Deployment {
 	d.UpdateStatus(details, err)
 	return d
 }
-
-func (d *Deployment) WithDone(details string, err error) *Deployment {
-	d.UpdateStatus(details, err)
-	d.done = true
-	return d
-}
