@@ -33,9 +33,9 @@ First, add a `build.sh` file which Skaffold will call to build artifacts:
 {{% readfile file="samples/buildpacks/build.sh" %}}
 
 
-Then, configure artifacts in your `skaffold.yaml` to build with this script. 
+Then, configure artifacts in your `skaffold.yaml` to build with `build.sh`: 
 
-{{% readfile file="samples/buildpacks/Skaffold.yaml" %}}
+{{% readfile file="samples/buildpacks/skaffold.yaml" %}}
 
 List the file dependencies for each artifact; in the example above, Skaffold watches all files in the build context.
 For more information about listing dependencies for custom artifacts, see the documentation [here](../builders).
@@ -61,4 +61,5 @@ Now, you should be able to use Skaffold:
 $ skaffold run --tail --default-repo <your repo>
 ```
 This will deploy Hello World in Go to your cluster.
-**Note**, no Dockerfile was needed, as buildpacks containerized the application from source code.
+
+**Note**:, no Dockerfile was needed, as buildpacks containerized the application from source code.
