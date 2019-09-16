@@ -82,9 +82,3 @@ func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 		status:    newStatus("", nil),
 	}
 }
-
-// For testing
-func (d *Deployment) WithStatus(details string, err error) *Deployment {
-	d.UpdateStatus(details, err)
-	return d
-}
