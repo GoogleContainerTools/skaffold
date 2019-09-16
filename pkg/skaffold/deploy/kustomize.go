@@ -167,6 +167,10 @@ func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 	return dependenciesForKustomization(k.KustomizePath)
 }
 
+func (k *KustomizeDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {
+	return errors.New("not yet implemented")
+}
+
 func dependenciesForKustomization(dir string) ([]string, error) {
 	var deps []string
 
