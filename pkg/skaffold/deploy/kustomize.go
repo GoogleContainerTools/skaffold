@@ -168,7 +168,7 @@ func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 }
 
 func (k *KustomizeDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {
-	return fmt.Errorf("not yet implemented")
+	return errors.New("not yet implemented")
 }
 
 func dependenciesForKustomization(dir string) ([]string, error) {
