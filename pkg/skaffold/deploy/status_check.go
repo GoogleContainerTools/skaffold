@@ -81,7 +81,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 			defer wg.Done()
 			pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), d)
 			pending := c.markProcessed()
-			printStatusCheckSummary(d, pending, c.total, out)
+			printStatusCheckSummary(out, d, pending, c.total)
 		}(d)
 	}
 
@@ -166,7 +166,7 @@ func getDeadline(d int) time.Duration {
 	return defaultStatusCheckDeadline
 }
 
-func printStatusCheckSummary(d *resource.Deployment, pending int, total int, out io.Writer) {
+func printStatusCheckSummary(out io.Writer, d *resource.Deployment, pending int, total int) {
 	status := fmt.Sprintf("%s %s", tabHeader, d)
 	if err := d.Status().Error(); err != nil {
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
