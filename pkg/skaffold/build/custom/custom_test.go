@@ -17,9 +17,15 @@ limitations under the License.
 package custom
 
 import (
+	"context"
+	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
+	"os/signal"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -122,6 +128,96 @@ func TestRetrieveCmd(t *testing.T) {
 			t.CheckDeepEqual(test.expected.Env, cmd.Env)
 		})
 	}
+}
+
+func TestGracefulBuildCancel(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("graceful cancel doesn't work on windows")
+	}
+
+	tests := []struct {
+		artifact    *latest.Artifact
+		testEnv     []string
+		shouldErr   bool
+		description string
+	}{
+		{
+			description: "terminate gracefully and exit 0",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					CustomArtifact: &latest.CustomArtifact{
+						BuildCommand: fmt.Sprintf("%s --test.run=TestHelperGracefulBuildCancel", os.Args[0]),
+					},
+				},
+			},
+			testEnv:   []string{"GO_STARTED_FROM_TEST=1"},
+			shouldErr: false,
+		},
+		{
+			description: "terminate gracefully and kill process",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					CustomArtifact: &latest.CustomArtifact{
+						BuildCommand: fmt.Sprintf("%s --test.run=TestHelperGracefulBuildKill", os.Args[0]),
+					},
+				},
+			},
+			testEnv:   []string{"GO_STARTED_FROM_TEST=1"},
+			shouldErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+
+			builder := NewArtifactBuilder(false, test.testEnv)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+
+			err := builder.Build(ctx, os.Stdout, test.artifact, "image:tag")
+			t.CheckError(test.shouldErr, err)
+
+			cancel()
+		})
+	}
+}
+
+func TestHelperGracefulBuildCancel(t *testing.T) {
+	if os.Getenv("GO_STARTED_FROM_TEST") != "1" {
+		return // skip test if not started from a test case
+	}
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt)
+
+	go func() {
+		<-signals
+		fmt.Println("Got interrupt")
+	}()
+
+	fmt.Println("Sleeping 25 seconds")
+	time.Sleep(25 * time.Second)
+	fmt.Println("Exiting...")
+	os.Exit(0)
+}
+
+func TestHelperGracefulBuildKill(t *testing.T) {
+	if os.Getenv("GO_STARTED_FROM_TEST") != "1" {
+		return // skip test if not started from a test case
+	}
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, os.Interrupt)
+
+	go func() {
+		<-signals
+		fmt.Println("Got interrupt")
+	}()
+
+	fmt.Println("Sleeping 35 seconds")
+	time.Sleep(35 * time.Second)
+	fmt.Println("Exiting...") // process should be killed already
+	os.Exit(0)
 }
 
 func expectedCmd(buildCommand, dir string, args, env []string) *exec.Cmd {
