@@ -103,6 +103,14 @@ func (b *ArtifactBuilder) retrieveCmd(out io.Writer, a *latest.Artifact, tag str
 	split := strings.Split(artifact.BuildCommand, " ")
 
 	cmd := exec.Command(split[0], split[1:]...)
+
+	// special case for inline (ba)sh scripts
+	if (split[0] == "bash" || split[0] == "sh") && split[1] == "-c" {
+		args := strings.Join(split[2:], " ")
+
+		cmd = exec.Command(split[0], split[1], args[1:len(args)-1])
+	}
+
 	cmd.Stdout = out
 	cmd.Stderr = out
 
