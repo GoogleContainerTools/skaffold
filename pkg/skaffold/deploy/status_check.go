@@ -32,7 +32,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
@@ -45,9 +44,6 @@ var (
 
 	// report resource status for pending resources 0.5 second.
 	reportStatusTime = 500 * time.Millisecond
-
-	// For testing
-	executeRolloutStatus = getRollOutStatus
 )
 
 const (
@@ -79,7 +75,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		wg.Add(1)
 		go func(d *resource.Deployment) {
 			defer wg.Done()
-			pollDeploymentRolloutStatus(ctx, kubectl.NewFromRunContext(runCtx), d)
+			pollResourceStatus(ctx, runCtx, d)
 			pending := c.markProcessed()
 			printStatusCheckSummary(out, d, pending, c.total)
 		}(d)
@@ -117,24 +113,20 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	return deployments, nil
 }
 
-func pollDeploymentRolloutStatus(ctx context.Context, k *kubectl.CLI, d *resource.Deployment) {
+func pollResourceStatus(ctx context.Context, runCtx *runcontext.RunContext, r Resource) {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
-	timeoutContext, cancel := context.WithTimeout(ctx, d.Deadline()+pollDuration)
-	logrus.Debugf("checking rollout status %s", d.String())
+	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
+	logrus.Debugf("checking status %s", r)
 	defer cancel()
 	for {
 		select {
 		case <-timeoutContext.Done():
-			err := errors.Wrap(timeoutContext.Err(), fmt.Sprintf("deployment rollout status could not be fetched within %v", d.Deadline()))
-			d.UpdateStatus(err.Error(), err)
-			d.MarkDone()
+			r.UpdateStatus(timeoutContext.Err().Error(), timeoutContext.Err())
 			return
 		case <-time.After(pollDuration):
-			status, err := executeRolloutStatus(timeoutContext, k, d.Name())
-			d.UpdateStatus(status, err)
-			if err != nil || strings.Contains(status, "successfully rolled out") {
-				d.MarkDone()
+			r.CheckStatus(timeoutContext, runCtx)
+			if r.IsStatusComplete() {
 				return
 			}
 		}
@@ -152,11 +144,6 @@ func getSkaffoldDeployStatus(deployments []*resource.Deployment) error {
 		return nil
 	}
 	return fmt.Errorf("following deployments are not stable:\n%s", strings.Join(errorStrings, "\n"))
-}
-
-func getRollOutStatus(ctx context.Context, k *kubectl.CLI, dName string) (string, error) {
-	b, err := k.RunOut(ctx, "rollout", "status", "deployment", dName, "--watch=false")
-	return string(b), err
 }
 
 func getDeadline(d int) time.Duration {
@@ -201,7 +188,7 @@ func printResourceStatus(ctx context.Context, out io.Writer, deps []*resource.De
 func printStatus(deps []*resource.Deployment, out io.Writer) bool {
 	allResourcesCheckComplete := true
 	for _, d := range deps {
-		if d.IsDone() {
+		if d.IsStatusComplete() {
 			continue
 		}
 		allResourcesCheckComplete = false
