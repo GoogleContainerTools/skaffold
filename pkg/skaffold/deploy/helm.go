@@ -306,6 +306,12 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
 	}
 
+	// SetFiles
+	for k, v := range r.SetFiles {
+		valuesSet[v] = true
+		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, v))
+	}
+
 	envMap := map[string]string{}
 	for idx, b := range builds {
 		suffix := ""

@@ -462,6 +462,10 @@ type HelmRelease struct {
 	// all parsed pairs after the flag.
 	SetValueTemplates map[string]string `yaml:"setValueTemplates,omitempty"`
 
+	// SetFiles are key-value pairs.
+	// If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.
+	SetFiles map[string]string `yaml:"setFiles,omitempty"`
+
 	// Wait if `true`, Skaffold will send `--wait` flag to Helm CLI.
 	// Defaults to `false`.
 	Wait bool `yaml:"wait,omitempty"`
