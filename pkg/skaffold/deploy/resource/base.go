@@ -18,7 +18,6 @@ package resource
 
 import (
 	"fmt"
-	"strings"
 )
 
 const (
@@ -45,22 +44,7 @@ func (b *Base) Status() Status {
 	return b.status
 }
 
-func (b *Base) UpdateStatus(details string, err error) {
-	updated := newStatus(details, err)
-	if !b.status.Equal(updated) {
-		b.status = updated
-	}
-	if err != nil && strings.Contains(err.Error(), TimeoutExceededError) {
-		b.done = true
-	}
-}
-
-func (b *Base) DeadlineExpired() {
-	b.UpdateStatus("", fmt.Errorf("resource status deadline expired"))
-	b.done = true
-}
-
-func (b *Base) IsDone() bool {
+func (b *Base) IsStatusComplete() bool {
 	return b.done
 }
 

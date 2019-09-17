@@ -18,7 +18,7 @@ package resource
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -64,7 +64,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 			commands: testutil.CmdRunOutErr(
 				rolloutCmd,
 				"",
-				fmt.Errorf("error"),
+				errors.New("error"),
 			),
 			expectedErr: "error",
 			complete:    true,
@@ -74,27 +74,109 @@ func TestDeploymentCheckStatus(t *testing.T) {
 			commands: testutil.CmdRunOutErr(
 				rolloutCmd,
 				"",
-				fmt.Errorf("Unable to connect to the server"),
+				errors.New("Unable to connect to the server"),
 			),
-			expectedErr: "kubectl connection error",
+			expectedErr: ErrKubectlConnection.Error(),
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
-			r := Deployment{Base: &Base{namespace: "test", name: "dep"}}
+			r := NewDeployment("dep", "test", 0)
 			runCtx := &runcontext.RunContext{
 				KubeContext: "kubecontext",
 			}
 
 			r.CheckStatus(context.Background(), runCtx)
-			t.CheckDeepEqual(test.complete, r.IsDone())
+			t.CheckDeepEqual(test.complete, r.IsStatusComplete())
 			if test.expectedErr != "" {
 				t.CheckErrorContains(test.expectedErr, r.Status().Error())
 			} else {
 				t.CheckDeepEqual(r.status.details, test.expectedDetails)
 			}
+		})
+	}
+}
+
+func TestParseKubectlError(t *testing.T) {
+	tests := []struct {
+		description string
+		err         error
+		expected    string
+		shouldErr   bool
+	}{
+		{
+			description: "rollout status connection error",
+			err:         errors.New("Unable to connect to the server"),
+			expected:    ErrKubectlConnection.Error(),
+			shouldErr:   true,
+		},
+		{
+			description: "rollout status kubectl command killed",
+			err:         errors.New("signal: killed"),
+			expected:    errKubectlKilled.Error(),
+			shouldErr:   true,
+		},
+		{
+			description: "rollout status random error",
+			err:         errors.New("deployment test not found"),
+			expected:    "deployment test not found",
+			shouldErr:   true,
+		},
+		{
+			description: "rollout status nil error",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual := parseKubectlRolloutError(test.err)
+			t.CheckError(test.shouldErr, actual)
+			if test.shouldErr {
+				t.CheckErrorContains(test.expected, actual)
+			}
+		})
+	}
+}
+
+func TestIsErrAndNotRetriable(t *testing.T) {
+	tests := []struct {
+		description string
+		err         error
+		expected    bool
+	}{
+		{
+			description: "rollout status connection error",
+			err:         ErrKubectlConnection,
+		},
+		{
+			description: "rollout status kubectl command killed",
+			err:         errKubectlKilled,
+			expected:    true,
+		},
+		{
+			description: "rollout status random error",
+			err:         errors.New("deployment test not found"),
+			expected:    true,
+		},
+		{
+			description: "rollout status parent context cancelled",
+			err:         context.Canceled,
+			expected:    true,
+		},
+		{
+			description: "rollout status parent conetct timed out",
+			err:         context.DeadlineExceeded,
+			expected:    true,
+		},
+		{
+			description: "rollout status nil error",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual := isErrAndNotRetryAble(test.err)
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }

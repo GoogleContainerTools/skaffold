@@ -25,13 +25,26 @@ import (
 )
 
 type Resource interface {
+
+	// Name returns resource Name
 	Name() string
-	String() string
+
+	// Status returns resource status
 	Status() resource.Status
-	CheckStatus(context.Context, *runcontext.RunContext)
-	UpdateStatus(string, error)
+
+	// ReportSinceLastUpdated returns the resource status only if it was updated
+	// since last time reported.
 	ReportSinceLastUpdated() string
+
+	// UpdateStatus updates the resource status
+	UpdateStatus(string, error)
+
+	// IsStatusComplete returns if the resource status check is complete
+	IsStatusComplete() bool
+
+	// Deadline returns the deadline for the resource
 	Deadline() time.Duration
-	DeadlineExpired()
-	IsDone() bool
+
+	// CheckStatus checks resource status
+	CheckStatus(context.Context, *runcontext.RunContext)
 }

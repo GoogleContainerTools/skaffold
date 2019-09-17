@@ -27,12 +27,15 @@ import (
 )
 
 const (
-	deploymentType = "deployment"
+	deploymentType   = "deployment"
+	rollOutSuccess   = "successfully rolled out"
+	connectionErrMsg = "Unable to connect to the server"
+	killedErrMsg     = "signal: killed"
 )
 
 var (
-	kubectlKilledErr     = errors.New("kubectl killed due to timeout")
-	kubectlConnectionErr = errors.New("kubectl connection error")
+	errKubectlKilled     = errors.New("kubectl rollout status command killed")
+	ErrKubectlConnection = errors.New("kubectl connection error")
 )
 
 type Deployment struct {
@@ -42,6 +45,16 @@ type Deployment struct {
 
 func (d *Deployment) Deadline() time.Duration {
 	return d.deadline
+}
+
+func (d *Deployment) UpdateStatus(details string, err error) {
+	updated := newStatus(details, err)
+	if !d.status.Equal(updated) {
+		d.status = updated
+		if strings.Contains(details, rollOutSuccess) || isErrAndNotRetryAble(err) {
+			d.done = true
+		}
+	}
 }
 
 func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
@@ -60,33 +73,26 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 	kubeCtl := kubectl.NewFromRunContext(runCtx)
 	b, err := kubeCtl.RunOut(ctx, "rollout", "status", "deployment", d.name, "--namespace", d.namespace, "--watch=false")
 	details := string(b)
-	err = parseKubectlError(err)
+	err = parseKubectlRolloutError(err)
 	d.UpdateStatus(details, err)
-	if strings.Contains(details, "successfully rolled out") || isErrAndNotRetriable(err) {
-		d.done = true
-	}
 }
 
-func parseKubectlError(err error) error {
+func parseKubectlRolloutError(err error) error {
 	if err == nil {
 		return err
 	}
-	if strings.Contains(err.Error(), "Unable to connect to the server") {
-		return kubectlConnectionErr
+	if strings.Contains(err.Error(), connectionErrMsg) {
+		return ErrKubectlConnection
 	}
-	if strings.Contains(err.Error(), "signal: killed") {
-		return kubectlKilledErr
+	if strings.Contains(err.Error(), killedErrMsg) {
+		return errKubectlKilled
 	}
 	return err
 }
 
-func isErrAndNotRetriable(err error) bool {
+func isErrAndNotRetryAble(err error) bool {
 	if err == nil {
 		return false
 	}
-	return err != kubectlConnectionErr
-}
-
-func (d *Deployment) MarkDone() {
-	d.done = true
+	return err != ErrKubectlConnection
 }

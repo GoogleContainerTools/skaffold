@@ -117,16 +117,16 @@ func pollResourceStatus(ctx context.Context, runCtx *runcontext.RunContext, r Re
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
-	logrus.Debugf("checking status %s", r.String())
+	logrus.Debugf("checking status %s", r)
 	defer cancel()
 	for {
 		select {
 		case <-timeoutContext.Done():
-			r.DeadlineExpired()
+			r.UpdateStatus(timeoutContext.Err().Error(), timeoutContext.Err())
 			return
 		case <-time.After(pollDuration):
 			r.CheckStatus(timeoutContext, runCtx)
-			if r.IsDone() {
+			if r.IsStatusComplete() {
 				return
 			}
 		}
@@ -188,7 +188,7 @@ func printResourceStatus(ctx context.Context, out io.Writer, resources []Resourc
 func printStatus(resources []Resource, out io.Writer) bool {
 	allResourcesCheckComplete := true
 	for _, r := range resources {
-		if r.IsDone() {
+		if r.IsStatusComplete() {
 			continue
 		}
 		allResourcesCheckComplete = false
