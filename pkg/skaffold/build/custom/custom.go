@@ -37,7 +37,6 @@ import (
 var (
 	// For testing
 	buildContext = retrieveBuildContext
-	buildCmdFunc = buildCmd
 )
 
 // ArtifactBuilder is a builder for custom artifacts
@@ -105,8 +104,9 @@ func (b *ArtifactBuilder) handleGracefulTermination(ctx context.Context, cmd *ex
 
 func (b *ArtifactBuilder) retrieveCmd(out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
 	artifact := a.CustomArtifact
+	split := strings.Split(artifact.BuildCommand, " ")
 
-	cmd := buildCmdFunc(artifact.BuildCommand)
+	cmd := exec.Command(split[0], split[1:]...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 
@@ -140,11 +140,6 @@ func (b *ArtifactBuilder) retrieveEnv(a *latest.Artifact, tag string) ([]string,
 	envs = append(envs, b.additionalEnv...)
 	envs = append(envs, util.OSEnviron()...)
 	return envs, nil
-}
-
-func buildCmd(command string) *exec.Cmd {
-	split := strings.Split(command, " ")
-	return exec.Command(split[0], split[1:]...)
 }
 
 func retrieveBuildContext(workspace string) (string, error) {

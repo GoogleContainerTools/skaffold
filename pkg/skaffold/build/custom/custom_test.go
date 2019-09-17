@@ -19,10 +19,8 @@ package custom
 import (
 	"context"
 	"io/ioutil"
-	"os"
 	"os/exec"
 	"runtime"
-	"strings"
 	"testing"
 	"time"
 
@@ -136,50 +134,33 @@ func TestGracefulBuildCancel(t *testing.T) {
 
 	tests := []struct {
 		description string
-		artifact    *latest.Artifact
+		command     string
 		shouldErr   bool
 	}{
 		{
 			description: "terminate gracefully and exit 0",
-			artifact: &latest.Artifact{
-				ArtifactType: latest.ArtifactType{
-					CustomArtifact: &latest.CustomArtifact{
-						BuildCommand: `bash -c "trap 'echo trap' INT; sleep 2"`,
-					},
-				},
-			},
+			command:     "trap 'echo trap' INT; sleep 2",
 		}, {
 			description: "terminate gracefully and kill process",
-			artifact: &latest.Artifact{
-				ArtifactType: latest.ArtifactType{
-					CustomArtifact: &latest.CustomArtifact{
-						BuildCommand: `bash -c "trap 'echo trap' INT; sleep 5"`,
-					},
-				},
-			},
-			shouldErr: true,
+			command:     "trap 'echo trap' INT; sleep 5",
+			shouldErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&buildCmdFunc, mockBuildCmd)
-
 			builder := NewArtifactBuilder(false, nil)
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 
-			err := builder.Build(ctx, os.Stdout, test.artifact, "image:tag")
+			cmd := exec.Command("bash", "-c", test.command)
+			t.CheckNoError(cmd.Start())
+
+			err := builder.handleGracefulTermination(ctx, cmd)
 			t.CheckError(test.shouldErr, err)
 
 			cancel()
 		})
 	}
-}
-
-func mockBuildCmd(command string) *exec.Cmd {
-	split := strings.Split(command, " ")
-	args := strings.Join(split[2:], " ")
-	return exec.Command(split[0], split[1], args[1:len(args)-1])
 }
 
 func expectedCmd(buildCommand, dir string, args, env []string) *exec.Cmd {
