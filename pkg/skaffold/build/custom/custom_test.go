@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -110,17 +111,6 @@ func TestRetrieveCmd(t *testing.T) {
 			},
 			tag:      "image:tag",
 			expected: expectedCmd("./build.sh", "", []string{"--flag", "--anotherflag"}, []string{"IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT="}),
-		}, {
-			description: "buildcommand with inline bash script",
-			artifact: &latest.Artifact{
-				ArtifactType: latest.ArtifactType{
-					CustomArtifact: &latest.CustomArtifact{
-						BuildCommand: `bash -c "echo 'hello world'"`,
-					},
-				},
-			},
-			tag:      "image:tag",
-			expected: expectedCmd("bash", "", []string{"-c", "echo 'hello world'"}, []string{"IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT="}),
 		},
 	}
 	for _, test := range tests {
@@ -147,7 +137,6 @@ func TestGracefulBuildCancel(t *testing.T) {
 	tests := []struct {
 		description string
 		artifact    *latest.Artifact
-		testEnv     []string
 		shouldErr   bool
 	}{
 		{
@@ -174,18 +163,23 @@ func TestGracefulBuildCancel(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			builder := NewArtifactBuilder(false, test.testEnv)
+			t.Override(&buildCmdFunc, mockBuildCmd)
 
-			for i := 0; i < 10; i++ {
-				ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			builder := NewArtifactBuilder(false, nil)
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 
-				err := builder.Build(ctx, os.Stdout, test.artifact, "image:tag")
-				t.CheckError(test.shouldErr, err)
+			err := builder.Build(ctx, os.Stdout, test.artifact, "image:tag")
+			t.CheckError(test.shouldErr, err)
 
-				cancel()
-			}
+			cancel()
 		})
 	}
+}
+
+func mockBuildCmd(command string) *exec.Cmd {
+	split := strings.Split(command, " ")
+	args := strings.Join(split[2:], " ")
+	return exec.Command(split[0], split[1], args[1:len(args)-1])
 }
 
 func expectedCmd(buildCommand, dir string, args, env []string) *exec.Cmd {

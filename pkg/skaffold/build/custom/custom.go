@@ -37,6 +37,7 @@ import (
 var (
 	// For testing
 	buildContext = retrieveBuildContext
+	buildCmdFunc = buildCmd
 )
 
 // ArtifactBuilder is a builder for custom artifacts
@@ -65,6 +66,10 @@ func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Ar
 		return errors.Wrap(err, "starting cmd")
 	}
 
+	return b.handleGracefulTermination(ctx, cmd)
+}
+
+func (b *ArtifactBuilder) handleGracefulTermination(ctx context.Context, cmd *exec.Cmd) error {
 	done := make(chan struct{})
 	go func() {
 		select {
@@ -93,24 +98,15 @@ func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Ar
 		}
 	}()
 
-	err = cmd.Wait()
+	err := cmd.Wait()
 	close(done)
 	return err
 }
 
 func (b *ArtifactBuilder) retrieveCmd(out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
 	artifact := a.CustomArtifact
-	split := strings.Split(artifact.BuildCommand, " ")
 
-	cmd := exec.Command(split[0], split[1:]...)
-
-	// special case for inline (ba)sh scripts
-	if (split[0] == "bash" || split[0] == "sh") && split[1] == "-c" {
-		args := strings.Join(split[2:], " ")
-
-		cmd = exec.Command(split[0], split[1], args[1:len(args)-1])
-	}
-
+	cmd := buildCmdFunc(artifact.BuildCommand)
 	cmd.Stdout = out
 	cmd.Stderr = out
 
@@ -144,6 +140,11 @@ func (b *ArtifactBuilder) retrieveEnv(a *latest.Artifact, tag string) ([]string,
 	envs = append(envs, b.additionalEnv...)
 	envs = append(envs, util.OSEnviron()...)
 	return envs, nil
+}
+
+func buildCmd(command string) *exec.Cmd {
+	split := strings.Split(command, " ")
+	return exec.Command(split[0], split[1:]...)
 }
 
 func retrieveBuildContext(workspace string) (string, error) {
