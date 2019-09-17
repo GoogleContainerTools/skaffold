@@ -82,28 +82,29 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 					Args:            args,
 					ImagePullPolicy: v1.PullIfNotPresent,
 					Env:             env,
-					VolumeMounts: []v1.VolumeMount{
-						{
-							Name:      constants.DefaultKanikoSecretName,
-							MountPath: "/secret",
-						},
-					},
-					Resources: resourceRequirements(clusterDetails.Resources),
+					Resources:       resourceRequirements(clusterDetails.Resources),
 				},
 			},
 			RestartPolicy: v1.RestartPolicyNever,
-			Volumes: []v1.Volume{{
-				Name: constants.DefaultKanikoSecretName,
-				VolumeSource: v1.VolumeSource{
-					Secret: &v1.SecretVolumeSource{
-						SecretName: clusterDetails.PullSecretName,
-					},
-				},
-			},
-			},
 		},
 	}
+	if clusterDetails.PullSecretName != "" {
+		VolumeMount := v1.VolumeMount{
+			Name:      constants.DefaultKanikoSecretName,
+			MountPath: "/secret",
+		}
+		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, VolumeMount)
+		Volume := v1.Volume{
+			Name: constants.DefaultKanikoSecretName,
+			VolumeSource: v1.VolumeSource{
+				Secret: &v1.SecretVolumeSource{
+					SecretName: clusterDetails.PullSecretName,
+				},
+			},
+		}
 
+		pod.Spec.Volumes = append(pod.Spec.Volumes, Volume)
+	}
 	if artifact.Cache != nil && artifact.Cache.HostPath != "" {
 		volumeMount := v1.VolumeMount{
 			Name:      constants.DefaultKanikoCacheDirName,
