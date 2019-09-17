@@ -60,22 +60,23 @@ Once you've done this, clone your fork to your local machine:
 
 Some changes to the skaffold code require a change to the skaffold config. These changes require a few extra steps:
 
-* Check to see what the latest config version was at the time of the last release. The easiest way to do this is to view the skaffold source on github at the last released tag.
+* Make your config change.
 
-* Check the current config version in the code. This can be found in `pkg/skaffold/schema/latest/config.go`: look for something like
+* Run `./hack/check-schema-changes.sh` if the latest config version is part of the last release.
 
-```golang
-const Version string = "skaffold/v1betaXX"
-```
-* If the config versions are different, do nothing. Somebody has already bumped the config version for this release cycle.
+* If the script passes, do nothing. Somebody has already bumped the config version for this release cycle.
 
-* **If the config versions are the same**:
+* **If the script fails**:
 
-  * Run `./hack/new_version.sh` to freeze the current config version and cut a new version.
+  * Save your changes. 
+  
+  * In a new branch, run `./hack/new_version.sh` to release a new version.
 
+  * Run `make test` to verify changes.
+  
   * Commit these generated changes, and submit a PR.
 
-Once you've done this, continue making your changes locally, including the new config change.
+Once you've done this, merge or rebase your development branch with config changes, including the new config change.
 **Any new config changes belong in pkg/skaffold/schema/latest/config.go. Do not edit the older config versions.**
 
 * Be sure and update the documentation in `pkg/skaffold/schema/<previous_config_version>/upgrade.go` with any additions, removals, or updates you make to the config.
