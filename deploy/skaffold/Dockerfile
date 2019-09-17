@@ -70,7 +70,7 @@ RUN chmod +x bazel
 
 # Download pack
 FROM alpine:3.10 as download-pack
-ENV PACK_VERSION 0.4.0
+ENV PACK_VERSION 0.4.1
 RUN wget https://github.com/buildpack/pack/releases/download/v${PACK_VERSION}/pack-v${PACK_VERSION}-linux.tgz
 RUN tar xvf pack-v${PACK_VERSION}-linux.tgz
 RUN rm pack-v${PACK_VERSION}-linux.tgz
