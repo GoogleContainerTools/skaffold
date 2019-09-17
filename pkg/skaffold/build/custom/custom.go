@@ -81,11 +81,11 @@ func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Ar
 				cmd.Process.Kill()
 			}
 
-			// wait 30 seconds or wait for the process to complete
+			// wait 2 seconds or wait for the process to complete
 			select {
-			case <-time.After(30 * time.Second):
+			case <-time.After(2 * time.Second):
 				logrus.Debugf("Killing process %v\n", cmd.Process.Pid)
-				// forcefully kill process after 30 seconds grace period
+				// forcefully kill process after 2 seconds grace period
 				cmd.Process.Kill()
 			case <-done:
 			}
