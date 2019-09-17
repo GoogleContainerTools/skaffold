@@ -157,6 +157,21 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
+// determine if we are using helm version 3
+func (h *HelmDeployer) isHelmV3(ctx context.Context) (bool, error) {
+	buf := &bytes.Buffer{}
+	if err := h.helm(ctx, buf, false, "version", "--short"); err != nil {
+		return false, errors.Wrap(err, "detecting helm version")
+	}
+	helm3 := buf.String()[:2] == "v3"
+	if helm3 {
+		logrus.Infof("Detected helm version 3")
+	} else {
+		logrus.Infof("Detected helm version <3")
+	}
+	return helm3, nil
+}
+
 func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, useSecrets bool, arg ...string) error {
 	args := append([]string{"--kube-context", h.kubeContext}, arg...)
 	args = append(args, h.Flags.Global...)
@@ -196,9 +211,18 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		}
 	}
 
+	helmV3, err := h.isHelmV3(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot get helm version")
+	}
+
 	var args []string
 	if !isInstalled {
-		args = append(args, "install", "--name", releaseName)
+		args = append(args, "install")
+		if !helmV3 {
+			args = append(args, "--name")
+		} // else helm v3 and the name is a positional argument (not a named optional argument)
+		args = append(args, releaseName)
 		args = append(args, h.Flags.Install...)
 	} else {
 		args = append(args, "upgrade", releaseName)
@@ -457,7 +481,15 @@ func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r lates
 		return errors.Wrap(err, "cannot parse the release name template")
 	}
 
-	if err := h.helm(ctx, out, false, "delete", releaseName, "--purge"); err != nil {
+	helmV3, err := h.isHelmV3(ctx)
+	if err != nil {
+		return errors.Wrap(err, "cannot get helm version")
+	}
+	args := []string{"delete", releaseName}
+	if !helmV3 {
+		args = append(args, "--purge")
+	}
+	if err := h.helm(ctx, out, false, args...); err != nil {
 		logrus.Debugf("deleting release %s: %v\n", releaseName, err)
 	}
 
