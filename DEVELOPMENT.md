@@ -62,13 +62,13 @@ Some changes to the skaffold code require a change to the skaffold config. These
 
 * Make your config change.
 
-* Run `./hack/check-schema-changes.sh` if the latest config version is part of the last release.
+* Run `./hack/check-schema-changes.sh` to see if config version is bumped since the last release.
 
 * If the script passes, do nothing. Somebody has already bumped the config version for this release cycle.
 
 * **If the script fails**:
 
-  * Save your changes. 
+  * Commit your changes. 
   
   * In a new branch, run `./hack/new_version.sh` to release a new version.
 
