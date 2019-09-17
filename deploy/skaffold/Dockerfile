@@ -68,6 +68,14 @@ ENV BAZEL_URL https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERS
 RUN wget -O bazel "${BAZEL_URL}"
 RUN chmod +x bazel
 
+# Download pack
+FROM alpine:3.10 as download-pack
+ENV PACK_VERSION 0.4.1
+RUN wget https://github.com/buildpack/pack/releases/download/v${PACK_VERSION}/pack-v${PACK_VERSION}-linux.tgz
+RUN tar xvf pack-v${PACK_VERSION}-linux.tgz
+RUN rm pack-v${PACK_VERSION}-linux.tgz
+RUN chmod +x pack
+
 FROM gcr.io/gcp-runtimes/ubuntu_16_0_4 as runtime_deps
 
 RUN apt-get update && \
@@ -83,6 +91,7 @@ COPY --from=download-kompose kompose /usr/local/bin/
 COPY --from=download-container-structure-test container-structure-test /usr/local/bin/
 COPY --from=download-bazel bazel /usr/local/bin/
 COPY --from=download-gcloud google-cloud-sdk/ /google-cloud-sdk/
+COPY --from=download-pack pack /usr/local/bin/
 
 # Finish installation of bazel
 RUN bazel version
