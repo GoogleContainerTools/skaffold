@@ -38,6 +38,10 @@ type Deployer interface {
 
 	// Cleanup deletes what was deployed by calling Deploy.
 	Cleanup(context.Context, io.Writer) error
+
+	// Render generates the Kubernetes manifests replacing the build results and
+	// writes them to the given file path
+	Render(context.Context, io.Writer, []build.Artifact, string) error
 }
 
 type Result struct {

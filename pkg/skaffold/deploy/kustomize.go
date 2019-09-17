@@ -85,6 +85,7 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 		},
 		defaultRepo:        runCtx.DefaultRepo,
 		insecureRegistries: runCtx.InsecureRegistries,
+		BuildArgs:          runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
 	}
 }
 
@@ -165,6 +166,10 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 // Dependencies lists all the files that can change what needs to be deployed.
 func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 	return dependenciesForKustomization(k.KustomizePath)
+}
+
+func (k *KustomizeDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {
+	return errors.New("not yet implemented")
 }
 
 func dependenciesForKustomization(dir string) ([]string, error) {

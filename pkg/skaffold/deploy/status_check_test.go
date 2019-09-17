@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -257,10 +258,16 @@ func TestGetDeployStatus(t *testing.T) {
 		{
 			description: "one error",
 			deps: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", time.Second).
-					WithStatus("success", nil),
-				resource.NewDeployment("dep2", "test", time.Second).
-					WithStatus("error", errors.New("could not return within default timeout")),
+				withStatus(
+					resource.NewDeployment("dep1", "test", time.Second),
+					"success",
+					nil,
+				),
+				withStatus(
+					resource.NewDeployment("dep2", "test", time.Second),
+					"error",
+					errors.New("could not return within default timeout"),
+				),
 			},
 			expectedErrMsg: []string{"dep2 failed due to could not return within default timeout"},
 			shouldErr:      true,
@@ -268,21 +275,35 @@ func TestGetDeployStatus(t *testing.T) {
 		{
 			description: "no error",
 			deps: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", time.Second).
-					WithStatus("success", nil),
-				resource.NewDeployment("dep2", "test", time.Second).
-					WithStatus("running", nil),
+				withStatus(
+					resource.NewDeployment("dep1", "test", time.Second),
+					"success",
+					nil,
+				),
+				withStatus(resource.NewDeployment("dep2", "test", time.Second),
+					"running",
+					nil,
+				),
 			},
 		},
 		{
 			description: "multiple errors",
 			deps: []*resource.Deployment{
-				resource.NewDeployment("dep1", "test", time.Second).
-					WithStatus("success", nil),
-				resource.NewDeployment("dep2", "test", time.Second).
-					WithStatus("error", errors.New("could not return within default timeout")),
-				resource.NewDeployment("dep3", "test", time.Second).
-					WithStatus("error", errors.New("ERROR")),
+				withStatus(
+					resource.NewDeployment("dep1", "test", time.Second),
+					"success",
+					nil,
+				),
+				withStatus(
+					resource.NewDeployment("dep2", "test", time.Second),
+					"error",
+					errors.New("could not return within default timeout"),
+				),
+				withStatus(
+					resource.NewDeployment("dep3", "test", time.Second),
+					"error",
+					errors.New("ERROR"),
+				),
 			},
 			expectedErrMsg: []string{"dep2 failed due to could not return within default timeout",
 				"dep3 failed due to ERROR"},
@@ -383,8 +404,97 @@ func TestPrintSummaryStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			printStatusCheckSummary(resource.NewDeployment("dep", "test", 0), int(test.pending), 10, test.err, out)
+			printStatusCheckSummary(
+				out,
+				withStatus(resource.NewDeployment("dep", "test", 0), "", test.err),
+				int(test.pending),
+				10,
+			)
 			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
+}
+
+func TestPrintStatus(t *testing.T) {
+	tests := []struct {
+		description string
+		rs          []*resource.Deployment
+		expectedOut string
+		expected    bool
+	}{
+		{
+			description: "single resource successful marked complete - skip print",
+			rs: []*resource.Deployment{
+				withDone(
+					resource.NewDeployment("r1", "test", 1),
+					"success",
+					nil,
+				),
+			},
+			expected: true,
+		},
+		{
+			description: "single resource in error marked complete -skip print",
+			rs: []*resource.Deployment{
+				withDone(
+					resource.NewDeployment("r1", "test", 1),
+					"error",
+					fmt.Errorf("error"),
+				),
+			},
+			expected: true,
+		},
+		{
+			description: "multiple resources 1 not complete",
+			rs: []*resource.Deployment{
+				withDone(
+					resource.NewDeployment("r1", "test", 1),
+					"succes",
+					nil,
+				),
+				withStatus(
+					resource.NewDeployment("r2", "test", 1),
+					"pending",
+					nil,
+				),
+			},
+			expectedOut: " - test:deployment/r2 pending\n",
+		},
+		{
+			description: "multiple resources 1 not complete and in error",
+			rs: []*resource.Deployment{
+				withDone(
+					resource.NewDeployment("r1", "test", 1),
+					"succes",
+					nil,
+				),
+				withStatus(
+					resource.NewDeployment("r2", "test", 1),
+					"",
+					fmt.Errorf("context deadline expired"),
+				),
+			},
+			expectedOut: " - test:deployment/r2 context deadline expired\n",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			out := new(bytes.Buffer)
+			actual := printStatus(test.rs, out)
+			t.CheckDeepEqual(test.expectedOut, out.String())
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+func withDone(d *resource.Deployment, details string, err error) *resource.Deployment {
+	d.UpdateStatus(details, err)
+	d.MarkDone()
+	return d
+}
+
+func withStatus(d *resource.Deployment, details string, err error) *resource.Deployment {
+	d.UpdateStatus(details, err)
+	return d
 }
