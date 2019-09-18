@@ -238,6 +238,7 @@ When you have changes you would like to propose to skaffold, you will need to:
 1. Ensure the commit message(s) describe what issue you are fixing and how you are fixing it
    (include references to [issue numbers](https://help.github.com/articles/closing-issues-using-keywords/)
    if appropriate)
+1. Add unit tests. Unit test coverage should increase or stay the same with every PR.
 1. [Create a pull request](https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
 
 ### Reviews
