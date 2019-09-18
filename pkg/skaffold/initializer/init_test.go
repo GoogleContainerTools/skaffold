@@ -498,3 +498,44 @@ func TestProcessCliArtifacts(t *testing.T) {
 		})
 	}
 }
+
+func Test_canonicalizeName(t *testing.T) {
+	const length253 = "aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa-aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa-aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaa"
+	tests := []struct {
+		in, out string
+	}{
+		{
+			in:  "abc def",
+			out: "abc-def",
+		},
+		{
+			in:  "abc    def",
+			out: "abc-def",
+		},
+		{
+			in:  "abc...def",
+			out: "abc...def",
+		},
+		{
+			in:  "abc---def",
+			out: "abc---def",
+		},
+		{
+			in:  "aBc DeF",
+			out: "abc-def",
+		},
+		{
+			in:  length253 + "XXXXXXX",
+			out: length253,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.in, func(t *testing.T) {
+			actual := canonicalizeName(test.in)
+			if actual != test.out {
+				t.Errorf("%s: expected %s, found %s", test.in, test.out, actual)
+			}
+		})
+	}
+}
