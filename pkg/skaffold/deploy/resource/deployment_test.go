@@ -89,7 +89,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 			}
 
 			r.CheckStatus(context.Background(), runCtx)
-			t.CheckDeepEqual(test.complete, r.IsStatusComplete())
+			t.CheckDeepEqual(test.complete, r.IsStatusCheckComplete())
 			if test.expectedErr != "" {
 				t.CheckErrorContains(test.expectedErr, r.Status().Error())
 			} else {

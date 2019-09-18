@@ -126,7 +126,7 @@ func pollResourceStatus(ctx context.Context, runCtx *runcontext.RunContext, r Re
 			return
 		case <-time.After(pollDuration):
 			r.CheckStatus(timeoutContext, runCtx)
-			if r.IsStatusComplete() {
+			if r.IsStatusCheckComplete() {
 				return
 			}
 		}
@@ -188,7 +188,7 @@ func printResourceStatus(ctx context.Context, out io.Writer, resources []Resourc
 func printStatus(resources []Resource, out io.Writer) bool {
 	allResourcesCheckComplete := true
 	for _, r := range resources {
-		if r.IsStatusComplete() {
+		if r.IsStatusCheckComplete() {
 			continue
 		}
 		allResourcesCheckComplete = false

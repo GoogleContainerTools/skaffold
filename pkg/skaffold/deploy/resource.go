@@ -39,8 +39,8 @@ type Resource interface {
 	// UpdateStatus updates the resource status
 	UpdateStatus(string, error)
 
-	// IsStatusComplete returns if the resource status check is complete
-	IsStatusComplete() bool
+	// IsStatusCheckComplete returns if the resource status check is complele
+	IsStatusCheckComplete() bool
 
 	// Deadline returns the deadline for the resource
 	Deadline() time.Duration
