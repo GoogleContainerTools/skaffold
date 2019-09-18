@@ -219,7 +219,7 @@ func (m *mockResource) Deadline() time.Duration {
 func (m *mockResource) CheckStatus(context.Context, *runcontext.RunContext) {
 }
 
-func (m *mockResource) IsStatusComplete() bool {
+func (m *mockResource) IsStatusCheckComplete() bool {
 	return m.done
 }
 

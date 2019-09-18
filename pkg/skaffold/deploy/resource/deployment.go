@@ -74,7 +74,7 @@ func (d *Deployment) UpdateStatus(details string, err error) {
 	}
 }
 
-func (d *Deployment) IsStatusComplete() bool {
+func (d *Deployment) IsStatusCheckComplete() bool {
 	return d.done
 }
 
