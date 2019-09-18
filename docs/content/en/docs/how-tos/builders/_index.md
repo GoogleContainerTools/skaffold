@@ -16,6 +16,7 @@ Skaffold supports the following tools to build your image:
 * [Jib](https://github.com/GoogleContainerTools/jib) Maven and Gradle projects locally
 * [Jib](https://github.com/GoogleContainerTools/jib) remotely with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
 * Custom build script run locally
+* [Building with CNCF Buildpacks](../buildpacks)
 
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how artifacts are built. To use a specific tool for building
