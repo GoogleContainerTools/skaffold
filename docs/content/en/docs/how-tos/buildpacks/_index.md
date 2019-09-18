@@ -33,6 +33,8 @@ Set the default buildpack to one that can build Go applications:
 $ pack set-default-builder heroku/buildpacks
 ```
 
+
+
 Take a look at the `build.sh` file, which uses `pack` to containerize source code with buildpacks:
 
 ```shell
@@ -70,13 +72,14 @@ deploy:
     manifests:
       - k8s-*
 ```
+For more information about how this works, see the Skaffold custom builder [documentation](https://skaffold.dev/docs/how-tos/builders/#custom-build-script-run-locally).
 
 Now, use Skaffold to deploy this application to your Kubernetes cluster:
 
 ```shell
 $ skaffold run --tail --default-repo <your repo>
 ```
-With this command, Skaffold will build `gcr.io/k8s-skaffold/skaffold-example` with buildpacks and deploy the application to Kubernetes.
+With this command, Skaffold will build the `skaffold-example` artifact with buildpacks and deploy the application to Kubernetes.
 You should be able to see "Hello, World!" printed every second in the Skaffold logs.
 
 To clean up your Kubernetes cluster, run:
