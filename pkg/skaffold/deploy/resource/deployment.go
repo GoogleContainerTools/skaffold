@@ -17,12 +17,26 @@ limitations under the License.
 package resource
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
 const (
-	deploymentType = "deployment"
+	deploymentType   = "deployment"
+	rollOutSuccess   = "successfully rolled out"
+	connectionErrMsg = "Unable to connect to the server"
+	killedErrMsg     = "signal: killed"
+)
+
+var (
+	errKubectlKilled     = errors.New("kubectl rollout status command killed")
+	ErrKubectlConnection = errors.New("kubectl connection error")
 )
 
 type Deployment struct {
@@ -54,15 +68,14 @@ func (d *Deployment) UpdateStatus(details string, err error) {
 	updated := newStatus(details, err)
 	if !d.status.Equal(updated) {
 		d.status = updated
+		if strings.Contains(details, rollOutSuccess) || isErrAndNotRetryAble(err) {
+			d.done = true
+		}
 	}
 }
 
-func (d *Deployment) IsDone() bool {
+func (d *Deployment) IsStatusCheckComplete() bool {
 	return d.done
-}
-
-func (d *Deployment) MarkDone() {
-	d.done = true
 }
 
 func (d *Deployment) ReportSinceLastUpdated() string {
@@ -73,6 +86,13 @@ func (d *Deployment) ReportSinceLastUpdated() string {
 	return fmt.Sprintf("%s %s", d, d.status)
 }
 
+func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunContext) {
+	cli := kubectl.NewFromRunContext(runCtx)
+	b, err := cli.RunOut(ctx, "rollout", "status", "deployment", d.name, "--namespace", d.namespace, "--watch=false")
+	err = parseKubectlRolloutError(err)
+	d.UpdateStatus(string(b), err)
+}
+
 func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 	return &Deployment{
 		name:      name,
@@ -81,4 +101,24 @@ func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 		deadline:  deadline,
 		status:    newStatus("", nil),
 	}
+}
+
+func parseKubectlRolloutError(err error) error {
+	if err == nil {
+		return err
+	}
+	if strings.Contains(err.Error(), connectionErrMsg) {
+		return ErrKubectlConnection
+	}
+	if strings.Contains(err.Error(), killedErrMsg) {
+		return errKubectlKilled
+	}
+	return err
+}
+
+func isErrAndNotRetryAble(err error) bool {
+	if err == nil {
+		return false
+	}
+	return err != ErrKubectlConnection
 }
