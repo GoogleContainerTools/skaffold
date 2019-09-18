@@ -34,8 +34,6 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 		return func() {}, nil
 	}
 
-	color.Default.Fprintf(out, "Creating kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
-
 	client, err := kubernetes.Client()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting kubernetes client")
@@ -53,6 +51,14 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 		return func() {}, nil
 	}
 
+	if _, err := secrets.Get(b.PullSecretName, metav1.GetOptions{}); err == nil {
+		logrus.Infof("Deleting existing %s secret", b.PullSecretName)
+		if err := secrets.Delete(b.PullSecretName, &metav1.DeleteOptions{}); err != nil {
+			logrus.Warnf("error deleting pull secret %s, %s", b.PullSecretName, err)
+		}
+	}
+
+	color.Default.Fprintf(out, "Creating kaniko secret [%s]...\n", b.PullSecretName)
 	secretData, err := ioutil.ReadFile(b.PullSecret)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading pull secret")
@@ -74,7 +80,7 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 
 	return func() {
 		if err := secrets.Delete(b.PullSecretName, &metav1.DeleteOptions{}); err != nil {
-			logrus.Warnf("deleting pull secret")
+			logrus.Warnf("error deleting pull secret %s, %s", b.PullSecretName, err)
 		}
 	}, nil
 }
@@ -83,8 +89,6 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 	if b.DockerConfig == nil {
 		return func() {}, nil
 	}
-
-	color.Default.Fprintf(out, "Creating docker config secret [%s]...\n", b.DockerConfig.SecretName)
 
 	client, err := kubernetes.Client()
 	if err != nil {
@@ -103,6 +107,14 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 		return func() {}, nil
 	}
 
+	if _, err := secrets.Get(b.DockerConfig.SecretName, metav1.GetOptions{}); err == nil {
+		logrus.Infof("Deleting existing docker config %s secret", b.DockerConfig.SecretName)
+		if err := secrets.Delete(b.DockerConfig.SecretName, &metav1.DeleteOptions{}); err != nil {
+			logrus.Warnf("error deleting docker config secret %s, %s", b.DockerConfig.SecretName, err)
+		}
+	}
+
+	color.Default.Fprintf(out, "Creating docker config secret [%s]...\n", b.DockerConfig.SecretName)
 	secretData, err := ioutil.ReadFile(b.DockerConfig.Path)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading docker config")
@@ -124,7 +136,7 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 
 	return func() {
 		if err := secrets.Delete(b.DockerConfig.SecretName, &metav1.DeleteOptions{}); err != nil {
-			logrus.Warnf("deleting docker config secret")
+			logrus.Warnf("error deleting docker config secret %s, %s", b.DockerConfig.SecretName, err)
 		}
 	}, nil
 }
