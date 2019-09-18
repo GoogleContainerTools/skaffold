@@ -73,11 +73,11 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	for _, d := range deployments {
 		wg.Add(1)
-		go func(d Resource) {
+		go func(r Resource) {
 			defer wg.Done()
-			pollResourceStatus(ctx, runCtx, d)
+			pollResourceStatus(ctx, runCtx, r)
 			pending := c.markProcessed()
-			printStatusCheckSummary(out, d, pending, c.total)
+			printStatusCheckSummary(out, r, pending, c.total)
 		}(d)
 	}
 

@@ -20,10 +20,6 @@ import (
 	"fmt"
 )
 
-const (
-	TimeoutExceededError = "resource status could not be fetched within deadline %s"
-)
-
 type Base struct {
 	name      string
 	namespace string
@@ -44,7 +40,7 @@ func (b *Base) Status() Status {
 	return b.status
 }
 
-func (b *Base) IsStatusComplete() bool {
+func (b *Base) IsStatusCheckComplete() bool {
 	return b.done
 }
 
