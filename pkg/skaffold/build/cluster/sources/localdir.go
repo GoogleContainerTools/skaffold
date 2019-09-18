@@ -21,18 +21,18 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 const (
@@ -44,6 +44,7 @@ const (
 type LocalDir struct {
 	artifact       *latest.KanikoArtifact
 	clusterDetails *latest.ClusterDetails
+	kubectl        *kubectl.CLI
 	tarPath        string
 }
 
@@ -83,9 +84,10 @@ func (g *LocalDir) Pod(args []string) *v1.Pod {
 		Image:        g.artifact.BuildContext.LocalDir.InitImage,
 		Command:      []string{"sh", "-c", "while [ ! -f /tmp/complete ]; do sleep 1; done"},
 		VolumeMounts: []v1.VolumeMount{vm},
+		Resources:    resourceRequirements(g.clusterDetails.Resources),
 	}
 
-	p := podTemplate(g.clusterDetails, g.artifact.Image, args)
+	p := podTemplate(g.clusterDetails, g.artifact, args, version.Get().Version)
 	p.Spec.InitContainers = []v1.Container{ic}
 	p.Spec.Containers[0].VolumeMounts = append(p.Spec.Containers[0].VolumeMounts, vm)
 	p.Spec.Volumes = append(p.Spec.Volumes, v)
@@ -96,10 +98,11 @@ func (g *LocalDir) Pod(args []string) *v1.Pod {
 // Via kubectl exec, we extract the tarball to the empty dir
 // Then, via kubectl exec, create the /tmp/complete file via kubectl exec to complete the init container
 func (g *LocalDir) ModifyPod(ctx context.Context, p *v1.Pod) error {
-	client, err := kubernetes.GetClientset()
+	client, err := kubernetes.Client()
 	if err != nil {
-		return errors.Wrap(err, "getting clientset")
+		return errors.Wrap(err, "getting kubernetes client")
 	}
+
 	if err := kubernetes.WaitForPodInitialized(ctx, client.CoreV1().Pods(p.Namespace), p.Name); err != nil {
 		return errors.Wrap(err, "waiting for pod to initialize")
 	}
@@ -111,14 +114,12 @@ func (g *LocalDir) ModifyPod(ctx context.Context, p *v1.Pod) error {
 	defer f.Close()
 
 	// Copy the context to the empty dir and extract it
-	copyAndExtract := exec.CommandContext(ctx, "kubectl", "exec", "-i", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "tar", "-xzf", "-", "-C", constants.DefaultKanikoEmptyDirMountPath)
-	copyAndExtract.Stdin = f
-	if err := util.RunCmd(copyAndExtract); err != nil {
+	err = g.kubectl.Run(ctx, f, nil, "exec", "-i", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "tar", "-xzf", "-", "-C", constants.DefaultKanikoEmptyDirMountPath)
+	if err != nil {
 		return errors.Wrap(err, "copying and extracting buildcontext to empty dir")
 	}
 	// Generate a file to successfully terminate the init container
-	file := exec.CommandContext(ctx, "kubectl", "exec", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "touch", "/tmp/complete")
-	return util.RunCmd(file)
+	return g.kubectl.Run(ctx, nil, nil, "exec", p.Name, "-c", initContainer, "-n", p.Namespace, "--", "touch", "/tmp/complete")
 }
 
 // Cleanup deletes the buildcontext tarball stored on the local filesystem

@@ -17,25 +17,18 @@ limitations under the License.
 package testutil
 
 import (
-	"testing"
-
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 // SetupFakeKubernetesContext replaces the current kubernetes configuration
 // file to setup a fixed current context.
-func SetupFakeKubernetesContext(t *testing.T, config api.Config) func() {
-	kubeConfig, cleanup := TempFile(t, "config", []byte{})
+func (t *T) SetupFakeKubernetesContext(config api.Config) {
+	kubeConfig := t.TempFile("config", []byte{})
 
 	if err := clientcmd.WriteToFile(config, kubeConfig); err != nil {
 		t.Fatalf("writing temp kubeconfig")
 	}
 
-	unsetEnvs := SetEnvs(t, map[string]string{"KUBECONFIG": kubeConfig})
-
-	return func() {
-		cleanup()
-		unsetEnvs(t)
-	}
+	t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
 }

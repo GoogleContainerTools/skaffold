@@ -17,19 +17,14 @@ limitations under the License.
 package event
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/pkg/errors"
-	"google.golang.org/grpc"
 )
 
 const (
@@ -37,15 +32,10 @@ const (
 	InProgress = "In Progress"
 	Complete   = "Complete"
 	Failed     = "Failed"
+	Info       = "Information"
 )
 
-var (
-	handler    *eventHandler
-	once       sync.Once
-	pluginMode bool
-
-	cli proto.SkaffoldServiceClient // for plugin RPC connections
-)
+var handler = &eventHandler{}
 
 type eventHandler struct {
 	eventLog []proto.LogEntry
@@ -54,13 +44,29 @@ type eventHandler struct {
 	state     proto.State
 	stateLock sync.Mutex
 
-	listeners []listener
+	listeners []*listener
 }
 
 type listener struct {
 	callback func(*proto.LogEntry) error
 	errors   chan error
 	closed   bool
+}
+
+func GetState() (*proto.State, error) {
+	state := handler.getState()
+	return &state, nil
+}
+
+func ForEachEvent(callback func(*proto.LogEntry) error) error {
+	return handler.forEachEvent(callback)
+}
+
+func Handle(event *proto.Event) error {
+	if event != nil {
+		handler.handle(event)
+	}
+	return nil
 }
 
 func (ev *eventHandler) getState() proto.State {
@@ -94,7 +100,7 @@ func (ev *eventHandler) logEvent(entry proto.LogEntry) {
 }
 
 func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error {
-	listener := listener{
+	listener := &listener{
 		callback: callback,
 		errors:   make(chan error),
 	}
@@ -117,12 +123,10 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(build *latest.BuildConfig) proto.State {
+func emptyState(build latest.BuildConfig) proto.State {
 	builds := map[string]string{}
-	if build != nil {
-		for _, a := range build.Artifacts {
-			builds[a.ImageName] = NotStarted
-		}
+	for _, a := range build.Artifacts {
+		builds[a.ImageName] = NotStarted
 	}
 
 	return proto.State{
@@ -132,40 +136,13 @@ func emptyState(build *latest.BuildConfig) proto.State {
 		DeployState: &proto.DeployState{
 			Status: NotStarted,
 		},
-		ForwardedPorts: make(map[string]*proto.PortEvent),
+		ForwardedPorts: make(map[int32]*proto.PortEvent),
 	}
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-// It returns a shutdown callback for tearing down the grpc server, which the runner is responsible for calling.
-// This function can only be called once.
-func InitializeState(runCtx *runcontext.RunContext) (func() error, error) {
-	var err error
-	serverShutdown := func() error { return nil }
-	once.Do(func() {
-		handler = &eventHandler{
-			state: emptyState(&runCtx.Cfg.Build),
-		}
-
-		if runCtx.Opts.EnableRPC {
-			serverShutdown, err = newStatusServer(runCtx.Opts.RPCPort, runCtx.Opts.RPCHTTPPort)
-			if err != nil {
-				err = errors.Wrap(err, "creating status server")
-				return
-			}
-		}
-	})
-	return serverShutdown, err
-}
-
-func SetupRPCClient(opts *config.SkaffoldOptions) error {
-	pluginMode = true
-	conn, err := grpc.Dial(fmt.Sprintf(":%d", opts.RPCPort), grpc.WithInsecure())
-	if err != nil {
-		return errors.Wrap(err, "opening gRPC connection to remote skaffold process")
-	}
-	cli = proto.NewSkaffoldServiceClient(conn)
-	return nil
+func InitializeState(build latest.BuildConfig) {
+	handler.setState(emptyState(build))
 }
 
 // DeployInProgress notifies that a deployment has been started.
@@ -173,9 +150,14 @@ func DeployInProgress() {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: InProgress})
 }
 
-// DeployFailed notifies that a deployment has failed.
+// DeployFailed notifies that non-fatal errors were encountered during a deployment.
 func DeployFailed(err error) {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error()})
+}
+
+// DeployEvent notifies that a deployment of non fatal interesting errors during deploy.
+func DeployInfoEvent(err error) {
+	handler.handleDeployEvent(&proto.DeployEvent{Status: Info, Err: err.Error()})
 }
 
 // DeployComplete notifies that a deployment has completed.
@@ -199,8 +181,8 @@ func BuildComplete(imageName string) {
 }
 
 // PortForwarded notifies that a remote port has been forwarded locally.
-func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string, portName string) {
-	handler.doHandle(&proto.Event{
+func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string, portName string, resourceType, resourceName string) {
+	go handler.handle(&proto.Event{
 		EventType: &proto.Event_PortEvent{
 			PortEvent: &proto.PortEvent{
 				LocalPort:     localPort,
@@ -209,13 +191,21 @@ func PortForwarded(localPort, remotePort int32, podName, containerName, namespac
 				ContainerName: containerName,
 				Namespace:     namespace,
 				PortName:      portName,
+				ResourceType:  resourceType,
+				ResourceName:  resourceName,
 			},
 		},
 	})
 }
 
+func (ev *eventHandler) setState(state proto.State) {
+	ev.stateLock.Lock()
+	ev.state = state
+	ev.stateLock.Unlock()
+}
+
 func (ev *eventHandler) handleDeployEvent(e *proto.DeployEvent) {
-	ev.doHandle(&proto.Event{
+	go ev.handle(&proto.Event{
 		EventType: &proto.Event_DeployEvent{
 			DeployEvent: e,
 		},
@@ -223,19 +213,11 @@ func (ev *eventHandler) handleDeployEvent(e *proto.DeployEvent) {
 }
 
 func (ev *eventHandler) handleBuildEvent(e *proto.BuildEvent) {
-	ev.doHandle(&proto.Event{
+	go ev.handle(&proto.Event{
 		EventType: &proto.Event_BuildEvent{
 			BuildEvent: e,
 		},
 	})
-}
-
-func (ev *eventHandler) doHandle(event *proto.Event) {
-	if pluginMode {
-		go cli.Handle(context.Background(), event)
-	} else {
-		go ev.handle(event)
-	}
 }
 
 func LogSkaffoldMetadata(info *version.Info) {
@@ -291,7 +273,7 @@ func (ev *eventHandler) handle(event *proto.Event) {
 	case *proto.Event_PortEvent:
 		pe := e.PortEvent
 		ev.stateLock.Lock()
-		ev.state.ForwardedPorts[pe.ContainerName] = pe
+		ev.state.ForwardedPorts[pe.LocalPort] = pe
 		ev.stateLock.Unlock()
 		logEntry.Entry = fmt.Sprintf("Forwarding container %s to local port %d", pe.ContainerName, pe.LocalPort)
 	default:

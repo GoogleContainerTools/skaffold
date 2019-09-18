@@ -108,16 +108,14 @@ kind: Config
 			shouldErr:   true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			cfgFile, teardown := testutil.TempFile(t, "config", []byte(test.inputYaml))
-			defer teardown()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfgFile := t.TempFile("config", []byte(test.inputYaml))
 
 			var b bytes.Buffer
 			err := fix(&b, cfgFile, false)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.output, b.String())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.output, b.String())
 		})
 	}
 }
@@ -156,13 +154,15 @@ deploy:
     - k8s/deployment.yaml
 `, latest.Version)
 
-	cfgFile, teardown := testutil.TempFile(t, "config", []byte(inputYaml))
-	defer teardown()
+	testutil.Run(t, "", func(t *testutil.T) {
+		cfgFile := t.TempFile("config", []byte(inputYaml))
 
-	var b bytes.Buffer
-	err := fix(&b, cfgFile, true)
+		var b bytes.Buffer
+		err := fix(&b, cfgFile, true)
 
-	output, _ := ioutil.ReadFile(cfgFile)
+		output, _ := ioutil.ReadFile(cfgFile)
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, expectedOutput, string(output))
+		t.CheckNoError(err)
+		t.CheckDeepEqual(expectedOutput, string(output))
+	})
 }

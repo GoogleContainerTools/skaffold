@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
@@ -48,12 +49,12 @@ type LocalDaemon interface {
 	Pull(ctx context.Context, out io.Writer, ref string) error
 	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
 	Tag(ctx context.Context, image, ref string) error
+	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
 	ImageID(ctx context.Context, ref string) (string, error)
 	ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error)
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
-	RepoDigest(ctx context.Context, ref string) (string, error)
-	ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error)
 	ImageExists(ctx context.Context, ref string) bool
+	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error
 }
 
 type localDaemon struct {
@@ -139,6 +140,11 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
 	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
 
+	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to evaluate build args")
+	}
+
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
 		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a, l.insecureRegistries)
@@ -155,12 +161,12 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	resp, err := l.apiClient.ImageBuild(ctx, body, types.ImageBuildOptions{
 		Tags:        []string{ref},
 		Dockerfile:  a.DockerfilePath,
-		BuildArgs:   a.BuildArgs,
+		BuildArgs:   buildArgs,
 		CacheFrom:   a.CacheFrom,
 		AuthConfigs: authConfigs,
 		Target:      a.Target,
 		ForceRemove: l.forceRemove,
-		NetworkMode: a.NetworkMode,
+		NetworkMode: strings.ToLower(a.NetworkMode),
 		NoCache:     a.NoCache,
 	})
 	if err != nil {
@@ -183,7 +189,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	}
 
 	if err := streamDockerMessages(out, resp.Body, auxCallback); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "unable to stream build output")
 	}
 
 	if imageID == "" {
@@ -289,6 +295,21 @@ func (l *localDaemon) Tag(ctx context.Context, image, ref string) error {
 	return l.apiClient.ImageTag(ctx, image, ref)
 }
 
+// For k8s, we need a unique, immutable ID for the image.
+// k8s doesn't recognize the imageID or any combination of the image name
+// suffixed with the imageID, as a valid image name.
+// So, the solution we chose is to create a tag, just for Skaffold, from
+// the imageID, and use that in the manifests.
+func (l *localDaemon) TagWithImageID(ctx context.Context, ref string, imageID string) (string, error) {
+	uniqueTag := ref + ":" + strings.TrimPrefix(imageID, "sha256:")
+
+	if err := l.Tag(ctx, imageID, uniqueTag); err != nil {
+		return "", err
+	}
+
+	return uniqueTag, nil
+}
+
 // ImageID returns the image ID for a corresponding reference.
 func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 	image, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
@@ -300,23 +321,6 @@ func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 	}
 
 	return image.ID, nil
-}
-
-// ImageList returns a list of all images in the local daemon
-func (l *localDaemon) ImageList(ctx context.Context, options types.ImageListOptions) ([]types.ImageSummary, error) {
-	return l.apiClient.ImageList(ctx, options)
-}
-
-// RepoDigest returns a repo digest for the given ref
-func (l *localDaemon) RepoDigest(ctx context.Context, ref string) (string, error) {
-	image, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
-	if err != nil {
-		return "", errors.Wrap(err, "inspecting image")
-	}
-	if len(image.RepoDigests) == 0 {
-		return "", nil
-	}
-	return image.RepoDigests[0], nil
 }
 
 func (l *localDaemon) ImageExists(ctx context.Context, ref string) bool {
@@ -336,8 +340,13 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	var args []string
 
+	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to evaluate build args")
+	}
+
 	var keys []string
-	for k := range a.BuildArgs {
+	for k := range buildArgs {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
@@ -345,15 +354,11 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	for _, k := range keys {
 		args = append(args, "--build-arg")
 
-		v := a.BuildArgs[k]
+		v := buildArgs[k]
 		if v == nil {
 			args = append(args, k)
 		} else {
-			value, err := evaluateBuildArgsValue(*v)
-			if err != nil {
-				return nil, errors.Wrapf(err, "unable to get value for build arg: %s", k)
-			}
-			args = append(args, fmt.Sprintf("%s=%s", k, value))
+			args = append(args, fmt.Sprintf("%s=%s", k, *v))
 		}
 	}
 
@@ -374,4 +379,54 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 	}
 
 	return args, nil
+}
+
+// EvaluateBuildArgs evaluates templated build args.
+func EvaluateBuildArgs(args map[string]*string) (map[string]*string, error) {
+	if args == nil {
+		return nil, nil
+	}
+
+	evaluated := map[string]*string{}
+	for k, v := range args {
+		if v == nil {
+			evaluated[k] = nil
+			continue
+		}
+
+		tmpl, err := util.ParseEnvTemplate(*v)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to parse template for build arg: %s=%s", k, *v)
+		}
+
+		value, err := util.ExecuteEnvTemplate(tmpl, nil)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to get value for build arg: %s", k)
+		}
+		evaluated[k] = &value
+	}
+
+	return evaluated, nil
+}
+
+func (l *localDaemon) Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error {
+	for _, id := range images {
+		resp, err := l.ImageRemove(ctx, id, types.ImageRemoveOptions{
+			Force:         true,
+			PruneChildren: pruneChildren,
+		})
+		if err != nil {
+			return errors.Wrap(err, "pruning images")
+		}
+		for _, r := range resp {
+			if r.Deleted != "" {
+				fmt.Fprintf(out, "deleted image %s\n", r.Deleted)
+			}
+			if r.Untagged != "" {
+				fmt.Fprintf(out, "untagged image %s\n", r.Untagged)
+			}
+		}
+	}
+
+	return nil
 }

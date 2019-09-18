@@ -31,7 +31,7 @@ type Artifact struct {
 }
 
 // Builder is an interface to the Build API of Skaffold.
-// It must build and make the resulting image accesible to the cluster.
+// It must build and make the resulting image accessible to the cluster.
 // This could include pushing to a authorized repository or loading the nodes with the image.
 // If artifacts is supplied, the builder should only rebuild those artifacts.
 type Builder interface {
@@ -41,6 +41,15 @@ type Builder interface {
 
 	DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 
+	// SyncMap provides a map of sync destinations by source paths.
+	SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error)
+
 	// Prune removes images built with Skaffold
 	Prune(context.Context, io.Writer) error
+}
+
+type ErrSyncMapNotSupported struct{}
+
+func (ErrSyncMapNotSupported) Error() string {
+	return "SyncMap is not supported by this builder"
 }

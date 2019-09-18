@@ -25,7 +25,7 @@ import (
 )
 
 func TestSupportedKubernetesFormats(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		in          string
 		out         bool
@@ -51,25 +51,17 @@ func TestSupportedKubernetesFormats(t *testing.T) {
 			out:         false,
 		},
 	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual := IsSupportedKubernetesFormat(test.in)
 
-	for _, tt := range tests {
-		t.Run(tt.description, func(t *testing.T) {
-			actual := IsSupportedKubernetesFormat(tt.in)
-			if tt.out != actual {
-				t.Errorf("out: %t, actual: %t", tt.out, actual)
-			}
+			t.CheckDeepEqual(test.out, actual)
 		})
 	}
 }
 
 func TestExpandPathsGlob(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-
-	tmpDir.Write("dir/sub_dir/file", "")
-	tmpDir.Write("dir_b/sub_dir_b/file", "")
-
-	var tests = []struct {
+	tests := []struct {
 		description string
 		in          []string
 		out         []string
@@ -78,31 +70,44 @@ func TestExpandPathsGlob(t *testing.T) {
 		{
 			description: "match exact filename",
 			in:          []string{"dir/sub_dir/file"},
-			out:         []string{tmpDir.Path("dir/sub_dir/file")},
+			out:         []string{"dir/sub_dir/file"},
 		},
 		{
 			description: "match leaf directory glob",
 			in:          []string{"dir/sub_dir/*"},
-			out:         []string{tmpDir.Path("dir/sub_dir/file")},
+			out:         []string{"dir/sub_dir/file"},
 		},
 		{
-			description: "match top level glob",
+			description: "top level glob",
 			in:          []string{"dir*"},
-			out:         []string{tmpDir.Path("dir/sub_dir/file"), tmpDir.Path("dir_b/sub_dir_b/file")},
+			out:         []string{"dir/sub_dir/file", "dir_b/sub_dir_b/file"},
+		},
+		{
+			description: "invalid pattern",
+			in:          []string{"[]"},
+			shouldErr:   true,
+		},
+		{
+			description: "keep top level order",
+			in:          []string{"dir_b/*", "dir/*"},
+			out:         []string{"dir_b/sub_dir_b/file", "dir/sub_dir/file"},
 		},
 	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Touch("dir/sub_dir/file", "dir_b/sub_dir_b/file")
 
-	for _, tt := range tests {
-		t.Run(tt.description, func(t *testing.T) {
-			actual, err := ExpandPathsGlob(tmpDir.Root(), tt.in)
+			actual, err := ExpandPathsGlob(tmpDir.Root(), test.in)
 
-			testutil.CheckErrorAndDeepEqual(t, tt.shouldErr, err, tt.out, actual)
+			expected := tmpDir.Paths(test.out...)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, expected, actual)
 		})
 	}
 }
 
 func TestExpand(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		text        string
 		key         string
@@ -152,12 +157,11 @@ func TestExpand(t *testing.T) {
 			expected:    "VALUE",
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual := Expand(test.text, test.key, test.value)
 
-			testutil.CheckDeepEqual(t, test.expected, actual)
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }
@@ -165,7 +169,8 @@ func TestExpand(t *testing.T) {
 func TestAbsFile(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
-	tmpDir.Write("file", "")
+	tmpDir.Touch("file")
+
 	expectedFile, err := filepath.Abs(filepath.Join(tmpDir.Root(), "file"))
 	testutil.CheckError(t, false, err)
 
@@ -180,7 +185,7 @@ func TestAbsFile(t *testing.T) {
 }
 
 func TestNonEmptyLines(t *testing.T) {
-	var testCases = []struct {
+	tests := []struct {
 		in  string
 		out []string
 	}{
@@ -191,23 +196,24 @@ func TestNonEmptyLines(t *testing.T) {
 		{"a\r\nb\n\n", []string{"a", "b"}},
 		{"\na\r\n\n\n", []string{"a"}},
 	}
-	for _, tt := range testCases {
-		t.Run(tt.in, func(t *testing.T) {
-			result := NonEmptyLines([]byte(tt.in))
-			testutil.CheckDeepEqual(t, tt.out, result)
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			result := NonEmptyLines([]byte(test.in))
+
+			t.CheckDeepEqual(test.out, result)
 		})
 	}
 }
 
 func TestCloneThroughJSON(t *testing.T) {
 	tests := []struct {
-		name     string
-		old      interface{}
-		new      interface{}
-		expected interface{}
+		description string
+		old         interface{}
+		new         interface{}
+		expected    interface{}
 	}{
 		{
-			name: "google cloud build",
+			description: "google cloud build",
 			old: map[string]string{
 				"projectId": "unit-test",
 			},
@@ -218,66 +224,128 @@ func TestCloneThroughJSON(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			err := CloneThroughJSON(test.old, test.new)
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, test.new)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			CloneThroughJSON(test.old, test.new)
+
+			t.CheckDeepEqual(test.expected, test.new)
+		})
+	}
+}
+
+func TestCloneThroughYAML(t *testing.T) {
+	tests := []struct {
+		description string
+		old         interface{}
+		new         interface{}
+		expected    interface{}
+	}{
+		{
+			description: "google cloud build",
+			old: map[string]string{
+				"projectId": "unit-test",
+			},
+			new: &latest.GoogleCloudBuild{},
+			expected: &latest.GoogleCloudBuild{
+				ProjectID: "unit-test",
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			CloneThroughYAML(test.old, test.new)
+
+			t.CheckDeepEqual(test.expected, test.new)
 		})
 	}
 }
 
 func TestIsHiddenDir(t *testing.T) {
 	tests := []struct {
-		name     string
-		filename string
-		expected bool
+		description string
+		filename    string
+		expected    bool
 	}{
 		{
-			name:     "hidden dir",
-			filename: ".hidden",
-			expected: true,
+			description: "hidden dir",
+			filename:    ".hidden",
+			expected:    true,
 		},
 		{
-			name:     "not hidden dir",
-			filename: "not_hidden",
-			expected: false,
+			description: "not hidden dir",
+			filename:    "not_hidden",
+			expected:    false,
 		},
 		{
-			name:     "current dir",
-			filename: ".",
-			expected: false,
+			description: "current dir",
+			filename:    ".",
+			expected:    false,
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if IsHiddenDir(test.filename) != test.expected {
-				t.Errorf("error want %t,  got %t", test.expected, !test.expected)
-			}
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			isHidden := IsHiddenDir(test.filename)
+
+			t.CheckDeepEqual(test.expected, isHidden)
 		})
 	}
 }
 
 func TestIsHiddenFile(t *testing.T) {
 	tests := []struct {
-		name     string
-		filename string
-		expected bool
+		description string
+		filename    string
+		expected    bool
 	}{
 		{
-			name:     "hidden file name",
-			filename: ".hidden",
-			expected: true,
+			description: "hidden file name",
+			filename:    ".hidden",
+			expected:    true,
 		},
 		{
-			name:     "not hidden file",
-			filename: "not_hidden",
-			expected: false,
+			description: "not hidden file",
+			filename:    "not_hidden",
+			expected:    false,
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			if IsHiddenDir(test.filename) != test.expected {
-				t.Errorf("error want %t,  got %t", test.expected, !test.expected)
-			}
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			isHidden := IsHiddenDir(test.filename)
+
+			t.CheckDeepEqual(test.expected, isHidden)
 		})
 	}
+}
+
+func TestRemoveFromSlice(t *testing.T) {
+	testutil.CheckDeepEqual(t, []string{""}, RemoveFromSlice([]string{""}, "ANY"))
+	testutil.CheckDeepEqual(t, []string{"A", "B", "C"}, RemoveFromSlice([]string{"A", "B", "C"}, "ANY"))
+	testutil.CheckDeepEqual(t, []string{"A", "C"}, RemoveFromSlice([]string{"A", "B", "C"}, "B"))
+	testutil.CheckDeepEqual(t, []string{"B", "C"}, RemoveFromSlice([]string{"A", "B", "C"}, "A"))
+	testutil.CheckDeepEqual(t, []string{"A", "C"}, RemoveFromSlice([]string{"A", "B", "B", "C"}, "B"))
+	testutil.CheckDeepEqual(t, []string{}, RemoveFromSlice([]string{"B", "B"}, "B"))
+}
+
+func TestStrSliceInsert(t *testing.T) {
+	testutil.CheckDeepEqual(t, []string{"d", "e"}, StrSliceInsert(nil, 0, []string{"d", "e"}))
+	testutil.CheckDeepEqual(t, []string{"d", "e"}, StrSliceInsert([]string{}, 0, []string{"d", "e"}))
+	testutil.CheckDeepEqual(t, []string{"a", "d", "e", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 1, []string{"d", "e"}))
+	testutil.CheckDeepEqual(t, []string{"d", "e", "a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 0, []string{"d", "e"}))
+	testutil.CheckDeepEqual(t, []string{"a", "b", "c", "d", "e"}, StrSliceInsert([]string{"a", "b", "c"}, 3, []string{"d", "e"}))
+	testutil.CheckDeepEqual(t, []string{"a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 0, nil))
+	testutil.CheckDeepEqual(t, []string{"a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 1, nil))
+}
+
+func TestIsFileIsDir(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Touch("file")
+
+	testutil.CheckDeepEqual(t, false, IsFile(tmpDir.Root()))
+	testutil.CheckDeepEqual(t, true, IsDir(tmpDir.Root()))
+
+	testutil.CheckDeepEqual(t, true, IsFile(filepath.Join(tmpDir.Root(), "file")))
+	testutil.CheckDeepEqual(t, false, IsDir(filepath.Join(tmpDir.Root(), "file")))
+
+	testutil.CheckDeepEqual(t, false, IsFile(filepath.Join(tmpDir.Root(), "nonexistent")))
+	testutil.CheckDeepEqual(t, false, IsDir(filepath.Join(tmpDir.Root(), "nonexistent")))
 }

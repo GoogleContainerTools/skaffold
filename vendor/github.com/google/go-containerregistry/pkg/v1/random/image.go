@@ -18,21 +18,26 @@ import (
 	"archive/tar"
 	"bytes"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"io/ioutil"
+	mrand "math/rand"
 	"time"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/empty"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 )
 
 // uncompressedLayer implements partial.UncompressedLayer from raw bytes.
-// TODO(mattmoor): Consider moving this into a library.
 type uncompressedLayer struct {
-	diffID  v1.Hash
-	content []byte
+	diffID    v1.Hash
+	mediaType types.MediaType
+	content   []byte
 }
 
 // DiffID implements partial.UncompressedLayer
@@ -47,97 +52,66 @@ func (ul *uncompressedLayer) Uncompressed() (io.ReadCloser, error) {
 
 // MediaType returns the media type of the layer
 func (ul *uncompressedLayer) MediaType() (types.MediaType, error) {
-	// Technically the media type should be 'application/tar' but given that our
-	// v1.Layer doesn't force consumers to care about whether the layer is compressed
-	// we should be fine returning the DockerLayer media type
-	return types.DockerLayer, nil
+	return ul.mediaType, nil
 }
 
 var _ partial.UncompressedLayer = (*uncompressedLayer)(nil)
 
 // Image returns a pseudo-randomly generated Image.
 func Image(byteSize, layers int64) (v1.Image, error) {
-	layerz := make(map[v1.Hash]partial.UncompressedLayer)
+	adds := make([]mutate.Addendum, 0, 5)
 	for i := int64(0); i < layers; i++ {
-		var b bytes.Buffer
-		tw := tar.NewWriter(&b)
-		if err := tw.WriteHeader(&tar.Header{
-			Name:     fmt.Sprintf("random_file_%d.txt", i),
-			Size:     byteSize,
-			Typeflag: tar.TypeRegA,
-		}); err != nil {
-			return nil, err
-		}
-		if _, err := io.CopyN(tw, rand.Reader, byteSize); err != nil {
-			return nil, err
-		}
-		if err := tw.Close(); err != nil {
-			return nil, err
-		}
-		bts := b.Bytes()
-		h, _, err := v1.SHA256(bytes.NewReader(bts))
+		layer, err := Layer(byteSize, types.DockerLayer)
 		if err != nil {
 			return nil, err
 		}
-		layerz[h] = &uncompressedLayer{
-			diffID:  h,
-			content: bts,
-		}
-	}
-
-	cfg := &v1.ConfigFile{}
-
-	// Some clients check this.
-	cfg.RootFS.Type = "layers"
-
-	// It is ok that iteration order is random in Go, because this is the random image anyways.
-	for k := range layerz {
-		cfg.RootFS.DiffIDs = append(cfg.RootFS.DiffIDs, k)
-	}
-
-	for i := int64(0); i < layers; i++ {
-		cfg.History = append(cfg.History, v1.History{
-			Author:    "random.Image",
-			Comment:   fmt.Sprintf("this is a random history %d", i),
-			CreatedBy: "random",
-			Created:   v1.Time{time.Now()},
+		adds = append(adds, mutate.Addendum{
+			Layer: layer,
+			History: v1.History{
+				Author:    "random.Image",
+				Comment:   fmt.Sprintf("this is a random history %d", i),
+				CreatedBy: "random",
+				Created:   v1.Time{time.Now()},
+			},
 		})
 	}
 
-	return partial.UncompressedToImage(&image{
-		config: cfg,
-		layers: layerz,
-	})
+	return mutate.Append(empty.Image, adds...)
 }
 
-// image is pseudo-randomly generated.
-type image struct {
-	config *v1.ConfigFile
-	layers map[v1.Hash]partial.UncompressedLayer
-}
+// Layer returns a layer with pseudo-randomly generated content.
+func Layer(byteSize int64, mt types.MediaType) (v1.Layer, error) {
+	fileName := fmt.Sprintf("random_file_%d.txt", mrand.Int())
 
-var _ partial.UncompressedImageCore = (*image)(nil)
+	// Hash the contents as we write it out to the buffer.
+	var b bytes.Buffer
+	hasher := sha256.New()
+	mw := io.MultiWriter(&b, hasher)
 
-// RawConfigFile implements partial.UncompressedImageCore
-func (i *image) RawConfigFile() ([]byte, error) {
-	return partial.RawConfigFile(i)
-}
-
-// ConfigFile implements v1.Image
-func (i *image) ConfigFile() (*v1.ConfigFile, error) {
-	return i.config, nil
-}
-
-// MediaType implements partial.UncompressedImageCore
-func (i *image) MediaType() (types.MediaType, error) {
-	return types.DockerManifestSchema2, nil
-}
-
-// LayerByDiffID implements partial.UncompressedImageCore
-func (i *image) LayerByDiffID(diffID v1.Hash) (partial.UncompressedLayer, error) {
-	l, ok := i.layers[diffID]
-	if !ok {
-		return nil, fmt.Errorf("unknown diff_id: %v", diffID)
+	// Write a single file with a random name and random contents.
+	tw := tar.NewWriter(mw)
+	if err := tw.WriteHeader(&tar.Header{
+		Name:     fileName,
+		Size:     byteSize,
+		Typeflag: tar.TypeRegA,
+	}); err != nil {
+		return nil, err
 	}
-	return l, nil
+	if _, err := io.CopyN(tw, rand.Reader, byteSize); err != nil {
+		return nil, err
+	}
+	if err := tw.Close(); err != nil {
+		return nil, err
+	}
+
+	h := v1.Hash{
+		Algorithm: "sha256",
+		Hex:       hex.EncodeToString(hasher.Sum(make([]byte, 0, hasher.Size()))),
+	}
+
+	return partial.UncompressedToLayer(&uncompressedLayer{
+		diffID:    h,
+		mediaType: mt,
+		content:   b.Bytes(),
+	})
 }

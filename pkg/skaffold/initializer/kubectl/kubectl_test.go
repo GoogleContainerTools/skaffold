@@ -80,18 +80,46 @@ spec:
 			images:    []string{"gcr.io/k8s-skaffold/skaffold-example"},
 			shouldErr: false,
 		},
+		{
+			description: "correct rolebinding yaml with no image",
+			contents: `apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: default-admin
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: admin
+subjects:
+- name: default
+  kind: ServiceAccount
+  namespace: default`,
+			images:    []string{},
+			shouldErr: false,
+		},
+		{
+			description: "crd",
+			contents: `apiVersion: my.crd.io/v1
+kind: CustomType
+metadata:
+  name: test crd
+spec:
+  containers:
+  - name: container
+    image: gcr.io/my/image`,
+			images:    []string{"gcr.io/my/image"},
+			shouldErr: false,
+		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmpDir, delete := testutil.NewTempDir(t)
-			defer delete()
-
-			tmpDir.Write("deployment.yaml", test.contents)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Write("deployment.yaml", test.contents)
 
 			images, err := parseImagesFromKubernetesYaml(tmpDir.Path("deployment.yaml"))
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.images, images)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.images, images)
 		})
 	}
 }

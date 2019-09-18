@@ -1,0 +1,113 @@
+apiVersion: tekton.dev/v1alpha1
+kind: PipelineResource
+metadata:
+  creationTimestamp: null
+  name: source-git
+spec:
+  params:
+  - name: url
+    value: this-is-a-test
+  type: git
+status: {}
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  creationTimestamp: null
+  name: skaffold-build-0
+spec:
+  inputs:
+    resources:
+    - name: source
+      outputImageDir: ""
+      targetPath: ""
+      type: git
+  outputs:
+    resources:
+    - name: source
+      outputImageDir: ""
+      targetPath: ""
+      type: git
+  steps:
+  - args:
+    - --filename
+    - skaffold.yaml
+    - --profile
+    - oncluster
+    - --file-output
+    - build.out
+    command:
+    - skaffold
+    - build
+    env:
+    - name: GOOGLE_APPLICATION_CREDENTIALS
+      value: /secret/kaniko-secret
+    image: gcr.io/k8s-skaffold/skaffold:test-version
+    name: run-build
+    resources: {}
+    volumeMounts:
+    - mountPath: /secret
+      name: kaniko-secret
+    workingDir: /workspace/source
+  volumes:
+  - name: kaniko-secret
+    secret:
+      secretName: kaniko-secret
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Task
+metadata:
+  creationTimestamp: null
+  name: skaffold-deploy-0
+spec:
+  inputs:
+    resources:
+    - name: source
+      outputImageDir: ""
+      targetPath: ""
+      type: git
+  steps:
+  - args:
+    - --filename
+    - skaffold.yaml
+    - --build-artifacts
+    - build.out
+    command:
+    - skaffold
+    - deploy
+    image: gcr.io/k8s-skaffold/skaffold:test-version
+    name: run-deploy
+    resources: {}
+    workingDir: /workspace/source
+---
+apiVersion: tekton.dev/v1alpha1
+kind: Pipeline
+metadata:
+  creationTimestamp: null
+  name: skaffold-pipeline
+spec:
+  resources:
+  - name: source-repo
+    type: git
+  tasks:
+  - name: skaffold-build-0-task
+    resources:
+      inputs:
+      - name: source
+        resource: source-repo
+      outputs:
+      - name: source
+        resource: source-repo
+    taskRef:
+      name: skaffold-build-0
+  - name: skaffold-deploy-0-task
+    resources:
+      inputs:
+      - from:
+        - skaffold-build-0-task
+        name: source
+        resource: source-repo
+    taskRef:
+      name: skaffold-deploy-0
+status: {}
+---

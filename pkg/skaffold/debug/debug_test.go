@@ -48,9 +48,10 @@ func TestFindArtifact(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			result := findArtifact(test.source, buildArtifacts)
-			testutil.CheckDeepEqual(t, test.returnNil, result == nil)
+
+			t.CheckDeepEqual(test.returnNil, result == nil)
 		})
 	}
 }
@@ -68,9 +69,10 @@ func TestEnvAsMap(t *testing.T) {
 		{"embedded equals", []string{"a=b=c", "c=d"}, map[string]string{"c": "d", "a": "b=c"}},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			result := envAsMap(test.source)
-			testutil.CheckDeepEqual(t, test.result, result)
+
+			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }
@@ -108,6 +110,10 @@ func (t testTransformer) IsApplicable(config imageConfiguration) bool {
 	return true
 }
 
+func (t testTransformer) RuntimeSupportImage() string {
+	return ""
+}
+
 func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
 	port := portAlloc(9999)
 	container.Ports = append(container.Ports, v1.ContainerPort{Name: "test", ContainerPort: port})
@@ -124,7 +130,7 @@ func TestApplyDebuggingTransforms(t *testing.T) {
 
 	tests := []struct {
 		description string
-		shouldError bool
+		shouldErr   bool
 		in          string
 		out         string
 	}{
@@ -478,14 +484,15 @@ status:
   replicas: 0`,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
-			result, error := applyDebuggingTransforms(kubectl.ManifestList{[]byte(test.in)}, retriever)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldError, error, test.out, result.String())
+
+			result, err := applyDebuggingTransforms(kubectl.ManifestList{[]byte(test.in)}, retriever)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, result.String())
 		})
 	}
 }

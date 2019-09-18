@@ -25,7 +25,7 @@ var gzipMagicHeader = []byte{'\x1f', '\x8b'}
 // GzipReadCloser reads uncompressed input data from the io.ReadCloser and
 // returns an io.ReadCloser from which compressed data may be read.
 // This uses gzip.BestSpeed for the compression level.
-func GzipReadCloser(r io.ReadCloser) (io.ReadCloser, error) {
+func GzipReadCloser(r io.ReadCloser) io.ReadCloser {
 	return GzipReadCloserLevel(r, gzip.BestSpeed)
 }
 
@@ -33,23 +33,31 @@ func GzipReadCloser(r io.ReadCloser) (io.ReadCloser, error) {
 // returns an io.ReadCloser from which compressed data may be read.
 // Refer to compress/gzip for the level:
 // https://golang.org/pkg/compress/gzip/#pkg-constants
-func GzipReadCloserLevel(r io.ReadCloser, level int) (io.ReadCloser, error) {
+func GzipReadCloserLevel(r io.ReadCloser, level int) io.ReadCloser {
 	pr, pw := io.Pipe()
 
-	go func() {
+	// Returns err so we can pw.CloseWithError(err)
+	go func() error {
+		// TODO(go1.14): Just defer {pw,gw,r}.Close like you'd expect.
+		// Context: https://golang.org/issue/24283
+		gw, err := gzip.NewWriterLevel(pw, level)
+		if err != nil {
+			return pw.CloseWithError(err)
+		}
+
+		if _, err := io.Copy(gw, r); err != nil {
+			defer r.Close()
+			defer gw.Close()
+			return pw.CloseWithError(err)
+		}
 		defer pw.Close()
 		defer r.Close()
-
-		gw, _ := gzip.NewWriterLevel(pw, level)
 		defer gw.Close()
 
-		_, err := io.Copy(gw, r)
-		if err != nil {
-			pr.CloseWithError(err)
-		}
+		return nil
 	}()
 
-	return pr, nil
+	return pr
 }
 
 // GunzipReadCloser reads compressed input data from the io.ReadCloser and

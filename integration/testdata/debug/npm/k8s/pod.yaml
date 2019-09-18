@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: npm
+spec:
+  containers:
+  - name: web
+    image: gcr.io/k8s-skaffold/skaffold-debug-npm
+    ports:
+    - containerPort: 3000

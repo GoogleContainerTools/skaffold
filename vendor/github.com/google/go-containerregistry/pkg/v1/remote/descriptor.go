@@ -16,14 +16,12 @@ package remote
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
 
-	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
@@ -39,7 +37,20 @@ var defaultPlatform = v1.Platform{
 // ErrSchema1 indicates that we received a schema1 manifest from the registry.
 // This library doesn't have plans to support this legacy image format:
 // https://github.com/google/go-containerregistry/issues/377
-var ErrSchema1 = errors.New("unsupported MediaType: https://github.com/google/go-containerregistry/issues/377")
+type ErrSchema1 struct {
+	schema string
+}
+
+func NewErrSchema1(schema types.MediaType) error {
+	return &ErrSchema1{
+		schema: string(schema),
+	}
+}
+
+// Error implements error.
+func (e *ErrSchema1) Error() string {
+	return fmt.Sprintf("unsupported MediaType: %q, see https://github.com/google/go-containerregistry/issues/377", e.schema)
+}
 
 // Descriptor provides access to metadata about remote artifact and accessors
 // for efficiently converting it into a v1.Image or v1.ImageIndex.
@@ -52,18 +63,10 @@ type Descriptor struct {
 	platform v1.Platform
 }
 
-type imageOpener struct {
-	auth      authn.Authenticator
-	transport http.RoundTripper
-	ref       name.Reference
-	client    *http.Client
-	platform  v1.Platform
-}
-
 // Get returns a remote.Descriptor for the given reference. The response from
 // the registry is left un-interpreted, for the most part. This is useful for
 // querying what kind of artifact a reference represents.
-func Get(ref name.Reference, options ...ImageOption) (*Descriptor, error) {
+func Get(ref name.Reference, options ...Option) (*Descriptor, error) {
 	acceptable := []types.MediaType{
 		types.DockerManifestSchema2,
 		types.OCIManifestSchema1,
@@ -78,26 +81,19 @@ func Get(ref name.Reference, options ...ImageOption) (*Descriptor, error) {
 
 // Handle options and fetch the manifest with the acceptable MediaTypes in the
 // Accept header.
-func get(ref name.Reference, acceptable []types.MediaType, options ...ImageOption) (*Descriptor, error) {
-	i := &imageOpener{
-		auth:      authn.Anonymous,
-		transport: http.DefaultTransport,
-		ref:       ref,
-		platform:  defaultPlatform,
+func get(ref name.Reference, acceptable []types.MediaType, options ...Option) (*Descriptor, error) {
+	o, err := makeOptions(ref.Context().Registry, options...)
+	if err != nil {
+		return nil, err
 	}
 
-	for _, option := range options {
-		if err := option(i); err != nil {
-			return nil, err
-		}
-	}
-	tr, err := transport.New(i.ref.Context().Registry, i.auth, i.transport, []string{i.ref.Scope(transport.PullScope)})
+	tr, err := transport.New(ref.Context().Registry, o.auth, o.transport, []string{ref.Scope(transport.PullScope)})
 	if err != nil {
 		return nil, err
 	}
 
 	f := fetcher{
-		Ref:    i.ref,
+		Ref:    ref,
 		Client: &http.Client{Transport: tr},
 	}
 
@@ -110,7 +106,7 @@ func get(ref name.Reference, acceptable []types.MediaType, options ...ImageOptio
 		fetcher:    f,
 		Manifest:   b,
 		Descriptor: *desc,
-		platform:   i.platform,
+		platform:   o.platform,
 	}, nil
 }
 
@@ -127,7 +123,7 @@ func (d *Descriptor) Image() (v1.Image, error) {
 	case types.DockerManifestSchema1, types.DockerManifestSchema1Signed:
 		// We don't care to support schema 1 images:
 		// https://github.com/google/go-containerregistry/issues/377
-		return nil, ErrSchema1
+		return nil, NewErrSchema1(d.MediaType)
 	case types.OCIImageIndex, types.DockerManifestList:
 		// We want an image but the registry has an index, resolve it to an image.
 		return d.remoteIndex().imageByPlatform(d.platform)
@@ -157,7 +153,7 @@ func (d *Descriptor) ImageIndex() (v1.ImageIndex, error) {
 	case types.DockerManifestSchema1, types.DockerManifestSchema1Signed:
 		// We don't care to support schema 1 images:
 		// https://github.com/google/go-containerregistry/issues/377
-		return nil, ErrSchema1
+		return nil, NewErrSchema1(d.MediaType)
 	case types.OCIManifestSchema1, types.DockerManifestSchema2:
 		// We want an index but the registry has an image, nothing we can do.
 		return nil, fmt.Errorf("unexpected media type for ImageIndex(): %s; call Image() instead", d.MediaType)
@@ -241,12 +237,16 @@ func (f *fetcher) fetchManifest(ref name.Reference, acceptable []types.MediaType
 	}
 
 	mediaType := types.MediaType(resp.Header.Get("Content-Type"))
+	contentDigest, err := v1.NewHash(resp.Header.Get("Docker-Content-Digest"))
+	if err == nil && mediaType == types.DockerManifestSchema1Signed {
+		// If we can parse the digest from the header, and it's a signed schema 1
+		// manifest, let's use that for the digest to appease older registries.
+		digest = contentDigest
+	}
 
 	// Validate the digest matches what we asked for, if pulling by digest.
 	if dgst, ok := ref.(name.Digest); ok {
-		if mediaType == types.DockerManifestSchema1Signed {
-			// Digests for this are stupid to calculate, ignore it.
-		} else if digest.String() != dgst.DigestStr() {
+		if digest.String() != dgst.DigestStr() {
 			return nil, nil, fmt.Errorf("manifest digest: %q does not match requested digest: %q for %q", digest, dgst.DigestStr(), f.Ref)
 		}
 	} else {

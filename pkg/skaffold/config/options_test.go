@@ -17,8 +17,10 @@ limitations under the License.
 package config
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestLabels(t *testing.T) {
@@ -61,6 +63,20 @@ func TestLabels(t *testing.T) {
 			},
 		},
 		{
+			description: "tail",
+			options:     SkaffoldOptions{Tail: true},
+			expectedLabels: map[string]string{
+				"skaffold.dev/tail": "true",
+			},
+		},
+		{
+			description: "tail dev",
+			options:     SkaffoldOptions{TailDev: true},
+			expectedLabels: map[string]string{
+				"skaffold.dev/tail": "true",
+			},
+		},
+		{
 			description: "all labels",
 			options: SkaffoldOptions{
 				Cleanup:   true,
@@ -93,14 +109,86 @@ func TestLabels(t *testing.T) {
 			},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			labels := test.options.Labels()
 
-			if !reflect.DeepEqual(test.expectedLabels, labels) {
-				t.Errorf("Wrong labels. Expected %v. Got %v", test.expectedLabels, labels)
-			}
+			t.CheckDeepEqual(test.expectedLabels, labels)
 		})
 	}
+}
+
+func TestIsTargetImage(t *testing.T) {
+	tests := []struct {
+		description   string
+		targetImages  []string
+		expectedMatch bool
+	}{
+		{
+			description:   "match all",
+			targetImages:  nil,
+			expectedMatch: true,
+		},
+		{
+			description:   "match full description",
+			targetImages:  []string{"domain/image"},
+			expectedMatch: true,
+		},
+		{
+			description:   "match partial description",
+			targetImages:  []string{"image"},
+			expectedMatch: true,
+		},
+		{
+			description:   "match any",
+			targetImages:  []string{"other", "image"},
+			expectedMatch: true,
+		},
+		{
+			description:   "no match",
+			targetImages:  []string{"other"},
+			expectedMatch: false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			opts := SkaffoldOptions{
+				TargetImages: test.targetImages,
+			}
+
+			match := opts.IsTargetImage(&latest.Artifact{
+				ImageName: "domain/image",
+			})
+
+			t.CheckDeepEqual(test.expectedMatch, match)
+		})
+	}
+}
+
+func TestForceDeploy(t *testing.T) {
+	opts := SkaffoldOptions{}
+	testutil.CheckDeepEqual(t, false, opts.ForceDeploy())
+
+	opts = SkaffoldOptions{ForceDev: true}
+	testutil.CheckDeepEqual(t, true, opts.ForceDeploy())
+
+	opts = SkaffoldOptions{Force: true}
+	testutil.CheckDeepEqual(t, true, opts.ForceDeploy())
+
+	opts = SkaffoldOptions{ForceDev: true, Force: true}
+	testutil.CheckDeepEqual(t, true, opts.ForceDeploy())
+}
+
+func TestPrune(t *testing.T) {
+	opts := SkaffoldOptions{}
+	testutil.CheckDeepEqual(t, true, opts.Prune())
+
+	opts = SkaffoldOptions{NoPrune: true}
+	testutil.CheckDeepEqual(t, false, opts.Prune())
+
+	opts = SkaffoldOptions{CacheArtifacts: true}
+	testutil.CheckDeepEqual(t, false, opts.Prune())
+
+	opts = SkaffoldOptions{NoPrune: true, CacheArtifacts: true}
+	testutil.CheckDeepEqual(t, false, opts.Prune())
 }

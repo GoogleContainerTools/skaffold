@@ -25,7 +25,7 @@ import (
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
-func TestDockerBuildDescription(t *testing.T) {
+func TestDockerBuildSpec(t *testing.T) {
 	artifact := &latest.Artifact{
 		ArtifactType: latest.ArtifactType{
 			DockerArtifact: &latest.DockerArtifact{
@@ -38,15 +38,13 @@ func TestDockerBuildDescription(t *testing.T) {
 		},
 	}
 
-	builder := Builder{
-		GoogleCloudBuild: &latest.GoogleCloudBuild{
-			DockerImage: "docker/docker",
-			DiskSizeGb:  100,
-			MachineType: "n1-standard-1",
-			Timeout:     "10m",
-		},
-	}
-	desc, err := builder.buildDescription(artifact, "nginx", "bucket", "object")
+	builder := newBuilder(latest.GoogleCloudBuild{
+		DockerImage: "docker/docker",
+		DiskSizeGb:  100,
+		MachineType: "n1-standard-1",
+		Timeout:     "10m",
+	})
+	desc, err := builder.buildSpec(artifact, "nginx", "bucket", "object")
 
 	expected := cloudbuild.Build{
 		LogsBucket: "bucket",
@@ -68,7 +66,7 @@ func TestDockerBuildDescription(t *testing.T) {
 		Timeout: "10m",
 	}
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected, *desc)
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, desc)
 }
 
 func TestPullCacheFrom(t *testing.T) {
@@ -77,12 +75,10 @@ func TestPullCacheFrom(t *testing.T) {
 		CacheFrom:      []string{"from/image1", "from/image2"},
 	}
 
-	builder := Builder{
-		GoogleCloudBuild: &latest.GoogleCloudBuild{
-			DockerImage: "docker/docker",
-		},
-	}
-	steps, err := builder.dockerBuildSteps(artifact, []string{"nginx2"})
+	builder := newBuilder(latest.GoogleCloudBuild{
+		DockerImage: "docker/docker",
+	})
+	desc, err := builder.dockerBuildSpec(artifact, "nginx2")
 
 	expected := []*cloudbuild.BuildStep{{
 		Name:       "docker/docker",
@@ -97,5 +93,5 @@ func TestPullCacheFrom(t *testing.T) {
 		Args: []string{"build", "--tag", "nginx2", "-f", "Dockerfile", "--cache-from", "from/image1", "--cache-from", "from/image2", "."},
 	}}
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected, steps)
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, desc.Steps)
 }

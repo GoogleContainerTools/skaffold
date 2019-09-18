@@ -22,18 +22,23 @@ import (
 	"io"
 	"time"
 
+	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
 // Builder builds docker artifacts on Kubernetes.
 type Builder struct {
 	*latest.ClusterDetails
 
+	kubectlcli         *kubectl.CLI
+	kubeContext        string
 	timeout            time.Duration
 	insecureRegistries map[string]bool
 }
@@ -46,8 +51,11 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	}
 
 	return &Builder{
-		ClusterDetails: runCtx.Cfg.Build.Cluster,
-		timeout:        timeout,
+		ClusterDetails:     runCtx.Cfg.Build.Cluster,
+		kubectlcli:         kubectl.NewFromRunContext(runCtx),
+		timeout:            timeout,
+		kubeContext:        runCtx.KubeContext,
+		insecureRegistries: runCtx.InsecureRegistries,
 	}, nil
 }
 
@@ -80,4 +88,8 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	return nil
+}
+
+func (b *Builder) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
+	return nil, build.ErrSyncMapNotSupported{}
 }

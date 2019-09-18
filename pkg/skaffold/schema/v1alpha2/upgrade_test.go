@@ -46,6 +46,31 @@ deploy:
 	verifyUpgrade(t, yaml, expected)
 }
 
+func TestUpgrade_helmReleaseValuesFileWithProfile(t *testing.T) {
+	yaml := `apiVersion: skaffold/v1alpha2
+kind: Config
+profiles:
+- name: test
+  deploy:
+    helm:
+      releases:
+      - name: test
+        valuesFilePath: values.yaml
+`
+	expected := `apiVersion: skaffold/v1alpha3
+kind: Config
+profiles:
+- name: test
+  deploy:
+    helm:
+      releases:
+      - name: test
+        valuesFiles:
+        - values.yaml
+`
+	verifyUpgrade(t, yaml, expected)
+}
+
 func TestUpgrade_kanikoWithProfile(t *testing.T) {
 	yaml := `apiVersion: skaffold/v1alpha2
 kind: Config

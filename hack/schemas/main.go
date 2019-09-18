@@ -25,6 +25,7 @@ import (
 	"go/token"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -92,8 +93,8 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 			strict = true
 		}
 
-		input := fmt.Sprintf("%s/pkg/skaffold/schema/%s/config.go", root, folder)
-		output := fmt.Sprintf("%s/docs/content/en/schemas/%s.json", root, apiVersion)
+		input := filepath.Join(root, "pkg", "skaffold", "schema", folder, "config.go")
+		output := filepath.Join(root, "docs", "content", "en", "schemas", apiVersion+".json")
 
 		generator := schemaGenerator{
 			strict: strict,
@@ -115,12 +116,16 @@ func generateSchemas(root string, dryRun bool) (bool, error) {
 			return false, errors.Wrapf(err, "unable to check that file exists %s", output)
 		}
 
+		current = bytes.Replace(current, []byte("\r\n"), []byte("\n"), -1)
+
 		if string(current) != string(buf) {
 			same = false
 		}
 
 		if !dryRun {
-			ioutil.WriteFile(output, buf, os.ModePerm)
+			if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
+				return false, errors.Wrapf(err, "unable to write schema %s", output)
+			}
 		}
 	}
 
@@ -141,8 +146,8 @@ func setTypeOrRef(def *Definition, typeName string) {
 		def.Type = typeName
 	case "bool":
 		def.Type = "boolean"
-	case "int", "int64":
-		def.Type = "number"
+	case "int", "int64", "int32":
+		def.Type = "integer"
 	default:
 		def.Ref = defPrefix + typeName
 	}
@@ -192,6 +197,7 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 			yamlName := yamlFieldName(field)
 
 			if strings.Contains(field.Tag.Value, "inline") {
+				def.PreferredOrder = append(def.PreferredOrder, "<inline>")
 				def.inlines = append(def.inlines, &Definition{
 					Ref: defPrefix + field.Type.(*ast.Ident).Name,
 				})
@@ -297,23 +303,46 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 			continue
 		}
 
-		var options []*Definition
+		for _, inlineStruct := range def.inlines {
+			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
+			inlines = append(inlines, ref)
+		}
 
+		// First, inline definitions without `oneOf`
+		inlineIndex := 0
+		var defPreferredOrder []string
+		for _, k := range def.PreferredOrder {
+			if k != "<inline>" {
+				defPreferredOrder = append(defPreferredOrder, k)
+				continue
+			}
+
+			inlineStruct := def.inlines[inlineIndex]
+			inlineIndex++
+
+			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
+			inlineStructRef := definitions[ref]
+			if isOneOf(inlineStructRef) {
+				continue
+			}
+
+			if def.Properties == nil {
+				def.Properties = make(map[string]*Definition, len(inlineStructRef.Properties))
+			}
+			for k, v := range inlineStructRef.Properties {
+				def.Properties[k] = v
+			}
+			defPreferredOrder = append(defPreferredOrder, inlineStructRef.PreferredOrder...)
+			def.Required = append(def.Required, inlineStructRef.Required...)
+		}
+		def.PreferredOrder = defPreferredOrder
+
+		// Then add options for `oneOf` definitions
+		var options []*Definition
 		for _, inlineStruct := range def.inlines {
 			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
 			inlineStructRef := definitions[ref]
-			inlines = append(inlines, ref)
-
-			// if not anyof, merge & continue
 			if !isOneOf(inlineStructRef) {
-				if def.Properties == nil {
-					def.Properties = make(map[string]*Definition, len(inlineStructRef.Properties))
-				}
-				for k, v := range inlineStructRef.Properties {
-					def.Properties[k] = v
-				}
-				def.PreferredOrder = append(def.PreferredOrder, inlineStructRef.PreferredOrder...)
-				def.Required = append(def.Required, inlineStructRef.Required...)
 				continue
 			}
 

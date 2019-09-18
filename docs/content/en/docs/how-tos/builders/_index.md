@@ -100,18 +100,44 @@ Kubernetes cluster. Kaniko enables building container images in environments
 that cannot easily or securely run a Docker daemon.
 
 Skaffold can help build artifacts in a Kubernetes cluster using the Kaniko
-image; after the artifacts are built, kaniko can push them to remote registries.
+image; after the artifacts are built, kaniko must push them to a registry.
 
 ### Configuration
 
 To use Kaniko, add build type `kaniko` to the `build` section of
 `skaffold.yaml`. The following options can optionally be configured:
 
-{{< schema root="KanikoBuild" >}}
+{{< schema root="KanikoArtifact" >}}
 
 The `buildContext` can be either:
 
 {{< schema root="KanikoBuildContext" >}}
+
+Since Kaniko must push images to a registry, it is required to set up cluster credentials.
+These credentials are configured in the `cluster` section with the following options:
+
+{{< schema root="ClusterDetails" >}}
+
+To set up the credentials for kaniko have a look at the [kaniko docs](https://github.com/GoogleContainerTools/kaniko#kubernetes-secret).
+The recommended way is to store the pull secret in Kubernetes and configure `pullSecretName`.
+Alternatively, the path to a credentials file can be set with the `pullSecret` option:
+```yaml
+build:
+  cluster:
+    pullSecretName: pull-secret-in-kubernetes
+    # OR
+    pullSecret: path-to-service-account-key-file
+```
+Similarly, when pushing to a docker registry:
+```yaml
+build:
+  cluster:
+    dockerConfig:
+      path: ~/.docker/config.json
+      # OR
+      secretName: docker-config-secret-in-kubernetes
+```
+Note that the kubernetes secret must not be of type `kubernetes.io/dockerconfigjson` which stores the config json under the key `".dockerconfigjson"`, but an opaque secret with the key `"config.json"`.
 
 ### Example
 
@@ -131,9 +157,11 @@ without a Docker daemon.
 Skaffold can help build artifacts using Jib; Jib builds the container images and then
 pushes them to the local Docker daemon or to remote registries as instructed by Skaffold.
 
+Skaffold requires using Jib v1.4.0 or later.
+
 ### Configuration
 
-To use Jib, add a `jibMaven` or `jibGradle` field to each artifact you specify in the
+To use Jib, add a `jib` field to each artifact you specify in the
 `artifacts` part of the `build` section. `context` should be a path to
 your Maven or Gradle project.  
 
@@ -141,13 +169,18 @@ your Maven or Gradle project.
 Your project must be configured to use Jib already.
 {{< /alert >}}
 
-The `jibMaven` type offers the following options:
+The `jib` type offers the following options:
 
-{{< schema root="JibMavenArtifact" >}}
+{{< schema root="JibArtifact" >}}
 
-The `jibGradle` type offers the following options:
+Skaffold's jib support chooses the underlying builder (Maven or Gradle) 
+based on the presence of standard build files in the `artifact`'s
+`context` directory:
 
-{{< schema root="JibGradleArtifact" >}}
+  - _Maven_: `pom.xml`, or `.mvn` directory.
+  - _Gradle_: `build.gradle`, `gradle.properties`, `settings.gradle`,
+    or the Gradle wrapper script (`gradlew`, `gradlew.bat`, or
+    `gradlew.cmd`).
 
 ### Example
 
@@ -162,32 +195,29 @@ each produce a separate container image.
 
 #### Maven
 
-To build a Maven multi-module project, first identify the modules that should
-produce a container image. Then for each such module:
+To build a Maven multi-module project, first identify the sub-projects (also called _modules_
+in Maven) that should produce a container image. Then for each such sub-project:
 
-  1. Create a Skaffold `artifact` in the `skaffold.yaml`:
-     - Set the `artifact`'s `context` field to the root project location.
-     - Add a `jibMaven` element and set its `module` field to the module's
-       `:artifactId`, `groupId:artifactId`, or the relative path to the module
-       _within the project_.
-  2. Configure the module's `pom.xml` to bind either `jib:build` or `jib:dockerBuild` to
-     the `package` phase as appropriate (see below).
+  - Create a Skaffold `artifact` in the `skaffold.yaml`.
+  - Set the `artifact`'s `context` field to the root project location.
+  - Add a `jib` element and set its `project` field to the sub-project's
+    `:artifactId`, `groupId:artifactId`, or the relative path to the sub-project
+    _within the project_.
 
-This second step is necessary at the moment as Maven applies plugin goals specified
-on the command-line, like `jib:build` or, to all modules and not just the modules
-producing container images.
-The situation is further complicated as Skaffold speeds up deploys to a local cluster,
-such as `minikube`, by building and loading container images directly to the
-local cluster's docker daemon (via `jib:dockerBuild` instead of `jib:build`),
-thus saving a push and a pull of the image.
-We plan to improve this situation [(#1876)](https://github.com/GoogleContainerTools/skaffold/issues/1876).
+{{% alert title="Updating from earlier versions" %}}
+Skaffold had required Maven multi-module projects bind a Jib
+`build` or `dockerBuild` goal to the *package* phase.  These bindings are
+no longer required with Jib 1.4.0 and should be removed.
+{{% /alert %}}
 
 #### Gradle
 
-To build a multi-module project with Gradle, specify each sub-project as a separate
-Skaffold artifact. For each artifact, add a `jibGradle` field with a `project` field
-containing the sub-project's name (the directory, by default). Each artifact's `context` field
-should point to the root project location.
+To build a multi-module project with Gradle, first identify the sub-projects that should produce
+a container image.  Then for each such sub-project:
+
+  - Create a Skaffold `artifact` in the `skaffold.yaml`.
+  - Set the `artifact`'s `context` field to the root project location.
+  - Add a `jib` element and set its `project` field to the sub-project's name (the directory, by default).
 
 ## Jib Maven and Gradle remotely with Google Cloud Build
 
@@ -250,15 +280,21 @@ Skaffold will pass in the following additional environment variables for the fol
 | ------------- |-------------| -----|
 | Docker daemon environment variables     | Inform the custom builder of which docker daemon endpoint we are using. Allows custom build scripts to work with tools like Minikube. For Minikube, this is the output of `minikube docker-env`.| None. | 
 
+##### Cluster Builder
+| Environment Variable         | Description           | Expectation  |
+| ------------- |-------------| -----|
+| $KUBECONTEXT    | The expected kubecontext in which the image will be built.| None. | 
+| $NAMESPACE      | The expected namespace in which the image will be built.| None. | 
+| $PULL_SECRET_NAME    | The name of the secret with authentication required to pull a base image/push the final image built on cluster.| None. | 
+| $DOCKER_CONFIG_SECRET_NAME    | The secret containing any required docker authentication for custom builds on cluster.| None. | 
+| $TIMEOUT        | The amount of time an on cluster build is allowed to run.| None. | 
 
 ### Configuration
 
 To use a custom build script, add a `custom` field to each corresponding artifact in the `build` section of the skaffold.yaml.
-Currently, this only works with the build type `local`. Supported schema for `custom` includes:
-
+Currently, this only works with the `local` and `cluster` build types. Supported schema for `custom` includes:
 
 {{< schema root="CustomArtifact" >}}
-
 
 `buildCommand` is *required* and points skaffold to the custom build script which will be executed to build the artifact.
 
@@ -266,10 +302,10 @@ Currently, this only works with the build type `local`. Supported schema for `cu
 
 `dependencies` tells the skaffold file watcher which files should be watched to trigger rebuilds and file syncs.  Supported schema for `dependencies` includes:
 
-
 {{< schema root="CustomDependencies" >}}
 
 ##### Paths and Ignore
+
 `Paths` and `Ignore` are arrays used to list dependencies. 
 Any paths in `Ignore` will be ignored by the skaffold file watcher, even if they are also specified in `Paths`.
 `Ignore` will only work in conjunction with `Paths`, and with none of the other custom artifact dependency types.
@@ -285,8 +321,8 @@ custom:
     - vendor/**
 ```
 
-
 ##### Dockerfile
+
 Skaffold can calculate dependencies from a Dockerfile for a custom artifact.
 Passing in the path to the Dockerfile and any build args, if necessary, will allow skaffold to do dependency calculation.
 
@@ -302,7 +338,8 @@ custom:
         file: foo
 ```
 
-##### Getting depedencies from a command
+##### Getting dependencies from a command
+
 Sometimes you might have a builder that can provide the dependencies for a given artifact.
 For example bazel has the `bazel query deps` command.
 Custom artifact builders can ask Skaffold to execute a custom command, which Skaffold can use to get the dependencies for the artifact for file watching.
@@ -319,10 +356,12 @@ custom:
 ```
 
 #### Custom Build Scripts and File Sync
+
 Syncable files must be included in both the `paths` section of `dependencies`, so that the skaffold file watcher knows to watch them, and the `sync` section, so that skaffold knows to sync them.  
 
 #### Custom Build Scripts and Logging
-STDOUT and STDERR from the custom build script will be redirected and displayed within skaffold logs.
+
+`STDOUT` and `STDERR` from the custom build script will be redirected and displayed within skaffold logs.
 
 
 ### Example

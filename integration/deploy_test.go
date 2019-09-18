@@ -17,6 +17,7 @@ limitations under the License.
 package integration
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
@@ -27,6 +28,9 @@ import (
 func TestBuildDeploy(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
 	}
 
 	ns, client, deleteNs := SetupNamespace(t)
@@ -64,7 +68,8 @@ func TestBuildDeploy(t *testing.T) {
 	dir.Write("build.out", string(outputBytes))
 
 	// Run Deploy using the build output
-	skaffold.Deploy("--build-artifacts", buildOutputFile).InDir("examples/microservices").InNs(ns.Name).RunOrFail(t)
+	// See https://github.com/GoogleContainerTools/skaffold/issues/2372 on why status-check=false
+	skaffold.Deploy("--build-artifacts", buildOutputFile, "--status-check=false").InDir("examples/microservices").InNs(ns.Name).RunOrFail(t)
 
 	depApp := client.GetDeployment("leeroy-app")
 	testutil.CheckDeepEqual(t, appTag, depApp.Spec.Template.Spec.Containers[0].Image)
@@ -79,6 +84,9 @@ func TestDeploy(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
 
 	ns, client, deleteNs := SetupNamespace(t)
 	defer deleteNs()
@@ -89,4 +97,24 @@ func TestDeploy(t *testing.T) {
 	testutil.CheckDeepEqual(t, "index.docker.io/library/busybox:1", dep.Spec.Template.Spec.Containers[0].Image)
 
 	skaffold.Delete().InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
+}
+
+func TestDeployWithInCorrectConfig(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	// We're not providing a tag for the getting-started image
+	output, err := skaffold.Deploy().InDir("examples/getting-started").InNs(ns.Name).RunWithCombinedOutput(t)
+	if err == nil {
+		t.Errorf("expected to see an error since not every image tag is provided: %s", output)
+	} else if !strings.Contains(string(output), "no tag provided for image [gcr.io/k8s-skaffold/skaffold-example]") {
+		t.Errorf("failed without saying the reason: %s", output)
+	}
 }

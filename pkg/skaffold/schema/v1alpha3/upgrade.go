@@ -17,11 +17,9 @@ limitations under the License.
 package v1alpha3
 
 import (
-	"encoding/json"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
-	"github.com/pkg/errors"
+	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
@@ -44,16 +42,13 @@ import (
 func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
-	if err := convert(config.Deploy, &newDeploy); err != nil {
-		return nil, errors.Wrap(err, "converting deploy config")
-	}
+	pkgutil.CloneThroughJSON(config.Deploy, &newDeploy)
 
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
 	if config.Profiles != nil {
-		if err := convert(config.Profiles, &newProfiles); err != nil {
-			return nil, errors.Wrap(err, "converting new profile")
-		}
+		pkgutil.CloneThroughJSON(config.Profiles, &newProfiles)
+
 		for i, oldProfile := range config.Profiles {
 			convertBuild(oldProfile.Build, newProfiles[i].Build)
 		}
@@ -62,9 +57,7 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Build (should be the same)
 	var newBuild next.BuildConfig
 	oldBuild := config.Build
-	if err := convert(oldBuild, &newBuild); err != nil {
-		return nil, errors.Wrap(err, "converting new build")
-	}
+	pkgutil.CloneThroughJSON(oldBuild, &newBuild)
 	convertBuild(oldBuild, newBuild)
 
 	return &next.SkaffoldConfig{
@@ -81,15 +74,4 @@ func convertBuild(oldBuild BuildConfig, newBuild next.BuildConfig) {
 		push := !*oldBuild.LocalBuild.SkipPush
 		newBuild.LocalBuild.Push = &push
 	}
-}
-
-func convert(old interface{}, new interface{}) error {
-	o, err := json.Marshal(old)
-	if err != nil {
-		return errors.Wrap(err, "marshalling old")
-	}
-	if err := json.Unmarshal(o, &new); err != nil {
-		return errors.Wrap(err, "unmarshalling new")
-	}
-	return nil
 }

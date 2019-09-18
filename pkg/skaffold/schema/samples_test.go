@@ -24,8 +24,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -37,38 +39,70 @@ var (
 	ignoredSamples = []string{"structureTest.yaml", "build.sh"}
 )
 
+// Test that every example can be parsed and produces a valid
+// Skaffold configuration.
+func TestParseExamples(t *testing.T) {
+	parseConfigFiles(t, "../../../examples")
+	parseConfigFiles(t, "../../../integration/testdata/regressions")
+}
+
+// Samples are skaffold.yaml fragments that are used
+// in the documentation.
 func TestParseSamples(t *testing.T) {
 	paths, err := findSamples(samplesRoot)
 	if err != nil {
-		t.Fatalf("unable to read sample files in %q", samplesRoot)
+		t.Fatalf("unable to list samples in %q", samplesRoot)
 	}
 
 	if len(paths) == 0 {
 		t.Fatalf("did not find sample files in %q", samplesRoot)
 	}
 
-	tmpDir, teardown := testutil.NewTempDir(t)
-	defer teardown()
-
 	for _, path := range paths {
 		name := filepath.Base(path)
+		if util.StrSliceContains(ignoredSamples, name) {
+			continue
+		}
 
-		t.Run(name, func(t *testing.T) {
-			for _, is := range ignoredSamples {
-				if name == is {
-					t.Skip()
-				}
-			}
+		testutil.Run(t, name, func(t *testutil.T) {
 			buf, err := ioutil.ReadFile(path)
-			testutil.CheckError(t, false, err)
+			t.CheckNoError(err)
 
-			tmpDir.Write(name, addHeader(buf))
+			checkSkaffoldConfig(t, addHeader(buf))
+		})
+	}
+}
 
-			cfg, err := ParseConfig(tmpDir.Path(name), true)
-			testutil.CheckError(t, false, err)
+func checkSkaffoldConfig(t *testutil.T, yaml []byte) {
+	configFile := t.TempFile("skaffold.yaml", yaml)
+	cfg, err := ParseConfig(configFile, true)
+	t.CheckNoError(err)
 
-			err = validation.Process(cfg.(*latest.SkaffoldConfig))
-			testutil.CheckError(t, false, err)
+	err = defaults.Set(cfg.(*latest.SkaffoldConfig))
+	t.CheckNoError(err)
+
+	err = validation.Process(cfg.(*latest.SkaffoldConfig))
+	t.CheckNoError(err)
+}
+
+func parseConfigFiles(t *testing.T, root string) {
+	paths, err := findExamples(root)
+	if err != nil {
+		t.Fatalf("unable to list skaffold configuration files in %q", root)
+	}
+
+	if len(paths) == 0 {
+		t.Fatalf("did not find skaffold configuration files in %q", root)
+	}
+
+	for _, path := range paths {
+		name := filepath.Base(filepath.Dir(path))
+
+		testutil.Run(t, name, func(t *testutil.T) {
+			buf, err := ioutil.ReadFile(path)
+			t.CheckNoError(err)
+
+			checkSkaffoldConfig(t, buf)
 		})
 	}
 }
@@ -86,9 +120,22 @@ func findSamples(root string) ([]string, error) {
 	return files, err
 }
 
-func addHeader(buf []byte) string {
+func findExamples(root string) ([]string, error) {
+	var files []string
+
+	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() && info.Name() == "skaffold.yaml" {
+			files = append(files, path)
+		}
+		return err
+	})
+
+	return files, err
+}
+
+func addHeader(buf []byte) []byte {
 	if bytes.HasPrefix(buf, []byte("apiVersion:")) {
-		return string(buf)
+		return buf
 	}
-	return fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, buf)
+	return []byte(fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, buf))
 }

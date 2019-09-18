@@ -18,6 +18,7 @@ package jib
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -27,7 +28,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -36,6 +40,35 @@ import (
 const (
 	dotDotSlash = ".." + string(filepath.Separator)
 )
+
+// PluginType defines the different supported Jib plugins.
+type PluginType int
+
+const (
+	// use `iota+1` so that 0 is an invalid value
+	JibMaven PluginType = iota + 1
+	JibGradle
+)
+
+// IsKnown checks that the num value is a known value (vs 0 or an unknown value).
+func (t PluginType) IsKnown() bool {
+	switch t {
+	case JibMaven, JibGradle:
+		return true
+	}
+	return false
+}
+
+// Name provides a human-oriented label for a plugin type.
+func PluginName(t PluginType) string {
+	switch t {
+	case JibMaven:
+		return "Jib Maven Plugin"
+	case JibGradle:
+		return "Jib Gradle Plugin"
+	}
+	panic("Unknown Jib Plugin Type: " + string(t))
+}
 
 // filesLists contains cached build/input dependencies
 type filesLists struct {
@@ -55,8 +88,47 @@ type filesLists struct {
 // watchedFiles maps from project name to watched files
 var watchedFiles = map[string]filesLists{}
 
+// GetDependencies returns a list of files to watch for changes to rebuild
+func GetDependencies(ctx context.Context, workspace string, artifact *latest.JibArtifact) ([]string, error) {
+	t, err := DeterminePluginType(workspace, artifact)
+	if err != nil {
+		return nil, err
+	}
+
+	switch t {
+	case JibMaven:
+		return getDependenciesMaven(ctx, workspace, artifact)
+	case JibGradle:
+		return getDependenciesGradle(ctx, workspace, artifact)
+	default:
+		return nil, errors.Errorf("Unable to determine Jib builder type for %s", workspace)
+	}
+}
+
+// DeterminePluginType tries to determine the Jib plugin type for the given artifact.
+func DeterminePluginType(workspace string, artifact *latest.JibArtifact) (PluginType, error) {
+	// check if explicitly specified
+	if artifact != nil {
+		if t := PluginType(artifact.Type); t.IsKnown() {
+			return t, nil
+		}
+	}
+
+	// check for typical gradle files
+	for _, gradleFile := range []string{"build.gradle", "gradle.properties", "settings.gradle", "gradlew", "gradlew.bat", "gradlew.cmd"} {
+		if util.IsFile(filepath.Join(workspace, gradleFile)) {
+			return JibGradle, nil
+		}
+	}
+	// check for typical maven files; .mvn is a directory used for polyglot maven
+	if util.IsFile(filepath.Join(workspace, "pom.xml")) || util.IsDir(filepath.Join(workspace, ".mvn")) {
+		return JibMaven, nil
+	}
+	return -1, errors.Errorf("Unable to determine Jib plugin type for %s", workspace)
+}
+
 // getDependencies returns a list of files to watch for changes to rebuild
-func getDependencies(workspace string, cmd *exec.Cmd, projectName string) ([]string, error) {
+func getDependencies(workspace string, cmd exec.Cmd, projectName string) ([]string, error) {
 	var dependencyList []string
 	files, ok := watchedFiles[projectName]
 	if !ok {
@@ -73,7 +145,6 @@ func getDependencies(workspace string, cmd *exec.Cmd, projectName string) ([]str
 		if err := refreshDependencyList(&files, cmd); err != nil {
 			return nil, errors.Wrap(err, "initial Jib dependency refresh failed")
 		}
-
 	} else if err := walkFiles(workspace, files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
 		// Walk build files to check for changes
 		if val, ok := files.BuildFileTimes[path]; !ok || info.ModTime() != val {
@@ -107,10 +178,10 @@ func getDependencies(workspace string, cmd *exec.Cmd, projectName string) ([]str
 }
 
 // refreshDependencyList calls out to Jib to update files with the latest list of files/directories to watch.
-func refreshDependencyList(files *filesLists, cmd *exec.Cmd) error {
-	stdout, err := util.RunCmdOut(cmd)
+func refreshDependencyList(files *filesLists, cmd exec.Cmd) error {
+	stdout, err := util.RunCmdOut(&cmd)
 	if err != nil {
-		return errors.Wrap(err, "failed to get Jib dependencies; it's possible you are using an old version of Jib (Skaffold requires Jib v1.0.2+)")
+		return errors.Wrap(err, "failed to get Jib dependencies")
 	}
 
 	// Search for Jib's output JSON. Jib's Maven/Gradle output takes the following form:
@@ -229,4 +300,15 @@ func relativize(path string, roots ...string) (string, error) {
 		}
 	}
 	return "", errors.New("could not relativize path")
+}
+
+// isOnInsecureRegistry checks if the given image specifies an insecure registry
+func isOnInsecureRegistry(image string, insecureRegistries map[string]bool) (bool, error) {
+	ref, err := name.ParseReference(image)
+	if err != nil {
+		return false, err
+	}
+
+	registry := ref.Context().Registry.Name()
+	return docker.IsInsecure(registry, insecureRegistries), nil
 }

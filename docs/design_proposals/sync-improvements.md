@@ -102,7 +102,7 @@ type Builder interface {
    DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 
    // ADDED
-   SyncMap() (map[string][]string, error)
+   SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error)
 }
 ```
 
@@ -286,8 +286,11 @@ Resolution: This is an implementation detail.
 
 1. Upgrade `artifact.sync` to the new sync rule structure and test schema validation.
    Should already support multiple destination paths. (#1847)
-2. Add inference logic for docker and examples. (#1812)
+2. Add inference logic for docker. (#2084)
 3. Support support sync rules with inference. (former #1812, will become separate PR)
+   - includes integration tests
+   - includes doc update
+   - includes example showcase
 4. (out of scope) Smart sync mode by allowing builders to specify default sync rules.
    - Support smart sync for jib.
    - Possibly support smart sync for Dockerfile when `ADD` or `COPY` are not followed by a `RUN` command.
@@ -301,6 +304,7 @@ Resolution: This is an implementation detail.
 
 - **implementation step 3** Set up automatic destination syncing and delete a local input file.
   Expect that the input file is also deleted in the container.
+  _Update_: This expectation cannot be met, because a deleted file is no longer contained in the inferred syncmap. Thus file deletion with inferred sync mode must trigger a rebuild.
 
 - **implementation step 4** Add a test case that that features builder plugin sync patterns.
 

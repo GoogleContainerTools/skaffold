@@ -18,431 +18,234 @@ package cache
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"reflect"
-	"sort"
+	"errors"
+	"io"
+	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 )
 
-// artifactSorter joins a By function and a slice of Planets to be sorted.
-type artifactSorter struct {
-	artifacts []*latest.Artifact
+type depLister struct {
+	files map[string][]string
 }
 
-// Len is part of sort.Interface.
-func (s *artifactSorter) Len() int {
-	return len(s.artifacts)
-}
-
-// Swap is part of sort.Interface.
-func (s *artifactSorter) Swap(i, j int) {
-	s.artifacts[i], s.artifacts[j] = s.artifacts[j], s.artifacts[i]
-}
-
-// Less is part of sort.Interface. It is implemented by calling the "by" closure in the sorter.
-func (s *artifactSorter) Less(i, j int) bool {
-	return s.artifacts[i].ImageName < s.artifacts[j].ImageName
-}
-
-func Test_RetrieveCachedArtifacts(t *testing.T) {
-	tests := []struct {
-		name                 string
-		cache                *Cache
-		hashes               map[string]string
-		artifacts            []*latest.Artifact
-		expectedArtifacts    []*latest.Artifact
-		api                  testutil.FakeAPIClient
-		expectedBuildResults []build.Artifact
-	}{
-		{
-			name:              "useCache is false, return all artifacts",
-			cache:             &Cache{},
-			artifacts:         []*latest.Artifact{{ImageName: "image1"}},
-			expectedArtifacts: []*latest.Artifact{{ImageName: "image1"}},
-		},
-		{
-			name:              "no artifacts in cache",
-			cache:             &Cache{useCache: true},
-			hashes:            map[string]string{"image1": "hash", "image2": "hash2"},
-			artifacts:         []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			expectedArtifacts: []*latest.Artifact{{ImageName: "image1", WorkspaceHash: "hash"}, {ImageName: "image2", WorkspaceHash: "hash2"}},
-		},
-		{
-			name: "one artifact in cache",
-			cache: &Cache{
-				useCache: true,
-				artifactCache: ArtifactCache{"workspace-hash": ImageDetails{
-					Digest: "sha256@digest",
-				}},
-			},
-			hashes: map[string]string{"image1": "workspace-hash", "image2": "workspace-hash-2"},
-			api: testutil.FakeAPIClient{
-				TagToImageID: map[string]string{"image1:workspace-hash": "image1:tag"},
-				ImageSummaries: []types.ImageSummary{
-					{
-						RepoDigests: []string{"sha256@digest"},
-						RepoTags:    []string{"image1:workspace-hash"},
-					},
-				},
-			},
-			artifacts:            []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			expectedBuildResults: []build.Artifact{{ImageName: "image1", Tag: "image1:workspace-hash"}},
-			expectedArtifacts:    []*latest.Artifact{{ImageName: "image2", WorkspaceHash: "workspace-hash-2"}},
-		},
-		{
-			name: "both artifacts in cache, but only one exists locally",
-			cache: &Cache{
-				useCache: true,
-				artifactCache: ArtifactCache{
-					"hash":  ImageDetails{Digest: "sha256@digest1"},
-					"hash2": ImageDetails{Digest: "sha256@digest2"},
-				},
-			},
-			api: testutil.FakeAPIClient{
-				TagToImageID: map[string]string{"image1:hash": "image1:tag"},
-				ImageSummaries: []types.ImageSummary{
-					{
-						ID:          "id",
-						RepoDigests: []string{"sha256@digest1"},
-						RepoTags:    []string{"image1:hash"},
-					},
-				},
-			},
-			hashes:               map[string]string{"image1": "hash", "image2": "hash2"},
-			artifacts:            []*latest.Artifact{{ImageName: "image1"}, {ImageName: "image2"}},
-			expectedArtifacts:    []*latest.Artifact{{ImageName: "image2", WorkspaceHash: "hash2"}},
-			expectedBuildResults: []build.Artifact{{ImageName: "image1", Tag: "image1:hash"}},
-		},
+func (d *depLister) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+	list, found := d.files[artifact.ImageName]
+	if !found {
+		return nil, errors.New("unknown artifact")
 	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			defer func(h func(context.Context, build.Builder, *latest.Artifact) (string, error)) { hashForArtifact = h }(hashForArtifact)
-			hashForArtifact = mockHashForArtifact(test.hashes)
-
-			test.cache.client = docker.NewLocalDaemon(&test.api, nil, false, map[string]bool{})
-
-			actualArtifacts, actualBuildResults, err := test.cache.RetrieveCachedArtifacts(context.Background(), os.Stdout, test.artifacts)
-			sort.Sort(&artifactSorter{artifacts: actualArtifacts})
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expectedArtifacts, actualArtifacts)
-			testutil.CheckDeepEqual(t, test.expectedBuildResults, actualBuildResults)
-		})
-	}
+	return list, nil
 }
 
-func TestRetrieveCachedArtifactDetails(t *testing.T) {
-	tests := []struct {
-		name                      string
-		targetImageExistsRemotely bool
-		artifact                  *latest.Artifact
-		hashes                    map[string]string
-		digest                    string
-		api                       *testutil.FakeAPIClient
-		cache                     *Cache
-		expected                  *cachedArtifactDetails
-	}{
-		{
-			name:     "image doesn't exist in cache, remote cluster",
-			artifact: &latest.Artifact{ImageName: "image"},
-			hashes:   map[string]string{"image": "hash"},
-			cache:    noCache,
-			expected: &cachedArtifactDetails{
-				needsRebuild: true,
-			},
-		},
-		{
-			name:     "image doesn't exist in cache, local cluster",
-			artifact: &latest.Artifact{ImageName: "image"},
-			hashes:   map[string]string{"image": "hash"},
-			cache:    noCache,
-			expected: &cachedArtifactDetails{
-				needsRebuild: true,
-			},
-		},
-		{
-			name:                      "image in cache and exists remotely, remote cluster",
-			targetImageExistsRemotely: true,
-			artifact:                  &latest.Artifact{ImageName: "image"},
-			hashes:                    map[string]string{"image": "hash"},
-			api: &testutil.FakeAPIClient{
-				TagToImageID: map[string]string{"image:hash": "image:tag"},
-				ImageSummaries: []types.ImageSummary{
-					{
-						RepoDigests: []string{"digest"},
-						RepoTags:    []string{"image:hash"},
-					},
-				},
-			},
-			cache: &Cache{
-				useCache:      true,
-				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: "digest"}},
-			},
-			digest: "digest",
-			expected: &cachedArtifactDetails{
-				hashTag:       "image:hash",
-				prebuiltImage: "image:hash",
-			},
-		},
-		{
-			name:     "image in cache and exists in daemon, local cluster",
-			artifact: &latest.Artifact{ImageName: "image"},
-			hashes:   map[string]string{"image": "hash"},
-			api: &testutil.FakeAPIClient{
-				TagToImageID: map[string]string{"image:hash": "image:tag"},
-				ImageSummaries: []types.ImageSummary{
-					{
-						RepoDigests: []string{"digest"},
-						RepoTags:    []string{"image:hash"},
-					},
-				},
-			},
-			cache: &Cache{
-				useCache:      true,
-				localCluster:  true,
-				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: "digest"}},
-			},
-			digest: "digest",
-			expected: &cachedArtifactDetails{
-				hashTag:       "image:hash",
-				prebuiltImage: "image:hash",
-			},
-		},
-		{
-			name:                      "image in cache, prebuilt image exists, remote cluster",
-			targetImageExistsRemotely: true,
-			api:                       &testutil.FakeAPIClient{},
-			artifact:                  &latest.Artifact{ImageName: "image"},
-			hashes:                    map[string]string{"image": "hash"},
-			cache: &Cache{
-				useCache:      true,
-				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
-				imageList: []types.ImageSummary{
-					{
-						RepoDigests: []string{fmt.Sprintf("image@%s", digest)},
-						RepoTags:    []string{"anotherimage:hash"},
-					},
-				},
-			},
-			digest: digest,
-			expected: &cachedArtifactDetails{
-				hashTag:       "image:hash",
-				prebuiltImage: "anotherimage:hash",
-				needsRetag:    true,
-			},
-		},
-		{
-			name:     "image in cache, prebuilt image exists, local cluster",
-			artifact: &latest.Artifact{ImageName: "image"},
-			hashes:   map[string]string{"image": "hash"},
-			api:      &testutil.FakeAPIClient{},
-			cache: &Cache{
-				useCache:      true,
-				localCluster:  true,
-				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
-				imageList: []types.ImageSummary{
-					{
-						RepoDigests: []string{fmt.Sprintf("image@%s", digest)},
-						RepoTags:    []string{"anotherimage:hash"},
-					},
-				},
-			},
-			digest: digest,
-			expected: &cachedArtifactDetails{
-				needsRetag:    true,
-				prebuiltImage: "anotherimage:hash",
-				hashTag:       "image:hash",
-			},
-		},
-		{
-			name:                      "push specified, local cluster, image exists remotely",
-			targetImageExistsRemotely: true,
-			api:                       &testutil.FakeAPIClient{},
-			artifact:                  &latest.Artifact{ImageName: "image"},
-			hashes:                    map[string]string{"image": "hash"},
-			cache: &Cache{
-				useCache:      true,
-				pushImages:    true,
-				localCluster:  true,
-				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
-				imageList: []types.ImageSummary{
-					{
-						RepoDigests: []string{fmt.Sprintf("image@%s", digest)},
-						RepoTags:    []string{"anotherimage:hash"},
-					},
-				},
-			},
-			digest: digest,
-			expected: &cachedArtifactDetails{
-				needsRetag:    true,
-				prebuiltImage: "anotherimage:hash",
-				hashTag:       "image:hash",
-			},
-		},
-		{
-			name:                      "no local daemon, image exists remotely",
-			artifact:                  &latest.Artifact{ImageName: "image"},
-			hashes:                    map[string]string{"image": "hash"},
-			targetImageExistsRemotely: true,
-			cache: &Cache{
-				useCache:      true,
-				pushImages:    true,
-				artifactCache: ArtifactCache{"hash": ImageDetails{Digest: digest}},
-			},
-			digest: digest,
-			expected: &cachedArtifactDetails{
-				hashTag: "image:hash",
-			},
-		},
-	}
+type mockBuilder struct {
+	built        []*latest.Artifact
+	push         bool
+	dockerDaemon docker.LocalDaemon
+}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			defer func(h func(context.Context, build.Builder, *latest.Artifact) (string, error)) { hashForArtifact = h }(hashForArtifact)
-			hashForArtifact = mockHashForArtifact(test.hashes)
+func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
+	var built []build.Artifact
 
-			defer func(d func(string, map[string]bool) (string, error)) { remoteDigest = d }(remoteDigest)
-			remoteDigest = func(string, map[string]bool) (string, error) {
-				return test.digest, nil
-			}
+	for _, artifact := range artifacts {
+		b.built = append(b.built, artifact)
+		tag := tags[artifact.ImageName]
 
-			defer func(i func(string, string, map[string]bool) bool) { imgExistsRemotely = i }(imgExistsRemotely)
-			imgExistsRemotely = func(string, string, map[string]bool) bool {
-				return test.targetImageExistsRemotely
-			}
+		_, err := b.dockerDaemon.Build(ctx, out, artifact.Workspace, artifact.DockerArtifact, tag)
+		if err != nil {
+			return nil, err
+		}
 
-			if test.api != nil {
-				test.cache.client = docker.NewLocalDaemon(test.api, nil, false, map[string]bool{})
-			}
-			actual, err := test.cache.retrieveCachedArtifactDetails(context.Background(), test.artifact)
+		if b.push {
+			digest, err := b.dockerDaemon.Push(ctx, out, tag)
 			if err != nil {
-				t.Fatalf("error retrieving artifact details: %v", err)
+				return nil, err
 			}
-			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
-			if !reflect.DeepEqual(test.expected, actual) {
-				t.Errorf("Expected: %v, Actual: %v", test.expected, actual)
-			}
-		})
+
+			built = append(built, build.Artifact{
+				ImageName: artifact.ImageName,
+				Tag:       tag + "@" + digest,
+			})
+		} else {
+			built = append(built, build.Artifact{
+				ImageName: artifact.ImageName,
+				Tag:       tag,
+			})
+		}
 	}
+
+	return built, nil
 }
 
-func TestRetrievePrebuiltImage(t *testing.T) {
-	tests := []struct {
-		name         string
-		cache        *Cache
-		imageDetails ImageDetails
-		shouldErr    bool
-		expected     string
-	}{
-		{
-			name: "one image id exists",
-			cache: &Cache{
-				imageList: []types.ImageSummary{
-					{
-						RepoTags:    []string{"image:mytag"},
-						RepoDigests: []string{image},
-					},
-					{
-						RepoTags:    []string{"image1:latest"},
-						RepoDigests: []string{imageOne},
-					},
-				},
+type stubAuth struct{}
+
+func (t stubAuth) GetAuthConfig(string) (types.AuthConfig, error)          { return types.AuthConfig{}, nil }
+func (t stubAuth) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { return nil, nil }
+
+func TestCacheBuildLocal(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&buildComplete, func(string) {})
+		t.Override(&buildInProgress, func(string) {})
+
+		tmpDir := t.NewTempDir().
+			Write("dep1", "content1").
+			Write("dep2", "content2").
+			Write("dep3", "content3").
+			Chdir()
+
+		runCtx := &runcontext.RunContext{
+			Opts: config.SkaffoldOptions{
+				CacheArtifacts: true,
+				CacheFile:      tmpDir.Path("cache"),
 			},
-			imageDetails: ImageDetails{
-				Digest: digest,
+		}
+		tags := map[string]string{
+			"artifact1": "artifact1:tag1",
+			"artifact2": "artifact2:tag2",
+		}
+		artifacts := []*latest.Artifact{
+			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+			{ImageName: "artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+		}
+		deps := &depLister{
+			files: map[string][]string{
+				"artifact1": {"dep1", "dep2"},
+				"artifact2": {"dep3"},
 			},
-			expected: "image:mytag",
-		},
-		{
-			name: "no image id exists",
-			cache: &Cache{
-				imageList: []types.ImageSummary{
-					{
-						RepoTags:    []string{"image:mytag"},
-						RepoDigests: []string{image},
-					},
-					{
-						RepoTags:    []string{"image:mytag"},
-						RepoDigests: []string{image},
-					},
-				},
-			},
-			shouldErr: true,
-			imageDetails: ImageDetails{
-				Digest: "dne",
-			},
-			expected: "",
-		},
-		{
-			name: "one image id exists",
-			cache: &Cache{
-				imageList: []types.ImageSummary{
-					{
-						RepoTags: []string{"image1", "image2"},
-						ID:       "something",
-					},
-					{
-						RepoTags: []string{"image3"},
-						ID:       "imageid",
-					},
-				},
-			},
-			imageDetails: ImageDetails{
-				ID: "imageid",
-			},
-			expected: "image3",
-		},
-		{
-			name: "multiple image ids exist",
-			cache: &Cache{
-				imageList: []types.ImageSummary{
-					{
-						RepoTags: []string{"image1", "image2"},
-						ID:       "something",
-					},
-					{
-						RepoTags: []string{"image3", "image4"},
-						ID:       "imageid",
-					},
-				},
-			},
-			imageDetails: ImageDetails{
-				ID: "imageid",
-			},
-			expected: "image3",
-		},
-		{
-			name: "no image id exists",
-			cache: &Cache{
-				imageList: []types.ImageSummary{
-					{
-						RepoTags: []string{"image1", "image2"},
-						ID:       "something",
-					},
-					{
-						RepoTags: []string{"image3"},
-						ID:       "somethingelse",
-					},
-				},
-			},
-			imageDetails: ImageDetails{
-				ID: "imageid",
-			},
-			shouldErr: true,
-			expected:  "",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			test.cache.client = docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, map[string]bool{})
-			actual, err := test.cache.retrievePrebuiltImage(test.imageDetails)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, actual)
+		}
+
+		// Mock Docker
+		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
+		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			return dockerDaemon, nil
 		})
-	}
+
+		// Create cache
+		artifactCache, err := NewCache(runCtx, true, deps)
+		t.CheckNoError(err)
+
+		// First build: Need to build both artifacts
+		builder := &mockBuilder{dockerDaemon: dockerDaemon, push: false}
+		bRes, err := artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(2, len(builder.built))
+		t.CheckDeepEqual(2, len(bRes))
+
+		// Second build: both artifacts are read from cache
+		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false}
+		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(0, len(builder.built))
+		t.CheckDeepEqual(2, len(bRes))
+		// Artifacts should always be returned in their original order
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
+
+		// Third build: change one artifact's dependencies
+		tmpDir.Write("dep1", "new content")
+		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false}
+		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(1, len(builder.built))
+		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
+	})
+}
+
+func TestCacheBuildRemote(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&buildComplete, func(string) {})
+		t.Override(&buildInProgress, func(string) {})
+
+		tmpDir := t.NewTempDir().
+			Write("dep1", "content1").
+			Write("dep2", "content2").
+			Write("dep3", "content3").
+			Chdir()
+
+		runCtx := &runcontext.RunContext{
+			Opts: config.SkaffoldOptions{
+				CacheArtifacts: true,
+				CacheFile:      tmpDir.Path("cache"),
+			},
+		}
+		tags := map[string]string{
+			"artifact1": "artifact1:tag1",
+			"artifact2": "artifact2:tag2",
+		}
+		artifacts := []*latest.Artifact{
+			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+			{ImageName: "artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
+		}
+		deps := &depLister{
+			files: map[string][]string{
+				"artifact1": {"dep1", "dep2"},
+				"artifact2": {"dep3"},
+			},
+		}
+
+		// Mock Docker
+		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
+		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			return dockerDaemon, nil
+		})
+		t.Override(&docker.DefaultAuthHelper, stubAuth{})
+		t.Override(&docker.RemoteDigest, func(ref string, _ map[string]bool) (string, error) {
+			switch ref {
+			case "artifact1:tag1":
+				return "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165", nil
+			case "artifact2:tag2":
+				return "sha256:35bdf2619f59e6f2372a92cb5486f4a0bf9b86e0e89ee0672864db6ed9c51539", nil
+			default:
+				return "", errors.New("unknown remote tag")
+			}
+		})
+
+		// Create cache
+		artifactCache, err := NewCache(runCtx, false, deps)
+		t.CheckNoError(err)
+
+		// First build: Need to build both artifacts
+		builder := &mockBuilder{dockerDaemon: dockerDaemon, push: true}
+		bRes, err := artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(2, len(builder.built))
+		t.CheckDeepEqual(2, len(bRes))
+		// Artifacts should always be returned in their original order
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
+
+		// Second build: both artifacts are read from cache
+		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: true}
+		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(0, len(builder.built))
+		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
+
+		// Third build: change one artifact's dependencies
+		tmpDir.Write("dep1", "new content")
+		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: true}
+		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(1, len(builder.built))
+		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
+	})
 }

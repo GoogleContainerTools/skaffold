@@ -1,0 +1,8 @@
+# The following flags are set to test use of new features for python toolchains
+# These flags will only work with Bazel 0.25.0 or above.
+build --incompatible_use_python_toolchains
+build --host_force_python=PY2
+test --incompatible_use_python_toolchains
+test --host_force_python=PY2
+run --incompatible_use_python_toolchains
+run --host_force_python=PY2

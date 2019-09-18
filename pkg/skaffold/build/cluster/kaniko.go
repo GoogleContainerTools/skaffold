@@ -22,7 +22,6 @@ import (
 	"io"
 	"sort"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -35,7 +34,7 @@ import (
 
 func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	// Prepare context
-	s := sources.Retrieve(b.ClusterDetails, artifact.KanikoArtifact)
+	s := sources.Retrieve(b.kubectlcli, b.ClusterDetails, artifact.KanikoArtifact)
 	dependencies, err := b.DependenciesForArtifact(ctx, artifact)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
@@ -46,36 +45,19 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	}
 	defer s.Cleanup(ctx)
 
-	kanikoArtifact := artifact.KanikoArtifact
-	// Create pod spec
-	args := []string{
-		"--dockerfile", kanikoArtifact.DockerfilePath,
-		"--context", context,
-		"--destination", tag,
-		"-v", logLevel().String()}
-
-	// TODO: remove since AdditionalFlags will be deprecated (priyawadhwa@)
-	if kanikoArtifact.AdditionalFlags != nil {
-		logrus.Warn("The additionalFlags field in kaniko is deprecated, please consult the current schema at skaffold.dev to update your skaffold.yaml.")
-		args = append(args, kanikoArtifact.AdditionalFlags...)
-	}
-	args = appendBuildArgsIfExists(args, kanikoArtifact.BuildArgs)
-	args = appendTargetIfExists(args, kanikoArtifact.Target)
-	args = appendCacheIfExists(args, kanikoArtifact.Cache)
-
-	if artifact.WorkspaceHash != "" {
-		hashTag := cache.HashTag(artifact)
-		args = append(args, []string{"--destination", hashTag}...)
-	}
-
-	podSpec := s.Pod(args)
-	// Create pod
-	client, err := kubernetes.GetClientset()
+	args, err := args(artifact.KanikoArtifact, context, tag)
 	if err != nil {
-		return "", errors.Wrap(err, "")
+		return "", errors.Wrap(err, "building args list")
 	}
-	pods := client.CoreV1().Pods(b.Namespace)
 
+	// Create pod
+	client, err := kubernetes.Client()
+	if err != nil {
+		return "", errors.Wrap(err, "getting kubernetes client")
+	}
+
+	pods := client.CoreV1().Pods(b.Namespace)
+	podSpec := s.Pod(args)
 	pod, err := pods.Create(podSpec)
 	if err != nil {
 		return "", errors.Wrap(err, "creating kaniko pod")
@@ -94,53 +76,68 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 
 	waitForLogs := streamLogs(out, pod.Name, pods)
 
-	if err := kubernetes.WaitForPodComplete(ctx, pods, pod.Name, b.timeout); err != nil {
+	err = kubernetes.WaitForPodSucceeded(ctx, pods, pod.Name, b.timeout)
+	waitForLogs()
+	if err != nil {
 		return "", errors.Wrap(err, "waiting for pod to complete")
 	}
-
-	waitForLogs()
 
 	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
 
-func appendCacheIfExists(args []string, cache *latest.KanikoCache) []string {
-	if cache == nil {
-		return args
-	}
-	args = append(args, "--cache=true")
-	if cache.Repo != "" {
-		args = append(args, fmt.Sprintf("--cache-repo=%s", cache.Repo))
-	}
-	return args
-}
+func args(artifact *latest.KanikoArtifact, context, tag string) ([]string, error) {
+	// Create pod spec
+	args := []string{
+		"--dockerfile", artifact.DockerfilePath,
+		"--context", context,
+		"--destination", tag,
+		"-v", logLevel().String()}
 
-func appendTargetIfExists(args []string, target string) []string {
-	if target == "" {
-		return args
-	}
-	return append(args, fmt.Sprintf("--target=%s", target))
-}
-
-func appendBuildArgsIfExists(args []string, buildArgs map[string]*string) []string {
-	if buildArgs == nil {
-		return args
+	// TODO: remove since AdditionalFlags will be deprecated (priyawadhwa@)
+	if artifact.AdditionalFlags != nil {
+		logrus.Warn("The additionalFlags field in kaniko is deprecated, please consult the current schema at skaffold.dev to update your skaffold.yaml.")
+		args = append(args, artifact.AdditionalFlags...)
 	}
 
-	var keys []string
-	for k := range buildArgs {
-		keys = append(keys, k)
+	buildArgs, err := docker.EvaluateBuildArgs(artifact.BuildArgs)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to evaluate build args")
 	}
-	sort.Strings(keys)
 
-	for _, k := range keys {
-		args = append(args, "--build-arg")
+	if buildArgs != nil {
+		var keys []string
+		for k := range buildArgs {
+			keys = append(keys, k)
+		}
+		sort.Strings(keys)
 
-		v := buildArgs[k]
-		if v == nil {
-			args = append(args, k)
-		} else {
-			args = append(args, fmt.Sprintf("%s=%s", k, *v))
+		for _, k := range keys {
+			v := buildArgs[k]
+			if v == nil {
+				args = append(args, "--build-arg", k)
+			} else {
+				args = append(args, "--build-arg", fmt.Sprintf("%s=%s", k, *v))
+			}
 		}
 	}
-	return args
+
+	if artifact.Target != "" {
+		args = append(args, "--target", artifact.Target)
+	}
+
+	if artifact.Cache != nil {
+		args = append(args, "--cache=true")
+		if artifact.Cache.Repo != "" {
+			args = append(args, "--cache-repo", artifact.Cache.Repo)
+		}
+		if artifact.Cache.HostPath != "" {
+			args = append(args, "--cache-dir", artifact.Cache.HostPath)
+		}
+	}
+
+	if artifact.Reproducible {
+		args = append(args, "--reproducible")
+	}
+
+	return args, nil
 }

@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
@@ -86,6 +87,15 @@ func Init(args ...string) *RunBuilder {
 	return &RunBuilder{command: "init", args: args}
 }
 
+// Diagnose runs `skaffold diagnose` with the given arguments.
+func Diagnose(args ...string) *RunBuilder {
+	return &RunBuilder{command: "diagnose", args: args}
+}
+
+func GeneratePipeline(args ...string) *RunBuilder {
+	return &RunBuilder{command: "generate-pipeline", args: args}
+}
+
 // InDir sets the directory in which skaffold is running.
 func (b *RunBuilder) InDir(dir string) *RunBuilder {
 	b.dir = dir
@@ -144,10 +154,7 @@ func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 // RunOrFail runs the skaffold command and fails the test
 // if the command returns an error.
 func (b *RunBuilder) RunOrFail(t *testing.T) {
-	t.Helper()
-	if err := b.Run(t); err != nil {
-		t.Fatal(err)
-	}
+	b.RunOrFailOutput(t)
 }
 
 // Run runs the skaffold command.
@@ -166,6 +173,24 @@ func (b *RunBuilder) Run(t *testing.T) error {
 	return nil
 }
 
+// RunWithCombinedOutput runs the skaffold command and returns the combined standard output and error.
+func (b *RunBuilder) RunWithCombinedOutput(t *testing.T) ([]byte, error) {
+	t.Helper()
+
+	cmd := b.cmd(context.Background())
+	cmd.Stdout, cmd.Stderr = nil, nil
+	logrus.Infoln(cmd.Args)
+
+	start := time.Now()
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return out, errors.Wrapf(err, "skaffold %s", b.command)
+	}
+
+	logrus.Infoln("Ran in", time.Since(start))
+	return out, nil
+}
+
 // RunOrFailOutput runs the skaffold command and fails the test
 // if the command returns an error.
 // It only returns the standard output.
@@ -179,6 +204,9 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 	start := time.Now()
 	out, err := cmd.Output()
 	if err != nil {
+		if ee, ok := err.(*exec.ExitError); ok {
+			defer t.Errorf(string(ee.Stderr))
+		}
 		t.Fatalf("skaffold %s: %v, %s", b.command, err, out)
 	}
 
@@ -197,7 +225,7 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	args = append(args, b.args...)
 
 	cmd := exec.CommandContext(ctx, "skaffold", args...)
-	cmd.Env = append(removeSkaffoldEnvVariables(os.Environ()), b.env...)
+	cmd.Env = append(removeSkaffoldEnvVariables(util.OSEnviron()), b.env...)
 	if b.stdin != nil {
 		cmd.Stdin = bytes.NewReader(b.stdin)
 	}

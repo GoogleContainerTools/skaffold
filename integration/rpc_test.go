@@ -29,7 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event/proto"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes/empty"
@@ -46,6 +46,9 @@ var (
 func TestEventLogRPC(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
 	}
 
 	rpcAddr := randomPort()
@@ -130,73 +133,99 @@ func TestEventLogRPC(t *testing.T) {
 }
 
 func TestEventLogHTTP(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
+	tests := []struct {
+		description string
+		endpoint    string
+	}{
+		{
+			description: "/v1/event_log",
+			endpoint:    "/v1/event_log",
+		},
+		{
+			description: "/v1/events",
+			endpoint:    "/v1/events",
+		},
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
 	}
 
-	httpAddr := randomPort()
-	teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
-	defer teardown()
-	time.Sleep(500 * time.Millisecond) // give skaffold time to process all events
-
-	httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s/v1/event_log", httpAddr))
-	if err != nil {
-		t.Fatalf("error connecting to gRPC REST API: %s", err.Error())
-	}
-	numEntries := 0
-	var logEntries []proto.LogEntry
-	for {
-		e := make([]byte, 1024)
-		l, err := httpResponse.Body.Read(e)
-		if err != nil {
-			t.Errorf("error reading body from http response: %s", err.Error())
-		}
-		e = e[0:l] // remove empty bytes from slice
-
-		// sometimes reads can encompass multiple log entries, since Read() doesn't count newlines as EOF.
-		readEntries := strings.Split(string(e), "\n")
-		for _, entryStr := range readEntries {
-			if entryStr == "" {
-				continue
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			if testing.Short() {
+				t.Skip("skipping integration test")
 			}
-			var entry proto.LogEntry
-			// the HTTP wrapper sticks the proto messages into a map of "result" -> message.
-			// attempting to JSON unmarshal drops necessary proto information, so we just manually
-			// strip the string off the response and unmarshal directly to the proto message
-			entryStr = strings.Replace(entryStr, "{\"result\":", "", 1)
-			entryStr = entryStr[:len(entryStr)-1]
-			if err := jsonpb.UnmarshalString(entryStr, &entry); err != nil {
-				t.Errorf("error converting http response to proto: %s", err.Error())
-			}
-			numEntries++
-			logEntries = append(logEntries, entry)
-		}
-		if numEntries >= numLogEntries {
-			break
-		}
-	}
 
-	metaEntries, buildEntries, deployEntries := 0, 0, 0
-	for _, entry := range logEntries {
-		switch entry.Event.GetEventType().(type) {
-		case *proto.Event_MetaEvent:
-			metaEntries++
-		case *proto.Event_BuildEvent:
-			buildEntries++
-		case *proto.Event_DeployEvent:
-			deployEntries++
-		default:
-		}
+			httpAddr := randomPort()
+			teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
+			defer teardown()
+			time.Sleep(500 * time.Millisecond) // give skaffold time to process all events
+
+			httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s%s", httpAddr, test.endpoint))
+			if err != nil {
+				t.Fatalf("error connecting to gRPC REST API: %s", err.Error())
+			}
+			defer httpResponse.Body.Close()
+
+			numEntries := 0
+			var logEntries []proto.LogEntry
+			for {
+				e := make([]byte, 1024)
+				l, err := httpResponse.Body.Read(e)
+				if err != nil {
+					t.Errorf("error reading body from http response: %s", err.Error())
+				}
+				e = e[0:l] // remove empty bytes from slice
+
+				// sometimes reads can encompass multiple log entries, since Read() doesn't count newlines as EOF.
+				readEntries := strings.Split(string(e), "\n")
+				for _, entryStr := range readEntries {
+					if entryStr == "" {
+						continue
+					}
+					var entry proto.LogEntry
+					// the HTTP wrapper sticks the proto messages into a map of "result" -> message.
+					// attempting to JSON unmarshal drops necessary proto information, so we just manually
+					// strip the string off the response and unmarshal directly to the proto message
+					entryStr = strings.Replace(entryStr, "{\"result\":", "", 1)
+					entryStr = entryStr[:len(entryStr)-1]
+					if err := jsonpb.UnmarshalString(entryStr, &entry); err != nil {
+						t.Errorf("error converting http response to proto: %s", err.Error())
+					}
+					numEntries++
+					logEntries = append(logEntries, entry)
+				}
+				if numEntries >= numLogEntries {
+					break
+				}
+			}
+
+			metaEntries, buildEntries, deployEntries := 0, 0, 0
+			for _, entry := range logEntries {
+				switch entry.Event.GetEventType().(type) {
+				case *proto.Event_MetaEvent:
+					metaEntries++
+				case *proto.Event_BuildEvent:
+					buildEntries++
+				case *proto.Event_DeployEvent:
+					deployEntries++
+				default:
+				}
+			}
+			// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries
+			testutil.CheckDeepEqual(t, 1, metaEntries)
+			testutil.CheckDeepEqual(t, 2, deployEntries)
+			testutil.CheckDeepEqual(t, 2, buildEntries)
+		})
 	}
-	// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries
-	testutil.CheckDeepEqual(t, 1, metaEntries)
-	testutil.CheckDeepEqual(t, 2, deployEntries)
-	testutil.CheckDeepEqual(t, 2, buildEntries)
 }
 
 func TestGetStateRPC(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
 	}
 
 	rpcAddr := randomPort()
@@ -251,6 +280,9 @@ func TestGetStateHTTP(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
 
 	httpAddr := randomPort()
 	teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
@@ -300,6 +332,8 @@ func retrieveHTTPState(t *testing.T, httpAddr string) proto.State {
 	if err != nil {
 		t.Fatalf("error connecting to gRPC REST API: %s", err.Error())
 	}
+	defer httpResponse.Body.Close()
+
 	b, err := ioutil.ReadAll(httpResponse.Body)
 	if err != nil {
 		t.Errorf("error reading body from http response: %s", err.Error())
@@ -339,4 +373,33 @@ func checkBuildAndDeployComplete(state proto.State) bool {
 		}
 	}
 	return state.DeployState.Status == event.Complete
+}
+
+func setupRPCClient(t *testing.T, port string) (proto.SkaffoldServiceClient, func()) {
+	// start a grpc client
+	var (
+		conn   *grpc.ClientConn
+		err    error
+		client proto.SkaffoldServiceClient
+	)
+
+	// connect to the skaffold grpc server
+	for i := 0; i < connectionRetries; i++ {
+		conn, err = grpc.Dial(fmt.Sprintf(":%s", port), grpc.WithInsecure())
+		if err != nil {
+			t.Logf("unable to establish skaffold grpc connection: retrying...")
+			time.Sleep(waitTime)
+			continue
+		}
+
+		client = proto.NewSkaffoldServiceClient(conn)
+		break
+	}
+
+	if client == nil {
+		t.Fatalf("error establishing skaffold grpc connection")
+	}
+	return client, func() {
+		conn.Close()
+	}
 }

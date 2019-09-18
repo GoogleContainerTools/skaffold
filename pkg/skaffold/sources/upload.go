@@ -36,13 +36,7 @@ func TarGz(ctx context.Context, w io.Writer, a *latest.Artifact, dependencies []
 }
 
 // UploadToGCS uploads the artifact's sources to a GCS bucket.
-func UploadToGCS(ctx context.Context, a *latest.Artifact, bucket, objectName string, dependencies []string) error {
-	c, err := cstorage.NewClient(ctx)
-	if err != nil {
-		return errors.Wrap(err, "creating GCS client")
-	}
-	defer c.Close()
-
+func UploadToGCS(ctx context.Context, c *cstorage.Client, a *latest.Artifact, bucket, objectName string, dependencies []string) error {
 	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
 	if err := TarGz(ctx, w, a, dependencies); err != nil {
 		return errors.Wrap(err, "uploading targz to google storage")

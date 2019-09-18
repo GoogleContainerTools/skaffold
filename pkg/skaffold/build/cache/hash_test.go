@@ -18,75 +18,127 @@ package cache
 
 import (
 	"context"
-	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-type mockBuilder struct {
+type stubDependencyLister struct {
 	dependencies []string
 }
 
-func (m *mockBuilder) Labels() map[string]string { return nil }
-
-func (m *mockBuilder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
-	return nil, nil
-}
-
-func (m *mockBuilder) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+func (m *stubDependencyLister) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 	return m.dependencies, nil
-}
-
-func (m *mockBuilder) Prune(ctx context.Context, out io.Writer) error {
-	return nil
 }
 
 var mockCacheHasher = func(s string) (string, error) {
 	return s, nil
 }
 
+var fakeArtifactConfig = func(a *latest.Artifact) (string, error) {
+	if a.ArtifactType.DockerArtifact != nil {
+		return "docker/target=" + a.ArtifactType.DockerArtifact.Target, nil
+	}
+	return "other", nil
+}
+
 func TestGetHashForArtifact(t *testing.T) {
 	tests := []struct {
-		name         string
-		dependencies [][]string
+		description  string
+		dependencies []string
+		artifact     *latest.Artifact
 		expected     string
 	}{
 		{
-			name: "check dependencies in different orders",
-			dependencies: [][]string{
-				{"a", "b"},
-				{"b", "a"},
+			description:  "hash for artifact",
+			dependencies: []string{"a", "b"},
+			artifact:     &latest.Artifact{},
+			expected:     "1caa15f7ce87536bddbac30a39768e8e3b212bf591f9b64926fa50c40b614c66",
+		},
+		{
+			description:  "dependencies in different orders",
+			dependencies: []string{"b", "a"},
+			artifact:     &latest.Artifact{},
+			expected:     "1caa15f7ce87536bddbac30a39768e8e3b212bf591f9b64926fa50c40b614c66",
+		},
+		{
+			description: "no dependencies",
+			artifact:    &latest.Artifact{},
+			expected:    "53ebd85adc9b03923a7dacfe6002879af526ef6067d441419d6e62fb9bf608ab",
+		},
+		{
+			description: "docker target",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						Target: "target",
+					},
+				},
 			},
-			expected: "eb394fd4559b1d9c383f4359667a508a615b82a74e1b160fce539f86ae0842e8",
+			expected: "f947b5aad32734914aa2dea0ec95bceff257037e6c2a529007183c3f21547eae",
+		},
+		{
+			description: "different docker target",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						Target: "other",
+					},
+				},
+			},
+			expected: "09b366c764d0e39f942283cc081d5522b9dde52e725376661808054e3ed0177f",
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			defer func(h func(string) (string, error)) { hashFunction = h }(hashFunction)
-			hashFunction = mockCacheHasher
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&hashFunction, mockCacheHasher)
+			t.Override(&artifactConfigFunction, fakeArtifactConfig)
 
-			for _, d := range test.dependencies {
-				builder := &mockBuilder{dependencies: d}
-				actual, err := getHashForArtifact(context.Background(), builder, nil)
-				testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, actual)
-			}
+			depLister := &stubDependencyLister{dependencies: test.dependencies}
+			actual, err := getHashForArtifact(context.Background(), depLister, test.artifact)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }
+
+func TestArtifactConfig(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		config1, err := artifactConfig(&latest.Artifact{
+			ArtifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					Target: "target",
+				},
+			},
+		})
+		t.CheckNoError(err)
+
+		config2, err := artifactConfig(&latest.Artifact{
+			ArtifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					Target: "other",
+				},
+			},
+		})
+		t.CheckNoError(err)
+
+		if config1 == config2 {
+			t.Errorf("configs should be different: [%s] [%s]", config1, config2)
+		}
+	})
+}
+
 func TestCacheHasher(t *testing.T) {
 	tests := []struct {
-		name          string
+		description   string
 		differentHash bool
 		newFilename   string
 		update        func(oldFile string, folder *testutil.TempDir)
 	}{
 		{
-			name:          "change filename",
+			description:   "change filename",
 			differentHash: true,
 			newFilename:   "newfoo",
 			update: func(oldFile string, folder *testutil.TempDir) {
@@ -94,14 +146,14 @@ func TestCacheHasher(t *testing.T) {
 			},
 		},
 		{
-			name:          "change file contents",
+			description:   "change file contents",
 			differentHash: true,
 			update: func(oldFile string, folder *testutil.TempDir) {
 				folder.Write(oldFile, "newcontents")
 			},
 		},
 		{
-			name:          "change both",
+			description:   "change both",
 			differentHash: true,
 			newFilename:   "newfoo",
 			update: func(oldFile string, folder *testutil.TempDir) {
@@ -110,46 +162,36 @@ func TestCacheHasher(t *testing.T) {
 			},
 		},
 		{
-			name:          "change nothing",
+			description:   "change nothing",
 			differentHash: false,
 			update:        func(oldFile string, folder *testutil.TempDir) {},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			originalFile := "foo"
 			originalContents := "contents"
 
-			folder, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
-			folder.Write(originalFile, originalContents)
+			tmpDir := t.NewTempDir().
+				Write(originalFile, originalContents)
 
 			path := originalFile
-			builder := &mockBuilder{dependencies: []string{folder.Path(originalFile)}}
+			depLister := &stubDependencyLister{dependencies: []string{tmpDir.Path(originalFile)}}
 
-			oldHash, err := getHashForArtifact(context.Background(), builder, nil)
-			if err != nil {
-				t.Errorf("error getting hash for artifact: %v", err)
-			}
+			oldHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{})
+			t.CheckNoError(err)
 
-			test.update(originalFile, folder)
+			test.update(originalFile, tmpDir)
 			if test.newFilename != "" {
 				path = test.newFilename
 			}
 
-			builder.dependencies = []string{folder.Path(path)}
-			newHash, err := getHashForArtifact(context.Background(), builder, nil)
-			if err != nil {
-				t.Errorf("error getting hash for artifact: %v", err)
-			}
+			depLister = &stubDependencyLister{dependencies: []string{tmpDir.Path(path)}}
+			newHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{})
 
-			if test.differentHash && oldHash == newHash {
-				t.Fatalf("expected hashes to be different but they were the same:\n oldHash: %s\n newHash: %s", oldHash, newHash)
-			}
-			if !test.differentHash && oldHash != newHash {
-				t.Fatalf("expected hashes to be the same but they were different:\n oldHash: %s\n newHash: %s", oldHash, newHash)
-			}
+			t.CheckNoError(err)
+			t.CheckDeepEqual(false, test.differentHash && oldHash == newHash)
+			t.CheckDeepEqual(false, !test.differentHash && oldHash != newHash)
 		})
 	}
 }

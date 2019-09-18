@@ -19,17 +19,24 @@ package integration
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"testing"
 	"time"
 
-	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	core_v1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
+
+func ShouldRunGCPOnlyTests() bool {
+	return os.Getenv("GCP_ONLY") == "true"
+}
 
 func Run(t *testing.T, dir, command string, args ...string) {
 	cmd := exec.Command(command, args...)
@@ -41,7 +48,7 @@ func Run(t *testing.T, dir, command string, args ...string) {
 
 // SetupNamespace creates a Kubernetes namespace to run a test.
 func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient, func()) {
-	client, err := kubernetesutil.GetClientset()
+	client, err := pkgkubernetes.Client()
 	if err != nil {
 		t.Fatalf("Test setup error: getting kubernetes client: %s", err)
 	}
@@ -75,8 +82,21 @@ type NSKubernetesClient struct {
 	ns     string
 }
 
+func (k *NSKubernetesClient) Pods() core_v1.PodInterface {
+	return k.client.CoreV1().Pods(k.ns)
+}
+
+func (k *NSKubernetesClient) Secrets() core_v1.SecretInterface {
+	return k.client.CoreV1().Secrets(k.ns)
+}
+
 // WaitForPodsReady waits for a list of pods to become ready.
 func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
+	k.WaitForPodsInPhase(v1.PodRunning, podNames...)
+}
+
+// WaitForPodsReady waits for a list of pods to become ready.
+func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNames ...string) {
 	if len(podNames) == 0 {
 		return
 	}
@@ -86,7 +106,8 @@ func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelTimeout()
 
-	w, err := k.client.CoreV1().Pods(k.ns).Watch(meta_v1.ListOptions{})
+	pods := k.client.CoreV1().Pods(k.ns)
+	w, err := pods.Watch(meta_v1.ListOptions{})
 	if err != nil {
 		k.t.Fatalf("Unable to watch pods: %v", err)
 	}
@@ -98,17 +119,25 @@ func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
 	waitLoop:
 		select {
 		case <-ctx.Done():
+			k.printDiskFreeSpace()
+			//k.debug("nodes")
 			k.debug("pods")
 			k.t.Fatalf("Timed out waiting for pods %v ready in namespace %s", podNames, k.ns)
 
 		case event := <-w.ResultChan():
 			pod := event.Object.(*v1.Pod)
 			logrus.Infoln("Pod", pod.Name, "is", pod.Status.Phase)
-
+			if pod.Status.Phase == v1.PodFailed {
+				logs, err := pods.GetLogs(pod.Name, &v1.PodLogOptions{}).DoRaw()
+				if err != nil {
+					k.t.Fatalf("failed to get logs for failed pod %s: %s", pod.Name, err)
+				}
+				k.t.Fatalf("pod %s failed. Logs:\n %s", pod.Name, logs)
+			}
 			phases[pod.Name] = pod.Status.Phase
 
 			for _, podName := range podNames {
-				if phases[podName] != v1.PodRunning {
+				if phases[podName] != expectedPhase {
 					break waitLoop
 				}
 			}
@@ -153,6 +182,8 @@ func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 	waitLoop:
 		select {
 		case <-ctx.Done():
+			k.printDiskFreeSpace()
+			//k.debug("nodes")
 			k.debug("deployments.apps")
 			k.debug("pods")
 			k.t.Fatalf("Timed out waiting for deployments %v to stabilize in namespace %s", depNames, k.ns)
@@ -182,6 +213,12 @@ func (k *NSKubernetesClient) debug(entities string) {
 
 	logrus.Warnln(cmd.Args)
 	// Use fmt.Println, not logrus, for prettier output
+	fmt.Println(string(out))
+}
+
+func (k *NSKubernetesClient) printDiskFreeSpace() {
+	cmd := exec.Command("df", "-h")
+	out, _ := cmd.CombinedOutput()
 	fmt.Println(string(out))
 }
 

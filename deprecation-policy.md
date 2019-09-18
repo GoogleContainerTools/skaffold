@@ -54,8 +54,7 @@ However the **behavior** of individual component might suffer breaking changes d
 - Artifact types:
   - Dockerfile: beta
   - Bazel: beta
-  - jibMaven: alpha
-  - jibGradle: alpha
+  - Jib: beta
 - Filesync: alpha
 - Port-forwarding: alpha
 - Taggers: beta
@@ -70,6 +69,7 @@ However the **behavior** of individual component might suffer breaking changes d
     - Kustomize: beta
     - Kubectl: beta
 - Profiles: beta
+- Debug: alpha
 
 ## Skaffold commands
 
@@ -78,6 +78,7 @@ Commands and their flags are subject to the deprecation policy based on the foll
 - build:  beta
 - completion:  beta
 - config:  alpha
+- debug: alpha
 - delete:  beta
 - deploy:  beta
 - dev:  beta

@@ -19,11 +19,8 @@ package deploy
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -34,6 +31,9 @@ import (
 	patch "k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
 
 // Artifact contains all information about a completed deployment
@@ -69,13 +69,13 @@ func labelDeployResults(labels map[string]string, results []Artifact) {
 	// use the kubectl client to update all k8s objects with a skaffold watermark
 	dynClient, err := kubernetes.DynamicClient()
 	if err != nil {
-		logrus.Warnf("error retrieving kubernetes dynamic client: %s", err.Error())
+		logrus.Warnf("error getting kubernetes dynamic client: %s", err.Error())
 		return
 	}
 
-	client, err := kubernetes.GetClientset()
+	client, err := kubernetes.Client()
 	if err != nil {
-		logrus.Warnf("error retrieving kubernetes client: %s", err.Error())
+		logrus.Warnf("error getting kubernetes client: %s", err.Error())
 		return
 	}
 
@@ -111,36 +111,38 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 	}
 	name := accessor.GetName()
 
-	kind := modifiedObj.GetObjectKind().GroupVersionKind().Kind
-	if strings.EqualFold(kind, "Service") {
-		logrus.Debugf("Labels are not applied to service [%s] because of issue: https://github.com/GoogleContainerTools/skaffold/issues/887", name)
-		return nil
-	}
-
 	addLabels(labels, accessor)
 
 	modifiedJSON, _ := json.Marshal(modifiedObj)
 	p, _ := patch.CreateTwoWayMergePatch(originalJSON, modifiedJSON, modifiedObj)
-	gvr, err := groupVersionResource(disco, modifiedObj.GetObjectKind().GroupVersionKind())
+
+	namespaced, gvr, err := groupVersionResource(disco, modifiedObj.GetObjectKind().GroupVersionKind())
 	if err != nil {
 		return errors.Wrap(err, "getting group version resource from obj")
 	}
 
-	var namespace string
-	if accessor.GetNamespace() != "" {
-		namespace = accessor.GetNamespace()
+	if namespaced {
+		var namespace string
+		if accessor.GetNamespace() != "" {
+			namespace = accessor.GetNamespace()
+		} else {
+			namespace = res.Namespace
+		}
+
+		ns, err := resolveNamespace(namespace)
+		if err != nil {
+			return errors.Wrap(err, "resolving namespace")
+		}
+
+		logrus.Debugln("Patching", name, "in namespace", ns)
+		if _, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
+			return errors.Wrapf(err, "patching resource %s/%s", ns, name)
+		}
 	} else {
-		namespace = res.Namespace
-	}
-
-	ns, err := resolveNamespace(namespace)
-	if err != nil {
-		return errors.Wrap(err, "resolving namespace")
-	}
-	logrus.Debugln("Patching", name, "in namespace", ns)
-
-	if _, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p); err != nil {
-		return errors.Wrapf(err, "patching resource %s/%s", namespace, name)
+		logrus.Debugln("Patching", name)
+		if _, err := client.Resource(gvr).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
+			return errors.Wrapf(err, "patching resource %s", name)
+		}
 	}
 
 	return nil
@@ -162,15 +164,15 @@ func resolveNamespace(ns string) (string, error) {
 	return "default", nil
 }
 
-func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVersionKind) (schema.GroupVersionResource, error) {
+func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVersionKind) (bool, schema.GroupVersionResource, error) {
 	resources, err := disco.ServerResourcesForGroupVersion(gvk.GroupVersion().String())
 	if err != nil {
-		return schema.GroupVersionResource{}, errors.Wrap(err, "getting server resources for group version")
+		return false, schema.GroupVersionResource{}, errors.Wrap(err, "getting server resources for group version")
 	}
 
 	for _, r := range resources.APIResources {
 		if r.Kind == gvk.Kind {
-			return schema.GroupVersionResource{
+			return r.Namespaced, schema.GroupVersionResource{
 				Group:    gvk.Group,
 				Version:  gvk.Version,
 				Resource: r.Name,
@@ -178,7 +180,7 @@ func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVe
 		}
 	}
 
-	return schema.GroupVersionResource{}, fmt.Errorf("could not find resource for %s", gvk.String())
+	return false, schema.GroupVersionResource{}, fmt.Errorf("could not find resource for %s", gvk.String())
 }
 
 func copyMap(dest, from map[string]string) {

@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -102,7 +103,7 @@ func addFileToTar(root string, src string, dst string, tw *tar.Writer) error {
 		}
 		tarHeader.Name = tarPath
 
-		if err := tw.WriteHeader(tarHeader); err != nil {
+		if err := writeHeader(tw, tarHeader); err != nil {
 			return err
 		}
 	case mode.IsRegular():
@@ -112,7 +113,7 @@ func addFileToTar(root string, src string, dst string, tw *tar.Writer) error {
 		}
 		tarHeader.Name = tarPath
 
-		if err := tw.WriteHeader(tarHeader); err != nil {
+		if err := writeHeader(tw, tarHeader); err != nil {
 			return err
 		}
 
@@ -140,7 +141,7 @@ func addFileToTar(root string, src string, dst string, tw *tar.Writer) error {
 			return err
 		}
 		tarHeader.Name = tarPath
-		if err := tw.WriteHeader(tarHeader); err != nil {
+		if err := writeHeader(tw, tarHeader); err != nil {
 			return err
 		}
 	default:
@@ -150,9 +151,30 @@ func addFileToTar(root string, src string, dst string, tw *tar.Writer) error {
 		if err != nil {
 			return err
 		}
-		if err := tw.WriteHeader(tarHeader); err != nil {
+		if err := writeHeader(tw, tarHeader); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// Code copied from https://github.com/moby/moby/blob/master/pkg/archive/archive_windows.go
+func writeHeader(tw *tar.Writer, tarHeader *tar.Header) error {
+	if runtime.GOOS == "windows" {
+		tarHeader.Mode = int64(chmodTarEntry(os.FileMode(tarHeader.Mode)))
+	}
+
+	return tw.WriteHeader(tarHeader)
+}
+
+// Code copied from https://github.com/moby/moby/blob/master/pkg/archive/archive_windows.go
+func chmodTarEntry(perm os.FileMode) os.FileMode {
+	//perm &= 0755 // this 0-ed out tar flags (like link, regular file, directory marker etc.)
+	permPart := perm & os.ModePerm
+	noPermPart := perm &^ os.ModePerm
+	// Add the x bit: make everything +x from windows
+	permPart |= 0111
+	permPart &= 0755
+
+	return noPermPart | permPart
 }

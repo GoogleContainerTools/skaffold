@@ -23,7 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -31,35 +31,32 @@ import (
 )
 
 func TestKustomizeDeploy(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-
-	var tests = []struct {
+	tests := []struct {
 		description string
 		cfg         *latest.KustomizeDeploy
 		builds      []build.Artifact
-		command     util.Command
+		commands    util.Command
 		shouldErr   bool
 		forceDeploy bool
 	}{
 		{
 			description: "no manifest",
 			cfg: &latest.KustomizeDeploy{
-				KustomizePath: tmpDir.Root(),
+				KustomizePath: ".",
 			},
-			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl version --client -ojson", kubectlVersion).
-				WithRunOut("kustomize build "+tmpDir.Root(), ""),
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				AndRunOut("kustomize build .", ""),
 		},
 		{
 			description: "deploy success",
 			cfg: &latest.KustomizeDeploy{
-				KustomizePath: tmpDir.Root(),
+				KustomizePath: ".",
 			},
-			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl version --client -ojson", kubectlVersion).
-				WithRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
-				WithRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force"),
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				AndRunOut("kustomize build .", deploymentWebYAML).
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
@@ -67,15 +64,15 @@ func TestKustomizeDeploy(t *testing.T) {
 			forceDeploy: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = test.command
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.commands)
+			t.NewTempDir().
+				Chdir()
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
-				WorkingDir: tmpDir.Root(),
-				Cfg: &latest.Pipeline{
+				WorkingDir: ".",
+				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: test.cfg,
@@ -83,14 +80,14 @@ func TestKustomizeDeploy(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
+				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 					Force:     test.forceDeploy,
 				},
 			})
-			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil).GetError()
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
@@ -99,10 +96,10 @@ func TestKustomizeCleanup(t *testing.T) {
 	tmpDir, cleanup := testutil.NewTempDir(t)
 	defer cleanup()
 
-	var tests = []struct {
+	tests := []struct {
 		description string
 		cfg         *latest.KustomizeDeploy
-		command     util.Command
+		commands    util.Command
 		shouldErr   bool
 	}{
 		{
@@ -110,18 +107,18 @@ func TestKustomizeCleanup(t *testing.T) {
 			cfg: &latest.KustomizeDeploy{
 				KustomizePath: tmpDir.Root(),
 			},
-			command: testutil.NewFakeCmd(t).
-				WithRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
-				WithRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
+			commands: testutil.
+				CmdRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
+				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
 		},
 		{
 			description: "cleanup error",
 			cfg: &latest.KustomizeDeploy{
 				KustomizePath: tmpDir.Root(),
 			},
-			command: testutil.NewFakeCmd(t).
-				WithRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
-				WithRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
+			commands: testutil.
+				CmdRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
+				AndRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
 		{
@@ -129,19 +126,21 @@ func TestKustomizeCleanup(t *testing.T) {
 			cfg: &latest.KustomizeDeploy{
 				KustomizePath: tmpDir.Root(),
 			},
-			command:   testutil.NewFakeCmd(t).WithRunOutErr("kustomize build "+tmpDir.Root(), ``, errors.New("BUG")),
+			commands: testutil.CmdRunOutErr(
+				"kustomize build "+tmpDir.Root(),
+				"",
+				errors.New("BUG"),
+			),
 			shouldErr: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-			util.DefaultExecCommand = test.command
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, test.commands)
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
 				WorkingDir: tmpDir.Root(),
-				Cfg: &latest.Pipeline{
+				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: test.cfg,
@@ -149,32 +148,44 @@ func TestKustomizeCleanup(t *testing.T) {
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts: &config.SkaffoldOptions{
+				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
 			})
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
-			testutil.CheckError(t, test.shouldErr, err)
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
 
 func TestDependenciesForKustomization(t *testing.T) {
 	tests := []struct {
-		description string
-		yaml        string
-		expected    []string
-		shouldErr   bool
+		description        string
+		yaml               string
+		expected           []string
+		shouldErr          bool
+		skipConfigCreation bool
+		createFiles        map[string]string
+		configName         string
 	}{
 		{
 			description: "resources",
 			yaml:        `resources: [pod1.yaml, path/pod2.yaml]`,
 			expected:    []string{"kustomization.yaml", "pod1.yaml", "path/pod2.yaml"},
+			createFiles: map[string]string{
+				"pod1.yaml":      "",
+				"path/pod2.yaml": "",
+			},
 		},
 		{
 			description: "paches",
 			yaml:        `patches: [patch1.yaml, path/patch2.yaml]`,
+			expected:    []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
+		},
+		{
+			description: "patchesStrategicMerge",
+			yaml:        `patchesStrategicMerge: [patch1.yaml, path/patch2.yaml]`,
 			expected:    []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
 		},
 		{
@@ -204,35 +215,208 @@ func TestDependenciesForKustomization(t *testing.T) {
 			expected: []string{"kustomization.yaml", "secret1.file", "secret2.file", "secret3.file"},
 		},
 		{
-			description: "unknown base",
-			yaml:        `bases: [other]`,
-			shouldErr:   true,
+			description: "base exists locally",
+			yaml:        `bases: [base]`,
+			expected:    []string{"kustomization.yaml", "base/kustomization.yaml", "base/app.yaml"},
+			createFiles: map[string]string{
+				"base/kustomization.yaml": `resources: [app.yaml]`,
+				"base/app.yaml":           "",
+			},
+		},
+		{
+			description: "missing base locally",
+			yaml:        `bases: [missing-or-remote-base]`,
+			expected:    []string{"kustomization.yaml"},
+		},
+		{
+			description: "local kustomization resource",
+			yaml:        `resources: [app.yaml, base]`,
+			expected:    []string{"kustomization.yaml", "app.yaml", "base/kustomization.yaml", "base/app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml":                "",
+				"base/kustomization.yaml": `resources: [app.yaml]`,
+				"base/app.yaml":           "",
+			},
+		},
+		{
+			description: "missing local kustomization resource",
+			yaml:        `resources: [app.yaml, missing-or-remote-base]`,
+			expected:    []string{"kustomization.yaml", "app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml": "",
+			},
+		},
+		{
+			description: "mixed resource types",
+			yaml:        `resources: [app.yaml, missing-or-remote-base, base]`,
+			expected:    []string{"kustomization.yaml", "app.yaml", "base/kustomization.yaml", "base/app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml":                "",
+				"base/kustomization.yaml": `resources: [app.yaml]`,
+				"base/app.yaml":           "",
+			},
+		},
+		{
+			description: "alt config name: kustomization.yml",
+			yaml:        `resources: [app.yaml]`,
+			expected:    []string{"kustomization.yml", "app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml": "",
+			},
+			configName: "kustomization.yml",
+		},
+		{
+			description: "alt config name: Kustomization",
+			yaml:        `resources: [app.yaml]`,
+			expected:    []string{"Kustomization", "app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml": "",
+			},
+			configName: "Kustomization",
+		},
+		{
+			description: "mixture of config names",
+			yaml:        `resources: [app.yaml, base1, base2]`,
+			expected:    []string{"Kustomization", "app.yaml", "base1/kustomization.yml", "base1/app.yaml", "base2/kustomization.yaml", "base2/app.yaml"},
+			createFiles: map[string]string{
+				"app.yaml":                 "",
+				"base1/kustomization.yml":  `resources: [app.yaml]`,
+				"base1/app.yaml":           "",
+				"base2/kustomization.yaml": `resources: [app.yaml]`,
+				"base2/app.yaml":           "",
+			},
+			configName: "Kustomization",
+		},
+		{
+			description:        "remote or missing root kustomization config",
+			expected:           []string{},
+			configName:         "missing-or-remote-root-config",
+			skipConfigCreation: true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmp, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			if test.configName == "" {
+				test.configName = "kustomization.yaml"
+			}
 
-			tmp.Write("kustomization.yaml", test.yaml)
+			tmpDir := t.NewTempDir()
+
+			if !test.skipConfigCreation {
+				tmpDir.Write(test.configName, test.yaml)
+			}
+
+			for path, contents := range test.createFiles {
+				tmpDir.Write(path, contents)
+			}
 
 			k := NewKustomizeDeployer(&runcontext.RunContext{
-				Cfg: &latest.Pipeline{
+				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: &latest.KustomizeDeploy{
-								KustomizePath: tmp.Root(),
+								KustomizePath: tmpDir.Root(),
 							},
 						},
 					},
 				},
 				KubeContext: testKubeContext,
-				Opts:        &config.SkaffoldOptions{},
 			})
 			deps, err := k.Dependencies()
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, joinPaths(tmp.Root(), test.expected), deps)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, tmpDir.Paths(test.expected...), deps)
+		})
+	}
+}
+
+func TestKustomizeBuildCommandArgs(t *testing.T) {
+	tests := []struct {
+		description   string
+		buildArgs     []string
+		kustomizePath string
+		expectedArgs  []string
+	}{
+		{
+			description:   "no BuildArgs, empty KustomizePath ",
+			buildArgs:     []string{},
+			kustomizePath: "",
+			expectedArgs:  []string{"build"},
+		},
+		{
+			description:   "One BuildArg, empty KustomizePath",
+			buildArgs:     []string{"--foo"},
+			kustomizePath: "",
+			expectedArgs:  []string{"build", "--foo"},
+		},
+		{
+			description:   "no BuildArgs, non-empty KustomizePath",
+			buildArgs:     []string{},
+			kustomizePath: "foo",
+			expectedArgs:  []string{"build", "foo"},
+		},
+		{
+			description:   "One BuildArg, non-empty KustomizePath",
+			buildArgs:     []string{"--foo"},
+			kustomizePath: "bar",
+			expectedArgs:  []string{"build", "--foo", "bar"},
+		},
+		{
+			description:   "Multiple BuildArg, empty KustomizePath",
+			buildArgs:     []string{"--foo", "--bar"},
+			kustomizePath: "",
+			expectedArgs:  []string{"build", "--foo", "--bar"},
+		},
+		{
+			description:   "Multiple BuildArg with spaces, empty KustomizePath",
+			buildArgs:     []string{"--foo bar", "--baz"},
+			kustomizePath: "",
+			expectedArgs:  []string{"build", "--foo", "bar", "--baz"},
+		},
+		{
+			description:   "Multiple BuildArg with spaces, non-empty KustomizePath",
+			buildArgs:     []string{"--foo bar", "--baz"},
+			kustomizePath: "barfoo",
+			expectedArgs:  []string{"build", "--foo", "bar", "--baz", "barfoo"},
+		},
+		{
+			description:   "Multiple BuildArg no spaces, non-empty KustomizePath",
+			buildArgs:     []string{"--foo", "bar", "--baz"},
+			kustomizePath: "barfoo",
+			expectedArgs:  []string{"build", "--foo", "bar", "--baz", "barfoo"},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			args := buildCommandArgs(test.buildArgs, test.kustomizePath)
+			t.CheckDeepEqual(test.expectedArgs, args)
+		})
+	}
+}
+
+func TestKustomizeRender(t *testing.T) {
+	tests := []struct {
+		description string
+		shouldErr   bool
+	}{
+		{
+			description: "calling render returns error",
+			shouldErr:   true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			deployer := NewKustomizeDeployer(&runcontext.RunContext{
+				Cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KustomizeDeploy: &latest.KustomizeDeploy{},
+						},
+					},
+				},
+			})
+			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, "tmp/dir")
+			t.CheckError(test.shouldErr, actual)
 		})
 	}
 }

@@ -20,22 +20,19 @@ import (
 	"bufio"
 	"bytes"
 	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 )
 
 const (
@@ -44,15 +41,6 @@ const (
 
 func RandomID() string {
 	b := make([]byte, 16)
-	_, err := rand.Read(b)
-	if err != nil {
-		panic(err)
-	}
-	return fmt.Sprintf("%x", b)
-}
-
-func RandomFourCharacterID() string {
-	b := make([]byte, 2)
 	_, err := rand.Read(b)
 	if err != nil {
 		panic(err)
@@ -76,30 +64,65 @@ func IsSupportedKubernetesFormat(n string) bool {
 }
 
 func StrSliceContains(sl []string, s string) bool {
-	for _, a := range sl {
+	return StrSliceIndex(sl, s) >= 0
+}
+
+func StrSliceIndex(sl []string, s string) int {
+	for i, a := range sl {
 		if a == s {
-			return true
+			return i
 		}
 	}
-	return false
+	return -1
+}
+
+func StrSliceInsert(sl []string, index int, insert []string) []string {
+	newSlice := make([]string, len(sl)+len(insert))
+	copy(newSlice[0:index], sl[0:index])
+	copy(newSlice[index:index+len(insert)], insert)
+	copy(newSlice[index+len(insert):], sl[index:])
+	return newSlice
+}
+
+// orderedFileSet holds an ordered set of file paths.
+type orderedFileSet struct {
+	files []string
+	seen  map[string]bool
+}
+
+func (l *orderedFileSet) Add(file string) {
+	if l.seen[file] {
+		return
+	}
+
+	if l.seen == nil {
+		l.seen = make(map[string]bool)
+	}
+	l.seen[file] = true
+
+	l.files = append(l.files, file)
+}
+
+func (l *orderedFileSet) Files() []string {
+	return l.files
 }
 
 // ExpandPathsGlob expands paths according to filepath.Glob patterns
 // Returns a list of unique files that match the glob patterns passed in.
 func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
-	expandedPaths := make(map[string]bool)
+	var set orderedFileSet
+
 	for _, p := range paths {
 		if filepath.IsAbs(p) {
 			// This is a absolute file reference
-			expandedPaths[p] = true
+			set.Add(p)
 			continue
 		}
 
 		path := filepath.Join(workingDir, p)
-
 		if _, err := os.Stat(path); err == nil {
 			// This is a file reference, so just add it
-			expandedPaths[path] = true
+			set.Add(path)
 			continue
 		}
 
@@ -112,36 +135,27 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 		}
 
 		for _, f := range files {
-			err := filepath.Walk(f, func(path string, info os.FileInfo, err error) error {
+			var filesInDirectory []string
+
+			if err := filepath.Walk(f, func(path string, info os.FileInfo, err error) error {
 				if !info.IsDir() {
-					expandedPaths[path] = true
+					filesInDirectory = append(filesInDirectory, path)
 				}
 
 				return nil
-			})
-			if err != nil {
+			}); err != nil {
 				return nil, errors.Wrap(err, "filepath walk")
+			}
+
+			// Make sure files inside a directory are listed in a consistent order
+			sort.Strings(filesInDirectory)
+			for _, file := range filesInDirectory {
+				set.Add(file)
 			}
 		}
 	}
 
-	var ret []string
-	for k := range expandedPaths {
-		ret = append(ret, k)
-	}
-	sort.Strings(ret)
-	return ret, nil
-}
-
-// HasMeta reports whether path contains any of the magic characters
-// recognized by filepath.Match.
-// This is a copy of filepath/match.go's hasMeta
-func HasMeta(path string) bool {
-	magicChars := `*?[`
-	if runtime.GOOS != "windows" {
-		magicChars = `*?[\`
-	}
-	return strings.ContainsAny(path, magicChars)
+	return set.Files(), nil
 }
 
 // BoolPtr returns a pointer to a bool
@@ -189,9 +203,9 @@ func VerifyOrCreateFile(path string) error {
 
 // RemoveFromSlice removes a string from a slice of strings
 func RemoveFromSlice(s []string, target string) []string {
-	for i, val := range s {
-		if val == target {
-			return append(s[:i], s[i+1:]...)
+	for i := len(s) - 1; i >= 0; i-- {
+		if s[i] == target {
+			s = append(s[:i], s[i+1:]...)
 		}
 	}
 	return s
@@ -245,39 +259,60 @@ func NonEmptyLines(input []byte) []string {
 	return result
 }
 
-// SHA256 returns the shasum of the contents of r
-func SHA256(r io.Reader) (string, error) {
-	hasher := sha256.New()
-	_, err := io.Copy(hasher, r)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(hasher.Sum(make([]byte, 0, hasher.Size()))), nil
-}
-
-// CloneThroughJSON marshals the old interface into the new one
-func CloneThroughJSON(old interface{}, new interface{}) error {
+// CloneThroughJSON clones an `old` object into a `new` one
+// using json marshalling and unmarshalling.
+// Since the object can be marshalled, it's almost sure it can be
+// unmarshalled. So we prefer to panic instead of returning an error
+// that would create an untestable branch on the call site.
+func CloneThroughJSON(old interface{}, new interface{}) {
 	o, err := json.Marshal(old)
 	if err != nil {
-		return errors.Wrap(err, "marshalling old")
+		panic(fmt.Sprintf("marshalling old: %v", err))
 	}
-	if err := json.Unmarshal(o, &new); err != nil {
-		return errors.Wrap(err, "unmarshalling new")
+	if err := json.Unmarshal(o, new); err != nil {
+		panic(fmt.Sprintf("unmarshalling new: %v", err))
 	}
-	return nil
+}
+
+// CloneThroughYAML clones an `old` object into a `new` one
+// using yaml marshalling and unmarshalling.
+// Since the object can be marshalled, it's almost sure it can be
+// unmarshalled. So we prefer to panic instead of returning an error
+// that would create an untestable branch on the call site.
+func CloneThroughYAML(old interface{}, new interface{}) {
+	contents, err := yaml.Marshal(old)
+	if err != nil {
+		panic(fmt.Sprintf("marshalling old: %v", err))
+	}
+	if err := yaml.Unmarshal(contents, new); err != nil {
+		panic(fmt.Sprintf("unmarshalling new: %v", err))
+	}
 }
 
 // AbsolutePaths prepends each path in paths with workspace if the path isn't absolute
 func AbsolutePaths(workspace string, paths []string) []string {
-	var p []string
+	var list []string
+
 	for _, path := range paths {
-		// TODO(dgageot): this is only done for jib builder.
 		if !filepath.IsAbs(path) {
 			path = filepath.Join(workspace, path)
 		}
-		p = append(p, path)
+		list = append(list, path)
 	}
-	return p
+
+	return list
+}
+
+func IsFile(path string) bool {
+	info, err := os.Stat(path)
+	// err could be permission-related
+	return (err == nil || !os.IsNotExist(err)) && info.Mode().IsRegular()
+}
+
+func IsDir(path string) bool {
+	info, err := os.Stat(path)
+	// err could be permission-related
+	return (err == nil || !os.IsNotExist(err)) && info.IsDir()
 }
 
 // IsHiddenDir returns if a directory is hidden.

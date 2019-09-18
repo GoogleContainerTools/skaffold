@@ -28,11 +28,14 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
-// logLevel makes sure kaniko logs at least at Info level.
+// logLevel makes sure kaniko logs at least at Info level and at most Debug level (trace doesn't work with Kaniko)
 func logLevel() logrus.Level {
 	level := logrus.GetLevel()
 	if level < logrus.InfoLevel {
 		return logrus.InfoLevel
+	}
+	if level > logrus.DebugLevel {
+		return logrus.DebugLevel
 	}
 	return level
 }
@@ -41,6 +44,7 @@ func streamLogs(out io.Writer, name string, pods corev1.PodInterface) func() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
+	var written int64
 	var retry int32 = 1
 	go func() {
 		defer wg.Done()
@@ -56,7 +60,8 @@ func streamLogs(out io.Writer, name string, pods corev1.PodInterface) func() {
 				continue
 			}
 
-			io.Copy(out, r)
+			w, _ := io.Copy(out, r)
+			atomic.AddInt64(&written, w)
 			return
 		}
 	}()
@@ -64,5 +69,15 @@ func streamLogs(out io.Writer, name string, pods corev1.PodInterface) func() {
 	return func() {
 		atomic.StoreInt32(&retry, 0)
 		wg.Wait()
+
+		// get latest logs if pod was terminated before logs have been streamed
+		if atomic.LoadInt64(&written) == 0 {
+			r, err := pods.GetLogs(name, &v1.PodLogOptions{
+				Container: constants.DefaultKanikoContainerName,
+			}).Stream()
+			if err == nil {
+				io.Copy(out, r)
+			}
+		}
 	}
 }

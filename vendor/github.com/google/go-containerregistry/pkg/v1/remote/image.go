@@ -41,9 +41,8 @@ type remoteImage struct {
 
 var _ partial.CompressedImageCore = (*remoteImage)(nil)
 
-// Image provides access to a remote image reference, applying functional options
-// to the underlying imageOpener before resolving the reference into a v1.Image.
-func Image(ref name.Reference, options ...ImageOption) (v1.Image, error) {
+// Image provides access to a remote image reference.
+func Image(ref name.Reference, options ...Option) (v1.Image, error) {
 	acceptable := []types.MediaType{
 		types.DockerManifestSchema2,
 		types.OCIManifestSchema1,

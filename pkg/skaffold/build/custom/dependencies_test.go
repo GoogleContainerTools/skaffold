@@ -36,10 +36,7 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 	// - baz
 	//     file
 	//   Dockerfile
-	tmpDir.Write("foo", "")
-	tmpDir.Write("bar", "")
-	tmpDir.Mkdir("baz")
-	tmpDir.Write("baz/file", "")
+	tmpDir.Touch("foo", "bar", "baz/file")
 	tmpDir.Write("Dockerfile", "FROM scratch \n ARG file \n COPY $file baz/file .")
 
 	customArtifact := &latest.CustomArtifact{
@@ -47,7 +44,7 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 			Dockerfile: &latest.DockerfileDependency{
 				Path: "Dockerfile",
 				BuildArgs: map[string]*string{
-					"file": stringPointer("foo"),
+					"file": util.StringPtr("foo"),
 				},
 			},
 		},
@@ -60,39 +57,27 @@ func TestGetDependenciesDockerfile(t *testing.T) {
 }
 
 func TestGetDependenciesCommand(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+			"echo [\"file1\",\"file2\",\"file3\"]",
+			"[\"file1\",\"file2\",\"file3\"]",
+		))
 
-	defer func(c util.Command) { util.DefaultExecCommand = c }(util.DefaultExecCommand)
-	util.DefaultExecCommand = testutil.NewFakeCmd(t).WithRunOut(
-		"echo [\"file1\",\"file2\",\"file3\"]",
-		"[\"file1\",\"file2\",\"file3\"]",
-	)
+		customArtifact := &latest.CustomArtifact{
+			Dependencies: &latest.CustomDependencies{
+				Command: "echo [\"file1\",\"file2\",\"file3\"]",
+			},
+		}
 
-	customArtifact := &latest.CustomArtifact{
-		Dependencies: &latest.CustomDependencies{
-			Command: "echo [\"file1\",\"file2\",\"file3\"]",
-		},
-	}
+		expected := []string{"file1", "file2", "file3"}
+		deps, err := GetDependencies(context.Background(), "", customArtifact, nil)
 
-	expected := []string{"file1", "file2", "file3"}
-	deps, err := GetDependencies(context.Background(), "", customArtifact, nil)
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected, deps)
+		t.CheckNoError(err)
+		t.CheckDeepEqual(expected, deps)
+	})
 }
 
 func TestGetDependenciesPaths(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-
-	// Directory structure:
-	//   foo
-	//   bar
-	// - baz
-	//     file
-	tmpDir.Write("foo", "")
-	tmpDir.Write("bar", "")
-	tmpDir.Mkdir("baz")
-	tmpDir.Write("baz/file", "")
-
 	tests := []struct {
 		description string
 		ignore      []string
@@ -112,21 +97,25 @@ func TestGetDependenciesPaths(t *testing.T) {
 			expected:    []string{"foo"},
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// Directory structure:
+			//   foo
+			//   bar
+			// - baz
+			//     file
+			tmpDir := t.NewTempDir().
+				Touch("foo", "bar", "baz/file")
+
 			deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.CustomArtifact{
 				Dependencies: &latest.CustomDependencies{
 					Paths:  test.paths,
 					Ignore: test.ignore,
 				},
 			}, nil)
-			testutil.CheckErrorAndDeepEqual(t, false, err, test.expected, deps)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, deps)
 		})
 	}
-
-}
-
-func stringPointer(s string) *string {
-	return &s
 }

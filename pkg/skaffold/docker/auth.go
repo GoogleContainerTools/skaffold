@@ -77,9 +77,7 @@ func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 		return nil, errors.Wrap(err, "docker config")
 	}
 
-	// TODO(dgageot): this is really slow because it has to run all the credential helpers.
-	// return cf.GetAllCredentials()
-	return cf.GetCredentialsStore("").GetAll()
+	return cf.GetAllCredentials()
 }
 
 func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {

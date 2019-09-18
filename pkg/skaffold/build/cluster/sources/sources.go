@@ -18,14 +18,16 @@ package sources
 
 import (
 	"context"
+	"fmt"
 	"io"
 
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // BuildContextSource is the generic type for the different build context sources the kaniko builder can use
@@ -37,11 +39,12 @@ type BuildContextSource interface {
 }
 
 // Retrieve returns the correct build context based on the config
-func Retrieve(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoArtifact) BuildContextSource {
+func Retrieve(cli *kubectl.CLI, clusterDetails *latest.ClusterDetails, artifact *latest.KanikoArtifact) BuildContextSource {
 	if artifact.BuildContext.LocalDir != nil {
 		return &LocalDir{
 			clusterDetails: clusterDetails,
 			artifact:       artifact,
+			kubectl:        cli,
 		}
 	}
 
@@ -51,7 +54,20 @@ func Retrieve(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoArti
 	}
 }
 
-func podTemplate(clusterDetails *latest.ClusterDetails, image string, args []string) *v1.Pod {
+func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoArtifact, args []string, version string) *v1.Pod {
+	userAgent := fmt.Sprintf("UpstreamClient(skaffold-%s)", version)
+
+	env := []v1.EnvVar{{
+		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+		Value: "/secret/kaniko-secret",
+	}, {
+		// This should be same https://github.com/GoogleContainerTools/kaniko/blob/77cfb912f3483c204bfd09e1ada44fd200b15a78/pkg/executor/push.go#L49
+		Name:  "UPSTREAM_CLIENT_TYPE",
+		Value: userAgent,
+	}}
+
+	env = setProxy(clusterDetails, env)
+
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kaniko-",
@@ -62,13 +78,10 @@ func podTemplate(clusterDetails *latest.ClusterDetails, image string, args []str
 			Containers: []v1.Container{
 				{
 					Name:            constants.DefaultKanikoContainerName,
-					Image:           image,
+					Image:           artifact.Image,
 					Args:            args,
 					ImagePullPolicy: v1.PullIfNotPresent,
-					Env: []v1.EnvVar{{
-						Name:  "GOOGLE_APPLICATION_CREDENTIALS",
-						Value: "/secret/kaniko-secret",
-					}},
+					Env:             env,
 					VolumeMounts: []v1.VolumeMount{
 						{
 							Name:      constants.DefaultKanikoSecretName,
@@ -89,6 +102,25 @@ func podTemplate(clusterDetails *latest.ClusterDetails, image string, args []str
 			},
 			},
 		},
+	}
+
+	if artifact.Cache != nil && artifact.Cache.HostPath != "" {
+		volumeMount := v1.VolumeMount{
+			Name:      constants.DefaultKanikoCacheDirName,
+			MountPath: constants.DefaultKanikoCacheDirMountPath,
+		}
+
+		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, volumeMount)
+
+		volume := v1.Volume{
+			Name: constants.DefaultKanikoCacheDirName,
+			VolumeSource: v1.VolumeSource{
+				HostPath: &v1.HostPathVolumeSource{
+					Path: artifact.Cache.HostPath,
+				},
+			},
+		}
+		pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
 	}
 
 	if clusterDetails.DockerConfig == nil {
@@ -114,6 +146,25 @@ func podTemplate(clusterDetails *latest.ClusterDetails, image string, args []str
 	pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
 
 	return pod
+}
+
+func setProxy(clusterDetails *latest.ClusterDetails, env []v1.EnvVar) []v1.EnvVar {
+	if clusterDetails.HTTPProxy != "" {
+		proxy := v1.EnvVar{
+			Name:  "HTTP_PROXY",
+			Value: clusterDetails.HTTPProxy,
+		}
+		env = append(env, proxy)
+	}
+
+	if clusterDetails.HTTPSProxy != "" {
+		proxy := v1.EnvVar{
+			Name:  "HTTPS_PROXY",
+			Value: clusterDetails.HTTPSProxy,
+		}
+		env = append(env, proxy)
+	}
+	return env
 }
 
 func resourceRequirements(rr *latest.ResourceRequirements) v1.ResourceRequirements {
@@ -143,5 +194,4 @@ func resourceRequirements(rr *latest.ResourceRequirements) v1.ResourceRequiremen
 	}
 
 	return req
-
 }

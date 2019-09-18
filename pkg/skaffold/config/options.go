@@ -18,27 +18,43 @@ package config
 
 import (
 	"strings"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
+
+// PortForwardOptions are options set by the command line for port forwarding
+// with additional configuration information as well
+type PortForwardOptions struct {
+	Enabled     bool
+	ForwardPods bool
+}
 
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
 	ConfigurationFile  string
+	GlobalConfig       string
 	Cleanup            bool
 	Notification       bool
 	Tail               bool
 	TailDev            bool
-	PortForward        bool
 	SkipTests          bool
 	CacheArtifacts     bool
 	EnableRPC          bool
 	Force              bool
+	ForceDev           bool
 	NoPrune            bool
 	NoPruneChildren    bool
+	StatusCheck        bool
+	AutoBuild          bool
+	AutoSync           bool
+	AutoDeploy         bool
+	PortForward        PortForwardOptions
 	CustomTag          string
 	Namespace          string
 	CacheFile          string
 	Trigger            string
+	KubeContext        string
 	WatchPollInterval  int
 	DefaultRepo        string
 	CustomLabels       []string
@@ -85,5 +101,19 @@ func (opts *SkaffoldOptions) Prune() bool {
 }
 
 func (opts *SkaffoldOptions) ForceDeploy() bool {
-	return opts.Command == "dev" || opts.Force
+	return opts.ForceDev || opts.Force
+}
+
+func (opts *SkaffoldOptions) IsTargetImage(artifact *latest.Artifact) bool {
+	if len(opts.TargetImages) == 0 {
+		return true
+	}
+
+	for _, targetImage := range opts.TargetImages {
+		if strings.Contains(artifact.ImageName, targetImage) {
+			return true
+		}
+	}
+
+	return false
 }

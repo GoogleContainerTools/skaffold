@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"runtime"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,12 +41,14 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.9.0@sha256:d9fe474f80b73808dc12b54f45f5fc90f7856d9fc699d4a5e79d968a1aef1a72"
+	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.10.0@sha256:78d44ec4e9cb5545d7f85c1924695c89503ded86a59f92c7ae658afa3cff5400"
 	DefaultKanikoSecretName             = "kaniko-secret"
 	DefaultKanikoTimeout                = "20m"
 	DefaultKanikoContainerName          = "kaniko"
 	DefaultKanikoEmptyDirName           = "kaniko-emptydir"
 	DefaultKanikoEmptyDirMountPath      = "/kaniko/buildcontext"
+	DefaultKanikoCacheDirName           = "kaniko-cache"
+	DefaultKanikoCacheDirMountPath      = "/cache"
 	DefaultKanikoDockerConfigSecretName = "docker-cfg"
 	DefaultKanikoDockerConfigPath       = "/kaniko/.docker"
 
@@ -54,14 +57,24 @@ const (
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
 	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
-	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b"
+	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
 	DefaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
+	DefaultCloudBuildKanikoImage = "gcr.io/kaniko-project/executor"
 
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"
 
 	DefaultRPCPort     = 50051
 	DefaultRPCHTTPPort = 50052
+
+	DefaultPortForwardNamespace = "default"
+
+	LeeroyAppResponse = "leeroooooy app!!\n"
+)
+
+var (
+	Pod     latest.ResourceType = "pod"
+	Service latest.ResourceType = "service"
 )
 
 var (
@@ -73,6 +86,21 @@ var (
 
 	// BuildContext is the absolute path to a directory this artifact is meant to be built from for custom artifacts
 	BuildContext = "BUILD_CONTEXT"
+
+	// KubeContext is the expected kubecontext to build an artifact with a custom build script on cluster
+	KubeContext = "KUBE_CONTEXT"
+
+	// Namespace is the expected namsepace to build an artifact with a custom build script on cluster.
+	Namespace = "NAMESPACE"
+
+	// PullSecretName is the secret with authentication required to pull a base image/push the final image built on cluster.
+	PullSecretName = "PULL_SECRET_NAME"
+
+	// DockerConfigSecretName is the secret containing any required docker authentication for custom builds on cluster.
+	DockerConfigSecretName = "DOCKER_CONFIG_SECRET_NAME"
+
+	// Timeout is the amount of time an on cluster build is allowed to run.
+	Timeout = "TIMEOUT"
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}

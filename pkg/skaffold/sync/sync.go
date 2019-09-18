@@ -26,39 +26,40 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
 	"github.com/bmatcuk/doublestar"
-	registry_v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
 	// WorkingDir is here for testing
-	WorkingDir = retrieveWorkingDir
+	WorkingDir = docker.RetrieveWorkingDir
 )
 
-type Syncer interface {
-	Sync(context.Context, *Item) error
-}
-
-type Item struct {
-	Image  string
-	Copy   map[string][]string
-	Delete map[string][]string
-}
-
-func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
-	// If there are no changes, short circuit and don't sync anything
-	if !e.HasChanged() || a.Sync == nil || len(a.Sync.Manual) == 0 {
+func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool, destProvider DestinationProvider) (*Item, error) {
+	if !e.HasChanged() || a.Sync == nil {
 		return nil, nil
 	}
 
+	if len(a.Sync.Manual) > 0 {
+		return manualSyncItem(a, e, builds, insecureRegistries)
+	}
+
+	if len(a.Sync.Infer) > 0 {
+		return inferredSyncItem(a, e, builds, destProvider)
+	}
+
+	return nil, nil
+}
+
+func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
 	tag := latestTag(a.ImageName, builds)
 	if tag == "" {
 		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
@@ -84,32 +85,56 @@ func NewItem(a *latest.Artifact, e watch.Events, builds []build.Artifact, insecu
 		return nil, nil
 	}
 
-	return &Item{
-		Image:  tag,
-		Copy:   toCopy,
-		Delete: toDelete,
-	}, nil
+	return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
 }
 
-func retrieveWorkingDir(tagged string, insecureRegistries map[string]bool) (string, error) {
-	var cf *registry_v1.ConfigFile
-	var err error
-
-	localDocker, err := docker.NewAPIClient(false, insecureRegistries)
-	if err != nil {
-		// No local Docker is available
-		cf, err = docker.RetrieveRemoteConfig(tagged, insecureRegistries)
-	} else {
-		cf, err = localDocker.ConfigFile(context.Background(), tagged)
-	}
-	if err != nil {
-		return "", errors.Wrap(err, "retrieving image config")
+func inferredSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, provider DestinationProvider) (*Item, error) {
+	// deleted files are no longer contained in the syncMap, so we need to rebuild
+	if len(e.Deleted) > 0 {
+		return nil, nil
 	}
 
-	if cf.Config.WorkingDir == "" {
-		return "/", nil
+	tag := latestTag(a.ImageName, builds)
+	if tag == "" {
+		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
 	}
-	return cf.Config.WorkingDir, nil
+
+	syncMap, err := provider()
+	if err != nil {
+		return nil, errors.Wrapf(err, "inferring syncmap for image %s", a.ImageName)
+	}
+
+	toCopy := make(map[string][]string)
+	for _, f := range append(e.Modified, e.Added...) {
+		relPath, err := filepath.Rel(a.Workspace, f)
+		if err != nil {
+			return nil, errors.Wrapf(err, "finding changed file %s relative to context %s", f, a.Workspace)
+		}
+
+		matches := false
+		for _, p := range a.Sync.Infer {
+			matches, err = doublestar.PathMatch(filepath.FromSlash(p), relPath)
+			if err != nil {
+				return nil, errors.Wrapf(err, "pattern error for %s", relPath)
+			}
+			if matches {
+				break
+			}
+		}
+		if !matches {
+			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
+			return nil, nil
+		}
+
+		if dsts, ok := syncMap[relPath]; ok {
+			toCopy[f] = dsts
+		} else {
+			logrus.Infof("Changed file %s is not syncable. Skipping sync", relPath)
+			return nil, nil
+		}
+	}
+
+	return &Item{Image: tag, Copy: toCopy}, nil
 }
 
 func latestTag(image string, builds []build.Artifact) string {
@@ -121,8 +146,8 @@ func latestTag(image string, builds []build.Artifact) string {
 	return ""
 }
 
-func intersect(contextWd, containerWd string, syncRules []*latest.SyncRule, files []string) (map[string][]string, error) {
-	ret := make(map[string][]string)
+func intersect(contextWd, containerWd string, syncRules []*latest.SyncRule, files []string) (syncMap, error) {
+	ret := make(syncMap)
 	for _, f := range files {
 		relPath, err := filepath.Rel(contextWd, f)
 		if err != nil {
@@ -169,14 +194,36 @@ func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) (
 	return dsts, nil
 }
 
-func Perform(ctx context.Context, image string, files map[string][]string, cmdFn func(context.Context, v1.Pod, v1.Container, map[string][]string) []*exec.Cmd, namespaces []string) error {
+func (k *podSyncer) Sync(ctx context.Context, s *Item) error {
+	if len(s.Copy) > 0 {
+		logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
+
+		if err := Perform(ctx, s.Image, s.Copy, k.copyFileFn, k.namespaces); err != nil {
+			return errors.Wrap(err, "copying files")
+		}
+	}
+
+	if len(s.Delete) > 0 {
+		logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
+
+		if err := Perform(ctx, s.Image, s.Delete, k.deleteFileFn, k.namespaces); err != nil {
+			return errors.Wrap(err, "deleting files")
+		}
+	}
+
+	return nil
+}
+
+func Perform(ctx context.Context, image string, files syncMap, cmdFn func(context.Context, v1.Pod, v1.Container, syncMap) *exec.Cmd, namespaces []string) error {
 	if len(files) == 0 {
 		return nil
 	}
 
+	errs, ctx := errgroup.WithContext(ctx)
+
 	client, err := kubernetes.Client()
 	if err != nil {
-		return errors.Wrap(err, "getting k8s client")
+		return errors.Wrap(err, "getting kubernetes client")
 	}
 
 	numSynced := 0
@@ -187,18 +234,21 @@ func Perform(ctx context.Context, image string, files map[string][]string, cmdFn
 		}
 
 		for _, p := range pods.Items {
+			if p.Status.Phase != v1.PodRunning {
+				continue
+			}
+
 			for _, c := range p.Spec.Containers {
 				if c.Image != image {
 					continue
 				}
 
-				cmds := cmdFn(ctx, p, c, files)
-				for _, cmd := range cmds {
-					if _, err := util.RunCmdOut(cmd); err != nil {
-						return err
-					}
-					numSynced++
-				}
+				cmd := cmdFn(ctx, p, c, files)
+				errs.Go(func() error {
+					_, err := util.RunCmdOut(cmd)
+					return err
+				})
+				numSynced++
 			}
 		}
 	}
@@ -207,5 +257,5 @@ func Perform(ctx context.Context, image string, files map[string][]string, cmdFn
 		return errors.New("didn't sync any files")
 	}
 
-	return nil
+	return errs.Wait()
 }

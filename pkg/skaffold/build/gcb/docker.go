@@ -25,7 +25,27 @@ import (
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
-func (b *Builder) dockerBuildSteps(artifact *latest.DockerArtifact, tags []string) ([]*cloudbuild.BuildStep, error) {
+// dockerBuildSpec lists the build steps required to build a docker image.
+func (b *Builder) dockerBuildSpec(artifact *latest.DockerArtifact, tag string) (cloudbuild.Build, error) {
+	args, err := b.dockerBuildArgs(artifact, tag)
+	if err != nil {
+		return cloudbuild.Build{}, err
+	}
+
+	steps := b.cacheFromSteps(artifact)
+	steps = append(steps, &cloudbuild.BuildStep{
+		Name: b.DockerImage,
+		Args: args,
+	})
+
+	return cloudbuild.Build{
+		Steps:  steps,
+		Images: []string{tag},
+	}, nil
+}
+
+// cacheFromSteps pulls images used by `--cache-from`.
+func (b *Builder) cacheFromSteps(artifact *latest.DockerArtifact) []*cloudbuild.BuildStep {
 	var steps []*cloudbuild.BuildStep
 
 	for _, cacheFrom := range artifact.CacheFrom {
@@ -36,20 +56,19 @@ func (b *Builder) dockerBuildSteps(artifact *latest.DockerArtifact, tags []strin
 		})
 	}
 
-	args := []string{"build"}
-	for _, t := range tags {
-		args = append(args, []string{"--tag", t}...)
-	}
-	args = append(args, []string{"-f", artifact.DockerfilePath}...)
+	return steps
+}
+
+// dockerBuildArgs lists the arguments passed to `docker` to build a given image.
+func (b *Builder) dockerBuildArgs(artifact *latest.DockerArtifact, tag string) ([]string, error) {
 	ba, err := docker.GetBuildArgs(artifact)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting docker build args")
 	}
+
+	args := []string{"build", "--tag", tag, "-f", artifact.DockerfilePath}
 	args = append(args, ba...)
 	args = append(args, ".")
 
-	return append(steps, &cloudbuild.BuildStep{
-		Name: b.DockerImage,
-		Args: args,
-	}), nil
+	return args, nil
 }

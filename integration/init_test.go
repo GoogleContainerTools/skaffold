@@ -26,6 +26,9 @@ func TestInit(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
 
 	tests := []struct {
 		name string
@@ -37,11 +40,23 @@ func TestInit(t *testing.T) {
 			dir:  "testdata/init/hello",
 		},
 		{
+			name: "ignore existing tags",
+			dir:  "testdata/init/ignore-tags",
+		},
+		{
+			name: "microservices (backwards compatibility)",
+			dir:  "testdata/init/microservices",
+			args: []string{
+				"-a", `leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app`,
+				"-a", `leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web`,
+			},
+		},
+		{
 			name: "microservices",
 			dir:  "testdata/init/microservices",
 			args: []string{
-				"-a", "leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app",
-				"-a", "leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web",
+				"-a", `{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
+				"-a", `{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
 			},
 		},
 		{
@@ -50,7 +65,6 @@ func TestInit(t *testing.T) {
 			args: []string{"--compose-file", "docker-compose.yaml"},
 		},
 	}
-
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ns, _, deleteNs := SetupNamespace(t)

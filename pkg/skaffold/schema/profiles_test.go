@@ -18,7 +18,6 @@ package schema
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -50,24 +49,23 @@ profiles:
         dockerfile: Dockerfile.second
 `
 
-	tmp, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().
+			Write("skaffold.yaml", addVersion(config))
 
-	yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, config)
-	tmp.Write("skaffold.yaml", yaml)
+		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"), false)
+		t.CheckNoError(err)
 
-	parsed, err := ParseConfig(tmp.Path("skaffold.yaml"), false)
-	testutil.CheckError(t, false, err)
+		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
+			Profiles: []string{"patches"},
+		})
 
-	skaffoldConfig := parsed.(*latest.SkaffoldConfig)
-	err = ApplyProfiles(skaffoldConfig, &cfg.SkaffoldOptions{
-		Profiles: []string{"patches"},
+		t.CheckNoError(err)
+		t.CheckDeepEqual("replacement", skaffoldConfig.Build.Artifacts[0].ImageName)
+		t.CheckDeepEqual("Dockerfile.DEV", skaffoldConfig.Build.Artifacts[0].DockerArtifact.DockerfilePath)
+		t.CheckDeepEqual("Dockerfile.second", skaffoldConfig.Build.Artifacts[1].DockerArtifact.DockerfilePath)
 	})
-	testutil.CheckError(t, false, err)
-
-	testutil.CheckDeepEqual(t, "replacement", skaffoldConfig.Build.Artifacts[0].ImageName)
-	testutil.CheckDeepEqual(t, "Dockerfile.DEV", skaffoldConfig.Build.Artifacts[0].DockerArtifact.DockerfilePath)
-	testutil.CheckDeepEqual(t, "Dockerfile.second", skaffoldConfig.Build.Artifacts[1].DockerArtifact.DockerfilePath)
 }
 
 func TestApplyInvalidPatch(t *testing.T) {
@@ -81,21 +79,20 @@ profiles:
     value: replacement
 `
 
-	tmp, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmp := t.NewTempDir().
+			Write("skaffold.yaml", addVersion(config))
 
-	yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, config)
-	tmp.Write("skaffold.yaml", yaml)
+		parsed, err := ParseConfig(tmp.Path("skaffold.yaml"), false)
+		t.CheckNoError(err)
 
-	parsed, err := ParseConfig(tmp.Path("skaffold.yaml"), false)
-	testutil.CheckError(t, false, err)
+		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
+			Profiles: []string{"patches"},
+		})
 
-	skaffoldConfig := parsed.(*latest.SkaffoldConfig)
-	err = ApplyProfiles(skaffoldConfig, &cfg.SkaffoldOptions{
-		Profiles: []string{"patches"},
+		t.CheckErrorAndDeepEqual(true, err, "applying profile patches: invalid path: /build/artifacts/0/image/", err.Error())
 	})
-
-	testutil.CheckErrorAndDeepEqual(t, true, err, "applying profile patches: invalid path: /build/artifacts/0/image/", err.Error())
 }
 
 func TestApplyProfiles(t *testing.T) {
@@ -129,8 +126,9 @@ func TestApplyProfiles(t *testing.T) {
 								GoogleCloudBuild: &latest.GoogleCloudBuild{
 									ProjectID:   "my-project",
 									DockerImage: "gcr.io/cloud-builders/docker",
-									MavenImage:  "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b",
+									MavenImage:  "gcr.io/cloud-builders/mvn",
 									GradleImage: "gcr.io/cloud-builders/gradle",
+									KanikoImage: "gcr.io/kaniko-project/executor",
 								},
 							},
 						},
@@ -306,18 +304,50 @@ func TestApplyProfiles(t *testing.T) {
 				}),
 			),
 		},
+		{
+			description: "port forwarding",
+			profile:     "profile",
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Pipeline: latest.Pipeline{
+						PortForward: []*latest.PortForwardResource{{
+							Namespace: "ns",
+							Name:      "name",
+							Type:      "service",
+							Port:      8080,
+							LocalPort: 8888,
+						}},
+					},
+				}),
+			),
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withPortForward(&latest.PortForwardResource{
+					Namespace: "ns",
+					Name:      "name",
+					Type:      "service",
+					Port:      8080,
+					LocalPort: 8888,
+				}),
+			),
+		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			err := ApplyProfiles(test.config, &cfg.SkaffoldOptions{
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			err := ApplyProfiles(test.config, cfg.SkaffoldOptions{
 				Profiles: []string{test.profile},
 			})
 
 			if test.shouldErr {
-				testutil.CheckError(t, test.shouldErr, err)
+				t.CheckError(test.shouldErr, err)
 			} else {
-				testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, test.config)
+				t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, test.config)
 			}
 		})
 	}
@@ -327,13 +357,14 @@ func TestActivatedProfiles(t *testing.T) {
 	tests := []struct {
 		description string
 		profiles    []latest.Profile
-		opts        *cfg.SkaffoldOptions
+		opts        cfg.SkaffoldOptions
+		envs        map[string]string
 		expected    []string
 		shouldErr   bool
 	}{
 		{
 			description: "Selected on the command line",
-			opts: &cfg.SkaffoldOptions{
+			opts: cfg.SkaffoldOptions{
 				Command:  "dev",
 				Profiles: []string{"activated", "also-activated"},
 			},
@@ -345,43 +376,53 @@ func TestActivatedProfiles(t *testing.T) {
 			expected: []string{"activated", "also-activated"},
 		}, {
 			description: "Auto-activated by command",
-			opts: &cfg.SkaffoldOptions{
+			opts: cfg.SkaffoldOptions{
 				Command: "dev",
 			},
 			profiles: []latest.Profile{
 				{Name: "run-profile", Activation: []latest.Activation{{Command: "run"}}},
 				{Name: "dev-profile", Activation: []latest.Activation{{Command: "dev"}}},
 				{Name: "non-run-profile", Activation: []latest.Activation{{Command: "!run"}}},
+				{Name: "run-or-dev-profile", Activation: []latest.Activation{{Command: "(run)|(dev)"}}},
+				{Name: "other-profile", Activation: []latest.Activation{{Command: "!(run)|(dev)"}}},
 			},
-			expected: []string{"dev-profile", "non-run-profile"},
+			expected: []string{"dev-profile", "non-run-profile", "run-or-dev-profile"},
 		}, {
 			description: "Auto-activated by env variable",
-			opts:        &cfg.SkaffoldOptions{},
+			envs:        map[string]string{"KEY": "VALUE"},
 			profiles: []latest.Profile{
 				{Name: "activated", Activation: []latest.Activation{{Env: "KEY=VALUE"}}},
 				{Name: "not-activated", Activation: []latest.Activation{{Env: "KEY=OTHER"}}},
 				{Name: "also-activated", Activation: []latest.Activation{{Env: "KEY=!OTHER"}}},
+				{Name: "not-treated-as-regex", Activation: []latest.Activation{{Env: "KEY="}}},
+				{Name: "regex-activated", Activation: []latest.Activation{{Env: "KEY=V.*E"}}},
+				{Name: "regex-activated-two", Activation: []latest.Activation{{Env: "KEY=^V.*E$"}}},
+				{Name: "regex-activated-substring-match", Activation: []latest.Activation{{Env: "KEY=^VAL"}}},
 			},
-			expected: []string{"activated", "also-activated"},
+			expected: []string{"activated", "also-activated", "regex-activated", "regex-activated-two", "regex-activated-substring-match"},
 		}, {
 			description: "Invalid env variable",
-			opts:        &cfg.SkaffoldOptions{},
+			envs:        map[string]string{"KEY": "VALUE"},
+			opts:        cfg.SkaffoldOptions{},
 			profiles: []latest.Profile{
 				{Name: "activated", Activation: []latest.Activation{{Env: "KEY:VALUE"}}},
 			},
 			shouldErr: true,
 		}, {
 			description: "Auto-activated by kube context",
-			opts:        &cfg.SkaffoldOptions{},
 			profiles: []latest.Profile{
 				{Name: "activated", Activation: []latest.Activation{{KubeContext: "prod-context"}}},
 				{Name: "not-activated", Activation: []latest.Activation{{KubeContext: "dev-context"}}},
 				{Name: "also-activated", Activation: []latest.Activation{{KubeContext: "!dev-context"}}},
+				{Name: "activated-regexp", Activation: []latest.Activation{{KubeContext: "prod-.*"}}},
+				{Name: "not-activated-regexp", Activation: []latest.Activation{{KubeContext: "dev-.*"}}},
+				{Name: "invalid-regexp", Activation: []latest.Activation{{KubeContext: `\`}}},
 			},
-			expected: []string{"activated", "also-activated"},
+			expected: []string{"activated", "also-activated", "activated-regexp"},
 		}, {
 			description: "AND between activation criteria",
-			opts: &cfg.SkaffoldOptions{
+			envs:        map[string]string{"KEY": "VALUE"},
+			opts: cfg.SkaffoldOptions{
 				Command: "dev",
 			},
 			profiles: []latest.Profile{
@@ -403,7 +444,7 @@ func TestActivatedProfiles(t *testing.T) {
 			expected: []string{"activated"},
 		}, {
 			description: "OR between activations",
-			opts: &cfg.SkaffoldOptions{
+			opts: cfg.SkaffoldOptions{
 				Command: "dev",
 			},
 			profiles: []latest.Profile{
@@ -417,24 +458,106 @@ func TestActivatedProfiles(t *testing.T) {
 			},
 			expected: []string{"activated"},
 		},
+		{
+			description: "Activation for undefined environment variable and empty value",
+			envs:        map[string]string{"ABC": ""},
+			opts: cfg.SkaffoldOptions{
+				Command: "dev",
+			},
+			profiles: []latest.Profile{
+				{
+					Name: "empty", Activation: []latest.Activation{{
+						Env: "ABC=",
+					}},
+				},
+				{
+					Name: "empty-by-regex", Activation: []latest.Activation{{
+						Env: "ABC=^$",
+					}},
+				},
+				{
+					Name: "not-empty", Activation: []latest.Activation{{
+						Env: "ABC=!",
+					}},
+				},
+				{
+					Name: "one", Activation: []latest.Activation{{
+						Env: "ABC=1",
+					}},
+				},
+				{
+					Name: "not-one", Activation: []latest.Activation{{
+						Env: "ABC=!1",
+					}},
+				},
+				{
+					Name: "two", Activation: []latest.Activation{{
+						Env: "ABC=2",
+					}},
+				},
+			},
+			expected: []string{"empty", "empty-by-regex", "not-one"},
+		},
+		{
+			description: "Activation for filled environment variable",
+			envs:        map[string]string{"ABC": "1"},
+			opts: cfg.SkaffoldOptions{
+				Command: "dev",
+			},
+			profiles: []latest.Profile{
+				{
+					Name: "empty", Activation: []latest.Activation{{
+						Env: "ABC=",
+					}},
+				},
+				{
+					Name: "one", Activation: []latest.Activation{{
+						Env: "ABC=1",
+					}},
+				},
+				{
+					Name: "one-as-well", Activation: []latest.Activation{{
+						Command: "not-triggered",
+					}, {
+						Env: "ABC=1",
+					}},
+				},
+				{
+					Name: "two", Activation: []latest.Activation{{
+						Command: "build",
+					}, {
+						Env: "ABC=2",
+					}},
+				},
+				{
+					Name: "not-two", Activation: []latest.Activation{{
+						Command: "build",
+					}, {
+						Env: "ABC=!2",
+					}},
+				},
+			},
+			expected: []string{"one", "one-as-well", "not-two"},
+		},
 	}
 
-	os.Setenv("KEY", "VALUE")
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "prod-context"})
-	defer restore()
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetEnvs(test.envs)
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "prod-context"})
 
 			activated, err := activatedProfiles(test.profiles, test.opts)
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, activated)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, activated)
 		})
 	}
-
 }
 
 func str(value string) *interface{} {
 	var v interface{} = value
 	return &v
+}
+
+func addVersion(yaml string) string {
+	return fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, yaml)
 }

@@ -24,7 +24,7 @@ import (
 )
 
 func TestParseVersion(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		in          string
 		out         semver.Version
@@ -46,11 +46,22 @@ func TestParseVersion(t *testing.T) {
 			shouldErr:   true,
 		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual, err := ParseVersion(test.in)
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.out, actual)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, actual)
 		})
 	}
+}
+
+func TestUserAgent(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&platform, "osx")
+		t.Override(&version, "1.0")
+
+		userAgent := UserAgent()
+
+		t.CheckDeepEqual("skaffold/osx/1.0", userAgent)
+	})
 }

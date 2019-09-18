@@ -101,18 +101,23 @@ build:
       path: /kaniko/.docker
 `
 	badConfig = "bad config"
+
+	invalidStatusCheckConfig = `
+deploy:
+  statusCheckDeadlineSeconds: s
+`
+	validStatusCheckConfig = `
+deploy:
+  statusCheckDeadlineSeconds: 10
+`
 )
 
 func TestParseConfig(t *testing.T) {
-	cleanup := testutil.SetupFakeKubernetesContext(t, api.Config{CurrentContext: "cluster1"})
-	defer cleanup()
-
-	var tests = []struct {
+	tests := []struct {
 		apiVersion  string
 		description string
 		config      string
 		expected    util.VersionedConfig
-		badReader   bool
 		shouldErr   bool
 	}{
 		{
@@ -205,25 +210,41 @@ func TestParseConfig(t *testing.T) {
 			config:      minimalConfig,
 			shouldErr:   true,
 		},
+		{
+			apiVersion:  latest.Version,
+			description: "invalid statusCheckDeadline",
+			config:      invalidStatusCheckConfig,
+			shouldErr:   true,
+		},
+		{
+			apiVersion:  latest.Version,
+			description: "valid statusCheckDeadline",
+			config:      validStatusCheckConfig,
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withStatusCheckDeadline(10),
+			),
+		},
 	}
-
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			tmp, cleanup := testutil.NewTempDir(t)
-			defer cleanup()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
 
-			yaml := fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config)
-			tmp.Write("skaffold.yaml", yaml)
+			tmpDir := t.NewTempDir().
+				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config))
 
-			cfg, err := ParseConfig(tmp.Path("skaffold.yaml"), true)
+			cfg, err := ParseConfig(tmpDir.Path("skaffold.yaml"), true)
 			if cfg != nil {
 				config := cfg.(*latest.SkaffoldConfig)
-				if err := defaults.Set(config); err != nil {
-					t.Fatal("unable to set default values")
-				}
+				err := defaults.Set(config)
+
+				t.CheckNoError(err)
 			}
 
-			testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expected, cfg)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cfg)
 		})
 	}
 }
@@ -251,8 +272,9 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 		b := latest.BuildConfig{BuildType: latest.BuildType{GoogleCloudBuild: &latest.GoogleCloudBuild{
 			ProjectID:   id,
 			DockerImage: "gcr.io/cloud-builders/docker",
-			MavenImage:  "gcr.io/cloud-builders/mvn@sha256:0ec283f2ee1ab1d2ac779dcbb24bddaa46275aec7088cc10f2926b4ea0fcac9b",
+			MavenImage:  "gcr.io/cloud-builders/mvn",
 			GradleImage: "gcr.io/cloud-builders/gradle",
+			KanikoImage: "gcr.io/kaniko-project/executor",
 		}}}
 		for _, op := range ops {
 			op(&b)
@@ -384,17 +406,31 @@ func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldConfig) {
 	}
 }
 
+func withPortForward(portForward ...*latest.PortForwardResource) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.PortForward = portForward
+	}
+}
+
+func withStatusCheckDeadline(deadline int) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.Deploy.StatusCheckDeadlineSeconds = deadline
+	}
+}
+
 func TestUpgradeToNextVersion(t *testing.T) {
 	for i, schemaVersion := range SchemaVersions[0 : len(SchemaVersions)-2] {
 		from := schemaVersion
 		to := SchemaVersions[i+1]
 		description := fmt.Sprintf("Upgrade from %s to %s", from.APIVersion, to.APIVersion)
 
-		t.Run(description, func(t *testing.T) {
+		testutil.Run(t, description, func(t *testutil.T) {
 			factory, _ := SchemaVersions.Find(from.APIVersion)
+
 			newer, err := factory().Upgrade()
 
-			testutil.CheckErrorAndDeepEqual(t, false, err, to.APIVersion, newer.GetVersion())
+			t.CheckNoError(err)
+			t.CheckDeepEqual(to.APIVersion, newer.GetVersion())
 		})
 	}
 }

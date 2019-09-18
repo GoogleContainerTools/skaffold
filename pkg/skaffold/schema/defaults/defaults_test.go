@@ -42,6 +42,12 @@ func TestSetDefaults(t *testing.T) {
 							},
 						},
 					},
+					{
+						ImageName: "third",
+						ArtifactType: latest.ArtifactType{
+							CustomArtifact: &latest.CustomArtifact{},
+						},
+					},
 				},
 			},
 		},
@@ -58,22 +64,80 @@ func TestSetDefaults(t *testing.T) {
 	testutil.CheckDeepEqual(t, "second", cfg.Build.Artifacts[1].ImageName)
 	testutil.CheckDeepEqual(t, "folder", cfg.Build.Artifacts[1].Workspace)
 	testutil.CheckDeepEqual(t, "Dockerfile.second", cfg.Build.Artifacts[1].DockerArtifact.DockerfilePath)
+
+	testutil.CheckDeepEqual(t, "third", cfg.Build.Artifacts[2].ImageName)
+	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[2].CustomArtifact.Dependencies.Paths)
+	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[2].CustomArtifact.Dependencies.Ignore)
 }
 
 func TestSetDefaultsOnCluster(t *testing.T) {
-	restore := testutil.SetupFakeKubernetesContext(t, api.Config{
-		CurrentContext: "cluster1",
-		Contexts: map[string]*api.Context{
-			"cluster1": {Namespace: "ns"},
-		},
-	})
-	defer restore()
+	testutil.Run(t, "no docker config", func(t *testutil.T) {
+		t.SetupFakeKubernetesContext(api.Config{
+			CurrentContext: "cluster1",
+			Contexts: map[string]*api.Context{
+				"cluster1": {Namespace: "ns"},
+			},
+		})
 
+		// no docker config
+		cfg := &latest.SkaffoldConfig{
+			Pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					BuildType: latest.BuildType{
+						Cluster: &latest.ClusterDetails{},
+					},
+				},
+			},
+		}
+		err := Set(cfg)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("ns", cfg.Build.Cluster.Namespace)
+		t.CheckDeepEqual(constants.DefaultKanikoTimeout, cfg.Build.Cluster.Timeout)
+		t.CheckDeepEqual(constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
+
+		// default docker config
+		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{}
+		err = Set(cfg)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(constants.DefaultKanikoDockerConfigSecretName, cfg.Build.Cluster.DockerConfig.SecretName)
+
+		// docker config with path
+		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{
+			Path: "/path",
+		}
+		err = Set(cfg)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("docker-cfg", cfg.Build.Cluster.DockerConfig.SecretName)
+		t.CheckDeepEqual("/path", cfg.Build.Cluster.DockerConfig.Path)
+
+		// docker config with secret name
+		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{
+			SecretName: "secret",
+		}
+		err = Set(cfg)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("secret", cfg.Build.Cluster.DockerConfig.SecretName)
+		t.CheckDeepEqual("", cfg.Build.Cluster.DockerConfig.Path)
+	})
+}
+
+func TestCustomBuildWithCluster(t *testing.T) {
 	cfg := &latest.SkaffoldConfig{
 		Pipeline: latest.Pipeline{
 			Build: latest.BuildConfig{
 				Artifacts: []*latest.Artifact{
-					{ImageName: "image"},
+					{
+						ImageName: "image",
+						ArtifactType: latest.ArtifactType{
+							CustomArtifact: &latest.CustomArtifact{
+								BuildCommand: "./build.sh",
+							},
+						},
+					},
 				},
 				BuildType: latest.BuildType{
 					Cluster: &latest.ClusterDetails{},
@@ -85,9 +149,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 	err := Set(cfg)
 
 	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, "ns", cfg.Build.Cluster.Namespace)
-	testutil.CheckDeepEqual(t, constants.DefaultKanikoTimeout, cfg.Build.Cluster.Timeout)
-	testutil.CheckDeepEqual(t, constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
+	testutil.CheckDeepEqual(t, (*latest.KanikoArtifact)(nil), cfg.Build.Artifacts[0].KanikoArtifact)
 }
 
 func TestSetDefaultsOnCloudBuild(t *testing.T) {
@@ -110,4 +172,46 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildDockerImage, cfg.Build.GoogleCloudBuild.DockerImage)
 	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildMavenImage, cfg.Build.GoogleCloudBuild.MavenImage)
 	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildGradleImage, cfg.Build.GoogleCloudBuild.GradleImage)
+}
+
+func TestSetDefaultPortForwardNamespace(t *testing.T) {
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{},
+			PortForward: []*latest.PortForwardResource{
+				{
+					Type:      constants.Service,
+					Namespace: "mynamespace",
+				}, {
+					Type: constants.Service,
+				},
+			},
+		},
+	}
+	err := Set(cfg)
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, "mynamespace", cfg.PortForward[0].Namespace)
+	testutil.CheckDeepEqual(t, constants.DefaultPortForwardNamespace, cfg.PortForward[1].Namespace)
+}
+
+func TestSetPortForwardLocalPort(t *testing.T) {
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{},
+			PortForward: []*latest.PortForwardResource{
+				{
+					Type: constants.Service,
+					Port: 8080,
+				}, {
+					Type:      constants.Service,
+					Port:      8080,
+					LocalPort: 9000,
+				},
+			},
+		},
+	}
+	err := Set(cfg)
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, 8080, cfg.PortForward[0].LocalPort)
+	testutil.CheckDeepEqual(t, 9000, cfg.PortForward[1].LocalPort)
 }
