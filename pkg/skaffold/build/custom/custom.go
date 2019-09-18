@@ -70,6 +70,8 @@ func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Ar
 
 func (b *ArtifactBuilder) handleGracefulTermination(ctx context.Context, cmd *exec.Cmd) error {
 	done := make(chan struct{})
+	defer close(done)
+
 	go func() {
 		select {
 		case <-ctx.Done():
@@ -92,14 +94,14 @@ func (b *ArtifactBuilder) handleGracefulTermination(ctx context.Context, cmd *ex
 				// forcefully kill process after 2 seconds grace period
 				cmd.Process.Kill()
 			case <-done:
+				return
 			}
 		case <-done:
+			return
 		}
 	}()
 
-	err := cmd.Wait()
-	close(done)
-	return err
+	return cmd.Wait()
 }
 
 func (b *ArtifactBuilder) retrieveCmd(out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
