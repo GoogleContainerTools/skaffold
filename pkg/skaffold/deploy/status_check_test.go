@@ -213,7 +213,7 @@ func (m *mockResource) UpdateStatus(s string, err error) {
 }
 
 func (m *mockResource) Deadline() time.Duration {
-	return 5
+	return 5 * time.Millisecond
 }
 
 func (m *mockResource) CheckStatus(context.Context, *runcontext.RunContext) {
