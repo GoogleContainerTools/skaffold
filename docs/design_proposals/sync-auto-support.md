@@ -1,7 +1,7 @@
 # Title
 
 * Author(s): Appu Goundan (@loosebazooka)
-* Design Shepherd: \<skaffold-core-team-member\>
+* Design Shepherd: Tejal Desai (@tejal29), Priya Wadhwa (@priyawadhwa)
 * Date: 09/17/2019
 * Status: New
 
@@ -87,7 +87,7 @@ What we might want, is an API that can accept configuration that looks like:
 
 ```
 sync: auto {
-  indirect:
+  generated:
   - command: "./gradlew jib classes"
     inputs:
       - src/main/java
@@ -126,6 +126,41 @@ Lets breakdown the different parts
 4. `includeTools` - useful for containers that don't contain, for example, `tar`
    and similar to debug, we can use some init container to inject the necessary
    tooling for sync.
+
+###### Jib - Skaffold Sync interface
+
+How a tool like Jib might surface the necessary information to Skaffold
+
+I would expect to add a task like `_jibSkaffoldSyncMap` that will produce
+json output for the skaffold-jib intergration to consume and forward to the sync
+system. And example output might look like:
+
+```
+BEGIN JIB JSON
+{
+  "generated": {
+    “target/classes”: "app/classes",
+    "target": "dest2"
+  },
+  "direct": {
+    "src/main/extra1": "/",
+    "src/main/extra2": "/"
+    ".m2/some/dep/my-dep-SNAPSHOT.jar": "app/dependencies/my-dep-SNAPSHOT.jar"
+  }
+}
+```
+
+perhaps jib should also tell the system what task/goals are required to build
+the generated files??
+
+```
+{
+  ...
+  "generator-tasks": ["classes", "resources"]
+  "generated": ...
+}
+```
+
 
 ### Open Issues/Questions
 
