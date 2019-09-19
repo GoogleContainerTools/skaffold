@@ -210,7 +210,7 @@ func setDefaultClusterTimeout(cluster *latest.ClusterDetails) error {
 }
 
 func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
-	if cluster.PullSecret != "" && cluster.PullSecretName != "" {
+	if cluster.PullSecret != "" {
 		absPath, err := homedir.Expand(cluster.PullSecret)
 		if err != nil {
 			return fmt.Errorf("unable to expand pullSecret %s", cluster.PullSecret)
