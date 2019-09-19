@@ -33,6 +33,8 @@ const (
 	Complete   = "Complete"
 	Failed     = "Failed"
 	Info       = "Information"
+	Updated    = "Updated"
+	Started    = "Started"
 )
 
 var handler = &eventHandler{}
@@ -136,6 +138,9 @@ func emptyState(build latest.BuildConfig) proto.State {
 		DeployState: &proto.DeployState{
 			Status: NotStarted,
 		},
+		StatusCheckState: &proto.StatusCheckState{
+			Status: NotStarted,
+		},
 		ForwardedPorts: make(map[int32]*proto.PortEvent),
 	}
 }
@@ -158,6 +163,56 @@ func DeployFailed(err error) {
 // DeployEvent notifies that a deployment of non fatal interesting errors during deploy.
 func DeployInfoEvent(err error) {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Info, Err: err.Error()})
+}
+
+func StatusCheckEventComplete() {
+	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
+		Status: Complete,
+	})
+}
+
+func StatusCheckEventFailed(err error) {
+	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
+		Status: Failed,
+		Err:    err.Error(),
+	})
+}
+
+func StatusCheckEventStarted() {
+	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
+		Status: Started,
+	})
+}
+
+func StatusCheckEventInProgress(s string) {
+	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
+		Status:  InProgress,
+		Message: s,
+	})
+}
+
+func ResourceStatusCheckEventComplete(r string, status string) {
+	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
+		Resource: r,
+		Status:   Complete,
+		Message:  status,
+	})
+}
+
+func ResourceStatusCheckEventFailed(r string, err error) {
+	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
+		Resource: r,
+		Status:   Failed,
+		Err:      err.Error(),
+	})
+}
+
+func ResourceStatusCheckEventUpdated(r string, status string) {
+	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
+		Resource: r,
+		Status:   Updated,
+		Message:  status,
+	})
 }
 
 // DeployComplete notifies that a deployment has completed.
@@ -208,6 +263,22 @@ func (ev *eventHandler) handleDeployEvent(e *proto.DeployEvent) {
 	go ev.handle(&proto.Event{
 		EventType: &proto.Event_DeployEvent{
 			DeployEvent: e,
+		},
+	})
+}
+
+func (ev *eventHandler) handleStatusCheckEvent(e *proto.StatusCheckEvent) {
+	go ev.handle(&proto.Event{
+		EventType: &proto.Event_StatusCheckEvent{
+			StatusCheckEvent: e,
+		},
+	})
+}
+
+func (ev *eventHandler) handleResourceStatusCheckEvent(e *proto.ResourceStatusCheckEvent) {
+	go ev.handle(&proto.Event{
+		EventType: &proto.Event_ResourceStatusCheckEvent{
+			ResourceStatusCheckEvent: e,
 		},
 	})
 }
@@ -276,6 +347,34 @@ func (ev *eventHandler) handle(event *proto.Event) {
 		ev.state.ForwardedPorts[pe.LocalPort] = pe
 		ev.stateLock.Unlock()
 		logEntry.Entry = fmt.Sprintf("Forwarding container %s to local port %d", pe.ContainerName, pe.LocalPort)
+	case *proto.Event_StatusCheckEvent:
+		se := e.StatusCheckEvent
+		ev.stateLock.Lock()
+		ev.state.StatusCheckState.Status = se.Status
+		ev.stateLock.Unlock()
+		switch se.Status {
+		case InProgress:
+			logEntry.Entry = "Deploy status check started"
+		case Complete:
+			logEntry.Entry = "Deploy status check complete"
+		case Failed:
+			logEntry.Entry = "Deploy status check Failed"
+		default:
+		}
+	case *proto.Event_ResourceStatusCheckEvent:
+		rse := e.ResourceStatusCheckEvent
+		ev.stateLock.Lock()
+		ev.stateLock.Unlock()
+		rseName := rse.Resource
+		switch rse.Status {
+		case Updated:
+			logEntry.Entry = fmt.Sprintf("Resource %s status updated to %s", rseName, rse.Status)
+		case Complete:
+			logEntry.Entry = fmt.Sprintf("Resource %s status completed successfully", rseName)
+		case Failed:
+			logEntry.Entry = fmt.Sprintf("Resource %s status failed with %s", rseName, rse.Err)
+		default:
+		}
 	default:
 		return
 	}

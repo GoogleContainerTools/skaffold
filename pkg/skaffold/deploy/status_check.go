@@ -25,6 +25,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -56,14 +57,17 @@ type counter struct {
 }
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
+	event.StatusCheckEventStarted()
 	client, err := pkgkubernetes.Client()
 	if err != nil {
+		event.StatusCheckEventFailed(err)
 		return errors.Wrap(err, "getting kubernetes client")
 	}
 
 	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds)
 	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)
 	if err != nil {
+		event.StatusCheckEventFailed(err)
 		return errors.Wrap(err, "could not fetch deployments")
 	}
 
@@ -88,7 +92,12 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Wait for all deployment status to be fetched
 	wg.Wait()
-	return getSkaffoldDeployStatus(deployments)
+	if err := getSkaffoldDeployStatus(deployments); err != nil {
+		event.StatusCheckEventFailed(err)
+		return err
+	}
+	event.StatusCheckEventComplete()
+	return nil
 }
 
 func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
@@ -161,7 +170,10 @@ func printStatusCheckSummary(out io.Writer, d *resource.Deployment, pending int,
 			trimNewLine(getPendingMessage(pending, total)),
 			trimNewLine(err.Error()),
 		)
+		event.ResourceStatusCheckEventFailed(d.String(), err)
+
 	} else {
+		event.ResourceStatusCheckEventComplete(d.String(), d.Status().String())
 		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(pending, total))
 	}
 	color.Default.Fprintln(out, status)
@@ -193,6 +205,7 @@ func printStatus(deps []*resource.Deployment, out io.Writer) bool {
 		}
 		allResourcesCheckComplete = false
 		if str := d.ReportSinceLastUpdated(); str != "" {
+			event.ResourceStatusCheckEventUpdated(d.String(), str)
 			color.Default.Fprintln(out, tabHeader, trimNewLine(str))
 		}
 	}
@@ -201,7 +214,9 @@ func printStatus(deps []*resource.Deployment, out io.Writer) bool {
 
 func getPendingMessage(pending int, total int) string {
 	if pending > 0 {
-		return fmt.Sprintf(" [%d/%d deployment(s) still pending]", pending, total)
+		s := fmt.Sprintf("%d/%d deployment(s) still pending", pending, total)
+		event.StatusCheckEventInProgress(s)
+		return fmt.Sprintf(" [%s]", s)
 	}
 	return ""
 }
@@ -220,3 +235,11 @@ func newCounter(i int) *counter {
 func (c *counter) markProcessed() int {
 	return int(atomic.AddInt32(&c.pending, -1))
 }
+
+//func toProto(r Resource) *proto.Resource {
+//	return &proto.Resource{
+//		Name:      r.Name(),
+//		Type:      r.Type(),
+//		Namespace: r.Namespace(),
+//	}
+//}

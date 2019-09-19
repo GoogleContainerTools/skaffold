@@ -24,7 +24,9 @@ import (
 )
 
 type Resource interface {
-
+	Name() string
+	Namespace() string
+	Type() string
 	// UpdateStatus updates the resource status
 	UpdateStatus(string, error)
 
