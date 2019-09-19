@@ -14,7 +14,7 @@ apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
   creationTimestamp: null
-  name: skaffold-build
+  name: skaffold-build-0
 spec:
   inputs:
     resources:
@@ -22,9 +22,14 @@ spec:
       outputImageDir: ""
       targetPath: ""
       type: git
+  outputs:
+    resources:
+    - name: source
+      outputImageDir: ""
+      targetPath: ""
+      type: git
   steps:
   - args:
-    - build
     - --filename
     - skaffold.yaml
     - --profile
@@ -33,6 +38,7 @@ spec:
     - build.out
     command:
     - skaffold
+    - build
     env:
     - name: GOOGLE_APPLICATION_CREDENTIALS
       value: /secret/kaniko-secret
@@ -52,7 +58,7 @@ apiVersion: tekton.dev/v1alpha1
 kind: Task
 metadata:
   creationTimestamp: null
-  name: skaffold-deploy
+  name: skaffold-deploy-0
 spec:
   inputs:
     resources:
@@ -62,13 +68,13 @@ spec:
       type: git
   steps:
   - args:
-    - deploy
     - --filename
     - skaffold.yaml
     - --build-artifacts
     - build.out
     command:
     - skaffold
+    - deploy
     image: gcr.io/k8s-skaffold/skaffold:test-version
     name: run-deploy
     resources: {}
@@ -84,21 +90,24 @@ spec:
   - name: source-repo
     type: git
   tasks:
-  - name: skaffold-build-task
+  - name: skaffold-build-0-task
     resources:
       inputs:
       - name: source
         resource: source-repo
-    taskRef:
-      name: skaffold-build
-  - name: skaffold-deploy-task
-    resources:
-      inputs:
+      outputs:
       - name: source
         resource: source-repo
-    runAfter:
-    - skaffold-build-task
     taskRef:
-      name: skaffold-deploy
+      name: skaffold-build-0
+  - name: skaffold-deploy-0-task
+    resources:
+      inputs:
+      - from:
+        - skaffold-build-0-task
+        name: source
+        resource: source-repo
+    taskRef:
+      name: skaffold-deploy-0
 status: {}
 ---

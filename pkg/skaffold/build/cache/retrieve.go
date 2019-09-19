@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -62,11 +63,14 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		result := results[i]
 		switch result := result.(type) {
 		case failed:
-			return nil, errors.Wrap(result.err, "checking cache")
+			logrus.Warnf("error checking cache, caching may not work as expected: %v", result.err)
+			color.Yellow.Fprintln(out, "Error checking cache. Rebuilding.")
+			needToBuild = append(needToBuild, artifact)
+			continue
 
 		case needsBuilding:
-			color.Red.Fprintln(out, "Not found. Building")
-			hashByName[artifact.ImageName] = result.hash
+			color.Yellow.Fprintln(out, "Not found. Building")
+			hashByName[artifact.ImageName] = result.Hash()
 			needToBuild = append(needToBuild, artifact)
 			continue
 
@@ -114,11 +118,13 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 	}
 
 	if err := c.addArtifacts(ctx, bRes, hashByName); err != nil {
-		return nil, errors.Wrap(err, "adding artifacts to cache")
+		logrus.Warnf("error adding artifacts to cache; caching may not work as expected: %v", err)
+		return append(bRes, alreadyBuilt...), nil
 	}
 
 	if err := saveArtifactCache(c.cacheFile, c.artifactCache); err != nil {
-		return nil, errors.Wrap(err, "saving cache")
+		logrus.Warnf("error saving cache file; caching may not work as expected: %v", err)
+		return append(bRes, alreadyBuilt...), nil
 	}
 
 	return append(bRes, alreadyBuilt...), err

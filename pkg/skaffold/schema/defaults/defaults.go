@@ -19,7 +19,7 @@ package defaults
 import (
 	"fmt"
 
-	"github.com/mitchellh/go-homedir"
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
@@ -40,11 +40,18 @@ func Set(c *latest.SkaffoldConfig) error {
 		SetDefaultCloudBuildDockerImage,
 		setDefaultCloudBuildMavenImage,
 		setDefaultCloudBuildGradleImage,
+		setDefaultCloudBuildKanikoImage,
 	)
 
-	if c.Build.Cluster != nil {
-		// All artifacts should be built with kaniko
-		for _, a := range c.Build.Artifacts {
+	for _, a := range c.Build.Artifacts {
+		// Set Kaniko as default if Cluster is specified
+		// or set defaults if KanikoArtifact is specified
+		if c.Build.Cluster != nil || a.KanikoArtifact != nil {
+			// must be either custom or kaniko build
+			if a.CustomArtifact != nil {
+				continue
+			}
+
 			setDefaultKanikoArtifact(a)
 			setDefaultKanikoArtifactImage(a)
 			setDefaultKanikoArtifactBuildContext(a)
@@ -65,6 +72,7 @@ func Set(c *latest.SkaffoldConfig) error {
 		setDefaultWorkspace(a)
 		defaultToDockerArtifact(a)
 		setDefaultDockerfile(a)
+		setDefaultCustomDependencies(a)
 	}
 
 	for _, pf := range c.PortForward {
@@ -114,6 +122,10 @@ func setDefaultCloudBuildGradleImage(gcb *latest.GoogleCloudBuild) {
 	gcb.GradleImage = valueOrDefault(gcb.GradleImage, constants.DefaultCloudBuildGradleImage)
 }
 
+func setDefaultCloudBuildKanikoImage(gcb *latest.GoogleCloudBuild) {
+	gcb.KanikoImage = valueOrDefault(gcb.KanikoImage, constants.DefaultCloudBuildKanikoImage)
+}
+
 func setDefaultTagger(c *latest.SkaffoldConfig) {
 	if c.Build.TagPolicy != (latest.TagPolicy{}) {
 		return
@@ -148,6 +160,14 @@ func defaultToDockerArtifact(a *latest.Artifact) {
 func setDefaultDockerfile(a *latest.Artifact) {
 	if a.DockerArtifact != nil {
 		SetDefaultDockerArtifact(a.DockerArtifact)
+	}
+}
+
+func setDefaultCustomDependencies(a *latest.Artifact) {
+	if a.CustomArtifact != nil {
+		if a.CustomArtifact.Dependencies == nil {
+			a.CustomArtifact.Dependencies = &latest.CustomDependencies{}
+		}
 	}
 }
 

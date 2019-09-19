@@ -32,6 +32,7 @@ const (
 	InProgress = "In Progress"
 	Complete   = "Complete"
 	Failed     = "Failed"
+	Info       = "Information"
 )
 
 var handler = &eventHandler{}
@@ -43,7 +44,7 @@ type eventHandler struct {
 	state     proto.State
 	stateLock sync.Mutex
 
-	listeners []listener
+	listeners []*listener
 }
 
 type listener struct {
@@ -99,7 +100,7 @@ func (ev *eventHandler) logEvent(entry proto.LogEntry) {
 }
 
 func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error {
-	listener := listener{
+	listener := &listener{
 		callback: callback,
 		errors:   make(chan error),
 	}
@@ -135,7 +136,7 @@ func emptyState(build latest.BuildConfig) proto.State {
 		DeployState: &proto.DeployState{
 			Status: NotStarted,
 		},
-		ForwardedPorts: make(map[string]*proto.PortEvent),
+		ForwardedPorts: make(map[int32]*proto.PortEvent),
 	}
 }
 
@@ -149,9 +150,14 @@ func DeployInProgress() {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: InProgress})
 }
 
-// DeployFailed notifies that a deployment has failed.
+// DeployFailed notifies that non-fatal errors were encountered during a deployment.
 func DeployFailed(err error) {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error()})
+}
+
+// DeployEvent notifies that a deployment of non fatal interesting errors during deploy.
+func DeployInfoEvent(err error) {
+	handler.handleDeployEvent(&proto.DeployEvent{Status: Info, Err: err.Error()})
 }
 
 // DeployComplete notifies that a deployment has completed.
@@ -267,7 +273,7 @@ func (ev *eventHandler) handle(event *proto.Event) {
 	case *proto.Event_PortEvent:
 		pe := e.PortEvent
 		ev.stateLock.Lock()
-		ev.state.ForwardedPorts[pe.ContainerName] = pe
+		ev.state.ForwardedPorts[pe.LocalPort] = pe
 		ev.stateLock.Unlock()
 		logEntry.Entry = fmt.Sprintf("Forwarding container %s to local port %d", pe.ContainerName, pe.LocalPort)
 	default:

@@ -91,8 +91,8 @@ func (t stubAuth) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { ret
 
 func TestCacheBuildLocal(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&buildComplete, func(_ string) {})
-		t.Override(&buildInProgress, func(_ string) {})
+		t.Override(&buildComplete, func(string) {})
+		t.Override(&buildInProgress, func(string) {})
 
 		tmpDir := t.NewTempDir().
 			Write("dep1", "content1").
@@ -146,6 +146,9 @@ func TestCacheBuildLocal(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckDeepEqual(0, len(builder.built))
 		t.CheckDeepEqual(2, len(bRes))
+		// Artifacts should always be returned in their original order
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 
 		// Third build: change one artifact's dependencies
 		tmpDir.Write("dep1", "new content")
@@ -155,13 +158,15 @@ func TestCacheBuildLocal(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckDeepEqual(1, len(builder.built))
 		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 	})
 }
 
 func TestCacheBuildRemote(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&buildComplete, func(_ string) {})
-		t.Override(&buildInProgress, func(_ string) {})
+		t.Override(&buildComplete, func(string) {})
+		t.Override(&buildInProgress, func(string) {})
 
 		tmpDir := t.NewTempDir().
 			Write("dep1", "content1").
@@ -218,6 +223,9 @@ func TestCacheBuildRemote(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckDeepEqual(2, len(builder.built))
 		t.CheckDeepEqual(2, len(bRes))
+		// Artifacts should always be returned in their original order
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 
 		// Second build: both artifacts are read from cache
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: true}
@@ -226,6 +234,8 @@ func TestCacheBuildRemote(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckDeepEqual(0, len(builder.built))
 		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 
 		// Third build: change one artifact's dependencies
 		tmpDir.Write("dep1", "new content")
@@ -235,5 +245,7 @@ func TestCacheBuildRemote(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckDeepEqual(1, len(builder.built))
 		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 	})
 }

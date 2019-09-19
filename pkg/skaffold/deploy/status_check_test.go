@@ -17,21 +17,22 @@ limitations under the License.
 package deploy
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	utilpointer "k8s.io/utils/pointer"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -40,7 +41,7 @@ func TestGetDeployments(t *testing.T) {
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment
-		expected    map[string]time.Duration
+		expected    []*resource.Deployment
 		shouldErr   bool
 	}{
 		{
@@ -51,8 +52,8 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
-							"random":            "foo",
+							RunIDLabel: labeller.runID,
+							"random":   "foo",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(10)},
@@ -62,14 +63,18 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep2",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							RunIDLabel: labeller.runID,
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(20)},
 				},
 			},
-			expected: map[string]time.Duration{"dep1": time.Duration(10) * time.Second, "dep2": time.Duration(20) * time.Second},
-		}, {
+			expected: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
+				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
+			},
+		},
+		{
 			description: "command flag deadline is less than deployment spec.",
 			deps: []*appsv1.Deployment{
 				{
@@ -77,15 +82,18 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
-							"random":            "foo",
+							RunIDLabel: labeller.runID,
+							"random":   "foo",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(300)},
 				},
 			},
-			expected: map[string]time.Duration{"dep1": time.Duration(200) * time.Second},
-		}, {
+			expected: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Duration(200)*time.Second),
+			},
+		},
+		{
 			description: "multiple deployments with no progress deadline set",
 			deps: []*appsv1.Deployment{
 				{
@@ -93,7 +101,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							RunIDLabel: labeller.runID,
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -103,17 +111,19 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep2",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							RunIDLabel: labeller.runID,
 						},
 					},
 				},
 			},
-			expected: map[string]time.Duration{"dep1": time.Duration(100) * time.Second,
-				"dep2": time.Duration(200) * time.Second},
+			expected: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Duration(100)*time.Second),
+				resource.NewDeployment("dep2", "test", time.Duration(200)*time.Second),
+			},
 		},
 		{
 			description: "no deployments",
-			expected:    map[string]time.Duration{},
+			expected:    []*resource.Deployment{},
 		},
 		{
 			description: "multiple deployments in different namespaces",
@@ -123,7 +133,7 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							RunIDLabel: labeller.runID,
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
@@ -133,13 +143,15 @@ func TestGetDeployments(t *testing.T) {
 						Name:      "dep2",
 						Namespace: "test1",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: labeller.skaffoldVersion(),
+							RunIDLabel: labeller.runID,
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: map[string]time.Duration{"dep1": time.Duration(100) * time.Second},
+			expected: []*resource.Deployment{
+				resource.NewDeployment("dep1", "test", time.Duration(100)*time.Second),
+			},
 		},
 		{
 			description: "deployment in correct namespace but not deployed by skaffold",
@@ -155,23 +167,23 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: map[string]time.Duration{},
+			expected: []*resource.Deployment{},
 		},
 		{
-			description: "deployment in correct namespace deployed by skaffold but previous version",
+			description: "deployment in correct namespace deployed by skaffold but different run",
 			deps: []*appsv1.Deployment{
 				{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "dep1",
 						Namespace: "test",
 						Labels: map[string]string{
-							K8ManagedByLabelKey: "skaffold-0.26.0",
+							RunIDLabel: "9876-6789",
 						},
 					},
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: map[string]time.Duration{},
+			expected: []*resource.Deployment{},
 		},
 	}
 
@@ -183,107 +195,126 @@ func TestGetDeployments(t *testing.T) {
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
 			actual, err := getDeployments(client, "test", labeller, time.Duration(200)*time.Second)
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
+				cmp.AllowUnexported(resource.Deployment{}, resource.Status{}))
 		})
 	}
 }
 
-func TestPollDeploymentRolloutStatus(t *testing.T) {
-	rolloutCmd := "kubectl --context kubecontext --namespace test rollout status deployment dep --watch=false"
+type mockResource struct {
+	inErr bool
+	done  bool
+}
+
+func (m *mockResource) UpdateStatus(s string, err error) {
+	if err == context.DeadlineExceeded {
+		m.inErr = true
+	}
+}
+
+func (m *mockResource) Deadline() time.Duration {
+	return 5 * time.Millisecond
+}
+
+func (m *mockResource) CheckStatus(context.Context, *runcontext.RunContext) {
+}
+
+func (m *mockResource) IsStatusCheckComplete() bool {
+	return m.done
+}
+
+func TestPollResourceStatus(t *testing.T) {
 	tests := []struct {
-		description string
-		command     util.Command
-		duration    int
-		shouldErr   bool
+		description   string
+		dummyResource *mockResource
+		isInErr       bool
 	}{
 		{
-			description: "rollout returns success",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(rolloutCmd, "dep successfully rolled out"),
-			duration: 50,
-		}, {
-			description: "rollout returns error in the first attempt",
-			command: testutil.NewFakeCmd(t).
-				WithRunOutErr(rolloutCmd, "could not find", errors.New("deployment.apps/dep could not be found")),
-			shouldErr: true,
-			duration:  50,
-		}, {
-			description: "rollout returns success before time out",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 0 of 1 updated replicas are available...").
-				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 0 of 1 updated replicas are available...").
-				WithRunOut(rolloutCmd, "deployment.apps/dep successfully rolled out"),
-			duration: 80,
-		}, {
-			description: "rollout returns did not stabilize within the given timeout",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 1 of 3 updated replicas are available...").
-				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 1 of 3 updated replicas are available...").
-				WithRunOut(rolloutCmd, "Waiting for rollout to finish: 2 of 3 updated replicas are available..."),
-			duration:  20,
-			shouldErr: true,
+			description:   "resource never stabilize within deadline",
+			dummyResource: &mockResource{},
+			isInErr:       true,
+		},
+		{
+			description:   "resource stabilizes",
+			dummyResource: &mockResource{done: true},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&defaultPollPeriodInMilliseconds, 10)
-			t.Override(&util.DefaultExecCommand, test.command)
-
-			actual := &sync.Map{}
-			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
-			pollDeploymentRolloutStatus(context.Background(), cli, "dep", time.Duration(test.duration)*time.Millisecond, actual)
-			if _, ok := actual.Load("dep"); !ok {
-				t.Error("expected result for deployment dep. But found none")
-			}
-			err := getSkaffoldDeployStatus(actual)
-			t.CheckError(test.shouldErr, err)
+			pollResourceStatus(context.Background(), nil, test.dummyResource)
+			t.CheckDeepEqual(test.dummyResource.inErr, test.isInErr)
 		})
 	}
+
 }
 
 func TestGetDeployStatus(t *testing.T) {
 	tests := []struct {
 		description    string
-		deps           map[string]interface{}
+		deps           []*resource.Deployment
 		expectedErrMsg []string
 		shouldErr      bool
 	}{
 		{
 			description: "one error",
-			deps: map[string]interface{}{
-				"dep1": "SUCCESS",
-				"dep2": fmt.Errorf("could not return within default timeout"),
+			deps: []*resource.Deployment{
+				withStatus(
+					resource.NewDeployment("dep1", "test", time.Second),
+					"success",
+					nil,
+				),
+				withStatus(
+					resource.NewDeployment("dep2", "test", time.Second),
+					"error",
+					errors.New("could not return within default timeout"),
+				),
 			},
-			expectedErrMsg: []string{"deployment dep2 failed due to could not return within default timeout"},
+			expectedErrMsg: []string{"dep2 failed due to could not return within default timeout"},
 			shouldErr:      true,
 		},
 		{
 			description: "no error",
-			deps: map[string]interface{}{
-				"dep1": "SUCCESS",
-				"dep2": "RUNNING",
+			deps: []*resource.Deployment{
+				withStatus(
+					resource.NewDeployment("dep1", "test", time.Second),
+					"success",
+					nil,
+				),
+				withStatus(resource.NewDeployment("dep2", "test", time.Second),
+					"running",
+					nil,
+				),
 			},
 		},
 		{
 			description: "multiple errors",
-			deps: map[string]interface{}{
-				"dep1": "SUCCESS",
-				"dep2": fmt.Errorf("could not return within default timeout"),
-				"dep3": fmt.Errorf("ERROR"),
+			deps: []*resource.Deployment{
+				withStatus(
+					resource.NewDeployment("dep1", "test", time.Second),
+					"success",
+					nil,
+				),
+				withStatus(
+					resource.NewDeployment("dep2", "test", time.Second),
+					"error",
+					errors.New("could not return within default timeout"),
+				),
+				withStatus(
+					resource.NewDeployment("dep3", "test", time.Second),
+					"error",
+					errors.New("ERROR"),
+				),
 			},
-			expectedErrMsg: []string{"deployment dep2 failed due to could not return within default timeout",
-				"deployment dep3 failed due to ERROR"},
+			expectedErrMsg: []string{"dep2 failed due to could not return within default timeout",
+				"dep3 failed due to ERROR"},
 			shouldErr: true,
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			syncMap := &sync.Map{}
-			for k, v := range test.deps {
-				syncMap.Store(k, v)
-			}
-			err := getSkaffoldDeployStatus(syncMap)
+			err := getSkaffoldDeployStatus(test.deps)
 			t.CheckError(test.shouldErr, err)
 			for _, msg := range test.expectedErrMsg {
 				t.CheckErrorContains(msg, err)
@@ -292,39 +323,127 @@ func TestGetDeployStatus(t *testing.T) {
 	}
 }
 
-func TestGetRollOutStatus(t *testing.T) {
-	rolloutCmd := "kubectl --context kubecontext --namespace test rollout status deployment dep --watch=false"
+func TestPrintSummaryStatus(t *testing.T) {
 	tests := []struct {
 		description string
-		command     util.Command
+		pending     int32
+		err         error
 		expected    string
-		shouldErr   bool
 	}{
 		{
-			description: "some output",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(rolloutCmd, "Waiting for replicas to be available"),
-			expected: "Waiting for replicas to be available",
+			description: "no deployment left and current is in success",
+			pending:     0,
+			err:         nil,
+			expected:    " - test:deployment/dep is ready.\n",
 		},
 		{
-			description: "no output",
-			command: testutil.NewFakeCmd(t).
-				WithRunOut(rolloutCmd, ""),
+			description: "no deployment left and current is in error",
+			pending:     0,
+			err:         errors.New("context deadline expired"),
+			expected:    " - test:deployment/dep failed. Error: context deadline expired.\n",
 		},
 		{
-			description: "rollout status error",
-			command: testutil.NewFakeCmd(t).
-				WithRunOutErr(rolloutCmd, "", fmt.Errorf("error")),
-			shouldErr: true,
+			description: "more than 1 deployment left and current is in success",
+			pending:     4,
+			err:         nil,
+			expected:    " - test:deployment/dep is ready. [4/10 deployment(s) still pending]\n",
+		},
+		{
+			description: "more than 1 deployment left and current is in error",
+			pending:     8,
+			err:         errors.New("context deadline expired"),
+			expected:    " - test:deployment/dep failed. [8/10 deployment(s) still pending] Error: context deadline expired.\n",
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.command)
-			cli := &kubectl.CLI{KubeContext: testKubeContext, Namespace: "test"}
-			actual, err := getRollOutStatus(context.Background(), cli, "dep")
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
+			out := new(bytes.Buffer)
+			printStatusCheckSummary(
+				out,
+				withStatus(resource.NewDeployment("dep", "test", 0), "", test.err),
+				int(test.pending),
+				10,
+			)
+			t.CheckDeepEqual(test.expected, out.String())
 		})
 	}
+}
+
+func TestPrintStatus(t *testing.T) {
+	tests := []struct {
+		description string
+		rs          []*resource.Deployment
+		expectedOut string
+		expected    bool
+	}{
+		{
+			description: "single resource successful marked complete - skip print",
+			rs: []*resource.Deployment{
+				withStatus(
+					resource.NewDeployment("r1", "test", 1),
+					"deployment successfully rolled out",
+					nil,
+				),
+			},
+			expected: true,
+		},
+		{
+			description: "single resource in error marked complete -skip print",
+			rs: []*resource.Deployment{
+				withStatus(
+					resource.NewDeployment("r1", "test", 1),
+					"error",
+					fmt.Errorf("error"),
+				),
+			},
+			expected: true,
+		},
+		{
+			description: "multiple resources 1 not complete",
+			rs: []*resource.Deployment{
+				withStatus(
+					resource.NewDeployment("r1", "test", 1),
+					"deployment successfully rolled out",
+					nil,
+				),
+				withStatus(
+					resource.NewDeployment("r2", "test", 1),
+					"pending",
+					nil,
+				),
+			},
+			expectedOut: " - test:deployment/r2 pending\n",
+		},
+		{
+			description: "multiple resources 1 not complete and retry-able error",
+			rs: []*resource.Deployment{
+				withStatus(
+					resource.NewDeployment("r1", "test", 1),
+					"deployment successfully rolled out",
+					nil,
+				),
+				withStatus(
+					resource.NewDeployment("r2", "test", 1),
+					"",
+					resource.ErrKubectlConnection,
+				),
+			},
+			expectedOut: " - test:deployment/r2 kubectl connection error\n",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			out := new(bytes.Buffer)
+			actual := printStatus(test.rs, out)
+			t.CheckDeepEqual(test.expectedOut, out.String())
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+func withStatus(d *resource.Deployment, details string, err error) *resource.Deployment {
+	d.UpdateStatus(details, err)
+	return d
 }

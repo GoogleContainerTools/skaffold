@@ -40,6 +40,10 @@ func TestInit(t *testing.T) {
 			dir:  "testdata/init/hello",
 		},
 		{
+			name: "ignore existing tags",
+			dir:  "testdata/init/ignore-tags",
+		},
+		{
 			name: "microservices (backwards compatibility)",
 			dir:  "testdata/init/microservices",
 			args: []string{

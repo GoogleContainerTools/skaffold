@@ -26,12 +26,14 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/tools/clientcmd"
+
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func TestDev(t *testing.T) {
@@ -180,14 +182,14 @@ func TestDevPortForward(t *testing.T) {
 	}
 
 	// Run skaffold build first to fail quickly on a build failure
-	skaffold.Build("--cache-artifacts=true").InDir("examples/microservices").RunOrFail(t)
+	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
 
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
 	rpcAddr := randomPort()
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr, "--cache-artifacts=true").InDir("examples/microservices").InNs(ns.Name).WithEnv(env)
+	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).WithEnv(env)
 	stop := cmd.RunBackground(t)
 	defer stop()
 
@@ -234,7 +236,7 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 		t.Skip("skipping integration test")
 	}
 	if !ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+		t.Skip("skipping test that is gcp only")
 	}
 
 	// Run skaffold build first to fail quickly on a build failure
@@ -303,7 +305,8 @@ func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourc
 
 // assertResponseFromPort waits for two minutes for the expected response at port.
 func assertResponseFromPort(t *testing.T, port int, expected string) {
-	logrus.Infof("Waiting for response %s from port %d", expected, port)
+	url := fmt.Sprintf("http://%s:%d", util.Loopback, port)
+	t.Logf("Waiting on %s to return: %s", url, expected)
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancelTimeout()
 
@@ -312,21 +315,22 @@ func assertResponseFromPort(t *testing.T, port int, expected string) {
 		case <-ctx.Done():
 			t.Fatalf("Timed out waiting for response from port %d", port)
 		case <-time.After(1 * time.Second):
-			resp, err := http.Get(fmt.Sprintf("http://%s:%d", util.Loopback, port))
+			client := http.Client{Timeout: 1 * time.Second}
+			resp, err := client.Get(url)
 			if err != nil {
-				logrus.Infof("error getting response from port %d: %v", port, err)
+				t.Logf("[retriable error]: %v", err)
 				continue
 			}
 			defer resp.Body.Close()
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				logrus.Infof("error reading response: %v", err)
+				t.Logf("[retriable error] reading response: %v", err)
 				continue
 			}
 			if string(body) == expected {
 				return
 			}
-			logrus.Infof("didn't get expected response from port. got: %s, expected: %s", string(body), expected)
+			t.Logf("[retriable error] didn't get expected response from port. got: %s, expected: %s", string(body), expected)
 		}
 	}
 }
@@ -362,4 +366,62 @@ func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retrie
 		}
 	}
 	return stream, err
+}
+
+func TestDev_WithKubecontextOverride(t *testing.T) {
+	testutil.Run(t, "skaffold run with kubecontext override", func(t *testutil.T) {
+		if testing.Short() {
+			t.Skip("skipping integration test")
+		}
+
+		dir := "examples/getting-started"
+		pods := []string{"getting-started"}
+
+		ns, client, deleteNs := SetupNamespace(t.T)
+		defer deleteNs()
+
+		modifiedKubeconfig, kubecontext, err := createModifiedKubeconfig(ns.Name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		kubeconfig := t.NewTempDir().
+			Write("kubeconfig", string(modifiedKubeconfig)).
+			Path("kubeconfig")
+		env := []string{fmt.Sprintf("KUBECONFIG=%s", kubeconfig)}
+
+		// n.b. for the sake of this test the namespace must not be given explicitly
+		skaffold.Run("--kube-context", kubecontext).InDir(dir).WithEnv(env).RunOrFail(t.T)
+
+		client.WaitForPodsReady(pods...)
+
+		// n.b. for the sake of this test the namespace must not be given explicitly
+		skaffold.Delete("--kube-context", kubecontext).InDir(dir).WithEnv(env).RunOrFail(t.T)
+	})
+}
+
+func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
+	// do not use context.CurrentConfig(), because it may have cached a different config
+	kubeConfig, err := clientcmd.NewDefaultClientConfigLoadingRules().Load()
+	if err != nil {
+		return nil, "", err
+	}
+
+	contextName := "modified-context"
+	if config.IsKindCluster(kubeConfig.CurrentContext) {
+		contextName += "@kind"
+	}
+
+	activeContext := kubeConfig.Contexts[kubeConfig.CurrentContext]
+	if activeContext == nil {
+		return nil, "", fmt.Errorf("no active kube-context set")
+	}
+	// clear the namespace in the active context
+	activeContext.Namespace = ""
+
+	newContext := activeContext.DeepCopy()
+	newContext.Namespace = namespace
+	kubeConfig.Contexts[contextName] = newContext
+
+	yaml, err := clientcmd.Write(*kubeConfig)
+	return yaml, contextName, err
 }

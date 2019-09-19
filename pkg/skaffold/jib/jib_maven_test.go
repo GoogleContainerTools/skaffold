@@ -86,8 +86,8 @@ func TestGetDependenciesMaven(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, t.FakeRunOutErr(
-				strings.Join(getCommandMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{Module: "maven-test"}).Args, " "),
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunOutErr(
+				strings.Join(getCommandMaven(ctx, tmpDir.Root(), &latest.JibArtifact{Project: "maven-test"}).Args, " "),
 				test.stdout,
 				test.err,
 			))
@@ -95,9 +95,9 @@ func TestGetDependenciesMaven(t *testing.T) {
 			// Change build file mod time
 			os.Chtimes(build, test.modTime, test.modTime)
 
-			deps, err := GetDependenciesMaven(ctx, tmpDir.Root(), &latest.JibMavenArtifact{Module: "maven-test"})
+			deps, err := getDependenciesMaven(ctx, tmpDir.Root(), &latest.JibArtifact{Project: "maven-test"})
 			if test.err != nil {
-				t.CheckErrorAndDeepEqual(true, err, "getting jibMaven dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies: "+test.err.Error(), err.Error())
+				t.CheckErrorAndDeepEqual(true, err, "getting jib-maven dependencies: initial Jib dependency refresh failed: failed to get Jib dependencies: "+test.err.Error(), err.Error())
 			} else {
 				t.CheckDeepEqual(test.expected, deps)
 			}
@@ -109,13 +109,13 @@ func TestGetCommandMaven(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
 		description      string
-		jibMavenArtifact latest.JibMavenArtifact
+		jibArtifact      latest.JibArtifact
 		filesInWorkspace []string
 		expectedCmd      func(workspace string) exec.Cmd
 	}{
 		{
-			description:      "maven no profile",
-			jibMavenArtifact: latest.JibMavenArtifact{},
+			description:      "maven basic",
+			jibArtifact:      latest.JibArtifact{},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return MavenCommand.CreateCommand(ctx, workspace, []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
@@ -123,7 +123,7 @@ func TestGetCommandMaven(t *testing.T) {
 		},
 		{
 			description: "maven with extra flags",
-			jibMavenArtifact: latest.JibMavenArtifact{
+			jibArtifact: latest.JibArtifact{
 				Flags: []string{"-DskipTests", "-x"},
 			},
 			filesInWorkspace: []string{},
@@ -132,40 +132,24 @@ func TestGetCommandMaven(t *testing.T) {
 			},
 		},
 		{
-			description:      "maven with profile",
-			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
-			filesInWorkspace: []string{},
-			expectedCmd: func(workspace string) exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
-			},
-		},
-		{
-			description:      "maven with wrapper no profile",
-			jibMavenArtifact: latest.JibMavenArtifact{},
+			description:      "maven with wrapper",
+			jibArtifact:      latest.JibArtifact{},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return MavenCommand.CreateCommand(ctx, workspace, []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
 		{
-			description:      "maven with wrapper no profile",
-			jibMavenArtifact: latest.JibMavenArtifact{},
+			description:      "maven with wrapper",
+			jibArtifact:      latest.JibArtifact{},
 			filesInWorkspace: []string{"mvnw", "mvnw.cmd"},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return MavenCommand.CreateCommand(ctx, workspace, []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
 			},
 		},
 		{
-			description:      "maven with wrapper and profile",
-			jibMavenArtifact: latest.JibMavenArtifact{Profile: "profile"},
-			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
-			expectedCmd: func(workspace string) exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--activate-profiles", "profile", "--non-recursive", "jib:_skaffold-files-v2", "--quiet"})
-			},
-		},
-		{
 			description:      "maven with multi-modules",
-			jibMavenArtifact: latest.JibMavenArtifact{Module: "module"},
+			jibArtifact:      latest.JibArtifact{Project: "module"},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) exec.Cmd {
 				return MavenCommand.CreateCommand(ctx, workspace, []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--projects", "module", "--also-make", "jib:_skaffold-files-v2", "--quiet"})
@@ -177,7 +161,7 @@ func TestGetCommandMaven(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Touch(test.filesInWorkspace...)
 
-			cmd := getCommandMaven(ctx, tmpDir.Root(), &test.jibMavenArtifact)
+			cmd := getCommandMaven(ctx, tmpDir.Root(), &test.jibArtifact)
 
 			expectedCmd := test.expectedCmd(tmpDir.Root())
 			t.CheckDeepEqual(expectedCmd.Path, cmd.Path)
@@ -189,21 +173,20 @@ func TestGetCommandMaven(t *testing.T) {
 
 func TestGenerateMavenArgs(t *testing.T) {
 	tests := []struct {
-		in        latest.JibMavenArtifact
-		skipTests bool
-		out       []string
+		in                 latest.JibArtifact
+		image              string
+		skipTests          bool
+		insecureRegistries map[string]bool
+		out                []string
 	}{
-		{latest.JibMavenArtifact{}, false, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
-		{latest.JibMavenArtifact{}, true, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--non-recursive", "-DskipTests=true", "prepare-package", "jib:goal", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Profile: "profile"}, false, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--activate-profiles", "profile", "--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Profile: "profile"}, true, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--activate-profiles", "profile", "--non-recursive", "-DskipTests=true", "prepare-package", "jib:goal", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Module: "module"}, false, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--projects", "module", "--also-make", "package", "jib:goal", "-Djib.containerize=module", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Module: "module"}, true, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--projects", "module", "--also-make", "-DskipTests=true", "package", "jib:goal", "-Djib.containerize=module", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, false, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--activate-profiles", "profile", "--projects", "module", "--also-make", "package", "jib:goal", "-Djib.containerize=module", "-Dimage=image"}},
-		{latest.JibMavenArtifact{Module: "module", Profile: "profile"}, true, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--activate-profiles", "profile", "--projects", "module", "--also-make", "-DskipTests=true", "package", "jib:goal", "-Djib.containerize=module", "-Dimage=image"}},
+		{latest.JibArtifact{}, "image", false, nil, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--non-recursive", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibArtifact{}, "image", true, nil, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--non-recursive", "-DskipTests=true", "prepare-package", "jib:goal", "-Dimage=image"}},
+		{latest.JibArtifact{Project: "module"}, "image", false, nil, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--projects", "module", "--also-make", "package", "jib:goal", "-Djib.containerize=module", "-Dimage=image"}},
+		{latest.JibArtifact{Project: "module"}, "image", true, nil, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--projects", "module", "--also-make", "-DskipTests=true", "package", "jib:goal", "-Djib.containerize=module", "-Dimage=image"}},
+		{latest.JibArtifact{Project: "module"}, "registry.tld/image", true, map[string]bool{"registry.tld": true}, []string{"-Djib.console=plain", "jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--projects", "module", "--also-make", "-DskipTests=true", "package", "jib:goal", "-Djib.containerize=module", "-Djib.allowInsecureRegistries=true", "-Dimage=registry.tld/image"}},
 	}
 	for _, test := range tests {
-		args := GenerateMavenArgs("goal", "image", &test.in, test.skipTests)
+		args := GenerateMavenArgs("goal", test.image, &test.in, test.skipTests, test.insecureRegistries)
 
 		testutil.CheckDeepEqual(t, test.out, args)
 	}

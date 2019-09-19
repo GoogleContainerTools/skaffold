@@ -203,6 +203,12 @@ FROM jboss/wildfly:14.0.1.Final
 ADD ./file /etc/file
 `
 
+const fromScratchWithStageName = `
+FROM scratch as stage
+FROM stage
+ADD ./file /etc/file
+`
+
 type fakeImageFetcher struct{}
 
 func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*v1.ConfigFile, error) {
@@ -497,6 +503,12 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			ignore:      "**\n!server.go",
 			expected:    []string{"Dockerfile", "server.go"},
+		},
+		{
+			description: "from scratch witch stage name",
+			dockerfile:  fromScratchWithStageName,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file"},
 		},
 	}
 

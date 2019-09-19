@@ -1,9 +1,9 @@
-apiVersion: skaffold/v1beta13
+apiVersion: skaffold/v1beta15
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-jib
-    jibMaven:
+    jib:
       args:
       - --no-transfer-progress
 
@@ -16,5 +16,5 @@ profiles:
   - name: old-jib
     patches:
     - op: add
-      path: /build/artifacts/0/jibMaven/args
+      path: /build/artifacts/0/jib/args
       value: ['-Djib.maven-plugin-version=1.3.0']

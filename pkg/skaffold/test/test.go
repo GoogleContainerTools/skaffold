@@ -20,22 +20,29 @@ import (
 	"context"
 	"io"
 
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test/structure"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-
-	"github.com/pkg/errors"
 )
 
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
 func NewTester(runCtx *runcontext.RunContext) Tester {
+	client, err := docker.NewAPIClient(runCtx)
+	if err != nil {
+		return nil
+	}
+
 	return FullTester{
 		testCases:  runCtx.Cfg.Test,
 		workingDir: runCtx.WorkingDir,
+		extraEnv:   client.ExtraEnv(),
 	}
 }
 
@@ -79,7 +86,7 @@ func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes [
 
 	fqn := resolveArtifactImageTag(testCase.ImageName, bRes)
 
-	runner := structure.NewRunner(files)
+	runner := structure.NewRunner(files, t.extraEnv)
 	return runner.Test(ctx, out, fqn)
 }
 

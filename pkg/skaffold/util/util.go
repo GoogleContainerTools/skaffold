@@ -84,22 +84,45 @@ func StrSliceInsert(sl []string, index int, insert []string) []string {
 	return newSlice
 }
 
+// orderedFileSet holds an ordered set of file paths.
+type orderedFileSet struct {
+	files []string
+	seen  map[string]bool
+}
+
+func (l *orderedFileSet) Add(file string) {
+	if l.seen[file] {
+		return
+	}
+
+	if l.seen == nil {
+		l.seen = make(map[string]bool)
+	}
+	l.seen[file] = true
+
+	l.files = append(l.files, file)
+}
+
+func (l *orderedFileSet) Files() []string {
+	return l.files
+}
+
 // ExpandPathsGlob expands paths according to filepath.Glob patterns
 // Returns a list of unique files that match the glob patterns passed in.
 func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
-	expandedPaths := make(map[string]bool)
+	var set orderedFileSet
+
 	for _, p := range paths {
 		if filepath.IsAbs(p) {
 			// This is a absolute file reference
-			expandedPaths[p] = true
+			set.Add(p)
 			continue
 		}
 
 		path := filepath.Join(workingDir, p)
-
 		if _, err := os.Stat(path); err == nil {
 			// This is a file reference, so just add it
-			expandedPaths[path] = true
+			set.Add(path)
 			continue
 		}
 
@@ -112,25 +135,27 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 		}
 
 		for _, f := range files {
-			err := filepath.Walk(f, func(path string, info os.FileInfo, err error) error {
+			var filesInDirectory []string
+
+			if err := filepath.Walk(f, func(path string, info os.FileInfo, err error) error {
 				if !info.IsDir() {
-					expandedPaths[path] = true
+					filesInDirectory = append(filesInDirectory, path)
 				}
 
 				return nil
-			})
-			if err != nil {
+			}); err != nil {
 				return nil, errors.Wrap(err, "filepath walk")
+			}
+
+			// Make sure files inside a directory are listed in a consistent order
+			sort.Strings(filesInDirectory)
+			for _, file := range filesInDirectory {
+				set.Add(file)
 			}
 		}
 	}
 
-	var ret []string
-	for k := range expandedPaths {
-		ret = append(ret, k)
-	}
-	sort.Strings(ret)
-	return ret, nil
+	return set.Files(), nil
 }
 
 // BoolPtr returns a pointer to a bool
@@ -234,28 +259,34 @@ func NonEmptyLines(input []byte) []string {
 	return result
 }
 
-// CloneThroughJSON marshals the old interface into the new one
-func CloneThroughJSON(old interface{}, new interface{}) error {
+// CloneThroughJSON clones an `old` object into a `new` one
+// using json marshalling and unmarshalling.
+// Since the object can be marshalled, it's almost sure it can be
+// unmarshalled. So we prefer to panic instead of returning an error
+// that would create an untestable branch on the call site.
+func CloneThroughJSON(old interface{}, new interface{}) {
 	o, err := json.Marshal(old)
 	if err != nil {
-		return errors.Wrap(err, "marshalling old")
+		panic(fmt.Sprintf("marshalling old: %v", err))
 	}
-	if err := json.Unmarshal(o, &new); err != nil {
-		return errors.Wrap(err, "unmarshalling new")
+	if err := json.Unmarshal(o, new); err != nil {
+		panic(fmt.Sprintf("unmarshalling new: %v", err))
 	}
-	return nil
 }
 
-// CloneThroughYAML marshals the old interface into the new one
-func CloneThroughYAML(old interface{}, new interface{}) error {
+// CloneThroughYAML clones an `old` object into a `new` one
+// using yaml marshalling and unmarshalling.
+// Since the object can be marshalled, it's almost sure it can be
+// unmarshalled. So we prefer to panic instead of returning an error
+// that would create an untestable branch on the call site.
+func CloneThroughYAML(old interface{}, new interface{}) {
 	contents, err := yaml.Marshal(old)
 	if err != nil {
-		return errors.Wrap(err, "unmarshalling properties")
+		panic(fmt.Sprintf("marshalling old: %v", err))
 	}
 	if err := yaml.Unmarshal(contents, new); err != nil {
-		return errors.Wrap(err, "unmarshalling bazel artifact")
+		panic(fmt.Sprintf("unmarshalling new: %v", err))
 	}
-	return nil
 }
 
 // AbsolutePaths prepends each path in paths with workspace if the path isn't absolute
@@ -270,6 +301,18 @@ func AbsolutePaths(workspace string, paths []string) []string {
 	}
 
 	return list
+}
+
+func IsFile(path string) bool {
+	info, err := os.Stat(path)
+	// err could be permission-related
+	return (err == nil || !os.IsNotExist(err)) && info.Mode().IsRegular()
+}
+
+func IsDir(path string) bool {
+	info, err := os.Stat(path)
+	// err could be permission-related
+	return (err == nil || !os.IsNotExist(err)) && info.IsDir()
 }
 
 // IsHiddenDir returns if a directory is hidden.

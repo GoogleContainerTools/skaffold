@@ -1,9 +1,9 @@
-apiVersion: skaffold/v1beta13
+apiVersion: skaffold/v1beta15
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-jib
-    jibGradle: {}
+    jib: {}
 
 profiles:
   - name: gcb
