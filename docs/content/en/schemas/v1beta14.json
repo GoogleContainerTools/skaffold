@@ -163,10 +163,10 @@
                 "gcr.io/k8s-skaffold/example"
               ]
             },
-            "jibMaven": {
-              "$ref": "#/definitions/JibMavenArtifact",
-              "description": "*alpha* builds images using the [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).",
-              "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>."
+            "jib": {
+              "$ref": "#/definitions/JibArtifact",
+              "description": "*alpha* builds images using the [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).",
+              "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/\">Jib plugins for Maven or Gradle</a>."
             },
             "sync": {
               "$ref": "#/definitions/Sync",
@@ -178,42 +178,7 @@
             "image",
             "context",
             "sync",
-            "jibMaven"
-          ],
-          "additionalProperties": false
-        },
-        {
-          "properties": {
-            "context": {
-              "type": "string",
-              "description": "directory containing the artifact's sources.",
-              "x-intellij-html-description": "directory containing the artifact's sources.",
-              "default": "."
-            },
-            "image": {
-              "type": "string",
-              "description": "name of the image to be built.",
-              "x-intellij-html-description": "name of the image to be built.",
-              "examples": [
-                "gcr.io/k8s-skaffold/example"
-              ]
-            },
-            "jibGradle": {
-              "$ref": "#/definitions/JibGradleArtifact",
-              "description": "*alpha* builds images using the [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).",
-              "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>."
-            },
-            "sync": {
-              "$ref": "#/definitions/Sync",
-              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
-            }
-          },
-          "preferredOrder": [
-            "image",
-            "context",
-            "sync",
-            "jibGradle"
+            "jib"
           ],
           "additionalProperties": false
         },
@@ -1272,15 +1237,15 @@
       "description": "patch to be applied by a profile.",
       "x-intellij-html-description": "patch to be applied by a profile."
     },
-    "JibGradleArtifact": {
+    "JibArtifact": {
       "properties": {
         "args": {
           "items": {
             "type": "string"
           },
           "type": "array",
-          "description": "additional build flags passed to Gradle.",
-          "x-intellij-html-description": "additional build flags passed to Gradle.",
+          "description": "additional build flags passed to the builder.",
+          "x-intellij-html-description": "additional build flags passed to the builder.",
           "default": "[]",
           "examples": [
             "[\"--no-build-cache\"]"
@@ -1288,8 +1253,8 @@
         },
         "project": {
           "type": "string",
-          "description": "selects which Gradle project to build.",
-          "x-intellij-html-description": "selects which Gradle project to build."
+          "description": "selects which sub-project to build for multi-module builds.",
+          "x-intellij-html-description": "selects which sub-project to build for multi-module builds."
         }
       },
       "preferredOrder": [
@@ -1297,42 +1262,8 @@
         "args"
       ],
       "additionalProperties": false,
-      "description": "*alpha* builds images using the [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).",
-      "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin\">Jib plugin for Gradle</a>."
-    },
-    "JibMavenArtifact": {
-      "properties": {
-        "args": {
-          "items": {
-            "type": "string"
-          },
-          "type": "array",
-          "description": "additional build flags passed to Maven.",
-          "x-intellij-html-description": "additional build flags passed to Maven.",
-          "default": "[]",
-          "examples": [
-            "[\"-x\", \"-DskipTests\"]"
-          ]
-        },
-        "module": {
-          "type": "string",
-          "description": "selects which Maven module to build, for a multi module project.",
-          "x-intellij-html-description": "selects which Maven module to build, for a multi module project."
-        },
-        "profile": {
-          "type": "string",
-          "description": "selects which Maven profile to activate.",
-          "x-intellij-html-description": "selects which Maven profile to activate."
-        }
-      },
-      "preferredOrder": [
-        "module",
-        "profile",
-        "args"
-      ],
-      "additionalProperties": false,
-      "description": "*alpha* builds images using the [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).",
-      "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin\">Jib plugin for Maven</a>."
+      "description": "*alpha* builds images using the [Jib plugins for Maven and Gradle](https://github.com/GoogleContainerTools/jib/).",
+      "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/\">Jib plugins for Maven and Gradle</a>."
     },
     "KanikoArtifact": {
       "properties": {

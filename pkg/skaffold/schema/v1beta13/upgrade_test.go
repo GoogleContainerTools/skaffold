@@ -19,7 +19,7 @@ package v1beta13
 import (
 	"testing"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta14"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -35,6 +35,14 @@ build:
   - image: gcr.io/k8s-skaffold/bazel
     bazel:
       target: //mytarget
+  - image: gcr.io/k8s-skaffold/jib-maven
+    jibMaven:
+      args: ['-v']
+      profile: prof
+      module: dir
+  - image: gcr.io/k8s-skaffold/jib-gradle
+    jibGradle:
+      args: ['-v']
   googleCloudBuild:
     projectId: test-project
 test:
@@ -88,6 +96,13 @@ build:
   - image: gcr.io/k8s-skaffold/bazel
     bazel:
       target: //mytarget
+  - image: gcr.io/k8s-skaffold/jib-maven
+    jib:
+      args: ['-v', '--activate-profiles', 'prof']
+      project: dir
+  - image: gcr.io/k8s-skaffold/jib-gradle
+    jib:
+      args: ['-v']
   googleCloudBuild:
     projectId: test-project
 test:

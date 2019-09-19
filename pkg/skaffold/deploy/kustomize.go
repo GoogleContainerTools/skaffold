@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
@@ -71,6 +72,7 @@ type KustomizeDeployer struct {
 	kubectl            deploy.CLI
 	defaultRepo        string
 	insecureRegistries map[string]bool
+	BuildArgs          []string
 }
 
 func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
@@ -83,6 +85,7 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 		},
 		defaultRepo:        runCtx.DefaultRepo,
 		insecureRegistries: runCtx.InsecureRegistries,
+		BuildArgs:          runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
 	}
 }
 
@@ -163,6 +166,10 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 // Dependencies lists all the files that can change what needs to be deployed.
 func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 	return dependenciesForKustomization(k.KustomizePath)
+}
+
+func (k *KustomizeDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {
+	return errors.New("not yet implemented")
 }
 
 func dependenciesForKustomization(dir string) ([]string, error) {
@@ -248,7 +255,7 @@ func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {
 }
 
 func (k *KustomizeDeployer) readManifests(ctx context.Context) (deploy.ManifestList, error) {
-	cmd := exec.CommandContext(ctx, "kustomize", "build", k.KustomizePath)
+	cmd := exec.CommandContext(ctx, "kustomize", buildCommandArgs(k.BuildArgs, k.KustomizePath)...)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
 		return nil, errors.Wrap(err, "kustomize build")
@@ -261,4 +268,22 @@ func (k *KustomizeDeployer) readManifests(ctx context.Context) (deploy.ManifestL
 	var manifests deploy.ManifestList
 	manifests.Append(out)
 	return manifests, nil
+}
+
+func buildCommandArgs(buildArgs []string, kustomizePath string) []string {
+	var args []string
+	args = append(args, "build")
+
+	if len(buildArgs) > 0 {
+		for _, v := range buildArgs {
+			parts := strings.Split(v, " ")
+			args = append(args, parts...)
+		}
+	}
+
+	if len(kustomizePath) > 0 {
+		args = append(args, kustomizePath)
+	}
+
+	return args
 }

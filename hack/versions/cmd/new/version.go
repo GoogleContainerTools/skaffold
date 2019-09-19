@@ -18,21 +18,15 @@ package main
 
 import (
 	"bufio"
-	"context"
-	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-
+	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
-	"github.com/google/go-github/github"
 	"github.com/sirupsen/logrus"
 )
 
@@ -42,14 +36,10 @@ func main() {
 	logrus.SetLevel(logrus.DebugLevel)
 	prev := strings.TrimPrefix(schema.SchemaVersions[len(schema.SchemaVersions)-2].APIVersion, "skaffold/")
 	logrus.Infof("Previous Skaffold version: %s", prev)
-	current := strings.TrimPrefix(latest.Version, "skaffold/")
-	logrus.Infof("Current Skaffold version: %s", current)
-	next := readNextVersion()
 
-	logrus.Infof("checking for released status of %s...", prev)
-	lastReleased := getLastReleasedConfigVersion()
-	logrus.Infof("last released version: %s", lastReleased)
-	if lastReleased != current {
+	current, latestIsReleased := version.GetLatestVersion()
+
+	if !latestIsReleased {
 		logrus.Fatalf("There is no need to create a new version, %s is still not released", current)
 	}
 
@@ -61,6 +51,8 @@ func main() {
 			sed(path(current, info.Name()), "package latest", "package "+current)
 		}
 	})
+
+	next := readNextVersion()
 
 	// Create code to upgrade from current to new
 	cp(path(prev, "upgrade.go"), path(current, "upgrade.go"))
@@ -101,26 +93,6 @@ func main() {
 	sed("docs/config.toml", current, next)
 }
 
-func getLastReleasedConfigVersion() string {
-	client := github.NewClient(nil)
-	releases, _, _ := client.Repositories.ListReleases(context.Background(), "GoogleContainerTools", "skaffold", &github.ListOptions{})
-	lastTag := *releases[0].TagName
-	logrus.Infof("last release tag: %s", lastTag)
-	configURL := fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag)
-	resp, err := http.Get(configURL)
-	if err != nil {
-		logrus.Fatalf("can't determine latest released config version, failed to download %s: %s", configURL, err)
-	}
-	defer resp.Body.Close()
-	config, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logrus.Fatalf("failed to read during download %s, err: %s", configURL, err)
-	}
-	versionPattern := regexp.MustCompile("const Version string = \"skaffold/(.*)\"")
-	lastReleased := versionPattern.FindStringSubmatch(string(config))[1]
-	return lastReleased
-}
-
 func makeSchemaDir(new string) {
 	latestDir, _ := os.Stat(path("latest"))
 	newDirPath := path(new)
@@ -142,7 +114,7 @@ func readNextVersion() string {
 	} else {
 		new = os.Args[1]
 	}
-	return new
+	return strings.TrimSuffix(new, "\n")
 }
 
 func path(elem ...string) string {

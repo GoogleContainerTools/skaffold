@@ -98,6 +98,19 @@ subjects:
 			images:    []string{},
 			shouldErr: false,
 		},
+		{
+			description: "crd",
+			contents: `apiVersion: my.crd.io/v1
+kind: CustomType
+metadata:
+  name: test crd
+spec:
+  containers:
+  - name: container
+    image: gcr.io/my/image`,
+			images:    []string{"gcr.io/my/image"},
+			shouldErr: false,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

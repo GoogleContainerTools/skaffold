@@ -20,7 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta14"
+const Version string = "skaffold/v1beta15"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -432,6 +432,9 @@ type KustomizeDeploy struct {
 
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
+
+	// BuildArgs are additional args passed to `kustomize build`.
+	BuildArgs []string `yaml:"buildArgs,omitempty"`
 }
 
 // HelmRelease describes a helm release to be deployed.
@@ -643,13 +646,9 @@ type ArtifactType struct {
 	// contain [Bazel](https://bazel.build/) configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 
-	// JibMavenArtifact *alpha* builds images using the
-	// [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
-	JibMavenArtifact *JibMavenArtifact `yaml:"jibMaven,omitempty" yamltags:"oneOf=artifact"`
-
-	// JibGradleArtifact *alpha* builds images using the
-	// [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
-	JibGradleArtifact *JibGradleArtifact `yaml:"jibGradle,omitempty" yamltags:"oneOf=artifact"`
+	// JibArtifact *alpha* builds images using the
+	// [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).
+	JibArtifact *JibArtifact `yaml:"jib,omitempty" yamltags:"oneOf=artifact"`
 
 	// KanikoArtifact *alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).
 	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty" yamltags:"oneOf=artifact"`
@@ -768,27 +767,16 @@ type BazelArtifact struct {
 	BuildArgs []string `yaml:"args,omitempty"`
 }
 
-// JibMavenArtifact *alpha* builds images using the
-// [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
-type JibMavenArtifact struct {
-	// Module selects which Maven module to build, for a multi module project.
-	Module string `yaml:"module,omitempty"`
-
-	// Profile selects which Maven profile to activate.
-	Profile string `yaml:"profile,omitempty"`
-
-	// Flags are additional build flags passed to Maven.
-	// For example: `["-x", "-DskipTests"]`.
-	Flags []string `yaml:"args,omitempty"`
-}
-
-// JibGradleArtifact *alpha* builds images using the
-// [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
-type JibGradleArtifact struct {
-	// Project selects which Gradle project to build.
+// JibArtifact *alpha* builds images using the
+// [Jib plugins for Maven and Gradle](https://github.com/GoogleContainerTools/jib/).
+type JibArtifact struct {
+	// Project selects which sub-project to build for multi-module builds.
 	Project string `yaml:"project,omitempty"`
 
-	// Flags are additional build flags passed to Gradle.
+	// Flags are additional build flags passed to the builder.
 	// For example: `["--no-build-cache"]`.
 	Flags []string `yaml:"args,omitempty"`
+
+	// Type the Jib builder type (internal: see jib.PluginType)
+	Type int `yaml:"-"`
 }
