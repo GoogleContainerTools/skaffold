@@ -22,6 +22,7 @@ message State {
   DeployState deployState = 2;
   reserved 3; // field 3 is obsolete
   map<int32, PortEvent> forwardedPorts = 4;
+  StatusCheckState statusCheckState = 5;
 }
 
 // BuildState contains a map of all skaffold artifacts to their current build
@@ -35,12 +36,19 @@ message DeployState {
   string status = 1;
 }
 
+// StatusCheckState contains the state of status check of current deployed resources.
+message StatusCheckState {
+  string status = 1;
+}
+
 message Event {
   oneof event_type {
     MetaEvent metaEvent = 1;
     BuildEvent buildEvent = 2;
     DeployEvent deployEvent = 3;
     PortEvent portEvent = 4;
+    StatusCheckEvent statusCheckEvent = 5;
+    ResourceStatusCheckEvent resourceStatusCheckEvent = 6;
   }
 }
 
@@ -57,6 +65,19 @@ message BuildEvent {
 message DeployEvent {
   string status = 1;
   string err = 2;
+}
+
+message StatusCheckEvent {
+  string status = 1;
+  string message = 2;
+  string err = 3;
+}
+
+message ResourceStatusCheckEvent {
+  string resource = 1;
+  string status = 2;
+  string message = 3;
+  string err = 4;
 }
 
 message PortEvent {
