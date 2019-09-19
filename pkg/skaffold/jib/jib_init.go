@@ -113,7 +113,7 @@ func ValidateJibConfig(path string) []Jib {
 		executable = "mvn"
 		wrapper = "mvnw"
 		taskName = "jib:_skaffold-init"
-	case strings.HasSuffix(path, "build.gradle"):
+	case strings.HasSuffix(path, "build.gradle"), strings.HasSuffix(path, "build.gradle.kts"):
 		builderType = JibGradle
 		executable = "gradle"
 		wrapper = "gradlew"
