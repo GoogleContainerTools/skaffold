@@ -57,6 +57,17 @@ func TestValidateJibConfig(t *testing.T) {
 			},
 		},
 		{
+			description: "jib gradle-kotlin single project",
+			path:        "path/to/build.gradle.kts",
+			command:     "gradle _jibSkaffoldInit -q",
+			stdout: `BEGIN JIB JSON
+{"image":"image","project":"project"}
+`,
+			expectedConfig: []Jib{
+				{BuilderName: PluginName(JibGradle), FilePath: "path/to/build.gradle.kts", Image: "image", Project: "project"},
+			},
+		},
+		{
 			description: "jib gradle multi-project",
 			path:        "path/to/build.gradle",
 			command:     "gradle _jibSkaffoldInit -q",
