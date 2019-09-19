@@ -210,13 +210,13 @@ func setDefaultClusterTimeout(cluster *latest.ClusterDetails) error {
 }
 
 func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
-	cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName)
-	if cluster.PullSecret != "" {
+	if cluster.PullSecret != "" && cluster.PullSecretName != "" {
 		absPath, err := homedir.Expand(cluster.PullSecret)
 		if err != nil {
 			return fmt.Errorf("unable to expand pullSecret %s", cluster.PullSecret)
 		}
 		cluster.PullSecret = absPath
+		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName)
 		return nil
 	}
 	return nil
