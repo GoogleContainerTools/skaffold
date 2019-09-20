@@ -148,3 +148,5 @@ To learn more about how Skaffold builds, tags, and deploys your app, see the How
 using [Builders](/docs/how-tos/builders), [Taggers](/docs/how-tos/taggers), and [Deployers]({{< relref "/docs/how-tos/deployers" >}}).
 
 [Skaffold Tutorials]({{< relref "/docs/tutorials" >}}) details some of the common use cases of Skaffold.
+
+:mega: **Please fill out our [quick 5-question survey](https://forms.gle/BMTbGQXLWSdn7vEs6)** to tell us how satisfied you are with Skaffold, and what improvements we should make. Thank you! :dancers:

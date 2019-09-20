@@ -38,6 +38,7 @@ You can join the Skaffold community and discuss the product at:
 
 * [Skaffold Mailing List](https://groups.google.com/forum#!forum/skaffold-users)
 * [Skaffold Topic on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
+* [Give us feedback](../references/feedback)
 
 The Skaffold Project also holds a bi-weekly meeting at 9:30am PST on Google
 Hangouts. Everyone is welcome to add suggestions to the [Meeting Agenda](https://docs.google.com/document/d/1mnCC_fAI3pmg3Vb2nMJyPk8Qtjjuapw_BTyqI_dX7sk/edit)

@@ -23,6 +23,7 @@ provides building blocks and describe customizations for a CI/CD pipeline.
 
 * [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users)
 * [#skaffold on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
+* [Give us Feedback](https://skaffold.dev/docs/references/feedback/)
 
 **Office Hours** 
 
@@ -67,6 +68,8 @@ Survey Link - https://forms.gle/BMTbGQXLWSdn7vEs6
 Installation methods can be found in the [Getting Started Guide](https://skaffold.dev/docs/getting-started/#installing-skaffold).
 
 See [Github Releases](https://github.com/GoogleContainerTools/skaffold/releases) for more information.
+
+:mega: **Please fill out our [quick 5-question survey](https://forms.gle/BMTbGQXLWSdn7vEs6)** so that we can learn how satisfied you are with Skaffold, and what improvements we should make. Thank you! :dancers:
 
 ## Demo
 
