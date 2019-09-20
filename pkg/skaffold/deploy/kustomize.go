@@ -45,7 +45,7 @@ import (
 type kustomization struct {
 	Bases                 []string             `yaml:"bases"`
 	Resources             []string             `yaml:"resources"`
-	Patches               []string             `yaml:"patches"`
+	Patches               []extendedPatch      `yaml:"patches"`
 	PatchesStrategicMerge []string             `yaml:"patchesStrategicMerge"`
 	CRDs                  []string             `yaml:"crds"`
 	PatchesJSON6902       []patchJSON6902      `yaml:"patchesJson6902"`
@@ -63,6 +63,10 @@ type configMapGenerator struct {
 
 type secretGenerator struct {
 	Files []string `yaml:"files"`
+}
+
+type extendedPatch struct {
+	Path string `yaml:"path"`
 }
 
 // KustomizeDeployer deploys workflows using kustomize CLI.
@@ -215,7 +219,12 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 		}
 	}
 
-	deps = append(deps, util.AbsolutePaths(dir, content.Patches)...)
+	for _, patch := range content.Patches {
+		if len(patch.Path) > 0 {
+			deps = append(deps, filepath.Join(dir, patch.Path))
+		}
+	}
+
 	deps = append(deps, util.AbsolutePaths(dir, content.PatchesStrategicMerge)...)
 	deps = append(deps, util.AbsolutePaths(dir, content.CRDs)...)
 	for _, patch := range content.PatchesJSON6902 {
