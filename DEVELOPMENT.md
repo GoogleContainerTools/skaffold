@@ -60,17 +60,18 @@ Once you've done this, clone your fork to your local machine:
 
 Some changes to the skaffold code require a change to the skaffold config. These changes require a few extra steps:
 
-* Make your config change.
+* Open the latest Config at [pkg/skaffold/schema/latest/config.go](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/config.go#L23) and inspect the comment at [L13](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/config.go#L23)
+* If the line mentions the config version is not released, proceed making your changes.
+  ```
+  // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+  ```
 
-* Run `./hack/check-schema-changes.sh` to see if config version is bumped since the last release.
-
-* If the script passes, do nothing. Somebody has already bumped the config version for this release cycle.
-
-* **If the script fails**:
-
-  * Commit your changes. 
+* **If the line mentions** the config version is released then, 
+  ```
+  // !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+  ```
   
-  * In a new branch, run `./hack/new_version.sh` to release a new version.
+  * Run `./hack/new_version.sh` to create a new version.
 
   * Run `make test` to verify changes.
   
