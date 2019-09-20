@@ -94,7 +94,6 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckDeepEqual("ns", cfg.Build.Cluster.Namespace)
 		t.CheckDeepEqual(constants.DefaultKanikoTimeout, cfg.Build.Cluster.Timeout)
-		t.CheckDeepEqual(constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
 
 		// default docker config
 		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{}
