@@ -89,64 +89,57 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 		},
 	}
 	if clusterDetails.PullSecretName != "" {
-		volumeMount := v1.VolumeMount{
-			Name:      constants.DefaultKanikoSecretName,
-			MountPath: "/secret",
-		}
-		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, volumeMount)
-		v := v1.Volume{
-			Name: constants.DefaultKanikoSecretName,
-			VolumeSource: v1.VolumeSource{
-				Secret: &v1.SecretVolumeSource{
-					SecretName: clusterDetails.PullSecretName,
-				},
-			},
-		}
-
+		vm, v := getVolumeMountAndSecretVolumes(constants.DefaultKanikoSecretName, "/secret", clusterDetails.PullSecretName)
+		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, vm)
 		pod.Spec.Volumes = append(pod.Spec.Volumes, v)
 	}
 	if artifact.Cache != nil && artifact.Cache.HostPath != "" {
-		volumeMount := v1.VolumeMount{
-			Name:      constants.DefaultKanikoCacheDirName,
-			MountPath: constants.DefaultKanikoCacheDirMountPath,
-		}
-
-		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, volumeMount)
-
-		volume := v1.Volume{
-			Name: constants.DefaultKanikoCacheDirName,
-			VolumeSource: v1.VolumeSource{
-				HostPath: &v1.HostPathVolumeSource{
-					Path: artifact.Cache.HostPath,
-				},
-			},
-		}
-		pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
+		vm, v := getVolumeMountAndHostPathVolumes(constants.DefaultKanikoCacheDirName, constants.DefaultKanikoCacheDirMountPath, artifact.Cache.HostPath)
+		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, vm)
+		pod.Spec.Volumes = append(pod.Spec.Volumes, v)
 	}
 
 	if clusterDetails.DockerConfig == nil {
 		return pod
 	}
 
+	vm, v := getVolumeMountAndSecretVolumes(constants.DefaultKanikoDockerConfigSecretName, constants.DefaultKanikoDockerConfigPath, clusterDetails.DockerConfig.SecretName)
+	pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, vm)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, v)
+
+	return pod
+}
+
+func getVolumeMountAndSecretVolumes(volumeName string, mountPath string, secretName string) (v1.VolumeMount, v1.Volume){
 	volumeMount := v1.VolumeMount{
-		Name:      constants.DefaultKanikoDockerConfigSecretName,
-		MountPath: constants.DefaultKanikoDockerConfigPath,
+		Name:      volumeName,
+		MountPath: mountPath,
 	}
-
-	pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, volumeMount)
-
 	volume := v1.Volume{
-		Name: constants.DefaultKanikoDockerConfigSecretName,
+		Name: volumeName,
 		VolumeSource: v1.VolumeSource{
 			Secret: &v1.SecretVolumeSource{
-				SecretName: clusterDetails.DockerConfig.SecretName,
+				SecretName: secretName,
 			},
 		},
 	}
+	return volumeMount, volume
+}
 
-	pod.Spec.Volumes = append(pod.Spec.Volumes, volume)
-
-	return pod
+func getVolumeMountAndHostPathVolumes(volumeName string, mountPath string, path string) (v1.VolumeMount, v1.Volume){
+	volumeMount := v1.VolumeMount{
+		Name:      volumeName,
+		MountPath: mountPath,
+	}
+	volume := v1.Volume{
+		Name: volumeName,
+		VolumeSource: v1.VolumeSource{
+			HostPath: &v1.HostPathVolumeSource{
+				Path: path,
+			},
+		},
+	}
+	return volumeMount, volume
 }
 
 func setProxy(clusterDetails *latest.ClusterDetails, env []v1.EnvVar) []v1.EnvVar {
