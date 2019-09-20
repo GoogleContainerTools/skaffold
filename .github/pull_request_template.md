@@ -15,13 +15,16 @@ Should merge after : _list any PRs that are prerequisites to this PR_
 your descriptive commit message(s)! -->
 
 **User facing changes**
+
 Write n/a if not output or log lines changed and no behavior is changed
 
 **Before**
+
 If log/output changes: Paste the current relevant skaffold output
 If behavior changes: describe succinctly the current behavior
 
 **After**
+
 If log/output changes: Paste skaffold output after your change
 If behavior changes: describe succintly the behavior after your change
 
