@@ -34,10 +34,6 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-var (
-	enableKubeContext = kubectx.ChangeKubeContext
-)
-
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
 func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
@@ -59,10 +55,10 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 		}
 	}
 
-	return enableEffectiveKubecontext(hasContextActivatedProfile, opts.KubeContext, c.Deploy.KubeContext)
+	return checkKubeContextConsistency(hasContextActivatedProfile, opts.KubeContext, c.Deploy.KubeContext)
 }
 
-func enableEffectiveKubecontext(isContextImmutable bool, cliContext, effectiveContext string) error {
+func checkKubeContextConsistency(isContextImmutable bool, cliContext, effectiveContext string) error {
 	// cli flag takes precedence
 	if cliContext != "" {
 		return nil
@@ -74,16 +70,11 @@ func enableEffectiveKubecontext(isContextImmutable bool, cliContext, effectiveCo
 	}
 
 	// nothing to do
-	if effectiveContext == "" || effectiveContext == kubeConfig.CurrentContext {
+	if effectiveContext == "" || effectiveContext == kubeConfig.CurrentContext || !isContextImmutable {
 		return nil
 	}
 
-	if isContextImmutable {
-		return fmt.Errorf("some activated profile contains kubecontext specific settings for a different than the effective kubecontext, please revise your profile activations")
-	}
-
-	enableKubeContext(effectiveContext)
-	return nil
+	return fmt.Errorf("some activated profile contains kubecontext specific settings for a different than the effective kubecontext, please revise your profile activations")
 }
 
 func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, bool, error) {

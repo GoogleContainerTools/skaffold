@@ -100,13 +100,12 @@ profiles:
 
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
-		description         string
-		config              *latest.SkaffoldConfig
-		profile             string
-		expected            *latest.SkaffoldConfig
-		kubeContextCli      string
-		expectedKubeContext string
-		shouldErr           bool
+		description    string
+		config         *latest.SkaffoldConfig
+		profile        string
+		expected       *latest.SkaffoldConfig
+		kubeContextCli string
+		shouldErr      bool
 	}{
 		{
 			description: "unknown profile",
@@ -377,34 +376,34 @@ func TestApplyProfiles(t *testing.T) {
 			expected: config(
 				withKubeContext("staging"),
 			),
-			expectedKubeContext: "staging",
 		},
 		{
-			description: "activate kubecontext, CLI flag takes precedence",
+			description: "when CLI flag is given, profiles with conflicting kube-context produce no error",
 			profile:     "profile",
 			config: config(
-				withProfiles(latest.Profile{
-					Name: "profile",
-					Pipeline: latest.Pipeline{
-						Deploy: latest.DeployConfig{
-							KubeContext: "staging",
-						},
-					}},
+				withProfiles(
+					latest.Profile{
+						Name:       "prod",
+						Activation: []latest.Activation{{KubeContext: "prod-context"}},
+					},
+					latest.Profile{
+						Name: "profile",
+						Pipeline: latest.Pipeline{
+							Deploy: latest.DeployConfig{
+								KubeContext: "staging",
+							},
+						}},
 				),
 			),
-			kubeContextCli: "prod",
+			kubeContextCli: "prod-context",
 			expected: config(
 				withKubeContext("staging"),
 			),
-			expectedKubeContext: "prod",
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			activeKubeContext := test.kubeContextCli
 			setupFakeKubeConfig(t, api.Config{CurrentContext: "prod-context"})
-			t.Override(&enableKubeContext, func(kubeContext string) { activeKubeContext = kubeContext })
-
 			err := ApplyProfiles(test.config, cfg.SkaffoldOptions{
 				Profiles:    []string{test.profile},
 				KubeContext: test.kubeContextCli,
@@ -414,7 +413,6 @@ func TestApplyProfiles(t *testing.T) {
 				t.CheckError(test.shouldErr, err)
 			} else {
 				t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, test.config)
-				t.CheckDeepEqual(test.expectedKubeContext, activeKubeContext)
 			}
 		})
 	}
@@ -618,38 +616,6 @@ func TestActivatedProfiles(t *testing.T) {
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, activated)
 		})
 	}
-}
-
-// KubeContext activation has a side-effect which needs to be checked explicitly.
-func TestOverrideKubecontext(t *testing.T) {
-	config := `build:
-  artifacts:
-  - image: example
-profiles:
-- name: prod
-  deploy:
-    kubeContext: prod-context
-`
-
-	testutil.Run(t, "", func(t *testutil.T) {
-		t.SetupFakeKubernetesContext(api.Config{CurrentContext: "staging-context"})
-		tmpDir := t.NewTempDir().
-			Write("skaffold.yaml", addVersion(config))
-
-		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"), false)
-		t.CheckNoError(err)
-
-		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
-		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
-			Profiles: []string{"prod"},
-		})
-
-		t.CheckNoError(err)
-		// a side-effect of profile activation is that kubectx.CurrentConfig() reports a changed current context
-		cfg, err := kubectx.CurrentConfig()
-		t.CheckNoError(err)
-		t.CheckDeepEqual("prod-context", cfg.CurrentContext)
-	})
 }
 
 func str(value string) *interface{} {
