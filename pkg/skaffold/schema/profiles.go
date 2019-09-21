@@ -43,7 +43,7 @@ var (
 func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 	byName := profilesByName(c.Profiles)
 
-	profiles, isContextSpecific, err := activatedProfiles(c.Profiles, opts)
+	profiles, hasContextActivatedProfile, err := activatedProfiles(c.Profiles, opts)
 	if err != nil {
 		return errors.Wrap(err, "finding auto-activated profiles")
 	}
@@ -59,7 +59,7 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 		}
 	}
 
-	return enableEffectiveKubecontext(isContextSpecific, opts.KubeContext, c.Deploy.KubeContext)
+	return enableEffectiveKubecontext(hasContextActivatedProfile, opts.KubeContext, c.Deploy.KubeContext)
 }
 
 func enableEffectiveKubecontext(isContextImmutable bool, cliContext, effectiveContext string) error {
@@ -88,7 +88,7 @@ func enableEffectiveKubecontext(isContextImmutable bool, cliContext, effectiveCo
 
 func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, bool, error) {
 	activated := opts.Profiles
-	hasContextSpecificProfile := false
+	hasContextActivatedProfile := false
 
 	// Auto-activated profiles
 	for _, profile := range profiles {
@@ -107,14 +107,14 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]s
 
 			if command && env && kubeContext {
 				if cond.KubeContext != "" {
-					hasContextSpecificProfile = true
+					hasContextActivatedProfile = true
 				}
 				activated = append(activated, profile.Name)
 			}
 		}
 	}
 
-	return activated, hasContextSpecificProfile, nil
+	return activated, hasContextActivatedProfile, nil
 }
 
 func isEnv(env string) (bool, error) {
