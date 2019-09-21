@@ -179,23 +179,69 @@ func TestGetRestClientConfig(t *testing.T) {
 	})
 }
 
-func TestChangeKubeContext(t *testing.T) {
-	testutil.Run(t, "change context before locking", func(t *testutil.T) {
-		ChangeKubeContext("initial")
-		ChangeKubeContext("changed")
+func TestUseKubeContext(t *testing.T) {
+	tests := []struct {
+		name              string
+		cliValue          string
+		firstYamlValue    string
+		secondYamlValue   string
+		lockWithFirstCall bool
+		expected          string
+	}{
+		{
+			name:            "cliValue takes preference",
+			cliValue:        "initial",
+			secondYamlValue: "other",
+			expected:        "initial",
+		},
+		{
+			name:            "set kube-context with second call",
+			secondYamlValue: "other",
+			expected:        "other",
+		},
+		{
+			name:            "override kube-context with second call",
+			firstYamlValue:  "initial",
+			secondYamlValue: "other",
+			expected:        "other",
+		},
+		{
+			name:              "cliValue takes preference before locking",
+			cliValue:          "initial",
+			firstYamlValue:    "other",
+			expected:          "initial",
+			lockWithFirstCall: true,
+		},
+		{
+			name:              "cliValue takes preference after locking",
+			cliValue:          "initial",
+			secondYamlValue:   "other",
+			expected:          "initial",
+			lockWithFirstCall: true,
+		},
+		{
+			name:              "cannot overwrite kube-context after it is locked",
+			firstYamlValue:    "initial",
+			secondYamlValue:   "other",
+			expected:          "initial",
+			lockWithFirstCall: true,
+		},
+		{
+			name:              "cannot set kube-context after it is locked",
+			secondYamlValue:   "other",
+			lockWithFirstCall: true,
+		},
+	}
 
-		t.CheckDeepEqual("changed", kubeContext)
-		isKubeContextLocked = false // cleanup
-	})
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			UseKubeContext(test.cliValue, test.firstYamlValue, test.lockWithFirstCall)
+			UseKubeContext(test.cliValue, test.secondYamlValue, false)
 
-	testutil.Run(t, "change context after locking", func(t *testutil.T) {
-		ChangeKubeContext("initial")
-		LockKubeContext()
-		ChangeKubeContext("changed")
-
-		t.CheckDeepEqual("initial", kubeContext)
-		isKubeContextLocked = false // cleanup
-	})
+			t.CheckDeepEqual(test.expected, kubeContext)
+			isKubeContextLocked = false // cleanup
+		})
+	}
 }
 
 func resetKubeConfig(t *testutil.T, content string) {
