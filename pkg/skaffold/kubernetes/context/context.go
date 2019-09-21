@@ -58,6 +58,9 @@ func UseKubeContext(cliValue, yamlValue string, lock bool) {
 	if cliValue != "" {
 		kubeContext = cliValue
 	}
+	if isKubeContextLocked && kubeContext != "" {
+		logrus.Infof("Activated kube-context %q", kubeContext)
+	}
 }
 
 // GetRestClientConfig returns a REST client config for API calls against the Kubernetes API.
