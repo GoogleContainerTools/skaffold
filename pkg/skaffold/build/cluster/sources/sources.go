@@ -96,7 +96,7 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 
 	// Add host path volume for cache
 	if artifact.Cache != nil && artifact.Cache.HostPath != "" {
-	    addHostPathVolume(pod, constants.DefaultKanikoCacheDirName, constants.DefaultKanikoCacheDirMountPath, artifact.Cache.HostPath)
+		addHostPathVolume(pod, constants.DefaultKanikoCacheDirName, constants.DefaultKanikoCacheDirMountPath, artifact.Cache.HostPath)
 	}
 
 	if clusterDetails.DockerConfig == nil {
@@ -104,7 +104,7 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 	}
 
 	// Add secret for docker config if specified
-	addSecretVolume(pod, constants.DefaultKanikoDockerConfigSecretName, constants.DefaultKanikoDockerConfigPath, clusterDetails.DockerConfig.SecretName )
+	addSecretVolume(pod, constants.DefaultKanikoDockerConfigSecretName, constants.DefaultKanikoDockerConfigPath, clusterDetails.DockerConfig.SecretName)
 	return pod
 }
 
@@ -141,7 +141,6 @@ func addHostPathVolume(pod *v1.Pod, name, mountPath, path string) {
 	pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, vm)
 	pod.Spec.Volumes = append(pod.Spec.Volumes, v)
 }
- 
 
 func setProxy(clusterDetails *latest.ClusterDetails, env []v1.EnvVar) []v1.EnvVar {
 	if clusterDetails.HTTPProxy != "" {
