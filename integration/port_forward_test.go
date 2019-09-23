@@ -79,7 +79,7 @@ func TestPortForwardDeletePod(t *testing.T) {
 
 	rpcAddr := randomPort()
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	cmd := skaffold.Dev("--cache-artifacts=true", "--port-forward", "--rpc-port", rpcAddr, "-v=info").InDir("examples/microservices").InNs(ns.Name).WithEnv(env)
+	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr, "-v=info").InDir("examples/microservices").InNs(ns.Name).WithEnv(env)
 	stop := cmd.RunBackground(t)
 	defer stop()
 

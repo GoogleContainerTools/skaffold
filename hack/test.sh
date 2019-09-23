@@ -20,6 +20,6 @@ RED='\033[0;31m'
 RESET='\033[0m'
 
 echo "Running go tests..."
-go test -count=1 -race -cover -short -timeout=60s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." ./... | awk -v FAIL="${RED}FAIL${RESET}" '! /no test files/ { gsub("FAIL", FAIL, $0); print $0 }'
+go test -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." ./... | awk -v FAIL="${RED}FAIL${RESET}" '! /no test files/ { gsub("FAIL", FAIL, $0); print $0 }'
 
 exit ${PIPESTATUS[0]}

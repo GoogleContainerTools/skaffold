@@ -52,27 +52,32 @@ func TestCLI(t *testing.T) {
 	// test cli.Run()
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, t.FakeRun(test.expectedCommand))
-			runCtx := &runcontext.RunContext{
+			t.Override(&util.DefaultExecCommand, testutil.CmdRun(
+				test.expectedCommand,
+			))
+
+			cli := NewFromRunContext(&runcontext.RunContext{
 				Opts:        config.SkaffoldOptions{Namespace: test.namespace},
 				KubeContext: test.kubecontext,
-			}
-			cli := NewFromRunContext(runCtx)
+			})
+			err := cli.Run(context.Background(), nil, nil, "exec", "arg1", "arg2")
 
-			t.CheckNoError(cli.Run(context.Background(), nil, nil, "exec", "arg1", "arg2"))
+			t.CheckNoError(err)
 		})
 	}
 
 	// test cli.RunOut()
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, t.FakeRunOut(test.expectedCommand, test.output))
-			runCtx := &runcontext.RunContext{
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+				test.expectedCommand,
+				test.output,
+			))
+
+			cli := NewFromRunContext(&runcontext.RunContext{
 				Opts:        config.SkaffoldOptions{Namespace: test.namespace},
 				KubeContext: test.kubecontext,
-			}
-			cli := NewFromRunContext(runCtx)
-
+			})
 			out, err := cli.RunOut(context.Background(), "exec", "arg1", "arg2")
 
 			t.CheckNoError(err)

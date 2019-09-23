@@ -17,13 +17,13 @@ limitations under the License.
 package v1beta12
 
 import (
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta13"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1beta9 to v1beta10
+// Config changes from v1beta12 to v1beta13
 // 1. No Additions
 // 2. No removals
 // 3. No Updates

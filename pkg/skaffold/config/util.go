@@ -49,7 +49,8 @@ var (
 	configErr  error
 	configOnce sync.Once
 
-	ReadConfigFile = readConfigFileCached
+	ReadConfigFile             = readConfigFileCached
+	GetConfigForCurrentKubectx = getConfigForCurrentKubectx
 )
 
 // readConfigFileCached reads the specified file and returns the contents
@@ -96,7 +97,7 @@ func ReadConfigFileNoCache(configFile string) (*GlobalConfig, error) {
 // GetConfigForCurrentKubectx returns the specific config to be modified based on the kubeContext.
 // Either returns the config corresponding to the provided or current context,
 // or the global config.
-func GetConfigForCurrentKubectx(configFile string) (*ContextConfig, error) {
+func getConfigForCurrentKubectx(configFile string) (*ContextConfig, error) {
 	configOnce.Do(func() {
 		cfg, err := ReadConfigFile(configFile)
 		if err != nil {
@@ -190,4 +191,12 @@ func isDefaultLocal(kubeContext string) bool {
 
 func IsKindCluster(kubeContext string) bool {
 	return strings.HasSuffix(kubeContext, "@kind")
+}
+
+func IsUpdateCheckEnabled(configfile string) bool {
+	cfg, err := GetConfigForCurrentKubectx(configfile)
+	if err != nil {
+		return true
+	}
+	return cfg == nil || cfg.UpdateCheck == nil || *cfg.UpdateCheck
 }

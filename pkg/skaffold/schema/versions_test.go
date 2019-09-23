@@ -274,6 +274,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 			DockerImage: "gcr.io/cloud-builders/docker",
 			MavenImage:  "gcr.io/cloud-builders/mvn",
 			GradleImage: "gcr.io/cloud-builders/gradle",
+			KanikoImage: "gcr.io/kaniko-project/executor",
 		}}}
 		for _, op := range ops {
 			op(&b)
@@ -402,6 +403,12 @@ func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldConfig) {
 func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Test = testCases
+	}
+}
+
+func withPortForward(portForward ...*latest.PortForwardResource) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.PortForward = portForward
 	}
 }
 

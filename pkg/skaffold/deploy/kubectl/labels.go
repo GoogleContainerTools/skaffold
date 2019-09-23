@@ -36,6 +36,7 @@ func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error)
 }
 
 type labelsSetter struct {
+	ReplaceAny
 	labels map[string]string
 }
 

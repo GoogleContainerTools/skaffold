@@ -41,12 +41,12 @@ var (
 )
 
 // InParallel builds a list of artifacts in parallel but prints the logs in sequential order.
-func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder) ([]Artifact, error) {
+func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildArtifact artifactBuilder, concurrency int) ([]Artifact, error) {
 	if len(artifacts) == 0 {
 		return nil, nil
 	}
 
-	if len(artifacts) == 1 {
+	if len(artifacts) == 1 || concurrency == 1 {
 		return runInSequence(ctx, out, tags, artifacts, buildArtifact)
 	}
 
@@ -59,6 +59,11 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	results := new(sync.Map)
 	outputs := make([]chan string, len(artifacts))
 
+	if concurrency == 0 {
+		concurrency = len(artifacts)
+	}
+	sem := make(chan bool, concurrency)
+
 	// Run builds in //
 	wg.Add(len(artifacts))
 	for i := range artifacts {
@@ -69,9 +74,13 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 		// Run build and write output/logs to piped writer and store build result in
 		// sync.Map
 		go func(i int) {
+			sem <- true
 			runBuild(ctx, cw, tags, artifacts[i], results, buildArtifact)
+			<-sem
+
 			wg.Done()
 		}(i)
+
 		// Read build output/logs and write to buffered channel
 		go readOutputAndWriteToChannel(r, outputs[i])
 	}

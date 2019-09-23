@@ -128,6 +128,7 @@ func TestApplyProfiles(t *testing.T) {
 									DockerImage: "gcr.io/cloud-builders/docker",
 									MavenImage:  "gcr.io/cloud-builders/mvn",
 									GradleImage: "gcr.io/cloud-builders/gradle",
+									KanikoImage: "gcr.io/kaniko-project/executor",
 								},
 							},
 						},
@@ -303,6 +304,39 @@ func TestApplyProfiles(t *testing.T) {
 				}),
 			),
 		},
+		{
+			description: "port forwarding",
+			profile:     "profile",
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Pipeline: latest.Pipeline{
+						PortForward: []*latest.PortForwardResource{{
+							Namespace: "ns",
+							Name:      "name",
+							Type:      "service",
+							Port:      8080,
+							LocalPort: 8888,
+						}},
+					},
+				}),
+			),
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+				),
+				withPortForward(&latest.PortForwardResource{
+					Namespace: "ns",
+					Name:      "name",
+					Type:      "service",
+					Port:      8080,
+					LocalPort: 8888,
+				}),
+			),
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -324,6 +358,7 @@ func TestActivatedProfiles(t *testing.T) {
 		description string
 		profiles    []latest.Profile
 		opts        cfg.SkaffoldOptions
+		envs        map[string]string
 		expected    []string
 		shouldErr   bool
 	}{
@@ -354,15 +389,20 @@ func TestActivatedProfiles(t *testing.T) {
 			expected: []string{"dev-profile", "non-run-profile", "run-or-dev-profile"},
 		}, {
 			description: "Auto-activated by env variable",
+			envs:        map[string]string{"KEY": "VALUE"},
 			profiles: []latest.Profile{
 				{Name: "activated", Activation: []latest.Activation{{Env: "KEY=VALUE"}}},
 				{Name: "not-activated", Activation: []latest.Activation{{Env: "KEY=OTHER"}}},
 				{Name: "also-activated", Activation: []latest.Activation{{Env: "KEY=!OTHER"}}},
+				{Name: "not-treated-as-regex", Activation: []latest.Activation{{Env: "KEY="}}},
 				{Name: "regex-activated", Activation: []latest.Activation{{Env: "KEY=V.*E"}}},
+				{Name: "regex-activated-two", Activation: []latest.Activation{{Env: "KEY=^V.*E$"}}},
+				{Name: "regex-activated-substring-match", Activation: []latest.Activation{{Env: "KEY=^VAL"}}},
 			},
-			expected: []string{"activated", "also-activated", "regex-activated"},
+			expected: []string{"activated", "also-activated", "regex-activated", "regex-activated-two", "regex-activated-substring-match"},
 		}, {
 			description: "Invalid env variable",
+			envs:        map[string]string{"KEY": "VALUE"},
 			opts:        cfg.SkaffoldOptions{},
 			profiles: []latest.Profile{
 				{Name: "activated", Activation: []latest.Activation{{Env: "KEY:VALUE"}}},
@@ -381,6 +421,7 @@ func TestActivatedProfiles(t *testing.T) {
 			expected: []string{"activated", "also-activated", "activated-regexp"},
 		}, {
 			description: "AND between activation criteria",
+			envs:        map[string]string{"KEY": "VALUE"},
 			opts: cfg.SkaffoldOptions{
 				Command: "dev",
 			},
@@ -417,11 +458,92 @@ func TestActivatedProfiles(t *testing.T) {
 			},
 			expected: []string{"activated"},
 		},
+		{
+			description: "Activation for undefined environment variable and empty value",
+			envs:        map[string]string{"ABC": ""},
+			opts: cfg.SkaffoldOptions{
+				Command: "dev",
+			},
+			profiles: []latest.Profile{
+				{
+					Name: "empty", Activation: []latest.Activation{{
+						Env: "ABC=",
+					}},
+				},
+				{
+					Name: "empty-by-regex", Activation: []latest.Activation{{
+						Env: "ABC=^$",
+					}},
+				},
+				{
+					Name: "not-empty", Activation: []latest.Activation{{
+						Env: "ABC=!",
+					}},
+				},
+				{
+					Name: "one", Activation: []latest.Activation{{
+						Env: "ABC=1",
+					}},
+				},
+				{
+					Name: "not-one", Activation: []latest.Activation{{
+						Env: "ABC=!1",
+					}},
+				},
+				{
+					Name: "two", Activation: []latest.Activation{{
+						Env: "ABC=2",
+					}},
+				},
+			},
+			expected: []string{"empty", "empty-by-regex", "not-one"},
+		},
+		{
+			description: "Activation for filled environment variable",
+			envs:        map[string]string{"ABC": "1"},
+			opts: cfg.SkaffoldOptions{
+				Command: "dev",
+			},
+			profiles: []latest.Profile{
+				{
+					Name: "empty", Activation: []latest.Activation{{
+						Env: "ABC=",
+					}},
+				},
+				{
+					Name: "one", Activation: []latest.Activation{{
+						Env: "ABC=1",
+					}},
+				},
+				{
+					Name: "one-as-well", Activation: []latest.Activation{{
+						Command: "not-triggered",
+					}, {
+						Env: "ABC=1",
+					}},
+				},
+				{
+					Name: "two", Activation: []latest.Activation{{
+						Command: "build",
+					}, {
+						Env: "ABC=2",
+					}},
+				},
+				{
+					Name: "not-two", Activation: []latest.Activation{{
+						Command: "build",
+					}, {
+						Env: "ABC=!2",
+					}},
+				},
+			},
+			expected: []string{"one", "one-as-well", "not-two"},
+		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.SetEnvs(map[string]string{"KEY": "VALUE"})
+			t.SetEnvs(test.envs)
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "prod-context"})
 
 			activated, err := activatedProfiles(test.profiles, test.opts)

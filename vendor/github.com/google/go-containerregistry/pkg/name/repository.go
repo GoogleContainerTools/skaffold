@@ -50,6 +50,7 @@ func (r Repository) Name() string {
 	if regName != "" {
 		return regName + regRepoDelimiter + r.RepositoryStr()
 	}
+	// TODO: As far as I can tell, this is unreachable.
 	return r.RepositoryStr()
 }
 

@@ -53,6 +53,21 @@ spec:
   - name: leeroy-web
     image: leeroy-web`
 
+const roleBinding = `apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default`
+
+const service = `apiVersion: v1
+kind: Service
+metadata:
+  name: my-app
+spec: 
+  selector:
+    app: my-app`
+
 func TestEmpty(t *testing.T) {
 	var manifests ManifestList
 
@@ -111,4 +126,15 @@ func TestAppendDifferentApiVersion(t *testing.T) {
 	testutil.CheckDeepEqual(t, 2, len(manifests))
 	testutil.CheckDeepEqual(t, "apiVersion: v1", string(manifests[0]))
 	testutil.CheckDeepEqual(t, "apiVersion: v2", string(manifests[1]))
+}
+
+func TestAppendServiceAndRoleBinding(t *testing.T) {
+	var manifests ManifestList
+
+	manifests.Append([]byte(roleBinding + "\n" + service))
+
+	testutil.CheckDeepEqual(t, 2, len(manifests))
+	testutil.CheckDeepEqual(t, roleBinding, string(manifests[0]))
+	testutil.CheckDeepEqual(t, service, string(manifests[1]))
+	testutil.CheckDeepEqual(t, manifests.String(), roleBinding+"\n---\n"+service)
 }

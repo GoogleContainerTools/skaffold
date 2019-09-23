@@ -37,14 +37,14 @@ spec:
   - image: gcr.io/k8s-skaffold/example:latest
     name: latest
   - image: gcr.io/k8s-skaffold/example:v1
-    name: fully-qualified
+    name: ignored-tag
   - image: skaffold/other
     name: other
   - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
     name: digest
   - image: skaffold/usedbyfqn:TAG
-  - image: skaffold/usedwrongfqn:OTHER
-  - image: in valid
+  - image: not valid
+  - image: unknown
 `)}
 
 	builds := []build.Artifact{{
@@ -59,9 +59,6 @@ spec:
 	}, {
 		ImageName: "skaffold/usedbyfqn",
 		Tag:       "skaffold/usedbyfqn:TAG",
-	}, {
-		ImageName: "skaffold/usedwrongfqn",
-		Tag:       "skaffold/usedwrongfqn:TAG",
 	}}
 
 	expected := ManifestList{[]byte(`
@@ -75,15 +72,15 @@ spec:
     name: not-tagged
   - image: gcr.io/k8s-skaffold/example:TAG
     name: latest
-  - image: gcr.io/k8s-skaffold/example:v1
-    name: fully-qualified
+  - image: gcr.io/k8s-skaffold/example:TAG
+    name: ignored-tag
   - image: skaffold/other:OTHER_TAG
     name: other
   - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
     name: digest
   - image: skaffold/usedbyfqn:TAG
-  - image: skaffold/usedwrongfqn:OTHER
-  - image: in valid
+  - image: not valid
+  - image: unknown
 `)}
 
 	testutil.Run(t, "", func(t *testutil.T) {
@@ -95,9 +92,8 @@ spec:
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected.String(), resultManifest.String())
 		t.CheckDeepEqual([]string{
-			"Couldn't parse image: in valid",
+			"Couldn't parse image [not valid]: invalid reference format",
 			"image [skaffold/unused] is not used by the deployment",
-			"image [skaffold/usedwrongfqn] is not used by the deployment",
 		}, fakeWarner.Warnings)
 	})
 }

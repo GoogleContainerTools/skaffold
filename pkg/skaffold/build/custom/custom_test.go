@@ -18,10 +18,11 @@ package custom
 
 import (
 	"context"
-	"os"
+	"io/ioutil"
 	"os/exec"
-	"reflect"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -44,24 +45,24 @@ func TestRetrieveEnv(t *testing.T) {
 			tag:          "gcr.io/image/tag:mytag",
 			environ:      nil,
 			buildContext: "/some/path",
-			expected:     []string{"BUILD_CONTEXT=/some/path", "IMAGES=gcr.io/image/tag:mytag", "PUSH_IMAGE=false"},
+			expected:     []string{"IMAGES=gcr.io/image/tag:mytag", "PUSH_IMAGE=false", "BUILD_CONTEXT=/some/path"},
 		}, {
 			description:  "make sure environ is correctly applied",
 			tag:          "gcr.io/image/tag:anothertag",
 			environ:      []string{"PATH=/path", "HOME=/root"},
 			buildContext: "/some/path",
-			expected:     []string{"BUILD_CONTEXT=/some/path", "HOME=/root", "IMAGES=gcr.io/image/tag:anothertag", "PATH=/path", "PUSH_IMAGE=false"},
+			expected:     []string{"IMAGES=gcr.io/image/tag:anothertag", "PUSH_IMAGE=false", "BUILD_CONTEXT=/some/path", "PATH=/path", "HOME=/root"},
 		}, {
 			description: "push image is true",
 			tag:         "gcr.io/image/push:tag",
 			pushImages:  true,
-			expected:    []string{"BUILD_CONTEXT=", "IMAGES=gcr.io/image/push:tag", "PUSH_IMAGE=true"},
+			expected:    []string{"IMAGES=gcr.io/image/push:tag", "PUSH_IMAGE=true", "BUILD_CONTEXT="},
 		}, {
 			description:   "add additional env",
 			tag:           "gcr.io/image/push:tag",
 			pushImages:    true,
 			additionalEnv: []string{"KUBECONTEXT=mycluster"},
-			expected:      []string{"BUILD_CONTEXT=", "IMAGES=gcr.io/image/push:tag", "KUBECONTEXT=mycluster", "PUSH_IMAGE=true"},
+			expected:      []string{"IMAGES=gcr.io/image/push:tag", "PUSH_IMAGE=true", "BUILD_CONTEXT=", "KUBECONTEXT=mycluster"},
 		},
 	}
 	for _, test := range tests {
@@ -96,7 +97,7 @@ func TestRetrieveCmd(t *testing.T) {
 				},
 			},
 			tag:      "image:tag",
-			expected: expectedCmd("./build.sh", "workspace", nil, []string{"BUILD_CONTEXT=workspace", "IMAGES=image:tag", "PUSH_IMAGE=false"}),
+			expected: expectedCmd("./build.sh", "workspace", nil, []string{"IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace"}),
 		}, {
 			description: "buildcommand with multiple args",
 			artifact: &latest.Artifact{
@@ -107,7 +108,7 @@ func TestRetrieveCmd(t *testing.T) {
 				},
 			},
 			tag:      "image:tag",
-			expected: expectedCmd("./build.sh", "", []string{"--flag", "--anotherflag"}, []string{"BUILD_CONTEXT=", "IMAGES=image:tag", "PUSH_IMAGE=false"}),
+			expected: expectedCmd("./build.sh", "", []string{"--flag", "--anotherflag"}, []string{"IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT="}),
 		},
 	}
 	for _, test := range tests {
@@ -116,22 +117,55 @@ func TestRetrieveCmd(t *testing.T) {
 			t.Override(&buildContext, func(string) (string, error) { return test.artifact.Workspace, nil })
 
 			builder := NewArtifactBuilder(false, nil)
-			cmd, err := builder.retrieveCmd(context.Background(), test.artifact, test.tag)
+			cmd, err := builder.retrieveCmd(ioutil.Discard, test.artifact, test.tag)
 
 			t.CheckNoError(err)
-			// cmp.Diff cannot access unexported fields in *exec.Cmd, so use reflect.DeepEqual here directly
-			if !reflect.DeepEqual(test.expected, cmd) {
-				t.Errorf("Expected result different from actual result. Expected: \n%v, \nActual: \n%v", test.expected, cmd)
-			}
+			t.CheckDeepEqual(test.expected.Args, cmd.Args)
+			t.CheckDeepEqual(test.expected.Dir, cmd.Dir)
+			t.CheckDeepEqual(test.expected.Env, cmd.Env)
+		})
+	}
+}
+
+func TestGracefulBuildCancel(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("graceful cancel doesn't work on windows")
+	}
+
+	tests := []struct {
+		description string
+		command     string
+		shouldErr   bool
+	}{
+		{
+			description: "terminate gracefully and exit 0",
+			command:     "trap 'echo trap' INT; sleep 2",
+		}, {
+			description: "terminate gracefully and kill process",
+			command:     "trap 'echo trap' INT; sleep 5",
+			shouldErr:   true,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			builder := NewArtifactBuilder(false, nil)
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+
+			cmd := exec.Command("bash", "-c", test.command)
+			t.CheckNoError(cmd.Start())
+
+			err := builder.handleGracefulTermination(ctx, cmd)
+			t.CheckError(test.shouldErr, err)
+
+			cancel()
 		})
 	}
 }
 
 func expectedCmd(buildCommand, dir string, args, env []string) *exec.Cmd {
-	cmd := exec.CommandContext(context.Background(), buildCommand, args...)
+	cmd := exec.Command(buildCommand, args...)
 	cmd.Dir = dir
 	cmd.Env = env
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 	return cmd
 }

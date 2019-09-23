@@ -17,29 +17,14 @@ limitations under the License.
 package kubectl
 
 import (
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
-
-// ReplaceImages replaces image names in a list of manifests.
-func (l *ManifestList) ReplaceImages(builds []build.Artifact, defaultRepo string) (ManifestList, error) {
-	replacer := newImageReplacer(builds, defaultRepo)
-
-	updated, err := l.Visit(replacer)
-	if err != nil {
-		return nil, errors.Wrap(err, "replacing images")
-	}
-
-	replacer.Check()
-	logrus.Debugln("manifests with tagged images", updated.String())
-
-	return updated, nil
-}
 
 // GetImages gathers a map of base image names to the image with its tag
 func (l *ManifestList) GetImages() ([]build.Artifact, error) {
@@ -49,6 +34,7 @@ func (l *ManifestList) GetImages() ([]build.Artifact, error) {
 }
 
 type imageSaver struct {
+	ReplaceAny
 	Images []build.Artifact
 }
 
@@ -73,7 +59,23 @@ func (is *imageSaver) NewValue(old interface{}) (bool, interface{}) {
 	return false, nil
 }
 
+// ReplaceImages replaces image names in a list of manifests.
+func (l *ManifestList) ReplaceImages(builds []build.Artifact, defaultRepo string) (ManifestList, error) {
+	replacer := newImageReplacer(builds, defaultRepo)
+
+	updated, err := l.Visit(replacer)
+	if err != nil {
+		return nil, errors.Wrap(err, "replacing images")
+	}
+
+	replacer.Check()
+	logrus.Debugln("manifests with tagged images:", updated.String())
+
+	return updated, nil
+}
+
 type imageReplacer struct {
+	ReplaceAny
 	defaultRepo     string
 	tagsByImageName map[string]string
 	found           map[string]bool
@@ -114,25 +116,23 @@ func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
 	return found, tag
 }
 
-// parseAndReplace takes an image from a manifest and if that image matches
-// a built image it will update the tag
 func (r *imageReplacer) parseAndReplace(image string) (bool, interface{}) {
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
-		warnings.Printf("Couldn't parse image: %s", image)
+		warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
+		return false, nil
+	}
+
+	// Leave images referenced by digest as they are
+	if parsed.Digest != "" {
 		return false, nil
 	}
 
 	if tag, present := r.tagsByImageName[parsed.BaseName]; present {
-		if parsed.FullyQualified {
-			if tag == image {
-				r.found[parsed.BaseName] = true
-			}
-		} else {
-			r.found[parsed.BaseName] = true
-			return true, tag
-		}
+		r.found[parsed.BaseName] = true
+		return true, tag
 	}
+
 	return false, nil
 }
 

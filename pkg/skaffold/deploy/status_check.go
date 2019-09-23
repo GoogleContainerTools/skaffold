@@ -25,18 +25,15 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resources"
-	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-)
 
-const (
-	TimeOutErr = "TimeOutErr"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
+	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
 var (
@@ -44,112 +41,92 @@ var (
 	defaultStatusCheckDeadline int32 = 600
 
 	// Poll period for checking set to 100 milliseconds
-	pollDuration = 100 * time.Millisecond
+	defaultPollPeriodInMilliseconds = 100 * time.Millisecond
 
-	// report resource status for pending resources every minute.
-	reportStatusTime = 1 * time.Second
+	// report resource status for pending resources 0.5 second.
+	reportStatusTime = 500 * time.Millisecond
 )
 
-type Checker struct {
-	context       context.Context
-	runCtx        *runcontext.RunContext
-	out           io.Writer
-	labeller      *DefaultLabeller
-	client        kubernetes.Interface
-	numPods       int
-	numDeps       int
-	processedPods int32
-	processedDeps int32
+const (
+	tabHeader = " -"
+)
+
+type counter struct {
+	total   int
+	pending int32
 }
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
-	client, err := kubernetesutil.GetClientset()
+	client, err := pkgkubernetes.Client()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "getting kubernetes client")
 	}
-	deadline := getDeadline(int32(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds))
 
-	deployments, err := fetchDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)
+	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds)
+	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "could not fetch deployments")
 	}
 
-	rs := []Resource{}
-	for _, r := range deployments {
-		rs = append(rs, r)
-	}
+	wg := sync.WaitGroup{}
 
-	checker := &Checker{
-		context:  ctx,
-		runCtx:   runCtx,
-		labeller: defaultLabeller,
-		client:   client,
-		out:      out,
-		numDeps:  len(deployments),
-	}
+	c := newCounter(len(deployments))
 
-	wg := &sync.WaitGroup{}
-
-	for _, r := range rs {
-		// Check resource status
+	for _, d := range deployments {
 		wg.Add(1)
-		go func(checker *Checker, r Resource) {
-			defer func(checker *Checker) {
-				atomic.AddInt32(&checker.processedDeps, 1)
-				checker.printStatusCheckSummary(r)
-				wg.Done()
-			}(checker)
-			checker.CheckResourceStatus(r)
-		}(checker, r)
+		go func(d *resource.Deployment) {
+			defer wg.Done()
+			pollResourceStatus(ctx, runCtx, d)
+			pending := c.markProcessed()
+			printStatusCheckSummary(out, d, pending, c.total)
+		}(d)
 	}
 
 	// Retrieve pending resource states
 	go func() {
-		checker.printResourceStatus(rs, deadline)
+		printResourceStatus(ctx, out, deployments, deadline)
 	}()
 
-	// Wait for all resource status to be fetched
+	// Wait for all deployment status to be fetched
 	wg.Wait()
-	if checker.isSkaffoldDeployInError(rs) {
-		return fmt.Errorf("one or more deployed resources were in error")
-	}
-	return nil
+	return getSkaffoldDeployStatus(deployments)
 }
 
-func fetchDeployments(c kubernetes.Interface, ns string, labeller *DefaultLabeller, deadline int32) ([]*resources.Deployment, error) {
-	deps, err := c.AppsV1().Deployments(ns).List(metav1.ListOptions{
-		LabelSelector: labeller.RunIDKeyValueString(),
+func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
+	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
+		LabelSelector: l.RunIDKeyValueString(),
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "could not fetch deployments")
 	}
 
-	deployments := make([]*resources.Deployment, len(deps.Items))
-
-	for i, d := range deps.Items {
-		var depDeadline int32
-		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds > deadline {
-			logrus.Debugf("no or higher progressDeadlineSeconds config found for deployment %s. Setting deadline to %d seconds", d.Name, defaultStatusCheckDeadline)
-			depDeadline = deadline
+	deployments := make([]*resource.Deployment, 0, len(deps.Items))
+	for _, d := range deps.Items {
+		var deadline time.Duration
+		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds > int32(deadlineDuration.Seconds()) {
+			deadline = deadlineDuration
 		} else {
-			depDeadline = *d.Spec.ProgressDeadlineSeconds
+			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
 		}
-		deployments[i] = resources.NewDeployment(d.Name, d.Namespace, time.Duration(depDeadline)*time.Second)
+		deployments = append(deployments, resource.NewDeployment(d.Name, d.Namespace, deadline))
 	}
+
 	return deployments, nil
 }
 
-func (c *Checker) CheckResourceStatus(r Resource) {
-	timeoutContext, cancel := context.WithTimeout(c.context, r.Deadline())
-	logrus.Debugf("checking status for %s in namespace %s for %s", r.String(), r.Namespace(), r.Deadline())
+func pollResourceStatus(ctx context.Context, runCtx *runcontext.RunContext, r Resource) {
+	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
+	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
+	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
+	logrus.Debugf("checking status %s", r)
 	defer cancel()
 	for {
 		select {
 		case <-timeoutContext.Done():
-			r.UpdateStatus("", TimeOutErr, errors.Wrap(timeoutContext.Err(), fmt.Sprintf("resource %s could not be fetched within %v", r.String(), r.Deadline())))
+			r.UpdateStatus(timeoutContext.Err().Error(), timeoutContext.Err())
 			return
 		case <-time.After(pollDuration):
-			r.CheckStatus(timeoutContext, c.runCtx)
+			r.CheckStatus(timeoutContext, runCtx)
 			if r.IsStatusCheckComplete() {
 				return
 			}
@@ -157,22 +134,51 @@ func (c *Checker) CheckResourceStatus(r Resource) {
 	}
 }
 
+func getSkaffoldDeployStatus(deployments []*resource.Deployment) error {
+	var errorStrings []string
+	for _, d := range deployments {
+		if err := d.Status().Error(); err != nil {
+			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", d, err.Error()))
+		}
+	}
+	if len(errorStrings) == 0 {
+		return nil
+	}
+	return fmt.Errorf("following deployments are not stable:\n%s", strings.Join(errorStrings, "\n"))
+}
+
+func getDeadline(d int) time.Duration {
+	if d > 0 {
+		return time.Duration(d) * time.Second
+	}
+	return defaultStatusCheckDeadline
+}
+
+func printStatusCheckSummary(out io.Writer, d *resource.Deployment, pending int, total int) {
+	status := fmt.Sprintf("%s %s", tabHeader, d)
+	if err := d.Status().Error(); err != nil {
+		status = fmt.Sprintf("%s failed.%s Error: %s.",
+			status,
+			trimNewLine(getPendingMessage(pending, total)),
+			trimNewLine(err.Error()),
+		)
+	} else {
+		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(pending, total))
+	}
+	color.Default.Fprintln(out, status)
+}
+
 // Print resource statuses until all status check are completed or context is cancelled.
-func (c *Checker) printResourceStatus(rs []Resource, deadline int32) {
-	timeoutContext, cancel := context.WithTimeout(c.context, time.Duration(deadline)*time.Second)
+func printResourceStatus(ctx context.Context, out io.Writer, deps []*resource.Deployment, deadline time.Duration) {
+	timeoutContext, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 	for {
-		allResourcesCheckComplete := true
+		var allResourcesCheckComplete bool
 		select {
 		case <-timeoutContext.Done():
 			return
 		case <-time.After(reportStatusTime):
-			for _, r := range rs {
-				if !r.IsStatusCheckComplete() {
-					allResourcesCheckComplete = false
-					r.ReportSinceLastUpdated(c.out)
-				}
-			}
+			allResourcesCheckComplete = printStatus(deps, out)
 		}
 		if allResourcesCheckComplete {
 			return
@@ -180,60 +186,38 @@ func (c *Checker) printResourceStatus(rs []Resource, deadline int32) {
 	}
 }
 
-func (c *Checker) isSkaffoldDeployInError(rs []Resource) bool {
-	for _, r := range rs {
-		if r.Status().Error() != nil {
-			return true
+func printStatus(deps []*resource.Deployment, out io.Writer) bool {
+	allResourcesCheckComplete := true
+	for _, d := range deps {
+		if d.IsStatusCheckComplete() {
+			continue
+		}
+		allResourcesCheckComplete = false
+		if str := d.ReportSinceLastUpdated(); str != "" {
+			color.Default.Fprintln(out, tabHeader, trimNewLine(str))
 		}
 	}
-	return false
+	return allResourcesCheckComplete
 }
 
-func (c *Checker) printStatusCheckSummary(r Resource) {
-	waitingMsg := ""
-	stats := make([]string, 0, 2)
-	if numLeft := c.numPods - int(c.processedPods); numLeft >0 {
-		stats = append(stats, fmt.Sprintf("%d/%d pods", numLeft, c.numPods))
+func getPendingMessage(pending int, total int) string {
+	if pending > 0 {
+		return fmt.Sprintf(" [%d/%d deployment(s) still pending]", pending, total)
 	}
+	return ""
+}
 
-	if numLeft := c.numDeps - int(c.processedDeps); numLeft > 0 {
-		stats = append(stats, fmt.Sprintf("%d/%d deployment(s)", numLeft, c.numDeps))
-	}
-	if len(stats) > 0 {
-		waitingMsg = fmt.Sprintf("[%s still pending]", strings.Join(stats, ", "))
-	}
-	if err := r.Status().Error(); err != nil {
-		color.Default.Fprintln(c.out,
-			fmt.Sprintf("%s failed %s. Error: %s.",
-				r.String(),
-				waitingMsg,
-				strings.TrimSuffix(err.Error(), "\n"),
-			),
-		)
-	} else {
-		color.Default.Fprintln(c.out, fmt.Sprintf("%s %s is ready. %s", resources.TabHeader, r.String(), waitingMsg))
+func trimNewLine(msg string) string {
+	return strings.TrimSuffix(msg, "\n")
+}
+
+func newCounter(i int) *counter {
+	return &counter{
+		total:   i,
+		pending: int32(i),
 	}
 }
 
-func getDeadline(d int32) int32 {
-	if d > 0 {
-		return d
-	}
-	return defaultStatusCheckDeadline
-}
-
-func fetchPods(c kubernetes.Interface, ns string, labeller *DefaultLabeller) ([]*resources.Pod, error) {
-	pi := c.CoreV1().Pods(ns)
-	pods, err := pi.List(metav1.ListOptions{
-		LabelSelector: labeller.K8sManagedByLabelKeyValueString(),
-	})
-	if err != nil{
-		return nil, err
-	}
-	podResources := make([]*resources.Pod, len(pods.Items))
-
-	for i, p := range pods.Items {
-		podResources[i] = resources.NewPod(p.Name, p.Namespace)
-	}
-	return podResources, nil
+func (c *counter) markProcessed() int {
+	return int(atomic.AddInt32(&c.pending, -1))
 }
