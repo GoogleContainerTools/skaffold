@@ -18,32 +18,41 @@ package deploy
 
 import (
 	"context"
-	"io"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resources"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
 type Resource interface {
+	// Name returns resource Name
+	Name() string
+
+	// Status returns resource status
+	Status() resource.Status
+
+	// ReportSinceLastUpdated returns the resource status only if it was updated
+	// since last time reported.
+	ReportSinceLastUpdated() string
+
+	// UpdateStatus updates the resource status
+	UpdateStatus(string, error)
+
+	// IsStatusCheckComplete returns if the resource status check is complele
+	IsStatusCheckComplete() bool
+
+	// Deadline returns the deadline for the resource
+	Deadline() time.Duration
+
+	// CheckStatus checks resource status
+	CheckStatus(context.Context, *runcontext.RunContext)
+
 	// String returns the string representation of a resource.
 	String() string
+
 	// Type returns the type of the resource
 	Type() string
-	// Status returns the resource status
-	Status() *resources.Status
+
 	// Namespace returns the resource namespace
 	Namespace() string
-	// Name returns the resource name
-	Name() string
-	// CheckStatus performs the resource status check.
-	CheckStatus(ctx context.Context, runCtx *runcontext.RunContext)
-	// Deadline returns the status check deadline for the resource
-	Deadline() time.Duration
-	// UpdateStatus updates the status of a resource with the given error message
-	UpdateStatus(msg string, reason string, err error)
-	// IsStatusCheckComplete returns if a status check is complete for a resource
-	IsStatusCheckComplete() bool
-	// ReportSinceLastUpdated writes the last known status to out if it hasn't been reported earlier.
-	ReportSinceLastUpdated(out io.Writer)
 }
