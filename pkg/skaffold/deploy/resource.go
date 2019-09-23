@@ -25,6 +25,7 @@ import (
 )
 
 type Resource interface {
+
 	// Name returns resource Name
 	Name() string
 
@@ -46,13 +47,4 @@ type Resource interface {
 
 	// CheckStatus checks resource status
 	CheckStatus(context.Context, *runcontext.RunContext)
-
-	// String returns the string representation of a resource.
-	String() string
-
-	// Type returns the type of the resource
-	Type() string
-
-	// Namespace returns the resource namespace
-	Namespace() string
 }

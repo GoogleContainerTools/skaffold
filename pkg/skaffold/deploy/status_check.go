@@ -37,11 +37,10 @@ import (
 )
 
 var (
-	// defaultStatusCheckDeadline is set to 10 minutes
-	defaultStatusCheckDeadline int32 = 600
+	defaultStatusCheckDeadline = time.Duration(10) * time.Minute
 
 	// Poll period for checking set to 100 milliseconds
-	defaultPollPeriodInMilliseconds = 100 * time.Millisecond
+	defaultPollPeriodInMilliseconds = 100
 
 	// report resource status for pending resources 0.5 second.
 	reportStatusTime = 500 * time.Millisecond

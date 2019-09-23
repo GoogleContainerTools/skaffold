@@ -14,59 +14,39 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package resources
+package resource
 
 import (
 	"context"
-	"fmt"
 	"time"
 
-	kubernetesutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/pkg/errors"
 )
 
 const (
-	PodType = "pod"
+	PodType     = "pod"
+	podDeadline = 2 * time.Minute
 )
 
 type Pod struct {
-	*ResourceObj
+	*Base
 }
 
 func NewPod(name string, ns string) *Pod {
 	return &Pod{
-		ResourceObj: &ResourceObj{name: name, namespace: ns, rType: PodType},
+		Base: &Base{name: name, namespace: ns, rType: PodType},
 	}
 }
 
 func (p *Pod) CheckStatus(ctx context.Context, runCtx *runcontext.RunContext) {
-	client, err := kubernetesutil.GetClientset()
-	if err != nil {
-		p.UpdateStatus("", KubectlConnection, errors.Wrap(err, fmt.Sprintf("could not get status for %s", p.String())))
-		return
+	updated := newStatus("nyi", errors.New("not yet implemented"))
+	if !p.status.Equal(updated) {
+		p.status = updated
+		p.done = true
 	}
-	if reason, err := kubernetesutil.GetPodDetails(client, p.Namespace(), p.Name()); err != nil {
-		reason = parsePodDuplicateReasons(reason)
-		p.UpdateStatus("", reason, err)
-		return
-	}
-	p.UpdateStatus("", "",nil)
-	p.checkComplete()
 }
 
 func (p *Pod) Deadline() time.Duration {
-	return 2 * time.Minute
-}
-
-func (p *Pod) WithError(err error) *Pod {
-	p.UpdateStatus("", "", err)
-	return p
-}
-
-func parsePodDuplicateReasons(reason string) string {
-	if reason == "ImgErrPull" || reason == "ImgPullBackOff" {
-		return "ImgErrPull"
-	}
-	return reason
+	return podDeadline
 }
