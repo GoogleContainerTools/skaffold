@@ -27,6 +27,7 @@ import (
 	"os"
 	"sort"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
@@ -64,6 +65,10 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 
 	// add build args for the artifact if specified
 	if buildArgs := retrieveBuildArgs(a); buildArgs != nil {
+		buildArgs, err := docker.EvaluateBuildArgs(buildArgs)
+		if err != nil {
+			return "", errors.Wrap(err, "evaluating build args")
+		}
 		args := convertBuildArgsToStringArray(buildArgs)
 		inputs = append(inputs, args...)
 	}

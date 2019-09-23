@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -157,6 +158,44 @@ func TestArtifactConfig(t *testing.T) {
 		if config1 == config2 {
 			t.Errorf("configs should be different: [%s] [%s]", config1, config2)
 		}
+	})
+}
+
+func TestBuildArgsEnvSubstitution(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		original := util.OSEnviron
+		defer func() { util.OSEnviron = original }()
+		util.OSEnviron = func() []string {
+			return []string{"FOO=bar"}
+		}
+
+		artifact := &latest.Artifact{
+			ArtifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					BuildArgs: map[string]*string{"env": stringPointer("${{.FOO}}")},
+				},
+			},
+		}
+
+		t.Override(&hashFunction, mockCacheHasher)
+		t.Override(&artifactConfigFunction, fakeArtifactConfig)
+
+		depLister := &stubDependencyLister{dependencies: []string{"dep"}}
+		actual, err := getHashForArtifact(context.Background(), depLister, artifact)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("afc018228939a12195994275d6a24ef8f0eb7fa5019ae0582b2daf9e4c353656", actual)
+
+		// Make sure hash is different with a new env
+
+		util.OSEnviron = func() []string {
+			return []string{"FOO=baz"}
+		}
+
+		actual, err = getHashForArtifact(context.Background(), depLister, artifact)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("f698ab606ce86ad1c6b7842890a6573060dfaa770e6df0913076f83f14ac32ae", actual)
 	})
 }
 
