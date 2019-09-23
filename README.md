@@ -23,7 +23,7 @@ provides building blocks and describe customizations for a CI/CD pipeline.
 
 * [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users)
 * [#skaffold on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
-* [Give us Feedback](https://skaffold.dev/docs/references/feedback/)
+* [Give us Feedback](https://skaffold.dev/docs/resources/feedback/)
 
 **Office Hours** 
 
