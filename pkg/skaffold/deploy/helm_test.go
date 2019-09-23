@@ -773,7 +773,7 @@ func TestGetSetFileValues(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			inMap := map[string]bool{}
-			actual := getSetFileValues(test.files, inMap)
+			actual := generateGetFilesArgs(test.files, inMap)
 			t.CheckDeepEqual(test.expected, actual)
 			t.CheckDeepEqual(test.expectedMap, inMap)
 		})

@@ -307,7 +307,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	}
 
 	// SetFiles
-	args = append(args, getSetFileValues(r.SetFiles, valuesSet)...)
+	args = append(args, generateGetFilesArgs(r.SetFiles, valuesSet)...)
 
 	envMap := map[string]string{}
 	for idx, b := range builds {
@@ -464,7 +464,7 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 	return paramToBuildResult, nil
 }
 
-func getSetFileValues(m map[string]string, valuesSet map[string]bool) []string {
+func generateGetFilesArgs(m map[string]string, valuesSet map[string]bool) []string {
 	args := make([]string, 0, len(m))
 	for k, v := range m {
 		valuesSet[v] = true
