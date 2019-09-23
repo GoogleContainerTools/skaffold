@@ -88,6 +88,36 @@ func TestGetHashForArtifact(t *testing.T) {
 				},
 			},
 			expected: "09b366c764d0e39f942283cc081d5522b9dde52e725376661808054e3ed0177f",
+		}, {
+			description: "build args",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						BuildArgs: map[string]*string{"one": stringPointer("1"), "two": stringPointer("2")},
+					},
+				},
+			},
+			expected: "f5b610f4fea07461411b2ea0e2cddfd2ffc28d1baed49180f5d3acee5a18f9e7",
+		}, {
+			description: "build args in different order",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						BuildArgs: map[string]*string{"two": stringPointer("2"), "one": stringPointer("1")},
+					},
+				},
+			},
+			expected: "f5b610f4fea07461411b2ea0e2cddfd2ffc28d1baed49180f5d3acee5a18f9e7",
+		}, {
+			description: "different build args",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						BuildArgs: map[string]*string{"one": stringPointer("")},
+					},
+				},
+			},
+			expected: "961582bfb8d159de1129f89fa12852308afce65816b5f3c521ee57cf9ec524d7",
 		},
 	}
 	for _, test := range tests {
@@ -194,4 +224,110 @@ func TestCacheHasher(t *testing.T) {
 			t.CheckDeepEqual(false, !test.differentHash && oldHash != newHash)
 		})
 	}
+}
+
+func TestRetrieveBuildArgs(t *testing.T) {
+	tests := []struct {
+		description  string
+		artifactType latest.ArtifactType
+		expected     map[string]*string
+	}{
+		{
+			description: "docker artifact with build args",
+			artifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					BuildArgs: map[string]*string{},
+				},
+			},
+			expected: map[string]*string{},
+		}, {
+			description: "docker artifact without build args",
+			artifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{},
+			},
+		}, {
+			description: "kaniko artifact with build args",
+			artifactType: latest.ArtifactType{
+				KanikoArtifact: &latest.KanikoArtifact{
+					BuildArgs: map[string]*string{},
+				},
+			},
+			expected: map[string]*string{},
+		}, {
+			description: "kaniko artifact without build args",
+			artifactType: latest.ArtifactType{
+				KanikoArtifact: &latest.KanikoArtifact{},
+			},
+		}, {
+			description: "custom artifact, dockerfile dependency, with build args",
+			artifactType: latest.ArtifactType{
+				CustomArtifact: &latest.CustomArtifact{
+					Dependencies: &latest.CustomDependencies{
+						Dockerfile: &latest.DockerfileDependency{
+							BuildArgs: map[string]*string{},
+						},
+					},
+				},
+			},
+			expected: map[string]*string{},
+		}, {
+			description: "custom artifact, no dockerfile dependency",
+			artifactType: latest.ArtifactType{
+				CustomArtifact: &latest.CustomArtifact{
+					Dependencies: &latest.CustomDependencies{},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			actual := retrieveBuildArgs(&latest.Artifact{
+				ArtifactType: test.artifactType,
+			})
+			testutil.CheckDeepEqual(t, test.expected, actual)
+		})
+	}
+}
+
+func TestConvertBuildArgsToStringArray(t *testing.T) {
+	tests := []struct {
+		description string
+		buildArgs   map[string]*string
+		expected    []string
+	}{
+		{
+			description: "regular key:value build args",
+			buildArgs: map[string]*string{
+				"one": stringPointer("1"),
+				"two": stringPointer("2"),
+			},
+			expected: []string{"one=1", "two=2"},
+		}, {
+			description: "empty key:value build args",
+			buildArgs: map[string]*string{
+				"one": stringPointer(""),
+				"two": stringPointer(""),
+			},
+			expected: []string{"one=", "two="},
+		}, {
+			description: "build args with nil vlaue",
+			buildArgs: map[string]*string{
+				"one": nil,
+				"two": nil,
+			},
+			expected: []string{"one", "two"},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			actual := convertBuildArgsToStringArray(test.buildArgs)
+			testutil.CheckDeepEqual(t, test.expected, actual)
+		})
+	}
+}
+
+func stringPointer(s string) *string {
+	return &s
 }
