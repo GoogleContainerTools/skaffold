@@ -64,6 +64,31 @@ func TestCmpGoStructs(t *testing.T) {
 			shouldErr: false,
 		},
 		{
+			name: "all supported types",
+			a: `package a
+type TestStructure struct {
+	a string			// Ident
+	b map[string]int 	// MapType
+	c []interface{} 	// InterfaceType
+	d []byte	 		// ArrayType
+	e (error)    		// ParenExpr
+	f *ast.Ident 		// SelectorExpr and StarExpr
+}
+`,
+			b: `package a
+type TestStructure struct {
+	a string			// Ident
+	b map[string]int 	// MapType
+	c []interface{} 	// InterfaceType
+	d []byte	 		// ArrayType
+	e (error)    		// ParenExpr
+	f *ast.Ident 		// SelectorExpr and StarExpr
+}
+`,
+			same:      true,
+			shouldErr: false,
+		},
+		{
 			name: "renamed struct: not same",
 			a: `package a
 //a comment
