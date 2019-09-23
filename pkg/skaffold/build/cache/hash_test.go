@@ -89,36 +89,6 @@ func TestGetHashForArtifact(t *testing.T) {
 				},
 			},
 			expected: "09b366c764d0e39f942283cc081d5522b9dde52e725376661808054e3ed0177f",
-		}, {
-			description: "build args",
-			artifact: &latest.Artifact{
-				ArtifactType: latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{
-						BuildArgs: map[string]*string{"one": stringPointer("1"), "two": stringPointer("2")},
-					},
-				},
-			},
-			expected: "f5b610f4fea07461411b2ea0e2cddfd2ffc28d1baed49180f5d3acee5a18f9e7",
-		}, {
-			description: "build args in different order",
-			artifact: &latest.Artifact{
-				ArtifactType: latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{
-						BuildArgs: map[string]*string{"two": stringPointer("2"), "one": stringPointer("1")},
-					},
-				},
-			},
-			expected: "f5b610f4fea07461411b2ea0e2cddfd2ffc28d1baed49180f5d3acee5a18f9e7",
-		}, {
-			description: "different build args",
-			artifact: &latest.Artifact{
-				ArtifactType: latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{
-						BuildArgs: map[string]*string{"one": stringPointer("")},
-					},
-				},
-			},
-			expected: "961582bfb8d159de1129f89fa12852308afce65816b5f3c521ee57cf9ec524d7",
 		},
 	}
 	for _, test := range tests {
@@ -157,6 +127,44 @@ func TestArtifactConfig(t *testing.T) {
 
 		if config1 == config2 {
 			t.Errorf("configs should be different: [%s] [%s]", config1, config2)
+		}
+	})
+}
+
+func TestBuildArgs(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		expected := "f5b610f4fea07461411b2ea0e2cddfd2ffc28d1baed49180f5d3acee5a18f9e7"
+
+		artifact := &latest.Artifact{
+			ArtifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					BuildArgs: map[string]*string{"one": stringPointer("1"), "two": stringPointer("2")},
+				},
+			},
+		}
+
+		t.Override(&hashFunction, mockCacheHasher)
+		t.Override(&artifactConfigFunction, fakeArtifactConfig)
+
+		actual, err := getHashForArtifact(context.Background(), &stubDependencyLister{}, artifact)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(expected, actual)
+
+		// Change order of buildargs
+		artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"two": stringPointer("2"), "one": stringPointer("1")}
+		actual, err = getHashForArtifact(context.Background(), &stubDependencyLister{}, artifact)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(expected, actual)
+
+		// Change build args, get different hash
+		artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"one": stringPointer("1")}
+		actual, err = getHashForArtifact(context.Background(), &stubDependencyLister{}, artifact)
+
+		t.CheckNoError(err)
+		if actual == expected {
+			t.Fatal("got same hash as different artifact; expected different hashes.")
 		}
 	})
 }
