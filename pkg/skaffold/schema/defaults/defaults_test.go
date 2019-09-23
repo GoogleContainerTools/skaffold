@@ -95,6 +95,23 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		t.CheckDeepEqual("ns", cfg.Build.Cluster.Namespace)
 		t.CheckDeepEqual(constants.DefaultKanikoTimeout, cfg.Build.Cluster.Timeout)
 
+		// pull secret set
+		cfg = &latest.SkaffoldConfig{
+			Pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					BuildType: latest.BuildType{
+						Cluster: &latest.ClusterDetails{
+							PullSecret: "path/to/pull/secret",
+						},
+					},
+				},
+			},
+		}
+		err = Set(cfg)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
+
 		// default docker config
 		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{}
 		err = Set(cfg)
