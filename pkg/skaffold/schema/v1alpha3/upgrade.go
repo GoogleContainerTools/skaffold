@@ -39,30 +39,30 @@ import (
 //    - Artifact.imageName -> image, workspace -> context in yaml
 //		- DockerArtifact.dockerfilePath -> dockerfile in yaml
 //    - BazelArtifact.BuildTarget is optional in yaml
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
-	pkgutil.CloneThroughJSON(config.Deploy, &newDeploy)
+	pkgutil.CloneThroughJSON(c.Deploy, &newDeploy)
 
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
-	if config.Profiles != nil {
-		pkgutil.CloneThroughJSON(config.Profiles, &newProfiles)
+	if c.Profiles != nil {
+		pkgutil.CloneThroughJSON(c.Profiles, &newProfiles)
 
-		for i, oldProfile := range config.Profiles {
+		for i, oldProfile := range c.Profiles {
 			convertBuild(oldProfile.Build, newProfiles[i].Build)
 		}
 	}
 
 	// convert Build (should be the same)
 	var newBuild next.BuildConfig
-	oldBuild := config.Build
+	oldBuild := c.Build
 	pkgutil.CloneThroughJSON(oldBuild, &newBuild)
 	convertBuild(oldBuild, newBuild)
 
 	return &next.SkaffoldConfig{
 		APIVersion: next.Version,
-		Kind:       config.Kind,
+		Kind:       c.Kind,
 		Deploy:     newDeploy,
 		Build:      newBuild,
 		Profiles:   newProfiles,

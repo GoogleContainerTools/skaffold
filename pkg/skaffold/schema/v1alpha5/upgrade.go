@@ -31,12 +31,12 @@ import (
 // 2. Removals:
 //   - AzureContainerBuilder
 // 3. No updates
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
-	if config.Build.AzureContainerBuild != nil {
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+	if c.Build.AzureContainerBuild != nil {
 		return nil, errors.Errorf("can't upgrade to %s, build.acr is not supported anymore, please remove it manually", next.Version)
 	}
 
-	for _, profile := range config.Profiles {
+	for _, profile := range c.Profiles {
 		if profile.Build.AzureContainerBuild != nil {
 			return nil, errors.Errorf("can't upgrade to %s, profiles.build.acr is not supported anymore, please remove it from the %s profile manually", next.Version, profile.Name)
 		}
@@ -44,7 +44,7 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 
 	var newConfig next.SkaffoldConfig
 
-	pkgutil.CloneThroughJSON(config, &newConfig)
+	pkgutil.CloneThroughJSON(c, &newConfig)
 	newConfig.APIVersion = next.Version
 
 	return &newConfig, nil

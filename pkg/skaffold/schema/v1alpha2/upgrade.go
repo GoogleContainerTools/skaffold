@@ -29,13 +29,13 @@ import (
 // 3. Updates
 //  - KanikoBuildContext instead of GCSBucket
 //  - HelmRelease.valuesFilePath -> valuesFiles in yaml
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
-	pkgutil.CloneThroughJSON(config.Deploy, &newDeploy)
+	pkgutil.CloneThroughJSON(c.Deploy, &newDeploy)
 
 	// if the helm deploy config was set, then convert ValueFilePath to ValuesFiles
-	if oldHelmDeploy := config.Deploy.DeployType.HelmDeploy; oldHelmDeploy != nil {
+	if oldHelmDeploy := c.Deploy.DeployType.HelmDeploy; oldHelmDeploy != nil {
 		for i, oldHelmRelease := range oldHelmDeploy.Releases {
 			if oldHelmRelease.ValuesFilePath != "" {
 				newDeploy.DeployType.HelmDeploy.Releases[i].ValuesFiles = []string{oldHelmRelease.ValuesFilePath}
@@ -45,12 +45,12 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
-	if config.Profiles != nil {
-		pkgutil.CloneThroughJSON(config.Profiles, &newProfiles)
+	if c.Profiles != nil {
+		pkgutil.CloneThroughJSON(c.Profiles, &newProfiles)
 	}
 
 	// if the helm deploy config was set for a profile, then convert ValueFilePath to ValuesFiles
-	for p, oldProfile := range config.Profiles {
+	for p, oldProfile := range c.Profiles {
 		if oldProfileHelmDeploy := oldProfile.Deploy.DeployType.HelmDeploy; oldProfileHelmDeploy != nil {
 			for i, oldProfileHelmRelease := range oldProfileHelmDeploy.Releases {
 				if oldProfileHelmRelease.ValuesFilePath != "" {
@@ -61,12 +61,12 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	}
 
 	// convert Build (different only for kaniko)
-	oldKanikoBuilder := config.Build.KanikoBuild
-	config.Build.KanikoBuild = nil
+	oldKanikoBuilder := c.Build.KanikoBuild
+	c.Build.KanikoBuild = nil
 
 	// copy over old build config to new build config
 	var newBuild next.BuildConfig
-	pkgutil.CloneThroughJSON(config.Build, &newBuild)
+	pkgutil.CloneThroughJSON(c.Build, &newBuild)
 
 	// if the kaniko build was set, then convert it
 	if oldKanikoBuilder != nil {
@@ -83,7 +83,7 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 
 	return &next.SkaffoldConfig{
 		APIVersion: next.Version,
-		Kind:       config.Kind,
+		Kind:       c.Kind,
 		Deploy:     newDeploy,
 		Build:      newBuild,
 		Profiles:   newProfiles,
