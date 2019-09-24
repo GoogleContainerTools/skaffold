@@ -59,20 +59,8 @@ func TestPodTemplate(t *testing.T) {
 								Name:  "UPSTREAM_CLIENT_TYPE",
 								Value: "UpstreamClient(skaffold-test)",
 							}},
-							VolumeMounts: []v1.VolumeMount{{
-								Name:      "kaniko-secret",
-								MountPath: "/secret",
-							}},
 							ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
 						},
-					},
-					Volumes: []v1.Volume{{
-						Name: "kaniko-secret",
-						VolumeSource: v1.VolumeSource{
-							Secret: &v1.SecretVolumeSource{
-								SecretName: "",
-							},
-						}},
 					},
 				},
 			},
@@ -173,24 +161,12 @@ func TestPodTemplate(t *testing.T) {
 							Name:  "UPSTREAM_CLIENT_TYPE",
 							Value: "UpstreamClient(skaffold-test)",
 						}},
-						VolumeMounts: []v1.VolumeMount{{
-							Name:      "kaniko-secret",
-							MountPath: "/secret",
-						}},
 						ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
 						Resources: createResourceRequirements(
 							resource.MustParse("1.0"),
 							resource.MustParse("2000"),
 							resource.MustParse("0.5"),
 							resource.MustParse("1000")),
-					}},
-					Volumes: []v1.Volume{{
-						Name: "kaniko-secret",
-						VolumeSource: v1.VolumeSource{
-							Secret: &v1.SecretVolumeSource{
-								SecretName: "",
-							},
-						},
 					}},
 				},
 			},
@@ -222,22 +198,12 @@ func TestPodTemplate(t *testing.T) {
 							Value: "UpstreamClient(skaffold-test)",
 						}},
 						VolumeMounts: []v1.VolumeMount{{
-							Name:      "kaniko-secret",
-							MountPath: "/secret",
-						}, {
 							Name:      "kaniko-cache",
 							MountPath: "/cache",
 						}},
 						ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
 					}},
 					Volumes: []v1.Volume{{
-						Name: "kaniko-secret",
-						VolumeSource: v1.VolumeSource{
-							Secret: &v1.SecretVolumeSource{
-								SecretName: "",
-							},
-						},
-					}, {
 						Name: "kaniko-cache",
 						VolumeSource: v1.VolumeSource{
 							HostPath: &v1.HostPathVolumeSource{
