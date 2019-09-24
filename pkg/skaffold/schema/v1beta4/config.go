@@ -21,6 +21,7 @@ import (
 	yamlpatch "github.com/krishicks/yaml-patch"
 )
 
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
 const Version string = "skaffold/v1beta4"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
