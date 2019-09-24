@@ -541,7 +541,7 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 	case "get":
 		return m.getResult
 	case "install":
-		if m.upgradeMatcher != nil && !m.installMatcher(c) {
+		if m.installMatcher != nil && !m.installMatcher(c) {
 			m.t.Errorf("install matcher failed to match commands: %+v", c.Args)
 		}
 		return m.installResult
@@ -670,6 +670,69 @@ func TestHelmDependencies(t *testing.T) {
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected(tmpDir), deps)
+		})
+	}
+}
+
+func TestGetImageSetValueFromHelmStrategy(t *testing.T) {
+	tests := []struct {
+		description string
+		valueName   string
+		tag         string
+		expected    string
+		strategy    *latest.HelmConventionConfig
+		shouldErr   bool
+	}{
+		{
+			description: "Helm set values with no convention config",
+			valueName:   "image",
+			tag:         "skaffold-helm:1.0.0",
+			expected:    "image=skaffold-helm:1.0.0",
+			strategy:    nil,
+			shouldErr:   false,
+		},
+		{
+			description: "Helm set values with helm conventions",
+			valueName:   "image",
+			tag:         "skaffold-helm:1.0.0",
+			expected:    "image.repository=skaffold-helm,image.tag=1.0.0",
+			strategy:    &latest.HelmConventionConfig{},
+			shouldErr:   false,
+		},
+		{
+			description: "Helm set values with helm conventions and explicit registry value",
+			valueName:   "image",
+			tag:         "docker.io/skaffold-helm:1.0.0",
+			expected:    "image.registry=docker.io,image.repository=skaffold-helm,image.tag=1.0.0",
+			strategy: &latest.HelmConventionConfig{
+				ExplicitRegistry: true,
+			},
+			shouldErr: false,
+		},
+		{
+			description: "Invalid tag with helm conventions",
+			valueName:   "image",
+			tag:         "skaffold-helm:1.0.0,0",
+			expected:    "",
+			strategy:    &latest.HelmConventionConfig{},
+			shouldErr:   true,
+		},
+		{
+			description: "Helm set values with helm conventions and explicit registry value, but missing in tag",
+			valueName:   "image",
+			tag:         "skaffold-helm:1.0.0",
+			expected:    "",
+			strategy: &latest.HelmConventionConfig{
+				ExplicitRegistry: true,
+			},
+			shouldErr: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			values, err := getImageSetValueFromHelmStrategy(test.strategy, test.valueName, test.tag)
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expected, values)
 		})
 	}
 }
