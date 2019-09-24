@@ -264,8 +264,6 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 		}
 	}
 
-	logrus.Debugln("manifests", manifests.String())
-
 	if len(manifests) == 0 {
 		return nil, nil
 	}
