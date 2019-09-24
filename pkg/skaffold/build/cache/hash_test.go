@@ -189,10 +189,9 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 		t.Override(&artifactConfigFunction, fakeArtifactConfig)
 
 		depLister := &stubDependencyLister{dependencies: []string{"dep"}}
-		actual, err := getHashForArtifact(context.Background(), depLister, artifact)
+		hash1, err := getHashForArtifact(context.Background(), depLister, artifact)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("afc018228939a12195994275d6a24ef8f0eb7fa5019ae0582b2daf9e4c353656", actual)
 
 		// Make sure hash is different with a new env
 
@@ -200,10 +199,12 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 			return []string{"FOO=baz"}
 		}
 
-		actual, err = getHashForArtifact(context.Background(), depLister, artifact)
+		hash2, err := getHashForArtifact(context.Background(), depLister, artifact)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("f698ab606ce86ad1c6b7842890a6573060dfaa770e6df0913076f83f14ac32ae", actual)
+		if hash1 == hash2 {
+			t.Fatal("hashes are the same even though build arg changed")
+		}
 	})
 }
 
