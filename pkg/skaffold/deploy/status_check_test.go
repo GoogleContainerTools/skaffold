@@ -251,73 +251,39 @@ func TestPollResourceStatus(t *testing.T) {
 
 func TestGetDeployStatus(t *testing.T) {
 	tests := []struct {
-		description    string
-		deps           []Resource
-		expectedErrMsg []string
-		shouldErr      bool
+		description string
+		counter     *counter
+		expected    string
+		shouldErr   bool
 	}{
 		{
 			description: "one error",
-			deps: []Resource{
-				withStatus(
-					resource.NewDeployment("dep1", "test", time.Second),
-					"success",
-					nil,
-				),
-				withStatus(
-					resource.NewDeployment("dep2", "test", time.Second),
-					"error",
-					errors.New("could not return within default timeout"),
-				),
-			},
-			expectedErrMsg: []string{"dep2 failed due to could not return within default timeout"},
-			shouldErr:      true,
+			counter:     &counter{total: 2, failed: 1},
+			expected:    "1/2 deployment(s) failed",
+			shouldErr:   true,
 		},
 		{
 			description: "no error",
-			deps: []Resource{
-				withStatus(
-					resource.NewDeployment("dep1", "test", time.Second),
-					"success",
-					nil,
-				),
-				withStatus(resource.NewDeployment("dep2", "test", time.Second),
-					"running",
-					nil,
-				),
-			},
+			counter:     &counter{total: 2},
 		},
 		{
 			description: "multiple errors",
-			deps: []Resource{
-				withStatus(
-					resource.NewDeployment("dep1", "test", time.Second),
-					"success",
-					nil,
-				),
-				withStatus(
-					resource.NewDeployment("dep2", "test", time.Second),
-					"error",
-					errors.New("could not return within default timeout"),
-				),
-				withStatus(
-					resource.NewDeployment("dep3", "test", time.Second),
-					"error",
-					errors.New("ERROR"),
-				),
-			},
-			expectedErrMsg: []string{"dep2 failed due to could not return within default timeout",
-				"dep3 failed due to ERROR"},
-			shouldErr: true,
+			counter:     &counter{total: 3, failed: 2},
+			expected:    "2/3 deployment(s) failed",
+			shouldErr:   true,
+		},
+		{
+			description: "0 deployments",
+			counter:     &counter{},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := getSkaffoldDeployStatus(test.deps)
+			err := getSkaffoldDeployStatus(test.counter)
 			t.CheckError(test.shouldErr, err)
-			for _, msg := range test.expectedErrMsg {
-				t.CheckErrorContains(msg, err)
+			if test.shouldErr {
+				t.CheckErrorContains(test.expected, err)
 			}
 		})
 	}
