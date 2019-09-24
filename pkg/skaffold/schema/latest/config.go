@@ -471,7 +471,8 @@ type HelmRelease struct {
 	// Defaults to `false`.
 	Wait bool `yaml:"wait,omitempty"`
 
-	// RecreatePods if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI.
+	// RecreatePods if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI
+	// when upgrading a new version of a chart in subsequent dev loop deploy.
 	// Defaults to `false`.
 	RecreatePods bool `yaml:"recreatePods,omitempty"`
 
