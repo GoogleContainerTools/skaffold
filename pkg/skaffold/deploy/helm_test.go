@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
 
@@ -774,6 +775,8 @@ func TestGetSetFileValues(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			inMap := map[string]bool{}
 			actual := generateGetFilesArgs(test.files, inMap)
+			sort.Strings(test.expected)
+			sort.Strings(actual)
 			t.CheckDeepEqual(test.expected, actual)
 			t.CheckDeepEqual(test.expectedMap, inMap)
 		})
