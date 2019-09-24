@@ -48,7 +48,7 @@ func recreate(out io.Writer, ns string, secretName string, secretPath string, se
 
 	secrets, err := getSecret(ns, secretName, secretPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	color.Default.Fprintf(out, "Creating secret [%s]...\n", secretName)
@@ -78,7 +78,7 @@ func recreate(out io.Writer, ns string, secretName string, secretPath string, se
 	}, nil
 }
 
-func getSecret(ns string, secretName string, secretPath string) {
+func getSecret(ns string, secretName string, secretPath string) (*v1.Secret, error) {
 	client, err := kubernetes.Client()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting kubernetes client")
