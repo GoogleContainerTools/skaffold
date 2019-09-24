@@ -43,14 +43,6 @@ type Deployment struct {
 	deadline time.Duration
 }
 
-func (d *Deployment) Namespace() string {
-	return d.namespace
-}
-
-func (d *Deployment) Type() string {
-	return d.rType
-}
-
 func (d *Deployment) Deadline() time.Duration {
 	return d.deadline
 }

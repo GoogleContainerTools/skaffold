@@ -47,4 +47,7 @@ type Resource interface {
 
 	// CheckStatus checks resource status
 	CheckStatus(context.Context, *runcontext.RunContext)
+
+	// String represents the string representation of resource
+	String() string
 }

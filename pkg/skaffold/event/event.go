@@ -33,8 +33,8 @@ const (
 	Complete   = "Complete"
 	Failed     = "Failed"
 	Info       = "Information"
-	Updated    = "Updated"
 	Started    = "Started"
+	Succeeded  = "Succeeded"
 )
 
 var handler = &eventHandler{}
@@ -139,7 +139,8 @@ func emptyState(build latest.BuildConfig) proto.State {
 			Status: NotStarted,
 		},
 		StatusCheckState: &proto.StatusCheckState{
-			Status: NotStarted,
+			Status:    NotStarted,
+			Resources: map[string]string{},
 		},
 		ForwardedPorts: make(map[int32]*proto.PortEvent),
 	}
@@ -165,9 +166,9 @@ func DeployInfoEvent(err error) {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Info, Err: err.Error()})
 }
 
-func StatusCheckEventComplete() {
+func StatusCheckEventSucceeded() {
 	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
-		Status: Complete,
+		Status: Succeeded,
 	})
 }
 
@@ -191,11 +192,11 @@ func StatusCheckEventInProgress(s string) {
 	})
 }
 
-func ResourceStatusCheckEventComplete(r string, status string) {
+func ResourceStatusCheckEventSucceeded(r string) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource: r,
-		Status:   Complete,
-		Message:  status,
+		Status:   Succeeded,
+		Message:  Succeeded,
 	})
 }
 
@@ -210,7 +211,7 @@ func ResourceStatusCheckEventFailed(r string, err error) {
 func ResourceStatusCheckEventUpdated(r string, status string) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource: r,
-		Status:   Updated,
+		Status:   InProgress,
 		Message:  status,
 	})
 }
@@ -353,28 +354,32 @@ func (ev *eventHandler) handle(event *proto.Event) {
 		ev.state.StatusCheckState.Status = se.Status
 		ev.stateLock.Unlock()
 		switch se.Status {
+		case Started:
+			logEntry.Entry = "Status check started"
 		case InProgress:
-			logEntry.Entry = "Deploy status check started"
-		case Complete:
-			logEntry.Entry = "Deploy status check complete"
+			logEntry.Entry = "Status check in progress"
+		case Succeeded:
+			logEntry.Entry = "Status check succeeded"
 		case Failed:
-			logEntry.Entry = "Deploy status check Failed"
+			logEntry.Entry = "Status check failed"
 		default:
 		}
 	case *proto.Event_ResourceStatusCheckEvent:
 		rse := e.ResourceStatusCheckEvent
-		ev.stateLock.Lock()
-		ev.stateLock.Unlock()
 		rseName := rse.Resource
+		ev.stateLock.Lock()
+		ev.state.StatusCheckState.Resources[rseName] = rse.Status
+		ev.stateLock.Unlock()
 		switch rse.Status {
-		case Updated:
+		case InProgress:
 			logEntry.Entry = fmt.Sprintf("Resource %s status updated to %s", rseName, rse.Status)
-		case Complete:
+		case Succeeded:
 			logEntry.Entry = fmt.Sprintf("Resource %s status completed successfully", rseName)
 		case Failed:
 			logEntry.Entry = fmt.Sprintf("Resource %s status failed with %s", rseName, rse.Err)
 		default:
 		}
+
 	default:
 		return
 	}
