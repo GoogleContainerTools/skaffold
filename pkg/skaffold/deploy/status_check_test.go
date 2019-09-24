@@ -226,6 +226,7 @@ func (m *mockResource) IsStatusCheckComplete() bool {
 func TestPollResourceStatus(t *testing.T) {
 	tests := []struct {
 		description   string
+		pollTime      int
 		dummyResource *mockResource
 		isInErr       bool
 	}{
@@ -241,7 +242,7 @@ func TestPollResourceStatus(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&defaultPollPeriodInMilliseconds, 10)
+			t.Override(&defaultPollPeriodInMilliseconds, 0)
 			pollResourceStatus(context.Background(), nil, test.dummyResource)
 			t.CheckDeepEqual(test.dummyResource.inErr, test.isInErr)
 		})
