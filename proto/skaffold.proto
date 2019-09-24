@@ -80,7 +80,6 @@ message ResourceStatusCheckEvent {
   string err = 4;
 }
 
-
 message PortEvent {
   int32 localPort = 1;
   int32 remotePort = 2;

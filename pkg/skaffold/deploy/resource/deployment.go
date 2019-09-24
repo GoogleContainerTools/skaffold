@@ -19,7 +19,6 @@ package resource
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -40,20 +39,8 @@ var (
 )
 
 type Deployment struct {
-	name      string
-	namespace string
-	rType     string
-	deadline  time.Duration
-	status    Status
-	done      bool
-}
-
-func (d *Deployment) String() string {
-	return fmt.Sprintf("%s:%s/%s", d.namespace, d.rType, d.name)
-}
-
-func (d *Deployment) Name() string {
-	return d.name
+	*Base
+	deadline time.Duration
 }
 
 func (d *Deployment) Namespace() string {
@@ -68,10 +55,6 @@ func (d *Deployment) Deadline() time.Duration {
 	return d.deadline
 }
 
-func (d *Deployment) Status() Status {
-	return d.status
-}
-
 func (d *Deployment) UpdateStatus(details string, err error) {
 	updated := newStatus(details, err)
 	if !d.status.Equal(updated) {
@@ -82,33 +65,24 @@ func (d *Deployment) UpdateStatus(details string, err error) {
 	}
 }
 
-func (d *Deployment) IsStatusCheckComplete() bool {
-	return d.done
-}
-
-func (d *Deployment) ReportSinceLastUpdated() string {
-	if d.status.reported {
-		return ""
+func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
+	return &Deployment{
+		Base: &Base{
+			name:      name,
+			namespace: ns,
+			rType:     deploymentType,
+			status:    newStatus("", nil),
+		},
+		deadline: deadline,
 	}
-	d.status.reported = true
-	return fmt.Sprintf("%s %s", d, d.status)
 }
 
 func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunContext) {
-	cli := kubectl.NewFromRunContext(runCtx)
-	b, err := cli.RunOut(ctx, "rollout", "status", "deployment", d.name, "--namespace", d.namespace, "--watch=false")
+	kubeCtl := kubectl.NewFromRunContext(runCtx)
+	b, err := kubeCtl.RunOut(ctx, "rollout", "status", "deployment", d.name, "--namespace", d.namespace, "--watch=false")
+	details := string(b)
 	err = parseKubectlRolloutError(err)
-	d.UpdateStatus(string(b), err)
-}
-
-func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
-	return &Deployment{
-		name:      name,
-		namespace: ns,
-		rType:     deploymentType,
-		deadline:  deadline,
-		status:    newStatus("", nil),
-	}
+	d.UpdateStatus(details, err)
 }
 
 func parseKubectlRolloutError(err error) error {

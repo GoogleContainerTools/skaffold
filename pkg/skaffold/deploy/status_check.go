@@ -77,11 +77,11 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	for _, d := range deployments {
 		wg.Add(1)
-		go func(d *resource.Deployment) {
+		go func(r Resource) {
 			defer wg.Done()
-			pollResourceStatus(ctx, runCtx, d)
+			pollResourceStatus(ctx, runCtx, r)
 			pending := c.markProcessed()
-			printStatusCheckSummary(out, d, pending, c.total)
+			printStatusCheckSummary(out, r, pending, c.total)
 		}(d)
 	}
 
@@ -100,7 +100,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	return nil
 }
 
-func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]*resource.Deployment, error) {
+func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]Resource, error) {
 	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
 		LabelSelector: l.RunIDKeyValueString(),
 	})
@@ -108,7 +108,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 		return nil, errors.Wrap(err, "could not fetch deployments")
 	}
 
-	deployments := make([]*resource.Deployment, 0, len(deps.Items))
+	deployments := make([]Resource, 0, len(deps.Items))
 	for _, d := range deps.Items {
 		var deadline time.Duration
 		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds > int32(deadlineDuration.Seconds()) {
@@ -142,17 +142,17 @@ func pollResourceStatus(ctx context.Context, runCtx *runcontext.RunContext, r Re
 	}
 }
 
-func getSkaffoldDeployStatus(deployments []*resource.Deployment) error {
+func getSkaffoldDeployStatus(resources []Resource) error {
 	var errorStrings []string
-	for _, d := range deployments {
-		if err := d.Status().Error(); err != nil {
-			errorStrings = append(errorStrings, fmt.Sprintf("deployment %s failed due to %s", d, err.Error()))
+	for _, r := range resources {
+		if err := r.Status().Error(); err != nil {
+			errorStrings = append(errorStrings, fmt.Sprintf("resource %s failed due to %s", r, err.Error()))
 		}
 	}
 	if len(errorStrings) == 0 {
 		return nil
 	}
-	return fmt.Errorf("following deployments are not stable:\n%s", strings.Join(errorStrings, "\n"))
+	return fmt.Errorf("following resources are not stable:\n%s", strings.Join(errorStrings, "\n"))
 }
 
 func getDeadline(d int) time.Duration {
@@ -162,9 +162,9 @@ func getDeadline(d int) time.Duration {
 	return defaultStatusCheckDeadline
 }
 
-func printStatusCheckSummary(out io.Writer, d *resource.Deployment, pending int, total int) {
-	status := fmt.Sprintf("%s %s", tabHeader, d)
-	if err := d.Status().Error(); err != nil {
+func printStatusCheckSummary(out io.Writer, r Resource, pending int, total int) {
+	status := fmt.Sprintf("%s %s", tabHeader, r)
+	if err := r.Status().Error(); err != nil {
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
 			trimNewLine(getPendingMessage(pending, total)),
@@ -180,7 +180,7 @@ func printStatusCheckSummary(out io.Writer, d *resource.Deployment, pending int,
 }
 
 // Print resource statuses until all status check are completed or context is cancelled.
-func printResourceStatus(ctx context.Context, out io.Writer, deps []*resource.Deployment, deadline time.Duration) {
+func printResourceStatus(ctx context.Context, out io.Writer, resources []Resource, deadline time.Duration) {
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 	for {
@@ -189,7 +189,7 @@ func printResourceStatus(ctx context.Context, out io.Writer, deps []*resource.De
 		case <-timeoutContext.Done():
 			return
 		case <-time.After(reportStatusTime):
-			allResourcesCheckComplete = printStatus(deps, out)
+			allResourcesCheckComplete = printStatus(resources, out)
 		}
 		if allResourcesCheckComplete {
 			return
@@ -197,13 +197,14 @@ func printResourceStatus(ctx context.Context, out io.Writer, deps []*resource.De
 	}
 }
 
-func printStatus(deps []*resource.Deployment, out io.Writer) bool {
+func printStatus(resources []Resource, out io.Writer) bool {
 	allResourcesCheckComplete := true
-	for _, d := range deps {
-		if d.IsStatusCheckComplete() {
+	for _, r := range resources {
+		if r.IsStatusCheckComplete() {
 			continue
 		}
 		allResourcesCheckComplete = false
+		if str := r.ReportSinceLastUpdated(); str != "" {
 		if str := d.ReportSinceLastUpdated(); str != "" {
 			event.ResourceStatusCheckEventUpdated(d.String(), str)
 			color.Default.Fprintln(out, tabHeader, trimNewLine(str))
@@ -235,11 +236,3 @@ func newCounter(i int) *counter {
 func (c *counter) markProcessed() int {
 	return int(atomic.AddInt32(&c.pending, -1))
 }
-
-//func toProto(r Resource) *proto.Resource {
-//	return &proto.Resource{
-//		Name:      r.Name(),
-//		Type:      r.Type(),
-//		Namespace: r.Namespace(),
-//	}
-//}

@@ -25,6 +25,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -67,7 +68,7 @@ func PluginName(t PluginType) string {
 	case JibGradle:
 		return "Jib Gradle Plugin"
 	}
-	panic("Unknown Jib Plugin Type: " + string(t))
+	panic("Unknown Jib Plugin Type: " + strconv.Itoa(int(t)))
 }
 
 // filesLists contains cached build/input dependencies
@@ -115,7 +116,7 @@ func DeterminePluginType(workspace string, artifact *latest.JibArtifact) (Plugin
 	}
 
 	// check for typical gradle files
-	for _, gradleFile := range []string{"build.gradle", "gradle.properties", "settings.gradle", "gradlew", "gradlew.bat", "gradlew.cmd"} {
+	for _, gradleFile := range []string{"build.gradle", "build.gradle.kts", "gradle.properties", "settings.gradle", "gradlew", "gradlew.bat", "gradlew.cmd"} {
 		if util.IsFile(filepath.Join(workspace, gradleFile)) {
 			return JibGradle, nil
 		}

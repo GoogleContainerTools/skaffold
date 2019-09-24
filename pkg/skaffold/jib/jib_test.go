@@ -177,9 +177,10 @@ func TestDeterminePluginType(t *testing.T) {
 		{"gradle-4", []string{"gradlew.bat"}, nil, false, JibGradle},
 		{"gradle-5", []string{"gradlew.cmd"}, nil, false, JibGradle},
 		{"gradle-6", []string{"settings.gradle"}, nil, false, JibGradle},
+		{"gradle-kotlin-1", []string{"build.gradle.kts"}, nil, false, JibGradle},
 		{"maven-1", []string{"pom.xml"}, nil, false, JibMaven},
 		{"maven-2", []string{".mvn/maven.config"}, nil, false, JibMaven},
-		{"maven-2", []string{".mvn/extensions.xml"}, nil, false, JibMaven},
+		{"maven-3", []string{".mvn/extensions.xml"}, nil, false, JibMaven},
 		{"gradle override", []string{"pom.xml"}, &latest.JibArtifact{Type: int(JibGradle)}, false, JibGradle},
 		{"maven override", []string{"build.gradle"}, &latest.JibArtifact{Type: int(JibMaven)}, false, JibMaven},
 	}
