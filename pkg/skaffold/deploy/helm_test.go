@@ -733,6 +733,53 @@ func TestHelmRender(t *testing.T) {
 	}
 }
 
+func TestGetSetFileValues(t *testing.T) {
+	tests := []struct {
+		description string
+		files       map[string]string
+		expected    []string
+		expectedMap map[string]bool
+	}{
+		{
+			description: "multiple value",
+			files: map[string]string{
+				"multiline_text": "path/to/textfile",
+				"another_file":   "path/to/another",
+			},
+			expected: []string{
+				"--set-file",
+				"multiline_text=path/to/textfile",
+				"--set-file",
+				"another_file=path/to/another",
+			},
+			expectedMap: map[string]bool{
+				"path/to/textfile": true,
+				"path/to/another":  true,
+			},
+		},
+		{
+			description: "empty value",
+			files:       map[string]string{},
+			expected:    []string{},
+			expectedMap: map[string]bool{},
+		},
+		{
+			description: "nil",
+			files:       nil,
+			expected:    []string{},
+			expectedMap: map[string]bool{},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			inMap := map[string]bool{}
+			actual := generateGetFilesArgs(test.files, inMap)
+			t.CheckDeepEqual(test.expected, actual)
+			t.CheckDeepEqual(test.expectedMap, inMap)
+		})
+	}
+}
+
 func makeRunContext(deploy latest.HelmDeploy, force bool) *runcontext.RunContext {
 	pipeline := latest.Pipeline{}
 	pipeline.Deploy.DeployType.HelmDeploy = &deploy

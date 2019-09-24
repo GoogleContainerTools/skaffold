@@ -306,6 +306,9 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
 	}
 
+	// SetFiles
+	args = append(args, generateGetFilesArgs(r.SetFiles, valuesSet)...)
+
 	envMap := map[string]string{}
 	for idx, b := range builds {
 		suffix := ""
@@ -459,6 +462,15 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 	}
 
 	return paramToBuildResult, nil
+}
+
+func generateGetFilesArgs(m map[string]string, valuesSet map[string]bool) []string {
+	args := make([]string, 0, len(m))
+	for k, v := range m {
+		valuesSet[v] = true
+		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, v))
+	}
+	return args
 }
 
 func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {

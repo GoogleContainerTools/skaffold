@@ -1079,6 +1079,15 @@
           "x-intellij-html-description": "specifies whether the chart path is remote, or exists on the host filesystem. <code>remote: true</code> implies <code>skipBuildDependencies: true</code>.",
           "default": "false"
         },
+        "setFiles": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "key-value pairs. If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.",
+          "x-intellij-html-description": "key-value pairs. If present, Skaffold will send <code>--set-file</code> flag to Helm CLI and append all pairs after the flag.",
+          "default": "{}"
+        },
         "setValueTemplates": {
           "additionalProperties": {
             "type": "string"
@@ -1148,6 +1157,7 @@
         "version",
         "setValues",
         "setValueTemplates",
+        "setFiles",
         "wait",
         "recreatePods",
         "skipBuildDependencies",
