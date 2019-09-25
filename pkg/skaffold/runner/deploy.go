@@ -29,6 +29,10 @@ import (
 )
 
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
+	if r.runCtx.Opts.RenderOnly {
+		return r.Render(ctx, out, artifacts, "")
+	}
+
 	if config.IsKindCluster(r.runCtx.KubeContext) {
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
 		if err := r.loadImagesInKindNodes(ctx, out, artifacts); err != nil {
