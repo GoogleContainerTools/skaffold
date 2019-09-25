@@ -292,3 +292,30 @@ func TestResetStateOnBuild(t *testing.T) {
 	}
 	testutil.CheckDeepEqual(t, expected, handler.getState())
 }
+
+func TestResetStateOnDeploy(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+	handler = &eventHandler{
+		state: proto.State{
+			BuildState: &proto.BuildState{
+				Artifacts: map[string]string{
+					"image1": Complete,
+				},
+			},
+
+			DeployState:      &proto.DeployState{Status: Complete},
+			StatusCheckState: &proto.StatusCheckState{Status: Complete},
+		},
+	}
+	ResetStateOnDeploy()
+	expected := proto.State{
+		BuildState: &proto.BuildState{
+			Artifacts: map[string]string{
+				"image1": NotStarted,
+			},
+		},
+		DeployState:      &proto.DeployState{Status: NotStarted},
+		StatusCheckState: &proto.StatusCheckState{Status: NotStarted},
+	}
+	testutil.CheckDeepEqual(t, expected, handler.getState())
+}

@@ -50,6 +50,7 @@ func (s *server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (
 	}
 
 	if intent.GetIntent().GetDeploy() {
+		event.ResetStateOnDeploy()
 		go func() {
 			s.deployIntentCallback()
 		}()

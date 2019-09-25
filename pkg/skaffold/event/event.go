@@ -399,3 +399,12 @@ func ResetStateOnBuild() {
 	newState := emptyStateWithArtifacts(builds)
 	handler.setState(newState)
 }
+
+// ResetStateOnDeploy resets the deploy, sync and status check state
+func ResetStateOnDeploy() {
+	newState := handler.getState()
+	newState.DeployState.Status = NotStarted
+	newState.StatusCheckState.Status = NotStarted
+	newState.ForwardedPorts = map[int32]*proto.PortEvent{}
+	handler.setState(newState)
+}
