@@ -292,7 +292,7 @@ func (ev *eventHandler) handle(event *proto.Event) {
 // ResetStateOnBuild resets the build, deploy and sync state
 func ResetStateOnBuild() {
 	builds := map[string]string{}
-	for k, _ := range handler.getState().BuildState.Artifacts {
+	for k := range handler.getState().BuildState.Artifacts {
 		builds[k] = NotStarted
 	}
 	newState := emptyStateWithArtifacts(builds)
