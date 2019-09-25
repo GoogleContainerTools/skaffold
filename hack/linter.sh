@@ -27,9 +27,12 @@ VERBOSE=""
 if [[ "${TRAVIS}" == "true" ]]; then
     # Use less memory on Travis
     # See https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
-    export GOGC=10
+    export GOGC=${GOLINT_GOGC:-8}
     VERBOSE="-v --print-resources-usage"
 fi
 
-golangci-lint run ${VERBOSE} -c ${DIR}/golangci.yml \
+# Limit number of default jobs, to avoid the CI builds running out of memory
+GOLINT_JOBS=${GOLINT_JOBS:-4}
+
+golangci-lint run ${VERBOSE} -c ${DIR}/golangci.yml --concurrency $GOLINT_JOBS \
     | awk '/out of memory/ || /Deadline exceeded/ {failed = 1}; {print}; END {exit failed}'
