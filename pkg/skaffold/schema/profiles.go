@@ -91,7 +91,7 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]s
 				return nil, false, err
 			}
 
-			kubeContext, err := isKubeContext(cond.KubeContext)
+			kubeContext, err := isKubeContext(cond.KubeContext, opts)
 			if err != nil {
 				return nil, false, err
 			}
@@ -140,9 +140,14 @@ func isCommand(command string, opts cfg.SkaffoldOptions) bool {
 	return satisfies(command, opts.Command)
 }
 
-func isKubeContext(kubeContext string) (bool, error) {
+func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
 	if kubeContext == "" {
 		return true, nil
+	}
+
+	// cli flag takes precedence
+	if opts.KubeContext != "" {
+		return satisfies(kubeContext, opts.KubeContext), nil
 	}
 
 	currentKubeConfig, err := kubectx.CurrentConfig()

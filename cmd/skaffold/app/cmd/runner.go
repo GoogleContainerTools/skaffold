@@ -68,15 +68,11 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 
 	config := parsed.(*latest.SkaffoldConfig)
 
-	// Set kube-context before profile application, in order
-	// to process profiles with the correct kube-context.
-	kubectx.UseKubeContext(opts.KubeContext, "", false)
-
 	if err = schema.ApplyProfiles(config, opts); err != nil {
 		return nil, nil, errors.Wrap(err, "applying profiles")
 	}
 
-	kubectx.UseKubeContext(opts.KubeContext, config.Deploy.KubeContext, true)
+	kubectx.UseKubeContext(opts.KubeContext, config.Deploy.KubeContext)
 
 	if err := defaults.Set(config); err != nil {
 		return nil, nil, errors.Wrap(err, "setting default values")
