@@ -128,7 +128,10 @@ func emptyState(build latest.BuildConfig) proto.State {
 	for _, a := range build.Artifacts {
 		builds[a.ImageName] = NotStarted
 	}
+	return emptyStateWithArtifacts(builds)
+}
 
+func emptyStateWithArtifacts(builds map[string]string) proto.State {
 	return proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: builds,
@@ -137,6 +140,9 @@ func emptyState(build latest.BuildConfig) proto.State {
 			Status: NotStarted,
 		},
 		ForwardedPorts: make(map[int32]*proto.PortEvent),
+		StatusCheckState: &proto.StatusCheckState{
+			Status: NotStarted,
+		},
 	}
 }
 
@@ -281,4 +287,14 @@ func (ev *eventHandler) handle(event *proto.Event) {
 	}
 
 	ev.logEvent(*logEntry)
+}
+
+// ResetStateOnBuild resets the build, deploy and sync state
+func ResetStateOnBuild() {
+	builds := map[string]string{}
+	for k, _ := range handler.getState().BuildState.Artifacts {
+		builds[k] = NotStarted
+	}
+	newState := emptyStateWithArtifacts(builds)
+	handler.setState(newState)
 }

@@ -182,3 +182,29 @@ func wait(t *testing.T, condition func() bool) {
 		}
 	}
 }
+
+func TestResetStateOnBuild(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+	handler = &eventHandler{
+		state: proto.State{
+			BuildState: &proto.BuildState{
+				Artifacts: map[string]string{
+					"image1": Complete,
+				},
+			},
+			DeployState:      &proto.DeployState{Status: Complete},
+			StatusCheckState: &proto.StatusCheckState{Status: Complete},
+		},
+	}
+	ResetStateOnBuild()
+	expected := proto.State{
+		BuildState: &proto.BuildState{
+			Artifacts: map[string]string{
+				"image1": NotStarted,
+			},
+		},
+		DeployState:      &proto.DeployState{Status: NotStarted},
+		StatusCheckState: &proto.StatusCheckState{Status: NotStarted},
+	}
+	testutil.CheckDeepEqual(t, expected, handler.getState())
+}
