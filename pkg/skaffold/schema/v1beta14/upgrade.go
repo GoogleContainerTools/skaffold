@@ -28,11 +28,11 @@ import (
 //    buildArgs for Kustomize deployer
 // 2. Removals:
 // 3. No updates
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 
-	pkgutil.CloneThroughJSON(config, &newConfig)
-	if err := util.UpgradePipelines(config, &newConfig, upgradeOnePipeline); err != nil {
+	pkgutil.CloneThroughJSON(c, &newConfig)
+	if err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline); err != nil {
 		return nil, err
 	}
 	newConfig.APIVersion = next.Version

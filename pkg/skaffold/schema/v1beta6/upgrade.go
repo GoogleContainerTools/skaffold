@@ -30,34 +30,34 @@ import (
 // 2. No removals
 // 3. Updates:
 // kaniko becomes cluster
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
-	pkgutil.CloneThroughJSON(config.Deploy, &newDeploy)
+	pkgutil.CloneThroughJSON(c.Deploy, &newDeploy)
 
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
-	if config.Profiles != nil {
-		pkgutil.CloneThroughJSON(config.Profiles, &newProfiles)
+	if c.Profiles != nil {
+		pkgutil.CloneThroughJSON(c.Profiles, &newProfiles)
 	}
 
 	// Update profile if kaniko build exists
-	for i, p := range config.Profiles {
+	for i, p := range c.Profiles {
 		upgradeKanikoBuild(p.Build, &newProfiles[i].Build)
 	}
 
 	// convert Kaniko if needed
 	var newBuild next.BuildConfig
-	pkgutil.CloneThroughJSON(config.Build, &newBuild)
-	upgradeKanikoBuild(config.Build, &newBuild)
+	pkgutil.CloneThroughJSON(c.Build, &newBuild)
+	upgradeKanikoBuild(c.Build, &newBuild)
 
 	// convert Test (should be the same)
 	var newTest []*next.TestCase
-	pkgutil.CloneThroughJSON(config.Test, &newTest)
+	pkgutil.CloneThroughJSON(c.Test, &newTest)
 
 	return &next.SkaffoldConfig{
 		APIVersion: next.Version,
-		Kind:       config.Kind,
+		Kind:       c.Kind,
 		Build:      newBuild,
 		Test:       newTest,
 		Deploy:     newDeploy,

@@ -28,10 +28,10 @@ import (
 //    - GitTagger variants `TreeSha` and `AbbrevTreeSha`
 // 2. No removals
 // 3. No Updates
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 
-	pkgutil.CloneThroughJSON(config, &newConfig)
+	pkgutil.CloneThroughJSON(c, &newConfig)
 	newConfig.APIVersion = next.Version
 
 	return &newConfig, nil

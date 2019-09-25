@@ -194,19 +194,19 @@ func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) (
 	return dsts, nil
 }
 
-func (k *podSyncer) Sync(ctx context.Context, s *Item) error {
-	if len(s.Copy) > 0 {
-		logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
+func (s *podSyncer) Sync(ctx context.Context, item *Item) error {
+	if len(item.Copy) > 0 {
+		logrus.Infoln("Copying files:", item.Copy, "to", item.Image)
 
-		if err := Perform(ctx, s.Image, s.Copy, k.copyFileFn, k.namespaces); err != nil {
+		if err := Perform(ctx, item.Image, item.Copy, s.copyFileFn, s.namespaces); err != nil {
 			return errors.Wrap(err, "copying files")
 		}
 	}
 
-	if len(s.Delete) > 0 {
-		logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
+	if len(item.Delete) > 0 {
+		logrus.Infoln("Deleting files:", item.Delete, "from", item.Image)
 
-		if err := Perform(ctx, s.Image, s.Delete, k.deleteFileFn, k.namespaces); err != nil {
+		if err := Perform(ctx, item.Image, item.Delete, s.deleteFileFn, s.namespaces); err != nil {
 			return errors.Wrap(err, "deleting files")
 		}
 	}
