@@ -24,6 +24,8 @@ go run ${DIR}/release_notes/listpullreqs.go
 # sync files from integration examples to examples/
 rm -rf ${EXAMPLES_DIR} && rm -rf ${INTEGRATION_EXAMPLES_DIR}/bazel/bazel-* && cp -r ${INTEGRATION_EXAMPLES_DIR} ${EXAMPLES_DIR} && rm -rf ${EXAMPLES_DIR}/test-*
 
+go run hack/versions/cmd/mark_latest_released/main.go
+
 echo
 echo "Huge thanks goes out to all of our contributors for this release:"
 echo
