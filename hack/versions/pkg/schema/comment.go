@@ -30,13 +30,13 @@ import (
 const releasedComment = `// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.`
 const unreleasedComment = `// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.`
 
-// historicalVersionComments is used to recognize whether an existing comment is a "release comment" or not.
-// If you want to change a (say releasedComment) comment historically on all files, then:
-// 1.) add the current version to `historicalVersionComments`
-// 2.) change the text of releasedComment (or unreleasedComment)
+// recognizedComments is used to recognize whether an existing comment is a "release comment" or not.
+// If you want to change releasedComment (or unreleasedComment) historically on all files, then:
+// 1.) add the old version to `recognizedComments`
+// 2.) change the text of `releasedComment` (or `unreleasedComment`)
 // 3.) run `go run hack/versions/cmd/update_comments/main.go`
-// 4.) remove the updated version from `historicalVersionComments`
-var historicalVersionComments = []string{
+// 4.) remove the old version from `recognizedComments`
+var recognizedComments = []string{
 	releasedComment,
 	unreleasedComment,
 }
@@ -80,7 +80,7 @@ func updateVersionComment(origFile string, released bool) ([]byte, error) {
 		return printAst(fset, astA)
 	}
 
-	if isVersionComment(firstComment) {
+	if isRecognizedComment(firstComment) {
 		firstComment.Text = commentString
 		return printAst(fset, astA)
 	}
@@ -90,8 +90,8 @@ func updateVersionComment(origFile string, released bool) ([]byte, error) {
 	return printAst(fset, astA)
 }
 
-func isVersionComment(firstComment *ast.Comment) bool {
-	for _, comment := range historicalVersionComments {
+func isRecognizedComment(firstComment *ast.Comment) bool {
+	for _, comment := range recognizedComments {
 		if comment == firstComment.Text {
 			return true
 		}

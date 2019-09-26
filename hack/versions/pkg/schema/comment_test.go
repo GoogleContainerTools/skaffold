@@ -58,7 +58,7 @@ var configWithNoComment = fmt.Sprintf(configFileTemplate, "")
 var configWithReleasedComment = fmt.Sprintf(configFileTemplate, releasedComment+"\n")
 var configWithUnreleasedComment = fmt.Sprintf(configFileTemplate, unreleasedComment+"\n")
 
-func TestAddComment(t *testing.T) {
+func TestUpdateComments(t *testing.T) {
 
 	tcs := []struct {
 		name     string
