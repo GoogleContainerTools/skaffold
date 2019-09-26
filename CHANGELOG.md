@@ -3,7 +3,7 @@
 *Note*: This release comes with a new config version `v1beta15`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
         See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
-        The env vars `DIGEST`, `DIGEST_HEX` and `DIGEST_ALGO` are now fail in `envTemplate` fields. 
+        The env vars `DIGEST`, `DIGEST_HEX` and `DIGEST_ALGO` now fail if found in `envTemplate` fields. 
 
 New Features:
 
