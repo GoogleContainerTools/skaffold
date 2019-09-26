@@ -226,7 +226,6 @@ func (m *mockResource) IsStatusCheckComplete() bool {
 func TestPollResourceStatus(t *testing.T) {
 	tests := []struct {
 		description   string
-		pollTime      int
 		dummyResource *mockResource
 		isInErr       bool
 	}{
