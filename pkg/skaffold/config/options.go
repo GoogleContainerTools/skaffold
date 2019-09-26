@@ -49,6 +49,7 @@ type SkaffoldOptions struct {
 	AutoBuild          bool
 	AutoSync           bool
 	AutoDeploy         bool
+	RenderOnly         bool
 	PortForward        PortForwardOptions
 	CustomTag          string
 	Namespace          string

@@ -17,6 +17,7 @@ Pipeline building blocks for CI/CD:
 * [skaffold build](#skaffold-build) - to just build and tag your image(s)
 * [skaffold deploy](#skaffold-deploy) - to deploy the given image(s)
 * [skaffold delete](#skaffold-delete) - to cleanup the deployed artifacts
+* [skaffold render](#skaffold-render) - build and tag images, and output templated kubernetes manifests
 
 Getting started with a new project:
 
@@ -71,6 +72,7 @@ Pipeline building blocks for CI/CD:
   build             Build the artifacts
   deploy            Deploy pre-built artifacts
   delete            Delete the deployed application
+  render            Perform all image builds, and output rendered kubernetes manifests
 
 Getting started with a new project:
   init              Generate configuration for deploying an application
@@ -446,6 +448,7 @@ Options:
       --no-prune-children=false: Skip removing layers reused by Skaffold
       --port-forward=false: Port-forward exposed container ports within pods
   -p, --profile=[]: Activate profiles by name
+      --render-only=false: Print rendered kubernetes manifests instead of deploying them
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
@@ -480,6 +483,7 @@ Env vars:
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_RENDER_ONLY` (same as `--render-only`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
@@ -580,6 +584,37 @@ The following options can be passed to any command:
 
 ```
 
+### skaffold render
+
+Perform all image builds, and output rendered kubernetes manifests
+
+```
+
+
+Options:
+  -d, --default-repo='': Default repository value (overrides global config)
+  -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
+      --loud=false: Show the build logs and output
+  -n, --namespace='': Run deployments in the specified namespace
+      --output='': file to write rendered manifests to
+  -p, --profile=[]: Activate profiles by name
+
+Usage:
+  skaffold render [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+Env vars:
+
+* `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_LOUD` (same as `--loud`)
+* `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_OUTPUT` (same as `--output`)
+* `SKAFFOLD_PROFILE` (same as `--profile`)
+
 ### skaffold run
 
 Run a pipeline
@@ -610,6 +645,7 @@ Options:
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
   -p, --profile=[]: Activate profiles by name
+      --render-only=false: Print rendered kubernetes manifests instead of deploying them
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
@@ -641,6 +677,7 @@ Env vars:
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_RENDER_ONLY` (same as `--render-only`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
