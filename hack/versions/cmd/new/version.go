@@ -24,6 +24,8 @@ import (
 	"regexp"
 	"strings"
 
+	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
+
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
@@ -71,6 +73,8 @@ func main() {
 	// Latest uses the new version
 	sed(path("latest", "config.go"), current, next)
 
+	hackschema.UpdateVersionComment(path(current, "config.go"), true)
+
 	// Update skaffold.yaml in integration tests
 	walk("integration", func(path string, info os.FileInfo) {
 		if info.Name() == "skaffold.yaml" {
@@ -91,6 +95,7 @@ func main() {
 
 	// Update the docs with the new version
 	sed("docs/config.toml", current, next)
+
 }
 
 func makeSchemaDir(new string) {
