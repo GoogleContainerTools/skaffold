@@ -60,22 +60,24 @@ Once you've done this, clone your fork to your local machine:
 
 Some changes to the skaffold code require a change to the skaffold config. These changes require a few extra steps:
 
-* Check to see what the latest config version was at the time of the last release. The easiest way to do this is to view the skaffold source on github at the last released tag.
+* Open the latest Config at [pkg/skaffold/schema/latest/config.go](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/config.go#L23) and inspect the comment at [L13](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/config.go#L23)
+* If the line mentions the config version is not released, proceed making your changes.
+  ```
+  // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+  ```
 
-* Check the current config version in the code. This can be found in `pkg/skaffold/schema/latest/config.go`: look for something like
+* **If the line mentions** the config version is released then, 
+  ```
+  // !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+  ```
+  
+  * Run `./hack/new_version.sh` to create a new version.
 
-```golang
-const Version string = "skaffold/v1betaXX"
-```
-* If the config versions are different, do nothing. Somebody has already bumped the config version for this release cycle.
-
-* **If the config versions are the same**:
-
-  * Run `./hack/new_version.sh` to freeze the current config version and cut a new version.
-
+  * Run `make test` to verify changes.
+  
   * Commit these generated changes, and submit a PR.
 
-Once you've done this, continue making your changes locally, including the new config change.
+Once you've done this, merge or rebase your development branch with config changes, including the new config change.
 **Any new config changes belong in pkg/skaffold/schema/latest/config.go. Do not edit the older config versions.**
 
 * Be sure and update the documentation in `pkg/skaffold/schema/<previous_config_version>/upgrade.go` with any additions, removals, or updates you make to the config.
