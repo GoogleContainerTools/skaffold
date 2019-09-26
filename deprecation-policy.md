@@ -95,10 +95,3 @@ Commands and their flags are subject to the deprecation policy based on the foll
 
 03/15/2019: With release v0.25.0 we mark for deprecation the `flags` field in kaniko (`KanikoArtifact.AdditionalFlags`) , instead Kaniko's additional flags will now be represented as unique fields under `kaniko` per artifact (`KanikoArtifact` type).
 This flag will will be removed earliest 06/15/2019.
-
-02/15/2019: With  release v0.23.0 we mark for deprecation the following env variables in the `envTemplate` tagger:
-- `DIGEST`
-- `DIGEST_ALGO`
-- `DIGEST_HEX`
-Currently these variables resolve to `_DEPRECATED_<envvar>_`, and the new tagging mechanism adds a digest to the image name thus it shouldn't break existing configurations.
-This backward compatibility behavior will be removed earliest 05/14/2019.
