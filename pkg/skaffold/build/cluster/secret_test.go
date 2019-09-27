@@ -94,12 +94,13 @@ func TestExistingSecretNotFound(t *testing.T) {
 		// should fail to retrieve an existing secret
 		_, err = builder.setupPullSecret(ioutil.Discard)
 
-		t.CheckErrorContains("checking for existing kaniko secret", err)
+		t.CheckErrorContains("checking for existing secret", err)
 	})
 }
 
 func TestExistingSecret(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().Touch("secret.json")
 		t.Override(&pkgkubernetes.Client, func() (kubernetes.Interface, error) {
 			return fake.NewSimpleClientset(&v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -115,6 +116,7 @@ func TestExistingSecret(t *testing.T) {
 						Cluster: &latest.ClusterDetails{
 							Timeout:        "20m",
 							PullSecretName: "kaniko-secret",
+							PullSecret:     tmpDir.Path("secret.json"),
 						},
 					},
 				},

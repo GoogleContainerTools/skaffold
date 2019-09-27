@@ -27,27 +27,33 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 	if b.PullSecret == "" && b.PullSecretName == "" {
 		return func() {}, nil
 	}
-	return recreate(out, b.Namespace, b.PullSecretName, b.PullSecret, constants.DefaultKanikoSecretName)
+	return reCreateSecret(out, b.Namespace, b.PullSecretName, b.PullSecret, constants.DefaultKanikoSecretName)
 }
 
 func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 	if b.DockerConfig == nil {
 		return func() {}, nil
 	}
-
-	return recreate(out, b.Namespace, b.DockerConfig.SecretName, b.DockerConfig.Path, "config.json")
+	return reCreateSecret(out, b.Namespace, b.DockerConfig.SecretName, b.DockerConfig.Path, "config.json")
 }
 
-func recreate(out io.Writer, ns string, secretName string, secretPath string, secretkey string) (func(), error) {
+func reCreateSecret(out io.Writer, ns string, secretName string, secretPath string, secretkey string) (func(), error) {
 
-	secrets, err := getSecret(ns, secretName, secretPath)
+	client, err := kubernetes.Client()
 	if err != nil {
+		return nil, errors.Wrap(err, "getting kubernetes client")
+	}
+
+	secrets := client.CoreV1().Secrets(ns)
+
+	if err := deleteSecret(secrets, secretName, secretPath); err != nil {
 		return nil, err
 	}
 
@@ -78,29 +84,22 @@ func recreate(out io.Writer, ns string, secretName string, secretPath string, se
 	}, nil
 }
 
-func getSecret(ns string, secretName string, secretPath string) (*v1.Secret, error) {
-	client, err := kubernetes.Client()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting kubernetes client")
-	}
-
-	secrets := client.CoreV1().Secrets(ns)
+func deleteSecret(secrets corev1.SecretInterface, secretName string, secretPath string) error {
 
 	if secretPath == "" {
 		logrus.Debug("No secret specified. Checking for one in the cluster.")
 
 		if _, err := secrets.Get(secretName, metav1.GetOptions{}); err != nil {
-			return nil, errors.Wrap(err, "checking for existing secret")
+			return errors.Wrap(err, "checking for existing secret")
 		}
-
-		return func() {}, nil
+		return nil
 	}
 
 	if _, err := secrets.Get(secretName, metav1.GetOptions{}); err == nil {
 		logrus.Infof("Deleting existing %s secret", secretName)
 		if err := secrets.Delete(secretName, &metav1.DeleteOptions{}); err != nil {
-			logrus.Warnf("error deleting secret %s, %s", secretName, err)
+			return errors.Wrapf(err, "error deleting secret %s, %s", secretName, err)
 		}
 	}
-	return secrets
+	return nil
 }
