@@ -728,6 +728,14 @@ func TestGetImageSetValueFromHelmStrategy(t *testing.T) {
 			},
 			shouldErr: true,
 		},
+		{
+			description: "Helm set values using digest",
+			valueName:   "image",
+			tag:         "skaffold-helm:stable@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f87876677c5cb2",
+			expected:    "image.repository=skaffold-helm,image.tag=stable@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f87876677c5cb2",
+			strategy:    &latest.HelmConventionConfig{},
+			shouldErr:   false,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
