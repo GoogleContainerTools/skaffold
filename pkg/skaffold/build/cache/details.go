@@ -25,6 +25,7 @@ import (
 
 type cacheDetails interface {
 	Hash() string
+	Location() string
 }
 
 // Failed: couldn't lookup cache
@@ -33,6 +34,10 @@ type failed struct {
 }
 
 func (d failed) Hash() string {
+	return ""
+}
+
+func (d failed) Location() string {
 	return ""
 }
 
@@ -45,13 +50,22 @@ func (d needsBuilding) Hash() string {
 	return d.hash
 }
 
+func (d needsBuilding) Location() string {
+	return ""
+}
+
 // Found in cache
 type found struct {
-	hash string
+	hash     string
+	location string
 }
 
 func (d found) Hash() string {
 	return d.hash
+}
+
+func (d found) Location() string {
+	return d.location
 }
 
 type needsTagging interface {
@@ -60,13 +74,18 @@ type needsTagging interface {
 
 // Found locally with wrong tag. Needs retagging
 type needsLocalTagging struct {
-	hash    string
-	tag     string
-	imageID string
+	hash     string
+	tag      string
+	imageID  string
+	location string
 }
 
 func (d needsLocalTagging) Hash() string {
 	return d.hash
+}
+
+func (d needsLocalTagging) Location() string {
+	return d.location
 }
 
 func (d needsLocalTagging) Tag(ctx context.Context, c *cache) error {
@@ -75,13 +94,18 @@ func (d needsLocalTagging) Tag(ctx context.Context, c *cache) error {
 
 // Found remotely with wrong tag. Needs retagging
 type needsRemoteTagging struct {
-	hash   string
-	tag    string
-	digest string
+	hash     string
+	tag      string
+	digest   string
+	location string
 }
 
 func (d needsRemoteTagging) Hash() string {
 	return d.hash
+}
+
+func (d needsRemoteTagging) Location() string {
+	return d.location
 }
 
 func (d needsRemoteTagging) Tag(ctx context.Context, c *cache) error {
@@ -91,13 +115,18 @@ func (d needsRemoteTagging) Tag(ctx context.Context, c *cache) error {
 
 // Found locally. Needs pushing
 type needsPushing struct {
-	hash    string
-	tag     string
-	imageID string
+	hash     string
+	tag      string
+	imageID  string
+	location string
 }
 
 func (d needsPushing) Hash() string {
 	return d.hash
+}
+
+func (d needsPushing) Location() string {
+	return d.location
 }
 
 func (d needsPushing) Push(ctx context.Context, out io.Writer, c *cache) error {

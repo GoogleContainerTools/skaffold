@@ -82,12 +82,12 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 
 	// Image exists locally with the same tag
 	if idForTag == entry.ID {
-		return found{hash: hash}
+		return found{hash: hash, location: "locally"}
 	}
 
 	// Image exists locally with a different tag
 	if c.client.ImageExists(ctx, entry.ID) {
-		return needsLocalTagging{hash: hash, tag: tag, imageID: entry.ID}
+		return needsLocalTagging{hash: hash, tag: tag, imageID: entry.ID, location: "locally"}
 	}
 
 	return needsBuilding{hash: hash}
@@ -97,7 +97,7 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 	if remoteDigest, err := docker.RemoteDigest(tag, c.insecureRegistries); err == nil {
 		// Image exists remotely with the same tag and digest
 		if remoteDigest == entry.Digest {
-			return found{hash: hash}
+			return found{hash: hash, location: "remote"}
 		}
 	}
 
@@ -105,13 +105,13 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 	fqn := tag + "@" + entry.Digest // Actual tag will be ignored but we need the registry and the digest part of it.
 	if remoteDigest, err := docker.RemoteDigest(fqn, c.insecureRegistries); err == nil {
 		if remoteDigest == entry.Digest {
-			return needsRemoteTagging{hash: hash, tag: tag, digest: entry.Digest}
+			return needsRemoteTagging{hash: hash, tag: tag, digest: entry.Digest, location: "remote"}
 		}
 	}
 
 	// Image exists locally
 	if entry.ID != "" && c.client != nil && c.client.ImageExists(ctx, entry.ID) {
-		return needsPushing{hash: hash, tag: tag, imageID: entry.ID}
+		return needsPushing{hash: hash, tag: tag, imageID: entry.ID, location: "remote"}
 	}
 
 	return needsBuilding{hash: hash}
