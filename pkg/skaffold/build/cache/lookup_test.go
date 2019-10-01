@@ -80,7 +80,7 @@ func TestLookupLocal(t *testing.T) {
 				"hash": {ID: "imageID"},
 			},
 			api:      (&testutil.FakeAPIClient{}).Add("tag", "imageID"),
-			expected: found{hash: "hash", location: "locally"},
+			expected: found{hash: "hash"},
 		},
 		{
 			description: "hit but different tag",
@@ -89,7 +89,7 @@ func TestLookupLocal(t *testing.T) {
 				"hash": {ID: "imageID"},
 			},
 			api:      (&testutil.FakeAPIClient{}).Add("tag", "otherImageID").Add("othertag", "imageID"),
-			expected: needsLocalTagging{hash: "hash", tag: "tag", imageID: "imageID", location: "locally"},
+			expected: needsLocalTagging{hash: "hash", tag: "tag", imageID: "imageID"},
 		},
 		{
 			description: "hit but imageID not found",
@@ -147,7 +147,7 @@ func TestLookupRemote(t *testing.T) {
 			cache: map[string]ImageDetails{
 				"hash": {Digest: "digest"},
 			},
-			expected: found{hash: "hash", location: "remote"},
+			expected: found{hash: "hash"},
 		},
 		{
 			description: "hit with different tag",
@@ -155,7 +155,7 @@ func TestLookupRemote(t *testing.T) {
 			cache: map[string]ImageDetails{
 				"hash": {Digest: "otherdigest"},
 			},
-			expected: needsRemoteTagging{hash: "hash", tag: "tag", digest: "otherdigest", location: "remote"},
+			expected: needsRemoteTagging{hash: "hash", tag: "tag", digest: "otherdigest"},
 		},
 		{
 			description: "found locally",
@@ -164,7 +164,7 @@ func TestLookupRemote(t *testing.T) {
 				"hash": {ID: "imageID"},
 			},
 			api:      (&testutil.FakeAPIClient{}).Add("tag", "imageID"),
-			expected: needsPushing{hash: "hash", tag: "tag", imageID: "imageID", location: "remote"},
+			expected: needsPushing{hash: "hash", tag: "tag", imageID: "imageID"},
 		},
 		{
 			description: "not found",

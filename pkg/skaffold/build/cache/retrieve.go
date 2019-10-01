@@ -87,11 +87,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			}
 
 		default:
-			if c.imagesAreLocal {
-				color.Green.Fprintln(out, "Found Locally")
-			} else {
-				color.Green.Fprintln(out, "Found Remotely")
-			}
+			color.Green.Fprintln(out, "Found")
 		}
 
 		// Image is already built
