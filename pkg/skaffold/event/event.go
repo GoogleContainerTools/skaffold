@@ -146,9 +146,6 @@ func emptyStateWithArtifacts(builds map[string]string) proto.State {
 			Resources: map[string]string{},
 		},
 		ForwardedPorts: make(map[int32]*proto.PortEvent),
-		StatusCheckState: &proto.StatusCheckState{
-			Status: NotStarted,
-		},
 	}
 }
 
