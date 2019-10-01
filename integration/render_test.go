@@ -95,6 +95,52 @@ spec:
 
 `,
 		},
+		{
+			description: "two artifacts, combined manifests",
+			builds: []build.Artifact{
+				{
+					ImageName: "gcr.io/project/image1",
+					Tag:       "gcr.io/project/image1:tag1",
+				},
+				{
+					ImageName: "gcr.io/project/image2",
+					Tag:       "gcr.io/project/image2:tag2",
+				},
+			},
+			input: `apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - image: gcr.io/project/image1
+    name: image1
+---
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - image: gcr.io/project/image2
+    name: image2
+`,
+			expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1:tag1
+    name: image1
+
+apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image2:tag2
+    name: image2
+
+`,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
