@@ -199,7 +199,7 @@ func validateJibPluginTypes(artifacts []*latest.Artifact) (errs []error) {
 		if t == "maven" || t == "gradle" {
 			continue
 		}
-		errs = append(errs, fmt.Errorf("artifact %s has invalid plugin type '%s'", a.ImageName, t))
+		errs = append(errs, fmt.Errorf("artifact %s has invalid Jib plugin type '%s'", a.ImageName, t))
 	}
 	return
 }
