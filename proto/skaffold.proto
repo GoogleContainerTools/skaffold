@@ -39,6 +39,7 @@ message DeployState {
 // StatusCheckState contains the state of status check of current deployed resources.
 message StatusCheckState {
   string status = 1;
+  map<string, string> resources = 2;
 }
 
 message Event {
