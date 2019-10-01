@@ -1229,11 +1229,17 @@
           "type": "string",
           "description": "selects which sub-project to build for multi-module builds.",
           "x-intellij-html-description": "selects which sub-project to build for multi-module builds."
+        },
+        "type": {
+          "type": "string",
+          "description": "the Jib builder type; normally determined automatically. Valid types are: `maven`: for Maven. `gradle`: for Gradle.",
+          "x-intellij-html-description": "the Jib builder type; normally determined automatically. Valid types are: <code>maven</code>: for Maven. <code>gradle</code>: for Gradle."
         }
       },
       "preferredOrder": [
         "project",
-        "args"
+        "args",
+        "type"
       ],
       "additionalProperties": false,
       "description": "*alpha* builds images using the [Jib plugins for Maven and Gradle](https://github.com/GoogleContainerTools/jib/).",

@@ -771,5 +771,5 @@ type JibArtifact struct {
 	Flags []string `yaml:"args,omitempty"`
 
 	// Type the Jib builder type (internal: see jib.PluginType)
-	Type int `yaml:"-"`
+	Type string `yaml:"type,omitempty"`
 }

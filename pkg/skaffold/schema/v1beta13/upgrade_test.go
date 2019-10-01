@@ -100,9 +100,11 @@ build:
     jib:
       args: ['-v', '--activate-profiles', 'prof']
       project: dir
+      type: maven
   - image: gcr.io/k8s-skaffold/jib-gradle
     jib:
       args: ['-v']
+      type: gradle
   googleCloudBuild:
     projectId: test-project
 test:
