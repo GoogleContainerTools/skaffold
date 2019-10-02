@@ -276,7 +276,14 @@ func TestResetStateOnBuild(t *testing.T) {
 					"image1": Complete,
 				},
 			},
-			DeployState:      &proto.DeployState{Status: Complete},
+			DeployState: &proto.DeployState{Status: Complete},
+			ForwardedPorts: map[int32]*proto.PortEvent{
+				2001: {
+					LocalPort:  2000,
+					RemotePort: 2001,
+					PodName:    "test/pod",
+				},
+			},
 			StatusCheckState: &proto.StatusCheckState{Status: Complete},
 		},
 	}
@@ -302,8 +309,14 @@ func TestResetStateOnDeploy(t *testing.T) {
 					"image1": Complete,
 				},
 			},
-
-			DeployState:      &proto.DeployState{Status: Complete},
+			DeployState: &proto.DeployState{Status: Complete},
+			ForwardedPorts: map[int32]*proto.PortEvent{
+				2001: {
+					LocalPort:  2000,
+					RemotePort: 2001,
+					PodName:    "test/pod",
+				},
+			},
 			StatusCheckState: &proto.StatusCheckState{Status: Complete},
 		},
 	}
@@ -311,7 +324,7 @@ func TestResetStateOnDeploy(t *testing.T) {
 	expected := proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: map[string]string{
-				"image1": NotStarted,
+				"image1": Complete,
 			},
 		},
 		DeployState:      &proto.DeployState{Status: NotStarted},
