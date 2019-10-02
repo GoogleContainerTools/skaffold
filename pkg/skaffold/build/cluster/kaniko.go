@@ -45,7 +45,7 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	}
 	defer s.Cleanup(ctx)
 
-	args, err := args(artifact.KanikoArtifact, context, tag)
+	args, err := args(artifact.KanikoArtifact, context, tag, b.insecureRegistries)
 	if err != nil {
 		return "", errors.Wrap(err, "building args list")
 	}
@@ -85,7 +85,7 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
 
-func args(artifact *latest.KanikoArtifact, context, tag string) ([]string, error) {
+func args(artifact *latest.KanikoArtifact, context, tag string, insecureRegistries map[string]bool) ([]string, error) {
 	// Create pod spec
 	args := []string{
 		"--dockerfile", artifact.DockerfilePath,
@@ -137,6 +137,10 @@ func args(artifact *latest.KanikoArtifact, context, tag string) ([]string, error
 
 	if artifact.Reproducible {
 		args = append(args, "--reproducible")
+	}
+
+	for reg := range insecureRegistries {
+		args = append(args, "--insecure-registry", reg)
 	}
 
 	return args, nil
