@@ -91,7 +91,7 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 
 	// Add secret for pull secret
 	if clusterDetails.PullSecretName != "" {
-		addSecretVolume(pod, constants.DefaultKanikoSecretName, "/secret", clusterDetails.PullSecretName)
+		addSecretVolume(pod, constants.DefaultKanikoSecretName, clusterDetails.PullSecretMountPath, clusterDetails.PullSecretName)
 	}
 
 	// Add host path volume for cache

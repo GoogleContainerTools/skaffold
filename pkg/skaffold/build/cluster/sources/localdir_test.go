@@ -55,9 +55,10 @@ func TestPod(t *testing.T) {
 			},
 		},
 		clusterDetails: &latest.ClusterDetails{
-			Namespace:      "ns",
-			PullSecretName: "secret",
-			Resources:      reqs,
+			Namespace:           "ns",
+			PullSecretName:      "secret",
+			PullSecretMountPath: "/secret",
+			Resources:           reqs,
 		},
 	}
 

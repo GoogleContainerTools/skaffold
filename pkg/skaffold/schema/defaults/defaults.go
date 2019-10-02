@@ -217,6 +217,7 @@ func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
 		}
 		cluster.PullSecret = absPath
 		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName)
+		cluster.PullSecretMountPath = valueOrDefault(cluster.PullSecretMountPath, constants.DefaultKanikoSecretMountPath)
 		return nil
 	}
 	return nil
