@@ -110,8 +110,8 @@ func TestArgs(t *testing.T) {
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 			},
-			insecureRegistries: map[string]bool{"localhost:4000": true, "localhost:5000": true},
-			expectedArgs:       []string{"--insecure-registry", "localhost:4000", "--insecure-registry", "localhost:5000"},
+			insecureRegistries: map[string]bool{"localhost:4000": true},
+			expectedArgs:       []string{"--insecure-registry", "localhost:4000"},
 		},
 	}
 	for _, test := range tests {
