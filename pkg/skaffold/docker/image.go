@@ -218,6 +218,11 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 		return "", errors.Wrapf(err, "getting auth config for %s", ref)
 	}
 
+	// Quick check if the image was already pushed (ignore any error).
+	if alreadyPushed, digest, err := l.isAlreadyPushed(ctx, ref, registryAuth); alreadyPushed && err == nil {
+		return digest, nil
+	}
+
 	rc, err := l.apiClient.ImagePush(ctx, ref, types.ImagePushOptions{
 		RegistryAuth: registryAuth,
 	})
@@ -254,6 +259,34 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	}
 
 	return digest, nil
+}
+
+// isAlreadyPushed quickly checks if the local image has already been pushed.
+func (l *localDaemon) isAlreadyPushed(ctx context.Context, ref, registryAuth string) (bool, string, error) {
+	localImage, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
+	if err != nil {
+		return false, "", err
+	}
+
+	if len(localImage.RepoDigests) == 0 {
+		return false, "", nil
+	}
+
+	remoteImage, err := l.apiClient.DistributionInspect(ctx, ref, registryAuth)
+	if err != nil {
+		return false, "", err
+	}
+	digest := remoteImage.Descriptor.Digest.String()
+
+	for _, repoDigest := range localImage.RepoDigests {
+		if parsed, err := ParseReference(repoDigest); err == nil {
+			if parsed.Digest == digest {
+				return true, parsed.Digest, nil
+			}
+		}
+	}
+
+	return false, "", nil
 }
 
 // Pull pulls an image reference from a registry.
