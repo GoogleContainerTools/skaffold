@@ -235,11 +235,7 @@ func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []bu
 		manifestOut = bufio.NewWriter(f)
 	}
 
-	for _, m := range manifests {
-		if _, err := fmt.Fprintln(manifestOut, string(m)); err != nil {
-			return errors.Wrap(err, "writing manifests")
-		}
-	}
+	fmt.Fprintln(manifestOut, manifests.String())
 	return nil
 }
 
