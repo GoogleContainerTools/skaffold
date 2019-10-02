@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -139,5 +140,21 @@ func args(artifact *latest.KanikoArtifact, context, tag string) ([]string, error
 		args = append(args, "--reproducible")
 	}
 
+	if artifact.SkipTLS {
+		reg, err := artifactRegistry(tag)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, "--skip-tls-verify-registry", reg)
+	}
+
 	return args, nil
+}
+
+func artifactRegistry(i string) (string, error) {
+	ref, err := name.ParseReference(i)
+	if err != nil {
+		return "", err
+	}
+	return ref.Context().RegistryStr(), nil
 }

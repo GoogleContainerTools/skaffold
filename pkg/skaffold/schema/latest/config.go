@@ -725,6 +725,9 @@ type KanikoArtifact struct {
 
 	// Reproducible is used to strip timestamps out of the built image.
 	Reproducible bool `yaml:"reproducible,omitempty"`
+
+	// SkipTLS skips TLS verification when pulling and pushing the image.
+	SkipTLS bool `yaml:"skipTLS,omitempty"`
 }
 
 // DockerArtifact *beta* describes an artifact built from a Dockerfile,
