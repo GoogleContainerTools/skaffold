@@ -347,8 +347,10 @@ func TestBuildKanikoInsecureRegistry(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+
+	// run on GCP as this test requires a load balancer
+	if !ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is gcp only")
 	}
 
 	ns, k8sClient, cleanupNs := SetupNamespace(t)
