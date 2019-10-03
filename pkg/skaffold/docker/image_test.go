@@ -76,6 +76,25 @@ func TestPush(t *testing.T) {
 	}
 }
 
+func TestDontPushAlreadyPushed(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&DefaultAuthHelper, testAuthHelper{})
+
+		api := &testutil.FakeAPIClient{}
+		api.Add("image", "sha256:imageIDabcab")
+		localDocker := NewLocalDaemon(api, nil, false, nil)
+
+		digest, err := localDocker.Push(context.Background(), ioutil.Discard, "image")
+		t.CheckErrorAndDeepEqual(false, err, "sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
+
+		// Images already pushed don't need being pushed.
+		api.ErrImagePush = true
+
+		digest, err = localDocker.Push(context.Background(), ioutil.Discard, "image")
+		t.CheckErrorAndDeepEqual(false, err, "sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
+	})
+}
+
 func TestBuild(t *testing.T) {
 	tests := []struct {
 		description   string

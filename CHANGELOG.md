@@ -1,8 +1,89 @@
+# v0.39.0 Release - 09/26/2019
+
+*Note*: This release comes with a new config version `v1beta15`.
+        To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
+        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        The env vars `DIGEST`, `DIGEST_HEX` and `DIGEST_ALGO` now fail if found in `envTemplate` fields. 
+
+Highlights: 
+
+* We now include build args in the artifact cache hash generation [#2926](https://github.com/GoogleContainerTools/skaffold/pull/2926) 
+* Skaffold now passes the `--set-files` argument to the helm CLI: you can define `helm.release.setFiles` in the skaffold.yaml
+* Skaffold now passes the `--build-args` arguments to kustomize: you can define `deploy.kustomize.buildArgs` in the skaffold.yaml
+
+New Features:
+
+* Optional pull secret for Kaniko [#2910](https://github.com/GoogleContainerTools/skaffold/pull/2910)
+* Add Jib-Gradle support for Kotlin buildscripts [#2914](https://github.com/GoogleContainerTools/skaffold/pull/2914)
+* Add graceful termination for custom builders [#2886](https://github.com/GoogleContainerTools/skaffold/pull/2886)
+* Add docs and tutorial for buildpacks [#2879](https://github.com/GoogleContainerTools/skaffold/pull/2879)
+* kustomize build args [#2871](https://github.com/GoogleContainerTools/skaffold/pull/2871)
+* Add `setFiles` to `HelmDeploy.HelmRelease` skaffold config which will be add `--set-files` argument to helm CLI [#2895](https://github.com/GoogleContainerTools/skaffold/pull/2895)
+
+Bug Fixes:
+
+* fix flake TestGetSetFileValues [#2936](https://github.com/GoogleContainerTools/skaffold/pull/2936)
+* Fix helm deployer with imageStrategy helm and fix test runner [#2887](https://github.com/GoogleContainerTools/skaffold/pull/2887)
+* Include build args in cache hash generation [#2926](https://github.com/GoogleContainerTools/skaffold/pull/2926)
+* Fix test flake TestPollResourceStatus [#2907](https://github.com/GoogleContainerTools/skaffold/pull/2907)
+* Fix build script for doc generation. [#2884](https://github.com/GoogleContainerTools/skaffold/pull/2884)
+
+Updates & Refactors:
+
+* Create new v1beta15 config [#2881](https://github.com/GoogleContainerTools/skaffold/pull/2881)
+* adding release comment management to all config.go [#2917](https://github.com/GoogleContainerTools/skaffold/pull/2917)
+* Change final status check error message to be more concise. [#2930](https://github.com/GoogleContainerTools/skaffold/pull/2930)
+* Add unimplemented 'skaffold render' command [#2942](https://github.com/GoogleContainerTools/skaffold/pull/2942)
+* Bump golangci-lint to v0.19.0 [#2927](https://github.com/GoogleContainerTools/skaffold/pull/2927)
+* Add pod resource with no status check implemented. [#2928](https://github.com/GoogleContainerTools/skaffold/pull/2928)
+* added support for interface type in schema check [#2924](https://github.com/GoogleContainerTools/skaffold/pull/2924)
+* add protos for status check [#2916](https://github.com/GoogleContainerTools/skaffold/pull/2916)
+* Refactor Deployment common functions in to a  Base struct in prep to pod [#2905](https://github.com/GoogleContainerTools/skaffold/pull/2905)
+* Add missing T.Helper() in testutil.Check* as required [#2913](https://github.com/GoogleContainerTools/skaffold/pull/2913)
+* Removing testing version dependent skaffold config test in examples [#2890](https://github.com/GoogleContainerTools/skaffold/pull/2890)
+* rename hack/versions/cmd/new/new.go to hack/versions/cmd/new/version.go [#2882](https://github.com/GoogleContainerTools/skaffold/pull/2882)
+* [Refactor] Move pollDeploymentStatus to resource.Deployment.CheckStatus [#2896](https://github.com/GoogleContainerTools/skaffold/pull/2896)
+* init: Add default config name [#2668](https://github.com/GoogleContainerTools/skaffold/pull/2668)
+* Upgrade jib to 1.6.1 [#2891](https://github.com/GoogleContainerTools/skaffold/pull/2891)
+* Print deployment status after every 0.5 seconds. [#2866](https://github.com/GoogleContainerTools/skaffold/pull/2866)
+* Fail PR if it has a structural schema change in a released version [#2864](https://github.com/GoogleContainerTools/skaffold/pull/2864)
+
+Docs:
+
+* add better docs for recreate pods [#2937](https://github.com/GoogleContainerTools/skaffold/pull/2937)
+* added release comments manually [#2931](https://github.com/GoogleContainerTools/skaffold/pull/2931)
+* add github pull request template [#2894](https://github.com/GoogleContainerTools/skaffold/pull/2894)
+        
+        
+Huge thanks goes out to all of our contributors for this release:
+
+- Aisuko
+- Andreas Sommer
+- Balint Pato
+- Brian de Alwis
+- Cedric Kring
+- Chanseok Oh
+- Cornelius Weig
+- David Gageot
+- Dominic Werner
+- Jack Davis
+- Marlon Gamez
+- Medya Gh
+- Michael Beaumont
+- Nick Kubala
+- Prashant Arya
+- Priya Wadhwa
+- Tad Cordle
+- Tejal Desai
+- Willy Aguirre
+
+
 # v0.38.0 Release - 09/12/2019
 
 *Note*: This release comes with a new config version `v1beta14`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.        
+        The env vars `DIGEST`, `DIGEST_HEX` and `DIGEST_ALGO` won't work anymore in envTemplates.
 
 New Features:
 

@@ -22,10 +22,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"sort"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 )
@@ -61,6 +63,16 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 		inputs = append(inputs, h)
 	}
 
+	// add build args for the artifact if specified
+	if buildArgs := retrieveBuildArgs(a); buildArgs != nil {
+		buildArgs, err := docker.EvaluateBuildArgs(buildArgs)
+		if err != nil {
+			return "", errors.Wrap(err, "evaluating build args")
+		}
+		args := convertBuildArgsToStringArray(buildArgs)
+		inputs = append(inputs, args...)
+	}
+
 	// get a key for the hashes
 	hasher := sha256.New()
 	enc := json.NewEncoder(hasher)
@@ -78,6 +90,33 @@ func artifactConfig(a *latest.Artifact) (string, error) {
 	}
 
 	return string(buf), nil
+}
+
+func retrieveBuildArgs(a *latest.Artifact) map[string]*string {
+	if a.ArtifactType.DockerArtifact != nil {
+		return a.ArtifactType.DockerArtifact.BuildArgs
+	}
+	if a.ArtifactType.KanikoArtifact != nil {
+		return a.KanikoArtifact.BuildArgs
+	}
+	customArtifact := a.ArtifactType.CustomArtifact
+	if customArtifact != nil && customArtifact.Dependencies.Dockerfile != nil {
+		return customArtifact.Dependencies.Dockerfile.BuildArgs
+	}
+	return nil
+}
+
+func convertBuildArgsToStringArray(buildArgs map[string]*string) []string {
+	var args []string
+	for k, v := range buildArgs {
+		if v == nil {
+			args = append(args, k)
+			continue
+		}
+		args = append(args, fmt.Sprintf("%s=%s", k, *v))
+	}
+	sort.Strings(args)
+	return args
 }
 
 // cacheHasher takes hashes the contents and name of a file

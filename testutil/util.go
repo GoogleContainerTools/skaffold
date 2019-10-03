@@ -55,25 +55,29 @@ func (t *T) Override(dest, tmp interface{}) {
 }
 
 func (t *T) CheckMatches(pattern, actual string) {
-	t.T.Helper()
+	t.Helper()
 	if matches, _ := regexp.MatchString(pattern, actual); !matches {
 		t.Errorf("expected output %s to match: %s", actual, pattern)
 	}
 }
 
 func (t *T) CheckContains(expected, actual string) {
+	t.Helper()
 	CheckContains(t.T, expected, actual)
 }
 
 func (t *T) CheckDeepEqual(expected, actual interface{}, opts ...cmp.Option) {
+	t.Helper()
 	CheckDeepEqual(t.T, expected, actual, opts...)
 }
 
 func (t *T) CheckErrorAndDeepEqual(shouldErr bool, err error, expected, actual interface{}, opts ...cmp.Option) {
+	t.Helper()
 	CheckErrorAndDeepEqual(t.T, shouldErr, err, expected, actual, opts...)
 }
 
 func (t *T) CheckError(shouldErr bool, err error) {
+	t.Helper()
 	CheckError(t.T, shouldErr, err)
 }
 

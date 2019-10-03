@@ -28,3 +28,17 @@ include::deployment.yaml[]
 ----
 
 endif::[]
+
+=== Example: passing arguments to kustomize
+:icons: font
+
+This is an example demonstrating how additional arguments can be passed to the `kustomize build` command.
+
+ifndef::env-github[]
+
+[source,yaml, indent=3, title=skaffold-kustomize-args.yaml]
+----
+include::skaffold-kustomize-args.yaml[]
+----
+
+endif::[]

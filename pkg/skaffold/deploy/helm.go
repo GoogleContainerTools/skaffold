@@ -277,23 +277,10 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	for k, v := range params {
 		var value string
 
-		if cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig; cfg != nil {
-			dockerRef, err := docker.ParseReference(v.Tag)
-			if err != nil {
-				return nil, errors.Wrapf(err, "cannot parse the image reference %s", v.Tag)
-			}
-
-			if cfg.ExplicitRegistry {
-				if dockerRef.Domain == "" {
-					return nil, errors.Wrapf(err, "image reference %s has no domain", v.Tag)
-				}
-
-				value = fmt.Sprintf("%[1]s.registry=%s,%[1]s.repository=%s,%[1]s.tag=%s", k, dockerRef.Domain, dockerRef.Path, v.Tag)
-			} else {
-				value = fmt.Sprintf("%[1]s.repository=%s,%[1]s.tag=%s", k, dockerRef.BaseName, v.Tag)
-			}
-		} else {
-			value = fmt.Sprintf("%s=%s", k, v.Tag)
+		cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
+		value, err = getImageSetValueFromHelmStrategy(cfg, k, v.Tag)
+		if err != nil {
+			return nil, err
 		}
 
 		valuesSet[v.Tag] = true
@@ -305,6 +292,9 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		valuesSet[v] = true
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
 	}
+
+	// SetFiles
+	args = append(args, generateGetFilesArgs(r.SetFiles, valuesSet)...)
 
 	envMap := map[string]string{}
 	for idx, b := range builds {
@@ -414,6 +404,34 @@ func (h *HelmDeployer) getReleaseInfo(ctx context.Context, release string) (*buf
 	return bufio.NewReader(&releaseInfo), nil
 }
 
+func getImageSetValueFromHelmStrategy(cfg *latest.HelmConventionConfig, valueName string, tag string) (string, error) {
+	if cfg != nil {
+		dockerRef, err := docker.ParseReference(tag)
+		if err != nil {
+			return "", errors.Wrapf(err, "cannot parse the image reference %s", tag)
+		}
+
+		if cfg.ExplicitRegistry {
+			if dockerRef.Domain == "" {
+				return "", errors.New(fmt.Sprintf("image reference %s has no domain", tag))
+			}
+			return fmt.Sprintf(
+				"%[1]s.registry=%[2]s,%[1]s.repository=%[3]s,%[1]s.tag=%[4]s",
+				valueName,
+				dockerRef.Domain,
+				dockerRef.Path,
+				dockerRef.Tag,
+			), nil
+		}
+		return fmt.Sprintf(
+			"%[1]s.repository=%[2]s,%[1]s.tag=%[3]s",
+			valueName, dockerRef.BaseName,
+			dockerRef.Tag,
+		), nil
+	}
+	return fmt.Sprintf("%s=%s", valueName, tag), nil
+}
+
 // Retrieve info about all releases using helm get
 // Skaffold labels will be applied to each deployed k8s object
 // Since helm isn't always consistent with retrieving results, don't return errors here
@@ -459,6 +477,15 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 	}
 
 	return paramToBuildResult, nil
+}
+
+func generateGetFilesArgs(m map[string]string, valuesSet map[string]bool) []string {
+	args := make([]string, 0, len(m))
+	for k, v := range m {
+		valuesSet[v] = true
+		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, v))
+	}
+	return args
 }
 
 func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {

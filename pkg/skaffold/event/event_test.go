@@ -163,6 +163,90 @@ func TestPortForwarded(t *testing.T) {
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] != nil })
 }
 
+func TestStatusCheckEventStarted(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+
+	handler = &eventHandler{
+		state: emptyState(latest.BuildConfig{}),
+	}
+
+	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
+	StatusCheckEventStarted()
+	wait(t, func() bool { return handler.getState().StatusCheckState.Status == Started })
+}
+
+func TestStatusCheckEventInProgress(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+
+	handler = &eventHandler{
+		state: emptyState(latest.BuildConfig{}),
+	}
+
+	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
+	StatusCheckEventInProgress("[2/5 deployment(s) are still pending]")
+	wait(t, func() bool { return handler.getState().StatusCheckState.Status == InProgress })
+}
+
+func TestStatusCheckEventSucceeded(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+
+	handler = &eventHandler{
+		state: emptyState(latest.BuildConfig{}),
+	}
+
+	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
+	StatusCheckEventSucceeded()
+	wait(t, func() bool { return handler.getState().StatusCheckState.Status == Succeeded })
+}
+
+func TestStatusCheckEventFailed(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+
+	handler = &eventHandler{
+		state: emptyState(latest.BuildConfig{}),
+	}
+
+	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
+	StatusCheckEventFailed(errors.New("one or more deployments failed"))
+	wait(t, func() bool { return handler.getState().StatusCheckState.Status == Failed })
+}
+
+func TestResourceStatusCheckEventUpdated(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+
+	handler = &eventHandler{
+		state: emptyState(latest.BuildConfig{}),
+	}
+
+	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
+	ResourceStatusCheckEventUpdated("ns:pod/foo", "img pull error")
+	wait(t, func() bool { return handler.getState().StatusCheckState.Resources["ns:pod/foo"] == InProgress })
+}
+
+func TestResourceStatusCheckEventSucceeded(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+
+	handler = &eventHandler{
+		state: emptyState(latest.BuildConfig{}),
+	}
+
+	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
+	ResourceStatusCheckEventSucceeded("ns:pod/foo")
+	wait(t, func() bool { return handler.getState().StatusCheckState.Resources["ns:pod/foo"] == Succeeded })
+}
+
+func TestResourceStatusCheckEventFailed(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+
+	handler = &eventHandler{
+		state: emptyState(latest.BuildConfig{}),
+	}
+
+	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
+	ResourceStatusCheckEventFailed("ns:pod/foo", errors.New("one or more deployments failed"))
+	wait(t, func() bool { return handler.getState().StatusCheckState.Resources["ns:pod/foo"] == Failed })
+}
+
 func wait(t *testing.T, condition func() bool) {
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
@@ -181,4 +265,30 @@ func wait(t *testing.T, condition func() bool) {
 			t.Fatal("Timed out waiting")
 		}
 	}
+}
+
+func TestResetStateOnBuild(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+	handler = &eventHandler{
+		state: proto.State{
+			BuildState: &proto.BuildState{
+				Artifacts: map[string]string{
+					"image1": Complete,
+				},
+			},
+			DeployState:      &proto.DeployState{Status: Complete},
+			StatusCheckState: &proto.StatusCheckState{Status: Complete},
+		},
+	}
+	ResetStateOnBuild()
+	expected := proto.State{
+		BuildState: &proto.BuildState{
+			Artifacts: map[string]string{
+				"image1": NotStarted,
+			},
+		},
+		DeployState:      &proto.DeployState{Status: NotStarted},
+		StatusCheckState: &proto.StatusCheckState{Status: NotStarted},
+	}
+	testutil.CheckDeepEqual(t, expected, handler.getState())
 }

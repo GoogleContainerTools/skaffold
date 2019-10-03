@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -41,7 +40,7 @@ func TestGetDeployments(t *testing.T) {
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment
-		expected    []*resource.Deployment
+		expected    []Resource
 		shouldErr   bool
 	}{
 		{
@@ -69,7 +68,7 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(20)},
 				},
 			},
-			expected: []*resource.Deployment{
+			expected: []Resource{
 				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
 				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
 			},
@@ -89,7 +88,7 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(300)},
 				},
 			},
-			expected: []*resource.Deployment{
+			expected: []Resource{
 				resource.NewDeployment("dep1", "test", time.Duration(200)*time.Second),
 			},
 		},
@@ -116,14 +115,14 @@ func TestGetDeployments(t *testing.T) {
 					},
 				},
 			},
-			expected: []*resource.Deployment{
+			expected: []Resource{
 				resource.NewDeployment("dep1", "test", time.Duration(100)*time.Second),
 				resource.NewDeployment("dep2", "test", time.Duration(200)*time.Second),
 			},
 		},
 		{
 			description: "no deployments",
-			expected:    []*resource.Deployment{},
+			expected:    []Resource{},
 		},
 		{
 			description: "multiple deployments in different namespaces",
@@ -149,7 +148,7 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: []*resource.Deployment{
+			expected: []Resource{
 				resource.NewDeployment("dep1", "test", time.Duration(100)*time.Second),
 			},
 		},
@@ -167,7 +166,7 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: []*resource.Deployment{},
+			expected: []Resource{},
 		},
 		{
 			description: "deployment in correct namespace deployed by skaffold but different run",
@@ -183,7 +182,7 @@ func TestGetDeployments(t *testing.T) {
 					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(100)},
 				},
 			},
-			expected: []*resource.Deployment{},
+			expected: []Resource{},
 		},
 	}
 
@@ -196,12 +195,13 @@ func TestGetDeployments(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(objs...)
 			actual, err := getDeployments(client, "test", labeller, time.Duration(200)*time.Second)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
-				cmp.AllowUnexported(resource.Deployment{}, resource.Status{}))
+				cmp.AllowUnexported(resource.Base{}, resource.Deployment{}, resource.Status{}))
 		})
 	}
 }
 
 type mockResource struct {
+	*resource.Base
 	inErr bool
 	done  bool
 }
@@ -251,73 +251,39 @@ func TestPollResourceStatus(t *testing.T) {
 
 func TestGetDeployStatus(t *testing.T) {
 	tests := []struct {
-		description    string
-		deps           []*resource.Deployment
-		expectedErrMsg []string
-		shouldErr      bool
+		description string
+		counter     *counter
+		expected    string
+		shouldErr   bool
 	}{
 		{
 			description: "one error",
-			deps: []*resource.Deployment{
-				withStatus(
-					resource.NewDeployment("dep1", "test", time.Second),
-					"success",
-					nil,
-				),
-				withStatus(
-					resource.NewDeployment("dep2", "test", time.Second),
-					"error",
-					errors.New("could not return within default timeout"),
-				),
-			},
-			expectedErrMsg: []string{"dep2 failed due to could not return within default timeout"},
-			shouldErr:      true,
+			counter:     &counter{total: 2, failed: 1},
+			expected:    "1/2 deployment(s) failed",
+			shouldErr:   true,
 		},
 		{
 			description: "no error",
-			deps: []*resource.Deployment{
-				withStatus(
-					resource.NewDeployment("dep1", "test", time.Second),
-					"success",
-					nil,
-				),
-				withStatus(resource.NewDeployment("dep2", "test", time.Second),
-					"running",
-					nil,
-				),
-			},
+			counter:     &counter{total: 2},
 		},
 		{
 			description: "multiple errors",
-			deps: []*resource.Deployment{
-				withStatus(
-					resource.NewDeployment("dep1", "test", time.Second),
-					"success",
-					nil,
-				),
-				withStatus(
-					resource.NewDeployment("dep2", "test", time.Second),
-					"error",
-					errors.New("could not return within default timeout"),
-				),
-				withStatus(
-					resource.NewDeployment("dep3", "test", time.Second),
-					"error",
-					errors.New("ERROR"),
-				),
-			},
-			expectedErrMsg: []string{"dep2 failed due to could not return within default timeout",
-				"dep3 failed due to ERROR"},
-			shouldErr: true,
+			counter:     &counter{total: 3, failed: 2},
+			expected:    "2/3 deployment(s) failed",
+			shouldErr:   true,
+		},
+		{
+			description: "0 deployments",
+			counter:     &counter{},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := getSkaffoldDeployStatus(test.deps)
+			err := getSkaffoldDeployStatus(test.counter)
 			t.CheckError(test.shouldErr, err)
-			for _, msg := range test.expectedErrMsg {
-				t.CheckErrorContains(msg, err)
+			if test.shouldErr {
+				t.CheckErrorContains(test.expected, err)
 			}
 		})
 	}
@@ -373,13 +339,13 @@ func TestPrintSummaryStatus(t *testing.T) {
 func TestPrintStatus(t *testing.T) {
 	tests := []struct {
 		description string
-		rs          []*resource.Deployment
+		rs          []Resource
 		expectedOut string
 		expected    bool
 	}{
 		{
 			description: "single resource successful marked complete - skip print",
-			rs: []*resource.Deployment{
+			rs: []Resource{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
 					"deployment successfully rolled out",
@@ -390,18 +356,18 @@ func TestPrintStatus(t *testing.T) {
 		},
 		{
 			description: "single resource in error marked complete -skip print",
-			rs: []*resource.Deployment{
+			rs: []Resource{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
 					"error",
-					fmt.Errorf("error"),
+					errors.New("error"),
 				),
 			},
 			expected: true,
 		},
 		{
 			description: "multiple resources 1 not complete",
-			rs: []*resource.Deployment{
+			rs: []Resource{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
 					"deployment successfully rolled out",
@@ -417,7 +383,7 @@ func TestPrintStatus(t *testing.T) {
 		},
 		{
 			description: "multiple resources 1 not complete and retry-able error",
-			rs: []*resource.Deployment{
+			rs: []Resource{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
 					"deployment successfully rolled out",
