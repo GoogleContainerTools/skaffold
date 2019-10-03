@@ -186,7 +186,8 @@ I'm not sure if we should just allow the user to go nuts, or if we should
 explicitly disallow this, because changing the build definition might result in
 a post-sync state that is broken.
 
-** What about files that have specific permissions? **
+**What about files that have specific permissions?**
+
 Jib allows users to customize file permissions, for instance a file on the
 container can be configured to be 0x456 or something. One option instead of
 dealing with this, is to just make all sync'd files 777? Or we allow passthrough
