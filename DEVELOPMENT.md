@@ -243,6 +243,7 @@ When you have changes you would like to propose to skaffold, you will need to:
 1. Add unit tests. Unit test coverage should increase or stay the same with every PR.
 1. [Create a pull request](https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
 
+Please follow our [small Pull Requests guidelines](./docs/community/small-prs.md) for quicker response time.
 ### Reviews
 
 Each PR must be reviewed by a maintainer. This maintainer will add the `kokoro:run` label
