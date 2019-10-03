@@ -73,7 +73,7 @@ func main() {
 	// Latest uses the new version
 	sed(path("latest", "config.go"), current, next)
 
-	hackschema.UpdateVersionComment(path(current, "config.go"), true)
+	hackschema.UpdateVersionComment(path("latest", "config.go"), false)
 
 	// Update skaffold.yaml in integration tests
 	walk("integration", func(path string, info os.FileInfo) {

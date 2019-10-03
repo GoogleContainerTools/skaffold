@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1beta15
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v1beta16"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v1beta15"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -725,9 +725,6 @@ type KanikoArtifact struct {
 
 	// Reproducible is used to strip timestamps out of the built image.
 	Reproducible bool `yaml:"reproducible,omitempty"`
-
-	// SkipTLS skips TLS verification when pulling and pushing the image.
-	SkipTLS bool `yaml:"skipTLS,omitempty"`
 }
 
 // DockerArtifact *beta* describes an artifact built from a Dockerfile,
