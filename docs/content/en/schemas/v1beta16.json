@@ -1289,6 +1289,12 @@
           "x-intellij-html-description": "used to strip timestamps out of the built image.",
           "default": "false"
         },
+        "skipTLS": {
+          "type": "boolean",
+          "description": "skips TLS verification when pulling and pushing the image.",
+          "x-intellij-html-description": "skips TLS verification when pulling and pushing the image.",
+          "default": "false"
+        },
         "target": {
           "type": "string",
           "description": "Dockerfile target name to build.",
@@ -1303,7 +1309,8 @@
         "buildContext",
         "image",
         "cache",
-        "reproducible"
+        "reproducible",
+        "skipTLS"
       ],
       "additionalProperties": false,
       "description": "*alpha* describes an artifact built from a Dockerfile, with kaniko.",
