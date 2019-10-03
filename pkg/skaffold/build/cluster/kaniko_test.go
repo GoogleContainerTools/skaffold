@@ -28,6 +28,7 @@ func TestArgs(t *testing.T) {
 	tests := []struct {
 		description  string
 		artifact     *latest.KanikoArtifact
+		tag          string
 		shouldErr    bool
 		expectedArgs []string
 	}{
@@ -112,12 +113,25 @@ func TestArgs(t *testing.T) {
 			},
 			expectedArgs: []string{"--skip-tls-verify-registry", "gcr.io"},
 		},
+		{
+			description: "invalid registry",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				SkipTLS:        true,
+			},
+			tag:       "!!!!",
+			shouldErr: true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			commonArgs := []string{"--dockerfile", "Dockerfile", "--context", "context", "--destination", "gcr.io/tag", "-v", "info"}
 
-			args, err := args(test.artifact, "context", "gcr.io/tag")
+			tag := "gcr.io/tag"
+			if test.tag != "" {
+				tag = test.tag
+			}
+			args, err := args(test.artifact, "context", tag)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
