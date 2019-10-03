@@ -172,7 +172,7 @@ func TestParseConfig(t *testing.T) {
 			description: "Minimal Kaniko config",
 			config:      minimalKanikoConfig,
 			expected: config(
-				withClusterBuild("", "", "default", "", "20m",
+				withClusterBuild("", "/secret", "default", "", "20m",
 					withGitTagger(),
 					withKanikoArtifact("image1", "./examples/app1", "Dockerfile", "demo"),
 				),

@@ -210,6 +210,7 @@ func setDefaultClusterTimeout(cluster *latest.ClusterDetails) error {
 }
 
 func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
+	cluster.PullSecretMountPath = valueOrDefault(cluster.PullSecretMountPath, constants.DefaultKanikoSecretMountPath)
 	if cluster.PullSecret != "" {
 		absPath, err := homedir.Expand(cluster.PullSecret)
 		if err != nil {
@@ -217,7 +218,6 @@ func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
 		}
 		cluster.PullSecret = absPath
 		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName)
-		cluster.PullSecretMountPath = valueOrDefault(cluster.PullSecretMountPath, constants.DefaultKanikoSecretMountPath)
 		return nil
 	}
 	return nil
