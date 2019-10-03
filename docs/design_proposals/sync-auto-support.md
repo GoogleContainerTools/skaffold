@@ -180,7 +180,8 @@ the generated files??
 
 Please list any open questions here in the following format:
 
-** What happens if the build definition changes? **
+**What happens if the build definition changes?**
+
 I'm not sure if we should just allow the user to go nuts, or if we should
 explicitly disallow this, because changing the build definition might result in
 a post-sync state that is broken.
