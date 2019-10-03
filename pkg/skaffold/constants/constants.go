@@ -51,6 +51,7 @@ const (
 	DefaultKanikoCacheDirMountPath      = "/cache"
 	DefaultKanikoDockerConfigSecretName = "docker-cfg"
 	DefaultKanikoDockerConfigPath       = "/kaniko/.docker"
+	DefaultKanikoSecretMountPath        = "/secret"
 
 	DefaultBusyboxImage = "busybox"
 

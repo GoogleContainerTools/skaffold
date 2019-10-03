@@ -287,6 +287,9 @@ type ClusterDetails struct {
 	// Defaults to `kaniko-secret`.
 	PullSecretName string `yaml:"pullSecretName,omitempty"`
 
+	// PullSecretMountPath is the path the pull secret will be mounted at within the running container.
+	PullSecretMountPath string `yaml:"pullSecretMountPath,omitempty"`
+
 	// Namespace is the Kubernetes namespace.
 	// Defaults to current namespace in Kubernetes configuration.
 	Namespace string `yaml:"namespace,omitempty"`

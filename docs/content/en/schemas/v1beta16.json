@@ -474,6 +474,11 @@
           "description": "path to the Google Cloud service account secret key file.",
           "x-intellij-html-description": "path to the Google Cloud service account secret key file."
         },
+        "pullSecretMountPath": {
+          "type": "string",
+          "description": "path the pull secret will be mounted at within the running container.",
+          "x-intellij-html-description": "path the pull secret will be mounted at within the running container."
+        },
         "pullSecretName": {
           "type": "string",
           "description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key `kaniko-secret`.",
@@ -496,6 +501,7 @@
         "HTTPS_PROXY",
         "pullSecret",
         "pullSecretName",
+        "pullSecretMountPath",
         "namespace",
         "timeout",
         "dockerConfig",

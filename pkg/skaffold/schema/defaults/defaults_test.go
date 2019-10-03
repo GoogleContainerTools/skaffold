@@ -111,6 +111,27 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
+		t.CheckDeepEqual(constants.DefaultKanikoSecretMountPath, cfg.Build.Cluster.PullSecretMountPath)
+
+		// pull secret mount path set
+		path := "/path"
+		cfg = &latest.SkaffoldConfig{
+			Pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					BuildType: latest.BuildType{
+						Cluster: &latest.ClusterDetails{
+							PullSecret:          "path/to/pull/secret",
+							PullSecretMountPath: path,
+						},
+					},
+				},
+			},
+		}
+
+		err = Set(cfg)
+		t.CheckNoError(err)
+		t.CheckDeepEqual(constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
+		t.CheckDeepEqual(path, cfg.Build.Cluster.PullSecretMountPath)
 
 		// default docker config
 		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{}

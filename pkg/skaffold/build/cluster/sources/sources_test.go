@@ -68,7 +68,8 @@ func TestPodTemplate(t *testing.T) {
 		{
 			description: "with docker config",
 			initial: &latest.ClusterDetails{
-				PullSecretName: "pull-secret",
+				PullSecretName:      "pull-secret",
+				PullSecretMountPath: "/secret",
 				DockerConfig: &latest.DockerConfig{
 					SecretName: "docker-cfg",
 					Path:       "/kaniko/.docker",

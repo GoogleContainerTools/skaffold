@@ -210,6 +210,7 @@ func setDefaultClusterTimeout(cluster *latest.ClusterDetails) error {
 }
 
 func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
+	cluster.PullSecretMountPath = valueOrDefault(cluster.PullSecretMountPath, constants.DefaultKanikoSecretMountPath)
 	if cluster.PullSecret != "" {
 		absPath, err := homedir.Expand(cluster.PullSecret)
 		if err != nil {
