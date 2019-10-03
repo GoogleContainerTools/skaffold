@@ -192,7 +192,7 @@ container can be configured to be 0x456 or something. One option instead of
 dealing with this, is to just make all sync'd files 777? Or we allow passthrough
 of permissions from the build system to the sync system.
 
-** Should we allow the user to configure the auto block? **
+**Should we allow the user to configure the auto block?**
 
 Perhaps the user knows something that jib doesnt, and wants to ignore some files
 from synchronization. They might want to do:
