@@ -50,7 +50,7 @@ func newNamespaceCollector() *namespaceCollector {
 	}
 }
 
-func (r *namespaceCollector) Matches(key string) bool {
+func (r *namespaceCollector) Matches(key interface{}) bool {
 	return key == "metadata"
 }
 

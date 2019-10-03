@@ -28,8 +28,8 @@ type dummyReplacer struct {
 	m Matcher
 }
 
-func (r *dummyReplacer) Matches(key string) bool {
-	return key == "replace-key"
+func (r *dummyReplacer) Matches(key interface{}) bool {
+	return key == "replace-key" || key == 1234
 }
 
 func (r *dummyReplacer) NewValue(old interface{}) (bool, interface{}) {
@@ -54,7 +54,7 @@ func (m mockMatcher) Matches(value interface{}) bool {
 	return false
 }
 
-func (m mockMatcher) IsMatchKey(key string) bool {
+func (m mockMatcher) IsMatchKey(key interface{}) bool {
 	return key == "match-key"
 }
 
@@ -124,6 +124,16 @@ replace-key: not-replaced`),
 				[]byte(`
 match-key: match-value
 replace-key: replaced`)},
+		},
+		{
+			description: "single manifest in the list with matched key and string value",
+			manifests: ManifestList{[]byte(`
+123: match-value
+1234: not-replaced`)},
+			matchValues: []string{"match-value"},
+			expected: ManifestList{[]byte(`
+123: match-value
+1234: replaced`)},
 		},
 	}
 

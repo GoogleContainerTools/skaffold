@@ -23,7 +23,7 @@ import (
 
 // Replacer is used to replace portions of yaml manifests that match a given key.
 type Replacer interface {
-	Matches(key string) bool
+	Matches(key interface{}) bool
 
 	NewValue(old interface{}) (bool, interface{})
 
@@ -70,17 +70,15 @@ func recursiveVisit(i interface{}, replacer Replacer) {
 		//    skip replacing the entire Object.
 		if replacer.ObjMatcher() != nil {
 			for k, v := range t {
-				key := k.(string)
-				if replacer.ObjMatcher().IsMatchKey(key) && !replacer.ObjMatcher().Matches(v) {
+				if replacer.ObjMatcher().IsMatchKey(k) && !replacer.ObjMatcher().Matches(v) {
 					return
 				}
 			}
 		}
 		// Now do the actual replacement.
 		for k, v := range t {
-			key := k.(string)
 			switch {
-			case replacer.Matches(key):
+			case replacer.Matches(k):
 				ok, newValue := replacer.NewValue(v)
 				if ok {
 					t[k] = newValue
