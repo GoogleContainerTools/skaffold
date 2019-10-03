@@ -41,7 +41,7 @@ It would greatly simplify code review process if we break this change into
 In this case, the contributor split this PR in 2 small changes
 1. Introduce a [place holder for a new config](https://github.com/GoogleContainerTools/skaffold/pull/2870).
    
-   This PR highlights the logic changes and makes it easier for reviewers to review control logic and tests.
+   This PR highlights the logic changes and makes it easier for reviewers to review code logic and tests.
    
    Note: The code added in this PR does not get exercised other than in tests.
 2. [Add a field to skaffold config](https://github.com/GoogleContainerTools/skaffold/pull/2871) and pass it to the place holder.
