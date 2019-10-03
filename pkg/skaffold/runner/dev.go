@@ -82,6 +82,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	}
 
 	if needsDeploy {
+		event.ResetStateOnDeploy()
 		defer func() {
 			r.changeSet.resetDeploy()
 			r.intents.resetDeploy()
