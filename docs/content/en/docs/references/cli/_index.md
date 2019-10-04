@@ -383,7 +383,7 @@ Deploy pre-built artifacts
 
 Options:
   -a, --build-artifacts=: Filepath containing build output.
-E.g. build.out created by running skaffold build --quiet {{json .}} > build.out
+E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build.out
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
