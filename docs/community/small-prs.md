@@ -2,14 +2,14 @@
 
 Writing good pull requests increase development velocity and minimize frustration.
  
-If pull requests are small they will result in being opened and merged quickly.
+Small pull request will be merged quicker.
 
 Having big pull requests that bounce back and forth between developers
 and reviewers can slow progress down significantly, causing developers to waste a 
 lot of time dealing with merge conflicts.
 
 Big pull requests also increase the risk of breaking things; since changes are so big, 
- - it’s hard to scrutinize all the changes and 
+ - it’s hard to truly understand all the changes and 
  - test them for regressions.
 
 In order to promote good PR quality, the skaffold team will push back
@@ -17,13 +17,15 @@ against big PRs. See [0](https://github.com/GoogleContainerTools/skaffold/pull/2
 
 ## Breaking down Pull Requests
 
-### Feature development.
+### Feature development
 Adding a new command or skaffold config results in large number of changes due to
 all the boilerplate code required for adding a new command, generating docs etc.
 
 It makes sense to break down these changes into 2 categories:
-1. Incremental code changes which are not accessed by control flow.
-2. User affecting changes like
+1. "Invisible changes": Incremental, small code changes 
+     1. refactoring: either keep the functionality the same but refactoring the design or
+     1. partial implementations: unit tested, new behavior, that is not yet accessible by the main control flow.
+2. "Visible changes": User affecting changes, for example
    1. Adding a new command which exercises the above code changes
    1. Adding config change and generating docs.
 
@@ -31,7 +33,7 @@ It makes sense to break down these changes into 2 categories:
 Below is an example of how you can break a config change into small individual PRs.
 
 A contributor wanted to support [custom build args to `kustomize` deployer](https://github.com/GoogleContainerTools/skaffold/issues/2488).
-This required, skaffold to support a `buildArgs` field to `deploy.kustomize` config. Plumb the config to `kustomize` command.
+This required skaffold to add the `deploy.kustomize.buildArgs` field and then plumb the arguments to the `kustomize` command.
 
 This small 10 line change results into 100+ lines of code along with test code.
 It would greatly simplify code review process if we break this change into 
@@ -72,4 +74,4 @@ Remember, its ok to land code which is not exercised. However please mention the
 in **Next PRs** section when creating a Pull Request [e.g. here.](https://github.com/GoogleContainerTools/skaffold/pull/2811)
 
 
-Finally, please use our best judgement when submitting pull requests.
+Finally, please use your best judgement when submitting pull requests, these rules might not always work for you - we would love to hear that! 
