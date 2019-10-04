@@ -17,8 +17,8 @@ Tag policy is specified in the `tagPolicy` field of the `build` section of the
 Skaffold configuration file, `skaffold.yaml`.
 
 For a detailed discussion on Skaffold configuration, see
-[Skaffold Concepts](/docs/concepts/#configuration) and
-[skaffold.yaml References](/docs/references/yaml).
+[Skaffold Concepts]({{< relref "/docs/concepts#configuration" >}}) and
+[skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
 ## `gitCommit`: uses Git commit IDs as tags
 
@@ -93,7 +93,7 @@ will be `gcr.io/k8s-skaffold/example:v1`.
 
 The tag template uses the [Go Programming Language Syntax](https://golang.org/pkg/text/template/).
 As showcased in the example, `envTemplate` tag policy features one
-**required** parameter, `template`, which is the tag template to use. To learn more about templating support in Skaffold.yaml see [Templated fields](/docs/how-tos/templating)
+**required** parameter, `template`, which is the tag template to use. To learn more about templating support in Skaffold.yaml see [Templated fields]({{< relref "/docs/how-tos/templating" >}})
 
 ## `dateTime`: uses data and time values as tags
 
@@ -117,7 +117,7 @@ be `gcr.io/k8s-skaffold/example:2006-01-02_15-04-05.999_MST`.
 ### Configuration
 
 You can learn more about what time format and time zone you can use in
-[Go Programming Language Documentation: Time package/Format Function](https://golang.org/pkg/time/#Time.Format) and
-[Go Programming Language Documentation: Time package/LoadLocation Function](https://golang.org/pkg/time/#LoadLocation) respectively. As showcased in the
+[Go Programming Language Documentation: Time package/Format Function](https://golang.org/pkg/time#Time.Format) and
+[Go Programming Language Documentation: Time package/LoadLocation Function](https://golang.org/pkg/time#LoadLocation) respectively. As showcased in the
 example, `dateTime`
 tag policy features two optional parameters: `format` and `timezone`.

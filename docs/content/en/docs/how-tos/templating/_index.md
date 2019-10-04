@@ -14,14 +14,14 @@ will be `gcr.io/k8s-skaffold/example:v1`.
 
 List of fields that support templating:
 
-* `build.artifacts.[].docker.buildArgs` (see [builders](/docs/how-tos/builders/))
-* `build.tagPolicy.envTemplate.template` (see [envTemplate tagger](/docs/how-tos/taggers/##envtemplate-using-values-of-environment-variables-as-tags))
-* `deploy.helm.releases.setValueTemplates` (see [Deploying with helm](/docs/how-tos/deployers/#deploying-with-helm))
-* `deploy.helm.releases.name` (see [Deploying with helm](/docs/how-tos/deployers/#deploying-with-helm))
+* `build.artifacts.[].docker.buildArgs` (see [builders]({{< relref "/docs/how-tos/builders" >}})
+* `build.tagPolicy.envTemplate.template` (see [envTemplate tagger]({{< relref "/docs/how-tos/taggers#envtemplate-using-values-of-environment-variables-as-tags)" >}})
+* `deploy.helm.releases.setValueTemplates` (see [Deploying with helm]({{< relref "/docs/how-tos/deployers#deploying-with-helm)" >}})
+* `deploy.helm.releases.name` (see [Deploying with helm]({{< relref "/docs/how-tos/deployers#deploying-with-helm)" >}})
 
 _Please note, this list is not exhaustive_
 
 List of variables that are available for templating:
 
 * all environment variables passed to the Skaffold process at startup
-* `IMAGE_NAME` - the artifacts' image name - the [image name rewriting](/docs/concepts/#image-repository-handling) acts after the template is calculated
+* `IMAGE_NAME` - the artifacts' image name - the [image name rewriting]({{< relref "/docs/concepts#image-repository-handling" >}}) acts after the template is calculated
