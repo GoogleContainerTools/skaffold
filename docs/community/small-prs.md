@@ -1,6 +1,6 @@
 # Pull Request Guidelines
 
-Writing good pull requests increase development velocity and minimize frustration.
+Writing good pull requests increases development velocity and minimizes frustration.
  
 Small pull request will be merged quicker.
 
@@ -72,6 +72,5 @@ To implement this feature, we
 
 Remember, its ok to land code which is not exercised. However please mention the follow up work
 in **Next PRs** section when creating a Pull Request [e.g. here.](https://github.com/GoogleContainerTools/skaffold/pull/2811)
-
 
 Finally, please use your best judgement when submitting pull requests, these rules might not always work for you - we would love to hear that! 
