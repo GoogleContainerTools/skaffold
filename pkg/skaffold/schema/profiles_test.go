@@ -20,12 +20,14 @@ import (
 	"fmt"
 	"testing"
 
+	yamlpatch "github.com/krishicks/yaml-patch"
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	yamlpatch "github.com/krishicks/yaml-patch"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 func TestApplyPatch(t *testing.T) {
@@ -50,6 +52,7 @@ profiles:
 `
 
 	testutil.Run(t, "", func(t *testutil.T) {
+		setupFakeKubeConfig(t, api.Config{CurrentContext: "prod-context"})
 		tmpDir := t.NewTempDir().
 			Write("skaffold.yaml", addVersion(config))
 
@@ -97,11 +100,12 @@ profiles:
 
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
-		description string
-		config      *latest.SkaffoldConfig
-		profile     string
-		expected    *latest.SkaffoldConfig
-		shouldErr   bool
+		description    string
+		config         *latest.SkaffoldConfig
+		profile        string
+		expected       *latest.SkaffoldConfig
+		kubeContextCli string
+		shouldErr      bool
 	}{
 		{
 			description: "unknown profile",
@@ -337,11 +341,72 @@ func TestApplyProfiles(t *testing.T) {
 				}),
 			),
 		},
+		{
+			description: "activate kubecontext specific profile and change the kubecontext",
+			profile:     "profile",
+			config: config(
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							KubeContext: "staging",
+						},
+					}},
+					latest.Profile{
+						Name:       "prod",
+						Activation: []latest.Activation{{KubeContext: "prod-context"}},
+					},
+				),
+			),
+			shouldErr: true,
+		},
+		{
+			description: "activate kubecontext with kubecontext override",
+			profile:     "profile",
+			config: config(
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							KubeContext: "staging",
+						},
+					}},
+				),
+			),
+			expected: config(
+				withKubeContext("staging"),
+			),
+		},
+		{
+			description: "when CLI flag is given, profiles with conflicting kube-context produce no error",
+			profile:     "profile",
+			config: config(
+				withProfiles(
+					latest.Profile{
+						Name:       "prod",
+						Activation: []latest.Activation{{KubeContext: "prod-context"}},
+					},
+					latest.Profile{
+						Name: "profile",
+						Pipeline: latest.Pipeline{
+							Deploy: latest.DeployConfig{
+								KubeContext: "staging",
+							},
+						}},
+				),
+			),
+			kubeContextCli: "prod-context",
+			expected: config(
+				withKubeContext("staging"),
+			),
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			setupFakeKubeConfig(t, api.Config{CurrentContext: "prod-context"})
 			err := ApplyProfiles(test.config, cfg.SkaffoldOptions{
-				Profiles: []string{test.profile},
+				Profiles:    []string{test.profile},
+				KubeContext: test.kubeContextCli,
 			})
 
 			if test.shouldErr {
@@ -546,7 +611,7 @@ func TestActivatedProfiles(t *testing.T) {
 			t.SetEnvs(test.envs)
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "prod-context"})
 
-			activated, err := activatedProfiles(test.profiles, test.opts)
+			activated, _, err := activatedProfiles(test.profiles, test.opts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, activated)
 		})
@@ -560,4 +625,10 @@ func str(value string) *interface{} {
 
 func addVersion(yaml string) string {
 	return fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, yaml)
+}
+
+func setupFakeKubeConfig(t *testutil.T, config api.Config) {
+	t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
+		return config, nil
+	})
 }

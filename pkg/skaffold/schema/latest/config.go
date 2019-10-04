@@ -353,9 +353,14 @@ type TestCase struct {
 
 // DeployConfig contains all the configuration needed by the deploy steps.
 type DeployConfig struct {
+	DeployType `yaml:",inline"`
+
 	// StatusCheckDeadlineSeconds *beta* is the deadline for deployments to stabilize in seconds.
 	StatusCheckDeadlineSeconds int `yaml:"statusCheckDeadlineSeconds,omitempty"`
-	DeployType                 `yaml:",inline"`
+
+	// KubeContext is the Kubernetes context that Skaffold should deploy to.
+	// For example: `minikube`.
+	KubeContext string `yaml:"kubeContext,omitempty"`
 }
 
 // DeployType contains the specific implementation and parameters needed

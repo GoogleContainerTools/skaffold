@@ -16,12 +16,18 @@
 
 set -e -o pipefail
 
-EXAMPLES=$(find examples -mindepth 1 -maxdepth 1 -type d -not -empty -exec basename {} \; | sort)
-INTEGRATION_EXAMPLES=$(find integration/examples -mindepth 1 -maxdepth 1 -type d -not -empty -exec basename {} \; | sort)
+EXAMPLES=`mktemp`
+INTEGRATION_EXAMPLES=`mktemp`
 
-if [[ "${EXAMPLES}" != "${INTEGRATION_EXAMPLES}" ]]; then
+find examples -mindepth 1 -maxdepth 1 -type d -not -empty -exec basename {} \; | sort  > $EXAMPLES
+find integration/examples -mindepth 1 -maxdepth 1 -type d -not -empty -exec basename {} \; | sort > $INTEGRATION_EXAMPLES
+
+EXAMPLES_MINUS_INTEGRATION_EXAMPLES=`awk 'FNR==NR{ array[$0];next} {if ( $1 in array ) next; print $1}' $INTEGRATION_EXAMPLES $EXAMPLES`
+
+if [ ! -z "$EXAMPLES_MINUS_INTEGRATION_EXAMPLES" ]; then
   echo "Every code sample that is in ./examples should also be in ./integration/examples"
-  diff <(printf "examples:\n${EXAMPLES}" ) <(printf "integration/examples:\n${INTEGRATION_EXAMPLES}")
+  echo "The following are in examples but not in integration/examples:"
+  echo $EXAMPLES_MINUS_INTEGRATION_EXAMPLES
   exit 1
 fi
 

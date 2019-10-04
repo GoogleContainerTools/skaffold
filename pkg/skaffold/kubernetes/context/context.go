@@ -33,19 +33,26 @@ var (
 )
 
 var (
-	kubeConfigOnce sync.Once
-	kubeConfig     clientcmd.ClientConfig
-	kubeContext    string
+	kubeConfigOnce  sync.Once
+	kubeConfig      clientcmd.ClientConfig
+	kubeContextOnce sync.Once
+	kubeContext     string
 )
 
-// resetConfig is used by tests
-func resetConfig() {
-	kubeConfigOnce = sync.Once{}
-}
-
 // UseKubeContext sets an override for the current context in the k8s config.
-func UseKubeContext(overrideKubeContext string) {
-	kubeContext = overrideKubeContext
+// When given, the firstCliValue always takes precedence over the yamlValue.
+// Changing the kube-context of a running Skaffold process is not supported, so
+// after the first call, the kube-context will be locked.
+func UseKubeContext(cliValue, yamlValue string) {
+	kubeContextOnce.Do(func() {
+		kubeContext = yamlValue
+		if cliValue != "" {
+			kubeContext = cliValue
+		}
+		if kubeContext != "" {
+			logrus.Infof("Activated kube-context %q", kubeContext)
+		}
+	})
 }
 
 // GetRestClientConfig returns a REST client config for API calls against the Kubernetes API.

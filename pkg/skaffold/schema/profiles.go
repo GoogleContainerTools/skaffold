@@ -39,7 +39,7 @@ import (
 func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 	byName := profilesByName(c.Profiles)
 
-	profiles, err := activatedProfiles(c.Profiles, opts)
+	profiles, hasContextActivatedProfile, err := activatedProfiles(c.Profiles, opts)
 	if err != nil {
 		return errors.Wrap(err, "finding auto-activated profiles")
 	}
@@ -55,11 +55,31 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 		}
 	}
 
-	return nil
+	return checkKubeContextConsistency(hasContextActivatedProfile, opts.KubeContext, c.Deploy.KubeContext)
 }
 
-func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, error) {
+func checkKubeContextConsistency(isContextImmutable bool, cliContext, effectiveContext string) error {
+	// cli flag takes precedence
+	if cliContext != "" {
+		return nil
+	}
+
+	kubeConfig, err := kubectx.CurrentConfig()
+	if err != nil {
+		return errors.Wrap(err, "getting current cluster context")
+	}
+
+	// nothing to do
+	if effectiveContext == "" || effectiveContext == kubeConfig.CurrentContext || !isContextImmutable {
+		return nil
+	}
+
+	return fmt.Errorf("some activated profile contains kubecontext specific settings for a different than the effective kubecontext, please revise your profile activations")
+}
+
+func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, bool, error) {
 	activated := opts.Profiles
+	hasContextActivatedProfile := false
 
 	// Auto-activated profiles
 	for _, profile := range profiles {
@@ -68,21 +88,24 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]s
 
 			env, err := isEnv(cond.Env)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 
-			kubeContext, err := isKubeContext(cond.KubeContext)
+			kubeContext, err := isKubeContext(cond.KubeContext, opts)
 			if err != nil {
-				return nil, err
+				return nil, false, err
 			}
 
 			if command && env && kubeContext {
+				if cond.KubeContext != "" {
+					hasContextActivatedProfile = true
+				}
 				activated = append(activated, profile.Name)
 			}
 		}
 	}
 
-	return activated, nil
+	return activated, hasContextActivatedProfile, nil
 }
 
 func isEnv(env string) (bool, error) {
@@ -117,9 +140,14 @@ func isCommand(command string, opts cfg.SkaffoldOptions) bool {
 	return satisfies(command, opts.Command)
 }
 
-func isKubeContext(kubeContext string) (bool, error) {
+func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
 	if kubeContext == "" {
 		return true, nil
+	}
+
+	// cli flag takes precedence
+	if opts.KubeContext != "" {
+		return satisfies(kubeContext, opts.KubeContext), nil
 	}
 
 	currentKubeConfig, err := kubectx.CurrentConfig()
@@ -300,6 +328,11 @@ func overlayProfileField(fieldName string, config interface{}, profile interface
 		return v.Interface()
 	case reflect.Int:
 		if v.Interface() == reflect.Zero(v.Type()).Interface() {
+			return config
+		}
+		return v.Interface()
+	case reflect.String:
+		if reflect.DeepEqual("", v.Interface()) {
 			return config
 		}
 		return v.Interface()

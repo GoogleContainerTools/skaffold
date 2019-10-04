@@ -320,6 +320,14 @@ func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldConfig) {
 	}
 }
 
+func withKubeContext(kubeContext string) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.Deploy = latest.DeployConfig{
+			KubeContext: kubeContext,
+		}
+	}
+}
+
 func withHelmDeploy() func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Deploy = latest.DeployConfig{
