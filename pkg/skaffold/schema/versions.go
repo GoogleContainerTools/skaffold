@@ -18,6 +18,7 @@ package schema
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -110,6 +111,21 @@ func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 	factory, present := SchemaVersions.Find(apiVersion.Version)
 	if !present {
 		return nil, errors.Errorf("unknown api version: '%s'", apiVersion.Version)
+	}
+
+	// Remove all top-level keys starting with `.` so they can be used as YAML anchors
+	parsed := make(map[string]interface{})
+	if err := yaml.UnmarshalStrict(buf, parsed); err != nil {
+		return nil, errors.Wrap(err, "unable to parse YAML")
+	}
+	for field := range parsed {
+		if strings.HasPrefix(field, ".") {
+			delete(parsed, field)
+		}
+	}
+	buf, err = yaml.Marshal(parsed)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to re-marshal YAML without dotted keys")
 	}
 
 	cfg := factory()

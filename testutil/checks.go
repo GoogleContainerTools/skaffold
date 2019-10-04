@@ -43,3 +43,12 @@ func (t *T) CheckNoError(err error) {
 		t.Errorf("unexpected error: %s", err)
 	}
 }
+
+func (t *T) RequireNoError(err error) {
+	t.Helper()
+
+	if err != nil {
+		t.Errorf("unexpected error (failing test now): %s", err)
+		t.FailNow()
+	}
+}

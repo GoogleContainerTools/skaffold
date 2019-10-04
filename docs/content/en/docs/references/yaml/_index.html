@@ -8,3 +8,9 @@ weight: 120
 <link rel="stylesheet" type="text/css" href="main.css">
 <script type="module" src="main.js"></script>
 <table id="table" data-version="{{% skaffold-version %}}"></table>
+
+<h3>YAML anchors</h3>
+<p>
+    Anchors can be defined by having top-level keys starting with a dot, e.g. <code>.common_stuff: &alias_name</code>.
+    You can then reuse the value using <code>*alias_name</code>.
+</p>
