@@ -100,6 +100,8 @@ func typeOfArtifact(a *latest.Artifact) string {
 		return "Kaniko artifact"
 	case a.CustomArtifact != nil:
 		return "Custom artifact"
+	case a.BuildpackArtifact != nil:
+		return "Buildpack artifact"
 	default:
 		panic("Unknown artifact")
 	}

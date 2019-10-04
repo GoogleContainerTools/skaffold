@@ -3,12 +3,5 @@ kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
-    custom:
-      buildCommand: ./build.sh
-      dependencies:
-        paths:
-        - .
-deploy:
-  kubectl:
-    manifests:
-      - k8s-*
+    buildpack:
+      builder: "heroku/buildpacks"

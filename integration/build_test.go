@@ -89,9 +89,10 @@ func TestBuild(t *testing.T) {
 			dir:         "testdata/tagPolicy",
 			args:        []string{"-p", "envTemplate"},
 			expectImage: imageName + "tag",
-		}, {
-			description: "buildpacks",
-			dir:         "examples/buildpacks",
+		},
+		{
+			description: "custom",
+			dir:         "examples/custom",
 			setup: func(t *testing.T, _ string) func() {
 				cmd := exec.Command("pack", "set-default-builder", "heroku/buildpacks")
 				if err := cmd.Run(); err != nil {

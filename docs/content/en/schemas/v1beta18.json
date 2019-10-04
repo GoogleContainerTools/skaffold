@@ -219,6 +219,41 @@
         },
         {
           "properties": {
+            "buildpack": {
+              "$ref": "#/definitions/BuildpackArtifact",
+              "description": "*alpha* builds images using [Cloud Native Buildpacks](https://buildpacks.io/).",
+              "x-intellij-html-description": "<em>alpha</em> builds images using <a href=\"https://buildpacks.io/\">Cloud Native Buildpacks</a>."
+            },
+            "context": {
+              "type": "string",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "directory containing the artifact's sources.",
+              "default": "."
+            },
+            "image": {
+              "type": "string",
+              "description": "name of the image to be built.",
+              "x-intellij-html-description": "name of the image to be built.",
+              "examples": [
+                "gcr.io/k8s-skaffold/example"
+              ]
+            },
+            "sync": {
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
+            }
+          },
+          "preferredOrder": [
+            "image",
+            "context",
+            "sync",
+            "buildpack"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
             "context": {
               "type": "string",
               "description": "directory containing the artifact's sources.",
@@ -441,6 +476,72 @@
       ],
       "description": "contains all the configuration for the build steps.",
       "x-intellij-html-description": "contains all the configuration for the build steps."
+    },
+    "BuildpackArtifact": {
+      "required": [
+        "builder"
+      ],
+      "properties": {
+        "builder": {
+          "type": "string",
+          "description": "builder image used.",
+          "x-intellij-html-description": "builder image used."
+        },
+        "dependencies": {
+          "$ref": "#/definitions/BuildpackDependencies",
+          "description": "file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.",
+          "x-intellij-html-description": "file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact."
+        },
+        "forcePull": {
+          "type": "boolean",
+          "description": "should the builder image be pull before each build.",
+          "x-intellij-html-description": "should the builder image be pull before each build.",
+          "default": "false"
+        },
+        "runImage": {
+          "type": "string",
+          "description": "overrides the stack's default run image.",
+          "x-intellij-html-description": "overrides the stack's default run image."
+        }
+      },
+      "preferredOrder": [
+        "forcePull",
+        "builder",
+        "runImage",
+        "dependencies"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* describes an artifact built using [Cloud Native Buildpacks](https://buildpacks.io/). It can be used to build images out of project's sources without any additional configuration.",
+      "x-intellij-html-description": "<em>alpha</em> describes an artifact built using <a href=\"https://buildpacks.io/\">Cloud Native Buildpacks</a>. It can be used to build images out of project's sources without any additional configuration."
+    },
+    "BuildpackDependencies": {
+      "properties": {
+        "ignore": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization. Will only work in conjunction with `paths`.",
+          "x-intellij-html-description": "specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both <code>paths</code> and in <code>ignore</code>, it will be ignored, and will be excluded from both rebuilds and file synchronization. Will only work in conjunction with <code>paths</code>.",
+          "default": "[]"
+        },
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.",
+          "x-intellij-html-description": "should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "paths",
+        "ignore"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* used to specify dependencies for an artifact built by a buildpack.",
+      "x-intellij-html-description": "<em>alpha</em> used to specify dependencies for an artifact built by a buildpack."
     },
     "ClusterDetails": {
       "properties": {
