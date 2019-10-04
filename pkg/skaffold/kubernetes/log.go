@@ -88,6 +88,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 			case <-cancelCtx.Done():
 				return
 			case evt, ok := <-aggregate:
+
 				if !ok {
 					return
 				}
@@ -96,6 +97,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 				if !ok {
 					continue
 				}
+				logrus.Tracef("logger saw a pod event: %s - %s - watch: %t \n\n", pod.Name, pod.Status.Phase, a.podSelector.Select(pod))
 
 				if !a.podSelector.Select(pod) {
 					continue

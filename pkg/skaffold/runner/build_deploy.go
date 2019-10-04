@@ -60,7 +60,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return nil, err
 	}
 
-	// Update which images are logged.
+	// Update which images are logged and portforwarded.
 	for _, build := range bRes {
 		r.podSelector.Add(build.Tag)
 	}
@@ -92,6 +92,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	var imageNames []string
 	for _, artifact := range artifacts {
 		imageNames = append(imageNames, artifact.ImageName)
+		r.podSelector.Add(artifact.Tag)
 	}
 
 	logger := r.newLoggerForImages(out, imageNames)

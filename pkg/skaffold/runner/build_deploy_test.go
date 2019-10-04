@@ -21,12 +21,44 @@ import (
 	"io/ioutil"
 	"testing"
 
+	v1 "k8s.io/api/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
+func TestDeployLogging(t *testing.T) {
+	testutil.Run(t, "should list pods for logging", func(t *testutil.T) {
+		t.SetupFakeKubernetesContext(api.Config{CurrentContext: "cluster1"})
+
+		ctx := context.Background()
+		artifacts := []build.Artifact{{
+			ImageName: "img",
+			Tag:       "img:1",
+		}}
+
+		bench := &TestBench{}
+		runner := createRunner(t, bench, nil)
+		runner.runCtx.Opts.Tail = true
+
+		err := runner.DeployAndLog(ctx, ioutil.Discard, artifacts)
+
+		t.CheckErrorAndDeepEqual(false, err, []Actions{{Deployed: []string{"img:1"}}}, bench.Actions())
+		t.CheckDeepEqual(true, runner.podSelector.Select(&v1.Pod{
+			Spec: v1.PodSpec{
+				Containers: []v1.Container{
+					{
+						Image: "img:1",
+					},
+				},
+			},
+		}))
+	})
+}
 func TestBuildTestDeploy(t *testing.T) {
 	tests := []struct {
 		description     string
