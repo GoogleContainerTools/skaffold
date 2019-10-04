@@ -43,7 +43,7 @@ func NewCmdDeploy() *cobra.Command {
 		WithFlags(func(f *pflag.FlagSet) {
 			f.VarP(&preBuiltImages, "images", "i", "A list of pre-built images to deploy")
 			f.VarP(&buildOutputFile, "build-artifacts", "a", `Filepath containing build output.
-E.g. build.out created by running skaffold build --quiet {{json .}} > build.out`)
+E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build.out`)
 		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doDeploy))
 }
