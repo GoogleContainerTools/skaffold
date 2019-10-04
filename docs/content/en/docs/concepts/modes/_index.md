@@ -18,5 +18,5 @@ Skaffold provides two separate operating modes:
     application.
 
 Skaffold command-line interface also provides other functionalities that may
-be helpful to your project. For more information, see [CLI References](/docs/references/cli).
+be helpful to your project. For more information, see [CLI References]({{< relref "/docs/references/cli" >}}).
 

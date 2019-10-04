@@ -7,7 +7,7 @@ weight: 10
 This document showcases how to get started with Skaffold using [Docker](https://www.docker.com/)
 and Kubernetes command-line tool, [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 Aside from `Docker` and `kubectl`, Skaffold also supports a variety of other tools
-and workflows; see [How-to Guides](/docs/how-tos) and [Tutorials](/docs/tutorials) for
+and workflows; see [How-to Guides](/docs/how-tos) and [Tutorials]({{< relref "/docs/tutorials" >}}) for
 more information.
 
 In this quickstart, you will:
@@ -149,7 +149,7 @@ For the latest **bleeding edge** build:
 To keep Skaffold up to date, update checks are made to Google servers to see if a new version of
 Skaffold is available.
 
-You can turn this update check off by following <a href=/docs/references/privacy/#update-check>these instructions</a>.
+You can turn this update check off by following <a href=/docs/references/privacy#update-check>these instructions</a>.
 
 
 Your use of this software is subject to the <a href=https://policies.google.com/privacy>Google Privacy Policy</a>
@@ -255,10 +255,10 @@ Skaffold will perform the workflow described in `skaffold.yaml` exactly once.
 
 ## What's next
 
-For more in-depth topics of Skaffold, explore [Skaffold Concepts: Configuration](/docs/concepts/#configuration),
-[Skaffold Concepts: Workflow](/docs/concepts/#workflow), and [Skaffold Concepts: Architecture](/docs/concepts/#architecture).
+For more in-depth topics of Skaffold, explore [Skaffold Concepts: Configuration]({{< relref "/docs/concepts#configuration" >}}),
+[Skaffold Concepts: Workflow](/docs/concepts#workflow), and [Skaffold Concepts: Architecture]({{< relref "/docs/concepts#architecture" >}}).
 
 To learn more about how Skaffold builds, tags, and deploys your app, see the How-to Guides on
-using [Builders](/docs/how-tos/builders), [Taggers](/docs/how-tos/taggers), and [Deployers](/docs/how-tos/deployers).
+using [Builders](/docs/how-tos/builders), [Taggers](/docs/how-tos/taggers), and [Deployers]({{< relref "/docs/how-tos/deployers" >}}).
 
-[Skaffold Tutorials](/docs/tutorials) details some of the common use cases of Skaffold.
+[Skaffold Tutorials]({{< relref "/docs/tutorials" >}}) details some of the common use cases of Skaffold.

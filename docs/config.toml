@@ -17,6 +17,10 @@ defaultContentLanguageInSubdir = false
 # Useful when translating.
 enableMissingTranslationPlaceholders = true
 
+# validate links and fail if not found
+refLinksErrorLevel="ERROR"
+relativeURLs=true
+canonifyURLs=false
 disableKinds = ["taxonomy", "taxonomyTerm"]
 
 # Highlighting config
@@ -38,7 +42,9 @@ blog = "/:section/:year/:month/:day/:slug/"
 ## Configuration for BlackFriday markdown parser: https://github.com/russross/blackfriday
 [blackfriday]
 plainIDAnchors = true
-hrefTargetBlank = true
+
+# due to https://github.com/gohugoio/hugo/issues/2424 this should not be turned on until it is fixed
+hrefTargetBlank = false
 angledQuotes = false
 latexDashes = true
 

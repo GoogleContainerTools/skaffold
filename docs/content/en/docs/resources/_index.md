@@ -36,7 +36,7 @@ See [Release Notes](https://github.com/GoogleContainerTools/skaffold/blob/master
 
 You can join the Skaffold community and discuss the product at:
 
-* [Skaffold Mailing List](https://groups.google.com/forum/#!forum/skaffold-users)
+* [Skaffold Mailing List](https://groups.google.com/forum#!forum/skaffold-users)
 * [Skaffold Topic on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
 
 The Skaffold Project also holds a bi-weekly meeting at 9:30am PST on Google
