@@ -23,8 +23,6 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -108,12 +106,6 @@ func (t *TestBench) DependenciesForArtifact(ctx context.Context, artifact *lates
 func (t *TestBench) enterNewCycle() {
 	t.actions = append(t.actions, t.currentActions)
 	t.currentActions = Actions{}
-}
-
-func (t *TestBench) newLoggerForImages(out io.Writer, images []string) *kubernetes.LogAggregator {
-	t.actions = append(t.actions, t.currentActions)
-	t.currentActions = Actions{}
-	return &kubernetes.LogAggregator{}
 }
 
 func (t *TestBench) Build(_ context.Context, _ io.Writer, _ tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
