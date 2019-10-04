@@ -62,7 +62,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 
 	// Update which images are logged.
 	for _, build := range bRes {
-		r.imageList.Add(build.Tag)
+		r.podSelector.Add(build.Tag)
 	}
 
 	// Make sure all artifacts are redeployed. Not only those that were just built.
