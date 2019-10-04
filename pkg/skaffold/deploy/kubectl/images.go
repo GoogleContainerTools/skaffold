@@ -38,7 +38,7 @@ type imageSaver struct {
 	Images []build.Artifact
 }
 
-func (is *imageSaver) Matches(key string) bool {
+func (is *imageSaver) Matches(key interface{}) bool {
 	return key == "image"
 }
 
@@ -94,7 +94,7 @@ func newImageReplacer(builds []build.Artifact, defaultRepo string) *imageReplace
 	}
 }
 
-func (r *imageReplacer) Matches(key string) bool {
+func (r *imageReplacer) Matches(key interface{}) bool {
 	return key == "image"
 }
 
