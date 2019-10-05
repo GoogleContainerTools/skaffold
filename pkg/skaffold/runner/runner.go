@@ -66,11 +66,14 @@ type SkaffoldRunner struct {
 	defaultLabeller      *deploy.DefaultLabeller
 	portForwardResources []*latest.PortForwardResource
 	builds               []build.Artifact
-	imageList            *kubernetes.ImageList
-	imagesAreLocal       bool
-	hasBuilt             bool
-	hasDeployed          bool
-	intents              *intents
+
+	// podSelector is used to determine relevant pods for logging and portForwarding
+	podSelector *kubernetes.ImageList
+
+	imagesAreLocal bool
+	hasBuilt       bool
+	hasDeployed    bool
+	intents        *intents
 }
 
 // for testing
