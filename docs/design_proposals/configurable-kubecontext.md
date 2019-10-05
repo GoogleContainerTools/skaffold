@@ -3,7 +3,10 @@
 * Author(s): Cornelius Weig (@corneliusweig)
 * Design Shepherd: Balint Pato (@balopat)
 * Date: 29 June 2019
-* Status: Under implementation
+* Status: On hold
+
+> **Note** :exclamation: As the global config option adds considerable complexity, that part of this design proposal has been put on hold to await more evidence.
+Ideally, the CLI and `skaffold.yaml` options are already enough for the great majority of Skaffold users.
 
 ## Background
 
@@ -192,8 +195,8 @@ Resolution: The top-level entry (option 2) overall has the better trade-offs.
 ## Implementation plan
 1. Implement the CLI flag and env var variant first. This should also be the most important for the IDE integration. [#2447](https://github.com/GoogleContainerTools/skaffold/pull/2447)
 2. Implement `skaffold.yaml` variant. [#2510](https://github.com/GoogleContainerTools/skaffold/pull/2510)
-3. Implement the global Skaffold config variant to override a kubecontext for a skaffold config (`skaffoldConfigs`). [#2558](https://github.com/GoogleContainerTools/skaffold/pull/2558)
-4. Implement the global Skaffold config variant to set a default kubecontext (`skaffoldConfigs['*']`). [#2558](https://github.com/GoogleContainerTools/skaffold/pull/2558)
+3. ~~Implement the global Skaffold config variant to override a kubecontext for a skaffold config (`skaffoldConfigs`).~~ [#2558](https://github.com/GoogleContainerTools/skaffold/pull/2558)
+4. ~~Implement the global Skaffold config variant to set a default kubecontext (`skaffoldConfigs['*']`).~~ [#2558](https://github.com/GoogleContainerTools/skaffold/pull/2558)
 5. ~~Implement the namespace functionality.~~ (out of scope)
 
 ## Integration test plan
