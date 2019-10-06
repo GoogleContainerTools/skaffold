@@ -75,14 +75,12 @@ func TestRun(t *testing.T) {
 			dir:         "testdata/gcb-sub-folder",
 			pods:        []string{"getting-started"},
 			gcpOnly:     true,
-		},
-		{
+		}, {
 			description: "Google Cloud Build with Kaniko",
 			dir:         "examples/gcb-kaniko",
 			pods:        []string{"getting-started-kaniko"},
 			gcpOnly:     true,
-		},
-		{
+		}, {
 			description: "kaniko",
 			dir:         "examples/kaniko",
 			pods:        []string{"getting-started-kaniko"},
@@ -131,6 +129,11 @@ func TestRun(t *testing.T) {
 			description: "custom builder",
 			dir:         "testdata/custom",
 			pods:        []string{"bazel"},
+		}, {
+			description: "profiles",
+			dir:         "examples/profiles",
+			args:        []string{"-p", "minikube-profile"},
+			pods:        []string{"hello-service"},
 		},
 	}
 	for _, test := range tests {
