@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/go-homedir"
@@ -36,6 +37,8 @@ import (
 const (
 	defaultConfigDir  = ".skaffold"
 	defaultConfigFile = "config"
+	tenDays           = time.Duration(time.Hour * 24 * 10)
+	threeMonths       = time.Duration(time.Hour * 24 * 90)
 )
 
 var (
@@ -51,6 +54,7 @@ var (
 
 	ReadConfigFile             = readConfigFileCached
 	GetConfigForCurrentKubectx = getConfigForCurrentKubectx
+	current                    = time.Now
 )
 
 // readConfigFileCached reads the specified file and returns the contents
@@ -222,4 +226,35 @@ func IsUpdateCheckEnabled(configfile string) bool {
 		return true
 	}
 	return cfg == nil || cfg.UpdateCheck == nil || *cfg.UpdateCheck
+}
+
+func ShouldDisplayPrompt(configfile string) bool {
+	if cfg, disabled := isSurveyPromptDisabled(configfile); !disabled {
+		return ifNotSurveyTakenOrPromptNotDisplayed(cfg)
+	}
+	return false
+}
+
+func isSurveyPromptDisabled(configfile string) (*ContextConfig, bool) {
+	cfg, err := GetConfigForCurrentKubectx(configfile)
+	if err != nil {
+		return nil, false
+	}
+	return cfg, cfg != nil && cfg.Survey != nil && *cfg.Survey.DisablePrompt
+}
+
+func ifNotSurveyTakenOrPromptNotDisplayed(cfg *ContextConfig) bool {
+	if cfg == nil && cfg.Survey == nil {
+		return false
+	}
+	return !isRecent(cfg.Survey.LastTaken, threeMonths) && !isRecent(cfg.Survey.LastPrompted, tenDays)
+}
+
+func isRecent(date string, duration time.Duration) bool {
+	t, err := time.Parse(time.RFC3339, date)
+	if err != nil {
+		logrus.Debugf("could not parse data %s", date)
+		return false
+	}
+	return current().Sub(t) < duration
 }
