@@ -243,3 +243,103 @@ func TestGetWaitingContainerStatus(t *testing.T) {
 		})
 	}
 }
+
+type mockCS struct {
+	len int
+}
+
+func (m *mockCS) mockWaitingContainerStatus(cs []v1.ContainerStatus) (string, string) {
+	m.len = len(cs)
+	return "", ""
+}
+
+func TestGetPendingDetails(t *testing.T) {
+	tests := []struct {
+		description string
+		init        []v1.ContainerStatus
+		cs          []v1.ContainerStatus
+		ephemeral   []v1.ContainerStatus
+		expected    int
+	}{
+		{
+			description: "pod with init containers and ephemeral containers",
+			init: []v1.ContainerStatus{
+				{
+					Name:  "foo-init",
+					State: v1.ContainerState{Terminated: &v1.ContainerStateTerminated{ExitCode: 0}},
+				},
+			},
+			cs: []v1.ContainerStatus{
+				{
+					Name:  "foo-container",
+					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
+				},
+			},
+			ephemeral: []v1.ContainerStatus{
+				{
+					Name:  "foo-eph",
+					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
+				},
+			},
+			expected: 3,
+		},
+		{
+			description: "pod with only ephemeral containers",
+			cs: []v1.ContainerStatus{
+				{
+					Name:  "foo-container",
+					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
+				},
+			},
+			ephemeral: []v1.ContainerStatus{
+				{
+					Name:  "foo-eph",
+					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
+				},
+			},
+			expected: 2,
+		},
+		{
+			description: "pod with only init containers",
+			init: []v1.ContainerStatus{
+				{
+					Name:  "foo-init",
+					State: v1.ContainerState{Terminated: &v1.ContainerStateTerminated{ExitCode: 0}},
+				},
+			},
+			cs: []v1.ContainerStatus{
+				{
+					Name:  "foo-container",
+					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
+				},
+			},
+			expected: 2,
+		},
+		{
+			description: "pod with only containers",
+			cs: []v1.ContainerStatus{
+				{
+					Name:  "foo-container",
+					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
+				},
+			},
+			expected: 1,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			m := mockCS{}
+			t.Override(&waitingContainerStatus, m.mockWaitingContainerStatus)
+			pod := &v1.Pod{
+				Status: v1.PodStatus{
+					Conditions:                 []v1.PodCondition{{Status: v1.ConditionFalse}},
+					InitContainerStatuses:      test.init,
+					ContainerStatuses:          test.cs,
+					EphemeralContainerStatuses: test.ephemeral,
+				},
+			}
+			getPendingDetails(pod)
+			t.CheckDeepEqual(test.expected, m.len)
+		})
+	}
+}

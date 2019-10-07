@@ -31,6 +31,11 @@ const (
 	pending = "Pending"
 )
 
+// for testing
+var (
+	waitingContainerStatus = getWaitingContainerStatus
+)
+
 type PodStatus struct {
 	phase string
 	err   *PodErr
@@ -68,9 +73,12 @@ func getPendingDetails(pod *v1.Pod) PodStatus {
 		case v1.ConditionUnknown:
 			return newPendingStatus(unknown, c.Message)
 		default:
-			reason, detail := getWaitingContainerStatus(pod.Status.ContainerStatuses)
+			cs := append(
+				append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...),
+				pod.Status.EphemeralContainerStatuses...,
+			)
+			reason, detail := waitingContainerStatus(cs)
 			return newPendingStatus(reason, detail)
-
 		}
 	}
 	return newUnknownStatus()
