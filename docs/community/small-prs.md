@@ -1,15 +1,15 @@
 # Pull Request Guidelines
 
-Writing good pull requests increase development velocity and minimize frustration.
+Writing good pull requests increases development velocity and minimizes frustration.
  
-If pull requests are small they will result in being opened and merged quickly.
+Small pull request will be merged quicker.
 
 Having big pull requests that bounce back and forth between developers
 and reviewers can slow progress down significantly, causing developers to waste a 
 lot of time dealing with merge conflicts.
 
 Big pull requests also increase the risk of breaking things; since changes are so big, 
- - it’s hard to scrutinize all the changes and 
+ - it’s hard to truly understand all the changes and 
  - test them for regressions.
 
 In order to promote good PR quality, the skaffold team will push back
@@ -24,8 +24,10 @@ Adding a new command or skaffold config results in large number of changes due t
 all the boilerplate code required for adding a new command, generating docs etc.
 
 It makes sense to break down these changes into 2 categories:
-1. Incremental code changes which are not accessed by control flow.
-2. User affecting changes like
+1. "Invisible changes": Incremental, small code changes 
+     1. refactoring: either keep the functionality the same but refactoring the design or
+     1. partial implementations: unit tested, new behavior, that is not yet accessible by the main control flow.
+2. "Visible changes": User affecting changes, for example
    1. Adding a new command which exercises the above code changes
    1. Adding config change and generating docs.
 
@@ -33,7 +35,7 @@ It makes sense to break down these changes into 2 categories:
 Below is an example of how you can break a config change into small individual PRs.
 
 A contributor wanted to support [custom build args to `kustomize` deployer](https://github.com/GoogleContainerTools/skaffold/issues/2488).
-This required, skaffold to support a `buildArgs` field to `deploy.kustomize` config. Plumb the config to `kustomize` command.
+This required skaffold to add the `deploy.kustomize.buildArgs` field and then plumb the arguments to the `kustomize` command.
 
 This small 10 line change results into 100+ lines of code along with test code.
 It would greatly simplify code review process if we break this change into 
@@ -43,7 +45,7 @@ It would greatly simplify code review process if we break this change into
 In this case, the contributor split this PR in 2 small changes
 1. Introduce a [place holder for a new config](https://github.com/GoogleContainerTools/skaffold/pull/2870).
    
-   This PR highlights the logic changes and makes it easier for reviewers to review control logic and tests.
+   This PR highlights the logic changes and makes it easier for reviewers to review code logic and tests.
    
    Note: The code added in this PR does not get exercised other than in tests.
 2. [Add a field to skaffold config](https://github.com/GoogleContainerTools/skaffold/pull/2871) and pass it to the place holder.
@@ -73,7 +75,6 @@ To implement this feature, we
 Remember, its ok to land code which is not exercised. However please mention the follow up work
 in **Next PRs** section when creating a Pull Request [e.g. here.](https://github.com/GoogleContainerTools/skaffold/pull/2811)
 
-
 Implementing the full functionality sometimes might makes a lot of sense,
  - so that you can get feedback regarding the code while implementing it also
  - the maintainers can try it out and test it, get a feel for it. 
@@ -82,4 +83,4 @@ If you are opening a big PR, we can mark these as `Draft PR` that will broken do
 You can either rebase the `Draft PR` as the smaller pieces get merged, and then finally merge `Draft PR` or close it without merging once all functionality is implemented. 
 See for example [#2917](https://github.com/GoogleContainerTools/skaffold/pull/2917).
 
-Finally, please use our best judgement when submitting pull requests.
+Finally, please use your best judgement when submitting pull requests, these rules might not always work for you - we would love to hear that! 
