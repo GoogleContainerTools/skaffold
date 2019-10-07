@@ -34,33 +34,52 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 	if b.PullSecret == "" && b.PullSecretName == "" {
 		return func() {}, nil
 	}
-	return reCreateSecret(out, b.Namespace, b.PullSecretName, b.PullSecret, constants.DefaultKanikoSecretName)
+	client, err := kubernetes.Client()
+	if err != nil {
+		return func() {}, errors.Wrap(err, "getting kubernetes client")
+	}
+
+	secrets := client.CoreV1().Secrets(b.Namespace)
+
+	if b.PullSecret != "" {
+		return recreateSecret(out, secrets, b.PullSecretName, b.PullSecret, constants.DefaultKanikoSecretName)
+	}
+	if _, err := secrets.Get(b.PullSecretName, metav1.GetOptions{}); err != nil {
+		return func() {}, errors.Wrap(err, "checking for existing secret")
+	}
+	return func() {}, nil
 }
 
 func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 	if b.DockerConfig == nil {
 		return func() {}, nil
 	}
-	return reCreateSecret(out, b.Namespace, b.DockerConfig.SecretName, b.DockerConfig.Path, "config.json")
-}
-
-func reCreateSecret(out io.Writer, ns string, secretName string, secretPath string, secretkey string) (func(), error) {
-
 	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting kubernetes client")
+		return func() {}, errors.Wrap(err, "getting kubernetes client")
 	}
 
-	secrets := client.CoreV1().Secrets(ns)
+	secrets := client.CoreV1().Secrets(b.Namespace)
+
+	if b.DockerConfig.Path != "" {
+		return recreateSecret(out, secrets, b.DockerConfig.SecretName, b.DockerConfig.Path, "config.json")
+	}
+	if _, err := secrets.Get(b.DockerConfig.SecretName, metav1.GetOptions{}); err != nil {
+		return func() {}, errors.Wrap(err, "checking for existing secret")
+	}
+	return func() {}, nil
+}
+
+func recreateSecret(out io.Writer, secrets corev1.SecretInterface, secretName string, secretPath string, secretkey string) (func(), error) {
 
 	if err := deleteSecret(secrets, secretName, secretPath); err != nil {
-		return nil, err
+		return func() {}, errors.Wrap(err, "deleting secret")
 	}
 
 	color.Default.Fprintf(out, "Creating secret [%s]...\n", secretName)
 	secretData, err := ioutil.ReadFile(secretPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading secret")
+		return func() {}, errors.Wrap(err, "reading secret")
 	}
 
 	secret := &v1.Secret{
@@ -74,7 +93,7 @@ func reCreateSecret(out io.Writer, ns string, secretName string, secretPath stri
 	}
 
 	if _, err := secrets.Create(secret); err != nil {
-		return nil, errors.Wrapf(err, "creating secret: %s", err)
+		return func() {}, errors.Wrapf(err, "creating secret: %s", err)
 	}
 
 	return func() {
@@ -85,16 +104,6 @@ func reCreateSecret(out io.Writer, ns string, secretName string, secretPath stri
 }
 
 func deleteSecret(secrets corev1.SecretInterface, secretName string, secretPath string) error {
-
-	if secretPath == "" {
-		logrus.Debug("No secret specified. Checking for one in the cluster.")
-
-		if _, err := secrets.Get(secretName, metav1.GetOptions{}); err != nil {
-			return errors.Wrap(err, "checking for existing secret")
-		}
-		return nil
-	}
-
 	if _, err := secrets.Get(secretName, metav1.GetOptions{}); err == nil {
 		logrus.Infof("Deleting existing %s secret", secretName)
 		if err := secrets.Delete(secretName, &metav1.DeleteOptions{}); err != nil {
