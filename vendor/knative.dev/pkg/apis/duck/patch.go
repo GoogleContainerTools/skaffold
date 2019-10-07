@@ -37,6 +37,8 @@ func marshallBeforeAfter(before, after interface{}) ([]byte, []byte, error) {
 	return rawBefore, rawAfter, nil
 }
 
+// CreateMergePatch creates a json merge patch as specified in
+// http://tools.ietf.org/html/draft-ietf-appsawg-json-merge-patch-07
 func CreateMergePatch(before, after interface{}) ([]byte, error) {
 	rawBefore, rawAfter, err := marshallBeforeAfter(before, after)
 	if err != nil {
@@ -45,6 +47,17 @@ func CreateMergePatch(before, after interface{}) ([]byte, error) {
 	return jsonmergepatch.CreateMergePatch(rawBefore, rawAfter)
 }
 
+// CreateBytePatch is a helper function that creates the same content as
+// CreatePatch, but returns in []byte format instead of JSONPatch.
+func CreateBytePatch(before, after interface{}) ([]byte, error) {
+	patch, err := CreatePatch(before, after)
+	if err != nil {
+		return nil, err
+	}
+	return patch.MarshalJSON()
+}
+
+// CreatePatch creates a patch as specified in http://jsonpatch.com/
 func CreatePatch(before, after interface{}) (JSONPatch, error) {
 	rawBefore, rawAfter, err := marshallBeforeAfter(before, after)
 	if err != nil {

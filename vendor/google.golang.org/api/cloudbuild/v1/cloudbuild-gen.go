@@ -884,6 +884,10 @@ type BuildTrigger struct {
 	// then we do not trigger a build.
 	IncludedFiles []string `json:"includedFiles,omitempty"`
 
+	// Name: User assigned name of the trigger. Must be unique within the
+	// project.
+	Name string `json:"name,omitempty"`
+
 	// Substitutions: Substitutions data for Build resource.
 	Substitutions map[string]string `json:"substitutions,omitempty"`
 
@@ -1344,14 +1348,14 @@ func (s *PullRequestFilter) MarshalJSON() ([]byte, error) {
 // PushFilter: Push contains filter properties for matching GitHub git
 // pushes.
 type PushFilter struct {
-	// Branch: Regexes of branches to match.
+	// Branch: Regexes matching branches to build.
 	//
 	// The syntax of the regular expressions accepted is the syntax accepted
 	// by
 	// RE2 and described at https://github.com/google/re2/wiki/Syntax
 	Branch string `json:"branch,omitempty"`
 
-	// Tag: Regexes of tags to match.
+	// Tag: Regexes matching tags to build.
 	//
 	// The syntax of the regular expressions accepted is the syntax accepted
 	// by
@@ -1384,7 +1388,11 @@ func (s *PushFilter) MarshalJSON() ([]byte, error) {
 // RepoSource: Location of the source in a Google Cloud Source
 // Repository.
 type RepoSource struct {
-	// BranchName: Name of the branch to build.
+	// BranchName: Regex matching branches to build.
+	//
+	// The syntax of the regular expressions accepted is the syntax accepted
+	// by
+	// RE2 and described at https://github.com/google/re2/wiki/Syntax
 	BranchName string `json:"branchName,omitempty"`
 
 	// CommitSha: Explicit commit SHA to build.
@@ -1408,7 +1416,11 @@ type RepoSource struct {
 	// assumed.
 	RepoName string `json:"repoName,omitempty"`
 
-	// TagName: Name of the tag to build.
+	// TagName: Regex matching tags to build.
+	//
+	// The syntax of the regular expressions accepted is the syntax accepted
+	// by
+	// RE2 and described at https://github.com/google/re2/wiki/Syntax
 	TagName string `json:"tagName,omitempty"`
 
 	// ForceSendFields is a list of field names (e.g. "BranchName") to

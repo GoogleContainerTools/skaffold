@@ -42,7 +42,6 @@ type MutationCache interface {
 	Mutation(interface{})
 }
 
-// ResourceVersionComparator is able to compare object versions.
 type ResourceVersionComparator interface {
 	CompareResourceVersion(lhs, rhs runtime.Object) int
 }

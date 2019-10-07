@@ -28,6 +28,8 @@ import (
 type URL url.URL
 
 // ParseURL attempts to parse the given string as a URL.
+// Compatible with net/url.Parse except in the case of an empty string, where
+// the resulting *URL will be nil with no error.
 func ParseURL(u string) (*URL, error) {
 	if u == "" {
 		return nil, nil
@@ -55,11 +57,14 @@ func (u *URL) UnmarshalJSON(b []byte) error {
 	if err := json.Unmarshal(b, &ref); err != nil {
 		return err
 	}
-	r, err := ParseURL(ref)
-	if err != nil {
+	if r, err := ParseURL(ref); err != nil {
 		return err
+	} else if r != nil {
+		*u = *r
+	} else {
+		*u = URL{}
 	}
-	*u = *r
+
 	return nil
 }
 
@@ -70,4 +75,10 @@ func (u *URL) String() string {
 	}
 	uu := url.URL(*u)
 	return uu.String()
+}
+
+// URL returns the URL as a url.URL.
+func (u *URL) URL() *url.URL {
+	url := url.URL(*u)
+	return &url
 }

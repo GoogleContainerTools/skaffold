@@ -59,6 +59,10 @@ func (r *remoteIndex) Digest() (v1.Hash, error) {
 	return partial.Digest(r)
 }
 
+func (r *remoteIndex) Size() (int64, error) {
+	return partial.Size(r)
+}
+
 func (r *remoteIndex) RawManifest() ([]byte, error) {
 	r.manifestLock.Lock()
 	defer r.manifestLock.Unlock()
