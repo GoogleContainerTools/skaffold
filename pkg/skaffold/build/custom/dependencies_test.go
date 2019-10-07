@@ -83,6 +83,7 @@ func TestGetDependenciesPaths(t *testing.T) {
 		ignore      []string
 		paths       []string
 		expected    []string
+		shouldErr   bool
 	}{
 		{
 			description: "watch everything",
@@ -95,6 +96,10 @@ func TestGetDependenciesPaths(t *testing.T) {
 			paths:       []string{"."},
 			ignore:      []string{"b*"},
 			expected:    []string{"foo"},
+		}, {
+			description: "error",
+			paths:       []string{"unknown"},
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
@@ -114,8 +119,7 @@ func TestGetDependenciesPaths(t *testing.T) {
 				},
 			}, nil)
 
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, deps)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
 		})
 	}
 }
