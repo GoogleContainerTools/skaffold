@@ -360,13 +360,13 @@ func TestIsRecent(t *testing.T) {
 		{
 			description: "date is recent than 10 days from 01/30/2019",
 			date:        "2019-01-22T13:04:05Z",
-			duration:    time.Duration(10 * 24 * time.Hour),
+			duration:    10 * 24 * time.Hour,
 			expected:    true,
 		},
 		{
 			description: "date is not recent than 10 days from 01/30/2019",
 			date:        "2019-01-19T13:04:05Z",
-			duration:    time.Duration(10 * 24 * time.Hour),
+			duration:    10 * 24 * time.Hour,
 		},
 		{
 			description: "date is not right format",

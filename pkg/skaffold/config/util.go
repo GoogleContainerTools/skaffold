@@ -37,8 +37,8 @@ import (
 const (
 	defaultConfigDir  = ".skaffold"
 	defaultConfigFile = "config"
-	tenDays           = time.Duration(time.Hour * 24 * 10)
-	threeMonths       = time.Duration(time.Hour * 24 * 90)
+	tenDays           = time.Hour * 24 * 10
+	threeMonths       = time.Hour * 24 * 90
 )
 
 var (
@@ -244,7 +244,7 @@ func isSurveyPromptDisabled(configfile string) (*ContextConfig, bool) {
 }
 
 func ifNotSurveyTakenOrPromptNotDisplayed(cfg *ContextConfig) bool {
-	if cfg == nil && cfg.Survey == nil {
+	if cfg == nil || cfg.Survey == nil {
 		return false
 	}
 	return !isRecent(cfg.Survey.LastTaken, threeMonths) && !isRecent(cfg.Survey.LastPrompted, tenDays)
