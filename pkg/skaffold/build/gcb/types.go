@@ -106,23 +106,20 @@ func (b *Builder) Labels() map[string]string {
 func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
 	var paths []string
 	var err error
-	if a.KanikoArtifact != nil {
+
+	switch {
+	case a.KanikoArtifact != nil:
 		paths, err = docker.GetDependencies(ctx, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, b.insecureRegistries)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
-		}
-	}
-	if a.DockerArtifact != nil {
+
+	case a.DockerArtifact != nil:
 		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
-		}
-	}
-	if a.JibArtifact != nil {
+
+	case a.JibArtifact != nil:
 		paths, err = jib.GetDependencies(ctx, a.Workspace, a.JibArtifact)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
-		}
+	}
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 	}
 
 	return util.AbsolutePaths(a.Workspace, paths), nil
