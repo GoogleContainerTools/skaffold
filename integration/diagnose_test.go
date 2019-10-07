@@ -18,6 +18,7 @@ package integration
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -42,7 +43,13 @@ func TestDiagnose(t *testing.T) {
 
 	for _, example := range examples {
 		t.Run(example, func(t *testing.T) {
-			skaffold.Diagnose().InDir(filepath.Join("examples", example)).RunOrFail(t)
+			dir := filepath.Join("examples", example)
+
+			if _, err := os.Stat(filepath.Join(dir, "skaffold.yaml")); os.IsNotExist(err) {
+				t.Skip("skipping diagnose in " + dir)
+			}
+
+			skaffold.Diagnose().InDir(dir).RunOrFail(t)
 		})
 	}
 }
