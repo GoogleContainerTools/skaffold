@@ -139,6 +139,18 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	// Like `docker build`, we ignore the errors
 	// See https://github.com/docker/cli/blob/75c1bb1f33d7cedbaf48404597d5bf9818199480/cli/command/image/build.go#L364
 	authConfigs, _ := DefaultAuthHelper.GetAllAuthConfigs()
+	auth := map[string]types.AuthConfig{}
+	for k, v := range authConfigs {
+		auth[k] = types.AuthConfig{
+			Username:      v.Username,
+			Password:      v.Password,
+			Auth:          v.Auth,
+			Email:         v.Email,
+			ServerAddress: v.ServerAddress,
+			IdentityToken: v.IdentityToken,
+			RegistryToken: v.RegistryToken,
+		}
+	}
 
 	buildArgs, err := EvaluateBuildArgs(a.BuildArgs)
 	if err != nil {
@@ -163,7 +175,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 		Dockerfile:  a.DockerfilePath,
 		BuildArgs:   buildArgs,
 		CacheFrom:   a.CacheFrom,
-		AuthConfigs: authConfigs,
+		AuthConfigs: auth,
 		Target:      a.Target,
 		ForceRemove: l.forceRemove,
 		NetworkMode: strings.ToLower(a.NetworkMode),

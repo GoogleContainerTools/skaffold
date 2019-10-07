@@ -25,8 +25,8 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/docker/cli/cli/config"
+	"github.com/docker/cli/cli/config/types"
 	"github.com/docker/distribution/reference"
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/docker/docker/registry"
 	"github.com/pkg/errors"
