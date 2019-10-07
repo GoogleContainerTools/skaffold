@@ -18,6 +18,8 @@ against big PRs. See [0](https://github.com/GoogleContainerTools/skaffold/pull/2
 ## Breaking down Pull Requests
 
 ### Feature development.
+When proposing a new feature, please review our [Design Document Proposal](../design_proposals) to see if you should first create a `Design Proposal`.
+
 Adding a new command or skaffold config results in large number of changes due to
 all the boilerplate code required for adding a new command, generating docs etc.
 
@@ -71,5 +73,13 @@ To implement this feature, we
 Remember, its ok to land code which is not exercised. However please mention the follow up work
 in **Next PRs** section when creating a Pull Request [e.g. here.](https://github.com/GoogleContainerTools/skaffold/pull/2811)
 
+
+Implementing the full functionality sometimes might makes a lot of sense,
+ - so that you can get feedback regarding the code while implementing it also
+ - the maintainers can try it out and test it, get a feel for it. 
+
+If you are opening a big PR, we can mark these as `Draft PR` that will broken down into smaller PRs that can refer back to this `Draft PR`.
+You can either rebase the `Draft PR` as the smaller pieces get merged, and then finally merge `Draft PR` or close it without merging once all functionality is implemented. 
+See for example [#2917](https://github.com/GoogleContainerTools/skaffold/pull/2917).
 
 Finally, please use our best judgement when submitting pull requests.
