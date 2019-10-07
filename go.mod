@@ -2,6 +2,19 @@ module github.com/GoogleContainerTools/skaffold
 
 go 1.12
 
+replace (
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.1+incompatible
+	github.com/Azure/go-autorest/autorest/adal => github.com/Azure/go-autorest/autorest/adal v0.6.1-0.20190906230412-69b4126ece6b
+	github.com/Azure/go-autorest/autorest/date => github.com/Azure/go-autorest/autorest/date v0.2.1-0.20190906230412-69b4126ece6b
+	github.com/Azure/go-autorest/autorest/mocks => github.com/Azure/go-autorest/autorest/mocks v0.3.1-0.20190906230412-69b4126ece6b
+	github.com/Azure/go-autorest/tracing => github.com/Azure/go-autorest/tracing v0.5.0
+	golang.org/x/crypto v0.0.0-20190129210102-0709b304e793 => golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
+	gopkg.in/russross/blackfriday.v2 v2.0.1 => github.com/russross/blackfriday/v2 v2.0.1
+	k8s.io/api => k8s.io/api v0.0.0-20190620084959-7cf5895f2711
+	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
+	k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
+)
+
 require (
 	4d63.com/tz v0.0.0-20190311034157-bd6cee76f731
 	cloud.google.com/go v0.45.1
@@ -28,7 +41,6 @@ require (
 	github.com/docker/libtrust v0.0.0-20160708172513-aabc10ec26b7 // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
-	github.com/fullstorydev/grpcurl v1.3.2 // indirect
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/protobuf v1.3.2
@@ -92,5 +104,3 @@ require (
 	k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 	knative.dev/pkg v0.0.0-20190730155243-972acd413fb9 // indirect
 )
-
-replace gopkg.in/russross/blackfriday.v2 v2.0.1 => github.com/russross/blackfriday/v2 v2.0.1
