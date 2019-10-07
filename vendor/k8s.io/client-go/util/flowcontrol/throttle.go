@@ -17,8 +17,6 @@ limitations under the License.
 package flowcontrol
 
 import (
-	"context"
-	"errors"
 	"sync"
 	"time"
 
@@ -35,8 +33,6 @@ type RateLimiter interface {
 	Stop()
 	// QPS returns QPS of this rate limiter
 	QPS() float32
-	// Wait returns nil if a token is taken before the Context is done.
-	Wait(ctx context.Context) error
 }
 
 type tokenBucketRateLimiter struct {
@@ -102,10 +98,6 @@ func (t *tokenBucketRateLimiter) QPS() float32 {
 	return t.qps
 }
 
-func (t *tokenBucketRateLimiter) Wait(ctx context.Context) error {
-	return t.limiter.Wait(ctx)
-}
-
 type fakeAlwaysRateLimiter struct{}
 
 func NewFakeAlwaysRateLimiter() RateLimiter {
@@ -122,10 +114,6 @@ func (t *fakeAlwaysRateLimiter) Accept() {}
 
 func (t *fakeAlwaysRateLimiter) QPS() float32 {
 	return 1
-}
-
-func (t *fakeAlwaysRateLimiter) Wait(ctx context.Context) error {
-	return nil
 }
 
 type fakeNeverRateLimiter struct {
@@ -152,8 +140,4 @@ func (t *fakeNeverRateLimiter) Accept() {
 
 func (t *fakeNeverRateLimiter) QPS() float32 {
 	return 1
-}
-
-func (t *fakeNeverRateLimiter) Wait(ctx context.Context) error {
-	return errors.New("can not be accept")
 }
