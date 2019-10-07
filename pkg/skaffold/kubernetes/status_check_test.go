@@ -200,8 +200,8 @@ func TestGetWaitingContainerStatus(t *testing.T) {
 		{
 			description:    "no containers at all ",
 			status:         []v1.ContainerStatus{},
-			expectedReason: "",
-			expectedDetail: "",
+			expectedReason: "Succeeded",
+			expectedDetail: "Succeeded",
 		},
 		{
 			description: "none of the container status is waiting",
@@ -213,8 +213,8 @@ func TestGetWaitingContainerStatus(t *testing.T) {
 					State: v1.ContainerState{Terminated: &v1.ContainerStateTerminated{}},
 				},
 			},
-			expectedReason: "",
-			expectedDetail: "",
+			expectedReason: "Succeeded",
+			expectedDetail: "Succeeded",
 		},
 		{
 			description: "one container state waiting",

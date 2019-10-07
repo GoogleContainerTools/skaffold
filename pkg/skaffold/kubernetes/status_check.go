@@ -27,7 +27,7 @@ import (
 const (
 	success = "Succeeded"
 	running = "Running"
-	unknown = "unknown"
+	unknown = "Unknown"
 	pending = "Pending"
 )
 
@@ -51,8 +51,7 @@ func (e *PodErr) Error() string {
 }
 
 func GetPodDetails(client kubernetes.Interface, ns string, podName string) PodStatus {
-	pi := client.CoreV1().Pods(ns)
-	pod, err := pi.Get(podName, meta_v1.GetOptions{})
+	pod, err := client.CoreV1().Pods(ns).Get(podName, meta_v1.GetOptions{})
 	if err != nil {
 		return PodStatus{err: &PodErr{message: err.Error()}}
 	}
@@ -91,7 +90,7 @@ func getWaitingContainerStatus(cs []v1.ContainerStatus) (string, string) {
 			return c.State.Waiting.Reason, c.State.Waiting.Message
 		}
 	}
-	return "", ""
+	return success, success
 }
 
 func newPendingStatus(r string, d string) PodStatus {
