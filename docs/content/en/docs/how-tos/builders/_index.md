@@ -9,13 +9,15 @@ to build Docker images.
 
 Skaffold supports the following tools to build your image:
 
-* [Dockerfile](https://docs.docker.com/engine/reference/builder/) locally with Docker
-* Dockerfile remotely with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
-* Dockerfile in-cluster with [Kaniko](https://github.com/GoogleContainerTools/kaniko)
+* [Dockerfile](https://docs.docker.com/engine/reference/builder/)
+  - locally with Docker
+  - in-cluster with [Kaniko](https://github.com/GoogleContainerTools/kaniko)
+  - on cloud with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
+* [Jib](https://github.com/GoogleContainerTools/jib) Maven and Gradle
+  - locally
+  - on cloud with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
 * [Bazel](https://bazel.build/) locally
-* [Jib](https://github.com/GoogleContainerTools/jib) Maven and Gradle projects locally
-* [Jib](https://github.com/GoogleContainerTools/jib) remotely with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
-* Custom build script run locally
+* Custom script locally
 * [Building with CNCF Buildpacks](../buildpacks)
 
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,

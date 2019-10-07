@@ -69,12 +69,15 @@ Skaffold supports the following tools:
 
 {{% tabs %}}
 {{% tab "IMAGE BUILDERS" %}}
-* Dockerfile locally
-* Dockerfile in-cluster (kaniko)
-* Dockerfile on cloud (Google Cloud Build)
-* Bazel locally
-* Jib Maven/Gradle locally
-* Jib Maven/Gradle on cloud (Google Cloud Build)
+* [Dockerfile](https://docs.docker.com/engine/reference/builder/)
+  - locally with Docker
+  - in-cluster with [Kaniko](https://github.com/GoogleContainerTools/kaniko)
+  - on cloud with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
+* [Jib](https://github.com/GoogleContainerTools/jib) Maven and Gradle
+  - locally
+  - on cloud with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
+* [Bazel](https://bazel.build/) locally
+* Custom script locally
 {{% /tab %}}
 
 {{% tab "TESTERS" %}}
