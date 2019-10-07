@@ -97,8 +97,12 @@ func typeOfArtifact(a *latest.Artifact) string {
 		return "Bazel artifact"
 	case a.JibArtifact != nil:
 		return "Jib artifact"
+	case a.KanikoArtifact != nil:
+		return "Kaniko artifact"
+	case a.CustomArtifact != nil:
+		return "Custom artifact"
 	default:
-		return "Unknown artifact"
+		panic("Unknown artifact")
 	}
 }
 

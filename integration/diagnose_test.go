@@ -17,6 +17,8 @@ limitations under the License.
 package integration
 
 import (
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -30,20 +32,34 @@ func TestDiagnose(t *testing.T) {
 		t.Skip("skipping test that is not gcp only")
 	}
 
-	tests := []struct {
-		name string
-		dir  string
-	}{
-		{name: "kaniko builder", dir: "examples/kaniko"},
-		{name: "docker builder", dir: "examples/nodejs"},
-		{name: "jib maven builder", dir: "testdata/jib"},
-		{name: "jib gradle builder", dir: "testdata/jib-gradle"},
-		{name: "bazel builder", dir: "examples/bazel"},
-		{name: "custom builder", dir: "testdata/custom"},
+	examples, err := folders("examples")
+	if err != nil {
+		t.Fatal("unable to list examples")
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			skaffold.Diagnose().InDir(test.dir).RunOrFail(t)
+	if len(examples) == 0 {
+		t.Fatal("didn't find any example")
+	}
+
+	for _, example := range examples {
+		t.Run(example, func(t *testing.T) {
+			skaffold.Diagnose().InDir(filepath.Join("examples", example)).RunOrFail(t)
 		})
 	}
+}
+
+func folders(root string) ([]string, error) {
+	var folders []string
+
+	files, err := ioutil.ReadDir(root)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range files {
+		if f.Mode().IsDir() {
+			folders = append(folders, f.Name())
+		}
+	}
+
+	return folders, err
 }
