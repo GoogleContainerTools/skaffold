@@ -174,7 +174,7 @@ func TestGetPodDetails(t *testing.T) {
 			expected: PodStatus{
 				phase: pending,
 				err: &PodErr{
-					reason:  "unknown",
+					reason:  "Unknown",
 					message: "could not determine",
 				},
 			},
