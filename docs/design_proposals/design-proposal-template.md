@@ -62,7 +62,7 @@ Please describe your solution. Please list any:
 For a new config change, please mention:
 
 * Is it backwards compatible? If not, what is the deprecation policy?
-  Refer to the [deprecation policy requirements.](./../../deprecation-policy.md#how-do-we-deprecate-things)
+  Refer to the [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/).
   for details.
 
 ### Open Issues/Questions

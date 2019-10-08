@@ -28,7 +28,7 @@ sure:
    philosophy for the tool and not a one off solution for a specific use case.
 2. The feature/change scope is well defined.
 3. When changing any existing feature, the implementation plan adheres to
-   [skaffold deprecation policy](./../../deprecation-policy.md).
+   [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/).
 
 Once the proposal has been approved, we can move discussions to our bi-weekly
 meetings to address any open concerns,and to reach a final decision on whether

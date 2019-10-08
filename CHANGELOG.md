@@ -2,7 +2,7 @@
 
 *Note*: This release comes with a new config version `v1beta15`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
         The env vars `DIGEST`, `DIGEST_HEX` and `DIGEST_ALGO` now fail if found in `envTemplate` fields. 
 
 Highlights: 
@@ -82,7 +82,7 @@ Huge thanks goes out to all of our contributors for this release:
 
 *Note*: This release comes with a new config version `v1beta14`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.        
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.        
         The env vars `DIGEST`, `DIGEST_HEX` and `DIGEST_ALGO` won't work anymore in envTemplates.
 
 New Features:
@@ -412,7 +412,7 @@ Huge thanks goes out to all of our contributors for this release:
 
 *Note*: This release comes with a new config version `v1beta13`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
 New Features:
 * File output flag for writing built images to a specified file [#2476](https://github.com/GoogleContainerTools/skaffold/pull/2476)
@@ -495,7 +495,7 @@ Huge thanks goes out to all of our contributors for this release:
 
 *Note*: This release comes with a new config version `v1beta12`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
 New Features:
 * Add support for user defined port forwarding [#2336](https://github.com/GoogleContainerTools/skaffold/pull/2336)
@@ -705,7 +705,7 @@ Huge thanks goes out to all of our contributors for this release:
 
 *Note*: This release comes with a new config version `v1beta11`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
 New Features: 
 
@@ -777,7 +777,7 @@ Huge thanks goes out to all of our contributors for this release:
 
 *Note*: This release comes with a new config version `v1beta10`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
         
 **Note**: `skaffold deploy` now requires images to be built first, `skaffold deploy` will not build images itself. 
 
@@ -858,7 +858,7 @@ Huge thanks goes out to all of our contributors for this release:
 
 *Note*: This release comes with a new config version `v1beta9`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
 New Features: 
 * Git tagger variants (Tags, CommitSha, AbbrevCommitSha) [#1902](https://github.com/GoogleContainerTools/skaffold/pull/1902)
@@ -919,7 +919,7 @@ Huge thanks goes out to all of our contributors for this release:
 
 *Note*: This release comes with a new config version `v1beta8`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
 New Features:
 
@@ -1024,7 +1024,7 @@ Huge thanks goes out to all of our contributors for this release:
 
 *Note*: This release comes with a new config version `v1beta7`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
 
 *Deprecation notice*: With this release we mark for deprecation the `flags` (KanikoArtifact.AdditionalFlags) field in kaniko; instead Kaniko's additional flags will now be represented as unique fields under `kaniko` per artifact (`KanikoArtifact` type).
@@ -1115,7 +1115,7 @@ Huge thanks goes out to all of our contributors for this release:
 
 *Note*: This release comes with a new config version `v1beta6`.
 To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
 New Features:
 * Add gRPC based event API [#1574](https://github.com/GoogleContainerTools/skaffold/pull/1574)
@@ -1168,7 +1168,7 @@ Huge thanks goes out to all of our contributors for this release:
 
 *Note*: This release comes with a new config version `v1beta5`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
 *Deprecation notice*: With this release we mark for deprecation the following env variables in the `envTemplate` tagger:
 - `DIGEST`
@@ -1241,7 +1241,7 @@ Huge thanks goes out to all of our contributors for this release:
 
 *Note*: This release comes with a new config version `v1beta4`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
 New features:
 * Introduce configuration option to configure image pushing per kube-context [#1355](https://github.com/GoogleContainerTools/skaffold/pull/1355)
@@ -1331,7 +1331,7 @@ Huge thanks goes out to all of our contributors for this release:
 
 *Note*: This release comes with a new config version `v1beta3`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
 New Features:
 * Add support for urls in deploy.kubectl.manifests [#1408](https://github.com/GoogleContainerTools/skaffold/pull/1408)
@@ -1405,7 +1405,7 @@ Huge thank you for this release towards our contributors:
 
 *Note*: This release comes with a new config version `v1beta2`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
 New Features:
 
@@ -1465,7 +1465,7 @@ Huge thank you for this release towards our contributors:
 
 *Note*: This release comes with a new config version `v1beta1`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [deprecation-policy.md](/deprecation-policy.md) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
 
 New features:
