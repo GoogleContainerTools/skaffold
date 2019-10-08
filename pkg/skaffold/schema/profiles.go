@@ -71,7 +71,7 @@ func checkKubeContextConsistency(contextSpecificProfiles []string, cliContext, e
 	currentContext := kubeConfig.CurrentContext
 
 	// nothing to do
-	if effectiveContext == "" || effectiveContext == currentContext || 0 == len(contextSpecificProfiles) {
+	if effectiveContext == "" || effectiveContext == currentContext || len(contextSpecificProfiles) == 0 {
 		return nil
 	}
 
