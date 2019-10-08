@@ -325,7 +325,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			rc := newResourceCounter(10, 0)
+			rc := newResourceCounter(10)
 			rc.deployments.pending = test.pending
 			printStatusCheckSummary(
 				out,
@@ -458,7 +458,7 @@ func TestResourceMarkProcessed(t *testing.T) {
 	}{
 		{
 			description: "when deployment failed, counter is updated",
-			c:           newResourceCounter(10, 0),
+			c:           newResourceCounter(10),
 			err:         errors.New("some err"),
 			expected: resourceCounter{
 				deployments: &counter{total: 10, failed: 1, pending: 9},
@@ -467,7 +467,7 @@ func TestResourceMarkProcessed(t *testing.T) {
 		},
 		{
 			description: "when deployment is successful, counter is updated",
-			c:           newResourceCounter(10, 0),
+			c:           newResourceCounter(10),
 			expected: resourceCounter{
 				deployments: &counter{total: 10, failed: 0, pending: 9},
 				pods:        newCounter(0),
@@ -475,7 +475,7 @@ func TestResourceMarkProcessed(t *testing.T) {
 		},
 		{
 			description: "counter when 1 deployment is updated correctly",
-			c:           newResourceCounter(1, 0),
+			c:           newResourceCounter(1),
 			expected: resourceCounter{
 				deployments: &counter{total: 1, failed: 0, pending: 0},
 				pods:        newCounter(0),

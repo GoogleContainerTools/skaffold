@@ -75,7 +75,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	wg := sync.WaitGroup{}
 
-	rc := newResourceCounter(len(deployments), 0)
+	rc := newResourceCounter(len(deployments))
 
 	for _, d := range deployments {
 		wg.Add(1)
@@ -235,10 +235,10 @@ func (c *counter) copy() *counter {
 		failed:  c.failed,
 	}
 }
-func newResourceCounter(d int, p int) *resourceCounter {
+func newResourceCounter(d int) *resourceCounter {
 	return &resourceCounter{
 		deployments: newCounter(d),
-		pods:        newCounter(p),
+		pods:        newCounter(0),
 	}
 }
 
