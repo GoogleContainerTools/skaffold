@@ -337,6 +337,10 @@ type ResourceRequirement struct {
 	// Memory the amount of memory to allocate to the pod.
 	// For example: `1Gi` or `1000Mi`.
 	Memory string `yaml:"memory,omitempty"`
+
+	// EphemeralStorage the amount of memory to allocate to the pod.
+	// For example: `1Gi` or `1000Mi`.
+	EphemeralStorage string `yaml:"ephemeralStorage,omitempty"`
 }
 
 // TestCase is a list of structure tests to run on images that Skaffold builds.
