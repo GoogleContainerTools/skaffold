@@ -75,7 +75,7 @@ func checkKubeContextConsistency(contextSpecificProfiles []string, cliContext, e
 		return nil
 	}
 
-	return fmt.Errorf("profiles %q were activated by kube-context %q, but the effective kube-context is %q -- please revise your profile activations", contextSpecificProfiles, currentContext, effectiveContext)
+	return fmt.Errorf("profiles %q were activated by kube-context %q, but the effective kube-context is %q -- please revise your `profiles.activation` and `deploy.kubeContext` configurations", contextSpecificProfiles, currentContext, effectiveContext)
 }
 
 // activatedProfiles returns the activated profiles and activated profiles which are kube-context specific.
