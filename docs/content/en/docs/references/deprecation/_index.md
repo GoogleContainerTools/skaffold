@@ -40,15 +40,13 @@ A "deprecation event" would coincide with a release.
     > Rule #6: Deprecated CLI elements must emit warnings (optionally disable) when used.
 
 # Current maturity of skaffold
-
-<<<<<<< HEAD
 Skaffold and its features are considered Beta unless specified (in this document, CLI reference, config YAML reference or in docs in skaffold.dev).  
 Skaffold is constantly evolving with the tools space, we want to be able to experiment and sometimes change things. 
 In order to be transparent about the maturity of feature areas and things that might change we offer the feature level maturity matrix that we keep up to date.
 
 ## Skaffold.yaml (pipeline config)
 
-The pipeline config, i.e. `skaffold.yaml` is **GA**.
+The pipeline config, i.e. `skaffold.yaml` is **beta**.
 
 This means that you can safely depend on the skaffold config with the assumption that skaffold will auto-upgrade to the latest version:
 
@@ -107,7 +105,7 @@ Init|init for Dockerfiles |alpha|skaffold init recognizes Dockerfiles
 
 ## Current deprecation notices
 
-No active deprecation notices. 
+No active deprecation notices.
 
 ## Past deprecation notices
 
