@@ -81,7 +81,7 @@ func (c *CLI) RunOut(ctx context.Context, command string, arg ...string) ([]byte
 // args builds an argument list for calling kubectl and consistently
 // adds the `--context` and `--namespace` flags.
 func (c *CLI) args(command string, namespace string, arg ...string) []string {
-	args := []string{"--context", c.KubeContext}
+	args := []string{"--context", c.KubeContext, "--kube-context", c.KubeContext}
 	namespace = c.resolveNamespace(namespace)
 	if namespace != "" {
 		args = append(args, "--namespace", namespace)
