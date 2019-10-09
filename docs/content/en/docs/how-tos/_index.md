@@ -14,4 +14,4 @@ weight: 30
 | [Port forwarding]({{< relref "/docs/how-tos/portforward" >}}) | Port forwarding from pods |
 | [Profiles]({{< relref "/docs/how-tos/profiles" >}}) | Define configurations for different contexts |
 | [Templated fields]({{< relref "/docs/how-tos/templating" >}}) | Adjust configuration with environment variables |
-| [Debugging (beta)]({{< relref "/docs/how-tos/debug" >}}) | Enabling debugging of apps as deployed to a Kubernetes cluster |
+| [Debugging (alpha)]({{< relref "/docs/how-tos/debug" >}}) | Enabling debugging of apps as deployed to a Kubernetes cluster |

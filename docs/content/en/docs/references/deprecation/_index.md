@@ -62,37 +62,37 @@ The following is the maturity of the larger feature areas:
 
 |area|state|description|
 |----|----|----|
-[Build]({{<relref "/docs/features/builders" >}})|GA |Build images based on multiple build tools in a configurable way
-Control API |beta|Applications can control sync, build and deployment during instead of automated sync, build and deploy
-[Debug]({{<relref "/docs/docs/how-tos/debug" >}})|beta|Language-aware reconfiguration of containers on the fly to become debuggable 
-[Default-repo]({{<relref "/docs/concepts/image_repositories" >}})|beta|specify a default image repository & rewrite image names to default repo
-Delete|GA |delete everything deployed by skaffold run from the cluster
-[Deploy] ({{<relref "docs/how-tos/deployers/" >}}|GA |Deploy a set of deployables as your applications and replace the image name with the built images 
-Dev|GA |Continuous development
-Diagnose|GA |Diagnose the current project and its configuration
-Event API v1|beta|Publish events and state of the application on gRPC and HTTP
-[Filesync]({{<relref "/docs/how-tos/filesync" >}}|alpha|Instead of rebuilding, copy the changed files in the running container
-[Global config]({{<relref "/docs/concepts/config" >}}|beta|store user preferences in a separate preferences file
+[Build]({{< relref "/docs/how-tos/builders" >}})|beta |Build images based on multiple build tools in a configurable way
+Control API |alpha|Applications can control sync, build and deployment during instead of automated sync, build and deploy
+[Debug]({{< relref "/docs/how-tos/debug" >}})|alpha|Language-aware reconfiguration of containers on the fly to become debuggable
+[Default-repo]({{< relref "/docs/concepts/image_repositories" >}})|alpha|specify a default image repository & rewrite image names to default repo
+Delete|beta |delete everything deployed by skaffold run from the cluster
+[Deploy] ({{< relref "docs/how-tos/deployers" >}})|beta |Deploy a set of deployables as your applications and replace the image name with the built images
+Dev|beta |Continuous development
+Diagnose|beta |Diagnose the current project and its configuration
+Event API v1|alpha|Publish events and state of the application on gRPC and HTTP
+[Filesync]({{< relref "/docs/how-tos/filesync" >}})|alpha|Instead of rebuilding, copy the changed files in the running container
+[Global config]({{< relref "/docs/concepts/config" >}})|alpha|store user preferences in a separate preferences file
 Init|alpha|Initialize a skaffold.yaml file based on the contents of the current directory
-Insecure registry handling|GA |Target registries for built images which are not secure
-[Port-forwarding]({{<relref "/docs/how-tos/portforward" >}}|GA |Port forward application to localhost
-[Profiles]({{<relref "/docs/how-tos/profiles" >}}|GA |Create different pipeline configurations based on overrides and patches defined in one or more profiles
-skaffold build |GA |run skaffold build separately
-skaffold fix|GA |Upgrade an older skaffold config to the current version
-skaffold run|GA |One-off build & deployment of the skaffold application
-[Tagpolicy]({{<relref "/docs/how-tos/taggers" >}}|GA |Automated tagging
-[Test]({{<relref "/docs/how-tos/testers" >}}|GA |Run tests as part of your pipeline
-Trigger|GA |Feature area: Trigger configured actions when source files change
+Insecure registry handling|alpha |Target registries for built images which are not secure
+[Port-forwarding]({{< relref "/docs/how-tos/portforward" >}})|alpha |Port forward application to localhost
+[Profiles]({{< relref "/docs/how-tos/profiles" >}})|beta |Create different pipeline configurations based on overrides and patches defined in one or more profiles
+skaffold build |beta |run skaffold build separately
+skaffold fix|beta |Upgrade an older skaffold config to the current version
+skaffold run|beta |One-off build & deployment of the skaffold application
+[Tagpolicy]({{< relref "/docs/how-tos/taggers" >}})|beta |Automated tagging
+[Test]({{< relref "/docs/how-tos/testers" >}})|alpha |Run tests as part of your pipeline
+Trigger|alpha |Feature area: Trigger configured actions when source files change
 version|beta|get the version string of the current skaffold binary
-[Templating]({{<relref "/docs/how-tos/templating" >}}|alpha|certain fields of skaffold.yaml can be parametrized with environment and built-in variables
+[Templating]({{< relref "/docs/how-tos/templating" >}})|alpha|certain fields of skaffold.yaml can be parametrized with environment and built-in variables
 
 Within a feature area we do have certain features that are expected to change: 
 
 |area|feature|state|description|
 |----|----|----|----|
-Debug|debug python apps|beta|debug python apps
-Debug|debug node apps|beta|debug node apps
-Debug|debug java apps|beta|debug java apps
+Debug|debug python apps|alpha|debug python apps
+Debug|debug node apps|alpha|debug node apps
+Debug|debug java apps|alpha|debug java apps
 Default-repo|preconcatentation strategy|beta|collision free rewriting strategy
 Tagpolicy|latest tagger|alpha|tag with latest, use image digest / image ID for deployment
 Tagpolicy|contentDigest tagger|alpha|reintroduce DIGEST and content based digest tag
