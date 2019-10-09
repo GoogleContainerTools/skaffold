@@ -61,10 +61,7 @@ This happens for
 - `skaffold run -p profile-1` if the current kube-context is `minikube`
 
 {{< alert title="Note" >}}
-It is possible to activate conflicting profiles in conjunction with the CLI flag. So the following example is valid:
-
-    skaffold run --kube-context minikube -p profile-1,profile-2
-
+It is possible to activate conflicting profiles in conjunction with the CLI flag. So the following example is valid `skaffold run --kube-context minikube -p profile-1,profile-2`
 {{< /alert >}}
 
 ### Limitations
