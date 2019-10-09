@@ -1,5 +1,5 @@
 ---
-title: "Deprecation policy"
+title: "Deprecation Policy"
 linkTitle: "Deprecation policy"
 weight: 300
 ---
