@@ -39,7 +39,7 @@ import (
 func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 	byName := profilesByName(c.Profiles)
 
-	profiles, hasContextActivatedProfile, err := activatedProfiles(c.Profiles, opts)
+	profiles, contextSpecificProfiles, err := activatedProfiles(c.Profiles, opts)
 	if err != nil {
 		return errors.Wrap(err, "finding auto-activated profiles")
 	}
@@ -55,10 +55,10 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 		}
 	}
 
-	return checkKubeContextConsistency(hasContextActivatedProfile, opts.KubeContext, c.Deploy.KubeContext)
+	return checkKubeContextConsistency(contextSpecificProfiles, opts.KubeContext, c.Deploy.KubeContext)
 }
 
-func checkKubeContextConsistency(isContextImmutable bool, cliContext, effectiveContext string) error {
+func checkKubeContextConsistency(contextSpecificProfiles []string, cliContext, effectiveContext string) error {
 	// cli flag takes precedence
 	if cliContext != "" {
 		return nil
@@ -68,18 +68,21 @@ func checkKubeContextConsistency(isContextImmutable bool, cliContext, effectiveC
 	if err != nil {
 		return errors.Wrap(err, "getting current cluster context")
 	}
+	currentContext := kubeConfig.CurrentContext
 
 	// nothing to do
-	if effectiveContext == "" || effectiveContext == kubeConfig.CurrentContext || !isContextImmutable {
+	if effectiveContext == "" || effectiveContext == currentContext || len(contextSpecificProfiles) == 0 {
 		return nil
 	}
 
-	return fmt.Errorf("some activated profile contains kubecontext specific settings for a different than the effective kubecontext, please revise your profile activations")
+	return fmt.Errorf("profiles %q were activated by kube-context %q, but the effective kube-context is %q -- please revise your `profiles.activation` and `deploy.kubeContext` configurations", contextSpecificProfiles, currentContext, effectiveContext)
 }
 
-func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, bool, error) {
+// activatedProfiles returns the activated profiles and activated profiles which are kube-context specific.
+// The latter matters for error reporting when the effective kube-context changes.
+func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, []string, error) {
 	activated := opts.Profiles
-	hasContextActivatedProfile := false
+	var contextSpecificProfiles []string
 
 	// Auto-activated profiles
 	for _, profile := range profiles {
@@ -88,24 +91,24 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]s
 
 			env, err := isEnv(cond.Env)
 			if err != nil {
-				return nil, false, err
+				return nil, nil, err
 			}
 
 			kubeContext, err := isKubeContext(cond.KubeContext, opts)
 			if err != nil {
-				return nil, false, err
+				return nil, nil, err
 			}
 
 			if command && env && kubeContext {
 				if cond.KubeContext != "" {
-					hasContextActivatedProfile = true
+					contextSpecificProfiles = append(contextSpecificProfiles, profile.Name)
 				}
 				activated = append(activated, profile.Name)
 			}
 		}
 	}
 
-	return activated, hasContextActivatedProfile, nil
+	return activated, contextSpecificProfiles, nil
 }
 
 func isEnv(env string) (bool, error) {
