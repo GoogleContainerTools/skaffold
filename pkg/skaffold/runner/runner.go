@@ -35,7 +35,7 @@ import (
 
 // Runner is responsible for running the skaffold build, test and deploy config.
 type Runner interface {
-	DiagnoseArtifacts(io.Writer) error
+	DiagnoseArtifacts(context.Context, io.Writer) error
 	Dev(context.Context, io.Writer, []*latest.Artifact) error
 	BuildAndTest(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)
 	DeployAndLog(context.Context, io.Writer, []build.Artifact) error
