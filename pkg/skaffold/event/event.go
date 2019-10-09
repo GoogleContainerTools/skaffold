@@ -146,6 +146,9 @@ func emptyStateWithArtifacts(builds map[string]string) proto.State {
 			Resources: map[string]string{},
 		},
 		ForwardedPorts: make(map[int32]*proto.PortEvent),
+		FileSyncState: &proto.FileSyncState{
+			Status: NotStarted,
+		},
 	}
 }
 
@@ -239,6 +242,21 @@ func BuildComplete(imageName string) {
 	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Complete})
 }
 
+// FileSyncInProgress notifies that a file sync has been started.
+func FileSyncInProgress(fileCount int, image string) {
+	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: InProgress})
+}
+
+// FileSyncFailed notifies that a file sync has failed.
+func FileSyncFailed(fileCount int, image string, err error) {
+	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed, Err: err.Error()})
+}
+
+// FileSyncSucceeded notifies that a file sync has succeeded.
+func FileSyncSucceeded(fileCount int, image string) {
+	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Succeeded})
+}
+
 // PortForwarded notifies that a remote port has been forwarded locally.
 func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string, portName string, resourceType, resourceName string) {
 	go handler.handle(&proto.Event{
@@ -291,6 +309,14 @@ func (ev *eventHandler) handleBuildEvent(e *proto.BuildEvent) {
 	go ev.handle(&proto.Event{
 		EventType: &proto.Event_BuildEvent{
 			BuildEvent: e,
+		},
+	})
+}
+
+func (ev *eventHandler) handleFileSyncEvent(e *proto.FileSyncEvent) {
+	go ev.handle(&proto.Event{
+		EventType: &proto.Event_FileSyncEvent{
+			FileSyncEvent: e,
 		},
 	})
 }
@@ -380,6 +406,22 @@ func (ev *eventHandler) handle(event *proto.Event) {
 			logEntry.Entry = fmt.Sprintf("Resource %s status completed successfully", rseName)
 		case Failed:
 			logEntry.Entry = fmt.Sprintf("Resource %s status failed with %s", rseName, rse.Err)
+		default:
+		}
+	case *proto.Event_FileSyncEvent:
+		fse := e.FileSyncEvent
+		fseFileCount := fse.FileCount
+		fseImage := fse.Image
+		ev.stateLock.Lock()
+		ev.state.FileSyncState.Status = fse.Status
+		ev.stateLock.Unlock()
+		switch fse.Status {
+		case InProgress:
+			logEntry.Entry = fmt.Sprintf("File sync started for %d files for %s", fseFileCount, fseImage)
+		case Succeeded:
+			logEntry.Entry = fmt.Sprintf("File sync succeeded for %d files for %s", fseFileCount, fseImage)
+		case Failed:
+			logEntry.Entry = fmt.Sprintf("File sync failed for %d files for %s", fseFileCount, fseImage)
 		default:
 		}
 

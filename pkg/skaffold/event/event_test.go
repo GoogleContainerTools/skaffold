@@ -247,6 +247,42 @@ func TestResourceStatusCheckEventFailed(t *testing.T) {
 	wait(t, func() bool { return handler.getState().StatusCheckState.Resources["ns:pod/foo"] == Failed })
 }
 
+func TestFileSyncInProgress(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+
+	handler = &eventHandler{
+		state: emptyState(latest.BuildConfig{}),
+	}
+
+	wait(t, func() bool { return handler.getState().FileSyncState.Status == NotStarted })
+	FileSyncInProgress(5, "image")
+	wait(t, func() bool { return handler.getState().FileSyncState.Status == InProgress })
+}
+
+func TestFileSyncFailed(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+
+	handler = &eventHandler{
+		state: emptyState(latest.BuildConfig{}),
+	}
+
+	wait(t, func() bool { return handler.getState().FileSyncState.Status == NotStarted })
+	FileSyncFailed(5, "image", errors.New("BUG"))
+	wait(t, func() bool { return handler.getState().FileSyncState.Status == Failed })
+}
+
+func TestFileSyncSucceeded(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+
+	handler = &eventHandler{
+		state: emptyState(latest.BuildConfig{}),
+	}
+
+	wait(t, func() bool { return handler.getState().FileSyncState.Status == NotStarted })
+	FileSyncSucceeded(5, "image")
+	wait(t, func() bool { return handler.getState().FileSyncState.Status == Succeeded })
+}
+
 func wait(t *testing.T, condition func() bool) {
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
@@ -285,6 +321,7 @@ func TestResetStateOnBuild(t *testing.T) {
 				},
 			},
 			StatusCheckState: &proto.StatusCheckState{Status: Complete},
+			FileSyncState:    &proto.FileSyncState{Status: Succeeded},
 		},
 	}
 	ResetStateOnBuild()
@@ -296,6 +333,7 @@ func TestResetStateOnBuild(t *testing.T) {
 		},
 		DeployState:      &proto.DeployState{Status: NotStarted},
 		StatusCheckState: &proto.StatusCheckState{Status: NotStarted},
+		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
 	}
 	testutil.CheckDeepEqual(t, expected, handler.getState())
 }
