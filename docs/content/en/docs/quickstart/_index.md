@@ -125,7 +125,7 @@ func main() {
 ```
 
 The moment you save the file, Skaffold will repeat the workflow described in
-`skaffold.yaml` and eventually re-deploy your application. Once the pipeline
+`skaffold.yaml`, rebuilding and redeploying your application. Once the pipeline
 is completed, you should see updated outputs in the terminal:
 
 ```
