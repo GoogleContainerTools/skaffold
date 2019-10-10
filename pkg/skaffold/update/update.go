@@ -88,5 +88,5 @@ func DownloadLatestVersion() (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "reading version file from GCS")
 	}
-	return string(versionBytes), nil
+	return strings.TrimSuffix(string(versionBytes), "\n"), nil
 }
