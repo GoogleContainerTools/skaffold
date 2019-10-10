@@ -102,6 +102,14 @@ Init|interactive|alpha|skaffold init interactive for CLI users
 Init|init for k8s manifests|alpha|skaffold init recognizes k8s manifest and the image names in them
 Init|init for Dockerfiles |alpha|skaffold init recognizes Dockerfiles
 
+## Exceptions 
+
+No policy can cover every possible situation. 
+This policy is a living document, and will evolve over time. 
+In practice, there will be situations that do not fit neatly into this policy, or for which this policy becomes a serious impediment. 
+Examples could be getting fixes fast for a serious vulnerability, a destructive bug or requirements that might be imposed by third parties (such as legal requirements).
+Such situations should be discussed on the given bugs / feature requests and during Skaffold Office Hours, always bearing in mind that Skaffold is committed to being a stable system that, as much as possible, never breaks users. 
+Exceptions will always be announced in all relevant release notes.
 
 ## Current deprecation notices
 
