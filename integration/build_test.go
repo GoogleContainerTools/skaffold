@@ -18,6 +18,7 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -34,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 	"github.com/sirupsen/logrus"
@@ -339,4 +341,50 @@ func TestExpectedBuildFailures(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestBuildKanikoInsecureRegistry(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	// run on GCP as this test requires a load balancer
+	if !ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is gcp only")
+	}
+
+	ns, k8sClient, cleanupNs := SetupNamespace(t)
+	defer cleanupNs()
+
+	dir := "testdata/kaniko-insecure-registry"
+
+	cleanup := deployInsecureRegistry(t, ns.Name, dir)
+	defer cleanup()
+
+	ip := getExternalIP(t, k8sClient, ns.Name)
+	registry := fmt.Sprintf("%s:5000", ip)
+
+	skaffold.Build("--insecure-registry", registry, "-d", registry, "-p", "build-artifact").InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
+}
+
+func deployInsecureRegistry(t *testing.T, ns, dir string) func() {
+	skaffold.Run("-p", "deploy-insecure-registry").InDir(dir).InNs(ns).RunOrFailOutput(t)
+
+	cleanup := func() {
+		skaffold.Delete("-p", "deploy-insecure-registry").InDir(dir).InNs(ns).RunOrFailOutput(t)
+	}
+	return cleanup
+}
+
+func getExternalIP(t *testing.T, c *NSKubernetesClient, ns string) string {
+	svc, err := c.client.CoreV1().Services(ns).Get("registry", metav1.GetOptions{})
+	if err != nil {
+		t.Fatalf("error getting registry service: %v", err)
+	}
+	// Wait for external IP of service
+	ip, err := kubernetes.GetExternalIP(svc)
+	if err != nil {
+		t.Fatalf("error getting external ip: %v", err)
+	}
+	return ip
 }
