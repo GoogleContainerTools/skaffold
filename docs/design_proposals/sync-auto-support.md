@@ -85,15 +85,14 @@ A user's devloop then looks like this:
 
 which is far from ideal.
 
-### Fix it?
+### A new `auto` option
 
 Provide users with an `auto` option, users that use `auto` should expect
 the builder-sync to do the right thing and will not be required to do much
 configuration.
 
-Auto will only work with builders that have implemented the auto spec. We
-expect at least `jib` to do implement the spec. How `auto` is implemented can be
-in the following ways.
+`auto` will only work with builders that have implemented the `auto` spec. We
+expect at least `jib` to do implement the spec.
 
 #### User Configuration
 
@@ -107,48 +106,10 @@ build:
       auto: {}
 ```
 
-#### Option 1: Delegate generation of sync tar to builder
 
-One option is to complete hand over the detection of container updates to the
-builder which would provide skaffold with a tar to synchronize.
+#### Get necessary information from the builder
 
-A potential runthrough might look like:
-
-1. Skaffold detects changes
-1. Skaffold asks build system if sync should happen
-1. Build system can reply
-  1. Yes: and here is the `tar` to sync
-  1. No: this will tell skaffold it should do a rebuild
-
-This allows the builder implementation to make the sync decisions within it's
-own system.
-
-##### Jib - Skaffold Sync interface
-
-For a potential consumer of this mechanism like jib, we would expose a task like
-`_jibCreateSyncTar` which would so something like
-
-1. If we should rebuild -> tell skaffold to rebuild, so output something like
-  ```
-  REBUILD
-  ```
-1. If we can sync
-  1. Compare against last build
-  2. Tar up files for synchronization
-  3. Tell skaffold where to find that tar
-  ```
-  SYNC: /path/to/sync.tar
-  ```
-
-TODO (comment here if you need this be elaborated more on)
-
-##### Open Issues/Questions
-
-**Something here?**
-
-#### Option 2: Get necessary information from the builder
-
-Another option is an API that can accept a more complex configuration on how
+Skaffold can expose an API that can accept a complex configuration on how
 skaffold should be doing synchronization.
 
 The builder will talk to sync component by providing it with the following data
@@ -225,7 +186,8 @@ the generated files??
 
 I'm not sure if we should just allow the user to go nuts, or if we should
 explicitly disallow this, because changing the build definition might result in
-a post-sync state that is broken.
+a post-sync state that is broken. The underlying `auto` implementation for the
+build can make these decisions.
 
 **What about files that have specific permissions?**
 
@@ -246,6 +208,8 @@ sync:
     - "src/main/jib/myExtraFilesThatBreakADeployment"
 ```
 
+TODO (comment here if you need this be elaborated more on)
+
 ## Implementation plan
 
 *TBD*
@@ -253,3 +217,46 @@ sync:
 ## Integration test plan
 
 *TBD*
+
+## Alternatives Explored
+
+The following implementation had a few problems and that were potential deal
+breakers, this implementation is left in here for information purposes, no
+attempt was made to implement this. It has the following issues:
+1. Depends on `sync` using `tar` which should be an implementation detail
+2. Doesn't really provide a good base for exposing the `auto` sync configuration
+   block. As skaffold takes care of fewer things, the user must be responsible
+   for implementing it.
+
+###### Delegate generation of sync tar to builder
+
+One option is to complete hand over the detection of container updates to the
+builder which would provide skaffold with a tar to synchronize.
+
+A potential runthrough might look like:
+
+1. Skaffold detects changes
+1. Skaffold asks build system if sync should happen
+1. Build system can reply
+  1. Yes: and here is the `tar` to sync
+  1. No: this will tell skaffold it should do a rebuild
+
+This allows the builder implementation to make the sync decisions within it's
+own system.
+
+##### Jib - Skaffold Sync interface
+
+For a potential consumer of this mechanism like jib, we would expose a task like
+`_jibCreateSyncTar` which would so something like
+
+1. If we should rebuild -> tell skaffold to rebuild, so output something like
+  ```
+  REBUILD
+  ```
+1. If we can sync
+  1. Compare against last build
+  2. Tar up files for synchronization
+  3. Tell skaffold where to find that tar
+  ```
+  SYNC: /path/to/sync.tar
+  ```
