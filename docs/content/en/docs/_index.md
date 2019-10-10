@@ -26,7 +26,7 @@ Kubernetes cluster.
   * **CI/CD building blocks** - use `skaffold build` and `skaffold deploy` as part of your CI/CD pipeline, or simply `skaffold run` end-to-end
   * **GitOps integration** - use `skaffold render` to build your images and render templated Kubernetes manifests for use in GitOps workflows
 * skaffold.yaml - a single pluggable, declarative configuration for your project
-  * **skaffold init** - Skaffold can discover your Dockerfiles and deployment configs and generate a Skaffold config
+  * **skaffold init** - Skaffold can discover your build and deployment configuration and generate a Skaffold config
   * **multi-component apps** - Skaffold supports applications with many components, making it great for microservice-based applications
   * **bring your own tools** - Skaffold has a pluggable architecture, allowing for different implementations of the build and deploy stages
 * Lightweight
