@@ -28,7 +28,7 @@ In this quickstart, you will:
 
 {{< alert title="Note">}}
 Skaffold will build the app using the Docker daemon hosted inside minikube. 
-If you want to deploy against a different Kubernetes cluster, e.g. Kind, GKE clusters, you will have to install Docker (for Desktop) to build this app.   
+If you want to deploy against a different Kubernetes cluster, e.g. Kind, GKE clusters, you will have to install Docker to build this app.
 {{</alert>}}
 
 ## Downloading the sample app
