@@ -97,7 +97,7 @@ Watching for changes...
 
 `skaffold dev` watches your local source code and executes your Skaffold pipeline
 every time a change is detected. `skaffold.yaml` provides specifications of the
-workflow, which, in this example, is
+workflow - in this example, the pipeline is
 
 * Building a Docker image from the source using the Dockerfile
 * Tagging the Docker image with the `sha256` hash of its contents
