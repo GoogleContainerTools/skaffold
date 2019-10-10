@@ -100,7 +100,7 @@ every time a change is detected. `skaffold.yaml` provides specifications of the
 workflow, which, in this example, is
 
 * Building a Docker image from the source using the Dockerfile
-* Tagging the Docker image with the Sha256 Hash of its contents
+* Tagging the Docker image with the `sha256` hash of its contents
 * Updating the Kubernetes manifest, `k8s-pod.yaml`, to use the image built previously
 * Deploying the Kubernetes manifest using `kubectl apply -f`
 * Streaming the logs back from the deployed app
