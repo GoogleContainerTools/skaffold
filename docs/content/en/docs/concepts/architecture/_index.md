@@ -45,5 +45,5 @@ Cloud Build and deploy using Helm:
 Skaffold also supports development profiles. You can specify multiple different
 profiles in the configuration and use whichever best serves your need in the
 moment without having to modify the configuration file. You can learn more about
-profiles from [Profiles]({{< relref "/docs/how-tos/profiles" >}}).
+profiles from [Profiles]({{< relref "/docs/components/profiles" >}}).
 

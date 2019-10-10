@@ -4,22 +4,19 @@ linkTitle: "Deployers"
 weight: 30
 ---
 
-This page discusses how to set up Skaffold to use the tool of your choice
-to deploy your app to a Kubernetes cluster.
+When Skaffold deploys an application, the following steps happen:
 
-When Skaffold deploys an application the following steps happen:
-
-* the Skaffold deployer _renders_ the final kubernetes manifests: Skaffold replaces untagged image names in the kubernetes manifests with the final tagged image names.
-Also, in case of the more complicated deployers the rendering step involves expanding templates (in case of helm) or calculating overlays (in case of kustomize).
-* the Skaffold deployer _deploys_ the final kubernetes manifests to the cluster
+* the Skaffold deployer _renders_ the final kubernetes manifests: Skaffold replaces untagged image names in the Kubernetes manifests with the final tagged image names.
+Also, in case of the more complicated deployers the rendering step involves expanding templates (helm) or calculating overlays (kustomize).
+* the Skaffold deployer _deploys_ the final Kubernetes manifests to the cluster
 
 ### Supported deployers
 
 Skaffold supports the following tools for deploying applications:
 
 * [`kubectl`](#deploying-with-kubectl)
-* [helm](#deploying-with-helm)
-* [kustomize](#deploying-with-kustomize)
+* [`helm`](#deploying-with-helm)
+* [`kustomize`](#deploying-with-kustomize)
 
 The `deploy` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how Skaffold builds artifacts. To use a specific tool for deploying
@@ -70,7 +67,7 @@ Also, it has to be installed in a version that's compatible with your cluster.
 
 ## Deploying with Helm
 
-[Helm](https://helm.sh/) is a package manager for Kubernetes that helps you
+[`helm`](https://helm.sh/) is a package manager for Kubernetes that helps you
 manage Kubernetes applications. Skaffold can work with Helm by calling its
 command-line interface.
 
@@ -110,7 +107,7 @@ Also, it has to be installed in a version that's compatible with your cluster.
 
 ## Deploying with kustomize
 
-[kustomize](https://github.com/kubernetes-sigs/kustomize) allows Kubernetes
+[`kustomize`](https://github.com/kubernetes-sigs/kustomize) allows Kubernetes
 developers to customize raw, template-free YAML files for multiple purposes.
 Skaffold can work with `kustomize` by calling its command-line interface.
 

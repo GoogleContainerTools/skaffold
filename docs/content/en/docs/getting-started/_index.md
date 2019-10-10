@@ -7,7 +7,7 @@ weight: 10
 This document showcases how to get started with Skaffold using [Docker](https://www.docker.com/)
 and Kubernetes command-line tool, [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 Aside from `Docker` and `kubectl`, Skaffold also supports a variety of other tools
-and workflows; see [How-to Guides](/docs/how-tos) and [Tutorials]({{< relref "/docs/tutorials" >}}) for
+and workflows; see [Component Guides](/docs/components) and [Tutorials]({{< relref "/docs/tutorials" >}}) for
 more information.
 
 In this quickstart, you will:
@@ -259,6 +259,6 @@ For more in-depth topics of Skaffold, explore [Skaffold Concepts: Configuration]
 [Skaffold Concepts: Workflow](/docs/concepts#workflow), and [Skaffold Concepts: Architecture]({{< relref "/docs/concepts#architecture" >}}).
 
 To learn more about how Skaffold builds, tags, and deploys your app, see the How-to Guides on
-using [Builders](/docs/how-tos/builders), [Taggers](/docs/how-tos/taggers), and [Deployers]({{< relref "/docs/how-tos/deployers" >}}).
+using [Builders](/docs/components/builders), [Taggers](/docs/components/taggers), and [Deployers]({{< relref "/docs/components/deployers" >}}).
 
 [Skaffold Tutorials]({{< relref "/docs/tutorials" >}}) details some of the common use cases of Skaffold.
