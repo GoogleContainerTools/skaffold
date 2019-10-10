@@ -95,7 +95,7 @@ Watching for changes...
 
 ```
 
-`skaffold dev` monitors your code repository and perform a Skaffold workflow
+`skaffold dev` watches your local source code and executes your Skaffold pipeline
 every time a change is detected. `skaffold.yaml` provides specifications of the
 workflow, which, in this example, is
 
