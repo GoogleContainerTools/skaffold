@@ -146,7 +146,7 @@ type Syncables struct {
 }
 ```
 
-##### Jib - Skaffold Sync interface
+#### Jib - Skaffold Sync interface
 
 How a tool like Jib might surface the necessary information to Skaffold
 
@@ -180,7 +180,7 @@ the generated files??
 }
 ```
 
-##### Open Issues/Questions
+#### Open Issues/Questions
 
 **What happens if the build definition changes?**
 
@@ -228,7 +228,7 @@ attempt was made to implement this. It has the following issues:
    block. As skaffold takes care of fewer things, the user must be responsible
    for implementing it.
 
-###### Delegate generation of sync tar to builder
+#### Delegate generation of sync tar to builder
 
 One option is to complete hand over the detection of container updates to the
 builder which would provide skaffold with a tar to synchronize.
@@ -244,7 +244,7 @@ A potential runthrough might look like:
 This allows the builder implementation to make the sync decisions within it's
 own system.
 
-##### Jib - Skaffold Sync interface
+#### Jib - Skaffold Sync interface
 
 For a potential consumer of this mechanism like jib, we would expose a task like
 `_jibCreateSyncTar` which would so something like
