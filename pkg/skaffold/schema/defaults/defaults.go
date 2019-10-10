@@ -156,7 +156,9 @@ func defaultToDockerArtifact(a *latest.Artifact) {
 
 func setCustomArtifactDefaults(a *latest.CustomArtifact) {
 	if a.Dependencies == nil {
-		a.Dependencies = &latest.CustomDependencies{}
+		a.Dependencies = &latest.CustomDependencies{
+			Paths: []string{"."},
+		}
 	}
 }
 
