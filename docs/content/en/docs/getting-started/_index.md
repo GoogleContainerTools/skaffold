@@ -4,11 +4,14 @@ linkTitle: "Getting Started"
 weight: 10
 ---
 
-This document showcases how to get started with Skaffold using [Docker](https://www.docker.com/)
-and Kubernetes command-line tool, [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
+Follow this tutorial to learn about Skaffold on a small Kubernetes app built with [Docker](https://www.docker.com/)
+and deployed with [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)! 
+
+{{< alert title="Note">}}
 Aside from `Docker` and `kubectl`, Skaffold also supports a variety of other tools
 and workflows; see [How-to Guides](/docs/how-tos) and [Tutorials]({{< relref "/docs/tutorials" >}}) for
 more information.
+{{</alert>}}
 
 In this quickstart, you will:
 
