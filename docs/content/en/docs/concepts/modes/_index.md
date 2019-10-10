@@ -4,9 +4,6 @@ linkTitle: "Operating modes"
 weight: 30
 ---
 
-This page discusses various operating modes of Skaffold.
-
-
 Skaffold provides two separate operating modes:
 
 * `skaffold dev`, the continuous development mode, enables monitoring of the

@@ -4,9 +4,6 @@ linkTitle: "Workflow"
 weight: 10
 ---
 
-This page discusses the development workflow with Skaffold.
-
-
 Skaffold features a five-stage workflow:
 
 ![workflow](/images/workflow.png)

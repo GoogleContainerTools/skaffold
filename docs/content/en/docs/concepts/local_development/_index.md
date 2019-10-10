@@ -4,9 +4,6 @@ linkTitle: "Local development"
 weight: 60
 ---
 
-This page discusses how to develop locally with Skaffold.
-
-
 Local development means that Skaffold can skip pushing built container images, because the images are already present where they are run.
 For standard development setups such as `minikube` and `docker-for-desktop`, this works out of the box.
 

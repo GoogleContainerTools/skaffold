@@ -4,9 +4,6 @@ linkTitle: "Architecture"
 weight: 20
 ---
 
-This page discusses the pluggable architecture of Skaffold.
-
-
 Skaffold is designed with pluggability in mind:
 
 ![architecture](/images/architecture.png)
@@ -31,19 +28,18 @@ provides built-in support for the following tools:
   * [Helm](https://helm.sh/)
   * [kustomize](https://github.com/kubernetes-sigs/kustomize)
 
-And you can combine the tools as you see fit in Skaffold. For experimental
+You can combine the tools as you see fit in Skaffold. For experimental
 projects, you may want to use local Docker daemon for building artifacts, and
 deploy them to a Minikube local Kubernetes cluster with `kubectl`:
 
 ![workflow_local](/images/workflow_local.png)
 
-However, for production sites, you might find it better to build with Google
-Cloud Build and deploy using Helm:
+However, for production applications, you might find it more appropriate to build
+with Google Cloud Build and deploy using Helm:
 
 ![workflow_gcb](/images/workflow_gcb.png)
 
 Skaffold also supports development profiles. You can specify multiple different
-profiles in the configuration and use whichever best serves your need in the
-moment without having to modify the configuration file. You can learn more about
+profiles in the configuration and use the one that best serves your needs
+without having to modify the configuration file. You can learn more about
 profiles from [Profiles]({{< relref "/docs/components/profiles" >}}).
-

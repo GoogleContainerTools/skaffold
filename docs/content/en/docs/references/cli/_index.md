@@ -4,8 +4,7 @@ linkTitle: "CLI"
 weight: 110
 ---
 
-Skaffold command-line interface provides the following commands:
-
+Skaffold's command-line interface provides the following commands:
 
 End-to-end pipelines:
 

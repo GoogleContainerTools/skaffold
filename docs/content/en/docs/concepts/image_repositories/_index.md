@@ -4,9 +4,6 @@ linkTitle: "Image repository handling"
 weight: 70
 ---
 
-This page discusses how Skaffold handles image repositories. In particular, how to work with insecure repositories.
-
-
 Skaffold allows for automatically rewriting image names to your repository.
 This way you can grab a Skaffold project and just `skaffold run` it to deploy to your cluster.
 The way to achieve this is the `default-repo` functionality:

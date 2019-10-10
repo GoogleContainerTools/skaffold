@@ -4,10 +4,7 @@ linkTitle: "Global configuration"
 weight: 50
 ---
 
-This section discusses global configuration options for Skaffold (`~/.skaffold/config`). These options are saved per user and apply to all Skaffold pipelines.
-
-
-Some context specific settings can be configured in a global configuration file, defaulting to `~/.skaffold/config`. Options can be configured globally or for specific contexts.
+Some context-specific settings can be configured in a global configuration file, defaulting to `~/.skaffold/config`. Options can be configured globally or for specific Kubernetes contexts.
 
 The options are:
 
