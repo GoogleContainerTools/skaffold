@@ -1,6 +1,10 @@
 # v0.40.0 Release - 09/26/2019
 
-*Note*: This release comes with a new config version `v1beta16`.
+This release adds a new command, `skaffold render`, which will output templated kubernetes manifests rather than sending them through `kubectl` to deploy to your cluster. This can be used to commit final manifests to a git repo for use in GitOps workflows.
+
+*This command has been implemented for the `kubectl` deployer only; implementations for `kustomize` and `helm` will follow in the next release.*
+
+*Note*: This release also comes with a new config version `v1beta16`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
         See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
