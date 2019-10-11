@@ -135,3 +135,16 @@ Documentation for latest build: <https://skaffold-latest.firebaseapp.com>
 ## More examples
 
 Check out our [examples page](./examples)
+
+
+## Support 
+
+Skaffold is currently Beta. Detailed feature maturity information and how we deprecate features are described in our [Deprecation Policy](https://skaffold.dev/docs/references/deprecation).
+
+Support channels: 
+
+* Github Issues and PRs on this repo is our primary channel: the Skaffold team triages Github Issues and PRs daily, PRs are welcome (please read [CONTRIBUTING.md](CONTRIBUTING.md) for more details).
+* [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users)
+* [#skaffold on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/): you can find us there on a best effort basis
+* Skaffold Office hours at 9AM PST, every other Wednesday: join the [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users) to get the calendar invite directly on your calendar.  
+
