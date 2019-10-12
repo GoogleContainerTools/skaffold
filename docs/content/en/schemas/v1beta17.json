@@ -1589,6 +1589,11 @@
     },
     "PortForwardResource": {
       "properties": {
+        "address": {
+          "type": "string",
+          "description": "local address to bind to. Defaults to the loopback address 127.0.0.1.",
+          "x-intellij-html-description": "local address to bind to. Defaults to the loopback address 127.0.0.1."
+        },
         "localPort": {
           "type": "integer",
           "description": "local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.",
@@ -1620,6 +1625,7 @@
         "resourceName",
         "namespace",
         "port",
+        "address",
         "localPort"
       ],
       "additionalProperties": false,

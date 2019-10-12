@@ -249,6 +249,7 @@ PortEvent Event describes each port forwarding event.
 | portName | [string](#string) |  |  |
 | resourceType | [string](#string) |  | resource type e.g. "pod", "service". |
 | resourceName | [string](#string) |  | name of the resource to forward. |
+| address | [string](#string) |  |  |
 
 
 

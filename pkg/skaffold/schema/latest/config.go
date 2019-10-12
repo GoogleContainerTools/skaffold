@@ -89,6 +89,9 @@ type PortForwardResource struct {
 	// Port is the resource port that will be forwarded.
 	Port int `yaml:"port,omitempty"`
 
+	// Address is the local address to bind to. Defaults to the loopback address 127.0.0.1.
+	Address string `yaml:"address,omitempty"`
+
 	// LocalPort is the local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
 	LocalPort int `yaml:"localPort,omitempty"`
 }

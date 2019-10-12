@@ -126,6 +126,7 @@ message PortEvent {
     string portName = 6;
     string resourceType = 7; // resource type e.g. "pod", "service".
     string resourceName = 8; // name of the resource to forward.
+    string address=9; // address on which to bind
 }
 
 // FileSyncEvent describes the sync status.

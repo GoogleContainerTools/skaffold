@@ -6,6 +6,8 @@ package proto
 import (
 	context "context"
 	fmt "fmt"
+	math "math"
+
 	proto "github.com/golang/protobuf/proto"
 	empty "github.com/golang/protobuf/ptypes/empty"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
@@ -13,7 +15,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -835,6 +836,7 @@ type PortEvent struct {
 	PortName             string   `protobuf:"bytes,6,opt,name=portName,proto3" json:"portName,omitempty"`
 	ResourceType         string   `protobuf:"bytes,7,opt,name=resourceType,proto3" json:"resourceType,omitempty"`
 	ResourceName         string   `protobuf:"bytes,8,opt,name=resourceName,proto3" json:"resourceName,omitempty"`
+	Address              string   `protobuf:"bytes,9,opt,name=address,proto3" json:"address,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -917,6 +919,13 @@ func (m *PortEvent) GetResourceType() string {
 func (m *PortEvent) GetResourceName() string {
 	if m != nil {
 		return m.ResourceName
+	}
+	return ""
+}
+
+func (m *PortEvent) GetAddress() string {
+	if m != nil {
+		return m.Address
 	}
 	return ""
 }
