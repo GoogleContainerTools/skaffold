@@ -14,16 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta15
+package v1beta16
 
 import (
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta16"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1beta15 to v1beta16
+// Config changes from v1beta16 to v1beta17
 // 1. Additions:
 //    buildArgs for Kustomize deployer
 // 2. Removals:

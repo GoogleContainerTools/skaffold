@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1beta16
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v1beta17"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v1beta16"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
