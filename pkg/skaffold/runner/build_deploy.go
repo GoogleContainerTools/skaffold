@@ -92,6 +92,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	var imageNames []string
 	for _, artifact := range artifacts {
 		imageNames = append(imageNames, artifact.ImageName)
+		r.podSelector.Add(artifact.Tag)
 	}
 
 	logger := r.newLoggerForImages(out, imageNames)

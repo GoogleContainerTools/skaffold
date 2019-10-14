@@ -127,12 +127,22 @@ func (b *RunBuilder) WithEnv(env []string) *RunBuilder {
 }
 
 // RunBackground runs the skaffold command in the background.
-// This also returns a teardown function that stops skaffold.
+// Returns a teardown function that stops skaffold.
 func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
+	_, cancel := b.RunBackgroundOutput(t)
+	return cancel
+}
+
+// RunBackgroundOutput runs the skaffold command in the background.
+// Returns a teardown function that stops skaffold.
+func (b *RunBuilder) RunBackgroundOutput(t *testing.T) (io.ReadCloser, context.CancelFunc) {
 	t.Helper()
+
+	pr, pw := io.Pipe()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := b.cmd(ctx)
+	cmd.Stdout = pw
 	logrus.Infoln(cmd.Args)
 
 	start := time.Now()
@@ -145,9 +155,10 @@ func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 		logrus.Infoln("Ran in", time.Since(start))
 	}()
 
-	return func() {
+	return pr, func() {
 		cancel()
 		cmd.Wait()
+		pr.Close()
 	}
 }
 
