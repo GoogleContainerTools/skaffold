@@ -194,10 +194,6 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Col
 			// Read up to newline
 			line, err := r.ReadString('\n')
 			if err == io.EOF {
-				// Unless the context was interrupted, this means that the container was stopped.
-				if ctx.Err() != context.Canceled {
-					a.printLogLine(headerColor, prefix, "<Container was Terminated>\n")
-				}
 				return nil
 			}
 			if err != nil {
