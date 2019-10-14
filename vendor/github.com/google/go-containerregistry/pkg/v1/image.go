@@ -28,6 +28,9 @@ type Image interface {
 	// MediaType of this image's manifest.
 	MediaType() (types.MediaType, error)
 
+	// Size returns the size of the manifest.
+	Size() (int64, error)
+
 	// ConfigName returns the hash of the image's config file.
 	ConfigName() (Hash, error)
 

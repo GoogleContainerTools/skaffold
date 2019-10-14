@@ -38,3 +38,13 @@ const (
 	DockerForeignLayer          MediaType = "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip"
 	DockerUncompressedLayer     MediaType = "application/vnd.docker.image.rootfs.diff.tar"
 )
+
+// IsDistributable returns true if a layer is distributable, see:
+// https://github.com/opencontainers/image-spec/blob/master/layer.md#non-distributable-layers
+func (m MediaType) IsDistributable() bool {
+	switch m {
+	case DockerForeignLayer, OCIRestrictedLayer, OCIUncompressedRestrictedLayer:
+		return false
+	}
+	return true
+}

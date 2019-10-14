@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// Package wait is a subset of k8s.io/apimachinery to avoid conflicts
+// in dependencies (specifically, logging).
 package wait
 
 import (
