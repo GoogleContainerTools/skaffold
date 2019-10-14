@@ -21,9 +21,9 @@ Here are some rules about how tagging currently works:
    super complex with a lot of retagging. It also produced images that were tagged with their
    own digest or imageID which is superfluous since the digest/imageID can be used to reference
    the images directly.
- + No matter the tagger, Skaffold always uses immutable referenced in Kubenetes manifests.
-   Which reference is used depend on whether the images are pushed or not:
-     + When images are pushed, their immutable digests are available. So images are referenced
+ + No matter the tagger, Skaffold always uses immutable references in Kubenetes manifests.
+   Which reference is used depends on whether the images are pushed or not:
+     + When images are pushed, their immutable digests are available - this means that are referenced
        by image tag and digest. Something like `image:tag@sha256:abacabac...`. Using both the
        tag and the digest seems superfluous but it guarantees that Kubernetes uses the exact image
        version, referenced by its immutable digest while helping the user quickly see which
@@ -40,7 +40,7 @@ Here are some rules about how tagging currently works:
  + the `git` tagger requires users to have the `git` binary installed. It also requires
    the project to be a git project, which is typically not the case when users just try
    to get started.
- + the `sha256` has a wrong name. It is named like that because, in the end, when Skaffold
+ + `sha256` is a misleading name. It is named like that because, in the end, when Skaffold
    deploys to a remote cluster, the image's sha256 digest will be used as the immutable tag.
    Users are very confused with this name and behaviour.
  + the `sha256` used to be able to use the image tags provided in the artifact definition,
