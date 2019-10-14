@@ -80,6 +80,10 @@ func (i *randomIndex) Digest() (v1.Hash, error) {
 	return partial.Digest(i)
 }
 
+func (i *randomIndex) Size() (int64, error) {
+	return partial.Size(i)
+}
+
 func (i *randomIndex) IndexManifest() (*v1.IndexManifest, error) {
 	return i.manifest, nil
 }

@@ -9,7 +9,7 @@ package volume
 
 import "github.com/docker/docker/api/types"
 
-// VolumeListOKBody Volume list response
+// VolumeListOKBody
 // swagger:model VolumeListOKBody
 type VolumeListOKBody struct {
 

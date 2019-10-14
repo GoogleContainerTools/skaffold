@@ -33,7 +33,6 @@ type SELinuxContext struct {
 
 // CredentialSpec for managed service account (Windows only)
 type CredentialSpec struct {
-	Config   string
 	File     string
 	Registry string
 }
@@ -56,7 +55,6 @@ type ContainerSpec struct {
 	User            string                  `json:",omitempty"`
 	Groups          []string                `json:",omitempty"`
 	Privileges      *Privileges             `json:",omitempty"`
-	Init            *bool                   `json:",omitempty"`
 	StopSignal      string                  `json:",omitempty"`
 	TTY             bool                    `json:",omitempty"`
 	OpenStdin       bool                    `json:",omitempty"`
@@ -72,5 +70,4 @@ type ContainerSpec struct {
 	Secrets   []*SecretReference  `json:",omitempty"`
 	Configs   []*ConfigReference  `json:",omitempty"`
 	Isolation container.Isolation `json:",omitempty"`
-	Sysctls   map[string]string   `json:",omitempty"`
 }
