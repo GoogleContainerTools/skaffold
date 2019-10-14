@@ -42,12 +42,12 @@ To do this, we will take advantage of the [custom builder](../builders) in Skaff
 
 First, add a `build.sh` file which Skaffold will call to build artifacts:
 
-{{% readfile file="samples/buildpacks/build.sh" %}}
+{{% readfile file="samples/custom-buildpacks/build.sh" %}}
 
 
 Then, configure artifacts in your `skaffold.yaml` to build with `build.sh`: 
 
-{{% readfile file="samples/buildpacks/skaffold.yaml" %}}
+{{% readfile file="samples/custom-buildpacks/skaffold.yaml" %}}
 
 List the file dependencies for each artifact; in the example above, Skaffold watches all files in the build context.
 For more information about listing dependencies for custom artifacts, see the documentation [here](../builders).

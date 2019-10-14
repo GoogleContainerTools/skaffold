@@ -20,7 +20,7 @@ To use buildpacks with Skaffold, please install the following additional tools:
 
 This tutorial will demonstrate how Skaffold can build a simple Hello World Go application with buildpacks and deploy it to a Kubernetes cluster.
 
-First, clone the Skaffold https://github.com/GoogleContainerTools/skaffold[repo] and navigate to the https://github.com/GoogleContainerTools/skaffold/tree/master/examples/buildpacks[buildpacks example] for sample code:
+First, clone the Skaffold https://github.com/GoogleContainerTools/skaffold[repo] and navigate to the https://github.com/GoogleContainerTools/skaffold/tree/master/examples/custom-buildpacks[buildpacks example] for sample code:
 
 ```shell
 $ git clone https://github.com/GoogleContainerTools/skaffold
@@ -89,7 +89,7 @@ $ skaffold delete --default-repo <your repo>
 ```
 
 ifndef::env-github[]
-==== link:{github-repo-tree}/examples/buildpacks[Example files icon:github[]]
+==== link:{github-repo-tree}/examples/custom-buildpacks[Example files icon:github[]]
 
 [source,yaml, indent=3, title=skaffold.yaml]
 ----
