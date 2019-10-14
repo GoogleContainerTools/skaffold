@@ -34,6 +34,10 @@ func TestApplyPatch(t *testing.T) {
 	config := `build:
   artifacts:
   - image: example
+deploy:
+  kubectl:
+    manifests:
+    - k8s-*
 profiles:
 - name: patches
   patches:
@@ -49,6 +53,8 @@ profiles:
       image: second
       docker:
         dockerfile: Dockerfile.second
+  - op: remove
+    path: /deploy
 `
 
 	testutil.Run(t, "", func(t *testutil.T) {
@@ -68,6 +74,7 @@ profiles:
 		t.CheckDeepEqual("replacement", skaffoldConfig.Build.Artifacts[0].ImageName)
 		t.CheckDeepEqual("Dockerfile.DEV", skaffoldConfig.Build.Artifacts[0].DockerArtifact.DockerfilePath)
 		t.CheckDeepEqual("Dockerfile.second", skaffoldConfig.Build.Artifacts[1].DockerArtifact.DockerfilePath)
+		t.CheckDeepEqual(latest.DeployConfig{}, skaffoldConfig.Deploy)
 	})
 }
 
