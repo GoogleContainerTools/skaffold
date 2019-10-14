@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox-hello
+spec:
+  containers:
+  - name: busybox-hello
+    image: busybox
+    args:
+      - sh
+      - -c
+      - "while :; do echo 'Hello world!'; sleep 1; done"
