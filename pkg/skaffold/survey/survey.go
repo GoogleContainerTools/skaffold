@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	Prompt = `Help improve Skaffold! Take a 10 seconds anonymous survey at
+	Prompt = `Help improve Skaffold! Take a 10 seconds anonymous survey by running
    $skaffold survey`
 )
 
