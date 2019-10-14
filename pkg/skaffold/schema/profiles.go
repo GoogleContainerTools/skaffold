@@ -245,6 +245,7 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 		return err
 	}
 
+	*config = latest.SkaffoldConfig{}
 	return yaml.Unmarshal(buf, config)
 }
 
