@@ -92,18 +92,20 @@ func artifactConfig(a *latest.Artifact) (string, error) {
 	return string(buf), nil
 }
 
-func retrieveBuildArgs(a *latest.Artifact) map[string]*string {
-	if a.ArtifactType.DockerArtifact != nil {
-		return a.ArtifactType.DockerArtifact.BuildArgs
+func retrieveBuildArgs(artifact *latest.Artifact) map[string]*string {
+	switch {
+	case artifact.DockerArtifact != nil:
+		return artifact.DockerArtifact.BuildArgs
+
+	case artifact.KanikoArtifact != nil:
+		return artifact.KanikoArtifact.BuildArgs
+
+	case artifact.CustomArtifact != nil && artifact.CustomArtifact.Dependencies.Dockerfile != nil:
+		return artifact.CustomArtifact.Dependencies.Dockerfile.BuildArgs
+
+	default:
+		return nil
 	}
-	if a.ArtifactType.KanikoArtifact != nil {
-		return a.KanikoArtifact.BuildArgs
-	}
-	customArtifact := a.ArtifactType.CustomArtifact
-	if customArtifact != nil && customArtifact.Dependencies.Dockerfile != nil {
-		return customArtifact.Dependencies.Dockerfile.BuildArgs
-	}
-	return nil
 }
 
 func convertBuildArgsToStringArray(buildArgs map[string]*string) []string {
