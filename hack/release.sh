@@ -14,12 +14,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -euo pipefail
+
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 EXAMPLES_DIR=${DIR}/../examples
 INTEGRATION_EXAMPLES_DIR=${DIR}/../integration/examples
 
+install_release_notes_helper() {
+  release_notes_workdir="$(mktemp -d)"
+  trap 'rm -rf -- ${release_notes_workdir}' RETURN
+
+  # See https://stackoverflow.com/questions/56842385/using-go-get-to-download-binaries-without-adding-them-to-go-mod for this workaround
+  cd "${release_notes_workdir}"
+  go mod init release-notes
+  GOBIN="$DIR" go get github.com/corneliusweig/release-notes
+  cd -
+}
+
+if ! [[ -x "${DIR}/release-notes" ]]; then
+  echo >&2 'Installing release-notes'
+  install_release_notes_helper
+fi
+
 # you can pass your github token with --token here if you run out of requests
-go run ${DIR}/release_notes/listpullreqs.go
+"${DIR}/release-notes" GoogleContainerTools skaffold
 
 # sync files from integration examples to examples/
 rm -rf ${EXAMPLES_DIR} && rm -rf ${INTEGRATION_EXAMPLES_DIR}/bazel/bazel-* && cp -r ${INTEGRATION_EXAMPLES_DIR} ${EXAMPLES_DIR} && rm -rf ${EXAMPLES_DIR}/test-*
