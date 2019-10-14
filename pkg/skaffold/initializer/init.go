@@ -359,8 +359,8 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []build
 		}
 		images = util.RemoveFromSlice(images, image)
 	}
-	if len(builderConfigs) > 0 {
-		logrus.Warnf("unused builder configs found in repository: %v", builderConfigs)
+	if len(choices) > 0 {
+		logrus.Warnf("unused builder configs found in repository: %v", choices)
 	}
 	return pairs
 }
