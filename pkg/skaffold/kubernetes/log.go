@@ -101,6 +101,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 					continue
 				}
 
+				// TODO(dgageot): Add EphemeralContainerStatuses
 				for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 					if c.ContainerID == "" {
 						if c.State.Waiting != nil && c.State.Waiting.Message != "" {

@@ -258,11 +258,10 @@ func TestGetPendingDetails(t *testing.T) {
 		description string
 		init        []v1.ContainerStatus
 		cs          []v1.ContainerStatus
-		ephemeral   []v1.ContainerStatus
 		expected    int
 	}{
 		{
-			description: "pod with init containers and ephemeral containers",
+			description: "pod with init containers containers",
 			init: []v1.ContainerStatus{
 				{
 					Name:  "foo-init",
@@ -272,28 +271,6 @@ func TestGetPendingDetails(t *testing.T) {
 			cs: []v1.ContainerStatus{
 				{
 					Name:  "foo-container",
-					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
-				},
-			},
-			ephemeral: []v1.ContainerStatus{
-				{
-					Name:  "foo-eph",
-					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
-				},
-			},
-			expected: 3,
-		},
-		{
-			description: "pod with only ephemeral containers",
-			cs: []v1.ContainerStatus{
-				{
-					Name:  "foo-container",
-					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
-				},
-			},
-			ephemeral: []v1.ContainerStatus{
-				{
-					Name:  "foo-eph",
 					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
 				},
 			},
@@ -332,10 +309,9 @@ func TestGetPendingDetails(t *testing.T) {
 			t.Override(&waitingContainerStatus, m.mockWaitingContainerStatus)
 			pod := &v1.Pod{
 				Status: v1.PodStatus{
-					Conditions:                 []v1.PodCondition{{Status: v1.ConditionFalse}},
-					InitContainerStatuses:      test.init,
-					ContainerStatuses:          test.cs,
-					EphemeralContainerStatuses: test.ephemeral,
+					Conditions:            []v1.PodCondition{{Status: v1.ConditionFalse}},
+					InitContainerStatuses: test.init,
+					ContainerStatuses:     test.cs,
 				},
 			}
 			getPendingDetails(pod)
