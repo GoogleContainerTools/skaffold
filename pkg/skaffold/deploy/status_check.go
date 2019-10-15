@@ -235,6 +235,7 @@ func (c *counter) copy() *counter {
 		failed:  c.failed,
 	}
 }
+
 func newResourceCounter(d int) *resourceCounter {
 	return &resourceCounter{
 		deployments: newCounter(d),
