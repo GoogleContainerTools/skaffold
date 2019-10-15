@@ -552,6 +552,7 @@ func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, st
 
 		var directories []*godirwalk.Dirent
 		findBuildersInDirectories := true
+		sort.Sort(dirents)
 		for _, file := range dirents {
 			// If we found a directory, keep track of it until we've gone through all the files first
 			if file.IsDir() {

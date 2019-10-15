@@ -171,9 +171,9 @@ func TestWalk(t *testing.T) {
 			},
 			expectedPaths: []string{
 				"Dockerfile",
-				"maven/pom.xml",
 				"deploy/Dockerfile",
 				"gradle/build.gradle",
+				"maven/pom.xml",
 			},
 			shouldErr: false,
 		},
@@ -194,8 +194,8 @@ func TestWalk(t *testing.T) {
 				"config/test.yaml",
 			},
 			expectedPaths: []string{
-				"maven/pom.xml",
 				"gradle/build.gradle",
+				"maven/pom.xml",
 			},
 			shouldErr: false,
 		},
@@ -217,8 +217,8 @@ func TestWalk(t *testing.T) {
 			},
 			expectedPaths: []string{
 				"Dockerfile",
-				"pom.xml",
 				"build.gradle",
+				"pom.xml",
 			},
 			shouldErr: false,
 		},
