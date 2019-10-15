@@ -56,6 +56,31 @@ func TestBuildBazel(t *testing.T) {
 	})
 }
 
+func TestBuildBazelFailInvalidTarget(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil), nil
+		})
+
+		builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
+			Push: util.BoolPtr(false),
+		}))
+		t.CheckNoError(err)
+
+		artifact := &latest.Artifact{
+			Workspace: ".",
+			ArtifactType: latest.ArtifactType{
+				BazelArtifact: &latest.BazelArtifact{
+					BuildTarget: "//:invalid-target",
+				},
+			},
+		}
+
+		_, err = builder.buildBazel(context.Background(), ioutil.Discard, artifact, "img:tag")
+		t.CheckError(true, err)
+	})
+}
+
 func TestBazelBin(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(

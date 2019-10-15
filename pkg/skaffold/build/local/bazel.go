@@ -34,6 +34,10 @@ import (
 func (b *Builder) buildBazel(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	a := artifact.ArtifactType.BazelArtifact
 
+	if !strings.HasSuffix(a.BuildTarget, ".tar") {
+		return "", errors.New("the bazel build target should end with .tar, see https://github.com/bazelbuild/rules_docker#using-with-docker-locally")
+	}
+
 	args := []string{"build"}
 	args = append(args, a.BuildArgs...)
 	args = append(args, a.BuildTarget)
