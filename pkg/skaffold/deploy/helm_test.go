@@ -512,6 +512,9 @@ type MockHelm struct {
 
 	packageOut    io.Reader
 	packageResult error
+
+	versionOut    io.Reader
+	versionResult error
 }
 
 func (m *MockHelm) ForTest(t *testing.T) {
@@ -560,6 +563,13 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 			}
 		}
 		return m.packageResult
+	case "version":
+		if m.versionOut != nil {
+			if _, err := io.Copy(c.Stdout, m.versionOut); err != nil {
+				m.t.Errorf("Failed to copy stdout")
+			}
+		}
+		return m.versionResult
 	default:
 		m.t.Errorf("Unknown helm command: %+v", c)
 		return nil

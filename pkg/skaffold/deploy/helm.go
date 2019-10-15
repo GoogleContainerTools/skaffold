@@ -163,7 +163,7 @@ func (h *HelmDeployer) isHelmV3(ctx context.Context) (bool, error) {
 	if err := h.helm(ctx, buf, false, "version", "--short"); err != nil {
 		return false, errors.Wrap(err, "detecting helm version")
 	}
-	helm3 := buf.String()[:2] == "v3"
+	helm3 := strings.HasPrefix(buf.String(), "v3")
 	if helm3 {
 		logrus.Infof("Detected helm version 3")
 	} else {
