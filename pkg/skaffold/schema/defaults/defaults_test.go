@@ -66,7 +66,7 @@ func TestSetDefaults(t *testing.T) {
 	testutil.CheckDeepEqual(t, "Dockerfile.second", cfg.Build.Artifacts[1].DockerArtifact.DockerfilePath)
 
 	testutil.CheckDeepEqual(t, "third", cfg.Build.Artifacts[2].ImageName)
-	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[2].CustomArtifact.Dependencies.Paths)
+	testutil.CheckDeepEqual(t, []string{"."}, cfg.Build.Artifacts[2].CustomArtifact.Dependencies.Paths)
 	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[2].CustomArtifact.Dependencies.Ignore)
 }
 
@@ -83,6 +83,26 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		cfg := &latest.SkaffoldConfig{
 			Pipeline: latest.Pipeline{
 				Build: latest.BuildConfig{
+					Artifacts: []*latest.Artifact{
+						{
+							ImageName: "docker",
+							ArtifactType: latest.ArtifactType{
+								DockerArtifact: &latest.DockerArtifact{},
+							},
+						},
+						{
+							ImageName: "kaniko",
+							ArtifactType: latest.ArtifactType{
+								KanikoArtifact: &latest.KanikoArtifact{},
+							},
+						},
+						{
+							ImageName: "custom",
+							ArtifactType: latest.ArtifactType{
+								CustomArtifact: &latest.CustomArtifact{},
+							},
+						},
+					},
 					BuildType: latest.BuildType{
 						Cluster: &latest.ClusterDetails{},
 					},
@@ -94,6 +114,11 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		t.CheckNoError(err)
 		t.CheckDeepEqual("ns", cfg.Build.Cluster.Namespace)
 		t.CheckDeepEqual(constants.DefaultKanikoTimeout, cfg.Build.Cluster.Timeout)
+
+		// artifact types
+		t.CheckDeepEqual(true, cfg.Pipeline.Build.Artifacts[0].KanikoArtifact != nil)
+		t.CheckDeepEqual(true, cfg.Pipeline.Build.Artifacts[1].KanikoArtifact != nil)
+		t.CheckDeepEqual(false, cfg.Pipeline.Build.Artifacts[2].KanikoArtifact != nil)
 
 		// pull secret set
 		cfg = &latest.SkaffoldConfig{
@@ -110,6 +135,27 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		err = Set(cfg)
 
 		t.CheckNoError(err)
+
+		t.CheckDeepEqual(constants.DefaultKanikoSecretMountPath, cfg.Build.Cluster.PullSecretMountPath)
+
+		// pull secret mount path set
+		path := "/path"
+		cfg = &latest.SkaffoldConfig{
+			Pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					BuildType: latest.BuildType{
+						Cluster: &latest.ClusterDetails{
+							PullSecret:          "path/to/pull/secret",
+							PullSecretMountPath: path,
+						},
+					},
+				},
+			},
+		}
+
+		err = Set(cfg)
+		t.CheckNoError(err)
+		t.CheckDeepEqual(path, cfg.Build.Cluster.PullSecretMountPath)
 
 		// default docker config
 		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{}

@@ -19,10 +19,7 @@ limitations under the License.
 package kubernetes
 
 import (
-	"fmt"
-
 	discovery "k8s.io/client-go/discovery"
-	admissionregistrationv1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1"
 	admissionregistrationv1beta1 "k8s.io/client-go/kubernetes/typed/admissionregistration/v1beta1"
 	appsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	appsv1beta1 "k8s.io/client-go/kubernetes/typed/apps/v1beta1"
@@ -42,7 +39,6 @@ import (
 	coordinationv1 "k8s.io/client-go/kubernetes/typed/coordination/v1"
 	coordinationv1beta1 "k8s.io/client-go/kubernetes/typed/coordination/v1beta1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	discoveryv1alpha1 "k8s.io/client-go/kubernetes/typed/discovery/v1alpha1"
 	eventsv1beta1 "k8s.io/client-go/kubernetes/typed/events/v1beta1"
 	extensionsv1beta1 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
 	networkingv1 "k8s.io/client-go/kubernetes/typed/networking/v1"
@@ -66,7 +62,6 @@ import (
 
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
-	AdmissionregistrationV1() admissionregistrationv1.AdmissionregistrationV1Interface
 	AdmissionregistrationV1beta1() admissionregistrationv1beta1.AdmissionregistrationV1beta1Interface
 	AppsV1() appsv1.AppsV1Interface
 	AppsV1beta1() appsv1beta1.AppsV1beta1Interface
@@ -86,7 +81,6 @@ type Interface interface {
 	CoordinationV1beta1() coordinationv1beta1.CoordinationV1beta1Interface
 	CoordinationV1() coordinationv1.CoordinationV1Interface
 	CoreV1() corev1.CoreV1Interface
-	DiscoveryV1alpha1() discoveryv1alpha1.DiscoveryV1alpha1Interface
 	EventsV1beta1() eventsv1beta1.EventsV1beta1Interface
 	ExtensionsV1beta1() extensionsv1beta1.ExtensionsV1beta1Interface
 	NetworkingV1() networkingv1.NetworkingV1Interface
@@ -110,7 +104,6 @@ type Interface interface {
 // version included in a Clientset.
 type Clientset struct {
 	*discovery.DiscoveryClient
-	admissionregistrationV1      *admissionregistrationv1.AdmissionregistrationV1Client
 	admissionregistrationV1beta1 *admissionregistrationv1beta1.AdmissionregistrationV1beta1Client
 	appsV1                       *appsv1.AppsV1Client
 	appsV1beta1                  *appsv1beta1.AppsV1beta1Client
@@ -130,7 +123,6 @@ type Clientset struct {
 	coordinationV1beta1          *coordinationv1beta1.CoordinationV1beta1Client
 	coordinationV1               *coordinationv1.CoordinationV1Client
 	coreV1                       *corev1.CoreV1Client
-	discoveryV1alpha1            *discoveryv1alpha1.DiscoveryV1alpha1Client
 	eventsV1beta1                *eventsv1beta1.EventsV1beta1Client
 	extensionsV1beta1            *extensionsv1beta1.ExtensionsV1beta1Client
 	networkingV1                 *networkingv1.NetworkingV1Client
@@ -148,11 +140,6 @@ type Clientset struct {
 	storageV1beta1               *storagev1beta1.StorageV1beta1Client
 	storageV1                    *storagev1.StorageV1Client
 	storageV1alpha1              *storagev1alpha1.StorageV1alpha1Client
-}
-
-// AdmissionregistrationV1 retrieves the AdmissionregistrationV1Client
-func (c *Clientset) AdmissionregistrationV1() admissionregistrationv1.AdmissionregistrationV1Interface {
-	return c.admissionregistrationV1
 }
 
 // AdmissionregistrationV1beta1 retrieves the AdmissionregistrationV1beta1Client
@@ -250,11 +237,6 @@ func (c *Clientset) CoreV1() corev1.CoreV1Interface {
 	return c.coreV1
 }
 
-// DiscoveryV1alpha1 retrieves the DiscoveryV1alpha1Client
-func (c *Clientset) DiscoveryV1alpha1() discoveryv1alpha1.DiscoveryV1alpha1Interface {
-	return c.discoveryV1alpha1
-}
-
 // EventsV1beta1 retrieves the EventsV1beta1Client
 func (c *Clientset) EventsV1beta1() eventsv1beta1.EventsV1beta1Interface {
 	return c.eventsV1beta1
@@ -349,22 +331,13 @@ func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 }
 
 // NewForConfig creates a new Clientset for the given config.
-// If config's RateLimiter is not set and QPS and Burst are acceptable,
-// NewForConfig will generate a rate-limiter in configShallowCopy.
 func NewForConfig(c *rest.Config) (*Clientset, error) {
 	configShallowCopy := *c
 	if configShallowCopy.RateLimiter == nil && configShallowCopy.QPS > 0 {
-		if configShallowCopy.Burst <= 0 {
-			return nil, fmt.Errorf("Burst is required to be greater than 0 when RateLimiter is not set and QPS is set to greater than 0")
-		}
 		configShallowCopy.RateLimiter = flowcontrol.NewTokenBucketRateLimiter(configShallowCopy.QPS, configShallowCopy.Burst)
 	}
 	var cs Clientset
 	var err error
-	cs.admissionregistrationV1, err = admissionregistrationv1.NewForConfig(&configShallowCopy)
-	if err != nil {
-		return nil, err
-	}
 	cs.admissionregistrationV1beta1, err = admissionregistrationv1beta1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
@@ -438,10 +411,6 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 		return nil, err
 	}
 	cs.coreV1, err = corev1.NewForConfig(&configShallowCopy)
-	if err != nil {
-		return nil, err
-	}
-	cs.discoveryV1alpha1, err = discoveryv1alpha1.NewForConfig(&configShallowCopy)
 	if err != nil {
 		return nil, err
 	}
@@ -525,7 +494,6 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 // panics if there is an error in the config.
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
-	cs.admissionregistrationV1 = admissionregistrationv1.NewForConfigOrDie(c)
 	cs.admissionregistrationV1beta1 = admissionregistrationv1beta1.NewForConfigOrDie(c)
 	cs.appsV1 = appsv1.NewForConfigOrDie(c)
 	cs.appsV1beta1 = appsv1beta1.NewForConfigOrDie(c)
@@ -545,7 +513,6 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 	cs.coordinationV1beta1 = coordinationv1beta1.NewForConfigOrDie(c)
 	cs.coordinationV1 = coordinationv1.NewForConfigOrDie(c)
 	cs.coreV1 = corev1.NewForConfigOrDie(c)
-	cs.discoveryV1alpha1 = discoveryv1alpha1.NewForConfigOrDie(c)
 	cs.eventsV1beta1 = eventsv1beta1.NewForConfigOrDie(c)
 	cs.extensionsV1beta1 = extensionsv1beta1.NewForConfigOrDie(c)
 	cs.networkingV1 = networkingv1.NewForConfigOrDie(c)
@@ -571,7 +538,6 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 // New creates a new Clientset for the given RESTClient.
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
-	cs.admissionregistrationV1 = admissionregistrationv1.New(c)
 	cs.admissionregistrationV1beta1 = admissionregistrationv1beta1.New(c)
 	cs.appsV1 = appsv1.New(c)
 	cs.appsV1beta1 = appsv1beta1.New(c)
@@ -591,7 +557,6 @@ func New(c rest.Interface) *Clientset {
 	cs.coordinationV1beta1 = coordinationv1beta1.New(c)
 	cs.coordinationV1 = coordinationv1.New(c)
 	cs.coreV1 = corev1.New(c)
-	cs.discoveryV1alpha1 = discoveryv1alpha1.New(c)
 	cs.eventsV1beta1 = eventsv1beta1.New(c)
 	cs.extensionsV1beta1 = extensionsv1beta1.New(c)
 	cs.networkingV1 = networkingv1.New(c)

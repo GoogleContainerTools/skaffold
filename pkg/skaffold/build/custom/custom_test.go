@@ -17,12 +17,9 @@ limitations under the License.
 package custom
 
 import (
-	"context"
 	"io/ioutil"
 	"os/exec"
-	"runtime"
 	"testing"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -123,42 +120,6 @@ func TestRetrieveCmd(t *testing.T) {
 			t.CheckDeepEqual(test.expected.Args, cmd.Args)
 			t.CheckDeepEqual(test.expected.Dir, cmd.Dir)
 			t.CheckDeepEqual(test.expected.Env, cmd.Env)
-		})
-	}
-}
-
-func TestGracefulBuildCancel(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("graceful cancel doesn't work on windows")
-	}
-
-	tests := []struct {
-		description string
-		command     string
-		shouldErr   bool
-	}{
-		{
-			description: "terminate gracefully and exit 0",
-			command:     "trap 'echo trap' INT; sleep 2",
-		}, {
-			description: "terminate gracefully and kill process",
-			command:     "trap 'echo trap' INT; sleep 5",
-			shouldErr:   true,
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			builder := NewArtifactBuilder(false, nil)
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-
-			cmd := exec.Command("bash", "-c", test.command)
-			t.CheckNoError(cmd.Start())
-
-			err := builder.handleGracefulTermination(ctx, cmd)
-			t.CheckError(test.shouldErr, err)
-
-			cancel()
 		})
 	}
 }

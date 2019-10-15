@@ -109,7 +109,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		labellers:            labellers,
 		defaultLabeller:      defaultLabeller,
 		portForwardResources: runCtx.Cfg.PortForward,
-		imageList:            kubernetes.NewImageList(),
+		podSelector:          kubernetes.NewImageList(),
 		cache:                artifactCache,
 		runCtx:               runCtx,
 		intents:              newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy),

@@ -32,9 +32,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (r *SkaffoldRunner) DiagnoseArtifacts(out io.Writer) error {
-	ctx := context.Background()
-
+func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) error {
 	for _, artifact := range r.runCtx.Cfg.Build.Artifacts {
 		color.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.ImageName)
 
@@ -97,8 +95,12 @@ func typeOfArtifact(a *latest.Artifact) string {
 		return "Bazel artifact"
 	case a.JibArtifact != nil:
 		return "Jib artifact"
+	case a.KanikoArtifact != nil:
+		return "Kaniko artifact"
+	case a.CustomArtifact != nil:
+		return "Custom artifact"
 	default:
-		return "Unknown artifact"
+		panic("Unknown artifact")
 	}
 }
 

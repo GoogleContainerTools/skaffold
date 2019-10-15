@@ -22,6 +22,9 @@ import (
 	"github.com/google/go-containerregistry/pkg/internal/retry/wait"
 )
 
+// Backoff is an alias of our own wait.Backoff to avoid name conflicts with
+// the kubernetes wait package. Typing retry.Backoff is aesier than fixing
+// the wrong import every time you use wait.Backoff.
 type Backoff = wait.Backoff
 
 // This is implemented by several errors in the net package as well as our

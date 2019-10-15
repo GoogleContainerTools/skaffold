@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -68,6 +69,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	}
 
 	if needsBuild {
+		event.ResetStateOnBuild()
 		defer func() {
 			r.changeSet.resetBuild()
 			r.intents.resetBuild()
@@ -80,6 +82,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	}
 
 	if needsDeploy {
+		event.ResetStateOnDeploy()
 		defer func() {
 			r.changeSet.resetDeploy()
 			r.intents.resetDeploy()

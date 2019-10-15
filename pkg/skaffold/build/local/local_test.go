@@ -50,7 +50,7 @@ func TestLocalRun(t *testing.T) {
 		artifacts        []*latest.Artifact
 		expected         []build.Artifact
 		expectedWarnings []string
-		expectedPushed   []string
+		expectedPushed   map[string]string
 		pushImages       bool
 		shouldErr        bool
 	}{
@@ -99,7 +99,9 @@ func TestLocalRun(t *testing.T) {
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:tag@sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165",
 			}},
-			expectedPushed: []string{"sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165"},
+			expectedPushed: map[string]string{
+				"gcr.io/test/image:tag": "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165",
+			},
 		},
 		{
 			description: "error build",

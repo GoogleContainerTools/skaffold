@@ -43,12 +43,14 @@ func (s *server) Handle(ctx context.Context, e *proto.Event) (*empty.Empty, erro
 
 func (s *server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (*empty.Empty, error) {
 	if intent.GetIntent().GetBuild() {
+		event.ResetStateOnBuild()
 		go func() {
 			s.buildIntentCallback()
 		}()
 	}
 
 	if intent.GetIntent().GetDeploy() {
+		event.ResetStateOnDeploy()
 		go func() {
 			s.deployIntentCallback()
 		}()

@@ -53,6 +53,7 @@ const (
 type counter struct {
 	total   int
 	pending int32
+	failed  int32
 }
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
@@ -76,7 +77,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		go func(r Resource) {
 			defer wg.Done()
 			pollResourceStatus(ctx, runCtx, r)
-			pending := c.markProcessed()
+			pending := c.markProcessed(r.Status().Error())
 			printStatusCheckSummary(out, r, pending, c.total)
 		}(d)
 	}
@@ -88,7 +89,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Wait for all deployment status to be fetched
 	wg.Wait()
-	return getSkaffoldDeployStatus(deployments)
+	return getSkaffoldDeployStatus(c)
 }
 
 func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]Resource, error) {
@@ -133,17 +134,11 @@ func pollResourceStatus(ctx context.Context, runCtx *runcontext.RunContext, r Re
 	}
 }
 
-func getSkaffoldDeployStatus(resources []Resource) error {
-	var errorStrings []string
-	for _, r := range resources {
-		if err := r.Status().Error(); err != nil {
-			errorStrings = append(errorStrings, fmt.Sprintf("resource %s failed due to %s", r, err.Error()))
-		}
-	}
-	if len(errorStrings) == 0 {
+func getSkaffoldDeployStatus(c *counter) error {
+	if c.failed == 0 {
 		return nil
 	}
-	return fmt.Errorf("following resources are not stable:\n%s", strings.Join(errorStrings, "\n"))
+	return fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
 }
 
 func getDeadline(d int) time.Duration {
@@ -217,6 +212,9 @@ func newCounter(i int) *counter {
 	}
 }
 
-func (c *counter) markProcessed() int {
+func (c *counter) markProcessed(err error) int {
+	if err != nil {
+		atomic.AddInt32(&c.failed, 1)
+	}
 	return int(atomic.AddInt32(&c.pending, -1))
 }

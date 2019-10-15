@@ -27,8 +27,8 @@ artifacts, add the value representing the tool and options for using the tool
 to the `deploy` section.
 
 For a detailed discussion on Skaffold configuration, see
-[Skaffold Concepts](/docs/concepts/#configuration) and
-[skaffold.yaml References](/docs/references/yaml).
+[Skaffold Concepts]({{< relref "/docs/concepts#configuration" >}}) and
+[skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
 ## Deploying with kubectl
 

@@ -80,6 +80,6 @@ func New(reg name.Registry, auth authn.Authenticator, t http.RoundTripper, scope
 		}
 		return bt, nil
 	default:
-		return nil, fmt.Errorf("Unrecognized challenge: %s", pr.challenge)
+		return nil, fmt.Errorf("unrecognized challenge: %s", pr.challenge)
 	}
 }

@@ -20,7 +20,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta15"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v1beta16"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -286,6 +287,9 @@ type ClusterDetails struct {
 	// Defaults to `kaniko-secret`.
 	PullSecretName string `yaml:"pullSecretName,omitempty"`
 
+	// PullSecretMountPath is the path the pull secret will be mounted at within the running container.
+	PullSecretMountPath string `yaml:"pullSecretMountPath,omitempty"`
+
 	// Namespace is the Kubernetes namespace.
 	// Defaults to current namespace in Kubernetes configuration.
 	Namespace string `yaml:"namespace,omitempty"`
@@ -349,9 +353,14 @@ type TestCase struct {
 
 // DeployConfig contains all the configuration needed by the deploy steps.
 type DeployConfig struct {
+	DeployType `yaml:",inline"`
+
 	// StatusCheckDeadlineSeconds *beta* is the deadline for deployments to stabilize in seconds.
 	StatusCheckDeadlineSeconds int `yaml:"statusCheckDeadlineSeconds,omitempty"`
-	DeployType                 `yaml:",inline"`
+
+	// KubeContext is the Kubernetes context that Skaffold should deploy to.
+	// For example: `minikube`.
+	KubeContext string `yaml:"kubeContext,omitempty"`
 }
 
 // DeployType contains the specific implementation and parameters needed
@@ -462,11 +471,16 @@ type HelmRelease struct {
 	// all parsed pairs after the flag.
 	SetValueTemplates map[string]string `yaml:"setValueTemplates,omitempty"`
 
+	// SetFiles are key-value pairs.
+	// If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.
+	SetFiles map[string]string `yaml:"setFiles,omitempty"`
+
 	// Wait if `true`, Skaffold will send `--wait` flag to Helm CLI.
 	// Defaults to `false`.
 	Wait bool `yaml:"wait,omitempty"`
 
-	// RecreatePods if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI.
+	// RecreatePods if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI
+	// when upgrading a new version of a chart in subsequent dev loop deploy.
 	// Defaults to `false`.
 	RecreatePods bool `yaml:"recreatePods,omitempty"`
 
@@ -719,6 +733,9 @@ type KanikoArtifact struct {
 
 	// Reproducible is used to strip timestamps out of the built image.
 	Reproducible bool `yaml:"reproducible,omitempty"`
+
+	// SkipTLS skips TLS verification when pulling and pushing the image.
+	SkipTLS bool `yaml:"skipTLS,omitempty"`
 }
 
 // DockerArtifact *beta* describes an artifact built from a Dockerfile,

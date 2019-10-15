@@ -18,6 +18,7 @@ package context
 
 import (
 	"io/ioutil"
+	"sync"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -179,9 +180,102 @@ func TestGetRestClientConfig(t *testing.T) {
 	})
 }
 
+func TestUseKubeContext(t *testing.T) {
+	type invocation struct {
+		cliValue, yamlValue string
+	}
+	tests := []struct {
+		name        string
+		invocations []invocation
+		expected    string
+	}{
+		{
+			name:        "when not called at all",
+			invocations: nil,
+			expected:    "",
+		},
+		{
+			name:        "yaml value when no CLI value is given",
+			invocations: []invocation{{yamlValue: "context2"}},
+			expected:    "context2",
+		},
+		{
+			name: "yaml value when no CLI value is given, first invocation persists",
+			invocations: []invocation{
+				{yamlValue: "context-first"},
+				{yamlValue: "context-second"},
+			},
+			expected: "context-first",
+		},
+		{
+			name:        "CLI value takes precedence",
+			invocations: []invocation{{cliValue: "context1", yamlValue: "context2"}},
+			expected:    "context1",
+		},
+		{
+			name: "first CLI value takes precedence",
+			invocations: []invocation{
+				{cliValue: "context-first"},
+				{cliValue: "context-second"},
+			},
+			expected: "context-first",
+		},
+		{
+			name: "mixed CLI value and yaml value - I",
+			invocations: []invocation{
+				{cliValue: "context-first"},
+				{yamlValue: "context-second"},
+			},
+			expected: "context-first",
+		},
+		{
+			name: "mixed CLI value and yaml value - II",
+			invocations: []invocation{
+				{yamlValue: "context-first"},
+				{cliValue: "context-second"},
+			},
+			expected: "context-first",
+		},
+		{
+			name: "mixed CLI value and yaml value - III",
+			invocations: []invocation{
+				{yamlValue: "context-first"},
+				{cliValue: "context-second", yamlValue: "context-third"},
+			},
+			expected: "context-first",
+		},
+		{
+			name: "mixed CLI value and yaml value - IV",
+			invocations: []invocation{
+				{cliValue: "context-first", yamlValue: "context-second"},
+				{cliValue: "context-third", yamlValue: "context-fourth"},
+			},
+			expected: "context-first",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			kubeContext = ""
+			for _, inv := range test.invocations {
+				UseKubeContext(inv.cliValue, inv.yamlValue)
+			}
+
+			t.CheckDeepEqual(test.expected, kubeContext)
+			resetConfig()
+		})
+	}
+}
+
+// resetConfig is used by tests
+func resetConfig() {
+	kubeConfigOnce = sync.Once{}
+	kubeContextOnce = sync.Once{}
+}
+
 func resetKubeConfig(t *testutil.T, content string) {
 	kubeConfig := t.TempFile("config", []byte(content))
-	kubeContext = ""
 	t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
+	kubeContext = ""
 	resetConfig()
 }

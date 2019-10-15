@@ -17,8 +17,10 @@ limitations under the License.
 package integration
 
 import (
+	"bufio"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -97,6 +99,43 @@ func TestDeploy(t *testing.T) {
 	testutil.CheckDeepEqual(t, "index.docker.io/library/busybox:1", dep.Spec.Template.Spec.Containers[0].Image)
 
 	skaffold.Delete().InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
+}
+
+func TestDeployTail(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	out, cancel := skaffold.Deploy("--tail", "--images", "busybox:latest").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunBackgroundOutput(t)
+	defer cancel()
+
+	// Wait for the logs to print "Hello world!"
+	lines := make(chan string)
+	go func() {
+		scanner := bufio.NewScanner(out)
+		for scanner.Scan() {
+			lines <- scanner.Text()
+		}
+	}()
+
+	timer := time.NewTimer(30 * time.Second)
+	defer timer.Stop()
+	for {
+		select {
+		case <-timer.C:
+			t.Fatal("timeout")
+		case line := <-lines:
+			if strings.Contains(line, "Hello world!") {
+				return
+			}
+		}
+	}
 }
 
 func TestDeployWithInCorrectConfig(t *testing.T) {

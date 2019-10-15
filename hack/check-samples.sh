@@ -16,12 +16,35 @@
 
 set -e -o pipefail
 
-EXAMPLES=$(find examples -mindepth 1 -maxdepth 1 -type d -not -empty -exec basename {} \; | sort)
-INTEGRATION_EXAMPLES=$(find integration/examples -mindepth 1 -maxdepth 1 -type d -not -empty -exec basename {} \; | sort)
+EXAMPLES=`mktemp`
+INTEGRATION_EXAMPLES=`mktemp`
 
-if [[ "${EXAMPLES}" != "${INTEGRATION_EXAMPLES}" ]]; then
+find examples -mindepth 1 -maxdepth 1 -type d -not -empty -exec basename {} \; | sort > $EXAMPLES
+find integration/examples -mindepth 1 -maxdepth 1 -type d -not -empty -exec basename {} \; | sort > $INTEGRATION_EXAMPLES
+
+EXAMPLES_MINUS_INTEGRATION_EXAMPLES=`awk 'FNR==NR{ array[$0];next} {if ( $1 in array ) next; print $1}' $INTEGRATION_EXAMPLES $EXAMPLES`
+
+if [ ! -z "$EXAMPLES_MINUS_INTEGRATION_EXAMPLES" ]; then
   echo "Every code sample that is in ./examples should also be in ./integration/examples"
-  diff <(printf "examples:\n${EXAMPLES}" ) <(printf "integration/examples:\n${INTEGRATION_EXAMPLES}")
+  echo "The following are in examples but not in integration/examples:"
+  echo $EXAMPLES_MINUS_INTEGRATION_EXAMPLES
   exit 1
 fi
 
+# /examples should use the latest released version
+LATEST_RELEASED="skaffold/$(go run ./hack/versions/cmd/latest_released/version.go)"
+
+for EXAMPLE in $(find examples -name skaffold*.yaml); do
+    if [ "1" != "$(grep -c "apiVersion: ${LATEST_RELEASED}" "${EXAMPLE}")" ]; then
+        echo "skaffold version in ${EXAMPLE} should be ${LATEST_RELEASED}"
+    fi
+done
+
+# /integration/examples should use the latest (even if not released) version
+LATEST="skaffold/$(go run ./hack/versions/cmd/latest/version.go)"
+
+for EXAMPLE in $(find integration/examples -name skaffold*.yaml); do
+    if [ "1" != "$(grep -c "apiVersion: ${LATEST}" "${EXAMPLE}")" ]; then
+        echo "skaffold version in ${EXAMPLE} should be ${LATEST}"
+    fi
+done

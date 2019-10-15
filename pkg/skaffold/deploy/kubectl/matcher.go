@@ -20,7 +20,7 @@ package kubectl
 // on a manifest key in the Manifest
 // Note: If the manifest key is not present, the replacer will replace.
 type Matcher interface {
-	IsMatchKey(key string) bool
+	IsMatchKey(key interface{}) bool
 	Matches(v interface{}) bool
 }
 
@@ -31,7 +31,7 @@ func (f anyMatcher) Matches(interface{}) bool {
 	return true
 }
 
-func (f anyMatcher) IsMatchKey(key string) bool {
+func (f anyMatcher) IsMatchKey(key interface{}) bool {
 	return false
 }
 

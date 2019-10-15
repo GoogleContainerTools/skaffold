@@ -17,6 +17,7 @@ limitations under the License.
 package deploy
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -461,28 +462,70 @@ func TestDependencies(t *testing.T) {
 func TestKubectlRender(t *testing.T) {
 	tests := []struct {
 		description string
-		shouldErr   bool
+		builds      []build.Artifact
+		input       string
 	}{
 		{
-			description: "calling render returns error",
-			shouldErr:   true,
+			description: "normal render",
+			builds: []build.Artifact{
+				{
+					ImageName: "gcr.io/k8s-skaffold/skaffold",
+					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
+				},
+			},
+			input: `apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold
+    name: skaffold
+`,
+		},
+		{
+			description: "two artifacts",
+			builds: []build.Artifact{
+				{
+					ImageName: "gcr.io/project/image1",
+					Tag:       "gcr.io/project/image1:tag1",
+				},
+				{
+					ImageName: "gcr.io/project/image2",
+					Tag:       "gcr.io/project/image2:tag2",
+				},
+			},
+			input: `apiVersion: v1
+		kind: Pod
+		spec:
+		  containers:
+		  - image: gcr.io/project/image1
+		    name: image1
+		  - image: gcr.io/project/image2
+		    name: image2
+		`,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.DefaultExecCommand, testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f deployment.yaml", test.input))
+
 			deployer := NewKubectlDeployer(&runcontext.RunContext{
+				WorkingDir: ".",
 				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KubectlDeploy: &latest.KubectlDeploy{
-								Manifests: []string{},
+								Manifests: []string{"deployment.yaml"},
 							},
 						},
 					},
 				},
+				KubeContext: testKubeContext,
 			})
-			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, "tmp/dir")
-			t.CheckError(test.shouldErr, actual)
+			var b bytes.Buffer
+			err := deployer.Render(context.Background(), &b, test.builds, "")
+			t.CheckError(false, err)
 		})
 	}
 }

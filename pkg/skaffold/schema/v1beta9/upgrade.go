@@ -43,13 +43,13 @@ var (
 // 2. No removals
 // 3. Updates:
 //    - sync map becomes a list of sync rules
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 
-	pkgutil.CloneThroughJSON(config, &newConfig)
+	pkgutil.CloneThroughJSON(c, &newConfig)
 	newConfig.APIVersion = next.Version
 
-	if err := util.UpgradePipelines(config, &newConfig, upgradeOnePipeline); err != nil {
+	if err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline); err != nil {
 		return nil, err
 	}
 

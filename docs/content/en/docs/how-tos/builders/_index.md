@@ -9,13 +9,15 @@ to build Docker images.
 
 Skaffold supports the following tools to build your image:
 
-* [Dockerfile](https://docs.docker.com/engine/reference/builder/) locally with Docker
-* Dockerfile remotely with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
-* Dockerfile in-cluster with [Kaniko](https://github.com/GoogleContainerTools/kaniko)
+* [Dockerfile](https://docs.docker.com/engine/reference/builder/)
+  - locally with Docker
+  - in-cluster with [Kaniko](https://github.com/GoogleContainerTools/kaniko)
+  - on cloud with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
+* [Jib](https://github.com/GoogleContainerTools/jib) Maven and Gradle
+  - locally
+  - on cloud with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
 * [Bazel](https://bazel.build/) locally
-* [Jib](https://github.com/GoogleContainerTools/jib) Maven and Gradle projects locally
-* [Jib](https://github.com/GoogleContainerTools/jib) remotely with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
-* Custom build script run locally
+* Custom script locally
 * [Building with CNCF Buildpacks](../buildpacks)
 
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
@@ -24,8 +26,8 @@ artifacts, add the value representing the tool and options for using that tool
 to the `build` section.
 
 For a detailed discussion on Skaffold configuration, see
-[Skaffold Concepts](/docs/concepts/#configuration) and
-[skaffold.yaml References](/docs/references/yaml).
+[Skaffold Concepts]({{< relref "/docs/concepts#configuration" >}}) and
+[skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
 ## Dockerfile locally with Docker
 
@@ -262,7 +264,7 @@ Skaffold will pass in the following environment variables to the custom build sc
 | $IMAGES     | An array of fully qualified image names, separated by spaces. For example, "gcr.io/image1 gcr.io/image2" | The custom build script is expected to build an image and tag it with each image name in $IMAGES. Each image should also be pushed if `$PUSH_IMAGE=true`. | 
 | $PUSH_IMAGE      | Set to true if each image in `$IMAGES` is expected to exist in a remote registry. Set to false if each image in `$IMAGES` is expected to exist locally.      |   The custom build script will push each image in `$IMAGES` if `$PUSH_IMAGE=true` | 
 | $BUILD_CONTEXT  | An absolute path to the directory this artifact is meant to be built from. Specified by artifact `context` in the skaffold.yaml.      | None. | 
-| Local environment variables | The current state of the local environment (e.g. `$HOST`, `$PATH)`. Determined by the golang [os.Environ](https://golang.org/pkg/os/#Environ) function.| None. |
+| Local environment variables | The current state of the local environment (e.g. `$HOST`, `$PATH)`. Determined by the golang [os.Environ](https://golang.org/pkg/os#Environ) function.| None. |
 
 As described above, the custom build script is expected to:
 

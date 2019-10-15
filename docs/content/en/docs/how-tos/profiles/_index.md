@@ -11,8 +11,8 @@ environments in your app's lifecycle, like Production or Development.
 You can create profiles in the `profiles` section of `skaffold.yaml`.
 
 For a detailed discussion on Skaffold configuration, see
-[Skaffold Concepts](/docs/concepts/#configuration) and
-[skaffold.yaml References](/docs/references/yaml).
+[Skaffold Concepts]({{< relref "/docs/concepts#configuration" >}}) and
+[skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
 ## Profiles (`profiles`)
 
@@ -29,9 +29,9 @@ Once a profile is activated, the specified `build`, `test` and `deploy` configur
 in it will replace the `build`, `test` and `deploy` sections declared
 in the main section of `skaffold.yaml`. The `build`, `test` and `deploy` configuration in the `profiles`
 section use the same syntax as the `build`, `test` and `deploy` sections of
-`skaffold.yaml`; for more information, see [Builders](/docs/how-tos/builders),
-[Testers](/docs/how-tos/testers), [Deployers](/docs/how-tos/deployers) and you can always refer to
- [skaffold.yaml reference](/docs/references/yaml/) for an overview of the syntax.
+`skaffold.yaml`; for more information, see [Builders]({{< relref "/docs/how-tos/builders" >}}),
+[Testers](/docs/how-tos/testers), [Deployers]({{< relref "/docs/how-tos/deployers" >}}) and you can always refer to
+ [skaffold.yaml reference]({{< relref "/docs/references/yaml" >}}) for an overview of the syntax.
  Alternatively, you can override the main configuration with finer grained control using `patches`.
 
 

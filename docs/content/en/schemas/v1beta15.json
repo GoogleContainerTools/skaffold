@@ -1069,8 +1069,8 @@
         },
         "recreatePods": {
           "type": "boolean",
-          "description": "if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI.",
-          "x-intellij-html-description": "if <code>true</code>, Skaffold will send <code>--recreate-pods</code> flag to Helm CLI.",
+          "description": "if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI when upgrading a new version of a chart in subsequent dev loop deploy.",
+          "x-intellij-html-description": "if <code>true</code>, Skaffold will send <code>--recreate-pods</code> flag to Helm CLI when upgrading a new version of a chart in subsequent dev loop deploy.",
           "default": "false"
         },
         "remote": {
@@ -1078,6 +1078,15 @@
           "description": "specifies whether the chart path is remote, or exists on the host filesystem. `remote: true` implies `skipBuildDependencies: true`.",
           "x-intellij-html-description": "specifies whether the chart path is remote, or exists on the host filesystem. <code>remote: true</code> implies <code>skipBuildDependencies: true</code>.",
           "default": "false"
+        },
+        "setFiles": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "key-value pairs. If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.",
+          "x-intellij-html-description": "key-value pairs. If present, Skaffold will send <code>--set-file</code> flag to Helm CLI and append all pairs after the flag.",
+          "default": "{}"
         },
         "setValueTemplates": {
           "additionalProperties": {
@@ -1148,6 +1157,7 @@
         "version",
         "setValues",
         "setValueTemplates",
+        "setFiles",
         "wait",
         "recreatePods",
         "skipBuildDependencies",

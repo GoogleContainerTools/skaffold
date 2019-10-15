@@ -20,18 +20,24 @@ import (
 	"fmt"
 	"testing"
 
+	yamlpatch "github.com/krishicks/yaml-patch"
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	yamlpatch "github.com/krishicks/yaml-patch"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 func TestApplyPatch(t *testing.T) {
 	config := `build:
   artifacts:
   - image: example
+deploy:
+  kubectl:
+    manifests:
+    - k8s-*
 profiles:
 - name: patches
   patches:
@@ -47,9 +53,12 @@ profiles:
       image: second
       docker:
         dockerfile: Dockerfile.second
+  - op: remove
+    path: /deploy
 `
 
 	testutil.Run(t, "", func(t *testutil.T) {
+		setupFakeKubeConfig(t, api.Config{CurrentContext: "prod-context"})
 		tmpDir := t.NewTempDir().
 			Write("skaffold.yaml", addVersion(config))
 
@@ -65,6 +74,7 @@ profiles:
 		t.CheckDeepEqual("replacement", skaffoldConfig.Build.Artifacts[0].ImageName)
 		t.CheckDeepEqual("Dockerfile.DEV", skaffoldConfig.Build.Artifacts[0].DockerArtifact.DockerfilePath)
 		t.CheckDeepEqual("Dockerfile.second", skaffoldConfig.Build.Artifacts[1].DockerArtifact.DockerfilePath)
+		t.CheckDeepEqual(latest.DeployConfig{}, skaffoldConfig.Deploy)
 	})
 }
 
@@ -97,11 +107,12 @@ profiles:
 
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
-		description string
-		config      *latest.SkaffoldConfig
-		profile     string
-		expected    *latest.SkaffoldConfig
-		shouldErr   bool
+		description    string
+		config         *latest.SkaffoldConfig
+		profile        string
+		expected       *latest.SkaffoldConfig
+		kubeContextCli string
+		shouldErr      bool
 	}{
 		{
 			description: "unknown profile",
@@ -337,11 +348,72 @@ func TestApplyProfiles(t *testing.T) {
 				}),
 			),
 		},
+		{
+			description: "activate kubecontext specific profile and change the kubecontext",
+			profile:     "profile",
+			config: config(
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							KubeContext: "staging",
+						},
+					}},
+					latest.Profile{
+						Name:       "prod",
+						Activation: []latest.Activation{{KubeContext: "prod-context"}},
+					},
+				),
+			),
+			shouldErr: true,
+		},
+		{
+			description: "activate kubecontext with kubecontext override",
+			profile:     "profile",
+			config: config(
+				withProfiles(latest.Profile{
+					Name: "profile",
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							KubeContext: "staging",
+						},
+					}},
+				),
+			),
+			expected: config(
+				withKubeContext("staging"),
+			),
+		},
+		{
+			description: "when CLI flag is given, profiles with conflicting kube-context produce no error",
+			profile:     "profile",
+			config: config(
+				withProfiles(
+					latest.Profile{
+						Name:       "prod",
+						Activation: []latest.Activation{{KubeContext: "prod-context"}},
+					},
+					latest.Profile{
+						Name: "profile",
+						Pipeline: latest.Pipeline{
+							Deploy: latest.DeployConfig{
+								KubeContext: "staging",
+							},
+						}},
+				),
+			),
+			kubeContextCli: "prod-context",
+			expected: config(
+				withKubeContext("staging"),
+			),
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			setupFakeKubeConfig(t, api.Config{CurrentContext: "prod-context"})
 			err := ApplyProfiles(test.config, cfg.SkaffoldOptions{
-				Profiles: []string{test.profile},
+				Profiles:    []string{test.profile},
+				KubeContext: test.kubeContextCli,
 			})
 
 			if test.shouldErr {
@@ -546,11 +618,60 @@ func TestActivatedProfiles(t *testing.T) {
 			t.SetEnvs(test.envs)
 			t.SetupFakeKubernetesContext(api.Config{CurrentContext: "prod-context"})
 
-			activated, err := activatedProfiles(test.profiles, test.opts)
+			activated, _, err := activatedProfiles(test.profiles, test.opts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, activated)
 		})
 	}
+}
+
+func TestYamlAlias(t *testing.T) {
+	config := `
+.activation_common: &activation_common
+  env: ABC=common
+build:
+  artifacts:
+  - image: example
+profiles:
+- name: simple1
+  activation:
+  - *activation_common
+  - env: ABC=1
+  build:
+    artifacts:
+    - image: simpleimage1
+- name: simple2
+  activation:
+  - *activation_common
+  - env: ABC=2
+  build:
+    artifacts:
+    - image: simpleimage2
+`
+
+	testutil.Run(t, "", func(t *testutil.T) {
+		tmpDir := t.NewTempDir().
+			Write("skaffold.yaml", addVersion(config))
+
+		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"), false)
+		t.RequireNoError(err)
+
+		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
+
+		t.CheckDeepEqual(2, len(skaffoldConfig.Profiles))
+		t.CheckDeepEqual("simple1", skaffoldConfig.Profiles[0].Name)
+		t.CheckDeepEqual([]latest.Activation{{Env: "ABC=common"}, {Env: "ABC=1"}}, skaffoldConfig.Profiles[0].Activation)
+		t.CheckDeepEqual("simple2", skaffoldConfig.Profiles[1].Name)
+		t.CheckDeepEqual([]latest.Activation{{Env: "ABC=common"}, {Env: "ABC=2"}}, skaffoldConfig.Profiles[1].Activation)
+
+		err = ApplyProfiles(skaffoldConfig, cfg.SkaffoldOptions{
+			Profiles: []string{"simple1"},
+		})
+		t.CheckNoError(err)
+
+		t.CheckDeepEqual(1, len(skaffoldConfig.Build.Artifacts))
+		t.CheckDeepEqual(latest.Artifact{ImageName: "simpleimage1"}, *skaffoldConfig.Build.Artifacts[0])
+	})
 }
 
 func str(value string) *interface{} {
@@ -560,4 +681,10 @@ func str(value string) *interface{} {
 
 func addVersion(yaml string) string {
 	return fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, yaml)
+}
+
+func setupFakeKubeConfig(t *testutil.T, config api.Config) {
+	t.Override(&kubectx.CurrentConfig, func() (api.Config, error) {
+		return config, nil
+	})
 }
