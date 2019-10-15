@@ -32,22 +32,26 @@ import (
 )
 
 func (b *Builder) buildBazel(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	args := []string{"build"}
 	a := artifact.ArtifactType.BazelArtifact
-	workspace := artifact.Workspace
+
+	if !strings.HasSuffix(a.BuildTarget, ".tar") {
+		return "", errors.New("the bazel build target should end with .tar, see https://github.com/bazelbuild/rules_docker#using-with-docker-locally")
+	}
+
+	args := []string{"build"}
 	args = append(args, a.BuildArgs...)
 	args = append(args, a.BuildTarget)
 
 	// FIXME: is it possible to apply b.skipTests?
 	cmd := exec.CommandContext(ctx, "bazel", args...)
-	cmd.Dir = workspace
+	cmd.Dir = artifact.Workspace
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
 		return "", errors.Wrap(err, "running command")
 	}
 
-	bazelBin, err := bazelBin(ctx, workspace, a)
+	bazelBin, err := bazelBin(ctx, artifact.Workspace, a)
 	if err != nil {
 		return "", errors.Wrap(err, "getting path of bazel-bin")
 	}

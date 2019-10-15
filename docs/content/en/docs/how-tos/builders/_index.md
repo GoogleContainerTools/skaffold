@@ -243,6 +243,13 @@ To use Bazel, `bazel` field to each artifact you specify in the
 
 {{< schema root="BazelArtifact" >}}
 
+{{% alert title="Not any Bazel target can be used" %}}
+The target specified must produce a bundle compatible
+with docker load. See
+<a href="https://github.com/bazelbuild/rules_docker#using-with-docker-locally">https://github.com/bazelbuild/rules_docker#using-with-docker-locally</a>
+{{% /alert %}}
+
+
 ### Example
 
 The following `build` section instructs Skaffold to build a
