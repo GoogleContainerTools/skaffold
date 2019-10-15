@@ -21,6 +21,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
@@ -30,8 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Build runs a docker build on the host and tags the resulting image with

@@ -21,10 +21,11 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/golang/protobuf/ptypes"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/proto"
-	"github.com/golang/protobuf/ptypes"
 )
 
 const (

@@ -19,8 +19,9 @@ package cluster
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestLogLevel(t *testing.T) {

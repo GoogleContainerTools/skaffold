@@ -23,7 +23,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/docker/cli/cli/config"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
@@ -31,6 +30,8 @@ import (
 	"github.com/docker/docker/registry"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 )
 
 const (

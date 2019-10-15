@@ -22,13 +22,14 @@ import (
 	"io"
 
 	cstorage "cloud.google.com/go/storage"
+	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
 )
 
 type GCSBucket struct {

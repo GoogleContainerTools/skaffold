@@ -25,8 +25,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 func GetLatestVersion() (string, bool) {

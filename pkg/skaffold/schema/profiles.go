@@ -23,15 +23,16 @@ import (
 	re "regexp"
 	"strings"
 
+	yamlpatch "github.com/krishicks/yaml-patch"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
+
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
-	yamlpatch "github.com/krishicks/yaml-patch"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 )
 
 // ApplyProfiles returns configuration modified by the application

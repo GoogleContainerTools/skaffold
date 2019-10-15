@@ -21,6 +21,10 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/docker/docker/api/types"
+	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -30,9 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/docker/docker/api/types"
-	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
 )
 
 type testAuthHelper struct{}

@@ -28,3 +28,7 @@ linters:
     - dogsled
     - nakedret
     - whitespace
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/GoogleContainerTools/skaffold

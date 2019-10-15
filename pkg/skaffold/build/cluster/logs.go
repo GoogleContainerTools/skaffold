@@ -22,10 +22,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 // logLevel makes sure kaniko logs at least at Info level and at most Debug level (trace doesn't work with Kaniko)

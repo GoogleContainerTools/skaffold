@@ -26,10 +26,11 @@ import (
 
 	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
-	"github.com/sirupsen/logrus"
 )
 
 // Before: prev -> current (latest)
