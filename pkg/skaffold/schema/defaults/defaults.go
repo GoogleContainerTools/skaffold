@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/google/uuid"
 )
 
 // Set makes sure default values are set on a SkaffoldConfig.
@@ -216,7 +217,8 @@ func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
 			return fmt.Errorf("unable to expand pullSecret %s", cluster.PullSecret)
 		}
 		cluster.PullSecret = absPath
-		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName)
+		uuid, err := uuid.NewUUID()
+		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName+uuid.String())
 		return nil
 	}
 	return nil
@@ -226,8 +228,8 @@ func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
 	if cluster.DockerConfig == nil {
 		return nil
 	}
-
-	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
+	uuid, err := uuid.NewUUID()
+	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName+uuid.String())
 
 	if cluster.DockerConfig.Path == "" {
 		return nil

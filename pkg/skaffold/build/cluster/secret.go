@@ -27,88 +27,104 @@ import (
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 	if b.PullSecret == "" && b.PullSecretName == "" {
 		return func() {}, nil
 	}
+
+	color.Default.Fprintf(out, "Creating kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
+
 	client, err := kubernetes.Client()
 	if err != nil {
-		return func() {}, errors.Wrap(err, "getting kubernetes client")
+		return nil, errors.Wrap(err, "getting kubernetes client")
 	}
 
 	secrets := client.CoreV1().Secrets(b.Namespace)
 
-	if b.PullSecret != "" {
-		return recreateSecret(out, secrets, b.PullSecretName, b.PullSecret, constants.DefaultKanikoSecretName)
+	if b.PullSecret == "" {
+		logrus.Debug("No pull secret specified. Checking for one in the cluster.")
+
+		if _, err := secrets.Get(b.PullSecretName, metav1.GetOptions{}); err != nil {
+			return nil, errors.Wrap(err, "checking for existing kaniko secret")
+		}
+
+		return func() {}, nil
 	}
-	if _, err := secrets.Get(b.PullSecretName, metav1.GetOptions{}); err != nil {
-		return func() {}, errors.Wrap(err, "checking for existing secret")
+
+	secretData, err := ioutil.ReadFile(b.PullSecret)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading pull secret")
 	}
-	return func() {}, nil
+
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:   b.PullSecretName,
+			Labels: map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+		},
+		Data: map[string][]byte{
+			constants.DefaultKanikoSecretName: secretData,
+		},
+	}
+
+	if _, err := secrets.Create(secret); err != nil {
+		return nil, errors.Wrapf(err, "creating pull secret: %s", err)
+	}
+
+	return func() {
+		if err := secrets.Delete(b.PullSecretName, &metav1.DeleteOptions{}); err != nil {
+			logrus.Warnf("deleting pull secret")
+		}
+	}, nil
 }
 
 func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 	if b.DockerConfig == nil {
 		return func() {}, nil
 	}
+
+	color.Default.Fprintf(out, "Creating docker config secret [%s]...\n", b.DockerConfig.SecretName)
+
 	client, err := kubernetes.Client()
 	if err != nil {
-		return func() {}, errors.Wrap(err, "getting kubernetes client")
+		return nil, errors.Wrap(err, "getting kubernetes client")
 	}
 
 	secrets := client.CoreV1().Secrets(b.Namespace)
 
-	if b.DockerConfig.Path != "" {
-		return recreateSecret(out, secrets, b.DockerConfig.SecretName, b.DockerConfig.Path, "config.json")
-	}
-	if _, err := secrets.Get(b.DockerConfig.SecretName, metav1.GetOptions{}); err != nil {
-		return func() {}, errors.Wrap(err, "checking for existing secret")
-	}
-	return func() {}, nil
-}
+	if b.DockerConfig.Path == "" {
+		logrus.Debug("No docker config specified. Checking for one in the cluster.")
 
-func recreateSecret(out io.Writer, secrets corev1.SecretInterface, secretName string, secretPath string, secretkey string) (func(), error) {
+		if _, err := secrets.Get(b.DockerConfig.SecretName, metav1.GetOptions{}); err != nil {
+			return nil, errors.Wrap(err, "checking for existing kaniko secret")
+		}
 
-	if err := deleteSecret(secrets, secretName, secretPath); err != nil {
-		return func() {}, errors.Wrap(err, "deleting secret")
+		return func() {}, nil
 	}
 
-	color.Default.Fprintf(out, "Creating secret [%s]...\n", secretName)
-	secretData, err := ioutil.ReadFile(secretPath)
+	secretData, err := ioutil.ReadFile(b.DockerConfig.Path)
 	if err != nil {
-		return func() {}, errors.Wrap(err, "reading secret")
+		return nil, errors.Wrap(err, "reading docker config")
 	}
 
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   secretName,
+			Name:   b.DockerConfig.SecretName,
 			Labels: map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 		},
 		Data: map[string][]byte{
-			secretkey: secretData,
+			"config.json": secretData,
 		},
 	}
 
 	if _, err := secrets.Create(secret); err != nil {
-		return func() {}, errors.Wrapf(err, "creating secret: %s", err)
+		return nil, errors.Wrapf(err, "creating docker config secret: %s", err)
 	}
 
 	return func() {
-		if err := secrets.Delete(secretName, &metav1.DeleteOptions{}); err != nil {
-			logrus.Warnf("error deleting secret %s, %s", secretName, err)
+		if err := secrets.Delete(b.DockerConfig.SecretName, &metav1.DeleteOptions{}); err != nil {
+			logrus.Warnf("deleting docker config secret")
 		}
 	}, nil
-}
-
-func deleteSecret(secrets corev1.SecretInterface, secretName string, secretPath string) error {
-	if _, err := secrets.Get(secretName, metav1.GetOptions{}); err == nil {
-		logrus.Infof("Deleting existing %s secret", secretName)
-		if err := secrets.Delete(secretName, &metav1.DeleteOptions{}); err != nil {
-			return errors.Wrapf(err, "error deleting secret %s, %s", secretName, err)
-		}
-	}
-	return nil
 }

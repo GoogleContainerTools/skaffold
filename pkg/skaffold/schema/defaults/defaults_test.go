@@ -110,14 +110,12 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		err = Set(cfg)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
 
 		// default docker config
 		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{}
 		err = Set(cfg)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(constants.DefaultKanikoDockerConfigSecretName, cfg.Build.Cluster.DockerConfig.SecretName)
 
 		// docker config with path
 		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{
@@ -126,7 +124,6 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		err = Set(cfg)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("docker-cfg", cfg.Build.Cluster.DockerConfig.SecretName)
 		t.CheckDeepEqual("/path", cfg.Build.Cluster.DockerConfig.Path)
 
 		// docker config with secret name
