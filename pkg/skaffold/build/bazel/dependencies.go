@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -37,6 +38,8 @@ func query(target string) string {
 	return fmt.Sprintf(sourceQuery, target)
 }
 
+var once sync.Once
+
 // GetDependencies finds the sources dependencies for the given bazel artifact.
 // All paths are relative to the workspace.
 func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) ([]string, error) {
@@ -45,7 +48,7 @@ func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) (
 
 	go func() {
 		<-timer.C
-		logrus.Warnln("Retrieving Bazel dependencies can take a long time the first time")
+		once.Do(func() { logrus.Warnln("Retrieving Bazel dependencies can take a long time the first time") })
 	}()
 
 	topLevelFolder, err := findWorkspace(dir)
