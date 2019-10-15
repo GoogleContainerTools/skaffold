@@ -30,6 +30,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/AlecAivazis/survey.v1"
@@ -541,35 +542,69 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, string) ([]InitBuilder, error)) ([]string, []InitBuilder, error) {
 	var potentialConfigs []string
 	var foundBuilders []InitBuilder
-	err := filepath.Walk(dir, func(path string, f os.FileInfo, e error) error {
-		if f.IsDir() && util.IsHiddenDir(f.Name()) {
-			logrus.Debugf("skip walking hidden dir %s", f.Name())
-			return filepath.SkipDir
-		}
-		if f.IsDir() || util.IsHiddenFile(f.Name()) {
-			return nil
-		}
-		if IsSkaffoldConfig(path) {
-			if !force {
-				return fmt.Errorf("pre-existing %s found", path)
-			}
-			logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", path)
-			return nil
-		}
-		if IsSupportedKubernetesFileExtension(path) {
-			potentialConfigs = append(potentialConfigs, path)
-			return nil
-		}
-		// try and parse build file
-		if builderConfigs, err := validateBuildFile(enableJibInit, path); builderConfigs != nil {
-			for _, buildConfig := range builderConfigs {
-				logrus.Infof("existing builder found: %s", buildConfig.Describe())
-				foundBuilders = append(foundBuilders, buildConfig)
-			}
+
+	var dirCallback func(path string, findBuilders bool) error
+	dirCallback = func(path string, findBuilders bool) error {
+		dirents, err := godirwalk.ReadDirents(path, nil)
+		if err != nil {
 			return err
 		}
+
+		var directories []*godirwalk.Dirent
+		findBuildersInDirectories := true
+		for _, file := range dirents {
+			// If we found a directory, keep track of it until we've gone through all the files first
+			if file.IsDir() {
+				directories = append(directories, file)
+				continue
+			}
+
+			if util.IsHiddenFile(file.Name()) {
+				continue
+			}
+			filePath := filepath.Join(path, file.Name())
+			if IsSkaffoldConfig(filePath) {
+				if !force {
+					return fmt.Errorf("pre-existing %s found", filePath)
+				}
+				logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", filePath)
+				continue
+			}
+			if IsSupportedKubernetesFileExtension(filePath) {
+				potentialConfigs = append(potentialConfigs, filePath)
+				continue
+			}
+			// try and parse build file
+			if findBuilders {
+				if builderConfigs, err := validateBuildFile(enableJibInit, filePath); builderConfigs != nil {
+					for _, buildConfig := range builderConfigs {
+						logrus.Infof("existing builder found: %s", buildConfig.Describe())
+						foundBuilders = append(foundBuilders, buildConfig)
+					}
+					if err == filepath.SkipDir {
+						findBuildersInDirectories = false
+					}
+				}
+			}
+		}
+
+		// Otherwise traverse deeper
+		for _, dir := range directories {
+			if util.IsHiddenDir(dir.Name()) {
+				logrus.Debugf("skip walking hidden dir %s", dir.Name())
+				continue
+			}
+
+			err = dirCallback(filepath.Join(path, dir.Name()), findBuildersInDirectories)
+			if err != nil {
+				return err
+			}
+		}
+
 		return nil
-	})
+	}
+
+	err := dirCallback(dir, true)
 	if err != nil {
 		return nil, nil, err
 	}
