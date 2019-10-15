@@ -108,6 +108,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 		event.DeployFailed(err)
 		return NewDeployErrorResult(errors.Wrap(err, "reading manifests"))
 	}
+	fmt.Printf("\n\n\n\n%v\n\n\n\n", manifests.String())
 
 	if len(manifests) == 0 {
 		return NewDeploySuccessResult(nil)
@@ -139,7 +140,6 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 			return NewDeployErrorResult(errors.Wrap(err, "unable to transform manifests"))
 		}
 	}
-
 	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		event.DeployFailed(err)
 		return NewDeployErrorResult(errors.Wrap(err, "kubectl error"))
@@ -190,7 +190,6 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 	if err := yaml.Unmarshal(buf, &content); err != nil {
 		return nil, err
 	}
-
 	deps = append(deps, path)
 
 	candidates := append(content.Bases, content.Resources...)
