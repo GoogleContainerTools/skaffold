@@ -110,7 +110,6 @@ func printAst(fset *token.FileSet, ast *ast.File) ([]byte, error) {
 
 func addFirstCommentOnVersion(astA *ast.File, commentString string) {
 	ast.Inspect(astA, func(node ast.Node) bool {
-
 		if decl, ok := node.(*ast.GenDecl); ok &&
 			decl.Tok.String() == "const" &&
 			len(decl.Specs) == 1 {

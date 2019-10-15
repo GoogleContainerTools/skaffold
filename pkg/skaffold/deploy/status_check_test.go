@@ -246,7 +246,6 @@ func TestPollResourceStatus(t *testing.T) {
 			t.CheckDeepEqual(test.dummyResource.inErr, test.isInErr)
 		})
 	}
-
 }
 
 func TestGetDeployStatus(t *testing.T) {

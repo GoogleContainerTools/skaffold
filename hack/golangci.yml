@@ -25,3 +25,6 @@ linters:
     - unparam
     - unused
     - varcheck
+    - dogsled
+    - nakedret
+    - whitespace

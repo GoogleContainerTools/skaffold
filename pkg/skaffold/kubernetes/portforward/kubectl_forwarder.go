@@ -179,6 +179,5 @@ func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, buf *bytes.Buffer
 				}
 			}
 		}
-
 	}
 }

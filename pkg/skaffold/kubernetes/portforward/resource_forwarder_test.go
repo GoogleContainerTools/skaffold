@@ -258,7 +258,6 @@ func mockClient(m kubernetes.Interface) func() (kubernetes.Interface, error) {
 	return func() (kubernetes.Interface, error) {
 		return m, nil
 	}
-
 }
 
 func TestRetrieveServices(t *testing.T) {

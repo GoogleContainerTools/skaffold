@@ -128,7 +128,6 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 				}
 			}
 			p.forwardPortForwardEntry(ctx, entry)
-
 		}
 	}
 	return nil

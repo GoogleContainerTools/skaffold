@@ -73,7 +73,6 @@ func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 		}
 		jibMaven.Flags = []string{"-Dimage=" + manifestImage}
 		a.ArtifactType = latest.ArtifactType{JibArtifact: jibMaven}
-
 	} else if j.BuilderName == PluginName(JibGradle) {
 		jibGradle := &latest.JibArtifact{Type: int(JibGradle)}
 		if j.Project != "" {

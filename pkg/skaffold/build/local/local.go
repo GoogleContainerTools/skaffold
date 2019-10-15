@@ -105,7 +105,6 @@ func (b *Builder) buildJib(ctx context.Context, out io.Writer, artifact *latest.
 	default:
 		return "", errors.Errorf("Unable to determine Jib builder type for %s", artifact.Workspace)
 	}
-
 }
 
 func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {

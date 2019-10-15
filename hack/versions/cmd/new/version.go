@@ -95,7 +95,6 @@ func main() {
 
 	// Update the docs with the new version
 	sed("docs/config.toml", current, next)
-
 }
 
 func makeSchemaDir(new string) {
