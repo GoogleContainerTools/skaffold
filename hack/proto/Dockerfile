@@ -42,13 +42,19 @@ ENV GO111MODULE=on
 RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 RUN go get -u github.com/golang/protobuf/protoc-gen-go
+RUN go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
 
 WORKDIR /proto
 COPY skaffold.proto ./
-RUN protoc -I /usr/local/include -I . -I $GOPATH/src -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:. skaffold.proto --go_out=plugins=grpc:.
+RUN protoc -I /usr/local/include -I . -I $GOPATH/src -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+  --grpc-gateway_out=logtostderr=true:. --go_out=plugins=grpc:. \
+  --doc_out=. \
+  --doc_opt=markdown,index.md \
+  skaffold.proto
 
 # Compare the proto files with the existing proto files
 FROM generateFiles AS compare
 WORKDIR /compare
 COPY *.go ./
+COPY --from=generateFiles /proto/index.md ./
 CMD cmp /proto/skaffold.pb.go skaffold.pb.go && cmp /proto/skaffold.pb.gw.go skaffold.pb.gw.go
