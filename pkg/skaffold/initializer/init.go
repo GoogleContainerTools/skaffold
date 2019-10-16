@@ -553,6 +553,8 @@ func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, st
 		var directories []*godirwalk.Dirent
 		findBuildersInDirectories := true
 		sort.Sort(dirents)
+
+		// Traverse files
 		for _, file := range dirents {
 			// If we found a directory, keep track of it until we've gone through all the files first
 			if file.IsDir() {
@@ -575,6 +577,7 @@ func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, st
 				potentialConfigs = append(potentialConfigs, filePath)
 				continue
 			}
+
 			// try and parse build file
 			if findBuilders {
 				if builderConfigs, err := validateBuildFile(enableJibInit, filePath); builderConfigs != nil {
@@ -589,7 +592,7 @@ func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, st
 			}
 		}
 
-		// Otherwise traverse deeper
+		// Traverse into subdirectories
 		for _, dir := range directories {
 			if util.IsHiddenDir(dir.Name()) {
 				logrus.Debugf("skip walking hidden dir %s", dir.Name())
