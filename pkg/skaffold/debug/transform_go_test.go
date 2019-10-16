@@ -26,8 +26,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestNewDlvSpecDefaults(t *testing.T) {

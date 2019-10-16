@@ -98,7 +98,6 @@ func (in *ConfigFile) DeepCopyInto(out *ConfigFile) {
 	}
 	in.RootFS.DeepCopyInto(&out.RootFS)
 	in.Config.DeepCopyInto(&out.Config)
-	in.ContainerConfig.DeepCopyInto(&out.ContainerConfig)
 	return
 }
 
@@ -266,6 +265,11 @@ func (in *Platform) DeepCopyInto(out *Platform) {
 	*out = *in
 	if in.OSFeatures != nil {
 		in, out := &in.OSFeatures, &out.OSFeatures
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.Features != nil {
+		in, out := &in.Features, &out.Features
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}

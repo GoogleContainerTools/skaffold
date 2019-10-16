@@ -25,10 +25,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	git "gopkg.in/src-d/go-git.v4"
 	"gopkg.in/src-d/go-git.v4/plumbing"
 	"gopkg.in/src-d/go-git.v4/plumbing/object"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 // These tests do not run on windows

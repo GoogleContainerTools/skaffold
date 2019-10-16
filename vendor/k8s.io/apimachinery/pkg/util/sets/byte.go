@@ -46,19 +46,17 @@ func ByteKeySet(theMap interface{}) Byte {
 }
 
 // Insert adds items to the set.
-func (s Byte) Insert(items ...byte) Byte {
+func (s Byte) Insert(items ...byte) {
 	for _, item := range items {
 		s[item] = Empty{}
 	}
-	return s
 }
 
 // Delete removes all items from the set.
-func (s Byte) Delete(items ...byte) Byte {
+func (s Byte) Delete(items ...byte) {
 	for _, item := range items {
 		delete(s, item)
 	}
-	return s
 }
 
 // Has returns true if and only if item is contained in the set.

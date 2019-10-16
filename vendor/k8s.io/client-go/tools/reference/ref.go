@@ -19,6 +19,8 @@ package reference
 import (
 	"errors"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -28,7 +30,8 @@ import (
 
 var (
 	// Errors that could be returned by GetReference.
-	ErrNilObject = errors.New("can't reference a nil object")
+	ErrNilObject  = errors.New("can't reference a nil object")
+	ErrNoSelfLink = errors.New("selfLink was empty, can't make reference")
 )
 
 // GetReference returns an ObjectReference which refers to the given
@@ -44,6 +47,20 @@ func GetReference(scheme *runtime.Scheme, obj runtime.Object) (*v1.ObjectReferen
 		return ref, nil
 	}
 
+	gvk := obj.GetObjectKind().GroupVersionKind()
+
+	// if the object referenced is actually persisted, we can just get kind from meta
+	// if we are building an object reference to something not yet persisted, we should fallback to scheme
+	kind := gvk.Kind
+	if len(kind) == 0 {
+		// TODO: this is wrong
+		gvks, _, err := scheme.ObjectKinds(obj)
+		if err != nil {
+			return nil, err
+		}
+		kind = gvks[0].Kind
+	}
+
 	// An object that implements only List has enough metadata to build a reference
 	var listMeta metav1.Common
 	objectMeta, err := meta.Accessor(obj)
@@ -56,28 +73,28 @@ func GetReference(scheme *runtime.Scheme, obj runtime.Object) (*v1.ObjectReferen
 		listMeta = objectMeta
 	}
 
-	gvk := obj.GetObjectKind().GroupVersionKind()
-
-	// If object meta doesn't contain data about kind and/or version,
-	// we are falling back to scheme.
-	//
-	// TODO: This doesn't work for CRDs, which are not registered in scheme.
-	if gvk.Empty() {
-		gvks, _, err := scheme.ObjectKinds(obj)
+	// if the object referenced is actually persisted, we can also get version from meta
+	version := gvk.GroupVersion().String()
+	if len(version) == 0 {
+		selfLink := listMeta.GetSelfLink()
+		if len(selfLink) == 0 {
+			return nil, ErrNoSelfLink
+		}
+		selfLinkUrl, err := url.Parse(selfLink)
 		if err != nil {
 			return nil, err
 		}
-		if len(gvks) == 0 || gvks[0].Empty() {
-			return nil, fmt.Errorf("unexpected gvks registered for object %T: %v", obj, gvks)
+		// example paths: /<prefix>/<version>/*
+		parts := strings.Split(selfLinkUrl.Path, "/")
+		if len(parts) < 4 {
+			return nil, fmt.Errorf("unexpected self link format: '%v'; got version '%v'", selfLink, version)
 		}
-		// TODO: The same object can be registered for multiple group versions
-		// (although in practise this doesn't seem to be used).
-		// In such case, the version set may not be correct.
-		gvk = gvks[0]
+		if parts[1] == "api" {
+			version = parts[2]
+		} else {
+			version = parts[2] + "/" + parts[3]
+		}
 	}
-
-	kind := gvk.Kind
-	version := gvk.GroupVersion().String()
 
 	// only has list metadata
 	if objectMeta == nil {

@@ -21,10 +21,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestWaitForPodSucceeded(t *testing.T) {

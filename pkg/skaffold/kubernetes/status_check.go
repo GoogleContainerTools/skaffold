@@ -72,10 +72,8 @@ func getPendingDetails(pod *v1.Pod) PodStatus {
 		case v1.ConditionUnknown:
 			return newPendingStatus(unknown, c.Message)
 		default:
-			cs := append(
-				append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...),
-				pod.Status.EphemeralContainerStatuses...,
-			)
+			// TODO(dgageot): Add EphemeralContainerStatuses
+			cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
 			reason, detail := waitingContainerStatus(cs)
 			return newPendingStatus(reason, detail)
 		}

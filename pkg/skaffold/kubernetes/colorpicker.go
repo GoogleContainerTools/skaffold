@@ -19,8 +19,9 @@ package kubernetes
 import (
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 )
 
 var colorCodes = []color.Color{

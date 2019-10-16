@@ -34,8 +34,7 @@ type ErrRequeue struct {
 	Err error
 }
 
-// ErrFIFOClosed used when FIFO is closed
-var ErrFIFOClosed = errors.New("DeltaFIFO: manipulating with closed queue")
+var FIFOClosedError error = errors.New("DeltaFIFO: manipulating with closed queue")
 
 func (e ErrRequeue) Error() string {
 	if e.Err == nil {
@@ -67,7 +66,7 @@ type Queue interface {
 	Close()
 }
 
-// Pop is helper function for popping from Queue.
+// Helper function for popping from Queue.
 // WARNING: Do NOT use this function in non-test code to avoid races
 // unless you really really really really know what you are doing.
 func Pop(queue Queue) interface{} {
@@ -127,7 +126,7 @@ func (f *FIFO) Close() {
 	f.cond.Broadcast()
 }
 
-// HasSynced returns true if an Add/Update/Delete/AddIfNotPresent are called first,
+// Return true if an Add/Update/Delete/AddIfNotPresent are called first,
 // or an Update called first but the first batch of items inserted by Replace() has been popped
 func (f *FIFO) HasSynced() bool {
 	f.lock.Lock()
@@ -243,7 +242,7 @@ func (f *FIFO) GetByKey(key string) (item interface{}, exists bool, err error) {
 	return item, exists, nil
 }
 
-// IsClosed checks if the queue is closed
+// Checks if the queue is closed
 func (f *FIFO) IsClosed() bool {
 	f.closedLock.Lock()
 	defer f.closedLock.Unlock()
@@ -268,7 +267,7 @@ func (f *FIFO) Pop(process PopProcessFunc) (interface{}, error) {
 			// When Close() is called, the f.closed is set and the condition is broadcasted.
 			// Which causes this loop to continue and return from the Pop().
 			if f.IsClosed() {
-				return nil, ErrFIFOClosed
+				return nil, FIFOClosedError
 			}
 
 			f.cond.Wait()

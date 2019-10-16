@@ -29,7 +29,6 @@ import (
 )
 
 func TestUnavailablePort(t *testing.T) {
-
 	original := isPortFree
 	defer func() { isPortFree = original }()
 
