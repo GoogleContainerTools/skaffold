@@ -21,7 +21,6 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	batchv1beta1 "k8s.io/api/batch/v1beta1"
@@ -29,6 +28,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func mockClient(m kubernetes.Interface) func() (kubernetes.Interface, error) {

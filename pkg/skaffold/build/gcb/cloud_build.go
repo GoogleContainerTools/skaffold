@@ -26,6 +26,13 @@ import (
 	"time"
 
 	cstorage "cloud.google.com/go/storage"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	cloudbuild "google.golang.org/api/cloudbuild/v1"
+	"google.golang.org/api/googleapi"
+	"google.golang.org/api/iterator"
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -35,12 +42,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
-	"google.golang.org/api/googleapi"
-	"google.golang.org/api/iterator"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 // Build builds a list of artifacts with Google Cloud Build.

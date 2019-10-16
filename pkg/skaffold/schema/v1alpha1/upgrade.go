@@ -17,9 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
-	"github.com/sirupsen/logrus"
 )
 
 // Upgrade upgrades a configuration to the next version.

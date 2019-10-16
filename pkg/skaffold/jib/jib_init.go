@@ -25,9 +25,10 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/sirupsen/logrus"
 )
 
 // For testing
@@ -73,7 +74,6 @@ func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 		}
 		jibMaven.Flags = []string{"-Dimage=" + manifestImage}
 		a.ArtifactType = latest.ArtifactType{JibArtifact: jibMaven}
-
 	} else if j.BuilderName == PluginName(JibGradle) {
 		jibGradle := &latest.JibArtifact{Type: int(JibGradle)}
 		if j.Project != "" {

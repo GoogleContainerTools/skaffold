@@ -31,15 +31,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"4d63.com/tz"
+	"github.com/docker/docker/api/types"
+	"github.com/sirupsen/logrus"
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/docker/docker/api/types"
-	"github.com/sirupsen/logrus"
-	corev1 "k8s.io/api/core/v1"
 )
 
 const imageName = "simple-build:"

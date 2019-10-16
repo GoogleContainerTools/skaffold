@@ -29,6 +29,8 @@ import (
 	"strings"
 	"testing"
 
+	homedir "github.com/mitchellh/go-homedir"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -39,7 +41,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 var testBuilds = []build.Artifact{{

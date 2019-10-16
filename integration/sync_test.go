@@ -24,10 +24,11 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func TestDevSync(t *testing.T) {

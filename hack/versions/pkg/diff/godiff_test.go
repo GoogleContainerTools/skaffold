@@ -290,5 +290,4 @@ func TestCompareSchemas(t *testing.T) {
 			}
 		})
 	}
-
 }
