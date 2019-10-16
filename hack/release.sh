@@ -20,20 +20,11 @@ DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 EXAMPLES_DIR=${DIR}/../examples
 INTEGRATION_EXAMPLES_DIR=${DIR}/../integration/examples
 
-install_release_notes_helper() {
-  release_notes_workdir="$(mktemp -d)"
-  trap 'rm -rf -- ${release_notes_workdir}' RETURN
-
-  # See https://stackoverflow.com/questions/56842385/using-go-get-to-download-binaries-without-adding-them-to-go-mod for this workaround
-  cd "${release_notes_workdir}"
-  go mod init release-notes
-  GOBIN="$DIR" go get github.com/corneliusweig/release-notes
-  cd -
-}
-
 if ! [[ -x "${DIR}/release-notes" ]]; then
   echo >&2 'Installing release-notes'
-  install_release_notes_helper
+  cd "${DIR}/tools"
+  GOBIN="$DIR" GO111MODULE=on go install github.com/corneliusweig/release-notes
+  cd -
 fi
 
 # you can pass your github token with --token here if you run out of requests
