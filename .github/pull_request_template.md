@@ -30,11 +30,10 @@ If behavior changes: describe succintly the behavior after your change
 
 **Next PRs.**
 
-In this section describe a list of follow up PRs if the current PR is a part of big feature change.
-
-See example #2811
-
+<!-- In this section describe a list of follow up PRs if the current PR is a part of big feature change.
+See example https://github.com/GoogleContainerTools/skaffold/pull/2811
 Write n/a if not applicable.
+-->
 
 
 **Submitter Checklist**
@@ -49,10 +48,11 @@ review them:
 
 _See [the contribution guide](../CONTRIBUTING.md) for more details._
 
+<!--
 Double check this list of stuff that's easy to miss:
-
 - If you are adding [a example to the `examples` dir](https://github.com/GoogleContainerTools/skaffold/tree/master/examples), please copy them to [`integration/examples`](https://github.com/GoogleContainerTools/skaffold/tree/master/integration/examples)
 - Every new example added in [`integration/examples` dir](https://github.com/GoogleContainerTools/skaffold/tree/master/integration/examples), should be tested in [integration test](https://github.com/GoogleContainerTools/skaffold/tree/master/integration)
+-->
 
 **Reviewer Notes**
 

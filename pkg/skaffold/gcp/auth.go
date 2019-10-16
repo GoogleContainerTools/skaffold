@@ -23,11 +23,12 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/cli/cli/config/configfile"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 var (

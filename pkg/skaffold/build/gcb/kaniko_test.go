@@ -19,10 +19,11 @@ package gcb
 import (
 	"testing"
 
+	"google.golang.org/api/cloudbuild/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"google.golang.org/api/cloudbuild/v1"
 )
 
 func TestKanikoBuildSpec(t *testing.T) {

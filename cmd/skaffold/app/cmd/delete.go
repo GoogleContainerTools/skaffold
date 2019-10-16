@@ -20,9 +20,10 @@ import (
 	"context"
 	"io"
 
+	"github.com/spf13/cobra"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/spf13/cobra"
 )
 
 // NewCmdDelete describes the CLI command to delete deployed resources.

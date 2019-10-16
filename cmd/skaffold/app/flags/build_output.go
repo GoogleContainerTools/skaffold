@@ -22,8 +22,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 )
 
 // BuildOutputFileFlag describes a flag which contains a BuildOutput.

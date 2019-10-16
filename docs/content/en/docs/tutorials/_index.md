@@ -14,3 +14,6 @@ As we have gcr.io/k8s-skaffold in our image names, to run the examples, you have
     1. env var: `SKAFFOLD_DEFAULT_REPO=<myrepo> skaffold dev`
     1. global skaffold config (one time): `skaffold config set --global default-repo <myrepo>`
     1. skaffold config for current kubectl context: `skaffold config set default-repo <myrepo>`
+
+
+:mega: **Please fill out our [quick 5-question survey](https://forms.gle/BMTbGQXLWSdn7vEs6)** to tell us how satisfied you are with Skaffold, and what improvements we should make. Thank you! :dancers:

@@ -25,10 +25,11 @@ import (
 
 	cstorage "cloud.google.com/go/storage"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 )
 
 // UploadDeploymentLogsToBucket gets logs from d and uploads them to the bucket

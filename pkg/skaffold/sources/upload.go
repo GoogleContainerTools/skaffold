@@ -21,9 +21,10 @@ import (
 	"io"
 
 	cstorage "cloud.google.com/go/storage"
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
 // TarGz creates a .tgz archive of the artifact's sources.

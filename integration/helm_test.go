@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/google/go-cmp/cmp"
+
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
 const (

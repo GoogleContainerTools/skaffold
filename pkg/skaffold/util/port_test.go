@@ -41,7 +41,6 @@ func AssertCompetingProcessesCanSucceed(ports ForwardedPorts, t *testing.T) {
 	wg.Add(N)
 	for i := 0; i < N; i++ {
 		go func() {
-
 			port := GetAvailablePort(4503, ports)
 
 			l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", Loopback, port))

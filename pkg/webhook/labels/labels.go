@@ -19,8 +19,9 @@ package labels
 import (
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
 	"github.com/google/go-github/github"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
 )
 
 // GenerateLabelsFromPR returns labels that should be applied to all deployment for this PR

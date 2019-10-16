@@ -21,8 +21,9 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type gitClient interface {

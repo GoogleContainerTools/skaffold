@@ -22,9 +22,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 const copyServerGo = `
