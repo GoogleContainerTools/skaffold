@@ -18,6 +18,7 @@ package cache
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -34,6 +35,9 @@ func (m *stubDependencyLister) DependenciesForArtifact(ctx context.Context, arti
 }
 
 var mockCacheHasher = func(s string) (string, error) {
+	if s == "not-found" {
+		return "", os.ErrNotExist
+	}
 	return s, nil
 }
 
@@ -54,6 +58,12 @@ func TestGetHashForArtifact(t *testing.T) {
 		{
 			description:  "hash for artifact",
 			dependencies: []string{"a", "b"},
+			artifact:     &latest.Artifact{},
+			expected:     "1caa15f7ce87536bddbac30a39768e8e3b212bf591f9b64926fa50c40b614c66",
+		},
+		{
+			description:  "ignore file not found",
+			dependencies: []string{"a", "b", "not-found"},
 			artifact:     &latest.Artifact{},
 			expected:     "1caa15f7ce87536bddbac30a39768e8e3b212bf591f9b64926fa50c40b614c66",
 		},

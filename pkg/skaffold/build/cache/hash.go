@@ -28,6 +28,7 @@ import (
 	"sort"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -59,6 +60,11 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 	for _, d := range deps {
 		h, err := hashFunction(d)
 		if err != nil {
+			if os.IsNotExist(err) {
+				logrus.Tracef("skipping dependency for artifact cache calculation, file not found %s: %s", d, err)
+				continue // Ignore files that don't exist
+			}
+
 			return "", errors.Wrapf(err, "getting hash for %s", d)
 		}
 		inputs = append(inputs, h)
