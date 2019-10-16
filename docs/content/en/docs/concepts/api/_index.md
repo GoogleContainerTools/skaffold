@@ -4,13 +4,11 @@ linkTitle: "Skaffold API"
 weight: 40
 ---
 
-
-This page discusses the Skaffold API.
-
-Skaffold exposes a API server over its lifetime. The API server is the primary way
-to get notifications regarding the different phases in a pipeline run. The API server
-also provides fine grain controls to Skaffold's individual components: build, deploy and sync, 
-as opposed to relying on Skaffold’s built-in trigger mechanisms.
+When using `skaffold dev` or `skaffold debug`, Skaffold exposes a API server over its lifetime.
+The API server is the primary way tools like IDEs to integrate with skaffold and subscribe to events 
+regarding the different phases in a pipeline run and to get the overall state of the pipeline.
+The API server also provides fine grain controls to Skaffold's individual components:
+build, deploy and sync, as opposed to relying on Skaffold’s built-in trigger mechanisms.
 
 
 ## Skaffold API 
