@@ -29,6 +29,8 @@ import (
 	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
 
+	"github.com/segmentio/textio"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -38,7 +40,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/segmentio/textio"
 )
 
 // kustomization is the content of a kustomization.yaml file.

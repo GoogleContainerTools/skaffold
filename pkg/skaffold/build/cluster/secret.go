@@ -20,13 +20,14 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
 
 func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {

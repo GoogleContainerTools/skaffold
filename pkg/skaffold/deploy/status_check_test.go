@@ -23,14 +23,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	utilpointer "k8s.io/utils/pointer"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -241,12 +242,11 @@ func TestPollResourceStatus(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&defaultPollPeriodInMilliseconds, 10)
+			t.Override(&defaultPollPeriodInMilliseconds, 0)
 			pollResourceStatus(context.Background(), nil, test.dummyResource)
 			t.CheckDeepEqual(test.dummyResource.inErr, test.isInErr)
 		})
 	}
-
 }
 
 func TestGetDeployStatus(t *testing.T) {

@@ -21,9 +21,10 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/proto"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"

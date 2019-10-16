@@ -19,10 +19,11 @@ package gcb
 import (
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 func (b *Builder) jibBuildSpec(artifact *latest.Artifact, tag string) (cloudbuild.Build, error) {

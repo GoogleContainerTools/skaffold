@@ -38,11 +38,6 @@ func (in *TLSClientConfig) DeepCopyInto(out *TLSClientConfig) {
 		*out = make([]byte, len(*in))
 		copy(*out, *in)
 	}
-	if in.NextProtos != nil {
-		in, out := &in.NextProtos, &out.NextProtos
-		*out = make([]string, len(*in))
-		copy(*out, *in)
-	}
 	return
 }
 

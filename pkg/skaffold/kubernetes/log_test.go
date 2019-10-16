@@ -23,9 +23,10 @@ import (
 	"testing"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	v1 "k8s.io/api/core/v1"
 )
 
 func TestSinceSeconds(t *testing.T) {

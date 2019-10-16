@@ -23,11 +23,12 @@ import (
 	"path"
 	"strings"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/diff"
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 func RunSchemaCheckOnChangedFiles() error {

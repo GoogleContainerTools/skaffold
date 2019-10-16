@@ -21,6 +21,10 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"github.com/docker/docker/api/types"
+	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -30,9 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/docker/docker/api/types"
-	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
 )
 
 type testAuthHelper struct{}
@@ -50,7 +51,7 @@ func TestLocalRun(t *testing.T) {
 		artifacts        []*latest.Artifact
 		expected         []build.Artifact
 		expectedWarnings []string
-		expectedPushed   []string
+		expectedPushed   map[string]string
 		pushImages       bool
 		shouldErr        bool
 	}{
@@ -99,7 +100,9 @@ func TestLocalRun(t *testing.T) {
 				ImageName: "gcr.io/test/image",
 				Tag:       "gcr.io/test/image:tag@sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165",
 			}},
-			expectedPushed: []string{"sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165"},
+			expectedPushed: map[string]string{
+				"gcr.io/test/image:tag": "sha256:51ae7fa00c92525c319404a3a6d400e52ff9372c5a39cb415e0486fe425f3165",
+			},
 		},
 		{
 			description: "error build",

@@ -1,0 +1,2 @@
+apiVersion: skaffold/v1beta16
+kind: Config

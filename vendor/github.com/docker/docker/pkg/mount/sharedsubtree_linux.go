@@ -48,22 +48,18 @@ func MakeRUnbindable(mountPoint string) error {
 	return ensureMountedAs(mountPoint, "runbindable")
 }
 
-// MakeMount ensures that the file or directory given is a mount point,
-// bind mounting it to itself it case it is not.
-func MakeMount(mnt string) error {
-	mounted, err := Mounted(mnt)
+func ensureMountedAs(mountPoint, options string) error {
+	mounted, err := Mounted(mountPoint)
 	if err != nil {
 		return err
 	}
-	if mounted {
-		return nil
+
+	if !mounted {
+		if err := Mount(mountPoint, mountPoint, "none", "bind,rw"); err != nil {
+			return err
+		}
 	}
-
-	return Mount(mnt, mnt, "none", "bind")
-}
-
-func ensureMountedAs(mountPoint, options string) error {
-	if err := MakeMount(mountPoint); err != nil {
+	if _, err = Mounted(mountPoint); err != nil {
 		return err
 	}
 

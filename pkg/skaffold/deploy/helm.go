@@ -30,6 +30,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -39,10 +44,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 )
 
 type HelmDeployer struct {
@@ -411,6 +412,13 @@ func getImageSetValueFromHelmStrategy(cfg *latest.HelmConventionConfig, valueNam
 			return "", errors.Wrapf(err, "cannot parse the image reference %s", tag)
 		}
 
+		var imageTag string
+		if dockerRef.Digest != "" {
+			imageTag = fmt.Sprintf("%s@%s", dockerRef.Tag, dockerRef.Digest)
+		} else {
+			imageTag = dockerRef.Tag
+		}
+
 		if cfg.ExplicitRegistry {
 			if dockerRef.Domain == "" {
 				return "", errors.New(fmt.Sprintf("image reference %s has no domain", tag))
@@ -420,13 +428,13 @@ func getImageSetValueFromHelmStrategy(cfg *latest.HelmConventionConfig, valueNam
 				valueName,
 				dockerRef.Domain,
 				dockerRef.Path,
-				dockerRef.Tag,
+				imageTag,
 			), nil
 		}
 		return fmt.Sprintf(
 			"%[1]s.repository=%[2]s,%[1]s.tag=%[3]s",
 			valueName, dockerRef.BaseName,
-			dockerRef.Tag,
+			imageTag,
 		), nil
 	}
 	return fmt.Sprintf("%s=%s", valueName, tag), nil

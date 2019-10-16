@@ -29,6 +29,8 @@ import (
 	"strings"
 	"testing"
 
+	homedir "github.com/mitchellh/go-homedir"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -39,7 +41,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 var testBuilds = []build.Artifact{{
@@ -727,6 +728,14 @@ func TestGetImageSetValueFromHelmStrategy(t *testing.T) {
 				ExplicitRegistry: true,
 			},
 			shouldErr: true,
+		},
+		{
+			description: "Helm set values using digest",
+			valueName:   "image",
+			tag:         "skaffold-helm:stable@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f87876677c5cb2",
+			expected:    "image.repository=skaffold-helm,image.tag=stable@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f87876677c5cb2",
+			strategy:    &latest.HelmConventionConfig{},
+			shouldErr:   false,
 		},
 	}
 	for _, test := range tests {

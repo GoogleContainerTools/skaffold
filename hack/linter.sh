@@ -20,14 +20,11 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if ! [ -x "$(command -v golangci-lint)" ]; then
 	echo "Installing GolangCI-Lint"
-	${DIR}/install_golint.sh -b $GOPATH/bin v1.18.0
+	${DIR}/install_golint.sh -b $GOPATH/bin v1.20.0
 fi
 
 VERBOSE=""
 if [[ "${TRAVIS}" == "true" ]]; then
-    # Use less memory on Travis
-    # See https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
-    export GOGC=10
     VERBOSE="-v --print-resources-usage"
 fi
 

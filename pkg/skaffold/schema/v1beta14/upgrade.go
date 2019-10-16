@@ -17,8 +17,8 @@ limitations under the License.
 package v1beta14
 
 import (
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta15"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 

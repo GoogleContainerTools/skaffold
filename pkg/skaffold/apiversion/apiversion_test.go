@@ -18,8 +18,9 @@ package apiversion
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/blang/semver"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestMustParse(t *testing.T) {

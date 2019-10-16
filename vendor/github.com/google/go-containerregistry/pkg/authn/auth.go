@@ -14,16 +14,17 @@
 
 package authn
 
-import (
-	"fmt"
-)
-
-// auth implements Authenticator for an "auth" entry of the docker config.
+// auth is an Authenticator that simply returns the wrapped AuthConfig.
 type auth struct {
-	token string
+	config AuthConfig
+}
+
+// FromConfig returns an Authenticator that just returns the given AuthConfig.
+func FromConfig(cfg AuthConfig) Authenticator {
+	return &auth{cfg}
 }
 
 // Authorization implements Authenticator.
-func (a *auth) Authorization() (string, error) {
-	return fmt.Sprintf("Basic %s", a.token), nil
+func (a *auth) Authorization() (*AuthConfig, error) {
+	return &a.config, nil
 }

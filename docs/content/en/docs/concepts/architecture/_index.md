@@ -15,9 +15,10 @@ The architecture allows you to use Skaffold with the tool you prefer. Skaffold
 provides built-in support for the following tools:
 
 * **Build**
-  * Dockerfile locally, in-cluster with kaniko or using Google Cloud Build
+  * Dockerfile locally, in-cluster with kaniko or on cloud using Google Cloud Build
+  * Jib Maven and Jib Gradle locally or on cloud using Google Cloud Build
   * Bazel locally
-  * Jib Maven and Jib Gradle locally or using Google Cloud Build
+  * Custom script locally
 * **Test**
   * [container-structure-test](https://github.com/GoogleContainerTools/container-structure-test)
 * **Tag**
@@ -44,5 +45,5 @@ Cloud Build and deploy using Helm:
 Skaffold also supports development profiles. You can specify multiple different
 profiles in the configuration and use whichever best serves your need in the
 moment without having to modify the configuration file. You can learn more about
-profiles from [Profiles](/docs/how-tos/profiles).
+profiles from [Profiles]({{< relref "/docs/how-tos/profiles" >}}).
 

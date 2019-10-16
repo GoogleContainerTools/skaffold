@@ -22,14 +22,16 @@ import (
 	"io"
 	"sort"
 
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster/sources"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
@@ -45,7 +47,7 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	}
 	defer s.Cleanup(ctx)
 
-	args, err := args(artifact.KanikoArtifact, context, tag)
+	args, err := args(artifact.KanikoArtifact, context, tag, b.insecureRegistries)
 	if err != nil {
 		return "", errors.Wrap(err, "building args list")
 	}
@@ -74,7 +76,7 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 		return "", errors.Wrap(err, "modifying kaniko pod")
 	}
 
-	waitForLogs := streamLogs(out, pod.Name, pods)
+	waitForLogs := streamLogs(ctx, out, pod.Name, pods)
 
 	err = kubernetes.WaitForPodSucceeded(ctx, pods, pod.Name, b.timeout)
 	waitForLogs()
@@ -85,7 +87,7 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
 
-func args(artifact *latest.KanikoArtifact, context, tag string) ([]string, error) {
+func args(artifact *latest.KanikoArtifact, context, tag string, insecureRegistries map[string]bool) ([]string, error) {
 	// Create pod spec
 	args := []string{
 		"--dockerfile", artifact.DockerfilePath,
@@ -139,5 +141,25 @@ func args(artifact *latest.KanikoArtifact, context, tag string) ([]string, error
 		args = append(args, "--reproducible")
 	}
 
+	for reg := range insecureRegistries {
+		args = append(args, "--insecure-registry", reg)
+	}
+
+	if artifact.SkipTLS {
+		reg, err := artifactRegistry(tag)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, "--skip-tls-verify-registry", reg)
+	}
+
 	return args, nil
+}
+
+func artifactRegistry(i string) (string, error) {
+	ref, err := name.ParseReference(i)
+	if err != nil {
+		return "", err
+	}
+	return ref.Context().RegistryStr(), nil
 }

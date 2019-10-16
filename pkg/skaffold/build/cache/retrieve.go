@@ -21,14 +21,15 @@ import (
 	"io"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -87,7 +88,11 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 			}
 
 		default:
-			color.Green.Fprintln(out, "Found")
+			if c.imagesAreLocal {
+				color.Green.Fprintln(out, "Found Locally")
+			} else {
+				color.Green.Fprintln(out, "Found Remotely")
+			}
 		}
 
 		// Image is already built

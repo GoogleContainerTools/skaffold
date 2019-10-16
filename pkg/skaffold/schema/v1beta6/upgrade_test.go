@@ -21,8 +21,9 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta7"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestUpgrade(t *testing.T) {

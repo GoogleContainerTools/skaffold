@@ -120,7 +120,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		return err
 	}
 
-	// Remote tags from image names
+	// Remove tags from image names
 	var images []string
 	for _, image := range k.GetImages() {
 		parsed, err := docker.ParseReference(image)
@@ -359,8 +359,8 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []build
 		}
 		images = util.RemoveFromSlice(images, image)
 	}
-	if len(builderConfigs) > 0 {
-		logrus.Warnf("unused builder configs found in repository: %v", builderConfigs)
+	if len(choices) > 0 {
+		logrus.Warnf("unused builder configs found in repository: %v", choices)
 	}
 	return pairs
 }

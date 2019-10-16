@@ -84,7 +84,6 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (ManifestLi
 
 	var manifestList ManifestList
 	manifestList.Append(buf)
-	logrus.Debugln("manifests", manifestList.String())
 
 	return manifestList, nil
 }

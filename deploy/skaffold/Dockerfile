@@ -71,10 +71,9 @@ RUN chmod +x bazel
 # Download pack
 FROM alpine:3.10 as download-pack
 ENV PACK_VERSION 0.4.1
-RUN wget https://github.com/buildpack/pack/releases/download/v${PACK_VERSION}/pack-v${PACK_VERSION}-linux.tgz
-RUN tar xvf pack-v${PACK_VERSION}-linux.tgz
-RUN rm pack-v${PACK_VERSION}-linux.tgz
-RUN chmod +x pack
+ENV PACK_URL https://github.com/buildpack/pack/releases/download/v${PACK_VERSION}/pack-v${PACK_VERSION}-linux.tgz
+RUN wget -O pack.tgz "${PACK_URL}"
+RUN tar -zxf pack.tgz
 
 FROM gcr.io/gcp-runtimes/ubuntu_16_0_4 as runtime_deps
 
