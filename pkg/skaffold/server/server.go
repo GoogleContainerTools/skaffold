@@ -24,7 +24,6 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -72,8 +71,8 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 		return func() error { return nil }, nil
 	}
 	rpcPort := util.GetAvailablePort(originalRPCPort, &sync.Map{})
-	if rpcPort != originalRPCPort && originalRPCPort != constants.DefaultRPCPort {
-		logrus.Warnf("provided port %d already in use: using %d instead", originalRPCPort, rpcPort)
+	if rpcPort != originalRPCPort {
+		logrus.Warnf("port %d for gRPC server already in use: using %d instead", originalRPCPort, rpcPort)
 	}
 	grpcCallback, err := newGRPCServer(rpcPort)
 	if err != nil {
@@ -84,8 +83,8 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 
 	originalHTTPPort := opts.RPCHTTPPort
 	httpPort := util.GetAvailablePort(originalHTTPPort, m)
-	if httpPort != originalHTTPPort && originalHTTPPort != constants.DefaultRPCHTTPPort {
-		logrus.Warnf("provided port %d already in use: using %d instead", originalHTTPPort, httpPort)
+	if httpPort != originalHTTPPort {
+		logrus.Warnf("port %d for gRPC HTTP server already in use: using %d instead", originalHTTPPort, httpPort)
 	}
 
 	httpCallback, err := newHTTPServer(httpPort, rpcPort)
