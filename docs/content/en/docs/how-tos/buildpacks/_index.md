@@ -9,7 +9,7 @@ Buildpacks enable building language-based containers from source code, without t
 
 ## Before you begin
 First, you will need to have Skaffold and a Kubernetes cluster set up.
-To learn more about how to set up Skaffold and a Kubernetes cluster, see the [getting started docs](/docs/getting-started/).
+To learn more about how to set up Skaffold and a Kubernetes cluster, see the [quickstart docs]({{< relref "/docs/quickstart" >}}).
 
 To use buildpacks with Skaffold, please install the following additional tools:
 
