@@ -217,7 +217,7 @@ func newCounter(i int) *counter {
 	}
 }
 
-func (c *counter) markProcessed(err error) *counter {
+func (c *counter) markProcessed(err error) counter {
 	if err != nil {
 		atomic.AddInt32(&c.failed, 1)
 	}
@@ -225,11 +225,8 @@ func (c *counter) markProcessed(err error) *counter {
 	return c.copy()
 }
 
-func (c *counter) copy() *counter {
-	if c == nil {
-		return nil
-	}
-	return &counter{
+func (c *counter) copy() counter {
+	return counter{
 		total:   c.total,
 		pending: c.pending,
 		failed:  c.failed,
@@ -243,8 +240,10 @@ func newResourceCounter(d int) *resourceCounter {
 }
 
 func (c *resourceCounter) markProcessed(err error) resourceCounter {
+	depCp := c.deployments.markProcessed(err)
+	podCp := c.pods.copy()
 	return resourceCounter{
-		deployments: c.deployments.markProcessed(err),
-		pods:        c.pods.copy(),
+		deployments: &depCp,
+		pods:        &podCp,
 	}
 }
