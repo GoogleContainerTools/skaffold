@@ -432,7 +432,7 @@ func TestCounterCopy(t *testing.T) {
 			expected:    &counter{total: 10, pending: 2},
 		},
 		{
-			description: "counter with updated failed and pendingis copied correctly",
+			description: "counter with updated failed and pending is copied correctly",
 			c:           &counter{total: 10, pending: 5, failed: 3},
 			expected:    &counter{total: 10, pending: 5, failed: 3},
 		},
