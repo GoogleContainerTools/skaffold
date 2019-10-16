@@ -778,6 +778,8 @@ type JibArtifact struct {
 	// For example: `["--no-build-cache"]`.
 	Flags []string `yaml:"args,omitempty"`
 
-	// Type the Jib builder type (internal: see jib.PluginType)
-	Type int `yaml:"-"`
+	// Type the Jib builder type; normally determined automatically. Valid types are
+	// `maven`: for Maven.
+	// `gradle`: for Gradle.
+	Type string `yaml:"type,omitempty"`
 }
