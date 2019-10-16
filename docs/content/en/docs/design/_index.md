@@ -1,11 +1,8 @@
 ---
-title: "Architecture"
-linkTitle: "Architecture"
-weight: 20
+title: "Architecture and Design"
+linkTitle: "Architecture and Design"
+weight: 40
 ---
-
-This page discusses the pluggable architecture of Skaffold.
-
 
 Skaffold is designed with pluggability in mind:
 
@@ -45,5 +42,4 @@ Cloud Build and deploy using Helm:
 Skaffold also supports development profiles. You can specify multiple different
 profiles in the configuration and use whichever best serves your need in the
 moment without having to modify the configuration file. You can learn more about
-profiles from [Profiles]({{< relref "/docs/how-tos/profiles" >}}).
-
+profiles [here]({{< relref "../environment/profiles.md" >}}).

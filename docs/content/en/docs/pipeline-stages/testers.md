@@ -1,7 +1,7 @@
 ---
-title: "Testers"
-linkTitle: "Testers"
-weight: 15
+title: "Test"
+linkTitle: "Test"
+weight: 20
 ---
 
 This page discusses how to set up Skaffold to run container structure tests after building an artifact.

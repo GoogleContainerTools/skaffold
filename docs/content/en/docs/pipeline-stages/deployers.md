@@ -1,6 +1,6 @@
 ---
-title: "Deployers"
-linkTitle: "Deployers"
+title: "Deploy"
+linkTitle: "Deploy"
 weight: 30
 ---
 
@@ -27,7 +27,7 @@ artifacts, add the value representing the tool and options for using the tool
 to the `deploy` section.
 
 For a detailed discussion on Skaffold configuration, see
-[Skaffold Concepts]({{< relref "/docs/concepts#configuration" >}}) and
+[Skaffold Concepts]({{< relref "/docs/design/config.md" >}}) and
 [skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
 ## Deploying with kubectl

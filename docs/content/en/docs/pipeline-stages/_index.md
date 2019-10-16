@@ -1,11 +1,8 @@
 ---
-title: "Workflow"
-linkTitle: "Workflow"
-weight: 10
+title: "Skaffold Pipeline Stages"
+linkTitle: "Skaffold Pipeline Stages"
+weight: 4
 ---
-
-This page discusses the development workflow with Skaffold.
-
 
 Skaffold features a five-stage workflow:
 
@@ -21,3 +18,5 @@ Skaffold allows you to skip stages. If, for example, you run Kubernetes
 locally with [Minikube](https://kubernetes.io/docs/setup/minikube/), Skaffold
 will not push artifacts to a remote repository.
 
+
+TODO: describe the skaffold pipeline, and anchor link to each stage

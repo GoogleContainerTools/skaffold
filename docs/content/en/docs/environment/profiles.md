@@ -11,7 +11,7 @@ environments in your app's lifecycle, like Production or Development.
 You can create profiles in the `profiles` section of `skaffold.yaml`.
 
 For a detailed discussion on Skaffold configuration, see
-[Skaffold Concepts]({{< relref "/docs/concepts#configuration" >}}) and
+[Skaffold Concepts]({{< relref "/docs/design/config.md" >}}) and
 [skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
 ## Profiles (`profiles`)
@@ -29,8 +29,8 @@ Once a profile is activated, the specified `build`, `test` and `deploy` configur
 in it will replace the `build`, `test` and `deploy` sections declared
 in the main section of `skaffold.yaml`. The `build`, `test` and `deploy` configuration in the `profiles`
 section use the same syntax as the `build`, `test` and `deploy` sections of
-`skaffold.yaml`; for more information, see [Builders]({{< relref "/docs/how-tos/builders" >}}),
-[Testers](/docs/how-tos/testers), [Deployers]({{< relref "/docs/how-tos/deployers" >}}) and you can always refer to
+`skaffold.yaml`; for more information, see [Builders]({{< relref "/docs/pipeline-stages/builders" >}}),
+[Testers](/docs/pipeline-stages/testers), [Deployers]({{< relref "/docs/pipeline-stages/deployers" >}}) and you can always refer to
  [skaffold.yaml reference]({{< relref "/docs/references/yaml" >}}) for an overview of the syntax.
  Alternatively, you can override the main configuration with finer grained control using `patches`.
 

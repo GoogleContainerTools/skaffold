@@ -1,7 +1,7 @@
 ---
 title: "Debugging with Skaffold"
 linkTitle: "Debugging"
-weight: 100
+weight: 2
 ---
 
 This page describes `skaffold debug`, a zero-configuration solution for
