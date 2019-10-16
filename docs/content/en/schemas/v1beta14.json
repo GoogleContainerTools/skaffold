@@ -1222,8 +1222,8 @@
         },
         "type": {
           "type": "string",
-          "description": "the Jib builder type (internal: see jib.PluginType)",
-          "x-intellij-html-description": "the Jib builder type (internal: see jib.PluginType)"
+          "description": "the Jib builder type; normally determined automatically. Valid types are `maven`: for Maven. `gradle`: for Gradle.",
+          "x-intellij-html-description": "the Jib builder type; normally determined automatically. Valid types are <code>maven</code>: for Maven. <code>gradle</code>: for Gradle."
         }
       },
       "preferredOrder": [
