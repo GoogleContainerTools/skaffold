@@ -16,7 +16,7 @@ Skaffold API is restful and `gRPC` based, so it works with any language that has
 The API server runs on localhost at predefined ports.
 The protos used can be found here. (todo add link)
 
-## gRPC Server
+### gRPC Server
 
 gRPC API server is exposed on port `50051` by default. If the port is busy, Skaffold will find the next available port. 
 You can grab the port from Skaffold logs.
@@ -28,7 +28,7 @@ WARN[0000] port 50051 for gRPC server already in use: using 50053 instead
 You can also specify a port on the command line with flag `--rpc-port`.
 
 
-## gRPC REST Server  
+### gRPC REST Server  
 REST API server is exposed on port `50052` by default. If the port is busy, Skaffold will find the next available port. 
 You can grab the port from Skaffold logs.
 
