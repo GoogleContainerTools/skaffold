@@ -4,43 +4,43 @@ linkTitle: "Skaffold API"
 weight: 40
 ---
 
-When using `skaffold dev` or `skaffold debug`, Skaffold exposes a API server over its lifetime.
-The API server is the primary way tools like IDEs to integrate with skaffold and subscribe to events 
-regarding the different phases in a pipeline run and to get the overall state of the pipeline.
-The API server also provides fine grain controls to Skaffold's individual components:
-build, deploy and sync, as opposed to relying on Skaffold’s built-in trigger mechanisms.
+When running `skaffold dev` or `skaffold debug`, Skaffold starts a server that exposes an API over the lifetime of the run.
+This API is the primary way tools like IDEs integrate with skaffold, both to subscribe to an event log 
+created from the different phases in a pipeline run, and to get a snapshot of the overall state of the pipeline at any given time during the run.
+The API also provides fine grain controls over the individual components of the Skaffold
+pipeline (build, deploy and sync), as opposed to relying on Skaffold’s built-in trigger mechanisms.
 
 
 ## Skaffold API 
-Skaffold API is restful and `gRPC` based, so it works with any language that has an HTTP library, such as cURL and urllib.
-The API server runs on localhost at predefined ports.
-The protos used can be found here. (todo add link)
+The Skaffold API is both restful and `gRPC` based, so it can be accessed directly through a terminal via `curl`, or through your favorite client library for issuing HTTP requests or writing `gRPC` clients.
+The server is hosted locally on the Skaffold host machine, and will serve by default on ports 50051 and 50052, though these ports can be configured through the `--rpc-port` and `--rpc-http-port` flags.
+The server's protocol is based on protobufs: documentation for these can be found here. TODO (tejaldesai): add link
 
 ### gRPC Server
 
-gRPC API server is exposed on port `50051` by default. If the port is busy, Skaffold will find the next available port. 
-You can grab the port from Skaffold logs.
+The gRPC API is exposed on port `50051` by default. If this port is busy, Skaffold will find the next available port. 
+You can find this port from Skaffold's logs on startup.
 
 ```code
 $ skaffold dev
 WARN[0000] port 50051 for gRPC server already in use: using 50053 instead 
 ``` 
-You can also specify a port on the command line with flag `--rpc-port`.
+You can also specify a port on the command line with the `--rpc-port` flag.
 
 
-### gRPC REST Server  
-REST API server is exposed on port `50052` by default. If the port is busy, Skaffold will find the next available port. 
+### HTTP (REST) API  
+The HTTP API is exposed on port `50052` by default. As with the gRPC API, if this port is busy, Skaffold will find the next available port, and the final port can be found from Skaffold's startup logs.
 You can grab the port from Skaffold logs.
 
 ```code
 $ skaffold dev
 WARN[0000] port 50052 for gRPC HTTP server already in use: using 50055 instead 
 ``` 
-You can also specify a port on the command line with flag `--rpc-http-port`.
+You can also specify a port on the command line with the `--rpc-http-port` flag.
 
 
 ## Skaffold API
-Skaffold API Server exposes following endpoints.
+Skaffold's API exposes the following endpoints:
 
 ### GET /v1/events
 
@@ -52,7 +52,7 @@ Skaffold exposes events for users to get notified when phases within a developme
 complete. 
 You can use these events to automate next steps in your development workflow. 
 
-e.g: when making a change to port-forwarded frontend service, reload the 
+For example, when making a change to port-forwarded frontend service, reload the 
 browser url after the service is deployed and running to test changes.
 
 Here is way to get events for a `skaffold dev` [getting-started example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/getting-started)
