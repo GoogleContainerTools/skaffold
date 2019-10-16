@@ -46,7 +46,7 @@ const (
 type PluginType string
 
 const (
-	JibMaven PluginType = "maven"
+	JibMaven  PluginType = "maven"
 	JibGradle PluginType = "gradle"
 )
 
