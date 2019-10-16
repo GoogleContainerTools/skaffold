@@ -17,6 +17,9 @@ limitations under the License.
 package cluster
 
 import (
+	"bufio"
+	"context"
+	"fmt"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -41,7 +44,7 @@ func logLevel() logrus.Level {
 	return level
 }
 
-func streamLogs(out io.Writer, name string, pods corev1.PodInterface) func() {
+func streamLogs(ctx context.Context, out io.Writer, name string, pods corev1.PodInterface) func() {
 	var wg sync.WaitGroup
 	wg.Add(1)
 
@@ -61,9 +64,20 @@ func streamLogs(out io.Writer, name string, pods corev1.PodInterface) func() {
 				continue
 			}
 
-			w, _ := io.Copy(out, r)
-			atomic.AddInt64(&written, w)
-			return
+			scanner := bufio.NewScanner(r)
+			for {
+				select {
+				case <-ctx.Done():
+					return // The build was cancelled
+				default:
+					if !scanner.Scan() {
+						return // No more logs
+					}
+
+					fmt.Fprintln(out, scanner.Text())
+					atomic.AddInt64(&written, 1)
+				}
+			}
 		}
 	}()
 
