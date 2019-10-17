@@ -5,16 +5,19 @@ weight: 40
 ---
 
 When running `skaffold dev` or `skaffold debug`, Skaffold starts a server that exposes an API over the lifetime of the run.
-This API is the primary way tools like IDEs integrate with skaffold, both to subscribe to an event log 
-created from the different phases in a pipeline run, and to get a snapshot of the overall state of the pipeline at any given time during the run.
-The API also provides fine grain controls over the individual components of the Skaffold
-pipeline (build, deploy and sync), as opposed to relying on Skaffold’s built-in trigger mechanisms.
+Besides the CLI, this API is the primary way tools like IDEs integrate with Skaffold for **retrieving information about the pipeline** and for **controlling the phases in the pipeline**. To  retrieve information of the Skaffold pipeline, the Skaffold API provides two main functionalities: 
+- a streaming event log  
+created from the different phases in a pipeline run
+- and a snapshot of the overall state of the pipeline at any given time during the run.
+The API also provides fine grained control over the individual phases of the Skaffold
+pipeline (build, deploy and sync), as opposed to relying on Skaffold’s automation.
 
 
 ## Skaffold API 
-The Skaffold API is both restful and `gRPC` based, so it can be accessed directly through a terminal via `curl`, or through your favorite client library for issuing HTTP requests or writing `gRPC` clients.
-The server is hosted locally on the Skaffold host machine, and will serve by default on ports 50051 and 50052, though these ports can be configured through the `--rpc-port` and `--rpc-http-port` flags.
-The server's protocol is based on protobufs: documentation for these can be found here. TODO (tejaldesai): add link
+The Skaffold API is `gRPC` based, and it is also exposed via the gRPC gateway as a JSON over HTTP service.
+The server is hosted locally on the same host where the skaffold process is running, and will serve by default on ports 50051 and 50052. These ports can be configured through the `--rpc-port` and `--rpc-http-port` flags.
+The server's gRPC service definitions and message protos can be found [here](/#). 
+{{% todo 1703 %}}
 
 ### gRPC Server
 
