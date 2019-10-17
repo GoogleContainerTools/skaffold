@@ -311,7 +311,7 @@ deploy:
 			t.Override(&docker.ValidateDockerfileFunc, fakeValidateDockerfile)
 			t.Override(&jib.ValidateJibConfigFunc, fakeValidateJibConfig)
 
-			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, test.enableJibInit, detectBuilders)
+			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, test.enableJibInit)
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {

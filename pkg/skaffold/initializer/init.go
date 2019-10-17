@@ -111,7 +111,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		}
 	}
 
-	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, c.EnableJibInit, detectBuilders)
+	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, c.EnableJibInit)
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,10 @@ func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builde
 	return pairs, builderConfigs, unresolvedImages
 }
 
-func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, error) {
+// detectBuilders checks if a path is a builder config, and if it is, returns the InitBuilders representing the
+// configs. Also returns a boolean marking whether search completion for subdirectories (true = subdirectories should
+// continue to be searched, false = subdirectories should not be searched for more builders)
+func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, bool) {
 	// TODO: Remove backwards compatibility if statement (not entire block)
 	if enableJibInit {
 		// Check for jib
@@ -252,19 +255,19 @@ func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, error) {
 			for i := range builders {
 				results[i] = builders[i]
 			}
-			return results, filepath.SkipDir
+			return results, false
 		}
 	}
 
 	// Check for Dockerfile
 	if docker.ValidateDockerfileFunc(path) {
 		results := []InitBuilder{docker.Docker{File: path}}
-		return results, nil
+		return results, true
 	}
 
 	// TODO: Check for more builders
 
-	return nil, nil
+	return nil, true
 }
 
 func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
@@ -539,7 +542,7 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 	return err
 }
 
-func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, string) ([]InitBuilder, error)) ([]string, []InitBuilder, error) {
+func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error) {
 	var potentialConfigs []string
 	var foundBuilders []InitBuilder
 
@@ -556,15 +559,16 @@ func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, st
 
 		// Traverse files
 		for _, file := range dirents {
+			if util.IsHiddenFile(file.Name()) || util.IsHiddenDir(file.Name()) {
+				continue
+			}
+
 			// If we found a directory, keep track of it until we've gone through all the files first
 			if file.IsDir() {
 				directories = append(directories, file)
 				continue
 			}
 
-			if util.IsHiddenFile(file.Name()) {
-				continue
-			}
 			filePath := filepath.Join(path, file.Name())
 			if IsSkaffoldConfig(filePath) {
 				if !force {
@@ -573,6 +577,7 @@ func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, st
 				logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", filePath)
 				continue
 			}
+
 			if IsSupportedKubernetesFileExtension(filePath) {
 				potentialConfigs = append(potentialConfigs, filePath)
 				continue
@@ -580,25 +585,14 @@ func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, st
 
 			// try and parse build file
 			if findBuilders {
-				if builderConfigs, err := validateBuildFile(enableJibInit, filePath); builderConfigs != nil {
-					for _, buildConfig := range builderConfigs {
-						logrus.Infof("existing builder found: %s", buildConfig.Describe())
-						foundBuilders = append(foundBuilders, buildConfig)
-					}
-					if err == filepath.SkipDir {
-						findBuildersInDirectories = false
-					}
-				}
+				var builderConfigs []InitBuilder
+				builderConfigs, findBuildersInDirectories = detectBuilders(enableJibInit, filePath)
+				foundBuilders = append(foundBuilders, builderConfigs...)
 			}
 		}
 
 		// Traverse into subdirectories
 		for _, dir := range directories {
-			if util.IsHiddenDir(dir.Name()) {
-				logrus.Debugf("skip walking hidden dir %s", dir.Name())
-				continue
-			}
-
 			err = dirCallback(filepath.Join(path, dir.Name()), findBuildersInDirectories)
 			if err != nil {
 				return err
