@@ -554,7 +554,7 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 		}
 
 		var directories []*godirwalk.Dirent
-		findBuildersInDirectories := true
+		findBuildersInSubdirectories := true
 		sort.Sort(dirents)
 
 		// Traverse files
@@ -570,14 +570,15 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 			}
 
 			filePath := filepath.Join(path, file.Name())
-			if findBuildersInDirectories, err = checkFile(filePath, force, findBuilders, enableJibInit, &potentialConfigs, &foundBuilders); err != nil {
+			if findBuildersInSubdirectories, err = checkFile(filePath, force, findBuilders, enableJibInit, &potentialConfigs, &foundBuilders); err != nil {
 				return err
 			}
 		}
 
 		// Traverse into subdirectories
+		findBuilders = findBuilders && findBuildersInSubdirectories
 		for _, dir := range directories {
-			err = enterDirectory(filepath.Join(path, dir.Name()), findBuildersInDirectories)
+			err = enterDirectory(filepath.Join(path, dir.Name()), findBuilders)
 			if err != nil {
 				return err
 			}
@@ -594,28 +595,28 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 }
 
 // checkFile checks if filePath is a skaffold config, k8s config, or builder config. Detected k8s configs are added to potentialConfigs,
-// and builder configs are added to foundBuilders. Returns true if subdirectories should continue to be searched, or false if the search
-// should stop at this directory level (e.g. if a Jib config being found).
+// and builder configs are added to foundBuilders. Returns true if subdirectories may continue to be searched, or false if a builder was
+// found that wants to stop searching in deeper subdirectories (e.g. Jib).
 func checkFile(filePath string, force, findBuilders, enableJibInit bool, potentialConfigs *[]string, foundBuilders *[]InitBuilder) (bool, error) {
 	if IsSkaffoldConfig(filePath) {
 		if !force {
 			return false, fmt.Errorf("pre-existing %s found", filePath)
 		}
 		logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", filePath)
-		return findBuilders, nil
+		return true, nil
 	}
 
 	if IsSupportedKubernetesFileExtension(filePath) {
 		*potentialConfigs = append(*potentialConfigs, filePath)
-		return findBuilders, nil
+		return true, nil
 	}
 
 	// try and parse build file
 	if findBuilders {
-		builderConfigs, findBuildersInDirectories := detectBuilders(enableJibInit, filePath)
+		builderConfigs, findBuildersInSubdirectories := detectBuilders(enableJibInit, filePath)
 		*foundBuilders = append(*foundBuilders, builderConfigs...)
-		return findBuildersInDirectories, nil
+		return findBuildersInSubdirectories, nil
 	}
 
-	return findBuilders, nil
+	return true, nil
 }
