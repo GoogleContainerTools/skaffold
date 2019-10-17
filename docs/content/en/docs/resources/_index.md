@@ -11,7 +11,7 @@ weight: 130
 * Debugging JVM applications
 * Provide help with integration testing
 * Skaffold keeps track of what it built, for faster restarts
-* Automated kubernetes manifest generation
+* Automated Kubernetes manifest generation
 * Pipeline CRD integration
 * Infrastructure scaffolding for CI/CD on GCP/GKE
 * Document end-to-end solutions

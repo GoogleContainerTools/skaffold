@@ -530,7 +530,7 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 	}
 
 	if c.Args[1] != "--kube-context" || c.Args[2] != testKubeContext {
-		m.t.Errorf("Invalid kubernetes context %v", c)
+		m.t.Errorf("Invalid Kubernetes context %v", c)
 	}
 
 	if c.Args[3] == "get" || c.Args[3] == "upgrade" {

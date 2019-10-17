@@ -59,7 +59,7 @@ type counter struct {
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
+		return errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds)

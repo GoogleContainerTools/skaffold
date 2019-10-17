@@ -4,32 +4,34 @@ linkTitle: "Image repository handling"
 weight: 70
 ---
 
-This page discusses how Skaffold handles image repositories. In particular, how to work with insecure repositories.
+Often, a Kubernetes manifest (or `skaffold.yaml`) makes references to images that push to
+registries that we might not have access to. Modifying these individual image names manually
+is tedious, so Skaffold supports automatically prefixing these image names with a registry
+specified by the user. Using this, any project configured with Skaffold can be run by any user
+with minimal configuration, and no manual YAML editing!
 
+This is accomplished through the `default-repo` functionality, and can be used one of three ways:
 
-Skaffold allows for automatically rewriting image names to your repository.
-This way you can grab a Skaffold project and just `skaffold run` it to deploy to your cluster.
-The way to achieve this is the `default-repo` functionality:
-
-1. Via `default-repo` flag
+1. `--default-repo` flag
 
     ```bash
     skaffold dev --default-repo <myrepo>
     ```
 
-1. Via `SKAFFOLD_DEFAULT_REPO` environment variable
+1. `SKAFFOLD_DEFAULT_REPO` environment variable
 
     ```bash
     SKAFFOLD_DEFAULT_REPO=<myrepo> skaffold dev
     ```
 
-1. Via Skaffold's global config
+1. Skaffold's global config
 
     ```bash
     skaffold config set default-repo <myrepo>
     ```
 
-If Skaffold doesn't find `default-repo`, there is no automated image name rewriting.
+If no `default-repo` is provided by the user, there is no automated image name rewriting, and Skaffold will
+try to push the image as provided in the yaml.
 
 The image name rewriting strategies are designed to be *conflict-free*:
 the full image name is rewritten on top of the default-repo so similar image names don't collide in the base namespace (e.g.: repo1/example and repo2/example would collide in the target_namespace/example without this)

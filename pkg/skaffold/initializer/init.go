@@ -52,7 +52,7 @@ var (
 )
 
 // NoBuilder allows users to specify they don't want to build
-// an image we parse out from a kubernetes manifest
+// an image we parse out from a Kubernetes manifest
 const NoBuilder = "None (image not built from these sources)"
 
 // Initializer is the Init API of skaffold and responsible for generating

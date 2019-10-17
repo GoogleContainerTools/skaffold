@@ -1,20 +1,19 @@
 ---
-title: "Local development"
-linkTitle: "Local development"
+title: "Local Cluster"
+linkTitle: "Local Cluster"
 weight: 60
 ---
 
-This page discusses how to develop locally with Skaffold.
+Skaffold can be easily configured to deploy against a cluster hosted locally, most commonly with
+[`minikube`](https://github.com/kubernetes/minikube/) or `docker-for-desktop`.
+The advantage of this setup is that no images need to be pushed, since the local cluster
+uses images straight from your local docker daemon.
 
-
-Local development means that Skaffold can skip pushing built container images, because the images are already present where they are run.
-For standard development setups such as `minikube` and `docker-for-desktop`, this works out of the box.
-
-However, for non-standard local setups, such as [minikube](https://github.com/kubernetes/minikube/) with custom profile or [kind](https://github.com/kubernetes-sigs/kind), some extra configuration is necessary.
-The essential steps are:
+For non-standard local setups, such as a custom `minikube` profile or [kind](https://github.com/kubernetes-sigs/kind),
+some extra configuration is necessary. The essential steps are:
 
 1. Ensure that Skaffold builds the images with the docker daemon, which also runs the containers.
-2. Tell Skaffold to skip pushing images either by configuring
+1. Tell Skaffold to skip pushing images either by configuring
 
     ```yaml
     build:
@@ -22,15 +21,15 @@ The essential steps are:
         push: false
     ```
    
-   or by marking a kubernetes context as local (see the following example).
+   or by marking a Kubernetes context as local (see the following example).
 
-For example, when running `minikube` with a custom profile, such as `minikube start -p my-profile`:
+For example, when running `minikube` with a custom profile (e.g. `minikube start -p my-profile`):
 
 1. Set up the docker environment for Skaffold with `source <(minikube docker-env -p my-profile)`.
    This should set some environment variables for docker (check with `env | grep DOCKER`).
-   It is important to do this in the same shell where Skaffold is executed.
+   **It is important to do this in the same shell where Skaffold is executed.**
    
-2. Tell Skaffold that the kubernetes context `my-profile` refers to a local cluster with
+2. Tell Skaffold that the Kubernetes context `my-profile` refers to a local cluster with
 
     ```bash
     skaffold config set --kube-context my-profile local-cluster true

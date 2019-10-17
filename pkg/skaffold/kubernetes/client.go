@@ -36,7 +36,7 @@ var (
 func getClientset() (kubernetes.Interface, error) {
 	config, err := context.GetRestClientConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting client config for kubernetes client")
+		return nil, errors.Wrap(err, "getting client config for Kubernetes client")
 	}
 	return kubernetes.NewForConfig(config)
 }

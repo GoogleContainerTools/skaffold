@@ -4,11 +4,13 @@ linkTitle: "Port forwarding"
 weight: 50
 ---
 
-This page discusses how to set up port forwarding with Skaffold for `skaffold dev` and `skaffold debug`.
+Skaffold has built-in support for forwarding ports for exposed Kubernetes resources on your cluster
+to your local machine when running in either `dev` or `debug` mode.
 
-Port forwarding is set to false by default; it is enabled with the `--port-forward` flag.
-If this flag is not set, no port forwarding will occur. 
-If the flag is set, Skaffold will:
+**Port forwarding is disabled by default; it can be enabled with the `--port-forward` flag.**
+**If this flag is not set, no port forwarding will occur!**
+
+When port forwarding is enabled, Skaffold will:
 
 1. Set up automatic port forwarding as described in the following section
 2. Port forward any user defined resources in the Skaffold config

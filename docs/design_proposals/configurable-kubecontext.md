@@ -7,7 +7,7 @@
 
 ## Background
 
-So far, Skaffold always uses the currently active kubecontext when interacting with a kubernetes cluster.
+So far, Skaffold always uses the currently active kubecontext when interacting with a Kubernetes cluster.
 This is problematic when users want to deploy multiple projects with different kubecontexts, because the user needs to manually switch the context before starting Skaffold.
 In particular when working on multiple such projects in parallel, the current behavior is limiting.
 
@@ -51,7 +51,7 @@ There are four places where kubecontext activation can be added:
             <td>1. (highest)</td>
             <td>CLI option</td>
             <td>
-              The kubernetes standard to set the kubecontext is <code>--context</code>.
+              The Kubernetes standard to set the kubecontext is <code>--context</code>.
               However, in Skaffold this term is so overloaded that it should more precisely be named <code>--kube-context</code>.
               This flag is necessary for IDE integration.
             </td>
@@ -138,7 +138,7 @@ There are at least three possibilities:
   This is guaranteed to be unique, but may break if a user moves his project to another location.
 - Identify projects by a new `metadata.name` entry in `skaffold.yaml` (see also [#2200](https://github.com/GoogleContainerTools/skaffold/issues/2200)).
   This has the drawback of being potentially not unique, so that users accidentally pin the kubecontext for more projects than intended.
-  On the other hand, this is the standard approach taken by kubernetes resources.
+  On the other hand, this is the standard approach taken by Kubernetes resources.
 - Identify project by their initial commit.
   This variant is stable against relocations.
   It is also unique unless a user forks a project and wants to define different kubecontexts for each fork.

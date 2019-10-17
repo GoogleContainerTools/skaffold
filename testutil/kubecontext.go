@@ -21,7 +21,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
-// SetupFakeKubernetesContext replaces the current kubernetes configuration
+// SetupFakeKubernetesContext replaces the current Kubernetes configuration
 // file to setup a fixed current context.
 func (t *T) SetupFakeKubernetesContext(config api.Config) {
 	kubeConfig := t.TempFile("config", []byte{})

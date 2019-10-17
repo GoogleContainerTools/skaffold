@@ -37,7 +37,7 @@ func (l *ManifestList) Visit(replacer Replacer) (ManifestList, error) {
 	for _, manifest := range *l {
 		m := make(map[interface{}]interface{})
 		if err := yaml.Unmarshal(manifest, &m); err != nil {
-			return nil, errors.Wrap(err, "reading kubernetes YAML")
+			return nil, errors.Wrap(err, "reading Kubernetes YAML")
 		}
 
 		if len(m) == 0 {

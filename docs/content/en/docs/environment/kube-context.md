@@ -4,14 +4,12 @@ linkTitle: "Kube-context activation"
 weight: 80
 ---
 
-This page discusses how Skaffold selects the `kube-context`.
-
-
-When interacting with a kubernetes cluster, Skaffold does so via a kube-context.
-Thus, the selected kube-context determines the kubernetes cluster, the kubernetes user, and the default namespace.
+When interacting with a Kubernetes cluster, just like any other Kubernetes-native tool,
+Skaffold requires a valid Kubernetes context to be configured.
+The selected kube-context determines the Kubernetes cluster, the Kubernetes user, and the default namespace.
 By default, Skaffold uses the _current_ kube-context from your kube-config file.
 
-You can override this default via
+You can override this default one of two ways:
 
 1. `--kube-context` flag
 
@@ -26,7 +24,7 @@ You can override this default via
       kubeContext: minikube
     ```
 
-When both are given, the CLI flag always takes precedence.
+The CLI flag always takes precedence over the config field in the `skaffold.yaml`.
 
 ### Kube-context activation and Skaffold profiles
 

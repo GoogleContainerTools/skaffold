@@ -48,7 +48,7 @@ func RandomID() string {
 	return fmt.Sprintf("%x", b)
 }
 
-// These are the supported file formats for kubernetes manifests
+// These are the supported file formats for Kubernetes manifests
 var validSuffixes = []string{".yml", ".yaml", ".json"}
 
 // IsSupportedKubernetesFormat is for determining if a file under a glob pattern

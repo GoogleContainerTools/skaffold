@@ -103,7 +103,7 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 func retrieveServiceResources(label string, namespaces []string) ([]*latest.PortForwardResource, error) {
 	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting kubernetes client")
+		return nil, errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	var resources []*latest.PortForwardResource
