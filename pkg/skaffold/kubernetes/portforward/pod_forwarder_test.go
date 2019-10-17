@@ -53,9 +53,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
-					resourceVersion: 1,
-					podName:         "podname",
-					containerName:   "containername",
+					podName:       "podname",
+					containerName: "containername",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
@@ -98,8 +97,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			expectedPorts: map[int]struct{}{9000: {}},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
-					resourceVersion: 1,
-					podName:         "podname",
+					podName: "podname",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
@@ -140,43 +138,13 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description:     "bad resource version",
-			expectedPorts:   map[int]struct{}{},
-			shouldErr:       true,
-			expectedEntries: map[string]*portForwardEntry{},
-			availablePorts:  []int{8080},
-			pods: []*v1.Pod{
-				{
-					ObjectMeta: metav1.ObjectMeta{
-						Name:            "podname",
-						ResourceVersion: "10000000000a",
-						Namespace:       "namespace",
-					},
-					Spec: v1.PodSpec{
-						Containers: []v1.Container{
-							{
-								Name: "containername",
-								Ports: []v1.ContainerPort{
-									{
-										ContainerPort: 8080,
-										Name:          "portname",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
 			description:    "two different container ports",
 			expectedPorts:  map[int]struct{}{8080: {}, 50051: {}},
 			availablePorts: []int{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
-					resourceVersion: 1,
-					podName:         "podname",
-					containerName:   "containername",
+					podName:       "podname",
+					containerName: "containername",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
@@ -191,9 +159,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					terminationLock:        &sync.Mutex{},
 				},
 				"owner-containername2-namespace2-portname2-50051": {
-					resourceVersion: 1,
-					podName:         "podname2",
-					containerName:   "containername2",
+					podName:       "podname2",
+					containerName: "containername2",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname2",
@@ -257,10 +224,9 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			availablePorts: []int{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
-					resourceVersion: 1,
-					podName:         "podname",
-					containerName:   "containername",
-					portName:        "portname",
+					podName:       "podname",
+					containerName: "containername",
+					portName:      "portname",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
@@ -274,10 +240,9 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					terminationLock:        &sync.Mutex{},
 				},
 				"owner-containername2-namespace2-portname2-8080": {
-					resourceVersion: 1,
-					podName:         "podname2",
-					containerName:   "containername2",
-					portName:        "portname2",
+					podName:       "podname2",
+					containerName: "containername2",
+					portName:      "portname2",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname2",
@@ -340,10 +305,9 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
-					resourceVersion: 2,
-					podName:         "podname",
-					containerName:   "containername",
-					portName:        "portname",
+					podName:       "podname",
+					containerName: "containername",
+					portName:      "portname",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
@@ -447,9 +411,8 @@ func TestStartPodForwarder(t *testing.T) {
 		event         watch.EventType
 	}{
 		{
-			description:   "pod modified event",
-			entryExpected: true,
-			event:         watch.Modified,
+			description: "pod modified event",
+			event:       watch.Modified,
 		},
 		{
 			description: "pod error event",

@@ -25,7 +25,6 @@ import (
 )
 
 type portForwardEntry struct {
-	resourceVersion        int
 	resource               latest.PortForwardResource
 	podName                string
 	containerName          string
@@ -39,9 +38,8 @@ type portForwardEntry struct {
 }
 
 // newPortForwardEntry returns a port forward entry.
-func newPortForwardEntry(resourceVersion int, resource latest.PortForwardResource, podName, containerName, portName, ownerReference string, localPort int, automaticPodForwarding bool) *portForwardEntry {
+func newPortForwardEntry(resource latest.PortForwardResource, podName, containerName, portName, ownerReference string, localPort int, automaticPodForwarding bool) *portForwardEntry {
 	return &portForwardEntry{
-		resourceVersion:        resourceVersion,
 		resource:               resource,
 		podName:                podName,
 		containerName:          containerName,

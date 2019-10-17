@@ -32,7 +32,7 @@ func TestPortForwardEntryKey(t *testing.T) {
 	}{
 		{
 			description: "entry for pod",
-			pfe: newPortForwardEntry(0, latest.PortForwardResource{
+			pfe: newPortForwardEntry(latest.PortForwardResource{
 				Type:      "pod",
 				Name:      "podName",
 				Namespace: "default",
@@ -41,7 +41,7 @@ func TestPortForwardEntryKey(t *testing.T) {
 			expected: "pod-podName-default-8080",
 		}, {
 			description: "entry for deploy",
-			pfe: newPortForwardEntry(0, latest.PortForwardResource{
+			pfe: newPortForwardEntry(latest.PortForwardResource{
 				Type:      "deployment",
 				Name:      "depName",
 				Namespace: "namespace",
@@ -74,7 +74,7 @@ func TestAutomaticPodForwardingKey(t *testing.T) {
 	}{
 		{
 			description: "entry for automatically port forwarded pod",
-			pfe: newPortForwardEntry(0, latest.PortForwardResource{
+			pfe: newPortForwardEntry(latest.PortForwardResource{
 				Type:      "pod",
 				Name:      "podName",
 				Namespace: "default",
