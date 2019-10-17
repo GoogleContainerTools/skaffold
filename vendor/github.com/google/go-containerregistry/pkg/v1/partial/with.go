@@ -175,6 +175,15 @@ func RawManifest(i WithManifest) ([]byte, error) {
 	return json.Marshal(m)
 }
 
+// Size is a helper for implementing v1.Image
+func Size(i WithRawManifest) (int64, error) {
+	b, err := i.RawManifest()
+	if err != nil {
+		return -1, err
+	}
+	return int64(len(b)), nil
+}
+
 // FSLayers is a helper for implementing v1.Image
 func FSLayers(i WithManifest) ([]v1.Hash, error) {
 	m, err := i.Manifest()
@@ -190,16 +199,30 @@ func FSLayers(i WithManifest) ([]v1.Hash, error) {
 
 // BlobSize is a helper for implementing v1.Image
 func BlobSize(i WithManifest, h v1.Hash) (int64, error) {
-	m, err := i.Manifest()
+	d, err := BlobDescriptor(i, h)
 	if err != nil {
 		return -1, err
 	}
+	return d.Size, nil
+}
+
+// BlobDescriptor is a helper for implementing v1.Image
+func BlobDescriptor(i WithManifest, h v1.Hash) (v1.Descriptor, error) {
+	m, err := i.Manifest()
+	if err != nil {
+		return v1.Descriptor{}, err
+	}
+
+	if m.Config.Digest == h {
+		return m.Config, nil
+	}
+
 	for _, l := range m.Layers {
 		if l.Digest == h {
-			return l.Size, nil
+			return l, nil
 		}
 	}
-	return -1, fmt.Errorf("blob %v not found", h)
+	return v1.Descriptor{}, fmt.Errorf("blob %v not found", h)
 }
 
 // WithManifestAndConfigFile defines the subset of v1.Image used by these helper methods
@@ -257,4 +280,12 @@ func DiffIDToBlob(wm WithManifestAndConfigFile, h v1.Hash) (v1.Hash, error) {
 // WithDiffID defines the subset of v1.Layer for exposing the DiffID method.
 type WithDiffID interface {
 	DiffID() (v1.Hash, error)
+}
+
+// withDescriptor allows partial layer implementations to provide a layer
+// descriptor to the partial image manifest builder. This allows partial
+// uncompressed layers to provide foreign layer metadata like URLs to the
+// uncompressed image manifest.
+type withDescriptor interface {
+	Descriptor() (*v1.Descriptor, error)
 }

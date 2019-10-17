@@ -23,6 +23,7 @@ message State {
   reserved 3; // field 3 is obsolete
   map<int32, PortEvent> forwardedPorts = 4;
   StatusCheckState statusCheckState = 5;
+  FileSyncState fileSyncState = 6;
 }
 
 // BuildState contains a map of all skaffold artifacts to their current build
@@ -42,6 +43,11 @@ message StatusCheckState {
   map<string, string> resources = 2;
 }
 
+// FileSyncState contains the status of the current file sync
+message FileSyncState {
+  string status = 1;
+}
+
 message Event {
   oneof event_type {
     MetaEvent metaEvent = 1;
@@ -50,6 +56,7 @@ message Event {
     PortEvent portEvent = 4;
     StatusCheckEvent statusCheckEvent = 5;
     ResourceStatusCheckEvent resourceStatusCheckEvent = 6;
+    FileSyncEvent fileSyncEvent = 7;
   }
 }
 
@@ -90,6 +97,13 @@ message PortEvent {
   string portName = 6;
   string resourceType=7;
   string resourceName=8;
+}
+
+message FileSyncEvent {
+  int32 fileCount = 1;
+  string image = 2;
+  string status = 3;
+  string err = 4;
 }
 
 message LogEntry {

@@ -1,5 +1,5 @@
 run:
-  deadline: 6m
+  timeout: 6m
   modules-download-mode: vendor
 
 linters:

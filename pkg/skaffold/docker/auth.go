@@ -68,7 +68,12 @@ func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
 
 	gcp.AutoConfigureGCRCredentialHelper(cf, registry)
 
-	return cf.GetAuthConfig(registry)
+	auth, err := cf.GetAuthConfig(registry)
+	if err != nil {
+		return types.AuthConfig{}, err
+	}
+
+	return types.AuthConfig(auth), nil
 }
 
 func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
@@ -77,7 +82,17 @@ func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 		return nil, errors.Wrap(err, "docker config")
 	}
 
-	return cf.GetAllCredentials()
+	credentials, err := cf.GetAllCredentials()
+	if err != nil {
+		return nil, err
+	}
+
+	authConfigs := make(map[string]types.AuthConfig, len(credentials))
+	for k, auth := range credentials {
+		authConfigs[k] = types.AuthConfig(auth)
+	}
+
+	return authConfigs, nil
 }
 
 func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {

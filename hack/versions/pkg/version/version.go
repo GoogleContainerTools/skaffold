@@ -17,15 +17,15 @@ limitations under the License.
 package version
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/google/go-github/github"
 	"github.com/sirupsen/logrus"
 )
 
@@ -40,12 +40,10 @@ func GetLatestVersion() (string, bool) {
 }
 
 func getLastReleasedConfigVersion() string {
-	client := github.NewClient(nil)
-	releases, _, err := client.Repositories.ListReleases(context.Background(), "GoogleContainerTools", "skaffold", &github.ListOptions{})
+	lastTag, err := update.DownloadLatestVersion()
 	if err != nil {
-		logrus.Fatalf("error listing Github releases: %s", err)
+		logrus.Fatalf("error getting latest version: %s", err)
 	}
-	lastTag := *releases[0].TagName
 	logrus.Infof("last release tag: %s", lastTag)
 	configURL := fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag)
 	resp, err := http.Get(configURL)

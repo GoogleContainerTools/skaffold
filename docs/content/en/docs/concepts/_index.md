@@ -16,3 +16,4 @@ understanding of Skaffold.
 | [Skaffold config]({{< relref "/docs/concepts/config" >}}) | Global configuration options |
 | [Local development]({{< relref "/docs/concepts/local_development" >}}) | Understand how to develop locally with Skaffold |
 | [Image repository handling]({{< relref "/docs/concepts/image_repositories" >}}) | Understand the image repository handling |
+| [Kube-context handling]({{< relref "/docs/concepts/kube_context" >}}) | Understand how the kube-context is selected |

@@ -36,6 +36,10 @@ func (i emptyIndex) Digest() (v1.Hash, error) {
 	return partial.Digest(i)
 }
 
+func (i emptyIndex) Size() (int64, error) {
+	return partial.Size(i)
+}
+
 func (i emptyIndex) IndexManifest() (*v1.IndexManifest, error) {
 	return base(), nil
 }

@@ -49,7 +49,7 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 		fmt.Fprintln(out, "Configuration version:", config.APIVersion)
 		fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
 
-		if err := r.DiagnoseArtifacts(out); err != nil {
+		if err := r.DiagnoseArtifacts(ctx, out); err != nil {
 			return errors.Wrap(err, "running diagnostic on artifacts")
 		}
 
