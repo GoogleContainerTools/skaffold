@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 var (
@@ -110,6 +111,19 @@ func (f forwardedResources) Load(key string) (*portForwardEntry, bool) {
 	return val, exists
 }
 
+func (f forwardedResources) ByResource(rType latest.ResourceType, ns string, name string) []*portForwardEntry {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	pfe := []*portForwardEntry{}
+	r := newResource(rType, ns, name)
+	for _, val := range f.resources {
+		if r.Equals(val) {
+			pfe = append(pfe, val)
+		}
+	}
+	return pfe
+}
+
 func (f forwardedResources) Delete(resource string) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
@@ -192,4 +206,22 @@ func (b *EntryManager) Terminate(p *portForwardEntry) {
 	b.forwardedResources.Delete(p.key())
 	b.forwardedPorts.Delete(p.localPort)
 	b.EntryForwarder.Terminate(p)
+}
+
+type resource struct {
+	rType     latest.ResourceType
+	name      string
+	namespace string
+}
+
+func newResource(t latest.ResourceType, ns string, name string) resource {
+	return resource{
+		rType:     t,
+		namespace: ns,
+		name:      name,
+	}
+}
+
+func (r resource) Equals(pfe *portForwardEntry) bool {
+	return r.rType == pfe.resource.Type && r.namespace == pfe.resource.Namespace && r.name == pfe.resource.Name
 }

@@ -45,6 +45,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		expectedPorts   map[int]struct{}
 		expectedEntries map[string]*portForwardEntry
 		availablePorts  []int
+		shouldErr       bool
 	}{
 		{
 			description:    "single container port",
@@ -52,8 +53,9 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
-					podName:       "podname",
-					containerName: "containername",
+					resourceVersion: 1,
+					podName:         "podname",
+					containerName:   "containername",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
@@ -96,7 +98,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			expectedPorts: map[int]struct{}{9000: {}},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
-					podName: "podname",
+					resourceVersion: 1,
+					podName:         "podname",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
@@ -137,13 +140,43 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			},
 		},
 		{
+			description:     "bad resource version",
+			expectedPorts:   map[int]struct{}{},
+			shouldErr:       true,
+			expectedEntries: map[string]*portForwardEntry{},
+			availablePorts:  []int{8080},
+			pods: []*v1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "podname",
+						ResourceVersion: "10000000000a",
+						Namespace:       "namespace",
+					},
+					Spec: v1.PodSpec{
+						Containers: []v1.Container{
+							{
+								Name: "containername",
+								Ports: []v1.ContainerPort{
+									{
+										ContainerPort: 8080,
+										Name:          "portname",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			description:    "two different container ports",
 			expectedPorts:  map[int]struct{}{8080: {}, 50051: {}},
 			availablePorts: []int{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
-					podName:       "podname",
-					containerName: "containername",
+					resourceVersion: 1,
+					podName:         "podname",
+					containerName:   "containername",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
@@ -158,8 +191,9 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					terminationLock:        &sync.Mutex{},
 				},
 				"owner-containername2-namespace2-portname2-50051": {
-					podName:       "podname2",
-					containerName: "containername2",
+					resourceVersion: 1,
+					podName:         "podname2",
+					containerName:   "containername2",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname2",
@@ -223,9 +257,10 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			availablePorts: []int{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
-					podName:       "podname",
-					containerName: "containername",
-					portName:      "portname",
+					resourceVersion: 1,
+					podName:         "podname",
+					containerName:   "containername",
+					portName:        "portname",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
@@ -239,9 +274,10 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					terminationLock:        &sync.Mutex{},
 				},
 				"owner-containername2-namespace2-portname2-8080": {
-					podName:       "podname2",
-					containerName: "containername2",
-					portName:      "portname2",
+					resourceVersion: 1,
+					podName:         "podname2",
+					containerName:   "containername2",
+					portName:        "portname2",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname2",
@@ -299,14 +335,15 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description:    "updated pod gets port forwarded",
+			description:    "updated pod does not get port forwarded if port is same",
 			expectedPorts:  map[int]struct{}{8080: {}},
 			availablePorts: []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
-					podName:       "podname",
-					containerName: "containername",
-					portName:      "portname",
+					resourceVersion: 2,
+					podName:         "podname",
+					containerName:   "containername",
+					portName:        "portname",
 					resource: latest.PortForwardResource{
 						Type:      "pod",
 						Name:      "podname",
@@ -363,6 +400,72 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:    "updated pod does get port forwarded when container port changes 8080 -> 8082",
+			expectedPorts:  map[int]struct{}{8081: {}},
+			availablePorts: []int{8080, 8081, 8082},
+			expectedEntries: map[string]*portForwardEntry{
+				"owner-containername-namespace-portname-8081": {
+					podName:         "podname",
+					resourceVersion: 2,
+					containerName:   "containername",
+					portName:        "portname",
+					resource: latest.PortForwardResource{
+						Type:      "pod",
+						Name:      "podname",
+						Namespace: "namespace",
+						Port:      8081,
+						LocalPort: 8081,
+					},
+					ownerReference:         "owner",
+					automaticPodForwarding: true,
+					localPort:              8081,
+					terminationLock:        &sync.Mutex{},
+				},
+			},
+			pods: []*v1.Pod{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "podname",
+						ResourceVersion: "1",
+						Namespace:       "namespace",
+					},
+					Spec: v1.PodSpec{
+						Containers: []v1.Container{
+							{
+								Name: "containername",
+								Ports: []v1.ContainerPort{
+									{
+										ContainerPort: 8080,
+										Name:          "portname",
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:            "podname",
+						ResourceVersion: "2",
+						Namespace:       "namespace",
+					},
+					Spec: v1.PodSpec{
+						Containers: []v1.Container{
+							{
+								Name: "containername",
+								Ports: []v1.ContainerPort{
+									{
+										ContainerPort: 8081,
+										Name:          "portname",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -384,7 +487,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			p.EntryForwarder = test.forwarder
 
 			for _, pod := range test.pods {
-				p.portForwardPod(context.Background(), pod)
+				err := p.portForwardPod(context.Background(), pod)
+				t.CheckError(test.shouldErr, err)
 			}
 
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
@@ -409,8 +513,9 @@ func TestStartPodForwarder(t *testing.T) {
 		event         watch.EventType
 	}{
 		{
-			description: "pod modified event",
-			event:       watch.Modified,
+			description:   "pod modified event",
+			entryExpected: true,
+			event:         watch.Modified,
 		},
 		{
 			description: "pod error event",

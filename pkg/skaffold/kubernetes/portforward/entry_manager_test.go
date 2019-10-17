@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestNewEntryManager(t *testing.T) {
@@ -48,13 +49,13 @@ func TestNewEntryManager(t *testing.T) {
 }
 
 func TestStop(t *testing.T) {
-	pfe1 := newPortForwardEntry(latest.PortForwardResource{
+	pfe1 := newPortForwardEntry(0, latest.PortForwardResource{
 		Type:      constants.Pod,
 		Name:      "resource",
 		Namespace: "default",
 	}, "", "", "", "", 9000, false)
 
-	pfe2 := newPortForwardEntry(latest.PortForwardResource{
+	pfe2 := newPortForwardEntry(0, latest.PortForwardResource{
 		Type:      constants.Pod,
 		Name:      "resource2",
 		Namespace: "default",
@@ -113,12 +114,90 @@ func TestForwardedPorts(t *testing.T) {
 	pf.Store("not an int", struct{}{})
 }
 
+func TestForwardedResources_ByResource(t *testing.T) {
+	foo8080 := latest.PortForwardResource{
+		Type:      latest.ResourceType("pod"),
+		Name:      "foo",
+		Namespace: "test",
+		Port:      8080,
+		LocalPort: 8080,
+	}
+	foo8081 := latest.PortForwardResource{
+		Type:      latest.ResourceType("pod"),
+		Name:      "foo",
+		Namespace: "test",
+		Port:      8081,
+		LocalPort: 8081,
+	}
+	bar4500 := latest.PortForwardResource{
+		Type:      latest.ResourceType("pod"),
+		Name:      "bar",
+		Namespace: "test",
+		Port:      4500,
+		LocalPort: 4500,
+	}
+	tests := []struct {
+		description string
+		pfes        []*portForwardEntry
+		expected    []*portForwardEntry
+	}{
+		{
+			description: "returns all ports forwarded for a foo resource",
+			pfes: []*portForwardEntry{
+				newPortForwardEntry(1, foo8080, "foo", "container1", "port1", "owner", 8080, true),
+				newPortForwardEntry(1, foo8081, "foo", "container2", "port2", "owner", 8081, true),
+				newPortForwardEntry(1, bar4500, "foo", "container1", "port", "owner", 4500, true),
+			},
+			expected: []*portForwardEntry{
+				newPortForwardEntry(1, foo8080, "foo", "container1", "port1", "owner", 8080, true),
+				newPortForwardEntry(1, foo8081, "foo", "container2", "port2", "owner", 8081, true),
+			},
+		},
+		{
+			description: "returns multiple entries for foo resource which belong to different resource version",
+			pfes: []*portForwardEntry{
+				newPortForwardEntry(1, foo8080, "foo", "container1", "port1", "owner", 8080, true),
+				newPortForwardEntry(2, foo8081, "foo", "container2", "port2", "owner", 8081, true),
+				newPortForwardEntry(1, bar4500, "foo", "container1", "port", "owner", 4500, true),
+			},
+			expected: []*portForwardEntry{
+				newPortForwardEntry(1, foo8080, "foo", "container1", "port1", "owner", 8080, true),
+				newPortForwardEntry(2, foo8081, "foo", "container2", "port2", "owner", 8081, true),
+			},
+		},
+		{
+			description: "matches none",
+			pfes: []*portForwardEntry{
+				newPortForwardEntry(1, bar4500, "foo", "container1", "port", "owner", 4500, true),
+			},
+			expected: []*portForwardEntry{},
+		},
+		{
+			description: "returns empty when no port forwarded entries",
+			pfes:        []*portForwardEntry{},
+			expected:    []*portForwardEntry{},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			pf := newForwardedResources()
+			for _, pfe := range test.pfes {
+				pf.Store(pfe.key(), pfe)
+			}
+			actual := pf.ByResource(latest.ResourceType("pod"), "test", "foo")
+			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
+			if !reflect.DeepEqual(test.expected, actual) {
+				t.Errorf("Forwarded entries differs from expected entries. Expected: %v, Actual: %v", test.expected, actual)
+			}
+		})
+	}
+}
+
 func TestForwardedResources(t *testing.T) {
 	pf := newForwardedResources()
 
 	// Try to store a resource
 	pf.Store("resource", &portForwardEntry{})
-
 	// Try to load the resource
 	if _, ok := pf.Load("resource"); !ok {
 		t.Fatal("didn't load resource correctly correctly")
@@ -135,6 +214,7 @@ func TestForwardedResources(t *testing.T) {
 			t.Errorf("The code did not panic")
 		}
 	}()
+
 	pf.Store("resource2", "not port forward entry")
 }
 
@@ -170,5 +250,81 @@ func AssertCompetingProcessesCanSucceed(ports util.ForwardedPorts, t *testing.T)
 	wg.Wait()
 	if atomic.LoadInt32(&errors) > 0 {
 		t.Fatalf("A port that was available couldn't be used %d times", errors)
+	}
+}
+
+func TestResource_Equals(t *testing.T) {
+	tests := []struct {
+		description string
+		r           resource
+		pfe         *portForwardEntry
+		expected    bool
+	}{
+		{
+			description: "resource is equal",
+			r:           newResource(latest.ResourceType("type1"), "test", "name"),
+			pfe: &portForwardEntry{
+				resourceVersion: 1,
+				resource: latest.PortForwardResource{
+					Type:      latest.ResourceType("type1"),
+					Name:      "name",
+					Namespace: "test",
+					Port:      8080,
+					LocalPort: 8080,
+				},
+				ownerReference: "dummy",
+			},
+			expected: true,
+		},
+		{
+			description: "resource namespace is different",
+			r:           newResource(latest.ResourceType("type1"), "test", "name"),
+			pfe: &portForwardEntry{
+				resourceVersion: 1,
+				resource: latest.PortForwardResource{
+					Type:      latest.ResourceType("type1"),
+					Name:      "name",
+					Namespace: "test-namespace",
+					Port:      8080,
+					LocalPort: 8080,
+				},
+				ownerReference: "dummy",
+			},
+		},
+		{
+			description: "resource name is different",
+			r:           newResource(latest.ResourceType("type1"), "test", "foo"),
+			pfe: &portForwardEntry{
+				resourceVersion: 1,
+				resource: latest.PortForwardResource{
+					Type:      latest.ResourceType("type1"),
+					Name:      "bar",
+					Namespace: "test",
+					Port:      8080,
+					LocalPort: 8080,
+				},
+				ownerReference: "dummy",
+			},
+		},
+		{
+			description: "resource type is different",
+			r:           newResource(latest.ResourceType("type1"), "test", "name"),
+			pfe: &portForwardEntry{
+				resourceVersion: 1,
+				resource: latest.PortForwardResource{
+					Type:      latest.ResourceType("pod"),
+					Name:      "name",
+					Namespace: "test",
+					Port:      8080,
+					LocalPort: 8080,
+				},
+				ownerReference: "dummy",
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expected, test.r.Equals(test.pfe))
+		})
 	}
 }

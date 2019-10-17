@@ -18,6 +18,7 @@ package portforward
 
 import (
 	"context"
+	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -83,14 +84,16 @@ func (p *WatchingPodForwarder) Start(ctx context.Context) error {
 				if !ok {
 					continue
 				}
-				// If the event's type is "DELETED" or "Modified" continue.
-				if evt.Type == watch.Deleted || evt.Type == watch.Modified {
+				// If the event's type is "DELETED", continue.
+				if evt.Type == watch.Deleted {
 					continue
 				}
-				// At this point, we know the event's type is "ADDED".
+				// At this point, we know the event's type is "ADDED" or "MODIFIED".
 				// We must take both types into account as it is possible for the pod to have become ready for port-forwarding before we established the watch.
 				if p.podSelector.Select(pod) && pod.Status.Phase == v1.PodRunning && pod.DeletionTimestamp == nil {
-					p.portForwardPod(ctx, pod)
+					if err := p.portForwardPod(ctx, pod); err != nil {
+						logrus.Warnf("port forwarding pod failed: %s", err)
+					}
 				}
 			}
 		}
@@ -99,7 +102,7 @@ func (p *WatchingPodForwarder) Start(ctx context.Context) error {
 	return nil
 }
 
-func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) {
+func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 	ownerReference := topLevelOwnerKey(pod, pod.Kind)
 	for _, c := range pod.Spec.Containers {
 		for _, port := range c.Ports {
@@ -112,30 +115,55 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 				LocalPort: int(port.ContainerPort),
 			}
 
-			entry := p.podForwardingEntry(c.Name, port.Name, ownerReference, resource)
+			entry, err := p.podForwardingEntry(pod.ResourceVersion, c.Name, port.Name, ownerReference, resource)
+			if err != nil {
+				return errors.Wrap(err, "getting pod forwarding entry")
+			}
 			if entry.resource.Port != entry.localPort {
 				color.Yellow.Fprintf(p.output, "Forwarding container %s/%s to local port %d.\n", pod.Name, c.Name, entry.localPort)
 			}
-			if _, ok := p.forwardedResources.Load(entry.key()); !ok {
+			if prevEntry, ok := p.forwardedResources.Load(entry.key()); ok {
+				// Check if this is a new generation of pod for the same port, update its resourceVersion in the entru
+				if entry.resourceVersion > prevEntry.resourceVersion {
+					prevEntry.resourceVersion = entry.resourceVersion
+				}
+			} else {
 				p.forwardPortForwardEntry(ctx, entry)
 			}
 		}
 	}
+	// Clean up all forwaredResources that belong to previous resourceVersion for this Pod
+	p.cleanUpOldPFEs(pod)
+	return nil
 }
 
-func (p *WatchingPodForwarder) podForwardingEntry(containerName, portName, ownerReference string, resource latest.PortForwardResource) *portForwardEntry {
-	entry := newPortForwardEntry(resource, resource.Name, containerName, portName, ownerReference, 0, true)
+func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName, portName, ownerReference string, resource latest.PortForwardResource) (*portForwardEntry, error) {
+	rv, err := strconv.Atoi(resourceVersion)
+	if err != nil {
+		return nil, errors.Wrap(err, "converting resource version to integer")
+	}
+	entry := newPortForwardEntry(rv, resource, resource.Name, containerName, portName, ownerReference, 0, true)
 
 	// If we have, return the current entry
 	oldEntry, ok := p.forwardedResources.Load(entry.key())
 
 	if ok {
 		entry.localPort = oldEntry.localPort
-		return entry
+		return entry, nil
 	}
 
 	// retrieve an open port on the host
 	entry.localPort = retrieveAvailablePort(resource.Port, p.forwardedPorts)
 
-	return entry
+	return entry, nil
+}
+
+func (p *WatchingPodForwarder) cleanUpOldPFEs(pod *v1.Pod) {
+	allEntries := p.forwardedResources.ByResource(constants.Pod, pod.Namespace, pod.Name)
+	rv, _ := strconv.Atoi(pod.ResourceVersion)
+	for _, entry := range allEntries {
+		if entry.resourceVersion < rv {
+			p.Terminate(entry)
+		}
+	}
 }
