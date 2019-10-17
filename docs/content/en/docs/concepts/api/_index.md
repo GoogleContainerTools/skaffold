@@ -55,7 +55,7 @@ You can use these events to automate next steps in your development workflow.
 For example, when making a change to port-forwarded frontend service, reload the 
 browser url after the service is deployed and running to test changes.
 
-Here is way to get events for a `skaffold dev` [getting-started example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/getting-started)
+An example output using curl to get events for a `skaffold dev` execution on our [getting-started example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/getting-started)
 ```code
  curl localhost:50052/v1/events
 {"result":{"timestamp":"2019-10-16T18:26:11.385251549Z","event":{"metaEvent":{"entry":"Starting Skaffold: \u0026{Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1beta15 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate:2019-10-03T15:01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"}}}}
