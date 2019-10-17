@@ -175,6 +175,10 @@ func resourceRequirements(rr *latest.ResourceRequirements) v1.ResourceRequiremen
 				req.Limits[v1.ResourceMemory] = resource.MustParse(rr.Limits.Memory)
 			}
 
+			if rr.Limits.ResourceStorage != "" {
+				req.Limits[v1.ResourceStorage] = resource.MustParse(rr.Limits.ResourceStorage)
+			}
+
 			if rr.Limits.EphemeralStorage != "" {
 				req.Limits[v1.ResourceEphemeralStorage] = resource.MustParse(rr.Limits.EphemeralStorage)
 			}
@@ -187,6 +191,9 @@ func resourceRequirements(rr *latest.ResourceRequirements) v1.ResourceRequiremen
 			}
 			if rr.Requests.Memory != "" {
 				req.Requests[v1.ResourceMemory] = resource.MustParse(rr.Requests.Memory)
+			}
+			if rr.Requests.ResourceStorage != "" {
+				req.Requests[v1.ResourceStorage] = resource.MustParse(rr.Requests.ResourceStorage)
 			}
 			if rr.Requests.EphemeralStorage != "" {
 				req.Requests[v1.ResourceEphemeralStorage] = resource.MustParse(rr.Requests.EphemeralStorage)
