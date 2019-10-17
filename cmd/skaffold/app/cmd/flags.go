@@ -167,7 +167,7 @@ var FlagRegistry = []Flag{
 	// when registering the flag twice.
 	{
 		Name:          "force",
-		Usage:         "Recreate kubernetes resources if necessary for deployment (default false, warning: might cause downtime!)",
+		Usage:         "Recreate Kubernetes resources if necessary for deployment (default false, warning: might cause downtime!)",
 		Value:         &opts.Force,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
@@ -175,7 +175,7 @@ var FlagRegistry = []Flag{
 	},
 	{
 		Name:          "force",
-		Usage:         "Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!)",
+		Usage:         "Recreate Kubernetes resources if necessary for deployment (warning: might cause downtime!)",
 		Value:         &opts.ForceDev,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
@@ -231,7 +231,7 @@ var FlagRegistry = []Flag{
 	},
 	{
 		Name:          "render-only",
-		Usage:         "Print rendered kubernetes manifests instead of deploying them",
+		Usage:         "Print rendered Kubernetes manifests instead of deploying them",
 		Value:         &opts.RenderOnly,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
@@ -248,7 +248,7 @@ var FlagRegistry = []Flag{
 	},
 	{
 		Name:          "kube-context",
-		Usage:         "Deploy to this kubernetes context",
+		Usage:         "Deploy to this Kubernetes context",
 		Value:         &opts.KubeContext,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",

@@ -51,7 +51,7 @@ func Run(t *testing.T, dir, command string, args ...string) {
 func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient, func()) {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
-		t.Fatalf("Test setup error: getting kubernetes client: %s", err)
+		t.Fatalf("Test setup error: getting Kubernetes client: %s", err)
 	}
 
 	ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{

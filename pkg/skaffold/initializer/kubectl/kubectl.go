@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// ValidSuffixes are the supported file formats for kubernetes manifests
+// ValidSuffixes are the supported file formats for Kubernetes manifests
 var ValidSuffixes = []string{".yml", ".yaml", ".json"}
 
 var requiredFields = []string{"apiVersion", "kind", "metadata"}
@@ -54,7 +54,7 @@ func New(potentialConfigs []string) (*Kubectl, error) {
 		}
 	}
 	if len(k8sConfigs) == 0 {
-		return nil, errors.New("one or more valid kubernetes manifests is required to run skaffold")
+		return nil, errors.New("one or more valid Kubernetes manifests is required to run skaffold")
 	}
 	return &Kubectl{
 		configs: k8sConfigs,
@@ -106,7 +106,7 @@ func parseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 
 		m := make(map[interface{}]interface{})
 		if err := yaml.Unmarshal(doc, &m); err != nil {
-			return nil, errors.Wrap(err, "reading kubernetes YAML")
+			return nil, errors.Wrap(err, "reading Kubernetes YAML")
 		}
 
 		if !isKubernetesYaml(m) {
@@ -118,7 +118,7 @@ func parseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 		images = append(images, parseImagesFromYaml(m)...)
 	}
 	if yamlsFound == 0 {
-		return nil, errors.New("no valid kubernetes objects decoded")
+		return nil, errors.New("no valid Kubernetes objects decoded")
 	}
 	return images, nil
 }

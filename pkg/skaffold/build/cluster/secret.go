@@ -39,7 +39,7 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 
 	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting kubernetes client")
+		return nil, errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	secrets := client.CoreV1().Secrets(b.Namespace)
@@ -89,7 +89,7 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 
 	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting kubernetes client")
+		return nil, errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	secrets := client.CoreV1().Secrets(b.Namespace)

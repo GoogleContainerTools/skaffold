@@ -101,7 +101,7 @@ func (g *LocalDir) Pod(args []string) *v1.Pod {
 func (g *LocalDir) ModifyPod(ctx context.Context, p *v1.Pod) error {
 	client, err := kubernetes.Client()
 	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
+		return errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	if err := kubernetes.WaitForPodInitialized(ctx, client.CoreV1().Pods(p.Namespace), p.Name); err != nil {

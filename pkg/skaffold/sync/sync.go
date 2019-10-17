@@ -224,7 +224,7 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 
 	client, err := kubernetes.Client()
 	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
+		return errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	numSynced := 0
