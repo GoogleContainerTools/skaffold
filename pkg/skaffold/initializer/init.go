@@ -244,7 +244,7 @@ func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builde
 }
 
 // detectBuilders checks if a path is a builder config, and if it is, returns the InitBuilders representing the
-// configs. Also returns a boolean marking whether search completion for subdirectories (true = subdirectories should
+// configs. Also returns a boolean marking search completion for subdirectories (true = subdirectories should
 // continue to be searched, false = subdirectories should not be searched for more builders)
 func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, bool) {
 	// TODO: Remove backwards compatibility if statement (not entire block)
@@ -546,8 +546,8 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 	var potentialConfigs []string
 	var foundBuilders []InitBuilder
 
-	var dirCallback func(path string, findBuilders bool) error
-	dirCallback = func(path string, findBuilders bool) error {
+	var enterDirectory func(path string, findBuilders bool) error
+	enterDirectory = func(path string, findBuilders bool) error {
 		dirents, err := godirwalk.ReadDirents(path, nil)
 		if err != nil {
 			return err
@@ -577,7 +577,7 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 
 		// Traverse into subdirectories
 		for _, dir := range directories {
-			err = dirCallback(filepath.Join(path, dir.Name()), findBuildersInDirectories)
+			err = enterDirectory(filepath.Join(path, dir.Name()), findBuildersInDirectories)
 			if err != nil {
 				return err
 			}
@@ -586,7 +586,7 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 		return nil
 	}
 
-	err := dirCallback(dir, true)
+	err := enterDirectory(dir, true)
 	if err != nil {
 		return nil, nil, err
 	}
