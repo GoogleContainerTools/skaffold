@@ -1,7 +1,7 @@
 ---
 title: "Installing Skaffold"
 linkTitle: "Installing Skaffold"
-weight: 5
+weight: 1
 ---
 
 {{< alert title="Note" >}}

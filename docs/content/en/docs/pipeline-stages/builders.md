@@ -1,6 +1,6 @@
 ---
-title: "Builders"
-linkTitle: "Builders"
+title: "Build"
+linkTitle: "Build"
 weight: 10
 ---
 
@@ -18,7 +18,7 @@ Skaffold supports the following tools to build your image:
   - on cloud with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
 * [Bazel](https://bazel.build/) locally
 * Custom script locally
-* [Building with CNCF Buildpacks](../buildpacks)
+* [Building with CNCF Buildpacks](../tutorials/buildpacks.md)
 
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how artifacts are built. To use a specific tool for building
@@ -26,7 +26,7 @@ artifacts, add the value representing the tool and options for using that tool
 to the `build` section.
 
 For a detailed discussion on Skaffold configuration, see
-[Skaffold Concepts]({{< relref "/docs/concepts#configuration" >}}) and
+[Skaffold Concepts]({{< relref "/docs/design/config.md" >}}) and
 [skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
 ## Dockerfile locally with Docker

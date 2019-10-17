@@ -1,7 +1,7 @@
 ---
-title: "Taggers"
-linkTitle: "Taggers"
-weight: 20
+title: "Tag"
+linkTitle: "Tag"
+weight: 15
 ---
 
 This page discusses how to set up Skaffold to tag artifacts as you see fit.
@@ -17,7 +17,7 @@ Tag policy is specified in the `tagPolicy` field of the `build` section of the
 Skaffold configuration file, `skaffold.yaml`.
 
 For a detailed discussion on Skaffold configuration, see
-[Skaffold Concepts]({{< relref "/docs/concepts#configuration" >}}) and
+[Skaffold Concepts]({{< relref "/docs/design/config.md" >}}) and
 [skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
 ## `gitCommit`: uses Git commit IDs as tags
@@ -93,7 +93,7 @@ will be `gcr.io/k8s-skaffold/example:v1`.
 
 The tag template uses the [Go Programming Language Syntax](https://golang.org/pkg/text/template/).
 As showcased in the example, `envTemplate` tag policy features one
-**required** parameter, `template`, which is the tag template to use. To learn more about templating support in Skaffold.yaml see [Templated fields]({{< relref "/docs/how-tos/templating" >}})
+**required** parameter, `template`, which is the tag template to use. To learn more about templating support in Skaffold.yaml see [Templated fields]({{< relref "../environment/templating.md" >}})
 
 ## `dateTime`: uses data and time values as tags
 
