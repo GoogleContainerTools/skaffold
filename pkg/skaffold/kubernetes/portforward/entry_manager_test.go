@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"net"
 	"reflect"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -185,6 +186,8 @@ func TestForwardedResources_ByResource(t *testing.T) {
 				pf.Store(pfe.key(), pfe)
 			}
 			actual := pf.ByResource(latest.ResourceType("pod"), "test", "foo")
+			sort.SliceStable(actual, func(i, j int) bool { return actual[i].key() < actual[j].key() })
+			sort.SliceStable(test.expected, func(i, j int) bool { return test.expected[i].key() < test.expected[j].key() })
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
 			if !reflect.DeepEqual(test.expected, actual) {
 				t.Errorf("Forwarded entries differs from expected entries. Expected: %v, Actual: %v", test.expected, actual)
