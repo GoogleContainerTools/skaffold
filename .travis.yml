@@ -16,6 +16,8 @@ jobs:
     - os: linux
       name: "checks"
       script:
+        - make generate-schemas
+        - git status
         - make checks
     - os: linux
       name: "Linux unit"
