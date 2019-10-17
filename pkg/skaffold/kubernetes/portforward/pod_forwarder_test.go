@@ -45,7 +45,6 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		expectedPorts   map[int]struct{}
 		expectedEntries map[string]*portForwardEntry
 		availablePorts  []int
-		shouldErr       bool
 	}{
 		{
 			description:    "single container port",
@@ -385,8 +384,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			p.EntryForwarder = test.forwarder
 
 			for _, pod := range test.pods {
-				err := p.portForwardPod(context.Background(), pod)
-				t.CheckError(test.shouldErr, err)
+				p.portForwardPod(context.Background(), pod)
 			}
 
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
