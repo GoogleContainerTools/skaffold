@@ -4,8 +4,7 @@ linkTitle: "Templated fields"
 weight: 90
 ---
 
-Skaffold config allows for certain fields to have values injected that are either environment variables or calculated by Skaffold.
-For example:
+Skaffold allows for certain fields in the config to be templated with values either from environment variables, or certain special values computed by Skaffold.
 
 {{% readfile file="samples/templating/env.yaml" %}}
 
@@ -19,7 +18,7 @@ List of fields that support templating:
 * `deploy.helm.releases.setValueTemplates` (see [Deploying with helm]({{< relref "/docs/pipeline-stages/deployers#deploying-with-helm)" >}})
 * `deploy.helm.releases.name` (see [Deploying with helm]({{< relref "/docs/pipeline-stages/deployers#deploying-with-helm)" >}})
 
-_Please note, this list is not exhaustive_
+_Please note, this list is not exhaustive._
 
 List of variables that are available for templating:
 

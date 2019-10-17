@@ -4,16 +4,14 @@ linkTitle: "Tag"
 weight: 15
 ---
 
-This page discusses how to set up Skaffold to tag artifacts as you see fit.
+Skaffold supports the following policies for tagging images:
 
-Skaffold supports the following tagging policies:
+* `gitCommit`: use git commit IDs as tags
+* `sha256`: use sha256 hashes of contents as tags
+* `envTemplate`: use values of environment variables as tags
+* `dateTime`: use date and time values as tags
 
-* `gitCommit`: uses Git commit IDs as tags
-* `sha256`: uses Sha256 hashes of contents as tags
-* `envTemplate`: uses values of environment variables as tags
-* `dateTime`: uses date and time values as tags
-
-Tag policy is specified in the `tagPolicy` field of the `build` section of the
+The tag policy is specified in the `tagPolicy` field of the `build` section of the
 Skaffold configuration file, `skaffold.yaml`.
 
 For a detailed discussion on Skaffold configuration, see

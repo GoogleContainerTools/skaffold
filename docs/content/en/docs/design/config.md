@@ -4,9 +4,6 @@ linkTitle: "Skaffold pipeline"
 weight: 40
 ---
 
-This page discusses the Skaffold pipeline config (`skaffold.yaml`) on a high level.
-
-
 You can configure Skaffold with the Skaffold configuration file,
 `skaffold.yaml`. The configuration file should be placed in the root of your
 project directory; when you run the `skaffold` command, Skaffold will try to

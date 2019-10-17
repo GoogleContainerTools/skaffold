@@ -4,10 +4,7 @@ linkTitle: "Build"
 weight: 10
 ---
 
-This page discusses how to set up Skaffold to use the tool of your choice
-to build Docker images.
-
-Skaffold supports the following tools to build your image:
+Skaffold has native support for several different tools for building images:
 
 * [Dockerfile](https://docs.docker.com/engine/reference/builder/)
   - locally with Docker
@@ -18,7 +15,7 @@ Skaffold supports the following tools to build your image:
   - on cloud with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
 * [Bazel](https://bazel.build/) locally
 * Custom script locally
-* [Building with CNCF Buildpacks](../tutorials/buildpacks.md)
+* [CNCF Buildpacks](../tutorials/buildpacks.md)
 
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how artifacts are built. To use a specific tool for building
@@ -31,15 +28,15 @@ For a detailed discussion on Skaffold configuration, see
 
 ## Dockerfile locally with Docker
 
-If you have [Docker Desktop](https://www.docker.com/products/docker-desktop)
+If you have [Docker](https://www.docker.com/products/docker-desktop)
 installed, Skaffold can be configured to build artifacts with the local
 Docker daemon.
 
 By default, Skaffold connects to the local Docker daemon using
-[Docker Engine APIs](https://docs.docker.com/develop/sdk/). Skaffold can, however,
-be asked to use the [command-line interface](https://docs.docker.com/engine/reference/commandline/cli/)
-instead. Additionally, Skaffold offers the option to build artifacts with
-[BuildKit](https://github.com/moby/buildkit).
+[Docker Engine APIs](https://docs.docker.com/develop/sdk/), though
+it can also use the Docker
+[command-line interface](https://docs.docker.com/engine/reference/commandline/cli/)
+instead, which enables artifacts with [BuildKit](https://github.com/moby/buildkit).
 
 After the artifacts are successfully built, Docker images will be pushed
 to the remote registry. You can choose to skip this step.
@@ -79,7 +76,7 @@ Skaffold Google Cloud Build process differs from the gcloud command
 and submit a tar file to GCB. It will then generate a single step `cloudbuild.yaml`
 and will start the building process. Skaffold does not honor `.gitignore` or `.gcloudignore`
 exclusions. If you need to ignore files use `.dockerignore`. Any `cloudbuild.yaml` found will not
-be used in the build process. 
+be used in the build process.
 
 ### Configuration
 
@@ -98,7 +95,7 @@ Docker image `gcr.io/k8s-skaffold/example` with Google Cloud Build:
 ## Dockerfile in-cluster with Kaniko
 
 [Kaniko](https://github.com/GoogleContainerTools/kaniko) is a Google-developed
-open-source tool for building images from a Dockerfile inside a container or
+open source tool for building images from a Dockerfile inside a container or
 Kubernetes cluster. Kaniko enables building container images in environments
 that cannot easily or securely run a Docker daemon.
 
@@ -116,12 +113,12 @@ The `buildContext` can be either:
 
 {{< schema root="KanikoBuildContext" >}}
 
-Since Kaniko must push images to a registry, it is required to set up cluster credentials.
+Since Kaniko builds images directly to a registry, it requires active cluster credentials.
 These credentials are configured in the `cluster` section with the following options:
 
 {{< schema root="ClusterDetails" >}}
 
-To set up the credentials for kaniko have a look at the [kaniko docs](https://github.com/GoogleContainerTools/kaniko#kubernetes-secret).
+To set up the credentials for Kaniko refer to the [kaniko docs](https://github.com/GoogleContainerTools/kaniko#kubernetes-secret).
 The recommended way is to store the pull secret in Kubernetes and configure `pullSecretName`.
 Alternatively, the path to a credentials file can be set with the `pullSecret` option:
 ```yaml
@@ -140,7 +137,7 @@ build:
       # OR
       secretName: docker-config-secret-in-kubernetes
 ```
-Note that the kubernetes secret must not be of type `kubernetes.io/dockerconfigjson` which stores the config json under the key `".dockerconfigjson"`, but an opaque secret with the key `"config.json"`.
+Note that the Kubernetes secret must not be of type `kubernetes.io/dockerconfigjson` which stores the config json under the key `".dockerconfigjson"`, but an opaque secret with the key `"config.json"`.
 
 ### Example
 
@@ -154,7 +151,7 @@ Docker image `gcr.io/k8s-skaffold/example` with Kaniko:
 [Jib](https://github.com/GoogleContainerTools/jib#jib) is a set of plugins for
 [Maven](https://github.com/GoogleContainerTools/jib/blob/master/jib-maven-plugin) and
 [Gradle](https://github.com/GoogleContainerTools/jib/blob/master/jib-gradle-plugin)
-for building optimized Docker and OCI images for Java applications
+for building optimized OCI-compliant container images for Java applications
 without a Docker daemon.
 
 Skaffold can help build artifacts using Jib; Jib builds the container images and then
@@ -166,7 +163,7 @@ Skaffold requires using Jib v1.4.0 or later.
 
 To use Jib, add a `jib` field to each artifact you specify in the
 `artifacts` part of the `build` section. `context` should be a path to
-your Maven or Gradle project.  
+your Maven or Gradle project.
 
 {{< alert title="Note" >}}
 Your project must be configured to use Jib already.

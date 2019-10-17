@@ -4,12 +4,14 @@ linkTitle: "Test"
 weight: 20
 ---
 
-This page discusses how to set up Skaffold to run container structure tests after building an artifact.
+It's common practice to validate built container images before deploying them to our cluster.
+To do this, Skaffold has an integrated testing phase between the build and deploy phases of the pipeline.
+Natively, Skaffold has support for running [container-structure-tests](https://github.com/GoogleContainerTools/container-structure-test)
+on built images, which validate the structural integrity of container images.
+The container-structure-test [binary](https://github.com/GoogleContainerTools/container-structure-test/releases)
+must be installed to run these tests.
 
-Container structure tests are consistency checks for containers.
-Skaffold relies on [container-structure-test](https://github.com/GoogleContainerTools/container-structure-test) to execute those tests, and requires its [binary](https://github.com/GoogleContainerTools/container-structure-test/releases) to be installed.
-
-Container structure tests are defined per image in the Skaffold config.
+Structure tests are defined per image in the Skaffold config.
 Every time an artifact is rebuilt, Skaffold runs the associated structure tests on that image.
 If the tests fail, Skaffold will not continue on to the deploy stage.
 If frequent tests are prohibitive, long-running tests should be moved to a dedicated Skaffold profile.

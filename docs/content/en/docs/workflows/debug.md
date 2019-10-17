@@ -4,9 +4,6 @@ linkTitle: "Debugging"
 weight: 2
 ---
 
-This page describes `skaffold debug`, a zero-configuration solution for
-setting up containers for debugging on a Kubernetes cluster. 
-
 {{< alert title="Note" >}}
 The `debug` functionality is in an alpha state and may change without warning.
 {{< /alert >}}
@@ -16,7 +13,7 @@ The `debug` functionality is in an alpha state and may change without warning.
 `skaffold debug` acts like `skaffold dev`, but it configures containers in pods
 for debugging as required for each container's runtime technology.
 The associated debugging ports are exposed and labelled so that they can be port-forwarded to the
-local machine.  Helper metadata is also added to allow IDEs to detect the debugging
+local machine. Helper metadata is also added to allow IDEs to detect the debugging
 configuration parameters.
  
 ## How it works
