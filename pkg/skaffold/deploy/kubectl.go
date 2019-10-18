@@ -46,7 +46,6 @@ type KubectlDeployer struct {
 	originalImages     []build.Artifact
 	workingDir         string
 	kubectl            deploy.CLI
-	defaultRepo        string
 	insecureRegistries map[string]bool
 }
 
@@ -61,7 +60,6 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 			Flags:       runCtx.Cfg.Deploy.KubectlDeploy.Flags,
 			ForceDeploy: runCtx.Opts.Force,
 		},
-		defaultRepo:        runCtx.DefaultRepo,
 		insecureRegistries: runCtx.InsecureRegistries,
 	}
 }
@@ -128,10 +126,12 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 			}
 			rm = append(rm, manifest)
 		}
-		upd, err := rm.ReplaceImages(k.originalImages, k.defaultRepo)
+
+		upd, err := rm.ReplaceImages(k.originalImages)
 		if err != nil {
 			return errors.Wrap(err, "replacing with originals")
 		}
+
 		if err := k.kubectl.Apply(ctx, out, upd); err != nil {
 			return errors.Wrap(err, "apply original")
 		}
@@ -271,7 +271,7 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 		return nil, nil
 	}
 
-	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
+	manifests, err = manifests.ReplaceImages(builds)
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images in manifests")
 	}

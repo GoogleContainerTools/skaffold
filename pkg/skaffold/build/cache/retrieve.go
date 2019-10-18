@@ -98,15 +98,17 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		// Image is already built
 		buildComplete(artifact.ImageName)
 		entry := c.artifactCache[result.Hash()]
+		tag := tags[artifact.ImageName]
+
 		var uniqueTag string
 		if c.imagesAreLocal {
 			var err error
-			uniqueTag, err = c.client.TagWithImageID(ctx, artifact.ImageName, entry.ID)
+			uniqueTag, err = c.client.TagWithImageID(ctx, tag, entry.ID)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			uniqueTag = tags[artifact.ImageName] + "@" + entry.Digest
+			uniqueTag = tag + "@" + entry.Digest
 		}
 
 		alreadyBuilt = append(alreadyBuilt, build.Artifact{

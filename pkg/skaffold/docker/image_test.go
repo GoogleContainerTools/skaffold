@@ -480,9 +480,20 @@ func TestTagWithImageID(t *testing.T) {
 			expected:    "ref:imageID",
 		},
 		{
+			description: "ignore tag",
+			imageName:   "ref:tag",
+			imageID:     "sha256:imageID",
+			expected:    "ref:imageID",
+		},
+		{
 			description: "not found",
 			imageName:   "ref",
 			imageID:     "sha256:unknownImageID",
+			shouldErr:   true,
+		},
+		{
+			description: "invalid",
+			imageName:   "!!invalid!!",
 			shouldErr:   true,
 		},
 	}

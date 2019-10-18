@@ -72,7 +72,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 
 	imageID := digestOrImageID
 	b.builtImages = append(b.builtImages, imageID)
-	return b.localDocker.TagWithImageID(ctx, artifact.ImageName, imageID)
+	return b.localDocker.TagWithImageID(ctx, tag, imageID)
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package docker
 
 import (
 	"testing"
@@ -28,6 +28,7 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 		image         string
 		defaultRepo   string
 		expectedImage string
+		shouldErr     bool
 	}{
 		{
 			description:   "basic GCR concatenation",
@@ -76,10 +77,36 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			defaultRepo:   "gcr.io/k8s-skaffold",
 			expectedImage: "gcr.io/k8s-skaffold/skaffold-example",
 		},
+		{
+			description:   "keep tag",
+			image:         "img:tag",
+			defaultRepo:   "gcr.io/default",
+			expectedImage: "gcr.io/default/img:tag",
+		},
+		{
+			description:   "keep digest",
+			image:         "img@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+			defaultRepo:   "gcr.io/default",
+			expectedImage: "gcr.io/default/img@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+		},
+		{
+			description:   "keep tag and digest",
+			image:         "img:tag@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+			defaultRepo:   "gcr.io/default",
+			expectedImage: "gcr.io/default/img:tag@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+		},
+		{
+			description: "invalid",
+			defaultRepo: "gcr.io/default",
+			image:       "!!invalid!!",
+			shouldErr:   true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(test.expectedImage, SubstituteDefaultRepoIntoImage(test.defaultRepo, test.image))
+			replaced, err := SubstituteDefaultRepoIntoImage(test.defaultRepo, test.image)
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedImage, replaced)
 		})
 	}
 }
