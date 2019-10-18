@@ -204,11 +204,11 @@ in Maven) that should produce a container image. Then for each such sub-project:
     `:artifactId`, `groupId:artifactId`, or the relative path to the sub-project
     _within the project_.
 
-{{% alert title="Updating from earlier versions" %}}
+{{< alert title="Updating from earlier versions" >}}
 Skaffold had required Maven multi-module projects bind a Jib
-`build` or `dockerBuild` goal to the *package* phase.  These bindings are
+<code>build</code> or <code>dockerBuild</code> goal to the <em>package</em> phase.  These bindings are
 no longer required with Jib 1.4.0 and should be removed.
-{{% /alert %}}
+{{< /alert >}}
 
 #### Gradle
 
