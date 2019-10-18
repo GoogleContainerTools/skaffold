@@ -123,9 +123,11 @@ func (configFile *ConfigFile) LoadFromReader(configData io.Reader) error {
 	}
 	var err error
 	for addr, ac := range configFile.AuthConfigs {
-		ac.Username, ac.Password, err = decodeAuth(ac.Auth)
-		if err != nil {
-			return err
+		if ac.Auth != "" {
+			ac.Username, ac.Password, err = decodeAuth(ac.Auth)
+			if err != nil {
+				return err
+			}
 		}
 		ac.Auth = ""
 		ac.ServerAddress = addr
