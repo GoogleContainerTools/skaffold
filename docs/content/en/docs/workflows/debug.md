@@ -47,7 +47,13 @@ are configured as _init-containers_ to populate a shared-volume that is mounted 
 each of the appropriate containers.  These images are hosted at `gcr.io/gcp-dev-tools/duct-tape`.
 
 {{< alert title="Caution" >}}
-`skaffold debug` does not support deprecated versions of Workload API objects such as `apps/v1beta1`.
+`skaffold debug` does not support deprecated versions of Workload API objects in
+`apps/v1beta1` ([deprecated in Kubernetes 1.8](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.8.md#other-notable-changes-16))
+and
+`apps/v1beta2` ([deprecated in Kubernetes 1.9](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.9.md#apps)).
+These deprecated Workload APIs have been [removed in Kubernetes 1.16](https://kubernetes.io/blog/2019/07/18/api-deprecations-in-1-16/).
+Applications should transition to the `apps/v1` APIs,
+[introduced in Kubernetes 1.9](https://kubernetes.io/blog/2017/12/kubernetes-19-workloads-expanded-ecosystem/).
 {{< /alert >}}
 
 ### Supported Language Runtimes
