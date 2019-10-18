@@ -163,23 +163,13 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug"},
 	},
-	// We need opts.Force and opts.ForceDev since cobra, overwrites the default value
-	// when registering the flag twice.
 	{
 		Name:          "force",
-		Usage:         "Recreate Kubernetes resources if necessary for deployment (default false, warning: might cause downtime!)",
+		Usage:         "Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)",
 		Value:         &opts.Force,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"deploy"},
-	},
-	{
-		Name:          "force",
-		Usage:         "Recreate Kubernetes resources if necessary for deployment (warning: might cause downtime!)",
-		Value:         &opts.ForceDev,
-		DefValue:      true,
-		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug"},
+		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
 	},
 	{
 		Name:          "skip-tests",
