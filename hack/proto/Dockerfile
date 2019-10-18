@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Install protoc
-FROM alpine:3.9 AS protoc
+FROM alpine:3.10 AS protoc
 RUN apk add --no-cache unzip
 
 ENV PROTOC_VERSION=3.8.0
@@ -21,7 +21,7 @@ RUN wget -O protoc.zip https://github.com/google/protobuf/releases/download/v${P
 RUN unzip protoc.zip -d protoc
 
 # Install protoc-gen-go and grpc-gateway binaries; then generate files.
-FROM golang:1.12.5-alpine3.9 AS generateFiles
+FROM golang:1.12.9-alpine3.10 AS generateFiles
 RUN apk add --no-cache protobuf=3.6.1-r1 git
 
 COPY --from=protoc /protoc/include /usr/local/include
@@ -42,13 +42,19 @@ ENV GO111MODULE=on
 RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 RUN go get -u github.com/golang/protobuf/protoc-gen-go
+RUN go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
 
 WORKDIR /proto
 COPY skaffold.proto ./
-RUN protoc -I /usr/local/include -I . -I $GOPATH/src -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:. skaffold.proto --go_out=plugins=grpc:.
+RUN protoc -I /usr/local/include -I . -I $GOPATH/src -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
+  --grpc-gateway_out=logtostderr=true:. --go_out=plugins=grpc:. \
+  --doc_out=. \
+  --doc_opt=markdown,index.md \
+  skaffold.proto
 
 # Compare the proto files with the existing proto files
 FROM generateFiles AS compare
 WORKDIR /compare
 COPY *.go ./
+COPY --from=generateFiles /proto/index.md ./
 CMD cmp /proto/skaffold.pb.go skaffold.pb.go && cmp /proto/skaffold.pb.gw.go skaffold.pb.gw.go

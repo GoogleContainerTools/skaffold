@@ -22,18 +22,19 @@ import (
 	"io"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
 )
 
 // BuildAndTest builds and tests a list of artifacts.
 func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	tags, err := r.imageTags(ctx, out, artifacts)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating tag")
+		return nil, err
 	}
 
 	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
@@ -62,11 +63,24 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 
 	// Update which images are logged.
 	for _, build := range bRes {
-		r.imageList.Add(build.Tag)
+		r.podSelector.Add(build.Tag)
 	}
 
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
+
+	color.Default.Fprintln(out, "Tags used in deployment:")
+
+	if r.imagesAreLocal {
+		color.Yellow.Fprintln(out, " - Since images are not pushed, they can't be referenced by digest")
+		color.Yellow.Fprintln(out, "   They are tagged and referenced by a unique ID instead")
+	}
+
+	for _, build := range r.builds {
+		color.Default.Fprintf(out, " - %s -> ", build.ImageName)
+		fmt.Fprintln(out, build.Tag)
+	}
+
 	return bRes, nil
 }
 
@@ -79,6 +93,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	var imageNames []string
 	for _, artifact := range artifacts {
 		imageNames = append(imageNames, artifact.ImageName)
+		r.podSelector.Add(artifact.Tag)
 	}
 
 	logger := r.newLoggerForImages(out, imageNames)

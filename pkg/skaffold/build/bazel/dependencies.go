@@ -23,12 +23,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const sourceQuery = "kind('source file', deps('%[1]s')) union buildfiles('%[1]s')"
@@ -36,6 +38,8 @@ const sourceQuery = "kind('source file', deps('%[1]s')) union buildfiles('%[1]s'
 func query(target string) string {
 	return fmt.Sprintf(sourceQuery, target)
 }
+
+var once sync.Once
 
 // GetDependencies finds the sources dependencies for the given bazel artifact.
 // All paths are relative to the workspace.
@@ -45,7 +49,7 @@ func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) (
 
 	go func() {
 		<-timer.C
-		logrus.Warnln("Retrieving Bazel dependencies can take a long time the first time")
+		once.Do(func() { logrus.Warnln("Retrieving Bazel dependencies can take a long time the first time") })
 	}()
 
 	topLevelFolder, err := findWorkspace(dir)
@@ -58,7 +62,7 @@ func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) (
 		return nil, errors.Wrapf(err, "unable to find absolute path for %s", dir)
 	}
 
-	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no")
+	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no", "--output=label")
 	cmd.Dir = dir
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {

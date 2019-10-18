@@ -78,7 +78,7 @@ func TestExpandPathsGlob(t *testing.T) {
 			out:         []string{"dir/sub_dir/file"},
 		},
 		{
-			description: "match top level glob",
+			description: "top level glob",
 			in:          []string{"dir*"},
 			out:         []string{"dir/sub_dir/file", "dir_b/sub_dir_b/file"},
 		},
@@ -86,6 +86,11 @@ func TestExpandPathsGlob(t *testing.T) {
 			description: "invalid pattern",
 			in:          []string{"[]"},
 			shouldErr:   true,
+		},
+		{
+			description: "keep top level order",
+			in:          []string{"dir_b/*", "dir/*"},
+			out:         []string{"dir_b/sub_dir_b/file", "dir/sub_dir/file"},
 		},
 	}
 	for _, test := range tests {
@@ -220,9 +225,35 @@ func TestCloneThroughJSON(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			err := CloneThroughJSON(test.old, test.new)
+			CloneThroughJSON(test.old, test.new)
 
-			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, test.new)
+		})
+	}
+}
+
+func TestCloneThroughYAML(t *testing.T) {
+	tests := []struct {
+		description string
+		old         interface{}
+		new         interface{}
+		expected    interface{}
+	}{
+		{
+			description: "google cloud build",
+			old: map[string]string{
+				"projectId": "unit-test",
+			},
+			new: &latest.GoogleCloudBuild{},
+			expected: &latest.GoogleCloudBuild{
+				ProjectID: "unit-test",
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			CloneThroughYAML(test.old, test.new)
+
 			t.CheckDeepEqual(test.expected, test.new)
 		})
 	}
@@ -302,4 +333,19 @@ func TestStrSliceInsert(t *testing.T) {
 	testutil.CheckDeepEqual(t, []string{"a", "b", "c", "d", "e"}, StrSliceInsert([]string{"a", "b", "c"}, 3, []string{"d", "e"}))
 	testutil.CheckDeepEqual(t, []string{"a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 0, nil))
 	testutil.CheckDeepEqual(t, []string{"a", "b", "c"}, StrSliceInsert([]string{"a", "b", "c"}, 1, nil))
+}
+
+func TestIsFileIsDir(t *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(t)
+	defer cleanup()
+	tmpDir.Touch("file")
+
+	testutil.CheckDeepEqual(t, false, IsFile(tmpDir.Root()))
+	testutil.CheckDeepEqual(t, true, IsDir(tmpDir.Root()))
+
+	testutil.CheckDeepEqual(t, true, IsFile(filepath.Join(tmpDir.Root(), "file")))
+	testutil.CheckDeepEqual(t, false, IsDir(filepath.Join(tmpDir.Root(), "file")))
+
+	testutil.CheckDeepEqual(t, false, IsFile(filepath.Join(tmpDir.Root(), "nonexistent")))
+	testutil.CheckDeepEqual(t, false, IsDir(filepath.Join(tmpDir.Root(), "nonexistent")))
 }

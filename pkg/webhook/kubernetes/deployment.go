@@ -25,15 +25,16 @@ import (
 	"path"
 	"time"
 
-	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/labels"
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/webhook/labels"
 )
 
 const (
@@ -48,9 +49,9 @@ const (
 // 		2. A container to run hugo server
 // and one emptyDir volume to hold the git repository
 func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP string) (*appsv1.Deployment, error) {
-	clientset, err := pkgkubernetes.GetClientset()
+	client, err := pkgkubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting clientset")
+		return nil, errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	deploymentLabels := svc.Spec.Selector
@@ -119,18 +120,20 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 			},
 		},
 	}
-	return clientset.AppsV1().Deployments(constants.Namespace).Create(d)
+	return client.AppsV1().Deployments(constants.Namespace).Create(d)
 }
 
 // WaitForDeploymentToStabilize waits till the Deployment has stabilized
 func WaitForDeploymentToStabilize(d *appsv1.Deployment, ip string) error {
-	client, err := pkgkubernetes.GetClientset()
+	client, err := pkgkubernetes.Client()
 	if err != nil {
-		return errors.Wrap(err, "getting clientset")
+		return errors.Wrap(err, "getting Kubernetes client")
 	}
+
 	if err := pkgkubernetes.WaitForDeploymentToStabilize(context.Background(), client, d.Namespace, d.Name, 5*time.Minute); err != nil {
 		return errors.Wrap(err, "waiting for deployment to stabilize")
 	}
+
 	// wait up to five minutes for the URL to return a valid endpoint
 	url := BaseURL(ip)
 	log.Printf("Waiting up to 2 minutes for %s to return an OK response...", url)

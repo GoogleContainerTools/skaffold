@@ -21,13 +21,14 @@ import (
 	"io"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
 // WithTimings creates a deployer that logs the duration of each phase.
@@ -88,8 +89,10 @@ func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.A
 
 	dr := w.Deployer.Deploy(ctx, out, builds, labellers)
 	if err := dr.GetError(); err != nil {
-		color.Default.Fprintln(out, "Deploy complete in", time.Since(start))
+		return dr
 	}
+
+	color.Default.Fprintln(out, "Deploy complete in", time.Since(start))
 	return dr
 }
 

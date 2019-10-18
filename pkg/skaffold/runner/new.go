@@ -71,7 +71,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	defaultLabeller := deploy.NewLabeller("")
-	labellers := []deploy.Labeller{&runCtx.Opts, builder, deployer, tagger, defaultLabeller}
+	// runCtx.Opts is last to let users override/remove any label
+	labellers := []deploy.Labeller{builder, deployer, tagger, defaultLabeller, &runCtx.Opts}
 
 	builder, tester, deployer = WithTimings(builder, tester, deployer, runCtx.Opts.CacheArtifacts)
 	if runCtx.Opts.Notification {
@@ -108,10 +109,11 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		labellers:            labellers,
 		defaultLabeller:      defaultLabeller,
 		portForwardResources: runCtx.Cfg.PortForward,
-		imageList:            kubernetes.NewImageList(),
+		podSelector:          kubernetes.NewImageList(),
 		cache:                artifactCache,
 		runCtx:               runCtx,
 		intents:              newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy),
+		imagesAreLocal:       imagesAreLocal,
 	}
 
 	if err := r.setupTriggerCallbacks(intentChan); err != nil {

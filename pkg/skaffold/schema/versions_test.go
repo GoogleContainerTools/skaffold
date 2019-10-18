@@ -20,12 +20,13 @@ import (
 	"fmt"
 	"testing"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 const (
@@ -172,7 +173,7 @@ func TestParseConfig(t *testing.T) {
 			description: "Minimal Kaniko config",
 			config:      minimalKanikoConfig,
 			expected: config(
-				withClusterBuild("kaniko-secret", "default", "", "20m",
+				withClusterBuild("", "/secret", "default", "", "20m",
 					withGitTagger(),
 					withKanikoArtifact("image1", "./examples/app1", "Dockerfile", "demo"),
 				),
@@ -184,7 +185,7 @@ func TestParseConfig(t *testing.T) {
 			description: "Complete Kaniko config",
 			config:      completeKanikoConfig,
 			expected: config(
-				withClusterBuild("secret-name", "nskaniko", "/secret.json", "120m",
+				withClusterBuild("secret-name", "/secret", "nskaniko", "/secret.json", "120m",
 					withGitTagger(),
 					withDockerConfig("config-name", "/kaniko/.docker"),
 					withKanikoArtifact("image1", "./examples/app1", "Dockerfile", ""),
@@ -274,6 +275,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 			DockerImage: "gcr.io/cloud-builders/docker",
 			MavenImage:  "gcr.io/cloud-builders/mvn",
 			GradleImage: "gcr.io/cloud-builders/gradle",
+			KanikoImage: "gcr.io/kaniko-project/executor",
 		}}}
 		for _, op := range ops {
 			op(&b)
@@ -282,13 +284,14 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 	}
 }
 
-func withClusterBuild(secretName, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
+func withClusterBuild(secretName, mountPath, namespace, secret string, timeout string, ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
 		b := latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{
-			PullSecretName: secretName,
-			Namespace:      namespace,
-			PullSecret:     secret,
-			Timeout:        timeout,
+			PullSecretName:      secretName,
+			Namespace:           namespace,
+			PullSecret:          secret,
+			PullSecretMountPath: mountPath,
+			Timeout:             timeout,
 		}}}
 		for _, op := range ops {
 			op(&b)
@@ -314,6 +317,14 @@ func withKubectlDeploy(manifests ...string) func(*latest.SkaffoldConfig) {
 					Manifests: manifests,
 				},
 			},
+		}
+	}
+}
+
+func withKubeContext(kubeContext string) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.Deploy = latest.DeployConfig{
+			KubeContext: kubeContext,
 		}
 	}
 }
@@ -402,6 +413,12 @@ func withProfiles(profiles ...latest.Profile) func(*latest.SkaffoldConfig) {
 func withTests(testCases ...*latest.TestCase) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
 		cfg.Test = testCases
+	}
+}
+
+func withPortForward(portForward ...*latest.PortForwardResource) func(*latest.SkaffoldConfig) {
+	return func(cfg *latest.SkaffoldConfig) {
+		cfg.PortForward = portForward
 	}
 }
 

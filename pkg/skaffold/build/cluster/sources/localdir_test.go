@@ -20,16 +20,20 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 func TestPod(t *testing.T) {
 	env := []v1.EnvVar{{
 		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 		Value: "/secret/kaniko-secret",
+	}, {
+		Name:  "UPSTREAM_CLIENT_TYPE",
+		Value: "UpstreamClient(skaffold-)",
 	}}
 	reqs := &latest.ResourceRequirements{
 		Requests: &latest.ResourceRequirement{
@@ -52,9 +56,10 @@ func TestPod(t *testing.T) {
 			},
 		},
 		clusterDetails: &latest.ClusterDetails{
-			Namespace:      "ns",
-			PullSecretName: "secret",
-			Resources:      reqs,
+			Namespace:           "ns",
+			PullSecretName:      "secret",
+			PullSecretMountPath: "/secret",
+			Resources:           reqs,
 		},
 	}
 

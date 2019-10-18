@@ -20,10 +20,11 @@ import (
 	"context"
 	"io"
 
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
 )
 
 func (b *Builder) buildCustom(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {

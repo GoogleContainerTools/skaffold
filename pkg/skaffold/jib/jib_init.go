@@ -25,21 +25,15 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/sirupsen/logrus"
 )
 
 // For testing
 var (
 	ValidateJibConfigFunc = ValidateJibConfig
-)
-
-const (
-	// JibGradle the name of the Jib Gradle Plugin
-	JibGradle = "Jib Gradle Plugin"
-	// JibMaven the name of the Jib Maven Plugin
-	JibMaven = "Jib Maven Plugin"
 )
 
 // Jib holds information about a Jib project
@@ -67,34 +61,26 @@ func (j Jib) Describe() string {
 func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 	workspace := filepath.Dir(j.FilePath)
 
-	a := &latest.Artifact{ImageName: j.Image}
-	if j.Image == "" {
-		a.ImageName = manifestImage
-	}
+	a := &latest.Artifact{ImageName: manifestImage}
 
 	if workspace != "." {
 		a.Workspace = workspace
 	}
 
-	if j.BuilderName == JibMaven {
-		jibMaven := &latest.JibMavenArtifact{}
+	if j.BuilderName == PluginName(JibMaven) {
+		jibMaven := &latest.JibArtifact{Type: int(JibMaven)}
 		if j.Project != "" {
-			jibMaven.Module = j.Project
+			jibMaven.Project = j.Project
 		}
-		if j.Image == "" {
-			jibMaven.Flags = []string{"-Dimage=" + manifestImage}
-		}
-		a.ArtifactType = latest.ArtifactType{JibMavenArtifact: jibMaven}
-
-	} else if j.BuilderName == JibGradle {
-		jibGradle := &latest.JibGradleArtifact{}
+		jibMaven.Flags = []string{"-Dimage=" + manifestImage}
+		a.ArtifactType = latest.ArtifactType{JibArtifact: jibMaven}
+	} else if j.BuilderName == PluginName(JibGradle) {
+		jibGradle := &latest.JibArtifact{Type: int(JibGradle)}
 		if j.Project != "" {
 			jibGradle.Project = j.Project
 		}
-		if j.Image == "" {
-			jibGradle.Flags = []string{"-Dimage=" + manifestImage}
-		}
-		a.ArtifactType = latest.ArtifactType{JibGradleArtifact: jibGradle}
+		jibGradle.Flags = []string{"-Dimage=" + manifestImage}
+		a.ArtifactType = latest.ArtifactType{JibArtifact: jibGradle}
 	}
 
 	return a
@@ -119,14 +105,15 @@ type jibJSON struct {
 // ValidateJibConfig checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
 func ValidateJibConfig(path string) []Jib {
 	// Determine whether maven or gradle
-	var builderType, executable, wrapper, taskName string
+	var builderType PluginType
+	var executable, wrapper, taskName string
 	switch {
 	case strings.HasSuffix(path, "pom.xml"):
 		builderType = JibMaven
 		executable = "mvn"
 		wrapper = "mvnw"
 		taskName = "jib:_skaffold-init"
-	case strings.HasSuffix(path, "build.gradle"):
+	case strings.HasSuffix(path, "build.gradle"), strings.HasSuffix(path, "build.gradle.kts"):
 		builderType = JibGradle
 		executable = "gradle"
 		wrapper = "gradlew"
@@ -162,7 +149,7 @@ func ValidateJibConfig(path string) []Jib {
 			return nil
 		}
 
-		results[i] = Jib{BuilderName: builderType, Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
+		results[i] = Jib{BuilderName: PluginName(builderType), Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
 	}
 	return results
 }

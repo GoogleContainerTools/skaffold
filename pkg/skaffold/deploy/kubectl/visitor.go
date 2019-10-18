@@ -23,9 +23,11 @@ import (
 
 // Replacer is used to replace portions of yaml manifests that match a given key.
 type Replacer interface {
-	Matches(key string) bool
+	Matches(key interface{}) bool
 
 	NewValue(old interface{}) (bool, interface{})
+
+	ObjMatcher() Matcher
 }
 
 // Visit recursively visits a list of manifests and applies transformations of them.
@@ -35,7 +37,7 @@ func (l *ManifestList) Visit(replacer Replacer) (ManifestList, error) {
 	for _, manifest := range *l {
 		m := make(map[interface{}]interface{})
 		if err := yaml.Unmarshal(manifest, &m); err != nil {
-			return nil, errors.Wrap(err, "reading kubernetes YAML")
+			return nil, errors.Wrap(err, "reading Kubernetes YAML")
 		}
 
 		if len(m) == 0 {
@@ -62,17 +64,27 @@ func recursiveVisit(i interface{}, replacer Replacer) {
 			recursiveVisit(v, replacer)
 		}
 	case map[interface{}]interface{}:
-		for k, v := range t {
-			key := k.(string)
-
-			if !replacer.Matches(key) {
-				recursiveVisit(v, replacer)
-				continue
+		// If a ObjMatcher is present:
+		// 1. First iterate through all keys.
+		// 2. If key is present and does not match the matcher return to
+		//    skip replacing the entire Object.
+		if replacer.ObjMatcher() != nil {
+			for k, v := range t {
+				if replacer.ObjMatcher().IsMatchKey(k) && !replacer.ObjMatcher().Matches(v) {
+					return
+				}
 			}
-
-			ok, newValue := replacer.NewValue(v)
-			if ok {
-				t[k] = newValue
+		}
+		// Now do the actual replacement.
+		for k, v := range t {
+			switch {
+			case replacer.Matches(k):
+				ok, newValue := replacer.NewValue(v)
+				if ok {
+					t[k] = newValue
+				}
+			default:
+				recursiveVisit(v, replacer)
 			}
 		}
 	}

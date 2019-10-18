@@ -20,21 +20,26 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
 
 func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
-	color.Default.Fprintf(out, "Creating kaniko secret [%s]...\n", b.PullSecretName)
+	if b.PullSecret == "" && b.PullSecretName == "" {
+		return func() {}, nil
+	}
 
-	client, err := kubernetes.GetClientset()
+	color.Default.Fprintf(out, "Creating kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
+
+	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting kubernetes client")
+		return nil, errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	secrets := client.CoreV1().Secrets(b.Namespace)
@@ -82,9 +87,9 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 
 	color.Default.Fprintf(out, "Creating docker config secret [%s]...\n", b.DockerConfig.SecretName)
 
-	client, err := kubernetes.GetClientset()
+	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting kubernetes client")
+		return nil, errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	secrets := client.CoreV1().Secrets(b.Namespace)

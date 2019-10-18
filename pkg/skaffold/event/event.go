@@ -21,10 +21,11 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/golang/protobuf/ptypes"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/GoogleContainerTools/skaffold/proto"
-	"github.com/golang/protobuf/ptypes"
 )
 
 const (
@@ -33,6 +34,8 @@ const (
 	Complete   = "Complete"
 	Failed     = "Failed"
 	Info       = "Information"
+	Started    = "Started"
+	Succeeded  = "Succeeded"
 )
 
 var handler = &eventHandler{}
@@ -128,7 +131,10 @@ func emptyState(build latest.BuildConfig) proto.State {
 	for _, a := range build.Artifacts {
 		builds[a.ImageName] = NotStarted
 	}
+	return emptyStateWithArtifacts(builds)
+}
 
+func emptyStateWithArtifacts(builds map[string]string) proto.State {
 	return proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: builds,
@@ -136,7 +142,14 @@ func emptyState(build latest.BuildConfig) proto.State {
 		DeployState: &proto.DeployState{
 			Status: NotStarted,
 		},
-		ForwardedPorts: make(map[string]*proto.PortEvent),
+		StatusCheckState: &proto.StatusCheckState{
+			Status:    NotStarted,
+			Resources: map[string]string{},
+		},
+		ForwardedPorts: make(map[int32]*proto.PortEvent),
+		FileSyncState: &proto.FileSyncState{
+			Status: NotStarted,
+		},
 	}
 }
 
@@ -160,6 +173,56 @@ func DeployInfoEvent(err error) {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Info, Err: err.Error()})
 }
 
+func StatusCheckEventSucceeded() {
+	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
+		Status: Succeeded,
+	})
+}
+
+func StatusCheckEventFailed(err error) {
+	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
+		Status: Failed,
+		Err:    err.Error(),
+	})
+}
+
+func StatusCheckEventStarted() {
+	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
+		Status: Started,
+	})
+}
+
+func StatusCheckEventInProgress(s string) {
+	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
+		Status:  InProgress,
+		Message: s,
+	})
+}
+
+func ResourceStatusCheckEventSucceeded(r string) {
+	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
+		Resource: r,
+		Status:   Succeeded,
+		Message:  Succeeded,
+	})
+}
+
+func ResourceStatusCheckEventFailed(r string, err error) {
+	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
+		Resource: r,
+		Status:   Failed,
+		Err:      err.Error(),
+	})
+}
+
+func ResourceStatusCheckEventUpdated(r string, status string) {
+	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
+		Resource: r,
+		Status:   InProgress,
+		Message:  status,
+	})
+}
+
 // DeployComplete notifies that a deployment has completed.
 func DeployComplete() {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Complete})
@@ -178,6 +241,21 @@ func BuildFailed(imageName string, err error) {
 // BuildComplete notifies that a build has completed.
 func BuildComplete(imageName string) {
 	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Complete})
+}
+
+// FileSyncInProgress notifies that a file sync has been started.
+func FileSyncInProgress(fileCount int, image string) {
+	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: InProgress})
+}
+
+// FileSyncFailed notifies that a file sync has failed.
+func FileSyncFailed(fileCount int, image string, err error) {
+	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed, Err: err.Error()})
+}
+
+// FileSyncSucceeded notifies that a file sync has succeeded.
+func FileSyncSucceeded(fileCount int, image string) {
+	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Succeeded})
 }
 
 // PortForwarded notifies that a remote port has been forwarded locally.
@@ -212,10 +290,34 @@ func (ev *eventHandler) handleDeployEvent(e *proto.DeployEvent) {
 	})
 }
 
+func (ev *eventHandler) handleStatusCheckEvent(e *proto.StatusCheckEvent) {
+	go ev.handle(&proto.Event{
+		EventType: &proto.Event_StatusCheckEvent{
+			StatusCheckEvent: e,
+		},
+	})
+}
+
+func (ev *eventHandler) handleResourceStatusCheckEvent(e *proto.ResourceStatusCheckEvent) {
+	go ev.handle(&proto.Event{
+		EventType: &proto.Event_ResourceStatusCheckEvent{
+			ResourceStatusCheckEvent: e,
+		},
+	})
+}
+
 func (ev *eventHandler) handleBuildEvent(e *proto.BuildEvent) {
 	go ev.handle(&proto.Event{
 		EventType: &proto.Event_BuildEvent{
 			BuildEvent: e,
+		},
+	})
+}
+
+func (ev *eventHandler) handleFileSyncEvent(e *proto.FileSyncEvent) {
+	go ev.handle(&proto.Event{
+		EventType: &proto.Event_FileSyncEvent{
+			FileSyncEvent: e,
 		},
 	})
 }
@@ -273,12 +375,79 @@ func (ev *eventHandler) handle(event *proto.Event) {
 	case *proto.Event_PortEvent:
 		pe := e.PortEvent
 		ev.stateLock.Lock()
-		ev.state.ForwardedPorts[pe.ContainerName] = pe
+		ev.state.ForwardedPorts[pe.LocalPort] = pe
 		ev.stateLock.Unlock()
 		logEntry.Entry = fmt.Sprintf("Forwarding container %s to local port %d", pe.ContainerName, pe.LocalPort)
+	case *proto.Event_StatusCheckEvent:
+		se := e.StatusCheckEvent
+		ev.stateLock.Lock()
+		ev.state.StatusCheckState.Status = se.Status
+		ev.stateLock.Unlock()
+		switch se.Status {
+		case Started:
+			logEntry.Entry = "Status check started"
+		case InProgress:
+			logEntry.Entry = "Status check in progress"
+		case Succeeded:
+			logEntry.Entry = "Status check succeeded"
+		case Failed:
+			logEntry.Entry = "Status check failed"
+		default:
+		}
+	case *proto.Event_ResourceStatusCheckEvent:
+		rse := e.ResourceStatusCheckEvent
+		rseName := rse.Resource
+		ev.stateLock.Lock()
+		ev.state.StatusCheckState.Resources[rseName] = rse.Status
+		ev.stateLock.Unlock()
+		switch rse.Status {
+		case InProgress:
+			logEntry.Entry = fmt.Sprintf("Resource %s status updated to %s", rseName, rse.Status)
+		case Succeeded:
+			logEntry.Entry = fmt.Sprintf("Resource %s status completed successfully", rseName)
+		case Failed:
+			logEntry.Entry = fmt.Sprintf("Resource %s status failed with %s", rseName, rse.Err)
+		default:
+		}
+	case *proto.Event_FileSyncEvent:
+		fse := e.FileSyncEvent
+		fseFileCount := fse.FileCount
+		fseImage := fse.Image
+		ev.stateLock.Lock()
+		ev.state.FileSyncState.Status = fse.Status
+		ev.stateLock.Unlock()
+		switch fse.Status {
+		case InProgress:
+			logEntry.Entry = fmt.Sprintf("File sync started for %d files for %s", fseFileCount, fseImage)
+		case Succeeded:
+			logEntry.Entry = fmt.Sprintf("File sync succeeded for %d files for %s", fseFileCount, fseImage)
+		case Failed:
+			logEntry.Entry = fmt.Sprintf("File sync failed for %d files for %s", fseFileCount, fseImage)
+		default:
+		}
+
 	default:
 		return
 	}
 
 	ev.logEvent(*logEntry)
+}
+
+// ResetStateOnBuild resets the build, deploy and sync state
+func ResetStateOnBuild() {
+	builds := map[string]string{}
+	for k := range handler.getState().BuildState.Artifacts {
+		builds[k] = NotStarted
+	}
+	newState := emptyStateWithArtifacts(builds)
+	handler.setState(newState)
+}
+
+// ResetStateOnDeploy resets the deploy, sync and status check state
+func ResetStateOnDeploy() {
+	newState := handler.getState()
+	newState.DeployState.Status = NotStarted
+	newState.StatusCheckState.Status = NotStarted
+	newState.ForwardedPorts = map[int32]*proto.PortEvent{}
+	handler.setState(newState)
 }

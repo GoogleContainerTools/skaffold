@@ -30,5 +30,8 @@ This library not only provides functions for traversing a file system directory
 tree, but also for obtaining a list of immediate descendants of a particular
 directory, typically much more quickly than using `os.ReadDir` or
 `os.ReadDirnames`.
+
+    dirname := "some/directory"
+    names, err := godirwalk.ReadDirnames()
 */
 package godirwalk

@@ -30,9 +30,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/pkg/errors"
 	blackfriday "gopkg.in/russross/blackfriday.v2"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 )
 
 const (

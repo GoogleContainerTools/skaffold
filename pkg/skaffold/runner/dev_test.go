@@ -22,11 +22,12 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type NoopMonitor struct{}
@@ -232,7 +233,7 @@ func TestDev(t *testing.T) {
 				{
 					Built:    []string{"img2:2"},
 					Tested:   []string{"img2:2"},
-					Deployed: []string{"img2:2", "img1:1"},
+					Deployed: []string{"img1:1", "img2:2"},
 				},
 			},
 		},

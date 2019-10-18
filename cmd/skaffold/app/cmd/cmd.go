@@ -33,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -72,8 +71,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			color.OverwriteDefault(color.Color(defaultColor))
 			cmd.Root().SetOutput(out)
 
-			kubectx.UseKubeContext(opts.KubeContext)
-
 			// Setup logs
 			if err := setUpLogs(err, v); err != nil {
 				return err
@@ -100,7 +97,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				logrus.Debugf("Update check is disabled because of quiet mode")
 			} else {
 				go func() {
-					if err := updateCheck(updateMsg); err != nil {
+					if err := updateCheck(updateMsg, opts.GlobalConfig); err != nil {
 						logrus.Infof("update check failed: %s", err)
 					}
 				}()
@@ -121,8 +118,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 		},
 	}
 
-	SetUpFlags()
-
 	groups := templates.CommandGroups{
 		{
 			Message: "End-to-end pipelines:",
@@ -138,6 +133,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				NewCmdBuild(),
 				NewCmdDeploy(),
 				NewCmdDelete(),
+				NewCmdRender(),
 			},
 		},
 		{
@@ -183,8 +179,8 @@ func NewCmdOptions() *cobra.Command {
 	return cmd
 }
 
-func updateCheck(ch chan string) error {
-	if !update.IsUpdateCheckEnabled() {
+func updateCheck(ch chan string, configfile string) error {
+	if !update.IsUpdateCheckEnabled(configfile) {
 		logrus.Debugf("Update check not enabled, skipping.")
 		return nil
 	}

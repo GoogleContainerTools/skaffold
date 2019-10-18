@@ -23,6 +23,8 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"k8s.io/client-go/tools/clientcmd/api"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -35,7 +37,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/client-go/tools/clientcmd/api"
 )
 
 type Actions struct {
@@ -168,6 +169,10 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Art
 
 	t.currentActions.Deployed = findTags(artifacts)
 	return deploy.NewDeploySuccessResult(t.namespaces)
+}
+
+func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ string) error {
+	return nil
 }
 
 func (t *TestBench) Actions() []Actions {

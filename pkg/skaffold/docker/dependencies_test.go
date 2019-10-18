@@ -22,9 +22,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 const copyServerGo = `
@@ -200,6 +201,12 @@ ADD ./file /etc/file
 
 const fromImageCaseSensitive = `
 FROM jboss/wildfly:14.0.1.Final
+ADD ./file /etc/file
+`
+
+const fromScratchWithStageName = `
+FROM scratch as stage
+FROM stage
 ADD ./file /etc/file
 `
 
@@ -497,6 +504,12 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			ignore:      "**\n!server.go",
 			expected:    []string{"Dockerfile", "server.go"},
+		},
+		{
+			description: "from scratch witch stage name",
+			dockerfile:  fromScratchWithStageName,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file"},
 		},
 	}
 

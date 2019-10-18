@@ -156,7 +156,7 @@ func NewEntryManager(out io.Writer, cli *kubectl.CLI) EntryManager {
 		output:             out,
 		forwardedPorts:     newForwardedPorts(),
 		forwardedResources: newForwardedResources(),
-		EntryForwarder:     &KubectlForwarder{kubectl: cli, out: out},
+		EntryForwarder:     NewKubectlForwarder(out, cli),
 	}
 }
 

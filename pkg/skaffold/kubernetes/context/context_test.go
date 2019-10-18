@@ -17,10 +17,17 @@ limitations under the License.
 package context
 
 import (
+	"io/ioutil"
+	"sync"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+const clusterFooContext = "cluster-foo"
+const clusterBarContext = "cluster-bar"
 
 const validKubeConfig = `
 apiVersion: v1
@@ -49,6 +56,26 @@ users:
     username: user
 `
 
+const changedKubeConfig = `
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    server: https://changed-url.com
+  name: cluster-bar
+contexts:
+- context:
+    cluster: cluster-bar
+    user: user1
+  name: cluster-bar
+current-context: cluster-foo
+users:
+- name: user1
+  user:
+    password: secret
+    username: user
+`
+
 func TestCurrentContext(t *testing.T) {
 	testutil.Run(t, "valid context", func(t *testutil.T) {
 		resetKubeConfig(t, validKubeConfig)
@@ -56,7 +83,7 @@ func TestCurrentContext(t *testing.T) {
 		config, err := CurrentConfig()
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("cluster-foo", config.CurrentContext)
+		t.CheckDeepEqual(clusterFooContext, config.CurrentContext)
 	})
 
 	testutil.Run(t, "valid with override context", func(t *testutil.T) {
@@ -66,7 +93,7 @@ func TestCurrentContext(t *testing.T) {
 		config, err := CurrentConfig()
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("cluster-bar", config.CurrentContext)
+		t.CheckDeepEqual(clusterBarContext, config.CurrentContext)
 	})
 
 	testutil.Run(t, "invalid context", func(t *testutil.T) {
@@ -91,7 +118,7 @@ func TestGetRestClientConfig(t *testing.T) {
 	testutil.Run(t, "valid context with override", func(t *testutil.T) {
 		resetKubeConfig(t, validKubeConfig)
 
-		kubeContext = "cluster-bar"
+		kubeContext = clusterBarContext
 		cfg, err := GetRestClientConfig()
 
 		t.CheckNoError(err)
@@ -105,11 +132,150 @@ func TestGetRestClientConfig(t *testing.T) {
 
 		t.CheckError(true, err)
 	})
+
+	testutil.Run(t, "kube-config immutability", func(t *testutil.T) {
+		logrus.SetLevel(logrus.InfoLevel)
+		kubeConfig := t.TempFile("config", []byte(validKubeConfig))
+		kubeContext = clusterBarContext
+		t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
+		resetConfig()
+
+		cfg, err := GetRestClientConfig()
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("https://bar.com", cfg.Host)
+
+		if err = ioutil.WriteFile(kubeConfig, []byte(changedKubeConfig), 0644); err != nil {
+			t.Error(err)
+		}
+
+		cfg, err = GetRestClientConfig()
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("https://bar.com", cfg.Host)
+	})
+
+	testutil.Run(t, "change context after first execution", func(t *testutil.T) {
+		resetKubeConfig(t, validKubeConfig)
+
+		_, err := GetRestClientConfig()
+		t.CheckNoError(err)
+		kubeContext = clusterBarContext
+		cfg, err := GetRestClientConfig()
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("https://bar.com", cfg.Host)
+	})
+
+	testutil.Run(t, "REST client in-cluster", func(t *testutil.T) {
+		logrus.SetLevel(logrus.DebugLevel)
+		t.SetEnvs(map[string]string{"KUBECONFIG": "non-valid"})
+		resetConfig()
+
+		_, err := getRestClientConfig("")
+
+		if err == nil {
+			t.Errorf("expected error outside the cluster")
+		}
+	})
+}
+
+func TestUseKubeContext(t *testing.T) {
+	type invocation struct {
+		cliValue, yamlValue string
+	}
+	tests := []struct {
+		name        string
+		invocations []invocation
+		expected    string
+	}{
+		{
+			name:        "when not called at all",
+			invocations: nil,
+			expected:    "",
+		},
+		{
+			name:        "yaml value when no CLI value is given",
+			invocations: []invocation{{yamlValue: "context2"}},
+			expected:    "context2",
+		},
+		{
+			name: "yaml value when no CLI value is given, first invocation persists",
+			invocations: []invocation{
+				{yamlValue: "context-first"},
+				{yamlValue: "context-second"},
+			},
+			expected: "context-first",
+		},
+		{
+			name:        "CLI value takes precedence",
+			invocations: []invocation{{cliValue: "context1", yamlValue: "context2"}},
+			expected:    "context1",
+		},
+		{
+			name: "first CLI value takes precedence",
+			invocations: []invocation{
+				{cliValue: "context-first"},
+				{cliValue: "context-second"},
+			},
+			expected: "context-first",
+		},
+		{
+			name: "mixed CLI value and yaml value - I",
+			invocations: []invocation{
+				{cliValue: "context-first"},
+				{yamlValue: "context-second"},
+			},
+			expected: "context-first",
+		},
+		{
+			name: "mixed CLI value and yaml value - II",
+			invocations: []invocation{
+				{yamlValue: "context-first"},
+				{cliValue: "context-second"},
+			},
+			expected: "context-first",
+		},
+		{
+			name: "mixed CLI value and yaml value - III",
+			invocations: []invocation{
+				{yamlValue: "context-first"},
+				{cliValue: "context-second", yamlValue: "context-third"},
+			},
+			expected: "context-first",
+		},
+		{
+			name: "mixed CLI value and yaml value - IV",
+			invocations: []invocation{
+				{cliValue: "context-first", yamlValue: "context-second"},
+				{cliValue: "context-third", yamlValue: "context-fourth"},
+			},
+			expected: "context-first",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			kubeContext = ""
+			for _, inv := range test.invocations {
+				UseKubeContext(inv.cliValue, inv.yamlValue)
+			}
+
+			t.CheckDeepEqual(test.expected, kubeContext)
+			resetConfig()
+		})
+	}
+}
+
+// resetConfig is used by tests
+func resetConfig() {
+	kubeConfigOnce = sync.Once{}
+	kubeContextOnce = sync.Once{}
 }
 
 func resetKubeConfig(t *testutil.T, content string) {
 	kubeConfig := t.TempFile("config", []byte(content))
-	kubeContext = ""
 	t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
+	kubeContext = ""
 	resetConfig()
 }

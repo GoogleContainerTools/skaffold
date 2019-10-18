@@ -15,6 +15,35 @@ locally then deploy to local or remote Kubernetes clusters. Skaffold handles
 the workflow for building, pushing and deploying your application. It also
 provides building blocks and describe customizations for a CI/CD pipeline.
 
+---------------------
+
+## Community
+
+**We'd love to hear from you!**
+
+* [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users)
+* [#skaffold on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
+* [Give us Feedback](https://skaffold.dev/docs/resources/feedback/)
+
+**Office Hours** 
+
+Skaffold office hours are for The Skaffold Community. We want to provide an open forum for the Community to share
+   * How can we make Skaffold better as a community: design proposals, issues or concerns, questions, ideas 
+   * How can we make contributing to Skaffold better
+   * How you are using Skaffold - demo of features, integrations are welcome to be shared with the community so everyone can learn from it!
+
+Please feel free to add suggestions to the [agenda](https://docs.google.com/document/d/1mnCC_fAI3pmg3Vb2nMJyPk8Qtjjuapw_BTyqI_dX7sk/edit) and attend.
+
+Join the [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users) to get the calendar invite directly on your calendar.
+You can access the hangouts invite directly from this calendar invite.
+
+**Survey** 
+
+Your feedback is very valuable to us! We have an anonymous user feedback survey - please help us by spending a quick 5 minutes to tell us how satisfied you are with Skaffold, and what improvements we should make!
+
+Survey Link - https://forms.gle/BMTbGQXLWSdn7vEs6
+
+
 ## Features
 
 * Fast local Kubernetes Development
@@ -39,6 +68,8 @@ provides building blocks and describe customizations for a CI/CD pipeline.
 Installation methods can be found in the [Getting Started Guide](https://skaffold.dev/docs/getting-started/#installing-skaffold).
 
 See [Github Releases](https://github.com/GoogleContainerTools/skaffold/releases) for more information.
+
+:mega: **Please fill out our [quick 5-question survey](https://forms.gle/BMTbGQXLWSdn7vEs6)** so that we can learn how satisfied you are with Skaffold, and what improvements we should make. Thank you! :dancers:
 
 ## Demo
 
@@ -79,18 +110,17 @@ Skaffold supports the following tools:
   * Jib Maven/Gradle locally
 * Test
   * with container-structure-test
-* Deploy
-  * Kubernetes Command-Line Interface (`kubectl`)
-  * Helm
-  * kustomize
 * Tag
   * tag by git commit
   * tag by current date&time
   * tag by environment variables based template
-  * tag by checksum of the source code
 * Push
   * don't push - keep the image on the local daemon
   * push to registry
+* Deploy
+  * Kubernetes Command-Line Interface (`kubectl`)
+  * Helm
+  * kustomize
 
 ![architecture](docs/static/images/architecture.png)
 
@@ -109,11 +139,15 @@ Documentation for latest build: <https://skaffold-latest.firebaseapp.com>
 
 Check out our [examples page](./examples)
 
-## Community
 
+## Support 
+
+Skaffold is currently Beta. Detailed feature maturity information and how we deprecate features are described in our [Deprecation Policy](https://skaffold.dev/docs/references/deprecation).
+
+Support channels: 
+
+* Github Issues and PRs on this repo is our primary channel: the Skaffold team triages Github Issues and PRs daily, PRs are welcome (please read [CONTRIBUTING.md](CONTRIBUTING.md) for more details).
 * [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users)
-* [#skaffold on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
+* [#skaffold on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/): you can find us there on a best effort basis
+* Skaffold Office hours at 9AM PST, every other Wednesday: join the [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users) to get the calendar invite directly on your calendar.  
 
-There is a bi-weekly Skaffold users meeting at 9:30am-10am PST hosted on hangouts under "skaffold".
-Everyone is welcome to add suggestions to the [agenda](https://docs.google.com/document/d/1mnCC_fAI3pmg3Vb2nMJyPk8Qtjjuapw_BTyqI_dX7sk/edit) and attend.
-Join the [skaffold-users mailing list](https://groups.google.com/forum/#!forum/skaffold-users) to get the calendar invite directly on your calendar.

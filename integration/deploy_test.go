@@ -17,7 +17,10 @@ limitations under the License.
 package integration
 
 import (
+	"bufio"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -98,6 +101,43 @@ func TestDeploy(t *testing.T) {
 	skaffold.Delete().InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
 }
 
+func TestDeployTail(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	out, cancel := skaffold.Deploy("--tail", "--images", "busybox:latest").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunBackgroundOutput(t)
+	defer cancel()
+
+	// Wait for the logs to print "Hello world!"
+	lines := make(chan string)
+	go func() {
+		scanner := bufio.NewScanner(out)
+		for scanner.Scan() {
+			lines <- scanner.Text()
+		}
+	}()
+
+	timer := time.NewTimer(30 * time.Second)
+	defer timer.Stop()
+	for {
+		select {
+		case <-timer.C:
+			t.Fatal("timeout")
+		case line := <-lines:
+			if strings.Contains(line, "Hello world!") {
+				return
+			}
+		}
+	}
+}
+
 func TestDeployWithInCorrectConfig(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
@@ -109,26 +149,11 @@ func TestDeployWithInCorrectConfig(t *testing.T) {
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	err := skaffold.Deploy("--status-check=true").InDir("testdata/unstable-deployment").InNs(ns.Name).Run(t)
+	// We're not providing a tag for the getting-started image
+	output, err := skaffold.Deploy().InDir("examples/getting-started").InNs(ns.Name).RunWithCombinedOutput(t)
 	if err == nil {
-		t.Error("expected an error to see since the deployment is not stable. However deploy returned success")
+		t.Errorf("expected to see an error since not every image tag is provided: %s", output)
+	} else if !strings.Contains(string(output), "no tag provided for image [gcr.io/k8s-skaffold/skaffold-example]") {
+		t.Errorf("failed without saying the reason: %s", output)
 	}
-
-	skaffold.Delete().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
-}
-
-func TestDeployWithInCorrectConfigWithNoStatusCheck(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
-	}
-
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
-
-	skaffold.Deploy().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFailOutput(t)
-
-	skaffold.Delete().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
 }

@@ -17,12 +17,16 @@ limitations under the License.
 package deploy
 
 import (
+	"bufio"
 	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/segmentio/textio"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -72,51 +76,17 @@ func (k *KubectlDeployer) Labels() map[string]string {
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
-	color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
-	if err := k.kubectl.CheckVersion(ctx); err != nil {
-		color.Default.Fprintln(out, err)
-	}
+	event.DeployInProgress()
+	manifests, err := k.renderManifests(ctx, out, builds)
 
-	manifests, err := k.readManifests(ctx)
 	if err != nil {
 		event.DeployFailed(err)
-		return NewDeployErrorResult(errors.Wrap(err, "reading manifests"))
+		return NewDeployErrorResult(err)
 	}
-
-	for _, m := range k.RemoteManifests {
-		manifest, err := k.readRemoteManifest(ctx, m)
-		if err != nil {
-			return NewDeployErrorResult(errors.Wrap(err, "get remote manifests"))
-		}
-
-		manifests = append(manifests, manifest)
-	}
-
-	if len(k.originalImages) == 0 {
-		k.originalImages, err = manifests.GetImages()
-		if err != nil {
-			return NewDeployErrorResult(errors.Wrap(err, "get images from manifests"))
-		}
-	}
-
-	logrus.Debugln("manifests", manifests.String())
 
 	if len(manifests) == 0 {
+		event.DeployComplete()
 		return NewDeploySuccessResult(nil)
-	}
-
-	event.DeployInProgress()
-
-	namespaces, err := manifests.CollectNamespaces()
-	if err != nil {
-		event.DeployInfoEvent(errors.Wrap(err, "could not fetch deployed resource namespace. "+
-			"This might cause port-forward and deploy health-check to fail."))
-	}
-
-	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
-	if err != nil {
-		event.DeployFailed(err)
-		return NewDeployErrorResult(errors.Wrap(err, "replacing images in manifests"))
 	}
 
 	manifests, err = manifests.SetLabels(merge(labellers...))
@@ -125,15 +95,13 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return NewDeployErrorResult(errors.Wrap(err, "setting labels in manifests"))
 	}
 
-	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds, k.insecureRegistries)
-		if err != nil {
-			event.DeployFailed(err)
-			return NewDeployErrorResult(errors.Wrap(err, "unable to transform manifests"))
-		}
+	namespaces, err := manifests.CollectNamespaces()
+	if err != nil {
+		event.DeployInfoEvent(errors.Wrap(err, "could not fetch deployed resource namespace. "+
+			"This might cause port-forward and deploy health-check to fail."))
 	}
 
-	if err := k.kubectl.Apply(ctx, out, manifests); err != nil {
+	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		event.DeployFailed(err)
 		return NewDeployErrorResult(errors.Wrap(err, "kubectl error"))
 	}
@@ -149,22 +117,27 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	// pull remote manifests
-	var rm deploy.ManifestList
-	for _, m := range k.RemoteManifests {
-		manifest, err := k.readRemoteManifest(ctx, m)
-		if err != nil {
-			return errors.Wrap(err, "get remote manifests")
+	// revert remote manifests
+	// TODO(dgageot): That seems super dangerous and I don't understand
+	// why we need to update resources just before we delete them.
+	if len(k.RemoteManifests) > 0 {
+		var rm deploy.ManifestList
+		for _, m := range k.RemoteManifests {
+			manifest, err := k.readRemoteManifest(ctx, m)
+			if err != nil {
+				return errors.Wrap(err, "get remote manifests")
+			}
+			rm = append(rm, manifest)
 		}
-		rm = append(rm, manifest)
+		upd, err := rm.ReplaceImages(k.originalImages, k.defaultRepo)
+		if err != nil {
+			return errors.Wrap(err, "replacing with originals")
+		}
+		if err := k.kubectl.Apply(ctx, out, upd); err != nil {
+			return errors.Wrap(err, "apply original")
+		}
 	}
-	upd, err := rm.ReplaceImages(k.originalImages, k.defaultRepo)
-	if err != nil {
-		return errors.Wrap(err, "replacing with originals")
-	}
-	if err := k.kubectl.Apply(ctx, out, upd); err != nil {
-		return errors.Wrap(err, "apply original")
-	}
+
 	if err := k.kubectl.Delete(ctx, out, manifests); err != nil {
 		return errors.Wrap(err, "delete")
 	}
@@ -244,4 +217,70 @@ func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) (
 	}
 
 	return manifest.Bytes(), nil
+}
+
+func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, filepath string) error {
+	manifests, err := k.renderManifests(ctx, out, builds)
+
+	if err != nil {
+		return err
+	}
+
+	manifestOut := out
+	if filepath != "" {
+		f, err := os.Open(filepath)
+		if err != nil {
+			return errors.Wrap(err, "opening file for writing manifests")
+		}
+		manifestOut = bufio.NewWriter(f)
+	}
+
+	fmt.Fprintln(manifestOut, manifests.String())
+	return nil
+}
+
+func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact) (deploy.ManifestList, error) {
+	if err := k.kubectl.CheckVersion(ctx); err != nil {
+		color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
+		color.Default.Fprintln(out, err)
+	}
+
+	manifests, err := k.readManifests(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading manifests")
+	}
+
+	for _, m := range k.RemoteManifests {
+		manifest, err := k.readRemoteManifest(ctx, m)
+		if err != nil {
+			return nil, errors.Wrap(err, "get remote manifests")
+		}
+
+		manifests = append(manifests, manifest)
+	}
+
+	if len(k.originalImages) == 0 {
+		k.originalImages, err = manifests.GetImages()
+		if err != nil {
+			return nil, errors.Wrap(err, "get images from manifests")
+		}
+	}
+
+	if len(manifests) == 0 {
+		return nil, nil
+	}
+
+	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
+	if err != nil {
+		return nil, errors.Wrap(err, "replacing images in manifests")
+	}
+
+	for _, transform := range manifestTransforms {
+		manifests, err = transform(manifests, builds, k.insecureRegistries)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to transform manifests")
+		}
+	}
+
+	return manifests, nil
 }

@@ -24,14 +24,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type from struct {
@@ -275,17 +276,14 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 }
 
 func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[string]bool) ([]*parser.Node, error) {
-	onbuildNodesCache := map[string][]*parser.Node{}
+	onbuildNodesCache := map[string][]*parser.Node{
+		"scratch": nil,
+	}
 	var expandedNodes []*parser.Node
 	n := 0
 	for m, node := range nodes {
 		if node.Value == command.From {
 			from := fromInstruction(node)
-
-			// `scratch` is case insensitive
-			if strings.ToLower(from.image) == "scratch" {
-				continue
-			}
 
 			// onbuild should immediately follow the from command
 			expandedNodes = append(expandedNodes, nodes[n:m+1]...)

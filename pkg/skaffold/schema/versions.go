@@ -18,10 +18,11 @@ package schema
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -35,6 +36,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta10"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta11"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta12"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta13"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta14"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta15"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta16"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta4"
@@ -68,6 +73,10 @@ var SchemaVersions = Versions{
 	{v1beta10.Version, v1beta10.NewSkaffoldConfig},
 	{v1beta11.Version, v1beta11.NewSkaffoldConfig},
 	{v1beta12.Version, v1beta12.NewSkaffoldConfig},
+	{v1beta13.Version, v1beta13.NewSkaffoldConfig},
+	{v1beta14.Version, v1beta14.NewSkaffoldConfig},
+	{v1beta15.Version, v1beta15.NewSkaffoldConfig},
+	{v1beta16.Version, v1beta16.NewSkaffoldConfig},
 	{latest.Version, latest.NewSkaffoldConfig},
 }
 
@@ -104,6 +113,21 @@ func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 	factory, present := SchemaVersions.Find(apiVersion.Version)
 	if !present {
 		return nil, errors.Errorf("unknown api version: '%s'", apiVersion.Version)
+	}
+
+	// Remove all top-level keys starting with `.` so they can be used as YAML anchors
+	parsed := make(map[string]interface{})
+	if err := yaml.UnmarshalStrict(buf, parsed); err != nil {
+		return nil, errors.Wrap(err, "unable to parse YAML")
+	}
+	for field := range parsed {
+		if strings.HasPrefix(field, ".") {
+			delete(parsed, field)
+		}
+	}
+	buf, err = yaml.Marshal(parsed)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to re-marshal YAML without dotted keys")
 	}
 
 	cfg := factory()

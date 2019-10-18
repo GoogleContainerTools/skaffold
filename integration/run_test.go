@@ -17,6 +17,7 @@ limitations under the License.
 package integration
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -41,88 +42,117 @@ func TestRun(t *testing.T) {
 			description: "getting-started",
 			dir:         "examples/getting-started",
 			pods:        []string{"getting-started"},
-		}, {
+		},
+		{
 			description: "nodejs",
 			dir:         "examples/nodejs",
 			deployments: []string{"node"},
-		}, {
+		},
+		{
 			description: "structure-tests",
 			dir:         "examples/structure-tests",
 			pods:        []string{"getting-started"},
-		}, {
+		},
+		{
 			description: "microservices",
 			dir:         "examples/microservices",
 			// See https://github.com/GoogleContainerTools/skaffold/issues/2372
 			args:        []string{"--status-check=false"},
 			deployments: []string{"leeroy-app", "leeroy-web"},
-		}, {
+		},
+		{
 			description: "envTagger",
 			dir:         "examples/tagging-with-environment-variables",
 			pods:        []string{"getting-started"},
 			env:         []string{"FOO=foo"},
-		}, {
+		},
+		{
 			description: "bazel",
 			dir:         "examples/bazel",
 			pods:        []string{"bazel"},
-		}, {
+		},
+		{
 			description: "Google Cloud Build",
 			dir:         "examples/google-cloud-build",
 			pods:        []string{"getting-started"},
 			gcpOnly:     true,
-		}, {
+		},
+		{
 			description: "Google Cloud Build with sub folder",
 			dir:         "testdata/gcb-sub-folder",
 			pods:        []string{"getting-started"},
 			gcpOnly:     true,
-		}, {
+		},
+		{
+			description: "Google Cloud Build with Kaniko",
+			dir:         "examples/gcb-kaniko",
+			pods:        []string{"getting-started-kaniko"},
+			gcpOnly:     true,
+		},
+		{
 			description: "kaniko",
 			dir:         "examples/kaniko",
 			pods:        []string{"getting-started-kaniko"},
 			gcpOnly:     true,
-		}, {
+		},
+		{
 			description: "kaniko local",
 			dir:         "examples/kaniko-local",
 			pods:        []string{"getting-started-kaniko"},
 			gcpOnly:     true,
-		}, {
+		},
+		{
 			description: "kaniko local with target",
 			dir:         "testdata/kaniko-target",
 			pods:        []string{"getting-started-kaniko"},
 			gcpOnly:     true,
-		}, {
+		},
+		{
 			description: "kaniko local with sub folder",
 			dir:         "testdata/kaniko-sub-folder",
 			pods:        []string{"getting-started-kaniko"},
 			gcpOnly:     true,
-		}, {
+		},
+		{
 			description: "kaniko microservices",
 			dir:         "testdata/kaniko-microservices",
 			deployments: []string{"leeroy-app", "leeroy-web"},
 			gcpOnly:     true,
-		}, {
+		},
+		{
 			description: "jib",
 			dir:         "testdata/jib",
 			deployments: []string{"web"},
-		}, {
+		},
+		{
 			description: "jib in googlecloudbuild",
 			dir:         "testdata/jib",
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
 			gcpOnly:     true,
-		}, {
+		},
+		{
 			description: "jib gradle",
 			dir:         "testdata/jib-gradle",
 			deployments: []string{"web"},
-		}, {
+		},
+		{
 			description: "jib gradle in googlecloudbuild",
 			dir:         "testdata/jib-gradle",
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
 			gcpOnly:     true,
-		}, {
+		},
+		{
 			description: "custom builder",
 			dir:         "testdata/custom",
 			pods:        []string{"bazel"},
+		},
+		{
+			description: "profiles",
+			dir:         "examples/profiles",
+			args:        []string{"-p", "minikube-profile"},
+			pods:        []string{"hello-service"},
 		},
 	}
 	for _, test := range tests {
@@ -137,7 +167,7 @@ func TestRun(t *testing.T) {
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			skaffold.Run(test.args...).WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFailOutput(t)
+			skaffold.Run(test.args...).WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)
@@ -145,4 +175,68 @@ func TestRun(t *testing.T) {
 			skaffold.Delete().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})
 	}
+}
+
+func TestRunIdempotent(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	// The first `skaffold run` creates resources (deployment.apps/leeroy-web, service/leeroy-app, deployment.apps/leeroy-app)
+	out := skaffold.Run("-l", "skaffold.dev/run-id=notunique").InDir("examples/microservices").InNs(ns.Name).RunOrFailOutput(t)
+	firstOut := string(out)
+	if strings.Count(firstOut, "created") == 0 {
+		t.Errorf("resources should have been created: %s", firstOut)
+	}
+
+	// Because we use the same custom `run-id`, the second `skaffold run` is idempotent:
+	// + It has nothing to rebuild
+	// + It leaves all resources unchanged
+	out = skaffold.Run("-l", "skaffold.dev/run-id=notunique").InDir("examples/microservices").InNs(ns.Name).RunOrFailOutput(t)
+	secondOut := string(out)
+	if strings.Count(secondOut, "created") != 0 {
+		t.Errorf("no resource should have been created: %s", secondOut)
+	}
+	if !strings.Contains(secondOut, "leeroy-web: Found") || !strings.Contains(secondOut, "leeroy-app: Found") {
+		t.Errorf("both artifacts should be in cache: %s", secondOut)
+	}
+}
+
+func TestRunUnstableChecked(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	output, err := skaffold.Run("--status-check=true").InDir("testdata/unstable-deployment").InNs(ns.Name).RunWithCombinedOutput(t)
+	if err == nil {
+		t.Errorf("expected to see an error since the deployment is not stable: %s", output)
+	} else if !strings.Contains(string(output), "unstable-deployment failed") {
+		t.Errorf("failed without saying the reason: %s", output)
+	}
+}
+
+func TestRunUnstableNotChecked(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	skaffold.Run().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
 }

@@ -20,7 +20,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-const Version string = "skaffold/v1beta13"
+// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+const Version string = "skaffold/v1beta17"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -221,6 +222,11 @@ type GoogleCloudBuild struct {
 	// Defaults to `gcr.io/cloud-builders/docker`.
 	DockerImage string `yaml:"dockerImage,omitempty"`
 
+	// KanikoImage is the image that runs a Kaniko build.
+	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
+	// Defaults to `gcr.io/kaniko-project/executor`.
+	KanikoImage string `yaml:"kanikoImage,omitempty"`
+
 	// MavenImage is the image that runs a Maven build.
 	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
 	// Defaults to `gcr.io/cloud-builders/mvn`.
@@ -230,6 +236,10 @@ type GoogleCloudBuild struct {
 	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
 	// Defaults to `gcr.io/cloud-builders/gradle`.
 	GradleImage string `yaml:"gradleImage,omitempty"`
+
+	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
+	// Defaults to 0.
+	Concurrency int `yaml:"concurrency,omitempty"`
 }
 
 // LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
@@ -277,6 +287,9 @@ type ClusterDetails struct {
 	// Defaults to `kaniko-secret`.
 	PullSecretName string `yaml:"pullSecretName,omitempty"`
 
+	// PullSecretMountPath is the path the pull secret will be mounted at within the running container.
+	PullSecretMountPath string `yaml:"pullSecretMountPath,omitempty"`
+
 	// Namespace is the Kubernetes namespace.
 	// Defaults to current namespace in Kubernetes configuration.
 	Namespace string `yaml:"namespace,omitempty"`
@@ -290,6 +303,10 @@ type ClusterDetails struct {
 
 	// Resources define the resource requirements for the kaniko pod.
 	Resources *ResourceRequirements `yaml:"resources,omitempty"`
+
+	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
+	// Defaults to 0.
+	Concurrency int `yaml:"concurrency,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
@@ -336,9 +353,14 @@ type TestCase struct {
 
 // DeployConfig contains all the configuration needed by the deploy steps.
 type DeployConfig struct {
+	DeployType `yaml:",inline"`
+
 	// StatusCheckDeadlineSeconds *beta* is the deadline for deployments to stabilize in seconds.
 	StatusCheckDeadlineSeconds int `yaml:"statusCheckDeadlineSeconds,omitempty"`
-	DeployType                 `yaml:",inline"`
+
+	// KubeContext is the Kubernetes context that Skaffold should deploy to.
+	// For example: `minikube`.
+	KubeContext string `yaml:"kubeContext,omitempty"`
 }
 
 // DeployType contains the specific implementation and parameters needed
@@ -414,6 +436,9 @@ type KustomizeDeploy struct {
 
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
+
+	// BuildArgs are additional args passed to `kustomize build`.
+	BuildArgs []string `yaml:"buildArgs,omitempty"`
 }
 
 // HelmRelease describes a helm release to be deployed.
@@ -446,11 +471,16 @@ type HelmRelease struct {
 	// all parsed pairs after the flag.
 	SetValueTemplates map[string]string `yaml:"setValueTemplates,omitempty"`
 
+	// SetFiles are key-value pairs.
+	// If present, Skaffold will send `--set-file` flag to Helm CLI and append all pairs after the flag.
+	SetFiles map[string]string `yaml:"setFiles,omitempty"`
+
 	// Wait if `true`, Skaffold will send `--wait` flag to Helm CLI.
 	// Defaults to `false`.
 	Wait bool `yaml:"wait,omitempty"`
 
-	// RecreatePods if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI.
+	// RecreatePods if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI
+	// when upgrading a new version of a chart in subsequent dev loop deploy.
 	// Defaults to `false`.
 	RecreatePods bool `yaml:"recreatePods,omitempty"`
 
@@ -598,9 +628,13 @@ type JSONPatch struct {
 
 // Activation criteria by which a profile is auto-activated.
 type Activation struct {
-	// Env is a `key=value` pair. The profile is auto-activated if an Environment
-	// Variable `key` has value `value`.
-	// For example: `ENV=production`.
+	// Env is a `key=pattern` pair. The profile is auto-activated if an Environment
+	// Variable `key` matches the pattern. If the pattern starts with `!`, activation
+	// happens if the remaining pattern is _not_ matched. The pattern matches if the
+	// Environment Variable value is exactly `pattern`, or the regex `pattern` is
+	// found in it. An empty `pattern` (e.g. `env: "key="`) always only matches if
+	// the Environment Variable is undefined or empty.
+	// For example: `ENV=production`
 	Env string `yaml:"env,omitempty"`
 
 	// KubeContext is a Kubernetes context for which the profile is auto-activated.
@@ -621,13 +655,9 @@ type ArtifactType struct {
 	// contain [Bazel](https://bazel.build/) configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 
-	// JibMavenArtifact *alpha* builds images using the
-	// [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
-	JibMavenArtifact *JibMavenArtifact `yaml:"jibMaven,omitempty" yamltags:"oneOf=artifact"`
-
-	// JibGradleArtifact *alpha* builds images using the
-	// [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
-	JibGradleArtifact *JibGradleArtifact `yaml:"jibGradle,omitempty" yamltags:"oneOf=artifact"`
+	// JibArtifact *alpha* builds images using the
+	// [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).
+	JibArtifact *JibArtifact `yaml:"jib,omitempty" yamltags:"oneOf=artifact"`
 
 	// KanikoArtifact *alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).
 	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty" yamltags:"oneOf=artifact"`
@@ -703,6 +733,9 @@ type KanikoArtifact struct {
 
 	// Reproducible is used to strip timestamps out of the built image.
 	Reproducible bool `yaml:"reproducible,omitempty"`
+
+	// SkipTLS skips TLS verification when pulling and pushing the image.
+	SkipTLS bool `yaml:"skipTLS,omitempty"`
 }
 
 // DockerArtifact *beta* describes an artifact built from a Dockerfile,
@@ -746,27 +779,16 @@ type BazelArtifact struct {
 	BuildArgs []string `yaml:"args,omitempty"`
 }
 
-// JibMavenArtifact *alpha* builds images using the
-// [Jib plugin for Maven](https://github.com/GoogleContainerTools/jib/tree/master/jib-maven-plugin).
-type JibMavenArtifact struct {
-	// Module selects which Maven module to build, for a multi module project.
-	Module string `yaml:"module,omitempty"`
-
-	// Profile selects which Maven profile to activate.
-	Profile string `yaml:"profile,omitempty"`
-
-	// Flags are additional build flags passed to Maven.
-	// For example: `["-x", "-DskipTests"]`.
-	Flags []string `yaml:"args,omitempty"`
-}
-
-// JibGradleArtifact *alpha* builds images using the
-// [Jib plugin for Gradle](https://github.com/GoogleContainerTools/jib/tree/master/jib-gradle-plugin).
-type JibGradleArtifact struct {
-	// Project selects which Gradle project to build.
+// JibArtifact *alpha* builds images using the
+// [Jib plugins for Maven and Gradle](https://github.com/GoogleContainerTools/jib/).
+type JibArtifact struct {
+	// Project selects which sub-project to build for multi-module builds.
 	Project string `yaml:"project,omitempty"`
 
-	// Flags are additional build flags passed to Gradle.
+	// Flags are additional build flags passed to the builder.
 	// For example: `["--no-build-cache"]`.
 	Flags []string `yaml:"args,omitempty"`
+
+	// Type the Jib builder type (internal: see jib.PluginType)
+	Type int `yaml:"-"`
 }

@@ -28,11 +28,11 @@ import (
 // Kaniko AdditionalFlags
 // 2. No removals
 // 3. No updates
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 
-	err := pkgutil.CloneThroughJSON(config, &newConfig)
+	pkgutil.CloneThroughJSON(c, &newConfig)
 	newConfig.APIVersion = next.Version
 
-	return &newConfig, err
+	return &newConfig, nil
 }

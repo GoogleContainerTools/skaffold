@@ -20,7 +20,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta7"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
 // Upgrade upgrades a configuration to the next version.
@@ -31,46 +30,34 @@ import (
 // 2. No removals
 // 3. Updates:
 // kaniko becomes cluster
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
-	if err := pkgutil.CloneThroughJSON(config.Deploy, &newDeploy); err != nil {
-		return nil, errors.Wrap(err, "converting deploy config")
-	}
+	pkgutil.CloneThroughJSON(c.Deploy, &newDeploy)
 
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
-	if config.Profiles != nil {
-		if err := pkgutil.CloneThroughJSON(config.Profiles, &newProfiles); err != nil {
-			return nil, errors.Wrap(err, "converting new profile")
-		}
+	if c.Profiles != nil {
+		pkgutil.CloneThroughJSON(c.Profiles, &newProfiles)
 	}
 
 	// Update profile if kaniko build exists
-	for i, p := range config.Profiles {
-		if err := upgradeKanikoBuild(p.Build, &newProfiles[i].Build); err != nil {
-			return nil, errors.Wrap(err, "upgrading kaniko build")
-		}
+	for i, p := range c.Profiles {
+		upgradeKanikoBuild(p.Build, &newProfiles[i].Build)
 	}
 
 	// convert Kaniko if needed
 	var newBuild next.BuildConfig
-	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
-		return nil, errors.Wrap(err, "converting new build")
-	}
-	if err := upgradeKanikoBuild(config.Build, &newBuild); err != nil {
-		return nil, errors.Wrap(err, "upgrading kaniko build")
-	}
+	pkgutil.CloneThroughJSON(c.Build, &newBuild)
+	upgradeKanikoBuild(c.Build, &newBuild)
 
 	// convert Test (should be the same)
 	var newTest []*next.TestCase
-	if err := pkgutil.CloneThroughJSON(config.Test, &newTest); err != nil {
-		return nil, errors.Wrap(err, "converting new test")
-	}
+	pkgutil.CloneThroughJSON(c.Test, &newTest)
 
 	return &next.SkaffoldConfig{
 		APIVersion: next.Version,
-		Kind:       config.Kind,
+		Kind:       c.Kind,
 		Build:      newBuild,
 		Test:       newTest,
 		Deploy:     newDeploy,
@@ -78,20 +65,16 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	}, nil
 }
 
-func upgradeKanikoBuild(build BuildConfig, newConfig *next.BuildConfig) error {
-	if build.KanikoBuild == nil {
-		return nil
-	}
+func upgradeKanikoBuild(build BuildConfig, newConfig *next.BuildConfig) {
 	kaniko := build.KanikoBuild
+	if kaniko == nil {
+		return
+	}
+
 	// Else, transition values from old config to new config artifacts
 	for _, a := range newConfig.Artifacts {
-		if err := pkgutil.CloneThroughJSON(kaniko, &a.KanikoArtifact); err != nil {
-			return errors.Wrap(err, "cloning kaniko artifact")
-		}
+		pkgutil.CloneThroughJSON(kaniko, &a.KanikoArtifact)
 	}
 	// Transition values from old config to in cluster details
-	if err := pkgutil.CloneThroughJSON(kaniko, &newConfig.Cluster); err != nil {
-		return errors.Wrap(err, "cloning cluster details")
-	}
-	return nil
+	pkgutil.CloneThroughJSON(kaniko, &newConfig.Cluster)
 }

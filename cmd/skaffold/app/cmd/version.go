@@ -19,10 +19,11 @@ package cmd
 import (
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 var versionFlag = flags.NewTemplateFlag("{{.Version}}\n", version.Info{})

@@ -24,18 +24,19 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 var (
@@ -194,19 +195,19 @@ func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) (
 	return dsts, nil
 }
 
-func (k *podSyncer) Sync(ctx context.Context, s *Item) error {
-	if len(s.Copy) > 0 {
-		logrus.Infoln("Copying files:", s.Copy, "to", s.Image)
+func (s *podSyncer) Sync(ctx context.Context, item *Item) error {
+	if len(item.Copy) > 0 {
+		logrus.Infoln("Copying files:", item.Copy, "to", item.Image)
 
-		if err := Perform(ctx, s.Image, s.Copy, k.copyFileFn, k.namespaces); err != nil {
+		if err := Perform(ctx, item.Image, item.Copy, s.copyFileFn, s.namespaces); err != nil {
 			return errors.Wrap(err, "copying files")
 		}
 	}
 
-	if len(s.Delete) > 0 {
-		logrus.Infoln("Deleting files:", s.Delete, "from", s.Image)
+	if len(item.Delete) > 0 {
+		logrus.Infoln("Deleting files:", item.Delete, "from", item.Image)
 
-		if err := Perform(ctx, s.Image, s.Delete, k.deleteFileFn, k.namespaces); err != nil {
+		if err := Perform(ctx, item.Image, item.Delete, s.deleteFileFn, s.namespaces); err != nil {
 			return errors.Wrap(err, "deleting files")
 		}
 	}
@@ -223,7 +224,7 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 
 	client, err := kubernetes.Client()
 	if err != nil {
-		return errors.Wrap(err, "getting k8s client")
+		return errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	numSynced := 0
@@ -234,9 +235,7 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 		}
 
 		for _, p := range pods.Items {
-
 			if p.Status.Phase != v1.PodRunning {
-				logrus.Infof("Skipping sync with pod %s because it's not running", p.Name)
 				continue
 			}
 

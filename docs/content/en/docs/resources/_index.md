@@ -11,7 +11,7 @@ weight: 130
 * Debugging JVM applications
 * Provide help with integration testing
 * Skaffold keeps track of what it built, for faster restarts
-* Automated kubernetes manifest generation
+* Automated Kubernetes manifest generation
 * Pipeline CRD integration
 * Infrastructure scaffolding for CI/CD on GCP/GKE
 * Document end-to-end solutions
@@ -36,8 +36,9 @@ See [Release Notes](https://github.com/GoogleContainerTools/skaffold/blob/master
 
 You can join the Skaffold community and discuss the product at:
 
-* [Skaffold Mailing List](https://groups.google.com/forum/#!forum/skaffold-users)
+* [Skaffold Mailing List](https://groups.google.com/forum#!forum/skaffold-users)
 * [Skaffold Topic on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
+* [Give us feedback](feedback)
 
 The Skaffold Project also holds a bi-weekly meeting at 9:30am PST on Google
 Hangouts. Everyone is welcome to add suggestions to the [Meeting Agenda](https://docs.google.com/document/d/1mnCC_fAI3pmg3Vb2nMJyPk8Qtjjuapw_BTyqI_dX7sk/edit)

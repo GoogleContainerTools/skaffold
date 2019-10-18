@@ -27,15 +27,21 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
-func GetClientset() (kubernetes.Interface, error) {
+// for tests
+var (
+	Client        = getClientset
+	DynamicClient = getDynamicClient
+)
+
+func getClientset() (kubernetes.Interface, error) {
 	config, err := context.GetRestClientConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting client config for kubernetes client")
+		return nil, errors.Wrap(err, "getting client config for Kubernetes client")
 	}
 	return kubernetes.NewForConfig(config)
 }
 
-func GetDynamicClient() (dynamic.Interface, error) {
+func getDynamicClient() (dynamic.Interface, error) {
 	config, err := context.GetRestClientConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting client config for dynamic client")

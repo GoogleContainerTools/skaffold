@@ -23,14 +23,15 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/random"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestPush(t *testing.T) {
@@ -74,6 +75,25 @@ func TestPush(t *testing.T) {
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDigest, digest)
 		})
 	}
+}
+
+func TestDontPushAlreadyPushed(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&DefaultAuthHelper, testAuthHelper{})
+
+		api := &testutil.FakeAPIClient{}
+		api.Add("image", "sha256:imageIDabcab")
+		localDocker := NewLocalDaemon(api, nil, false, nil)
+
+		digest, err := localDocker.Push(context.Background(), ioutil.Discard, "image")
+		t.CheckErrorAndDeepEqual(false, err, "sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
+
+		// Images already pushed don't need being pushed.
+		api.ErrImagePush = true
+
+		digest, err = localDocker.Push(context.Background(), ioutil.Discard, "image")
+		t.CheckErrorAndDeepEqual(false, err, "sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
+	})
 }
 
 func TestBuild(t *testing.T) {

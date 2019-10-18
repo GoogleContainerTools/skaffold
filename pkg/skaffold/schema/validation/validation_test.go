@@ -377,72 +377,69 @@ func TestValidateSyncRules(t *testing.T) {
 		},
 		{
 			description: "no sync rules",
-			artifacts: []*latest.Artifact{
-				{
-					Sync: nil,
-				},
-			},
+			artifacts: []*latest.Artifact{{
+				ImageName: "img",
+				Sync:      nil,
+			}},
 		},
 		{
 			description: "two good rules",
-			artifacts: []*latest.Artifact{
-				{
-					Sync: &latest.Sync{Manual: []*latest.SyncRule{
-						{
-							Src:  "src/**/*.js",
-							Dest: ".",
-						},
-						{
-							Src:   "src/**/*.js",
-							Dest:  ".",
-							Strip: "src/",
-						},
-					}},
-				},
-			},
+			artifacts: []*latest.Artifact{{
+				ImageName: "img",
+				Sync: &latest.Sync{Manual: []*latest.SyncRule{
+					{
+						Src:  "src/**/*.js",
+						Dest: ".",
+					},
+					{
+						Src:   "src/**/*.js",
+						Dest:  ".",
+						Strip: "src/",
+					},
+				}},
+			}},
 		},
 		{
 			description: "one good one bad rule",
-			artifacts: []*latest.Artifact{
-				{
-					Sync: &latest.Sync{Manual: []*latest.SyncRule{
-						{
-							Src:   "src/**/*.js",
-							Dest:  ".",
-							Strip: "/src",
-						},
-						{
-							Src:   "src/**/*.py",
-							Dest:  ".",
-							Strip: "src/",
-						},
-					}},
-				},
-			},
+			artifacts: []*latest.Artifact{{
+				ImageName: "img",
+				Sync: &latest.Sync{Manual: []*latest.SyncRule{
+					{
+						Src:   "src/**/*.js",
+						Dest:  ".",
+						Strip: "/src",
+					},
+					{
+						Src:   "src/**/*.py",
+						Dest:  ".",
+						Strip: "src/",
+					},
+				}},
+			}},
 			shouldErr: true,
 		},
 		{
 			description: "two bad rules",
-			artifacts: []*latest.Artifact{
-				{
-					Sync: &latest.Sync{Manual: []*latest.SyncRule{
-						{
-							Dest:  ".",
-							Strip: "src",
-						},
-						{
-							Src:   "**/*.js",
-							Dest:  ".",
-							Strip: "src/",
-						},
-					}},
-				},
-			},
+			artifacts: []*latest.Artifact{{
+				ImageName: "img",
+				Sync: &latest.Sync{Manual: []*latest.SyncRule{
+					{
+						Dest:  ".",
+						Strip: "src",
+					},
+					{
+						Src:   "**/*.js",
+						Dest:  ".",
+						Strip: "src/",
+					},
+				}},
+			}},
 			shouldErr: true,
 		},
 		{
 			description: "stripping part of folder name is valid",
 			artifacts: []*latest.Artifact{{
+				ImageName: "img",
 				Sync: &latest.Sync{
 					Manual: []*latest.SyncRule{{
 						Src:   "srcsomeother/**/*.js",
@@ -550,6 +547,67 @@ func TestValidatePortForwardResources(t *testing.T) {
 			if len(errs) > 0 {
 				err = errs[0]
 			}
+
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
+func TestValidateImageNames(t *testing.T) {
+	tests := []struct {
+		description string
+		artifacts   []*latest.Artifact
+		shouldErr   bool
+	}{
+		{
+			description: "no name",
+			artifacts: []*latest.Artifact{{
+				ImageName: "",
+			}},
+			shouldErr: true,
+		},
+		{
+			description: "valid",
+			artifacts: []*latest.Artifact{{
+				ImageName: "img",
+			}},
+			shouldErr: false,
+		},
+		{
+			description: "shouldn't have a tag",
+			artifacts: []*latest.Artifact{{
+				ImageName: "img:tag",
+			}},
+			shouldErr: true,
+		},
+		{
+			description: "shouldn't have a digest",
+			artifacts: []*latest.Artifact{{
+				ImageName: "img@sha256:77af4d6b9913e693e8d0b4b294fa62ade6054e6b2f1ffb617ac955dd63fb0182",
+			}},
+			shouldErr: true,
+		},
+		{
+			description: "no tag nor digest",
+			artifacts: []*latest.Artifact{{
+				ImageName: "img:tag@sha256:77af4d6b9913e693e8d0b4b294fa62ade6054e6b2f1ffb617ac955dd63fb0182",
+			}},
+			shouldErr: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// disable yamltags validation
+			t.Override(&validateYamltags, func(interface{}) error { return nil })
+
+			err := Process(
+				&latest.SkaffoldConfig{
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							Artifacts: test.artifacts,
+						},
+					},
+				})
 
 			t.CheckError(test.shouldErr, err)
 		})

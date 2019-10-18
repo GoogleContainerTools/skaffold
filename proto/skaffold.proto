@@ -20,7 +20,10 @@ message Request {
 message State {
   BuildState buildState = 1;
   DeployState deployState = 2;
-  map<string, PortEvent> forwardedPorts = 3;
+  reserved 3; // field 3 is obsolete
+  map<int32, PortEvent> forwardedPorts = 4;
+  StatusCheckState statusCheckState = 5;
+  FileSyncState fileSyncState = 6;
 }
 
 // BuildState contains a map of all skaffold artifacts to their current build
@@ -34,12 +37,26 @@ message DeployState {
   string status = 1;
 }
 
+// StatusCheckState contains the state of status check of current deployed resources.
+message StatusCheckState {
+  string status = 1;
+  map<string, string> resources = 2;
+}
+
+// FileSyncState contains the status of the current file sync
+message FileSyncState {
+  string status = 1;
+}
+
 message Event {
   oneof event_type {
     MetaEvent metaEvent = 1;
     BuildEvent buildEvent = 2;
     DeployEvent deployEvent = 3;
     PortEvent portEvent = 4;
+    StatusCheckEvent statusCheckEvent = 5;
+    ResourceStatusCheckEvent resourceStatusCheckEvent = 6;
+    FileSyncEvent fileSyncEvent = 7;
   }
 }
 
@@ -58,6 +75,19 @@ message DeployEvent {
   string err = 2;
 }
 
+message StatusCheckEvent {
+  string status = 1;
+  string message = 2;
+  string err = 3;
+}
+
+message ResourceStatusCheckEvent {
+  string resource = 1;
+  string status = 2;
+  string message = 3;
+  string err = 4;
+}
+
 message PortEvent {
   int32 localPort = 1;
   int32 remotePort = 2;
@@ -67,6 +97,13 @@ message PortEvent {
   string portName = 6;
   string resourceType=7;
   string resourceName=8;
+}
+
+message FileSyncEvent {
+  int32 fileCount = 1;
+  string image = 2;
+  string status = 3;
+  string err = 4;
 }
 
 message LogEntry {

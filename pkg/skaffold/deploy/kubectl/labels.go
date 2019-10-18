@@ -36,6 +36,7 @@ func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error)
 }
 
 type labelsSetter struct {
+	ReplaceAny
 	labels map[string]string
 }
 
@@ -45,7 +46,7 @@ func newLabelsSetter(labels map[string]string) *labelsSetter {
 	}
 }
 
-func (r *labelsSetter) Matches(key string) bool {
+func (r *labelsSetter) Matches(key interface{}) bool {
 	return key == "metadata"
 }
 

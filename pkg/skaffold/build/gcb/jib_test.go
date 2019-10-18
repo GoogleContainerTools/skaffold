@@ -19,10 +19,11 @@ package gcb
 import (
 	"testing"
 
+	cloudbuild "google.golang.org/api/cloudbuild/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
 func TestJibMavenBuildSpec(t *testing.T) {
@@ -46,7 +47,7 @@ func TestJibMavenBuildSpec(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
-					JibMavenArtifact: &latest.JibMavenArtifact{},
+					JibArtifact: &latest.JibArtifact{Type: int(jib.JibMaven)},
 				},
 			}
 
@@ -91,7 +92,7 @@ func TestJibGradleBuildSpec(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
-					JibGradleArtifact: &latest.JibGradleArtifact{},
+					JibArtifact: &latest.JibArtifact{Type: int(jib.JibGradle)},
 				},
 			}
 

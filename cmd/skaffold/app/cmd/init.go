@@ -17,11 +17,13 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"io"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
 )
 
 var (
@@ -47,11 +49,11 @@ func NewCmdInit() *cobra.Command {
 			f.BoolVar(&enableJibInit, "XXenableJibInit", false, "")
 			f.MarkHidden("XXenableJibInit")
 		}).
-		NoArgs(doInit)
+		NoArgs(cancelWithCtrlC(context.Background(), doInit))
 }
 
-func doInit(out io.Writer) error {
-	return initializer.DoInit(out, initializer.Config{
+func doInit(ctx context.Context, out io.Writer) error {
+	return initializer.DoInit(ctx, out, initializer.Config{
 		ComposeFile:   composeFile,
 		CliArtifacts:  cliArtifacts,
 		SkipBuild:     skipBuild,

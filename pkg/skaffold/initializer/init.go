@@ -18,6 +18,7 @@ package initializer
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -25,8 +26,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/AlecAivazis/survey.v1"
+	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -36,10 +43,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	survey "gopkg.in/AlecAivazis/survey.v1"
-	yaml "gopkg.in/yaml.v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 // For testing
@@ -48,7 +52,7 @@ var (
 )
 
 // NoBuilder allows users to specify they don't want to build
-// an image we parse out from a kubernetes manifest
+// an image we parse out from a Kubernetes manifest
 const NoBuilder = "None (image not built from these sources)"
 
 // Initializer is the Init API of skaffold and responsible for generating
@@ -94,13 +98,13 @@ type builderImagePair struct {
 }
 
 // DoInit executes the `skaffold init` flow.
-func DoInit(out io.Writer, c Config) error {
+func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	rootDir := "."
 
 	if c.ComposeFile != "" {
 		// run kompose first to generate k8s manifests, then run skaffold init
 		logrus.Infof("running 'kompose convert' for file %s", c.ComposeFile)
-		komposeCmd := exec.Command("kompose", "convert", "-f", c.ComposeFile)
+		komposeCmd := exec.CommandContext(ctx, "kompose", "convert", "-f", c.ComposeFile)
 		if err := util.RunCmd(komposeCmd); err != nil {
 			return errors.Wrap(err, "running kompose")
 		}
@@ -115,7 +119,23 @@ func DoInit(out io.Writer, c Config) error {
 	if err != nil {
 		return err
 	}
-	images := k.GetImages()
+
+	// Remove tags from image names
+	var images []string
+	for _, image := range k.GetImages() {
+		parsed, err := docker.ParseReference(image)
+		if err != nil {
+			// It's possible that it's a templatized name that can't be parsed as is.
+			warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
+			continue
+		}
+		if parsed.Digest != "" {
+			warnings.Printf("Ignoring image referenced by digest: [%s]", image)
+			continue
+		}
+
+		images = append(images, parsed.BaseName)
+	}
 
 	// Determine which builders/images require prompting
 	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(builderConfigs, images)
@@ -142,7 +162,11 @@ func DoInit(out io.Writer, c Config) error {
 			}
 			pairs = append(pairs, newPairs...)
 		} else {
-			pairs = append(pairs, resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages)...)
+			resolved, err := resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages)
+			if err != nil {
+				return err
+			}
+			pairs = append(pairs, resolved...)
 		}
 	}
 
@@ -281,7 +305,8 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 			pair := builderImagePair{Builder: parsed.Payload, ImageName: a.Image}
 			pairs = append(pairs, pair)
 
-		case jib.JibGradle, jib.JibMaven:
+		// FIXME: shouldn't use a human-readable name?
+		case jib.PluginName(jib.JibGradle), jib.PluginName(jib.JibMaven):
 			parsed := struct {
 				Payload jib.Jib `json:"payload"`
 			}{}
@@ -300,10 +325,10 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 }
 
 // For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
-func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []builderImagePair {
+func resolveBuilderImages(builderConfigs []InitBuilder, images []string) ([]builderImagePair, error) {
 	// If nothing to choose, don't bother prompting
 	if len(images) == 0 || len(builderConfigs) == 0 {
-		return []builderImagePair{}
+		return []builderImagePair{}, nil
 	}
 
 	// if we only have 1 image and 1 build config, don't bother prompting
@@ -311,7 +336,7 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []build
 		return []builderImagePair{{
 			Builder:   builderConfigs[0],
 			ImageName: images[0],
-		}}
+		}}, nil
 	}
 
 	// Build map from choice string to builder config struct
@@ -330,21 +355,26 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []build
 		if len(images) == 0 {
 			break
 		}
+
 		image := images[0]
-		choice := promptUserForBuildConfigFunc(image, choices)
+		choice, err := promptUserForBuildConfigFunc(image, choices)
+		if err != nil {
+			return nil, err
+		}
+
 		if choice != NoBuilder {
 			pairs = append(pairs, builderImagePair{Builder: choiceMap[choice], ImageName: image})
 			choices = util.RemoveFromSlice(choices, choice)
 		}
 		images = util.RemoveFromSlice(images, image)
 	}
-	if len(builderConfigs) > 0 {
-		logrus.Warnf("unused builder configs found in repository: %v", builderConfigs)
+	if len(choices) > 0 {
+		logrus.Warnf("unused builder configs found in repository: %v", choices)
 	}
-	return pairs
+	return pairs, nil
 }
 
-func promptUserForBuildConfig(image string, choices []string) string {
+func promptUserForBuildConfig(image string, choices []string) (string, error) {
 	var selectedBuildConfig string
 	options := append(choices, NoBuilder)
 	prompt := &survey.Select{
@@ -352,8 +382,12 @@ func promptUserForBuildConfig(image string, choices []string) string {
 		Options:  options,
 		PageSize: 15,
 	}
-	survey.AskOne(prompt, &selectedBuildConfig, nil)
-	return selectedBuildConfig
+	err := survey.AskOne(prompt, &selectedBuildConfig, nil)
+	if err != nil {
+		return "", err
+	}
+
+	return selectedBuildConfig, nil
 }
 
 func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {
@@ -372,9 +406,15 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
 
+	name, err := suggestConfigName()
+	if err != nil {
+		warnings.Printf("Couldn't generate default config name: %s", err.Error())
+	}
+
 	cfg := &latest.SkaffoldConfig{
 		APIVersion: latest.Version,
 		Kind:       "Config",
+		Metadata:   latest.Metadata{Name: name},
 	}
 	if err := defaults.Set(cfg); err != nil {
 		return nil, errors.Wrap(err, "generating default pipeline")
@@ -389,6 +429,33 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 	}
 
 	return pipelineStr, nil
+}
+
+func suggestConfigName() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	base := filepath.Base(cwd)
+
+	// give up for edge cases
+	if base == "." || base == string(filepath.Separator) {
+		return "", nil
+	}
+
+	return canonicalizeName(base), nil
+}
+
+// canonicalizeName converts a given string to a valid k8s name string.
+// See https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names for details
+func canonicalizeName(name string) string {
+	forbidden := regexp.MustCompile(`[^-.a-z]+`)
+	canonicalized := forbidden.ReplaceAllString(strings.ToLower(name), "-")
+	if len(canonicalized) <= 253 {
+		return canonicalized
+	}
+	return canonicalized[:253]
 }
 
 func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {

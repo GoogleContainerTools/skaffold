@@ -22,12 +22,14 @@ import (
 	"io"
 
 	cstorage "cloud.google.com/go/storage"
+	"github.com/pkg/errors"
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
-	"github.com/pkg/errors"
-	v1 "k8s.io/api/core/v1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 type GCSBucket struct {
@@ -51,7 +53,12 @@ func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.A
 	color.Default.Fprintln(out, "Uploading sources to", bucket, "GCS bucket")
 
 	g.tarName = fmt.Sprintf("context-%s.tar.gz", initialTag)
-	if err := sources.UploadToGCS(ctx, artifact, bucket, g.tarName, dependencies); err != nil {
+	c, err := gcp.CloudStorageClient()
+	if err != nil {
+		return "", errors.Wrap(err, "getting cloud storage client")
+	}
+	defer c.Close()
+	if err := sources.UploadToGCS(ctx, c, artifact, bucket, g.tarName, dependencies); err != nil {
 		return "", errors.Wrap(err, "uploading sources to GCS")
 	}
 
@@ -61,7 +68,7 @@ func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.A
 
 // Pod returns the pod template for this builder
 func (g *GCSBucket) Pod(args []string) *v1.Pod {
-	return podTemplate(g.clusterDetails, g.artifact, args)
+	return podTemplate(g.clusterDetails, g.artifact, args, version.Get().Version)
 }
 
 // ModifyPod does nothing here, since we just need to let kaniko run to completion

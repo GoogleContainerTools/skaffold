@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"io"
 	"regexp"
 	"strconv"
 )
@@ -102,17 +103,32 @@ func (c *Cursor) Location(buf *bytes.Buffer) (*Coord, error) {
 		// Reports the cursor position (CPR) to the application as (as though typed at
 		// the keyboard) ESC[n;mR, where n is the row and m is the column.
 		reader := bufio.NewReader(c.In)
-		text, err := reader.ReadSlice('R')
+		text, err := reader.ReadSlice(byte('R'))
 		if err != nil {
 			return nil, err
 		}
 
 		loc = dsrPattern.FindStringIndex(string(text))
 		if loc == nil {
-			// Stdin contains R that doesn't match DSR.
+			// After reading slice to byte 'R', the bufio Reader may have read more
+			// bytes into its internal buffer which will be discarded on next ReadSlice.
+			// We create a temporary buffer to read the remaining buffered slice and
+			// write them to output buffer.
+			buffered := make([]byte, reader.Buffered())
+			_, err = io.ReadFull(reader, buffered)
+			if err != nil {
+				return nil, err
+			}
+
+			// Stdin contains R that doesn't match DSR, so pass the bytes along to
+			// output buffer.
 			buf.Write(text)
+			buf.Write(buffered)
 		} else {
+			// Write the non-matching leading bytes to output buffer.
 			buf.Write(text[:loc[0]])
+
+			// Save the matching bytes to extract the row and column of the cursor.
 			match = string(text[loc[0]:loc[1]])
 		}
 	}

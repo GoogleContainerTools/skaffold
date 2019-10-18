@@ -19,9 +19,10 @@ package server
 import (
 	"context"
 
+	"github.com/golang/protobuf/ptypes/empty"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/proto"
-	"github.com/golang/protobuf/ptypes/empty"
 )
 
 func (s *server) GetState(context.Context, *empty.Empty) (*proto.State, error) {
@@ -43,12 +44,14 @@ func (s *server) Handle(ctx context.Context, e *proto.Event) (*empty.Empty, erro
 
 func (s *server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (*empty.Empty, error) {
 	if intent.GetIntent().GetBuild() {
+		event.ResetStateOnBuild()
 		go func() {
 			s.buildIntentCallback()
 		}()
 	}
 
 	if intent.GetIntent().GetDeploy() {
+		event.ResetStateOnDeploy()
 		go func() {
 			s.deployIntentCallback()
 		}()

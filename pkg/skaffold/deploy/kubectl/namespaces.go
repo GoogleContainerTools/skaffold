@@ -40,6 +40,7 @@ func (l *ManifestList) CollectNamespaces() ([]string, error) {
 }
 
 type namespaceCollector struct {
+	ReplaceAny
 	namespaces map[string]bool
 }
 
@@ -49,7 +50,7 @@ func newNamespaceCollector() *namespaceCollector {
 	}
 }
 
-func (r *namespaceCollector) Matches(key string) bool {
+func (r *namespaceCollector) Matches(key interface{}) bool {
 	return key == "metadata"
 }
 

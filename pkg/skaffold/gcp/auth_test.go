@@ -21,8 +21,9 @@ package gcp
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/docker/cli/cli/config/configfile"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestAutoConfigureGCRCredentialHelper(t *testing.T) {

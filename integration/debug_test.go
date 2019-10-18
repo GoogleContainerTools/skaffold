@@ -41,14 +41,14 @@ func TestDebug(t *testing.T) {
 			description: "kubectl",
 			dir:         "testdata/debug",
 			deployments: []string{"jib"},
-			pods:        []string{"nodejs", "npm", "python3"},
+			pods:        []string{"nodejs", "npm", "python3", "go"},
 		},
 		{
 			description: "kustomize",
 			args:        []string{"--profile", "kustomize"},
 			dir:         "testdata/debug",
 			deployments: []string{"jib"},
-			pods:        []string{"nodejs", "npm", "python3"},
+			pods:        []string{"nodejs", "npm", "python3", "go"},
 		},
 	}
 	for _, test := range tests {

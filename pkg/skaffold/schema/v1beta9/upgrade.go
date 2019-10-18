@@ -20,11 +20,11 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta10"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -43,59 +43,25 @@ var (
 // 2. No removals
 // 3. Updates:
 //    - sync map becomes a list of sync rules
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
-	// convert Deploy (should be the same)
-	var newDeploy next.DeployConfig
-	if err := pkgutil.CloneThroughJSON(config.Deploy, &newDeploy); err != nil {
-		return nil, errors.Wrap(err, "converting deploy config")
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+	var newConfig next.SkaffoldConfig
+
+	pkgutil.CloneThroughJSON(c, &newConfig)
+	newConfig.APIVersion = next.Version
+
+	if err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline); err != nil {
+		return nil, err
 	}
 
-	// convert Profiles (should be the same)
-	var newProfiles []next.Profile
-	for _, p := range config.Profiles {
-		var newProfile next.Profile
-		if err := pkgutil.CloneThroughJSON(p, &newProfile); err != nil {
-			return nil, errors.Wrap(err, "converting new profile")
-		}
-		newProfileBuild, err := convertBuildConfig(p.Build)
-		if err != nil {
-			return nil, errors.Wrap(err, "converting new profile build")
-		}
-		newProfile.Build = newProfileBuild
-		newProfiles = append(newProfiles, newProfile)
-	}
-
-	newBuild, err := convertBuildConfig(config.Build)
-	if err != nil {
-		return nil, errors.Wrap(err, "converting new build")
-	}
-
-	// convert Test (should be the same)
-	var newTest []*next.TestCase
-	if err := pkgutil.CloneThroughJSON(config.Test, &newTest); err != nil {
-		return nil, errors.Wrap(err, "converting new test")
-	}
-
-	return &next.SkaffoldConfig{
-		APIVersion: next.Version,
-		Kind:       config.Kind,
-		Pipeline: next.Pipeline{
-			Build:  newBuild,
-			Test:   newTest,
-			Deploy: newDeploy,
-		},
-		Profiles: newProfiles,
-	}, nil
+	return &newConfig, nil
 }
 
-func convertBuildConfig(build BuildConfig) (next.BuildConfig, error) {
-	// convert Build (should be same)
-	var newBuild next.BuildConfig
-	if err := pkgutil.CloneThroughJSON(build, &newBuild); err != nil {
-		return next.BuildConfig{}, err
-	}
+func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldBuild := &oldPipeline.(*Pipeline).Build
+	newBuild := &newPipeline.(*next.Pipeline).Build
+
 	// set Sync in newBuild
-	newSyncRules := convertSyncRules(build.Artifacts)
+	newSyncRules := convertSyncRules(oldBuild.Artifacts)
 	for i, a := range newBuild.Artifacts {
 		if len(newSyncRules[i]) > 0 {
 			a.Sync = &next.Sync{
@@ -103,7 +69,7 @@ func convertBuildConfig(build BuildConfig) (next.BuildConfig, error) {
 			}
 		}
 	}
-	return newBuild, nil
+	return nil
 }
 
 // convertSyncRules converts the old sync map into sync rules.

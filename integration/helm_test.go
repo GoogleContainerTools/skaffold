@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/google/go-cmp/cmp"
+
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
 const (
@@ -50,7 +51,7 @@ func TestHelmDeploy(t *testing.T) {
 
 	runArgs := []string{"--images", "gcr.io/k8s-skaffold/skaffold-helm"}
 
-	skaffold.Deploy(runArgs...).InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFailOutput(t)
+	skaffold.Deploy(runArgs...).InDir(helmDir).InNs(ns.Name).WithEnv(env).RunOrFail(t)
 
 	client.WaitForDeploymentsToStabilize(depName)
 

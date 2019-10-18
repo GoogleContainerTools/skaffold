@@ -23,15 +23,15 @@ import (
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1beta9 to v1beta10
+// Config changes from v1beta11 to v1beta12
 // 1. No Additions
 // 2. No removals
 // 3. No Updates
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 
-	err := pkgutil.CloneThroughJSON(config, &newConfig)
+	pkgutil.CloneThroughJSON(c, &newConfig)
 	newConfig.APIVersion = next.Version
 
-	return &newConfig, err
+	return &newConfig, nil
 }

@@ -26,9 +26,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // RunBuilder is used to build a command line to run `skaffold`.
@@ -127,12 +128,22 @@ func (b *RunBuilder) WithEnv(env []string) *RunBuilder {
 }
 
 // RunBackground runs the skaffold command in the background.
-// This also returns a teardown function that stops skaffold.
+// Returns a teardown function that stops skaffold.
 func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
+	_, cancel := b.RunBackgroundOutput(t)
+	return cancel
+}
+
+// RunBackgroundOutput runs the skaffold command in the background.
+// Returns a teardown function that stops skaffold.
+func (b *RunBuilder) RunBackgroundOutput(t *testing.T) (io.ReadCloser, context.CancelFunc) {
 	t.Helper()
+
+	pr, pw := io.Pipe()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cmd := b.cmd(ctx)
+	cmd.Stdout = pw
 	logrus.Infoln(cmd.Args)
 
 	start := time.Now()
@@ -145,19 +156,17 @@ func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
 		logrus.Infoln("Ran in", time.Since(start))
 	}()
 
-	return func() {
+	return pr, func() {
 		cancel()
 		cmd.Wait()
+		pr.Close()
 	}
 }
 
 // RunOrFail runs the skaffold command and fails the test
 // if the command returns an error.
 func (b *RunBuilder) RunOrFail(t *testing.T) {
-	t.Helper()
-	if err := b.Run(t); err != nil {
-		t.Fatal(err)
-	}
+	b.RunOrFailOutput(t)
 }
 
 // Run runs the skaffold command.

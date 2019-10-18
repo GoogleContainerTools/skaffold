@@ -34,10 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 )
 
-// Client is for tests
-var Client = GetClientset
-var DynamicClient = GetDynamicClient
-
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
 	output      io.Writer
@@ -105,6 +101,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 					continue
 				}
 
+				// TODO(dgageot): Add EphemeralContainerStatuses
 				for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
 					if c.ContainerID == "" {
 						if c.State.Waiting != nil && c.State.Waiting.Message != "" {
@@ -152,7 +149,11 @@ func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, co
 	tr, tw := io.Pipe()
 	go func() {
 		if err := a.kubectlcli.Run(ctx, nil, tw, "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace); err != nil {
-			logrus.Warn(err)
+			// Don't print errors if the user interrupted the logs
+			// or if the logs were interrupted because of a configuration change
+			if ctx.Err() != context.Canceled {
+				logrus.Warn(err)
+			}
 		}
 		_ = tw.Close()
 	}()
@@ -193,7 +194,6 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Col
 			// Read up to newline
 			line, err := r.ReadString('\n')
 			if err == io.EOF {
-				a.printLogLine(headerColor, prefix, "<Container was Terminated>\n")
 				return nil
 			}
 			if err != nil {

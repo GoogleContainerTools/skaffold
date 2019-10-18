@@ -299,12 +299,7 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 
 		if err := r.watchHandler(w, &resourceVersion, resyncerrc, stopCh); err != nil {
 			if err != errorStopRequested {
-				switch {
-				case apierrs.IsResourceExpired(err):
-					klog.V(4).Infof("%s: watch of %v ended with: %v", r.name, r.expectedType, err)
-				default:
-					klog.Warningf("%s: watch of %v ended with: %v", r.name, r.expectedType, err)
-				}
+				klog.Warningf("%s: watch of %v ended with: %v", r.name, r.expectedType, err)
 			}
 			return nil
 		}

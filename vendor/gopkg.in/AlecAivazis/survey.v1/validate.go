@@ -24,7 +24,7 @@ func MaxLength(length int) Validator {
 	return func(val interface{}) error {
 		if str, ok := val.(string); ok {
 			// if the string is longer than the given value
-			if len(str) > length {
+			if len([]rune(str)) > length {
 				// yell loudly
 				return fmt.Errorf("value is too long. Max length is %v", length)
 			}
@@ -44,7 +44,7 @@ func MinLength(length int) Validator {
 	return func(val interface{}) error {
 		if str, ok := val.(string); ok {
 			// if the string is shorter than the given value
-			if len(str) < length {
+			if len([]rune(str)) < length {
 				// yell loudly
 				return fmt.Errorf("value is too short. Min length is %v", length)
 			}

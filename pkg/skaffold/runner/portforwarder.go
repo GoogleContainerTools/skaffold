@@ -26,7 +26,7 @@ import (
 func (r *SkaffoldRunner) createForwarder(out io.Writer, kubectlCLI *kubectl.CLI) {
 	r.forwarderManager = portforward.NewForwarderManager(out,
 		kubectlCLI,
-		r.imageList,
+		r.podSelector,
 		r.runCtx.Namespaces,
 		r.defaultLabeller.RunIDKeyValueString(),
 		r.runCtx.Opts.PortForward,

@@ -8,8 +8,8 @@
 **/jib_** @briandealwis @loosebazooka @TadCordle @chanseokoh @balopat @dgageot @nkubala @priyawadhwa @tejal29
 
 # Debug owners
-pkg/skaffold/debug/** @briandealwis @loosebazooka @quoctruong
-docs/content/en/docs/how-tos/debug/** @briandealwis @loosebazooka @quoctruong
-integration/test-data/debug/** @briandealwis @loosebazooka @quoctruong
-integration/debug_test.go  @briandealwis @loosebazooka @quoctruong
 
+pkg/skaffold/debug/** @briandealwis @loosebazooka @quoctruong @balopat @dgageot @nkubala @priyawadhwa @tejal29
+docs/content/en/docs/how-tos/debug/** @briandealwis @loosebazooka @quoctruong @balopat @dgageot @nkubala @priyawadhwa @tejal29
+integration/test-data/debug/** @briandealwis @loosebazooka @quoctruong @balopat @dgageot @nkubala @priyawadhwa @tejal29
+integration/debug_test.go  @briandealwis @loosebazooka @quoctruong @balopat @dgageot @nkubala @priyawadhwa @tejal29
