@@ -22,6 +22,7 @@ import (
 	"io"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -68,9 +69,26 @@ func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Ar
 
 func (b *ArtifactBuilder) retrieveCmd(out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
 	artifact := a.CustomArtifact
-	split := strings.Split(artifact.BuildCommand, " ")
 
-	cmd := exec.Command(split[0], split[1:]...)
+	var cmd *exec.Cmd
+
+	split := strings.Split(artifact.BuildCommand, " ")
+	switch {
+	// When the user specifies a command without args, such as `./build.sh`,
+	// Skaffold can just exec this command.
+	case len(split) == 1:
+		cmd = exec.Command(artifact.BuildCommand)
+
+	// When the user specifies a command with args, such as `./build.sh -flag $IMAGE`,
+	// Skaffold has to shell out to sh in order for arguments to be evaluated.
+	case runtime.GOOS != "windows":
+		cmd = exec.Command("sh", "-c", artifact.BuildCommand)
+
+	// On Windows, cmd.exe does the evaluation of the arguments.
+	default:
+		cmd = exec.Command("cmd.exe", "/C", artifact.BuildCommand)
+	}
+
 	cmd.Stdout = out
 	cmd.Stderr = out
 
