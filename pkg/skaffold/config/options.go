@@ -42,7 +42,6 @@ type SkaffoldOptions struct {
 	CacheArtifacts     bool
 	EnableRPC          bool
 	Force              bool
-	ForceDev           bool
 	NoPrune            bool
 	NoPruneChildren    bool
 	StatusCheck        bool
@@ -99,10 +98,6 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 // and the user did NOT specify the --cache-artifacts flag.
 func (opts *SkaffoldOptions) Prune() bool {
 	return !opts.NoPrune && !opts.CacheArtifacts
-}
-
-func (opts *SkaffoldOptions) ForceDeploy() bool {
-	return opts.ForceDev || opts.Force
 }
 
 func (opts *SkaffoldOptions) IsTargetImage(artifact *latest.Artifact) bool {
