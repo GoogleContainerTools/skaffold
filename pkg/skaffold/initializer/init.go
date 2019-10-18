@@ -554,7 +554,7 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 		}
 
 		var directories []*godirwalk.Dirent
-		findBuildersInSubdirectories := true
+		continueSearching := findBuilders
 		sort.Sort(dirents)
 
 		// Traverse files
@@ -569,17 +569,24 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 				continue
 			}
 
+			// Check for skaffold.yaml/k8s manifest
 			filePath := filepath.Join(path, file.Name())
-			if findBuildersInSubdirectories, err = checkFile(filePath, force, findBuilders, enableJibInit, &potentialConfigs, &foundBuilders); err != nil {
+			var foundConfig bool
+			if foundConfig, err = checkConfigFile(filePath, force, &potentialConfigs); err != nil {
 				return err
+			}
+
+			// Check for builder config
+			if !foundConfig && findBuilders {
+				builderConfigs, findBuildersInSubdirectories := detectBuilders(enableJibInit, filePath)
+				foundBuilders = append(foundBuilders, builderConfigs...)
+				continueSearching = continueSearching && findBuildersInSubdirectories
 			}
 		}
 
-		// Traverse into subdirectories
-		findBuilders = findBuilders && findBuildersInSubdirectories
+		// Recurse into subdirectories
 		for _, dir := range directories {
-			err = enterDirectory(filepath.Join(path, dir.Name()), findBuilders)
-			if err != nil {
+			if err = enterDirectory(filepath.Join(path, dir.Name()), continueSearching); err != nil {
 				return err
 			}
 		}
@@ -594,13 +601,12 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 	return potentialConfigs, foundBuilders, nil
 }
 
-// checkFile checks if filePath is a skaffold config, k8s config, or builder config. Detected k8s configs are added to potentialConfigs,
-// and builder configs are added to foundBuilders. Returns true if subdirectories may continue to be searched, or false if a builder was
-// found that wants to stop searching in deeper subdirectories (e.g. Jib).
-func checkFile(filePath string, force, findBuilders, enableJibInit bool, potentialConfigs *[]string, foundBuilders *[]InitBuilder) (bool, error) {
+// checkConfigFile checks if filePath is a skaffold config or k8s config, or builder config. Detected k8s configs are added to potentialConfigs.
+// Returns true if filePath is a config file, and false if not.
+func checkConfigFile(filePath string, force bool, potentialConfigs *[]string) (bool, error) {
 	if IsSkaffoldConfig(filePath) {
 		if !force {
-			return false, fmt.Errorf("pre-existing %s found", filePath)
+			return true, fmt.Errorf("pre-existing %s found", filePath)
 		}
 		logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", filePath)
 		return true, nil
@@ -611,12 +617,5 @@ func checkFile(filePath string, force, findBuilders, enableJibInit bool, potenti
 		return true, nil
 	}
 
-	// try and parse build file
-	if findBuilders {
-		builderConfigs, findBuildersInSubdirectories := detectBuilders(enableJibInit, filePath)
-		*foundBuilders = append(*foundBuilders, builderConfigs...)
-		return findBuildersInSubdirectories, nil
-	}
-
-	return true, nil
+	return false, nil
 }
