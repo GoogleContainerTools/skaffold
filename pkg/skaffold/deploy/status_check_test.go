@@ -436,11 +436,6 @@ func TestCounterCopy(t *testing.T) {
 			c:           &counter{total: 10, pending: 5, failed: 3},
 			expected:    &counter{total: 10, pending: 5, failed: 3},
 		},
-		{
-			description: "nil counter copied correctly",
-			c:           nil,
-			expected:    nil,
-		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
