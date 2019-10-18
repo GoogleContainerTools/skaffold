@@ -542,19 +542,20 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 	return err
 }
 
+// walk recursively walks a directory and returns the k8s configs and builder configs that it finds
 func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error) {
 	var potentialConfigs []string
 	var foundBuilders []InitBuilder
 
-	var enterDirectory func(path string, findBuilders bool) error
-	enterDirectory = func(path string, findBuilders bool) error {
+	var searchConfigsAndBuilders func(path string, findBuilders bool) error
+	searchConfigsAndBuilders = func(path string, findBuilders bool) error {
 		dirents, err := godirwalk.ReadDirents(path, nil)
 		if err != nil {
 			return err
 		}
 
-		var directories []*godirwalk.Dirent
-		continueSearching := findBuilders
+		var subdirectories []*godirwalk.Dirent
+		searchForBuildersInSubdirectories := findBuilders
 		sort.Sort(dirents)
 
 		// Traverse files
@@ -565,7 +566,7 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 
 			// If we found a directory, keep track of it until we've gone through all the files first
 			if file.IsDir() {
-				directories = append(directories, file)
+				subdirectories = append(subdirectories, file)
 				continue
 			}
 
@@ -578,15 +579,15 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 
 			// Check for builder config
 			if !foundConfig && findBuilders {
-				builderConfigs, findBuildersInSubdirectories := detectBuilders(enableJibInit, filePath)
+				builderConfigs, continueSearchingBuilders := detectBuilders(enableJibInit, filePath)
 				foundBuilders = append(foundBuilders, builderConfigs...)
-				continueSearching = continueSearching && findBuildersInSubdirectories
+				searchForBuildersInSubdirectories = searchForBuildersInSubdirectories && continueSearchingBuilders
 			}
 		}
 
 		// Recurse into subdirectories
-		for _, dir := range directories {
-			if err = enterDirectory(filepath.Join(path, dir.Name()), continueSearching); err != nil {
+		for _, dir := range subdirectories {
+			if err = searchConfigsAndBuilders(filepath.Join(path, dir.Name()), searchForBuildersInSubdirectories); err != nil {
 				return err
 			}
 		}
@@ -594,7 +595,7 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 		return nil
 	}
 
-	err := enterDirectory(dir, true)
+	err := searchConfigsAndBuilders(dir, true)
 	if err != nil {
 		return nil, nil, err
 	}
