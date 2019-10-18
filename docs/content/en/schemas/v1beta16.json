@@ -1683,14 +1683,6 @@
             "2`, `2.0` or `200m"
           ]
         },
-        "ephemeralStorage": {
-          "type": "string",
-          "description": "the amount of Ephemeral storage to allocate to the pod.",
-          "x-intellij-html-description": "the amount of Ephemeral storage to allocate to the pod.",
-          "examples": [
-            "1Gi` or `1000Mi"
-          ]
-        },
         "memory": {
           "type": "string",
           "description": "the amount of memory to allocate to the pod.",
@@ -1698,21 +1690,11 @@
           "examples": [
             "1Gi` or `1000Mi"
           ]
-        },
-        "resourceStorage": {
-          "type": "string",
-          "description": "the amount of resource storage to allocate to the pod.",
-          "x-intellij-html-description": "the amount of resource storage to allocate to the pod.",
-          "examples": [
-            "1Gi` or `1000Mi"
-          ]
         }
       },
       "preferredOrder": [
         "cpu",
-        "memory",
-        "ephemeralStorage",
-        "resourceStorage"
+        "memory"
       ],
       "additionalProperties": false,
       "description": "stores the CPU/Memory requirements for the pod.",
