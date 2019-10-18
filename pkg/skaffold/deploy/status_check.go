@@ -32,6 +32,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
@@ -58,8 +59,9 @@ type counter struct {
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	client, err := pkgkubernetes.Client()
+	event.StatusCheckEventStarted()
 	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
+		return errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds)
@@ -136,9 +138,12 @@ func pollResourceStatus(ctx context.Context, runCtx *runcontext.RunContext, r Re
 
 func getSkaffoldDeployStatus(c *counter) error {
 	if c.failed == 0 {
+		event.StatusCheckEventSucceeded()
 		return nil
 	}
-	return fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
+	err := fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
+	event.StatusCheckEventFailed(err)
+	return err
 }
 
 func getDeadline(d int) time.Duration {
@@ -151,12 +156,14 @@ func getDeadline(d int) time.Duration {
 func printStatusCheckSummary(out io.Writer, r Resource, pending int, total int) {
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if err := r.Status().Error(); err != nil {
+		event.ResourceStatusCheckEventFailed(r.String(), err)
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
 			trimNewLine(getPendingMessage(pending, total)),
 			trimNewLine(err.Error()),
 		)
 	} else {
+		event.ResourceStatusCheckEventSucceeded(r.String())
 		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(pending, total))
 	}
 	color.Default.Fprintln(out, status)
@@ -188,6 +195,7 @@ func printStatus(resources []Resource, out io.Writer) bool {
 		}
 		allResourcesCheckComplete = false
 		if str := r.ReportSinceLastUpdated(); str != "" {
+			event.ResourceStatusCheckEventUpdated(r.String(), str)
 			color.Default.Fprintln(out, tabHeader, trimNewLine(str))
 		}
 	}

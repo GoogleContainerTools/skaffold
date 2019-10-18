@@ -19,8 +19,9 @@ package version
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/blang/semver"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestParseVersion(t *testing.T) {

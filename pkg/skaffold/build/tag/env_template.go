@@ -20,9 +20,10 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
 // envTemplateTagger implements Tagger

@@ -19,8 +19,9 @@ package resource
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestReportSinceLastUpdated(t *testing.T) {

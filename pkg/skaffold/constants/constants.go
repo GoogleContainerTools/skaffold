@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 const (

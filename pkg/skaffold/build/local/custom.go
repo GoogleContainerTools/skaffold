@@ -18,12 +18,14 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"io"
+
+	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
 )
 
 func (b *Builder) buildCustom(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
@@ -38,7 +40,15 @@ func (b *Builder) buildCustom(ctx context.Context, out io.Writer, artifact *late
 		return docker.RemoteDigest(tag, b.insecureRegistries)
 	}
 
-	return b.localDocker.ImageID(ctx, tag)
+	imageID, err := b.localDocker.ImageID(ctx, tag)
+	if err != nil {
+		return "", err
+	}
+	if imageID == "" {
+		return "", fmt.Errorf("the custom script didn't produce an image with tag [%s]", tag)
+	}
+
+	return imageID, nil
 }
 
 func (b *Builder) retrieveExtraEnv() []string {

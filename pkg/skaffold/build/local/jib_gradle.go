@@ -20,12 +20,13 @@ import (
 	"context"
 	"io"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 func (b *Builder) buildJibGradle(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {

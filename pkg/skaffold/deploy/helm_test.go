@@ -29,6 +29,8 @@ import (
 	"strings"
 	"testing"
 
+	homedir "github.com/mitchellh/go-homedir"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -39,7 +41,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 var testBuilds = []build.Artifact{{
@@ -529,7 +530,7 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 	}
 
 	if c.Args[1] != "--kube-context" || c.Args[2] != testKubeContext {
-		m.t.Errorf("Invalid kubernetes context %v", c)
+		m.t.Errorf("Invalid Kubernetes context %v", c)
 	}
 
 	if c.Args[3] == "get" || c.Args[3] == "upgrade" {
