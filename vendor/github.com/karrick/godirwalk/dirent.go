@@ -8,8 +8,8 @@ import (
 // Dirent stores the name and file system mode type of discovered file system
 // entries.
 type Dirent struct {
-	name     string
-	modeType os.FileMode
+	name     string      // name is the basename of the file system entry.
+	modeType os.FileMode // modeType is the type of file system entry.
 }
 
 // NewDirent returns a newly initialized Dirent structure, or an error.  This
@@ -19,15 +19,23 @@ type Dirent struct {
 // functions in this library that read and walk directories, but is provided,
 // however, for the occasion when a program needs to create a Dirent.
 func NewDirent(osPathname string) (*Dirent, error) {
-	fi, err := os.Lstat(osPathname)
+	modeType, err := modeType(osPathname)
 	if err != nil {
 		return nil, err
 	}
 	return &Dirent{
 		name:     filepath.Base(osPathname),
-		modeType: fi.Mode() & os.ModeType,
+		modeType: modeType,
 	}, nil
 }
+
+// // dup returns a duplicate of the directory entry.
+// func (de Dirent) dup() *Dirent {
+// 	return &Dirent{
+// 		name:     de.name,
+// 		modeType: de.modeType,
+// 	}
+// }
 
 // Name returns the basename of the file system entry.
 func (de Dirent) Name() string { return de.name }
@@ -60,6 +68,12 @@ func (de Dirent) IsSymlink() bool { return de.modeType&os.ModeSymlink != 0 }
 
 // IsDevice returns true if and only if the Dirent represents a device file.
 func (de Dirent) IsDevice() bool { return de.modeType&os.ModeDevice != 0 }
+
+// reset releases memory held by entry err and name, and resets mode type to 0.
+func (de *Dirent) reset() {
+	de.name = ""
+	de.modeType = 0
+}
 
 // Dirents represents a slice of Dirent pointers, which are sortable by
 // name. This type satisfies the `sort.Interface` interface.

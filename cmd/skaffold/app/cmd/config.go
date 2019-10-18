@@ -17,9 +17,10 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
 )
 
 func NewCmdConfig() *cobra.Command {

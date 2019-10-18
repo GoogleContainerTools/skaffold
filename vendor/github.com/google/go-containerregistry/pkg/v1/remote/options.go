@@ -19,7 +19,6 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/logs"
-	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 )
@@ -34,7 +33,7 @@ type options struct {
 	platform  v1.Platform
 }
 
-func makeOptions(reg name.Registry, opts ...Option) (*options, error) {
+func makeOptions(target authn.Resource, opts ...Option) (*options, error) {
 	o := &options{
 		auth:      authn.Anonymous,
 		transport: http.DefaultTransport,
@@ -48,7 +47,7 @@ func makeOptions(reg name.Registry, opts ...Option) (*options, error) {
 	}
 
 	if o.keychain != nil {
-		auth, err := o.keychain.Resolve(reg)
+		auth, err := o.keychain.Resolve(target)
 		if err != nil {
 			return nil, err
 		}
@@ -56,6 +55,13 @@ func makeOptions(reg name.Registry, opts ...Option) (*options, error) {
 			logs.Warn.Println("No matching credentials were found, falling back on anonymous")
 		}
 		o.auth = auth
+	}
+
+	// Wrap the transport in something that logs requests and responses.
+	// It's expensive to generate the dumps, so skip it if we're writing
+	// to nothing.
+	if logs.Enabled(logs.Debug) {
+		o.transport = transport.NewLogger(o.transport)
 	}
 
 	// Wrap the transport in something that can retry network flakes.

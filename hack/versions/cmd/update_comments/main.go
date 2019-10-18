@@ -41,5 +41,4 @@ func main() {
 	}); err != nil {
 		logrus.Fatalf("%s", err)
 	}
-
 }

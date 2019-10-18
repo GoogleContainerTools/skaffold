@@ -20,10 +20,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
 func RetrieveWorkingDir(tagged string, insecureRegistries map[string]bool) (string, error) {

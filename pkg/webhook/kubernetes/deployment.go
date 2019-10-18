@@ -25,15 +25,16 @@ import (
 	"path"
 	"time"
 
-	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/webhook/labels"
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
+
+	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/webhook/labels"
 )
 
 const (
@@ -50,7 +51,7 @@ const (
 func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP string) (*appsv1.Deployment, error) {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting kubernetes client")
+		return nil, errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	deploymentLabels := svc.Spec.Selector
@@ -126,7 +127,7 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 func WaitForDeploymentToStabilize(d *appsv1.Deployment, ip string) error {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
+		return errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	if err := pkgkubernetes.WaitForDeploymentToStabilize(context.Background(), client, d.Namespace, d.Name, 5*time.Minute); err != nil {

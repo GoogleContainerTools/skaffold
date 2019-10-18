@@ -34,7 +34,7 @@ fi
 # /examples should use the latest released version
 LATEST_RELEASED="skaffold/$(go run ./hack/versions/cmd/latest_released/version.go)"
 
-for EXAMPLE in $(find examples -name skaffold.yaml); do
+for EXAMPLE in $(find examples -name skaffold*.yaml); do
     if [ "1" != "$(grep -c "apiVersion: ${LATEST_RELEASED}" "${EXAMPLE}")" ]; then
         echo "skaffold version in ${EXAMPLE} should be ${LATEST_RELEASED}"
     fi
@@ -43,7 +43,7 @@ done
 # /integration/examples should use the latest (even if not released) version
 LATEST="skaffold/$(go run ./hack/versions/cmd/latest/version.go)"
 
-for EXAMPLE in $(find integration/examples -name skaffold.yaml); do
+for EXAMPLE in $(find integration/examples -name skaffold*.yaml); do
     if [ "1" != "$(grep -c "apiVersion: ${LATEST}" "${EXAMPLE}")" ]; then
         echo "skaffold version in ${EXAMPLE} should be ${LATEST}"
     fi

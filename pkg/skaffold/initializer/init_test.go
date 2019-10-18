@@ -344,15 +344,16 @@ func TestResolveBuilderImages(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			// Overrides promptUserForBuildConfig to choose first option rather than using the interactive menu
-			t.Override(&promptUserForBuildConfigFunc, func(image string, choices []string) string {
+			t.Override(&promptUserForBuildConfigFunc, func(image string, choices []string) (string, error) {
 				if !test.shouldMakeChoice {
 					t.FailNow()
 				}
-				return choices[0]
+				return choices[0], nil
 			})
 
-			pairs := resolveBuilderImages(test.buildConfigs, test.images)
+			pairs, err := resolveBuilderImages(test.buildConfigs, test.images)
 
+			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedPairs, pairs)
 		})
 	}
@@ -422,7 +423,6 @@ func TestAutoSelectBuilders(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-
 			pairs, builderConfigs, filteredImages := autoSelectBuilders(test.builderConfigs, test.images)
 
 			t.CheckDeepEqual(test.expectedPairs, pairs)

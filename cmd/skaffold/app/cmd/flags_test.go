@@ -19,8 +19,9 @@ package cmd
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/spf13/cobra"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestHasCmdAnnotation(t *testing.T) {

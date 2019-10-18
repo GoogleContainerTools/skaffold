@@ -52,7 +52,7 @@ var (
 )
 
 // NoBuilder allows users to specify they don't want to build
-// an image we parse out from a kubernetes manifest
+// an image we parse out from a Kubernetes manifest
 const NoBuilder = "None (image not built from these sources)"
 
 // Initializer is the Init API of skaffold and responsible for generating
@@ -120,7 +120,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		return err
 	}
 
-	// Remote tags from image names
+	// Remove tags from image names
 	var images []string
 	for _, image := range k.GetImages() {
 		parsed, err := docker.ParseReference(image)
@@ -162,7 +162,11 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 			}
 			pairs = append(pairs, newPairs...)
 		} else {
-			pairs = append(pairs, resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages)...)
+			resolved, err := resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages)
+			if err != nil {
+				return err
+			}
+			pairs = append(pairs, resolved...)
 		}
 	}
 
@@ -321,10 +325,10 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 }
 
 // For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
-func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []builderImagePair {
+func resolveBuilderImages(builderConfigs []InitBuilder, images []string) ([]builderImagePair, error) {
 	// If nothing to choose, don't bother prompting
 	if len(images) == 0 || len(builderConfigs) == 0 {
-		return []builderImagePair{}
+		return []builderImagePair{}, nil
 	}
 
 	// if we only have 1 image and 1 build config, don't bother prompting
@@ -332,7 +336,7 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []build
 		return []builderImagePair{{
 			Builder:   builderConfigs[0],
 			ImageName: images[0],
-		}}
+		}}, nil
 	}
 
 	// Build map from choice string to builder config struct
@@ -351,21 +355,26 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []build
 		if len(images) == 0 {
 			break
 		}
+
 		image := images[0]
-		choice := promptUserForBuildConfigFunc(image, choices)
+		choice, err := promptUserForBuildConfigFunc(image, choices)
+		if err != nil {
+			return nil, err
+		}
+
 		if choice != NoBuilder {
 			pairs = append(pairs, builderImagePair{Builder: choiceMap[choice], ImageName: image})
 			choices = util.RemoveFromSlice(choices, choice)
 		}
 		images = util.RemoveFromSlice(images, image)
 	}
-	if len(builderConfigs) > 0 {
-		logrus.Warnf("unused builder configs found in repository: %v", builderConfigs)
+	if len(choices) > 0 {
+		logrus.Warnf("unused builder configs found in repository: %v", choices)
 	}
-	return pairs
+	return pairs, nil
 }
 
-func promptUserForBuildConfig(image string, choices []string) string {
+func promptUserForBuildConfig(image string, choices []string) (string, error) {
 	var selectedBuildConfig string
 	options := append(choices, NoBuilder)
 	prompt := &survey.Select{
@@ -373,8 +382,12 @@ func promptUserForBuildConfig(image string, choices []string) string {
 		Options:  options,
 		PageSize: 15,
 	}
-	survey.AskOne(prompt, &selectedBuildConfig, nil)
-	return selectedBuildConfig
+	err := survey.AskOne(prompt, &selectedBuildConfig, nil)
+	if err != nil {
+		return "", err
+	}
+
+	return selectedBuildConfig, nil
 }
 
 func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {

@@ -26,11 +26,12 @@ import (
 
 func TestArgs(t *testing.T) {
 	tests := []struct {
-		description  string
-		artifact     *latest.KanikoArtifact
-		tag          string
-		shouldErr    bool
-		expectedArgs []string
+		description        string
+		artifact           *latest.KanikoArtifact
+		insecureRegistries map[string]bool
+		tag                string
+		shouldErr          bool
+		expectedArgs       []string
 	}{
 		{
 			description: "simple build",
@@ -106,6 +107,14 @@ func TestArgs(t *testing.T) {
 			shouldErr: true,
 		},
 		{
+			description: "insecure registries",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+			},
+			insecureRegistries: map[string]bool{"localhost:4000": true},
+			expectedArgs:       []string{"--insecure-registry", "localhost:4000"},
+		},
+		{
 			description: "skip tls",
 			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
@@ -131,7 +140,7 @@ func TestArgs(t *testing.T) {
 			if test.tag != "" {
 				tag = test.tag
 			}
-			args, err := args(test.artifact, "context", tag)
+			args, err := args(test.artifact, "context", tag, test.insecureRegistries)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {

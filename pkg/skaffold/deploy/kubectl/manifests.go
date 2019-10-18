@@ -41,7 +41,6 @@ func (l *ManifestList) String() string {
 // `buf` can contain concatenated manifests without `---` separators
 // because `kubectl create --dry-run -oyaml` produces such output.
 func (l *ManifestList) Append(buf []byte) {
-
 	// If there's at most one `apiVersion` field, then append the `buf` as is.
 	if len(regexp.MustCompile("(?m)^apiVersion:").FindAll(buf, -1)) <= 1 {
 		*l = append(*l, buf)

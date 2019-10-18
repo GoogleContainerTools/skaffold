@@ -26,12 +26,13 @@ import (
 
 	core_v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
-	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
 
 func ShouldRunGCPOnlyTests() bool {
@@ -50,7 +51,7 @@ func Run(t *testing.T, dir, command string, args ...string) {
 func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient, func()) {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
-		t.Fatalf("Test setup error: getting kubernetes client: %s", err)
+		t.Fatalf("Test setup error: getting Kubernetes client: %s", err)
 	}
 
 	ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{

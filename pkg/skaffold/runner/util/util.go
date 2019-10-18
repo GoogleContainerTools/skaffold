@@ -19,9 +19,10 @@ package util
 import (
 	"sort"
 
+	"github.com/pkg/errors"
+
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
 )
 
 // GetAllPodNamespaces lists the namespaces that should be watched.

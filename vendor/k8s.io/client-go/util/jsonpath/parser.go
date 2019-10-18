@@ -37,6 +37,7 @@ type Parser struct {
 	Name  string
 	Root  *ListNode
 	input string
+	cur   *ListNode
 	pos   int
 	start int
 	width int
@@ -185,7 +186,8 @@ func (p *Parser) parseInsideAction(cur *ListNode) error {
 func (p *Parser) parseRightDelim(cur *ListNode) error {
 	p.pos += len(rightDelim)
 	p.consumeText()
-	return p.parseText(p.Root)
+	cur = p.Root
+	return p.parseText(cur)
 }
 
 // parseIdentifier scans build-in keywords, like "range" "end"
@@ -229,7 +231,7 @@ func (p *Parser) parseRecursive(cur *ListNode) error {
 func (p *Parser) parseNumber(cur *ListNode) error {
 	r := p.peek()
 	if r == '+' || r == '-' {
-		p.next()
+		r = p.next()
 	}
 	for {
 		r = p.next()

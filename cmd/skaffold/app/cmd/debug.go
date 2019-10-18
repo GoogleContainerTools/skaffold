@@ -20,9 +20,10 @@ import (
 	"context"
 	"io"
 
+	"github.com/spf13/cobra"
+
 	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/spf13/cobra"
 )
 
 // NewCmdDebug describes the CLI command to run a pipeline in debug mode.

@@ -18,12 +18,68 @@ package local
 
 import (
 	"context"
+	"io/ioutil"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+func TestBuildBazel(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.NewTempDir().Mkdir("bin").Chdir()
+		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar").AndRunOut("bazel info bazel-bin", "bin"))
+		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil), nil
+		})
+		testutil.CreateFakeImageTar("bazel:app", "bin/app.tar")
+
+		builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
+			Push: util.BoolPtr(false),
+		}))
+		t.CheckNoError(err)
+
+		artifact := &latest.Artifact{
+			Workspace: ".",
+			ArtifactType: latest.ArtifactType{
+				BazelArtifact: &latest.BazelArtifact{
+					BuildTarget: "//:app.tar",
+				},
+			},
+		}
+
+		_, err = builder.buildBazel(context.Background(), ioutil.Discard, artifact, "img:tag")
+		t.CheckNoError(err)
+	})
+}
+
+func TestBuildBazelFailInvalidTarget(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil), nil
+		})
+
+		builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
+			Push: util.BoolPtr(false),
+		}))
+		t.CheckNoError(err)
+
+		artifact := &latest.Artifact{
+			Workspace: ".",
+			ArtifactType: latest.ArtifactType{
+				BazelArtifact: &latest.BazelArtifact{
+					BuildTarget: "//:invalid-target",
+				},
+			},
+		}
+
+		_, err = builder.buildBazel(context.Background(), ioutil.Discard, artifact, "img:tag")
+		t.CheckError(true, err)
+	})
+}
 
 func TestBazelBin(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {

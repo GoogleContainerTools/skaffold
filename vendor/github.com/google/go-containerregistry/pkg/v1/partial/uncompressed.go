@@ -81,6 +81,30 @@ func (ule *uncompressedLayerExtender) calcSizeHash() {
 	})
 }
 
+// Descriptor returns the layer manifest descriptor for this uncompressed layer.
+// The embedded UncompressedLayer is checked to see if it has a Descriptor
+// function which is returned if it exists. The underlying descriptor provides
+// foreign layer data like URLs. Otherwise, a new descriptor is
+// generated.
+func (ule *uncompressedLayerExtender) Descriptor() (*v1.Descriptor, error) {
+	if withDesc, ok := ule.UncompressedLayer.(withDescriptor); ok {
+		return withDesc.Descriptor()
+	}
+	ule.calcSizeHash()
+	if ule.hashSizeError != nil {
+		return nil, ule.hashSizeError
+	}
+	mt, err := ule.MediaType()
+	if err != nil {
+		return nil, err
+	}
+	return &v1.Descriptor{
+		MediaType: mt,
+		Size:      ule.size,
+		Digest:    ule.hash,
+	}, nil
+}
+
 // UncompressedToLayer fills in the missing methods from an UncompressedLayer so that it implements v1.Layer
 func UncompressedToLayer(ul UncompressedLayer) (v1.Layer, error) {
 	return &uncompressedLayerExtender{UncompressedLayer: ul}, nil
@@ -155,6 +179,15 @@ func (i *uncompressedImageExtender) Manifest() (*v1.Manifest, error) {
 
 	m.Layers = make([]v1.Descriptor, len(ls))
 	for i, l := range ls {
+		// Check if the layer implementation provides the descriptor directly.
+		if withDesc, ok := l.(withDescriptor); ok {
+			desc, err := withDesc.Descriptor()
+			if err != nil {
+				return nil, err
+			}
+			m.Layers[i] = *desc
+			continue
+		}
 		sz, err := l.Size()
 		if err != nil {
 			return nil, err
@@ -178,6 +211,11 @@ func (i *uncompressedImageExtender) Manifest() (*v1.Manifest, error) {
 // RawManifest implements v1.Image
 func (i *uncompressedImageExtender) RawManifest() ([]byte, error) {
 	return RawManifest(i)
+}
+
+// Size implements v1.Image
+func (i *uncompressedImageExtender) Size() (int64, error) {
+	return Size(i)
 }
 
 // ConfigName implements v1.Image
