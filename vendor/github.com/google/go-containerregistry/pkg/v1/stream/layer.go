@@ -39,8 +39,9 @@ var (
 
 // Layer is a streaming implementation of v1.Layer.
 type Layer struct {
-	blob     io.ReadCloser
-	consumed bool
+	blob        io.ReadCloser
+	consumed    bool
+	compression int
 
 	mu             sync.Mutex
 	digest, diffID *v1.Hash
@@ -49,8 +50,29 @@ type Layer struct {
 
 var _ v1.Layer = (*Layer)(nil)
 
+// LayerOption applies options to layer
+type LayerOption func(*Layer)
+
+// WithCompressionLevel sets the gzip compression. See `gzip.NewWriterLevel` for possible values.
+func WithCompressionLevel(level int) LayerOption {
+	return func(l *Layer) {
+		l.compression = level
+	}
+}
+
 // NewLayer creates a Layer from an io.ReadCloser.
-func NewLayer(rc io.ReadCloser) *Layer { return &Layer{blob: rc} }
+func NewLayer(rc io.ReadCloser, opts ...LayerOption) *Layer {
+	layer := &Layer{
+		blob:        rc,
+		compression: gzip.BestSpeed,
+	}
+
+	for _, opt := range opts {
+		opt(layer)
+	}
+
+	return layer
+}
 
 // Digest implements v1.Layer.
 func (l *Layer) Digest() (v1.Hash, error) {
@@ -121,7 +143,7 @@ func newCompressedReader(l *Layer) (*compressedReader, error) {
 	// capture compressed digest, and a countWriter to capture compressed
 	// size.
 	pr, pw := io.Pipe()
-	zw, err := gzip.NewWriterLevel(io.MultiWriter(pw, zh, count), gzip.BestSpeed)
+	zw, err := gzip.NewWriterLevel(io.MultiWriter(pw, zh, count), l.compression)
 	if err != nil {
 		return nil, err
 	}

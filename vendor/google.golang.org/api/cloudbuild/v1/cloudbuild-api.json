@@ -573,7 +573,7 @@
       }
     }
   },
-  "revision": "20190702",
+  "revision": "20190824",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ArtifactObjects": {
@@ -1044,6 +1044,10 @@
           },
           "type": "array"
         },
+        "name": {
+          "description": "User assigned name of the trigger. Must be unique within the project.",
+          "type": "string"
+        },
         "substitutions": {
           "additionalProperties": {
             "type": "string"
@@ -1287,11 +1291,11 @@
       "id": "PushFilter",
       "properties": {
         "branch": {
-          "description": "Regexes of branches to match.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
+          "description": "Regexes matching branches to build.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
           "type": "string"
         },
         "tag": {
-          "description": "Regexes of tags to match.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
+          "description": "Regexes matching tags to build.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
           "type": "string"
         }
       },
@@ -1302,7 +1306,7 @@
       "id": "RepoSource",
       "properties": {
         "branchName": {
-          "description": "Name of the branch to build.",
+          "description": "Regex matching branches to build.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
           "type": "string"
         },
         "commitSha": {
@@ -1322,7 +1326,7 @@
           "type": "string"
         },
         "tagName": {
-          "description": "Name of the tag to build.",
+          "description": "Regex matching tags to build.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
           "type": "string"
         }
       },
