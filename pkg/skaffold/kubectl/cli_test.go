@@ -27,25 +27,36 @@ import (
 )
 
 func TestCLI(t *testing.T) {
+	const (
+		kubeContext = "some-kubecontext"
+		output      = "this is the expected output"
+	)
+
 	tests := []struct {
 		name            string
-		kubecontext     string
+		kubeconfig      string
 		namespace       string
-		output          string
 		expectedCommand string
 	}{
 		{
-			name:            "with context and namespace",
-			kubecontext:     "some-kubecontext",
+			name:            "without namespace or kubeconfig",
+			expectedCommand: "kubectl --context some-kubecontext exec arg1 arg2",
+		},
+		{
+			name:            "only namespace, no kubeconfig",
 			namespace:       "some-namespace",
-			output:          "this is the expected output",
 			expectedCommand: "kubectl --context some-kubecontext --namespace some-namespace exec arg1 arg2",
 		},
 		{
-			name:            "only context, no namespace",
-			kubecontext:     "some-kubecontext",
-			output:          "this is the expected output",
-			expectedCommand: "kubectl --context some-kubecontext exec arg1 arg2",
+			name:            "only kubeconfig, no namespace",
+			kubeconfig:      "some-kubeconfig",
+			expectedCommand: "kubectl --context some-kubecontext --kubeconfig some-kubeconfig exec arg1 arg2",
+		},
+		{
+			name:            "with namespace and kubeconfig",
+			kubeconfig:      "some-kubeconfig",
+			namespace:       "some-namespace",
+			expectedCommand: "kubectl --context some-kubecontext --namespace some-namespace --kubeconfig some-kubeconfig exec arg1 arg2",
 		},
 	}
 
@@ -57,8 +68,11 @@ func TestCLI(t *testing.T) {
 			))
 
 			cli := NewFromRunContext(&runcontext.RunContext{
-				Opts:        config.SkaffoldOptions{Namespace: test.namespace},
-				KubeContext: test.kubecontext,
+				Opts: config.SkaffoldOptions{
+					Namespace:  test.namespace,
+					KubeConfig: test.kubeconfig,
+				},
+				KubeContext: kubeContext,
 			})
 			err := cli.Run(context.Background(), nil, nil, "exec", "arg1", "arg2")
 
@@ -71,17 +85,20 @@ func TestCLI(t *testing.T) {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
 				test.expectedCommand,
-				test.output,
+				output,
 			))
 
 			cli := NewFromRunContext(&runcontext.RunContext{
-				Opts:        config.SkaffoldOptions{Namespace: test.namespace},
-				KubeContext: test.kubecontext,
+				Opts: config.SkaffoldOptions{
+					Namespace:  test.namespace,
+					KubeConfig: test.kubeconfig,
+				},
+				KubeContext: kubeContext,
 			})
 			out, err := cli.RunOut(context.Background(), "exec", "arg1", "arg2")
 
 			t.CheckNoError(err)
-			t.CheckDeepEqual(string(out), test.output)
+			t.CheckDeepEqual(string(out), output)
 		})
 	}
 }
