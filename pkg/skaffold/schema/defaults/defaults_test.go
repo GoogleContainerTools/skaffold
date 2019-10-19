@@ -254,7 +254,7 @@ func TestSetDefaultPortForwardNamespace(t *testing.T) {
 	err := Set(cfg)
 	testutil.CheckError(t, false, err)
 	testutil.CheckDeepEqual(t, "mynamespace", cfg.PortForward[0].Namespace)
-	testutil.CheckDeepEqual(t, constants.DefaultPortForwardNamespace, cfg.PortForward[1].Namespace)
+	testutil.CheckDeepEqual(t, "ns", cfg.PortForward[1].Namespace)
 }
 
 func TestSetPortForwardLocalPort(t *testing.T) {
