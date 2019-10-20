@@ -50,6 +50,7 @@ type HelmDeployer struct {
 	*latest.HelmDeploy
 
 	kubeContext string
+	kubeConfig  string
 	namespace   string
 	defaultRepo string
 	forceDeploy bool
@@ -61,6 +62,7 @@ func NewHelmDeployer(runCtx *runcontext.RunContext) *HelmDeployer {
 	return &HelmDeployer{
 		HelmDeploy:  runCtx.Cfg.Deploy.HelmDeploy,
 		kubeContext: runCtx.KubeContext,
+		kubeConfig:  runCtx.Opts.KubeConfig,
 		namespace:   runCtx.Opts.Namespace,
 		defaultRepo: runCtx.DefaultRepo,
 		forceDeploy: runCtx.Opts.Force,
@@ -161,6 +163,9 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, useSecrets bool, arg ...string) error {
 	args := append([]string{"--kube-context", h.kubeContext}, arg...)
 	args = append(args, h.Flags.Global...)
+	if h.kubeConfig != "" {
+		args = append(args, "--kubeconfig", h.kubeConfig)
+	}
 
 	if useSecrets {
 		args = append([]string{"secrets"}, args...)
