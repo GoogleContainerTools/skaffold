@@ -113,7 +113,8 @@ Exceptions will always be announced in all relevant release notes.
 
 ## Current deprecation notices
 
-No active deprecation notices.
+10/21/2019: With release v0.41.0 we mark for deprecation the `$IMAGES` environment variable passed to custom builders. Variable `$IMAGE` should be used instead.
+This environment variable flag will be removed no earlier than 01/21/2020.
 
 ## Past deprecation notices
 
