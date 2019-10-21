@@ -23,4 +23,4 @@ _Please note, this list is not exhaustive._
 List of variables that are available for templating:
 
 * all environment variables passed to the Skaffold process at startup
-* `IMAGE_NAME` - the artifacts' image name - the [image name rewriting]({{< relref "/docs/environment/image-registries.md" >}})) acts after the template is calculated
+* `IMAGE_NAME` - the artifacts' image name - the [image name rewriting]({{< relref "/docs/environment/image-registries.md" >}}) acts after the template is calculated
