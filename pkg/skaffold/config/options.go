@@ -55,6 +55,7 @@ type SkaffoldOptions struct {
 	CacheFile          string
 	Trigger            string
 	KubeContext        string
+	KubeConfig         string
 	WatchPollInterval  int
 	DefaultRepo        string
 	CustomLabels       []string
