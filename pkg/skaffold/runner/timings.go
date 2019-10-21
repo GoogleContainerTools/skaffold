@@ -59,7 +59,6 @@ func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		return nil, nil
 	}
 	start := time.Now()
-	color.Default.Fprintln(out, "Starting build...")
 
 	bRes, err := w.Builder.Build(ctx, out, tags, artifacts)
 	if err != nil {
@@ -72,7 +71,6 @@ func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 
 func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Artifact) error {
 	start := time.Now()
-	color.Default.Fprintln(out, "Starting test...")
 
 	err := w.Tester.Test(ctx, out, builds)
 	if err != nil {

@@ -90,12 +90,12 @@ func TestTimingsBuild(t *testing.T) {
 	}{
 		{
 			description:  "build success",
-			shouldOutput: "(?m)^Starting build...\nBuild complete in .+$",
+			shouldOutput: "(?m)^Build complete in .+$",
 			shouldErr:    false,
 		},
 		{
 			description:  "build failure",
-			shouldOutput: "^Starting build...\n$",
+			shouldOutput: "",
 			shouldErr:    true,
 		},
 	}
@@ -152,12 +152,12 @@ func TestTimingsTest(t *testing.T) {
 	}{
 		{
 			description:  "test success",
-			shouldOutput: "(?m)^Starting test...\nTest complete in .+$",
+			shouldOutput: "(?m)^Test complete in .+$",
 			shouldErr:    false,
 		},
 		{
 			description:  "test failure",
-			shouldOutput: "^Starting test...\n$",
+			shouldOutput: "",
 			shouldErr:    true,
 		},
 	}
