@@ -297,7 +297,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
-      --force=true: Recreate Kubernetes resources if necessary for deployment (warning: might cause downtime!)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
@@ -388,7 +388,7 @@ E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
-      --force=false: Recreate Kubernetes resources if necessary for deployment (default false, warning: might cause downtime!)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
   -i, --images=: A list of pre-built images to deploy
       --kube-context='': Deploy to this Kubernetes context
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
@@ -439,7 +439,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
-      --force=true: Recreate Kubernetes resources if necessary for deployment (warning: might cause downtime!)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
@@ -637,7 +637,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
-      --force=true: Recreate Kubernetes resources if necessary for deployment (warning: might cause downtime!)
+      --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels

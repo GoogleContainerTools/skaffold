@@ -55,30 +55,19 @@ var portMap = map[string]string{
 // RoundTrip implements http.RoundTripper
 func (bt *bearerTransport) RoundTrip(in *http.Request) (*http.Response, error) {
 	sendRequest := func() (*http.Response, error) {
-		auth, err := bt.bearer.Authorization()
-		if err != nil {
-			return nil, err
-		}
-
 		// http.Client handles redirects at a layer above the http.RoundTripper
 		// abstraction, so to avoid forwarding Authorization headers to places
 		// we are redirected, only set it when the authorization header matches
 		// the registry with which we are interacting.
 		// In case of redirect http.Client can use an empty Host, check URL too.
-		canonicalHeaderHost := bt.canonicalAddress(in.Host)
-		canonicalURLHost := bt.canonicalAddress(in.URL.Host)
-		canonicalRegistryHost := bt.canonicalAddress(bt.registry.RegistryStr())
-		if canonicalHeaderHost == canonicalRegistryHost || canonicalURLHost == canonicalRegistryHost {
+		if matchesHost(bt.registry, in, bt.scheme) {
+			auth, err := bt.bearer.Authorization()
+			if err != nil {
+				return nil, err
+			}
 			hdr := fmt.Sprintf("Bearer %s", auth.RegistryToken)
 			in.Header.Set("Authorization", hdr)
-
-			// When we ping() the registry, we determine whether to use http or https
-			// based on which scheme was successful. That is only valid for the
-			// registry server and not e.g. a separate token server or blob storage,
-			// so we should only override the scheme if the host is the registry.
-			in.URL.Scheme = bt.scheme
 		}
-		in.Header.Set("User-Agent", transportName)
 		return bt.inner.RoundTrip(in)
 	}
 
@@ -168,7 +157,14 @@ func (bt *bearerTransport) refresh() error {
 	return nil
 }
 
-func (bt *bearerTransport) canonicalAddress(host string) (address string) {
+func matchesHost(reg name.Registry, in *http.Request, scheme string) bool {
+	canonicalHeaderHost := canonicalAddress(in.Host, scheme)
+	canonicalURLHost := canonicalAddress(in.URL.Host, scheme)
+	canonicalRegistryHost := canonicalAddress(reg.RegistryStr(), scheme)
+	return canonicalHeaderHost == canonicalRegistryHost || canonicalURLHost == canonicalRegistryHost
+}
+
+func canonicalAddress(host, scheme string) (address string) {
 	// The host may be any one of:
 	// - hostname
 	// - hostname:port
@@ -184,13 +180,13 @@ func (bt *bearerTransport) canonicalAddress(host string) (address string) {
 			return host
 		}
 		if port == "" {
-			port = portMap[bt.scheme]
+			port = portMap[scheme]
 		}
 
 		return net.JoinHostPort(hostname, port)
 	}
 
-	return net.JoinHostPort(host, portMap[bt.scheme])
+	return net.JoinHostPort(host, portMap[scheme])
 }
 
 // https://docs.docker.com/registry/spec/auth/oauth/

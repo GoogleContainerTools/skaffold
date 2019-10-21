@@ -82,7 +82,7 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 		kubectl: deploy.CLI{
 			CLI:         kubectl.NewFromRunContext(runCtx),
 			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
-			ForceDeploy: runCtx.Opts.ForceDeploy(),
+			ForceDeploy: runCtx.Opts.Force,
 		},
 		defaultRepo:        runCtx.DefaultRepo,
 		insecureRegistries: runCtx.InsecureRegistries,
