@@ -115,7 +115,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		})
 	}
 
-	color.Default.Fprintln(out, "Cache check complete in", time.Since(start))
+	logrus.Infoln("Cache check complete in", time.Since(start))
 
 	bRes, err := buildAndTest(ctx, out, tags, needToBuild)
 	if err != nil {
