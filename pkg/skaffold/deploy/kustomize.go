@@ -178,7 +178,7 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 
 	path, err := findKustomizationConfig(dir)
 	if err != nil {
-		// No kustomiization config found so assume it's remote and stop traversing
+		// No kustomization config found so assume it's remote and stop traversing
 		return deps, nil
 	}
 
