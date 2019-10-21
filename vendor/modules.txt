@@ -279,6 +279,7 @@ github.com/sergi/go-diff/diffmatchpatch
 github.com/shurcooL/sanitized_anchor_name
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus
+github.com/sirupsen/logrus/hooks/test
 # github.com/spf13/cobra v0.0.5
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5

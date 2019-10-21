@@ -185,7 +185,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return errors.Wrapf(err, "watching skaffold configuration %s", r.runCtx.Opts.ConfigurationFile)
 	}
 
-	color.Default.Fprintln(out, "List generated in", time.Since(start))
+	logrus.Infoln("List generated in", time.Since(start))
 
 	// First build
 	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {
