@@ -35,6 +35,13 @@ import (
 // ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
 var ErrorConfigurationChanged = errors.New("configuration changed")
 
+var (
+	// For testing
+	fileSyncInProgress = event.FileSyncInProgress
+	fileSyncFailed     = event.FileSyncFailed
+	fileSyncSucceeded  = event.FileSyncSucceeded
+)
+
 func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	if r.changeSet.needsReload {
 		return ErrorConfigurationChanged
@@ -60,12 +67,17 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		}()
 
 		for _, s := range r.changeSet.needsResync {
-			color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
+			fileCount := len(s.Copy) + len(s.Delete)
+			color.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
+			fileSyncInProgress(fileCount, s.Image)
 
 			if err := r.syncer.Sync(ctx, s); err != nil {
 				logrus.Warnln("Skipping deploy due to sync error:", err)
+				fileSyncFailed(fileCount, s.Image, err)
 				return nil
 			}
+
+			fileSyncSucceeded(fileCount, s.Image)
 		}
 	}
 
