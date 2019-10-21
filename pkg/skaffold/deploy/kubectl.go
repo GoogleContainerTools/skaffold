@@ -138,7 +138,7 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		}
 	}
 
-	if err := k.kubectl.Delete(ctx, out, manifests); err != nil {
+	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		return errors.Wrap(err, "delete")
 	}
 
