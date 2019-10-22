@@ -259,11 +259,6 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
 
-	// ValuesFiles
-	for _, valuesFile := range expandPaths(r.ValuesFiles) {
-		args = append(args, "-f", valuesFile)
-	}
-
 	// TODO(dgageot): we should merge `Values`, `SetValues` and `SetValueTemplates`
 	// as much as possible.
 
@@ -323,6 +318,19 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 
 		valuesSet[v] = true
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
+	}
+
+	// ValuesFiles
+	for _, tmplValuesFile := range expandPaths(r.ValuesFiles) {
+		t, err := util.ParseEnvTemplate(tmplValuesFile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse valuesFileTemplate")
+		}
+		v, err := util.ExecuteEnvTemplate(t, envMap)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to generate valuesFileTemplate")
+		}
+		args = append(args, "-f", v)
 	}
 
 	// Let's make sure that every image tag is set with `--set`.
