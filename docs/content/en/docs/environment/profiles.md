@@ -100,7 +100,7 @@ defines a different Dockerfile to use for the first artifact.
 
 {{% readfile file="samples/profiles/patches.yaml" %}}
 
-### Specifying multiple profiles
+### Activating multiple profiles at the same time
 
 Multiple profiles can be specified either by using the `-p` flag multiple times or by comma separated profiles.
 
