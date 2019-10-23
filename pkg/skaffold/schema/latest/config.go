@@ -18,6 +18,7 @@ package latest
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	v1 "k8s.io/api/core/v1"
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
@@ -727,6 +728,9 @@ type KanikoArtifact struct {
 	// It also accepts environment variables via the go template syntax.
 	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
+
+	// Env are environment variables passed to the kaniko pod.
+	Env []v1.EnvVar `yaml:"env,omitempty"`
 
 	// BuildContext is where the build context for this artifact resides.
 	BuildContext *KanikoBuildContext `yaml:"buildContext,omitempty"`

@@ -216,6 +216,46 @@ func TestPodTemplate(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "with env vars",
+			initial:     &latest.ClusterDetails{},
+			artifact: &latest.KanikoArtifact{
+				Image: "kaniko-latest",
+				Env: []v1.EnvVar{{
+					Name:  "EMPTY_ENV",
+					Value: "",
+				}, {
+					Name:  "VALUE_ENV",
+					Value: "value",
+				}},
+			},
+			expected: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "kaniko-",
+					Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy: "Never",
+					Containers: []v1.Container{
+						{
+							Name:  "kaniko",
+							Image: "kaniko-latest",
+							Env: []v1.EnvVar{{
+								Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+								Value: "/secret/kaniko-secret",
+							}, {
+								Name:  "UPSTREAM_CLIENT_TYPE",
+								Value: "UpstreamClient(skaffold-test)",
+							}, {
+								Name:  "VALUE_ENV",
+								Value: "value",
+							}},
+							ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
+						},
+					},
+				},
+			},
+		},
 	}
 
 	opt := cmp.Comparer(func(x, y resource.Quantity) bool {
