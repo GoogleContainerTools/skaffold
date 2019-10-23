@@ -17,8 +17,9 @@ limitations under the License.
 package latest
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
