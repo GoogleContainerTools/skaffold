@@ -1312,9 +1312,7 @@
           "default": "Dockerfile"
         },
         "env": {
-          "items": {
-            "type": "object"
-          },
+          "items": {},
           "type": "array",
           "description": "environment variables passed to the kaniko pod.",
           "x-intellij-html-description": "environment variables passed to the kaniko pod.",
@@ -1357,6 +1355,7 @@
         "dockerfile",
         "target",
         "buildArgs",
+        "env",
         "buildContext",
         "image",
         "cache",
