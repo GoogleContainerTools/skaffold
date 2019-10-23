@@ -42,7 +42,7 @@ func NewCmdDev() *cobra.Command {
 			f.MarkHidden("auto-sync")
 			f.BoolVar(&opts.AutoDeploy, "auto-deploy", true, "When set to false, deploys wait for API request instead of running automatically (default true)")
 			f.MarkHidden("auto-deploy")
-			f.StringSliceVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
+			f.StringSliceVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Only artifacts with image names that contain the expression will be built and watched. Default is to watch sources for all artifacts")
 			f.IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
 		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doDev))

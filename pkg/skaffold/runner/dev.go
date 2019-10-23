@@ -129,11 +129,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	start := time.Now()
 	color.Default.Fprintln(out, "Listing files to watch...")
 
+	var targetArtifacts []*latest.Artifact
 	for i := range artifacts {
 		artifact := artifacts[i]
 		if !r.runCtx.Opts.IsTargetImage(artifact) {
 			continue
 		}
+		targetArtifacts = append(targetArtifacts, artifact)
 
 		color.Default.Fprintf(out, " - %s\n", artifact.ImageName)
 
@@ -188,7 +190,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	logrus.Infoln("List generated in", time.Since(start))
 
 	// First build
-	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {
+	if _, err := r.BuildAndTest(ctx, out, targetArtifacts); err != nil {
 		return errors.Wrap(err, "exiting dev mode because first build failed")
 	}
 
