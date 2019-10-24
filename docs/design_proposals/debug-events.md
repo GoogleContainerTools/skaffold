@@ -60,6 +60,8 @@ This design proposes that Skaffold issue events to inform the IDEs of the follow
          - the port(s)
          - ! the container image's working directory
          - ! (optional) the container image's _remote root_ for source file resolving 
+         
+Skaffold will also maintain state and report on the set of debuggable containers.
 
 With this information, the IDE should be able to:
 
