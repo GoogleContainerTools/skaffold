@@ -65,6 +65,7 @@ GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
 GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+GOMAXPROCS := $(shell go run hack/numprocs/numprocs.go)
 
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
@@ -114,7 +115,7 @@ checks: $(BUILD_DIR)
 
 .PHONY: quicktest
 quicktest:
-	go test -short -timeout=60s ./...
+	GOMAXPROCS=$(GOMAXPROCS) go test -short -timeout=60s ./...
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
