@@ -76,6 +76,7 @@ With this information, the IDE should be able to:
  
 ### Example
 
+#### Events in Action
 ```json
 {
   "result": {
@@ -149,6 +150,38 @@ With this information, the IDE should be able to:
     },
     "entry": "Forwarding container web to local port 9229"
   }
+}
+```
+
+#### State in Action
+
+```json
+$ curl -s localhost:50052/v1/state | jq .
+{
+  "buildState": {
+    "artifacts": {
+      "gcr.io/k8s-skaffold/skaffold-jib": "Complete"
+    }
+  },
+  "deployState": {
+    "status": "Complete"
+  },
+  "statusCheckState": {
+    "status": "Not Started"
+  },
+  "fileSyncState": {
+    "status": "Not Started"
+  },
+  "debuggingContainers": [
+    {
+      "status": "Started",
+      "podName": "web-6d7c9db467-gqr5x",
+      "containerName": "web",
+      "namespace": "default",
+      "runtime": "jvm",
+      "configuration": "{\"name\":\"gcr.io/artifact/name/from/skaffold.yaml\",\"ports\":{\"jdwp\":5005},\"runtime\":\"jvm\",\"workingDir\":\"/app\"}"
+    }
+  ]
 }
 ```
 
