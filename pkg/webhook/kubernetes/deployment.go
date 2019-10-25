@@ -51,7 +51,7 @@ const (
 func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP string) (*appsv1.Deployment, error) {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting kubernetes client")
+		return nil, errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	deploymentLabels := svc.Spec.Selector
@@ -127,7 +127,7 @@ func CreateDeployment(pr *github.PullRequestEvent, svc *v1.Service, externalIP s
 func WaitForDeploymentToStabilize(d *appsv1.Deployment, ip string) error {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
+		return errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	if err := pkgkubernetes.WaitForDeploymentToStabilize(context.Background(), client, d.Namespace, d.Name, 5*time.Minute); err != nil {

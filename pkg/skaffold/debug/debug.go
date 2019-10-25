@@ -67,7 +67,7 @@ func applyDebuggingTransforms(l kubectl.ManifestList, retriever configurationRet
 	for _, manifest := range l {
 		obj, _, err := decodeFromYaml(manifest, nil, nil)
 		if err != nil {
-			return nil, errors.Wrap(err, "reading kubernetes YAML")
+			return nil, errors.Wrap(err, "reading Kubernetes YAML")
 		}
 
 		if transformManifest(obj, retriever) {

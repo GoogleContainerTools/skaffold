@@ -165,20 +165,6 @@ func TestIsTargetImage(t *testing.T) {
 	}
 }
 
-func TestForceDeploy(t *testing.T) {
-	opts := SkaffoldOptions{}
-	testutil.CheckDeepEqual(t, false, opts.ForceDeploy())
-
-	opts = SkaffoldOptions{ForceDev: true}
-	testutil.CheckDeepEqual(t, true, opts.ForceDeploy())
-
-	opts = SkaffoldOptions{Force: true}
-	testutil.CheckDeepEqual(t, true, opts.ForceDeploy())
-
-	opts = SkaffoldOptions{ForceDev: true, Force: true}
-	testutil.CheckDeepEqual(t, true, opts.ForceDeploy())
-}
-
 func TestPrune(t *testing.T) {
 	opts := SkaffoldOptions{}
 	testutil.CheckDeepEqual(t, true, opts.Prune())

@@ -1,7 +1,7 @@
 ---
 title: "Quickstart"
 linkTitle: "Quickstart"
-weight: 10
+weight: 2
 ---
 
 Follow this tutorial to learn about Skaffold on a small Kubernetes app built with [Docker](https://www.docker.com/) inside [minikube](https://minikube.sigs.k8s.io)
@@ -9,7 +9,7 @@ and deployed with [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubec
 
 {{< alert title="Note">}}
 Aside from <code>Docker</code> and <code>kubectl</code>, Skaffold also supports a variety of other tools
-and workflows; see <a href="/docs/how-tos">How-to Guides</a> and <a href="/docs/tutorials">Tutorials</a> for
+and workflows; see <a href="/docs/tutorials">Tutorials</a> for
 more information.
 {{</alert>}}
 
@@ -141,11 +141,11 @@ Skaffold will perform the workflow described in `skaffold.yaml` exactly once.
 
 ## What's next
 
-For more in-depth topics of Skaffold, explore [Skaffold Concepts: Configuration]({{< relref "/docs/concepts#configuration" >}}),
-[Skaffold Concepts: Workflow](/docs/concepts#workflow), and [Skaffold Concepts: Architecture]({{< relref "/docs/concepts#architecture" >}}).
+For more in-depth topics of Skaffold, explore [Configuration]({{< relref "/docs/design/config.md" >}}),
+[Skaffold Pipeline](/docs/pipeline-stages), and [Architecture and Design]({{< relref "/docs/design" >}}).
 
 To learn more about how Skaffold builds, tags, and deploys your app, see the How-to Guides on
-using [Builders](/docs/how-tos/builders), [Taggers](/docs/how-tos/taggers), and [Deployers]({{< relref "/docs/how-tos/deployers" >}}).
+using [Builders](/docs/pipeline-stages/builders), [Taggers](/docs/pipeline-stages/taggers), and [Deployers]({{< relref "/docs/pipeline-stages/deployers" >}}).
 
 [Skaffold Tutorials]({{< relref "/docs/tutorials" >}}) details some of the common use cases of Skaffold.
 

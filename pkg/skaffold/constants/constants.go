@@ -80,8 +80,11 @@ var (
 )
 
 var (
-	// Images is an environment variable key, whose value is an array of fully qualified image names passed in to a custom build script.
-	Images = "IMAGES"
+	// DeprecatedImages is an environment variable key, whose value is an array of fully qualified image names passed in to a custom build script.
+	DeprecatedImages = "IMAGES"
+
+	// Image is an environment variable key, whose value is the fully qualified image name passed in to a custom build script.
+	Image = "IMAGE"
 
 	// PushImage lets the custom build script know if the image is expected to be pushed to a remote registry
 	PushImage = "PUSH_IMAGE"

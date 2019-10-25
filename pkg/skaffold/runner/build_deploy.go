@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -68,18 +69,6 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
-
-	color.Default.Fprintln(out, "Tags used in deployment:")
-
-	if r.imagesAreLocal {
-		color.Yellow.Fprintln(out, " - Since images are not pushed, they can't be referenced by digest")
-		color.Yellow.Fprintln(out, "   They are tagged and referenced by a unique ID instead")
-	}
-
-	for _, build := range r.builds {
-		color.Default.Fprintf(out, " - %s -> ", build.ImageName)
-		fmt.Fprintln(out, build.Tag)
-	}
 
 	return bRes, nil
 }
@@ -161,6 +150,6 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 		}
 	}
 
-	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
+	logrus.Infoln("Tags generated in", time.Since(start))
 	return imageTags, nil
 }

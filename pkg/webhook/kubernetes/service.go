@@ -36,7 +36,7 @@ import (
 func CreateService(pr *github.PullRequestEvent) (*v1.Service, error) {
 	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting kubernetes client")
+		return nil, errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	l := labels.GenerateLabelsFromPR(pr.GetNumber())
@@ -85,7 +85,7 @@ func serviceName(prNumber int) string {
 func getService(svc *v1.Service) (*v1.Service, error) {
 	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting kubernetes client")
+		return nil, errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	return client.CoreV1().Services(svc.Namespace).Get(svc.Name, metav1.GetOptions{})

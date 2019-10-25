@@ -46,9 +46,8 @@ review them:
 - [ ] Adds documentation as needed: user docs, YAML reference, CLI reference.
 - [ ] Adds integration tests if needed.
 
-_See [the contribution guide](../CONTRIBUTING.md) for more details._
-
 <!--
+_See [the contribution guide](../CONTRIBUTING.md) for more details._
 Double check this list of stuff that's easy to miss:
 - If you are adding [a example to the `examples` dir](https://github.com/GoogleContainerTools/skaffold/tree/master/examples), please copy them to [`integration/examples`](https://github.com/GoogleContainerTools/skaffold/tree/master/integration/examples)
 - Every new example added in [`integration/examples` dir](https://github.com/GoogleContainerTools/skaffold/tree/master/integration/examples), should be tested in [integration test](https://github.com/GoogleContainerTools/skaffold/tree/master/integration)
@@ -63,7 +62,9 @@ Double check this list of stuff that's easy to miss:
 
 **Release Notes**
 
+<!-- 
 Describe any user facing changes here so maintainer can include it in the release notes, or delete this block.
+-->
 
 ```
 Examples of user facing changes:

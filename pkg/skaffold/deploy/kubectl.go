@@ -60,7 +60,7 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 		kubectl: deploy.CLI{
 			CLI:         kubectl.NewFromRunContext(runCtx),
 			Flags:       runCtx.Cfg.Deploy.KubectlDeploy.Flags,
-			ForceDeploy: runCtx.Opts.ForceDeploy(),
+			ForceDeploy: runCtx.Opts.Force,
 		},
 		defaultRepo:        runCtx.DefaultRepo,
 		insecureRegistries: runCtx.InsecureRegistries,
@@ -138,7 +138,7 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		}
 	}
 
-	if err := k.kubectl.Delete(ctx, out, manifests); err != nil {
+	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		return errors.Wrap(err, "delete")
 	}
 

@@ -30,6 +30,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/AlecAivazis/survey.v1"
@@ -52,7 +53,7 @@ var (
 )
 
 // NoBuilder allows users to specify they don't want to build
-// an image we parse out from a kubernetes manifest
+// an image we parse out from a Kubernetes manifest
 const NoBuilder = "None (image not built from these sources)"
 
 // Initializer is the Init API of skaffold and responsible for generating
@@ -110,7 +111,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		}
 	}
 
-	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, c.EnableJibInit, detectBuilders)
+	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, c.EnableJibInit)
 	if err != nil {
 		return err
 	}
@@ -162,7 +163,11 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 			}
 			pairs = append(pairs, newPairs...)
 		} else {
-			pairs = append(pairs, resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages)...)
+			resolved, err := resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages)
+			if err != nil {
+				return err
+			}
+			pairs = append(pairs, resolved...)
 		}
 	}
 
@@ -242,7 +247,10 @@ func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builde
 	return pairs, builderConfigs, unresolvedImages
 }
 
-func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, error) {
+// detectBuilders checks if a path is a builder config, and if it is, returns the InitBuilders representing the
+// configs. Also returns a boolean marking search completion for subdirectories (true = subdirectories should
+// continue to be searched, false = subdirectories should not be searched for more builders)
+func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, bool) {
 	// TODO: Remove backwards compatibility if statement (not entire block)
 	if enableJibInit {
 		// Check for jib
@@ -251,19 +259,19 @@ func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, error) {
 			for i := range builders {
 				results[i] = builders[i]
 			}
-			return results, filepath.SkipDir
+			return results, false
 		}
 	}
 
 	// Check for Dockerfile
 	if docker.ValidateDockerfileFunc(path) {
 		results := []InitBuilder{docker.Docker{File: path}}
-		return results, nil
+		return results, true
 	}
 
 	// TODO: Check for more builders
 
-	return nil, nil
+	return nil, true
 }
 
 func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
@@ -321,10 +329,10 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 }
 
 // For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
-func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []builderImagePair {
+func resolveBuilderImages(builderConfigs []InitBuilder, images []string) ([]builderImagePair, error) {
 	// If nothing to choose, don't bother prompting
 	if len(images) == 0 || len(builderConfigs) == 0 {
-		return []builderImagePair{}
+		return []builderImagePair{}, nil
 	}
 
 	// if we only have 1 image and 1 build config, don't bother prompting
@@ -332,7 +340,7 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []build
 		return []builderImagePair{{
 			Builder:   builderConfigs[0],
 			ImageName: images[0],
-		}}
+		}}, nil
 	}
 
 	// Build map from choice string to builder config struct
@@ -351,8 +359,13 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []build
 		if len(images) == 0 {
 			break
 		}
+
 		image := images[0]
-		choice := promptUserForBuildConfigFunc(image, choices)
+		choice, err := promptUserForBuildConfigFunc(image, choices)
+		if err != nil {
+			return nil, err
+		}
+
 		if choice != NoBuilder {
 			pairs = append(pairs, builderImagePair{Builder: choiceMap[choice], ImageName: image})
 			choices = util.RemoveFromSlice(choices, choice)
@@ -362,10 +375,10 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) []build
 	if len(choices) > 0 {
 		logrus.Warnf("unused builder configs found in repository: %v", choices)
 	}
-	return pairs
+	return pairs, nil
 }
 
-func promptUserForBuildConfig(image string, choices []string) string {
+func promptUserForBuildConfig(image string, choices []string) (string, error) {
 	var selectedBuildConfig string
 	options := append(choices, NoBuilder)
 	prompt := &survey.Select{
@@ -373,8 +386,12 @@ func promptUserForBuildConfig(image string, choices []string) string {
 		Options:  options,
 		PageSize: 15,
 	}
-	survey.AskOne(prompt, &selectedBuildConfig, nil)
-	return selectedBuildConfig
+	err := survey.AskOne(prompt, &selectedBuildConfig, nil)
+	if err != nil {
+		return "", err
+	}
+
+	return selectedBuildConfig, nil
 }
 
 func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {
@@ -538,40 +555,81 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 	return err
 }
 
-func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, string) ([]InitBuilder, error)) ([]string, []InitBuilder, error) {
+// walk recursively walks a directory and returns the k8s configs and builder configs that it finds
+func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error) {
 	var potentialConfigs []string
 	var foundBuilders []InitBuilder
-	err := filepath.Walk(dir, func(path string, f os.FileInfo, e error) error {
-		if f.IsDir() && util.IsHiddenDir(f.Name()) {
-			logrus.Debugf("skip walking hidden dir %s", f.Name())
-			return filepath.SkipDir
-		}
-		if f.IsDir() || util.IsHiddenFile(f.Name()) {
-			return nil
-		}
-		if IsSkaffoldConfig(path) {
-			if !force {
-				return fmt.Errorf("pre-existing %s found", path)
-			}
-			logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", path)
-			return nil
-		}
-		if IsSupportedKubernetesFileExtension(path) {
-			potentialConfigs = append(potentialConfigs, path)
-			return nil
-		}
-		// try and parse build file
-		if builderConfigs, err := validateBuildFile(enableJibInit, path); builderConfigs != nil {
-			for _, buildConfig := range builderConfigs {
-				logrus.Infof("existing builder found: %s", buildConfig.Describe())
-				foundBuilders = append(foundBuilders, buildConfig)
-			}
+
+	var searchConfigsAndBuilders func(path string, findBuilders bool) error
+	searchConfigsAndBuilders = func(path string, findBuilders bool) error {
+		dirents, err := godirwalk.ReadDirents(path, nil)
+		if err != nil {
 			return err
 		}
+
+		var subdirectories []*godirwalk.Dirent
+		searchForBuildersInSubdirectories := findBuilders
+		sort.Sort(dirents)
+
+		// Traverse files
+		for _, file := range dirents {
+			if util.IsHiddenFile(file.Name()) || util.IsHiddenDir(file.Name()) {
+				continue
+			}
+
+			// If we found a directory, keep track of it until we've gone through all the files first
+			if file.IsDir() {
+				subdirectories = append(subdirectories, file)
+				continue
+			}
+
+			// Check for skaffold.yaml/k8s manifest
+			filePath := filepath.Join(path, file.Name())
+			var foundConfig bool
+			if foundConfig, err = checkConfigFile(filePath, force, &potentialConfigs); err != nil {
+				return err
+			}
+
+			// Check for builder config
+			if !foundConfig && findBuilders {
+				builderConfigs, continueSearchingBuilders := detectBuilders(enableJibInit, filePath)
+				foundBuilders = append(foundBuilders, builderConfigs...)
+				searchForBuildersInSubdirectories = searchForBuildersInSubdirectories && continueSearchingBuilders
+			}
+		}
+
+		// Recurse into subdirectories
+		for _, dir := range subdirectories {
+			if err = searchConfigsAndBuilders(filepath.Join(path, dir.Name()), searchForBuildersInSubdirectories); err != nil {
+				return err
+			}
+		}
+
 		return nil
-	})
+	}
+
+	err := searchConfigsAndBuilders(dir, true)
 	if err != nil {
 		return nil, nil, err
 	}
 	return potentialConfigs, foundBuilders, nil
+}
+
+// checkConfigFile checks if filePath is a skaffold config or k8s config, or builder config. Detected k8s configs are added to potentialConfigs.
+// Returns true if filePath is a config file, and false if not.
+func checkConfigFile(filePath string, force bool, potentialConfigs *[]string) (bool, error) {
+	if IsSkaffoldConfig(filePath) {
+		if !force {
+			return true, fmt.Errorf("pre-existing %s found", filePath)
+		}
+		logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", filePath)
+		return true, nil
+	}
+
+	if IsSupportedKubernetesFileExtension(filePath) {
+		*potentialConfigs = append(*potentialConfigs, filePath)
+		return true, nil
+	}
+
+	return false, nil
 }

@@ -57,7 +57,7 @@ func TestKustomizeDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
 				AndRunOut("kustomize build .", deploymentWebYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",

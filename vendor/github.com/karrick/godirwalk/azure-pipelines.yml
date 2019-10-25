@@ -22,7 +22,7 @@ jobs:
       - task: Go@0
         inputs:
           command: test
-          arguments: -v ./...
+          arguments: -race -v ./...
         displayName: 'Execute Tests'
 
   - job: Mac
@@ -37,7 +37,7 @@ jobs:
       - task: Go@0
         inputs:
           command: test
-          arguments: -v ./...
+          arguments: -race -v ./...
         displayName: 'Execute Tests'
 
   - job: Windows
@@ -52,5 +52,5 @@ jobs:
       - task: Go@0
         inputs:
           command: test
-          arguments: -v ./...
+          arguments: -race -v ./...
         displayName: 'Execute Tests'

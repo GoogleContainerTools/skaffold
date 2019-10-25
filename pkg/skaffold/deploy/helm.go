@@ -63,7 +63,7 @@ func NewHelmDeployer(runCtx *runcontext.RunContext) *HelmDeployer {
 		kubeContext: runCtx.KubeContext,
 		namespace:   runCtx.Opts.Namespace,
 		defaultRepo: runCtx.DefaultRepo,
-		forceDeploy: runCtx.Opts.ForceDeploy(),
+		forceDeploy: runCtx.Opts.Force,
 	}
 }
 
