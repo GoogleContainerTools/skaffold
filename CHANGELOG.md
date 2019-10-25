@@ -1,3 +1,92 @@
+# v0.41.0 Release - 09/26/2019
+
+*This command has been implemented for the `kubectl` deployer only; implementations for `kustomize` and `helm` will follow in the next release.*
+
+*Note*: This release also comes with a new config version `v1beta17`.
+        To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
+
+*Note*: 
+
+
+
+New Features: 
+
+* Adding ephemeralstorage and ResourceStorage for kaniko pods [#3013](https://github.com/GoogleContainerTools/skaffold/pull/3013)
+* Integrate file sync events into dev command [#3009](https://github.com/GoogleContainerTools/skaffold/pull/3009)
+* add event api integration for deploy health check [#3072](https://github.com/GoogleContainerTools/skaffold/pull/3072)
+* New version v1beta17 [#3041](https://github.com/GoogleContainerTools/skaffold/pull/3041)
+
+Fixes:
+
+* Improve skaffold init file traversal [#3062](https://github.com/GoogleContainerTools/skaffold/pull/3062)
+* Fix `—force=false` [#3086](https://github.com/GoogleContainerTools/skaffold/pull/3086)
+* Interrupt skaffold init with ctrl-c [#3070](https://github.com/GoogleContainerTools/skaffold/pull/3070)
+* display survey prompt which points to survey url [#3011](https://github.com/GoogleContainerTools/skaffold/pull/3011)
+* Fix remove patch in Profiles [#3045](https://github.com/GoogleContainerTools/skaffold/pull/3045)
+* Fix `skaffold deploy --tail` [#3049](https://github.com/GoogleContainerTools/skaffold/pull/3049)
+
+
+Updates & Refactorings:
+
+* Log durations instead of always printing them [#3102](https://github.com/GoogleContainerTools/skaffold/pull/3102)
+* Add heuristics to speed up Jib check in skaffold init [#3120](https://github.com/GoogleContainerTools/skaffold/pull/3120)
+* [Custom] [Deprecation] Use $IMAGE instead of $IMAGES  [#3084](https://github.com/GoogleContainerTools/skaffold/pull/3084)
+* Remove logs before building and testing [#3105](https://github.com/GoogleContainerTools/skaffold/pull/3105)
+* Align kubectl/kustomize cleanup output with deploy output [#3103](https://github.com/GoogleContainerTools/skaffold/pull/3103)
+* `skaffold build` shouldn’t print the tags used in deployments [#3091](https://github.com/GoogleContainerTools/skaffold/pull/3091)
+* Update a few dependencies [#3087](https://github.com/GoogleContainerTools/skaffold/pull/3087)
+* Upgrade Jib to 1.7.0 [#3093](https://github.com/GoogleContainerTools/skaffold/pull/3093)
+* [Custom] Clearer message when image was not built [#3085](https://github.com/GoogleContainerTools/skaffold/pull/3085)
+* Warn when default or provided port not available for API Server [#3065](https://github.com/GoogleContainerTools/skaffold/pull/3065)
+* [Cache] Ignore file not found [#3066](https://github.com/GoogleContainerTools/skaffold/pull/3066)
+* [kaniko] Stop printing the logs on ctrl-c [#3069](https://github.com/GoogleContainerTools/skaffold/pull/3069)
+* a windows build file [#3063](https://github.com/GoogleContainerTools/skaffold/pull/3063)
+* Activate more linters [#3057](https://github.com/GoogleContainerTools/skaffold/pull/3057)
+* Don’t print bazel slow warnings more than once. [#3059](https://github.com/GoogleContainerTools/skaffold/pull/3059)
+* [Bazel] Target must end with .tar [#3058](https://github.com/GoogleContainerTools/skaffold/pull/3058)
+* remove Container Was Terminated message [#3054](https://github.com/GoogleContainerTools/skaffold/pull/3054)
+* Update docker and go-containerregistry [#3053](https://github.com/GoogleContainerTools/skaffold/pull/3053)
+* Update dependencies and rollback to older k8s [#3052](https://github.com/GoogleContainerTools/skaffold/pull/3052)
+* Use a switch instead of if [#3042](https://github.com/GoogleContainerTools/skaffold/pull/3042)
+* Warn about unused configs [#3046](https://github.com/GoogleContainerTools/skaffold/pull/3046)
+
+Docs:
+
+* Close the bracket in documentation [#3101](https://github.com/GoogleContainerTools/skaffold/pull/3101)
+* Clarify debug docs for deprecated Workload APIs [#3092](https://github.com/GoogleContainerTools/skaffold/pull/3092)
+* move pr template instructions to comments [#3080](https://github.com/GoogleContainerTools/skaffold/pull/3080)
+* Rename custom/buildpacks sample config [#3076](https://github.com/GoogleContainerTools/skaffold/pull/3076)
+* Docs updates [#3079](https://github.com/GoogleContainerTools/skaffold/pull/3079)
+* Major docs restructure [#3071](https://github.com/GoogleContainerTools/skaffold/pull/3071)
+* generate docs for proto [#3067](https://github.com/GoogleContainerTools/skaffold/pull/3067)
+* Make all docs have TOC on the right hand side. [#3064](https://github.com/GoogleContainerTools/skaffold/pull/3064)
+* Add HaTS and Opt-In Feedback links [#2919](https://github.com/GoogleContainerTools/skaffold/pull/2919)
+* getting started -> quickstart [#3030](https://github.com/GoogleContainerTools/skaffold/pull/3030)
+
+Design proposals: 
+
+* kube-context design proposal: add note about the implementation status [#2991](https://github.com/GoogleContainerTools/skaffold/pull/2991)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Amet Umerov
+- Andreas Sommer
+- Balint Pato
+- Brian de Alwis
+- Cornelius Weig
+- David Gageot
+- Hugo Duncan
+- Jens Ulrich Hjuler Fosgerau
+- Michael Beaumont
+- Nick Kubala
+- Philippe Martin
+- Prashant
+- Priya Wadhwa
+- Tad Cordle
+- Tejal Desai
+
 # v0.40.0 Release - 09/26/2019
 
 This release adds a new command, `skaffold render`, which will output templated kubernetes manifests rather than sending them through `kubectl` to deploy to your cluster. This can be used to commit final manifests to a git repo for use in GitOps workflows.
