@@ -45,11 +45,11 @@ var (
 	regexpDefaults = regexp.MustCompile("(.*)Defaults to `(.*)`")
 	regexpExample  = regexp.MustCompile("(.*)For example: `(.*)`")
 	pTags          = regexp.MustCompile("(<p>)|(</p>)")
-	
+
 	// patterns for enum-type values
-	enumValuePattern = "^[ \t]*`(?P<name>[^`]+)`([ \t]*\\(default\\))?: .*$"
-	regexpEnumDefinition  = regexp.MustCompile("(?m).*Valid [a-z]+ are((\\n" + enumValuePattern + ")*)")
-	regexpEnumValues  = regexp.MustCompile("(?m)" + enumValuePattern)
+	enumValuePattern     = "^[ \t]*`(?P<name>[^`]+)`([ \t]*\\(default\\))?: .*$"
+	regexpEnumDefinition = regexp.MustCompile("(?m).*Valid [a-z]+ are((\\n" + enumValuePattern + ")*)")
+	regexpEnumValues     = regexp.MustCompile("(?m)" + enumValuePattern)
 )
 
 type schemaGenerator struct {
