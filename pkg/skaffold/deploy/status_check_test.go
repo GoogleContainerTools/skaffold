@@ -419,22 +419,22 @@ func TestCounterCopy(t *testing.T) {
 	tests := []struct {
 		description string
 		c           *counter
-		expected    *counter
+		expected    counter
 	}{
 		{
 			description: "initial counter is copied correctly ",
 			c:           newCounter(10),
-			expected:    newCounter(10),
+			expected:    *newCounter(10),
 		},
 		{
 			description: "counter with updated pending is copied correctly",
 			c:           &counter{total: 10, pending: 2},
-			expected:    &counter{total: 10, pending: 2},
+			expected:    counter{total: 10, pending: 2},
 		},
 		{
 			description: "counter with updated failed and pending is copied correctly",
 			c:           &counter{total: 10, pending: 5, failed: 3},
-			expected:    &counter{total: 10, pending: 5, failed: 3},
+			expected:    counter{total: 10, pending: 5, failed: 3},
 		},
 	}
 	for _, test := range tests {
