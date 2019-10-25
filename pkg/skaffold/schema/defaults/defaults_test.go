@@ -79,7 +79,6 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 			CurrentContext: "cluster1",
 			Contexts: map[string]*api.Context{
 				"cluster1": {Namespace: "ns"},
-				"cluster2": {Namespace: "toto"},
 			},
 		})
 
