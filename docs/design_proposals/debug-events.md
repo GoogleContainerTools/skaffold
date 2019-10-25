@@ -11,7 +11,7 @@
 Cloud Code for IntelliJ and VS Code currently launch `skaffold debug --port-forward` to start
 an application in debugging mode.  `debug` modifies the podspecs to explicitly expose the debug port used
 by the underlying language runtime via `containerPort` definitions.  Skaffold monitors the cluster
-and initiated forwards to ports on any newly-started containers, and raises events once the forwards
+and initiated forwards to ports on any newly-started containers, and raises events once the
 forwards are established.  The IDEs establish debug launch configurations by examining these
 port-forward events for ports with specific names to (e.g., `jdwp` for Java/JVM,
 `devtools` for NodeJS, or `dap` for connections using the _Debug Adapter Protocol_).
@@ -38,7 +38,7 @@ containers are started and terminated.
 This design proposes that Skaffold issue events to inform the IDEs of the following conditions:
 
 - The appearance of a container that is debuggable.  This event will provide:
-    - the namespace.
+    - the namespace
     - the pod ID
     - the container ID
     - the contents of the `debug.cloud.google.com/config` configuration block for the container
@@ -163,19 +163,20 @@ This design was eliminated as:
     require a `kubectl exec` to launch a process in the remote container. 
   - Port-forwards may be dropped and re-established
   
-There may also be a desire for the IDEs to selectively initiate port-forwards on an as-neeeded
-basis.  This may be useful for large microservice deployments.
+There may also be a desire for the IDEs to selectively initiate port-forwards on an as-needed
+basis.  This may be useful for large microservice deployments.  Indeed the debugging podspec
+transformations could be applied on-the-fly too. 
 
 ## Implementation plan
 
-The idea here is that `skaffold debug` installs a watcher that looks and notifies of pods with
-debuggable containers, similar to how the [port-forwarding manager](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/kubernetes/portforward/pod_forwarder.go) 
+The idea here is that `skaffold debug` internally configures a watcher that looks for and notifies
+of pods with debuggable containers, similar to how the [port-forwarding manager](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/kubernetes/portforward/pod_forwarder.go) 
 listens for pods or services.
 
 1. `skaffold debug` will set a `DebugMode` option to `true`. This value will be used in
   `SkaffoldRunner.Dev()` to install the debug container watch manager.
 1. Add a new `DebugEvent` type to the protobuf definitions.  The status field will be one
-   of `"Started"` or `"Termninated"` (or `"Stopped"`?).
+   of `"Started"` or `"Terminated"`.
 1. Add new debuggable container state to the general state.
 1. Generalize the port-forward manager or create a new parallel debug watcher to notify
    of pod events.
