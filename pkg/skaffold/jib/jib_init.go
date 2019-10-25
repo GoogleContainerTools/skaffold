@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -106,19 +107,26 @@ type jibJSON struct {
 func ValidateJibConfig(path string) []Jib {
 	// Determine whether maven or gradle
 	var builderType PluginType
-	var executable, wrapper, taskName string
+	var executable, wrapper, taskName, searchString string
 	switch {
 	case strings.HasSuffix(path, "pom.xml"):
 		builderType = JibMaven
 		executable = "mvn"
 		wrapper = "mvnw"
+		searchString = "<artifactId>jib-maven-plugin</artifactId>"
 		taskName = "jib:_skaffold-init"
 	case strings.HasSuffix(path, "build.gradle"), strings.HasSuffix(path, "build.gradle.kts"):
 		builderType = JibGradle
 		executable = "gradle"
 		wrapper = "gradlew"
+		searchString = "com.google.cloud.tools.jib"
 		taskName = "_jibSkaffoldInit"
 	default:
+		return nil
+	}
+
+	// Search for indication of Jib in build file before proceeding
+	if content, err := ioutil.ReadFile(path); err != nil || !strings.Contains(string(content), searchString) {
 		return nil
 	}
 
