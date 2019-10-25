@@ -45,6 +45,13 @@ func AddRemoteTag(src, target string, insecureRegistries map[string]bool) error 
 		return errors.Wrap(err, "getting target reference")
 	}
 
+	if IsInsecure(targetRef.Context().Registry.Name(), insecureRegistries) {
+		targetRef, err = getInsecureRegistryImpl(target)
+		if err != nil {
+			logrus.Warnf("error getting insecure registry: %s\nremote references may not be retrieved", err.Error())
+		}
+	}
+
 	return remote.Write(targetRef, img, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 }
 
