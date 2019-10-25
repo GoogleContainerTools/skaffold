@@ -32,7 +32,9 @@ type InlineStruct struct {
 	// Field1 should be the first field
 	Field1 string `yaml:"field1"`
 
-	// Field2 should be the second field
+	// Field2 should be the second field. Valid modes are
+	// `a`: first letter
+	// `b` (default): second letter
 	Field2 string `yaml:"field2"`
 
 	// Field3 should be the third field and listed in required

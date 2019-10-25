@@ -701,7 +701,12 @@
         "network": {
           "type": "string",
           "description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are `host`: use the host's networking stack. `bridge`: use the bridged network configuration. `none`: no networking in the container.",
-          "x-intellij-html-description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are <code>host</code>: use the host's networking stack. <code>bridge</code>: use the bridged network configuration. <code>none</code>: no networking in the container."
+          "x-intellij-html-description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are <code>host</code>: use the host's networking stack. <code>bridge</code>: use the bridged network configuration. <code>none</code>: no networking in the container.",
+          "enum": [
+            "host",
+            "bridge",
+            "none"
+          ]
         },
         "noCache": {
           "type": "boolean",
@@ -802,7 +807,14 @@
         "variant": {
           "type": "string",
           "description": "determines the behavior of the git tagger. Valid variants are `Tags` (default): use git tags or fall back to abbreviated commit hash. `CommitSha`: use the full git commit sha. `AbbrevCommitSha`: use the abbreviated git commit sha. `TreeSha`: use the full tree hash of the artifact workingdir. `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.",
-          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are <code>Tags</code> (default): use git tags or fall back to abbreviated commit hash. <code>CommitSha</code>: use the full git commit sha. <code>AbbrevCommitSha</code>: use the abbreviated git commit sha. <code>TreeSha</code>: use the full tree hash of the artifact workingdir. <code>AbbrevTreeSha</code>: use the abbreviated tree hash of the artifact workingdir."
+          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are <code>Tags</code> (default): use git tags or fall back to abbreviated commit hash. <code>CommitSha</code>: use the full git commit sha. <code>AbbrevCommitSha</code>: use the abbreviated git commit sha. <code>TreeSha</code>: use the full tree hash of the artifact workingdir. <code>AbbrevTreeSha</code>: use the abbreviated tree hash of the artifact workingdir.",
+          "enum": [
+            "Tags",
+            "CommitSha",
+            "AbbrevCommitSha",
+            "TreeSha",
+            "AbbrevTreeSha"
+          ]
         }
       },
       "preferredOrder": [
@@ -1223,7 +1235,11 @@
         "type": {
           "type": "string",
           "description": "the Jib builder type; normally determined automatically. Valid types are `maven`: for Maven. `gradle`: for Gradle.",
-          "x-intellij-html-description": "the Jib builder type; normally determined automatically. Valid types are <code>maven</code>: for Maven. <code>gradle</code>: for Gradle."
+          "x-intellij-html-description": "the Jib builder type; normally determined automatically. Valid types are <code>maven</code>: for Maven. <code>gradle</code>: for Gradle.",
+          "enum": [
+            "maven",
+            "gradle"
+          ]
         }
       },
       "preferredOrder": [

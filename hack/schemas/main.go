@@ -45,6 +45,11 @@ var (
 	regexpDefaults = regexp.MustCompile("(.*)Defaults to `(.*)`")
 	regexpExample  = regexp.MustCompile("(.*)For example: `(.*)`")
 	pTags          = regexp.MustCompile("(<p>)|(</p>)")
+	
+	// patterns for enum-type values
+	enumValuePattern = "^[ \t]*`(?P<name>[^`]+)`([ \t]*\\(default\\))?: .*$"
+	regexpEnumDefinition  = regexp.MustCompile("(?m).*Valid [a-z]+ are((\\n" + enumValuePattern + ")*)")
+	regexpEnumValues  = regexp.MustCompile("(?m)" + enumValuePattern)
 )
 
 type schemaGenerator struct {
@@ -70,6 +75,7 @@ type Definition struct {
 	HTMLDescription      string                 `json:"x-intellij-html-description,omitempty"`
 	Default              interface{}            `json:"default,omitempty"`
 	Examples             []string               `json:"examples,omitempty"`
+	Enum                 []string               `json:"enum,omitempty"`
 
 	inlines []*Definition
 	tags    string
@@ -226,6 +232,17 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 	if g.strict && name != "" {
 		if !strings.HasPrefix(comment, name+" ") {
 			panic(fmt.Sprintf("comment should start with field name on field %s", name))
+		}
+	}
+
+	// process enums before stripping out newlines
+	if m := regexpEnumDefinition.FindStringSubmatch(comment); m != nil {
+		enums := make([]string, 0)
+		if n := regexpEnumValues.FindAllStringSubmatch(m[1], -1); n != nil {
+			for _, matches := range n {
+				enums = append(enums, matches[1])
+			}
+			def.Enum = enums
 		}
 	}
 
