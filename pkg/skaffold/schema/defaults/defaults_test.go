@@ -241,7 +241,6 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 }
 
 func TestSetDefaultPortForwardNamespace(t *testing.T) {
-
 	tests := []struct {
 		description        string
 		currentConfig      api.Config
