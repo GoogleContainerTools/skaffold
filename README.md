@@ -65,7 +65,7 @@ Survey Link - https://forms.gle/BMTbGQXLWSdn7vEs6
 
 ## Install
 
-Installation methods can be found in the [Getting Started Guide](https://skaffold.dev/docs/getting-started/#installing-skaffold).
+Installation methods can be found in the [Getting Started Guide](https://skaffold.dev/docs/install/).
 
 See [Github Releases](https://github.com/GoogleContainerTools/skaffold/releases) for more information.
 
