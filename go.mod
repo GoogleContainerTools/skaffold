@@ -63,7 +63,7 @@ require (
 	github.com/mattn/go-isatty v0.0.9 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.6.2
-	github.com/opencontainers/go-digest v1.0.0-rc1
+	github.com/opencontainers/go-digest v1.0.0-rc1.0.20190228220655-ac19fd6e7483
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/procfs v0.0.4 // indirect
