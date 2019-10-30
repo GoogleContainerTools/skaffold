@@ -143,9 +143,9 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 
 	if c.Analyze {
 		// TODO: Remove backwards compatibility block
-		if !c.EnableJibInit {
-			return printAnalyzeJSONNoJib(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
-		}
+		// if !c.EnableJibInit {
+		// 	return printAnalyzeJSONNoJib(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
+		// }
 
 		return printAnalyzeJSON(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
 	}
@@ -462,6 +462,20 @@ func canonicalizeName(name string) string {
 	return canonicalized[:253]
 }
 
+// deduplicate removes any duplicated values and returns a new slice, keeping the order unchanged
+func deduplicate(s []string) []string {
+	encountered := map[string]bool{}
+	ret := make([]string, 0)
+	for i := range s {
+		if encountered[s[i]] {
+			continue
+		}
+		encountered[s[i]] = true
+		ret = append(ret, s[i])
+	}
+	return ret
+}
+
 func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
 	if !skipBuild && len(unresolvedBuilders) == 0 {
 		return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again, or run `skaffold init --skip-build`")
@@ -470,7 +484,7 @@ func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePa
 	a := struct {
 		Dockerfiles []string `json:"dockerfiles,omitempty"`
 		Images      []string `json:"images,omitempty"`
-	}{Images: unresolvedImages}
+	}{Images: deduplicate(unresolvedImages)}
 
 	for _, pair := range pairs {
 		if pair.Builder.Name() == docker.Name {
@@ -536,6 +550,8 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 		Images   []Image   `json:"images,omitempty"`
 	}{}
 
+	seen := make(map[string]bool)
+
 	for _, pair := range pairs {
 		a.Builders = append(a.Builders, Builder{Name: pair.Builder.Name(), Payload: pair.Builder})
 		a.Images = append(a.Images, Image{Name: pair.ImageName, FoundMatch: true})
@@ -544,7 +560,10 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 		a.Builders = append(a.Builders, Builder{Name: config.Name(), Payload: config})
 	}
 	for _, image := range unresolvedImages {
-		a.Images = append(a.Images, Image{Name: image, FoundMatch: false})
+		if _, ok := seen[image]; !ok {
+			a.Images = append(a.Images, Image{Name: image, FoundMatch: false})
+			seen[image] = true
+		}
 	}
 
 	contents, err := json.Marshal(a)
