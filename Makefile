@@ -50,9 +50,9 @@ LDFLAGS_linux = -static
 LDFLAGS_darwin =
 LDFLAGS_windows =
 
-GO_BUILD_TAGS_linux := "osusergo netgo static_build"
-GO_BUILD_TAGS_darwin := ""
-GO_BUILD_TAGS_windows := ""
+GO_BUILD_TAGS_linux := "osusergo netgo static_build release"
+GO_BUILD_TAGS_darwin := "release"
+GO_BUILD_TAGS_windows := "release"
 
 GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
