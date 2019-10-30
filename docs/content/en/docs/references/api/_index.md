@@ -46,14 +46,15 @@
 <a name="proto.BuildEvent"></a>
 
 ### BuildEvent
-
+BuildEvent describes if the build status per artifact. Status could be one of
+&#34;InProgress&#34;, &#34;Completed&#34; or &#34;Failed&#34;.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| artifact | [string](#string) |  |  |
-| status | [string](#string) |  |  |
-| err | [string](#string) |  |  |
+| artifact | [string](#string) |  | artifact name |
+| status | [string](#string) |  | artifact build status oneof: InProgress, Completed, Failed |
+| err | [string](#string) |  | error when build status is Failed. |
 
 
 
@@ -95,13 +96,13 @@ states
 <a name="proto.DeployEvent"></a>
 
 ### DeployEvent
-
+Deploy Event describes if the deployment has started, is in progress or is complete.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [string](#string) |  |  |
-| err | [string](#string) |  |  |
+| status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
+| err | [string](#string) |  | error when status is Failed |
 
 
 
@@ -126,18 +127,18 @@ DeployState contains the status of the current deploy
 <a name="proto.Event"></a>
 
 ### Event
-
+Event is one of the following events.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| metaEvent | [MetaEvent](#proto.MetaEvent) |  |  |
-| buildEvent | [BuildEvent](#proto.BuildEvent) |  |  |
-| deployEvent | [DeployEvent](#proto.DeployEvent) |  |  |
-| portEvent | [PortEvent](#proto.PortEvent) |  |  |
-| statusCheckEvent | [StatusCheckEvent](#proto.StatusCheckEvent) |  |  |
-| resourceStatusCheckEvent | [ResourceStatusCheckEvent](#proto.ResourceStatusCheckEvent) |  |  |
-| fileSyncEvent | [FileSyncEvent](#proto.FileSyncEvent) |  |  |
+| metaEvent | [MetaEvent](#proto.MetaEvent) |  | contains general information regarding Skaffold like version info |
+| buildEvent | [BuildEvent](#proto.BuildEvent) |  | describes if the build status per artifact. Status could be one of &#34;InProgress&#34;, &#34;Completed&#34; or &#34;Failed&#34;. |
+| deployEvent | [DeployEvent](#proto.DeployEvent) |  | describes if the deployment has started, is in progress or is complete. |
+| portEvent | [PortEvent](#proto.PortEvent) |  | describes each port forwarding event. |
+| statusCheckEvent | [StatusCheckEvent](#proto.StatusCheckEvent) |  | describes if the Status check has started, is in progress, has succeeded or failed. |
+| resourceStatusCheckEvent | [ResourceStatusCheckEvent](#proto.ResourceStatusCheckEvent) |  | indicates progress for each kubernetes deployment. |
+| fileSyncEvent | [FileSyncEvent](#proto.FileSyncEvent) |  | describes the sync status. |
 
 
 
@@ -147,15 +148,15 @@ DeployState contains the status of the current deploy
 <a name="proto.FileSyncEvent"></a>
 
 ### FileSyncEvent
-
+FileSyncEvent describes the sync status.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| fileCount | [int32](#int32) |  |  |
-| image | [string](#string) |  |  |
-| status | [string](#string) |  |  |
-| err | [string](#string) |  |  |
+| fileCount | [int32](#int32) |  | number of files synced |
+| image | [string](#string) |  | the container image to which files are sycned. |
+| status | [string](#string) |  | status of file sync. one of: Not Started, In progress, Succeeded, Failed. |
+| err | [string](#string) |  | error in case of status failed. |
 
 
 
@@ -197,14 +198,14 @@ FileSyncState contains the status of the current file sync
 <a name="proto.LogEntry"></a>
 
 ### LogEntry
-
+LogEntry describes an event and a string description of the event.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| timestamp | [google.protobuf.Timestamp](#google.protobuf.Timestamp) |  |  |
-| event | [Event](#proto.Event) |  |  |
-| entry | [string](#string) |  |  |
+| timestamp | [google.protobuf.Timestamp](#google.protobuf.Timestamp) |  | timestamp of the event. |
+| event | [Event](#proto.Event) |  | Event |
+| entry | [string](#string) |  | description of the event. |
 
 
 
@@ -214,7 +215,7 @@ FileSyncState contains the status of the current file sync
 <a name="proto.MetaEvent"></a>
 
 ### MetaEvent
-
+MetaEvent gives general information regarding Skaffold like version info
 
 
 | Field | Type | Label | Description |
@@ -229,19 +230,19 @@ FileSyncState contains the status of the current file sync
 <a name="proto.PortEvent"></a>
 
 ### PortEvent
-
+PortEvent Event describes each port forwarding event.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| localPort | [int32](#int32) |  |  |
-| remotePort | [int32](#int32) |  |  |
-| podName | [string](#string) |  |  |
-| containerName | [string](#string) |  |  |
-| namespace | [string](#string) |  |  |
+| localPort | [int32](#int32) |  | local port for forwarded resource |
+| remotePort | [int32](#int32) |  | remote port is the resource port that will be forwarded. |
+| podName | [string](#string) |  | pod name if port forwarded resourceType is Pod |
+| containerName | [string](#string) |  | container name if specified in the kubernetes spec |
+| namespace | [string](#string) |  | the namespace of the resource to port forward. |
 | portName | [string](#string) |  |  |
-| resourceType | [string](#string) |  |  |
-| resourceName | [string](#string) |  |  |
+| resourceType | [string](#string) |  | resource type e.g. &#34;pod&#34;, &#34;service&#34;. |
+| resourceName | [string](#string) |  | name of the resource to forward. |
 
 
 
@@ -299,7 +300,7 @@ FileSyncState contains the status of the current file sync
 <a name="proto.State"></a>
 
 ### State
-
+State represents the current state of the Skaffold components
 
 
 | Field | Type | Label | Description |
@@ -349,7 +350,7 @@ FileSyncState contains the status of the current file sync
 <a name="proto.StatusCheckEvent"></a>
 
 ### StatusCheckEvent
-
+StatusCheck Event describes if the Status check has started, is in progress, has succeeded or failed.
 
 
 | Field | Type | Label | Description |
