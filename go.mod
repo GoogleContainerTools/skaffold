@@ -50,7 +50,6 @@ require (
 	github.com/google/go-containerregistry v0.0.0-20191017210159-68bc585818ee
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
-	github.com/google/trillian v1.3.2-0.20191028154214-c93851d711b5 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/grpc-gateway v1.11.3
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
@@ -60,6 +59,7 @@ require (
 	github.com/krishicks/yaml-patch v0.0.10
 	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
+	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-isatty v0.0.9 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.6.2
@@ -76,6 +76,9 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
 	go.opencensus.io v0.22.1 // indirect
+	go.uber.org/atomic v1.4.0 // indirect
+	go.uber.org/multierr v1.1.0 // indirect
+	go.uber.org/zap v1.10.0 // indirect
 	golang.org/x/crypto v0.0.0-20191028145041-f83a4685e152
 	golang.org/x/exp v0.0.0-20191014171548-69215a2ee97e // indirect
 	golang.org/x/net v0.0.0-20191028085509-fe3aa8a45271 // indirect

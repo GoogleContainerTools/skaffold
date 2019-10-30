@@ -89,6 +89,7 @@ github.com/docker/docker/pkg/ioutils
 github.com/docker/docker/pkg/jsonmessage
 github.com/docker/docker/pkg/longpath
 github.com/docker/docker/pkg/progress
+github.com/docker/docker/pkg/stdcopy
 github.com/docker/docker/pkg/streamformatter
 github.com/docker/docker/pkg/stringid
 github.com/docker/docker/pkg/tarsum

@@ -54,6 +54,9 @@ func Set(c *latest.SkaffoldConfig) error {
 
 		case a.CustomArtifact != nil:
 			setCustomArtifactDefaults(a.CustomArtifact)
+
+		case a.BuildpackArtifact != nil:
+			setBuildpackArtifactDefaults(a.BuildpackArtifact)
 		}
 	}
 
@@ -157,6 +160,14 @@ func defaultToDockerArtifact(a *latest.Artifact) {
 func setCustomArtifactDefaults(a *latest.CustomArtifact) {
 	if a.Dependencies == nil {
 		a.Dependencies = &latest.CustomDependencies{
+			Paths: []string{"."},
+		}
+	}
+}
+
+func setBuildpackArtifactDefaults(a *latest.BuildpackArtifact) {
+	if a.Dependencies == nil {
+		a.Dependencies = &latest.BuildpackDependencies{
 			Paths: []string{"."},
 		}
 	}
