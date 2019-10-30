@@ -26,6 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -87,6 +88,10 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 
 	case artifact.CustomArtifact != nil:
 		return b.buildCustom(ctx, out, artifact, tag)
+
+	case artifact.BuildpackArtifact != nil:
+		return b.buildBuildpack(ctx, out, artifact, tag)
+
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}
@@ -126,6 +131,9 @@ func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifac
 
 	case a.CustomArtifact != nil:
 		paths, err = custom.GetDependencies(ctx, a.Workspace, a.CustomArtifact, b.insecureRegistries)
+
+	case a.BuildpackArtifact != nil:
+		paths, err = buildpacks.GetDependencies(ctx, a.Workspace, a.BuildpackArtifact)
 
 	default:
 		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)

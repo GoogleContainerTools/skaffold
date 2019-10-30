@@ -142,8 +142,13 @@ func TestRun(t *testing.T) {
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
 			gcpOnly:     true,
-		},
-		{
+		}, {
+			description: "buildpacks",
+			dir:         "examples/buildpacks",
+			pods:        []string{"getting-started"},
+			// Don't run on kind because of this issue: https://github.com/buildpack/pack/issues/277
+			gcpOnly: true,
+		}, {
 			description: "custom builder",
 			dir:         "testdata/custom",
 			pods:        []string{"bazel"},
