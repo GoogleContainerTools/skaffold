@@ -40,4 +40,4 @@ if ! [[ -f ${STATIK} ]]; then
   GOBIN=${DIR} GO111MODULE=on go get github.com/rakyll/statik
 fi
 
-${STATIK} -src=${TMP_DIR} -m -dest cmd/skaffold/app/cmd/credits
+${STATIK} -f -src=${TMP_DIR} -m -dest cmd/skaffold/app/cmd/credits
