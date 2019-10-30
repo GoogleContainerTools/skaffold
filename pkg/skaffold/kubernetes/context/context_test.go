@@ -66,9 +66,13 @@ clusters:
 contexts:
 - context:
     cluster: cluster-bar
-    user: user1
-  name: cluster-bar
-current-context: cluster-foo
+    user: user-bar
+  name: context-bar
+- context:
+    cluster: cluster-bar
+    user: user-baz
+  name: context-baz
+current-context: context-baz
 users:
 - name: user1
   user:
@@ -94,6 +98,17 @@ func TestCurrentContext(t *testing.T) {
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(clusterBarContext, config.CurrentContext)
+	})
+
+	testutil.Run(t, "kubeconfig CLI flag takes precedence", func(t *testutil.T) {
+		resetKubeConfig(t, validKubeConfig)
+		kubeConfig := t.TempFile("config", []byte(changedKubeConfig))
+
+		kubeConfigFile = kubeConfig
+		config, err := CurrentConfig()
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual("context-baz", config.CurrentContext)
 	})
 
 	testutil.Run(t, "invalid context", func(t *testutil.T) {
@@ -172,7 +187,7 @@ func TestGetRestClientConfig(t *testing.T) {
 		t.SetEnvs(map[string]string{"KUBECONFIG": "non-valid"})
 		resetConfig()
 
-		_, err := getRestClientConfig("")
+		_, err := getRestClientConfig("", "")
 
 		if err == nil {
 			t.Errorf("expected error outside the cluster")
@@ -258,7 +273,7 @@ func TestUseKubeContext(t *testing.T) {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			kubeContext = ""
 			for _, inv := range test.invocations {
-				UseKubeContext(inv.cliValue, inv.yamlValue)
+				ConfigureKubeConfig("", inv.cliValue, inv.yamlValue)
 			}
 
 			t.CheckDeepEqual(test.expected, kubeContext)
@@ -270,12 +285,13 @@ func TestUseKubeContext(t *testing.T) {
 // resetConfig is used by tests
 func resetConfig() {
 	kubeConfigOnce = sync.Once{}
-	kubeContextOnce = sync.Once{}
+	configureOnce = sync.Once{}
 }
 
 func resetKubeConfig(t *testutil.T, content string) {
 	kubeConfig := t.TempFile("config", []byte(content))
 	t.SetEnvs(map[string]string{"KUBECONFIG": kubeConfig})
 	kubeContext = ""
+	kubeConfigFile = ""
 	resetConfig()
 }
