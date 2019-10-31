@@ -59,7 +59,7 @@ Go-based applications are configured to run under [Delve](https://github.com/go-
     environment variables](https://godoc.org/runtime) such as `GODEBUG`, `GOGC`, `GOMAXPROCS`,
     or `GOTRACEBACK`. `GOTRACEBACK=all` is a generally useful configuration.
   - Go applications should be built without optimizations, so your build should be capable of building with
-    `-gcflags='all=-N -l'`. Skaffold [_Profiles_](../profiles/) are a useful option.
+    `-gcflags='all=-N -l'`. Skaffold [_Profiles_]({{< relref "/docs/environment/profiles.md" >}}) are a useful option.
 
 Note for users of [VS Code's debug adapter for Go](https://github.com/Microsoft/vscode-go): Delve seems
 to treat the source location for headless launches as being relative to `/go`.  The following
