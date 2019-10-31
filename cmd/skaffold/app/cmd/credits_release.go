@@ -53,18 +53,11 @@ func exportCredits(out io.Writer) error {
 				log.Fatalf("error opening %s in embedded filesystem: %s", filePath, err)
 				return err
 			}
-			size := int(fileInfo.Size())
-			buf := make([]byte, size)
-			n, err := file.Read(buf)
+			buf, err := ioutil.ReadAll(file)
 			if err != nil {
 				log.Fatalf("error reading %s in embedded filesystem: %s", filePath, err)
 				return err
 			}
-			if n < size {
-				log.Fatalf("failed to read %d bytes, only read %d", n, size)
-				return err
-			}
-
 			err = ioutil.WriteFile(newPath, buf, 0664)
 			if err != nil {
 				log.Fatalf("error writing %s to %s: %s", filePath, newPath, err)

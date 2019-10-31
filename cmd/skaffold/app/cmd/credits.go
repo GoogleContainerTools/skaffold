@@ -28,7 +28,7 @@ func NewCmdCredits() *cobra.Command {
 		WithDescription("Export third party notices to given path (./skaffold-credits by default)").
 		WithExample("export third party licenses to ~/skaffold-credits", "credits -d ~/skaffold-credits").
 		WithFlags(func(f *pflag.FlagSet) {
-			f.StringVarP(&creditsPath, "dir", "d", ".", "destination directory to place third party licenses")
+			f.StringVarP(&creditsPath, "dir", "d", "./skaffold-credits", "destination directory to place third party licenses")
 		}).
 		NoArgs(exportCredits)
 }

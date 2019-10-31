@@ -27,5 +27,5 @@ import (
 // this file does not depend on the generated statik.go file that is not checked
 // in by default to git
 func exportCredits(out io.Writer) error {
-	return errors.New("not implemented, skaffold should be built with make")
+	return errors.New("not implemented, skaffold should be built with make ('release' build tag)")
 }
