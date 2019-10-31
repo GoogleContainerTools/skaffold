@@ -98,6 +98,20 @@ type builderImagePair struct {
 	ImageName string
 }
 
+type set map[string]interface{}
+
+func (s set) add(value string) {
+	s[value] = value
+}
+
+func (s set) values() (values []string) {
+	for val := range s {
+		values = append(values, val)
+	}
+	sort.Strings(values)
+	return values
+}
+
 // DoInit executes the `skaffold init` flow.
 func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	rootDir := "."
@@ -219,7 +233,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 // separately returns the builder configs and images that didn't have any matches.
 func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
 	var pairs []builderImagePair
-	var unresolvedImages []string
+	var unresolvedImages = make(set)
 	for _, image := range images {
 		matchingConfigIndex := -1
 		for i, config := range builderConfigs {
@@ -241,10 +255,10 @@ func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builde
 			builderConfigs = append(builderConfigs[:matchingConfigIndex], builderConfigs[matchingConfigIndex+1:]...)
 		} else {
 			// No definite pair found, add to images list
-			unresolvedImages = append(unresolvedImages, image)
+			unresolvedImages.add(image)
 		}
 	}
-	return pairs, builderConfigs, unresolvedImages
+	return pairs, builderConfigs, unresolvedImages.values()
 }
 
 // detectBuilders checks if a path is a builder config, and if it is, returns the InitBuilders representing the
@@ -462,20 +476,6 @@ func canonicalizeName(name string) string {
 	return canonicalized[:253]
 }
 
-// deduplicate removes any duplicated values and returns a new slice, keeping the order unchanged
-func deduplicate(s []string) []string {
-	encountered := map[string]bool{}
-	ret := make([]string, 0)
-	for i := range s {
-		if encountered[s[i]] {
-			continue
-		}
-		encountered[s[i]] = true
-		ret = append(ret, s[i])
-	}
-	return ret
-}
-
 func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
 	if !skipBuild && len(unresolvedBuilders) == 0 {
 		return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again, or run `skaffold init --skip-build`")
@@ -484,7 +484,7 @@ func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePa
 	a := struct {
 		Dockerfiles []string `json:"dockerfiles,omitempty"`
 		Images      []string `json:"images,omitempty"`
-	}{Images: deduplicate(unresolvedImages)}
+	}{Images: unresolvedImages}
 
 	for _, pair := range pairs {
 		if pair.Builder.Name() == docker.Name {
@@ -550,8 +550,6 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 		Images   []Image   `json:"images,omitempty"`
 	}{}
 
-	seen := make(map[string]bool)
-
 	for _, pair := range pairs {
 		a.Builders = append(a.Builders, Builder{Name: pair.Builder.Name(), Payload: pair.Builder})
 		a.Images = append(a.Images, Image{Name: pair.ImageName, FoundMatch: true})
@@ -560,10 +558,7 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 		a.Builders = append(a.Builders, Builder{Name: config.Name(), Payload: config})
 	}
 	for _, image := range unresolvedImages {
-		if _, ok := seen[image]; !ok {
-			a.Images = append(a.Images, Image{Name: image, FoundMatch: false})
-			seen[image] = true
-		}
+		a.Images = append(a.Images, Image{Name: image, FoundMatch: false})
 	}
 
 	contents, err := json.Marshal(a)

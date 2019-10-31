@@ -56,12 +56,6 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 			expected:    `{"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":false}]}`,
 		},
 		{
-			description: "image names should be unique",
-			images:      []string{"image1", "image2", "image1"},
-			skipBuild:   true,
-			expected:    `{"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":false}]}`,
-		},
-		{
 			description: "no dockerfile",
 			images:      []string{"image1", "image2"},
 			shouldErr:   true,
@@ -101,12 +95,6 @@ func TestPrintAnalyzeJSONNoJib(t *testing.T) {
 		{
 			description: "no dockerfile, skip build (backwards compatibility)",
 			images:      []string{"image1", "image2"},
-			skipBuild:   true,
-			expected:    `{"images":["image1","image2"]}`,
-		},
-		{
-			description: "image names should be unique",
-			images:      []string{"image1", "image2", "image1"},
 			skipBuild:   true,
 			expected:    `{"images":["image1","image2"]}`,
 		},
@@ -474,6 +462,14 @@ func TestAutoSelectBuilders(t *testing.T) {
 				jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "image1"},
 			},
 			expectedFilteredImages: []string{"image1", "image2"},
+		},
+		{
+			description: "show unique image names",
+			builderConfigs: nil,
+			images:        []string{"image1", "image1"},
+			expectedPairs: nil,
+			expectedBuildersLeft: nil,
+			expectedFilteredImages: []string{"image1"},
 		},
 	}
 
