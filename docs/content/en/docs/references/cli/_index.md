@@ -295,7 +295,7 @@ Examples:
   skaffold credits -d ~/skaffold-credits
 
 Options:
-  -d, --dir='.': destination directory to place third party licenses
+  -d, --dir='./skaffold-credits': destination directory to place third party licenses
 
 Usage:
   skaffold credits [options]
