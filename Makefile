@@ -179,7 +179,7 @@ release-build-in-docker:
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) hack/bin
 
 .PHONY: kind-cluster
 kind-cluster:

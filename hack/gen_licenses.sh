@@ -18,26 +18,27 @@ set -euo pipefail
 
 export GOFLAGS=""
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
-LICENSES=${DIR}/licenses
-STATIK=${DIR}/statik
+BIN=${DIR}/bin
+LICENSES=${BIN}/licenses
+STATIK=${BIN}/statik
 
+mkdir -p ${BIN}
 
 if ! [[ -f ${LICENSES} ]]; then
+  pushd ${DIR}/tools
   echo >&2 'Installing licenses tool'
-  GOBIN=${DIR} GO111MODULE=on go get github.com/google/trillian/scripts/licenses@c93851d711b5
+  GOBIN=${BIN} GO111MODULE=on go get github.com/google/trillian/scripts/licenses
+  popd
 fi
 
 TMP_DIR=$(mktemp -d)
 ${LICENSES} save "github.com/GoogleContainerTools/skaffold/cmd/skaffold" --save_path="${TMP_DIR}/skaffold-credits"
 
-OUT_DIR=./out/third-party-notices
-mkdir -p ${OUT_DIR}
-
-tar -cz -C "${TMP_DIR}" -f ${OUT_DIR}/licenses.tgz  .
-
 if ! [[ -f ${STATIK} ]]; then
+  pushd ${DIR}/tools
   echo >&2 'Installing statik tool'
-  GOBIN=${DIR} GO111MODULE=on go get github.com/rakyll/statik
+  GOBIN=${BIN} GO111MODULE=on go get github.com/rakyll/statik
+  popd
 fi
 
 ${STATIK} -f -src=${TMP_DIR}/skaffold-credits/ -m -dest cmd/skaffold/app/cmd/credits
