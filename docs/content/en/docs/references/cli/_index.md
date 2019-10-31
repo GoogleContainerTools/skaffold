@@ -81,6 +81,7 @@ Getting started with a new project:
 Other Commands:
   completion        Output shell completion for the given shell (bash or zsh)
   config            Interact with the Skaffold configuration
+  credits           Export third party notices to given path (./skaffold-credits by default)
   diagnose          Run a diagnostic on Skaffold
   version           Print the version information
 
@@ -281,6 +282,31 @@ Env vars:
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_GLOBAL` (same as `--global`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
+
+### skaffold credits
+
+Export third party notices to given path (./skaffold-credits by default)
+
+```
+
+
+Examples:
+  # export third party licenses to ~/skaffold-credits
+  skaffold credits -d ~/skaffold-credits
+
+Options:
+  -d, --dir='./skaffold-credits': destination directory to place third party licenses
+
+Usage:
+  skaffold credits [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+Env vars:
+
+* `SKAFFOLD_DIR` (same as `--dir`)
 
 ### skaffold debug
 
