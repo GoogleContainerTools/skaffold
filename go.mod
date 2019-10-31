@@ -46,6 +46,7 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20191002201903-404acd9df4cc // indirect
 	github.com/golang/protobuf v1.3.2
+	github.com/google/btree v1.0.0 // indirect
 	github.com/google/go-cmp v0.3.1
 	github.com/google/go-containerregistry v0.0.0-20191017210159-68bc585818ee
 	github.com/google/go-github v17.0.0+incompatible
