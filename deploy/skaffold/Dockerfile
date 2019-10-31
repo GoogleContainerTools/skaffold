@@ -128,3 +128,4 @@ CMD ["make", "integration"]
 
 FROM runtime_deps as distribution
 COPY --from=integration /usr/bin/skaffold /usr/bin/skaffold
+RUN skaffold credits -d /THIRD_PARTY_NOTICES
