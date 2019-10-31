@@ -74,8 +74,8 @@ func NewCmdCompletion() *cobra.Command {
 }
 
 func runCompletionZsh(cmd *cobra.Command, out io.Writer) {
-	_ = rootCmd(cmd).GenZshCompletion(out)
-	_, _ = io.WriteString(out, zshCompdef)
+	rootCmd(cmd).GenZshCompletion(out)
+	io.WriteString(out, zshCompdef)
 }
 
 func rootCmd(cmd *cobra.Command) *cobra.Command {
