@@ -24,5 +24,4 @@ Take a look at our other guides
 
 | Tutorials References  |
 |----------|
-| [Getting Started With Your Project]({{< relref "/docs/tutorials/getting-started-with-your-project" >}}) |
 | [Custom Builder]({{< relref "/docs/tutorials/buildpacks" >}}) |

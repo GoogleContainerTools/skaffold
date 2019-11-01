@@ -141,7 +141,7 @@ Skaffold will perform the workflow described in `skaffold.yaml` exactly once.
 
 ## What's next
 
-For getting started with your project, see the [Getting Started With Your Project]({{<relref "/docs/tutorials/getting-started-with-your-project" >}}) tutorial.
+For getting started with your project, see the [Getting Started With Your Project]({{<relref "/docs/workflows/getting-started-with-your-project" >}}) workflow.
 
 For more in-depth topics of Skaffold, explore [Configuration]({{< relref "/docs/design/config.md" >}}),
 [Skaffold Pipeline]({{<relref "/docs/pipeline-stages" >}}), and [Architecture and Design]({{< relref "/docs/design" >}}).

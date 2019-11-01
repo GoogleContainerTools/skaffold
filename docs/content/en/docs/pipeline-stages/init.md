@@ -1,19 +1,13 @@
 ---
-title: "Getting Started With Your Project"
-linkTitle: "Getting Started With Your Project"
-weight: 100
+title: "Init"
+linkTitle: "Init"
+weight: 1
 ---
 
-Skaffold requires a `skaffold.yaml`, but - for supported projects - Skaffold can generate a simple config for you that you can get started with. To configure Skaffold for your application you can run [`skaffold init`]({{<relref "docs/references/cli#skaffold-init" >}}).
+`skaffold init` is an easy way to get your project up and running in seconds.
 
-Running `skaffold init` at the root of your project directory will walk you through a wizard
-and create a `skaffold.yaml` with [build](#build-config-initialization) and [deploy](#deploy-config-initialization) config.
+Skaffold auto-generates `build` and `deploy` config for supported builders and deployers.
 
-You can further set up [File Sync]({{<relref "docs/pipeline-stages/filesync" >}}) for file dependencies
-that do not need a rebuild.
-
-If your project contain resources other than services, you can set-up [port-forwarding]({{<relref "docs/pipeline-stages/port-forwarding" >}})
-to port-forward these resources in [`dev`]({{<relref "docs/workflows/dev" >}}) or [`debug`]({{<relref "docs/workflows/debug" >}}) mode.
 
 ## Build Config Initialization
 `skaffold init` currently supports build detection for two builders.
@@ -75,4 +69,103 @@ deploy:
 ```
 
 
+## Init API
+`skaffold init` also exposes an api which tools like IDEs can integrate with via flags.
 
+This API can be used to 
+
+1. Analyze a project workspace and discover all `Dockerfiles` and images.
+2. Generate Skaffold `build` config for a given artifact.
+
+**Init API contract**
+
+| API | flag | input/output |
+| ---- | --- | --- |
+| Analyze | `--analyze` and `--XXenableJibInit`| json encoded output of builders and images|  
+| Generate | `--artifact`| `=` delimited Dockerfile/image pair, or JSON string |
+
+
+### Analyze API
+Analyze API walks through all files in your project workspace and looks for 
+`Dockerfile`, `build.gradle` and `pom.xml` files.
+
+To get all image names and image builders, run
+```json
+skaffold init --analyze --XXenableJibInit | jq
+{
+  {
+    "builders": [
+      {
+        "name": "Docker",
+        "payload": {
+          "path": "microservices/leeroy-app/Dockerfile"
+        }
+      },
+      {
+        "name": "Jib Maven Plugin",
+        "payload": {
+          "image": "gcr.io/k8s-skaffold/project1",
+          "path": "pom.xml",
+          "project": "skaffold-project-1"
+        }
+      },
+      {
+        "name": "Jib Maven Plugin",
+        "payload": {
+          "image": "gcr.io/k8s-skaffold/project2",
+          "path": "pom.xml",
+          "project": "skaffold-project-2"
+        }
+      }
+    ],
+    "images": [
+      {
+        "name": "gcr.io/k8s-skaffold/skaffold-jib-1",
+        "foundMatch": false
+      },
+      {
+        "name": "gcr.io/k8s-skaffold/skaffold-jib-2",
+        "foundMatch": false
+      },
+      {
+        "name": "gcr.io/k8s-skaffold/leeroy-app",
+        "foundMatch": false
+      },
+    ]
+  }
+}
+```
+
+### Generate API
+To generate a skaffold `build` config, use the `--artifact` flag per artifact.
+
+For multiple artifacts, use `--artifact` multiple times.
+
+```bash
+multimodule$skaffold init \
+  -a '{"builder":"Docker","payload":{"path":"web/Dockerfile.web"},"image":"gcr.io/web-project/image"}' \
+  -a '{"builder":"Jib Maven Plugin","payload":{"path":"backend/pom.xml"},"image":"gcr.io/backend/image"}' \
+  --XXenableJibInit
+
+apiVersion: skaffold/v1beta15
+kind: Config
+metadata:
+  name: multimodule
+build:
+  artifacts:
+  - image: gcr.io/web-project/image
+    context: web
+    docker:
+      dockerfile: web/Dockerfile.web
+  - image: gcr.io/backend/image
+    context: backend
+    jib:
+      args:
+      - -Dimage=gcr.io/backend/image
+deploy:
+  kubectl:
+    manifests:
+    - web/kubernetes/web.yaml
+    - backend/kubernetes/deployment.yaml
+
+```
