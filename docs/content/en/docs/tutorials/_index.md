@@ -17,3 +17,12 @@ As we have gcr.io/k8s-skaffold in our image names, to run the examples, you have
 
 
 :mega: **Please fill out our [quick 5-question survey](https://forms.gle/BMTbGQXLWSdn7vEs6)** to tell us how satisfied you are with Skaffold, and what improvements we should make. Thank you! :dancers:
+
+
+## What's next
+Take a look at our other guides
+
+| Tutorials References  |
+|----------|
+| [Getting Started With Your Project]({{< relref "/docs/tutorials/getting-started-with-your-project" >}}) |
+| [Custom Builder]({{< relref "/docs/tutorials/buildpacks" >}}) |
