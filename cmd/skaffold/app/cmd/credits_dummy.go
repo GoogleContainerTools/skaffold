@@ -21,6 +21,9 @@ package cmd
 import (
 	"errors"
 	"io"
+
+	//required for rakyll/statik embedded content
+	_ "github.com/rakyll/statik/fs"
 )
 
 // exportCredits with !release build tag is just here for compilation purposes

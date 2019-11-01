@@ -123,8 +123,9 @@ COPY . .
 FROM builder as integration
 ARG VERSION
 COPY --from=download-kind kind /usr/local/bin/
-RUN make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
+RUN make clean && make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
 CMD ["make", "integration"]
 
 FROM runtime_deps as distribution
 COPY --from=integration /usr/bin/skaffold /usr/bin/skaffold
+RUN skaffold credits -d /THIRD_PARTY_NOTICES
