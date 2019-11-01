@@ -26,6 +26,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/empty"
+
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -358,7 +360,7 @@ func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retrie
 	var stream proto.SkaffoldService_EventLogClient
 	var err error
 	for i := 0; i < retries; i++ {
-		stream, err = client.EventLog(context.Background())
+		stream, err = client.EventLog(context.Background(), &empty.Empty{})
 		if err != nil {
 			t.Logf("waiting for connection...")
 			time.Sleep(waitTime)

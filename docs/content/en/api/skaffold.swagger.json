@@ -1,0 +1,382 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "skaffold.proto",
+    "version": "version not set"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/event_log": {
+      "get": {
+        "summary": "EventLog returns all the events of the current Skaffold execution from the start",
+        "operationId": "EventLog",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/protoLogEntry"
+            }
+          }
+        },
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v1/execute": {
+      "post": {
+        "summary": "Execute allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.",
+        "operationId": "Execute",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoIntent"
+            }
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v1/state": {
+      "get": {
+        "summary": "GetState returns the state of the current Skaffold execution",
+        "operationId": "GetState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoState"
+            }
+          }
+        },
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protoBuildEvent": {
+      "type": "object",
+      "properties": {
+        "artifact": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        }
+      },
+      "description": "BuildEvent describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."
+    },
+    "protoBuildState": {
+      "type": "object",
+      "properties": {
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "title": "BuildState contains a map of all skaffold artifacts to their current build\nstates"
+    },
+    "protoDeployEvent": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        }
+      },
+      "description": "DeployEvent gives the status of a deployment, and will be emitted by Skaffold\nanytime a deployment starts or completes, successfully or not."
+    },
+    "protoDeployState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      },
+      "title": "DeployState contains the status of the current deploy"
+    },
+    "protoEvent": {
+      "type": "object",
+      "properties": {
+        "metaEvent": {
+          "$ref": "#/definitions/protoMetaEvent"
+        },
+        "buildEvent": {
+          "$ref": "#/definitions/protoBuildEvent"
+        },
+        "deployEvent": {
+          "$ref": "#/definitions/protoDeployEvent"
+        },
+        "portEvent": {
+          "$ref": "#/definitions/protoPortEvent"
+        },
+        "statusCheckEvent": {
+          "$ref": "#/definitions/protoStatusCheckEvent"
+        },
+        "resourceStatusCheckEvent": {
+          "$ref": "#/definitions/protoResourceStatusCheckEvent"
+        },
+        "fileSyncEvent": {
+          "$ref": "#/definitions/protoFileSyncEvent"
+        }
+      },
+      "description": "Event is one of the following events."
+    },
+    "protoFileSyncEvent": {
+      "type": "object",
+      "properties": {
+        "fileCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "image": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        }
+      },
+      "description": "FileSyncEvent describes the sync status."
+    },
+    "protoFileSyncState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      },
+      "title": "FileSyncState contains the status of the current file sync"
+    },
+    "protoIntent": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "sync": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "deploy": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "description": "Intent represents user intents for a given phase to be unblocked, once."
+    },
+    "protoLogEntry": {
+      "type": "object",
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "event": {
+          "$ref": "#/definitions/protoEvent"
+        },
+        "entry": {
+          "type": "string"
+        }
+      },
+      "description": "LogEntry describes an event and a string description of the event."
+    },
+    "protoMetaEvent": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "type": "string"
+        }
+      },
+      "title": "MetaEvent gives general information regarding Skaffold like version info"
+    },
+    "protoPortEvent": {
+      "type": "object",
+      "properties": {
+        "localPort": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "remotePort": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "containerName": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "portName": {
+          "type": "string"
+        },
+        "resourceType": {
+          "type": "string"
+        },
+        "resourceName": {
+          "type": "string"
+        }
+      },
+      "description": "PortEvent Event describes each port forwarding event."
+    },
+    "protoResourceStatusCheckEvent": {
+      "type": "object",
+      "properties": {
+        "resource": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        }
+      }
+    },
+    "protoState": {
+      "type": "object",
+      "properties": {
+        "buildState": {
+          "$ref": "#/definitions/protoBuildState"
+        },
+        "deployState": {
+          "$ref": "#/definitions/protoDeployState"
+        },
+        "forwardedPorts": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/protoPortEvent"
+          }
+        },
+        "statusCheckState": {
+          "$ref": "#/definitions/protoStatusCheckState"
+        },
+        "fileSyncState": {
+          "$ref": "#/definitions/protoFileSyncState"
+        }
+      },
+      "title": "State represents the current state of the Skaffold components"
+    },
+    "protoStatusCheckEvent": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        }
+      },
+      "description": "StatusCheck Event describes if the Status check has started, is in progress, has succeeded or failed."
+    },
+    "protoStatusCheckState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "resources": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "StatusCheckState contains the state of status check of current deployed resources."
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "runtimeStreamError": {
+      "type": "object",
+      "properties": {
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  },
+  "x-stream-definitions": {
+    "protoLogEntry": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/protoLogEntry"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of protoLogEntry"
+    }
+  }
+}

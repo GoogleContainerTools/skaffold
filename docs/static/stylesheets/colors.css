@@ -98,10 +98,10 @@ input.td-search-input::placeholder {
   color: var(--hover-foreground);
 }
 
-a {
+.splash a {
   color: var(--header-footer-foreground)
 }
 
-a:hover {
+.splash a:hover {
   color: var(--hover-color)
 }
