@@ -1,3 +1,5 @@
+// +build tools
+
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -16,4 +18,8 @@ limitations under the License.
 
 package main
 
-import _ "github.com/corneliusweig/release-notes"
+import (
+	_ "github.com/corneliusweig/release-notes"
+	_ "github.com/google/trillian/scripts/licenses"
+	_ "github.com/rakyll/statik"
+)
