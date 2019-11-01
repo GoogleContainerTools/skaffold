@@ -4,9 +4,9 @@ linkTitle: "Getting Started With Your Project"
 weight: 100
 ---
 
-To enable Skaffold for your application you can run [`skaffold init`]({{<relref "docs/references/cli#skaffold-init" >}})
+Skaffold requires a `skaffold.yaml`, but - for supported projects - Skaffold can generate a simple config for you that you can get started with. To configure Skaffold for your application you can run [`skaffold init`]({{<relref "docs/references/cli#skaffold-init" >}}).
 
-Running `skaffold init` at the root of your project directory, will walk you through a wizard
+Running `skaffold init` at the root of your project directory will walk you through a wizard
 and create a `skaffold.yaml` with [build](#build-config-initialization) and [deploy](#deploy-config-initialization) config.
 
 You can further set up [File Sync]({{<relref "docs/pipeline-stages/filesync" >}}) for file dependencies
