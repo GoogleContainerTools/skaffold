@@ -1,61 +1,16 @@
-/*https://colorhunt.co/palette/22272 */
-/*:root {*/
-/*  --main-bg-color: #112d4e;*/
-/*  --header-footer: #dbe2ef;*/
-/*  --values-color: #3f72af;*/
-/*  --testimonials-color: #f9f7f7;*/
-/*  --hover-color: var(--values-color);*/
-/*  --light-text: white;*/
-/*  --dark-text: black;*/
 
-/*  --header-footer-foreground: var(--main-bg-color);*/
-
-/*}*/
-
-/*!* https://colorhunt.co/palette/151976 + black & white *!*/
-/*:root {*/
-/*    --main-bg-color: #293462;*/
-/*    --header-footer: #216583;*/
-/*    --values-color: #f76262;*/
-/*    --testimonials-color: #fff1c1;*/
-
-/*    --hover-color: var(--values-color);*/
-/*    --light-text: white;*/
-/*    --dark-text: black;*/
-
-/*    --header-footer-foreground: var(--light-text);*/
-/*}*/
-
-/*!*https://colorhunt.co/palette/141534*!*/
 :root {
-  --main-bg-color: #183661;
-  --header-footer: #1c4b82;
-  --values-color: #dd6b4d;
-  --testimonials-color: #dae1e7;
-
+  --main-bg-color: #112d4e;
+  --header-footer: #dbe2ef;
+  --values-color: #a8d0e6;
+  --testimonials-color: #f9f7f7;
   --hover-color: var(--values-color);
+  --hover-foreground: var(--values-foreground);
   --light-text: white;
   --dark-text: black;
-  --values-foreground: var(--light-text);
-  --hover-foreground: var(--values-foreground);
-
-  --header-footer-foreground: var(--light-text);
+  --values-foreground: var(--main-bg-color);
+  --header-footer-foreground: var(--main-bg-color);
 }
-
-/*!* nick's version*!*/
-/*:root {*/
-/*  --main-bg-color: #25274d;*/
-/*  --header-footer: #dbe2ef;*/
-/*  --values-color: #a8d0e6;*/
-/*  --testimonials-color: #f9f7f7;*/
-/*  --hover-color: var(--values-color);*/
-/*  --hover-foreground: var(--values-foreground);*/
-/*  --light-text: white;*/
-/*  --dark-text: black;*/
-/*  --values-foreground: var(--main-bg-color);*/
-/*  --header-footer-foreground: var(--main-bg-color);*/
-/*}*/
-
 
 .main-color {
   background-color: var(--main-bg-color);
