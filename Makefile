@@ -222,17 +222,17 @@ integration-in-docker: skaffold-builder
 
 .PHONY: submit-build-trigger
 submit-build-trigger:
-	gcloud container builds submit . \
+	gcloud builds submit . \
 		--config=deploy/cloudbuild.yaml \
 		--substitutions="_RELEASE_BUCKET=$(RELEASE_BUCKET),COMMIT_SHA=$(COMMIT)"
 
 .PHONY: submit-release-trigger
 submit-release-trigger:
-	gcloud container builds submit . \
+	gcloud builds submit . \
 		--config=deploy/cloudbuild-release.yaml \
 		--substitutions="_RELEASE_BUCKET=$(RELEASE_BUCKET),TAG_NAME=$(VERSION)"
 
-#utilities for skaffold site - not used anywhere else
+# utilities for skaffold site - not used anywhere else
 
 .PHONY: preview-docs
 preview-docs:
