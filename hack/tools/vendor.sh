@@ -17,12 +17,26 @@
 ## This tool should only be used when the hack/tools/vendor directory needs update
 ## Why are we using this instead of go mod vendor? Because https://github.com/golang/go/issues/32502
 ## What files do we need?
+## vendor/github.com/google/licenseclassifier/licenses - it contains no go files, hence it's not part of it
+## vendor/github.com/google/trillian/scripts/licenses - it has no go.mod for it
 
-cd "$( dirname "${BASH_SOURCE[0]}" )" || exit 1
-export GOFLAGS=""
+DIR="$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)"
+cd ${DIR}
 go mod vendor
+
 git clone https://github.com/google/licenseclassifier
+cd licenseclassifier
+git checkout 842c0d70d702
+cd ${DIR}
 cp -R licenseclassifier/licenses vendor/github.com/google/licenseclassifier/
 rm -rf licenseclassifier
+
+git clone https://github.com/google/trillian
+cd trillian
+git checkout 9600d042b2e7
+mkdir -p vendor/github.com/google/trillian/scripts/
+cd ${DIR}
+cp -R trillian/scripts/licenses vendor/github.com/google/trillian/scripts/
+rm -rf trillian
 
 

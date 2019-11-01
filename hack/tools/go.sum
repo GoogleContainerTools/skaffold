@@ -145,6 +145,8 @@ github.com/google/pprof v0.0.0-20190515194954-54271f7e092f/go.mod h1:zfwlbNMJ+OI
 github.com/google/trillian v1.2.2-0.20190612132142-05461f4df60a/go.mod h1:YPmUVn5NGwgnDUgqlVyFGMTgaWlnSvH7W5p+NdOG8UA=
 github.com/google/trillian v1.3.2-0.20191028154214-c93851d711b5 h1:XjcMiq0QsXctpc3C41vsIhSlvfpOdbgDbrZYiOA63YI=
 github.com/google/trillian v1.3.2-0.20191028154214-c93851d711b5/go.mod h1:RUI4FE6YwFEDDGAgCAIdCrU2hpyGUGubgm9K3kqvJAA=
+github.com/google/trillian v1.3.2-0.20191031155000-9600d042b2e7 h1:rpYDS9D8rXDKiQE8QvGxYlNTQgheReIE3e0U2aOfUKM=
+github.com/google/trillian v1.3.2-0.20191031155000-9600d042b2e7/go.mod h1:RUI4FE6YwFEDDGAgCAIdCrU2hpyGUGubgm9K3kqvJAA=
 github.com/google/trillian-examples v0.0.0-20190603134952-4e75ba15216c/go.mod h1:WgL3XZ3pA8/9cm7yxqWrZE6iZkESB2ItGxy5Fo6k2lk=
 github.com/google/uuid v1.1.1/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+vpHVxEJEs9eg=

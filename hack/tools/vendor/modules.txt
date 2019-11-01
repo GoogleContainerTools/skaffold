@@ -22,7 +22,7 @@ github.com/google/licenseclassifier/stringclassifier
 github.com/google/licenseclassifier/stringclassifier/internal/pq
 github.com/google/licenseclassifier/stringclassifier/searchset
 github.com/google/licenseclassifier/stringclassifier/searchset/tokenizer
-# github.com/google/trillian v1.3.2-0.20191028154214-c93851d711b5
+# github.com/google/trillian v1.3.2-0.20191031155000-9600d042b2e7
 github.com/google/trillian/scripts/licenses
 github.com/google/trillian/scripts/licenses/licenses
 # github.com/inconshreveable/mousetrap v1.0.0
