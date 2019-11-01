@@ -46,8 +46,8 @@
 <a name="proto.BuildEvent"></a>
 
 ### BuildEvent
-BuildEvent describes if the build status per artifact. Status could be one of
-&#34;InProgress&#34;, &#34;Completed&#34; or &#34;Failed&#34;.
+BuildEvent describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
+If the build fails, an error will be attached to the event.
 
 
 | Field | Type | Label | Description |
@@ -96,7 +96,8 @@ states
 <a name="proto.DeployEvent"></a>
 
 ### DeployEvent
-Deploy Event describes if the deployment has started, is in progress or is complete.
+DeployEvent gives the status of a deployment, and will be emitted by Skaffold
+anytime a deployment starts or completes, successfully or not.
 
 
 | Field | Type | Label | Description |

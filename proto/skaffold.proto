@@ -67,15 +67,16 @@ message MetaEvent {
   string entry = 1;
 }
 
-// BuildEvent describes if the build status per artifact. Status could be one of
-// "InProgress", "Completed" or "Failed".
+// BuildEvent describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
+// If the build fails, an error will be attached to the event.
 message BuildEvent {
   string artifact = 1; // artifact name
   string status = 2;   // artifact build status oneof: InProgress, Completed, Failed
   string err = 3;      // error when build status is Failed.
 }
 
-// Deploy Event describes if the deployment has started, is in progress or is complete.
+// DeployEvent gives the status of a deployment, and will be emitted by Skaffold
+// anytime a deployment starts or completes, successfully or not.
 message DeployEvent {
   string status = 1;   // deployment status oneof: InProgress, Completed, Failed
   string err = 2;      // error when status is Failed

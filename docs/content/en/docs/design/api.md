@@ -1,20 +1,20 @@
 ---
 title: "Skaffold API"
 linkTitle: "Skaffold API"
-weight: 40
+weight: 60
 ---
 When running [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) or [`skaffold debug`]({{< relref "/docs/workflows/debug" >}}), 
 Skaffold starts a server that exposes an API over the lifetime of the Skaffold process.
 Besides the CLI, this API is the primary way tools like IDEs integrate with Skaffold for **retrieving information about the
 pipeline** and for **controlling the phases in the pipeline**.
 
-To retrieve information of the Skaffold pipeline, the Skaffold API provides two main functionalities:
+To retrieve information about the Skaffold pipeline, the Skaffold API provides two main functionalities:
   
-  * A [streaming event log]({{< relref "/docs/concepts/api#events-api">}}) created from the different phases in a pipeline run and
+  * A [streaming event log]({{< relref "/docs/design/api#events-api">}}) created from the different phases in a pipeline run and
   
-  * A snapshot of the [overall state]({{< relref "/docs/concepts/api#state-api" >}}) of the pipeline at any given time during the run.
+  * A snapshot of the [overall state]({{< relref "/docs/design/api#state-api" >}}) of the pipeline at any given time during the run.
 
-To control the individual phases of the Skaffold, the Skaffold API provides [fine grained control over]({{< relref "/docs/concepts/api#controlling-build-sync-deploy" >}})
+To control the individual phases of the Skaffold, the Skaffold API provides [fine grained control over]({{< relref "/docs/design/api#controlling-build-sync-deploy" >}})
 the individual phases of the pipeline (build, deploy and sync).
 
 
@@ -51,7 +51,7 @@ WARN[0000] port 50051 for gRPC server already in use: using 50053 instead
 To connect to the `gRPC` server at default port `50051` use the following code snippet.
 
 {{< alert title="Note" >}}
-The skaffold gRPC server is not an HTTPS service, hence we need to specify <code>.WithInSecure()</code>
+The skaffold gRPC server is not an HTTPS service, hence we need to specify <code>grpc.WithInSecure()</code>
 {{</alert>}}
 
 ```golang
@@ -82,7 +82,7 @@ Skaffold's API exposes the three main endpoints:
 
 ### Events API
 
-Skaffold provides a continuous development mode [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) which builds, deploys
+Skaffold provides a continuous development mode [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) which rebuilds and redeploys
 your application on changes. In a single development loop, one or more container images
 may be built and deployed.
 
@@ -93,7 +93,7 @@ Tools that integrate with Skaffold can use these events to kick-off parts of the
 Example scenarios:
 
 * port forwarding events are used by Cloud Code to attach debuggers automatically to running containers.     
-* when a port-forwarded frontend service is redeployed successfully, kick-off a suite of Selenium tests can be executed to test changes.
+* when a port-forwarded frontend service is redeployed successfully, kick-off a suite of Selenium tests that test changes to the newly deployed service..
 
 **Event API contract**
 
@@ -110,7 +110,7 @@ Example scenarios:
 Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` execution on our [getting-started example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/getting-started)
 ```bash
  curl localhost:50052/v1/events
-{"result":{"timestamp":"2019-10-16T18:26:11.385251549Z","event":{"metaEvent":{"entry":"Starting Skaffold: \u0026{Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1beta15 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate:2019-10-03T15:01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"}}}}
+{"result":{"timestamp":"2019-10-16T18:26:11.385251549Z","event":{"metaEvent":{"entry":"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1beta15 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate:2019-10-03T15:01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"}}}}
 {"result":{"timestamp":"2019-10-16T18:26:11.436231589Z","event":{"buildEvent":{"artifact":"gcr.io/k8s-skaffold/skaffold-example","status":"In Progress"}},"entry":"Build started for artifact gcr.io/k8s-skaffold/skaffold-example"}}
 {"result":{"timestamp":"2019-10-16T18:26:12.010124246Z","event":{"buildEvent":{"artifact":"gcr.io/k8s-skaffold/skaffold-example","status":"Complete"}},"entry":"Build completed for artifact gcr.io/k8s-skaffold/skaffold-example"}}
 {"result":{"timestamp":"2019-10-16T18:26:12.391721823Z","event":{"deployEvent":{"status":"In Progress"}},"entry":"Deploy started"}}
@@ -119,7 +119,7 @@ Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` ex
 ```
 {{% /tab %}}
 {{% tab "gRPC API" %}}
-To get events from the `gRPC` server, first create [`gRPC` client]({{< relref "/docs/concepts/api#creating-a-grpc-client" >}})
+To get events from the `gRPC` server, first create [`gRPC` client]({{< relref "/docs/design/api#creating-a-grpc-client" >}})
 
 ```golang
 func main() {
@@ -210,7 +210,7 @@ Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` ex
 ```
 {{% /tab %}}
 {{% tab "gRPC API" %}}
-To get events over `gRPC` server, first create [`gRPC` client]({{< relref "/docs/concepts/api#creating-a-grpc-client" >}})
+To get events over `gRPC` server, first create [`gRPC` client]({{< relref "/docs/design/api#creating-a-grpc-client" >}})
 ```code
 func main() {
   // Create a gRPC client connection to localhost:50051.

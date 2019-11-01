@@ -581,8 +581,8 @@ func (m *MetaEvent) GetEntry() string {
 	return ""
 }
 
-// BuildEvent describes if the build status per artifact. Status could be one of
-// "InProgress", "Completed" or "Failed".
+// BuildEvent describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
+// If the build fails, an error will be attached to the event.
 type BuildEvent struct {
 	Artifact             string   `protobuf:"bytes,1,opt,name=artifact,proto3" json:"artifact,omitempty"`
 	Status               string   `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
@@ -638,7 +638,8 @@ func (m *BuildEvent) GetErr() string {
 	return ""
 }
 
-// Deploy Event describes if the deployment has started, is in progress or is complete.
+// DeployEvent gives the status of a deployment, and will be emitted by Skaffold
+// anytime a deployment starts or completes, successfully or not.
 type DeployEvent struct {
 	Status               string   `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	Err                  string   `protobuf:"bytes,2,opt,name=err,proto3" json:"err,omitempty"`

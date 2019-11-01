@@ -10,5 +10,5 @@ weight: 100
 | [skaffold.yaml]({{< relref "/docs/references/yaml" >}}) |
 | [Deprecation Policy]({{< relref "/docs/references/deprecation" >}}) |
 | [Privacy Settings] ({{< relref "/docs/references/privacy" >}}) |
-| [Skaffold API]({{< relref "/docs/references/api" >}}) |
+| [API Reference]({{< relref "/docs/references/api" >}}) |
 
