@@ -32,10 +32,7 @@
 
 .skaffold-footer {
     background-color: #25274d !important;
-    min-height: 80px;
-    padding-top: 10px !important;
-
-
+    min-height: unset;
 }
 
 
@@ -58,6 +55,9 @@
     border: 1px solid white;
 }
 
+.splashbutton-secondary:visited {
+    color: white;
+}
 .splashbutton-secondary:hover {
     opacity: 0.8;
     color: white;
