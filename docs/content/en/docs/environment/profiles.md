@@ -99,3 +99,14 @@ In the example below instead of overriding the whole `build` section, the `dev` 
 defines a different Dockerfile to use for the first artifact.
 
 {{% readfile file="samples/profiles/patches.yaml" %}}
+
+### Activating multiple profiles at the same time
+
+Multiple profiles can be specified either by using the `-p` flag multiple times or by comma separated profiles.
+
+```bash
+skaffold dev -p hello,world
+```
+
+Skaffold will activate both profiles, `hello` and `world`. 
+This is e.g. useful when combined with patches to provide a composable development setup where `hello` and `world` can be added on demand.

@@ -17,7 +17,6 @@ limitations under the License.
 package deploy
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -228,14 +227,16 @@ func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []bu
 
 	manifestOut := out
 	if filepath != "" {
-		f, err := os.Open(filepath)
+		f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
 			return errors.Wrap(err, "opening file for writing manifests")
 		}
-		manifestOut = bufio.NewWriter(f)
+		defer f.Close()
+		f.WriteString(manifests.String() + "\n")
+	} else {
+		fmt.Fprintln(manifestOut, manifests.String())
 	}
 
-	fmt.Fprintln(manifestOut, manifests.String())
 	return nil
 }
 

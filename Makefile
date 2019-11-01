@@ -50,9 +50,9 @@ LDFLAGS_linux = -static
 LDFLAGS_darwin =
 LDFLAGS_windows =
 
-GO_BUILD_TAGS_linux := "osusergo netgo static_build"
-GO_BUILD_TAGS_darwin := ""
-GO_BUILD_TAGS_windows := ""
+GO_BUILD_TAGS_linux := "osusergo netgo static_build release"
+GO_BUILD_TAGS_darwin := "release"
+GO_BUILD_TAGS_windows := "release"
 
 GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
@@ -69,10 +69,10 @@ GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
-$(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): generate-licenses $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
 
-$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): generate-licenses $(GO_FILES) $(BUILD_DIR)
 	docker build --build-arg PROJECT=$(REPOPATH) \
 		--build-arg TARGETS=$*/$(GOARCH) \
 		--build-arg FLAG_LDFLAGS=$(GO_LDFLAGS_$(*)) \
@@ -117,7 +117,7 @@ quicktest:
 	go test -short -timeout=60s ./...
 
 .PHONY: install
-install: $(GO_FILES) $(BUILD_DIR)
+install: generate-licenses $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
@@ -179,7 +179,7 @@ release-build-in-docker:
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) hack/bin
 
 .PHONY: kind-cluster
 kind-cluster:
@@ -222,17 +222,17 @@ integration-in-docker: skaffold-builder
 
 .PHONY: submit-build-trigger
 submit-build-trigger:
-	gcloud container builds submit . \
+	gcloud builds submit . \
 		--config=deploy/cloudbuild.yaml \
 		--substitutions="_RELEASE_BUCKET=$(RELEASE_BUCKET),COMMIT_SHA=$(COMMIT)"
 
 .PHONY: submit-release-trigger
 submit-release-trigger:
-	gcloud container builds submit . \
+	gcloud builds submit . \
 		--config=deploy/cloudbuild-release.yaml \
 		--substitutions="_RELEASE_BUCKET=$(RELEASE_BUCKET),TAG_NAME=$(VERSION)"
 
-#utilities for skaffold site - not used anywhere else
+# utilities for skaffold site - not used anywhere else
 
 .PHONY: preview-docs
 preview-docs:
@@ -247,3 +247,7 @@ build-docs-preview:
 .PHONY: generate-schemas
 generate-schemas:
 	go run hack/schemas/main.go
+
+.PHONY: generate-licenses
+generate-licenses:
+	hack/gen_licenses.sh
