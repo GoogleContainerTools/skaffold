@@ -144,6 +144,7 @@ func (m *Request) GetName() string {
 	return ""
 }
 
+// State represents the current state of the Skaffold components
 type State struct {
 	BuildState           *BuildState          `protobuf:"bytes,1,opt,name=buildState,proto3" json:"buildState,omitempty"`
 	DeployState          *DeployState         `protobuf:"bytes,2,opt,name=deployState,proto3" json:"deployState,omitempty"`
@@ -384,6 +385,7 @@ func (m *FileSyncState) GetStatus() string {
 	return ""
 }
 
+// Event is one of the following events.
 type Event struct {
 	// Types that are valid to be assigned to EventType:
 	//	*Event_MetaEvent
@@ -539,6 +541,7 @@ func (*Event) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// MetaEvent gives general information regarding Skaffold like version info
 type MetaEvent struct {
 	Entry                string   `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -578,6 +581,8 @@ func (m *MetaEvent) GetEntry() string {
 	return ""
 }
 
+// BuildEvent describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
+// If the build fails, an error will be attached to the event.
 type BuildEvent struct {
 	Artifact             string   `protobuf:"bytes,1,opt,name=artifact,proto3" json:"artifact,omitempty"`
 	Status               string   `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
@@ -633,6 +638,8 @@ func (m *BuildEvent) GetErr() string {
 	return ""
 }
 
+// DeployEvent gives the status of a deployment, and will be emitted by Skaffold
+// anytime a deployment starts or completes, successfully or not.
 type DeployEvent struct {
 	Status               string   `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	Err                  string   `protobuf:"bytes,2,opt,name=err,proto3" json:"err,omitempty"`
@@ -680,6 +687,7 @@ func (m *DeployEvent) GetErr() string {
 	return ""
 }
 
+// StatusCheck Event describes if the Status check has started, is in progress, has succeeded or failed.
 type StatusCheckEvent struct {
 	Status               string   `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	Message              string   `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
@@ -798,6 +806,7 @@ func (m *ResourceStatusCheckEvent) GetErr() string {
 	return ""
 }
 
+// PortEvent Event describes each port forwarding event.
 type PortEvent struct {
 	LocalPort            int32    `protobuf:"varint,1,opt,name=localPort,proto3" json:"localPort,omitempty"`
 	RemotePort           int32    `protobuf:"varint,2,opt,name=remotePort,proto3" json:"remotePort,omitempty"`
@@ -893,6 +902,7 @@ func (m *PortEvent) GetResourceName() string {
 	return ""
 }
 
+// FileSyncEvent describes the sync status.
 type FileSyncEvent struct {
 	FileCount            int32    `protobuf:"varint,1,opt,name=fileCount,proto3" json:"fileCount,omitempty"`
 	Image                string   `protobuf:"bytes,2,opt,name=image,proto3" json:"image,omitempty"`
@@ -956,6 +966,7 @@ func (m *FileSyncEvent) GetErr() string {
 	return ""
 }
 
+// LogEntry describes an event and a string description of the event.
 type LogEntry struct {
 	Timestamp            *timestamp.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Event                *Event               `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`

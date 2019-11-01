@@ -17,6 +17,7 @@ message Request {
   string name = 1;
 }
 
+// State represents the current state of the Skaffold components
 message State {
   BuildState buildState = 1;
   DeployState deployState = 2;
@@ -48,38 +49,51 @@ message FileSyncState {
   string status = 1;
 }
 
+// Event is one of the following events.
 message Event {
   oneof event_type {
-    MetaEvent metaEvent = 1;
-    BuildEvent buildEvent = 2;
-    DeployEvent deployEvent = 3;
-    PortEvent portEvent = 4;
-    StatusCheckEvent statusCheckEvent = 5;
-    ResourceStatusCheckEvent resourceStatusCheckEvent = 6;
-    FileSyncEvent fileSyncEvent = 7;
+    MetaEvent metaEvent = 1;   // contains general information regarding Skaffold like version info
+    BuildEvent buildEvent = 2;  // describes if the build status per artifact. Status could be one of "InProgress", "Completed" or "Failed".
+    DeployEvent deployEvent = 3; // describes if the deployment has started, is in progress or is complete.
+    PortEvent portEvent = 4;     //  describes each port forwarding event.
+    StatusCheckEvent statusCheckEvent = 5; // describes if the Status check has started, is in progress, has succeeded or failed.
+    ResourceStatusCheckEvent resourceStatusCheckEvent = 6; // indicates progress for each kubernetes deployment.
+    FileSyncEvent fileSyncEvent = 7; // describes the sync status.
   }
 }
 
+// MetaEvent gives general information regarding Skaffold like version info
 message MetaEvent {
   string entry = 1;
 }
 
+// BuildEvent describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
+// If the build fails, an error will be attached to the event.
 message BuildEvent {
-  string artifact = 1;
-  string status = 2;
-  string err = 3;
+  string artifact = 1; // artifact name
+  string status = 2;   // artifact build status oneof: InProgress, Completed, Failed
+  string err = 3;      // error when build status is Failed.
 }
 
+// DeployEvent gives the status of a deployment, and will be emitted by Skaffold
+// anytime a deployment starts or completes, successfully or not.
 message DeployEvent {
-  string status = 1;
-  string err = 2;
+  string status = 1;   // deployment status oneof: InProgress, Completed, Failed
+  string err = 2;      // error when status is Failed
 }
 
+// StatusCheck Event describes if the Status check has started, is in progress, has succeeded or failed.
 message StatusCheckEvent {
   string status = 1;
   string message = 2;
   string err = 3;
 }
+
+// A Resource StatusCheck Event, indicates progress for each kubernetes deployment.
+// For every resource, there will be exactly one event with `status` *Succeeded* or *Failed* event.
+// There can be multiple events with `status` *Pending*.
+// Skaffold polls for resource status every 0.5 second. If the resource status changes, an event with `status` “Pending”, “Complete” and “Failed”
+// will be sent with the new status. e.g.
 
 message ResourceStatusCheckEvent {
   string resource = 1;
@@ -88,28 +102,31 @@ message ResourceStatusCheckEvent {
   string err = 4;
 }
 
+// PortEvent Event describes each port forwarding event.
 message PortEvent {
-  int32 localPort = 1;
-  int32 remotePort = 2;
-  string podName = 3;
-  string containerName = 4;
-  string namespace = 5;
+  int32 localPort = 1;     // local port for forwarded resource
+  int32 remotePort = 2;    // remote port is the resource port that will be forwarded.
+  string podName = 3;      // pod name if port forwarded resourceType is Pod
+  string containerName = 4;  // container name if specified in the kubernetes spec
+  string namespace = 5;       // 	the namespace of the resource to port forward.
   string portName = 6;
-  string resourceType=7;
-  string resourceName=8;
+  string resourceType=7;     // resource type e.g. "pod", "service".
+  string resourceName=8;     // name of the resource to forward.
 }
 
+// FileSyncEvent describes the sync status.
 message FileSyncEvent {
-  int32 fileCount = 1;
-  string image = 2;
-  string status = 3;
-  string err = 4;
+  int32 fileCount = 1;      // number of files synced
+  string image = 2;         // the container image to which files are sycned.
+  string status = 3;        // status of file sync. one of: Not Started, In progress, Succeeded, Failed.
+  string err = 4;           // error in case of status failed.
 }
 
+// LogEntry describes an event and a string description of the event.
 message LogEntry {
-  google.protobuf.Timestamp timestamp = 1;
-  Event event = 2;
-  string entry = 3;
+  google.protobuf.Timestamp timestamp = 1;  // timestamp of the event.
+  Event event = 2;                          // Event
+  string entry = 3;                         // description of the event.
 }
 
 message UserIntentRequest {
