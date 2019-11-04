@@ -74,15 +74,15 @@ deploy:
 
 This API can be used to 
 
-1. Analyze a project workspace and discover all `Dockerfiles` and images.
-2. Generate Skaffold `build` config for a given artifact.
+1. Analyze a project workspace and discover all build definitions (e.g. `Dockerfile`s) and artifacts (image names from the Kubernetes manifests) - this then provides an ability for tools to ask the user to pair the artifacts with Dockerfiles interactively. 
+2. Given a pairing between the image names (artifacts) and build definitions (e.g. Dockerfiles), generate Skaffold `build` config for a given artifact.
 
 **Init API contract**
 
 | API | flag | input/output |
 | ---- | --- | --- |
 | Analyze | `--analyze` and `--XXenableJibInit`| json encoded output of builders and images|  
-| Generate | `--artifact`| `=` delimited Dockerfile/image pair, or JSON string |
+| Generate | `--artifact`| "`=` delimited" build definition/image pair (for example: `=path1/Dockerfile=artifact1`) or JSON string (for example: ...) |
 
 
 ### Analyze API
