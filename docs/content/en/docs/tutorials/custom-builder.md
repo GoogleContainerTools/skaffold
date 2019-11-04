@@ -5,7 +5,7 @@ weight: 100
 ---
 
 This page describes building Skaffold artifacts using a custom build script, which builds images using [buildpacks](https://buildpacks.io/).
-Buildpacks enables building language-based containers from source code, without the need for a Dockerfile.
+Buildpacks enable building language-based containers from source code, without the need for a Dockerfile.
 
 ## Before you begin
 First, you will need to have Skaffold and a Kubernetes cluster set up.
