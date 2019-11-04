@@ -1,12 +1,11 @@
 #!/bin/bash
 set -e
-images=$(echo $IMAGES | tr " " "\n")
+image=$(echo $IMAGE)
 
-for image in $images
-do
-    pack build $image
-    if $PUSH_IMAGE
-    then
-        docker push $image
-    fi
-done
+if [ !-z "$image" ]
+  pack build $image
+  if $PUSH_IMAGE
+  then
+    docker push $image
+  fi
+fi

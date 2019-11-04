@@ -4,17 +4,12 @@ bazel build //:skaffold_example.tar
 TAR_PATH=$(bazel info bazel-bin)
 docker load -i $TAR_PATH/skaffold_example.tar
 
+image=$(echo $IMAGE)
 
-images=$(echo $IMAGES | tr " " "\n")
-
-for image in $images
-do
-    docker tag bazel:skaffold_example $image
-
-    if $PUSH_IMAGE
-    then
-        docker push $image
-    fi
-
-done
-
+if [ !-z "$image" ]
+  pack build $image
+  if $PUSH_IMAGE
+  then
+    docker push $image
+  fi
+fi
