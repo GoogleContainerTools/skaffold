@@ -10,31 +10,10 @@ Running `skaffold init` at the root of your project directory will walk you thro
 and create a `skaffold.yaml` with [build](#build-config-initialization) and [deploy](#deploy-config-initialization) config.
 
 ```bash
-microservices$ skaffold init
-? Choose the builder to build image gcr.io/k8s-skaffold/leeroy-app Docker (leeroy-app/Dockerfile)
-? Choose the builder to build image gcr.io/k8s-skaffold/leeroy-web Docker (leeroy-web/Dockerfile)
-apiVersion: skaffold/v1beta15
-kind: Config
-metadata:
-  name: microservices
-build:
-  artifacts:
-  - image: gcr.io/k8s-skaffold/leeroy-app
-    context: leeroy-app
-  - image: gcr.io/k8s-skaffold/leeroy-web
-    context: leeroy-web
-deploy:
-  kubectl:
-    manifests:
-    - leeroy-app/kubernetes/deployment.yaml
-    - leeroy-web/kubernetes/deployment.yaml
-
-Do you want to write this configuration to skaffold.yaml? [y/n]: y
-Configuration skaffold.yaml was written
-You can now run [skaffold build] to build the artifacts
-or [skaffold run] to build and deploy
-or [skaffold dev] to enter development mode, with auto-redeploy
+skaffold init
 ```
+
+![init-flow](/images/init-flow.png)
 
 ## What's next
 You can further set up [File Sync]({{<relref "/docs/pipeline-stages/filesync" >}}) for source files 
