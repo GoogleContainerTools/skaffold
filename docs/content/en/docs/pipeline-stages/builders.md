@@ -84,7 +84,7 @@ section of `skaffold.yaml`. The following options can optionally be configured:
 
 {{< schema root="GoogleCloudBuild" >}}
 
-**Example**
+### Example
 
 The following `build` section, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Google Cloud Build:
