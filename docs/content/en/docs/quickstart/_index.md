@@ -8,8 +8,8 @@ Follow this tutorial to learn about Skaffold on a small Kubernetes app built wit
 and deployed with [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)! 
 
 {{< alert title="Note">}}
-Aside from <code>Docker</code> and <code>kubectl</code>, Skaffold also supports a variety of other tools
-and workflows; see <a href="/docs/tutorials">Tutorials</a> for
+Aside from `Docker` and `kubectl`, Skaffold also supports a variety of other tools
+and workflows; see [Tutorials]({{<relref "/docs/tutorials">}}) for
 more information.
 {{</alert>}}
 

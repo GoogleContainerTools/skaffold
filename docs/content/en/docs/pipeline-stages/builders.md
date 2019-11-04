@@ -40,14 +40,14 @@ instead, which enables artifacts with [BuildKit](https://github.com/moby/buildki
 After the artifacts are successfully built, Docker images will be pushed
 to the remote registry. You can choose to skip this step.
 
-### Configuration
+**Configuration**
 
 To use the local Docker daemon, add build type `local` to the `build` section
 of `skaffold.yaml`. The following options can optionally be configured:
 
 {{< schema root="LocalBuild" >}}
 
-### Example
+**Example**
 
 The following `build` section instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with the local Docker daemon:
@@ -77,14 +77,14 @@ and will start the building process. Skaffold does not honor `.gitignore` or `.g
 exclusions. If you need to ignore files use `.dockerignore`. Any `cloudbuild.yaml` found will not
 be used in the build process.
 
-### Configuration
+**Configuration**
 
 To use Cloud Build, add build type `googleCloudBuild` to the `build`
 section of `skaffold.yaml`. The following options can optionally be configured:
 
 {{< schema root="GoogleCloudBuild" >}}
 
-### Example
+**Example**
 
 The following `build` section, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Google Cloud Build:
@@ -101,7 +101,7 @@ that cannot easily or securely run a Docker daemon.
 Skaffold can help build artifacts in a Kubernetes cluster using the Kaniko
 image; after the artifacts are built, kaniko must push them to a registry.
 
-### Configuration
+**Configuration**
 
 To use Kaniko, add build type `kaniko` to the `build` section of
 `skaffold.yaml`. The following options can optionally be configured:
@@ -138,7 +138,7 @@ build:
 ```
 Note that the Kubernetes secret must not be of type `kubernetes.io/dockerconfigjson` which stores the config json under the key `".dockerconfigjson"`, but an opaque secret with the key `"config.json"`.
 
-### Example
+**Example**
 
 The following `build` section, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Kaniko:
@@ -158,7 +158,7 @@ pushes them to the local Docker daemon or to remote registries as instructed by 
 
 Skaffold requires using Jib v1.4.0 or later.
 
-### Configuration
+**Configuration**
 
 To use Jib, add a `jib` field to each artifact you specify in the
 `artifacts` part of the `build` section. `context` should be a path to
@@ -181,7 +181,7 @@ based on the presence of standard build files in the `artifact`'s
     or the Gradle wrapper script (`gradlew`, `gradlew.bat`, or
     `gradlew.cmd`).
 
-### Example
+**Example**
 
 See the [Skaffold-Jib demo project](https://github.com/GoogleContainerTools/skaffold/blob/master/examples/jib/)
 for an example.
@@ -205,7 +205,7 @@ in Maven) that should produce a container image. Then for each such sub-project:
 
 {{< alert title="Updating from earlier versions" >}}
 Skaffold had required Maven multi-module projects bind a Jib
-<code>build</code> or <code>dockerBuild</code> goal to the <em>package</em> phase.  These bindings are
+`build` or `dockerBuild` goal to the **package** phase.  These bindings are
 no longer required with Jib 1.4.0 and should be removed.
 {{< /alert >}}
 
@@ -230,7 +230,7 @@ extensible build system.
 Skaffold can help build artifacts using Bazel; after Bazel finishes building
 container images, they will be loaded into the local Docker daemon.
 
-### Configuration
+**Configuration**
 
 To use Bazel, `bazel` field to each artifact you specify in the
 `artifacts` part of the `build` section, and use the build type `local`.
@@ -246,7 +246,7 @@ with docker load. See
 {{% /alert %}}
 
 
-### Example
+**Example**
 
 The following `build` section instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Bazel:
@@ -295,7 +295,7 @@ Skaffold will pass in the following additional environment variables for the fol
 | $DOCKER_CONFIG_SECRET_NAME    | The secret containing any required docker authentication for custom builds on cluster.| None. | 
 | $TIMEOUT        | The amount of time an on cluster build is allowed to run.| None. | 
 
-### Configuration
+**Configuration**
 
 To use a custom build script, add a `custom` field to each corresponding artifact in the `build` section of the skaffold.yaml.
 Currently, this only works with the `local` and `cluster` build types. Supported schema for `custom` includes:
@@ -370,7 +370,7 @@ Syncable files must be included in both the `paths` section of `dependencies`, s
 `STDOUT` and `STDERR` from the custom build script will be redirected and displayed within skaffold logs.
 
 
-### Example
+**Example**
 
 The following `build` section instructs Skaffold to build an image `gcr.io/k8s-skaffold/example` with a custom build script `build.sh`:
 
