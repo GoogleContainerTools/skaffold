@@ -150,12 +150,28 @@ service SkaffoldService {
     };
     }
 
-    // EventLog returns all the events of the current Skaffold execution from the start
-    rpc EventLog (google.protobuf.Empty) returns (stream LogEntry) {
+    // EventLog is DEPRECATED. It does the same as Events.
+    rpc EventLog(stream LogEntry) returns (stream LogEntry) {
         option (google.api.http) = {
-      get: "/v1/event_log"
-    };
+            get: "/v1/event_log"
+        };
     }
+
+    // Events returns all the events of the current Skaffold execution from the start
+    rpc Events(stream LogEntry) returns (stream LogEntry) {
+        option (google.api.http) = {
+            get: "/v1/events"
+        };
+    }
+
+    // Handle is an experimental feature that allows for custom events to be implemented in custom builders for example
+    rpc Handle(Event) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/events/handle"
+            body: "*"
+        };
+    }
+
 
     // Execute allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
     rpc Execute (UserIntentRequest) returns (google.protobuf.Empty) {

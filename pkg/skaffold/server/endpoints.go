@@ -29,8 +29,17 @@ func (s *server) GetState(context.Context, *empty.Empty) (*proto.State, error) {
 	return event.GetState()
 }
 
-func (s *server) EventLog(empty *empty.Empty, stream proto.SkaffoldService_EventLogServer) error {
+func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
 	return event.ForEachEvent(stream.Send)
+}
+
+func (s *server) Events(stream proto.SkaffoldService_EventsServer) error {
+	return event.ForEachEvent(stream.Send)
+}
+
+func (s *server) Handle(ctx context.Context, e *proto.Event) (*empty.Empty, error) {
+	event.Handle(e)
+	return &empty.Empty{}, nil
 }
 
 func (s *server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (*empty.Empty, error) {

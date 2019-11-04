@@ -87,7 +87,7 @@ func TestEventLogRPC(t *testing.T) {
 	// read the event log stream from the skaffold grpc server
 	var stream proto.SkaffoldService_EventLogClient
 	for i := 0; i < readRetries; i++ {
-		stream, err = client.EventLog(ctx, &empty.Empty{})
+		stream, err = client.EventLog(ctx)
 		if err != nil {
 			t.Logf("waiting for connection...")
 			time.Sleep(waitTime)
@@ -141,6 +141,10 @@ func TestEventLogHTTP(t *testing.T) {
 		{
 			description: "/v1/event_log",
 			endpoint:    "/v1/event_log",
+		},
+		{
+			description: "/v1/events",
+			endpoint:    "/v1/events",
 		},
 	}
 	if ShouldRunGCPOnlyTests() {

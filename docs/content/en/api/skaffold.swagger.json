@@ -17,7 +17,7 @@
   "paths": {
     "/v1/event_log": {
       "get": {
-        "summary": "EventLog returns all the events of the current Skaffold execution from the start",
+        "summary": "EventLog is DEPRECATED. It does the same as Events.",
         "operationId": "EventLog",
         "responses": {
           "200": {
@@ -27,6 +27,386 @@
             }
           }
         },
+        "parameters": [
+          {
+            "name": "timestamp",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "event.metaEvent.entry",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.buildEvent.artifact",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.buildEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.buildEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.deployEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.deployEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.localPort",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.portEvent.remotePort",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.portEvent.podName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.containerName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.namespace",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.portName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.resourceType",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.resourceName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.statusCheckEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.statusCheckEvent.message",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.statusCheckEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.resource",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.message",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.fileCount",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.fileSyncEvent.image",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "entry",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v1/events": {
+      "get": {
+        "summary": "Events returns all the events of the current Skaffold execution from the start",
+        "operationId": "Events",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/protoLogEntry"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "timestamp",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "event.metaEvent.entry",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.buildEvent.artifact",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.buildEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.buildEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.deployEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.deployEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.localPort",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.portEvent.remotePort",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.portEvent.podName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.containerName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.namespace",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.portName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.resourceType",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.resourceName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.statusCheckEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.statusCheckEvent.message",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.statusCheckEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.resource",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.message",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.fileCount",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.fileSyncEvent.image",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "entry",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v1/events/handle": {
+      "post": {
+        "summary": "Handle is an experimental feature that allows for custom events to be implemented in custom builders for example",
+        "operationId": "Handle",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoEvent"
+            }
+          }
+        ],
         "tags": [
           "SkaffoldService"
         ]
