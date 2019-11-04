@@ -2,6 +2,10 @@
 title: "Image repository handling"
 linkTitle: "Image repository handling"
 weight: 70
+infoPanel: true
+maturity: alpha
+applicability: true 
+all: true
 ---
 
 Often, a Kubernetes manifest (or `skaffold.yaml`) makes references to images that push to

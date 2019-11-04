@@ -2,11 +2,11 @@
 title: "File sync"
 linkTitle: "File sync"
 weight: 40
+infoPanel: true
+maturity: alpha 
+applicability: true
+dev: true
 ---
-
-{{< alert title="Note" >}}
-File sync is alpha and may change between releases.
-{{< /alert >}}
 
 Skaffold supports copying changed files to a deployed container so as to avoid the need to rebuild, redeploy, and restart the corresponding pod.
 The file copying is enabled by adding a `sync` section with _sync rules_ to the `artifact` in the `skaffold.yaml`.

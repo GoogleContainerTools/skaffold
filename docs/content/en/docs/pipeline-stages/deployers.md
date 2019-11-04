@@ -2,6 +2,11 @@
 title: "Deploy"
 linkTitle: "Deploy"
 weight: 30
+infoPanel: true
+maturity: GA 
+applicability: true
+dev: true
+deploy: true
 ---
 
 When Skaffold deploys your application, it goes through these steps:

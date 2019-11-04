@@ -2,11 +2,11 @@
 title: "Debugging with Skaffold"
 linkTitle: "Debugging"
 weight: 2
+infoPanel: true
+maturity: alpha 
+debug: true
 ---
 
-{{< alert title="Note" >}}
-The `debug` functionality is in an alpha state and may change without warning.
-{{< /alert >}}
 
 ## Debugging with Skaffold
 

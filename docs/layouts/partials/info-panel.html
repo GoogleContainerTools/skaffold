@@ -1,0 +1,48 @@
+{{ if .Params.infoPanel }}
+    {{ $dev := .Params.dev }}
+    {{ $debug := .Params.debug }}
+    {{ $run := .Params.run }}
+    {{ $build := .Params.build }}
+    {{ $deploy := .Params.deploy }}
+    {{ $render := .Params.render }}
+    {{ $maturity := .Params.maturity }}
+    {{ $all := .Params.all }}
+
+    <div class="alert infopanel" role="contentinfo">
+        <table>
+            {{ if and $maturity (not (eq $maturity "GA")) }}
+                <tr>
+                    <td><b>Maturity</b></td>
+                    <td>{{$maturity}}</td>
+                </tr>
+            {{ end }}
+            {{ if .Params.applicability }}
+                <tr>
+                    <td><b>Works with</b></td>
+                    <td>
+                        {{if or $dev $all}}<code>dev</code><br/>{{end}}
+                        {{if or $debug $all}}<code> debug</code><br/>{{end}}
+                        {{if or $run $all}} <code> run</code><br/>{{end}}
+                        {{if or $build $all}}<code> build</code><br/>{{end}}
+                        {{if or $deploy $all}}<code> deploy</code><br/>{{end}}
+                        {{if or $render $all}}<code> render</code><br/>{{end}}
+                    </td>
+                </tr>
+                {{ if not $all}}
+                    <tr>
+                        <td><b>Doesn't work with</b></td>
+                        <td>
+                            {{if not $dev}}<code> dev</code><br/>{{end}}
+                            {{if not $debug}}<code> debug</code><br/>{{end}}
+                            {{if not $run}} <code> run</code><br/>{{end}}
+                            {{if not $build}}<code> build</code><br/>{{end}}
+                            {{if not $deploy}}<code> deploy</code><br/>{{end}}
+                            {{if not $render}}<code> render</code><br/>{{end}}
+                        </td>
+                    </tr>
+                {{end}}
+            {{end}}
+        </table>
+    </div>
+
+{{end}}

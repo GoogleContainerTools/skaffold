@@ -1,0 +1,19 @@
+.infopanel {
+    font-size: 12px;
+    position: relative;
+    background: var(--header-footer) !important;
+}
+
+.infopanel td {
+    vertical-align: top;
+    padding-right: 10px;
+}
+
+.infopanel td {
+    /*border-bottom: 1px solid var(--main-bg-color);*/
+}
+
+.infopanel table, tr, tbody {
+
+    width: 100%;
+}
