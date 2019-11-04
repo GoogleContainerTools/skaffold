@@ -36,15 +36,17 @@ or [skaffold run] to build and deploy
 or [skaffold dev] to enter development mode, with auto-redeploy
 ```
 
-
 ## What's next
+You can further set up [File Sync]({{<relref "/docs/pipeline-stages/filesync" >}}) for source files 
+that do not need a rebuild in [dev mode]({{<relref "/docs/workflows/dev">}}). 
 
-You can further set up [File Sync]({{<relref "docs/pipeline-stages/filesync" >}}) for file dependencies
-that do not need a rebuild.
+Skaffold automatically forwards Kubernetes Services in [dev mode]({{<relref "/docs/workflows/dev">}}) if you run it with `--port-forward`. If your project contains resources other than services, you can set-up [port-forwarding]({{<relref "/docs/pipeline-stages/port-forwarding" >}})
+to port-forward these resources in [`dev`]({{<relref "docs/workflows/dev" >}}) or [`debug`]({{<relref "/docs/workflows/debug" >}}) mode.
 
-If your project contain resources other than services, you can set-up [Port forwarding]({{<relref "docs/pipeline-stages/port-forwarding" >}})
-to port-forward them in [`dev`]({{<relref "docs/workflows/dev" >}}) or [`debug`]({{<relref "docs/workflows/debug" >}}) mode.
 
-For more understanding on how init works, see [`skaffold init`]({{<relref "docs/pipeline-stages/init" >}})
+For more understanding on how init works, see [`skaffold init`]({{<relref "/docs/pipeline-stages/init" >}})
+
+Try out [dev]({{<relref "/docs/workflows/dev" >}}), [debug]({{<relref "/docs/workflows/debug" >}}) workflows.
+
 
 
