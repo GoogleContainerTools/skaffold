@@ -295,7 +295,7 @@ Skaffold will pass in the following additional environment variables for the fol
 | $DOCKER_CONFIG_SECRET_NAME    | The secret containing any required docker authentication for custom builds on cluster.| None. | 
 | $TIMEOUT        | The amount of time an on cluster build is allowed to run.| None. | 
 
-**Configuration**
+### Configuration
 
 To use a custom build script, add a `custom` field to each corresponding artifact in the `build` section of the skaffold.yaml.
 Currently, this only works with the `local` and `cluster` build types. Supported schema for `custom` includes:
