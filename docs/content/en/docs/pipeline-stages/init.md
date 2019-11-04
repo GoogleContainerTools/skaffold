@@ -21,15 +21,12 @@ or `build.gradle/pom.xml`.
 If you have multiple `Dockerfile` or `build.gradle/pom.xml` files, Skaffold will provide an option
 to pair an image with one of the file.
 
-E.g.:                                                                                                                                                                                                                                                                                                                                 For a multi-services [microservices example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices)
+E.g. For a multi-services [microservices example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/microservices)
+
 ```bash
 skaffold init
-? Choose the builder to build image gcr.io/k8s-skaffold/leeroy-app  [Use arrows to move, space to select, type to filter]
-> Docker (leeroy-app/Dockerfile)
-  Docker (leeroy-web/Dockerfile)
-  None (image not built from these sources)
-
 ```
+![microservices](/images/microservices-init-flow.png)
 
 
 {{< alert title="Note" >}}
@@ -42,14 +39,12 @@ You will have to manually set up build config for this artifact
 Currently `jib` artifact detection is disabled by default, you can turn it on using the flag `--XXenableJibInit`.
 
 You can try it this out on example [jib project](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/jib-multimodule)
+
 ```bash
-$cd examples/jib-multimodule
-$skaffold init --XXenableJibInit
-? Choose the builder to build image gcr.io/k8s-skaffold/skaffold-jib-1  [Use arrows to move, space to select, type to filter]
-> Jib Maven Plugin (skaffold-project-1, pom.xml)
-  Jib Maven Plugin (skaffold-project-2, pom.xml)
-  None (image not built from these sources)
+skaffold init --XXenableJibInit
 ```
+
+![jib-multimodule](/images/jib-multimodule-init-flow.png)
 
 
 In case you want to configure build artifacts on your own, use `--skip-build` flag.
@@ -82,7 +77,7 @@ This API can be used to
 | API | flag | input/output |
 | ---- | --- | --- |
 | Analyze | `--analyze` | json encoded output of builders and images|  
-| Generate | `--artifact`| "`=` delimited" build definition/image pair (for example: `=path1/Dockerfile=artifact1`) or JSON string (for example: ...) |
+| Generate | `--artifact`| "`=` delimited" build definition/image pair (for example: `=path1/Dockerfile=artifact1`) or <br>JSON string (for example: `{"builder":"Docker","payload":{"path":"Dockerfile"},"image":"artifact")`|
 
 
 ### Analyze API
@@ -90,8 +85,11 @@ Analyze API walks through all files in your project workspace and looks for
 `Dockerfile` files.
 
 To get all image names and dockerfiles, run
-```json
+```bash
 skaffold init --analyze | jq
+```
+will give you a json output
+```json
 {
   "dockerfiles": [
     "leeroy-app/Dockerfile",
