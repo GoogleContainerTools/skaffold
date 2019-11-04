@@ -24,8 +24,3 @@ to port-forward these resources in [`dev`]({{<relref "docs/workflows/dev" >}}) o
 
 
 For more understanding on how init works, see [`skaffold init`]({{<relref "/docs/pipeline-stages/init" >}})
-
-Try out [dev]({{<relref "/docs/workflows/dev" >}}), [debug]({{<relref "/docs/workflows/debug" >}}) workflows.
-
-
-
