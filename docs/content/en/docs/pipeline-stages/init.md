@@ -81,58 +81,26 @@ This API can be used to
 
 | API | flag | input/output |
 | ---- | --- | --- |
-| Analyze | `--analyze` and `--XXenableJibInit`| json encoded output of builders and images|  
+| Analyze | `--analyze` | json encoded output of builders and images|  
 | Generate | `--artifact`| `=` delimited Dockerfile/image pair, or JSON string |
 
 
 ### Analyze API
 Analyze API walks through all files in your project workspace and looks for 
-`Dockerfile`, `build.gradle` and `pom.xml` files.
+`Dockerfile` files.
 
-To get all image names and image builders, run
+To get all image names and dockerfiles, run
 ```json
-skaffold init --analyze --XXenableJibInit | jq
+skaffold init --analyze | jq
 {
-  {
-    "builders": [
-      {
-        "name": "Docker",
-        "payload": {
-          "path": "microservices/leeroy-app/Dockerfile"
-        }
-      },
-      {
-        "name": "Jib Maven Plugin",
-        "payload": {
-          "image": "gcr.io/k8s-skaffold/project1",
-          "path": "pom.xml",
-          "project": "skaffold-project-1"
-        }
-      },
-      {
-        "name": "Jib Maven Plugin",
-        "payload": {
-          "image": "gcr.io/k8s-skaffold/project2",
-          "path": "pom.xml",
-          "project": "skaffold-project-2"
-        }
-      }
-    ],
-    "images": [
-      {
-        "name": "gcr.io/k8s-skaffold/skaffold-jib-1",
-        "foundMatch": false
-      },
-      {
-        "name": "gcr.io/k8s-skaffold/skaffold-jib-2",
-        "foundMatch": false
-      },
-      {
-        "name": "gcr.io/k8s-skaffold/leeroy-app",
-        "foundMatch": false
-      },
-    ]
-  }
+  "dockerfiles": [
+    "leeroy-app/Dockerfile",
+    "leeroy-web/Dockerfile"
+  ],
+  "images": [
+    "gcr.io/k8s-skaffold/leeroy-app",
+    "gcr.io/k8s-skaffold/leeroy-web"
+  ]
 }
 ```
 
@@ -142,30 +110,26 @@ To generate a skaffold `build` config, use the `--artifact` flag per artifact.
 For multiple artifacts, use `--artifact` multiple times.
 
 ```bash
-multimodule$skaffold init \
-  -a '{"builder":"Docker","payload":{"path":"web/Dockerfile.web"},"image":"gcr.io/web-project/image"}' \
-  -a '{"builder":"Jib Maven Plugin","payload":{"path":"backend/pom.xml"},"image":"gcr.io/backend/image"}' \
-  --XXenableJibInit
+microservices$skaffold init \
+  -a '{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}' \
+  -a '{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}'
+```
 
+will produce an `skaffold.yaml` config like this
+```bash
 apiVersion: skaffold/v1beta15
 kind: Config
 metadata:
-  name: multimodule
+  name: microservices
 build:
   artifacts:
-  - image: gcr.io/web-project/image
-    context: web
-    docker:
-      dockerfile: web/Dockerfile.web
-  - image: gcr.io/backend/image
-    context: backend
-    jib:
-      args:
-      - -Dimage=gcr.io/backend/image
+  - image: gcr.io/k8s-skaffold/leeroy-app
+    context: leeroy-app
+  - image: gcr.io/k8s-skaffold/leeroy-web
+    context: leeroy-web
 deploy:
   kubectl:
     manifests:
-    - web/kubernetes/web.yaml
-    - backend/kubernetes/deployment.yaml
-
+    - leeroy-app/kubernetes/deployment.yaml
+    - leeroy-web/kubernetes/deployment.yaml
 ```
