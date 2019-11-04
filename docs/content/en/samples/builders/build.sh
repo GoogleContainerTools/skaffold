@@ -6,7 +6,7 @@ docker load -i $TAR_PATH/skaffold_example.tar
 
 image=$(echo $IMAGE)
 
-if [ !-z "$image" ]
+if [ !-z "$image" ]; then
   pack build $image
   if $PUSH_IMAGE
   then

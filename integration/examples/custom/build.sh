@@ -2,7 +2,7 @@
 set -e
 image=$(echo $IMAGE)
 
-if [ !-z "$image" ]
+if [ !-z "$image" ]; then
   pack build $image
   if $PUSH_IMAGE
   then
