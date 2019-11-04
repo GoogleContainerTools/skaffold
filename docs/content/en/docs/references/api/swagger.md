@@ -6,7 +6,7 @@ weight: 40
 
 This is a generated reference for the [Skaffold API]({{<relref "/docs/design/api">}}) HTTP layer.
 
-We also generate the [reference doc for the gRPC layer]({{<relref "/docs/references/grpc">}}).
+We also generate the [reference doc for the gRPC layer]({{<relref "/docs/references/api/grpc">}}).
 
 
 <div id="swagger-ui"></div>

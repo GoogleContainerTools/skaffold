@@ -91,55 +91,20 @@ func request_SkaffoldService_EventLog_0(ctx context.Context, marshaler runtime.M
 }
 
 func request_SkaffoldService_Events_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldServiceClient, req *http.Request, pathParams map[string]string) (SkaffoldService_EventsClient, runtime.ServerMetadata, error) {
+	var protoReq empty.Empty
 	var metadata runtime.ServerMetadata
-	stream, err := client.Events(ctx)
+
+	stream, err := client.Events(ctx, &protoReq)
 	if err != nil {
-		grpclog.Infof("Failed to start streaming: %v", err)
 		return nil, metadata, err
 	}
-	dec := marshaler.NewDecoder(req.Body)
-	handleSend := func() error {
-		var protoReq LogEntry
-		err := dec.Decode(&protoReq)
-		if err == io.EOF {
-			return err
-		}
-		if err != nil {
-			grpclog.Infof("Failed to decode request: %v", err)
-			return err
-		}
-		if err := stream.Send(&protoReq); err != nil {
-			grpclog.Infof("Failed to send request: %v", err)
-			return err
-		}
-		return nil
-	}
-	if err := handleSend(); err != nil {
-		if cerr := stream.CloseSend(); cerr != nil {
-			grpclog.Infof("Failed to terminate client stream: %v", cerr)
-		}
-		if err == io.EOF {
-			return stream, metadata, nil
-		}
-		return nil, metadata, err
-	}
-	go func() {
-		for {
-			if err := handleSend(); err != nil {
-				break
-			}
-		}
-		if err := stream.CloseSend(); err != nil {
-			grpclog.Infof("Failed to terminate client stream: %v", err)
-		}
-	}()
 	header, err := stream.Header()
 	if err != nil {
-		grpclog.Infof("Failed to get header from client: %v", err)
 		return nil, metadata, err
 	}
 	metadata.HeaderMD = header
 	return stream, metadata, nil
+
 }
 
 func request_SkaffoldService_Handle_0(ctx context.Context, marshaler runtime.Marshaler, client SkaffoldServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {

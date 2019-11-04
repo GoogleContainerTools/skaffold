@@ -150,7 +150,8 @@ service SkaffoldService {
     };
     }
 
-    // EventLog is DEPRECATED. It does the same as Events.
+    // EventLog is DEPRECATED. Events should be used instead.
+    // TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)
     rpc EventLog(stream LogEntry) returns (stream LogEntry) {
         option (google.api.http) = {
             get: "/v1/event_log"
@@ -158,13 +159,13 @@ service SkaffoldService {
     }
 
     // Events returns all the events of the current Skaffold execution from the start
-    rpc Events(stream LogEntry) returns (stream LogEntry) {
+    rpc Events(google.protobuf.Empty) returns (stream LogEntry) {
         option (google.api.http) = {
             get: "/v1/events"
         };
     }
 
-    // Handle is an experimental feature that allows for custom events to be implemented in custom builders for example
+    // Handle is EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.
     rpc Handle(Event) returns (google.protobuf.Empty) {
         option (google.api.http) = {
             post: "/v1/events/handle"

@@ -23,7 +23,7 @@ The Skaffold API is `gRPC` based, and it is also exposed via the gRPC gateway as
 The server is hosted locally on the same host where the skaffold process is running, and will serve by default on ports 50051 and 50052.
 These ports can be configured through the `--rpc-port` and `--rpc-http-port` flags.
 
-We generate the server's [gRPC service definitions and message protos]({{< relref "/docs/references/grpc" >}}) as well as the [Swagger based HTTP API Spec]({{< relref "/docs/references/swagger" >}}).
+We generate the server's [gRPC service definitions and message protos]({{< relref "/docs/references/api/grpc" >}}) as well as the [Swagger based HTTP API Spec]({{< relref "/docs/references/api/swagger" >}}).
 
 
 ### HTTP server
@@ -100,7 +100,7 @@ Example scenarios:
 | protocol | endpoint | encoding |
 | ---- | --- | --- |
 | HTTP | `http://localhost:{HTTP_RPC_PORT}/v1/events` | newline separated JSON using chunk transfer encoding over HTTP|  
-| gRPC | `client.EventLog(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/grpc#skaffoldservice">}}) | protobuf 3 over HTTP |  
+| gRPC | `client.EventLog(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) | protobuf 3 over HTTP |  
 
 
 **Examples**
@@ -146,7 +146,7 @@ func main() {
 {{% /tab %}}
 {{% /tabs %}}
 
-Each [Entry log]({{<relref "/docs/references/grpc#proto.LogEntry" >}}) contains an [Event]({{< relref "/docs/references/grpc#proto.Event" >}}) in the `LogEntry.Event` field and
+Each [Entry log]({{<relref "/docs/references/api/grpc#proto.LogEntry" >}}) contains an [Event]({{< relref "/docs/references/api/grpc#proto.Event" >}}) in the `LogEntry.Event` field and
 a string description of the event in `LogEntry.entry` field.
 
 
@@ -165,7 +165,7 @@ The State API provides a snapshot of the current state of the following componen
 | protocol | endpoint | encoding |
 | ---- | --- | --- |
 | HTTP | `http://localhost:{HTTP_RPC_PORT}/v1/state` | newline separated JSON using chunk transfer encoding over HTTP|  
-| gRPC | `client.GetState(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/grpc#skaffoldservice">}}) | protobuf 3 over HTTP |  
+| gRPC | `client.GetState(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) | protobuf 3 over HTTP |  
 
 
 **Examples** 
@@ -238,8 +238,8 @@ The Control API mode is best to think about as "semaphores" for build / sync / d
 
 | protocol | endpoint | 
 | ---- |  ---- | ---- |  
-| HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/execute`, the [Execution Service]({{<relref "docs/references/swagger#/SkaffoldService/Execute">}}) |     
-| gRPC | `client.Execute(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/grpc#skaffoldservice">}}) | 
+| HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/execute`, the [Execution Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/Execute">}}) |     
+| gRPC | `client.Execute(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) | 
 
 
 **Examples**

@@ -7,7 +7,7 @@ weight: 30
 ******
 WARNING!!!
 
-The file docs/content/en/docs/references/grpc.md is generated based on proto/markdown.tmpl,
+The file docs/content/en/docs/references/api/grpc.md is generated based on proto/markdown.tmpl,
 and generated with hack/generate_protos.sh!
 Please edit the template file and not the markdown one directly!
 
@@ -15,9 +15,7 @@ Please edit the template file and not the markdown one directly!
 -->
 This is a generated reference for the [Skaffold API]({{<relref "/docs/design/api">}}) gRPC layer.
 
-We also generate the [reference doc for the HTTP layer]({{<relref "/docs/references/swagger">}}).
-
-
+We also generate the [reference doc for the HTTP layer]({{<relref "/docs/references/api/swagger">}}).
 
 <a name="skaffold.proto"></a>
 
@@ -37,9 +35,9 @@ SkaffoldService describes all the methods for the Skaffold API
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetState | [.google.protobuf.Empty](#google.protobuf.Empty) | [State](#proto.State) | GetState returns the state of the current Skaffold execution |
-| EventLog | [LogEntry](#proto.LogEntry) stream | [LogEntry](#proto.LogEntry) stream | EventLog is DEPRECATED. It does the same as Events. |
-| Events | [LogEntry](#proto.LogEntry) stream | [LogEntry](#proto.LogEntry) stream | Events returns all the events of the current Skaffold execution from the start |
-| Handle | [Event](#proto.Event) | [.google.protobuf.Empty](#google.protobuf.Empty) | Handle is an experimental feature that allows for custom events to be implemented in custom builders for example |
+| EventLog | [LogEntry](#proto.LogEntry) stream | [LogEntry](#proto.LogEntry) stream | EventLog is DEPRECATED. Events should be used instead. TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168) |
+| Events | [.google.protobuf.Empty](#google.protobuf.Empty) | [LogEntry](#proto.LogEntry) stream | Events returns all the events of the current Skaffold execution from the start |
+| Handle | [Event](#proto.Event) | [.google.protobuf.Empty](#google.protobuf.Empty) | Handle is EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example. |
 | Execute | [UserIntentRequest](#proto.UserIntentRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Execute allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled. |
 
  <!-- end services -->
