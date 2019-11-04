@@ -51,7 +51,7 @@ WARN[0000] port 50051 for gRPC server already in use: using 50053 instead
 To connect to the `gRPC` server at default port `50051` use the following code snippet.
 
 {{< alert title="Note" >}}
-The skaffold gRPC server is not an HTTPS service, hence we need to specify <code>grpc.WithInSecure()</code>
+The skaffold gRPC server is not an HTTPS service, hence we need to specify `grpc.WithInSecure()`
 {{</alert>}}
 
 ```golang
