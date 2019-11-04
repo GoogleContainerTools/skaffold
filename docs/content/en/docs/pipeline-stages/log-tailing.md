@@ -34,7 +34,6 @@ In the above example, `leeroy-web-75ff54dc77-9shwm` is the pod name and `leeroy-
 defined in the spec for this deployment
 
 ```yaml
-tejaldesai@@microservices (add_logging)$ cat leeroy-web/kubernetes/deployment.yaml 
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -55,8 +54,7 @@ spec:
         - name: leeroy-web
           image: gcr.io/k8s-skaffold/leeroy-web
           ports:
-            - containerPort: 8080
-tejaldesai@@microservices (add_logging)$ 
+            - containerPort: 8080 
 ```
 
 Skaffold will choose a unique color for each container to make it easy for users to read the logs.
