@@ -95,7 +95,7 @@ Example scenarios:
 * port forwarding events are used by Cloud Code to attach debuggers automatically to running containers.     
 * when a port-forwarded frontend service is redeployed successfully, kick-off a suite of Selenium tests that test changes to the newly deployed service..
 
-~~**Event API contract**
+**Event API contract**
 
 | protocol | endpoint | encoding |
 | ---- | --- | --- |
