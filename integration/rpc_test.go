@@ -142,10 +142,6 @@ func TestEventLogHTTP(t *testing.T) {
 			description: "/v1/event_log",
 			endpoint:    "/v1/event_log",
 		},
-		{
-			description: "/v1/events",
-			endpoint:    "/v1/events",
-		},
 	}
 	if ShouldRunGCPOnlyTests() {
 		t.Skip("skipping test that is not gcp only")
