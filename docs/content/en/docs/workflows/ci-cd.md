@@ -1,7 +1,7 @@
 ---
 title: "CI/CD with Skaffold"
 linkTitle: "CI/CD with Skaffold"
-weight: 20
+weight: 30
 ---
 
 Skaffold offers several sub-commands for its workflows that make it quite flexible when integrating with CI/CD pipelines.
