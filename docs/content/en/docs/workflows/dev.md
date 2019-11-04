@@ -34,8 +34,8 @@ By default, Skaffold uses `fsnotify` to monitor events on the local filesystem. 
 
 ## Control API
 
-By default, the dev loop will carry out all actions (as needed) each time a file is changed locally, with the exception of operating in `manual` trigger mode. However, individual actions can be gated off by user input through the Control API.
+By default, the dev loop will carry out all actions (as needed) each time a file is changed locally, with the exception of operating in `manual` trigger mode. However, individual actions can be gated off by user input through the Skaffold API.
 
-Skaffold exposes an API on a local port for interacting with actions in the dev loop, giving users more fine-grained control over the actions Skaffold performs over the lifecycle of the run. Using the flags `--auto-sync=false`, `--auto-build=false`, and `--auto-deploy=false`, users can tell Skaffold to wait for user input before performing any of these actions, even if the requisite files were changed on the filesystem. By doing so, users can "queue up" changes while they are iterating locally, and then have Skaffold rebuild and redeploy only when asked. This can be very useful when builds are happening more frequently than desired, or when builds or deploys take a long time or are otherwise very costly.
+With this API, users can tell Skaffold to wait for user input before performing any of these actions, even if the requisite files were changed on the filesystem. By doing so, users can "queue up" changes while they are iterating locally, and then have Skaffold rebuild and redeploy only when asked. This can be very useful when builds are happening more frequently than desired, when builds or deploys take a long time or are otherwise very costly, or when users want to integrate other tools with `skaffold dev`.
 
-For more documentation, see the Trigger API Docs. (//TODO(balintp) write docs)
+For more documentation, see the Skaffold API Docs. (//TODO(balintp) write docs)
