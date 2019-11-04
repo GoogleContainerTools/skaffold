@@ -94,6 +94,7 @@ Build | buildpacks native support|alpha| Skaffold natively support for buildpack
 Debug|debug python apps|alpha|debug python apps
 Debug|debug node apps|alpha|debug node apps
 Debug|debug java apps|alpha|debug java apps
+Debug|debug go apps|alpha|debug go apps
 Default-repo|preconcatentation strategy|beta|collision free rewriting strategy
 Tagpolicy|latest tagger|alpha|tag with latest, use image digest / image ID for deployment
 Tagpolicy|contentDigest tagger|alpha|reintroduce DIGEST and content based digest tag
