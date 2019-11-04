@@ -90,7 +90,7 @@ Within a feature area we do have certain features that are expected to change:
 
 |area|feature|state|description|
 |----|----|----|----|
-Build | buildpacks native support|alpha| Skaffold natively support for buildpacks artifact and buildpacks builder |
+Build | buildpacks native support|alpha| Skaffold natively support for buildpacks artifact and buildpacks builder
 Debug|debug python apps|alpha|debug python apps
 Debug|debug node apps|alpha|debug node apps
 Debug|debug java apps|alpha|debug java apps
