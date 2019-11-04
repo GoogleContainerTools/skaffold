@@ -69,7 +69,6 @@ Control API |alpha|Applications can control sync, build and deployment during in
 Delete|beta |delete everything deployed by skaffold run from the cluster
 [Deploy] ({{< relref "docs/pipeline-stages/deployers" >}})|beta |Deploy a set of deployables as your applications and replace the image name with the built images
 [Dev]({{< relref "/docs/workflows/dev.md" >}})|beta |Continuous development
-Diagnose|beta |Diagnose the current project and its configuration
 Event API v1|alpha|Publish events and state of the application on gRPC and HTTP
 [Filesync]({{< relref "/docs/pipeline-stages/filesync" >}})|alpha|Instead of rebuilding, copy the changed files in the running container
 [Global config]({{< relref "/docs/design/config" >}})|alpha|store user preferences in a separate preferences file
