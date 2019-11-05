@@ -14,7 +14,7 @@ pipeline** and for **controlling the phases in the pipeline**.
 
 To retrieve information about the Skaffold pipeline, the Skaffold API provides two main functionalities:
   
-  * A [streaming event log]({{< relref "#events-api">}}) created from the different phases in a pipeline run and
+  * A [streaming event log]({{< relref "#events-api">}}) created from the different phases in a pipeline run, and
   
   * A snapshot of the [overall state]({{< relref "#state-api" >}}) of the pipeline at any given time during the run.
 
