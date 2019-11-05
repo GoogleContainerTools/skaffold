@@ -86,7 +86,7 @@ profiles:
         manifests:
         - k8s-*
 `
-	expected := `apiVersion: skaffold/v1beta18
+	expected := `apiVersion: skaffold/v1
 kind: Config
 build:
   artifacts:

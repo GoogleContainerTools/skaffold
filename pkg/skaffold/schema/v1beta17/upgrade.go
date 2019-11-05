@@ -23,7 +23,7 @@ import (
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1beta17 to v1beta18
+// Config changes from v1beta17 to v1
 // 1. Additions:
 //    Add EphemeralStorage and ResourceStorage to Kaniko Pod Resource Requirement.
 // 2. Removals:
