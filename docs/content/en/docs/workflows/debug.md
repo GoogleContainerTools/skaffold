@@ -5,6 +5,7 @@ weight: 2
 infoPanel: true
 maturity: alpha 
 debug: true
+applicability: true 
 ---
 
 

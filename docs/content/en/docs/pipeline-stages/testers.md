@@ -2,6 +2,11 @@
 title: "Test"
 linkTitle: "Test"
 weight: 20
+applicability: true
+maturity: GA
+dev: true
+build: true
+run: true
 ---
 
 It's common practice to validate built container images before deploying them to our cluster.

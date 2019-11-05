@@ -7,6 +7,7 @@ maturity: GA
 applicability: true
 dev: true
 deploy: true
+debug: true
 ---
 
 When Skaffold deploys your application, it goes through these steps:

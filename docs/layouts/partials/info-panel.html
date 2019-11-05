@@ -11,33 +11,33 @@
     <div class="alert infopanel" role="contentinfo">
         <table>
             {{ if and $maturity (not (eq $maturity "GA")) }}
-                <tr>
+                <tr class="maturity maturity-{{$maturity}}">
                     <td><b>Maturity</b></td>
-                    <td>{{$maturity}}</td>
+                    <td><a href="/docs/references/deprecation"><code>{{$maturity}}</code></a></td>
                 </tr>
             {{ end }}
             {{ if .Params.applicability }}
                 <tr>
-                    <td><b>Works with</b></td>
+                    <td><b>Applicable</b></td>
                     <td>
-                        {{if or $dev $all}}<code>dev</code><br/>{{end}}
-                        {{if or $debug $all}}<code> debug</code><br/>{{end}}
-                        {{if or $run $all}} <code> run</code><br/>{{end}}
-                        {{if or $build $all}}<code> build</code><br/>{{end}}
-                        {{if or $deploy $all}}<code> deploy</code><br/>{{end}}
-                        {{if or $render $all}}<code> render</code><br/>{{end}}
+                        {{if or $dev $all}}<a href="/docs/references/cli#skaffold-dev"><code> dev</code></a>{{end}}
+                        {{if or $debug $all}}<a href="/docs/references/cli#skaffold-debug"><code> debug</code></a>{{end}}
+                        {{if or $run $all}} <a href="/docs/references/cli#skaffold-run"><code> run</code></a>{{end}}
+                        {{if or $build $all}}<a href="/docs/references/cli#skaffold-build"><code> build</code></a>{{end}}
+                        {{if or $deploy $all}}<a href="/docs/references/cli#skaffold-deploy"><code> deploy</code></a>{{end}}
+                        {{if or $render $all}}<a href="/docs/references/cli#skaffold-render"><code> render</code></a>{{end}}
                     </td>
                 </tr>
                 {{ if not $all}}
                     <tr>
-                        <td><b>Doesn't work with</b></td>
+                        <td><b>Not applicable</b></td>
                         <td>
-                            {{if not $dev}}<code> dev</code><br/>{{end}}
-                            {{if not $debug}}<code> debug</code><br/>{{end}}
-                            {{if not $run}} <code> run</code><br/>{{end}}
-                            {{if not $build}}<code> build</code><br/>{{end}}
-                            {{if not $deploy}}<code> deploy</code><br/>{{end}}
-                            {{if not $render}}<code> render</code><br/>{{end}}
+                            {{if not $dev}}<a href="/docs/references/cli#skaffold-dev"><code> dev</code></a>{{end}}
+                            {{if not $debug}}<a href="/docs/references/cli#skaffold-debug"><code> debug</code></a>{{end}}
+                            {{if not $run}} <a href="/docs/references/cli#skaffold-run"><code> run</code></a>{{end}}
+                            {{if not $build}}<a href="/docs/references/cli#skaffold-build"><code> build</code></a>{{end}}
+                            {{if not $deploy}}<a href="/docs/references/cli#skaffold-deploy"><code> deploy</code></a>{{end}}
+                            {{if not $render}}<a href="/docs/references/cli#skaffold-render"><code> render</code></a>{{end}}
                         </td>
                     </tr>
                 {{end}}
