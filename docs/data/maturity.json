@@ -384,7 +384,7 @@
     "area": "Log tailing",
     "maturity": "GA",
     "description": "automated log tailing of deployed pods",
-    "url": "/docs/pipeline-stages/logging"
+    "url": "/docs/pipeline-stages/log-tailing"
   },
   "portforward.pods_automated": {
     "dev": "x",
