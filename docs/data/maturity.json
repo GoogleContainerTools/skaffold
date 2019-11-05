@@ -274,7 +274,10 @@
     "description": "use kustomize files as your deployable "
   },
   "deploy.status_check": {
+    "dev": "x",
     "deploy": "x",
+    "run": "x",
+    "debug": "x",
     "area": "Deploy",
     "feature": "Status check",
     "maturity": "beta",

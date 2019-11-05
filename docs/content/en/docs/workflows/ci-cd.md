@@ -89,4 +89,4 @@ pod/getting-started configured
 ```
 
 ## Waiting for Skaffold deployments using `healthcheck`
-{{< beta >}}
+{{< maturity "deploy.status_check" >}}
