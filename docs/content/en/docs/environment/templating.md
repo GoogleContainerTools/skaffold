@@ -2,6 +2,10 @@
 title: "Templated fields"
 linkTitle: "Templated fields"
 weight: 90
+
+infoPanel: true
+featureId: templating
+applicability: true
 ---
 
 Skaffold allows for certain fields in the config to be templated with values either from environment variables, or certain special values computed by Skaffold.

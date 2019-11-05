@@ -29,3 +29,8 @@ sup {
     font-size: 18px;
     line-height: 2em;
 }
+
+.maturity{
+    font-size: 12px;
+    width: fit-content;
+}

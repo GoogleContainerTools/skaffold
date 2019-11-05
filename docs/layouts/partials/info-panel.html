@@ -1,12 +1,13 @@
 {{ if .Params.infoPanel }}
-    {{ $dev := .Params.dev }}
-    {{ $debug := .Params.debug }}
-    {{ $run := .Params.run }}
-    {{ $build := .Params.build }}
-    {{ $deploy := .Params.deploy }}
-    {{ $render := .Params.render }}
-    {{ $maturity := .Params.maturity }}
-    {{ $all := .Params.all }}
+    {{ $data := (index .Site.Data.maturity .Params.featureId)}}
+    {{ $maturity := $data.maturity }}
+    {{ $dev := $data.dev }}
+    {{ $debug := $data.debug }}
+    {{ $run := $data.run }}
+    {{ $build := $data.build }}
+    {{ $deploy := $data.deploy }}
+    {{ $render := $data.render }}
+    {{ $all := and $dev $debug $run $build $deploy $render }}
 
     <div class="alert infopanel" role="contentinfo">
         <table>

@@ -3,14 +3,9 @@ title: "Build"
 linkTitle: "Build"
 weight: 10
 
-maturity: GA
-
 infoPanel: true
+featureId: build
 applicability: true
-dev: true
-debug: true
-build: true
-run: true
 ---
 
 Skaffold has native support for several different tools for building images:

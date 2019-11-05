@@ -2,10 +2,10 @@
 title: "Profiles"
 linkTitle: "Profiles"
 weight: 70
+
 infoPanel: true
-maturity: GA 
+featureId: profiles
 applicability: true
-all: true
 ---
 
 Skaffold profiles allow you to define build, test and deployment

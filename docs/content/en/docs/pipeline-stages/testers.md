@@ -3,13 +3,9 @@ title: "Test"
 linkTitle: "Test"
 weight: 20
 
-maturity: beta
-
 infoPanel: true
+featureId: test
 applicability: true
-dev: true
-build: true
-run: true
 ---
 
 It's common practice to validate built container images before deploying them to our cluster.

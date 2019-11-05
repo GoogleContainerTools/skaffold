@@ -6,10 +6,8 @@ weight: 15
 maturity: GA
 
 infoPanel: true
+featureId: tagpolicy
 applicability: true
-dev: true
-debug: true
-build: true
 ---
 
 Skaffold supports the following policies for tagging images:
