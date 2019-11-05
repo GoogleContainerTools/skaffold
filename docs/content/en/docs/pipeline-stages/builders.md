@@ -14,8 +14,8 @@ Skaffold has native support for several different tools for building images:
   - locally
   - on cloud with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
 * [Bazel](https://bazel.build/) locally
-* Custom script locally
-* [CNCF Buildpacks]({{<relref "/docs/tutorials/buildpacks">}})
+* [Custom script locally]({{< relref "/docs/pipeline-stages/builders#custom-build-script-run-locally" >}})
+* CNCF Buildpacks [TODO #2904](https://github.com/GoogleContainerTools/skaffold/issues/2904)
 
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how artifacts are built. To use a specific tool for building
@@ -84,7 +84,7 @@ section of `skaffold.yaml`. The following options can optionally be configured:
 
 {{< schema root="GoogleCloudBuild" >}}
 
-### Example
+**Example**
 
 The following `build` section, instructs Skaffold to build a
 Docker image `gcr.io/k8s-skaffold/example` with Google Cloud Build:
@@ -295,7 +295,7 @@ Skaffold will pass in the following additional environment variables for the fol
 | $DOCKER_CONFIG_SECRET_NAME    | The secret containing any required docker authentication for custom builds on cluster.| None. | 
 | $TIMEOUT        | The amount of time an on cluster build is allowed to run.| None. | 
 
-### Configuration
+**Configuration**
 
 To use a custom build script, add a `custom` field to each corresponding artifact in the `build` section of the skaffold.yaml.
 Currently, this only works with the `local` and `cluster` build types. Supported schema for `custom` includes:
