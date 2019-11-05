@@ -15,16 +15,15 @@ Skaffold has native support for several different tools for building images:
   - on cloud with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
 * [Bazel](https://bazel.build/) locally
 * Custom script locally
-* [CNCF Buildpacks](../tutorials/buildpacks.md)
+* [CNCF Buildpacks]({{<relref "/docs/tutorials/buildpacks">}})
 
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how artifacts are built. To use a specific tool for building
 artifacts, add the value representing the tool and options for using that tool
 to the `build` section.
 
-For a detailed discussion on Skaffold configuration, see
-[Skaffold Concepts]({{< relref "/docs/design/config.md" >}}) and
-[skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
+For a detailed discussion on [Skaffold Configuration]({{< relref "/docs/design/config.md" >}}),
+see [skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
 ## Dockerfile locally with Docker
 

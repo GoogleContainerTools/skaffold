@@ -1,7 +1,7 @@
 ---
 title: "Debugging with Skaffold"
 linkTitle: "Debugging"
-weight: 20
+weight: 30
 ---
 
 {{< alert title="Note" >}}
