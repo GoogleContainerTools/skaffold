@@ -114,8 +114,8 @@ microservices$skaffold init \
 ```
 
 will produce an `skaffold.yaml` config like this
-```bash
-apiVersion: skaffold/v1beta15
+```json
+apiVersion: skaffold/v1
 kind: Config
 metadata:
   name: microservices
