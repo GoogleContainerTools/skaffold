@@ -66,8 +66,9 @@ The following is the maturity of the larger feature areas:
 [Control API]({{< relref "/docs/design/api#control-api" >}}) |alpha|Applications can control sync, build and deployment during instead of automated sync, build and deploy
 [Debug]({{< relref "/docs/workflows/debug.md" >}})|alpha|Language-aware reconfiguration of containers on the fly to become debuggable
 [Default-repo]({{< relref "/docs/environment/image-registries.md" >}})|alpha|specify a default image repository & rewrite image names to default repo
-Delete| beta |delete everything deployed by skaffold run from the cluster
-[Deploy]({{< relref "docs/pipeline-stages/deployers" >}})|beta |Deploy a set of deployables as your applications and replace the image name with the built images
+Delete|beta |delete everything deployed by skaffold run from the cluster
+[Deploy] ({{< relref "/docs/pipeline-stages/deployers" >}})|beta |Deploy a set of deployables as your applications and replace the image name with the built images
+Render |alpha| Skaffold render outputs rendered kubernetes manifests|
 [Dev]({{< relref "/docs/workflows/dev.md" >}})|beta |Continuous development
 [Event API]({{< relref "/docs/design/api#event-api" >}})|alpha|Publish events and state of the application on gRPC and HTTP
 [Filesync]({{< relref "/docs/pipeline-stages/filesync" >}})|alpha|Instead of rebuilding, copy the changed files in the running container
@@ -89,9 +90,11 @@ Within a feature area we do have certain features that are expected to change:
 
 |area|feature|state|description|
 |----|----|----|----|
+Build | buildpacks native support|alpha| Skaffold natively support for buildpacks artifact and buildpacks builder
 Debug|debug python apps|alpha|debug python apps
 Debug|debug node apps|alpha|debug node apps
 Debug|debug java apps|alpha|debug java apps
+Debug|debug go apps|alpha|debug go apps
 Default-repo|preconcatentation strategy|beta|collision free rewriting strategy
 Tagpolicy|latest tagger|alpha|tag with latest, use image digest / image ID for deployment
 Tagpolicy|contentDigest tagger|alpha|reintroduce DIGEST and content based digest tag
