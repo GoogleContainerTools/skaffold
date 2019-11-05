@@ -150,7 +150,7 @@ func main() {
 {{% /tab %}}
 {{% /tabs %}}
 
-Each [Entry log]({{<relref "/docs/references/api/grpc#proto.LogEntry" >}}) contains an [Event]({{< relref "/docs/references/api/grpc#proto.Event" >}}) in the `LogEntry.Event` field and
+Each [Entry]({{<relref "/docs/references/api/grpc#proto.LogEntry" >}}) in the log contains an [Event]({{< relref "/docs/references/api/grpc#proto.Event" >}}) in the `LogEntry.Event` field and
 a string description of the event in `LogEntry.entry` field.
 
 
