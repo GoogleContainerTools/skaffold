@@ -131,7 +131,7 @@ func main() {
   defer ctxCancel()
   // `client` is the gRPC client with connection to localhost:50051.
   // See code above to create it
-  logStream, err := client.EventLog(ctx, &empty.Empty{})
+  logStream, err := client.Events(ctx, &empty.Empty{})
   if err != nil {
   	log.Fatalf("could not get events: %v", err)
   }
