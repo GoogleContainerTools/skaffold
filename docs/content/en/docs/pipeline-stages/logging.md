@@ -2,9 +2,11 @@
 title: "Logging"
 linkTitle: "Logging"
 weight: 40
+
+maturity: GA
+
 infoPanel: true
 applicability: true
-maturity: GA
 dev: true
 debug: true
 run: true

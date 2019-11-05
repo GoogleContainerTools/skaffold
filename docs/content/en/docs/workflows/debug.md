@@ -2,14 +2,13 @@
 title: "Debugging with Skaffold"
 linkTitle: "Debugging"
 weight: 20
-infoPanel: true
+
 maturity: alpha 
+
+infoPanel: true
 debug: true
 applicability: true 
 ---
-
-
-## Debugging with Skaffold
 
 `skaffold debug` acts like `skaffold dev`, but it configures containers in pods
 for debugging as required for each container's runtime technology.

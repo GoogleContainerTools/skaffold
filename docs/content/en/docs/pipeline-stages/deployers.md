@@ -2,8 +2,10 @@
 title: "Deploy"
 linkTitle: "Deploy"
 weight: 30
+
+maturity: GA
+ 
 infoPanel: true
-maturity: GA 
 applicability: true
 dev: true
 deploy: true

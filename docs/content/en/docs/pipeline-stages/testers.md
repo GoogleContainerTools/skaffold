@@ -2,8 +2,11 @@
 title: "Test"
 linkTitle: "Test"
 weight: 20
+
+maturity: beta
+
+infoPanel: true
 applicability: true
-maturity: GA
 dev: true
 build: true
 run: true

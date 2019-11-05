@@ -2,6 +2,13 @@
 title: "Skaffold API"
 linkTitle: "Skaffold API"
 weight: 60
+
+maturity: alpha
+
+infopanel: true
+applicability: true
+dev: true
+debug: true
 ---
 When running [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) or [`skaffold debug`]({{< relref "/docs/workflows/debug" >}}), 
 Skaffold starts a server that exposes an API over the lifetime of the Skaffold process.
@@ -81,6 +88,7 @@ Skaffold's API exposes the three main endpoints:
 * Control API - control build/deploy/sync
 
 ### Events API
+{{< alpha >}}
 
 Skaffold provides a continuous development mode [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) which rebuilds and redeploys
 your application on changes. In a single development loop, one or more container images
@@ -151,6 +159,7 @@ a string description of the event in `LogEntry.entry` field.
 
 
 ### State API
+{{< beta >}}
 
 The State API provides a snapshot of the current state of the following components:
 
@@ -224,6 +233,7 @@ func main() {
 {{% /tab %}}
 {{% /tabs %}}
 
-### Controlling Build/Sync/Deploy
+### Control API
+{{< alpha >}}
 
 TODO: https://github.com/GoogleContainerTools/skaffold/issues/3143

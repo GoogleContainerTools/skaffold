@@ -3,8 +3,9 @@ title: "File sync"
 linkTitle: "File sync"
 weight: 40
 
-infoPanel: true
 maturity: alpha 
+
+infoPanel: true
 applicability: true
 dev: true
 ---

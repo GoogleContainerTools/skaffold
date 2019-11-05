@@ -3,9 +3,10 @@ title: "Build"
 linkTitle: "Build"
 weight: 10
 
+maturity: GA
+
 infoPanel: true
 applicability: true
-maturity: GA
 dev: true
 debug: true
 build: true

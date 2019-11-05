@@ -2,6 +2,16 @@
 title: "CI/CD with Skaffold"
 linkTitle: "CI/CD with Skaffold"
 weight: 30
+
+maturity: beta
+
+infoPanel: true
+applicability: true
+
+build: true
+deploy: true
+render: true
+run: true
 ---
 
 Skaffold offers several sub-commands for its workflows that make it quite flexible when integrating with CI/CD pipelines.
@@ -46,7 +56,8 @@ Starting deploy...
  - pod/getting-started configured
 ```
 
-## `skaffold render`
+## `skaffold render` 
+{{< alpha >}}
 
 Skaffold also has another built-in command, `skaffold render`, that will perform builds on all artifacts in your project, template the newly built image tags into your Kubernetes deployment configuration files (based on your configured deployer), and instead of sending these through the deployment process, print out the final deployment artifacts. This allows your to snapshot your project's builds, but also integrate those builds into your deployment configs to snapshot your deployment as well. This can be very useful when integrating with GitOps based workflows: these templated deployment configurations can be committed to a Git repository as a way to deploy using GitOps.
 
@@ -86,3 +97,4 @@ pod/getting-started configured
 ```
 
 ## Waiting for Skaffold deployments using `healthcheck`
+{{< beta >}}

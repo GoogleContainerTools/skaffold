@@ -2,9 +2,11 @@
 title: "Port forwarding"
 linkTitle: "Port forwarding"
 weight: 50
+
+maturity: beta
+
 infoPanel: true
 applicability: true
-maturity: beta
 dev: true
 debug: true
 ---
