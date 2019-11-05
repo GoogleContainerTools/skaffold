@@ -19,11 +19,11 @@ package deploy
 import (
 	"bytes"
 	"context"
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -208,7 +208,7 @@ type mockResource struct {
 }
 
 func (m *mockResource) UpdateStatus(s string, err error) {
-	err = errors.Unwrap(err)
+	err = errors.Cause(err)
 	if err == context.DeadlineExceeded {
 		m.inErr = true
 	}
