@@ -14,11 +14,11 @@ pipeline** and for **controlling the phases in the pipeline**.
 
 To retrieve information about the Skaffold pipeline, the Skaffold API provides two main functionalities:
   
-  * A [streaming event log]({{< relref "/docs/design/api#events-api">}}) created from the different phases in a pipeline run and
+  * A [streaming event log]({{< relref "#events-api">}}) created from the different phases in a pipeline run, and
   
-  * A snapshot of the [overall state]({{< relref "/docs/design/api#state-api" >}}) of the pipeline at any given time during the run.
+  * A snapshot of the [overall state]({{< relref "#state-api" >}}) of the pipeline at any given time during the run.
 
-To control the individual phases of the Skaffold, the Skaffold API provides [fine grained control over]({{< relref "/docs/design/api#controlling-build-sync-deploy" >}})
+To control the individual phases of the Skaffold, the Skaffold API provides [fine grained control over]({{< relref "#controlling-build-sync-deploy" >}})
 the individual phases of the pipeline (build, deploy and sync).
 
 
@@ -27,7 +27,7 @@ The Skaffold API is `gRPC` based, and it is also exposed via the gRPC gateway as
 The server is hosted locally on the same host where the skaffold process is running, and will serve by default on ports 50051 and 50052.
 These ports can be configured through the `--rpc-port` and `--rpc-http-port` flags.
 
-The server's gRPC service definitions and message protos can be found [here]({{< relref "/docs/references/api" >}}).
+For reference, we generate the server's [gRPC service definitions and message protos]({{< relref "/docs/references/api/grpc" >}}) as well as the [Swagger based HTTP API Spec]({{< relref "/docs/references/api/swagger" >}}).
 
 
 ### HTTP server
@@ -123,7 +123,7 @@ Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` ex
 ```
 {{% /tab %}}
 {{% tab "gRPC API" %}}
-To get events from the `gRPC` server, first create [`gRPC` client]({{< relref "/docs/design/api#creating-a-grpc-client" >}})
+To get events from the API using `gRPC`, first create a [`gRPC` client]({{< relref "#creating-a-grpc-client" >}}):
 
 ```golang
 func main() {
@@ -131,7 +131,7 @@ func main() {
   defer ctxCancel()
   // `client` is the gRPC client with connection to localhost:50051.
   // See code above to create it
-  logStream, err := client.Events(ctx)
+  logStream, err := client.Events(ctx, &empty.Empty{})
   if err != nil {
   	log.Fatalf("could not get events: %v", err)
   }
@@ -150,7 +150,7 @@ func main() {
 {{% /tab %}}
 {{% /tabs %}}
 
-Each [Entry log]({{<relref "/docs/references/api#proto.LogEntry" >}}) contains an [Event]({{< relref "/docs/references/api#proto.Event" >}}) in the `LogEntry.Event` field and
+Each [Entry]({{<relref "/docs/references/api/grpc#proto.LogEntry" >}}) in the log contains an [Event]({{< relref "/docs/references/api/grpc#proto.Event" >}}) in the `LogEntry.Event` field and
 a string description of the event in `LogEntry.entry` field.
 
 
@@ -169,7 +169,7 @@ The State API provides a snapshot of the current state of the following componen
 | protocol | endpoint | encoding |
 | ---- | --- | --- |
 | HTTP | `http://localhost:{HTTP_RPC_PORT}/v1/state` | newline separated JSON using chunk transfer encoding over HTTP|  
-| gRPC | `client.GetState(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api#skaffoldservice">}}) | protobuf 3 over HTTP |  
+| gRPC | `client.GetState(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) | protobuf 3 over HTTP |  
 
 
 **Examples** 
@@ -214,7 +214,7 @@ Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` ex
 ```
 {{% /tab %}}
 {{% tab "gRPC API" %}}
-To get events over `gRPC` server, first create [`gRPC` client]({{< relref "/docs/design/api#creating-a-grpc-client" >}})
+To retrieve the state from the server using `gRPC`, first create [`gRPC` client]({{< relref "#creating-a-grpc-client" >}}) as before:
 ```code
 func main() {
   // Create a gRPC client connection to localhost:50051.
@@ -230,4 +230,67 @@ func main() {
 
 ### Control API
 
-TODO: https://github.com/GoogleContainerTools/skaffold/issues/3143
+By default, [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) automatically builds artifacts, deploys manifests and syncs files on every source code change. 
+The automation can be turned off with `--auto-build=false` flag for building, `--auto-deploy=false` flag for deploys, and the `--auto-sync=false` flag for file sync.
+If automation is turned off for a phase, Skaffold will wait for a call to the Control API before executing the given phase.
+
+One call to the Control API allows for one execution of the phases specified in the request.
+This means that _even if there are new file changes_, Skaffold will wait for another execution request before executing the given phase again. 
+The Control API mode is best to think about as "semaphores" for build / sync / deploy, that get lifted once per every request. 
+
+**Control API contract**
+
+| protocol | endpoint | 
+| ---- |  ---- | ---- |  
+| HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/execute`, the [Execution Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/Execute">}}) |     
+| gRPC | `client.Execute(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) | 
+
+
+**Examples**
+
+{{% tabs %}}
+{{% tab "HTTP API" %}}
+
+Using our [Quickstart example]({{< relref "/docs/quickstart" >}}) we can start skaffold with `skaffold dev --auto-build=false`.
+When we change `main.go`, Skaffold will notice file changes but it won't rebuild the image until it receives a call to the Control API with `"build":true`:
+
+```bash
+curl -X POST http://localhost:50052/v1/execute -d '{"build": true}'
+```       
+
+At this point, Skaffold will wait to deploy the newly built image until we invoke the Control API with `"deploy":true`:
+ 
+```bash
+curl -X POST http://localhost:50052/v1/execute -d '{"deploy": true}'
+```       
+
+Note that you can also combine these steps into one call:
+
+```bash
+curl -X POST http://localhost:50052/v1/execute -d '{"build": true, "deploy": true}'
+``` 
+
+{{% /tab %}}
+{{% tab "gRPC API" %}}
+To get events from the `gRPC` server, first create [`gRPC` client]({{< relref "#creating-a-grpc-client" >}}) 
+
+```golang
+func main() {
+    ctx, ctxCancel := context.WithCancel(context.Background())
+    defer ctxCancel()
+    // `client` is the gRPC client with connection to localhost:50051.
+    // See code above to create it
+    _, err = client.Execute(ctx, &pb.UserIntentRequest{
+        Intent: &pb.Intent{
+            Build:  true,
+            Sync:   true,
+            Deploy: true,
+        },
+    })
+    if err != nil {
+        log.Fatalf("error when trying to execute phases: %v", err)
+    }
+}
+```
+{{% /tab %}}
+{{% /tabs %}}

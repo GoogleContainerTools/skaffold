@@ -100,12 +100,12 @@ input.td-search-input::placeholder {
     color: var(--hover-foreground);
 }
 
-a {
-    color: var(--header-footer-foreground)
+.splash a {
+  color: var(--header-footer-foreground)
 }
 
-a:hover {
-    color: var(--hover-color)
+.splash a:hover {
+  color: var(--hover-color)
 }
 
 a > code {

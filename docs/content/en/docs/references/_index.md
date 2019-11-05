@@ -8,7 +8,8 @@ weight: 100
 |----------|
 | [CLI]({{< relref "/docs/references/cli" >}}) |
 | [skaffold.yaml]({{< relref "/docs/references/yaml" >}}) |
-| [Deprecation Policy]({{< relref "/docs/references/deprecation" >}}) |
+| [gRPC API]({{< relref "/docs/references/api/grpc" >}}) |
+| [HTTP API]({{< relref "/docs/references/api/swagger" >}}) |
 | [Privacy Settings] ({{< relref "/docs/references/privacy" >}}) |
-| [API Reference]({{< relref "/docs/references/api" >}}) |
+| [Deprecation Policy]({{< relref "/docs/references/deprecation" >}}) |
 

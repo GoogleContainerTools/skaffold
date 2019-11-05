@@ -29,7 +29,7 @@ fi
 temp_file=$(mktemp)
 trap 'rm -f -- "$temp_file"' INT TERM HUP EXIT
 docker run --rm gen-proto cat index.md > "$temp_file"
-cmp "$temp_file" docs/content/en/docs/references/api/_index.md
+cmp "$temp_file" docs/content/en/docs/references/api/grpc.md
 if [ $? -ne 0 ]; then
    printf "\nGenerated docs aren't updated. Please run ./hack/generate-proto.sh\n"
    exit 1
