@@ -19,4 +19,15 @@ locally with [Minikube](https://kubernetes.io/docs/setup/minikube/), Skaffold
 will not push artifacts to a remote repository.
 
 
-TODO: describe the skaffold pipeline, and anchor link to each stage
+| Skaffold References  |
+|----------|
+| [Init]({{< relref "/docs/pipeline-stages/init" >}}) |
+| [Build]({{< relref "/docs/pipeline-stages/builders" >}}) |
+| [Tag]({{< relref "/docs/pipeline-stages/taggers" >}}) |
+| [Test]({{< relref "/docs/pipeline-stages/testers" >}}) |
+| [Deploy]({{< relref "/docs/pipeline-stages/deployers" >}}) |
+| [File Sync]({{< relref "/docs/pipeline-stages/filesync" >}}) |
+| [Log Tailing]({{< relref "/docs/pipeline-stages/log-tailing" >}}) |
+| [Port Forwarding]({{< relref "/docs/pipeline-stages/port-forwarding" >}}) |
+| [Cleanup]({{< relref "/docs/pipeline-stages/cleanup" >}}) |
+

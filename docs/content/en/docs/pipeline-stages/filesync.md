@@ -1,6 +1,6 @@
 ---
-title: "File sync"
-linkTitle: "File sync"
+title: "File Sync"
+linkTitle: "File Sync"
 weight: 40
 featureId: sync
 ---
