@@ -4,8 +4,6 @@ linkTitle: "Deprecation policy"
 weight: 60
 ---
 
-# Skaffold deprecation policy
-
 This document sets out the deprecation policy for Skaffold, and outlines how the Skaffold project will approach the introduction of breaking changes over time.
 
 Deprecation policy applies only to Stable Builds. Bleeding Edge builds may have less stable implementations.  
@@ -60,49 +58,7 @@ However the **behavior** of individual component might suffer breaking changes d
 
 The following is the maturity of the larger feature areas: 
 
-|area|state|description|
-|----|----|----|
-[Build]({{< relref "/docs/pipeline-stages/builders" >}})|beta |Build images based on multiple build tools in a configurable way
-[Control API]({{< relref "/docs/design/api#control-api" >}}) |alpha|Applications can control sync, build and deployment during instead of automated sync, build and deploy
-[Debug]({{< relref "/docs/workflows/debug.md" >}})|alpha|Language-aware reconfiguration of containers on the fly to become debuggable
-[Default-repo]({{< relref "/docs/environment/image-registries.md" >}})|alpha|specify a default image repository & rewrite image names to default repo
-Delete|beta |delete everything deployed by skaffold run from the cluster
-[Deploy] ({{< relref "/docs/pipeline-stages/deployers" >}})|beta |Deploy a set of deployables as your applications and replace the image name with the built images
-Render |alpha| Skaffold render outputs rendered kubernetes manifests|
-[Dev]({{< relref "/docs/workflows/dev.md" >}})|beta |Continuous development
-[Event API]({{< relref "/docs/design/api#event-api" >}})|alpha|Publish events and state of the application on gRPC and HTTP
-[Filesync]({{< relref "/docs/pipeline-stages/filesync" >}})|alpha|Instead of rebuilding, copy the changed files in the running container
-[Global config]({{< relref "/docs/design/config" >}})|alpha|store user preferences in a separate preferences file
-Init|alpha|Initialize a skaffold.yaml file based on the contents of the current directory
-[Insecure registry handling]({{<relref "/docs/environment/image-registries">}})|alpha |Target registries for built images which are not secure
-[Port-forwarding]({{< relref "/docs/pipeline-stages/port-forwarding" >}})|alpha |Port forward application to localhost
-[Profiles]({{< relref "/docs/environment/profiles.md" >}})|beta |Create different pipeline configurations based on overrides and patches defined in one or more profiles
-skaffold build |beta |run skaffold build separately
-skaffold fix|beta |Upgrade an older skaffold config to the current version
-skaffold run|beta |One-off build & deployment of the skaffold application
-[Tagpolicy]({{< relref "/docs/pipeline-stages/taggers" >}})|beta |Automated tagging
-[Test]({{< relref "/docs/pipeline-stages/testers" >}})|alpha |Run tests as part of your pipeline
-Trigger|alpha |Feature area: Trigger configured actions when source files change
-version|beta|get the version string of the current skaffold binary
-[Templating]({{< relref "/docs/environment/templating.md" >}})|alpha|certain fields of skaffold.yaml can be parametrized with environment and built-in variables
-
-Within a feature area we do have certain features that are expected to change: 
-
-|area|feature|state|description|
-|----|----|----|----|
-Build | buildpacks native support|alpha| Skaffold natively support for buildpacks artifact and buildpacks builder
-Debug|debug python apps|alpha|debug python apps
-Debug|debug node apps|alpha|debug node apps
-Debug|debug java apps|alpha|debug java apps
-Debug|debug go apps|alpha|debug go apps
-Default-repo|preconcatentation strategy|beta|collision free rewriting strategy
-Tagpolicy|latest tagger|alpha|tag with latest, use image digest / image ID for deployment
-Tagpolicy|contentDigest tagger|alpha|reintroduce DIGEST and content based digest tag
-Filesync|sync.infer|alpha|mark files as "syncable" - infer the destinations based on the Dockerfile
-Init|json based |alpha|skaffold init JSON based API for IDE integrations
-Init|interactive|alpha|skaffold init interactive for CLI users
-Init|init for k8s manifests|alpha|skaffold init recognizes k8s manifest and the image names in them
-Init|init for Dockerfiles |alpha|skaffold init recognizes Dockerfiles
+{{< maturity-table >}}
 
 ## Exceptions 
 

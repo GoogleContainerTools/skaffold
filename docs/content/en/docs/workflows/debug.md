@@ -2,13 +2,8 @@
 title: "Debugging with Skaffold"
 linkTitle: "Debugging"
 weight: 30
+featureId: debug
 ---
-
-{{< alert title="Note" >}}
-The `debug` functionality is in an alpha state and may change without warning.
-{{< /alert >}}
-
-## Debugging with Skaffold
 
 `skaffold debug` acts like `skaffold dev`, but it configures containers in pods
 for debugging as required for each container's runtime technology.

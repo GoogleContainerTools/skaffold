@@ -1,0 +1,48 @@
+{{ if .Params.featureId }}
+    {{ $data := (index .Site.Data.maturity .Params.featureId)}}
+    {{ $maturity := $data.maturity }}
+    {{ $dev := $data.dev }}
+    {{ $debug := $data.debug }}
+    {{ $run := $data.run }}
+    {{ $build := $data.build }}
+    {{ $deploy := $data.deploy }}
+    {{ $render := $data.render }}
+    {{ $all := and $dev $debug $run $build $deploy $render }}
+
+    <div class="alert infopanel" role="contentinfo">
+        <table>
+            {{ if and $maturity (not (eq $maturity "GA")) }}
+                <tr class="maturity maturity-{{$maturity}}">
+                    <td><b>Maturity</b></td>
+                    <td><a href="/docs/references/deprecation"><code>{{$maturity}}</code></a></td>
+                </tr>
+            {{ end }}
+
+            <tr>
+                <td><b>Applicable</b></td>
+                <td>
+                    {{if or $dev $all}}<a href="/docs/references/cli#skaffold-dev"><code> dev</code></a>{{end}}
+                    {{if or $debug $all}}<a href="/docs/references/cli#skaffold-debug"><code> debug</code></a>{{end}}
+                    {{if or $run $all}} <a href="/docs/references/cli#skaffold-run"><code> run</code></a>{{end}}
+                    {{if or $build $all}}<a href="/docs/references/cli#skaffold-build"><code> build</code></a>{{end}}
+                    {{if or $deploy $all}}<a href="/docs/references/cli#skaffold-deploy"><code> deploy</code></a>{{end}}
+                    {{if or $render $all}}<a href="/docs/references/cli#skaffold-render"><code> render</code></a>{{end}}
+                </td>
+            </tr>
+            {{ if not $all}}
+                <tr>
+                    <td><b>Not applicable</b></td>
+                    <td>
+                        {{if not $dev}}<a href="/docs/references/cli#skaffold-dev"><code> dev</code></a>{{end}}
+                        {{if not $debug}}<a href="/docs/references/cli#skaffold-debug"><code> debug</code></a>{{end}}
+                        {{if not $run}} <a href="/docs/references/cli#skaffold-run"><code> run</code></a>{{end}}
+                        {{if not $build}}<a href="/docs/references/cli#skaffold-build"><code> build</code></a>{{end}}
+                        {{if not $deploy}}<a href="/docs/references/cli#skaffold-deploy"><code> deploy</code></a>{{end}}
+                        {{if not $render}}<a href="/docs/references/cli#skaffold-render"><code> render</code></a>{{end}}
+                    </td>
+                </tr>
+            {{end}}
+        </table>
+    </div>
+
+{{end}}

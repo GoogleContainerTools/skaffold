@@ -2,6 +2,7 @@
 title: "Init"
 linkTitle: "Init"
 weight: 1
+featureId: init
 ---
 
 `skaffold init` is an easy way to get your project up and running in seconds.

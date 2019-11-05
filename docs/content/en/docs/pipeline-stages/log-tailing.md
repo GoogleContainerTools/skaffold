@@ -2,6 +2,7 @@
 title: "Log Tailing"
 linkTitle: "Log Tailing"
 weight: 40
+featureId: logging
 ---
 
 Skaffold has built-in support for tailing logs for containers **deployed by Skaffold** on your cluster

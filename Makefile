@@ -236,7 +236,7 @@ submit-release-trigger:
 
 .PHONY: preview-docs
 preview-docs:
-	./deploy/docs/local-preview.sh hugo serve -D --bind=0.0.0.0
+	./deploy/docs/local-preview.sh hugo serve -D --bind=0.0.0.0 --ignoreCache
 
 .PHONY: build-docs-preview
 build-docs-preview:
