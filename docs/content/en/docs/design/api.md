@@ -214,7 +214,7 @@ Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` ex
 ```
 {{% /tab %}}
 {{% tab "gRPC API" %}}
-To get events over `gRPC` server, first create [`gRPC` client]({{< relref "#creating-a-grpc-client" >}})
+To retrieve the state from the server using `gRPC`, first create [`gRPC` client]({{< relref "#creating-a-grpc-client" >}}) as before:
 ```code
 func main() {
   // Create a gRPC client connection to localhost:50051.
