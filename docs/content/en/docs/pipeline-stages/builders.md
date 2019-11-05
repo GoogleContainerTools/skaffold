@@ -15,8 +15,8 @@ Skaffold has native support for several different tools for building images:
   - locally
   - on cloud with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
 * [Bazel](https://bazel.build/) locally
-* Custom script locally
-* [CNCF Buildpacks]({{<relref "/docs/tutorials/buildpacks">}})
+* [Custom script locally]({{< relref "/docs/pipeline-stages/builders#custom-build-script-run-locally" >}})
+* CNCF Buildpacks [TODO #2904](https://github.com/GoogleContainerTools/skaffold/issues/2904)
 
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how artifacts are built. To use a specific tool for building

@@ -24,4 +24,4 @@ Take a look at our other guides
 
 | Tutorials References  |
 |----------|
-| [Custom Builder]({{< relref "/docs/tutorials/buildpacks" >}}) |
+| [Custom Build Script]({{< relref "/docs/tutorials/custom-builder" >}}) |
