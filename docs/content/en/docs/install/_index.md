@@ -8,10 +8,10 @@ weight: 1
 To keep Skaffold up to date, update checks are made to Google servers to see if a new version of
 Skaffold is available.
 
-You can turn this update check off by following <a href=/docs/references/privacy#update-check>these instructions</a>.
+You can turn this update check off by following [these instructions]({{<relref "/docs/references/privacy#update-check">}}).
 
+Your use of this software is subject to the [Google Privacy Policy](https://policies.google.com/privacy)
 
-Your use of this software is subject to the <a href=https://policies.google.com/privacy>Google Privacy Policy</a>
 {{< /alert >}}
 
 

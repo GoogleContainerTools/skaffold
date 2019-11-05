@@ -1,7 +1,7 @@
 ---
 title: "Debugging with Skaffold"
 linkTitle: "Debugging"
-weight: 2
+weight: 20
 infoPanel: true
 maturity: alpha 
 debug: true

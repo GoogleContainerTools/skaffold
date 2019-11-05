@@ -68,9 +68,9 @@ Control API |alpha|Applications can control sync, build and deployment during in
 [Default-repo]({{< relref "/docs/environment/image-registries.md" >}})|alpha|specify a default image repository & rewrite image names to default repo
 Delete|beta |delete everything deployed by skaffold run from the cluster
 [Deploy] ({{< relref "docs/pipeline-stages/deployers" >}})|beta |Deploy a set of deployables as your applications and replace the image name with the built images
+Render |alpha| Skaffold render outputs rendered kubernetes manifests|
 [Dev]({{< relref "/docs/workflows/dev.md" >}})|beta |Continuous development
-Diagnose|beta |Diagnose the current project and its configuration
-Event API v1|alpha|Publish events and state of the application on gRPC and HTTP
+[Event API v1]({{<relref "docs/design/api#events-api" >}})|alpha|Publish events and state of the application on gRPC and HTTP
 [Filesync]({{< relref "/docs/pipeline-stages/filesync" >}})|alpha|Instead of rebuilding, copy the changed files in the running container
 [Global config]({{< relref "/docs/design/config" >}})|alpha|store user preferences in a separate preferences file
 Init|alpha|Initialize a skaffold.yaml file based on the contents of the current directory
@@ -90,9 +90,11 @@ Within a feature area we do have certain features that are expected to change:
 
 |area|feature|state|description|
 |----|----|----|----|
+Build | buildpacks native support|alpha| Skaffold natively support for buildpacks artifact and buildpacks builder
 Debug|debug python apps|alpha|debug python apps
 Debug|debug node apps|alpha|debug node apps
 Debug|debug java apps|alpha|debug java apps
+Debug|debug go apps|alpha|debug go apps
 Default-repo|preconcatentation strategy|beta|collision free rewriting strategy
 Tagpolicy|latest tagger|alpha|tag with latest, use image digest / image ID for deployment
 Tagpolicy|contentDigest tagger|alpha|reintroduce DIGEST and content based digest tag
