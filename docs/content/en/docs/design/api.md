@@ -27,7 +27,7 @@ The Skaffold API is `gRPC` based, and it is also exposed via the gRPC gateway as
 The server is hosted locally on the same host where the skaffold process is running, and will serve by default on ports 50051 and 50052.
 These ports can be configured through the `--rpc-port` and `--rpc-http-port` flags.
 
-We generate the server's [gRPC service definitions and message protos]({{< relref "/docs/references/api/grpc" >}}) as well as the [Swagger based HTTP API Spec]({{< relref "/docs/references/api/swagger" >}}).
+For reference, we generate the server's [gRPC service definitions and message protos]({{< relref "/docs/references/api/grpc" >}}) as well as the [Swagger based HTTP API Spec]({{< relref "/docs/references/api/swagger" >}}).
 
 
 ### HTTP server
