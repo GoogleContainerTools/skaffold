@@ -9,21 +9,23 @@ Skaffold offers several sub-commands for its workflows that make it quite flexib
 
 ## `skaffold run`
 
-`skaffold run` is a single command for a one-off deployment. It includes all the following phases as it builds, tags, deploys and waits for the deployment to succeed if specified. 
-We recommend `skaffold run` for the simplest Continuous Delivery setup, where it is sufficient to have a single step that deploys from version control to a cluster. 
-For more sophisticated Continuous Delivery pipelines, Skaffold offers building blocks that are described next: 
+`skaffold run` is a single command for a one-off deployment. It includes all the following phases as it builds, tags, deploys and waits for the deployment to succeed if specified.
+We recommend `skaffold run` for a simple Continuous Delivery setup, where it is sufficient to have a single step that deploys from version control to a cluster.
+For more sophisticated Continuous Delivery pipelines, Skaffold offers building blocks that are described next:
 
-- health check - tell `skaffold deploy` or `skaffold run` to succeed only if all deployments are successful  
-- `skaffold build` - build, tag and push artifacts to a registry 
-- `skaffold deploy` - deploy built artifacts to a cluster 
-- `skaffold render` - to export the transformed Kubernetes manifests for GitOps workflows   
+- [healthcheck]({{<relref "/docs/workflows/ci-cd#waiting-for-skaffold-deployments-using-healthcheck">}}) - 
+wait for `deployments` to stabilize and succeed only if all deployments are successful
+- [`skaffold build`]({{<relref "/docs/workflows/ci-cd#skaffold-build-skaffold-deploy">}}) - build, tag and push artifacts to a registry
+- [`skaffold deploy`]({{<relref "/docs/workflows/ci-cd#skaffold-build-skaffold-deploy">}})  - deploy built artifacts to a cluster
+- [`skaffold render`]({{<relref "/docs/workflows/ci-cd#skaffold-render">}})  - export the transformed Kubernetes manifests for GitOps workflows
 
 ## Waiting for Skaffold deployments using `healthcheck`
+{{< maturity "deploy.status_check" >}}
 
 {{< todo 1937 >}}
 
 ## `skaffold build | skaffold deploy`
- 
+
 `skaffold build` will build your project's artifacts, and push the build images to the specified registry. If your project is already configured to run with Skaffold, `skaffold build` can be a very lightweight way of setting up builds for your CI pipeline. Passing the `--file-output` flag to Skaffold build will also write out your built artifacts in JSON format to a file on disk, which can then by passed to `skaffold deploy` later on. This is a great way of "committing" your artifacts when they have reached a state that you're comfortable with, especially for projects with multiple artifacts for multiple services.
 
 Example using the current git state as a unique file ID to "commit" build state:
@@ -103,5 +105,3 @@ gives us the one line output telling us the only thing we need to know:
 pod/getting-started configured
 ```
 
-## Waiting for Skaffold deployments using `healthcheck`
-{{< maturity "deploy.status_check" >}}
