@@ -221,7 +221,24 @@ a container image.  Then for each such sub-project:
 
 ## Jib Maven and Gradle remotely with Google Cloud Build
 
-{{% todo 1299 %}}
+Similar to building [Dockerfile remotely on Google Cloud Build](#dockerfile-remotely-with-google-cloud-build), you can also build
+maven and gradle projects remotely using Jib.
+Jib cloud builder is one of the [supported builders for Google Cloud Build](https://cloud.google.com/cloud-build/docs/cloud-builders#supported_builder_images_provided_by_product_name_short).
+
+**Configuration**
+
+Similar to building [Dockerfile remotely on Google Cloud Build](#dockerfile-remotely-with-google-cloud-build), to use Cloud Build, add build type `googleCloudBuild` to the `build`
+section of `skaffold.yaml`. The following options can optionally be configured:
+
+{{< schema root="GoogleCloudBuild" >}}
+
+**Example**
+
+The following `build` section, instructs Skaffold to build
+ `gcr.io/k8s-skaffold/project1` with Google Cloud Build using Jib builder:
+
+{{% readfile file="samples/builders/gcb-jib.yaml" %}}
+
 
 ## Bazel locally
 
