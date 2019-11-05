@@ -1,7 +1,7 @@
 ---
 title: "skaffold dev"
 linkTitle: "Continuous development"
-weight: 10
+weight: 20
 ---
 
 `skaffold dev` enables continuous local development on an application.

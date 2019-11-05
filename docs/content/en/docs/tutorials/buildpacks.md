@@ -1,7 +1,7 @@
 ---
 title: "Building Artifacts with CNCF Buildpacks"
 linkTitle: "Buildpacks"
-weight: 100
+weight: 110
 ---
 
 This page describes building Skaffold artifacts with [buildpacks](https://buildpacks.io/).
