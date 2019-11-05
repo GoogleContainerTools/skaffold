@@ -54,6 +54,9 @@ RUN protoc -I /usr/local/include -I . -I $GOPATH/src -I $GOPATH/src/github.com/g
   --swagger_out=logtostderr=true:. \
   skaffold.proto
 
+# this is a hack - seemingly grpc-gateway-swagger-gen is sometimes generating titles when they should be descriptions
+RUN sed -i 's/"title"/"description"/g' skaffold.swagger.json
+
 # Compare the proto files with the existing proto files
 FROM generateFiles AS compare
 WORKDIR /compare

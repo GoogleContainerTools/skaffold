@@ -17,6 +17,8 @@ This is a generated reference for the [Skaffold API]({{<relref "/docs/design/api
 
 We also generate the [reference doc for the HTTP layer]({{<relref "/docs/references/api/swagger">}}).
 
+
+
 <a name="skaffold.proto"></a>
 
 ## skaffold.proto
@@ -30,15 +32,15 @@ You can find the source for skaffold.proto [on Github](https://github.com/Google
 <a name="proto.SkaffoldService"></a>
 
 #### SkaffoldService
-SkaffoldService describes all the methods for the Skaffold API
+Describes all the methods for the Skaffold API
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetState | [.google.protobuf.Empty](#google.protobuf.Empty) | [State](#proto.State) | GetState returns the state of the current Skaffold execution |
-| EventLog | [LogEntry](#proto.LogEntry) stream | [LogEntry](#proto.LogEntry) stream | EventLog is DEPRECATED. Events should be used instead. TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168) |
-| Events | [.google.protobuf.Empty](#google.protobuf.Empty) | [LogEntry](#proto.LogEntry) stream | Events returns all the events of the current Skaffold execution from the start |
-| Handle | [Event](#proto.Event) | [.google.protobuf.Empty](#google.protobuf.Empty) | Handle is EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example. |
-| Execute | [UserIntentRequest](#proto.UserIntentRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Execute allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled. |
+| GetState | [.google.protobuf.Empty](#google.protobuf.Empty) | [State](#proto.State) | Returns the state of the current Skaffold execution |
+| EventLog | [LogEntry](#proto.LogEntry) stream | [LogEntry](#proto.LogEntry) stream | DEPRECATED. Events should be used instead. TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168) |
+| Events | [.google.protobuf.Empty](#google.protobuf.Empty) | [LogEntry](#proto.LogEntry) stream | Returns all the events of the current Skaffold execution from the start |
+| Execute | [UserIntentRequest](#proto.UserIntentRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled. |
+| Handle | [Event](#proto.Event) | [.google.protobuf.Empty](#google.protobuf.Empty) | EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example. |
 
  <!-- end services -->
 
@@ -49,7 +51,7 @@ SkaffoldService describes all the methods for the Skaffold API
 
 <a name="proto.BuildEvent"></a>
 #### BuildEvent
-BuildEvent describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
+`BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
 If the build fails, an error will be attached to the event.
 
 
@@ -67,13 +69,12 @@ If the build fails, an error will be attached to the event.
 
 <a name="proto.BuildState"></a>
 #### BuildState
-BuildState contains a map of all skaffold artifacts to their current build
-states
+`BuildState` maps Skaffold artifacts to their current build states
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| artifacts | [BuildState.ArtifactsEntry](#proto.BuildState.ArtifactsEntry) | repeated |  |
+| artifacts | [BuildState.ArtifactsEntry](#proto.BuildState.ArtifactsEntry) | repeated | A map of `artifact name -> build-state`. Artifact name is defined in the `skaffold.yaml`. The `build-state` can be: <br> - `"Not started"`: not yet started <br> - `"In progress"`: build started <br> - `"Complete"`: build succeeded <br> - `"Failed"`: build failed |
 
 
 
@@ -99,7 +100,7 @@ states
 
 <a name="proto.DeployEvent"></a>
 #### DeployEvent
-DeployEvent gives the status of a deployment, and will be emitted by Skaffold
+`DeployEvent` represents the status of a deployment, and is emitted by Skaffold
 anytime a deployment starts or completes, successfully or not.
 
 
@@ -116,7 +117,7 @@ anytime a deployment starts or completes, successfully or not.
 
 <a name="proto.DeployState"></a>
 #### DeployState
-DeployState contains the status of the current deploy
+`DeployState` describes the status of the current deploy
 
 
 | Field | Type | Label | Description |
@@ -131,7 +132,8 @@ DeployState contains the status of the current deploy
 
 <a name="proto.Event"></a>
 #### Event
-Event is one of the following events.
+`Event` describes an event in the Skaffold process.
+It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent or FileSyncEvent.
 
 
 | Field | Type | Label | Description |
@@ -170,7 +172,7 @@ FileSyncEvent describes the sync status.
 
 <a name="proto.FileSyncState"></a>
 #### FileSyncState
-FileSyncState contains the status of the current file sync
+`FileSyncState` contains the status of the current file sync
 
 
 | Field | Type | Label | Description |
@@ -208,7 +210,7 @@ LogEntry describes an event and a string description of the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | timestamp | [google.protobuf.Timestamp](#google.protobuf.Timestamp) |  | timestamp of the event. |
-| event | [Event](#proto.Event) |  | Event |
+| event | [Event](#proto.Event) |  | the actual event that is one of |
 | entry | [string](#string) |  | description of the event. |
 
 
@@ -219,12 +221,12 @@ LogEntry describes an event and a string description of the event.
 
 <a name="proto.MetaEvent"></a>
 #### MetaEvent
-MetaEvent gives general information regarding Skaffold like version info
+`MetaEvent` provides general information regarding Skaffold
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| entry | [string](#string) |  |  |
+| entry | [string](#string) |  | entry, for example: `"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1beta15 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"` |
 
 
 
@@ -271,7 +273,11 @@ PortEvent Event describes each port forwarding event.
 
 <a name="proto.ResourceStatusCheckEvent"></a>
 #### ResourceStatusCheckEvent
-
+A Resource StatusCheck Event, indicates progress for each kubernetes deployment.
+For every resource, there will be exactly one event with `status` *Succeeded* or *Failed* event.
+There can be multiple events with `status` *Pending*.
+Skaffold polls for resource status every 0.5 second. If the resource status changes, an event with `status` “Pending”, “Complete” and “Failed”
+will be sent with the new status.
 
 
 | Field | Type | Label | Description |
@@ -304,7 +310,7 @@ PortEvent Event describes each port forwarding event.
 
 <a name="proto.State"></a>
 #### State
-State represents the current state of the Skaffold components
+`State` represents the current state of the Skaffold components
 
 
 | Field | Type | Label | Description |
@@ -354,7 +360,7 @@ State represents the current state of the Skaffold components
 
 <a name="proto.StatusCheckEvent"></a>
 #### StatusCheckEvent
-StatusCheck Event describes if the Status check has started, is in progress, has succeeded or failed.
+`StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed.
 
 
 | Field | Type | Label | Description |
@@ -371,13 +377,13 @@ StatusCheck Event describes if the Status check has started, is in progress, has
 
 <a name="proto.StatusCheckState"></a>
 #### StatusCheckState
-StatusCheckState contains the state of status check of current deployed resources.
+`StatusCheckState` describes the state of status check of current deployed resources.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
-| resources | [StatusCheckState.ResourcesEntry](#proto.StatusCheckState.ResourcesEntry) | repeated |  |
+| resources | [StatusCheckState.ResourcesEntry](#proto.StatusCheckState.ResourcesEntry) | repeated | A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name. The `status-check-state` can be <br> - `"Not started"`: indicates that `status-check` has just started. <br> - `"In progress"`: InProgress is sent after every resource check is complete. <br> - `"Succeeded"`: - `"Failed"`: |
 
 
 

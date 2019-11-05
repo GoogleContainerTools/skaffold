@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "skaffold.proto",
+    "description": "skaffold.proto",
     "version": "version not set"
   },
   "schemes": [
@@ -17,7 +17,7 @@
   "paths": {
     "/v1/event_log": {
       "get": {
-        "summary": "EventLog is DEPRECATED. Events should be used instead.\nTODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)",
+        "summary": "DEPRECATED. Events should be used instead.\nTODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)",
         "operationId": "EventLog",
         "responses": {
           "200": {
@@ -37,6 +37,7 @@
           },
           {
             "name": "event.metaEvent.entry",
+            "description": "entry, for example: `\"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1beta15 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}\"`.",
             "in": "query",
             "required": false,
             "type": "string"
@@ -202,7 +203,7 @@
     },
     "/v1/events": {
       "get": {
-        "summary": "Events returns all the events of the current Skaffold execution from the start",
+        "summary": "Returns all the events of the current Skaffold execution from the start",
         "operationId": "Events",
         "responses": {
           "200": {
@@ -219,7 +220,7 @@
     },
     "/v1/events/handle": {
       "post": {
-        "summary": "Handle is EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.",
+        "summary": "EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.",
         "operationId": "Handle",
         "responses": {
           "200": {
@@ -246,7 +247,7 @@
     },
     "/v1/execute": {
       "post": {
-        "summary": "Execute allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.",
+        "summary": "Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.",
         "operationId": "Execute",
         "responses": {
           "200": {
@@ -273,7 +274,7 @@
     },
     "/v1/state": {
       "get": {
-        "summary": "GetState returns the state of the current Skaffold execution",
+        "summary": "Returns the state of the current Skaffold execution",
         "operationId": "GetState",
         "responses": {
           "200": {
@@ -303,7 +304,7 @@
           "type": "string"
         }
       },
-      "description": "BuildEvent describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."
+      "description": "`BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."
     },
     "protoBuildState": {
       "type": "object",
@@ -312,10 +313,11 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "description": "A map of `artifact name -\u003e build-state`.\nArtifact name is defined in the `skaffold.yaml`.\nThe `build-state` can be: \u003cbr\u003e\n- `\"Not started\"`: not yet started \u003cbr\u003e\n- `\"In progress\"`: build started \u003cbr\u003e\n- `\"Complete\"`: build succeeded \u003cbr\u003e\n- `\"Failed\"`: build failed"
         }
       },
-      "title": "BuildState contains a map of all skaffold artifacts to their current build\nstates"
+      "description": "`BuildState` maps Skaffold artifacts to their current build states"
     },
     "protoDeployEvent": {
       "type": "object",
@@ -327,7 +329,7 @@
           "type": "string"
         }
       },
-      "description": "DeployEvent gives the status of a deployment, and will be emitted by Skaffold\nanytime a deployment starts or completes, successfully or not."
+      "description": "`DeployEvent` represents the status of a deployment, and is emitted by Skaffold\nanytime a deployment starts or completes, successfully or not."
     },
     "protoDeployState": {
       "type": "object",
@@ -336,7 +338,7 @@
           "type": "string"
         }
       },
-      "title": "DeployState contains the status of the current deploy"
+      "description": "`DeployState` describes the status of the current deploy"
     },
     "protoEvent": {
       "type": "object",
@@ -363,7 +365,7 @@
           "$ref": "#/definitions/protoFileSyncEvent"
         }
       },
-      "description": "Event is one of the following events."
+      "description": "`Event` describes an event in the Skaffold process.\nIt is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent or FileSyncEvent."
     },
     "protoFileSyncEvent": {
       "type": "object",
@@ -391,7 +393,7 @@
           "type": "string"
         }
       },
-      "title": "FileSyncState contains the status of the current file sync"
+      "description": "`FileSyncState` contains the status of the current file sync"
     },
     "protoIntent": {
       "type": "object",
@@ -431,10 +433,11 @@
       "type": "object",
       "properties": {
         "entry": {
-          "type": "string"
+          "type": "string",
+          "description": "entry, for example: `\"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1beta15 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}\"`"
         }
       },
-      "title": "MetaEvent gives general information regarding Skaffold like version info"
+      "description": "`MetaEvent` provides general information regarding Skaffold"
     },
     "protoPortEvent": {
       "type": "object",
@@ -483,7 +486,8 @@
         "err": {
           "type": "string"
         }
-      }
+      },
+      "description": "A Resource StatusCheck Event, indicates progress for each kubernetes deployment.\nFor every resource, there will be exactly one event with `status` *Succeeded* or *Failed* event.\nThere can be multiple events with `status` *Pending*.\nSkaffold polls for resource status every 0.5 second. If the resource status changes, an event with `status` “Pending”, “Complete” and “Failed”\nwill be sent with the new status."
     },
     "protoState": {
       "type": "object",
@@ -507,7 +511,7 @@
           "$ref": "#/definitions/protoFileSyncState"
         }
       },
-      "title": "State represents the current state of the Skaffold components"
+      "description": "`State` represents the current state of the Skaffold components"
     },
     "protoStatusCheckEvent": {
       "type": "object",
@@ -522,7 +526,7 @@
           "type": "string"
         }
       },
-      "description": "StatusCheck Event describes if the Status check has started, is in progress, has succeeded or failed."
+      "description": "`StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed."
     },
     "protoStatusCheckState": {
       "type": "object",
@@ -534,10 +538,11 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "description": "A map of `resource name -\u003e status-check-state`. Where `resource-name` is the kubernetes resource name.\nThe `status-check-state` can be \u003cbr\u003e\n- `\"Not started\"`: indicates that `status-check` has just started. \u003cbr\u003e\n- `\"In progress\"`: InProgress is sent after every resource check is complete. \u003cbr\u003e\n- `\"Succeeded\"`:\n- `\"Failed\"`:"
         }
       },
-      "description": "StatusCheckState contains the state of status check of current deployed resources."
+      "description": "`StatusCheckState` describes the state of status check of current deployed resources."
     },
     "protobufAny": {
       "type": "object",
@@ -588,7 +593,7 @@
           "$ref": "#/definitions/runtimeStreamError"
         }
       },
-      "title": "Stream result of protoLogEntry"
+      "description": "Stream result of protoLogEntry"
     }
   }
 }

@@ -63,18 +63,18 @@ The following is the maturity of the larger feature areas:
 |area|state|description|
 |----|----|----|
 [Build]({{< relref "/docs/pipeline-stages/builders" >}})|beta |Build images based on multiple build tools in a configurable way
-Control API |alpha|Applications can control sync, build and deployment during instead of automated sync, build and deploy
+[Control API]({{< relref "/docs/design/api#control-api" >}}) |alpha|Applications can control sync, build and deployment during instead of automated sync, build and deploy
 [Debug]({{< relref "/docs/workflows/debug.md" >}})|alpha|Language-aware reconfiguration of containers on the fly to become debuggable
 [Default-repo]({{< relref "/docs/environment/image-registries.md" >}})|alpha|specify a default image repository & rewrite image names to default repo
-Delete|beta |delete everything deployed by skaffold run from the cluster
-[Deploy] ({{< relref "docs/pipeline-stages/deployers" >}})|beta |Deploy a set of deployables as your applications and replace the image name with the built images
+Delete| beta |delete everything deployed by skaffold run from the cluster
+[Deploy]({{< relref "docs/pipeline-stages/deployers" >}})|beta |Deploy a set of deployables as your applications and replace the image name with the built images
 [Dev]({{< relref "/docs/workflows/dev.md" >}})|beta |Continuous development
-Event API v1|alpha|Publish events and state of the application on gRPC and HTTP
+[Event API]({{< relref "/docs/design/api#event-api" >}})|alpha|Publish events and state of the application on gRPC and HTTP
 [Filesync]({{< relref "/docs/pipeline-stages/filesync" >}})|alpha|Instead of rebuilding, copy the changed files in the running container
 [Global config]({{< relref "/docs/design/config" >}})|alpha|store user preferences in a separate preferences file
 Init|alpha|Initialize a skaffold.yaml file based on the contents of the current directory
-Insecure registry handling|alpha |Target registries for built images which are not secure
-[Port-forwarding]({{< relref "/docs/pipeline-stages/port-forwarding.md" >}})|alpha |Port forward application to localhost
+[Insecure registry handling]({{<relref "/docs/environment/image-registries">}})|alpha |Target registries for built images which are not secure
+[Port-forwarding]({{< relref "/docs/pipeline-stages/port-forwarding" >}})|alpha |Port forward application to localhost
 [Profiles]({{< relref "/docs/environment/profiles.md" >}})|beta |Create different pipeline configurations based on overrides and patches defined in one or more profiles
 skaffold build |beta |run skaffold build separately
 skaffold fix|beta |Upgrade an older skaffold config to the current version
