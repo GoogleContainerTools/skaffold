@@ -55,7 +55,7 @@ You can also configure the time for deployments to stabilize with `statusCheckDe
 To configure deployments to stabilize with 5 minutes use,
 {{% readfile file="samples/deployers/healthcheck.yaml" %}}
 
-With `--status-check` flag, for each `Deployment` kind resource, `skaffold deploy` will wait for 
+With `--status-check` flag, for each `Deployment` kind resource, `skaffold deploy` will wait for
 [`progressDeadlineSeconds`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#progress-deadline-seconds)
 mentioned in its specification.
 
@@ -67,7 +67,7 @@ If the `Deployment.spec.progressDeadlineSeconds` is not set, Skaffold will wait 
 In case you have both `statusCheckDeadlineSeconds` and `Deployment.spec.progressDeadlineSeconds` set, precedence
 is given to `Deployment.spec.progressDeadline` **only if it is within** `statusCheckDeadlineSeconds`.
 
-e.g. if for below `Deployment` with `progressDeadlineSeconds` set to 5 minutes, 
+e.g. if for below `Deployment` with `progressDeadlineSeconds` set to 5 minutes,
 
 ```yaml
 apiVersion: apps/v1
@@ -83,7 +83,7 @@ spec:
         image: gcr.io/k8s-skaffold/getting-started-foo
 ```
 
-if the `skaffold.yaml` overrides the whole deploy to stabilize in a minute, 
+if the `skaffold.yaml` overrides the whole deploy to stabilize in a minute,
 
 ```yaml
 apiVersion: skaffold/v1
