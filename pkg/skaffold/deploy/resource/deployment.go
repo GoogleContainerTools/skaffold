@@ -18,9 +18,11 @@ package resource
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -34,7 +36,7 @@ const (
 )
 
 var (
-	errKubectlKilled     = errors.New("kubectl rollout status command killed")
+	errKubectlKilled     = errors.New("kubectl rollout status command interrupted")
 	ErrKubectlConnection = errors.New("kubectl connection error")
 )
 
@@ -74,6 +76,9 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 	b, err := kubeCtl.RunOut(ctx, "rollout", "status", "deployment", d.name, "--namespace", d.namespace, "--watch=false")
 	details := string(b)
 	err = parseKubectlRolloutError(err)
+	if err == errKubectlKilled {
+		err = errors.Wrap(err, fmt.Sprintf("received Ctrl-C or deployments could not stabilize within %v", d.deadline))
+	}
 	d.UpdateStatus(details, err)
 }
 
