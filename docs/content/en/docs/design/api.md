@@ -2,6 +2,10 @@
 title: "Skaffold API"
 linkTitle: "Skaffold API"
 weight: 60
+
+
+featureId: api
+
 ---
 When running [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) or [`skaffold debug`]({{< relref "/docs/workflows/debug" >}}), 
 Skaffold starts a server that exposes an API over the lifetime of the Skaffold process.
@@ -224,6 +228,6 @@ func main() {
 {{% /tab %}}
 {{% /tabs %}}
 
-### Controlling Build/Sync/Deploy
+### Control API
 
 TODO: https://github.com/GoogleContainerTools/skaffold/issues/3143

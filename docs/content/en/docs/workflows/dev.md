@@ -1,6 +1,7 @@
 ---
 title: "skaffold dev"
 linkTitle: "Continuous development"
+featureId: dev
 weight: 20
 ---
 
