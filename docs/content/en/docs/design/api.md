@@ -123,7 +123,7 @@ Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` ex
 ```
 {{% /tab %}}
 {{% tab "gRPC API" %}}
-To get events from the `gRPC` server, first create [`gRPC` client]({{< relref "#creating-a-grpc-client" >}})
+To get events from the API using `gRPC`, first create a [`gRPC` client]({{< relref "#creating-a-grpc-client" >}}):
 
 ```golang
 func main() {
