@@ -2,10 +2,7 @@
 title: "Debugging with Skaffold"
 linkTitle: "Debugging"
 weight: 20
-
-infoPanel: true
 featureId: debug
-applicability: true
 ---
 
 `skaffold debug` acts like `skaffold dev`, but it configures containers in pods

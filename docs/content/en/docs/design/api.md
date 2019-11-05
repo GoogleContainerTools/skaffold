@@ -3,9 +3,9 @@ title: "Skaffold API"
 linkTitle: "Skaffold API"
 weight: 60
 
-infopanel: true
+
 featureId: api
-applicability: true
+
 ---
 When running [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) or [`skaffold debug`]({{< relref "/docs/workflows/debug" >}}), 
 Skaffold starts a server that exposes an API over the lifetime of the Skaffold process.

@@ -2,6 +2,7 @@
 title: "Kube-context activation"
 linkTitle: "Kube-context activation"
 weight: 80
+featureId: deploy.kubecontext
 ---
 
 When interacting with a Kubernetes cluster, just like any other Kubernetes-native tool,

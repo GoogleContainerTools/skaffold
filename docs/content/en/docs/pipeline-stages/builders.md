@@ -2,10 +2,7 @@
 title: "Build"
 linkTitle: "Build"
 weight: 10
-
-infoPanel: true
 featureId: build
-applicability: true
 ---
 
 Skaffold has native support for several different tools for building images:

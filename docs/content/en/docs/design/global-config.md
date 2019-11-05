@@ -3,9 +3,9 @@ title: "Global configuration"
 linkTitle: "Global configuration"
 weight: 50
 
-infopanel: true
+
 featureId: global_config
-applicability: true
+
 ---
 
 Some context specific settings can be configured in a global configuration file, which defaults to `~/.skaffold/config`. Options can be configured globally or for specific Kubernetes contexts.

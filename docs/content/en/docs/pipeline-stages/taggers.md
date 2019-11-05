@@ -2,12 +2,7 @@
 title: "Tag"
 linkTitle: "Tag"
 weight: 15
-
-maturity: GA
-
-infoPanel: true
 featureId: tagpolicy
-applicability: true
 ---
 
 Skaffold supports the following policies for tagging images:
