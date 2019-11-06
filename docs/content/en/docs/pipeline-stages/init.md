@@ -13,8 +13,8 @@ Skaffold auto-generates `build` and `deploy` config for supported builders and d
 ## Build Config Initialization
 `skaffold init` currently supports build detection for two builders.
 
-1. [Docker]({{<relref "/docs/pipeline-stages/builders/local#dockerfile-with-docker">}})
-2. [Jib]({{<relref "/docs/pipeline-stages/builders/local#jib-maven-and-gradle">}})
+1. [Docker]({{<relref "/docs/pipeline-stages/builders/docker">}})
+2. [Jib]({{<relref "/docs/pipeline-stages/builders/jib">}})
 
 `skaffold init` will walk your project directory and look for any `Dockerfiles` 
 or `build.gradle/pom.xml`.
