@@ -145,7 +145,7 @@ func TestRun(t *testing.T) {
 		}, {
 			description: "buildpacks",
 			dir:         "examples/buildpacks",
-			pods:        []string{"getting-started"},
+			deployments: []string{"web"},
 			// Don't run on kind because of this issue: https://github.com/buildpack/pack/issues/277
 			gcpOnly: true,
 		}, {
