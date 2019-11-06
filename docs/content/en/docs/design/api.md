@@ -18,8 +18,8 @@ To retrieve information about the Skaffold pipeline, the Skaffold API provides t
   
   * A snapshot of the [overall state]({{< relref "#state-api" >}}) of the pipeline at any given time during the run.
 
-To control the individual phases of the Skaffold, the Skaffold API provides [fine grained control over]({{< relref "#controlling-build-sync-deploy" >}})
-the individual phases of the pipeline (build, deploy and sync).
+To control the individual phases of the Skaffold, the Skaffold API provides [fine grained control]({{< relref "#controlling-build-sync-deploy" >}})
+over the individual phases of the pipeline (build, deploy, and sync).
 
 
 ## Connecting to the Skaffold API
@@ -52,10 +52,10 @@ WARN[0000] port 50051 for gRPC server already in use: using 50053 instead
 ```
 
 #### Creating a gRPC Client
-To connect to the `gRPC` server at default port `50051` use the following code snippet.
+To connect to the `gRPC` server at default port `50051`, create a client using the following code snippet.
 
 {{< alert title="Note" >}}
-The skaffold gRPC server is not an HTTPS service, hence we need to specify `grpc.WithInSecure()`
+The skaffold gRPC server is not compatible with HTTPS, so connections need to be marked as insecure with `grpc.WithInsecure()`
 {{</alert>}}
 
 ```golang
@@ -76,30 +76,31 @@ func main(){
 ```
 
 
-## API structure
+## API Structure
 
 Skaffold's API exposes the three main endpoints:
 
-* Events API - stream of lifecycle events
+* Event API - continuous stream of lifecycle events
 * State API - retrieve the current state
 * Control API - control build/deploy/sync
 
-### Events API
+### Event API
 
-Skaffold provides a continuous development mode [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) which rebuilds and redeploys
+Skaffold provides a continuous development mode, [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}), which rebuilds and redeploys
 your application on changes. In a single development loop, one or more container images
 may be built and deployed.
 
-Skaffold exposes events for clients to get notified when phases within a development loop
-start, succeed or fail.
-Tools that integrate with Skaffold can use these events to kick-off parts of the development workflow depending on them.
+Skaffold exposes events for clients to be notified when phases within a development loop
+start, succeed, or fail.
+Tools that integrate with Skaffold can use these events to kick off parts of a development workflow depending on them.
 
 Example scenarios:
 
-* port forwarding events are used by Cloud Code to attach debuggers automatically to running containers.     
-* when a port-forwarded frontend service is redeployed successfully, kick-off a suite of Selenium tests that test changes to the newly deployed service..
+* port-forwarding events are used by Cloud Code to automatically attach debuggers to running containers.     
+* using an event indicating a frontend service has been deployed and port-forwarded successfully to
+kick off a suite of Selenium tests against the newly deployed service.
 
-**Event API contract**
+**Event API Contract**
 
 | protocol | endpoint | encoding |
 | ---- | --- | --- |
@@ -123,14 +124,14 @@ Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` ex
 ```
 {{% /tab %}}
 {{% tab "gRPC API" %}}
-To get events from the API using `gRPC`, first create a [`gRPC` client]({{< relref "#creating-a-grpc-client" >}}):
+To get events from the API using `gRPC`, first create a [`gRPC` client]({{< relref "#creating-a-grpc-client" >}}).
+then, call the `client.Events()` method:
 
 ```golang
 func main() {
   ctx, ctxCancel := context.WithCancel(context.Background())
   defer ctxCancel()
-  // `client` is the gRPC client with connection to localhost:50051.
-  // See code above to create it
+  // `client` is a gRPC client with connection to localhost:50051.
   logStream, err := client.Events(ctx, &empty.Empty{})
   if err != nil {
   	log.Fatalf("could not get events: %v", err)
@@ -164,12 +165,12 @@ The State API provides a snapshot of the current state of the following componen
 - status check state per resource 
 - port-forwarded resources
 
-**Event API contract**  
+**State API Contract**  
 
 | protocol | endpoint | encoding |
 | ---- | --- | --- |
 | HTTP | `http://localhost:{HTTP_RPC_PORT}/v1/state` | newline separated JSON using chunk transfer encoding over HTTP|  
-| gRPC | `client.GetState(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) | protobuf 3 over HTTP |  
+| gRPC | `client.GetState(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) | protobuf 3 over HTTP |
 
 
 **Examples** 
@@ -214,8 +215,10 @@ Using `curl` and `HTTP_RPC_PORT=50052`, an example output of a `skaffold dev` ex
 ```
 {{% /tab %}}
 {{% tab "gRPC API" %}}
-To retrieve the state from the server using `gRPC`, first create [`gRPC` client]({{< relref "#creating-a-grpc-client" >}}) as before:
-```code
+To retrieve the state from the server using `gRPC`, first create [`gRPC` client]({{< relref "#creating-a-grpc-client" >}}).
+Then, call the `client.GetState()` method:
+
+```golang
 func main() {
   // Create a gRPC client connection to localhost:50051.
   // See code above
@@ -230,20 +233,27 @@ func main() {
 
 ### Control API
 
-By default, [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) automatically builds artifacts, deploys manifests and syncs files on every source code change. 
+By default, [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) will automatically build artifacts, deploy manifests and sync files on every source code change.
+However, individual actions can be gated off by user input through the Control API.
+
+With this API, users can tell Skaffold to wait for user input before performing any of these actions,
+even if the requisite files were changed on the filesystem. By doing so, users can "queue up" changes while
+they are iterating locally, and then have Skaffold rebuild and redeploy only when asked. This can be very
+useful when builds are happening more frequently than desired, when builds or deploys take a long time or
+are otherwise very costly, or when users want to integrate other tools with `skaffold dev`.
+
 The automation can be turned off with `--auto-build=false` flag for building, `--auto-deploy=false` flag for deploys, and the `--auto-sync=false` flag for file sync.
-If automation is turned off for a phase, Skaffold will wait for a call to the Control API before executing the given phase.
+If automation is turned off for a phase, Skaffold will wait for a request to the Control API before executing the associated action.
 
-One call to the Control API allows for one execution of the phases specified in the request.
-This means that _even if there are new file changes_, Skaffold will wait for another execution request before executing the given phase again. 
-The Control API mode is best to think about as "semaphores" for build / sync / deploy, that get lifted once per every request. 
+Each time a request is sent to the Control API by the user, the specified actions in the payload are executed immediately.
+This means that _even if there are new file changes_, Skaffold will wait for another user request before executing any of the given actions again.
 
-**Control API contract**
+**Control API Contract**
 
-| protocol | endpoint | 
-| ---- |  ---- | ---- |  
-| HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/execute`, the [Execution Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/Execute">}}) |     
-| gRPC | `client.Execute(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) | 
+| protocol | endpoint |
+| ---- |  ---- | ---- |
+| HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/execute`, the [Execution Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/Execute">}}) |
+| gRPC | `client.Execute(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
 
 
 **Examples**
@@ -251,20 +261,20 @@ The Control API mode is best to think about as "semaphores" for build / sync / d
 {{% tabs %}}
 {{% tab "HTTP API" %}}
 
-Using our [Quickstart example]({{< relref "/docs/quickstart" >}}) we can start skaffold with `skaffold dev --auto-build=false`.
-When we change `main.go`, Skaffold will notice file changes but it won't rebuild the image until it receives a call to the Control API with `"build":true`:
+Using our [Quickstart example]({{< relref "/docs/quickstart" >}}), we can start skaffold with `skaffold dev --auto-build=false`.
+When we change `main.go`, Skaffold will notice file changes but will not rebuild the image until it receives a request to the Control API with `{"build": true}`:
 
 ```bash
 curl -X POST http://localhost:50052/v1/execute -d '{"build": true}'
 ```       
 
-At this point, Skaffold will wait to deploy the newly built image until we invoke the Control API with `"deploy":true`:
+At this point, Skaffold will wait to deploy the newly built image until we invoke the Control API with `{"deploy": true}`:
  
 ```bash
 curl -X POST http://localhost:50052/v1/execute -d '{"deploy": true}'
 ```       
 
-Note that you can also combine these steps into one call:
+These steps can also be combined into a single request:
 
 ```bash
 curl -X POST http://localhost:50052/v1/execute -d '{"build": true, "deploy": true}'
@@ -272,14 +282,14 @@ curl -X POST http://localhost:50052/v1/execute -d '{"build": true, "deploy": tru
 
 {{% /tab %}}
 {{% tab "gRPC API" %}}
-To get events from the `gRPC` server, first create [`gRPC` client]({{< relref "#creating-a-grpc-client" >}}) 
+To access the Control API via the `gRPC`, create [`gRPC` client]({{< relref "#creating-a-grpc-client" >}}) as before.
+Then, use the `client.Execute()` method with the desired payload:
 
 ```golang
 func main() {
     ctx, ctxCancel := context.WithCancel(context.Background())
     defer ctxCancel()
     // `client` is the gRPC client with connection to localhost:50051.
-    // See code above to create it
     _, err = client.Execute(ctx, &pb.UserIntentRequest{
         Intent: &pb.Intent{
             Build:  true,
