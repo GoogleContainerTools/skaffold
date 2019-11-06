@@ -84,7 +84,6 @@ func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration
 
 	// try to find existing `dlv` command
 	spec := retrieveDlvSpec(config)
-	// todo: find existing containerPort "dlv" and use port. But what if it conflicts with command-line spec?
 
 	if spec == nil {
 		newSpec := newDlvSpec(uint16(portAlloc(defaultDlvPort)))
@@ -102,11 +101,7 @@ func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration
 		}
 	}
 
-	dlvPort := v1.ContainerPort{
-		Name:          "dlv",
-		ContainerPort: int32(spec.port),
-	}
-	container.Ports = append(container.Ports, dlvPort)
+	container.Ports = exposePort(container.Ports, "dlv", int32(spec.port))
 
 	return map[string]interface{}{
 		"runtime": "go",

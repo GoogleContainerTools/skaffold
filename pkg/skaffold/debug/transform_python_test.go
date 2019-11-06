@@ -133,7 +133,7 @@ func TestPythonTransformer_RuntimeSupportImage(t *testing.T) {
 	testutil.CheckDeepEqual(t, "python", pythonTransformer{}.RuntimeSupportImage())
 }
 
-func TestPythonTransformerApply(t *testing.T) {
+func TestPythonTransformer_Apply(t *testing.T) {
 	tests := []struct {
 		description   string
 		containerSpec v1.Container
@@ -166,6 +166,18 @@ func TestPythonTransformerApply(t *testing.T) {
 				Command: []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678"},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "dap", ContainerPort: 5678}},
 				Env:     []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
+			},
+		},
+		{
+			description: "existing port and env",
+			containerSpec: v1.Container{
+				Ports: []v1.ContainerPort{{Name: "dap", ContainerPort: 8080}},
+			},
+			configuration: imageConfiguration{entrypoint: []string{"python"}, env: map[string]string{"PYTHONUSERBASE": "/foo"}},
+			result: v1.Container{
+				Command: []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678"},
+				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
+				Env:     []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python:/foo"}},
 			},
 		},
 		{

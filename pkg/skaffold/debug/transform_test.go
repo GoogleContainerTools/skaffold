@@ -133,3 +133,41 @@ func TestDescribe(t *testing.T) {
 		})
 	}
 }
+
+func TestExposePort(t *testing.T) {
+	tests := []struct {
+		description string
+		in          []v1.ContainerPort
+		expected    []v1.ContainerPort
+	}{
+		{"no ports", []v1.ContainerPort{}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"existing port", []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"add new port", []v1.ContainerPort{{Name: "foo", ContainerPort: 4444}}, []v1.ContainerPort{{Name: "foo", ContainerPort: 4444}, {Name: "name", ContainerPort: 5555}}},
+		{"clashing port name", []v1.ContainerPort{{Name: "name", ContainerPort: 4444}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"clashing port value", []v1.ContainerPort{{Name: "foo", ContainerPort: 5555}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result := exposePort(test.in, "name", 5555)
+			t.CheckDeepEqual(test.expected, result)
+		})
+	}
+}
+
+func TestSetEnvVar(t *testing.T) {
+	tests := []struct {
+		description string
+		in          []v1.EnvVar
+		expected    []v1.EnvVar
+	}{
+		{"no entry", []v1.EnvVar{}, []v1.EnvVar{{Name: "name", Value: "new-text"}}},
+		{"add new entry", []v1.EnvVar{{Name: "foo", Value: "bar"}}, []v1.EnvVar{{Name: "foo", Value: "bar"}, {Name: "name", Value: "new-text"}}},
+		{"replace existing entry", []v1.EnvVar{{Name: "name", Value: "value"}}, []v1.EnvVar{{Name: "name", Value: "new-text"}}},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result := setEnvVar(test.in, "name", "new-text")
+			t.CheckDeepEqual(test.expected, result)
+		})
+	}
+}

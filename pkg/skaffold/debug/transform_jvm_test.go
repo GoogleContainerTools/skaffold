@@ -129,6 +129,18 @@ func TestJdwpTransformerApply(t *testing.T) {
 				Ports: []v1.ContainerPort{{ContainerPort: 5005}, {Name: "jdwp", ContainerPort: 8000}},
 			},
 		},
+		{
+			description: "existing JAVA_TOOL_OPTIONS",
+			containerSpec: v1.Container{
+				Env:   []v1.EnvVar{{Name: "FOO", Value: "BAR"}},
+				Ports: []v1.ContainerPort{{ContainerPort: 8000}},
+			},
+			configuration: imageConfiguration{env: map[string]string{"JAVA_TOOL_OPTIONS": "-Xms1g"}},
+			result: v1.Container{
+				Env:   []v1.EnvVar{{Name: "FOO", Value: "BAR"}, {Name: "JAVA_TOOL_OPTIONS", Value: "-Xms1g -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
+				Ports: []v1.ContainerPort{{ContainerPort: 8000}, {Name: "jdwp", ContainerPort: 5005}},
+			},
+		},
 	}
 	var identity portAllocator = func(port int32) int32 {
 		return port
@@ -138,6 +150,13 @@ func TestJdwpTransformerApply(t *testing.T) {
 			jdwpTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
 
 			t.CheckDeepEqual(test.result, test.containerSpec)
+			jtoCount := 0
+			for _, env := range test.containerSpec.Env {
+				if env.Name == "JAVA_TOOL_OPTIONS" {
+					jtoCount++
+				}
+			}
+			t.CheckDeepEqual(1, jtoCount)
 		})
 	}
 }

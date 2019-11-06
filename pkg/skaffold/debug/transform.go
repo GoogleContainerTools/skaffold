@@ -311,3 +311,37 @@ func describe(obj runtime.Object) (group, version, kind, description string) {
 	}
 	return
 }
+
+// exposePort adds a `ContainerPort` instance or amends an existing entry with the same port.
+func exposePort(entries []v1.ContainerPort, portName string, port int32) []v1.ContainerPort {
+	for i := range entries {
+		// ports and names must be unique so rewrite an existing entry if found
+		if entries[i].ContainerPort == port || entries[i].Name == portName {
+			entries[i].Name = portName
+			entries[i].ContainerPort = port
+			return entries
+		}
+	}
+	entry := v1.ContainerPort{
+		Name:          portName,
+		ContainerPort: port,
+	}
+	return append(entries, entry)
+}
+
+// setEnvVar adds a `EnvVar` instance or replaced an existing entry
+func setEnvVar(entries []v1.EnvVar, varName, value string) []v1.EnvVar {
+	for i := range entries {
+		// env variable names must be unique so rewrite an existing entry if found
+		if entries[i].Name == varName {
+			entries[i].Value = value
+			return entries
+		}
+	}
+
+	entry := v1.EnvVar{
+		Name:  varName,
+		Value: value,
+	}
+	return append(entries, entry)
+}
