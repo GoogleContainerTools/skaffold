@@ -27,7 +27,7 @@ Cleanup is enabled by default, it can be turned off by `--cleanup=false`.
 
 ## Ctrl + C 
 
-In case of `skaffold dev` and `skaffold debug`, pressing `Ctrl+C` (`SIGINT` signal) will kick off the cleanup process which will run a `skaffold delete` essentially.
+When running `skaffold dev` or `skaffold debug`, pressing `Ctrl+C` (`SIGINT` signal) will kick off the cleanup process which will mimic the behavior of `skaffold delete`.
 If for some reason the Skaffold process was unable to catch the `SIGINT` signal, `skaffold delete` can always be run later to clean up the deployed Kubernetes resources.
  
 ### Image pruning 
