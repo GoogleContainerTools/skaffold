@@ -42,8 +42,6 @@ input.td-search-input::placeholder {
 }
 
 .values-section {
-    /* font-family: 'Titillium Web'; */
-
     background-color: var(--values-color);
     color: var(--values-foreground);
 
