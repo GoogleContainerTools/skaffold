@@ -130,15 +130,15 @@ func TestJdwpTransformerApply(t *testing.T) {
 			},
 		},
 		{
-			description: "existing JAVA_TOOL_OPTIONS",
+			description: "existing jdwp port and JAVA_TOOL_OPTIONS",
 			containerSpec: v1.Container{
 				Env:   []v1.EnvVar{{Name: "FOO", Value: "BAR"}},
-				Ports: []v1.ContainerPort{{ContainerPort: 8000}},
+				Ports: []v1.ContainerPort{{Name: "jdwp", ContainerPort: 8000}},
 			},
 			configuration: imageConfiguration{env: map[string]string{"JAVA_TOOL_OPTIONS": "-Xms1g"}},
 			result: v1.Container{
 				Env:   []v1.EnvVar{{Name: "FOO", Value: "BAR"}, {Name: "JAVA_TOOL_OPTIONS", Value: "-Xms1g -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
-				Ports: []v1.ContainerPort{{ContainerPort: 8000}, {Name: "jdwp", ContainerPort: 5005}},
+				Ports: []v1.ContainerPort{{Name: "jdwp", ContainerPort: 5005}},
 			},
 		},
 	}
