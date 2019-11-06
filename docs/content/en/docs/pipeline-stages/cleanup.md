@@ -16,7 +16,7 @@ that both have side effects on both your local and deployment environments:
 Skaffold offers functionality to cleanup some of these side effects:
 
 - Kubernetes resource cleanup - `skaffold delete`, and automatic cleanup on `Ctrl+C` for `skaffold dev` and `skaffold debug`   
-- Image pruning - for local Docker daemon images only, on Ctrl+C for `skaffold dev` and `skaffold debug` 
+- Image pruning - for local Docker daemon images only, automatically on `Ctrl+C` for `skaffold dev` and `skaffold debug` 
 
 For pushed images in registries and application side effects the user has to take care of cleanup. 
 
