@@ -6,7 +6,8 @@ After two years, we are extremely excited to release v1.0.0 of Skaffold that sig
 
 *Note*: This release also comes with a new config version `v1`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
-        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
+        See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what GA means.
+        See [Feature Maturity](https://skaffold-latest.firebaseapp.com/docs/references/deprecation/#skaffold-features) to find out more on feature maturity.
 
 Highlights
 
