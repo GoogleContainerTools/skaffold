@@ -36,6 +36,7 @@ import (
 
 const (
 	testKubeContext = "kubecontext"
+	testKubeConfig  = "kubeconfig"
 	kubectlVersion  = `{"clientVersion":{"major":"1","minor":"12"}}`
 )
 
