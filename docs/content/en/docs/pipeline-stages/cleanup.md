@@ -6,7 +6,7 @@ featureId: cleanup
 ---
 
 Skaffold works with [image builders]({{<relref "/docs/pipeline-stages/builders">}}) and [deployers]({{<relref "/docs/pipeline-stages/deployers">}}) 
-that both have side effects on the environment: 
+that both have side effects on both your local and deployment environments: 
 
 - resources are created in one or more namespaces in a Kubernetes cluster 
 - images might be created on the local Docker daemon
