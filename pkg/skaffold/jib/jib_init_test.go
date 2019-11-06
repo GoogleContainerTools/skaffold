@@ -189,7 +189,7 @@ func TestCreateArtifact(t *testing.T) {
 			expectedArtifact: latest.Artifact{
 				ImageName:    "different-image",
 				Workspace:    filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project", Type: string(JibGradle)}},
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project"}},
 			},
 		},
 		{
@@ -199,7 +199,7 @@ func TestCreateArtifact(t *testing.T) {
 			expectedArtifact: latest.Artifact{
 				ImageName:    "different-image",
 				Workspace:    filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Type: string(JibGradle)}},
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
 			},
 		},
 		{
@@ -209,7 +209,7 @@ func TestCreateArtifact(t *testing.T) {
 			expectedArtifact: latest.Artifact{
 				ImageName:    "different-image",
 				Workspace:    filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project", Type: string(JibMaven)}},
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project"}},
 			},
 		},
 		{
@@ -219,7 +219,7 @@ func TestCreateArtifact(t *testing.T) {
 			expectedArtifact: latest.Artifact{
 				ImageName:    "different-image",
 				Workspace:    filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Type: string(JibMaven)}},
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
 			},
 		},
 		{
@@ -228,7 +228,7 @@ func TestCreateArtifact(t *testing.T) {
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName:    "different-image",
-				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Type: string(JibGradle)}},
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
 			},
 		},
 	}

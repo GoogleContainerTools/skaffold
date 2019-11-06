@@ -68,18 +68,17 @@ func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 		a.Workspace = workspace
 	}
 
+	jib := &latest.JibArtifact{}
 	if j.BuilderName == PluginName(JibMaven) {
-		jibMaven := &latest.JibArtifact{Type: string(JibMaven)}
 		if j.Project != "" {
-			jibMaven.Project = j.Project
+			jib.Project = j.Project
 		}
-		a.ArtifactType = latest.ArtifactType{JibArtifact: jibMaven}
+		a.ArtifactType = latest.ArtifactType{JibArtifact: jib}
 	} else if j.BuilderName == PluginName(JibGradle) {
-		jibGradle := &latest.JibArtifact{Type: string(JibGradle)}
 		if j.Project != "" {
-			jibGradle.Project = j.Project
+			jib.Project = j.Project
 		}
-		a.ArtifactType = latest.ArtifactType{JibArtifact: jibGradle}
+		a.ArtifactType = latest.ArtifactType{JibArtifact: jib}
 	}
 
 	return a
