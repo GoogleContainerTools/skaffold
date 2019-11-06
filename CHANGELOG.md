@@ -8,6 +8,8 @@ After two years, we are extremely excited to release v1.0.0 of Skaffold that sig
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
         See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what beta means.
 
+Highlights
+
 New Features: 
 * Adding support for Cloud Native Buildpacks [#3000](https://github.com/GoogleContainerTools/skaffold/pull/3000)
 * skaffold credits to surface thirdparty licenses [#3138](https://github.com/GoogleContainerTools/skaffold/pull/3138)

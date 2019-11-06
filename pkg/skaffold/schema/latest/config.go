@@ -703,7 +703,7 @@ type BuildpackDependencies struct {
 	Ignore []string `yaml:"ignore,omitempty"`
 }
 
-// CustomArtifact *alpha* describes an artifact built from a custom build script
+// CustomArtifact *beta* describes an artifact built from a custom build script
 // written by the user. It can be used to build images with builders that aren't directly integrated with skaffold.
 type CustomArtifact struct {
 	// BuildCommand is the command executed to build the image.
@@ -712,7 +712,7 @@ type CustomArtifact struct {
 	Dependencies *CustomDependencies `yaml:"dependencies,omitempty"`
 }
 
-// CustomDependencies *alpha* is used to specify dependencies for an artifact built by a custom build script.
+// CustomDependencies *beta* is used to specify dependencies for an artifact built by a custom build script.
 // Either `dockerfile` or `paths` should be specified for file watching to work as expected.
 type CustomDependencies struct {
 	// Dockerfile should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies.
@@ -726,7 +726,7 @@ type CustomDependencies struct {
 	Ignore []string `yaml:"ignore,omitempty"`
 }
 
-// DockerfileDependency *alpha* is used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile.
+// DockerfileDependency *beta* is used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile.
 type DockerfileDependency struct {
 	// Path locates the Dockerfile relative to workspace.
 	Path string `yaml:"path,omitempty"`
@@ -737,7 +737,7 @@ type DockerfileDependency struct {
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 }
 
-// KanikoArtifact *alpha* describes an artifact built from a Dockerfile,
+// KanikoArtifact describes an artifact built from a Dockerfile,
 // with kaniko.
 type KanikoArtifact struct {
 	// AdditionalFlags are additional flags to be passed to Kaniko command line.
@@ -775,7 +775,7 @@ type KanikoArtifact struct {
 	SkipTLS bool `yaml:"skipTLS,omitempty"`
 }
 
-// DockerArtifact *beta* describes an artifact built from a Dockerfile,
+// DockerArtifact describes an artifact built from a Dockerfile,
 // usually using `docker build`.
 type DockerArtifact struct {
 	// DockerfilePath locates the Dockerfile relative to workspace.
@@ -805,7 +805,7 @@ type DockerArtifact struct {
 	NoCache bool `yaml:"noCache,omitempty"`
 }
 
-// BazelArtifact *beta* describes an artifact built with [Bazel](https://bazel.build/).
+// BazelArtifact describes an artifact built with [Bazel](https://bazel.build/).
 type BazelArtifact struct {
 	// BuildTarget is the `bazel build` target to run.
 	// For example: `//:skaffold_example.tar`.
@@ -816,7 +816,7 @@ type BazelArtifact struct {
 	BuildArgs []string `yaml:"args,omitempty"`
 }
 
-// JibArtifact *alpha* builds images using the
+// JibArtifact builds images using the
 // [Jib plugins for Maven and Gradle](https://github.com/GoogleContainerTools/jib/).
 type JibArtifact struct {
 	// Project selects which sub-project to build for multi-module builds.
