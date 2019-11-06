@@ -27,15 +27,10 @@ This feature is very handy to use in Continous Delivery pipeline to ensure the d
 in healthy state before proceeding with the next steps in pipeline.
 
 {{<alert title="Note">}}
-`healthcheck` is disabled by default; it can be enabled with the `--stauts-check` flag.
+`healthcheck` is disabled by default; it can be enabled with the `--status-check` flag.
 
 If this flag is not set, no healthcheck will be performed.
 {{</alert>}}
-
-To enable status check, use flag, `--status-check`,
-```bash
-skaffold run --status-check
-```
 
 To determine if a `Deployment` kind resource is up and running, Skaffold relies on `kubectl rollout status` to obtain its status.
 
@@ -52,7 +47,7 @@ Deployments stabilized in 2.168799605s
 
 You can also configure the time for deployments to stabilize with `statusCheckDeadlineSeconds` config field.
 
-To configure deployments to stabilize with 5 minutes use,
+To configure deployments to stabilize within 5 minutes use:
 {{% readfile file="samples/deployers/healthcheck.yaml" %}}
 
 With `--status-check` flag, for each `Deployment` kind resource, `skaffold deploy` will wait for
