@@ -8,7 +8,7 @@ _Please keep in mind that the generate-pipeline command is still a WIP_
 Prerequisites:
 
 * Install tekton on your cluster (https://github.com/tektoncd/pipeline/blob/master/docs/install.md)
-* Have kaniko secrets setup and installed in your cluster (https://github.com/GoogleContainerTools/kaniko#kubernetes-secret)
+* Have kaniko secrets setup (https://github.com/GoogleContainerTools/kaniko)
 * Container registry must be public
 * Give your default service account the cluster-admin role (necessary to have pipeline access secrets)
 ----
@@ -20,22 +20,8 @@ kubectl create clusterrolebinding serviceaccounts-cluster-admin \
 To generate and run a pipeline:
 
 * Run skaffold generate-pipeline
-* Modify skaffold.yaml to use a valid GCSbucket for kaniko if needed.
+* Modify skaffold.yaml to use a valid GCSbucket for kaniko
 * Commit and push updated skaffold.yaml
 * kubectl apply -f pipeline.yaml
-* Create a pipelinerun.yaml 
-----
-apiVersion: tekton.dev/v1alpha1
-kind: PipelineRun
-metadata:
-  name: skaffold-pipeline-run
-spec: 
-  pipelineRef: 
-    name: skaffold-pipeline
-  resources:
-  - name: source-repo
-    resourceRef:
-      name: source-git
-----
- 
+* Create a pipelinerun.yaml
 * kubectl apply -f pipelinerun.yaml
