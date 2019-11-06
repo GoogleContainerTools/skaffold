@@ -22,8 +22,8 @@ wait for `deployments` to stabilize and succeed only if all deployments are succ
 ## Waiting for Skaffold deployments using `healthcheck`
 {{< maturity "deploy.status_check" >}}
 
-`skaffold deploy` optionally performs a `healthcheck` for [`Deployment` kind](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) resources and waits for them to be stable.
-This feature is important to use in Continuous Delivery pipeline to ensure that the deployed resources are
+`skaffold deploy` optionally performs a `healthcheck` for resources of kind [`Deployment`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) and waits for them to be stable.
+This feature can be very useful in Continuous Delivery pipelines to ensure that the deployed resources are
 healthy before proceeding with the next steps in the pipeline.
 
 {{<alert title="Note">}}
@@ -31,7 +31,7 @@ healthy before proceeding with the next steps in the pipeline.
 If this flag is not set, no healthcheck will be performed.
 {{</alert>}}
 
-To determine if a `Deployment` kind resource is up and running, Skaffold relies on `kubectl rollout status` to obtain its status.
+To determine if a `Deployment` resource is up and running, Skaffold relies on `kubectl rollout status` to obtain its status.
 
 ```bash
 Waiting for deployments to stabilize
@@ -44,24 +44,24 @@ Deployments stabilized in 2.168799605s
 
 **Configuring status check time for deploy `healthcheck`**
 
-You can also configure the time for deployments to stabilize with `statusCheckDeadlineSeconds` config field.
+You can also configure the time for deployments to stabilize with the `statusCheckDeadlineSeconds` config field in the `skaffold.yaml`.
 
-To configure deployments to stabilize within 5 minutes use:
+For example, to configure deployments to stabilize within 5 minutes:
 {{% readfile file="samples/deployers/healthcheck.yaml" %}}
 
-With `--status-check` flag, for each `Deployment` kind resource, `skaffold deploy` will wait for
-[`progressDeadlineSeconds`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#progress-deadline-seconds)
-mentioned in its specification.
+With the `--status-check` flag, for each `Deployment` resource, `skaffold deploy` will wait for
+the time specified by [`progressDeadlineSeconds`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#progress-deadline-seconds)
+from the deployment configuration.
 
-If the `Deployment.spec.progressDeadlineSeconds` is not set, Skaffold will wait for
+If the `Deployment.spec.progressDeadlineSeconds` is not set, Skaffold will either wait for
 
-1. Time set in Skaffold deploy config field `statusCheckDeadlineSeconds` if set, or
-2. default 10 minutes.
+the time specified in the `statusCheckDeadlineSeconds` field of the deployment config stanza in the `skaffold.yaml`, or
+default to 10 minutes if this is not specified.
 
-In case you have both `statusCheckDeadlineSeconds` and `Deployment.spec.progressDeadlineSeconds` set, precedence
-is given to `Deployment.spec.progressDeadline` **only if it is within** `statusCheckDeadlineSeconds`.
+In the case that both `statusCheckDeadlineSeconds` and `Deployment.spec.progressDeadlineSeconds` are set, precedence
+is given to `Deployment.spec.progressDeadline` **only if it is less than** `statusCheckDeadlineSeconds`.
 
-e.g. if for below `Deployment` with `progressDeadlineSeconds` set to 5 minutes,
+For example, the `Deployment` below with `progressDeadlineSeconds` set to 5 minutes,
 
 ```yaml
 apiVersion: apps/v1
