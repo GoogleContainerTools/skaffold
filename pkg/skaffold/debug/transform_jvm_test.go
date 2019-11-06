@@ -150,13 +150,6 @@ func TestJdwpTransformerApply(t *testing.T) {
 			jdwpTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
 
 			t.CheckDeepEqual(test.result, test.containerSpec)
-			jtoCount := 0
-			for _, env := range test.containerSpec.Env {
-				if env.Name == "JAVA_TOOL_OPTIONS" {
-					jtoCount++
-				}
-			}
-			t.CheckDeepEqual(1, jtoCount)
 		})
 	}
 }
