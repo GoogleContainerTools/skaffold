@@ -123,6 +123,12 @@
             "type": "string"
           },
           {
+            "name": "event.portEvent.address",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
             "name": "event.statusCheckEvent.status",
             "in": "query",
             "required": false,
@@ -466,6 +472,9 @@
           "type": "string"
         },
         "resourceName": {
+          "type": "string"
+        },
+        "address": {
           "type": "string"
         }
       },
