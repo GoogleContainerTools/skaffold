@@ -24,8 +24,7 @@ To generate and run a pipeline:
 * Commit and push updated skaffold.yaml
 * kubectl apply -f pipeline.yaml
 * Create a pipelinerun.yaml 
-
-```yaml
+----
 apiVersion: tekton.dev/v1alpha1
 kind: PipelineRun
 metadata:
@@ -37,6 +36,6 @@ spec:
   - name: source-repo
     resourceRef:
       name: source-git
- ```
-
+----
+ 
 * kubectl apply -f pipelinerun.yaml
