@@ -31,14 +31,14 @@ see [skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
 Skaffold supports building artifacts in following execution contexts:
 
-1. Local via Docker Daemon
+1. Local
 2. In Cluster
 3. Remotely on Google Cloud Build.
 
 
 ## Local Build
-Local build execution is the default execution context. When building locally, Skaffold images will be
-build in local Docker Daemon.
+Local build execution is the default execution context.
+Skaffold will use the build tools locally installed on your machine to execute the build.
 
 To configure the local execution explictly, add build type `local` to the build section of `skaffold.yaml`
 
@@ -51,6 +51,7 @@ TODO add schema root local
 
 If you are deploying to [local cluster]({{<relref "/docs/environment/local-cluster" >}}), you can additional set `push` to `false` to speed up builds.
 
+For building docker artifacts, you can specify 
 
 ## In Cluster Build
 Skaffold supports building in cluster via [Kaniko]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-in-cluster-with-kaniko" >}}) 
@@ -91,10 +92,8 @@ section of `skaffold.yaml`. The following options can optionally be configured:
 {{< schema root="GoogleCloudBuild" >}}
 
 
-Skaffold supports following two Google Cloud Builders.
-
-1. [Docker]({{<relref "/docs/pipeline-stages/builders/docker#dockerfile-remotely-with-google-cloud-build">}})
-2. [Jib]({{<relref "/docs/pipeline-stages/builders/jib#remotely-with-google-cloud-build">}})
+Skaffold currently supports  [Docker]({{<relref "/docs/pipeline-stages/builders/docker#dockerfile-remotely-with-google-cloud-build">}})
+and [Jib]({{<relref "/docs/pipeline-stages/builders/jib#remotely-with-google-cloud-build">}}) Google Cloud Builders.
 
 
 
