@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -80,6 +81,15 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 		inputs = append(inputs, args...)
 	}
 
+	// add env variables for the artifact if specified
+	if env := retrieveEnv(a); len(env) > 0 {
+		evaluatedEnv, err := misc.EvaluateEnv(env)
+		if err != nil {
+			return "", errors.Wrap(err, "evaluating build args")
+		}
+		inputs = append(inputs, evaluatedEnv...)
+	}
+
 	// get a key for the hashes
 	hasher := sha256.New()
 	enc := json.NewEncoder(hasher)
@@ -109,6 +119,16 @@ func retrieveBuildArgs(artifact *latest.Artifact) map[string]*string {
 
 	case artifact.CustomArtifact != nil && artifact.CustomArtifact.Dependencies.Dockerfile != nil:
 		return artifact.CustomArtifact.Dependencies.Dockerfile.BuildArgs
+
+	default:
+		return nil
+	}
+}
+
+func retrieveEnv(artifact *latest.Artifact) []string {
+	switch {
+	case artifact.BuildpackArtifact != nil:
+		return artifact.BuildpackArtifact.Env
 
 	default:
 		return nil

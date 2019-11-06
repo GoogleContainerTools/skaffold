@@ -25,8 +25,16 @@ The following options can optionally be configured:
 
 {{< schema root="BuildpackArtifact" >}}
 
+**Builder**
+
 `builder` is *required* and tells Skaffold which
 [Builder](https://buildpacks.io/docs/app-developer-guide/build-an-app/) to use.
+
+**User defined environment variables**
+
+`env` makes it possible to pass arbitrary environment variables to the buildpacks.
+This is in general used to adjust the detection and the build phases. Many buildpacks
+use environment variables to select specific versions of language runtimes.
 
 **Example**
 

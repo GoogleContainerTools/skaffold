@@ -5,3 +5,5 @@ build:
   - image: gcr.io/k8s-skaffold/skaffold-buildpacks
     buildpack:
       builder: "heroku/buildpacks"
+      env:
+      - GOVERSION=1.13.1

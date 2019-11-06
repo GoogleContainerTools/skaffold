@@ -36,6 +36,7 @@ func (l *localDaemon) ContainerRun(ctx context.Context, out io.Writer, runs ...C
 			Image: run.Image,
 			Cmd:   run.Command,
 			User:  run.User,
+			Env:   run.Env,
 		}, &container.HostConfig{
 			Mounts: run.Mounts,
 		}, nil, "")

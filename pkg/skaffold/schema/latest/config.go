@@ -689,6 +689,11 @@ type BuildpackArtifact struct {
 	// RunImage overrides the stack's default run image.
 	RunImage string `yaml:"runImage,omitempty"`
 
+	// Env are environment variables, in the `key=value` form,  passed to the build.
+	// Values can use the go template syntax.
+	// For example: `["key1=value1", "key2=value2", "key3={{.ENV_VARIABLE}}"]`.
+	Env []string `yaml:"env,omitempty"`
+
 	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`
 }

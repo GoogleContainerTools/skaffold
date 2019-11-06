@@ -492,6 +492,18 @@
           "description": "file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.",
           "x-intellij-html-description": "file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact."
         },
+        "env": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "environment variables, in the `key=value` form,  passed to the build. Values can use the go template syntax.",
+          "x-intellij-html-description": "environment variables, in the <code>key=value</code> form,  passed to the build. Values can use the go template syntax.",
+          "default": "[]",
+          "examples": [
+            "[\"key1=value1\", \"key2=value2\", \"key3={{.ENV_VARIABLE}}\"]"
+          ]
+        },
         "forcePull": {
           "type": "boolean",
           "description": "should the builder image be pull before each build.",
@@ -508,6 +520,7 @@
         "forcePull",
         "builder",
         "runImage",
+        "env",
         "dependencies"
       ],
       "additionalProperties": false,
