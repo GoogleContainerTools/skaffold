@@ -32,7 +32,7 @@ If for some reason the Skaffold process was unable to catch the `SIGINT` signal,
  
 ### Image pruning 
  
-Images that are built by Skaffold and stored on the local Docker daemon can easily add up, taking up signficant amount of disk space locally.
+Images that are built by Skaffold and stored on the local Docker daemon can easily pile up, taking up a significant amount of disk space.
 To avoid this, users can turn on image pruning that deletes the images built by Skaffold on `SIGTERM` from `skaffold dev` and `skaffold debug`.  
 
 {{< alert title="Note" >}}
