@@ -40,7 +40,7 @@ Image pruning is only available if artifact caching is disabled.<br>
 As artifact caching is enabled by default, image pruning is disabled by default.
 {{</alert>}}
 
-To enable image pruning mode you can run skaffold with both `--no-prune=false` and `--cache-artifacts=false`:
+To enable image pruning, you can run Skaffold with both `--no-prune=false` and `--cache-artifacts=false`:
 
  ```bash
 skaffold dev --no-prune=false --cache-artifacts=false
