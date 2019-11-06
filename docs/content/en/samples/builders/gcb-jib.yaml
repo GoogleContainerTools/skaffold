@@ -1,0 +1,6 @@
+build:
+  artifacts:
+  - image: gcr.io/k8s-skaffold/project1
+    jib: {}
+  googleCloudBuild:
+    projectId: YOUR-GCP-PROJECT
