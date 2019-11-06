@@ -47,7 +47,7 @@ build:
   local: {}
 ```
 
-TODO add schema root local
+{{< schema root="LocalBuild" >}}
 
 If you are deploying to [local cluster]({{<relref "/docs/environment/local-cluster" >}}), you can additional set `push` to `false` to speed up builds.
 
@@ -61,7 +61,7 @@ To configure in-cluster Build, add build type `cluster` to the build section of 
 
 The following options can optionally be configured:
 
-TODO add schema root cluster
+{{< schema root="ClusterDetails" >}}
 
 ## Remotely on Google Cloud Build
 
