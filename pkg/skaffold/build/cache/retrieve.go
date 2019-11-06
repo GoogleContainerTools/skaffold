@@ -132,7 +132,22 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		return append(bRes, alreadyBuilt...), nil
 	}
 
-	return append(bRes, alreadyBuilt...), err
+	return maintainArtifactOrder(append(bRes, alreadyBuilt...), artifacts), err
+}
+
+func maintainArtifactOrder(built []build.Artifact, artifacts []*latest.Artifact) []build.Artifact {
+	byName := make(map[string]build.Artifact)
+	for _, build := range built {
+		byName[build.ImageName] = build
+	}
+
+	var ordered []build.Artifact
+
+	for _, artifact := range artifacts {
+		ordered = append(ordered, byName[artifact.ImageName])
+	}
+
+	return ordered
 }
 
 func (c *cache) addArtifacts(ctx context.Context, bRes []build.Artifact, hashByName map[string]string) error {
