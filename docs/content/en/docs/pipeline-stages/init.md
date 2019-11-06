@@ -13,8 +13,8 @@ Skaffold auto-generates `build` and `deploy` config for supported builders and d
 ## Build Config Initialization
 `skaffold init` currently supports build detection for two builders.
 
-1. [Docker]({{<relref "/docs/pipeline-stages/builders#dockerfile-locally-with-docker">}})
-2. [Jib]({{<relref "/docs/pipeline-stages/builders#jib-maven-and-gradle-locally">}})
+1. [Docker]({{<relref "/docs/pipeline-stages/builders/local#dockerfile-with-docker">}})
+2. [Jib]({{<relref "/docs/pipeline-stages/builders/local#jib-maven-and-gradle">}})
 
 `skaffold init` will walk your project directory and look for any `Dockerfiles` 
 or `build.gradle/pom.xml`.
@@ -36,7 +36,7 @@ options are correct. <br>
 You will have to manually set up build config for this artifact
 {{</alert>}}
 
-`skaffold` init also recognizes a maven or gradle project and will auto-suggest [`jib`]({{<relref "/docs/pipeline-stages/builders#jib-maven-and-gradle-locally">}}) builder.
+`skaffold` init also recognizes a maven or gradle project and will auto-suggest [`jib`]({{<relref "/docs/pipeline-stages/builders#/local#jib-maven-and-gradle">}}) builder.
 Currently `jib` artifact detection is disabled by default, you can turn it on using the flag `--XXenableJibInit`.
 
 You can try it this out on example [jib project](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/jib-multimodule)
