@@ -28,6 +28,7 @@ Updates & refactorings:
 * Don’t need race detection/code coverage [#3140](https://github.com/GoogleContainerTools/skaffold/pull/3140)
 * Prepare cli-go to accept `--kubeconfig` setting [#3107](https://github.com/GoogleContainerTools/skaffold/pull/3107)
 * Delegate release notes to external tool [#3055](https://github.com/GoogleContainerTools/skaffold/pull/3055)
+* [buildpacks] Run cleanup on ctrl-c [#3184](https://github.com/GoogleContainerTools/skaffold/pull/3184)
 
 Docs updates: 
 
@@ -37,7 +38,6 @@ Docs updates:
 * Skaffold image credits [#3146](https://github.com/GoogleContainerTools/skaffold/pull/3146)
 * [docs] a few docs changes [#3181](https://github.com/GoogleContainerTools/skaffold/pull/3181)
 * Simplify custom builder example [#3183](https://github.com/GoogleContainerTools/skaffold/pull/3183)
-* [buildpacks] Run cleanup on ctrl-c [#3184](https://github.com/GoogleContainerTools/skaffold/pull/3184)
 * Improve the k8s yaml used in buildpacks sample [#3182](https://github.com/GoogleContainerTools/skaffold/pull/3182)
 * [example] update apiVersion of Deployment [#3161](https://github.com/GoogleContainerTools/skaffold/pull/3161)
 * [docs] Right steps for secret creation in `generate-pipeline` flow. [#3180](https://github.com/GoogleContainerTools/skaffold/pull/3180)
