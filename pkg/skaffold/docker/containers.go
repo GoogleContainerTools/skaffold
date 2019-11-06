@@ -49,7 +49,8 @@ func (l *localDaemon) ContainerRun(ctx context.Context, out io.Writer, runs ...C
 
 		errRun := l.runAndLog(ctx, out, container.ID)
 
-		if err := l.apiClient.ContainerRemove(ctx, container.ID, types.ContainerRemoveOptions{Force: true}); err != nil {
+		// Don't use ctx. It might have been cancelled by Ctrl-C
+		if err := l.apiClient.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{Force: true}); err != nil {
 			return err
 		}
 
