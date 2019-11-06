@@ -17,10 +17,16 @@ We're always looking to have conversations with developers like you to learn abo
 the different ways you use Skaffold, and what improvements you think we can make to
 better suit your workflow.
 
+**What is a feedback session?**
+
 We periodically schedule hour long video conference sessions with both individual developers and teams
 to get more personalized feedback. If you're interested in talking with us, fill out our
 [feedback form](https://forms.gle/J5h567ncypY2ziq49), and we'll schedule a session at a time
 convenient for you. No preparation is needed!
+
+{{< alert title="Note" >}}
+Providing your information does not guarantee that we will contact you.
+{{< /alert >}}
 
 If at any time you wish to opt out of communications from the Skaffold team, you can fill out
 our [opt out form](https://forms.gle/cnfCXotenyUtF92w6).
