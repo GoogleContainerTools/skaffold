@@ -463,6 +463,14 @@ func TestAutoSelectBuilders(t *testing.T) {
 			},
 			expectedFilteredImages: []string{"image1", "image2"},
 		},
+		{
+			description:            "show unique image names",
+			builderConfigs:         nil,
+			images:                 []string{"image1", "image1"},
+			expectedPairs:          nil,
+			expectedBuildersLeft:   nil,
+			expectedFilteredImages: []string{"image1"},
+		},
 	}
 
 	for _, test := range tests {

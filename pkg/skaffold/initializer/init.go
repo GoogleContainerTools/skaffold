@@ -98,6 +98,20 @@ type builderImagePair struct {
 	ImageName string
 }
 
+type set map[string]interface{}
+
+func (s set) add(value string) {
+	s[value] = value
+}
+
+func (s set) values() (values []string) {
+	for val := range s {
+		values = append(values, val)
+	}
+	sort.Strings(values)
+	return values
+}
+
 // DoInit executes the `skaffold init` flow.
 func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	rootDir := "."
@@ -219,7 +233,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 // separately returns the builder configs and images that didn't have any matches.
 func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
 	var pairs []builderImagePair
-	var unresolvedImages []string
+	var unresolvedImages = make(set)
 	for _, image := range images {
 		matchingConfigIndex := -1
 		for i, config := range builderConfigs {
@@ -241,10 +255,10 @@ func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builde
 			builderConfigs = append(builderConfigs[:matchingConfigIndex], builderConfigs[matchingConfigIndex+1:]...)
 		} else {
 			// No definite pair found, add to images list
-			unresolvedImages = append(unresolvedImages, image)
+			unresolvedImages.add(image)
 		}
 	}
-	return pairs, builderConfigs, unresolvedImages
+	return pairs, builderConfigs, unresolvedImages.values()
 }
 
 // detectBuilders checks if a path is a builder config, and if it is, returns the InitBuilders representing the
