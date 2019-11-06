@@ -190,7 +190,7 @@ func TestCreateArtifact(t *testing.T) {
 				ImageName: "different-image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Project: "project", Flags: []string{"-Dimage=different-image"}, Type: int(JibGradle)},
+					JibArtifact: &latest.JibArtifact{Project: "project", Flags: []string{"-Dimage=different-image"}, Type: string(JibGradle)},
 				},
 			},
 		},
@@ -202,7 +202,7 @@ func TestCreateArtifact(t *testing.T) {
 				ImageName: "different-image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: int(JibGradle)},
+					JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: string(JibGradle)},
 				},
 			},
 		},
@@ -213,7 +213,7 @@ func TestCreateArtifact(t *testing.T) {
 			expectedArtifact: latest.Artifact{
 				ImageName:    "different-image",
 				Workspace:    filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project", Flags: []string{"-Dimage=different-image"}, Type: int(JibMaven)}},
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project", Flags: []string{"-Dimage=different-image"}, Type: string(JibMaven)}},
 			},
 		},
 		{
@@ -224,7 +224,7 @@ func TestCreateArtifact(t *testing.T) {
 				ImageName: "different-image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: int(JibMaven)},
+					JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: string(JibMaven)},
 				},
 			},
 		},
@@ -234,7 +234,7 @@ func TestCreateArtifact(t *testing.T) {
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName:    "different-image",
-				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: int(JibGradle)}},
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: string(JibGradle)}},
 			},
 		},
 	}

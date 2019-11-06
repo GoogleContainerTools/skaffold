@@ -39,6 +39,7 @@ func Process(config *latest.SkaffoldConfig) error {
 	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
 	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
 	errs = append(errs, validatePortForwardResources(config.PortForward)...)
+	errs = append(errs, validateJibPluginTypes(config.Build.Artifacts)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -186,4 +187,19 @@ func validatePortForwardResources(pfrs []*latest.PortForwardResource) []error {
 		}
 	}
 	return errs
+}
+
+// validateJibPluginTypes makes sure that jib type is one of `maven`, or `gradle` if set.
+func validateJibPluginTypes(artifacts []*latest.Artifact) (errs []error) {
+	for _, a := range artifacts {
+		if a.JibArtifact == nil || a.JibArtifact.Type == "" {
+			continue
+		}
+		t := strings.ToLower(a.JibArtifact.Type)
+		if t == "maven" || t == "gradle" {
+			continue
+		}
+		errs = append(errs, fmt.Errorf("artifact %s has invalid Jib plugin type '%s'", a.ImageName, t))
+	}
+	return
 }

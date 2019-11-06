@@ -57,11 +57,13 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 			newBuild.Artifacts[i].JibArtifact = &next.JibArtifact{
 				Project: a.JibMavenArtifact.Module,
 				Flags:   flags,
+				Type:    "maven",
 			}
 		case a.JibGradleArtifact != nil:
 			newBuild.Artifacts[i].JibArtifact = &next.JibArtifact{
 				Project: a.JibGradleArtifact.Project,
 				Flags:   a.JibGradleArtifact.Flags,
+				Type:    "gradle",
 			}
 		}
 	}

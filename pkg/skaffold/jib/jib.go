@@ -25,7 +25,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -44,12 +43,11 @@ const (
 )
 
 // PluginType defines the different supported Jib plugins.
-type PluginType int
+type PluginType string
 
 const (
-	// use `iota+1` so that 0 is an invalid value
-	JibMaven PluginType = iota + 1
-	JibGradle
+	JibMaven  PluginType = "maven"
+	JibGradle PluginType = "gradle"
 )
 
 // IsKnown checks that the num value is a known value (vs 0 or an unknown value).
@@ -69,7 +67,7 @@ func PluginName(t PluginType) string {
 	case JibGradle:
 		return "Jib Gradle Plugin"
 	}
-	panic("Unknown Jib Plugin Type: " + strconv.Itoa(int(t)))
+	panic("Unknown Jib Plugin Type: " + string(t))
 }
 
 // filesLists contains cached build/input dependencies
@@ -126,7 +124,7 @@ func DeterminePluginType(workspace string, artifact *latest.JibArtifact) (Plugin
 	if util.IsFile(filepath.Join(workspace, "pom.xml")) || util.IsDir(filepath.Join(workspace, ".mvn")) {
 		return JibMaven, nil
 	}
-	return -1, errors.Errorf("Unable to determine Jib plugin type for %s", workspace)
+	return "", errors.Errorf("Unable to determine Jib plugin type for %s", workspace)
 }
 
 // getDependencies returns a list of files to watch for changes to rebuild
