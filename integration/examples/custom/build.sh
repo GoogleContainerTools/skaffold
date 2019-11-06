@@ -1,11 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
-image=$(echo $IMAGE)
 
-if [ ! -z "$image" ]; then
-  pack build $image
-  if $PUSH_IMAGE
-  then
-    docker push $image
-  fi
+pack build --builder=heroku/buildpacks $IMAGE
+
+if $PUSH_IMAGE; then
+    docker push $IMAGE
 fi
