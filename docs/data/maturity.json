@@ -211,6 +211,10 @@
     "description": "more intuitive prefix replacement strategy"
   },
   "cleanup": {
+    "dev": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
     "area": "Cleanup",
     "maturity": "GA",
     "description": "`skaffold delete` removes everything deployed by skaffold run from the cluster, prune images locally",
