@@ -69,17 +69,10 @@ func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 	}
 
 	jib := &latest.JibArtifact{}
-	if j.BuilderName == PluginName(JibMaven) {
-		if j.Project != "" {
-			jib.Project = j.Project
-		}
-		a.ArtifactType = latest.ArtifactType{JibArtifact: jib}
-	} else if j.BuilderName == PluginName(JibGradle) {
-		if j.Project != "" {
-			jib.Project = j.Project
-		}
-		a.ArtifactType = latest.ArtifactType{JibArtifact: jib}
+	if j.Project != "" {
+		jib.Project = j.Project
 	}
+	a.ArtifactType = latest.ArtifactType{JibArtifact: jib}
 
 	return a
 }
