@@ -1,10 +1,28 @@
 ---
-title: "CI/CD with Skaffold"
-linkTitle: "CI/CD with Skaffold"
+title: "Continuous Delivery"
+linkTitle: "Continuous Delivery"
 weight: 40
 ---
 
 Skaffold offers several sub-commands for its workflows that make it quite flexible when integrating with CI/CD pipelines.
+
+
+## `skaffold run`
+
+`skaffold run` is a single command for a one-off deployment. It includes all the following phases as it builds, tags, deploys and waits for the deployment to succeed if specified.
+We recommend `skaffold run` for a simple Continuous Delivery setup, where it is sufficient to have a single step that deploys from version control to a cluster.
+For more sophisticated Continuous Delivery pipelines, Skaffold offers building blocks that are described next:
+
+- [healthcheck]({{<relref "/docs/workflows/ci-cd#waiting-for-skaffold-deployments-using-healthcheck">}}) - 
+wait for `deployments` to stabilize and succeed only if all deployments are successful
+- [`skaffold build`]({{<relref "/docs/workflows/ci-cd#skaffold-build-skaffold-deploy">}}) - build, tag and push artifacts to a registry
+- [`skaffold deploy`]({{<relref "/docs/workflows/ci-cd#skaffold-build-skaffold-deploy">}})  - deploy built artifacts to a cluster
+- [`skaffold render`]({{<relref "/docs/workflows/ci-cd#skaffold-render">}})  - export the transformed Kubernetes manifests for GitOps workflows
+
+## Waiting for Skaffold deployments using `healthcheck`
+{{< maturity "deploy.status_check" >}}
+
+{{< todo 1937 >}}
 
 ## `skaffold build | skaffold deploy`
 
@@ -87,5 +105,3 @@ gives us the one line output telling us the only thing we need to know:
 pod/getting-started configured
 ```
 
-## Waiting for Skaffold deployments using `healthcheck`
-{{< maturity "deploy.status_check" >}}
