@@ -347,8 +347,12 @@ func (l *localDaemon) Tag(ctx context.Context, image, ref string) error {
 // So, the solution we chose is to create a tag, just for Skaffold, from
 // the imageID, and use that in the manifests.
 func (l *localDaemon) TagWithImageID(ctx context.Context, ref string, imageID string) (string, error) {
-	uniqueTag := ref + ":" + strings.TrimPrefix(imageID, "sha256:")
+	parsed, err := ParseReference(ref)
+	if err != nil {
+		return "", err
+	}
 
+	uniqueTag := parsed.BaseName + ":" + strings.TrimPrefix(imageID, "sha256:")
 	if err := l.Tag(ctx, imageID, uniqueTag); err != nil {
 		return "", err
 	}

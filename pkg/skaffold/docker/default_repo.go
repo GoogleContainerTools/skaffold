@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package docker
 
 import (
 	"regexp"
@@ -28,26 +28,43 @@ var (
 	prefixRegex = regexp.MustCompile(`(.*\.)?gcr.io/[a-zA-Z0-9-_]+/?`)
 )
 
-func SubstituteDefaultRepoIntoImage(defaultRepo string, originalImage string) string {
+func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, error) {
 	if defaultRepo == "" {
-		return originalImage
+		return image, nil
 	}
 
-	originalPrefix := prefixRegex.FindString(originalImage)
+	parsed, err := ParseReference(image)
+	if err != nil {
+		return "", err
+	}
+
+	replaced := replace(defaultRepo, parsed.BaseName)
+	if parsed.Tag != "" {
+		replaced = replaced + ":" + parsed.Tag
+	}
+	if parsed.Digest != "" {
+		replaced = replaced + "@" + parsed.Digest
+	}
+
+	return replaced, nil
+}
+
+func replace(defaultRepo string, baseImage string) string {
+	originalPrefix := prefixRegex.FindString(baseImage)
 	defaultRepoPrefix := prefixRegex.FindString(defaultRepo)
 	if originalPrefix != "" && defaultRepoPrefix != "" {
 		// prefixes match
 		if originalPrefix == defaultRepoPrefix {
-			return defaultRepo + "/" + originalImage[len(originalPrefix):]
+			return defaultRepo + "/" + baseImage[len(originalPrefix):]
 		}
-		if strings.HasPrefix(originalImage, defaultRepo) {
-			return originalImage
+		if strings.HasPrefix(baseImage, defaultRepo) {
+			return baseImage
 		}
 		// prefixes don't match, concatenate and truncate
-		return truncate(defaultRepo + "/" + originalImage)
+		return truncate(defaultRepo + "/" + baseImage)
 	}
 
-	return truncate(defaultRepo + "/" + escapeRegex.ReplaceAllString(originalImage, "_"))
+	return truncate(defaultRepo + "/" + escapeRegex.ReplaceAllString(baseImage, "_"))
 }
 
 func truncate(image string) string {
