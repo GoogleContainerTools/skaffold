@@ -19,11 +19,11 @@ package deploy
 import (
 	"bytes"
 	"context"
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -208,6 +208,7 @@ type mockResource struct {
 }
 
 func (m *mockResource) UpdateStatus(s string, err error) {
+	err = errors.Cause(err)
 	if err == context.DeadlineExceeded {
 		m.inErr = true
 	}
@@ -244,7 +245,7 @@ func TestPollResourceStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&defaultPollPeriodInMilliseconds, 0)
 			pollResourceStatus(context.Background(), nil, test.dummyResource)
-			t.CheckDeepEqual(test.dummyResource.inErr, test.isInErr)
+			t.CheckDeepEqual(test.isInErr, test.dummyResource.inErr)
 		})
 	}
 }
