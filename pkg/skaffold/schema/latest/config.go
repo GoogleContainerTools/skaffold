@@ -560,7 +560,7 @@ type Artifact struct {
 	// Defaults to `.`.
 	Workspace string `yaml:"context,omitempty"`
 
-	// Sync *alpha* lists local files synced to pods instead
+	// Sync *beta* lists local files synced to pods instead
 	// of triggering an image build when modified.
 	Sync *Sync `yaml:"sync,omitempty"`
 
@@ -568,7 +568,7 @@ type Artifact struct {
 	ArtifactType `yaml:",inline"`
 }
 
-// Sync *alpha* specifies what files to sync into the container.
+// Sync *beta* specifies what files to sync into the container.
 // This is a list of sync rules indicating the intent to sync for source files.
 type Sync struct {
 	// Manual lists manual sync rules indicating the source and destination.
@@ -597,7 +597,7 @@ type SyncRule struct {
 	Strip string `yaml:"strip,omitempty"`
 }
 
-// Profile *beta* profiles are used to override any `build`, `test` or `deploy` configuration.
+// Profile is used to override any `build`, `test` or `deploy` configuration.
 type Profile struct {
 	// Name is a unique profile name.
 	// For example: `profile-prod`.
@@ -663,17 +663,17 @@ type ArtifactType struct {
 	// contain [Bazel](https://bazel.build/) configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 
-	// JibArtifact *alpha* builds images using the
+	// JibArtifact builds images using the
 	// [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).
 	JibArtifact *JibArtifact `yaml:"jib,omitempty" yamltags:"oneOf=artifact"`
 
-	// KanikoArtifact *alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).
+	// KanikoArtifact builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).
 	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty" yamltags:"oneOf=artifact"`
 
-	// BuildpackArtifact *alpha* builds images using [Cloud Native Buildpacks](https://buildpacks.io/).
+	// BuildpackArtifact builds images using [Cloud Native Buildpacks](https://buildpacks.io/).
 	BuildpackArtifact *BuildpackArtifact `yaml:"buildpack,omitempty" yamltags:"oneOf=artifact"`
 
-	// CustomArtifact *alpha* builds images using a custom build script written by the user.
+	// CustomArtifact *beta* builds images using a custom build script written by the user.
 	CustomArtifact *CustomArtifact `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
 }
 
