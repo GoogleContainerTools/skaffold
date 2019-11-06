@@ -23,12 +23,11 @@ wait for `deployments` to stabilize and succeed only if all deployments are succ
 {{< maturity "deploy.status_check" >}}
 
 `skaffold deploy` optionally performs a `healthcheck` for [`Deployment` kind](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) resources and waits for them to be stable.
-This feature is very handy to use in Continous Delivery pipeline to ensure the deployed resources are
-in healthy state before proceeding with the next steps in pipeline.
+This feature is important to use in Continuous Delivery pipeline to ensure that the deployed resources are
+healthy before proceeding with the next steps in the pipeline.
 
 {{<alert title="Note">}}
-`healthcheck` is disabled by default; it can be enabled with the `--status-check` flag.
-
+`healthcheck` is disabled by default; it can be enabled with the `--status-check` flag.</br>
 If this flag is not set, no healthcheck will be performed.
 {{</alert>}}
 
@@ -78,7 +77,7 @@ spec:
         image: gcr.io/k8s-skaffold/getting-started-foo
 ```
 
-if the `skaffold.yaml` overrides the whole deploy to stabilize in a minute,
+if the `skaffold.yaml` overrides the deadline to make sure deployment stabilizes in a 60 seconds,
 
 ```yaml
 apiVersion: skaffold/v1
@@ -94,7 +93,7 @@ Running `skaffold deploy`
 ```code
 skaffold deploy --status-check
 ```
-will error out, within 1 minute.
+will result in an error after waiting for 1 minute:
 
 ```bash
 Tags used in deployment:
