@@ -86,10 +86,11 @@ func (b *BuildpackBuilder) build(ctx context.Context, out io.Writer, workspace s
 	dockerSocket := volume(mount.TypeBind, "/var/run/docker.sock", "/var/run/docker.sock")
 
 	defer func() {
-		if err := b.localDocker.VolumeRemove(ctx, packWorkspace.Source, true); err != nil {
+		// Don't use ctx. It might have been cancelled by Ctrl-C
+		if err := b.localDocker.VolumeRemove(context.Background(), packWorkspace.Source, true); err != nil {
 			logrus.Warnf("unable to delete the docker volume [%s]", packWorkspace.Source)
 		}
-		if err := b.localDocker.VolumeRemove(ctx, layers.Source, true); err != nil {
+		if err := b.localDocker.VolumeRemove(context.Background(), layers.Source, true); err != nil {
 			logrus.Warnf("unable to delete the docker volume [%s]", layers.Source)
 		}
 	}()
