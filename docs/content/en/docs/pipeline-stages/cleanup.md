@@ -22,7 +22,7 @@ For pushed images in registries and application side effects the user has to tak
 
 ## Kubernetes resource cleanup 
  
-After you ran `skaffold run` or `skaffold deploy` and deployed your application to a cluster, running `skaffold delete` will remove all the resources you deployed.
+After running `skaffold run` or `skaffold deploy` and deploying your application to a cluster, running `skaffold delete` will remove all the resources you deployed.
 Cleanup is enabled by default, it can be turned off by `--cleanup=false`. 
 
 ## Ctrl + C 
