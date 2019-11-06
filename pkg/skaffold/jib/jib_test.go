@@ -171,7 +171,7 @@ func TestDeterminePluginType(t *testing.T) {
 		shouldErr   bool
 		PluginType  PluginType
 	}{
-		{"empty", []string{}, nil, true, PluginType(-1)},
+		{"empty", []string{}, nil, true, PluginType("")},
 		{"gradle-2", []string{"gradle.properties"}, nil, false, JibGradle},
 		{"gradle-3", []string{"gradlew"}, nil, false, JibGradle},
 		{"gradle-4", []string{"gradlew.bat"}, nil, false, JibGradle},
@@ -181,8 +181,8 @@ func TestDeterminePluginType(t *testing.T) {
 		{"maven-1", []string{"pom.xml"}, nil, false, JibMaven},
 		{"maven-2", []string{".mvn/maven.config"}, nil, false, JibMaven},
 		{"maven-3", []string{".mvn/extensions.xml"}, nil, false, JibMaven},
-		{"gradle override", []string{"pom.xml"}, &latest.JibArtifact{Type: int(JibGradle)}, false, JibGradle},
-		{"maven override", []string{"build.gradle"}, &latest.JibArtifact{Type: int(JibMaven)}, false, JibMaven},
+		{"gradle override", []string{"pom.xml"}, &latest.JibArtifact{Type: string(JibGradle)}, false, JibGradle},
+		{"maven override", []string{"build.gradle"}, &latest.JibArtifact{Type: string(JibMaven)}, false, JibMaven},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

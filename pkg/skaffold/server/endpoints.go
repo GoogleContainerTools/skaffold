@@ -33,7 +33,7 @@ func (s *server) EventLog(stream proto.SkaffoldService_EventLogServer) error {
 	return event.ForEachEvent(stream.Send)
 }
 
-func (s *server) Events(stream proto.SkaffoldService_EventsServer) error {
+func (s *server) Events(_ *empty.Empty, stream proto.SkaffoldService_EventsServer) error {
 	return event.ForEachEvent(stream.Send)
 }
 

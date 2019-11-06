@@ -2,6 +2,7 @@
 title: "Deploy"
 linkTitle: "Deploy"
 weight: 30
+featureId: deploy
 ---
 
 When Skaffold deploys your application, it goes through these steps:

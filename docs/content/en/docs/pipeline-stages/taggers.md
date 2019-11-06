@@ -2,6 +2,7 @@
 title: "Tag"
 linkTitle: "Tag"
 weight: 15
+featureId: tagpolicy
 ---
 
 Skaffold supports the following policies for tagging images:
@@ -76,8 +77,8 @@ image.
 {{< alert >}}
 <b>Note</b><br>
 
-<code>IMAGE_NAME</code> is a built-in variable whose value is the <code>imageName</code> field in
-the <code>artifacts</code> part of the <code>build</code> section.
+`IMAGE_NAME` is a built-in variable whose value is the `imageName` field in
+the `artifacts` part of the `build` section.
 {{< /alert >}}
 
 ### Example

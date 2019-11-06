@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -149,6 +150,6 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 		}
 	}
 
-	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
+	logrus.Infoln("Tags generated in", time.Since(start))
 	return imageTags, nil
 }

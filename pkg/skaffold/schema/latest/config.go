@@ -21,7 +21,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v1beta17"
+const Version string = "skaffold/v1"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -337,6 +337,14 @@ type ResourceRequirement struct {
 	// Memory the amount of memory to allocate to the pod.
 	// For example: `1Gi` or `1000Mi`.
 	Memory string `yaml:"memory,omitempty"`
+
+	// EphemeralStorage the amount of Ephemeral storage to allocate to the pod.
+	// For example: `1Gi` or `1000Mi`.
+	EphemeralStorage string `yaml:"ephemeralStorage,omitempty"`
+
+	// ResourceStorage the amount of resource storage to allocate to the pod.
+	// For example: `1Gi` or `1000Mi`.
+	ResourceStorage string `yaml:"resourceStorage,omitempty"`
 }
 
 // TestCase is a list of structure tests to run on images that Skaffold builds.
@@ -662,8 +670,37 @@ type ArtifactType struct {
 	// KanikoArtifact *alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).
 	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty" yamltags:"oneOf=artifact"`
 
+	// BuildpackArtifact *alpha* builds images using [Cloud Native Buildpacks](https://buildpacks.io/).
+	BuildpackArtifact *BuildpackArtifact `yaml:"buildpack,omitempty" yamltags:"oneOf=artifact"`
+
 	// CustomArtifact *alpha* builds images using a custom build script written by the user.
 	CustomArtifact *CustomArtifact `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
+}
+
+// BuildpackArtifact *alpha* describes an artifact built using [Cloud Native Buildpacks](https://buildpacks.io/).
+// It can be used to build images out of project's sources without any additional configuration.
+type BuildpackArtifact struct {
+	// ForcePull should the builder image be pull before each build.
+	ForcePull bool `yaml:"forcePull,omitempty"`
+
+	// Builder is the builder image used.
+	Builder string `yaml:"builder" yamltags:"required"`
+
+	// RunImage overrides the stack's default run image.
+	RunImage string `yaml:"runImage,omitempty"`
+
+	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
+	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`
+}
+
+// BuildpackDependencies *alpha* is used to specify dependencies for an artifact built by a buildpack.
+type BuildpackDependencies struct {
+	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
+	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
+
+	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
+	// Will only work in conjunction with `paths`.
+	Ignore []string `yaml:"ignore,omitempty"`
 }
 
 // CustomArtifact *alpha* describes an artifact built from a custom build script
@@ -789,6 +826,8 @@ type JibArtifact struct {
 	// For example: `["--no-build-cache"]`.
 	Flags []string `yaml:"args,omitempty"`
 
-	// Type the Jib builder type (internal: see jib.PluginType)
-	Type int `yaml:"-"`
+	// Type the Jib builder type; normally determined automatically. Valid types are
+	// `maven`: for Maven.
+	// `gradle`: for Gradle.
+	Type string `yaml:"type,omitempty"`
 }

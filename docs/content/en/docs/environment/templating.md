@@ -2,6 +2,7 @@
 title: "Templated fields"
 linkTitle: "Templated fields"
 weight: 90
+featureId: templating
 ---
 
 Skaffold allows for certain fields in the config to be templated with values either from environment variables, or certain special values computed by Skaffold.
@@ -13,10 +14,10 @@ will be `gcr.io/k8s-skaffold/example:v1`.
 
 List of fields that support templating:
 
-* `build.artifacts.[].docker.buildArgs` (see [builders]({{< relref "/docs/pipeline-stages/builders" >}})
-* `build.tagPolicy.envTemplate.template` (see [envTemplate tagger]({{< relref "/docs/pipeline-stages/taggers#envtemplate-using-values-of-environment-variables-as-tags)" >}})
-* `deploy.helm.releases.setValueTemplates` (see [Deploying with helm]({{< relref "/docs/pipeline-stages/deployers#deploying-with-helm)" >}})
-* `deploy.helm.releases.name` (see [Deploying with helm]({{< relref "/docs/pipeline-stages/deployers#deploying-with-helm)" >}})
+* `build.artifacts.[].docker.buildArgs` (see [builders]({{< relref "/docs/pipeline-stages/builders" >}}))
+* `build.tagPolicy.envTemplate.template` (see [envTemplate tagger]({{< relref "/docs/pipeline-stages/taggers#envtemplate-using-values-of-environment-variables-as-tags)" >}}))
+* `deploy.helm.releases.setValueTemplates` (see [Deploying with helm]({{< relref "/docs/pipeline-stages/deployers#deploying-with-helm)" >}}))
+* `deploy.helm.releases.name` (see [Deploying with helm]({{< relref "/docs/pipeline-stages/deployers#deploying-with-helm)" >}}))
 
 _Please note, this list is not exhaustive._
 

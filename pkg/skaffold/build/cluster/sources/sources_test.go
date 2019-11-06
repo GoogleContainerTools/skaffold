@@ -283,3 +283,55 @@ func createResourceRequirements(cpuLimit resource.Quantity, memoryLimit resource
 		},
 	}
 }
+
+func TestResourceRequirements(t *testing.T) {
+	tests := []struct {
+		description string
+		initial     *latest.ResourceRequirements
+		expected    v1.ResourceRequirements
+	}{
+		{
+			description: "no resource specified",
+			initial:     &latest.ResourceRequirements{},
+			expected:    v1.ResourceRequirements{},
+		},
+		{
+			description: "with resource specified",
+			initial: &latest.ResourceRequirements{
+				Requests: &latest.ResourceRequirement{
+					CPU:              "0.5",
+					Memory:           "1000",
+					ResourceStorage:  "1000",
+					EphemeralStorage: "1000",
+				},
+				Limits: &latest.ResourceRequirement{
+					CPU:              "1.0",
+					Memory:           "2000",
+					ResourceStorage:  "1000",
+					EphemeralStorage: "1000",
+				},
+			},
+			expected: v1.ResourceRequirements{
+				Requests: v1.ResourceList{
+					v1.ResourceCPU:              resource.MustParse("0.5"),
+					v1.ResourceMemory:           resource.MustParse("1000"),
+					v1.ResourceStorage:          resource.MustParse("1000"),
+					v1.ResourceEphemeralStorage: resource.MustParse("1000"),
+				},
+				Limits: v1.ResourceList{
+					v1.ResourceCPU:              resource.MustParse("1.0"),
+					v1.ResourceMemory:           resource.MustParse("2000"),
+					v1.ResourceStorage:          resource.MustParse("1000"),
+					v1.ResourceEphemeralStorage: resource.MustParse("1000"),
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual := resourceRequirements(test.initial)
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}

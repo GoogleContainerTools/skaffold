@@ -46,11 +46,16 @@ RUN go get -u github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc
 
 WORKDIR /proto
 COPY skaffold.proto ./
+COPY markdown.tmpl ./
 RUN protoc -I /usr/local/include -I . -I $GOPATH/src -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis \
   --grpc-gateway_out=logtostderr=true:. --go_out=plugins=grpc:. \
   --doc_out=. \
-  --doc_opt=markdown,index.md \
+  --doc_opt=./markdown.tmpl,index.md \
+  --swagger_out=logtostderr=true:. \
   skaffold.proto
+
+# this is a hack - seemingly grpc-gateway-swagger-gen is sometimes generating titles when they should be descriptions
+RUN sed -i 's/"title"/"description"/g' skaffold.swagger.json
 
 # Compare the proto files with the existing proto files
 FROM generateFiles AS compare

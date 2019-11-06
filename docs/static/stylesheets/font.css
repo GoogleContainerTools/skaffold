@@ -1,0 +1,30 @@
+.main-container {
+    font-family: 'Titillium Web';
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.tagline {
+    font-size: 1.3rem;
+}
+
+.title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    opacity: 0;
+    transition: 3s
+}
+
+.navbar-font {
+    font-family: 'Titillium Web';
+}
+
+.testimonial {
+    font-family: 'Telex';
+    font-size: 1rem;
+}
+
+.testimonial-byline {
+    text-align: center !important;
+    font-style: italic;
+}

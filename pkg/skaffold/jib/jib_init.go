@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -68,14 +69,14 @@ func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
 	}
 
 	if j.BuilderName == PluginName(JibMaven) {
-		jibMaven := &latest.JibArtifact{Type: int(JibMaven)}
+		jibMaven := &latest.JibArtifact{Type: string(JibMaven)}
 		if j.Project != "" {
 			jibMaven.Project = j.Project
 		}
 		jibMaven.Flags = []string{"-Dimage=" + manifestImage}
 		a.ArtifactType = latest.ArtifactType{JibArtifact: jibMaven}
 	} else if j.BuilderName == PluginName(JibGradle) {
-		jibGradle := &latest.JibArtifact{Type: int(JibGradle)}
+		jibGradle := &latest.JibArtifact{Type: string(JibGradle)}
 		if j.Project != "" {
 			jibGradle.Project = j.Project
 		}
@@ -106,19 +107,26 @@ type jibJSON struct {
 func ValidateJibConfig(path string) []Jib {
 	// Determine whether maven or gradle
 	var builderType PluginType
-	var executable, wrapper, taskName string
+	var executable, wrapper, taskName, searchString string
 	switch {
 	case strings.HasSuffix(path, "pom.xml"):
 		builderType = JibMaven
 		executable = "mvn"
 		wrapper = "mvnw"
+		searchString = "<artifactId>jib-maven-plugin</artifactId>"
 		taskName = "jib:_skaffold-init"
 	case strings.HasSuffix(path, "build.gradle"), strings.HasSuffix(path, "build.gradle.kts"):
 		builderType = JibGradle
 		executable = "gradle"
 		wrapper = "gradlew"
+		searchString = "com.google.cloud.tools.jib"
 		taskName = "_jibSkaffoldInit"
 	default:
+		return nil
+	}
+
+	// Search for indication of Jib in build file before proceeding
+	if content, err := ioutil.ReadFile(path); err != nil || !strings.Contains(string(content), searchString) {
 		return nil
 	}
 

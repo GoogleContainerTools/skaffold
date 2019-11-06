@@ -125,7 +125,8 @@ func pollResourceStatus(ctx context.Context, runCtx *runcontext.RunContext, r Re
 	for {
 		select {
 		case <-timeoutContext.Done():
-			r.UpdateStatus(timeoutContext.Err().Error(), timeoutContext.Err())
+			err := errors.Wrap(timeoutContext.Err(), fmt.Sprintf("could not stabilize within %v", r.Deadline()))
+			r.UpdateStatus(err.Error(), err)
 			return
 		case <-time.After(pollDuration):
 			r.CheckStatus(timeoutContext, runCtx)

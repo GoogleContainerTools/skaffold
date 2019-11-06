@@ -157,7 +157,7 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		return errors.Wrap(err, "reading manifests")
 	}
 
-	if err := k.kubectl.Delete(ctx, out, manifests); err != nil {
+	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		return errors.Wrap(err, "delete")
 	}
 
@@ -178,7 +178,7 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 
 	path, err := findKustomizationConfig(dir)
 	if err != nil {
-		// No kustomiization config found so assume it's remote and stop traversing
+		// No kustomization config found so assume it's remote and stop traversing
 		return deps, nil
 	}
 

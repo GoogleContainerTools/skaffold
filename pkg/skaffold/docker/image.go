@@ -26,6 +26,7 @@ import (
 	"sync"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/progress"
@@ -38,6 +39,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
+
+type ContainerRun struct {
+	Image       string
+	User        string
+	Command     []string
+	Mounts      []mount.Mount
+	BeforeStart func(context.Context, string) error
+}
 
 // LocalDaemon talks to a local Docker API.
 type LocalDaemon interface {
@@ -56,6 +65,9 @@ type LocalDaemon interface {
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
 	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error
+	ContainerRun(ctx context.Context, out io.Writer, runs ...ContainerRun) error
+	CopyToContainer(ctx context.Context, container string, dest string, root string, paths []string) error
+	VolumeRemove(ctx context.Context, volumeID string, force bool) error
 }
 
 type localDaemon struct {

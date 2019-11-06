@@ -90,14 +90,14 @@ func (b *ArtifactBuilder) retrieveCmd(out io.Writer, a *latest.Artifact, tag str
 }
 
 func (b *ArtifactBuilder) retrieveEnv(a *latest.Artifact, tag string) ([]string, error) {
-	images := strings.Join([]string{tag}, " ")
 	buildContext, err := buildContext(a.Workspace)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting absolute path for artifact build context")
 	}
 
 	envs := []string{
-		fmt.Sprintf("%s=%s", constants.Images, images),
+		fmt.Sprintf("%s=%s", constants.Image, tag),
+		fmt.Sprintf("%s=%s", constants.DeprecatedImages, tag),
 		fmt.Sprintf("%s=%t", constants.PushImage, b.pushImages),
 		fmt.Sprintf("%s=%s", constants.BuildContext, buildContext),
 	}

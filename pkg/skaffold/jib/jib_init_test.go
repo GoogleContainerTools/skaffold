@@ -29,6 +29,7 @@ func TestValidateJibConfig(t *testing.T) {
 	var tests = []struct {
 		description    string
 		path           string
+		fileContents   string
 		command        string
 		stdout         string
 		expectedConfig []Jib
@@ -39,16 +40,24 @@ func TestValidateJibConfig(t *testing.T) {
 			expectedConfig: nil,
 		},
 		{
-			description:    "jib not configured",
+			description:    "jib string not found",
 			path:           "path/to/build.gradle",
+			fileContents:   "not a useful string",
+			expectedConfig: nil,
+		},
+		{
+			description:    "jib string found but not configured",
+			path:           "path/to/build.gradle",
+			fileContents:   "com.google.cloud.tools.jib",
 			command:        "gradle _jibSkaffoldInit -q",
 			stdout:         "error",
 			expectedConfig: nil,
 		},
 		{
-			description: "jib gradle single project",
-			path:        "path/to/build.gradle",
-			command:     "gradle _jibSkaffoldInit -q",
+			description:  "jib gradle single project",
+			path:         "path/to/build.gradle",
+			fileContents: "com.google.cloud.tools.jib",
+			command:      "gradle _jibSkaffoldInit -q",
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project"}
 `,
@@ -57,9 +66,10 @@ func TestValidateJibConfig(t *testing.T) {
 			},
 		},
 		{
-			description: "jib gradle-kotlin single project",
-			path:        "path/to/build.gradle.kts",
-			command:     "gradle _jibSkaffoldInit -q",
+			description:  "jib gradle-kotlin single project",
+			path:         "path/to/build.gradle.kts",
+			fileContents: "com.google.cloud.tools.jib",
+			command:      "gradle _jibSkaffoldInit -q",
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project"}
 `,
@@ -68,9 +78,10 @@ func TestValidateJibConfig(t *testing.T) {
 			},
 		},
 		{
-			description: "jib gradle multi-project",
-			path:        "path/to/build.gradle",
-			command:     "gradle _jibSkaffoldInit -q",
+			description:  "jib gradle multi-project",
+			path:         "path/to/build.gradle",
+			fileContents: "com.google.cloud.tools.jib",
+			command:      "gradle _jibSkaffoldInit -q",
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project1"}
 
@@ -83,9 +94,10 @@ BEGIN JIB JSON
 			},
 		},
 		{
-			description: "jib maven single module",
-			path:        "path/to/pom.xml",
-			command:     "mvn jib:_skaffold-init -q",
+			description:  "jib maven single module",
+			path:         "path/to/pom.xml",
+			fileContents: "<artifactId>jib-maven-plugin</artifactId>",
+			command:      "mvn jib:_skaffold-init -q",
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project"}`,
 			expectedConfig: []Jib{
@@ -93,9 +105,10 @@ BEGIN JIB JSON
 			},
 		},
 		{
-			description: "jib maven multi-module",
-			path:        "path/to/pom.xml",
-			command:     "mvn jib:_skaffold-init -q",
+			description:  "jib maven multi-module",
+			path:         "path/to/pom.xml",
+			fileContents: "<artifactId>jib-maven-plugin</artifactId>",
+			command:      "mvn jib:_skaffold-init -q",
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project1"}
 
@@ -110,12 +123,17 @@ BEGIN JIB JSON
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().Write(test.path, test.fileContents)
+			for i := range test.expectedConfig {
+				test.expectedConfig[i].FilePath = tmpDir.Path(test.expectedConfig[i].FilePath)
+			}
+
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
 				test.command,
 				test.stdout,
 			))
 
-			validated := ValidateJibConfig(test.path)
+			validated := ValidateJibConfig(tmpDir.Path(test.path))
 
 			t.CheckDeepEqual(test.expectedConfig, validated)
 		})
@@ -172,7 +190,7 @@ func TestCreateArtifact(t *testing.T) {
 				ImageName: "different-image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Project: "project", Flags: []string{"-Dimage=different-image"}, Type: int(JibGradle)},
+					JibArtifact: &latest.JibArtifact{Project: "project", Flags: []string{"-Dimage=different-image"}, Type: string(JibGradle)},
 				},
 			},
 		},
@@ -184,7 +202,7 @@ func TestCreateArtifact(t *testing.T) {
 				ImageName: "different-image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: int(JibGradle)},
+					JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: string(JibGradle)},
 				},
 			},
 		},
@@ -195,7 +213,7 @@ func TestCreateArtifact(t *testing.T) {
 			expectedArtifact: latest.Artifact{
 				ImageName:    "different-image",
 				Workspace:    filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project", Flags: []string{"-Dimage=different-image"}, Type: int(JibMaven)}},
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project", Flags: []string{"-Dimage=different-image"}, Type: string(JibMaven)}},
 			},
 		},
 		{
@@ -206,7 +224,7 @@ func TestCreateArtifact(t *testing.T) {
 				ImageName: "different-image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: int(JibMaven)},
+					JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: string(JibMaven)},
 				},
 			},
 		},
@@ -216,7 +234,7 @@ func TestCreateArtifact(t *testing.T) {
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName:    "different-image",
-				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: int(JibGradle)}},
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: string(JibGradle)}},
 			},
 		},
 	}

@@ -63,10 +63,11 @@ require (
 	github.com/mattn/go-isatty v0.0.9 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.6.2
-	github.com/opencontainers/go-digest v1.0.0-rc1
+	github.com/opencontainers/go-digest v1.0.0-rc1.0.20190228220655-ac19fd6e7483
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/procfs v0.0.4 // indirect
+	github.com/rakyll/statik v0.1.6
 	github.com/rjeczalik/notify v0.9.2
 	github.com/segmentio/textio v1.2.0
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
@@ -78,12 +79,13 @@ require (
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.10.0 // indirect
-	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
+	golang.org/x/crypto v0.0.0-20191028145041-f83a4685e152
 	golang.org/x/exp v0.0.0-20191014171548-69215a2ee97e // indirect
-	golang.org/x/net v0.0.0-20191014212845-da9a3fd4c582 // indirect
+	golang.org/x/net v0.0.0-20191028085509-fe3aa8a45271 // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/tools v0.0.0-20191018000036-341939e08647 // indirect
+	golang.org/x/sys v0.0.0-20191028164358-195ce5e7f934 // indirect
+	golang.org/x/tools v0.0.0-20191028215554-80f3f9ca0853 // indirect
 	google.golang.org/api v0.11.0
 	google.golang.org/appengine v1.6.5 // indirect
 	google.golang.org/genproto v0.0.0-20191009194640-548a555dbc03

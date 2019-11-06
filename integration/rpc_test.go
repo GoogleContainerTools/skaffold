@@ -44,7 +44,7 @@ var (
 	waitTime          = 1 * time.Second
 )
 
-func TestEventLogRPC(t *testing.T) {
+func TestEventsRPC(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
 	}
@@ -85,9 +85,9 @@ func TestEventLogRPC(t *testing.T) {
 	defer ctxCancel()
 
 	// read the event log stream from the skaffold grpc server
-	var stream proto.SkaffoldService_EventLogClient
+	var stream proto.SkaffoldService_EventsClient
 	for i := 0; i < readRetries; i++ {
-		stream, err = client.EventLog(ctx)
+		stream, err = client.Events(ctx, &empty.Empty{})
 		if err != nil {
 			t.Logf("waiting for connection...")
 			time.Sleep(waitTime)
@@ -139,6 +139,7 @@ func TestEventLogHTTP(t *testing.T) {
 		endpoint    string
 	}{
 		{
+			//TODO deprecate (https://github.com/GoogleContainerTools/skaffold/issues/3168)
 			description: "/v1/event_log",
 			endpoint:    "/v1/event_log",
 		},

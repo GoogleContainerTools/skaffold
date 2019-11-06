@@ -141,18 +141,31 @@ func TestCacheBuildLocal(t *testing.T) {
 		t.CheckDeepEqual(2, len(bRes))
 
 		// Second build: both artifacts are read from cache
+		// Artifacts should always be returned in their original order
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false}
 		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(0, len(builder.built))
 		t.CheckDeepEqual(2, len(bRes))
-		// Artifacts should always be returned in their original order
 		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
 
-		// Third build: change one artifact's dependencies
+		// Third build: change first artifact's dependency
+		// Artifacts should always be returned in their original order
 		tmpDir.Write("dep1", "new content")
+		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false}
+		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(1, len(builder.built))
+		t.CheckDeepEqual(2, len(bRes))
+		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
+		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
+
+		// Fourth build: change second artifact's dependency
+		// Artifacts should always be returned in their original order
+		tmpDir.Write("dep3", "new content")
 		builder = &mockBuilder{dockerDaemon: dockerDaemon, push: false}
 		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
 

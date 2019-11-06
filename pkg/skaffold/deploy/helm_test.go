@@ -529,8 +529,12 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 		m.t.Errorf("Not enough args in command %v", c)
 	}
 
-	if c.Args[1] != "--kube-context" || c.Args[2] != testKubeContext {
+	argString := strings.Join(c.Args, " ")
+	if !strings.Contains(argString, "--kube-context "+testKubeContext) {
 		m.t.Errorf("Invalid Kubernetes context %v", c)
+	}
+	if !strings.Contains(argString, "--kubeconfig "+testKubeConfig) {
+		m.t.Errorf("Invalid Kubernetes config %v", c)
 	}
 
 	if c.Args[3] == "get" || c.Args[3] == "upgrade" {
@@ -863,8 +867,9 @@ func makeRunContext(deploy latest.HelmDeploy, force bool) *runcontext.RunContext
 		Cfg:         pipeline,
 		KubeContext: testKubeContext,
 		Opts: config.SkaffoldOptions{
-			Namespace: testNamespace,
-			Force:     force,
+			Namespace:  testNamespace,
+			KubeConfig: testKubeConfig,
+			Force:      force,
 		},
 	}
 }

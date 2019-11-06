@@ -1,7 +1,7 @@
 ---
 title: "CLI"
 linkTitle: "CLI"
-weight: 110
+weight: 1
 ---
 
 Skaffold command-line interface provides the following commands:

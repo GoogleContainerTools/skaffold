@@ -143,8 +143,8 @@ func TestWalk(t *testing.T) {
 			},
 			force: false,
 			expectedConfigs: []string{
-				"config/test.yaml",
 				"k8pod.yml",
+				"config/test.yaml",
 			},
 			expectedPaths: []string{
 				"Dockerfile",
@@ -166,8 +166,8 @@ func TestWalk(t *testing.T) {
 			force:         false,
 			enableJibInit: true,
 			expectedConfigs: []string{
-				"config/test.yaml",
 				"k8pod.yml",
+				"config/test.yaml",
 			},
 			expectedPaths: []string{
 				"Dockerfile",
@@ -184,18 +184,41 @@ func TestWalk(t *testing.T) {
 				"k8pod.yml":                      emptyFile,
 				"gradle/build.gradle":            emptyFile,
 				"gradle/subproject/build.gradle": emptyFile,
+				"maven/asubproject/pom.xml":      emptyFile,
 				"maven/pom.xml":                  emptyFile,
-				"maven/subproject/pom.xml":       emptyFile,
 			},
 			force:         false,
 			enableJibInit: true,
 			expectedConfigs: []string{
-				"config/test.yaml",
 				"k8pod.yml",
+				"config/test.yaml",
 			},
 			expectedPaths: []string{
 				"gradle/build.gradle",
 				"maven/pom.xml",
+			},
+			shouldErr: false,
+		},
+		{
+			description: "multiple builders in same directory",
+			filesWithContents: map[string]string{
+				"build.gradle":                 emptyFile,
+				"ignored-builder/build.gradle": emptyFile,
+				"not-ignored-config/test.yaml": emptyFile,
+				"Dockerfile":                   emptyFile,
+				"k8pod.yml":                    emptyFile,
+				"pom.xml":                      emptyFile,
+			},
+			force:         false,
+			enableJibInit: true,
+			expectedConfigs: []string{
+				"k8pod.yml",
+				"not-ignored-config/test.yaml",
+			},
+			expectedPaths: []string{
+				"Dockerfile",
+				"build.gradle",
+				"pom.xml",
 			},
 			shouldErr: false,
 		},
@@ -234,8 +257,8 @@ deploy:
 			force:         true,
 			enableJibInit: true,
 			expectedConfigs: []string{
-				"config/test.yaml",
 				"k8pod.yml",
+				"config/test.yaml",
 			},
 			expectedPaths: []string{
 				"Dockerfile",
@@ -244,7 +267,7 @@ deploy:
 			shouldErr: false,
 		},
 		{
-			description: "should  error when skaffold.config present and force = false",
+			description: "should error when skaffold.config present and force = false",
 			filesWithContents: map[string]string{
 				"config/test.yaml":  emptyFile,
 				"k8pod.yml":         emptyFile,
@@ -262,18 +285,39 @@ deploy:
 			expectedPaths:   nil,
 			shouldErr:       true,
 		},
+		{
+			description: "should error when skaffold.config present with jib config",
+			filesWithContents: map[string]string{
+				"config/test.yaml": emptyFile,
+				"k8pod.yml":        emptyFile,
+				"README":           emptyFile,
+				"pom.xml":          emptyFile,
+				"skaffold.yaml": `apiVersion: skaffold/v1beta6
+kind: Config
+deploy:
+  kustomize: {}`,
+			},
+			force:           false,
+			enableJibInit:   true,
+			expectedConfigs: nil,
+			expectedPaths:   nil,
+			shouldErr:       true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().
-				WriteFiles(test.filesWithContents)
+			tmpDir := t.NewTempDir().WriteFiles(test.filesWithContents)
 
 			t.Override(&docker.ValidateDockerfileFunc, fakeValidateDockerfile)
 			t.Override(&jib.ValidateJibConfigFunc, fakeValidateJibConfig)
 
-			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, test.enableJibInit, detectBuilders)
+			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, test.enableJibInit)
 
 			t.CheckError(test.shouldErr, err)
+			if test.shouldErr {
+				return
+			}
+
 			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), potentialConfigs)
 			t.CheckDeepEqual(len(test.expectedPaths), len(builders))
 			for i := range builders {
@@ -418,6 +462,14 @@ func TestAutoSelectBuilders(t *testing.T) {
 				jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "image1"},
 			},
 			expectedFilteredImages: []string{"image1", "image2"},
+		},
+		{
+			description:            "show unique image names",
+			builderConfigs:         nil,
+			images:                 []string{"image1", "image1"},
+			expectedPairs:          nil,
+			expectedBuildersLeft:   nil,
+			expectedFilteredImages: []string{"image1"},
 		},
 	}
 
