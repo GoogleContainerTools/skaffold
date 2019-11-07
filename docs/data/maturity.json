@@ -7,124 +7,22 @@
     "description": "Control API, Event API and State API",
     "url": "/docs/design/api"
   },
-  "build.artifact_cache": {
-    "dev": "x",
+  "build.buildpacks": {
     "build": "x",
-    "debug": "x",
     "area": "Build",
-    "feature": "artifact cache",
-    "maturity": "GA",
-    "description": "cache artifacts that were built before locally "
+    "feature": "native buildpacks support",
+    "maturity": "alpha",
+    "description": "Skaffold natively support for buildpacks artifact and buildpacks builder "
   },
-  "build.cluster_custom": {
-    "dev": "x",
-    "build": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Build",
-    "feature": "cluster + customBuilder",
-    "maturity": "GA",
-    "description": "build in-cluster using a custom build script "
-  },
-  "build.cluster_kaniko": {
+  "build.custom": {
     "dev": "x",
     "build": "x",
     "run": "x",
     "debug": "x",
     "area": "Build",
-    "feature": "cluster + kaniko ",
-    "maturity": "GA",
-    "description": "build Dockerfiles in-cluster with Kaniko"
-  },
-  "build.cmd": {
-    "area": "Build",
-    "feature": "skaffold build command",
-    "maturity": "GA",
-    "description": "run skaffold build separately"
-  },
-  "build.cmd.build_image": {
-    "build": "x",
-    "area": "Build",
-    "feature": "build-image",
-    "subfeature": "build-image",
-    "maturity": "GA",
-    "description": "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts"
-  },
-  "build.cmd.output": {
-    "build": "x",
-    "area": "Build",
-    "feature": "skaffold build",
-    "subfeature": "output",
-    "maturity": "GA",
-    "description": "Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput"
-  },
-  "build.gcb_docker": {
-    "dev": "x",
-    "build": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Build",
-    "feature": "gcb + Docker",
-    "maturity": "GA",
-    "description": "build Dockerfiles on Google Cloud Build "
-  },
-  "build.gcb_jib": {
-    "dev": "x",
-    "build": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Build",
-    "feature": "gcb + jib ",
-    "maturity": "GA",
-    "description": "build jib projects on Google Cloud Build "
-  },
-  "build.local_bazel": {
-    "dev": "x",
-    "build": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Build",
-    "feature": "local + bazel ",
-    "maturity": "GA",
-    "description": "build bazel projects locally "
-  },
-  "build.local_custom": {
-    "dev": "x",
-    "build": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Build",
-    "feature": "local + customBuilder",
-    "maturity": "GA",
+    "feature": "custom artifact Builder",
+    "maturity": "beta",
     "description": "build locally using a custom build script "
-  },
-  "build.local_docker": {
-    "dev": "x",
-    "build": "x",
-    "debug": "x",
-    "area": "Build",
-    "feature": "local + Docker",
-    "maturity": "GA",
-    "description": "build Dockerfiles using the local Docker daemon and/or minikube/d4d daemon"
-  },
-  "build.local_jib": {
-    "dev": "x",
-    "build": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Build",
-    "feature": "local + jib",
-    "maturity": "GA",
-    "description": "build jib projects locally "
-  },
-  "build.prune": {
-    "dev": "x",
-    "build": "x",
-    "debug": "x",
-    "area": "Build",
-    "feature": "prune",
-    "maturity": "GA",
-    "description": "automated image pruning helps keep the disk footprint low"
   },
   "build": {
     "dev": "x",
@@ -217,7 +115,7 @@
     "debug": "x",
     "area": "Cleanup",
     "maturity": "GA",
-    "description": "`skaffold delete` removes everything deployed by `skaffold run` from the cluster, and prunes images locally",
+    "description": "`skaffold delete` removes everything deployed `skaffold run` from the cluster, and prunes locally",
     "url": "/docs/pipeline-stages/cleanup"
   },
   "deploy": {
@@ -229,53 +127,6 @@
     "maturity": "GA",
     "description": "Deploy a set of deployables as your applications and replace the image name with the built images ",
     "url": "/docs/pipeline-stages/deployers"
-  },
-  "deploy.cmd": {
-    "deploy": "x",
-    "area": "Deploy",
-    "feature": "skaffold deploy",
-    "maturity": "GA",
-    "description": "separate command to run only deployment "
-  },
-  "deploy.helm": {
-    "dev": "x",
-    "deploy": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Deploy",
-    "feature": "Helm",
-    "maturity": "GA",
-    "description": "use helm charts as your deployable "
-  },
-  "deploy.kubecontext": {
-    "dev": "x",
-    "deploy": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Deploy",
-    "feature": "change kubecontext",
-    "maturity": "GA",
-    "description": "specify kubecontext based on a flag, or skaffold.yaml"
-  },
-  "deploy.kubectl": {
-    "dev": "x",
-    "deploy": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Deploy",
-    "feature": "Kubectl",
-    "maturity": "GA",
-    "description": "use k8s manifests as your deployable "
-  },
-  "deploy.kustomize": {
-    "dev": "x",
-    "deploy": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Deploy",
-    "feature": "Kustomize",
-    "maturity": "GA",
-    "description": "use kustomize files as your deployable "
   },
   "deploy.status_check": {
     "dev": "x",
@@ -356,33 +207,6 @@
     "description": "Target registries for built images which are not secure",
     "url": "/docs/environment/image-registries/#insecure-image-registries"
   },
-  "insecure_registry.cluster_kaniko": {
-    "dev": "x",
-    "build": "x",
-    "debug": "x",
-    "area": "Insecure registry handling",
-    "feature": "cluster + kaniko ",
-    "maturity": "GA",
-    "description": "pass insecure registries to Kaniko"
-  },
-  "insecure_registry.local_docker": {
-    "dev": "x",
-    "build": "x",
-    "debug": "x",
-    "area": "Insecure registry handling",
-    "feature": "local + Docker",
-    "maturity": "GA",
-    "description": "pass insecure registries to Docker"
-  },
-  "insecure_registry.local_jib": {
-    "dev": "x",
-    "build": "x",
-    "debug": "x",
-    "area": "Insecure registry handling",
-    "feature": "local + jib",
-    "maturity": "GA",
-    "description": "pass insecure registries to jib"
-  },
   "logging": {
     "dev": "x",
     "deploy": "x",
@@ -392,30 +216,6 @@
     "maturity": "GA",
     "description": "automated log tailing of deployed pods",
     "url": "/docs/pipeline-stages/log-tailing"
-  },
-  "portforward.pods_automated": {
-    "dev": "x",
-    "debug": "x",
-    "area": "Port-forwarding",
-    "feature": "automated for pods",
-    "maturity": "GA",
-    "description": "Port-forward pods with containers built by skaffold automatically for debug"
-  },
-  "portforward.services_automated": {
-    "dev": "x",
-    "debug": "x",
-    "area": "Port-forwarding",
-    "feature": "automated for services",
-    "maturity": "GA",
-    "description": "Port-forward services deployed by Skaffold automatically"
-  },
-  "portforward.user_defined": {
-    "dev": "x",
-    "debug": "x",
-    "area": "Port-forwarding",
-    "feature": "user defined",
-    "maturity": "GA",
-    "description": "Port-forward any resources defined by the user in the skaffold.yaml for portforwarding"
   },
   "portforward": {
     "dev": "x",
@@ -457,59 +257,12 @@
     "maturity": "alpha",
     "description": "mark files as \"syncable\" - infer the destinations based on the Dockerfile"
   },
-  "sync.manual": {
-    "dev": "x",
-    "area": "Filesync",
-    "feature": "sync.manual",
-    "maturity": "GA",
-    "description": "mark files as \"syncable\" that won't trigger a rebuild on change"
-  },
   "sync": {
     "dev": "x",
     "area": "Filesync",
-    "maturity": "alpha",
+    "maturity": "beta",
     "description": "Instead of rebuilding, copy the changed files in the running container",
     "url": "/docs/pipeline-stages/filesync"
-  },
-  "tagpolicy.datetime": {
-    "dev": "x",
-    "build": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Tagpolicy",
-    "feature": "dateTime",
-    "maturity": "GA",
-    "description": "tag based on date and timestamp, configurable with datetime format"
-  },
-  "tagpolicy.digest": {
-    "dev": "x",
-    "build": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Tagpolicy",
-    "feature": "contentDigest tagger",
-    "maturity": "alpha",
-    "description": "reintroduce DIGEST and content based digest tag"
-  },
-  "tagpolicy.envtagger": {
-    "dev": "x",
-    "build": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Tagpolicy",
-    "feature": "envTagger",
-    "maturity": "GA",
-    "description": "tag based on a template that uses environment variables and the IMAGE_NAME variable"
-  },
-  "tagpolicy.gitcommit": {
-    "dev": "x",
-    "build": "x",
-    "run": "x",
-    "debug": "x",
-    "area": "Tagpolicy",
-    "feature": "gitCommit",
-    "maturity": "GA",
-    "description": "tag built images based on the gitCommit"
   },
   "tagpolicy.latest": {
     "dev": "x",
@@ -517,8 +270,8 @@
     "run": "x",
     "debug": "x",
     "area": "Tagpolicy",
-    "feature": "latest tagger",
-    "maturity": "alpha",
+    "feature": "sha256 (== \"latest\") tagger",
+    "maturity": "beta",
     "description": "tag with latest, use image digest / image ID for deployment"
   },
   "tagpolicy": {
@@ -538,14 +291,6 @@
     "description": "certain fields of skaffold.yaml can be parametrized with environment and built-in variables",
     "url": "/docs/environment/templating/"
   },
-  "test.structure_test": {
-    "dev": "x",
-    "run": "x",
-    "area": "Test",
-    "feature": "structure test",
-    "maturity": "GA",
-    "description": "run structure tests against built images"
-  },
   "test": {
     "dev": "x",
     "run": "x",
@@ -553,30 +298,6 @@
     "maturity": "GA",
     "description": "Run tests as part of your pipeline",
     "url": "/docs/pipeline-stages/testers"
-  },
-  "triggers.manual": {
-    "dev": "x",
-    "debug": "x",
-    "area": "Trigger",
-    "feature": "manual",
-    "maturity": "GA",
-    "description": "Manual trigger, checks for file changes only on stdin \"return\" "
-  },
-  "triggers.notify": {
-    "dev": "x",
-    "debug": "x",
-    "area": "Trigger",
-    "feature": "notify",
-    "maturity": "GA",
-    "description": "The notify trigger checks for filechanges using native, filesytem level notifications"
-  },
-  "triggers.polling": {
-    "dev": "x",
-    "debug": "x",
-    "area": "Trigger",
-    "feature": "polling",
-    "maturity": "GA",
-    "description": "Polling trigger, checks for file changes periodically"
   },
   "triggers": {
     "dev": "x",
