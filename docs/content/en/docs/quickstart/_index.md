@@ -20,7 +20,7 @@ In this quickstart, you will:
 * Use `skaffold dev` to build and deploy your app every time your code changes,
 * Use `skaffold run` to build and deploy your app once, similar to a CI/CD pipeline
 
-## Before you begin
+## Before you Begin
 
 * [Install Skaffold]({{< relref "/docs/install" >}})
 * [Install kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
@@ -31,7 +31,7 @@ Skaffold will build the app using the Docker daemon hosted inside minikube.
 If you want to deploy against a different Kubernetes cluster, e.g. Kind, GKE clusters, you will have to install Docker to build this app.
 {{</alert>}}
 
-## Downloading the sample app
+## Downloading the Sample App
 
 1. Clone the Skaffold repository:
 
@@ -45,7 +45,7 @@ If you want to deploy against a different Kubernetes cluster, e.g. Kind, GKE clu
     cd examples/getting-started
     ```
 
-## `skaffold dev`: continuous build & deploy on code changes
+## `skaffold dev`: Continuous Build & Deploy on Code Changes
 
 Run `skaffold dev` to build and deploy your app continuously.
 You should see some outputs similar to the following entries:
@@ -134,12 +134,12 @@ is completed, you should see the changes reflected in the output in the terminal
 
 <span style="font-size: 36pt">✨</span>
 
-## `skaffold run`: build & deploy once 
+## `skaffold run`: Build & Deploy Once 
 
 If you prefer building and deploying once at a time, run `skaffold run`.
 Skaffold will perform the workflow described in `skaffold.yaml` exactly once.
 
-## What's next
+## What's Next
 
 For getting started with your project, see the [Getting Started With Your Project]({{<relref "/docs/workflows/getting-started-with-your-project" >}}) workflow.
 

@@ -33,7 +33,7 @@ Other Commands:
 * [skaffold diagnose](#skaffold-diagnose) - diagnostics of Skaffold works in your project
 
 
-## Global flags
+## Global Flags
 
 | Flag | Description |
 |------- |---------------|
@@ -41,14 +41,14 @@ Other Commands:
 |`-v, --verbosity LOG-LEVEL` | Uses a specific log level. Available log levels are `info`, `warn`, `error`, `fatal`, `debug` and `trace`. Default value is `warn`.|
 
 
-## Global environment variables
+## Global Environment Variables
 
 | Flag | Description |
 |------- |---------------|
 |`SKAFFOLD_UPDATE_CHECK`|Enables checking for latest version of the Skaffold binary. By default it's `true`. |
 
 
-## Skaffold commands
+## Skaffold Commands
 
 <!--
 ******

@@ -11,7 +11,7 @@ Skaffold supports building with Dockerfile
 2. [in cluster]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-in-cluster-with-kaniko">}})
 3. [on Google CloudBuild ]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-remotely-with-google-cloud-build">}})
 
-## Dockerfile with Docker locally
+## Dockerfile with Docker Locally
 
 If you have [Docker](https://www.docker.com/products/docker-desktop)
 installed, Skaffold can be configured to build artifacts with the local
@@ -44,7 +44,7 @@ Which is equivalent to:
 
 {{% readfile file="samples/builders/local-full.yaml" %}}
 
-## Dockerfile in-cluster with Kaniko
+## Dockerfile In-cluster with Kaniko
 
 [Kaniko](https://github.com/GoogleContainerTools/kaniko) is a Google-developed
 open source tool for building images from a Dockerfile inside a container or
@@ -99,7 +99,7 @@ Docker image `gcr.io/k8s-skaffold/example` with Kaniko:
 
 {{% readfile file="samples/builders/kaniko.yaml" %}}
 
-## Dockerfile remotely with Google Cloud Build
+## Dockerfile Remotely with Google Cloud Build
 Skaffold can build the Dockerfile image remotely with [Google Cloud Build]({{<relref "/docs/pipeline-stages/builders#remotely-on-google-cloud-build">}}).
 
 **Configuration**

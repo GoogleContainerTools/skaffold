@@ -27,7 +27,7 @@ You can override this default one of two ways:
 
 The CLI flag always takes precedence over the config field in the `skaffold.yaml`.
 
-### Kube-context activation and Skaffold profiles
+### Kube-context Activation and Skaffold Profiles
 
 The kube-context has a double role for Skaffold profiles:
 

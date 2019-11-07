@@ -11,7 +11,7 @@ The associated debugging ports are exposed and labelled so that they can be port
 local machine. Helper metadata is also added to allow IDEs to detect the debugging
 configuration parameters.
  
-## How It Works
+## How it Works
 
 `skaffold debug` examines the built artifacts to determine the underlying runtime technology.
 Any Kubernetes manifest that references these artifacts are transformed to enable the runtime technology's

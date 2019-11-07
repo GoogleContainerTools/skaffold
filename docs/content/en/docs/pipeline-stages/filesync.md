@@ -10,7 +10,7 @@ The file copying is enabled by adding a `sync` section with _sync rules_ to the 
 Under the hood, Skaffold creates a tar file with changed files that match the sync rules.
 This tar file is sent to and extracted on the corresponding containers. 
 
-### Inferred sync mode
+### Inferred Sync Mode
 For docker artifacts, Skaffold knows how to infer the desired destination from the artifact's `Dockerfile`.
 To enable syncing, you only need to specify which files are eligible for syncing in the sync rules.
 The sync rules for inferred sync mode is just a list of glob patterns.
@@ -41,7 +41,7 @@ And a `skaffold.yaml` with the following sync configuration:
 Inferred sync mode only applies to modified and added files.
 File deletion will always cause a complete rebuild.
 
-### Manual sync mode
+### Manual Sync Mode
 
 A manual sync rule must specify the `src` and `dest` field.
 The `src` field is a glob pattern to match files relative to the artifact _context_ directory, which may contain `**` to match nested files.

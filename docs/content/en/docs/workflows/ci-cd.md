@@ -19,7 +19,7 @@ wait for `deployments` to stabilize and succeed only if all deployments are succ
 - [`skaffold deploy`]({{<relref "/docs/workflows/ci-cd#skaffold-build-skaffold-deploy">}})  - deploy built artifacts to a cluster
 - [`skaffold render`]({{<relref "/docs/workflows/ci-cd#skaffold-render">}})  - export the transformed Kubernetes manifests for GitOps workflows
 
-## Waiting for Skaffold deployments using `healthcheck`
+## Waiting for Skaffold Deployments using `healthcheck`
 {{< maturity "deploy.status_check" >}}
 
 `skaffold deploy` optionally performs a `healthcheck` for resources of kind [`Deployment`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) and waits for them to be stable.

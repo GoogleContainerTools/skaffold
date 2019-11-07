@@ -20,7 +20,7 @@ Skaffold offers cleanup functionality to negate some of these side effects:
 
 For pushed images in registries and application side effects the user has to take care of cleanup. 
 
-## Kubernetes resource cleanup 
+## Kubernetes Resource Cleanup 
  
 After running `skaffold run` or `skaffold deploy` and deploying your application to a cluster, running `skaffold delete` will remove all the resources you deployed.
 Cleanup is enabled by default, it can be turned off by `--cleanup=false`. 
@@ -30,7 +30,7 @@ Cleanup is enabled by default, it can be turned off by `--cleanup=false`.
 When running `skaffold dev` or `skaffold debug`, pressing `Ctrl+C` (`SIGINT` signal) will kick off the cleanup process which will mimic the behavior of `skaffold delete`.
 If for some reason the Skaffold process was unable to catch the `SIGINT` signal, `skaffold delete` can always be run later to clean up the deployed Kubernetes resources.
  
-### Image pruning 
+### Image Pruning 
  
 Images that are built by Skaffold and stored on the local Docker daemon can easily pile up, taking up a significant amount of disk space.
 To avoid this, users can turn on image pruning that deletes the images built by Skaffold on `SIGTERM` from `skaffold dev` and `skaffold debug`.  

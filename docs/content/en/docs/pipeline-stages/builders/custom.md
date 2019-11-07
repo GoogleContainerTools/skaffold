@@ -112,7 +112,7 @@ custom:
         file: foo
 ```
 
-#### Dependencies from a command
+#### Dependencies from a Command
 
 Sometimes you might have a builder that can provide the dependencies for a given artifact.
 For example bazel has the `bazel query deps` command.

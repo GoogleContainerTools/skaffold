@@ -11,7 +11,7 @@ When Skaffold deploys your application, it goes through these steps:
 It also might go through the extra intermediate step of expanding templates (for helm) or calculating overlays (for kustomize).
 * the Skaffold deployer _deploys_ the final Kubernetes manifests to the cluster
 
-### Supported deployers
+## Supported Deployers
 
 Skaffold supports the following tools for deploying applications:
 
@@ -28,7 +28,7 @@ For a detailed discussion on Skaffold configuration, see
 [Skaffold Concepts]({{< relref "/docs/design/config.md" >}}) and
 [skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
-## Deploying with kubectl
+## Deploying with Kubectl
 
 `kubectl` is Kubernetes
 [command-line tool](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
@@ -106,7 +106,7 @@ install it.
 Also, it has to be installed in a version that's compatible with your cluster.
 {{< /alert >}}
 
-## Deploying with kustomize
+## Deploying with Kustomize
 
 [`kustomize`](https://github.com/kubernetes-sigs/kustomize) allows Kubernetes
 developers to customize raw, template-free YAML files for multiple purposes.

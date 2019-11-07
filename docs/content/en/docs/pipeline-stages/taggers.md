@@ -19,7 +19,7 @@ For a detailed discussion on Skaffold configuration, see
 [Skaffold Concepts]({{< relref "/docs/design/config.md" >}}) and
 [skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
-## `gitCommit`: uses Git commit IDs as tags
+## `gitCommit`: Git Commit IDs as Tags
 
 `gitCommit` is the default tag policy of Skaffold: if you do not specify the
 `tagPolicy` field in the `build` section, Skaffold will use Git information
@@ -44,7 +44,7 @@ specified explicitly:
 
 `gitCommit` tag policy features no options.
 
-## `sha256`: uses Sha256 hashes of contents as tags
+## `sha256`: Sha256 Hashes as Tags
 
 `sha256` is a content-based tagging strategy: it uses the Sha256 hash of
 your built image as the tag of the Docker image.
@@ -60,7 +60,7 @@ Docker image `gcr.io/k8s-skaffold/example` with the `sha256` tag policy:
 
 `sha256` tag policy features no options.
 
-## `envTemplate`: uses values of environment variables as tags
+## `envTemplate`: Environment Variables as Tags
 
 `envTemplate` allows you to use environment variables in tags. This
 policy requires that you specify a tag template, where part of template
@@ -94,7 +94,7 @@ The tag template uses the [Go Programming Language Syntax](https://golang.org/pk
 As showcased in the example, `envTemplate` tag policy features one
 **required** parameter, `template`, which is the tag template to use. To learn more about templating support in Skaffold.yaml see [Templated fields]({{< relref "../environment/templating.md" >}})
 
-## `dateTime`: uses data and time values as tags
+## `dateTime`: Data and Time Values as Tags
 
 `dateTime` uses the time when Skaffold starts building artifacts as the
 tag. You can choose which format and timezone Skaffold should use. By default,

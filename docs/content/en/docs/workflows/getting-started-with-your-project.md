@@ -15,7 +15,7 @@ skaffold init
 
 ![init-flow](/images/init-flow.png)
 
-## What's next
+## What's Next
 You can further set up [File Sync]({{<relref "/docs/pipeline-stages/filesync" >}}) for source files 
 that do not need a rebuild in [dev mode]({{<relref "/docs/workflows/dev">}}). 
 

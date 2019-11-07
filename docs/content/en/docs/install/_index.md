@@ -17,7 +17,7 @@ Your use of this software is subject to the [Google Privacy Policy](https://poli
 
 {{% tabs %}}
 {{% tab "LINUX" %}}
-### Stable binary
+### Stable Binary
 For the latest **stable** release download and place it in your `PATH`:
 
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
@@ -30,7 +30,7 @@ chmod +x skaffold
 sudo mv skaffold /usr/local/bin
 ```
 
-### Latest bleeding edge binary
+### Latest Bleeding Edge Binary
 
 For the latest **bleeding edge** build, download and place it in your `PATH`:
 
@@ -54,7 +54,7 @@ sudo mv skaffold /usr/local/bin
 brew install skaffold
 ```
 
-### Stable binary
+### Stable Binary
 For the latest **stable** release download and place it in your `PATH`:
 
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64
@@ -67,7 +67,7 @@ chmod +x skaffold
 sudo mv skaffold /usr/local/bin
 ```
 
-### Bleeding edge binary
+### Bleeding Edge Binary
 
 For the latest **bleeding edge** build, download and place it in your `PATH`:
 
@@ -90,13 +90,13 @@ sudo mv skaffold /usr/local/bin
 choco install skaffold
 ```
 
-### Stable binary
+### Stable Binary
 
 For the latest **stable** release download and place it in your `PATH` as `skaffold.exe`:
 
 https://storage.googleapis.com/skaffold/releases/latest/skaffold-windows-amd64.exe
 
-### Bleeding edge binary
+### Bleeding Edge Binary
 
 For the latest **bleeding edge** build, download and place it in your `PATH` as `skaffold.exe`:
 
@@ -107,13 +107,13 @@ https://storage.googleapis.com/skaffold/builds/latest/skaffold-windows-amd64.exe
 
 {{% tab "DOCKER" %}}
 
-### Stable binary
+### Stable Binary
 
 For the latest **stable** release, you can use: 
 
 `docker run gcr.io/k8s-skaffold/skaffold:latest skaffold <command>`
 
-### Bleeding edge binary
+### Bleeding Edge Binary
 
 For the latest **bleeding edge** build:
 

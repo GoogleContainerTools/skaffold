@@ -21,7 +21,7 @@ A breaking change is when the primary functionality of a feature changes in a wa
 - **Breaking config change**:  In case of Skaffold's pipeline config (skaffold.yaml) a breaking change between an old and new version occurs when the skaffold binary cannot parse the input yaml with auto-upgrade. This can happen when the new version removes a feature or when the new version introduces a mandatory field with no default value
 - **Breaking functional change**: functional changes that force user workflow changes even when the config is the same or upgradeable.
 
-## How do we deprecate things?
+# How do we Deprecate Things?
 
 A "deprecation event" would coincide with a release.
 
@@ -37,12 +37,12 @@ A "deprecation event" would coincide with a release.
 2. if applicable, [inspired by the Kubernetes policy](https://kubernetes.io/docs/reference/using-api/deprecation-policy/#deprecating-a-flag-or-cli):
     > Rule #6: Deprecated CLI elements must emit warnings (optionally disable) when used.
 
-# Current maturity of skaffold
+# Current Maturity of Skaffold
 Skaffold and its features are considered Beta unless specified (in this document, CLI reference, config YAML reference or in docs in skaffold.dev).  
 Skaffold is constantly evolving with the tools space, we want to be able to experiment and sometimes change things. 
 In order to be transparent about the maturity of feature areas and things that might change we offer the feature level maturity matrix that we keep up to date.
 
-## Skaffold.yaml (pipeline config)
+## Skaffold.yaml (Pipeline Config)
 
 The pipeline config, i.e. `skaffold.yaml` is **beta**.
 
@@ -51,7 +51,7 @@ This means that you can safely depend on the skaffold config with the assumption
 - Removal and non-upgradable changes are subject to the deprecation policy for all (even new) features under the config.
 - Auto-upgradable changes are not considered breaking changes.
 
-## Skaffold features
+## Skaffold Features
 
 We are committed to design for auto-upgradeable changes in the config.
 However the **behavior** of individual component might suffer breaking changes depending on maturity.
@@ -69,12 +69,12 @@ Examples could be getting fixes fast for a serious vulnerability, a destructive 
 Such situations should be discussed on the given bugs / feature requests and during Skaffold Office Hours, always bearing in mind that Skaffold is committed to being a stable system that, as much as possible, never breaks users. 
 Exceptions will always be announced in all relevant release notes.
 
-## Current deprecation notices
+## Current Deprecation Notices
 
 10/21/2019: With release v0.41.0 we mark for deprecation the `$IMAGES` environment variable passed to custom builders. Variable `$IMAGE` should be used instead.
 This environment variable flag will be removed no earlier than 01/21/2020.
 
-## Past deprecation notices
+## Past Deprecation Notices
 
 03/15/2019: With release v0.25.0 we mark for deprecation the `flags` field in kaniko (`KanikoArtifact.AdditionalFlags`) , instead Kaniko's additional flags will now be represented as unique fields under `kaniko` per artifact (`KanikoArtifact` type).
 This flag will will be removed earliest 06/15/2019.

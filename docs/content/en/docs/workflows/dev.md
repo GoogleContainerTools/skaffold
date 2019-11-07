@@ -13,7 +13,7 @@ will rebuild your images (or sync files to your running containers), push any ne
 to leverage all of the features of Skaffold in a continuous way while iterating
 on your application.
 
-## Dev loop
+## Dev Loop
 
 When `skaffold dev` is run, Skaffold will first do a full build and deploy of all artifacts specified in the `skaffold.yaml`, similar to `skaffold run`. Upon successful build and deploy, Skaffold will start watching all source file dependencies for all artifacts specified in the project. As changes are made to these source files, Skaffold will rebuild the associated artifacts, and redeploy the new changes to your cluster.
 

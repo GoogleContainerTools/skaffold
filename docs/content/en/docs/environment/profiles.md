@@ -64,7 +64,7 @@ In the example below:
 {{% readfile file="samples/profiles/activations.yaml" %}}
 
 
-### Override via replacement
+### Override via Replacement
 
 The `build`, `test` and `deploy` sections defined in the profile will completely replace the main configuration.
 The default values are the same in profiles as in the main config.
@@ -91,7 +91,7 @@ since the `gcb` profile does not specify a deploy configuration, Skaffold will
 continue using `kubectl` for deployments.
 
 
-### Override via patches
+### Override via Patches
 
 Patches are a more verbose way of overriding your config, but they provide a powerful, fine-grained way
 to override individual values in your yaml config. They are based on [JSON Patch](http://jsonpatch.com/) under the hood.
@@ -101,7 +101,7 @@ defines a different Dockerfile to use for the first artifact.
 
 {{% readfile file="samples/profiles/patches.yaml" %}}
 
-### Activating multiple profiles at the same time
+### Activating Multiple Profiles
 
 Multiple profiles can be specified either by using the `-p` flag multiple times or by comma separated profiles.
 

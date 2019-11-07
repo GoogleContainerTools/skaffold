@@ -7,7 +7,7 @@ weight: 50
 The privacy of our users is very important to us. 
 Your use of this software is subject to the <a href=https://policies.google.com/privacy>Google Privacy Policy</a>.
 
-## Update check
+## Update Check
 
 To keep Skaffold up to date, update checks are made to Google servers to see if a new version of
 Skaffold is available. By default, this behavior is enabled. As a side effect this request is logged.

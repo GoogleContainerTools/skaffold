@@ -7,7 +7,7 @@ weight: 100
 This page describes building Skaffold artifacts using a custom build script, which builds images using [buildpacks](https://buildpacks.io/).
 Buildpacks enable building language-based containers from source code, without the need for a Dockerfile.
 
-## Before you begin
+## Before you Begin
 First, you will need to have Skaffold and a Kubernetes cluster set up.
 To learn more about how to set up Skaffold and a Kubernetes cluster, see the [quickstart docs]({{< relref "/docs/quickstart" >}}).
 
@@ -36,7 +36,7 @@ $ pack set-default-builder <insert buildpack image here>
 This tutorial will be based on the [buildpacks example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/buildpacks) in our repository.
 
 
-## Adding a Custom Builder to Your Skaffold Project
+## Adding a Custom Builder to your Skaffold Project
 
 We'll need to configure your Skaffold config to build artifacts with this custom builder.
 To do this, we will take advantage of the [custom builder]({{<relref "docs/pipeline-stages/builders#custom-build-script-run-locally" >}}) in Skaffold.

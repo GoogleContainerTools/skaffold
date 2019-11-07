@@ -72,7 +72,7 @@ Automated image name rewriting strategies are determined based on the default-re
       rewritten image:  gcr.io/k8s-skaffold/myimage/skaffold-example1	
     ```
 
-## Insecure image registries
+## Insecure Image Registries
 
 During development you may be forced to push images to a registry that does not support HTTPS.
 By itself, Skaffold will never try to downgrade a connection to a registry to plain HTTP.

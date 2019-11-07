@@ -45,7 +45,7 @@ Describes all the methods for the Skaffold API
  <!-- end services -->
 
 
-### Data types
+### Data Types
 
 
 
