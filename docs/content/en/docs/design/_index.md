@@ -1,7 +1,7 @@
 ---
 title: "Architecture and Design"
 linkTitle: "Architecture and Design"
-weight: 40
+weight: 50
 ---
 
 Skaffold is designed with pluggability in mind:

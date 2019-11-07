@@ -37,7 +37,7 @@ var (
 // NewCmdRender describes the CLI command to build artifacts render Kubernetes manifests.
 func NewCmdRender() *cobra.Command {
 	return NewCmd("render").
-		WithDescription("Perform all image builds, and output rendered Kubernetes manifests").
+		WithDescription("[alpha] Perform all image builds, and output rendered Kubernetes manifests").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.BoolVar(&showBuild, "loud", false, "Show the build logs and output")

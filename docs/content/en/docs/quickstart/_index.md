@@ -1,7 +1,7 @@
 ---
 title: "Quickstart"
 linkTitle: "Quickstart"
-weight: 2
+weight: 20
 ---
 
 Follow this tutorial to learn about Skaffold on a small Kubernetes app built with [Docker](https://www.docker.com/) inside [minikube](https://minikube.sigs.k8s.io)

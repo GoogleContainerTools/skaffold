@@ -44,11 +44,9 @@ In order to be transparent about the maturity of feature areas and things that m
 
 ## Skaffold.yaml (Pipeline Config)
 
-The pipeline config, i.e. `skaffold.yaml` is **beta**.
+You can safely depend on the skaffold config with the assumption that skaffold will auto-upgrade to the latest version:
 
-This means that you can safely depend on the skaffold config with the assumption that skaffold will auto-upgrade to the latest version:
-
-- Removal and non-upgradable changes are subject to the deprecation policy for all (even new) features under the config.
+- Removal and other non-upgradable changes are subject to the deprecation policy for all (even new) features under the config.
 - Auto-upgradable changes are not considered breaking changes.
 
 ## Skaffold Features
