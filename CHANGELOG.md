@@ -1,7 +1,7 @@
 # v1.0.0 Release - 11/07/2019
 
 🎉🎉🎉🎉🎉🎉 
-After two years, we are extremely excited to release v1.0.0 of Skaffold that signals that Skaffold reached GA maturity!
+After two years, we are extremely excited to announce first generally available release v1.0.0 of Skaffold!
 See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what GA means.
 See [Feature Maturity](https://skaffold-latest.firebaseapp.com/docs/references/deprecation/#skaffold-features) to find out more on feature maturity.
 🎉🎉🎉🎉🎉🎉 
