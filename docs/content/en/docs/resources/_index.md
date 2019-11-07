@@ -6,30 +6,26 @@ weight: 130
 
 ## 2020 Roadmap
 
-* Web UI for Skaffold 
-* Skaffold modules for dependency management 
-* Extensibility, hooks
-* Composability of Skaffold config
-* Better tutorials 
-* Better GitOps workflows with Skaffold
-* Kustomize and Helm support for `skaffold init` 
-* Buildpacks support
-  
-{{< alert title="Note" >}}
-The roadmap is subject to change and aspirational but we would like to share our plans with the user and contributor community.
-{{< /alert >}}
+Coming soon!  
 
 ## 2019 Roadmap
 
-* Plugin model for builders - DONE - see custom artifacts
-* IDE integration - VSCode and IntelliJ Skaffold dev/build/run/deploy support, Skaffold Config code completion - DONE, see Cloud Code
-* Debugging JVM applications - DONE, we have Java, go, python and node
-* Skaffold keeps track of what it built, for faster restarts - DONE, artifact caching is implemented
-* Pipeline CRD integration - DONE - we have Tekton pipeline generation
+* Plugin model for builders
+   * DONE - see custom artifacts
+* IDE integration VSCode and IntelliJ Skaffold dev/build/run/deploy support, Skaffold Config code completion
+   * DONE, see [Cloud Code](http://cloud.google.com/code)
+* Debugging JVM applications 
+    * DONE, we have Java, go, python and node for [debbuging]({{<relref "/docs/workflows/debug">}})
+* Skaffold keeps track of what it built, for faster restarts
+    * DONE, artifact caching is enabled by default, can be controlled with the `--cache-artifacts` flag
+* Pipeline CRD integration
+    * DONE - we have Tekton pipeline generation in alpha, docs to come
 
-We reprioritized these items: 
+In 2019 we also focused a major part of our efforts in fixing bugs, improve our triage, pull request and design processes, created better documentation, and continuously increased test coverage.
 
-* Provide help with integration testing 
+We reprioritized these items for next year: 
+
+* Provide help with integration testing
 * Automated Kubernetes manifest generation
 * Infrastructure scaffolding for CI/CD on GCP/GKE
 * Document end-to-end solutions

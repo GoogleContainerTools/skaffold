@@ -32,6 +32,8 @@ Updates & refactorings:
 * Prepare cli-go to accept `--kubeconfig` setting [#3107](https://github.com/GoogleContainerTools/skaffold/pull/3107)
 * Delegate release notes to external tool [#3055](https://github.com/GoogleContainerTools/skaffold/pull/3055)
 * [buildpacks] Run cleanup on ctrl-c [#3184](https://github.com/GoogleContainerTools/skaffold/pull/3184)
+* Remove trailing \n from download url [#3201](https://github.com/GoogleContainerTools/skaffold/pull/3201)
+* Use native zsh completion script generator [#3137](https://github.com/GoogleContainerTools/skaffold/pull/3137)
 
 Docs updates: 
 
@@ -63,6 +65,16 @@ Docs updates:
 * [docs] Fixes a broken link to the Profiles page [#3144](https://github.com/GoogleContainerTools/skaffold/pull/3144)
 * [docs] fix install links [#3135](https://github.com/GoogleContainerTools/skaffold/pull/3135)
 * [docs] Fix broken link to installation guide [#3134](https://github.com/GoogleContainerTools/skaffold/pull/3134)
+* Add example to `skaffold deploy` [#3202](https://github.com/GoogleContainerTools/skaffold/pull/3202)
+* [Doc] Buildpacks [#3199](https://github.com/GoogleContainerTools/skaffold/pull/3199)
+* [docs] add docs for buildpacks [#3198](https://github.com/GoogleContainerTools/skaffold/pull/3198)
+* [example] update apiVersion of Deployment [#3161](https://github.com/GoogleContainerTools/skaffold/pull/3161)
+* [docs] move builders in to individual pages [#3193](https://github.com/GoogleContainerTools/skaffold/pull/3193)
+* [docs] Cleanup docs [#3176](https://github.com/GoogleContainerTools/skaffold/pull/3176)
+* [docs] quick feedback page update [#3196](https://github.com/GoogleContainerTools/skaffold/pull/3196)
+* [website] unify fonts [#3197](https://github.com/GoogleContainerTools/skaffold/pull/3197)
+* [docs] Add healthcheck [#3178](https://github.com/GoogleContainerTools/skaffold/pull/3178)
+
 
 Huge thanks goes out to all of our contributors for this release:
 
