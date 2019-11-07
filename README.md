@@ -142,7 +142,7 @@ Check out our [examples page](./examples)
 
 ## Support 
 
-Skaffold is GA and considered production ready. 
+Skaffold is generally available and considered production ready. 
 Detailed feature maturity information and how we deprecate features are described in our [Deprecation Policy](https://skaffold.dev/docs/references/deprecation).
 
 Support channels: 
