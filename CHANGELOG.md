@@ -3,13 +3,18 @@
 🎉🎉🎉🎉🎉🎉 
 After two years, we are extremely excited to announce first generally available release v1.0.0 of Skaffold!
 See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecation/) for details on what GA means.
-See [Feature Maturity](https://skaffold-latest.firebaseapp.com/docs/references/deprecation/#skaffold-features) to find out more on feature maturity.
+See [Feature Maturity](https://skaffold.dev/docs/references/deprecation/#skaffold-features) to find out more on feature maturity.
 🎉🎉🎉🎉🎉🎉 
 
 *Note*: This release also comes with a new config version `v1`.
         To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
        
-Highlights
+Highlights: 
+
+- We revamped http://skaffold.dev splash page added client testimonials, and added a ton of missing documentation, clearer maturity state and what functionality applies for what skaffold command 
+- We added experimental support for Cloud Native BuildPacks
+- We surface now the thirdparty open source licenses in `skaffold credits` command 
+
 
 New Features: 
 * Adding support for Cloud Native Buildpacks [#3000](https://github.com/GoogleContainerTools/skaffold/pull/3000)
