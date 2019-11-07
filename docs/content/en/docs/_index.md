@@ -78,6 +78,7 @@ Skaffold supports the following tools:
   - locally
   - on cloud with [Google Cloud Build](https://cloud.google.com/cloud-build/docs/)
 * [Bazel](https://bazel.build/) locally
+* [Cloud Native Buildpacks](https://buildpacks.io/) locally
 * Custom script locally
 {{% /tab %}}
 
