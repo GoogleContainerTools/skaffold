@@ -1,6 +1,6 @@
 ---
-title: "Templated fields"
-linkTitle: "Templated fields"
+title: "Templated Fields"
+linkTitle: "Templated Fields"
 weight: 90
 featureId: templating
 ---
