@@ -6,14 +6,13 @@ See [Skaffold Deprecation Policy](http://skaffold.dev/docs/references/deprecatio
 See [Feature Maturity](https://skaffold.dev/docs/references/deprecation/#skaffold-features) to find out more on feature maturity.
 🎉🎉🎉🎉🎉🎉 
 
-*Note*: This release also comes with a new config version `v1`.
-        To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
+*Note*: This release also comes with a new config version `v1`. To upgrade your `skaffold.yaml`, use `skaffold fix`. If you don't upgrade, skaffold will auto-upgrade in memory as best it can, and print a warning message.
        
 Highlights: 
 
-- We revamped http://skaffold.dev splash page added client testimonials, and added a ton of missing documentation, clearer maturity state and what functionality applies for what skaffold command 
-- We added experimental support for Cloud Native BuildPacks
-- We surface now the thirdparty open source licenses in `skaffold credits` command 
+- Revamped the http://skaffold.dev splash page, added client testimonials, and added a ton of missing documentation, clearer maturity state and what functionality applies for what skaffold command 
+- Added experimental support for Cloud Native BuildPacks
+- Third party open source licenses are now surfaced in `skaffold credits` command 
 
 
 New Features: 
