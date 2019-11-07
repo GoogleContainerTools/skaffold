@@ -87,9 +87,11 @@ a container image.  Then for each such sub-project:
 Skaffold can build artifacts using Jib remotely on [Google Cloud Build]({{<relref "/docs/pipeline-stages/builders#remotely-on-google-cloud-build">}}).
 
 **Configuration**
+
 To configure, add `googleCloudBuild` to  `build` section to `skaffold.yaml`
 
 **Example**
+
 Following configuration instructs skaffold to build
  `gcr.io/k8s-skaffold/project1` with Google Cloud Build using Jib builder:
 

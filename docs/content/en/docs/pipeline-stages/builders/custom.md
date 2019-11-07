@@ -112,7 +112,7 @@ custom:
         file: foo
 ```
 
-#### Getting dependencies from a command
+#### Dependencies from a command
 
 Sometimes you might have a builder that can provide the dependencies for a given artifact.
 For example bazel has the `bazel query deps` command.
@@ -129,11 +129,11 @@ custom:
     command: echo ["file1","file2","file3"]
 ```
 
-### Custom Build Scripts and File Sync
+### File Sync
 
 Syncable files must be included in both the `paths` section of `dependencies`, so that the skaffold file watcher knows to watch them, and the `sync` section, so that skaffold knows to sync them.  
 
-### Custom Build Scripts and Logging
+### Logging
 
 `STDOUT` and `STDERR` from the custom build script will be redirected and displayed within skaffold logs.
 

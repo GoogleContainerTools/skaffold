@@ -40,24 +40,30 @@ Skaffold supports building artifacts in following execution contexts:
 Local build execution is the default execution context.
 Skaffold will use the build tools locally installed on your machine to execute the build.
 
-To configure the local execution explictly, add build type `local` to the build section of `skaffold.yaml`
+To configure the local execution explicitly, add build type `local` to the build section of `skaffold.yaml`
 
 ```yaml
 build:
-  local: {}
+  local:
+    ...
 ```
 
 {{< schema root="LocalBuild" >}}
 
 If you are deploying to [local cluster]({{<relref "/docs/environment/local-cluster" >}}), you can additional set `push` to `false` to speed up builds.
 
-For building docker artifacts, you can specify 
 
 ## In Cluster Build
 Skaffold supports building in cluster via [Kaniko]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-in-cluster-with-kaniko" >}}) 
-or [Custom Build Script]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-in-cluster" >}}) 
+or [Custom Build Script]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-in-cluster" >}}).
 
 To configure in-cluster Build, add build type `cluster` to the build section of `skaffold.yaml`. 
+
+```yaml
+build:
+  cluster:
+    ...
+```
 
 The following options can optionally be configured:
 
