@@ -168,7 +168,6 @@ func filter(ports []v1.ContainerPort, predicate func(v1.ContainerPort) bool) []v
 	return selected
 }
 
-
 func TestSetEnvVar(t *testing.T) {
 	tests := []struct {
 		description string
