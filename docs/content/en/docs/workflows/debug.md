@@ -102,6 +102,15 @@ DAP is not yet supported by JetBrains IDEs like PyCharm.
 
 `skaffold debug` has some limitations.
 
+### Entrypoints using Launchers or Scripts
+
+`skaffold debug` requires being able to examine and alter the
+command-line used to launch a program, and as such will not work
+with images that use intermediate an launch scripts or binaries.
+For example, `debug` cannot work with an image produced by the Cloud
+Native Buildpacks builder as it uses a `launcher` binary to run
+commands that are specified in a set of configuration files.
+
 ### Supported Deployers
 
 `skaffold debug` is only supported with the `kubectl` and `kustomize` deployers at the moment: support for
