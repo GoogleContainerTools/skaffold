@@ -314,13 +314,24 @@ func describe(obj runtime.Object) (group, version, kind, description string) {
 
 // exposePort adds a `ContainerPort` instance or amends an existing entry with the same port.
 func exposePort(entries []v1.ContainerPort, portName string, port int32) []v1.ContainerPort {
-	for i := range entries {
-		// ports and names must be unique so rewrite an existing entry if found
-		if entries[i].ContainerPort == port || entries[i].Name == portName {
+	found := false
+	for i := 0; i < len(entries); {
+		switch {
+		case entries[i].Name == portName:
+			// Ports and names must be unique so rewrite an existing entry if found
 			entries[i].Name = portName
 			entries[i].ContainerPort = port
-			return entries
+			found = true
+			i++
+		case entries[i].ContainerPort == port:
+			// Cut any entries with a clashing port
+			entries = append(entries[:i], entries[i+1:]...)
+		default:
+			i++
 		}
+	}
+	if found {
+		return entries
 	}
 	entry := v1.ContainerPort{
 		Name:          portName,

@@ -145,14 +145,29 @@ func TestExposePort(t *testing.T) {
 		{"add new port", []v1.ContainerPort{{Name: "foo", ContainerPort: 4444}}, []v1.ContainerPort{{Name: "foo", ContainerPort: 4444}, {Name: "name", ContainerPort: 5555}}},
 		{"clashing port name", []v1.ContainerPort{{Name: "name", ContainerPort: 4444}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
 		{"clashing port value", []v1.ContainerPort{{Name: "foo", ContainerPort: 5555}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"clashing port name and value", []v1.ContainerPort{{ContainerPort: 5555}, {Name: "name", ContainerPort: 4444}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
+		{"clashing port name and value", []v1.ContainerPort{{Name: "name", ContainerPort: 4444}, {ContainerPort: 5555}}, []v1.ContainerPort{{Name: "name", ContainerPort: 5555}}},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			result := exposePort(test.in, "name", 5555)
 			t.CheckDeepEqual(test.expected, result)
+			t.CheckDeepEqual([]v1.ContainerPort{{Name: "name", ContainerPort: 5555}}, filter(result, func(p v1.ContainerPort) bool { return p.Name == "name" }))
+			t.CheckDeepEqual([]v1.ContainerPort{{Name: "name", ContainerPort: 5555}}, filter(result, func(p v1.ContainerPort) bool { return p.ContainerPort == 5555 }))
 		})
 	}
 }
+
+func filter(ports []v1.ContainerPort, predicate func(v1.ContainerPort) bool) []v1.ContainerPort {
+	var selected []v1.ContainerPort
+	for _, p := range ports {
+		if predicate(p) {
+			selected = append(selected, p)
+		}
+	}
+	return selected
+}
+
 
 func TestSetEnvVar(t *testing.T) {
 	tests := []struct {
