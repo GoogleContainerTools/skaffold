@@ -260,7 +260,7 @@
   "sync": {
     "dev": "x",
     "area": "Filesync",
-    "maturity": "alpha",
+    "maturity": "beta",
     "description": "Instead of rebuilding, copy the changed files in the running container",
     "url": "/docs/pipeline-stages/filesync"
   },
