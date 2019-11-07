@@ -210,11 +210,15 @@
     "maturity": "alpha",
     "description": "more intuitive prefix replacement strategy"
   },
-  "delete": {
-    "area": "Delete",
+  "cleanup": {
+    "dev": "x",
+    "deploy": "x",
+    "run": "x",
+    "debug": "x",
+    "area": "Cleanup",
     "maturity": "GA",
-    "description": "delete everything deployed by skaffold run from the cluster",
-    "url": "/docs/pipeline-stages/delete"
+    "description": "`skaffold delete` removes everything deployed by `skaffold run` from the cluster, and prunes images locally",
+    "url": "/docs/pipeline-stages/cleanup"
   },
   "deploy": {
     "dev": "x",
