@@ -15,10 +15,10 @@ Skaffold has native support for several different tools for building images:
   - [locally]({{< relref "/docs/pipeline-stages/builders/jib#jib-maven-and-gradle-locally" >}})
   - on cloud with [Google Cloud Build]({{< relref "/docs/pipeline-stages/builders/jib#remotely-with-google-cloud-build" >}})
 * [Bazel]({{< relref "/docs/pipeline-stages/builders/bazel" >}}) locally
+* [Cloud Native Buildpacks]({{< relref "/docs/pipeline-stages/builders/buildpacks" >}}) locally
 * [Custom script] ({{< relref "/docs/pipeline-stages/builders/custom" >}})
   - [locally]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-locally" >}}) and
   - [in cluster]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-in-cluster" >}}) 
-* [CNCF Buildpacks] ({{< relref "/docs/pipeline-stages/builders/buildpacks" >}})
 
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how artifacts are built. To use a specific tool for building
