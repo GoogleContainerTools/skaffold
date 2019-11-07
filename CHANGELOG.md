@@ -79,7 +79,7 @@ Docs updates:
 * [docs] quick feedback page update [#3196](https://github.com/GoogleContainerTools/skaffold/pull/3196)
 * [website] unify fonts [#3197](https://github.com/GoogleContainerTools/skaffold/pull/3197)
 * [docs] Add healthcheck [#3178](https://github.com/GoogleContainerTools/skaffold/pull/3178)
-
+* [doc] `debug` does not work with buildpack builder and maybe custom builder images too [#3204](https://github.com/GoogleContainerTools/skaffold/pull/3204)
 
 Huge thanks goes out to all of our contributors for this release:
 
