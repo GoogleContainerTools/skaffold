@@ -1,6 +1,6 @@
 ---
-title: "Skaffold pipeline"
-linkTitle: "Skaffold pipeline"
+title: "Skaffold Pipeline"
+linkTitle: "Skaffold Pipeline"
 weight: 40
 ---
 

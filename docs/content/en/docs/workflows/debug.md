@@ -1,5 +1,5 @@
 ---
-title: "Debugging with Skaffold"
+title: "Debugging With Skaffold"
 linkTitle: "Debugging"
 weight: 30
 featureId: debug

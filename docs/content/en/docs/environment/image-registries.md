@@ -1,6 +1,6 @@
 ---
-title: "Image repository handling"
-linkTitle: "Image repository handling"
+title: "Image Repository Handling"
+linkTitle: "Image Repository Handling"
 weight: 70
 featureId: default_repo
 ---

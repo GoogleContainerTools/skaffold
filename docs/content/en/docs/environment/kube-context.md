@@ -1,6 +1,6 @@
 ---
-title: "Kube-context activation"
-linkTitle: "Kube-context activation"
+title: "Kube-context Activation"
+linkTitle: "Kube-context Activation"
 weight: 80
 featureId: deploy.kubecontext
 ---
