@@ -1,7 +1,7 @@
 ---
 title: "Working With Skaffold"
 linkTitle: "Working With Skaffold"
-weight: 1
+weight: 30
 ---
 
 | Skaffold Workflow | |

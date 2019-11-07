@@ -66,16 +66,16 @@ To edit this file above edit index_header - the rest of the file is autogenerate
 End-to-end pipelines:
   run               Run a pipeline
   dev               Run a pipeline in development mode
-  debug             Run a pipeline in debug mode
+  debug             [beta] Run a pipeline in debug mode
 
 Pipeline building blocks for CI/CD:
   build             Build the artifacts
   deploy            Deploy pre-built artifacts
   delete            Delete the deployed application
-  render            Perform all image builds, and output rendered Kubernetes manifests
+  render            [alpha] Perform all image builds, and output rendered Kubernetes manifests
 
 Getting started with a new project:
-  init              Generate configuration for deploying an application
+  init              [alpha] Generate configuration for deploying an application
   fix               Update old configuration to newest schema version
 
 Other Commands:
@@ -310,7 +310,7 @@ Env vars:
 
 ### skaffold debug
 
-Run a pipeline in debug mode
+[beta] Run a pipeline in debug mode
 
 ```
 
@@ -574,7 +574,7 @@ Env vars:
 
 ### skaffold init
 
-Generate configuration for deploying an application
+[alpha] Generate configuration for deploying an application
 
 ```
 
@@ -619,7 +619,7 @@ The following options can be passed to any command:
 
 ### skaffold render
 
-Perform all image builds, and output rendered Kubernetes manifests
+[alpha] Perform all image builds, and output rendered Kubernetes manifests
 
 ```
 

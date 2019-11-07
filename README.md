@@ -142,7 +142,8 @@ Check out our [examples page](./examples)
 
 ## Support 
 
-Skaffold is currently Beta. Detailed feature maturity information and how we deprecate features are described in our [Deprecation Policy](https://skaffold.dev/docs/references/deprecation).
+Skaffold is generally available and considered production ready. 
+Detailed feature maturity information and how we deprecate features are described in our [Deprecation Policy](https://skaffold.dev/docs/references/deprecation).
 
 Support channels: 
 
