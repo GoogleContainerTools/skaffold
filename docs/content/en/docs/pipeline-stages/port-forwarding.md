@@ -1,6 +1,6 @@
 ---
-title: "Port forwarding"
-linkTitle: "Port forwarding"
+title: "Port Forwarding"
+linkTitle: "Port Forwarding"
 weight: 50
 featureId: portforward
 ---

@@ -4,8 +4,6 @@ linkTitle: "Working With Skaffold"
 weight: 1
 ---
 
-{{< todo 3074>}} paragraph about the identified use cases for skaffold
-
 | Skaffold Workflow | |
 |----------|---|
 | [`skaffold init`]({{< relref "getting-started-with-your-project" >}}) | Getting started with your project|

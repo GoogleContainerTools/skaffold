@@ -51,7 +51,7 @@ Then, configure artifacts in your `skaffold.yaml` to build with `build.sh`:
 {{% readfile file="samples/builders/custom-buildpacks/skaffold.yaml" %}}
 
 List the file dependencies for each artifact; in the example above, Skaffold watches all files in the build context.
-For more information about listing dependencies for custom artifacts, see the documentation [here]({{<relref "docs/pipeline-stages/builders#getting-dependencies-from-a-command" >}}).
+For more information about listing dependencies for custom artifacts, see the documentation [here]({{<relref "docs/pipeline-stages/builders#dependencies-from-a-command" >}}).
 
 
 You can check custom builder is properly configured by running `skaffold build`.
