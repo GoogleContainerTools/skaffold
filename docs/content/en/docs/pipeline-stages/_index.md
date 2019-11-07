@@ -1,7 +1,7 @@
 ---
 title: "Skaffold Pipeline Stages"
 linkTitle: "Skaffold Pipeline Stages"
-weight: 4
+weight: 40
 ---
 
 Skaffold features a five-stage workflow:
