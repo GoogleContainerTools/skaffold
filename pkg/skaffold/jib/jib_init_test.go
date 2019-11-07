@@ -187,11 +187,9 @@ func TestCreateArtifact(t *testing.T) {
 			config:        Jib{BuilderName: "Jib Gradle Plugin", FilePath: filepath.Join("path", "to", "build.gradle"), Image: "image", Project: "project"},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
-				ImageName: "different-image",
-				Workspace: filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Project: "project", Flags: []string{"-Dimage=different-image"}, Type: string(JibGradle)},
-				},
+				ImageName:    "different-image",
+				Workspace:    filepath.Join("path", "to"),
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project"}},
 			},
 		},
 		{
@@ -199,11 +197,9 @@ func TestCreateArtifact(t *testing.T) {
 			config:        Jib{BuilderName: "Jib Gradle Plugin", FilePath: filepath.Join("path", "to", "build.gradle")},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
-				ImageName: "different-image",
-				Workspace: filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: string(JibGradle)},
-				},
+				ImageName:    "different-image",
+				Workspace:    filepath.Join("path", "to"),
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
 			},
 		},
 		{
@@ -213,7 +209,7 @@ func TestCreateArtifact(t *testing.T) {
 			expectedArtifact: latest.Artifact{
 				ImageName:    "different-image",
 				Workspace:    filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project", Flags: []string{"-Dimage=different-image"}, Type: string(JibMaven)}},
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project"}},
 			},
 		},
 		{
@@ -221,11 +217,9 @@ func TestCreateArtifact(t *testing.T) {
 			config:        Jib{BuilderName: "Jib Maven Plugin", FilePath: filepath.Join("path", "to", "pom.xml")},
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
-				ImageName: "different-image",
-				Workspace: filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: string(JibMaven)},
-				},
+				ImageName:    "different-image",
+				Workspace:    filepath.Join("path", "to"),
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
 			},
 		},
 		{
@@ -234,7 +228,7 @@ func TestCreateArtifact(t *testing.T) {
 			manifestImage: "different-image",
 			expectedArtifact: latest.Artifact{
 				ImageName:    "different-image",
-				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Flags: []string{"-Dimage=different-image"}, Type: string(JibGradle)}},
+				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
 			},
 		},
 	}
