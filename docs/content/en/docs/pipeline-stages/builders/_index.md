@@ -40,6 +40,8 @@ Skaffold supports building artifacts in following execution contexts:
 Local build execution is the default execution context.
 Skaffold will use the build tools locally installed on your machine to execute the build.
 
+**Configuration**
+
 To configure the local execution explicitly, add build type `local` to the build section of `skaffold.yaml`
 
 ```yaml
@@ -56,6 +58,8 @@ If you are deploying to [local cluster]({{<relref "/docs/environment/local-clust
 ## In Cluster Build
 Skaffold supports building in cluster via [Kaniko]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-in-cluster-with-kaniko" >}}) 
 or [Custom Build Script]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-in-cluster" >}}).
+
+**Configuration**
 
 To configure in-cluster Build, add build type `cluster` to the build section of `skaffold.yaml`. 
 
@@ -93,7 +97,15 @@ be used in the build process.
 **Configuration**
 
 To use Cloud Build, add build type `googleCloudBuild` to the `build`
-section of `skaffold.yaml`. The following options can optionally be configured:
+section of `skaffold.yaml`. 
+
+```yaml
+build:
+  googleCloudBuild:
+    ...
+```
+
+The following options can optionally be configured:
 
 {{< schema root="GoogleCloudBuild" >}}
 
