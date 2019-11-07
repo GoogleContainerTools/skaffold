@@ -10,9 +10,9 @@
   "build.buildpacks": {
     "build": "x",
     "area": "Build",
-    "feature": "native buildpacks support",
+    "feature": "Cloud Native Buildpacks support",
     "maturity": "alpha",
-    "description": "Skaffold natively support for buildpacks artifact and buildpacks builder "
+    "description": "Skaffold natively support for artifacts built with Cloud Native Buildpacks"
   },
   "build.custom": {
     "dev": "x",

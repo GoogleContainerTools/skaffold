@@ -407,6 +407,13 @@ Deploy pre-built artifacts
 ```
 
 
+Examples:
+  # Build the artifacts and collect the tags into a file
+  skaffold build --file-output=tags.json
+
+  # Deploy those tags
+  skaffold deploy --build-artifacts=tags.json
+
 Options:
   -a, --build-artifacts=: Filepath containing build output.
 E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build.out
