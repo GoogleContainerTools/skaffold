@@ -97,6 +97,6 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 func warnIfUpdateIsAvailable() {
 	latest, current, versionErr := update.GetLatestAndCurrentVersion()
 	if versionErr == nil && latest.GT(current) {
-		logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) at %s\n", latest, constants.LatestDownloadURL)
+		logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) at %s", latest, constants.LatestDownloadURL)
 	}
 }
