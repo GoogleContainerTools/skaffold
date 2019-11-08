@@ -26,7 +26,7 @@ will produce an output like this
 ![logging-output](/images/logging-output.png)
 
 
-For, every log line, skaffold will prefix the pod name and container name if they're not the same.
+For every log line, skaffold will prefix the pod name and container name if they're not the same.
 
 ![logging-output](/images/log-line-single.png)
 
