@@ -19,6 +19,7 @@ package docker
 import (
 	"context"
 	"io"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -83,10 +84,10 @@ func (l *localDaemon) runAndLog(ctx context.Context, out io.Writer, containerID 
 }
 
 // CopyToContainer copies files to a running container.
-func (l *localDaemon) CopyToContainer(ctx context.Context, container string, dest string, root string, paths []string) error {
+func (l *localDaemon) CopyToContainer(ctx context.Context, container string, dest string, root string, paths []string, uid, gid int, modTime time.Time) error {
 	r, w := io.Pipe()
 	go func() {
-		if err := util.CreateTar(w, root, paths); err != nil {
+		if err := util.CreateTarWithParents(w, root, paths, uid, gid, modTime); err != nil {
 			w.CloseWithError(err)
 		} else {
 			w.Close()
