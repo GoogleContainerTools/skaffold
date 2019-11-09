@@ -29,4 +29,4 @@ if [[ "${TRAVIS}" == "true" ]]; then
 fi
 
 golangci-lint run ${VERBOSE} -c ${DIR}/golangci.yml \
-    | awk '/out of memory/ || /Deadline exceeded/ {failed = 1}; {print}; END {exit failed}'
+    | awk '/out of memory/ || /Timeout exceeded/ {failed = 1}; {print}; END {exit failed}'
