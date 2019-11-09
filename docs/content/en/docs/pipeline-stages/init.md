@@ -51,7 +51,7 @@ skaffold init --XXenableJibInit
 In case you want to configure build artifacts on your own, use `--skip-build` flag.
 
 ## Deploy Config Initialization
-`skaffold init` currently supports only [`Kubeclt` deployer]({{<relref "/docs/pipeline-stages/deployers#deploying-with-kubectl" >}})
+`skaffold init` currently supports only [`kubectl` deployer]({{<relref "/docs/pipeline-stages/deployers#deploying-with-kubectl" >}})
 Skaffold will walk through all the `yaml` files in your project and find valid kubernetes manifest files.
 
 These files will be added to `deploy` config in `skaffold.yaml`.
