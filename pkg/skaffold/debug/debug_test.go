@@ -114,14 +114,14 @@ func (t testTransformer) RuntimeSupportImage() string {
 	return ""
 }
 
-func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
+func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *debugConfiguration {
 	port := portAlloc(9999)
 	container.Ports = append(container.Ports, v1.ContainerPort{Name: "test", ContainerPort: port})
 
 	testEnv := v1.EnvVar{Name: "KEY", Value: "value"}
 	container.Env = append(container.Env, testEnv)
 
-	return map[string]interface{}{"key": "value"}
+	return &debugConfiguration{Runtime: "test"}
 }
 
 func TestApplyDebuggingTransforms(t *testing.T) {
@@ -149,7 +149,7 @@ spec:
 kind: Pod
 metadata:
   annotations:
-    debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+    debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
   creationTimestamp: null
   name: pod
 spec:
@@ -200,7 +200,7 @@ spec:
   template:
     metadata:
       annotations:
-        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
       creationTimestamp: null
       labels:
         app: debug-app
@@ -252,7 +252,7 @@ spec:
   template:
     metadata:
       annotations:
-        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
       creationTimestamp: null
       labels:
         app: debug-app
@@ -307,7 +307,7 @@ spec:
   template:
     metadata:
       annotations:
-        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
       creationTimestamp: null
       labels:
         app: debug-app
@@ -359,7 +359,7 @@ spec:
   template:
     metadata:
       annotations:
-        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
       creationTimestamp: null
       labels:
         app: debug-app
@@ -414,7 +414,7 @@ spec:
   template:
     metadata:
       annotations:
-        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
       creationTimestamp: null
       labels:
         app: debug-app
@@ -464,7 +464,7 @@ spec:
   template:
     metadata:
       annotations:
-        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
       creationTimestamp: null
       labels:
         app: debug-app

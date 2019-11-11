@@ -70,7 +70,7 @@ func (t jdwpTransformer) RuntimeSupportImage() string {
 
 // Apply configures a container definition for JVM debugging.
 // Returns a simple map describing the debug configuration details.
-func (t jdwpTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
+func (t jdwpTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *debugConfiguration {
 	logrus.Infof("Configuring %q for JVM debugging", container.Name)
 	// try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
 	// todo: find existing containerPort "jdwp" and use port. But what if it conflicts with jdwp spec?
@@ -95,9 +95,9 @@ func (t jdwpTransformer) Apply(container *v1.Container, config imageConfiguratio
 	}
 	container.Ports = append(container.Ports, jdwpPort)
 
-	return map[string]interface{}{
-		"runtime": "jvm",
-		"jdwp":    port,
+	return &debugConfiguration{
+		Runtime: "jvm",
+		Ports:   map[string]int{"jdwp": int(port)},
 	}
 }
 

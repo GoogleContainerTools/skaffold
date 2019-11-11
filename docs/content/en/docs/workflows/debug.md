@@ -33,7 +33,7 @@ describing the debug configurations for the pod's containers (linebreaks for rea
 For example the following annotation indicates that the container named `web` is a Go application
 that is being debugged by a headless Delve session on port `56268`:
 ```
-debug.cloud.google.com/config={"web":{"dlv":56268,"runtime":"go"}}
+debug.cloud.google.com/config={"web":{"runtime":"go","ports":{"dlv":56268}}}
 ```
 
 Some language runtimes require additional support files to enable debugging.
