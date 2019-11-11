@@ -53,7 +53,7 @@ Acceptable resource types include: `Service`, `Pod` and Controller resource type
 | ------------- |-------------| -----|
 | resourceType     | `pod`, `service`, `deployment`, `replicaset`, `statefulset`, `replicationcontroller`, `daemonset`, `job`, `cronjob` | Yes | 
 | resourceName     | Name of the resource to forward.     | Yes | 
-| namespace  | The namespace of the resource to port forward.     | No. Defaults to `default` | 
+| namespace  | The namespace of the resource to port forward.     | No. Defaults to current namespace, or `default` if no current namespace is defined | 
 | port | Port is the resource port that will be forwarded. | Yes |
 | localPort | LocalPort is the local port to forward too. | No. Defaults to value set for `port`. |
 

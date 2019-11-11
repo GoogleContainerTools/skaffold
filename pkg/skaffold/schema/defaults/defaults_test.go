@@ -17,11 +17,13 @@ limitations under the License.
 package defaults
 
 import (
+	"errors"
 	"testing"
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -248,23 +250,93 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 }
 
 func TestSetDefaultPortForwardNamespace(t *testing.T) {
-	cfg := &latest.SkaffoldConfig{
-		Pipeline: latest.Pipeline{
-			Build: latest.BuildConfig{},
-			PortForward: []*latest.PortForwardResource{
-				{
-					Type:      constants.Service,
-					Namespace: "mynamespace",
-				}, {
-					Type: constants.Service,
+	tests := []struct {
+		description        string
+		currentConfig      api.Config
+		currentConfigErr   error
+		cfg                *latest.SkaffoldConfig
+		expectedNamespaces []string
+	}{
+		{
+			description: "defined namespace",
+			currentConfig: api.Config{
+				CurrentContext: "cluster1",
+				Contexts: map[string]*api.Context{
+					"cluster1": {Namespace: "ns"},
 				},
 			},
+			cfg: &latest.SkaffoldConfig{
+				Pipeline: latest.Pipeline{
+					Build: latest.BuildConfig{},
+					PortForward: []*latest.PortForwardResource{
+						{
+							Type:      constants.Service,
+							Namespace: "mynamespace",
+						}, {
+							Type: constants.Service,
+						},
+					},
+				},
+			},
+			expectedNamespaces: []string{"mynamespace", "ns"},
+		},
+		{
+			description: "empty namespace",
+			currentConfig: api.Config{
+				CurrentContext: "cluster1",
+				Contexts: map[string]*api.Context{
+					"cluster1": {Namespace: ""},
+				},
+			},
+			cfg: &latest.SkaffoldConfig{
+				Pipeline: latest.Pipeline{
+					Build: latest.BuildConfig{},
+					PortForward: []*latest.PortForwardResource{
+						{
+							Type:      constants.Service,
+							Namespace: "mynamespace",
+						}, {
+							Type: constants.Service,
+						},
+					},
+				},
+			},
+			expectedNamespaces: []string{"mynamespace", "default"},
+		},
+		{
+			description:      "error getting context",
+			currentConfig:    api.Config{},
+			currentConfigErr: errors.New("ome error"),
+			cfg: &latest.SkaffoldConfig{
+				Pipeline: latest.Pipeline{
+					Build: latest.BuildConfig{},
+					PortForward: []*latest.PortForwardResource{
+						{
+							Type:      constants.Service,
+							Namespace: "mynamespace",
+						}, {
+							Type: constants.Service,
+						},
+					},
+				},
+			},
+			expectedNamespaces: []string{"mynamespace", "default"},
 		},
 	}
-	err := Set(cfg)
-	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, "mynamespace", cfg.PortForward[0].Namespace)
-	testutil.CheckDeepEqual(t, constants.DefaultPortForwardNamespace, cfg.PortForward[1].Namespace)
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			kubectx.CurrentConfig = func() (api.Config, error) {
+				return test.currentConfig, test.currentConfigErr
+			}
+			err := Set(test.cfg)
+			t.CheckError(false, err)
+			t.CheckDeepEqual(len(test.expectedNamespaces), len(test.cfg.PortForward))
+			for i, pf := range test.cfg.PortForward {
+				t.CheckDeepEqual(test.expectedNamespaces[i], pf.Namespace)
+			}
+		})
+	}
 }
 
 func TestSetPortForwardLocalPort(t *testing.T) {
