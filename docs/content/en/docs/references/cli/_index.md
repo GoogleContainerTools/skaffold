@@ -129,6 +129,7 @@ Options:
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
+      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -n, --namespace='': Run deployments in the specified namespace
   -o, --output={{json .}}: Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput
   -p, --profile=[]: Activate profiles by name
@@ -157,6 +158,7 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
+* `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
@@ -326,6 +328,7 @@ Options:
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
+      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
@@ -357,6 +360,7 @@ Env vars:
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
+* `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
@@ -381,6 +385,7 @@ Options:
   -d, --default-repo='': Default repository value (overrides global config)
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
       --kube-context='': Deploy to this Kubernetes context
+      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -n, --namespace='': Run deployments in the specified namespace
   -p, --profile=[]: Activate profiles by name
 
@@ -397,6 +402,7 @@ Env vars:
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
+* `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 
@@ -424,6 +430,7 @@ E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
   -i, --images=: A list of pre-built images to deploy
       --kube-context='': Deploy to this Kubernetes context
+      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace='': Run deployments in the specified namespace
   -p, --profile=[]: Activate profiles by name
@@ -449,6 +456,7 @@ Env vars:
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_IMAGES` (same as `--images`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
+* `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
@@ -475,6 +483,7 @@ Options:
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
+      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
@@ -510,6 +519,7 @@ Env vars:
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
+* `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
@@ -673,6 +683,7 @@ Options:
       --force=false: Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)
       --insecure-registry=[]: Target registries for built images which are not secure
       --kube-context='': Deploy to this Kubernetes context
+      --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
@@ -705,6 +716,7 @@ Env vars:
 * `SKAFFOLD_FORCE` (same as `--force`)
 * `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
 * `SKAFFOLD_KUBE_CONTEXT` (same as `--kube-context`)
+* `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
