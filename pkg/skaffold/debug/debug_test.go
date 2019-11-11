@@ -17,6 +17,7 @@ limitations under the License.
 package debug
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -495,4 +496,23 @@ status:
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, result.String())
 		})
 	}
+}
+
+func TestWorkingDir(t *testing.T) {
+	defer func(c []containerTransformer) { containerTransforms = c }(containerTransforms)
+	containerTransforms = append(containerTransforms, testTransformer{})
+
+	pod := &v1.Pod{
+		TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+		ObjectMeta: metav1.ObjectMeta{Name: "podname"},
+		Spec:       v1.PodSpec{Containers: []v1.Container{{Name: "name1", Image: "image1"}}}}
+
+	retriever := func(image string) (imageConfiguration, error) {
+		return imageConfiguration{workingDir: "/a/dir"}, nil
+	}
+
+	result := transformManifest(pod, retriever)
+	testutil.CheckDeepEqual(t, true, result)
+	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
+	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"workingDir":"/a/dir"`))
 }

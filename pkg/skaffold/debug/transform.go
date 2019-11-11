@@ -78,12 +78,14 @@ type imageConfiguration struct {
 	env        map[string]string
 	entrypoint []string
 	arguments  []string
+	workingDir string
 }
 
 // debugConfiguration captures debugging information for a specific container
 type debugConfiguration struct {
-	Runtime string         `json:"runtime,omitempty"`
-	Ports   map[string]int `json:"ports,omitempty"`
+	Runtime    string         `json:"runtime,omitempty"`
+	Ports      map[string]int `json:"ports,omitempty"`
+	WorkingDir string         `json:"workingDir,omitempty"`
 }
 
 // containerTransformer transforms a container definition
@@ -180,6 +182,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		}
 		// requiredImage, if not empty, is the image ID providing the debugging support files
 		if configuration, requiredImage, err := transformContainer(container, imageConfig, portAlloc); err == nil {
+			configuration.WorkingDir = imageConfig.workingDir
 			configurations[container.Name] = *configuration
 			if len(requiredImage) > 0 {
 				logrus.Infof("%q requires debugging support image %q", container.Name, requiredImage)

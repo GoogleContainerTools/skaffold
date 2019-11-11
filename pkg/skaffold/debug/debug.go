@@ -121,6 +121,7 @@ func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact, i
 		entrypoint: config.Entrypoint,
 		arguments:  config.Cmd,
 		labels:     config.Labels,
+		workingDir: config.WorkingDir,
 	}, nil
 }
 
