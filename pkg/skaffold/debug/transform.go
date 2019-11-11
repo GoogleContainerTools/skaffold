@@ -72,8 +72,12 @@ type portAllocator func(int32) int32
 // configurationRetriever retrieves an container image configuration
 type configurationRetriever func(string) (imageConfiguration, error)
 
-// imageConfiguration captures information from a docker/oci image configuration
+// imageConfiguration captures information from a docker/oci image configuration.
+// It also includes a "name", usually containing the corresponding artifact `name` from `skaffold.yaml`.
 type imageConfiguration struct {
+	// name is the corresponding artifact's name'
+	name string
+
 	labels     map[string]string
 	env        map[string]string
 	entrypoint []string
@@ -83,9 +87,10 @@ type imageConfiguration struct {
 
 // debugConfiguration captures debugging information for a specific container
 type debugConfiguration struct {
-	Runtime    string         `json:"runtime,omitempty"`
-	Ports      map[string]int `json:"ports,omitempty"`
-	WorkingDir string         `json:"workingDir,omitempty"`
+	ArtifactName string         `json:"artifactName,omitempty"`
+	Runtime      string         `json:"runtime,omitempty"`
+	Ports        map[string]int `json:"ports,omitempty"`
+	WorkingDir   string         `json:"workingDir,omitempty"`
 }
 
 // containerTransformer transforms a container definition
@@ -182,6 +187,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		}
 		// requiredImage, if not empty, is the image ID providing the debugging support files
 		if configuration, requiredImage, err := transformContainer(container, imageConfig, portAlloc); err == nil {
+			configuration.ArtifactName = imageConfig.name
 			configuration.WorkingDir = imageConfig.workingDir
 			configurations[container.Name] = *configuration
 			if len(requiredImage) > 0 {

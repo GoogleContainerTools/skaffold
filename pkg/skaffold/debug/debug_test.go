@@ -516,3 +516,22 @@ func TestWorkingDir(t *testing.T) {
 	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
 	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"workingDir":"/a/dir"`))
 }
+
+func TestArtifactName(t *testing.T) {
+	defer func(c []containerTransformer) { containerTransforms = c }(containerTransforms)
+	containerTransforms = append(containerTransforms, testTransformer{})
+
+	pod := &v1.Pod{
+		TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+		ObjectMeta: metav1.ObjectMeta{Name: "podname"},
+		Spec:       v1.PodSpec{Containers: []v1.Container{{Name: "name1", Image: "image1"}}}}
+
+	retriever := func(image string) (imageConfiguration, error) {
+		return imageConfiguration{name: "gcr.io/random/image"}, nil
+	}
+
+	result := transformManifest(pod, retriever)
+	testutil.CheckDeepEqual(t, true, result)
+	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
+	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"artifactName":"gcr.io/random/image"`))
+}
