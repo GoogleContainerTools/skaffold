@@ -76,9 +76,7 @@ func (dk *defaultKeychain) Resolve(target Resource) (Authenticator, error) {
 	}
 	if logs.Enabled(logs.Debug) {
 		b, err := json.Marshal(cfg)
-		if err != nil {
-			logs.Debug.Printf("defaultKeychain.Resolve(%q) = %+v", key, cfg)
-		} else {
+		if err == nil {
 			logs.Debug.Printf("defaultKeychain.Resolve(%q) = %s", key, string(b))
 		}
 	}
