@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"regexp"
 	"strings"
@@ -93,6 +94,22 @@ func (t *T) CheckErrorContains(message string, err error) {
 		t.Errorf("expected message [%s] not found in error: %s", message, err.Error())
 		return
 	}
+}
+
+// SetStdin replaces os.Stdin with a given content.
+func (t *T) SetStdin(content []byte) {
+	origStdin := os.Stdin
+
+	tmpFile := t.TempFile("stdin", content)
+	file, err := os.Open(tmpFile)
+	if err != nil {
+		t.Error("unable to read temp file")
+		return
+	}
+
+	os.Stdin = file
+
+	t.teardownActions = append(t.teardownActions, func() { os.Stdin = origStdin })
 }
 
 func (t *T) TempFile(prefix string, content []byte) string {
