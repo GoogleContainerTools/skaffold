@@ -32,9 +32,10 @@ The following options can optionally be configured:
 
 **User defined environment variables**
 
-`env` makes it possible to pass arbitrary environment variables to the buildpacks.
-This is in general used to adjust the detection and the build phases. Many buildpacks
-use environment variables to select specific versions of language runtimes.
+`env` makes it possible to configure specific environment variables for buildpacks.
+Many buildpacks use environment variables to adjust their detection and the build phases,
+such as selecting specific versions of language runtimes.
+Note that user's current environment is not passed through to buildpacks.
 
 **Example**
 

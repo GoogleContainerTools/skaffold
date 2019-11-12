@@ -7,3 +7,4 @@ build:
       builder: "heroku/buildpacks"
       env:
       - GOVERSION=1.13.1
+      - GOPROXY={{.GOPROXY}}
