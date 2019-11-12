@@ -28,3 +28,4 @@ profiles:
     tagPolicy:
       envTemplate:
         template: "{{.IMAGE_NAME}}:tag"
+- name: args

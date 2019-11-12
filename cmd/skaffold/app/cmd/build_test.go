@@ -48,6 +48,40 @@ func (r *mockRunner) Stop() error {
 	return nil
 }
 
+func TestTagFlag(t *testing.T) {
+	mockCreateRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
+	}
+
+	tests := []struct {
+		description    string
+		tag            string
+		template       string
+		expectedOutput []byte
+	}{
+		{
+			description:    "override tag with argument",
+			tag:            "test",
+			expectedOutput: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&quietFlag, true)
+			t.Override(&createRunner, mockCreateRunner)
+			if test.template != "" {
+				t.Override(&buildFormatFlag, flags.NewTemplateFlag(test.template, flags.BuildOutput{}))
+			}
+
+			var output bytes.Buffer
+
+			err := doBuild(context.Background(), &output)
+
+			t.CheckErrorAndDeepEqual(false, err, string(test.expectedOutput), output.String())
+		})
+	}
+}
+
 func TestQuietFlag(t *testing.T) {
 	mockCreateRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
 		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
