@@ -124,6 +124,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	kubectlCLI := kubectl.NewFromRunContext(r.runCtx)
 	r.createForwarder(out, kubectlCLI)
 	defer r.forwarderManager.Stop()
+	if r.runCtx.Opts.DebugMode {
+		r.createDebuggableContainerManager(out, kubectlCLI)
+	}
 
 	// Watch artifacts
 	start := time.Now()
@@ -203,7 +206,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err := r.forwarderManager.Start(ctx); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
 	}
-
+	if err := r.debugContainerManager.Start(ctx); err != nil {
+		logrus.Warnln("Error starting debug container notification:", err)
+	}
+	
 	// Start printing the logs after deploy is finished
 	if r.runCtx.Opts.TailDev {
 		if err := r.logger.Start(ctx); err != nil {

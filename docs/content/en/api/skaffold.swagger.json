@@ -190,6 +190,42 @@
             "type": "string"
           },
           {
+            "name": "event.DebuggingContainerEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.DebuggingContainerEvent.podName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.DebuggingContainerEvent.containerName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.DebuggingContainerEvent.namespace",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.DebuggingContainerEvent.runtime",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.DebuggingContainerEvent.configuration",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
             "name": "entry",
             "in": "query",
             "required": false,
@@ -319,6 +355,30 @@
       },
       "description": "`BuildState` maps Skaffold artifacts to their current build states"
     },
+    "protoDebuggingContainerEvent": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "containerName": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "string"
+        },
+        "configuration": {
+          "type": "string"
+        }
+      },
+      "description": "DebuggingContainerEvent is raised when a debugging container is started or terminated"
+    },
     "protoDeployEvent": {
       "type": "object",
       "properties": {
@@ -363,9 +423,12 @@
         },
         "fileSyncEvent": {
           "$ref": "#/definitions/protoFileSyncEvent"
+        },
+        "DebuggingContainerEvent": {
+          "$ref": "#/definitions/protoDebuggingContainerEvent"
         }
       },
-      "description": "`Event` describes an event in the Skaffold process.\nIt is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent or FileSyncEvent."
+      "description": "`Event` describes an event in the Skaffold process.\nIt is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent."
     },
     "protoFileSyncEvent": {
       "type": "object",
@@ -509,6 +572,12 @@
         },
         "fileSyncState": {
           "$ref": "#/definitions/protoFileSyncState"
+        },
+        "debuggingContainers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protoDebuggingContainerEvent"
+          }
         }
       },
       "description": "`State` represents the current state of the Skaffold components"

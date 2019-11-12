@@ -36,6 +36,7 @@ const (
 	Info       = "Information"
 	Started    = "Started"
 	Succeeded  = "Succeeded"
+	Terminated = "Terminated"
 )
 
 var handler = &eventHandler{}
@@ -276,6 +277,36 @@ func PortForwarded(localPort, remotePort int32, podName, containerName, namespac
 	})
 }
 
+// DebugContainerStarted notifies that a debuggable container has appeared.
+func DebugContainerStarted(podName, containerName, namespace, runtime, config string) {
+	go handler.handle(&proto.Event{
+		EventType: &proto.Event_DebuggingContainerEvent{
+			DebuggingContainerEvent: &proto.DebuggingContainerEvent{
+				Status:        Started,
+				PodName:       podName,
+				ContainerName: containerName,
+				Namespace:     namespace,
+				Runtime:       runtime,
+				Configuration: config,
+			},
+		},
+	})
+}
+
+// DebugContainerTerminated notifies that a debuggable container has disappeared.
+func DebugContainerTerminated(podName, containerName, namespace string) {
+	go handler.handle(&proto.Event{
+		EventType: &proto.Event_DebuggingContainerEvent{
+			DebuggingContainerEvent: &proto.DebuggingContainerEvent{
+				Status:        Terminated,
+				PodName:       podName,
+				ContainerName: containerName,
+				Namespace:     namespace,
+			},
+		},
+	})
+}
+
 func (ev *eventHandler) setState(state proto.State) {
 	ev.stateLock.Lock()
 	ev.state = state
@@ -425,7 +456,29 @@ func (ev *eventHandler) handle(event *proto.Event) {
 			logEntry.Entry = fmt.Sprintf("File sync failed for %d files for %s", fseFileCount, fseImage)
 		default:
 		}
-
+	case *proto.Event_DebuggingContainerEvent:
+		de := e.DebuggingContainerEvent
+		ev.stateLock.Lock()
+		switch de.Status {
+		case Started:
+			ev.state.DebuggingContainers = append(ev.state.DebuggingContainers, de)
+		case Terminated:
+			n := 0
+			for _, x := range ev.state.DebuggingContainers {
+				if x.Namespace != de.Namespace || x.PodName != de.PodName || x.ContainerName != de.ContainerName {
+					ev.state.DebuggingContainers[n] = x
+					n++
+				}
+			}
+			ev.state.DebuggingContainers = ev.state.DebuggingContainers[:n]
+		}
+		ev.stateLock.Unlock()
+		switch de.Status {
+		case Started:
+			logEntry.Entry = fmt.Sprintf("Debuggable container started pod/%s:%s (%s)", de.PodName, de.ContainerName, de.Namespace)
+		case Terminated:
+			logEntry.Entry = fmt.Sprintf("Debuggable container terminated pod/%s:%s (%s)", de.PodName, de.ContainerName, de.Namespace)
+		}
 	default:
 		return
 	}
@@ -449,5 +502,6 @@ func ResetStateOnDeploy() {
 	newState.DeployState.Status = NotStarted
 	newState.StatusCheckState.Status = NotStarted
 	newState.ForwardedPorts = map[int32]*proto.PortEvent{}
+	newState.DebuggingContainers = make([]*proto.DebuggingContainerEvent,5)
 	handler.setState(newState)
 }

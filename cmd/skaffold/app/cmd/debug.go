@@ -41,6 +41,7 @@ func doDebug(ctx context.Context, out io.Writer) error {
 	if len(opts.TargetImages) == 0 {
 		opts.TargetImages = []string{"none"}
 	}
+	opts.DebugMode = true
 	opts.PortForward.ForwardPods = true
 	deploy.AddManifestTransform(debugging.ApplyDebuggingTransforms)
 
