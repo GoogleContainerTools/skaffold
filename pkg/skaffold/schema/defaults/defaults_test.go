@@ -360,3 +360,23 @@ func TestSetPortForwardLocalPort(t *testing.T) {
 	testutil.CheckDeepEqual(t, 8080, cfg.PortForward[0].LocalPort)
 	testutil.CheckDeepEqual(t, 9000, cfg.PortForward[1].LocalPort)
 }
+
+func TestSetDefaultPortForwardAddress(t *testing.T) {
+	cfg := &latest.SkaffoldConfig{
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{},
+			PortForward: []*latest.PortForwardResource{
+				{
+					Type:    constants.Service,
+					Address: "0.0.0.0",
+				}, {
+					Type: constants.Service,
+				},
+			},
+		},
+	}
+	err := Set(cfg)
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, "0.0.0.0", cfg.PortForward[0].Address)
+	testutil.CheckDeepEqual(t, constants.DefaultPortForwardAddress, cfg.PortForward[1].Address)
+}

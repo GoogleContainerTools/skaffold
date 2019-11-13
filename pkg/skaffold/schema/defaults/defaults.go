@@ -79,6 +79,7 @@ func Set(c *latest.SkaffoldConfig) error {
 	for _, pf := range c.PortForward {
 		setDefaultPortForwardNamespace(pf)
 		setDefaultLocalPort(pf)
+		setDefaultAddress(pf)
 	}
 
 	return nil
@@ -303,5 +304,11 @@ func setDefaultPortForwardNamespace(pf *latest.PortForwardResource) {
 			return
 		}
 		pf.Namespace = ns
+	}
+}
+
+func setDefaultAddress(pf *latest.PortForwardResource) {
+	if pf.Address == "" {
+		pf.Address = constants.DefaultPortForwardAddress
 	}
 }

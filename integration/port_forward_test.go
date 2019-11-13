@@ -104,8 +104,8 @@ func TestPortForwardDeletePod(t *testing.T) {
 		}
 	}()
 
-	localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)
-	assertResponseFromPort(t, localPort, constants.LeeroyAppResponse)
+	address, localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)
+	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
 
 	// now, delete all pods in this namespace.
 	logrus.Infof("Deleting all pods in namespace %s", ns.Name)
@@ -120,7 +120,7 @@ func TestPortForwardDeletePod(t *testing.T) {
 		t.Fatalf("error deleting all pods: %v \n %s", err, string(output))
 	}
 	// port forwarding should come up again on the same port
-	assertResponseFromPort(t, localPort, constants.LeeroyAppResponse)
+	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
 }
 
 func getKubectlCLI(t *testing.T, ns string) *kubectl.CLI {
