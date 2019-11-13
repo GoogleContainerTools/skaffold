@@ -85,14 +85,6 @@ type imageConfiguration struct {
 	workingDir string
 }
 
-// debugConfiguration captures debugging information for a specific container
-type debugConfiguration struct {
-	ArtifactName string         `json:"artifactName,omitempty"`
-	Runtime      string         `json:"runtime,omitempty"`
-	Ports        map[string]int `json:"ports,omitempty"`
-	WorkingDir   string         `json:"workingDir,omitempty"`
-}
-
 // containerTransformer transforms a container definition
 type containerTransformer interface {
 	// IsApplicable determines if this container is suitable to be transformed.
@@ -102,7 +94,7 @@ type containerTransformer interface {
 	RuntimeSupportImage() string
 
 	// Apply configures a container definition for debugging, returning a debug configuration details or `nil` if it could not be done
-	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *debugConfiguration
+	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *DebugConfiguration
 }
 
 // debuggingSupportVolume is the name of the volume used to hold language runtime debugging support files
@@ -173,7 +165,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		return allocatePort(podSpec, desiredPort)
 	}
 	// map of containers -> debugging configuration maps; k8s ensures that a pod's containers are uniquely named
-	configurations := make(map[string]debugConfiguration)
+	configurations := make(map[string]DebugConfiguration)
 	// the container images that require debugging support files
 	var containersRequiringSupport []*v1.Container
 	// the set of image IDs required to provide debugging support files
@@ -273,7 +265,7 @@ func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
 // transformContainer rewrites the container definition to enable debugging.
 // Returns a debugging configuration description with associated language runtime support
 // container image, or an error if the rewrite was unsuccessful.
-func transformContainer(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (*debugConfiguration, string, error) {
+func transformContainer(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (*DebugConfiguration, string, error) {
 	// update image configuration values with those set in the k8s manifest
 	for _, envVar := range container.Env {
 		// FIXME handle ValueFrom?
@@ -298,7 +290,7 @@ func transformContainer(container *v1.Container, config imageConfiguration, port
 	return nil, "", errors.Errorf("unable to determine runtime for %q", container.Name)
 }
 
-func encodeConfigurations(configurations map[string]debugConfiguration) string {
+func encodeConfigurations(configurations map[string]DebugConfiguration) string {
 	bytes, err := json.Marshal(configurations)
 	if err != nil {
 		return ""

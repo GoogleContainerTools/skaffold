@@ -283,7 +283,7 @@ func TestFileSyncSucceeded(t *testing.T) {
 	wait(t, func() bool { return handler.getState().FileSyncState.Status == Succeeded })
 }
 
-func TestDebugContainer(t *testing.T) {
+func TestDebuggingContainer(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
@@ -300,9 +300,9 @@ func TestDebugContainer(t *testing.T) {
 	}
 	notFound := func() bool { return !found() }
 	wait(t, notFound)
-	DebugContainerStarted("pod", "container", "ns", "runtime", "{\"container\":{}}")
+	DebugContainerStarted("pod", "container", "ns", "artifact", "runtime", "/", nil)
 	wait(t, found)
-	DebugContainerTerminated("pod", "container", "ns")
+	DebugContainerTerminated("pod", "container", "ns", "artifact", "runtime", "/", nil)
 	wait(t, notFound)
 }
 

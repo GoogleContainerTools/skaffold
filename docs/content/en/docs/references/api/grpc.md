@@ -105,12 +105,30 @@ DebuggingContainerEvent is raised when a debugging container is started or termi
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| status | [string](#string) |  |  |
-| podName | [string](#string) |  |  |
-| containerName | [string](#string) |  |  |
-| namespace | [string](#string) |  |  |
-| runtime | [string](#string) |  |  |
-| configuration | [string](#string) |  | JSON object from `debug.cloud.google.com/config` annotation |
+| status | [string](#string) |  | the container status oneof: Started, Terminated |
+| podName | [string](#string) |  | pod name with the debugging container |
+| containerName | [string](#string) |  | the name of the container configured for debugging |
+| namespace | [string](#string) |  | the namespace of the debugging container |
+| artifactName | [string](#string) |  | the name of the corresponding artifact in the skaffold.yaml |
+| runtime | [string](#string) |  | the detected language runtime |
+| workingDir | [string](#string) |  | the working directory in the container image |
+| ports | [DebuggingContainerEvent.PortsEntry](#proto.DebuggingContainerEvent.PortsEntry) | repeated | the exposed debugging-related ports |
+
+
+
+
+
+
+
+<a name="proto.DebuggingContainerEvent.PortsEntry"></a>
+#### DebuggingContainerEvent.PortsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [uint32](#uint32) |  |  |
 
 
 

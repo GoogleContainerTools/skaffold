@@ -214,13 +214,19 @@
             "type": "string"
           },
           {
+            "name": "event.debuggingContainerEvent.artifactName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
             "name": "event.debuggingContainerEvent.runtime",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "event.debuggingContainerEvent.configuration",
+            "name": "event.debuggingContainerEvent.workingDir",
             "in": "query",
             "required": false,
             "type": "string"
@@ -370,11 +376,21 @@
         "namespace": {
           "type": "string"
         },
+        "artifactName": {
+          "type": "string"
+        },
         "runtime": {
           "type": "string"
         },
-        "configuration": {
+        "workingDir": {
           "type": "string"
+        },
+        "ports": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "format": "int64"
+          }
         }
       },
       "description": "DebuggingContainerEvent is raised when a debugging container is started or terminated"

@@ -48,6 +48,14 @@ var (
 	}
 )
 
+// DebugConfiguration captures debugging information for a specific container
+type DebugConfiguration struct {
+	ArtifactName string          `json:"artifactName,omitempty"`
+	Runtime      string          `json:"runtime,omitempty"`
+	WorkingDir   string          `json:"workingDir,omitempty"`
+	Ports        map[string]uint32 `json:"ports,omitempty"`
+}
+
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
 func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool) (kubectl.ManifestList, error) {
 	ctx, cancel := context.WithCancel(context.Background())

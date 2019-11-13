@@ -28,6 +28,5 @@ func (r *SkaffoldRunner) createDebuggableContainerManager(out io.Writer, kubectl
 		out,
 		kubectlCLI,
 		r.podSelector,
-		r.runCtx.Namespaces,
-		r.defaultLabeller.K8sManagedByLabelKeyValueString())
+		r.runCtx.Namespaces)
 }

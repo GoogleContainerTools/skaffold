@@ -79,7 +79,7 @@ func (t dlvTransformer) RuntimeSupportImage() string {
 
 // Apply configures a container definition for Go with Delve.
 // Returns a simple map describing the debug configuration details.
-func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *debugConfiguration {
+func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *DebugConfiguration {
 	logrus.Infof("Configuring %q for Go/Delve debugging", container.Name)
 
 	// try to find existing `dlv` command
@@ -108,9 +108,9 @@ func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration
 	}
 	container.Ports = append(container.Ports, dlvPort)
 
-	return &debugConfiguration{
+	return &DebugConfiguration{
 		Runtime: "go",
-		Ports:   map[string]int{"dlv": int(spec.port)},
+		Ports:   map[string]uint32{"dlv": uint32(spec.port)},
 	}
 }
 

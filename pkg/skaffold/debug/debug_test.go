@@ -115,14 +115,14 @@ func (t testTransformer) RuntimeSupportImage() string {
 	return ""
 }
 
-func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *debugConfiguration {
+func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *DebugConfiguration {
 	port := portAlloc(9999)
 	container.Ports = append(container.Ports, v1.ContainerPort{Name: "test", ContainerPort: port})
 
 	testEnv := v1.EnvVar{Name: "KEY", Value: "value"}
 	container.Env = append(container.Env, testEnv)
 
-	return &debugConfiguration{Runtime: "test"}
+	return &DebugConfiguration{Runtime: "test"}
 }
 
 func TestApplyDebuggingTransforms(t *testing.T) {

@@ -23,6 +23,7 @@ import (
 	"encoding/json"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -43,12 +44,11 @@ type DebuggableContainerManager struct {
 	cli         *kubectl.CLI
 	podSelector kubernetes.PodSelector
 	namespaces  []string
-	label       string
 	active      map[string]string // set of containers that have been notified
 }
 
-func NewDebuggableContainerManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string, label string) *DebuggableContainerManager {
-	return &DebuggableContainerManager{output: out, cli: cli, podSelector: podSelector, namespaces: namespaces, label: label, active: map[string]string{}}
+func NewDebuggableContainerManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string) *DebuggableContainerManager {
+	return &DebuggableContainerManager{output: out, cli: cli, podSelector: podSelector, namespaces: namespaces, active: map[string]string{}}
 }
 
 func (d *DebuggableContainerManager) Start(ctx context.Context) error {
@@ -105,7 +105,7 @@ func (d *DebuggableContainerManager) checkPod(ctx context.Context, pod *v1.Pod) 
 	if !found {
 		return
 	}
-	var configurations map[string]map[string]interface{}
+	var configurations map[string]debug.DebugConfiguration
 	if err := json.Unmarshal([]byte(debugConfigString), &configurations); err != nil {
 		logrus.Warnf("Unable to parse debug-config for pod %s/%s: '%s'", pod.Namespace, pod.Name, debugConfigString)
 		return
@@ -119,19 +119,24 @@ func (d *DebuggableContainerManager) checkPod(ctx context.Context, pod *v1.Pod) 
 			switch {
 			case c.State.Running != nil && !seen:
 				d.active[key] = key
-				color.Yellow.Fprintf(d.output, "Debuggable container: %s runtime=%s\n", key, config["runtime"].(string))
-				configString, _ := json.Marshal(config)
+				color.Yellow.Fprintf(d.output, "Debuggable container: %s runtime=%s\n", key, config.Runtime)
 				event.DebugContainerStarted(
 					pod.Name,
 					c.Name,
 					pod.Namespace,
-					config["runtime"].(string),
-					string(configString))
+					config.ArtifactName,
+					config.Runtime,
+					config.WorkingDir,
+					config.Ports)
 					
 			case c.State.Terminated != nil && seen:
 				delete(d.active, key)
 				color.Yellow.Fprintf(d.output, "Debuggable container %s terminated\n", key)
-				event.DebugContainerTerminated(pod.Name, c.Name, pod.Namespace)
+				event.DebugContainerTerminated(pod.Name, c.Name, pod.Namespace,
+					config.ArtifactName,
+					config.Runtime,
+					config.WorkingDir,
+					config.Ports)
 			}
 		}
 	}

@@ -140,12 +140,15 @@ message FileSyncEvent {
 
 // DebuggingContainerEvent is raised when a debugging container is started or terminated
 message DebuggingContainerEvent {
-  string status = 1;
-  string podName = 2;
-  string containerName = 3;
-  string namespace = 4;
-  string runtime = 5;
-  string configuration = 6; // JSON object from `debug.cloud.google.com/config` annotation
+  string status = 1; // the container status oneof: Started, Terminated
+  string podName = 2; // the pod name with the debugging container
+  string containerName = 3; // the name of the container configured for debugging
+  string namespace = 4; // the namespace of the debugging container
+
+  string artifactName = 5; // the artifact name in skaffold.yaml of the debugging container
+  string runtime = 6; // the detected language runtime
+  string workingDir = 7; // the working directory in the container image
+  map<string,uint32> ports = 8; // the exposed debugging-related ports
 }
 
 // LogEntry describes an event and a string description of the event.

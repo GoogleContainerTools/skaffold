@@ -74,7 +74,7 @@ func (t nodeTransformer) RuntimeSupportImage() string {
 
 // Apply configures a container definition for NodeJS Chrome V8 Inspector.
 // Returns a simple map describing the debug configuration details.
-func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *debugConfiguration {
+func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *DebugConfiguration {
 	logrus.Infof("Configuring %q for node.js debugging", container.Name)
 
 	// try to find existing `--inspect` command
@@ -108,9 +108,9 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 	}
 	container.Ports = append(container.Ports, inspectPort)
 
-	return &debugConfiguration{
+	return &DebugConfiguration{
 		Runtime: "nodejs",
-		Ports:   map[string]int{"devtools": int(spec.port)},
+		Ports:   map[string]uint32{"devtools": uint32(spec.port)},
 	}
 }
 

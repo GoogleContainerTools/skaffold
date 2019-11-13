@@ -278,7 +278,7 @@ func PortForwarded(localPort, remotePort int32, podName, containerName, namespac
 }
 
 // DebugContainerStarted notifies that a debuggable container has appeared.
-func DebugContainerStarted(podName, containerName, namespace, runtime, config string) {
+func DebugContainerStarted(podName, containerName, namespace, artifactName, runtime, workingDir string, ports map[string]uint32) {
 	go handler.handle(&proto.Event{
 		EventType: &proto.Event_DebuggingContainerEvent{
 			DebuggingContainerEvent: &proto.DebuggingContainerEvent{
@@ -286,15 +286,17 @@ func DebugContainerStarted(podName, containerName, namespace, runtime, config st
 				PodName:       podName,
 				ContainerName: containerName,
 				Namespace:     namespace,
+				ArtifactName:  artifactName,
 				Runtime:       runtime,
-				Configuration: config,
+				WorkingDir:    workingDir,
+				Ports:         ports,
 			},
 		},
 	})
 }
 
 // DebugContainerTerminated notifies that a debuggable container has disappeared.
-func DebugContainerTerminated(podName, containerName, namespace string) {
+func DebugContainerTerminated(podName, containerName, namespace, artifactName, runtime, workingDir string, ports map[string]uint32) {
 	go handler.handle(&proto.Event{
 		EventType: &proto.Event_DebuggingContainerEvent{
 			DebuggingContainerEvent: &proto.DebuggingContainerEvent{
@@ -302,6 +304,10 @@ func DebugContainerTerminated(podName, containerName, namespace string) {
 				PodName:       podName,
 				ContainerName: containerName,
 				Namespace:     namespace,
+				ArtifactName:  artifactName,
+				Runtime:       runtime,
+				WorkingDir:    workingDir,
+				Ports:         ports,
 			},
 		},
 	})
@@ -502,6 +508,6 @@ func ResetStateOnDeploy() {
 	newState.DeployState.Status = NotStarted
 	newState.StatusCheckState.Status = NotStarted
 	newState.ForwardedPorts = map[int32]*proto.PortEvent{}
-	newState.DebuggingContainers = make([]*proto.DebuggingContainerEvent,5)
+	newState.DebuggingContainers = nil
 	handler.setState(newState)
 }
