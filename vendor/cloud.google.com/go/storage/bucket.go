@@ -232,9 +232,17 @@ type BucketAttrs struct {
 	// ACL is the list of access control rules on the bucket.
 	ACL []ACLRule
 
-	// BucketPolicyOnly configures access checks to use only bucket-level IAM
-	// policies.
+	// BucketPolicyOnly is an alias for UniformBucketLevelAccess. Use of
+	// UniformBucketLevelAccess is recommended above the use of this field.
+	// Setting BucketPolicyOnly.Enabled OR UniformBucketLevelAccess.Enabled to
+	// true, will enable UniformBucketLevelAccess.
 	BucketPolicyOnly BucketPolicyOnly
+
+	// UniformBucketLevelAccess configures access checks to use only bucket-level IAM
+	// policies and ignore any ACL rules for the bucket.
+	// See https://cloud.google.com/storage/docs/uniform-bucket-level-access
+	// for more information.
+	UniformBucketLevelAccess UniformBucketLevelAccess
 
 	// DefaultObjectACL is the list of access controls to
 	// apply to new objects when no object ACL is provided.
@@ -321,9 +329,20 @@ type BucketAttrs struct {
 	LocationType string
 }
 
-// BucketPolicyOnly configures access checks to use only bucket-level IAM
-// policies.
+// BucketPolicyOnly is an alias for UniformBucketLevelAccess.
+// Use of UniformBucketLevelAccess is preferred above BucketPolicyOnly.
 type BucketPolicyOnly struct {
+	// Enabled specifies whether access checks use only bucket-level IAM
+	// policies. Enabled may be disabled until the locked time.
+	Enabled bool
+	// LockedTime specifies the deadline for changing Enabled from true to
+	// false.
+	LockedTime time.Time
+}
+
+// UniformBucketLevelAccess configures access checks to use only bucket-level IAM
+// policies.
+type UniformBucketLevelAccess struct {
 	// Enabled specifies whether access checks use only bucket-level IAM
 	// policies. Enabled may be disabled until the locked time.
 	Enabled bool
@@ -488,26 +507,27 @@ func newBucket(b *raw.Bucket) (*BucketAttrs, error) {
 		return nil, err
 	}
 	return &BucketAttrs{
-		Name:                  b.Name,
-		Location:              b.Location,
-		MetaGeneration:        b.Metageneration,
-		DefaultEventBasedHold: b.DefaultEventBasedHold,
-		StorageClass:          b.StorageClass,
-		Created:               convertTime(b.TimeCreated),
-		VersioningEnabled:     b.Versioning != nil && b.Versioning.Enabled,
-		ACL:                   toBucketACLRules(b.Acl),
-		DefaultObjectACL:      toObjectACLRules(b.DefaultObjectAcl),
-		Labels:                b.Labels,
-		RequesterPays:         b.Billing != nil && b.Billing.RequesterPays,
-		Lifecycle:             toLifecycle(b.Lifecycle),
-		RetentionPolicy:       rp,
-		CORS:                  toCORS(b.Cors),
-		Encryption:            toBucketEncryption(b.Encryption),
-		Logging:               toBucketLogging(b.Logging),
-		Website:               toBucketWebsite(b.Website),
-		BucketPolicyOnly:      toBucketPolicyOnly(b.IamConfiguration),
-		Etag:                  b.Etag,
-		LocationType:          b.LocationType,
+		Name:                     b.Name,
+		Location:                 b.Location,
+		MetaGeneration:           b.Metageneration,
+		DefaultEventBasedHold:    b.DefaultEventBasedHold,
+		StorageClass:             b.StorageClass,
+		Created:                  convertTime(b.TimeCreated),
+		VersioningEnabled:        b.Versioning != nil && b.Versioning.Enabled,
+		ACL:                      toBucketACLRules(b.Acl),
+		DefaultObjectACL:         toObjectACLRules(b.DefaultObjectAcl),
+		Labels:                   b.Labels,
+		RequesterPays:            b.Billing != nil && b.Billing.RequesterPays,
+		Lifecycle:                toLifecycle(b.Lifecycle),
+		RetentionPolicy:          rp,
+		CORS:                     toCORS(b.Cors),
+		Encryption:               toBucketEncryption(b.Encryption),
+		Logging:                  toBucketLogging(b.Logging),
+		Website:                  toBucketWebsite(b.Website),
+		BucketPolicyOnly:         toBucketPolicyOnly(b.IamConfiguration),
+		UniformBucketLevelAccess: toUniformBucketLevelAccess(b.IamConfiguration),
+		Etag:                     b.Etag,
+		LocationType:             b.LocationType,
 	}, nil
 }
 
@@ -533,9 +553,9 @@ func (b *BucketAttrs) toRawBucket() *raw.Bucket {
 		bb = &raw.BucketBilling{RequesterPays: true}
 	}
 	var bktIAM *raw.BucketIamConfiguration
-	if b.BucketPolicyOnly.Enabled {
+	if b.UniformBucketLevelAccess.Enabled || b.BucketPolicyOnly.Enabled {
 		bktIAM = &raw.BucketIamConfiguration{
-			BucketPolicyOnly: &raw.BucketIamConfigurationBucketPolicyOnly{
+			UniformBucketLevelAccess: &raw.BucketIamConfigurationUniformBucketLevelAccess{
 				Enabled: true,
 			},
 		}
@@ -602,9 +622,19 @@ type BucketAttrsToUpdate struct {
 	// newly created objects in this bucket.
 	DefaultEventBasedHold optional.Bool
 
-	// BucketPolicyOnly configures access checks to use only bucket-level IAM
-	// policies.
+	// BucketPolicyOnly is an alias for UniformBucketLevelAccess. Use of
+	// UniformBucketLevelAccess is recommended above the use of this field.
+	// Setting BucketPolicyOnly.Enabled OR UniformBucketLevelAccess.Enabled to
+	// true, will enable UniformBucketLevelAccess. If both BucketPolicyOnly and
+	// UniformBucketLevelAccess are set, the value of UniformBucketLevelAccess
+	// will take precedence.
 	BucketPolicyOnly *BucketPolicyOnly
+
+	// UniformBucketLevelAccess configures access checks to use only bucket-level IAM
+	// policies and ignore any ACL rules for the bucket.
+	// See https://cloud.google.com/storage/docs/uniform-bucket-level-access
+	// for more information.
+	UniformBucketLevelAccess *UniformBucketLevelAccess
 
 	// If set, updates the retention policy of the bucket. Using
 	// RetentionPolicy.RetentionPeriod = 0 will delete the existing policy.
@@ -694,8 +724,16 @@ func (ua *BucketAttrsToUpdate) toRawBucket() *raw.Bucket {
 	}
 	if ua.BucketPolicyOnly != nil {
 		rb.IamConfiguration = &raw.BucketIamConfiguration{
-			BucketPolicyOnly: &raw.BucketIamConfigurationBucketPolicyOnly{
+			UniformBucketLevelAccess: &raw.BucketIamConfigurationUniformBucketLevelAccess{
 				Enabled:         ua.BucketPolicyOnly.Enabled,
+				ForceSendFields: []string{"Enabled"},
+			},
+		}
+	}
+	if ua.UniformBucketLevelAccess != nil {
+		rb.IamConfiguration = &raw.BucketIamConfiguration{
+			UniformBucketLevelAccess: &raw.BucketIamConfigurationUniformBucketLevelAccess{
+				Enabled:         ua.UniformBucketLevelAccess.Enabled,
 				ForceSendFields: []string{"Enabled"},
 			},
 		}
@@ -1035,6 +1073,22 @@ func toBucketPolicyOnly(b *raw.BucketIamConfiguration) BucketPolicyOnly {
 	}
 }
 
+func toUniformBucketLevelAccess(b *raw.BucketIamConfiguration) UniformBucketLevelAccess {
+	if b == nil || b.UniformBucketLevelAccess == nil || !b.UniformBucketLevelAccess.Enabled {
+		return UniformBucketLevelAccess{}
+	}
+	lt, err := time.Parse(time.RFC3339, b.UniformBucketLevelAccess.LockedTime)
+	if err != nil {
+		return UniformBucketLevelAccess{
+			Enabled: true,
+		}
+	}
+	return UniformBucketLevelAccess{
+		Enabled:    true,
+		LockedTime: lt,
+	}
+}
+
 // Objects returns an iterator over the objects in the bucket that match the Query q.
 // If q is nil, no filtering is done.
 //
@@ -1046,13 +1100,8 @@ func (b *BucketHandle) Objects(ctx context.Context, q *Query) *ObjectIterator {
 	}
 	it.pageInfo, it.nextFunc = iterator.NewPageInfo(
 		it.fetch,
-		func() int { return len(it.items) - it.index },
-		func() interface{} {
-			b := it.items
-			it.items = nil
-			it.index = 0
-			return b
-		})
+		func() int { return len(it.items) },
+		func() interface{} { b := it.items; it.items = nil; return b })
 	if q != nil {
 		it.query = *q
 	}
@@ -1069,7 +1118,6 @@ type ObjectIterator struct {
 	pageInfo *iterator.PageInfo
 	nextFunc func() error
 	items    []*ObjectAttrs
-	index    int
 }
 
 // PageInfo supports pagination. See the google.golang.org/api/iterator package for details.
@@ -1090,10 +1138,8 @@ func (it *ObjectIterator) Next() (*ObjectAttrs, error) {
 	if err := it.nextFunc(); err != nil {
 		return nil, err
 	}
-
-	item := it.items[it.index]
-	it.index++
-
+	item := it.items[0]
+	it.items = it.items[1:]
 	return item, nil
 }
 
@@ -1146,13 +1192,9 @@ func (c *Client) Buckets(ctx context.Context, projectID string) *BucketIterator 
 	}
 	it.pageInfo, it.nextFunc = iterator.NewPageInfo(
 		it.fetch,
-		func() int { return len(it.buckets) - it.index },
-		func() interface{} {
-			b := it.buckets
-			it.buckets = nil
-			it.index = 0
-			return b
-		})
+		func() int { return len(it.buckets) },
+		func() interface{} { b := it.buckets; it.buckets = nil; return b })
+
 	return it
 }
 
@@ -1169,7 +1211,6 @@ type BucketIterator struct {
 	buckets   []*BucketAttrs
 	pageInfo  *iterator.PageInfo
 	nextFunc  func() error
-	index     int
 }
 
 // Next returns the next result. Its second return value is iterator.Done if
@@ -1181,10 +1222,8 @@ func (it *BucketIterator) Next() (*BucketAttrs, error) {
 	if err := it.nextFunc(); err != nil {
 		return nil, err
 	}
-
-	b := it.buckets[it.index]
-	it.index++
-
+	b := it.buckets[0]
+	it.buckets = it.buckets[1:]
 	return b, nil
 }
 
