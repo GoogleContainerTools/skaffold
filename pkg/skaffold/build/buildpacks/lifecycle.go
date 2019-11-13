@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -54,6 +55,12 @@ func (b *BuildpackBuilder) build(ctx context.Context, out io.Writer, workspace s
 	logrus.Debugln("Run image", runImage)
 	if err := b.pull(ctx, out, runImage, artifact.ForcePull); err != nil {
 		return "", err
+	}
+
+	logrus.Debugln("Evaluate env variables")
+	env, err := misc.EvaluateEnv(artifact.Env)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to evaluate env variables")
 	}
 
 	logrus.Debugln("Get dependencies")
@@ -101,6 +108,7 @@ func (b *BuildpackBuilder) build(ctx context.Context, out io.Writer, workspace s
 			Command:     []string{"/lifecycle/detector"},
 			BeforeStart: copyWorkspace,
 			Mounts:      []mount.Mount{packWorkspace, layers},
+			Env:         env,
 		}, docker.ContainerRun{
 			Image:   builderImage,
 			Command: []string{"sh", "-c", "/lifecycle/restorer -path /cache && /lifecycle/analyzer -daemon " + latest},
@@ -110,6 +118,7 @@ func (b *BuildpackBuilder) build(ctx context.Context, out io.Writer, workspace s
 			Image:   builderImage,
 			Command: []string{"/lifecycle/builder"},
 			Mounts:  []mount.Mount{packWorkspace, layers},
+			Env:     env,
 		}, docker.ContainerRun{
 			Image:   builderImage,
 			Command: []string{"sh", "-c", "/lifecycle/exporter -daemon -image " + runImage + " -launch-cache /launch-cache " + latest + " && /lifecycle/cacher -path /cache"},

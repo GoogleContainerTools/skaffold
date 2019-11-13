@@ -45,6 +45,7 @@ type ContainerRun struct {
 	User        string
 	Command     []string
 	Mounts      []mount.Mount
+	Env         []string
 	BeforeStart func(context.Context, string) error
 }
 

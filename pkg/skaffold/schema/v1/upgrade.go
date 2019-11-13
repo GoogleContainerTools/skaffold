@@ -14,18 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta17
+package v1
 
 import (
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1beta17 to v1
+// Config changes from v1 to v2alpha1
 // 1. Additions:
-//    Add EphemeralStorage and ResourceStorage to Kaniko Pod Resource Requirement.
 // 2. Removals:
 // 3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
