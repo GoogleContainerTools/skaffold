@@ -26,14 +26,13 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 const (
@@ -60,7 +59,7 @@ func (g *LocalDir) Setup(ctx context.Context, out io.Writer, artifact *latest.Ar
 	}
 	defer f.Close()
 
-	err = sources.TarGz(ctx, f, artifact, dependencies)
+	err = util.CreateTarGz(f, artifact.Workspace, dependencies)
 
 	context := fmt.Sprintf("dir://%s", constants.DefaultKanikoEmptyDirMountPath)
 	return context, err
