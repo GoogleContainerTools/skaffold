@@ -53,33 +53,17 @@ func TestTagFlag(t *testing.T) {
 		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
 	}
 
-	tests := []struct {
-		description    string
-		tag            string
-		template       string
-		expectedOutput []byte
-	}{
-		{
-			description:    "override tag with argument",
-			tag:            "test",
-			expectedOutput: []byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`),
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&quietFlag, true)
-			t.Override(&createRunner, mockCreateRunner)
-			if test.template != "" {
-				t.Override(&buildFormatFlag, flags.NewTemplateFlag(test.template, flags.BuildOutput{}))
-			}
+	testutil.Run(t, "override tag with argument", func(t *testutil.T) {
+		t.Override(&quietFlag, true)
+		t.Override(&opts.CustomTag, "tag")
+		t.Override(&createRunner, mockCreateRunner)
 
-			var output bytes.Buffer
+		var output bytes.Buffer
 
-			err := doBuild(context.Background(), &output)
+		err := doBuild(context.Background(), &output)
 
-			t.CheckErrorAndDeepEqual(false, err, string(test.expectedOutput), output.String())
-		})
-	}
+		t.CheckErrorAndDeepEqual(false, err, string([]byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`)), output.String())
+	})
 }
 
 func TestQuietFlag(t *testing.T) {
