@@ -1,24 +1,12 @@
-<!--
-  Issues without logs and details are more complicated to fix.
-  Please help us by filling the template below!
--->
+<!-- Issues without logs and details are harder to diagnose and fix.
+Please help us help you by filling out the template below! -->
 
 ### Expected behavior
 
 ### Actual behavior
 
-### Information
+### Steps to reproduce
 
-- Skaffold version: version...
-- Operating system: ...
-- Contents of skaffold.yaml:
+### Information (skaffold version, OS information, Kubernetes/Docker version, etc.)
 
-```yaml
-<paste your skaffold.yaml here>
-```
-
-### Steps to reproduce the behavior
-
-1. a clonable repository with the sample skaffold project
-2. `skaffold <command>`
-3. ...
+### skaffold.yaml contents

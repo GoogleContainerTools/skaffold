@@ -1,78 +1,14 @@
-<!-- 🎉🎉🎉 Thank you for the PR!!! 🎉🎉🎉 -->
+<!-- Thank you for your contribution! -->
 
+Please provide any of the following information that applies:
+* A description of this change. The more detailed the description, the less we have to infer from the code or the commit messages!
+* A description of any user facing changes that will be surfaced by this PR. This is probably easiest through a before/after description. This includes both logging/output changes AND behavior changes! Bonus points for screenshots.
+* Relevant issues that track either the new feature(s) being added, or the bug(s) that this PR will fix
+* Open PRs that this PR depends on, or PRs that depend on this one
+* Follow-up work that will need to be done once this change is upstreamed
 
-Relates to _in case of new feature, this should point to issue/(s) which describes the feature_
+Please be sure that any necessary unit or integration tests have been added! We generally do not merge changes that decrease our code coverage :)
 
-Fixes `#<issue number>`. _in case of a bug fix, this should point to a bug and any other related issue(s)_
+Also, please be sure that any relevant documentation has been added. We want your new features to be visible to users!
 
-Should merge before : _list any PRs that depend on this PR_
-
-Should merge after : _list any PRs that are prerequisites to this PR_
-
-**Description**
-
-<!-- Describe your changes here- ideally you can get that description straight from
-your descriptive commit message(s)! -->
-
-**User facing changes**
-
-Write n/a if not output or log lines changed and no behavior is changed
-
-**Before**
-
-If log/output changes: Paste the current relevant skaffold output
-If behavior changes: describe succinctly the current behavior
-
-**After**
-
-If log/output changes: Paste skaffold output after your change
-If behavior changes: describe succintly the behavior after your change
-
-**Next PRs.**
-
-<!-- In this section describe a list of follow up PRs if the current PR is a part of big feature change.
-See example https://github.com/GoogleContainerTools/skaffold/pull/2811
-Write n/a if not applicable.
--->
-
-
-**Submitter Checklist**
-
-These are the criteria that every PR should meet, please check them off as you
-review them:
-
-- [ ] Includes [unit tests](../DEVELOPMENT.md#creating-a-pr)
-- [ ] Mentions any output changes.
-- [ ] Adds documentation as needed: user docs, YAML reference, CLI reference.
-- [ ] Adds integration tests if needed.
-
-<!--
-_See [the contribution guide](../CONTRIBUTING.md) for more details._
-Double check this list of stuff that's easy to miss:
-- If you are adding [a example to the `examples` dir](https://github.com/GoogleContainerTools/skaffold/tree/master/examples), please copy them to [`integration/examples`](https://github.com/GoogleContainerTools/skaffold/tree/master/integration/examples)
-- Every new example added in [`integration/examples` dir](https://github.com/GoogleContainerTools/skaffold/tree/master/integration/examples), should be tested in [integration test](https://github.com/GoogleContainerTools/skaffold/tree/master/integration)
--->
-
-**Reviewer Notes**
-
-- [ ] The code flow looks good. 
-- [ ] Unit test added.
-- [ ] User facing changes look good.
-
-
-**Release Notes**
-
-<!-- 
-Describe any user facing changes here so maintainer can include it in the release notes, or delete this block.
--->
-
-```
-Examples of user facing changes:
-- Skaffold config changes like
-  e.g. "Add buildArgs to `Kustomize` deployer skaffold config."
-- Bug fixes
-  e.g. "Improve skaffold init behaviour when tags are used in manifests"
-- Any changes in skaffold behavior
-  e.g. "Artiface cachine is turned on by default."
-
-```
+See the [contribution guide](../CONTRIBUTING.md) and the [development guide](../DEVELOPMENT.md) for more details.
