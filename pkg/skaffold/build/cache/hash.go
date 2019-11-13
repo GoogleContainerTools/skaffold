@@ -52,7 +52,7 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 	inputs = append(inputs, config)
 
 	// Append the digest of each input file
-	deps, err := depLister.DependenciesForArtifact(ctx, a)
+	deps, err := depLister(ctx, a)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 	}

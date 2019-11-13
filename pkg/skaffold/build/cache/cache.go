@@ -53,9 +53,7 @@ type cache struct {
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
-type DependencyLister interface {
-	DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
-}
+type DependencyLister func(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 
 // NewCache returns the current state of the cache
 func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies DependencyLister) (Cache, error) {

@@ -34,16 +34,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-type depLister struct {
-	files map[string][]string
-}
-
-func (d *depLister) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-	list, found := d.files[artifact.ImageName]
-	if !found {
-		return nil, errors.New("unknown artifact")
+func depLister(files map[string][]string) DependencyLister {
+	return func(_ context.Context, artifact *latest.Artifact) ([]string, error) {
+		list, found := files[artifact.ImageName]
+		if !found {
+			return nil, errors.New("unknown artifact")
+		}
+		return list, nil
 	}
-	return list, nil
 }
 
 type mockBuilder struct {
@@ -115,12 +113,10 @@ func TestCacheBuildLocal(t *testing.T) {
 			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 			{ImageName: "artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 		}
-		deps := &depLister{
-			files: map[string][]string{
-				"artifact1": {"dep1", "dep2"},
-				"artifact2": {"dep3"},
-			},
-		}
+		deps := depLister(map[string][]string{
+			"artifact1": {"dep1", "dep2"},
+			"artifact2": {"dep3"},
+		})
 
 		// Mock Docker
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
@@ -203,12 +199,10 @@ func TestCacheBuildRemote(t *testing.T) {
 			{ImageName: "artifact1", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 			{ImageName: "artifact2", ArtifactType: latest.ArtifactType{DockerArtifact: &latest.DockerArtifact{}}},
 		}
-		deps := &depLister{
-			files: map[string][]string{
-				"artifact1": {"dep1", "dep2"},
-				"artifact2": {"dep3"},
-			},
-		}
+		deps := depLister(map[string][]string{
+			"artifact1": {"dep1", "dep2"},
+			"artifact2": {"dep3"},
+		})
 
 		// Mock Docker
 		dockerDaemon := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
