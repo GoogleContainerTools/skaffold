@@ -190,37 +190,37 @@
             "type": "string"
           },
           {
-            "name": "event.DebuggingContainerEvent.status",
+            "name": "event.debuggingContainerEvent.status",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "event.DebuggingContainerEvent.podName",
+            "name": "event.debuggingContainerEvent.podName",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "event.DebuggingContainerEvent.containerName",
+            "name": "event.debuggingContainerEvent.containerName",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "event.DebuggingContainerEvent.namespace",
+            "name": "event.debuggingContainerEvent.namespace",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "event.DebuggingContainerEvent.runtime",
+            "name": "event.debuggingContainerEvent.runtime",
             "in": "query",
             "required": false,
             "type": "string"
           },
           {
-            "name": "event.DebuggingContainerEvent.configuration",
+            "name": "event.debuggingContainerEvent.configuration",
             "in": "query",
             "required": false,
             "type": "string"
@@ -424,7 +424,7 @@
         "fileSyncEvent": {
           "$ref": "#/definitions/protoFileSyncEvent"
         },
-        "DebuggingContainerEvent": {
+        "debuggingContainerEvent": {
           "$ref": "#/definitions/protoDebuggingContainerEvent"
         }
       },

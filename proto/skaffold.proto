@@ -74,7 +74,7 @@ message Event {
         StatusCheckEvent statusCheckEvent = 5; // describes if the Status check has started, is in progress, has succeeded or failed.
         ResourceStatusCheckEvent resourceStatusCheckEvent = 6; // indicates progress for each kubernetes deployment.
         FileSyncEvent fileSyncEvent = 7; // describes the sync status.
-        DebuggingContainerEvent DebuggingContainerEvent = 8; // describes the appearance or disappearance of a Debugging container 
+        DebuggingContainerEvent debuggingContainerEvent = 8; // describes the appearance or disappearance of a Debugging container 
     }
 }
 
