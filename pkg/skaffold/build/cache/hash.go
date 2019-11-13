@@ -126,13 +126,10 @@ func retrieveBuildArgs(artifact *latest.Artifact) map[string]*string {
 }
 
 func retrieveEnv(artifact *latest.Artifact) []string {
-	switch {
-	case artifact.BuildpackArtifact != nil:
+	if artifact.BuildpackArtifact != nil {
 		return artifact.BuildpackArtifact.Env
-
-	default:
-		return nil
 	}
+	return nil
 }
 
 func convertBuildArgsToStringArray(buildArgs map[string]*string) []string {
