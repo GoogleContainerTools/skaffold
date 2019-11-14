@@ -1,0 +1,10 @@
+apiVersion: skaffold/v2alpha1
+kind: Config
+build:
+  artifacts:
+    - image: skaffold-default-repo
+      kaniko:
+        buildContext:
+          localDir: {}
+  cluster:
+    pullSecretName: e2esecret
