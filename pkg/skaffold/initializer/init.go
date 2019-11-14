@@ -177,7 +177,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 			}
 			pairs = append(pairs, newPairs...)
 		} else {
-			resolved, err := resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages)
+			resolved, err := resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages, c.Force)
 			if err != nil {
 				return err
 			}
@@ -343,7 +343,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 }
 
 // For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
-func resolveBuilderImages(builderConfigs []InitBuilder, images []string) ([]builderImagePair, error) {
+func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force bool) ([]builderImagePair, error) {
 	// If nothing to choose, don't bother prompting
 	if len(images) == 0 || len(builderConfigs) == 0 {
 		return []builderImagePair{}, nil
@@ -355,6 +355,10 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) ([]buil
 			Builder:   builderConfigs[0],
 			ImageName: images[0],
 		}}, nil
+	}
+
+	if force {
+		return nil, errors.New("unable to automatically resolve builder/image pairs; run `skaffold init` without `--force` to manually resolve ambiguities")
 	}
 
 	// Build map from choice string to builder config struct
