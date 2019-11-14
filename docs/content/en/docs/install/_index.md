@@ -2,6 +2,7 @@
 title: "Installing Skaffold"
 linkTitle: "Installing Skaffold"
 weight: 10
+aliases: [/docs/getting-started/]
 ---
 
 {{< alert title="Note" >}}
