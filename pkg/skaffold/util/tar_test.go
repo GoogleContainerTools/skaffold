@@ -72,7 +72,7 @@ func TestCreateTarWithParents(t *testing.T) {
 		_, paths := prepareFiles(t, files)
 
 		var b bytes.Buffer
-		err := CreateTarWithParents(&b, ".", paths, 1000, 1000, time.Now())
+		err := CreateTarWithParents(&b, ".", paths, 10, 100, time.Now())
 		t.CheckNoError(err)
 
 		// Make sure the contents match.
@@ -84,6 +84,8 @@ func TestCreateTarWithParents(t *testing.T) {
 				break
 			}
 			t.CheckNoError(err)
+			t.CheckDeepEqual(10, hdr.Uid)
+			t.CheckDeepEqual(100, hdr.Gid)
 
 			content, err := ioutil.ReadAll(tr)
 			t.CheckNoError(err)
