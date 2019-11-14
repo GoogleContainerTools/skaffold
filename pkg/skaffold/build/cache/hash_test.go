@@ -26,12 +26,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-type stubDependencyLister struct {
-	dependencies []string
-}
-
-func (m *stubDependencyLister) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-	return m.dependencies, nil
+func stubDependencyLister(dependencies []string) DependencyLister {
+	return func(context.Context, *latest.Artifact) ([]string, error) {
+		return dependencies, nil
+	}
 }
 
 var mockCacheHasher = func(s string) (string, error) {
@@ -132,7 +130,7 @@ func TestGetHashForArtifact(t *testing.T) {
 			t.Override(&hashFunction, mockCacheHasher)
 			t.Override(&artifactConfigFunction, fakeArtifactConfig)
 
-			depLister := &stubDependencyLister{dependencies: test.dependencies}
+			depLister := stubDependencyLister(test.dependencies)
 			actual, err := getHashForArtifact(context.Background(), depLister, test.artifact)
 
 			t.CheckNoError(err)
@@ -182,21 +180,21 @@ func TestBuildArgs(t *testing.T) {
 		t.Override(&hashFunction, mockCacheHasher)
 		t.Override(&artifactConfigFunction, fakeArtifactConfig)
 
-		actual, err := getHashForArtifact(context.Background(), &stubDependencyLister{}, artifact)
+		actual, err := getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected, actual)
 
 		// Change order of buildargs
 		artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"two": stringPointer("2"), "one": stringPointer("1")}
-		actual, err = getHashForArtifact(context.Background(), &stubDependencyLister{}, artifact)
+		actual, err = getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected, actual)
 
 		// Change build args, get different hash
 		artifact.ArtifactType.DockerArtifact.BuildArgs = map[string]*string{"one": stringPointer("1")}
-		actual, err = getHashForArtifact(context.Background(), &stubDependencyLister{}, artifact)
+		actual, err = getHashForArtifact(context.Background(), stubDependencyLister(nil), artifact)
 
 		t.CheckNoError(err)
 		if actual == expected {
@@ -224,7 +222,7 @@ func TestBuildArgsEnvSubstitution(t *testing.T) {
 		t.Override(&hashFunction, mockCacheHasher)
 		t.Override(&artifactConfigFunction, fakeArtifactConfig)
 
-		depLister := &stubDependencyLister{dependencies: []string{"dep"}}
+		depLister := stubDependencyLister([]string{"dep"})
 		hash1, err := getHashForArtifact(context.Background(), depLister, artifact)
 
 		t.CheckNoError(err)
@@ -290,7 +288,7 @@ func TestCacheHasher(t *testing.T) {
 				Write(originalFile, originalContents)
 
 			path := originalFile
-			depLister := &stubDependencyLister{dependencies: []string{tmpDir.Path(originalFile)}}
+			depLister := stubDependencyLister([]string{tmpDir.Path(originalFile)})
 
 			oldHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{})
 			t.CheckNoError(err)
@@ -300,7 +298,7 @@ func TestCacheHasher(t *testing.T) {
 				path = test.newFilename
 			}
 
-			depLister = &stubDependencyLister{dependencies: []string{tmpDir.Path(path)}}
+			depLister = stubDependencyLister([]string{tmpDir.Path(path)})
 			newHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{})
 
 			t.CheckNoError(err)

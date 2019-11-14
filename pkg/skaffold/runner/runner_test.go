@@ -100,10 +100,6 @@ func (t *TestBench) SyncMap(ctx context.Context, artifact *latest.Artifact) (map
 	return nil, nil
 }
 
-func (t *TestBench) DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-	return nil, nil
-}
-
 func (t *TestBench) enterNewCycle() {
 	t.actions = append(t.actions, t.currentActions)
 	t.currentActions = Actions{}
