@@ -32,7 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
@@ -44,7 +43,7 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 		return "", errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
 	}
 
-	context, err := s.Setup(ctx, out, artifact, util.RandomID(), dependencies)
+	context, err := s.Setup(ctx, out, artifact, tag, dependencies)
 	if err != nil {
 		return "", errors.Wrap(err, "setting up build context")
 	}
