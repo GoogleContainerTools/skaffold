@@ -8,3 +8,7 @@ build:
       env:
       - GOVERSION=1.13.1
       - GOPROXY={{.GOPROXY}}
+profiles:
+- name: gcb
+  build:
+    googleCloudBuild: {}
