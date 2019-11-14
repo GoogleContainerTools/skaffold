@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"time"
 
 	"github.com/docker/docker/api/types/mount"
 	"github.com/pkg/errors"
@@ -75,7 +76,11 @@ func (b *BuildpackBuilder) build(ctx context.Context, out io.Writer, workspace s
 	}
 
 	copyWorkspace := func(ctx context.Context, container string) error {
-		return b.localDocker.CopyToContainer(ctx, container, "/workspace", workspace, paths)
+		uid := 1000
+		gid := 1000
+		modTime := time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
+
+		return b.localDocker.CopyToContainer(ctx, container, "/workspace", workspace, paths, uid, gid, modTime)
 	}
 
 	// These volumes store the state shared between build steps.
