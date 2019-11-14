@@ -50,12 +50,12 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 }
 
 func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	cbclient, err := gcp.CloudBuildClient()
+	cbclient, err := cloudbuild.NewService(ctx, gcp.ClientOptions()...)
 	if err != nil {
 		return "", errors.Wrap(err, "getting cloudbuild client")
 	}
 
-	c, err := gcp.CloudStorageClient()
+	c, err := cstorage.NewClient(ctx, gcp.ClientOptions()...)
 	if err != nil {
 		return "", errors.Wrap(err, "getting cloud storage client")
 	}

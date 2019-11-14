@@ -53,11 +53,12 @@ func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.A
 	color.Default.Fprintln(out, "Uploading sources to", bucket, "GCS bucket")
 
 	g.tarName = fmt.Sprintf("context-%s.tar.gz", initialTag)
-	c, err := gcp.CloudStorageClient()
+	c, err := cstorage.NewClient(ctx, gcp.ClientOptions()...)
 	if err != nil {
 		return "", errors.Wrap(err, "getting cloud storage client")
 	}
 	defer c.Close()
+
 	if err := sources.UploadToGCS(ctx, c, artifact, bucket, g.tarName, dependencies); err != nil {
 		return "", errors.Wrap(err, "uploading sources to GCS")
 	}
