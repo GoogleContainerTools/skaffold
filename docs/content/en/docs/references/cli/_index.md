@@ -116,7 +116,7 @@ Examples:
   skaffold build -q > build_result.json
 
   # Build the artifacts and then deploy them
-  skaffold build -q > skaffold deploy
+  skaffold build -q | skaffold deploy --build-artifacts -
 
 Options:
   -b, --build-image=[]: Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
@@ -419,6 +419,9 @@ Examples:
 
   # Deploy those tags
   skaffold deploy --build-artifacts=tags.json
+
+  # Build the artifacts and then deploy them
+  skaffold build -q | skaffold deploy --build-artifacts -
 
 Options:
   -a, --build-artifacts=: Filepath containing build output.
