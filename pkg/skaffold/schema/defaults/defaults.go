@@ -208,8 +208,12 @@ func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
 			return fmt.Errorf("unable to expand pullSecret %s", cluster.PullSecret)
 		}
 		cluster.PullSecret = absPath
-		uuid, err := uuid.NewUUID()
-		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName+uuid.String())
+        random := ""
+        if cluster.RandomPullSecret == true {
+            uid, _ := uuid.NewUUID()
+            random = uid.String()
+        }
+	    cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName + random)
 		return nil
 	}
 	return nil
@@ -219,8 +223,14 @@ func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
 	if cluster.DockerConfig == nil {
 		return nil
 	}
-	uuid, err := uuid.NewUUID()
-	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName+uuid.String())
+
+	random := ""
+	if cluster.RandomDockerConfigSecret == true {
+	    uid, _ := uuid.NewUUID()
+	    random = uid.String()
+	}
+
+	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName + random)
 
 	if cluster.DockerConfig.Path == "" {
 		return nil
