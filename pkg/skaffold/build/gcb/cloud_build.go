@@ -63,7 +63,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 
 	projectID := b.ProjectID
 	if projectID == "" {
-		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)
+		guessedProjectID, err := gcp.ExtractProjectID(tag)
 		if err != nil {
 			return "", errors.Wrap(err, "extracting projectID from image name")
 		}

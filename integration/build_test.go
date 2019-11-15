@@ -28,12 +28,11 @@ import (
 	"testing"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"4d63.com/tz"
 	"github.com/docker/docker/api/types"
 	"github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -389,4 +388,32 @@ func getExternalIP(t *testing.T, c *NSKubernetesClient, ns string) string {
 		t.Fatalf("error getting external ip: %v", err)
 	}
 	return ip
+}
+
+func TestBuildGCBWithDefaultRepo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if !ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is gcp only")
+	}
+
+	// The GCB project (k8s-skaffold) has to be deduced from artifact's image name
+	// after the default repo is applied.
+	// If it's not properly resolved, the build will fail.
+	skaffold.Build("-d", "gcr.io/k8s-skaffold").InDir("testdata/gcb-default-repo").RunOrFail(t)
+}
+
+func TestBuildKanikoWithDefaultRepo(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if !ShouldRunGCPOnlyTests() {
+		t.Skip("skipping test that is gcp only")
+	}
+
+	// The GCS project (k8s-skaffold) has to be deduced from artifact's image name
+	// after the default repo is applied.
+	// If it's not properly resolved, the build will fail.
+	skaffold.Build("-d", "gcr.io/k8s-skaffold").InDir("testdata/kaniko-default-repo").RunOrFail(t)
 }
