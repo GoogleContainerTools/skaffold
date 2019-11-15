@@ -155,7 +155,7 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-containerregistry v0.0.0-20191108172333-79629ba8e9a1
+# github.com/google/go-containerregistry v0.0.0-20191114011901-9087f290f1e4
 github.com/google/go-containerregistry/pkg/authn
 github.com/google/go-containerregistry/pkg/internal/retry
 github.com/google/go-containerregistry/pkg/internal/retry/wait
@@ -837,7 +837,7 @@ k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/retry
 # k8s.io/klog v1.0.0
 k8s.io/klog
-# k8s.io/kube-openapi v0.0.0-20190816220812-743ec37842bf
+# k8s.io/kube-openapi v0.0.0-20191107075043-30be4d16710a
 k8s.io/kube-openapi/pkg/util/proto
 # k8s.io/kubectl v0.0.0-20190831163037-3b58a944563f => k8s.io/kubectl v0.0.0-20190831163037-3b58a944563f
 k8s.io/kubectl/pkg/util/interrupt

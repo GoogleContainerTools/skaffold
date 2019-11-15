@@ -36,8 +36,6 @@ import (
 // Taggable is an interface that enables a manifest PUT (e.g. for tagging).
 type Taggable interface {
 	RawManifest() ([]byte, error)
-	MediaType() (types.MediaType, error)
-	Digest() (v1.Hash, error)
 }
 
 // Write pushes the provided img to the specified image reference.
@@ -366,13 +364,55 @@ func (w *writer) uploadOne(l v1.Layer) error {
 	return retry.Retry(tryUpload, retry.IsTemporary, backoff)
 }
 
+type withMediaType interface {
+	MediaType() (types.MediaType, error)
+}
+
+// This is really silly, but go interfaces don't let me satisfy remote.Taggable
+// with remote.Descriptor because of name collisions between method names and
+// struct fields.
+//
+// Use reflection to either pull the v1.Descriptor out of remote.Descriptor or
+// create a descriptor based on the RawManifest and (optionally) MediaType.
+func unpackTaggable(t Taggable) (*v1.Descriptor, error) {
+	if d, ok := t.(*Descriptor); ok {
+		return &d.Descriptor, nil
+	}
+	b, err := t.RawManifest()
+	if err != nil {
+		return nil, err
+	}
+
+	// A reasonable default if Taggable doesn't implement MediaType.
+	mt := types.DockerManifestSchema2
+
+	if wmt, ok := t.(withMediaType); ok {
+		m, err := wmt.MediaType()
+		if err != nil {
+			return nil, err
+		}
+		mt = m
+	}
+
+	h, sz, err := v1.SHA256(bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1.Descriptor{
+		MediaType: mt,
+		Size:      sz,
+		Digest:    h,
+	}, nil
+}
+
 // commitImage does a PUT of the image's manifest.
 func (w *writer) commitImage(t Taggable) error {
 	raw, err := t.RawManifest()
 	if err != nil {
 		return err
 	}
-	mt, err := t.MediaType()
+	desc, err := unpackTaggable(t)
 	if err != nil {
 		return err
 	}
@@ -384,7 +424,7 @@ func (w *writer) commitImage(t Taggable) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", string(mt))
+	req.Header.Set("Content-Type", string(desc.MediaType))
 
 	resp, err := w.client.Do(req)
 	if err != nil {
@@ -396,13 +436,8 @@ func (w *writer) commitImage(t Taggable) error {
 		return err
 	}
 
-	digest, err := t.Digest()
-	if err != nil {
-		return err
-	}
-
 	// The image was successfully pushed!
-	logs.Progress.Printf("%v: digest: %v size: %d", w.ref, digest, len(raw))
+	logs.Progress.Printf("%v: digest: %v size: %d", w.ref, desc.Digest, len(raw))
 	return nil
 }
 

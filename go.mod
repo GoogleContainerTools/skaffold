@@ -54,7 +54,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
 	github.com/golang/protobuf v1.3.2
 	github.com/google/go-cmp v0.3.1
-	github.com/google/go-containerregistry v0.0.0-20191108172333-79629ba8e9a1
+	github.com/google/go-containerregistry v0.0.0-20191114011901-9087f290f1e4
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/uuid v1.1.1
@@ -64,7 +64,6 @@ require (
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
 	github.com/imdario/mergo v0.3.8
-	github.com/json-iterator/go v1.1.8 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
 	github.com/karrick/godirwalk v1.13.0
 	github.com/krishicks/yaml-patch v0.0.10
