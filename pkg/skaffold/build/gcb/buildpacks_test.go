@@ -45,8 +45,8 @@ func TestBuildpackBuildSpec(t *testing.T) {
 				},
 				Steps: []*cloudbuild.BuildStep{
 					{
-						Name: "busybox",
-						Args: []string{"sh", "-c", "chown -R 1000:1000 /workspace /layers $$HOME"},
+						Name: "builder",
+						Args: []string{"sh", "-c", "chown -R $$CNB_USER_ID:$$CNB_GROUP_ID /workspace /layers $$HOME"},
 					},
 					{
 						Name:       "builder",
@@ -83,8 +83,8 @@ func TestBuildpackBuildSpec(t *testing.T) {
 				},
 				Steps: []*cloudbuild.BuildStep{
 					{
-						Name: "busybox",
-						Args: []string{"sh", "-c", "chown -R 1000:1000 /workspace /layers $$HOME"},
+						Name: "otherbuilder",
+						Args: []string{"sh", "-c", "chown -R $$CNB_USER_ID:$$CNB_GROUP_ID /workspace /layers $$HOME"},
 					},
 					{
 						Name:       "otherbuilder",
