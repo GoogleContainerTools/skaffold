@@ -17,21 +17,28 @@ limitations under the License.
 package gcb
 
 import (
+	"github.com/pkg/errors"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 func (b *Builder) buildpackBuildSpec(artifact *latest.BuildpackArtifact, tag string) (cloudbuild.Build, error) {
+	env, err := misc.EvaluateEnv(artifact.Env)
+	if err != nil {
+		return cloudbuild.Build{}, errors.Wrap(err, "unable to evaluate env variables")
+	}
+
 	steps := []*cloudbuild.BuildStep{
 		{
 			Name: "busybox",
 			Args: []string{"sh", "-c", "chown -R 1000:1000 /workspace /layers $$HOME"},
 		},
 		{
-			// TODO: env
 			Name:       artifact.Builder,
 			Entrypoint: "/lifecycle/detector",
+			Env:        env,
 		},
 		{
 			Name:       artifact.Builder,
@@ -39,9 +46,9 @@ func (b *Builder) buildpackBuildSpec(artifact *latest.BuildpackArtifact, tag str
 			Args:       []string{tag},
 		},
 		{
-			// TODO: env
 			Name:       artifact.Builder,
 			Entrypoint: "/lifecycle/builder",
+			Env:        env,
 		},
 	}
 

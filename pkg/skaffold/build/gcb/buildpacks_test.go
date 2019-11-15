@@ -22,6 +22,7 @@ import (
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -30,11 +31,13 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		description string
 		artifact    *latest.BuildpackArtifact
 		expected    cloudbuild.Build
+		shouldErr   bool
 	}{
 		{
 			description: "default run image",
 			artifact: &latest.BuildpackArtifact{
 				Builder: "builder",
+				Env:     []string{"KEY=VALUE", "FOO={{.BAR}}"},
 			},
 			expected: cloudbuild.Build{
 				Options: &cloudbuild.BuildOptions{
@@ -48,6 +51,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 					{
 						Name:       "builder",
 						Entrypoint: "/lifecycle/detector",
+						Env:        []string{"KEY=VALUE", "FOO=bar"},
 					},
 					{
 						Name:       "builder",
@@ -57,6 +61,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 					{
 						Name:       "builder",
 						Entrypoint: "/lifecycle/builder",
+						Env:        []string{"KEY=VALUE", "FOO=bar"},
 					},
 					{
 						Name:       "builder",
@@ -106,9 +111,19 @@ func TestBuildpackBuildSpec(t *testing.T) {
 				},
 			},
 		},
+		{
+			description: "invalid env",
+			artifact: &latest.BuildpackArtifact{
+				Builder: "builder",
+				Env:     []string{"FOO={{INVALID}}"},
+			},
+			shouldErr: true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&util.OSEnviron, func() []string { return []string{"BAR=bar"} })
+
 			artifact := &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					BuildpackArtifact: test.artifact,
@@ -119,11 +134,13 @@ func TestBuildpackBuildSpec(t *testing.T) {
 				DockerImage: "docker/docker",
 			})
 			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
-			t.CheckNoError(err)
+			t.CheckError(test.shouldErr, err)
 
-			t.CheckDeepEqual(test.expected.Steps, buildSpec.Steps)
-			t.CheckDeepEqual(test.expected.Options.Volumes, buildSpec.Options.Volumes)
-			t.CheckDeepEqual(0, len(buildSpec.Images))
+			if !test.shouldErr {
+				t.CheckDeepEqual(test.expected.Steps, buildSpec.Steps)
+				t.CheckDeepEqual(test.expected.Options.Volumes, buildSpec.Options.Volumes)
+				t.CheckDeepEqual(0, len(buildSpec.Images))
+			}
 		})
 	}
 }
