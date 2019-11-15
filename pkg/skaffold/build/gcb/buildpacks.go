@@ -32,8 +32,8 @@ func (b *Builder) buildpackBuildSpec(artifact *latest.BuildpackArtifact, tag str
 
 	steps := []*cloudbuild.BuildStep{
 		{
-			Name: "busybox",
-			Args: []string{"sh", "-c", "chown -R 1000:1000 /workspace /layers $$HOME"},
+			Name: artifact.Builder,
+			Args: []string{"sh", "-c", "chown -R $$CNB_USER_ID:$$CNB_GROUP_ID /workspace /layers $$HOME"},
 		},
 		{
 			Name:       artifact.Builder,
