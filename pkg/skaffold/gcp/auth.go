@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"os/exec"
-	"strings"
 	"sync"
 
 	"github.com/docker/cli/cli/config/configfile"
@@ -37,31 +36,27 @@ var (
 	credsErr  error
 )
 
+// TODO:(dgageot) Is there a way to not hard code those values?
+var gcrPrefixes = []string{"gcr.io", "us.gcr.io", "eu.gcr.io", "asia.gcr.io", "staging-k8s.gcr.io", "marketplace.gcr.io"}
+
 // AutoConfigureGCRCredentialHelper automatically adds the `gcloud` credential helper
 // to docker's configuration.
 // This doesn't modify the ~/.docker/config.json. It's only in-memory
-func AutoConfigureGCRCredentialHelper(cf *configfile.ConfigFile, registry string) {
-	if registry != "gcr.io" && !strings.HasSuffix(registry, ".gcr.io") {
-		logrus.Debugln("Skipping credential configuration because registry is not gcr.")
-		return
-	}
-
-	if cf.CredentialHelpers != nil && cf.CredentialHelpers[registry] != "" {
-		logrus.Debugln("Skipping credential configuration because credentials are already configured.")
-		return
-	}
-
+func AutoConfigureGCRCredentialHelper(cf *configfile.ConfigFile) {
 	if path, _ := exec.LookPath("docker-credential-gcloud"); path == "" {
 		logrus.Debugln("Skipping credential configuration because docker-credential-gcloud is not on PATH.")
 		return
 	}
 
-	logrus.Debugf("Adding `gcloud` as a docker credential helper for [%s]", registry)
-
 	if cf.CredentialHelpers == nil {
 		cf.CredentialHelpers = make(map[string]string)
 	}
-	cf.CredentialHelpers[registry] = "gcloud"
+
+	for _, gcrPrefix := range gcrPrefixes {
+		if _, present := cf.CredentialHelpers[gcrPrefix]; !present {
+			cf.CredentialHelpers[gcrPrefix] = "gcloud"
+		}
+	}
 }
 
 func activeUserCredentials() (*google.Credentials, error) {
