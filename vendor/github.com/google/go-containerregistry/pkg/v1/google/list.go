@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/logs"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 )
@@ -49,6 +50,13 @@ func newLister(repo name.Repository, options ...ListerOption) (*lister, error) {
 		if err := option(l); err != nil {
 			return nil, err
 		}
+	}
+
+	// Wrap the transport in something that logs requests and responses.
+	// It's expensive to generate the dumps, so skip it if we're writing
+	// to nothing.
+	if logs.Enabled(logs.Debug) {
+		l.transport = transport.NewLogger(l.transport)
 	}
 
 	// Wrap the transport in something that can retry network flakes.
