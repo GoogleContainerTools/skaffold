@@ -17,6 +17,7 @@ limitations under the License.
 package custom
 
 import (
+	"context"
 	"io/ioutil"
 	"os/exec"
 	"runtime"
@@ -96,8 +97,8 @@ func TestRetrieveCmd(t *testing.T) {
 				},
 			},
 			tag:               "image:tag",
-			expected:          expectedCmd("workspace", "./build.sh", nil, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace"}),
-			expectedOnWindows: expectedCmd("workspace", "./build.sh", nil, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace"}),
+			expected:          expectedCmd("workspace", "sh", []string{"-c", "./build.sh"}, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace"}),
+			expectedOnWindows: expectedCmd("workspace", "cmd.exe", []string{"/C", "./build.sh"}, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace"}),
 		}, {
 			description: "buildcommand with multiple args",
 			artifact: &latest.Artifact{
@@ -118,7 +119,7 @@ func TestRetrieveCmd(t *testing.T) {
 			t.Override(&buildContext, func(string) (string, error) { return test.artifact.Workspace, nil })
 
 			builder := NewArtifactBuilder(false, nil)
-			cmd, err := builder.retrieveCmd(ioutil.Discard, test.artifact, test.tag)
+			cmd, err := builder.retrieveCmd(context.Background(), ioutil.Discard, test.artifact, test.tag)
 
 			t.CheckNoError(err)
 			if runtime.GOOS == "windows" {

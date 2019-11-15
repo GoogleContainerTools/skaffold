@@ -23,7 +23,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -55,7 +54,7 @@ func NewArtifactBuilder(pushImages bool, additionalEnv []string) *ArtifactBuilde
 // Build builds a custom artifact
 // It returns true if the image is expected to exist remotely, or false if it is expected to exist locally
 func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) error {
-	cmd, err := b.retrieveCmd(out, a, tag)
+	cmd, err := b.retrieveCmd(ctx, out, a, tag)
 	if err != nil {
 		return errors.Wrap(err, "retrieving cmd")
 	}
@@ -67,28 +66,17 @@ func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Ar
 	return misc.HandleGracefulTermination(ctx, cmd)
 }
 
-func (b *ArtifactBuilder) retrieveCmd(out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
+func (b *ArtifactBuilder) retrieveCmd(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
 	artifact := a.CustomArtifact
 
 	var cmd *exec.Cmd
-
-	split := strings.Split(artifact.BuildCommand, " ")
-	switch {
-	// When the user specifies a command without args, such as `./build.sh`,
-	// Skaffold can just exec this command.
-	case len(split) == 1:
-		cmd = exec.Command(artifact.BuildCommand)
-
-	// When the user specifies a command with args, such as `./build.sh -flag $IMAGE`,
-	// Skaffold has to shell out to sh in order for arguments to be evaluated.
-	case runtime.GOOS != "windows":
-		cmd = exec.Command("sh", "-c", artifact.BuildCommand)
-
-	// On Windows, cmd.exe does the evaluation of the arguments.
-	default:
-		cmd = exec.Command("cmd.exe", "/C", artifact.BuildCommand)
+	// We evaluate the command with a shell so that it can contain
+	// env variables.
+	if runtime.GOOS == "windows" {
+		cmd = exec.CommandContext(ctx, "cmd.exe", "/C", artifact.BuildCommand)
+	} else {
+		cmd = exec.CommandContext(ctx, "sh", "-c", artifact.BuildCommand)
 	}
-
 	cmd.Stdout = out
 	cmd.Stderr = out
 
