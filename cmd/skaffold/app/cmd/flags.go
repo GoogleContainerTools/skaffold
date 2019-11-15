@@ -252,6 +252,15 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
 	},
+	{
+		Name:          "tag",
+		Shorthand:     "t",
+		Usage:         "The optional custom tag to use for images which overrides the current Tagger configuration",
+		Value:         &opts.CustomTag,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"build", "deploy", "dev", "run"},
+	},
 }
 
 var commandFlags []*pflag.Flag
