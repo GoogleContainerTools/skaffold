@@ -29,6 +29,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster/sources"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -135,7 +136,7 @@ func args(artifact *latest.KanikoArtifact, context, tag string, insecureRegistri
 			args = append(args, "--cache-repo", artifact.Cache.Repo)
 		}
 		if artifact.Cache.HostPath != "" {
-			args = append(args, "--cache-dir", artifact.Cache.HostPath)
+			args = append(args, "--cache-dir", constants.DefaultKanikoCacheDirMountPath)
 		}
 	}
 
