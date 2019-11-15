@@ -259,7 +259,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.CustomTag,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "deploy", "dev", "run"},
+		DefinedOn:     []string{"build", "debug", "dev", "run"},
 	},
 }
 
