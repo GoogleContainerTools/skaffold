@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -51,7 +52,7 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 	inputs = append(inputs, config)
 
 	// Append the digest of each input file
-	deps, err := depLister.DependenciesForArtifact(ctx, a)
+	deps, err := depLister(ctx, a)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
 	}
@@ -78,6 +79,15 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 		}
 		args := convertBuildArgsToStringArray(buildArgs)
 		inputs = append(inputs, args...)
+	}
+
+	// add env variables for the artifact if specified
+	if env := retrieveEnv(a); len(env) > 0 {
+		evaluatedEnv, err := misc.EvaluateEnv(env)
+		if err != nil {
+			return "", errors.Wrap(err, "evaluating build args")
+		}
+		inputs = append(inputs, evaluatedEnv...)
 	}
 
 	// get a key for the hashes
@@ -113,6 +123,13 @@ func retrieveBuildArgs(artifact *latest.Artifact) map[string]*string {
 	default:
 		return nil
 	}
+}
+
+func retrieveEnv(artifact *latest.Artifact) []string {
+	if artifact.BuildpackArtifact != nil {
+		return artifact.BuildpackArtifact.Env
+	}
+	return nil
 }
 
 func convertBuildArgsToStringArray(buildArgs map[string]*string) []string {

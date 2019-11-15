@@ -1,5 +1,5 @@
 ---
-title: "Debugging with Skaffold"
+title: "Debugging With Skaffold"
 linkTitle: "Debugging"
 weight: 30
 featureId: debug
@@ -11,7 +11,7 @@ The associated debugging ports are exposed and labelled so that they can be port
 local machine. Helper metadata is also added to allow IDEs to detect the debugging
 configuration parameters.
  
-## How it works
+## How It Works
 
 `skaffold debug` examines the built artifacts to determine the underlying runtime technology.
 Any Kubernetes manifest that references these artifacts are transformed to enable the runtime technology's
@@ -72,7 +72,7 @@ to treat the source location for headless launches as being relative to `/go`.  
 }
 ```
 
-#### Java and other JVM languages
+#### Java and Other JVM Languages
 
 Java/JVM applications are configured to expose the JDWP agent using the `JAVA_TOOL_OPTIONS`
 environment variable.  
@@ -101,6 +101,16 @@ DAP is not yet supported by JetBrains IDEs like PyCharm.
 ## Limitations
 
 `skaffold debug` has some limitations.
+
+### Unsupported Container Entrypoints
+
+`skaffold debug` requires being able to examine and alter the
+command-line used in the container entrypoint.  This transformation
+will not work with images that use intermediate launch scripts or
+binaries.  For example, `debug` cannot work with an image produced
+by the Cloud Native Buildpacks builder as it uses a `launcher`
+binary to run commands that are specified in a set of configuration
+files.
 
 ### Supported Deployers
 

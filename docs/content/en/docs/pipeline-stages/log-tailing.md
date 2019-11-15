@@ -9,9 +9,8 @@ Skaffold has built-in support for tailing logs for containers **deployed by Skaf
 to your local machine when running in either `dev`, `debug` or `run` mode.
 
 {{< alert title="Note" >}}
-**Log Tailing is enabled by default in [`dev`](<relref docs="/docs/workflows/dev" >}}) and [`debug`](<relref docs="/docs/workflows/debug" >}}) modes**
-
-**Log Tailing is disabled by default in `run` mode; it can be enabled with the `--tail` flag.**
+Log Tailing is **enabled by default** for [`dev`](<relref docs="/docs/workflows/dev" >}}) and [`debug`](<relref docs="/docs/workflows/debug" >}}).<br>
+Log Tailing is **disabled by default** for `run` mode; it can be enabled with the `--tail` flag.
 {{< /alert >}}
 
 
@@ -27,7 +26,7 @@ will produce an output like this
 ![logging-output](/images/logging-output.png)
 
 
-For, every log line, skaffold will prefix the pod name and container name if there not the same.
+For every log line, skaffold will prefix the pod name and container name if they're not the same.
 
 ![logging-output](/images/log-line-single.png)
 

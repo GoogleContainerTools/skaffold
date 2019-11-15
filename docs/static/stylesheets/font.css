@@ -1,5 +1,4 @@
 .main-container {
-    font-family: 'Titillium Web';
     margin-left: 0;
     margin-right: 0;
 }
@@ -15,16 +14,14 @@
     transition: 3s
 }
 
-.navbar-font {
-    font-family: 'Titillium Web';
-}
-
 .testimonial {
-    font-family: 'Telex';
     font-size: 1rem;
 }
 
 .testimonial-byline {
     text-align: center !important;
-    font-style: italic;
+}
+
+.skaffold-font {
+    font-family: 'Exo 2', Arial, Helvetica, sans-serif;
 }

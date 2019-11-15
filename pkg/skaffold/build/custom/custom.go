@@ -22,7 +22,7 @@ import (
 	"io"
 	"os/exec"
 	"path/filepath"
-	"strings"
+	"runtime"
 
 	"github.com/pkg/errors"
 
@@ -54,7 +54,7 @@ func NewArtifactBuilder(pushImages bool, additionalEnv []string) *ArtifactBuilde
 // Build builds a custom artifact
 // It returns true if the image is expected to exist remotely, or false if it is expected to exist locally
 func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) error {
-	cmd, err := b.retrieveCmd(out, a, tag)
+	cmd, err := b.retrieveCmd(ctx, out, a, tag)
 	if err != nil {
 		return errors.Wrap(err, "retrieving cmd")
 	}
@@ -66,11 +66,17 @@ func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Ar
 	return misc.HandleGracefulTermination(ctx, cmd)
 }
 
-func (b *ArtifactBuilder) retrieveCmd(out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
+func (b *ArtifactBuilder) retrieveCmd(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
 	artifact := a.CustomArtifact
-	split := strings.Split(artifact.BuildCommand, " ")
 
-	cmd := exec.Command(split[0], split[1:]...)
+	var cmd *exec.Cmd
+	// We evaluate the command with a shell so that it can contain
+	// env variables.
+	if runtime.GOOS == "windows" {
+		cmd = exec.CommandContext(ctx, "cmd.exe", "/C", artifact.BuildCommand)
+	} else {
+		cmd = exec.CommandContext(ctx, "sh", "-c", artifact.BuildCommand)
+	}
 	cmd.Stdout = out
 	cmd.Stderr = out
 

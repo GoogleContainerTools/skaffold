@@ -71,7 +71,6 @@ type KustomizeDeployer struct {
 	*latest.KustomizeDeploy
 
 	kubectl            deploy.CLI
-	defaultRepo        string
 	insecureRegistries map[string]bool
 	BuildArgs          []string
 }
@@ -84,7 +83,6 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
 			ForceDeploy: runCtx.Opts.Force,
 		},
-		defaultRepo:        runCtx.DefaultRepo,
 		insecureRegistries: runCtx.InsecureRegistries,
 		BuildArgs:          runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
 	}
@@ -121,7 +119,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 		event.DeployInfoEvent(errors.Wrap(err, "could not fetch deployed resource namespace."+
 			"This might cause port-forward and deploy health-check to fail."))
 	}
-	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
+	manifests, err = manifests.ReplaceImages(builds)
 	if err != nil {
 		event.DeployFailed(err)
 		return NewDeployErrorResult(errors.Wrap(err, "replacing images in manifests"))

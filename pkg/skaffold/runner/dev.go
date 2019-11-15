@@ -24,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -142,7 +143,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			return context.Canceled
 		default:
 			if err := r.monitor.Register(
-				func() ([]string, error) { return r.builder.DependenciesForArtifact(ctx, artifact) },
+				func() ([]string, error) {
+					return build.DependenciesForArtifact(ctx, artifact, r.runCtx.InsecureRegistries)
+				},
 				func(e filemon.Events) {
 					syncMap := func() (map[string][]string, error) { return r.builder.SyncMap(ctx, artifact) }
 					s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries, syncMap)

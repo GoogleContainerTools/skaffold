@@ -47,7 +47,7 @@ func NewCmdBuild() *cobra.Command {
 		WithExample("Build artifacts with a profile activated", "build -p <profile>").
 		WithExample("Build artifacts whose image name contains <db>", "build -b <db>").
 		WithExample("Quietly build artifacts and output the image names as json", "build -q > build_result.json").
-		WithExample("Build the artifacts and then deploy them", "build -q > skaffold deploy").
+		WithExample("Build the artifacts and then deploy them", "build -q | skaffold deploy --build-artifacts -").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")

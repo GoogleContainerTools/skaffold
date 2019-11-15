@@ -27,21 +27,24 @@ import (
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster/sources"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	// Prepare context
 	s := sources.Retrieve(b.kubectlcli, b.ClusterDetails, artifact.KanikoArtifact)
-	dependencies, err := b.DependenciesForArtifact(ctx, artifact)
+
+	dependencies, err := build.DependenciesForArtifact(ctx, artifact, b.insecureRegistries)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
 	}
-	context, err := s.Setup(ctx, out, artifact, util.RandomID(), dependencies)
+
+	context, err := s.Setup(ctx, out, artifact, tag, dependencies)
 	if err != nil {
 		return "", errors.Wrap(err, "setting up build context")
 	}
@@ -78,11 +81,11 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 
 	waitForLogs := streamLogs(ctx, out, pod.Name, pods)
 
-	err = kubernetes.WaitForPodSucceeded(ctx, pods, pod.Name, b.timeout)
-	waitForLogs()
-	if err != nil {
+	if err := kubernetes.WaitForPodSucceeded(ctx, pods, pod.Name, b.timeout); err != nil {
 		return "", errors.Wrap(err, "waiting for pod to complete")
 	}
+
+	waitForLogs()
 
 	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
@@ -133,7 +136,7 @@ func args(artifact *latest.KanikoArtifact, context, tag string, insecureRegistri
 			args = append(args, "--cache-repo", artifact.Cache.Repo)
 		}
 		if artifact.Cache.HostPath != "" {
-			args = append(args, "--cache-dir", artifact.Cache.HostPath)
+			args = append(args, "--cache-dir", constants.DefaultKanikoCacheDirMountPath)
 		}
 	}
 

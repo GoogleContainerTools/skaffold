@@ -1,7 +1,7 @@
 ---
 title: "Skaffold Pipeline Stages"
 linkTitle: "Skaffold Pipeline Stages"
-weight: 4
+weight: 40
 ---
 
 Skaffold features a five-stage workflow:
@@ -19,4 +19,14 @@ locally with [Minikube](https://kubernetes.io/docs/setup/minikube/), Skaffold
 will not push artifacts to a remote repository.
 
 
-TODO: describe the skaffold pipeline, and anchor link to each stage
+| Skaffold Pipeline stages|Description| 
+|----------|-------|------|
+| [Init]({{< relref "/docs/pipeline-stages/init" >}}) | generate a starting point for Skaffold configuration | 
+| [Build]({{< relref "/docs/pipeline-stages/builders" >}}) | build images with different builders | 
+| [Tag]({{< relref "/docs/pipeline-stages/taggers" >}}) | tag images based on different policies |
+| [Test]({{< relref "/docs/pipeline-stages/testers" >}}) |  test images with structure tests |
+| [Deploy]({{< relref "/docs/pipeline-stages/deployers" >}}) |  deploy with kubectl, kustomize or helm |
+| [File Sync]({{< relref "/docs/pipeline-stages/filesync" >}}) |  sync changed files directly to containers |
+| [Log Tailing]({{< relref "/docs/pipeline-stages/log-tailing" >}}) |  tail logs from workloads |
+| [Port Forwarding]({{< relref "/docs/pipeline-stages/port-forwarding" >}}) | forward ports from services and arbitrary resources to localhost  |
+| [Cleanup]({{< relref "/docs/pipeline-stages/cleanup" >}}) | cleanup manifests and images |

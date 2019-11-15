@@ -244,6 +244,14 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
 	},
+	{
+		Name:          "kubeconfig",
+		Usage:         "Path to the kubeconfig file to use for CLI requests.",
+		Value:         &opts.KubeConfig,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+	},
 }
 
 var commandFlags []*pflag.Flag

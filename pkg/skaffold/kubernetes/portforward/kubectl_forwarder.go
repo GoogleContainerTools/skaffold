@@ -80,7 +80,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		}
 		pfe.terminationLock.Unlock()
 
-		if !isPortFree(pfe.localPort) {
+		if !isPortFree(util.Loopback, pfe.localPort) {
 			//assuming that Skaffold brokered ports don't overlap, this has to be an external process that started
 			//since the dev loop kicked off. We are notifying the user in the hope that they can fix it
 			color.Red.Fprintf(k.out, "failed to port forward %v, port %d is taken, retrying...\n", pfe, pfe.localPort)
@@ -128,13 +128,16 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 }
 
 func portForwardCommand(ctx context.Context, k *kubectl.CLI, pfe *portForwardEntry, buf io.Writer) *exec.Cmd {
-	cmd := k.Command(ctx,
-		"port-forward",
+	args := []string{
 		"--pod-running-timeout", "1s",
 		fmt.Sprintf("%s/%s", pfe.resource.Type, pfe.resource.Name),
 		fmt.Sprintf("%d:%d", pfe.localPort, pfe.resource.Port),
 		"--namespace", pfe.resource.Namespace,
-	)
+	}
+	if pfe.resource.Address != "" && pfe.resource.Address != util.Loopback {
+		args = append(args, []string{"--address", pfe.resource.Address}...)
+	}
+	cmd := k.Command(ctx, "port-forward", args...)
 	cmd.Stdout = buf
 	cmd.Stderr = buf
 	return cmd

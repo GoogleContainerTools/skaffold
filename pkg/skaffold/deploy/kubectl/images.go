@@ -22,7 +22,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
@@ -60,8 +59,8 @@ func (is *imageSaver) NewValue(old interface{}) (bool, interface{}) {
 }
 
 // ReplaceImages replaces image names in a list of manifests.
-func (l *ManifestList) ReplaceImages(builds []build.Artifact, defaultRepo string) (ManifestList, error) {
-	replacer := newImageReplacer(builds, defaultRepo)
+func (l *ManifestList) ReplaceImages(builds []build.Artifact) (ManifestList, error) {
+	replacer := newImageReplacer(builds)
 
 	updated, err := l.Visit(replacer)
 	if err != nil {
@@ -76,19 +75,17 @@ func (l *ManifestList) ReplaceImages(builds []build.Artifact, defaultRepo string
 
 type imageReplacer struct {
 	ReplaceAny
-	defaultRepo     string
 	tagsByImageName map[string]string
 	found           map[string]bool
 }
 
-func newImageReplacer(builds []build.Artifact, defaultRepo string) *imageReplacer {
+func newImageReplacer(builds []build.Artifact) *imageReplacer {
 	tagsByImageName := make(map[string]string)
 	for _, build := range builds {
 		tagsByImageName[build.ImageName] = build.Tag
 	}
 
 	return &imageReplacer{
-		defaultRepo:     defaultRepo,
 		tagsByImageName: tagsByImageName,
 		found:           make(map[string]bool),
 	}
@@ -104,16 +101,7 @@ func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
 		return false, nil
 	}
 
-	found, tag := r.parseAndReplace(image)
-	if !found {
-		subbedImage := r.substituteRepoIntoImage(image)
-		if image == subbedImage {
-			return found, tag
-		}
-		// no match, so try substituting in defaultRepo value
-		found, tag = r.parseAndReplace(subbedImage)
-	}
-	return found, tag
+	return r.parseAndReplace(image)
 }
 
 func (r *imageReplacer) parseAndReplace(image string) (bool, interface{}) {
@@ -142,8 +130,4 @@ func (r *imageReplacer) Check() {
 			warnings.Printf("image [%s] is not used by the deployment", imageName)
 		}
 	}
-}
-
-func (r *imageReplacer) substituteRepoIntoImage(originalImage string) string {
-	return util.SubstituteDefaultRepoIntoImage(r.defaultRepo, originalImage)
 }

@@ -1,9 +1,7 @@
 ---
-title: "Global configuration"
-linkTitle: "Global configuration"
+title: "Global Configuration"
+linkTitle: "Global Configuration"
 weight: 50
-
-
 featureId: global_config
 
 ---

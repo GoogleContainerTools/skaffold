@@ -31,7 +31,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -274,7 +273,7 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 	waitForPortForwardEvent(t, entries, "gke-loadbalancer", "service", ns.Name, "hello!!\n")
 }
 
-func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace string) int {
+func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace string) (string, int) {
 	timeout := time.After(1 * time.Minute)
 	for {
 		select {
@@ -287,9 +286,10 @@ func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry
 				if e.Event.GetPortEvent().ResourceName == resourceName &&
 					e.Event.GetPortEvent().ResourceType == resourceType &&
 					e.Event.GetPortEvent().Namespace == namespace {
+					address := e.Event.GetPortEvent().Address
 					port := e.Event.GetPortEvent().LocalPort
-					t.Logf("Detected %s/%s is forwarded to port %d", resourceType, resourceName, port)
-					return int(port)
+					t.Logf("Detected %s/%s is forwarded to address %s port %d", resourceType, resourceName, address, port)
+					return address, int(port)
 				}
 			default:
 				t.Logf("event received %v", e)
@@ -299,13 +299,13 @@ func getLocalPortFromPortForwardEvent(t *testing.T, entries chan *proto.LogEntry
 }
 
 func waitForPortForwardEvent(t *testing.T, entries chan *proto.LogEntry, resourceName, resourceType, namespace, expected string) {
-	port := getLocalPortFromPortForwardEvent(t, entries, resourceName, resourceType, namespace)
-	assertResponseFromPort(t, port, expected)
+	address, port := getLocalPortFromPortForwardEvent(t, entries, resourceName, resourceType, namespace)
+	assertResponseFromPort(t, address, port, expected)
 }
 
 // assertResponseFromPort waits for two minutes for the expected response at port.
-func assertResponseFromPort(t *testing.T, port int, expected string) {
-	url := fmt.Sprintf("http://%s:%d", util.Loopback, port)
+func assertResponseFromPort(t *testing.T, address string, port int, expected string) {
+	url := fmt.Sprintf("http://%s:%d", address, port)
 	t.Logf("Waiting on %s to return: %s", url, expected)
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancelTimeout()

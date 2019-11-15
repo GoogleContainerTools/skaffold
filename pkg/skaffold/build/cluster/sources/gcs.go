@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sources"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
@@ -39,10 +40,10 @@ type GCSBucket struct {
 }
 
 // Setup uploads the context to the provided GCS bucket
-func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, initialTag string, dependencies []string) (string, error) {
+func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string, dependencies []string) (string, error) {
 	bucket := g.artifact.BuildContext.GCSBucket
 	if bucket == "" {
-		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)
+		guessedProjectID, err := gcp.ExtractProjectID(tag)
 		if err != nil {
 			return "", errors.Wrap(err, "extracting projectID from image name")
 		}
@@ -52,12 +53,13 @@ func (g *GCSBucket) Setup(ctx context.Context, out io.Writer, artifact *latest.A
 
 	color.Default.Fprintln(out, "Uploading sources to", bucket, "GCS bucket")
 
-	g.tarName = fmt.Sprintf("context-%s.tar.gz", initialTag)
-	c, err := gcp.CloudStorageClient()
+	g.tarName = fmt.Sprintf("context-%s.tar.gz", util.RandomID())
+	c, err := cstorage.NewClient(ctx, gcp.ClientOptions()...)
 	if err != nil {
 		return "", errors.Wrap(err, "getting cloud storage client")
 	}
 	defer c.Close()
+
 	if err := sources.UploadToGCS(ctx, c, artifact, bucket, g.tarName, dependencies); err != nil {
 		return "", errors.Wrap(err, "uploading sources to GCS")
 	}

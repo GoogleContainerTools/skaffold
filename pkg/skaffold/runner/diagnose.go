@@ -26,7 +26,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -46,11 +45,11 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) e
 			fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
 		}
 
-		timeDeps1, deps, err := timeToListDependencies(ctx, r.builder, artifact)
+		timeDeps1, deps, err := timeToListDependencies(ctx, artifact, r.runCtx.InsecureRegistries)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
-		timeDeps2, _, err := timeToListDependencies(ctx, r.builder, artifact)
+		timeDeps2, _, err := timeToListDependencies(ctx, artifact, r.runCtx.InsecureRegistries)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
@@ -107,9 +106,9 @@ func typeOfArtifact(a *latest.Artifact) string {
 	}
 }
 
-func timeToListDependencies(ctx context.Context, builder cache.DependencyLister, a *latest.Artifact) (time.Duration, []string, error) {
+func timeToListDependencies(ctx context.Context, a *latest.Artifact, insecureRegistries map[string]bool) (time.Duration, []string, error) {
 	start := time.Now()
-	paths, err := builder.DependenciesForArtifact(ctx, a)
+	paths, err := build.DependenciesForArtifact(ctx, a, insecureRegistries)
 	return time.Since(start), paths, err
 }
 

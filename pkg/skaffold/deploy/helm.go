@@ -52,7 +52,6 @@ type HelmDeployer struct {
 	kubeContext string
 	kubeConfig  string
 	namespace   string
-	defaultRepo string
 	forceDeploy bool
 }
 
@@ -64,7 +63,6 @@ func NewHelmDeployer(runCtx *runcontext.RunContext) *HelmDeployer {
 		kubeContext: runCtx.KubeContext,
 		kubeConfig:  runCtx.Opts.KubeConfig,
 		namespace:   runCtx.Opts.Namespace,
-		defaultRepo: runCtx.DefaultRepo,
 		forceDeploy: runCtx.Opts.Force,
 	}
 }
@@ -479,9 +477,7 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 	paramToBuildResult := map[string]build.Artifact{}
 
 	for param, imageName := range params {
-		newImageName := util.SubstituteDefaultRepoIntoImage(h.defaultRepo, imageName)
-
-		b, ok := imageToBuildResult[newImageName]
+		b, ok := imageToBuildResult[imageName]
 		if !ok {
 			return nil, fmt.Errorf("no build present for %s", imageName)
 		}

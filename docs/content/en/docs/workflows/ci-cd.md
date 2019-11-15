@@ -22,7 +22,90 @@ wait for `deployments` to stabilize and succeed only if all deployments are succ
 ## Waiting for Skaffold deployments using `healthcheck`
 {{< maturity "deploy.status_check" >}}
 
-{{< todo 1937 >}}
+`skaffold deploy` optionally performs a `healthcheck` for resources of kind [`Deployment`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) and waits for them to be stable.
+This feature can be very useful in Continuous Delivery pipelines to ensure that the deployed resources are
+healthy before proceeding with the next steps in the pipeline.
+
+{{<alert title="Note">}}
+`healthcheck` is disabled by default; it can be enabled with the `--status-check` flag.</br>
+If this flag is not set, no healthcheck will be performed.
+{{</alert>}}
+
+To determine if a `Deployment` resource is up and running, Skaffold relies on `kubectl rollout status` to obtain its status.
+
+```bash
+Waiting for deployments to stabilize
+ - default:deployment/leeroy-app Waiting for rollout to finish: 0 of 1 updated replicas are available...
+ - default:deployment/leeroy-web Waiting for rollout to finish: 0 of 1 updated replicas are available...
+ - default:deployment/leeroy-web is ready. [1/2 deployment(s) still pending]
+ - default:deployment/leeroy-app is ready.
+Deployments stabilized in 2.168799605s
+```
+
+**Configuring status check time for deploy `healthcheck`**
+
+You can also configure the time for deployments to stabilize with the `statusCheckDeadlineSeconds` config field in the `skaffold.yaml`.
+
+For example, to configure deployments to stabilize within 5 minutes:
+{{% readfile file="samples/deployers/healthcheck.yaml" %}}
+
+With the `--status-check` flag, for each `Deployment` resource, `skaffold deploy` will wait for
+the time specified by [`progressDeadlineSeconds`](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#progress-deadline-seconds)
+from the deployment configuration.
+
+If the `Deployment.spec.progressDeadlineSeconds` is not set, Skaffold will either wait for
+
+the time specified in the `statusCheckDeadlineSeconds` field of the deployment config stanza in the `skaffold.yaml`, or
+default to 10 minutes if this is not specified.
+
+In the case that both `statusCheckDeadlineSeconds` and `Deployment.spec.progressDeadlineSeconds` are set, precedence
+is given to `Deployment.spec.progressDeadline` **only if it is less than** `statusCheckDeadlineSeconds`.
+
+For example, the `Deployment` below with `progressDeadlineSeconds` set to 5 minutes,
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: getting-started
+spec:
+  progressDeadlineSeconds: 300
+  template:
+    spec:
+      containers:
+      - name: cannot-run
+        image: gcr.io/k8s-skaffold/getting-started-foo
+```
+
+if the `skaffold.yaml` overrides the deadline to make sure deployment stabilizes in a 60 seconds,
+
+```yaml
+apiVersion: skaffold/v1
+deploy:
+  statusCheckDeadlineSeconds: 60
+  kubectl:
+    manifests:
+    - k8s-*
+```
+
+Running `skaffold deploy`
+
+```code
+skaffold deploy --status-check
+```
+will result in an error after waiting for 1 minute:
+
+```bash
+Tags used in deployment:
+Starting deploy...
+kubectl client version: 1.11+
+kubectl version 1.12.0 or greater is recommended for use with Skaffold
+ - deployment.apps/getting-started created
+Waiting for deployments to stabilize
+ - default:deployment/getting-started Waiting for rollout to finish: 0 of 1 updated replicas are available...
+ - default:deployment/getting-started failed. Error: received Ctrl-C or deployments could not stabilize within 1m: kubectl rollout status command interrupted.
+FATA[0006] 1/1 deployment(s) failed
+```
 
 ## `skaffold build | skaffold deploy`
 
@@ -104,4 +187,3 @@ gives us the one line output telling us the only thing we need to know:
 ```code
 pod/getting-started configured
 ```
-

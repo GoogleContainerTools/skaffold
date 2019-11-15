@@ -1,10 +1,8 @@
 ---
 title: "Working With Skaffold"
 linkTitle: "Working With Skaffold"
-weight: 1
+weight: 30
 ---
-
-{{< todo 3074>}} paragraph about the identified use cases for skaffold
 
 | Skaffold Workflow | |
 |----------|---|

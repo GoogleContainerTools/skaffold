@@ -48,6 +48,8 @@ func TestGracefulBuildCancel(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Parallel()
+
 			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 
 			cmd := exec.Command("bash", "-c", test.command)
