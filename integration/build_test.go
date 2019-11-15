@@ -390,8 +390,6 @@ func getExternalIP(t *testing.T, c *NSKubernetesClient, ns string) string {
 	return ip
 }
 
-// Make sure GCB project is deduced from artifact's image name,
-// AFTER the default repo is applied.
 func TestBuildGCBWithDefaultRepo(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
@@ -400,11 +398,12 @@ func TestBuildGCBWithDefaultRepo(t *testing.T) {
 		t.Skip("skipping test that is gcp only")
 	}
 
+	// The GCB project (k8s-skaffold) has to be deduced from artifact's image name
+	// after the default repo is applied.
+	// If it's not properly resolved, the build will fail.
 	skaffold.Build("-d", "gcr.io/k8s-skaffold").InDir("testdata/gcb-default-repo").RunOrFail(t)
 }
 
-// Make sure GCB project is deduced from artifact's image name,
-// AFTER the default repo is applied.
 func TestBuildKanikoWithDefaultRepo(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping integration test")
@@ -413,5 +412,8 @@ func TestBuildKanikoWithDefaultRepo(t *testing.T) {
 		t.Skip("skipping test that is gcp only")
 	}
 
+	// The GCS project (k8s-skaffold) has to be deduced from artifact's image name
+	// after the default repo is applied.
+	// If it's not properly resolved, the build will fail.
 	skaffold.Build("-d", "gcr.io/k8s-skaffold").InDir("testdata/kaniko-default-repo").RunOrFail(t)
 }
