@@ -287,8 +287,8 @@ type ClusterDetails struct {
 	// Defaults to `kaniko-secret`.
 	PullSecretName string `yaml:"pullSecretName,omitempty"`
 
-    // Random secret
-    RandomPullSecret bool `yaml: randomPullSecret, omitempty`
+	// RandomPullSecret attach uuid to secret to facilate parallel builds
+	RandomPullSecret bool `yaml:"randomPullSecret, omitempty"`
 
 	// PullSecretMountPath is the path the pull secret will be mounted at within the running container.
 	PullSecretMountPath string `yaml:"pullSecretMountPath,omitempty"`
@@ -304,8 +304,8 @@ type ClusterDetails struct {
 	// DockerConfig describes how to mount the local Docker configuration into a pod.
 	DockerConfig *DockerConfig `yaml:"dockerConfig,omitempty"`
 
-    // Random secret
-    RandomDockerConfigSecret bool `yaml: randomDockerConfigSecret, omitempty`
+	// RandomDockerConfigSecret attach uuid to secret to facilate parallel builds
+	RandomDockerConfigSecret bool `yaml:"randomDockerConfigSecret, omitempty"`
 
 	// Resources define the resource requirements for the kaniko pod.
 	Resources *ResourceRequirements `yaml:"resources,omitempty"`
