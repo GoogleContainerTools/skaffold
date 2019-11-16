@@ -319,12 +319,14 @@ func exposePort(entries []v1.ContainerPort, portName string, port int32) []v1.Co
 		switch {
 		case entries[i].Name == portName:
 			// Ports and names must be unique so rewrite an existing entry if found
+			logrus.Warnf("skaffold debug needs to expose port %d with name %s. Replacing clashing port definition %d (%s)", port, portName, entries[i].ContainerPort, entries[i].Name)
 			entries[i].Name = portName
 			entries[i].ContainerPort = port
 			found = true
 			i++
 		case entries[i].ContainerPort == port:
 			// Cut any entries with a clashing port
+			logrus.Warnf("skaffold debug needs to expose port %d for %s. Removing clashing port definition %d (%s)", port, portName, entries[i].ContainerPort, entries[i].Name)
 			entries = append(entries[:i], entries[i+1:]...)
 		default:
 			i++
