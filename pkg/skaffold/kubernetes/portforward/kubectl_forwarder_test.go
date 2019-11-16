@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -37,7 +39,7 @@ func TestUnavailablePort(t *testing.T) {
 	// has been called
 	portFreeWG := &sync.WaitGroup{}
 	portFreeWG.Add(1)
-	isPortFree = func(_ int) bool {
+	isPortFree = func(_ string, _ int) bool {
 		defer portFreeWG.Done()
 		return false
 	}
@@ -160,5 +162,64 @@ func assertCmdIsRunning(t *testing.T, cmd *exec.Cmd) {
 func assertCmdWasKilled(t *testing.T, cmd *exec.Cmd) {
 	if err := cmd.Wait(); err == nil {
 		t.Fatal("cmd was not killed but expected to be killed")
+	}
+}
+
+func TestAddressArg(t *testing.T) {
+	ctx := context.Background()
+	pfe := newPortForwardEntry(0, latest.PortForwardResource{Address: "0.0.0.0"}, "", "", "", "", 8080, false)
+	cli := kubectl.NewFromRunContext(&runcontext.RunContext{})
+	cmd := portForwardCommand(ctx, cli, pfe, nil)
+	assertCmdContainsArgs(t, cmd, true, "--address", "0.0.0.0")
+}
+
+func TestNoAddressArg(t *testing.T) {
+	ctx := context.Background()
+	pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false)
+	cli := kubectl.NewFromRunContext(&runcontext.RunContext{})
+	cmd := portForwardCommand(ctx, cli, pfe, nil)
+	assertCmdContainsArgs(t, cmd, false, "--address")
+}
+
+func TestDefaultAddressArg(t *testing.T) {
+	ctx := context.Background()
+	pfe := newPortForwardEntry(0, latest.PortForwardResource{Address: "127.0.0.1"}, "", "", "", "", 8080, false)
+	cli := kubectl.NewFromRunContext(&runcontext.RunContext{})
+	cmd := portForwardCommand(ctx, cli, pfe, nil)
+	assertCmdContainsArgs(t, cmd, false, "--address")
+}
+
+func assertCmdContainsArgs(t *testing.T, cmd *exec.Cmd, expected bool, args ...string) {
+	if len(args) == 0 {
+		return
+	}
+	contains := false
+	cmdArgs := cmd.Args
+	var start int
+	var cmdArg string
+	for start, cmdArg = range cmdArgs {
+		if cmdArg == args[0] {
+			contains = true
+			break
+		}
+	}
+	if !contains {
+		if expected {
+			t.Fatalf("cmd expected to contain args %v but args are %v", args, cmdArgs)
+		}
+		return
+	}
+	for i, arg := range args[1:] {
+		if arg != cmdArgs[start+i+1] {
+			contains = false
+			break
+		}
+	}
+	if contains != expected {
+		if expected {
+			t.Fatalf("cmd expected to contain args %v but args are %v", args, cmdArgs)
+		} else {
+			t.Fatalf("cmd expected not to contain args %v but args are %v", args, cmdArgs)
+		}
 	}
 }

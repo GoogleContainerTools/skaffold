@@ -17,6 +17,7 @@ limitations under the License.
 package runner
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -57,7 +58,11 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		imagesAreLocal = !localBuilder.PushImages()
 	}
 
-	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, builder)
+	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+		return build.DependenciesForArtifact(ctx, artifact, runCtx.InsecureRegistries)
+	}
+
+	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, depLister)
 	if err != nil {
 		return nil, errors.Wrap(err, "initializing cache")
 	}

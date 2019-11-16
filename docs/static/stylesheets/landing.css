@@ -1,0 +1,6 @@
+.hero video {
+    box-shadow: 1px 1px 10px grey;
+    width: calc(100% - 80px);
+    height: 100%;
+    margin: 0 40px;
+}

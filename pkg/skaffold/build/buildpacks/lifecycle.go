@@ -21,11 +21,13 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"time"
 
 	"github.com/docker/docker/api/types/mount"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -56,6 +58,12 @@ func (b *BuildpackBuilder) build(ctx context.Context, out io.Writer, workspace s
 		return "", err
 	}
 
+	logrus.Debugln("Evaluate env variables")
+	env, err := misc.EvaluateEnv(artifact.Env)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to evaluate env variables")
+	}
+
 	logrus.Debugln("Get dependencies")
 	deps, err := GetDependencies(ctx, workspace, artifact)
 	if err != nil {
@@ -68,7 +76,11 @@ func (b *BuildpackBuilder) build(ctx context.Context, out io.Writer, workspace s
 	}
 
 	copyWorkspace := func(ctx context.Context, container string) error {
-		return b.localDocker.CopyToContainer(ctx, container, "/workspace", workspace, paths)
+		uid := 1000
+		gid := 1000
+		modTime := time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
+
+		return b.localDocker.CopyToContainer(ctx, container, "/workspace", workspace, paths, uid, gid, modTime)
 	}
 
 	// These volumes store the state shared between build steps.
@@ -101,6 +113,7 @@ func (b *BuildpackBuilder) build(ctx context.Context, out io.Writer, workspace s
 			Command:     []string{"/lifecycle/detector"},
 			BeforeStart: copyWorkspace,
 			Mounts:      []mount.Mount{packWorkspace, layers},
+			Env:         env,
 		}, docker.ContainerRun{
 			Image:   builderImage,
 			Command: []string{"sh", "-c", "/lifecycle/restorer -path /cache && /lifecycle/analyzer -daemon " + latest},
@@ -110,6 +123,7 @@ func (b *BuildpackBuilder) build(ctx context.Context, out io.Writer, workspace s
 			Image:   builderImage,
 			Command: []string{"/lifecycle/builder"},
 			Mounts:  []mount.Mount{packWorkspace, layers},
+			Env:     env,
 		}, docker.ContainerRun{
 			Image:   builderImage,
 			Command: []string{"sh", "-c", "/lifecycle/exporter -daemon -image " + runImage + " -launch-cache /launch-cache " + latest + " && /lifecycle/cacher -path /cache"},

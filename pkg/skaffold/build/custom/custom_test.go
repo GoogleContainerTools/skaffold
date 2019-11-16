@@ -17,8 +17,10 @@ limitations under the License.
 package custom
 
 import (
+	"context"
 	"io/ioutil"
 	"os/exec"
+	"runtime"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -78,10 +80,11 @@ func TestRetrieveEnv(t *testing.T) {
 
 func TestRetrieveCmd(t *testing.T) {
 	tests := []struct {
-		description string
-		artifact    *latest.Artifact
-		tag         string
-		expected    *exec.Cmd
+		description       string
+		artifact          *latest.Artifact
+		tag               string
+		expected          *exec.Cmd
+		expectedOnWindows *exec.Cmd
 	}{
 		{
 			description: "artifact with workspace set",
@@ -93,19 +96,21 @@ func TestRetrieveCmd(t *testing.T) {
 					},
 				},
 			},
-			tag:      "image:tag",
-			expected: expectedCmd("./build.sh", "workspace", nil, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace"}),
+			tag:               "image:tag",
+			expected:          expectedCmd("workspace", "sh", []string{"-c", "./build.sh"}, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace"}),
+			expectedOnWindows: expectedCmd("workspace", "cmd.exe", []string{"/C", "./build.sh"}, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace"}),
 		}, {
 			description: "buildcommand with multiple args",
 			artifact: &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					CustomArtifact: &latest.CustomArtifact{
-						BuildCommand: "./build.sh --flag --anotherflag",
+						BuildCommand: "./build.sh --flag=$IMAGES --anotherflag",
 					},
 				},
 			},
-			tag:      "image:tag",
-			expected: expectedCmd("./build.sh", "", []string{"--flag", "--anotherflag"}, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT="}),
+			tag:               "image:tag",
+			expected:          expectedCmd("", "sh", []string{"-c", "./build.sh --flag=$IMAGES --anotherflag"}, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT="}),
+			expectedOnWindows: expectedCmd("", "cmd.exe", []string{"/C", "./build.sh --flag=$IMAGES --anotherflag"}, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT="}),
 		},
 	}
 	for _, test := range tests {
@@ -114,17 +119,23 @@ func TestRetrieveCmd(t *testing.T) {
 			t.Override(&buildContext, func(string) (string, error) { return test.artifact.Workspace, nil })
 
 			builder := NewArtifactBuilder(false, nil)
-			cmd, err := builder.retrieveCmd(ioutil.Discard, test.artifact, test.tag)
+			cmd, err := builder.retrieveCmd(context.Background(), ioutil.Discard, test.artifact, test.tag)
 
 			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected.Args, cmd.Args)
-			t.CheckDeepEqual(test.expected.Dir, cmd.Dir)
-			t.CheckDeepEqual(test.expected.Env, cmd.Env)
+			if runtime.GOOS == "windows" {
+				t.CheckDeepEqual(test.expectedOnWindows.Args, cmd.Args)
+				t.CheckDeepEqual(test.expectedOnWindows.Dir, cmd.Dir)
+				t.CheckDeepEqual(test.expectedOnWindows.Env, cmd.Env)
+			} else {
+				t.CheckDeepEqual(test.expected.Args, cmd.Args)
+				t.CheckDeepEqual(test.expected.Dir, cmd.Dir)
+				t.CheckDeepEqual(test.expected.Env, cmd.Env)
+			}
 		})
 	}
 }
 
-func expectedCmd(buildCommand, dir string, args, env []string) *exec.Cmd {
+func expectedCmd(dir, buildCommand string, args, env []string) *exec.Cmd {
 	cmd := exec.Command(buildCommand, args...)
 	cmd.Dir = dir
 	cmd.Env = env

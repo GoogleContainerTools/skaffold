@@ -94,7 +94,7 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = retrieveAvailablePort(resource.LocalPort, &p.forwardedPorts)
+	entry.localPort = retrieveAvailablePort(resource.Address, resource.LocalPort, &p.forwardedPorts)
 	return entry
 }
 
@@ -121,6 +121,7 @@ func retrieveServiceResources(label string, namespaces []string) ([]*latest.Port
 					Name:      s.Name,
 					Namespace: s.Namespace,
 					Port:      int(p.Port),
+					Address:   constants.DefaultPortForwardAddress,
 					LocalPort: int(p.Port),
 				})
 			}

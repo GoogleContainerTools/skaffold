@@ -314,6 +314,9 @@ func NewCallbackCDecl(fn interface{}) uintptr {
 //sys	rtlGetVersion(info *OsVersionInfoEx) (ret error) = ntdll.RtlGetVersion
 //sys	rtlGetNtVersionNumbers(majorVersion *uint32, minorVersion *uint32, buildNumber *uint32) = ntdll.RtlGetNtVersionNumbers
 
+// Process Status API (PSAPI)
+//sys	EnumProcesses(processIds []uint32, bytesReturned *uint32) (err error) = psapi.EnumProcesses
+
 // syscall interface implementation for other packages
 
 // GetCurrentProcess returns the handle for the current process.

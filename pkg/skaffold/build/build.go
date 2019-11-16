@@ -39,8 +39,6 @@ type Builder interface {
 
 	Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]Artifact, error)
 
-	DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
-
 	// SyncMap provides a map of sync destinations by source paths.
 	SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error)
 
