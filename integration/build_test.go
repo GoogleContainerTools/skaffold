@@ -100,6 +100,12 @@ func TestBuild(t *testing.T) {
 				return func() {}
 			},
 		},
+		{
+			description: "--tag arg",
+			dir:         "testdata/tagPolicy",
+			args:        []string{"-p", "args", "-t", "foo"},
+			expectImage: imageName + "foo",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
