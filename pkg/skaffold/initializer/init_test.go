@@ -346,7 +346,9 @@ func TestResolveBuilderImages(t *testing.T) {
 		description      string
 		buildConfigs     []InitBuilder
 		images           []string
+		force            bool
 		shouldMakeChoice bool
+		shouldErr        bool
 		expectedPairs    []builderImagePair
 	}{
 		{
@@ -384,6 +386,27 @@ func TestResolveBuilderImages(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:      "successful force",
+			buildConfigs:     []InitBuilder{jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"}},
+			images:           []string{"image1"},
+			shouldMakeChoice: false,
+			force:            true,
+			expectedPairs: []builderImagePair{
+				{
+					Builder:   jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"},
+					ImageName: "image1",
+				},
+			},
+		},
+		{
+			description:      "error with ambiguous force",
+			buildConfigs:     []InitBuilder{docker.Docker{File: "Dockerfile1"}, jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"}},
+			images:           []string{"image1", "image2"},
+			shouldMakeChoice: false,
+			force:            true,
+			shouldErr:        true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -395,10 +418,9 @@ func TestResolveBuilderImages(t *testing.T) {
 				return choices[0], nil
 			})
 
-			pairs, err := resolveBuilderImages(test.buildConfigs, test.images)
+			pairs, err := resolveBuilderImages(test.buildConfigs, test.images, test.force)
 
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expectedPairs, pairs)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, pairs)
 		})
 	}
 }
