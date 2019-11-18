@@ -54,3 +54,48 @@ func (b *Builder) findRunImage(ctx context.Context, a *latest.BuildpackArtifact,
 
 	return m.Stack.RunImage.Image, nil
 }
+
+type buildMetadata struct {
+	Bom []bom `json:"bom"`
+}
+
+type bom struct {
+	Metadata bomMetadata `json:"metadata"`
+}
+
+type bomMetadata struct {
+	Sync []sync `json:"skaffold.sync"`
+}
+
+type sync struct {
+	Src   string `json:"src"`
+	Dest  string `json:"dest"`
+	Strip string `json:"strip"`
+}
+
+// $ docker inspect demo/buildpacks | jq -r '.[].Config.Labels["io.buildpacks.build.metadata"] | fromjson.bom[].metadata["skaffold.sync"]'
+func SyncRules(labels map[string]string) ([]*latest.SyncRule, error) {
+	metadataJSON, present := labels["io.buildpacks.build.metadata"]
+	if !present {
+		return nil, nil
+	}
+
+	m := buildMetadata{}
+	if err := json.Unmarshal([]byte(metadataJSON), &m); err != nil {
+		return nil, err
+	}
+
+	var rules []*latest.SyncRule
+
+	for _, b := range m.Bom {
+		for _, sync := range b.Metadata.Sync {
+			rules = append(rules, &latest.SyncRule{
+				Src:   sync.Src,
+				Dest:  sync.Dest,
+				Strip: sync.Strip,
+			})
+		}
+	}
+
+	return rules, nil
+}

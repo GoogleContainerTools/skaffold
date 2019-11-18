@@ -82,6 +82,10 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		return "", errors.Wrap(err, "unable to evaluate env variables")
 	}
 
+	if b.devMode && a.Sync != nil && len(a.Sync.Infer) > 0 {
+		env = append(env, "EXPERIMENTAL_DEV=1")
+	}
+
 	if err := runPackBuildFunc(ctx, out, pack.BuildOptions{
 		AppPath:  workspace,
 		Builder:  builderImage,

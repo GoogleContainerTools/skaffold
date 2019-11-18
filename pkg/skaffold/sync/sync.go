@@ -32,6 +32,7 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -42,6 +43,7 @@ import (
 // For testing
 var (
 	WorkingDir = docker.RetrieveWorkingDir
+	Labels     = docker.RetrieveLabels
 	SyncMap    = syncMapForArtifact
 )
 
@@ -53,12 +55,54 @@ func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, inse
 	case a.Sync != nil && len(a.Sync.Manual) > 0:
 		return manualSyncItem(a, e, builds, insecureRegistries)
 
+	case a.BuildpackArtifact != nil && a.Sync != nil && len(a.Sync.Infer) > 0:
+		return autoSyncItem(a, e, builds, insecureRegistries)
+
 	case a.Sync != nil && len(a.Sync.Infer) > 0:
 		return inferredSyncItem(a, e, builds, insecureRegistries)
 
 	default:
 		return nil, nil
 	}
+}
+
+func autoSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
+	tag := latestTag(a.ImageName, builds)
+	if tag == "" {
+		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
+	}
+
+	containerWd, err := WorkingDir(tag, insecureRegistries)
+	if err != nil {
+		return nil, errors.Wrapf(err, "retrieving working dir for %s", tag)
+	}
+
+	labels, err := Labels(tag, insecureRegistries)
+	if err != nil {
+		return nil, errors.Wrapf(err, "retrieving labels for %s", tag)
+	}
+
+	rules, err := buildpacks.SyncRules(labels)
+	if err != nil {
+		return nil, errors.Wrapf(err, "extracting sync rules from labels for %s", tag)
+	}
+
+	toCopy, err := intersect(a.Workspace, containerWd, rules, append(e.Added, e.Modified...))
+	if err != nil {
+		return nil, errors.Wrap(err, "intersecting sync map and added, modified files")
+	}
+
+	toDelete, err := intersect(a.Workspace, containerWd, rules, e.Deleted)
+	if err != nil {
+		return nil, errors.Wrap(err, "intersecting sync map and deleted files")
+	}
+
+	// Something went wrong, don't sync, rebuild.
+	if toCopy == nil || toDelete == nil {
+		return nil, nil
+	}
+
+	return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
 }
 
 func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {

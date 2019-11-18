@@ -50,6 +50,7 @@ type cache struct {
 	insecureRegistries map[string]bool
 	cacheFile          string
 	imagesAreLocal     bool
+	devMode            bool
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
@@ -85,6 +86,7 @@ func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies D
 		insecureRegistries: runCtx.InsecureRegistries,
 		cacheFile:          cacheFile,
 		imagesAreLocal:     imagesAreLocal,
+		devMode:            runCtx.DevMode,
 	}, nil
 }
 

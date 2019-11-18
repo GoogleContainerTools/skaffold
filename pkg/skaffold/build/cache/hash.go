@@ -41,11 +41,11 @@ var (
 	artifactConfigFunction = artifactConfig
 )
 
-func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact) (string, error) {
+func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *latest.Artifact, devMode bool) (string, error) {
 	var inputs []string
 
 	// Append the artifact's configuration
-	config, err := artifactConfigFunction(a)
+	config, err := artifactConfigFunction(a, devMode)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting artifact's configuration for %s", a.ImageName)
 	}
@@ -100,10 +100,15 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
-func artifactConfig(a *latest.Artifact) (string, error) {
+// TODO(dgageot): when the buildpacks builder image digest changes, we need to change the hash
+func artifactConfig(a *latest.Artifact, devMode bool) (string, error) {
 	buf, err := json.Marshal(a.ArtifactType)
 	if err != nil {
 		return "", errors.Wrapf(err, "marshalling the artifact's configuration for %s", a.ImageName)
+	}
+
+	if devMode && a.BuildpackArtifact != nil && a.Sync != nil && len(a.Sync.Infer) > 0 {
+		return string(buf) + ".DEV", nil
 	}
 
 	return string(buf), nil

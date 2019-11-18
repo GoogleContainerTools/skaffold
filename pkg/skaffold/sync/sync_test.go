@@ -639,6 +639,7 @@ func TestNewSyncItem(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return test.workingDir, nil })
 			t.Override(&SyncMap, func(*latest.Artifact, map[string]bool) (map[string][]string, error) { return test.dependencies, nil })
+			t.Override(&Labels, func(string, map[string]bool) (map[string]string, error) { return nil, nil })
 
 			actual, err := NewItem(test.artifact, test.evt, test.builds, nil)
 
