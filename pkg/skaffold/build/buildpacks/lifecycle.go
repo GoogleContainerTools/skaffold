@@ -59,6 +59,10 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		return "", errors.Wrap(err, "unable to evaluate env variables")
 	}
 
+	if b.devMode && a.Sync != nil && len(a.Sync.Infer) > 0 {
+		env = append(env, "GOOGLE_DEVMODE=1")
+	}
+
 	alreadyPulled := images.AreAlreadyPulled(artifact.Builder, artifact.RunImage)
 
 	if err := runPackBuildFunc(ctx, out, pack.BuildOptions{

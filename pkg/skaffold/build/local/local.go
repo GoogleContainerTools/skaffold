@@ -89,7 +89,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
 
 	case artifact.BuildpackArtifact != nil:
-		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages).Build(ctx, out, artifact, tag)
+		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.devMode).Build(ctx, out, artifact, tag)
 
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
