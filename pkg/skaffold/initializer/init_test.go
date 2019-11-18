@@ -420,11 +420,7 @@ func TestResolveBuilderImages(t *testing.T) {
 
 			pairs, err := resolveBuilderImages(test.buildConfigs, test.images, test.force)
 
-			t.CheckError(test.shouldErr, err)
-			if test.shouldErr {
-				return
-			}
-			t.CheckDeepEqual(test.expectedPairs, pairs)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, pairs)
 		})
 	}
 }
