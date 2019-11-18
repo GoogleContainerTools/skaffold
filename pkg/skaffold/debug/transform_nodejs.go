@@ -79,7 +79,6 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 
 	// try to find existing `--inspect` command
 	spec := retrieveNodeInspectSpec(config)
-	// todo: find existing containerPort "devtools" and use port. But what if it conflicts with command-line spec?
 
 	if spec == nil {
 		spec = &inspectSpec{port: portAlloc(defaultDevtoolsPort)}
@@ -102,11 +101,7 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 		}
 	}
 
-	inspectPort := v1.ContainerPort{
-		Name:          "devtools",
-		ContainerPort: spec.port,
-	}
-	container.Ports = append(container.Ports, inspectPort)
+	container.Ports = exposePort(container.Ports, "devtools", spec.port)
 
 	return map[string]interface{}{
 		"runtime":  "nodejs",
