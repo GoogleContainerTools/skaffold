@@ -90,10 +90,10 @@ func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration
 		spec = &newSpec
 		switch {
 		case len(config.entrypoint) > 0:
-			container.Command = rewriteDlvCommandLine(config.entrypoint, *spec)
+			container.Command = rewriteDlvCommandLine(config.entrypoint, *spec, container.Args)
 
 		case len(config.entrypoint) == 0 && len(config.arguments) > 0:
-			container.Args = rewriteDlvCommandLine(config.arguments, *spec)
+			container.Args = rewriteDlvCommandLine(config.arguments, *spec, container.Args)
 
 		default:
 			logrus.Warnf("Skipping %q as does not appear to be Go-based", container.Name)
@@ -160,10 +160,10 @@ arguments:
 }
 
 // rewriteDlvCommandLine rewrites a go command-line to insert a `dlv`
-func rewriteDlvCommandLine(commandLine []string, spec dlvSpec) []string {
+func rewriteDlvCommandLine(commandLine []string, spec dlvSpec, args []string) []string {
 	// todo: parse off dlv commands if present?
 
-	if len(commandLine) > 1 {
+	if len(commandLine) > 1 || len(args) > 0 {
 		// insert "--" after app binary to indicate end of Delve arguments
 		commandLine = util.StrSliceInsert(commandLine, 1, []string{"--"})
 	}
