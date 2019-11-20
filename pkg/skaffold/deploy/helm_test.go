@@ -212,6 +212,15 @@ var testDeployRemoteChart = latest.HelmDeploy{
 	}},
 }
 
+var upgradeOnChangeFalse = false
+var testDeployUpgradeOnChange = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:            "skaffold-helm-upgradeOnChange",
+		ChartPath:       "examples/test",
+		UpgradeOnChange: &upgradeOnChangeFalse,
+	}},
+}
+
 var testDeployWithoutTags = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
@@ -338,6 +347,15 @@ func TestHelmDeploy(t *testing.T) {
 			commands:    &MockHelm{},
 			runContext:  makeRunContext(testDeploySkipBuildDependencies, false),
 			builds:      testBuilds,
+		},
+		{
+			description: "deploy success when `upgradeOnChange: false` and does not upgrade",
+			commands: &MockHelm{
+				installResult: fmt.Errorf("should not have called install"),
+				upgradeResult: fmt.Errorf("should not have called upgrade"),
+			},
+			runContext: makeRunContext(testDeployUpgradeOnChange, false),
+			builds:     testBuilds,
 		},
 		{
 			description: "deploy error remote chart without skipBuildDependencies",
@@ -855,6 +873,38 @@ func TestGetSetFileValues(t *testing.T) {
 			sort.Strings(actual)
 			t.CheckDeepEqual(test.expected, actual)
 			t.CheckDeepEqual(test.expectedMap, inMap)
+		})
+	}
+}
+
+func TestShouldUpgradeOnChange(t *testing.T) {
+	trueBool := true
+	tests := []struct {
+		description string
+		input       latest.HelmRelease
+		expected    bool
+	}{
+		{
+			description: "Default `UpgradeOnChange: false` when `Remote: true`",
+			input:       latest.HelmRelease{Remote: true, UpgradeOnChange: nil},
+			expected:    false,
+		},
+		{
+			description: "Default `UpgradeOnChange: true` when `Remote: false`",
+			input:       latest.HelmRelease{Remote: false, UpgradeOnChange: nil},
+			expected:    true,
+		},
+		{
+			description: "Uses upgradeOnChange value regardless of Remote value",
+			input:       latest.HelmRelease{Remote: true, UpgradeOnChange: &trueBool},
+			expected:    true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			deployer := NewHelmDeployer(&runcontext.RunContext{})
+
+			t.CheckDeepEqual(test.expected, deployer.shouldUpgradeOnChange(test.input))
 		})
 	}
 }

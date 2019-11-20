@@ -204,6 +204,9 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	if !isInstalled {
 		args = append(args, "install", "--name", releaseName)
 		args = append(args, h.Flags.Install...)
+	} else if !h.shouldUpgradeOnChange(r) {
+		logrus.Infof("Release %s already installed...\n", releaseName)
+		return []Artifact{}, nil
 	} else {
 		args = append(args, "upgrade", releaseName)
 		args = append(args, h.Flags.Upgrade...)
@@ -540,4 +543,12 @@ func expandPaths(paths []string) []string {
 	}
 
 	return paths
+}
+
+func (h *HelmDeployer) shouldUpgradeOnChange(r latest.HelmRelease) bool {
+	if r.UpgradeOnChange != nil {
+		return *r.UpgradeOnChange
+	}
+
+	return !r.Remote
 }

@@ -502,8 +502,12 @@ type HelmRelease struct {
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
 
 	// Remote specifies whether the chart path is remote, or exists on the host filesystem.
-	// `remote: true` implies `skipBuildDependencies: true`.
+	// `remote: true` implies `skipBuildDependencies: true` and `upgradeOnChange: false`.
+	// `remote: false` implies `upgradeOnChange: true`.
 	Remote bool `yaml:"remote,omitempty"`
+
+	// UpgradeOnChange specifics whether to upgrade helm chart on code changes.
+	UpgradeOnChange *bool `yaml:"upgradeOnChange,omitempty"`
 
 	// Overrides are key-value pairs.
 	// If present, Skaffold will build a Helm `values` file that overrides

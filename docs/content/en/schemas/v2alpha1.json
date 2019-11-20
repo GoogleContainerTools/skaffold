@@ -1243,8 +1243,8 @@
         },
         "remote": {
           "type": "boolean",
-          "description": "specifies whether the chart path is remote, or exists on the host filesystem. `remote: true` implies `skipBuildDependencies: true`.",
-          "x-intellij-html-description": "specifies whether the chart path is remote, or exists on the host filesystem. <code>remote: true</code> implies <code>skipBuildDependencies: true</code>.",
+          "description": "specifies whether the chart path is remote, or exists on the host filesystem. `remote: true` implies `skipBuildDependencies: true` and `upgradeOnChange: false`. `remote: false` implies `upgradeOnChange: true`.",
+          "x-intellij-html-description": "specifies whether the chart path is remote, or exists on the host filesystem. <code>remote: true</code> implies <code>skipBuildDependencies: true</code> and <code>upgradeOnChange: false</code>. <code>remote: false</code> implies <code>upgradeOnChange: true</code>.",
           "default": "false"
         },
         "setFiles": {
@@ -1279,6 +1279,11 @@
           "description": "should build dependencies be skipped.",
           "x-intellij-html-description": "should build dependencies be skipped.",
           "default": "false"
+        },
+        "upgradeOnChange": {
+          "type": "boolean",
+          "description": "specifics whether to upgrade helm chart on code changes.",
+          "x-intellij-html-description": "specifics whether to upgrade helm chart on code changes."
         },
         "useHelmSecrets": {
           "type": "boolean",
@@ -1331,6 +1336,7 @@
         "skipBuildDependencies",
         "useHelmSecrets",
         "remote",
+        "upgradeOnChange",
         "overrides",
         "packaged",
         "imageStrategy"
