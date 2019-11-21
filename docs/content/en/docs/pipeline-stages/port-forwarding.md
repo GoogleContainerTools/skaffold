@@ -3,6 +3,7 @@ title: "Port Forwarding"
 linkTitle: "Port Forwarding"
 weight: 50
 featureId: portforward
+aliases: [/docs/how-tos/portforward]
 ---
 
 Skaffold has built-in support for forwarding ports for exposed Kubernetes resources on your cluster

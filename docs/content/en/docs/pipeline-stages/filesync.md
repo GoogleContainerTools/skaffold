@@ -3,6 +3,7 @@ title: "File Sync"
 linkTitle: "File Sync"
 weight: 40
 featureId: sync
+aliases: [/docs/how-tos/filesync]
 ---
 
 Skaffold supports copying changed files to a deployed container so as to avoid the need to rebuild, redeploy, and restart the corresponding pod.
