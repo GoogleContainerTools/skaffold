@@ -50,9 +50,9 @@ var (
 
 // DebugConfiguration captures debugging information for a specific container
 type DebugConfiguration struct {
-	ArtifactName string          `json:"artifactName,omitempty"`
-	Runtime      string          `json:"runtime,omitempty"`
-	WorkingDir   string          `json:"workingDir,omitempty"`
+	ArtifactName string            `json:"artifactName,omitempty"`
+	Runtime      string            `json:"runtime,omitempty"`
+	WorkingDir   string            `json:"workingDir,omitempty"`
 	Ports        map[string]uint32 `json:"ports,omitempty"`
 }
 

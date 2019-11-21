@@ -293,7 +293,7 @@ func TestDebuggingContainer(t *testing.T) {
 	found := func() bool {
 		for _, dc := range handler.getState().DebuggingContainers {
 			if dc.Namespace == "ns" && dc.PodName == "pod" && dc.ContainerName == "container" {
-					return true
+				return true
 			}
 		}
 		return false

@@ -128,7 +128,7 @@ func (d *DebuggableContainerManager) checkPod(ctx context.Context, pod *v1.Pod) 
 					config.Runtime,
 					config.WorkingDir,
 					config.Ports)
-					
+
 			case c.State.Terminated != nil && seen:
 				delete(d.active, key)
 				color.Yellow.Fprintf(d.output, "Debuggable container %s terminated\n", key)

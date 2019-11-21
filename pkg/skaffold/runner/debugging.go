@@ -17,8 +17,8 @@ limitations under the License.
 package runner
 
 import (
-
 	"io"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
 )
