@@ -260,7 +260,7 @@ func FileSyncSucceeded(fileCount int, image string) {
 }
 
 // PortForwarded notifies that a remote port has been forwarded locally.
-func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string, portName string, resourceType, resourceName string) {
+func PortForwarded(localPort, remotePort int32, podName, containerName, namespace string, portName string, resourceType, resourceName, address string) {
 	go handler.handle(&proto.Event{
 		EventType: &proto.Event_PortEvent{
 			PortEvent: &proto.PortEvent{
@@ -272,6 +272,7 @@ func PortForwarded(localPort, remotePort int32, podName, containerName, namespac
 				PortName:      portName,
 				ResourceType:  resourceType,
 				ResourceName:  resourceName,
+				Address:       address,
 			},
 		},
 	})

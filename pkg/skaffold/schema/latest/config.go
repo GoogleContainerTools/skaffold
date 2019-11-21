@@ -20,8 +20,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v1"
+// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+const Version string = "skaffold/v2alpha1"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -88,6 +88,9 @@ type PortForwardResource struct {
 
 	// Port is the resource port that will be forwarded.
 	Port int `yaml:"port,omitempty"`
+
+	// Address is the local address to bind to. Defaults to the loopback address 127.0.0.1.
+	Address string `yaml:"address,omitempty"`
 
 	// LocalPort is the local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
 	LocalPort int `yaml:"localPort,omitempty"`
@@ -206,15 +209,15 @@ type GoogleCloudBuild struct {
 	ProjectID string `yaml:"projectId,omitempty"`
 
 	// DiskSizeGb is the disk size of the VM that runs the build.
-	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).
+	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v2alpha1/projects.builds#buildoptions).
 	DiskSizeGb int64 `yaml:"diskSizeGb,omitempty"`
 
 	// MachineType is the type of the VM that runs the build.
-	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).
+	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v2alpha1/projects.builds#buildoptions).
 	MachineType string `yaml:"machineType,omitempty"`
 
 	// Timeout is the amount of time (in seconds) that this build should be allowed to run.
-	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build).
+	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v2alpha1/projects.builds#resource-build).
 	Timeout string `yaml:"timeout,omitempty"`
 
 	// DockerImage is the image that runs a Docker build.
@@ -688,6 +691,11 @@ type BuildpackArtifact struct {
 
 	// RunImage overrides the stack's default run image.
 	RunImage string `yaml:"runImage,omitempty"`
+
+	// Env are environment variables, in the `key=value` form,  passed to the build.
+	// Values can use the go template syntax.
+	// For example: `["key1=value1", "key2=value2", "key3={{.ENV_VARIABLE}}"]`.
+	Env []string `yaml:"env,omitempty"`
 
 	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`

@@ -197,6 +197,14 @@ exists that does not require sorting the directory's immediate
 descendants prior to visiting its nodes, this library will skip the
 sorting step when the `Unsorted` parameter is set to true.
 
+Here's an interesting read of the potential hazzards of traversing a
+file system hierarchy in a non-deterministic order. If you know the
+problem you are solving is not affected by the order files are
+visited, then I encourage you to use `Unsorted`. Otherwise skip
+setting this option.
+
+[Researchers find bug in Python script may have affected hundreds of studies](https://arstechnica.com/information-technology/2019/10/chemists-discover-cross-platform-python-scripts-not-so-cross-platform/)
+
 #### Configurable Post Children Callback
 
 This library provides upstream code with the ability to specify a

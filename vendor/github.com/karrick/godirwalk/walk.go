@@ -71,6 +71,13 @@ type Options struct {
 	// by the introduction of the Scanner struct, and migrating ReadDirents,
 	// ReadDirnames, and Walk to use Scanner for enumerating directory contents.
 	ScratchBuffer []byte
+
+	// AllowNonDirectory causes Walk to bypass the check that ensures it is
+	// being called on a directory node, or when FollowSymbolicLinks is true, a
+	// symbolic link that points to a directory. Leave this value false to have
+	// Walk return an error when called on a non-directory. Set this true to
+	// have Walk run even when called on a non-directory node.
+	AllowNonDirectory bool
 }
 
 // ErrorAction defines a set of actions the Walk function could take based on
@@ -119,9 +126,7 @@ type WalkFunc func(osPathname string, directoryEntry *Dirent) error
 
 // Walk walks the file tree rooted at the specified directory, calling the
 // specified callback function for each file system node in the tree, including
-// root, symbolic links, and other node types. The nodes are walked in lexical
-// order, which makes the output deterministic but means that for very large
-// directories this function can be inefficient.
+// root, symbolic links, and other node types.
 //
 // This function is often much faster than filepath.Walk because it does not
 // invoke os.Stat for every node it encounters, but rather obtains the file
@@ -159,8 +164,8 @@ type WalkFunc func(osPathname string, directoryEntry *Dirent) error
 //        }
 //    }
 func Walk(pathname string, options *Options) error {
-	if options.Callback == nil {
-		return errors.New("cannot walk without a specified Callback function")
+	if options == nil || options.Callback == nil {
+		return errors.New("cannot walk without non-nil options and Callback function")
 	}
 
 	pathname = filepath.Clean(pathname)
@@ -170,19 +175,21 @@ func Walk(pathname string, options *Options) error {
 
 	if options.FollowSymbolicLinks {
 		fi, err = os.Stat(pathname)
-		if err != nil {
-			return err
-		}
 	} else {
 		fi, err = os.Lstat(pathname)
-		if err != nil {
-			return err
-		}
+	}
+	if err != nil {
+		return err
 	}
 
 	mode := fi.Mode()
-	if mode&os.ModeDir == 0 {
+	if !options.AllowNonDirectory && mode&os.ModeDir == 0 {
 		return fmt.Errorf("cannot Walk non-directory: %s", pathname)
+	}
+
+	dirent := &Dirent{
+		name:     filepath.Base(pathname),
+		modeType: mode & os.ModeType,
 	}
 
 	// If ErrorCallback is nil, set to a default value that halts the walk
@@ -192,16 +199,10 @@ func Walk(pathname string, options *Options) error {
 		options.ErrorCallback = defaultErrorCallback
 	}
 
-	dirent := &Dirent{
-		name:     filepath.Base(pathname),
-		modeType: mode & os.ModeType,
+	if err = walk(pathname, dirent, options); err != filepath.SkipDir {
+		return err
 	}
-
-	err = walk(pathname, dirent, options)
-	if err == filepath.SkipDir {
-		return nil // silence SkipDir for top level
-	}
-	return err
+	return nil // silence SkipDir for top level
 }
 
 // defaultErrorCallback always returns Halt because if the upstream code did not

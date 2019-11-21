@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -116,6 +117,11 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
 
+	defaultRepo, err := config.GetDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting default repo")
+	}
+
 	tagErrs := make([]chan tagErr, len(artifacts))
 
 	for i := range artifacts {
@@ -143,7 +149,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 				return nil, errors.Wrapf(t.err, "generating tag for %s", imageName)
 			}
 
-			tag, err := docker.SubstituteDefaultRepoIntoImage(r.runCtx.DefaultRepo, t.tag)
+			tag, err := docker.SubstituteDefaultRepoIntoImage(defaultRepo, t.tag)
 			if err != nil {
 				return nil, errors.Wrapf(t.err, "applying default repo to %s", t.tag)
 			}

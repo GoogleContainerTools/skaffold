@@ -128,6 +128,7 @@ message PortEvent {
     string portName = 6;
     string resourceType = 7; // resource type e.g. "pod", "service".
     string resourceName = 8; // name of the resource to forward.
+    string address=9; // address on which to bind
 }
 
 // FileSyncEvent describes the sync status.
@@ -175,7 +176,7 @@ service SkaffoldService {
     // Returns the state of the current Skaffold execution
     rpc GetState (google.protobuf.Empty) returns (State) {
         option (google.api.http) = {
-      get: "/v1/state"
+            get: "/v1/state"
     };
     }
 
@@ -197,8 +198,8 @@ service SkaffoldService {
     // Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
     rpc Execute (UserIntentRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
-      post: "/v1/execute"
-      body: "intent"
+            post: "/v1/execute"
+            body: "intent"
     };
     }
 

@@ -67,3 +67,14 @@ It is possible to activate conflicting profiles in conjunction with the CLI flag
 
 It is not possible to change the kube-context of a running `skaffold dev` session.
 To pick up the changes to `kubeContext`, you will need to quit and re-run `skaffold dev`.
+
+## Kubeconfig selection
+
+The kubeconfig file is only loaded once during Skaffold's startup phase.
+
+1. If the `--kubeconfig` flag is set, then only that file is loaded.
+2. If `$KUBECONFIG` environment variable is set, then it is used as a list of paths (normal path delimiting rules for your system). These paths are merged.
+3. Otherwise, ${HOME}/.kube/config is used.
+4. If neither `--kubeconfig` or `--kube-context` are given and no kubeconfig file is found, Skaffold will try to guess an in-cluster
+   configuration using the secrets stored in `/var/run/secrets/kubernetes.io/serviceaccount/`. This is useful when Skaffold runs inside
+   a kubernetes Pod and should deploy to the same cluster.

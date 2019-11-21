@@ -195,7 +195,7 @@ func TestRewriteNpmCommandLine(t *testing.T) {
 	}
 }
 
-func TestNodeTransformerApply(t *testing.T) {
+func TestNodeTransformer_Apply(t *testing.T) {
 	tests := []struct {
 		description   string
 		containerSpec v1.Container
@@ -226,6 +226,17 @@ func TestNodeTransformerApply(t *testing.T) {
 			result: v1.Container{
 				Command: []string{"node", "--inspect=9229"},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "devtools", ContainerPort: 9229}},
+			},
+		},
+		{
+			description: "existing devtools port",
+			containerSpec: v1.Container{
+				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 4444}},
+			},
+			configuration: imageConfiguration{entrypoint: []string{"node"}},
+			result: v1.Container{
+				Command: []string{"node", "--inspect=9229"},
+				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 		},
 		{

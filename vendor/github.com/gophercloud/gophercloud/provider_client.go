@@ -2,6 +2,7 @@ package gophercloud
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -72,34 +73,49 @@ type ProviderClient struct {
 	// authentication functions for different Identity service versions.
 	ReauthFunc func() error
 
-	// IsThrowaway determines whether if this client is a throw-away client. It's a copy of user's provider client
+	// Throwaway determines whether if this client is a throw-away client. It's a copy of user's provider client
 	// with the token and reauth func zeroed. Such client can be used to perform reauthorization.
-	IsThrowaway bool
+	Throwaway bool
 
+	// Context is the context passed to the HTTP request.
+	Context context.Context
+
+	// mut is a mutex for the client. It protects read and write access to client attributes such as getting
+	// and setting the TokenID.
 	mut *sync.RWMutex
 
+	// reauthmut is a mutex for reauthentication it attempts to ensure that only one reauthentication
+	// attempt happens at one time.
 	reauthmut *reauthlock
+
+	authResult AuthResult
 }
 
+// reauthlock represents a set of attributes used to help in the reauthentication process.
 type reauthlock struct {
 	sync.RWMutex
-	reauthing    bool
-	reauthingErr error
-	done         *sync.Cond
+	// This channel is non-nil during reauthentication. It can be used to ask the
+	// goroutine doing Reauthenticate() for its result. Look at the implementation
+	// of Reauthenticate() for details.
+	ongoing chan<- (chan<- error)
 }
 
 // AuthenticatedHeaders returns a map of HTTP headers that are common for all
 // authenticated service requests. Blocks if Reauthenticate is in progress.
 func (client *ProviderClient) AuthenticatedHeaders() (m map[string]string) {
-	if client.IsThrowaway {
+	if client.IsThrowaway() {
 		return
 	}
 	if client.reauthmut != nil {
+		// If a Reauthenticate is in progress, wait for it to complete.
 		client.reauthmut.Lock()
-		for client.reauthmut.reauthing {
-			client.reauthmut.done.Wait()
-		}
+		ongoing := client.reauthmut.ongoing
 		client.reauthmut.Unlock()
+		if ongoing != nil {
+			responseChannel := make(chan error)
+			ongoing <- responseChannel
+			_ = <-responseChannel
+		}
 	}
 	t := client.Token()
 	if t == "" {
@@ -115,6 +131,20 @@ func (client *ProviderClient) UseTokenLock() {
 	client.reauthmut = new(reauthlock)
 }
 
+// GetAuthResult returns the result from the request that was used to obtain a
+// provider client's Keystone token.
+//
+// The result is nil when authentication has not yet taken place, when the token
+// was set manually with SetToken(), or when a ReauthFunc was used that does not
+// record the AuthResult.
+func (client *ProviderClient) GetAuthResult() AuthResult {
+	if client.mut != nil {
+		client.mut.RLock()
+		defer client.mut.RUnlock()
+	}
+	return client.authResult
+}
+
 // Token safely reads the value of the auth token from the ProviderClient. Applications should
 // call this method to access the token instead of the TokenID field
 func (client *ProviderClient) Token() string {
@@ -126,13 +156,71 @@ func (client *ProviderClient) Token() string {
 }
 
 // SetToken safely sets the value of the auth token in the ProviderClient. Applications may
-// use this method in a custom ReauthFunc
+// use this method in a custom ReauthFunc.
+//
+// WARNING: This function is deprecated. Use SetTokenAndAuthResult() instead.
 func (client *ProviderClient) SetToken(t string) {
 	if client.mut != nil {
 		client.mut.Lock()
 		defer client.mut.Unlock()
 	}
 	client.TokenID = t
+	client.authResult = nil
+}
+
+// SetTokenAndAuthResult safely sets the value of the auth token in the
+// ProviderClient and also records the AuthResult that was returned from the
+// token creation request. Applications may call this in a custom ReauthFunc.
+func (client *ProviderClient) SetTokenAndAuthResult(r AuthResult) error {
+	tokenID := ""
+	var err error
+	if r != nil {
+		tokenID, err = r.ExtractTokenID()
+		if err != nil {
+			return err
+		}
+	}
+
+	if client.mut != nil {
+		client.mut.Lock()
+		defer client.mut.Unlock()
+	}
+	client.TokenID = tokenID
+	client.authResult = r
+	return nil
+}
+
+// CopyTokenFrom safely copies the token from another ProviderClient into the
+// this one.
+func (client *ProviderClient) CopyTokenFrom(other *ProviderClient) {
+	if client.mut != nil {
+		client.mut.Lock()
+		defer client.mut.Unlock()
+	}
+	if other.mut != nil && other.mut != client.mut {
+		other.mut.RLock()
+		defer other.mut.RUnlock()
+	}
+	client.TokenID = other.TokenID
+	client.authResult = other.authResult
+}
+
+// IsThrowaway safely reads the value of the client Throwaway field.
+func (client *ProviderClient) IsThrowaway() bool {
+	if client.reauthmut != nil {
+		client.reauthmut.RLock()
+		defer client.reauthmut.RUnlock()
+	}
+	return client.Throwaway
+}
+
+// SetThrowaway safely sets the value of the client Throwaway field.
+func (client *ProviderClient) SetThrowaway(v bool) {
+	if client.reauthmut != nil {
+		client.reauthmut.Lock()
+		defer client.reauthmut.Unlock()
+	}
+	client.Throwaway = v
 }
 
 // Reauthenticate calls client.ReauthFunc in a thread-safe way. If this is
@@ -140,45 +228,59 @@ func (client *ProviderClient) SetToken(t string) {
 // this case, the reauthentication can be skipped if another thread has already
 // reauthenticated in the meantime. If no previous token is known, an empty
 // string should be passed instead to force unconditional reauthentication.
-func (client *ProviderClient) Reauthenticate(previousToken string) (err error) {
+func (client *ProviderClient) Reauthenticate(previousToken string) error {
 	if client.ReauthFunc == nil {
 		return nil
 	}
 
-	if client.mut == nil {
+	if client.reauthmut == nil {
 		return client.ReauthFunc()
 	}
 
+	messages := make(chan (chan<- error))
+
+	// Check if a Reauthenticate is in progress, or start one if not.
 	client.reauthmut.Lock()
-	if client.reauthmut.reauthing {
-		for !client.reauthmut.reauthing {
-			client.reauthmut.done.Wait()
-		}
-		err = client.reauthmut.reauthingErr
-		client.reauthmut.Unlock()
-		return err
+	ongoing := client.reauthmut.ongoing
+	if ongoing == nil {
+		client.reauthmut.ongoing = messages
 	}
 	client.reauthmut.Unlock()
 
-	client.mut.Lock()
-	defer client.mut.Unlock()
+	// If Reauthenticate is running elsewhere, wait for its result.
+	if ongoing != nil {
+		responseChannel := make(chan error)
+		ongoing <- responseChannel
+		return <-responseChannel
+	}
 
-	client.reauthmut.Lock()
-	client.reauthmut.reauthing = true
-	client.reauthmut.done = sync.NewCond(client.reauthmut)
-	client.reauthmut.reauthingErr = nil
-	client.reauthmut.Unlock()
-
+	// Perform the actual reauthentication.
+	var err error
 	if previousToken == "" || client.TokenID == previousToken {
 		err = client.ReauthFunc()
+	} else {
+		err = nil
 	}
 
+	// Mark Reauthenticate as finished.
 	client.reauthmut.Lock()
-	client.reauthmut.reauthing = false
-	client.reauthmut.reauthingErr = err
-	client.reauthmut.done.Broadcast()
+	client.reauthmut.ongoing = nil
 	client.reauthmut.Unlock()
-	return
+
+	// Report result to all other interested goroutines.
+	//
+	// This happens in a separate goroutine because another goroutine might have
+	// acquired a copy of `client.reauthmut.ongoing` before we cleared it, but not
+	// have come around to sending its request. By answering in a goroutine, we
+	// can have that goroutine linger until all responseChannels have been sent.
+	// When GC has collected all sendings ends of the channel, our receiving end
+	// will be closed and the goroutine will end.
+	go func() {
+		for responseChannel := range messages {
+			responseChannel <- err
+		}
+	}()
+	return err
 }
 
 // RequestOpts customizes the behavior of the provider.Request() method.
@@ -205,11 +307,26 @@ type RequestOpts struct {
 	ErrorContext error
 }
 
+// requestState contains temporary state for a single ProviderClient.Request() call.
+type requestState struct {
+	// This flag indicates if we have reauthenticated during this request because of a 401 response.
+	// It ensures that we don't reauthenticate multiple times for a single request. If we
+	// reauthenticate, but keep getting 401 responses with the fresh token, reauthenticating some more
+	// will just get us into an infinite loop.
+	hasReauthenticated bool
+}
+
 var applicationJSON = "application/json"
 
 // Request performs an HTTP request using the ProviderClient's current HTTPClient. An authentication
 // header will automatically be provided.
 func (client *ProviderClient) Request(method, url string, options *RequestOpts) (*http.Response, error) {
+	return client.doRequest(method, url, options, &requestState{
+		hasReauthenticated: false,
+	})
+}
+
+func (client *ProviderClient) doRequest(method, url string, options *RequestOpts, state *requestState) (*http.Response, error) {
 	var body io.Reader
 	var contentType *string
 
@@ -237,6 +354,9 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
+	}
+	if client.Context != nil {
+		req = req.WithContext(client.Context)
 	}
 
 	// Populate the request headers. Apply options.MoreHeaders last, to give the caller the chance to
@@ -276,13 +396,14 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 	}
 
 	// Allow default OkCodes if none explicitly set
-	if options.OkCodes == nil {
-		options.OkCodes = defaultOkCodes(method)
+	okc := options.OkCodes
+	if okc == nil {
+		okc = defaultOkCodes(method)
 	}
 
 	// Validate the HTTP response status.
 	var ok bool
-	for _, code := range options.OkCodes {
+	for _, code := range okc {
 		if resp.StatusCode == code {
 			ok = true
 			break
@@ -308,7 +429,7 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 				err = error400er.Error400(respErr)
 			}
 		case http.StatusUnauthorized:
-			if client.ReauthFunc != nil {
+			if client.ReauthFunc != nil && !state.hasReauthenticated {
 				err = client.Reauthenticate(prereqtok)
 				if err != nil {
 					e := &ErrUnableToReauthenticate{}
@@ -320,7 +441,8 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 						seeker.Seek(0, 0)
 					}
 				}
-				resp, err = client.Request(method, url, options)
+				state.hasReauthenticated = true
+				resp, err = client.doRequest(method, url, options, state)
 				if err != nil {
 					switch err.(type) {
 					case *ErrUnexpectedResponseCode:
@@ -358,6 +480,11 @@ func (client *ProviderClient) Request(method, url string, options *RequestOpts) 
 			err = ErrDefault408{respErr}
 			if error408er, ok := errType.(Err408er); ok {
 				err = error408er.Error408(respErr)
+			}
+		case http.StatusConflict:
+			err = ErrDefault409{respErr}
+			if error409er, ok := errType.(Err409er); ok {
+				err = error409er.Error409(respErr)
 			}
 		case 429:
 			err = ErrDefault429{respErr}

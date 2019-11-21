@@ -20,7 +20,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if ! [ -x "$(command -v golangci-lint)" ]; then
 	echo "Installing GolangCI-Lint"
-	${DIR}/install_golint.sh -b $GOPATH/bin v1.20.0
+	${DIR}/install_golint.sh -b $GOPATH/bin v1.21.0
 fi
 
 VERBOSE=""
@@ -29,4 +29,4 @@ if [[ "${TRAVIS}" == "true" ]]; then
 fi
 
 golangci-lint run ${VERBOSE} -c ${DIR}/golangci.yml \
-    | awk '/out of memory/ || /Deadline exceeded/ {failed = 1}; {print}; END {exit failed}'
+    | awk '/out of memory/ || /Timeout exceeded/ {failed = 1}; {print}; END {exit failed}'

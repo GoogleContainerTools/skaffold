@@ -3,6 +3,7 @@ title: "Debugging With Skaffold"
 linkTitle: "Debugging"
 weight: 30
 featureId: debug
+aliases: [/docs/how-tos/debug]
 ---
 
 `skaffold debug` acts like `skaffold dev`, but it configures containers in pods

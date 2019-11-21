@@ -2,6 +2,7 @@
 title: "Local Cluster"
 linkTitle: "Local Cluster"
 weight: 60
+aliases: [/docs/concepts/local_development]
 ---
 
 Skaffold can be easily configured to deploy against a cluster hosted locally, most commonly with

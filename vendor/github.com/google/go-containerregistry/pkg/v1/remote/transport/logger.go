@@ -1,6 +1,7 @@
 package transport
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httputil"
 
@@ -21,22 +22,22 @@ func (t *logTransport) RoundTrip(in *http.Request) (out *http.Response, err erro
 	// Inspired by: github.com/motemen/go-loghttp
 	logs.Debug.Printf("--> %s %s", in.Method, in.URL)
 	b, err := httputil.DumpRequestOut(in, true)
-	if err != nil {
-		logs.Debug.Printf("Could not dump request: %v", err)
-	} else {
-		logs.Debug.Printf(string(b))
+	if err == nil {
+		logs.Debug.Println(string(b))
 	}
 	out, err = t.inner.RoundTrip(in)
 	if err != nil {
 		logs.Debug.Printf("<-- %v %s", err, in.URL)
 	}
 	if out != nil {
-		logs.Debug.Printf("<-- %d %s", out.StatusCode, out.Request.URL)
+		msg := fmt.Sprintf("<-- %d", out.StatusCode)
+		if out.Request != nil {
+			msg = fmt.Sprintf("%s %s", msg, out.Request.URL)
+		}
+		logs.Debug.Printf(msg)
 		b, err := httputil.DumpResponse(out, true)
-		if err != nil {
-			logs.Debug.Printf("Could not dump response: %v", err)
-		} else {
-			logs.Debug.Printf(string(b))
+		if err == nil {
+			logs.Debug.Println(string(b))
 		}
 	}
 	return

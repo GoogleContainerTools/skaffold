@@ -29,45 +29,53 @@ import (
 func TestBuild(t *testing.T) {
 	tests := []struct {
 		description string
+		artifact    *latest.BuildpackArtifact
 		tag         string
-		latest      string
-		builder     string
-		runImage    string
 		api         *testutil.FakeAPIClient
-		forcePull   bool
 		pushImages  bool
 		shouldErr   bool
 	}{
 		{
 			description: "success",
-			tag:         "img:tag",
-			latest:      "img:latest",
-			builder:     "my/builder",
-			runImage:    "my/run",
-			api:         &testutil.FakeAPIClient{},
+			artifact: &latest.BuildpackArtifact{
+				Builder:      "my/builder",
+				RunImage:     "my/run",
+				Dependencies: defaultBuildpackDependencies(),
+			},
+			tag: "img:tag",
+			api: &testutil.FakeAPIClient{},
 		},
 		{
 			description: "invalid ref",
-			tag:         "in valid ref",
-			api:         &testutil.FakeAPIClient{},
-			shouldErr:   true,
+			artifact: &latest.BuildpackArtifact{
+				Builder:      "my/builder",
+				RunImage:     "my/run",
+				Dependencies: defaultBuildpackDependencies(),
+			},
+			tag:       "in valid ref",
+			api:       &testutil.FakeAPIClient{},
+			shouldErr: true,
 		},
 		{
 			description: "force pull",
-			tag:         "img:tag",
-			latest:      "img:latest",
-			builder:     "my/builder",
-			runImage:    "my/run",
-			forcePull:   true,
-			api:         &testutil.FakeAPIClient{},
+			artifact: &latest.BuildpackArtifact{
+				Builder:      "my/builder",
+				RunImage:     "my/run",
+				ForcePull:    true,
+				Dependencies: defaultBuildpackDependencies(),
+			},
+			tag: "img:tag",
+			api: &testutil.FakeAPIClient{},
 		},
 		{
 			description: "force pull error",
-			tag:         "img:tag",
-			latest:      "img:latest",
-			builder:     "my/builder",
-			runImage:    "my/run",
-			forcePull:   true,
+			artifact: &latest.BuildpackArtifact{
+				Builder:      "my/builder",
+				RunImage:     "my/run",
+				ForcePull:    true,
+				Dependencies: defaultBuildpackDependencies(),
+			},
+			tag: "img:tag",
 			api: &testutil.FakeAPIClient{
 				ErrImagePull: true,
 			},
@@ -75,14 +83,28 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			description: "push error",
-			tag:         "img:tag",
-			latest:      "img:latest",
-			builder:     "my/builder",
-			runImage:    "my/run",
-			pushImages:  true,
+			artifact: &latest.BuildpackArtifact{
+				Builder:      "my/builder",
+				RunImage:     "my/run",
+				Dependencies: defaultBuildpackDependencies(),
+			},
+			tag:        "img:tag",
+			pushImages: true,
 			api: &testutil.FakeAPIClient{
 				ErrImagePush: true,
 			},
+			shouldErr: true,
+		},
+		{
+			description: "invalid env",
+			artifact: &latest.BuildpackArtifact{
+				Builder:      "my/builder",
+				RunImage:     "my/run",
+				Env:          []string{"INVALID"},
+				Dependencies: defaultBuildpackDependencies(),
+			},
+			tag:       "img:tag",
+			api:       &testutil.FakeAPIClient{},
 			shouldErr: true,
 		},
 	}
@@ -90,27 +112,26 @@ func TestBuild(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Touch("file").Chdir()
 			test.api.
-				Add(test.builder, "builderImageID").
-				Add(test.runImage, "runImageID").
-				Add(test.latest, "builtImageID")
+				Add(test.artifact.Builder, "builderImageID").
+				Add(test.artifact.RunImage, "runImageID").
+				Add("img:latest", "builtImageID")
 			localDocker := docker.NewLocalDaemon(test.api, nil, false, nil)
 
 			builder := NewArtifactBuilder(localDocker, test.pushImages)
 			_, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				Workspace: ".",
 				ArtifactType: latest.ArtifactType{
-					BuildpackArtifact: &latest.BuildpackArtifact{
-						Builder:   test.builder,
-						RunImage:  test.runImage,
-						ForcePull: test.forcePull,
-						Dependencies: &latest.BuildpackDependencies{
-							Paths: []string{"."},
-						},
-					},
+					BuildpackArtifact: test.artifact,
 				},
 			}, test.tag)
 
 			t.CheckError(test.shouldErr, err)
 		})
+	}
+}
+
+func defaultBuildpackDependencies() *latest.BuildpackDependencies {
+	return &latest.BuildpackDependencies{
+		Paths: []string{"."},
 	}
 }

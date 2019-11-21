@@ -3,6 +3,7 @@ title: "Build"
 linkTitle: "Build"
 weight: 10
 featureId: build
+aliases: [/docs/how-tos/builders]
 ---
 
 Skaffold has native support for several different tools for building images:
@@ -15,7 +16,9 @@ Skaffold has native support for several different tools for building images:
   - [locally]({{< relref "/docs/pipeline-stages/builders/jib#jib-maven-and-gradle-locally" >}})
   - on cloud with [Google Cloud Build]({{< relref "/docs/pipeline-stages/builders/jib#remotely-with-google-cloud-build" >}})
 * [Bazel]({{< relref "/docs/pipeline-stages/builders/bazel" >}}) locally
-* [Cloud Native Buildpacks]({{< relref "/docs/pipeline-stages/builders/buildpacks" >}}) locally
+* [Cloud Native Buildpacks]({{< relref "/docs/pipeline-stages/builders/buildpacks" >}})
+  - locally with Docker
+  - on cloud with Google Cloud Build
 * [Custom script] ({{< relref "/docs/pipeline-stages/builders/custom" >}})
   - [locally]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-locally" >}}) and
   - [in cluster]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-in-cluster" >}}) 

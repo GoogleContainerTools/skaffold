@@ -3,6 +3,7 @@ title: "Cloud Native Buildpacks"
 linkTitle: "Buildpacks"
 weight: 50
 featureId: build.buildpacks
+aliases: [/docs/how-tos/buildpacks]
 ---
 
 [Cloud Native Buildpacks](https://buildpacks.io/) enable building
@@ -25,8 +26,17 @@ The following options can optionally be configured:
 
 {{< schema root="BuildpackArtifact" >}}
 
+**Builder**
+
 `builder` is *required* and tells Skaffold which
 [Builder](https://buildpacks.io/docs/app-developer-guide/build-an-app/) to use.
+
+**User defined environment variables**
+
+`env` makes it possible to configure specific environment variables for buildpacks.
+Many buildpacks use environment variables to adjust their detection and the build phases,
+such as selecting specific versions of language runtimes.
+Note that user's current environment is not passed through to buildpacks.
 
 **Example**
 
