@@ -3,6 +3,7 @@ title: "Templated Fields"
 linkTitle: "Templated Fields"
 weight: 90
 featureId: templating
+aliases: [/docs/how-tos/templating]
 ---
 
 Skaffold allows for certain fields in the config to be templated with values either from environment variables, or certain special values computed by Skaffold.
