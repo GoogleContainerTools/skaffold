@@ -99,23 +99,23 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 		addHostPathVolume(pod, constants.DefaultKanikoCacheDirName, constants.DefaultKanikoCacheDirMountPath, artifact.Cache.HostPath)
 	}
 
+	// Add user-configured ConfigMaps and Secrets
+	for _, vol := range clusterDetails.Volumes {
+		if vol.ConfigMap != nil {
+			addConfigMapVolume(pod, vol.ConfigMap.VolumeName, vol.ConfigMap.MountPath, vol.ConfigMap.Name, vol.ConfigMap.Items)
+		}
+
+		if vol.Secret != nil {
+			addSecretVolume(pod, vol.Secret.VolumeName, vol.Secret.MountPath, vol.Secret.Name, vol.Secret.Items)
+		}
+	}
+
 	if clusterDetails.DockerConfig == nil {
 		return pod
 	}
 
 	// Add secret for docker config if specified
 	addSecretVolume(pod, constants.DefaultKanikoDockerConfigSecretName, constants.DefaultKanikoDockerConfigPath, clusterDetails.DockerConfig.SecretName, nil)
-
-	// Add user-configured ConfigMaps and Secrets
-	for _, vol := range clusterDetails.Volumes {
-		if vol.ConfigMap != nil {
-			addConfigMapVolume(pod, vol.ConfigMap.Name, vol.ConfigMap.MountPath, vol.ConfigMap.VolumeName, vol.ConfigMap.Items)
-		}
-
-		if vol.Secret != nil {
-			addSecretVolume(pod, vol.Secret.Name, vol.Secret.MountPath, vol.Secret.VolumeName, vol.Secret.Items)
-		}
-	}
 
 	return pod
 }
