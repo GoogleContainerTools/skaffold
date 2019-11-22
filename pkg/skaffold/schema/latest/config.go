@@ -310,6 +310,60 @@ type ClusterDetails struct {
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
 	// Defaults to 0.
 	Concurrency int `yaml:"concurrency,omitempty"`
+
+	// Volumes define container mounts for ConfigMap and Secret resources
+	Volumes []VolumeMount `yaml:"volumes,omitempty"`
+}
+
+// VolumeMount represents a volume to mount to the kaniko container.
+// Only one of its members may be specified.
+type VolumeMount struct {
+	// ConfigMap specifies a ConfigMap mount into the kaniko pod container
+	ConfigMap *ConfigMapMount `yaml:"configMap,omitempty" yamltags:"oneOf=volumeType"`
+
+	// Secret specifies a Secret mount into the kaniko pod container
+	Secret *SecretMount `yaml:"secret,omitempty" yamltags:"oneOf=volumeType"`
+}
+
+// ConfigMapMount describes one ConfigMap mount to the kaniko container filesystem.
+type ConfigMapMount struct {
+	// Name is the Kubernetes ConfigMap name
+	Name string `yaml:"name" yamltags:"required"`
+
+	// Items if specified then only defined keys of the ConfigMap will be projected to the pod filesystem using relative paths as
+	// described in [volumes configMap](https://kubernetes.io/docs/concepts/storage/volumes/#configmap)
+	Items []KeyToPath `yaml:"items,omitempty"`
+
+	// Defines the path to mount the ConfigMap
+	MountPath string `yaml:"mountPath" yamltags:"required"`
+
+	// VolumeName defines Kubernetes pod.spec.volumes[].name for the Pod
+	VolumeName string `yaml:"volumeName" yamltags:"required"`
+}
+
+// SecretMount describes one Secret mount to a kaniko container filesystem.
+type SecretMount struct {
+	// Name is the Kubernetes Secret name
+	Name string `yaml:"name" yamltags:"required"`
+
+	// Items if specified then only defined keys of the Secret will be projected to the pod filesystem using relative paths as
+	// described in [volumes secret](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets)
+	Items []KeyToPath `yaml:"items,omitempty"`
+
+	// Defines the path to mount the Secret
+	MountPath string `yaml:"mountPath" yamltags:"required"`
+
+	// VolumeName defines Kubernetes pod.spec.volumes[].name for the Pod
+	VolumeName string `yaml:"volumeName" yamltags:"required"`
+}
+
+// KeyToPath describes mapping from ConfigMap or Secret resource key to a path within a volume.
+type KeyToPath struct {
+	// Key is the key to get from the Resource.
+	Key string `yaml:"key" yamltags:"required"`
+
+	// Path is the relative path to mount Key to.
+	Path string `yaml:"path" yamltags:"required"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.

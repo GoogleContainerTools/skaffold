@@ -91,7 +91,7 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 
 	// Add secret for pull secret
 	if clusterDetails.PullSecretName != "" {
-		addSecretVolume(pod, constants.DefaultKanikoSecretName, clusterDetails.PullSecretMountPath, clusterDetails.PullSecretName)
+		addSecretVolume(pod, constants.DefaultKanikoSecretName, clusterDetails.PullSecretMountPath, clusterDetails.PullSecretName, nil)
 	}
 
 	// Add host path volume for cache
@@ -104,11 +104,36 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 	}
 
 	// Add secret for docker config if specified
-	addSecretVolume(pod, constants.DefaultKanikoDockerConfigSecretName, constants.DefaultKanikoDockerConfigPath, clusterDetails.DockerConfig.SecretName)
+	addSecretVolume(pod, constants.DefaultKanikoDockerConfigSecretName, constants.DefaultKanikoDockerConfigPath, clusterDetails.DockerConfig.SecretName, nil)
+
+	// Add user-configured ConfigMaps and Secrets
+	for _, vol := range clusterDetails.Volumes {
+		if vol.ConfigMap != nil {
+			addConfigMapVolume(pod, vol.ConfigMap.Name, vol.ConfigMap.MountPath, vol.ConfigMap.VolumeName, vol.ConfigMap.Items)
+		}
+
+		if vol.Secret != nil {
+			addSecretVolume(pod, vol.Secret.Name, vol.Secret.MountPath, vol.Secret.VolumeName, vol.Secret.Items)
+		}
+	}
+
 	return pod
 }
 
-func addSecretVolume(pod *v1.Pod, name, mountPath, secretName string) {
+func addSecretVolume(pod *v1.Pod, name, mountPath, secretName string, items []latest.KeyToPath) {
+	// Create Secret items
+	var kp []v1.KeyToPath
+	if items != nil {
+		kp = make([]v1.KeyToPath, len(items))
+
+		for i, v := range items {
+			kp[i] = v1.KeyToPath{
+				Key:  v.Key,
+				Path: v.Path,
+			}
+		}
+	}
+
 	vm := v1.VolumeMount{
 		Name:      name,
 		MountPath: mountPath,
@@ -118,9 +143,45 @@ func addSecretVolume(pod *v1.Pod, name, mountPath, secretName string) {
 		VolumeSource: v1.VolumeSource{
 			Secret: &v1.SecretVolumeSource{
 				SecretName: secretName,
+				Items:      kp,
 			},
 		},
 	}
+
+	pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, vm)
+	pod.Spec.Volumes = append(pod.Spec.Volumes, v)
+}
+
+func addConfigMapVolume(pod *v1.Pod, name, mountPath, configMapName string, items []latest.KeyToPath) {
+	// Create ConfigMap items
+	var kp []v1.KeyToPath
+	if items != nil {
+		kp = make([]v1.KeyToPath, len(items))
+
+		for i, v := range items {
+			kp[i] = v1.KeyToPath{
+				Key:  v.Key,
+				Path: v.Path,
+			}
+		}
+	}
+
+	vm := v1.VolumeMount{
+		Name:      name,
+		MountPath: mountPath,
+	}
+	v := v1.Volume{
+		Name: name,
+		VolumeSource: v1.VolumeSource{
+			ConfigMap: &v1.ConfigMapVolumeSource{
+				LocalObjectReference: v1.LocalObjectReference{
+					Name: configMapName,
+				},
+				Items: kp,
+			},
+		},
+	}
+
 	pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, vm)
 	pod.Spec.Volumes = append(pod.Spec.Volumes, v)
 }

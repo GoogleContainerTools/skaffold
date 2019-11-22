@@ -25,6 +25,7 @@ import (
 // Upgrade upgrades a configuration to the next version.
 // Config changes from v1 to v2alpha1
 // 1. Additions:
+// 	  Add Volumes, VolumeMount, ConfigMapMount and SecretMount to ClusterDetails.
 // 2. Removals:
 // 3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
