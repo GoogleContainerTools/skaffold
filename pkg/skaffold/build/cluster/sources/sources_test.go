@@ -335,3 +335,299 @@ func TestResourceRequirements(t *testing.T) {
 		})
 	}
 }
+
+func TestSecretVolume(t *testing.T) {
+	tests := []struct {
+		description string
+		initial     *latest.ClusterDetails
+		artifact    *latest.KanikoArtifact
+		expected    *v1.Pod
+	}{
+		{
+			description: "secret volume",
+			initial: &latest.ClusterDetails{
+				Volumes: []latest.VolumeMount{
+					{
+						Secret: &latest.SecretMount{
+							Name:       "kubernetes-secret",
+							MountPath:  "/mount-dir",
+							VolumeName: "kubernetes-secret-volume",
+						},
+					},
+				},
+			},
+			artifact: &latest.KanikoArtifact{
+				Image: "kaniko-latest",
+			},
+			expected: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "kaniko-",
+					Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy: "Never",
+					Containers: []v1.Container{
+						{
+							Name:  "kaniko",
+							Image: "kaniko-latest",
+							Env: []v1.EnvVar{{
+								Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+								Value: "/secret/kaniko-secret",
+							}, {
+								Name:  "UPSTREAM_CLIENT_TYPE",
+								Value: "UpstreamClient(skaffold-test)",
+							}},
+							ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
+							VolumeMounts: []v1.VolumeMount{
+								{
+									Name:      "kubernetes-secret-volume",
+									MountPath: "/mount-dir",
+								},
+							},
+						},
+					},
+					Volumes: []v1.Volume{
+						{
+							Name: "kubernetes-secret-volume",
+							VolumeSource: v1.VolumeSource{
+								Secret: &v1.SecretVolumeSource{
+									SecretName: "kubernetes-secret",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "secret volume with items",
+			initial: &latest.ClusterDetails{
+				Volumes: []latest.VolumeMount{
+					{
+						Secret: &latest.SecretMount{
+							Name:       "kubernetes-secret",
+							MountPath:  "/mount-dir",
+							VolumeName: "kubernetes-secret-volume",
+							Items: []latest.KeyToPath{
+								latest.KeyToPath{
+									Key:  "secret-file",
+									Path: "secret/subpath",
+								},
+							},
+						},
+					},
+				},
+			},
+			artifact: &latest.KanikoArtifact{
+				Image: "kaniko-latest",
+			},
+			expected: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "kaniko-",
+					Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy: "Never",
+					Containers: []v1.Container{
+						{
+							Name:  "kaniko",
+							Image: "kaniko-latest",
+							Env: []v1.EnvVar{{
+								Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+								Value: "/secret/kaniko-secret",
+							}, {
+								Name:  "UPSTREAM_CLIENT_TYPE",
+								Value: "UpstreamClient(skaffold-test)",
+							}},
+							ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
+							VolumeMounts: []v1.VolumeMount{
+								{
+									Name:      "kubernetes-secret-volume",
+									MountPath: "/mount-dir",
+								},
+							},
+						},
+					},
+					Volumes: []v1.Volume{
+						{
+							Name: "kubernetes-secret-volume",
+							VolumeSource: v1.VolumeSource{
+								Secret: &v1.SecretVolumeSource{
+									SecretName: "kubernetes-secret",
+									Items: []v1.KeyToPath{
+										v1.KeyToPath{
+											Key:  "secret-file",
+											Path: "secret/subpath",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	opt := cmp.Comparer(func(x, y resource.Quantity) bool {
+		return x.String() == y.String()
+	})
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual := podTemplate(test.initial, test.artifact, nil, "test")
+
+			t.CheckDeepEqual(test.expected, actual, opt)
+		})
+	}
+}
+
+func TestConfigMapVolume(t *testing.T) {
+	tests := []struct {
+		description string
+		initial     *latest.ClusterDetails
+		artifact    *latest.KanikoArtifact
+		expected    *v1.Pod
+	}{
+		{
+			description: "config-map volume",
+			initial: &latest.ClusterDetails{
+				Volumes: []latest.VolumeMount{
+					{
+						ConfigMap: &latest.ConfigMapMount{
+							Name:       "kubernetes-config-map",
+							MountPath:  "/mount-dir",
+							VolumeName: "kubernetes-config-map-volume",
+						},
+					},
+				},
+			},
+			artifact: &latest.KanikoArtifact{
+				Image: "kaniko-latest",
+			},
+			expected: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "kaniko-",
+					Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy: "Never",
+					Containers: []v1.Container{
+						{
+							Name:  "kaniko",
+							Image: "kaniko-latest",
+							Env: []v1.EnvVar{{
+								Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+								Value: "/secret/kaniko-secret",
+							}, {
+								Name:  "UPSTREAM_CLIENT_TYPE",
+								Value: "UpstreamClient(skaffold-test)",
+							}},
+							ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
+							VolumeMounts: []v1.VolumeMount{
+								{
+									Name:      "kubernetes-config-map-volume",
+									MountPath: "/mount-dir",
+								},
+							},
+						},
+					},
+					Volumes: []v1.Volume{
+						{
+							Name: "kubernetes-config-map-volume",
+							VolumeSource: v1.VolumeSource{
+								ConfigMap: &v1.ConfigMapVolumeSource{
+									LocalObjectReference: v1.LocalObjectReference{
+										Name: "kubernetes-config-map",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "config-map volume with items",
+			initial: &latest.ClusterDetails{
+				Volumes: []latest.VolumeMount{
+					{
+						ConfigMap: &latest.ConfigMapMount{
+							Name:       "kubernetes-config-map",
+							MountPath:  "/mount-dir",
+							VolumeName: "kubernetes-config-map-volume",
+							Items: []latest.KeyToPath{
+								latest.KeyToPath{
+									Key:  "config-map-file",
+									Path: "config-map/subpath",
+								},
+							},
+						},
+					},
+				},
+			},
+			artifact: &latest.KanikoArtifact{
+				Image: "kaniko-latest",
+			},
+			expected: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "kaniko-",
+					Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy: "Never",
+					Containers: []v1.Container{
+						{
+							Name:  "kaniko",
+							Image: "kaniko-latest",
+							Env: []v1.EnvVar{{
+								Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+								Value: "/secret/kaniko-secret",
+							}, {
+								Name:  "UPSTREAM_CLIENT_TYPE",
+								Value: "UpstreamClient(skaffold-test)",
+							}},
+							ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
+							VolumeMounts: []v1.VolumeMount{
+								{
+									Name:      "kubernetes-config-map-volume",
+									MountPath: "/mount-dir",
+								},
+							},
+						},
+					},
+					Volumes: []v1.Volume{
+						{
+							Name: "kubernetes-config-map-volume",
+							VolumeSource: v1.VolumeSource{
+								ConfigMap: &v1.ConfigMapVolumeSource{
+									LocalObjectReference: v1.LocalObjectReference{
+										Name: "kubernetes-config-map",
+									},
+									Items: []v1.KeyToPath{
+										v1.KeyToPath{
+											Key:  "config-map-file",
+											Path: "config-map/subpath",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	opt := cmp.Comparer(func(x, y resource.Quantity) bool {
+		return x.String() == y.String()
+	})
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual := podTemplate(test.initial, test.artifact, nil, "test")
+
+			t.CheckDeepEqual(test.expected, actual, opt)
+		})
+	}
+}
