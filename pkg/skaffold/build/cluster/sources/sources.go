@@ -91,7 +91,7 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 
 	// Add secret for pull secret
 	if clusterDetails.PullSecretName != "" {
-		addSecretVolume(pod, constants.DefaultKanikoSecretName, clusterDetails.PullSecretMountPath, clusterDetails.PullSecretName, nil)
+		addSecretVolume(pod, constants.DefaultKanikoSecretName, clusterDetails.PullSecretMountPath, clusterDetails.PullSecretName, nil, nil)
 	}
 
 	// Add host path volume for cache
@@ -102,11 +102,14 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 	// Add user-configured ConfigMaps and Secrets
 	for _, vol := range clusterDetails.Volumes {
 		if vol.ConfigMap != nil {
-			addConfigMapVolume(pod, vol.ConfigMap.VolumeName, vol.ConfigMap.MountPath, vol.ConfigMap.Name, vol.ConfigMap.Items)
+			addConfigMapVolume(pod, vol.ConfigMap.VolumeName,
+				vol.ConfigMap.MountPath, vol.ConfigMap.Name,
+				vol.ConfigMap.Items, vol.ConfigMap.DefaultMode)
 		}
 
 		if vol.Secret != nil {
-			addSecretVolume(pod, vol.Secret.VolumeName, vol.Secret.MountPath, vol.Secret.Name, vol.Secret.Items)
+			addSecretVolume(pod, vol.Secret.VolumeName, vol.Secret.MountPath,
+				vol.Secret.Name, vol.Secret.Items, vol.Secret.DefaultMode)
 		}
 	}
 
@@ -115,12 +118,12 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 	}
 
 	// Add secret for docker config if specified
-	addSecretVolume(pod, constants.DefaultKanikoDockerConfigSecretName, constants.DefaultKanikoDockerConfigPath, clusterDetails.DockerConfig.SecretName, nil)
+	addSecretVolume(pod, constants.DefaultKanikoDockerConfigSecretName, constants.DefaultKanikoDockerConfigPath, clusterDetails.DockerConfig.SecretName, nil, nil)
 
 	return pod
 }
 
-func addSecretVolume(pod *v1.Pod, name, mountPath, secretName string, items []latest.KeyToPath) {
+func addSecretVolume(pod *v1.Pod, name, mountPath, secretName string, items []latest.KeyToPath, defaultMode *int32) {
 	// Create Secret items
 	var kp []v1.KeyToPath
 	if items != nil {
@@ -130,6 +133,7 @@ func addSecretVolume(pod *v1.Pod, name, mountPath, secretName string, items []la
 			kp[i] = v1.KeyToPath{
 				Key:  v.Key,
 				Path: v.Path,
+				Mode: v.Mode,
 			}
 		}
 	}
@@ -142,8 +146,9 @@ func addSecretVolume(pod *v1.Pod, name, mountPath, secretName string, items []la
 		Name: name,
 		VolumeSource: v1.VolumeSource{
 			Secret: &v1.SecretVolumeSource{
-				SecretName: secretName,
-				Items:      kp,
+				SecretName:  secretName,
+				Items:       kp,
+				DefaultMode: defaultMode,
 			},
 		},
 	}
@@ -152,7 +157,8 @@ func addSecretVolume(pod *v1.Pod, name, mountPath, secretName string, items []la
 	pod.Spec.Volumes = append(pod.Spec.Volumes, v)
 }
 
-func addConfigMapVolume(pod *v1.Pod, name, mountPath, configMapName string, items []latest.KeyToPath) {
+func addConfigMapVolume(pod *v1.Pod, name, mountPath, configMapName string,
+	items []latest.KeyToPath, defaultMode *int32) {
 	// Create ConfigMap items
 	var kp []v1.KeyToPath
 	if items != nil {
@@ -162,6 +168,7 @@ func addConfigMapVolume(pod *v1.Pod, name, mountPath, configMapName string, item
 			kp[i] = v1.KeyToPath{
 				Key:  v.Key,
 				Path: v.Path,
+				Mode: v.Mode,
 			}
 		}
 	}
@@ -177,7 +184,8 @@ func addConfigMapVolume(pod *v1.Pod, name, mountPath, configMapName string, item
 				LocalObjectReference: v1.LocalObjectReference{
 					Name: configMapName,
 				},
-				Items: kp,
+				Items:       kp,
+				DefaultMode: defaultMode,
 			},
 		},
 	}
@@ -199,6 +207,7 @@ func addHostPathVolume(pod *v1.Pod, name, mountPath, path string) {
 			},
 		},
 	}
+
 	pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, vm)
 	pod.Spec.Volumes = append(pod.Spec.Volumes, v)
 }

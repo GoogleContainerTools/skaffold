@@ -642,6 +642,11 @@
         "volumeName"
       ],
       "properties": {
+        "defaultMode": {
+          "type": "integer",
+          "description": "UNIX mode bits to set on mounted files. Must be a value between 0 and 0777. Defaults to 0644.",
+          "x-intellij-html-description": "UNIX mode bits to set on mounted files. Must be a value between 0 and 0777. Defaults to 0644."
+        },
         "items": {
           "items": {
             "$ref": "#/definitions/KeyToPath"
@@ -670,7 +675,8 @@
         "name",
         "items",
         "mountPath",
-        "volumeName"
+        "volumeName",
+        "defaultMode"
       ],
       "additionalProperties": false,
       "description": "describes one ConfigMap mount to the kaniko container filesystem.",
@@ -1597,6 +1603,11 @@
           "description": "key to get from the Resource.",
           "x-intellij-html-description": "key to get from the Resource."
         },
+        "mode": {
+          "type": "integer",
+          "description": "UNIX mode bits to set on mounted files. Must be a value between 0 and 0777. Defaults to 0644.",
+          "x-intellij-html-description": "UNIX mode bits to set on mounted files. Must be a value between 0 and 0777. Defaults to 0644."
+        },
         "path": {
           "type": "string",
           "description": "relative path to mount Key to.",
@@ -1605,7 +1616,8 @@
       },
       "preferredOrder": [
         "key",
-        "path"
+        "path",
+        "mode"
       ],
       "additionalProperties": false,
       "description": "describes mapping from ConfigMap or Secret resource key to a path within a volume.",
@@ -1968,6 +1980,11 @@
         "volumeName"
       ],
       "properties": {
+        "defaultMode": {
+          "type": "integer",
+          "description": "UNIX mode bits to set on mounted files. Must be a value between 0 and 0777. Defaults to 0644.",
+          "x-intellij-html-description": "UNIX mode bits to set on mounted files. Must be a value between 0 and 0777. Defaults to 0644."
+        },
         "items": {
           "items": {
             "$ref": "#/definitions/KeyToPath"
@@ -1996,7 +2013,8 @@
         "name",
         "items",
         "mountPath",
-        "volumeName"
+        "volumeName",
+        "defaultMode"
       ],
       "additionalProperties": false,
       "description": "describes one Secret mount to a kaniko container filesystem.",

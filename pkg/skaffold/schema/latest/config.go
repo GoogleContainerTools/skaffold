@@ -339,6 +339,10 @@ type ConfigMapMount struct {
 
 	// VolumeName defines Kubernetes pod.spec.volumes[].name for the Pod.
 	VolumeName string `yaml:"volumeName" yamltags:"required"`
+
+	// DefaultMode UNIX mode bits to set on mounted files. Must be a
+	// value between 0 and 0777. Defaults to 0644.
+	DefaultMode *int32 `yaml:"defaultMode,omitempty"`
 }
 
 // SecretMount describes one Secret mount to a kaniko container filesystem.
@@ -355,6 +359,10 @@ type SecretMount struct {
 
 	// VolumeName defines Kubernetes pod.spec.volumes[].name for the Pod.
 	VolumeName string `yaml:"volumeName" yamltags:"required"`
+
+	// DefaultMode UNIX mode bits to set on mounted files. Must be a
+	// value between 0 and 0777. Defaults to 0644.
+	DefaultMode *int32 `yaml:"defaultMode,omitempty"`
 }
 
 // KeyToPath describes mapping from ConfigMap or Secret resource key to a path within a volume.
@@ -364,6 +372,10 @@ type KeyToPath struct {
 
 	// Path is the relative path to mount Key to.
 	Path string `yaml:"path" yamltags:"required"`
+
+	// Mode UNIX mode bits to set on mounted files. Must be a
+	// value between 0 and 0777. Defaults to 0644.
+	Mode *int32 `yaml:"mode,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
