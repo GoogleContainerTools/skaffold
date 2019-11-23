@@ -318,42 +318,42 @@ type ClusterDetails struct {
 // VolumeMount represents a volume to mount to the kaniko container.
 // Only one of its members may be specified.
 type VolumeMount struct {
-	// ConfigMap specifies a ConfigMap mount into the kaniko pod container
+	// ConfigMap specifies a ConfigMap mount into the kaniko pod container.
 	ConfigMap *ConfigMapMount `yaml:"configMap,omitempty" yamltags:"oneOf=volumeType"`
 
-	// Secret specifies a Secret mount into the kaniko pod container
+	// Secret specifies a Secret mount into the kaniko pod container.
 	Secret *SecretMount `yaml:"secret,omitempty" yamltags:"oneOf=volumeType"`
 }
 
 // ConfigMapMount describes one ConfigMap mount to the kaniko container filesystem.
 type ConfigMapMount struct {
-	// Name is the Kubernetes ConfigMap name
+	// Name is the Kubernetes ConfigMap name.
 	Name string `yaml:"name" yamltags:"required"`
 
 	// Items if specified then only defined keys of the ConfigMap will be projected to the pod filesystem using relative paths as
-	// described in [volumes configMap](https://kubernetes.io/docs/concepts/storage/volumes/#configmap)
+	// described in [volumes configMap](https://kubernetes.io/docs/concepts/storage/volumes/#configmap).
 	Items []KeyToPath `yaml:"items,omitempty"`
 
-	// Defines the path to mount the ConfigMap
+	// MountPath defines the path to mount the ConfigMap.
 	MountPath string `yaml:"mountPath" yamltags:"required"`
 
-	// VolumeName defines Kubernetes pod.spec.volumes[].name for the Pod
+	// VolumeName defines Kubernetes pod.spec.volumes[].name for the Pod.
 	VolumeName string `yaml:"volumeName" yamltags:"required"`
 }
 
 // SecretMount describes one Secret mount to a kaniko container filesystem.
 type SecretMount struct {
-	// Name is the Kubernetes Secret name
+	// Name is the Kubernetes Secret name.
 	Name string `yaml:"name" yamltags:"required"`
 
 	// Items if specified then only defined keys of the Secret will be projected to the pod filesystem using relative paths as
-	// described in [volumes secret](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets)
+	// described in [volumes secret](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets).
 	Items []KeyToPath `yaml:"items,omitempty"`
 
-	// Defines the path to mount the Secret
+	// MountPath defines the path to mount the Secret.
 	MountPath string `yaml:"mountPath" yamltags:"required"`
 
-	// VolumeName defines Kubernetes pod.spec.volumes[].name for the Pod
+	// VolumeName defines Kubernetes pod.spec.volumes[].name for the Pod.
 	VolumeName string `yaml:"volumeName" yamltags:"required"`
 }
 
