@@ -409,7 +409,7 @@ func TestSecretVolume(t *testing.T) {
 							MountPath:  "/mount-dir",
 							VolumeName: "kubernetes-secret-volume",
 							Items: []latest.KeyToPath{
-								latest.KeyToPath{
+								{
 									Key:  "secret-file",
 									Path: "secret/subpath",
 								},
@@ -455,7 +455,7 @@ func TestSecretVolume(t *testing.T) {
 								Secret: &v1.SecretVolumeSource{
 									SecretName: "kubernetes-secret",
 									Items: []v1.KeyToPath{
-										v1.KeyToPath{
+										{
 											Key:  "secret-file",
 											Path: "secret/subpath",
 										},
@@ -557,7 +557,7 @@ func TestConfigMapVolume(t *testing.T) {
 							MountPath:  "/mount-dir",
 							VolumeName: "kubernetes-config-map-volume",
 							Items: []latest.KeyToPath{
-								latest.KeyToPath{
+								{
 									Key:  "config-map-file",
 									Path: "config-map/subpath",
 								},
@@ -605,7 +605,7 @@ func TestConfigMapVolume(t *testing.T) {
 										Name: "kubernetes-config-map",
 									},
 									Items: []v1.KeyToPath{
-										v1.KeyToPath{
+										{
 											Key:  "config-map-file",
 											Path: "config-map/subpath",
 										},

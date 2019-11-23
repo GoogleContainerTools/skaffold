@@ -311,7 +311,7 @@ type ClusterDetails struct {
 	// Defaults to 0.
 	Concurrency int `yaml:"concurrency,omitempty"`
 
-	// Volumes define container mounts for ConfigMap and Secret resources
+	// Volumes define container mounts for ConfigMap and Secret resources.
 	Volumes []VolumeMount `yaml:"volumes,omitempty"`
 }
 
