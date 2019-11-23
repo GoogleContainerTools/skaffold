@@ -578,6 +578,14 @@
           "description": "describes how to mount the local Docker configuration into a pod.",
           "x-intellij-html-description": "describes how to mount the local Docker configuration into a pod."
         },
+        "envVars": {
+          "items": {
+            "$ref": "#/definitions/EnvVar"
+          },
+          "type": "array",
+          "description": "defines Environment Variables for the containers in the Kaniko Pod.",
+          "x-intellij-html-description": "defines Environment Variables for the containers in the Kaniko Pod."
+        },
         "namespace": {
           "type": "string",
           "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.",
@@ -629,11 +637,37 @@
         "dockerConfig",
         "resources",
         "concurrency",
-        "volumes"
+        "volumes",
+        "envVars"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build.",
       "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
+    },
+    "ConfigMapKeyRef": {
+      "required": [
+        "name",
+        "key"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "sets the Key from the Secret to set as the Env Var value.",
+          "x-intellij-html-description": "sets the Key from the Secret to set as the Env Var value."
+        },
+        "name": {
+          "type": "string",
+          "description": "sets the name of the Secret which is used to get value for the Env Var.",
+          "x-intellij-html-description": "sets the name of the Secret which is used to get value for the Env Var."
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "key"
+      ],
+      "additionalProperties": false,
+      "description": "describes a ConfigMap source for Environent Variable value.",
+      "x-intellij-html-description": "describes a ConfigMap source for Environent Variable value."
     },
     "ConfigMapMount": {
       "required": [
@@ -1013,6 +1047,42 @@
       "additionalProperties": false,
       "description": "*beta* tags images with a configurable template string.",
       "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string."
+    },
+    "EnvVar": {
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "configMap": {
+          "$ref": "#/definitions/ConfigMapKeyRef",
+          "description": "sets the given Kubernetes Config Map as a value for the Env Var.",
+          "x-intellij-html-description": "sets the given Kubernetes Config Map as a value for the Env Var."
+        },
+        "name": {
+          "type": "string",
+          "description": "sets name for configured Environment Variable.",
+          "x-intellij-html-description": "sets name for configured Environment Variable."
+        },
+        "secret": {
+          "$ref": "#/definitions/SecretKeyRef",
+          "description": "sets the given Kubernetes Secret as a value for the Env Var.",
+          "x-intellij-html-description": "sets the given Kubernetes Secret as a value for the Env Var."
+        },
+        "value": {
+          "type": "string",
+          "description": "sets the Value for the Env Var.",
+          "x-intellij-html-description": "sets the Value for the Env Var."
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "secret",
+        "configMap",
+        "value"
+      ],
+      "additionalProperties": false,
+      "description": "describes one Environment Variable to set to the Kaniko Pod.",
+      "x-intellij-html-description": "describes one Environment Variable to set to the Kaniko Pod."
     },
     "GitTagger": {
       "properties": {
@@ -1972,6 +2042,31 @@
       "type": "string",
       "description": "describes the Kubernetes resource types used for port forwarding.",
       "x-intellij-html-description": "describes the Kubernetes resource types used for port forwarding."
+    },
+    "SecretKeyRef": {
+      "required": [
+        "name",
+        "key"
+      ],
+      "properties": {
+        "key": {
+          "type": "string",
+          "description": "sets the Key from the Secret to set as the Env Var value.",
+          "x-intellij-html-description": "sets the Key from the Secret to set as the Env Var value."
+        },
+        "name": {
+          "type": "string",
+          "description": "sets the name of the Secret which is used to get value for the Env Var.",
+          "x-intellij-html-description": "sets the name of the Secret which is used to get value for the Env Var."
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "key"
+      ],
+      "additionalProperties": false,
+      "description": "describes a Secret source for Environent Variable value.",
+      "x-intellij-html-description": "describes a Secret source for Environent Variable value."
     },
     "SecretMount": {
       "required": [

@@ -113,6 +113,11 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 		}
 	}
 
+	// Add user-configured Environment Variables
+	for _, e := range clusterDetails.EnvVars {
+		addEnvVar(pod, e)
+	}
+
 	if clusterDetails.DockerConfig == nil {
 		return pod
 	}
@@ -121,6 +126,52 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 	addSecretVolume(pod, constants.DefaultKanikoDockerConfigSecretName, constants.DefaultKanikoDockerConfigPath, clusterDetails.DockerConfig.SecretName, nil, nil)
 
 	return pod
+}
+
+func addEnvVar(pod *v1.Pod, e latest.EnvVar) {
+	switch {
+	case e.Secret != nil:
+		env := v1.EnvVar{
+			Name: e.Name,
+			ValueFrom: &v1.EnvVarSource{
+				SecretKeyRef: &v1.SecretKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: e.Secret.Name,
+					},
+					Key: e.Secret.Key,
+				},
+			},
+		}
+
+		appendEnvVar(pod, env)
+	case e.ConfigMap != nil:
+		env := v1.EnvVar{
+			Name: e.Name,
+			ValueFrom: &v1.EnvVarSource{
+				ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+					LocalObjectReference: v1.LocalObjectReference{
+						Name: e.ConfigMap.Name,
+					},
+					Key: e.ConfigMap.Key,
+				},
+			},
+		}
+
+		appendEnvVar(pod, env)
+	case e.Value != nil:
+		env := v1.EnvVar{
+			Name:  e.Name,
+			Value: *e.Value,
+		}
+
+		appendEnvVar(pod, env)
+	}
+}
+
+func appendEnvVar(pod *v1.Pod, env v1.EnvVar) {
+	for i := range pod.Spec.Containers {
+		pod.Spec.Containers[i].Env = append(pod.Spec.Containers[i].Env, env)
+	}
 }
 
 func addSecretVolume(pod *v1.Pod, name, mountPath, secretName string, items []latest.KeyToPath, defaultMode *int32) {

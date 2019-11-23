@@ -1063,3 +1063,175 @@ func TestConfigMapVolume(t *testing.T) {
 		})
 	}
 }
+
+func TestUserEnvVar(t *testing.T) {
+	var testEnvVarValue = "my_env_var_value"
+
+	tests := []struct {
+		description string
+		initial     *latest.ClusterDetails
+		artifact    *latest.KanikoArtifact
+		expected    *v1.Pod
+	}{
+		{
+			description: "Env Var Key-Value",
+			initial: &latest.ClusterDetails{
+				EnvVars: []latest.EnvVar{
+					{
+						Name:  "MY_ENV_VAR_KEY",
+						Value: &testEnvVarValue,
+					},
+				},
+			},
+			artifact: &latest.KanikoArtifact{
+				Image: "kaniko-latest",
+			},
+			expected: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "kaniko-",
+					Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy: "Never",
+					Containers: []v1.Container{
+						{
+							Name:  "kaniko",
+							Image: "kaniko-latest",
+							Env: []v1.EnvVar{
+								{
+									Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+									Value: "/secret/kaniko-secret",
+								},
+								{
+									Name:  "UPSTREAM_CLIENT_TYPE",
+									Value: "UpstreamClient(skaffold-test)",
+								},
+								{
+									Name:  "MY_ENV_VAR_KEY",
+									Value: testEnvVarValue,
+								},
+							},
+							ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "Env Var Config Map Source",
+			initial: &latest.ClusterDetails{
+				EnvVars: []latest.EnvVar{
+					{
+						Name: "MY_ENV_VAR_KEY",
+						ConfigMap: &latest.ConfigMapKeyRef{
+							Name: "my-config-map",
+							Key:  "config-map-key",
+						},
+					},
+				},
+			},
+			artifact: &latest.KanikoArtifact{
+				Image: "kaniko-latest",
+			},
+			expected: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "kaniko-",
+					Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy: "Never",
+					Containers: []v1.Container{
+						{
+							Name:  "kaniko",
+							Image: "kaniko-latest",
+							Env: []v1.EnvVar{
+								{
+									Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+									Value: "/secret/kaniko-secret",
+								},
+								{
+									Name:  "UPSTREAM_CLIENT_TYPE",
+									Value: "UpstreamClient(skaffold-test)",
+								},
+								{
+									Name: "MY_ENV_VAR_KEY",
+									ValueFrom: &v1.EnvVarSource{
+										ConfigMapKeyRef: &v1.ConfigMapKeySelector{
+											LocalObjectReference: v1.LocalObjectReference{
+												Name: "my-config-map",
+											},
+											Key: "config-map-key",
+										},
+									},
+								},
+							},
+							ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "Env Var Secret Source",
+			initial: &latest.ClusterDetails{
+				EnvVars: []latest.EnvVar{
+					{
+						Name: "MY_ENV_VAR_KEY",
+						Secret: &latest.SecretKeyRef{
+							Name: "my-secret",
+							Key:  "secret-key",
+						},
+					},
+				},
+			},
+			artifact: &latest.KanikoArtifact{
+				Image: "kaniko-latest",
+			},
+			expected: &v1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					GenerateName: "kaniko-",
+					Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+				},
+				Spec: v1.PodSpec{
+					RestartPolicy: "Never",
+					Containers: []v1.Container{
+						{
+							Name:  "kaniko",
+							Image: "kaniko-latest",
+							Env: []v1.EnvVar{
+								{
+									Name:  "GOOGLE_APPLICATION_CREDENTIALS",
+									Value: "/secret/kaniko-secret",
+								},
+								{
+									Name:  "UPSTREAM_CLIENT_TYPE",
+									Value: "UpstreamClient(skaffold-test)",
+								},
+								{
+									Name: "MY_ENV_VAR_KEY",
+									ValueFrom: &v1.EnvVarSource{
+										SecretKeyRef: &v1.SecretKeySelector{
+											LocalObjectReference: v1.LocalObjectReference{
+												Name: "my-secret",
+											},
+											Key: "secret-key",
+										},
+									},
+								},
+							},
+							ImagePullPolicy: v1.PullPolicy("IfNotPresent"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actual := podTemplate(test.initial, test.artifact, nil, "test")
+
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
