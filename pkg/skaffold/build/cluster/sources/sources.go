@@ -105,6 +105,10 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 
 	// Add secret for docker config if specified
 	addSecretVolume(pod, constants.DefaultKanikoDockerConfigSecretName, constants.DefaultKanikoDockerConfigPath, clusterDetails.DockerConfig.SecretName)
+
+	for _, secret := range clusterDetails.Secrets {
+		addSecretVolume(pod, secret.Name, secret.MountPath, secret.Name)
+	}
 	return pod
 }
 

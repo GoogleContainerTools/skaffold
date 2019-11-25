@@ -310,6 +310,14 @@ type ClusterDetails struct {
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
 	// Defaults to 0.
 	Concurrency int `yaml:"concurrency,omitempty"`
+
+	// Secrets is list of secrets which would be mounted to kaniko pod
+	Secrets []MountSecrets `yaml: secrets, omitempty`
+}
+
+type MountSecrets struct {
+	Name      string `yaml: "string,omitempty"`
+	MountPath string `yaml: "mountPath,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
