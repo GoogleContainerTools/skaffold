@@ -18,6 +18,7 @@ package latest
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	v1 "k8s.io/api/core/v1"
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
@@ -310,6 +311,9 @@ type ClusterDetails struct {
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
 	// Defaults to 0.
 	Concurrency int `yaml:"concurrency,omitempty"`
+
+	// Envs is array of all the environment variable to be passed to kaniko"
+	Envs []v1.EnvVar `yaml: "envs, omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
