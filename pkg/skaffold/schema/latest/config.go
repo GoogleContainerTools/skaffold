@@ -18,6 +18,7 @@ package latest
 
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+
 	v1 "k8s.io/api/core/v1"
 )
 
