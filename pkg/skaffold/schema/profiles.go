@@ -82,7 +82,7 @@ func checkKubeContextConsistency(contextSpecificProfiles []string, cliContext, e
 // activatedProfiles returns the activated profiles and activated profiles which are kube-context specific.
 // The latter matters for error reporting when the effective kube-context changes.
 func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, []string, error) {
-	activated := opts.Profiles
+	var activated []string
 	var contextSpecificProfiles []string
 
 	// Auto-activated profiles
@@ -108,6 +108,8 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]s
 			}
 		}
 	}
+
+	activated = append(activated, opts.Profiles...)
 
 	return activated, contextSpecificProfiles, nil
 }
