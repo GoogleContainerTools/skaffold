@@ -312,8 +312,8 @@ type ClusterDetails struct {
 	// Defaults to 0.
 	Concurrency int `yaml:"concurrency,omitempty"`
 
-	// Envs is array of all the environment variable to be passed to kaniko"
-	Envs []v1.EnvVar `yaml: "envs, omitempty"`
+	// Envs is array of all the environment variable to be passed to kaniko.
+	Envs []v1.EnvVar `yaml:"envs,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
