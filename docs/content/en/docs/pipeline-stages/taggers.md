@@ -43,7 +43,7 @@ specified explicitly:
 
 ### Configuration
 
-`gitCommit` tag policy features no options.
+{{< schema root="GitTagger" >}}
 
 ## `sha256`: uses Sha256 hashes of contents as tags
 
