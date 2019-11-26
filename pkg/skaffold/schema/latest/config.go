@@ -312,7 +312,7 @@ type ClusterDetails struct {
 	Concurrency int `yaml:"concurrency,omitempty"`
 
 	// Secrets is list of secrets which would be mounted to kaniko pod.
-	Secrets []MountSecrets `yaml:"secrets, omitempty"`
+	Secrets []MountSecrets `yaml:"secrets,omitempty"`
 }
 
 // MountSecrets contains the secret name and its mount path.
