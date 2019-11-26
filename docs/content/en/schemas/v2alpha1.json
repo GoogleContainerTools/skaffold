@@ -604,6 +604,14 @@
           "description": "define the resource requirements for the kaniko pod.",
           "x-intellij-html-description": "define the resource requirements for the kaniko pod."
         },
+        "secrets": {
+          "items": {
+            "$ref": "#/definitions/MountSecrets"
+          },
+          "type": "array",
+          "description": "list of secrets which would be mounted to kaniko pod.",
+          "x-intellij-html-description": "list of secrets which would be mounted to kaniko pod."
+        },
         "timeout": {
           "type": "string",
           "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
@@ -620,7 +628,8 @@
         "timeout",
         "dockerConfig",
         "resources",
-        "concurrency"
+        "concurrency",
+        "secrets"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build.",
@@ -1700,6 +1709,27 @@
       "additionalProperties": false,
       "description": "holds an optional name of the project.",
       "x-intellij-html-description": "holds an optional name of the project."
+    },
+    "MountSecrets": {
+      "properties": {
+        "mountPath": {
+          "type": "string",
+          "description": "of the secrets.",
+          "x-intellij-html-description": "of the secrets."
+        },
+        "string": {
+          "type": "string",
+          "description": "of the secrets.",
+          "x-intellij-html-description": "of the secrets."
+        }
+      },
+      "preferredOrder": [
+        "string",
+        "mountPath"
+      ],
+      "additionalProperties": false,
+      "description": "contains the secret name and its mount path.",
+      "x-intellij-html-description": "contains the secret name and its mount path."
     },
     "PortForwardResource": {
       "properties": {

@@ -311,13 +311,16 @@ type ClusterDetails struct {
 	// Defaults to 0.
 	Concurrency int `yaml:"concurrency,omitempty"`
 
-	// Secrets is list of secrets which would be mounted to kaniko pod
-	Secrets []MountSecrets `yaml: secrets, omitempty`
+	// Secrets is list of secrets which would be mounted to kaniko pod.
+	Secrets []MountSecrets `yaml:"secrets, omitempty"`
 }
 
+// MountSecrets contains the secret name and its mount path.
 type MountSecrets struct {
-	Name      string `yaml: "string,omitempty"`
-	MountPath string `yaml: "mountPath,omitempty"`
+	// Name of the secrets.
+	Name string `yaml:"string,omitempty"`
+	// MountPath of the secrets.
+	MountPath string `yaml:"mountPath,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
