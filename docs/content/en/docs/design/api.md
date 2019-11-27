@@ -250,8 +250,8 @@ This means that _even if there are new file changes_, Skaffold will wait for ano
 
 **Control API Contract**
 
-| protocol | endpoint |
-| ---- |  ---- |
+| protocol | endpoint | 
+| --- | --- | --- |
 | HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/execute`, the [Execution Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/Execute">}}) |
 | gRPC | `client.Execute(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
 

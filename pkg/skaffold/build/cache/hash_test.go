@@ -363,11 +363,12 @@ func TestRetrieveBuildArgs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual := retrieveBuildArgs(&latest.Artifact{
 				ArtifactType: test.artifactType,
 			})
-			testutil.CheckDeepEqual(t, test.expected, actual)
+
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }
@@ -403,9 +404,10 @@ func TestConvertBuildArgsToStringArray(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual := convertBuildArgsToStringArray(test.buildArgs)
-			testutil.CheckDeepEqual(t, test.expected, actual)
+
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }

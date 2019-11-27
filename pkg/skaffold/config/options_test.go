@@ -52,14 +52,15 @@ func TestLabels(t *testing.T) {
 			description: "profile",
 			options:     SkaffoldOptions{Profiles: []string{"profile"}},
 			expectedLabels: map[string]string{
-				"skaffold.dev/profiles": "profile",
+				"skaffold.dev/profile.0": "profile",
 			},
 		},
 		{
 			description: "profiles",
 			options:     SkaffoldOptions{Profiles: []string{"profile1", "profile2"}},
 			expectedLabels: map[string]string{
-				"skaffold.dev/profiles": "profile1__profile2",
+				"skaffold.dev/profile.0": "profile1",
+				"skaffold.dev/profile.1": "profile2",
 			},
 		},
 		{
@@ -86,7 +87,8 @@ func TestLabels(t *testing.T) {
 			expectedLabels: map[string]string{
 				"skaffold.dev/cleanup":   "true",
 				"skaffold.dev/namespace": "namespace",
-				"skaffold.dev/profiles":  "p1__p2",
+				"skaffold.dev/profile.0": "p1",
+				"skaffold.dev/profile.1": "p2",
 			},
 		},
 		{

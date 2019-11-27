@@ -53,11 +53,11 @@ func TestExtractDlvArg(t *testing.T) {
 		{[]string{"dlv", "debug", "--listen=host:4345", "--headless", "--api-version=2", "--log"}, &dlvSpec{mode: "debug", host: "host", port: 4345, headless: true, apiVersion: 2, log: true}},
 	}
 	for _, test := range tests {
-		t.Run(strings.Join(test.in, " "), func(t *testing.T) {
+		testutil.Run(t, strings.Join(test.in, " "), func(t *testutil.T) {
 			if test.result == nil {
-				testutil.CheckDeepEqual(t, test.result, extractDlvSpec(test.in))
+				t.CheckDeepEqual(test.result, extractDlvSpec(test.in))
 			} else {
-				testutil.CheckDeepEqual(t, *test.result, *extractDlvSpec(test.in), cmp.AllowUnexported(dlvSpec{}))
+				t.CheckDeepEqual(*test.result, *extractDlvSpec(test.in), cmp.AllowUnexported(dlvSpec{}))
 			}
 		})
 	}
@@ -107,9 +107,10 @@ func TestDlvTransformer_IsApplicable(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			result := dlvTransformer{}.IsApplicable(test.source)
-			testutil.CheckDeepEqual(t, test.result, result)
+
+			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }
@@ -188,9 +189,10 @@ func TestDlvTransformerApply(t *testing.T) {
 		return port
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			dlvTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
-			testutil.CheckDeepEqual(t, test.result, test.containerSpec)
+
+			t.CheckDeepEqual(test.result, test.containerSpec)
 		})
 	}
 }
@@ -565,15 +567,16 @@ func TestTransformManifestDelve(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			value := test.in.DeepCopyObject()
 
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
 			result := transformManifest(value, retriever)
-			testutil.CheckDeepEqual(t, test.transformed, result)
-			testutil.CheckDeepEqual(t, test.out, value)
+
+			t.CheckDeepEqual(test.transformed, result)
+			t.CheckDeepEqual(test.out, value)
 		})
 	}
 }

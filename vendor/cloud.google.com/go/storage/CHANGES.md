@@ -1,5 +1,10 @@
 # Changes
 
+## v1.4.0
+
+- When listing objects in a bucket, allow callers to specify which attributes
+  are queried. This allows for performance optimization.
+
 ## v1.3.0
 
 - Use `storage.googleapis.com/storage/v1` by default for GCS requests

@@ -117,7 +117,7 @@ func TestTestSuccess(t *testing.T) {
 			Tag:       "TAG",
 		}})
 
-		t.CheckError(false, err)
+		t.CheckNoError(err)
 	})
 }
 

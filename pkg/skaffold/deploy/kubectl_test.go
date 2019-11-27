@@ -301,7 +301,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 			})
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
-			t.CheckError(false, err)
+			t.CheckNoError(err)
 		})
 	}
 }
@@ -527,7 +527,7 @@ spec:
 			})
 			var b bytes.Buffer
 			err := deployer.Render(context.Background(), &b, test.builds, "")
-			t.CheckError(false, err)
+			t.CheckNoError(err)
 		})
 	}
 }

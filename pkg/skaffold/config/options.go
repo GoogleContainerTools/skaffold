@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -82,8 +83,9 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 	if opts.Namespace != "" {
 		labels["skaffold.dev/namespace"] = opts.Namespace
 	}
-	if len(opts.Profiles) > 0 {
-		labels["skaffold.dev/profiles"] = strings.Join(opts.Profiles, "__")
+	for i, profile := range opts.Profiles {
+		key := fmt.Sprintf("skaffold.dev/profile.%d", i)
+		labels[key] = profile
 	}
 	for _, cl := range opts.CustomLabels {
 		l := strings.SplitN(cl, "=", 2)
