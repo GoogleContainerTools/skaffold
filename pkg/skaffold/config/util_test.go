@@ -275,6 +275,8 @@ func TestIsDefaultLocal(t *testing.T) {
 		{context: "docker-for-desktop", expectedLocal: true},
 		{context: "docker-desktop", expectedLocal: true},
 		{context: "anything-else", expectedLocal: false},
+		{context: "kind@blah", expectedLocal: false},
+		{context: "other-kind", expectedLocal: false},
 	}
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
@@ -288,22 +290,22 @@ func TestIsDefaultLocal(t *testing.T) {
 func TestIsKindCluster(t *testing.T) {
 	tests := []struct {
 		context        string
-		expecteName    string
+		expectedName   string
 		expectedIsKind bool
 	}{
-		{context: "kind-kind", expecteName: "kind", expectedIsKind: true},
-		{context: "kind-other", expecteName: "other", expectedIsKind: true},
-		{context: "kind@kind", expecteName: "kind", expectedIsKind: true},
-		{context: "other@kind", expecteName: "other", expectedIsKind: true},
-		{context: "docker-for-desktop", expecteName: "", expectedIsKind: false},
-		{context: "not-kind", expecteName: "", expectedIsKind: false},
+		{context: "kind-kind", expectedName: "kind", expectedIsKind: true},
+		{context: "kind-other", expectedName: "other", expectedIsKind: true},
+		{context: "kind@kind", expectedName: "kind", expectedIsKind: true},
+		{context: "other@kind", expectedName: "other", expectedIsKind: true},
+		{context: "docker-for-desktop", expectedName: "", expectedIsKind: false},
+		{context: "not-kind", expectedName: "", expectedIsKind: false},
 	}
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
 			isKind, name := IsKindCluster(test.context)
 
 			t.CheckDeepEqual(test.expectedIsKind, isKind)
-			t.CheckDeepEqual(test.expecteName, name)
+			t.CheckDeepEqual(test.expectedName, name)
 		})
 	}
 }
