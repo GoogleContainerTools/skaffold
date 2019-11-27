@@ -330,7 +330,7 @@ func TestSetDefaultPortForwardNamespace(t *testing.T) {
 				return test.currentConfig, test.currentConfigErr
 			}
 			err := Set(test.cfg)
-			t.CheckError(false, err)
+			t.CheckNoError(err)
 			t.CheckDeepEqual(len(test.expectedNamespaces), len(test.cfg.PortForward))
 			for i, pf := range test.cfg.PortForward {
 				t.CheckDeepEqual(test.expectedNamespaces[i], pf.Namespace)
