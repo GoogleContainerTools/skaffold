@@ -1282,8 +1282,8 @@
         },
         "upgradeOnChange": {
           "type": "boolean",
-          "description": "specifics whether to upgrade helm chart on code changes.",
-          "x-intellij-html-description": "specifics whether to upgrade helm chart on code changes."
+          "description": "specifies whether to upgrade helm chart on code changes.",
+          "x-intellij-html-description": "specifies whether to upgrade helm chart on code changes."
         },
         "useHelmSecrets": {
           "type": "boolean",

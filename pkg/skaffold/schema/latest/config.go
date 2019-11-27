@@ -506,7 +506,7 @@ type HelmRelease struct {
 	// `remote: false` implies `upgradeOnChange: true`.
 	Remote bool `yaml:"remote,omitempty"`
 
-	// UpgradeOnChange specifics whether to upgrade helm chart on code changes.
+	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
 	UpgradeOnChange *bool `yaml:"upgradeOnChange,omitempty"`
 
 	// Overrides are key-value pairs.
