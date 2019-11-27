@@ -37,6 +37,9 @@ var (
 	// For testing
 	aggregatePodWatcher = kubernetes.AggregatePodWatcher
 	topLevelOwnerKey    = kubernetes.TopLevelOwnerKey
+
+	notifyDebugContainerStarted    = event.DebugContainerStarted
+	notifyDebugContainerTerminated = event.DebugContainerTerminated
 )
 
 type DebuggableContainerManager struct {
@@ -120,7 +123,7 @@ func (d *DebuggableContainerManager) checkPod(ctx context.Context, pod *v1.Pod) 
 			case c.State.Running != nil && !seen:
 				d.active[key] = key
 				color.Yellow.Fprintf(d.output, "Debuggable container: %s runtime=%s\n", key, config.Runtime)
-				event.DebugContainerStarted(
+				notifyDebugContainerStarted(
 					pod.Name,
 					c.Name,
 					pod.Namespace,
@@ -132,7 +135,7 @@ func (d *DebuggableContainerManager) checkPod(ctx context.Context, pod *v1.Pod) 
 			case c.State.Terminated != nil && seen:
 				delete(d.active, key)
 				color.Yellow.Fprintf(d.output, "Debuggable container %s terminated\n", key)
-				event.DebugContainerTerminated(pod.Name, c.Name, pod.Namespace,
+				notifyDebugContainerTerminated(pod.Name, c.Name, pod.Namespace,
 					config.ArtifactImage,
 					config.Runtime,
 					config.WorkingDir,
