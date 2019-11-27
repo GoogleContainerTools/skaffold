@@ -288,7 +288,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		}
 
 		valuesSet[v.Tag] = true
-		args = append(args, "--set", value)
+		args = append(args, "--set-string", value)
 	}
 
 	// SetValues
