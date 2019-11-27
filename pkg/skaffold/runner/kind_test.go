@@ -33,6 +33,7 @@ import (
 func TestLoadImagesInKindNodes(t *testing.T) {
 	tests := []struct {
 		description   string
+		kindCluster   string
 		built         []build.Artifact
 		deployed      []build.Artifact
 		commands      util.Command
@@ -41,19 +42,21 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 	}{
 		{
 			description: "load image",
+			kindCluster: "kind",
 			built:       []build.Artifact{{Tag: "tag1"}},
 			deployed:    []build.Artifact{{Tag: "tag1"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
-				AndRun("kind load docker-image tag1"),
+				AndRun("kind load docker-image --name kind tag1"),
 		},
 		{
 			description: "load missing image",
+			kindCluster: "other-kind",
 			built:       []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
 			deployed:    []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "tag1").
-				AndRun("kind load docker-image tag2"),
+				AndRun("kind load docker-image --name other-kind tag2"),
 		},
 		{
 			description: "inspect error",
@@ -66,21 +69,23 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 		},
 		{
 			description: "load error",
+			kindCluster: "kind",
 			built:       []build.Artifact{{Tag: "tag"}},
 			deployed:    []build.Artifact{{Tag: "tag"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
-				AndRunErr("kind load docker-image tag", errors.New("BUG")),
+				AndRunErr("kind load docker-image --name kind tag", errors.New("BUG")),
 			shouldErr:     true,
 			expectedError: "unable to load",
 		},
 		{
 			description: "ignore image that's not built",
+			kindCluster: "kind",
 			built:       []build.Artifact{{Tag: "built"}},
 			deployed:    []build.Artifact{{Tag: "built"}, {Tag: "busybox"}},
 			commands: testutil.
 				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
-				AndRun("kind load docker-image built"),
+				AndRun("kind load docker-image --name kind built"),
 		},
 		{
 			description: "no artifact",
@@ -106,7 +111,7 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 					KubeContext: "kubecontext",
 				},
 			}
-			err := r.loadImagesInKindNodes(context.Background(), ioutil.Discard, test.deployed)
+			err := r.loadImagesInKindNodes(context.Background(), ioutil.Discard, test.kindCluster, test.deployed)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)

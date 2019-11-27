@@ -183,15 +183,27 @@ func GetInsecureRegistries(configFile string) ([]string, error) {
 }
 
 func isDefaultLocal(kubeContext string) bool {
-	return kubeContext == constants.DefaultMinikubeContext ||
+	if kubeContext == constants.DefaultMinikubeContext ||
 		kubeContext == constants.DefaultDockerForDesktopContext ||
-		kubeContext == constants.DefaultDockerDesktopContext ||
-		IsKindCluster(kubeContext)
+		kubeContext == constants.DefaultDockerDesktopContext {
+		return true
+	}
+
+	isKind, _ := IsKindCluster(kubeContext)
+	return isKind
 }
 
-func IsKindCluster(kubeContext string) bool {
-	return strings.HasPrefix(kubeContext, "kind-") ||
-		strings.HasSuffix(kubeContext, "@kind")
+// IsKindCluster checks that the given `kubeContext` is talking to `kind`.
+// It also returns the name of the `kind` cluster.
+func IsKindCluster(kubeContext string) (bool, string) {
+	switch {
+	case strings.HasPrefix(kubeContext, "kind-"):
+		return true, strings.TrimPrefix(kubeContext, "kind-")
+	case strings.HasSuffix(kubeContext, "@kind"):
+		return true, strings.TrimSuffix(kubeContext, "@kind")
+	default:
+		return false, ""
+	}
 }
 
 func IsUpdateCheckEnabled(configfile string) bool {
