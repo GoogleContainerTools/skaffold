@@ -86,13 +86,15 @@ func TestDontPushAlreadyPushed(t *testing.T) {
 		localDocker := NewLocalDaemon(api, nil, false, nil)
 
 		digest, err := localDocker.Push(context.Background(), ioutil.Discard, "image")
-		t.CheckErrorAndDeepEqual(false, err, "sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
+		t.CheckNoError(err)
+			t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
 
 		// Images already pushed don't need being pushed.
 		api.ErrImagePush = true
 
 		digest, err = localDocker.Push(context.Background(), ioutil.Discard, "image")
-		t.CheckErrorAndDeepEqual(false, err, "sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
+		t.CheckNoError(err)
+			t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
 	})
 }
 

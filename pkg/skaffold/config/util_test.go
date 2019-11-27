@@ -72,7 +72,8 @@ func TestReadConfig(t *testing.T) {
 
 			cfg, err := ReadConfigFile(test.filename)
 
-			t.CheckErrorAndDeepEqual(false, err, test.expectedCfg, cfg)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedCfg, cfg)
 		})
 	}
 }
@@ -90,7 +91,8 @@ func TestResolveConfigFile(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		cfg := t.TempFile("givenConfigurationFile", nil)
 		actual, err := ResolveConfigFile(cfg)
-		t.CheckErrorAndDeepEqual(false, err, cfg, actual)
+		t.CheckNoError(err)
+		t.CheckDeepEqual(cfg, actual)
 	})
 }
 
@@ -213,7 +215,8 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual, err := getConfigForKubeContextWithGlobalDefaults(test.cfg, test.kubecontext)
-			t.CheckErrorAndDeepEqual(false, err, test.expectedConfig, actual)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedConfig, actual)
 		})
 	}
 }
