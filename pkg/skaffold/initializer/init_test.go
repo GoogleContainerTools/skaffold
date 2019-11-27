@@ -605,11 +605,10 @@ func Test_canonicalizeName(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.in, func(t *testing.T) {
+		testutil.Run(t, test.in, func(t *testutil.T) {
 			actual := canonicalizeName(test.in)
-			if actual != test.out {
-				t.Errorf("%s: expected %s, found %s", test.in, test.out, actual)
-			}
+
+			t.CheckDeepEqual(test.out, actual)
 		})
 	}
 }
