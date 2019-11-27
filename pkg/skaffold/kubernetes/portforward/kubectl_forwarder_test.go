@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestUnavailablePort(t *testing.T) {
@@ -115,7 +116,7 @@ func TestMonitorErrorLogs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 
 			cmd := exec.Command("sleep", "5")
@@ -153,13 +154,13 @@ func TestMonitorErrorLogs(t *testing.T) {
 	}
 }
 
-func assertCmdIsRunning(t *testing.T, cmd *exec.Cmd) {
+func assertCmdIsRunning(t *testutil.T, cmd *exec.Cmd) {
 	if cmd.ProcessState != nil {
 		t.Fatal("cmd was killed but expected to continue running")
 	}
 }
 
-func assertCmdWasKilled(t *testing.T, cmd *exec.Cmd) {
+func assertCmdWasKilled(t *testutil.T, cmd *exec.Cmd) {
 	if err := cmd.Wait(); err == nil {
 		t.Fatal("cmd was not killed but expected to be killed")
 	}
