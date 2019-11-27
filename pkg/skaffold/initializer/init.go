@@ -117,11 +117,8 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	rootDir := "."
 
 	if c.ComposeFile != "" {
-		// run kompose first to generate k8s manifests, then run skaffold init
-		logrus.Infof("running 'kompose convert' for file %s", c.ComposeFile)
-		komposeCmd := exec.CommandContext(ctx, "kompose", "convert", "-f", c.ComposeFile)
-		if err := util.RunCmd(komposeCmd); err != nil {
-			return errors.Wrap(err, "running kompose")
+		if err := runKompose(ctx, c.ComposeFile); err != nil {
+			return err
 		}
 	}
 
@@ -226,6 +223,18 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	tips.PrintForInit(out, c.Opts)
 
 	return nil
+}
+
+// runKompose runs the `kompose` CLI before running skaffold init
+func runKompose(ctx context.Context, composeFile string) error {
+	if _, err := os.Stat(composeFile); os.IsNotExist(err) {
+		return err
+	}
+
+	logrus.Infof("running 'kompose convert' for file %s", composeFile)
+	komposeCmd := exec.CommandContext(ctx, "kompose", "convert", "-f", composeFile)
+	_, err := util.RunCmdOut(komposeCmd)
+	return err
 }
 
 // autoSelectBuilders takes a list of builders and images, checks if any of the builders' configured target
