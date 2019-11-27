@@ -190,7 +190,8 @@ func isDefaultLocal(kubeContext string) bool {
 }
 
 func IsKindCluster(kubeContext string) bool {
-	return strings.HasSuffix(kubeContext, "@kind")
+	return strings.HasPrefix(kubeContext, "kind-") ||
+		strings.HasSuffix(kubeContext, "@kind")
 }
 
 func IsUpdateCheckEnabled(configfile string) bool {

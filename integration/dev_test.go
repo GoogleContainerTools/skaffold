@@ -408,7 +408,7 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 
 	contextName := "modified-context"
 	if config.IsKindCluster(kubeConfig.CurrentContext) {
-		contextName += "@kind"
+		contextName = "kind-" + contextName
 	}
 
 	activeContext := kubeConfig.Contexts[kubeConfig.CurrentContext]
