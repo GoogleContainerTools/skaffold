@@ -146,7 +146,7 @@ message DebuggingContainerEvent {
   string containerName = 3; // the name of the container configured for debugging
   string namespace = 4; // the namespace of the debugging container
 
-  string artifactName = 5; // the artifact name in skaffold.yaml of the debugging container
+  string artifactImage = 5; // the artifact image in skaffold.yaml of the debugging container
   string runtime = 6; // the detected language runtime
   string workingDir = 7; // the working directory in the container image
   map<string,uint32> ports = 8; // the exposed debugging-related ports

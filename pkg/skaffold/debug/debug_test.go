@@ -517,7 +517,7 @@ func TestWorkingDir(t *testing.T) {
 	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"workingDir":"/a/dir"`))
 }
 
-func TestArtifactName(t *testing.T) {
+func TestArtifactImage(t *testing.T) {
 	defer func(c []containerTransformer) { containerTransforms = c }(containerTransforms)
 	containerTransforms = append(containerTransforms, testTransformer{})
 
@@ -533,5 +533,5 @@ func TestArtifactName(t *testing.T) {
 	result := transformManifest(pod, retriever)
 	testutil.CheckDeepEqual(t, true, result)
 	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
-	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"artifactName":"gcr.io/random/image"`))
+	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"artifactImage":"gcr.io/random/image"`))
 }

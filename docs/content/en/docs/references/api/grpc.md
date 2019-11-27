@@ -106,10 +106,10 @@ DebuggingContainerEvent is raised when a debugging container is started or termi
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | the container status oneof: Started, Terminated |
-| podName | [string](#string) |  | pod name with the debugging container |
+| podName | [string](#string) |  | the pod name with the debugging container |
 | containerName | [string](#string) |  | the name of the container configured for debugging |
 | namespace | [string](#string) |  | the namespace of the debugging container |
-| artifactName | [string](#string) |  | the name of the corresponding artifact in the skaffold.yaml |
+| artifactImage | [string](#string) |  | the artifact image in skaffold.yaml of the debugging container |
 | runtime | [string](#string) |  | the detected language runtime |
 | workingDir | [string](#string) |  | the working directory in the container image |
 | ports | [DebuggingContainerEvent.PortsEntry](#proto.DebuggingContainerEvent.PortsEntry) | repeated | the exposed debugging-related ports |

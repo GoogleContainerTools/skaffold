@@ -124,7 +124,7 @@ func (d *DebuggableContainerManager) checkPod(ctx context.Context, pod *v1.Pod) 
 					pod.Name,
 					c.Name,
 					pod.Namespace,
-					config.ArtifactName,
+					config.ArtifactImage,
 					config.Runtime,
 					config.WorkingDir,
 					config.Ports)
@@ -133,7 +133,7 @@ func (d *DebuggableContainerManager) checkPod(ctx context.Context, pod *v1.Pod) 
 				delete(d.active, key)
 				color.Yellow.Fprintf(d.output, "Debuggable container %s terminated\n", key)
 				event.DebugContainerTerminated(pod.Name, c.Name, pod.Namespace,
-					config.ArtifactName,
+					config.ArtifactImage,
 					config.Runtime,
 					config.WorkingDir,
 					config.Ports)

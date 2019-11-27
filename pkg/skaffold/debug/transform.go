@@ -179,7 +179,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		}
 		// requiredImage, if not empty, is the image ID providing the debugging support files
 		if configuration, requiredImage, err := transformContainer(container, imageConfig, portAlloc); err == nil {
-			configuration.ArtifactName = imageConfig.name
+			configuration.ArtifactImage = imageConfig.name
 			configuration.WorkingDir = imageConfig.workingDir
 			configurations[container.Name] = *configuration
 			if len(requiredImage) > 0 {
