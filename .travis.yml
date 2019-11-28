@@ -14,14 +14,14 @@ branches:
 jobs:
   include:
     - os: linux
-      name: "checks"
-      script:
-        - make checks
-    - os: linux
       name: "Linux unit"
+      env:
+        - GOCACHE=$HOME/go-cache
       script:
-        # - make
         - make coverage
+      cache:
+        directories:
+          - $GOCACHE
     - os: osx
       name: "OSX unit"
       env:
@@ -39,10 +39,3 @@ jobs:
       script:
         # - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
         - go test -short -timeout 60s ./...
-    - os: linux
-      name: "integration"
-      before_install:
-        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.0/kind-linux-amd64
-        - chmod +x ${HOME}/bin/kind
-      script:
-        - make integration-in-kind
