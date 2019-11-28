@@ -106,7 +106,7 @@ func TestDoDev(t *testing.T) {
 			err := doDev(context.Background(), ioutil.Discard)
 
 			t.CheckDeepEqual(test.expectedCalls, mockRunner.calls)
-			t.CheckDeepEqual(true, err == context.Canceled)
+			t.CheckTrue(err == context.Canceled)
 		})
 	}
 }
@@ -158,7 +158,7 @@ func TestDevConfigChange(t *testing.T) {
 		// ensure that we received the context.Cancled error (and not ErrorConfigurationChanged)
 		// also ensure that the we run through dev cycles (since we reloaded on the first),
 		// and exit after a real error is received
-		t.CheckDeepEqual(true, err == context.Canceled)
+		t.CheckTrue(err == context.Canceled)
 		t.CheckDeepEqual(mockRunner.cycles, 2)
 	})
 }

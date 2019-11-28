@@ -302,8 +302,8 @@ func TestCacheHasher(t *testing.T) {
 			newHash, err := getHashForArtifact(context.Background(), depLister, &latest.Artifact{})
 
 			t.CheckNoError(err)
-			t.CheckDeepEqual(false, test.differentHash && oldHash == newHash)
-			t.CheckDeepEqual(false, !test.differentHash && oldHash != newHash)
+			t.CheckFalse(test.differentHash && oldHash == newHash)
+			t.CheckFalse(!test.differentHash && oldHash != newHash)
 		})
 	}
 }
