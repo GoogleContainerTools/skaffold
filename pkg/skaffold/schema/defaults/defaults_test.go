@@ -196,7 +196,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("secret", cfg.Build.Cluster.DockerConfig.SecretName)
-		t.CheckDeepEqual("", cfg.Build.Cluster.DockerConfig.Path)
+		t.CheckEmpty(cfg.Build.Cluster.DockerConfig.Path)
 	})
 }
 

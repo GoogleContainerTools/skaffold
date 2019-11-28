@@ -66,7 +66,7 @@ func TestJibMavenBuildSpec(t *testing.T) {
 			}}
 
 			t.CheckDeepEqual(expected, buildSpec.Steps)
-			t.CheckDeepEqual(0, len(buildSpec.Images))
+			t.CheckEmpty(buildSpec.Images)
 		})
 	}
 }
@@ -111,7 +111,7 @@ func TestJibGradleBuildSpec(t *testing.T) {
 			}}
 
 			t.CheckDeepEqual(expected, buildSpec.Steps)
-			t.CheckDeepEqual(0, len(buildSpec.Images))
+			t.CheckEmpty(buildSpec.Images)
 		})
 	}
 }

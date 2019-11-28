@@ -101,6 +101,32 @@ func (t *T) CheckFalse(actual bool) {
 	}
 }
 
+func (t *T) CheckEmpty(actual interface{}) {
+	t.Helper()
+
+	var len int
+	v := reflect.ValueOf(actual)
+	switch v.Kind() {
+	case reflect.Array:
+		len = v.Len()
+	case reflect.Chan:
+		len = v.Len()
+	case reflect.Map:
+		len = v.Len()
+	case reflect.Slice:
+		len = v.Len()
+	case reflect.String:
+		len = v.Len()
+	default:
+		t.Errorf("expected `empty`, but was `%+v`", actual)
+		return
+	}
+
+	if len != 0 {
+		t.Errorf("expected `empty`, but was `%+v`", actual)
+	}
+}
+
 func (t *T) CheckDeepEqual(expected, actual interface{}, opts ...cmp.Option) {
 	t.Helper()
 	CheckDeepEqual(t.T, expected, actual, opts...)

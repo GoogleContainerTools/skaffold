@@ -143,7 +143,7 @@ func TestCacheBuildLocal(t *testing.T) {
 		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(0, len(builder.built))
+		t.CheckEmpty(builder.built)
 		t.CheckDeepEqual(2, len(bRes))
 		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
@@ -241,7 +241,7 @@ func TestCacheBuildRemote(t *testing.T) {
 		bRes, err = artifactCache.Build(context.Background(), ioutil.Discard, tags, artifacts, builder.BuildAndTest)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(0, len(builder.built))
+		t.CheckEmpty(builder.built)
 		t.CheckDeepEqual(2, len(bRes))
 		t.CheckDeepEqual("artifact1", bRes[0].ImageName)
 		t.CheckDeepEqual("artifact2", bRes[1].ImageName)
