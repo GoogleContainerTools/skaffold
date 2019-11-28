@@ -920,7 +920,7 @@
           "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
           "default": "{}",
           "examples": [
-            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"{{.ENV_VARIABLE}}\"}"
+            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"'{{.ENV_VARIABLE}}'\"}"
           ]
         },
         "path": {
@@ -1428,7 +1428,7 @@
           "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
           "default": "{}",
           "examples": [
-            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"{{.ENV_VARIABLE}}\"}"
+            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"'{{.ENV_VARIABLE}}'\"}"
           ]
         },
         "buildContext": {
