@@ -17,20 +17,20 @@ jobs:
       name: "Linux unit"
       env:
         - GOCACHE=$HOME/go-cache
-      script:
-        - make coverage
       cache:
         directories:
           - $GOCACHE
+      script:
+        - make coverage
     - os: osx
       name: "OSX unit"
       env:
         - GOCACHE=$HOME/go-cache
-      script:
-        - make quicktest
       cache:
         directories:
           - $GOCACHE
+      script:
+        - make quicktest
     - os: windows
       name: "Windows unit"
       env:
