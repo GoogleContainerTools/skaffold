@@ -67,6 +67,26 @@ func (t *T) CheckContains(expected, actual string) {
 	CheckContains(t.T, expected, actual)
 }
 
+func (t *T) CheckNil(actual interface{}) {
+	t.Helper()
+
+	if !isNil(actual) {
+		t.Errorf("expected `nil`, but was `%+v`", actual)
+	}
+}
+
+func (t *T) CheckNotNil(actual interface{}) {
+	t.Helper()
+
+	if isNil(actual) {
+		t.Error("expected `not nil`, but was `nil`")
+	}
+}
+
+func isNil(actual interface{}) bool {
+	return actual == nil || (reflect.ValueOf(actual).Kind() == reflect.Ptr && reflect.ValueOf(actual).IsNil())
+}
+
 func (t *T) CheckTrue(actual bool) {
 	t.Helper()
 	if !actual {
