@@ -15,26 +15,38 @@ jobs:
   include:
     - os: linux
       name: "checks"
+      env:
+        - STATICCHECK_CACHE=$HOME/linting
       script:
         - make checks
+      cache:
+        directories:
+          - $STATICCHECK_CACHE
+          - $HOME/.cache/go-build
     - os: linux
       name: "Linux unit"
       script:
-        - make
         - make coverage
+      cache:
+        directories:
+          - $HOME/.cache/go-build
     - os: osx
       name: "OSX unit"
       script:
-        - make
         - make quicktest
+      cache:
+        directories:
+          - $HOME/.cache/go-build
     - os: windows
       name: "Windows unit"
       env:
         - GO111MODULE=on
         - GOFLAGS="-mod=vendor"
       script:
-        - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
         - go test -short -timeout 60s ./...
+      cache:
+        directories:
+          - C:\\Users\\travis\\AppData\\Local\\go-build
     - os: linux
       name: "integration"
       before_install:
