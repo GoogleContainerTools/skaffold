@@ -20,12 +20,12 @@ jobs:
     - os: linux
       name: "Linux unit"
       script:
-        - make
+        # - make
         - make coverage
     - os: osx
       name: "OSX unit"
       script:
-        - make
+        # - make
         - make quicktest
     - os: windows
       name: "Windows unit"
