@@ -67,6 +67,20 @@ func (t *T) CheckContains(expected, actual string) {
 	CheckContains(t.T, expected, actual)
 }
 
+func (t *T) CheckTrue(actual bool) {
+	t.Helper()
+	if !actual {
+		t.Error("expected `true`, but was `false`")
+	}
+}
+
+func (t *T) CheckFalse(actual bool) {
+	t.Helper()
+	if actual {
+		t.Error("expected `false`, but was `true`")
+	}
+}
+
 func (t *T) CheckDeepEqual(expected, actual interface{}, opts ...cmp.Option) {
 	t.Helper()
 	CheckDeepEqual(t.T, expected, actual, opts...)

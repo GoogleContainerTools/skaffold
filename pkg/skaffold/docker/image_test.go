@@ -87,14 +87,14 @@ func TestDontPushAlreadyPushed(t *testing.T) {
 
 		digest, err := localDocker.Push(context.Background(), ioutil.Discard, "image")
 		t.CheckNoError(err)
-			t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
+		t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
 
 		// Images already pushed don't need being pushed.
 		api.ErrImagePush = true
 
 		digest, err = localDocker.Push(context.Background(), ioutil.Discard, "image")
 		t.CheckNoError(err)
-			t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
+		t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
 	})
 }
 
@@ -420,8 +420,8 @@ func TestInsecureRegistry(t *testing.T) {
 
 			t.CheckNoError(err)
 			if !test.shouldErr {
-				t.CheckDeepEqual(false, test.insecure && !called)
-				t.CheckDeepEqual(false, !test.insecure && called)
+				t.CheckFalse(test.insecure && !called)
+				t.CheckFalse(!test.insecure && called)
 			}
 		})
 	}

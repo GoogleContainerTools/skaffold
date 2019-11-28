@@ -129,9 +129,9 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		t.CheckDeepEqual(constants.DefaultKanikoTimeout, cfg.Build.Cluster.Timeout)
 
 		// artifact types
-		t.CheckDeepEqual(true, cfg.Pipeline.Build.Artifacts[0].KanikoArtifact != nil)
-		t.CheckDeepEqual(true, cfg.Pipeline.Build.Artifacts[1].KanikoArtifact != nil)
-		t.CheckDeepEqual(false, cfg.Pipeline.Build.Artifacts[2].KanikoArtifact != nil)
+		t.CheckTrue(cfg.Pipeline.Build.Artifacts[0].KanikoArtifact != nil)
+		t.CheckTrue(cfg.Pipeline.Build.Artifacts[1].KanikoArtifact != nil)
+		t.CheckFalse(cfg.Pipeline.Build.Artifacts[2].KanikoArtifact != nil)
 
 		// pull secret set
 		cfg = &latest.SkaffoldConfig{
