@@ -24,9 +24,13 @@ jobs:
         - make coverage
     - os: osx
       name: "OSX unit"
+      env:
+        - GOCACHE=$HOME/go-cache
       script:
-        # - make
         - make quicktest
+      cache:
+        directories:
+          - $GOCACHE
     - os: windows
       name: "Windows unit"
       env:
