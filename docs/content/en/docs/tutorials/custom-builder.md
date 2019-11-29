@@ -39,7 +39,7 @@ This tutorial will be based on the [buildpacks example](https://github.com/Googl
 ## Adding a Custom Builder to Your Skaffold Project
 
 We'll need to configure your Skaffold config to build artifacts with this custom builder.
-To do this, we will take advantage of the [custom builder]({{<relref "docs/pipeline-stages/builders#custom-build-script-run-locally" >}}) in Skaffold.
+To do this, we will take advantage of the [custom builder]({{<relref "/docs/pipeline-stages/builders/custom" >}}) in Skaffold.
 
 First, add a `build.sh` file which Skaffold will call to build artifacts:
 
@@ -51,8 +51,7 @@ Then, configure artifacts in your `skaffold.yaml` to build with `build.sh`:
 {{% readfile file="samples/builders/custom-buildpacks/skaffold.yaml" %}}
 
 List the file dependencies for each artifact; in the example above, Skaffold watches all files in the build context.
-For more information about listing dependencies for custom artifacts, see the documentation [here]({{<relref "docs/pipeline-stages/builders#dependencies-from-a-command" >}}).
-
+For more information about listing dependencies for custom artifacts, see the documentation [here]({{<relref "/docs/pipeline-stages/builders/custom#dependencies-from-a-command" >}}).
 
 You can check custom builder is properly configured by running `skaffold build`.
 This command should build the artifacts and exit successfully.
