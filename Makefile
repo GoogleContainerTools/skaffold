@@ -133,7 +133,7 @@ endif
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
 	docker build \
-		-f deploy/skaffold/Dockerfile \
+		-f deploy/skaffold/distribution.dockerfile \
 		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		--build-arg VERSION=$(VERSION) \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
@@ -145,7 +145,7 @@ release: cross $(BUILD_DIR)/VERSION
 .PHONY: release-build
 release-build: cross
 	docker build \
-		-f deploy/skaffold/Dockerfile \
+		-f deploy/skaffold/distribution.dockerfile \
 		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
@@ -164,9 +164,8 @@ kind-cluster:
 skaffold-builder:
 	-docker pull gcr.io/$(GCP_PROJECT)/skaffold-builder
 	docker build \
+		-f deploy/skaffold/builder.dockerfile \
 		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		-f deploy/skaffold/Dockerfile \
-		--target builder \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-builder .
 
 .PHONY: integration-in-kind
