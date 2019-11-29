@@ -107,7 +107,7 @@ func (d *DebuggableContainerManager) checkPod(ctx context.Context, pod *v1.Pod) 
 	if !found {
 		return
 	}
-	var configurations map[string]debug.DebugConfiguration
+	var configurations map[string]debug.ContainerDebugConfiguration
 	if err := json.Unmarshal([]byte(debugConfigString), &configurations); err != nil {
 		logrus.Warnf("Unable to parse debug-config for pod %s/%s: '%s'", pod.Namespace, pod.Name, debugConfigString)
 		return

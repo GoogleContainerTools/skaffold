@@ -48,8 +48,8 @@ var (
 	}
 )
 
-// DebugConfiguration captures debugging information for a specific container
-type DebugConfiguration struct {
+// ContainerDebugConfiguration captures debugging information for a specific container
+type ContainerDebugConfiguration struct {
 	// ArtifactImage is the image reference used in the skaffold.yaml
 	ArtifactImage string `json:"artifactImage,omitempty"`
 	// Runtime represents the underlying language runtime (`go`, `jvm`, `nodejs`, `python`)
