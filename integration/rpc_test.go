@@ -41,7 +41,6 @@ import (
 var (
 	connectionRetries = 2
 	readRetries       = 5
-	numLogEntries     = 5
 	waitTime          = 1 * time.Second
 )
 
@@ -57,65 +56,9 @@ func TestEventsRPC(t *testing.T) {
 	teardown := setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
 	defer teardown()
 
-	// start a grpc client and make sure we can connect properly
-	var (
-		conn   *grpc.ClientConn
-		err    error
-		client proto.SkaffoldServiceClient
-	)
-
-	// connect to the skaffold grpc server
-	for i := 0; i < connectionRetries; i++ {
-		conn, err = grpc.Dial(fmt.Sprintf(":%s", rpcAddr), grpc.WithInsecure())
-		if err != nil {
-			t.Logf("unable to establish skaffold grpc connection: retrying...")
-			time.Sleep(waitTime)
-			continue
-		}
-		defer conn.Close()
-
-		client = proto.NewSkaffoldServiceClient(conn)
-		break
-	}
-
-	if client == nil {
-		t.Fatalf("error establishing skaffold grpc connection")
-	}
-
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	defer ctxCancel()
-
-	// read the event log stream from the skaffold grpc server
-	var stream proto.SkaffoldService_EventsClient
-	for i := 0; i < readRetries; i++ {
-		stream, err = client.Events(ctx, &empty.Empty{})
-		if err != nil {
-			t.Logf("waiting for connection...")
-			time.Sleep(waitTime)
-			continue
-		}
-	}
-	if stream == nil {
-		t.Fatalf("error retrieving event log: %v\n", err)
-	}
-
 	// read a preset number of entries from the event log
-	var logEntries []*proto.LogEntry
-	entriesReceived := 0
-	for {
-		entry, err := stream.Recv()
-		if err != nil {
-			t.Errorf("error receiving entry from stream: %s", err)
-		}
+	logEntries := retrieveGrpcLogEntries(t, rpcAddr, 5)
 
-		if entry != nil {
-			logEntries = append(logEntries, entry)
-			entriesReceived++
-		}
-		if entriesReceived == numLogEntries {
-			break
-		}
-	}
 	metaEntries, buildEntries, deployEntries := 0, 0, 0
 	for _, entry := range logEntries {
 		switch entry.Event.GetEventType().(type) {
@@ -198,7 +141,7 @@ func TestEventLogHTTP(t *testing.T) {
 					numEntries++
 					logEntries = append(logEntries, entry)
 				}
-				if numEntries >= numLogEntries {
+				if numEntries >= 5 {
 					break
 				}
 			}
@@ -406,4 +349,50 @@ func setupRPCClient(t *testing.T, port string) (proto.SkaffoldServiceClient, fun
 	return client, func() {
 		conn.Close()
 	}
+}
+
+// retrieveGrpcLogEntries reads a preset number of entries from the event log
+func retrieveGrpcLogEntries(t *testing.T, rpcAddr string, numberEntries int) []*proto.LogEntry {
+	grpcClient, close := setupRPCClient(t, rpcAddr)
+	defer close()
+
+	if grpcClient == nil {
+		t.Fatal("error establishing skaffold grpc connection")
+	}
+
+	ctx, ctxCancel := context.WithCancel(context.Background())
+	defer ctxCancel()
+
+	// read the event log stream from the skaffold grpc server
+	var err error
+	var stream proto.SkaffoldService_EventsClient
+	for i := 0; i < readRetries; i++ {
+		stream, err = grpcClient.Events(ctx, &empty.Empty{})
+		if err != nil {
+			t.Logf("waiting for connection...")
+			time.Sleep(waitTime)
+			continue
+		}
+	}
+	if stream == nil {
+		t.Fatalf("error retrieving event log: %v", err)
+	}
+
+	var logEntries []*proto.LogEntry
+	entriesReceived := 0
+	for {
+		entry, err := stream.Recv()
+		if err != nil {
+			t.Errorf("error receiving entry from stream: %s", err)
+		}
+
+		if entry != nil {
+			logEntries = append(logEntries, entry)
+			entriesReceived++
+		}
+		if entriesReceived == numberEntries {
+			break
+		}
+	}
+	return logEntries
 }
