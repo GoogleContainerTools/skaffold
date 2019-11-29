@@ -91,6 +91,7 @@ COPY --from=download-container-structure-test container-structure-test /usr/loca
 COPY --from=download-bazel bazel /usr/local/bin/
 COPY --from=download-gcloud google-cloud-sdk/ /google-cloud-sdk/
 COPY --from=download-pack pack /usr/local/bin/
+COPY --from=download-kind kind /usr/local/bin/
 
 # Finish installation of bazel
 RUN bazel version
@@ -116,16 +117,11 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
     apt-transport-https && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=golang:1.12 /usr/local/go /usr/local/go
-ENV PATH /usr/local/go/bin:/go/bin:$PATH
+ENV PATH /usr/local/go/bin:/root/go/bin:$PATH
 WORKDIR /skaffold
 COPY . .
 
-FROM builder as integration
-ARG VERSION
-COPY --from=download-kind kind /usr/local/bin/
-RUN make clean && make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
-CMD ["make", "integration"]
-
 FROM runtime_deps as distribution
-COPY --from=integration /usr/bin/skaffold /usr/bin/skaffold
+ARG VERSION
+RUN make clean && make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
 RUN skaffold credits -d /THIRD_PARTY_NOTICES
