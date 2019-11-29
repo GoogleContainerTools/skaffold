@@ -50,6 +50,7 @@ type SkaffoldOptions struct {
 	AutoSync           bool
 	AutoDeploy         bool
 	RenderOnly         bool
+	DebugMode          bool
 	PortForward        PortForwardOptions
 	CustomTag          string
 	Namespace          string
@@ -66,7 +67,6 @@ type SkaffoldOptions struct {
 	Command            string
 	RPCPort            int
 	RPCHTTPPort        int
-	DebugMode          bool
 }
 
 // Labels returns a map of labels to be applied to all deployed

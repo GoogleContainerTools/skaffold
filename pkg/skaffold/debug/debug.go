@@ -51,13 +51,13 @@ var (
 // DebugConfiguration captures debugging information for a specific container
 type DebugConfiguration struct {
 	// ArtifactImage is the image reference used in the skaffold.yaml
-	ArtifactImage string            `json:"artifactImage,omitempty"`
-	// Runtime represents the underlying language runtime (`go`, `jvm`, `nodejs`, `python`) 
-	Runtime      string            `json:"runtime,omitempty"`
+	ArtifactImage string `json:"artifactImage,omitempty"`
+	// Runtime represents the underlying language runtime (`go`, `jvm`, `nodejs`, `python`)
+	Runtime string `json:"runtime,omitempty"`
 	// WorkingDir is the working directory in the image configuration; may be empty
-	WorkingDir   string            `json:"workingDir,omitempty"`
+	WorkingDir string `json:"workingDir,omitempty"`
 	// Ports is the list of debugging ports, keyed by protocol type
-	Ports        map[string]uint32 `json:"ports,omitempty"`
+	Ports map[string]uint32 `json:"ports,omitempty"`
 }
 
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.

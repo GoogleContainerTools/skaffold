@@ -36,7 +36,6 @@ import (
 var (
 	// For testing
 	aggregatePodWatcher = kubernetes.AggregatePodWatcher
-	topLevelOwnerKey    = kubernetes.TopLevelOwnerKey
 
 	notifyDebugContainerStarted    = event.DebugContainerStarted
 	notifyDebugContainerTerminated = event.DebugContainerTerminated
