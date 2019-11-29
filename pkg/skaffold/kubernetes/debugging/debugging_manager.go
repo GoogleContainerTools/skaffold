@@ -102,7 +102,7 @@ func (d *DebuggableContainerManager) Start(ctx context.Context) error {
 	return nil
 }
 
-func (d *DebuggableContainerManager) checkPod(ctx context.Context, pod *v1.Pod) {
+func (d *DebuggableContainerManager) checkPod(_ context.Context, pod *v1.Pod) {
 	debugConfigString, found := pod.Annotations["debug.cloud.google.com/config"]
 	if !found {
 		return
