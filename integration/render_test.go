@@ -162,7 +162,9 @@ spec:
 			})
 			var b bytes.Buffer
 			err := deployer.Render(context.Background(), &b, test.builds, "")
-			t.CheckErrorAndDeepEqual(false, err, test.expectedOut, b.String())
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedOut, b.String())
 		})
 	}
 }

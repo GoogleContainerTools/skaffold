@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -364,8 +365,9 @@ func setupSkaffoldWithArgs(t *testing.T, args ...string) func() {
 	}
 }
 
+// randomPort chooses a port in range [1024, 65535]
 func randomPort() string {
-	return fmt.Sprintf("%d", rand.Intn(65535))
+	return strconv.Itoa(1024 + rand.Intn(65536-1024))
 }
 
 func checkBuildAndDeployComplete(state proto.State) bool {

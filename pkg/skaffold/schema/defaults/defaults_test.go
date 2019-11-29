@@ -129,9 +129,9 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		t.CheckDeepEqual(constants.DefaultKanikoTimeout, cfg.Build.Cluster.Timeout)
 
 		// artifact types
-		t.CheckDeepEqual(true, cfg.Pipeline.Build.Artifacts[0].KanikoArtifact != nil)
-		t.CheckDeepEqual(true, cfg.Pipeline.Build.Artifacts[1].KanikoArtifact != nil)
-		t.CheckDeepEqual(false, cfg.Pipeline.Build.Artifacts[2].KanikoArtifact != nil)
+		t.CheckNotNil(cfg.Pipeline.Build.Artifacts[0].KanikoArtifact)
+		t.CheckNotNil(cfg.Pipeline.Build.Artifacts[1].KanikoArtifact)
+		t.CheckNil(cfg.Pipeline.Build.Artifacts[2].KanikoArtifact)
 
 		// pull secret set
 		cfg = &latest.SkaffoldConfig{
@@ -196,7 +196,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual("secret", cfg.Build.Cluster.DockerConfig.SecretName)
-		t.CheckDeepEqual("", cfg.Build.Cluster.DockerConfig.Path)
+		t.CheckEmpty(cfg.Build.Cluster.DockerConfig.Path)
 	})
 }
 

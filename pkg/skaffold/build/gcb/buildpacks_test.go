@@ -139,7 +139,7 @@ func TestBuildpackBuildSpec(t *testing.T) {
 			if !test.shouldErr {
 				t.CheckDeepEqual(test.expected.Steps, buildSpec.Steps)
 				t.CheckDeepEqual(test.expected.Options.Volumes, buildSpec.Options.Volumes)
-				t.CheckDeepEqual(0, len(buildSpec.Images))
+				t.CheckEmpty(buildSpec.Images)
 			}
 		})
 	}

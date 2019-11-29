@@ -66,11 +66,11 @@ func TestDockerContext(t *testing.T) {
 				files[header.Name] = true
 			}
 
-			t.CheckDeepEqual(false, files["ignored.txt"])
-			t.CheckDeepEqual(false, files["alsoignored.txt"])
-			t.CheckDeepEqual(false, files["files/ignored.txt"])
-			t.CheckDeepEqual(true, files["files/included.txt"])
-			t.CheckDeepEqual(true, files["Dockerfile"])
+			t.CheckFalse(files["ignored.txt"])
+			t.CheckFalse(files["alsoignored.txt"])
+			t.CheckFalse(files["files/ignored.txt"])
+			t.CheckTrue(files["files/included.txt"])
+			t.CheckTrue(files["Dockerfile"])
 		})
 	}
 }

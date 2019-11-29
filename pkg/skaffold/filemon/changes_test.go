@@ -106,7 +106,8 @@ func TestStat(t *testing.T) {
 		t.CheckDeepEqual(len(list), len(actual))
 		for _, f := range list {
 			_, present := actual[f]
-			t.CheckDeepEqual(true, present)
+
+			t.CheckTrue(present)
 		}
 	})
 }
