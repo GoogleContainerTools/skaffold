@@ -118,9 +118,8 @@ func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, err
 }
 
 func (b *Builder) SyncMap(ctx context.Context, a *latest.Artifact) (map[string][]string, error) {
-	if a.DockerArtifact == nil {
-		return nil, build.ErrSyncMapNotSupported{}
+	if a.DockerArtifact != nil {
+		return docker.SyncMap(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
 	}
-
-	return docker.SyncMap(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
+	return nil, build.ErrSyncMapNotSupported{}
 }
