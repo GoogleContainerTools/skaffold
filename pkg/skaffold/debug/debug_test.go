@@ -483,6 +483,36 @@ spec:
 status:
   replicas: 0`,
 		},
+		{
+			`Function`, false,
+			`apiVersion: openfaas.com/v1alpha2
+kind: Function
+metadata:
+  name: my-function
+  namespace: openfaas-fn
+spec:
+  name: my-function
+  handler: ./handler
+  image: gcr.io/k8s-debug/debug-example:latest
+  environment:
+    KEY: value
+  secrets:
+    - my-secret
+`,
+			`apiVersion: openfaas.com/v1alpha2
+kind: Function
+metadata:
+  name: my-function
+  namespace: openfaas-fn
+spec:
+  name: my-function
+  handler: ./handler
+  image: gcr.io/k8s-debug/debug-example:latest
+  environment:
+    KEY: value
+  secrets:
+    - my-secret`,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

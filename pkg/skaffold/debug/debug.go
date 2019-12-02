@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -67,7 +68,13 @@ func applyDebuggingTransforms(l kubectl.ManifestList, retriever configurationRet
 	for _, manifest := range l {
 		obj, _, err := decodeFromYaml(manifest, nil, nil)
 		if err != nil {
-			return nil, errors.Wrap(err, "reading Kubernetes YAML")
+			if m, err := regexp.MatchString(`no kind ".*" is registered for version ".*" in scheme ".*"`, err.Error()); err != nil || !m {
+				return nil, errors.Wrap(err, "reading Kubernetes YAML")
+			}
+			// Issue a warning, appending the original (unchanged) manifest to the list of "updated" manifests.
+			logrus.Warnf("Skipping manifest transformation due to parsing error: %v", err)
+			updated = append(updated, manifest)
+			continue
 		}
 
 		if transformManifest(obj, retriever) {
