@@ -85,8 +85,24 @@ func getCommandMaven(ctx context.Context, workspace string, a *latest.JibArtifac
 	return MavenCommand.CreateCommand(ctx, workspace, args)
 }
 
+func getSyncMapCommandMaven(ctx context.Context, workspace string, a *latest.JibArtifact) *exec.Cmd {
+	cmd := MavenCommand.CreateCommand(ctx, workspace, mavenBuildArgs("_skaffold-sync-map", a, true))
+	return &cmd
+}
+
 // GenerateMavenArgs generates the arguments to Maven for building the project as an image.
 func GenerateMavenArgs(goal string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
+	args := mavenBuildArgs(goal, a, skipTests)
+	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
+		// jib doesn't support marking specific registries as insecure
+		args = append(args, "-Djib.allowInsecureRegistries=true")
+	}
+	args = append(args, "-Dimage="+imageName)
+
+	return args
+}
+
+func mavenBuildArgs(goal string, a *latest.JibArtifact, skipTests bool) []string {
 	// disable jib's rich progress footer on builds; we could use --batch-mode
 	// but it also disables colour which can be helpful
 	args := []string{"-Djib.console=plain"}
@@ -103,13 +119,6 @@ func GenerateMavenArgs(goal string, imageName string, a *latest.JibArtifact, ski
 		// multi-module project: instruct jib to containerize only the given module
 		args = append(args, "package", "jib:"+goal, "-Djib.containerize="+a.Project)
 	}
-
-	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
-		// jib doesn't support marking specific registries as insecure
-		args = append(args, "-Djib.allowInsecureRegistries=true")
-	}
-	args = append(args, "-Dimage="+imageName)
-
 	return args
 }
 

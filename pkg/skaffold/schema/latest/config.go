@@ -581,6 +581,9 @@ type Sync struct {
 	// The container destination is inferred by the builder.
 	// Currently only available for docker artifacts.
 	Infer []string `yaml:"infer,omitempty" yamltags:"oneOf=sync"`
+
+	// Auto delegate discovery of sync rules to the build system.
+	Auto *Auto `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.
@@ -599,6 +602,10 @@ type SyncRule struct {
 	// For example: `"css/"`
 	Strip string `yaml:"strip,omitempty"`
 }
+
+// Auto may be extended to allow customization of the `auto` block but is currently
+// empty
+type Auto struct {}
 
 // Profile is used to override any `build`, `test` or `deploy` configuration.
 type Profile struct {

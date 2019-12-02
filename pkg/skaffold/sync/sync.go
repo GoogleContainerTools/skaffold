@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	jib2 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/bmatcuk/doublestar"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -44,7 +45,7 @@ var (
 	WorkingDir = docker.RetrieveWorkingDir
 )
 
-func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool, destProvider DestinationProvider) (*Item, error) {
+func NewItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool, destProvider DestinationProvider) (*Item, error) {
 	if !e.HasChanged() || a.Sync == nil {
 		return nil, nil
 	}
@@ -55,6 +56,10 @@ func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, inse
 
 	if len(a.Sync.Infer) > 0 {
 		return inferredSyncItem(a, e, builds, destProvider)
+	}
+
+	if a.Sync.Auto != nil {
+		return autoSyncItem(ctx, a, e, builds)
 	}
 
 	return nil, nil
@@ -136,6 +141,28 @@ func inferredSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artif
 	}
 
 	return &Item{Image: tag, Copy: toCopy}, nil
+}
+
+func autoSyncItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds []build.Artifact) (*Item, error) {
+	tag := latestTag(a.ImageName, builds)
+	if tag == "" {
+		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
+	}
+
+	if e.HasChanged() {
+		if a.JibArtifact != nil {
+			if toCopy, toDelete, err := jib2.GetSyncDiff(ctx, a.Workspace, a.JibArtifact, e); err != nil {
+				return nil, err
+			} else if toCopy == nil && toDelete == nil {
+				// do a rebuild
+				return nil, nil
+			} else {
+				return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
+			}
+		}
+	}
+
+	return nil, nil
 }
 
 func latestTag(image string, builds []build.Artifact) string {
@@ -259,4 +286,19 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 	}
 
 	return errs.Wait()
+}
+
+func Init(ctx context.Context, artifacts []*latest.Artifact) error {
+	for i := range artifacts {
+		a := artifacts[i]
+		if a.Sync != nil && a.Sync.Auto != nil{
+			if a.JibArtifact != nil {
+				if err := jib2.InitSync(ctx, a.Workspace, a.JibArtifact); err != nil {
+					// maybe should just disable sync here, instead of dead?
+					return errors.Wrapf(err, "error initializing sync state for %s", a.ImageName)
+				}
+			}
+		}
+	}
+	return nil
 }
