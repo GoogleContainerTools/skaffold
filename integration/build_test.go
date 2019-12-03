@@ -351,27 +351,31 @@ func TestExpectedBuildFailures(t *testing.T) {
 }
 
 func TestBuildKanikoInsecureRegistry(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
+	for i := 1; i < 20; i++ {
+		testutil.Run(t, fmt.Sprintf("kaniko experiment %d", i), func(t *testutil.T) {
+			if testing.Short() {
+				t.Skip("skipping integration test")
+			}
+
+			// run on GCP as this test requires a load balancer
+			if !ShouldRunGCPOnlyTests() {
+				t.Skip("skipping test that is gcp only")
+			}
+
+			ns, k8sClient, cleanupNs := SetupNamespace(t.T)
+			defer cleanupNs()
+
+			dir := "testdata/kaniko-insecure-registry"
+
+			cleanup := deployInsecureRegistry(t.T, ns.Name, dir)
+			defer cleanup()
+
+			ip := getExternalIP(t.T, k8sClient, ns.Name)
+			registry := fmt.Sprintf("%s:5000", ip)
+
+			skaffold.Build("-v", "debug", "--insecure-registry", registry, "-d", registry, "-p", "build-artifact").InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
+		})
 	}
-
-	// run on GCP as this test requires a load balancer
-	if !ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is gcp only")
-	}
-
-	ns, k8sClient, cleanupNs := SetupNamespace(t)
-	defer cleanupNs()
-
-	dir := "testdata/kaniko-insecure-registry"
-
-	cleanup := deployInsecureRegistry(t, ns.Name, dir)
-	defer cleanup()
-
-	ip := getExternalIP(t, k8sClient, ns.Name)
-	registry := fmt.Sprintf("%s:5000", ip)
-
-	skaffold.Build("--insecure-registry", registry, "-d", registry, "-p", "build-artifact").InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
 }
 
 func deployInsecureRegistry(t *testing.T, ns, dir string) func() {

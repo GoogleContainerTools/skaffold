@@ -333,3 +333,8 @@ func IsHiddenFile(filename string) bool {
 func hasHiddenPrefix(s string) bool {
 	return strings.HasPrefix(s, hiddenPrefix)
 }
+
+func PrettyPrint(i interface{}) string {
+	s, _ := json.MarshalIndent(i, "", "\t")
+	return string(s)
+}

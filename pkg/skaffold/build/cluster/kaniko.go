@@ -21,6 +21,9 @@ import (
 	"fmt"
 	"io"
 	"sort"
+	"strings"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
@@ -82,6 +85,12 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	waitForLogs := streamLogs(ctx, out, pod.Name, pods)
 
 	if err := kubernetes.WaitForPodSucceeded(ctx, pods, pod.Name, b.timeout); err != nil {
+		get, _ := pods.Get(pod.Name, metav1.GetOptions{})
+		// temporary extra debugging for integration test failures
+		logrus.Errorf("waiting for pod to complete: %s\npodInfo.status", err)
+		for _, line := range strings.Split(util.PrettyPrint(get.Status), "\n") {
+			logrus.Error(line)
+		}
 		return "", errors.Wrap(err, "waiting for pod to complete")
 	}
 
