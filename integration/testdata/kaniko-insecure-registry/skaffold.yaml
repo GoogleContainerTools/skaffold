@@ -7,7 +7,7 @@ profiles:
         - image: kaniko-insecure
           context: app
           kaniko:
-#            cache: {}
+            cache: {}
             buildContext:
               localDir: {}
       cluster:
