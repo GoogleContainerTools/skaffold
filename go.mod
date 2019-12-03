@@ -36,7 +36,6 @@ require (
 	github.com/aws/aws-sdk-go v1.25.33 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.1.5
-	github.com/buildpack/libbuildpack v1.25.4 // indirect
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/docker/cli v0.0.0-20191126203649-54d085b857e9
 	github.com/docker/distribution v2.7.1+incompatible
@@ -74,6 +73,8 @@ require (
 	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.6.3
+	github.com/onsi/ginkgo v1.10.3 // indirect
+	github.com/onsi/gomega v1.7.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1.0.20190228220655-ac19fd6e7483
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.8.1
@@ -106,6 +107,7 @@ require (
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
 	google.golang.org/grpc v1.25.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
+	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.2.5
 	k8s.io/api v0.0.0-20190831074750-7364b6bdad65
