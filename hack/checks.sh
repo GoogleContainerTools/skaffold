@@ -32,11 +32,13 @@ fail=0
 for s in "${scripts[@]}"; do
     echo "RUN ${s}"
 
+    start=$(date +%s)
     ./$s
     result=$?
+    end=$(date +%s)
 
     if [[ $result -eq 0 ]]; then
-        echo -e "${GREEN}PASSED${RESET} ${s}"
+        echo -e "${GREEN}PASSED${RESET} ${s} in $((end-start))s"
     else
         echo -e "${RED}FAILED${RESET} ${s}"
         fail=1
