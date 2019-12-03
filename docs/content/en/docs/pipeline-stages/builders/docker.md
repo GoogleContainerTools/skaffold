@@ -92,6 +92,16 @@ build:
 ```
 Note that the Kubernetes secret must not be of type `kubernetes.io/dockerconfigjson` which stores the config json under the key `".dockerconfigjson"`, but an opaque secret with the key `"config.json"`.
 
+To set up envrionment variable for Kaniko pod.
+```
+build:
+  artifacts:
+    - image: gcr.io/k8s-skaffold/example
+      kaniko:
+        envs:
+        - JAVA_PATH : /bin/usr/java
+```
+
 **Example**
 
 The following `build` section, instructs Skaffold to build a
