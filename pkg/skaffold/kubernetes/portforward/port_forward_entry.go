@@ -34,7 +34,7 @@ type portForwardEntry struct {
 	localPort              int
 	automaticPodForwarding bool
 	terminated             bool
-	terminationLock        *sync.Mutex
+	terminationLock        sync.Mutex
 	cancel                 context.CancelFunc
 }
 
@@ -49,7 +49,6 @@ func newPortForwardEntry(resourceVersion int, resource latest.PortForwardResourc
 		ownerReference:         ownerReference,
 		localPort:              localPort,
 		automaticPodForwarding: automaticPodForwarding,
-		terminationLock:        &sync.Mutex{},
 	}
 }
 

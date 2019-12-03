@@ -70,7 +70,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		return errors.Wrap(err, "could not fetch deployments")
 	}
 
-	wg := sync.WaitGroup{}
+	var wg sync.WaitGroup
 
 	c := newCounter(len(deployments))
 
