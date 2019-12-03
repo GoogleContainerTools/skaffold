@@ -67,7 +67,7 @@ func applyDebuggingTransforms(l kubectl.ManifestList, retriever configurationRet
 	for _, manifest := range l {
 		obj, _, err := decodeFromYaml(manifest, nil, nil)
 		if err != nil {
-			logrus.Debugf("Unable to load Kubernetes YAML: %v\n", err)
+			logrus.Debugf("Unable to interpret manifest for debugging: %v\n", err)
 		} else if transformManifest(obj, retriever) {
 			manifest, err = encodeAsYaml(obj)
 			if err != nil {
