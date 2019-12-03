@@ -124,7 +124,7 @@ func TestMonitorErrorLogs(t *testing.T) {
 				t.Fatal("error starting command")
 			}
 
-			wg := &sync.WaitGroup{}
+			var wg sync.WaitGroup
 			wg.Add(1)
 
 			go func() {
