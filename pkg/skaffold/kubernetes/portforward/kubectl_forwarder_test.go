@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"os/exec"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -32,49 +31,45 @@ import (
 )
 
 func TestUnavailablePort(t *testing.T) {
-	original := isPortFree
-	defer func() { isPortFree = original }()
+	testutil.Run(t, "", func(t *testutil.T) {
+		// Return that the port is false, while also
+		// adding a sync group so we know when isPortFree
+		// has been called
+		var portFreeWG sync.WaitGroup
+		portFreeWG.Add(1)
+		t.Override(&isPortFree, func(string, int) bool {
+			portFreeWG.Done()
+			return false
+		})
 
-	// Return that the port is false, while also
-	// adding a sync group so we know when isPortFree
-	// has been called
-	portFreeWG := &sync.WaitGroup{}
-	portFreeWG.Add(1)
-	isPortFree = func(_ string, _ int) bool {
-		defer portFreeWG.Done()
-		return false
-	}
+		// Create a wait group that will only be
+		// fulfilled when the forward function returns
+		var forwardFunctionWG sync.WaitGroup
+		forwardFunctionWG.Add(1)
+		t.Override(&deferFunc, func() {
+			forwardFunctionWG.Done()
+		})
 
-	// Create a wait group that will only be
-	// fulfilled when the forward function returns
-	forwardFunctionWG := &sync.WaitGroup{}
-	forwardFunctionWG.Add(1)
-	originalDefer := deferFunc
-	defer func() { deferFunc = originalDefer }()
-	deferFunc = func() { defer forwardFunctionWG.Done() }
+		var buf bytes.Buffer
+		k := KubectlForwarder{
+			out: &buf,
+		}
+		pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false)
 
-	buf := bytes.NewBuffer([]byte{})
-	k := KubectlForwarder{
-		out: buf,
-	}
-	pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false)
+		k.Forward(context.Background(), pfe)
 
-	k.Forward(context.Background(), pfe)
+		// wait for isPortFree to be called
+		portFreeWG.Wait()
 
-	// wait for isPortFree to be called
-	portFreeWG.Wait()
+		// then, end port forwarding and wait for the forward function to return.
+		pfe.terminationLock.Lock()
+		pfe.terminated = true
+		pfe.terminationLock.Unlock()
+		forwardFunctionWG.Wait()
 
-	// then, end port forwarding and wait for the forward function to return.
-	pfe.terminationLock.Lock()
-	pfe.terminated = true
-	pfe.terminationLock.Unlock()
-	forwardFunctionWG.Wait()
-
-	// read output to make sure logs are expected
-	output := buf.String()
-	if !strings.Contains(output, "port 8080 is taken") {
-		t.Fatalf("port wasn't available but didn't get warning, got: \n%s", output)
-	}
+		// read output to make sure logs are expected
+		t.CheckContains("port 8080 is taken", buf.String())
+	})
 }
 
 func TestTerminate(t *testing.T) {
