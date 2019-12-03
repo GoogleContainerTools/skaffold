@@ -20,12 +20,10 @@ jobs:
     - os: linux
       name: "Linux unit"
       script:
-        - make
         - make coverage
     - os: osx
       name: "OSX unit"
       script:
-        - make
         - make quicktest
     - os: windows
       name: "Windows unit"
@@ -33,7 +31,6 @@ jobs:
         - GO111MODULE=on
         - GOFLAGS="-mod=vendor"
       script:
-        - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
         - go test -short -timeout 60s ./...
     - os: linux
       name: "integration"
