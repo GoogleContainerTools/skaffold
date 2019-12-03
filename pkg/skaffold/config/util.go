@@ -183,14 +183,37 @@ func GetInsecureRegistries(configFile string) ([]string, error) {
 }
 
 func isDefaultLocal(kubeContext string) bool {
-	return kubeContext == constants.DefaultMinikubeContext ||
+	if kubeContext == constants.DefaultMinikubeContext ||
 		kubeContext == constants.DefaultDockerForDesktopContext ||
-		kubeContext == constants.DefaultDockerDesktopContext ||
-		IsKindCluster(kubeContext)
+		kubeContext == constants.DefaultDockerDesktopContext {
+		return true
+	}
+
+	isKind, _ := IsKindCluster(kubeContext)
+	return isKind
 }
 
-func IsKindCluster(kubeContext string) bool {
-	return strings.HasSuffix(kubeContext, "@kind")
+// IsKindCluster checks that the given `kubeContext` is talking to `kind`.
+// It also returns the name of the `kind` cluster.
+func IsKindCluster(kubeContext string) (bool, string) {
+	switch {
+	// With kind version < 0.6.0, the k8s context
+	// is `[CLUSTER NAME]@kind`.
+	// For eg: `cluster@kind`
+	// the default name is `kind@kind`
+	case strings.HasSuffix(kubeContext, "@kind"):
+		return true, strings.TrimSuffix(kubeContext, "@kind")
+
+	// With kind version == 0.6.0, the k8s context
+	// is `kind-[CLUSTER NAME]`.
+	// For eg: `kind-cluster`
+	// the default name is `kind-kind`
+	case strings.HasPrefix(kubeContext, "kind-"):
+		return true, strings.TrimPrefix(kubeContext, "kind-")
+
+	default:
+		return false, ""
+	}
 }
 
 func IsUpdateCheckEnabled(configfile string) bool {

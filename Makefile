@@ -196,7 +196,7 @@ skaffold-builder:
 
 .PHONY: integration-in-kind
 integration-in-kind: kind-cluster skaffold-builder
-	docker exec -it kind-control-plane cat /etc/kubernetes/admin.conf > /tmp/kind-config
+	kind get kubeconfig --internal > /tmp/kind-config
 	echo '{}' > /tmp/docker-config
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
