@@ -373,7 +373,7 @@ func TestBuildKanikoInsecureRegistry(t *testing.T) {
 			ip := getExternalIP(t.T, k8sClient, ns.Name)
 			registry := fmt.Sprintf("%s:5000", ip)
 
-			skaffold.Build("-v", "debug", "--insecure-registry", registry, "-d", registry, "-p", "build-artifact").InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
+			skaffold.Build("-v", "debug", "--insecure-registry", registry, "-d", registry, "-p", "build-artifact").InDir(dir).InNs(ns.Name).RunOrFailOutput(t.T)
 		})
 	}
 }
