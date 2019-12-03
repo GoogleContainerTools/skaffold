@@ -5,5 +5,5 @@ EXPOSE 3000
 CMD ["npm", "run", "dev"]
 
 COPY package* ./
-RUN npm install
+RUN npm ci
 COPY src .
