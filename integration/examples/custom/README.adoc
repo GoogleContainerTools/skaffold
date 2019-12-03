@@ -46,7 +46,7 @@ and the skaffold config, which configures artifact `gcr.io/k8s-skaffold/skaffold
 
 ```yaml
 $ cat skaffold.yaml
-apiVersion: skaffold/v1beta15
+apiVersion: skaffold/v2alpha1
 kind: Config
 build:
   artifacts:
