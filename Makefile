@@ -133,7 +133,7 @@ endif
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
 	docker build \
-		-f deploy/skaffold/Dockerfile \
+		-f deploy/skaffold/distribution.dockerfile \
 		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		--build-arg VERSION=$(VERSION) \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
@@ -145,7 +145,7 @@ release: cross $(BUILD_DIR)/VERSION
 .PHONY: release-build
 release-build: cross
 	docker build \
-		-f deploy/skaffold/Dockerfile \
+		-f deploy/skaffold/distribution.dockerfile \
 		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
@@ -164,10 +164,9 @@ kind-cluster:
 skaffold-builder:
 	-time docker pull gcr.io/$(GCP_PROJECT)/skaffold-builder
 	time docker build \
+		-f deploy/skaffold/builder.dockerfile \
 		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		-f deploy/skaffold/Dockerfile \
-		--target integration \
-		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
+		-t gcr.io/$(GCP_PROJECT)/skaffold-builder .
 
 .PHONY: integration-in-kind
 integration-in-kind: kind-cluster skaffold-builder
@@ -178,7 +177,8 @@ integration-in-kind: kind-cluster skaffold-builder
 		-v /tmp/kind-config:/kind-config \
 		-v /tmp/docker-config:/root/.docker/config.json \
 		-e KUBECONFIG=/kind-config \
-		gcr.io/$(GCP_PROJECT)/skaffold-integration
+		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		make integration
 
 .PHONY: integration-in-docker
 integration-in-docker: skaffold-builder
@@ -193,7 +193,8 @@ integration-in-docker: skaffold-builder
 		-e DOCKER_CONFIG=/root/.docker \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
-		gcr.io/$(GCP_PROJECT)/skaffold-integration
+		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		make integration
 
 .PHONY: submit-build-trigger
 submit-build-trigger:
