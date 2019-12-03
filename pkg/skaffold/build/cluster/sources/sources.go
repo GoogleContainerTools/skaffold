@@ -67,7 +67,7 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 	}}
 
 	env = setProxy(clusterDetails, env)
-	env = append(env, clusterDetails.Envs...)
+	env = append(env, artifact.Envs...)
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kaniko-",

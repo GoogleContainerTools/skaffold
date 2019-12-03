@@ -578,13 +578,6 @@
           "description": "describes how to mount the local Docker configuration into a pod.",
           "x-intellij-html-description": "describes how to mount the local Docker configuration into a pod."
         },
-        "envs": {
-          "items": {},
-          "type": "array",
-          "description": "array of all the environment variable to be passed to kaniko.",
-          "x-intellij-html-description": "array of all the environment variable to be passed to kaniko.",
-          "default": "[]"
-        },
         "namespace": {
           "type": "string",
           "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.",
@@ -627,8 +620,7 @@
         "timeout",
         "dockerConfig",
         "resources",
-        "concurrency",
-        "envs"
+        "concurrency"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build.",
@@ -1455,6 +1447,13 @@
           "x-intellij-html-description": "locates the Dockerfile relative to workspace.",
           "default": "Dockerfile"
         },
+        "envs": {
+          "items": {},
+          "type": "array",
+          "description": "array of all the environment variable to be passed to the pod building _all_ of the artifacts.",
+          "x-intellij-html-description": "array of all the environment variable to be passed to the pod building <em>all</em> of the artifacts.",
+          "default": "[]"
+        },
         "flags": {
           "items": {
             "type": "string"
@@ -1496,7 +1495,8 @@
         "image",
         "cache",
         "reproducible",
-        "skipTLS"
+        "skipTLS",
+        "envs"
       ],
       "additionalProperties": false,
       "description": "describes an artifact built from a Dockerfile, with kaniko.",

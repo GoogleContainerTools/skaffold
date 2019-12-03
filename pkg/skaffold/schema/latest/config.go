@@ -312,9 +312,6 @@ type ClusterDetails struct {
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
 	// Defaults to 0.
 	Concurrency int `yaml:"concurrency,omitempty"`
-
-	// Envs is array of all the environment variable to be passed to kaniko.
-	Envs []v1.EnvVar `yaml:"envs,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
@@ -786,6 +783,9 @@ type KanikoArtifact struct {
 
 	// SkipTLS skips TLS verification when pulling and pushing the image.
 	SkipTLS bool `yaml:"skipTLS,omitempty"`
+
+	// Envs is array of all the environment variable to be passed to the pod building _all_ of the artifacts.
+	Envs []v1.EnvVar `yaml:"envs,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,
