@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"time"
 
 	"github.com/golang/glog"
@@ -57,7 +58,7 @@ func watchUntilTimeout(ctx context.Context, timeout time.Duration, w watch.Inter
 }
 
 // WaitForPodSucceeded waits until the Pod status is Succeeded.
-func WaitForPodSucceeded(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration) error {
+func WaitForPodSucceeded(ctx context.Context, pods corev1.PodInterface, podName string, timeout time.Duration, b *kubectl.CLI) error {
 	logrus.Infof("Waiting for %s to be complete", podName)
 
 	w, err := pods.Watch(meta_v1.ListOptions{})
@@ -66,10 +67,10 @@ func WaitForPodSucceeded(ctx context.Context, pods corev1.PodInterface, podName 
 	}
 	defer w.Stop()
 
-	return watchUntilTimeout(ctx, timeout, w, isPodSucceeded(podName))
+	return watchUntilTimeout(ctx, timeout, w, isPodSucceeded(podName, b, ctx))
 }
 
-func isPodSucceeded(podName string) func(event *watch.Event) (bool, error) {
+func isPodSucceeded(podName string, b *kubectl.CLI, ctx context.Context) func(event *watch.Event) (bool, error) {
 	return func(event *watch.Event) (bool, error) {
 		if event.Object == nil {
 			return false, nil
@@ -85,10 +86,13 @@ func isPodSucceeded(podName string) func(event *watch.Event) (bool, error) {
 		case v1.PodRunning:
 			return false, nil
 		case v1.PodFailed:
+			b.RunOut(ctx, "get", "events", "--field-selector", fmt.Sprintf("involvedObject.name=%s", podName))
 			return false, fmt.Errorf("pod already in terminal phase: %s", pod.Status.Phase)
 		case v1.PodUnknown, v1.PodPending:
+			b.RunOut(ctx, "get", "events", "--field-selector", fmt.Sprintf("involvedObject.name=%s", podName))
 			return false, nil
 		}
+		b.RunOut(ctx, "get", "events", "--field-selector", fmt.Sprintf("involvedObject.name=%s", podName))
 		return false, fmt.Errorf("unknown phase: %s", pod.Status.Phase)
 	}
 }
