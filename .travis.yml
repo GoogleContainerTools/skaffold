@@ -11,4 +11,4 @@ branches:
 
 script:
   # - service --status-all
-  - sudo ls -R /var/lib/docker
+  - cat /etc/docker/daemon.json
