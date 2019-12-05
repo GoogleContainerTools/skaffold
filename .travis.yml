@@ -11,4 +11,5 @@ branches:
 
 script:
   # - service --status-all
-  - sudo cat /etc/docker/daemon.json
+  - |
+    sudo echo '{"registry-mirrors": ["https://mirror.gcr.io"], "mtu": 1460, "experimental": true}' > /etc/docker/daemon.json
