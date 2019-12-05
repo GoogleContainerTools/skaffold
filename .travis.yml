@@ -1,8 +1,6 @@
 dist: xenial
-
-language: go
-go: "1.12.x"
-go_import_path: /skaffold
+os: linux
+language: minimal
 
 git:
   submodules: false
@@ -11,8 +9,6 @@ branches:
   only:
     - master
 
-os: linux
 script:
-  - docker info
-  - service --status-all
-  - ls -R /var/lib/docker
+  # - service --status-all
+  - sudo ls -R /var/lib/docker
