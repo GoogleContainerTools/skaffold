@@ -14,4 +14,4 @@ script:
     sudo sh -c 'echo "{\"registry-mirrors\": [\"https://mirror.gcr.io\"], \"mtu\": 1460, \"experimental\": true}" > /etc/docker/daemon.json'
   - sudo service docker restart
   - docker info
-  - DOCKER_BUILDKIT=1 docker build -f deploy/skaffold/Dockerfile
+  - DOCKER_BUILDKIT=1 docker build -f deploy/skaffold/Dockerfile .
