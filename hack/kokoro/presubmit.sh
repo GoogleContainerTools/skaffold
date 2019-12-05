@@ -17,7 +17,7 @@
 export DOCKER_NAMESPACE=gcr.io/k8s-skaffold
 source $KOKORO_GFILE_DIR/common.sh
 
-pushd $KOKORO_ARTIFACTS_DIR/github/skaffold >/dev/null
-    GCP_ONLY=true make integration-in-docker
-popd
+# pushd $KOKORO_ARTIFACTS_DIR/github/skaffold >/dev/null
+#     GCP_ONLY=true make integration-in-docker
+# popd
 
