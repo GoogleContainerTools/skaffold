@@ -11,32 +11,8 @@ branches:
   only:
     - master
 
-jobs:
-  include:
-    - os: linux
-      name: "checks"
-      script:
-        - make checks
-    - os: linux
-      name: "Linux unit"
-      script:
-        - make coverage
-    - os: osx
-      name: "OSX unit"
-      script:
-        - make quicktest
-    - os: windows
-      name: "Windows unit"
-      env:
-        - GO111MODULE=on
-        - GOFLAGS="-mod=vendor"
-      script:
-        - go test -short -timeout 60s ./...
-    - os: linux
-      name: "integration"
-      language: minimal
-      before_install:
-        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.0/kind-linux-amd64
-        - chmod +x ${HOME}/bin/kind
-      script:
-        - make integration-in-kind
+os: linux
+script:
+  - docker info
+  - service --status-all
+  - ls -R /var/lib/docker
