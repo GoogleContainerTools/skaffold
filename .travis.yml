@@ -12,4 +12,5 @@ branches:
 script:
   # - service --status-all
   - |
-    sudo echo '{"registry-mirrors": ["https://mirror.gcr.io"], "mtu": 1460, "experimental": true}' > /etc/docker/daemon.json
+    sudo sh -c 'echo "{\"registry-mirrors\": [\"https://mirror.gcr.io\"], \"mtu\": 1460, \"experimental\": true}" > /etc/docker/daemon.json'
+  - sudo service docker restart
