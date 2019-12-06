@@ -69,10 +69,10 @@ GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
-$(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): generate-licenses $(GO_FILES) $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): generate-statik $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
 
-$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): generate-licenses $(GO_FILES) $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): generate-statik $(GO_FILES) $(BUILD_DIR)
 	docker build --build-arg PROJECT=$(REPOPATH) \
 		--build-arg TARGETS=$*/$(GOARCH) \
 		--build-arg FLAG_LDFLAGS=$(GO_LDFLAGS_$(*)) \
@@ -117,7 +117,7 @@ quicktest:
 	go test -short -timeout=60s ./...
 
 .PHONY: install
-install: generate-licenses $(GO_FILES) $(BUILD_DIR)
+install: generate-statik $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
@@ -223,6 +223,6 @@ build-docs-preview:
 generate-schemas:
 	go run hack/schemas/main.go
 
-.PHONY: generate-licenses
-generate-licenses:
-	hack/gen_licenses.sh
+.PHONY: generate-statik
+generate-statik:
+	hack/gen_statik.sh
