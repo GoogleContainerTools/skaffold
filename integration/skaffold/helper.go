@@ -38,6 +38,7 @@ type RunBuilder struct {
 	configFile string
 	dir        string
 	ns         string
+	repo       string
 	args       []string
 	env        []string
 	stdin      []byte
@@ -45,52 +46,52 @@ type RunBuilder struct {
 
 // Dev runs `skaffold dev` with the given arguments.
 func Dev(args ...string) *RunBuilder {
-	return &RunBuilder{command: "dev", args: args}
+	return withDefaults("dev", args)
 }
 
 // Fix runs `skaffold fix` with the given arguments.
 func Fix(args ...string) *RunBuilder {
-	return &RunBuilder{command: "fix", args: args}
+	return withDefaults("fix", args)
 }
 
 // Build runs `skaffold build` with the given arguments.
 func Build(args ...string) *RunBuilder {
-	return &RunBuilder{command: "build", args: args}
+	return withDefaults("build", args)
 }
 
 // Deploy runs `skaffold deploy` with the given arguments.
 func Deploy(args ...string) *RunBuilder {
-	return &RunBuilder{command: "deploy", args: args}
+	return withDefaults("deploy", args)
 }
 
 // Debug runs `skaffold debug` with the given arguments.
 func Debug(args ...string) *RunBuilder {
-	return &RunBuilder{command: "debug", args: args}
+	return withDefaults("debug", args)
 }
 
 // Run runs `skaffold run` with the given arguments.
 func Run(args ...string) *RunBuilder {
-	return &RunBuilder{command: "run", args: args}
+	return withDefaults("run", args)
 }
 
 // Delete runs `skaffold delete` with the given arguments.
 func Delete(args ...string) *RunBuilder {
-	return &RunBuilder{command: "delete", args: args}
+	return withDefaults("delete", args)
 }
 
 // Config runs `skaffold config` with the given arguments.
 func Config(args ...string) *RunBuilder {
-	return &RunBuilder{command: "config", args: args}
+	return withDefaults("config", args)
 }
 
 // Init runs `skaffold init` with the given arguments.
 func Init(args ...string) *RunBuilder {
-	return &RunBuilder{command: "init", args: args}
+	return withDefaults("init", args)
 }
 
 // Diagnose runs `skaffold diagnose` with the given arguments.
 func Diagnose(args ...string) *RunBuilder {
-	return &RunBuilder{command: "diagnose", args: args}
+	return withDefaults("diagnose", args)
 }
 
 // Schema runs `skaffold schema` with the given arguments.
@@ -104,7 +105,11 @@ func Credits(args ...string) *RunBuilder {
 }
 
 func GeneratePipeline(args ...string) *RunBuilder {
-	return &RunBuilder{command: "generate-pipeline", args: args}
+	return withDefaults("generate-pipeline", args)
+}
+
+func withDefaults(command string, args []string) *RunBuilder {
+	return &RunBuilder{command: command, args: args, repo: "gcr.io/k8s-skaffold"}
 }
 
 // InDir sets the directory in which skaffold is running.
@@ -116,6 +121,12 @@ func (b *RunBuilder) InDir(dir string) *RunBuilder {
 // WithConfig sets the config file to be used by skaffold.
 func (b *RunBuilder) WithConfig(configFile string) *RunBuilder {
 	b.configFile = configFile
+	return b
+}
+
+// WithRepo sets the default repository to be used by skaffold.
+func (b *RunBuilder) WithRepo(repo string) *RunBuilder {
+	b.repo = repo
 	return b
 }
 
@@ -243,6 +254,9 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	}
 	if b.configFile != "" {
 		args = append(args, "-f", b.configFile)
+	}
+	if b.repo != "" {
+		args = append(args, "--default-repo", b.repo)
 	}
 	args = append(args, b.args...)
 
