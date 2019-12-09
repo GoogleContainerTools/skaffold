@@ -30,11 +30,8 @@ const (
 )
 
 func TestHelmDeploy(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if !ShouldRunGCPOnlyTests() {
-		t.Skip("skipping gcp only test")
+	if testing.Short() || !RunOnGCP() {
+		t.Skip("skipping GCP integration test")
 	}
 
 	helmDir := "testdata/helm"

@@ -32,6 +32,10 @@ import (
 )
 
 func TestDevSync(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
 	tests := []struct {
 		description string
 		trigger     string
@@ -55,13 +59,6 @@ func TestDevSync(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if testing.Short() {
-				t.Skip("skipping integration test")
-			}
-			if ShouldRunGCPOnlyTests() {
-				t.Skip("skipping test that is not gcp only")
-			}
-
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().InDir("testdata/file-sync").WithConfig(test.config).RunOrFail(t)
 
@@ -86,11 +83,8 @@ func TestDevSync(t *testing.T) {
 }
 
 func TestDevSyncAPITrigger(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	ns, k8sclient, deleteNs := SetupNamespace(t)

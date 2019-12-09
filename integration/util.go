@@ -35,7 +35,7 @@ import (
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
 
-func ShouldRunGCPOnlyTests() bool {
+func RunOnGCP() bool {
 	return os.Getenv("GCP_ONLY") == "true"
 }
 
