@@ -3,7 +3,7 @@ kind: Config
 build:
   # only build and deploy "base-service" on main profile
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-base
+  - image: skaffold-base
     context: base-service
 deploy:
   kubectl:
@@ -16,18 +16,18 @@ profiles:
       - op: add
         path: /build/artifacts/1
         value:
-          image: gcr.io/k8s-skaffold/skaffold-hello
+          image: skaffold-hello
           context: hello-service
       - op: add
         path: /deploy/kubectl/manifests/1
         value: 'hello-service/*.yaml'
-        
+
   - name: world
     patches:
       - op: add
         path: /build/artifacts/1
         value:
-          image: gcr.io/k8s-skaffold/skaffold-world
+          image: skaffold-world
           context: world-service
       - op: add
         path: /deploy/kubectl/manifests/1

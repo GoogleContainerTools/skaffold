@@ -2,7 +2,7 @@ apiVersion: skaffold/v2alpha2
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-buildpacks
+  - image: skaffold-buildpacks
     buildpack:
       builder: "heroku/buildpacks"
       env:

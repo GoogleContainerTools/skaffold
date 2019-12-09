@@ -2,18 +2,18 @@ apiVersion: skaffold/v2alpha2
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-debug-jib
+  - image: skaffold-debug-jib
     context: jib
     jib:
       args:
       - --no-transfer-progress
-  - image: gcr.io/k8s-skaffold/skaffold-debug-npm
+  - image: skaffold-debug-npm
     context: npm
-  - image: gcr.io/k8s-skaffold/skaffold-debug-nodejs
+  - image: skaffold-debug-nodejs
     context: nodejs
-  - image: gcr.io/k8s-skaffold/skaffold-debug-python3
+  - image: skaffold-debug-python3
     context: python3
-  - image: gcr.io/k8s-skaffold/skaffold-debug-go
+  - image: skaffold-debug-go
     context: go
     docker:
       buildArgs:

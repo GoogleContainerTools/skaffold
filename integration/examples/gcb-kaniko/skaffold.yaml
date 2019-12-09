@@ -4,7 +4,7 @@ build:
   googleCloudBuild:
     projectId: k8s-skaffold
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-example
+  - image: skaffold-example
     kaniko:
       cache: {}
 deploy:

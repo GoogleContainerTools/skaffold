@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: web1
-        image: gcr.io/k8s-skaffold/skaffold-jib-1
+        image: skaffold-jib-1
         ports:
           - containerPort: 8080
 ---
@@ -32,6 +32,6 @@ spec:
     spec:
       containers:
       - name: web2
-        image: gcr.io/k8s-skaffold/skaffold-jib-2
+        image: skaffold-jib-2
         ports:
           - containerPort: 8080
