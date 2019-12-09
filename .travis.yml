@@ -14,44 +14,8 @@ branches:
 jobs:
   include:
     - os: linux
-      name: "checks"
-      env:
-        - STATICCHECK_CACHE=$HOME/linting
+      name: "cloud code samples"
       script:
-        - make checks
-      cache:
-        directories:
-          - $STATICCHECK_CACHE
-          - $HOME/.cache/go-build
-    - os: linux
-      name: "Linux unit"
-      script:
-        - make coverage
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-    - os: osx
-      name: "OSX unit"
-      script:
-        - make quicktest
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-    - os: windows
-      name: "Windows unit"
-      env:
-        - GO111MODULE=on
-        - GOFLAGS="-mod=vendor"
-      script:
-        - go test -short -timeout 60s ./...
-      cache:
-        directories:
-          - C:\\Users\\travis\\AppData\\Local\\go-build
-    - os: linux
-      name: "integration"
-      language: minimal
-      before_install:
-        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.0/kind-linux-amd64
-        - chmod +x ${HOME}/bin/kind
-      script:
-        - make integration-in-kind
+        - make install
+        - skaffold config set --kube-context '' local-cluster true
+        - ./hack/cloud-code-samples.sh
