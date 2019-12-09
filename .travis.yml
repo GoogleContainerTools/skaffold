@@ -51,7 +51,7 @@ jobs:
       name: "integration"
       language: minimal
       before_install:
-        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.0/kind-linux-amd64
+        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-linux-amd64
         - chmod +x ${HOME}/bin/kind
       script:
         - make integration-in-kind
