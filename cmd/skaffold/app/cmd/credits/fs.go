@@ -1,4 +1,4 @@
-// +build !release
+// +build release
 
 /*
 Copyright 2019 The Skaffold Authors
@@ -16,19 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package credits
 
 import (
-	"errors"
-	"io"
+	"github.com/rakyll/statik/fs"
 
 	//required for rakyll/statik embedded content
-	_ "github.com/rakyll/statik/fs"
+	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/credits/statik"
 )
 
-// exportCredits with !release build tag is just here for compilation purposes
-// this file does not depend on the generated statik.go file that is not checked
-// in by default to git
-func exportCredits(out io.Writer) error {
-	return errors.New("not implemented, skaffold should be built with make ('release' build tag)")
-}
+var statikFS = fs.New
