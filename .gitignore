@@ -16,4 +16,4 @@ docs/node_modules
 docs/themes
 docs/package-lock.json
 pkg/skaffold/color/debug.test
-cmd/skaffold/app/cmd/credits
+cmd/skaffold/app/cmd/credits/statik
