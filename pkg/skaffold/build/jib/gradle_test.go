@@ -19,6 +19,7 @@ package jib
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -27,10 +28,146 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+func TestBuildJibGradleToDocker(t *testing.T) {
+	tests := []struct {
+		description   string
+		artifact      *latest.JibArtifact
+		commands      util.Command
+		shouldErr     bool
+		expectedError string
+	}{
+		{
+			description: "build",
+			artifact:    &latest.JibArtifact{},
+			commands: testutil.CmdRun(
+				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + MinimumJibGradleVersion + " :jibDockerBuild --image=img:tag",
+			),
+		},
+		{
+			description: "build with additional flags",
+			artifact:    &latest.JibArtifact{Flags: []string{"--flag1", "--flag2"}},
+			commands: testutil.CmdRun(
+				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + MinimumJibGradleVersion + " :jibDockerBuild --image=img:tag --flag1 --flag2",
+			),
+		},
+		{
+			description: "build with project",
+			artifact:    &latest.JibArtifact{Project: "project"},
+			commands: testutil.CmdRun(
+				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + MinimumJibGradleVersion + " :project:jibDockerBuild --image=img:tag",
+			),
+		},
+		{
+			description: "fail build",
+			artifact:    &latest.JibArtifact{},
+			commands: testutil.CmdRunErr(
+				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion="+MinimumJibGradleVersion+" :jibDockerBuild --image=img:tag",
+				errors.New("BUG"),
+			),
+			shouldErr:     true,
+			expectedError: "gradle build failed",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().Touch("build.gradle").Chdir()
+			t.Override(&util.DefaultExecCommand, test.commands)
+			api := (&testutil.FakeAPIClient{}).Add("img:tag", "imageID")
+			localDocker := docker.NewLocalDaemon(api, nil, false, nil)
+
+			builder := NewArtifactBuilder(localDocker, nil, false, false)
+			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					JibArtifact: test.artifact,
+				},
+			}, "img:tag")
+
+			t.CheckError(test.shouldErr, err)
+			if test.shouldErr {
+				t.CheckErrorContains(test.expectedError, err)
+			} else {
+				t.CheckDeepEqual("imageID", result)
+			}
+		})
+	}
+}
+
+func TestBuildJibGradleToRegistry(t *testing.T) {
+	tests := []struct {
+		description   string
+		artifact      *latest.JibArtifact
+		commands      util.Command
+		shouldErr     bool
+		expectedError string
+	}{
+		{
+			description: "remote build",
+			artifact:    &latest.JibArtifact{},
+			commands: testutil.CmdRun(
+				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + MinimumJibGradleVersion + " :jib --image=img:tag",
+			),
+		},
+		{
+			description: "build with additional flags",
+			artifact:    &latest.JibArtifact{Flags: []string{"--flag1", "--flag2"}},
+			commands: testutil.CmdRun(
+				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + MinimumJibGradleVersion + " :jib --image=img:tag --flag1 --flag2",
+			),
+		},
+		{
+			description: "build with project",
+			artifact:    &latest.JibArtifact{Project: "project"},
+			commands: testutil.CmdRun(
+				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + MinimumJibGradleVersion + " :project:jib --image=img:tag",
+			),
+		},
+		{
+			description: "fail build",
+			artifact:    &latest.JibArtifact{},
+			commands: testutil.CmdRunErr(
+				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion="+MinimumJibGradleVersion+" :jib --image=img:tag",
+				errors.New("BUG"),
+			),
+			shouldErr:     true,
+			expectedError: "gradle build failed",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().Touch("build.gradle").Chdir()
+			t.Override(&util.DefaultExecCommand, test.commands)
+			t.Override(&docker.RemoteDigest, func(identifier string, _ map[string]bool) (string, error) {
+				if identifier == "img:tag" {
+					return "digest", nil
+				}
+				return "", errors.New("unknown remote tag")
+			})
+			localDocker := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
+
+			builder := NewArtifactBuilder(localDocker, nil, true, false)
+			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					JibArtifact: test.artifact,
+				},
+			}, "img:tag")
+
+			t.CheckError(test.shouldErr, err)
+			if test.shouldErr {
+				t.CheckErrorContains(test.expectedError, err)
+			} else {
+				t.CheckDeepEqual("digest", result)
+			}
+		})
+	}
+}
 
 func TestMinimumGradleVersion(t *testing.T) {
 	testutil.CheckDeepEqual(t, "1.4.0", MinimumJibGradleVersion)

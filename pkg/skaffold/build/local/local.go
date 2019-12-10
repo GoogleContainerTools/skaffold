@@ -28,10 +28,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -83,7 +83,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return bazel.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages).Build(ctx, out, artifact, tag)
 
 	case artifact.JibArtifact != nil:
-		return b.buildJib(ctx, out, artifact, tag)
+		return jib.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.skipTests).Build(ctx, out, artifact, tag)
 
 	case artifact.CustomArtifact != nil:
 		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
@@ -93,22 +93,6 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
-	}
-}
-
-func (b *Builder) buildJib(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	t, err := jib.DeterminePluginType(artifact.Workspace, artifact.JibArtifact)
-	if err != nil {
-		return "", err
-	}
-
-	switch t {
-	case jib.JibMaven:
-		return b.buildJibMaven(ctx, out, artifact.Workspace, artifact.JibArtifact, tag)
-	case jib.JibGradle:
-		return b.buildJibGradle(ctx, out, artifact.Workspace, artifact.JibArtifact, tag)
-	default:
-		return "", errors.Errorf("Unable to determine Jib builder type for %s", artifact.Workspace)
 	}
 }
 
