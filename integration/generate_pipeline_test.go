@@ -78,9 +78,7 @@ func TestGeneratePipeline(t *testing.T) {
 			defer writeOriginalContents(contents)
 
 			originalConfig, err := ioutil.ReadFile(test.dir + "/skaffold.yaml")
-			if err != nil {
-				t.Error("error reading skaffold yaml")
-			}
+			failNowIfError(t, err)
 			defer ioutil.WriteFile(test.dir+"/skaffold.yaml", originalConfig, 0755)
 			defer os.Remove(test.dir + "/pipeline.yaml")
 
@@ -100,17 +98,16 @@ func TestGeneratePipeline(t *testing.T) {
 
 func getOriginalContents(testArgs []string, testDir string, configFiles []string) ([]string, []configContents, error) {
 	var originalConfigs []configContents
-	if len(configFiles) != 0 {
-		for _, configFile := range configFiles {
-			testArgs = append(testArgs, []string{"--config-files", configFile}...)
 
-			path := testDir + "/" + configFile
-			contents, err := ioutil.ReadFile(path)
-			if err != nil {
-				return nil, nil, err
-			}
-			originalConfigs = append(originalConfigs, configContents{path, contents})
+	for _, configFile := range configFiles {
+		testArgs = append(testArgs, []string{"--config-files", configFile}...)
+
+		path := testDir + "/" + configFile
+		contents, err := ioutil.ReadFile(path)
+		if err != nil {
+			return nil, nil, err
 		}
+		originalConfigs = append(originalConfigs, configContents{path, contents})
 	}
 
 	return testArgs, originalConfigs, nil
@@ -124,13 +121,10 @@ func writeOriginalContents(contents []configContents) {
 
 func checkFileContents(t *testing.T, wantFile, gotFile string) {
 	wantContents, err := ioutil.ReadFile(wantFile)
-	if err != nil {
-		t.Errorf("Error while reading contents of file %s: %s", wantFile, err)
-	}
+	failNowIfError(t, err)
+
 	gotContents, err := ioutil.ReadFile(gotFile)
-	if err != nil {
-		t.Errorf("Error while reading contents of file %s: %s", gotFile, err)
-	}
+	failNowIfError(t, err)
 
 	if !bytes.Equal(wantContents, gotContents) {
 		t.Errorf("Contents of %s did not match those of %s\ngot:%s\nwant:%s", gotFile, wantFile, string(gotContents), string(wantContents))
