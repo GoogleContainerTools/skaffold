@@ -355,7 +355,7 @@ func TestBuildKanikoInsecureRegistry(t *testing.T) {
 	cleanup := deployInsecureRegistry(t, ns.Name, dir)
 	defer cleanup()
 
-	ip := getExternalIP(t, k8sClient, ns.Name)
+	ip := getExternalIP(t, k8sClient)
 	registry := fmt.Sprintf("%s:5000", ip)
 
 	skaffold.Build("--insecure-registry", registry, "-d", registry, "-p", "build-artifact").InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
@@ -370,8 +370,8 @@ func deployInsecureRegistry(t *testing.T, ns, dir string) func() {
 	return cleanup
 }
 
-func getExternalIP(t *testing.T, c *NSKubernetesClient, ns string) string {
-	svc, err := c.client.CoreV1().Services(ns).Get("registry", metav1.GetOptions{})
+func getExternalIP(t *testing.T, c *NSKubernetesClient) string {
+	svc, err := c.Services().Get("registry", metav1.GetOptions{})
 	if err != nil {
 		t.Fatalf("error getting registry service: %v", err)
 	}
