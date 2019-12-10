@@ -17,7 +17,6 @@ limitations under the License.
 package integration
 
 import (
-	"context"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -78,31 +77,7 @@ func TestPortForwardDeletePod(t *testing.T) {
 	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
 
 	// now, delete all pods in this namespace.
-	logrus.Infof("Deleting all pods in namespace %s", ns.Name)
-	kubectlCLI := getKubectlCLI(t, ns.Name)
-	killPodsCmd := kubectlCLI.Command(context.Background(),
-		"delete",
-		"pods", "--all",
-		"-n", ns.Name,
-	)
+	Run(t, ".", "kubectl", "delete", "pods", "--all", "-n", ns.Name)
 
-	if output, err := killPodsCmd.CombinedOutput(); err != nil {
-		t.Fatalf("error deleting all pods: %v \n %s", err, string(output))
-	}
-	// port forwarding should come up again on the same port
 	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
-}
-
-func getKubectlCLI(t *testing.T, ns string) *kubectl.CLI {
-	cfg, err := kubectx.CurrentConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return kubectl.NewFromRunContext(&runcontext.RunContext{
-		KubeContext: cfg.CurrentContext,
-		Opts: config.SkaffoldOptions{
-			Namespace: ns,
-		},
-	})
 }

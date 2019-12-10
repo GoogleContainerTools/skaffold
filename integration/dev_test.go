@@ -77,7 +77,7 @@ func TestDev(t *testing.T) {
 				newDep := client.GetDeployment("test-dev")
 				return dep.GetGeneration() != newDep.GetGeneration(), nil
 			})
-			testutil.CheckError(t, false, err)
+			failNowIfError(t, err)
 		})
 	}
 }

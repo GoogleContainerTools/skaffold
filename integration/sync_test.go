@@ -28,7 +28,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/proto"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestDevSync(t *testing.T) {
@@ -77,7 +76,7 @@ func TestDevSync(t *testing.T) {
 				out, _ := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "cat", "foo").Output()
 				return string(out) == "foo", nil
 			})
-			testutil.CheckError(t, false, err)
+			failNowIfError(t, err)
 		})
 	}
 }
