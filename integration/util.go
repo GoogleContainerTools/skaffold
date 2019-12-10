@@ -104,7 +104,7 @@ func (k *NSKubernetesClient) DefaultSecrets() corev1.SecretInterface {
 	return k.client.CoreV1().Secrets("default")
 }
 
-func (k *NSKubernetesClient) CreateSecretFrom(name, ns string) {
+func (k *NSKubernetesClient) CreateSecretFrom(ns, name string) {
 	secret, err := k.client.CoreV1().Secrets(ns).Get(name, metav1.GetOptions{})
 	if err != nil {
 		k.t.Fatalf("failed reading default/e2esecret: %s", err)
