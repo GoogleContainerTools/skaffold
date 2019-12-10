@@ -20,9 +20,9 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/wait"
-
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/proto"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func TestCacheAPITriggers(t *testing.T) {
@@ -44,9 +44,11 @@ func TestCacheAPITriggers(t *testing.T) {
 	_, entries, shutdown := apiEvents(t, rpcAddr)
 	defer shutdown()
 
-	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
-		return e.GetEvent().GetBuildEvent().GetArtifact() == "gcr.io/k8s-skaffold/skaffold-example", nil
+	waitForEvent(t, entries, func(e *proto.LogEntry) bool {
+		return e.GetEvent().GetBuildEvent().GetArtifact() == "gcr.io/k8s-skaffold/skaffold-example"
 	})
-	failNowIfError(t, err)
+}
+
+func waitForEvent(t *testing.T, entries chan *proto.LogEntry, condition func(*proto.LogEntry) bool) {
+	failNowIfError(t, wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) { return condition(<-entries), nil }))
 }
