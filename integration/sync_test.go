@@ -97,29 +97,13 @@ func TestDevSyncAPITrigger(t *testing.T) {
 	stop := skaffold.Dev("--auto-sync=false", "--rpc-port", rpcAddr).InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunBackground(t)
 	defer stop()
 
-	rpcClient, shutdown := setupRPCClient(t, rpcAddr)
+	rpcClient, entries, shutdown := apiEvents(t, rpcAddr)
 	defer shutdown()
-
-	stream, err := readEventAPIStream(rpcClient, t, readRetries)
-	if stream == nil {
-		t.Fatalf("error retrieving event log: %v\n", err)
-	}
 
 	// throw away first 5 entries of log (from first run of dev loop)
 	for i := 0; i < 5; i++ {
-		stream.Recv()
+		<-entries
 	}
-
-	// read entries from the log
-	entries := make(chan *proto.LogEntry)
-	go func() {
-		for {
-			entry, _ := stream.Recv()
-			if entry != nil {
-				entries <- entry
-			}
-		}
-	}()
 
 	client.WaitForPodsReady("test-file-sync")
 
@@ -133,22 +117,22 @@ func TestDevSyncAPITrigger(t *testing.T) {
 	})
 
 	// Ensure we see a file sync in progress triggered in the event log
-	err = wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
+	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
 		return e.GetEvent().GetFileSyncEvent().GetStatus() == "In Progress", nil
 	})
-	testutil.CheckError(t, false, err)
+	failNowIfError(t, err)
 
 	err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 		out, _ := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "cat", "foo").Output()
 		return string(out) == "foo", nil
 	})
-	testutil.CheckError(t, false, err)
+	failNowIfError(t, err)
 
 	// Ensure we see a file sync succeeded triggered in the event log
 	err = wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
 		return e.GetEvent().GetFileSyncEvent().GetStatus() == "Succeeded", nil
 	})
-	testutil.CheckError(t, false, err)
+	failNowIfError(t, err)
 }

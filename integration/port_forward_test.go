@@ -18,7 +18,6 @@ package integration
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -30,7 +29,6 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 func TestPortForward(t *testing.T) {
@@ -70,30 +68,11 @@ func TestPortForwardDeletePod(t *testing.T) {
 	defer deleteNs()
 
 	rpcAddr := randomPort()
-	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr, "-v=info").InDir("examples/microservices").InNs(ns.Name).WithEnv(env)
-	stop := cmd.RunBackground(t)
+	stop := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr, "-v=info").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
 	defer stop()
 
-	client, shutdown := setupRPCClient(t, rpcAddr)
+	_, entries, shutdown := apiEvents(t, rpcAddr)
 	defer shutdown()
-
-	// create a grpc connection. Increase number of reties for helm.
-	stream, err := readEventAPIStream(client, t, 20)
-	if stream == nil {
-		t.Fatalf("error retrieving event log: %v\n", err)
-	}
-
-	// read entries from the log
-	entries := make(chan *proto.LogEntry)
-	go func() {
-		for {
-			entry, _ := stream.Recv()
-			if entry != nil {
-				entries <- entry
-			}
-		}
-	}()
 
 	address, localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)
 	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
