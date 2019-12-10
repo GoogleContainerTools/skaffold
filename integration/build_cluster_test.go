@@ -27,7 +27,6 @@ import (
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -69,48 +68,35 @@ func TestBuildInCluster(t *testing.T) {
 	}
 
 	testutil.Run(t, "", func(t *testutil.T) {
-		ns, k8sClient, cleanupNs := SetupNamespace(t.T)
-		defer cleanupNs()
+		ns, client, deleteNs := SetupNamespace(t.T)
+		defer deleteNs()
 
 		// this workaround is to ensure there is no overlap between testcases on kokoro
 		// see https://github.com/GoogleContainerTools/skaffold/issues/2781#issuecomment-527770537
 		project, err := filepath.Abs("testdata/skaffold-in-cluster")
-		if err != nil {
-			t.Fatalf("failed getting path to project: %s", err)
-		}
+		t.CheckNoError(err)
 
 		// copy the skaffold binary to the test case folder
 		// this is geared towards the in-docker setup: the fresh built binary is here
 		// for manual testing, we can override this temporarily
 		skaffoldSrc, err := exec.LookPath("skaffold")
-		if err != nil {
-			t.Fatalf("failed to find skaffold binary: %s", err)
-		}
+		t.CheckNoError(err)
 
 		t.NewTempDir().Chdir()
 		copyDir(t, project, ".")
 		copyFile(t, skaffoldSrc, "skaffold")
 
-		// TODO: until https://github.com/GoogleContainerTools/skaffold/issues/2757 is resolved, this is the simplest
-		// way to override the build.cluster.namespace
+		// TODO: until https://github.com/GoogleContainerTools/skaffold/issues/2757 is resolved,
+		// this is the simplest way to override the build.cluster.namespace
 		replaceNamespace(t, "skaffold.yaml", ns)
 		replaceNamespace(t, "build-step/kustomization.yaml", ns)
 
 		// we have to copy the e2esecret from default ns -> temporary namespace for kaniko
-		secret, err := k8sClient.client.CoreV1().Secrets("default").Get("e2esecret", metav1.GetOptions{})
-		if err != nil {
-			t.Fatalf("failed reading default/e2esecret: %s", err)
-		}
-		secret.Namespace = ns.Name
-		secret.ResourceVersion = ""
-		if _, err = k8sClient.Secrets().Create(secret); err != nil {
-			t.Fatalf("failed creating %s/e2esecret: %s", ns.Name, err)
-		}
+		client.CreateSecretFrom("default", "e2esecret")
 
-		logs := skaffold.Run("-p", "create-build-step").InNs(ns.Name).RunOrFailOutput(t.T)
-		t.Logf("create-build-step logs: \n%s", logs)
+		skaffold.Run("-p", "create-build-step").InNs(ns.Name).RunOrFail(t.T)
 
-		k8sClient.WaitForPodsInPhase(corev1.PodSucceeded, "skaffold-in-cluster")
+		client.WaitForPodsInPhase(corev1.PodSucceeded, "skaffold-in-cluster")
 	})
 }
 

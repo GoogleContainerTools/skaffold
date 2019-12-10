@@ -100,6 +100,23 @@ func (k *NSKubernetesClient) Deployments() typedappsv1.DeploymentInterface {
 	return k.client.AppsV1().Deployments(k.ns)
 }
 
+func (k *NSKubernetesClient) DefaultSecrets() corev1.SecretInterface {
+	return k.client.CoreV1().Secrets("default")
+}
+
+func (k *NSKubernetesClient) CreateSecretFrom(name, ns string) {
+	secret, err := k.client.CoreV1().Secrets(ns).Get(name, metav1.GetOptions{})
+	if err != nil {
+		k.t.Fatalf("failed reading default/e2esecret: %s", err)
+	}
+
+	secret.Namespace = k.ns
+	secret.ResourceVersion = ""
+	if _, err = k.Secrets().Create(secret); err != nil {
+		k.t.Fatalf("failed creating %s/e2esecret: %s", k.ns, err)
+	}
+}
+
 // WaitForPodsReady waits for a list of pods to become ready.
 func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
 	k.WaitForPodsInPhase(v1.PodRunning, podNames...)
