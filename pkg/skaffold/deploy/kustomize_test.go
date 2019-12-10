@@ -433,7 +433,6 @@ spec:
     name: image1
   - image: gcr.io/project/image2:tag2
     name: image2
-
 `,
 		},
 	}

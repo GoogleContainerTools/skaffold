@@ -17,7 +17,6 @@ limitations under the License.
 package deploy
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -186,18 +185,16 @@ func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []
 
 	manifestOut := out
 	if filepath != "" {
-		f, err := os.Open(filepath)
+		f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
 			return errors.Wrap(err, "opening file for writing manifests")
 		}
-		manifestOut = bufio.NewWriter(f)
+		defer f.Close()
+		f.WriteString(manifests.String() + "\n")
+		return nil
 	}
 
-	for _, m := range manifests {
-		if _, err := fmt.Fprintln(manifestOut, string(m)); err != nil {
-			return errors.Wrap(err, "writing manifests")
-		}
-	}
+	fmt.Fprintln(manifestOut, manifests.String())
 	return nil
 }
 
