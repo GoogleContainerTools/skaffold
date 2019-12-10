@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -86,7 +87,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return b.buildCustom(ctx, out, artifact, tag)
 
 	case artifact.BuildpackArtifact != nil:
-		return b.buildBuildpack(ctx, out, artifact, tag)
+		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages).Build(ctx, out, artifact, tag)
 
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
