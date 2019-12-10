@@ -31,9 +31,7 @@ func TestDiagnose(t *testing.T) {
 	}
 
 	examples, err := folders("examples")
-	if err != nil {
-		t.Fatal("unable to list examples")
-	}
+	failNowIfError(t, err)
 	if len(examples) == 0 {
 		t.Fatal("didn't find any example")
 	}

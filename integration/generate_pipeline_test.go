@@ -74,9 +74,7 @@ func TestGeneratePipeline(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			args, contents, err := getOriginalContents(test.args, test.dir, test.configFiles)
-			if err != nil {
-				t.Fatal(err)
-			}
+			failNowIfError(t, err)
 			defer writeOriginalContents(contents)
 
 			originalConfig, err := ioutil.ReadFile(test.dir + "/skaffold.yaml")

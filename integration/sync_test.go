@@ -87,7 +87,7 @@ func TestDevSyncAPITrigger(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	ns, k8sclient, deleteNs := SetupNamespace(t)
+	ns, client, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
 	skaffold.Build().InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunOrFail(t)
@@ -97,10 +97,10 @@ func TestDevSyncAPITrigger(t *testing.T) {
 	stop := skaffold.Dev("--auto-sync=false", "--rpc-port", rpcAddr).InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunBackground(t)
 	defer stop()
 
-	client, shutdown := setupRPCClient(t, rpcAddr)
+	rpcClient, shutdown := setupRPCClient(t, rpcAddr)
 	defer shutdown()
 
-	stream, err := readEventAPIStream(client, t, readRetries)
+	stream, err := readEventAPIStream(rpcClient, t, readRetries)
 	if stream == nil {
 		t.Fatalf("error retrieving event log: %v\n", err)
 	}
@@ -121,12 +121,12 @@ func TestDevSyncAPITrigger(t *testing.T) {
 		}
 	}()
 
-	k8sclient.WaitForPodsReady("test-file-sync")
+	client.WaitForPodsReady("test-file-sync")
 
 	ioutil.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
 	defer func() { os.Truncate("testdata/file-sync/foo", 0) }()
 
-	client.Execute(context.Background(), &proto.UserIntentRequest{
+	rpcClient.Execute(context.Background(), &proto.UserIntentRequest{
 		Intent: &proto.Intent{
 			Sync: true,
 		},

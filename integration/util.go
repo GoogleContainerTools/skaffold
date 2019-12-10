@@ -33,6 +33,7 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	k8s "github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 )
 
 func RunOnGCP() bool {
@@ -229,6 +230,21 @@ func (k *NSKubernetesClient) printDiskFreeSpace() {
 	cmd := exec.Command("df", "-h")
 	out, _ := cmd.CombinedOutput()
 	fmt.Println(string(out))
+}
+
+// ExternalIP waits for the external IP aof a given service.
+func (k *NSKubernetesClient) ExternalIP(serviceName string) string {
+	svc, err := k.Services().Get(serviceName, metav1.GetOptions{})
+	if err != nil {
+		k.t.Fatalf("error getting registry service: %v", err)
+	}
+
+	ip, err := k8s.GetExternalIP(svc)
+	if err != nil {
+		k.t.Fatalf("error getting external ip: %v", err)
+	}
+
+	return ip
 }
 
 func isStable(dp *appsv1.Deployment) bool {

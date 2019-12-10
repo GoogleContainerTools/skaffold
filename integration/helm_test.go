@@ -25,9 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
-const (
-	TestVersion = "vtest"
-)
+const TestVersion = "vtest"
 
 func TestHelmDeploy(t *testing.T) {
 	if testing.Short() || !RunOnGCP() {

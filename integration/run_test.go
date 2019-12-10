@@ -31,7 +31,6 @@ func TestRun(t *testing.T) {
 	tests := []struct {
 		description string
 		dir         string
-		filename    string
 		args        []string
 		deployments []string
 		pods        []string
@@ -97,12 +96,12 @@ func TestRun(t *testing.T) {
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			skaffold.Run(test.args...).WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)
 
-			skaffold.Delete().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})
 	}
 }
@@ -115,11 +114,9 @@ func TestRunGCPOnly(t *testing.T) {
 	tests := []struct {
 		description string
 		dir         string
-		filename    string
 		args        []string
 		deployments []string
 		pods        []string
-		env         []string
 	}{
 		{
 			description: "Google Cloud Build",
@@ -191,12 +188,12 @@ func TestRunGCPOnly(t *testing.T) {
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			skaffold.Run(test.args...).WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)
 
-			skaffold.Delete().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 		})
 	}
 }
