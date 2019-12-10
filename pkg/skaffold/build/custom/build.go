@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package local
+package custom
 
 import (
 	"context"
@@ -23,16 +23,13 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func (b *Builder) buildCustom(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	extraEnv := b.retrieveExtraEnv()
-	customArtifactBuilder := custom.NewArtifactBuilder(b.pushImages, extraEnv)
-
-	if err := customArtifactBuilder.Build(ctx, out, artifact, tag); err != nil {
+// Build builds an artifact using a custom script
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	if err := b.runBuildScript(ctx, out, artifact, tag); err != nil {
 		return "", errors.Wrap(err, "building custom artifact")
 	}
 
@@ -49,8 +46,4 @@ func (b *Builder) buildCustom(ctx context.Context, out io.Writer, artifact *late
 	}
 
 	return imageID, nil
-}
-
-func (b *Builder) retrieveExtraEnv() []string {
-	return b.localDocker.ExtraEnv()
 }

@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/bazel"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -85,7 +86,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return b.buildJib(ctx, out, artifact, tag)
 
 	case artifact.CustomArtifact != nil:
-		return b.buildCustom(ctx, out, artifact, tag)
+		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
 
 	case artifact.BuildpackArtifact != nil:
 		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages).Build(ctx, out, artifact, tag)

@@ -56,6 +56,10 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 	return imageID, nil
 }
 
+func (b *Builder) retrieveExtraEnv() []string {
+	return b.localDocker.ExtraEnv()
+}
+
 func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, tag string) (string, error) {
 	dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.DockerfilePath)
 	if err != nil {
