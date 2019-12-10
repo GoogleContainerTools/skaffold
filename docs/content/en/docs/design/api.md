@@ -104,7 +104,7 @@ kick off a suite of Selenium tests against the newly deployed service.
 
 | protocol | endpoint | encoding |
 | ---- | --- | --- |
-| HTTP | `http://localhost:{HTTP_RPC_PORT}/v1/events` | newline separated JSON using chunk transfer encoding over HTTP|  
+| HTTP | `http://localhost:{HTTP_RPC_PORT}/v1/events` | newline separated JSON using chunk transfer encoding over HTTP|
 | gRPC | `client.Events(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api#skaffoldservice">}}) | protobuf 3 over HTTP |
 
 
