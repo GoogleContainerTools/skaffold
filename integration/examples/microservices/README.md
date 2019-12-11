@@ -77,3 +77,4 @@ deploy:
     - ./leeroy-app/kubernetes/*
 ```
 
+<a href="vscode://googlecloudtools.cloudcode/shell?repo=https://github.com/GoogleContainerTools/skaffold.git&subpath=/examples/microservices"><img width="286" height="50" src="/docs/static/images/open-cloud-code.png"></a>
