@@ -22,27 +22,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// BuildpackBuilder is a builder for buildpack artifacts
-type BuildpackBuilder struct {
-	localDocker docker.LocalDaemon
-	pushImages  bool
-}
-
-// NewArtifactBuilder returns a new buildpack artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool) *BuildpackBuilder {
-	return &BuildpackBuilder{
-		localDocker: localDocker,
-		pushImages:  pushImages,
-	}
-}
-
 // Build builds an artifact with Cloud Native Buildpacks:
 // https://buildpacks.io/
-func (b *BuildpackBuilder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
 	built, err := b.build(ctx, out, a.Workspace, a.BuildpackArtifact, tag)
 	if err != nil {
 		return "", err

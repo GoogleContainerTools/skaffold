@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package local
+package bazel
 
 import (
 	"context"
@@ -22,7 +22,6 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -32,16 +31,9 @@ func TestBuildBazel(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.NewTempDir().Mkdir("bin").Chdir()
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar").AndRunOut("bazel info bazel-bin", "bin"))
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
-			return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil), nil
-		})
 		testutil.CreateFakeImageTar("bazel:app", "bin/app.tar")
 
-		builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
-			Push: util.BoolPtr(false),
-		}))
-		t.CheckNoError(err)
-
+		localDocker := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
 		artifact := &latest.Artifact{
 			Workspace: ".",
 			ArtifactType: latest.ArtifactType{
@@ -51,24 +43,16 @@ func TestBuildBazel(t *testing.T) {
 			},
 		}
 
-		_, err = builder.buildBazel(context.Background(), ioutil.Discard, artifact, "img:tag")
+		builder := NewArtifactBuilder(localDocker, nil, false)
+		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag")
+
 		t.CheckNoError(err)
 	})
 }
 
 func TestBuildBazelFailInvalidTarget(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
-			return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil), nil
-		})
-
-		builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
-			Push: util.BoolPtr(false),
-		}))
-		t.CheckNoError(err)
-
 		artifact := &latest.Artifact{
-			Workspace: ".",
 			ArtifactType: latest.ArtifactType{
 				BazelArtifact: &latest.BazelArtifact{
 					BuildTarget: "//:invalid-target",
@@ -76,8 +60,10 @@ func TestBuildBazelFailInvalidTarget(t *testing.T) {
 			},
 		}
 
-		_, err = builder.buildBazel(context.Background(), ioutil.Discard, artifact, "img:tag")
-		t.CheckError(true, err)
+		builder := NewArtifactBuilder(nil, nil, false)
+		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag")
+
+		t.CheckErrorContains("the bazel build target should end with .tar", err)
 	})
 }
 

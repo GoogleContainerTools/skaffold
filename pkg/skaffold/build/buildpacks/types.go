@@ -14,18 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package local
+package buildpacks
 
-import (
-	"context"
-	"io"
+import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-)
+// Builder is an artifact builder that uses buildpacks
+type Builder struct {
+	localDocker docker.LocalDaemon
+	pushImages  bool
+}
 
-func (b *Builder) buildBuildpack(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	buildpackBuilder := buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages)
-
-	return buildpackBuilder.Build(ctx, out, artifact, tag)
+// NewArtifactBuilder returns a new buildpack artifact builder
+func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool) *Builder {
+	return &Builder{
+		localDocker: localDocker,
+		pushImages:  pushImages,
+	}
 }

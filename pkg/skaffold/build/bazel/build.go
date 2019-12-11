@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package local
+package bazel
 
 import (
 	"context"
@@ -32,9 +32,22 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func (b *Builder) buildBazel(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+// Build builds an artifact with Bazel.
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	a := artifact.ArtifactType.BazelArtifact
 
+	tarPath, err := b.buildTar(ctx, out, artifact.Workspace, a)
+	if err != nil {
+		return "", err
+	}
+
+	if b.pushImages {
+		return docker.Push(tarPath, tag, b.insecureRegistries)
+	}
+	return b.loadImage(ctx, out, tarPath, a, tag)
+}
+
+func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string, a *latest.BazelArtifact) (string, error) {
 	if !strings.HasSuffix(a.BuildTarget, ".tar") {
 		return "", errors.New("the bazel build target should end with .tar, see https://github.com/bazelbuild/rules_docker#using-with-docker-locally")
 	}
@@ -45,25 +58,20 @@ func (b *Builder) buildBazel(ctx context.Context, out io.Writer, artifact *lates
 
 	// FIXME: is it possible to apply b.skipTests?
 	cmd := exec.CommandContext(ctx, "bazel", args...)
-	cmd.Dir = artifact.Workspace
+	cmd.Dir = workspace
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
 		return "", errors.Wrap(err, "running command")
 	}
 
-	bazelBin, err := bazelBin(ctx, artifact.Workspace, a)
+	bazelBin, err := bazelBin(ctx, workspace, a)
 	if err != nil {
 		return "", errors.Wrap(err, "getting path of bazel-bin")
 	}
 
 	tarPath := filepath.Join(bazelBin, buildTarPath(a.BuildTarget))
-
-	if b.pushImages {
-		return docker.Push(tarPath, tag, b.insecureRegistries)
-	}
-
-	return b.loadImage(ctx, out, tarPath, a, tag)
+	return tarPath, nil
 }
 
 func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, a *latest.BazelArtifact, tag string) (string, error) {
@@ -83,7 +91,6 @@ func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, 
 		return "", errors.Wrap(err, "tagging the image")
 	}
 
-	b.builtImages = append(b.builtImages, imageID)
 	return imageID, nil
 }
 

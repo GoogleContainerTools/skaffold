@@ -37,23 +37,7 @@ var (
 	buildContext = retrieveBuildContext
 )
 
-// ArtifactBuilder is a builder for custom artifacts
-type ArtifactBuilder struct {
-	pushImages    bool
-	additionalEnv []string
-}
-
-// NewArtifactBuilder returns a new custom artifact builder
-func NewArtifactBuilder(pushImages bool, additionalEnv []string) *ArtifactBuilder {
-	return &ArtifactBuilder{
-		pushImages:    pushImages,
-		additionalEnv: additionalEnv,
-	}
-}
-
-// Build builds a custom artifact
-// It returns true if the image is expected to exist remotely, or false if it is expected to exist locally
-func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) error {
+func (b *Builder) runBuildScript(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) error {
 	cmd, err := b.retrieveCmd(ctx, out, a, tag)
 	if err != nil {
 		return errors.Wrap(err, "retrieving cmd")
@@ -66,7 +50,7 @@ func (b *ArtifactBuilder) Build(ctx context.Context, out io.Writer, a *latest.Ar
 	return misc.HandleGracefulTermination(ctx, cmd)
 }
 
-func (b *ArtifactBuilder) retrieveCmd(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
+func (b *Builder) retrieveCmd(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
 	artifact := a.CustomArtifact
 
 	var cmd *exec.Cmd
@@ -95,7 +79,7 @@ func (b *ArtifactBuilder) retrieveCmd(ctx context.Context, out io.Writer, a *lat
 	return cmd, nil
 }
 
-func (b *ArtifactBuilder) retrieveEnv(a *latest.Artifact, tag string) ([]string, error) {
+func (b *Builder) retrieveEnv(a *latest.Artifact, tag string) ([]string, error) {
 	buildContext, err := buildContext(a.Workspace)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting absolute path for artifact build context")
