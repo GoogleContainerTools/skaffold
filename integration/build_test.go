@@ -45,11 +45,8 @@ import (
 const imageName = "simple-build:"
 
 func TestBuild(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	tests := []struct {
@@ -136,11 +133,8 @@ func TestBuild(t *testing.T) {
 
 //see integration/testdata/README.md for details
 func TestBuildInCluster(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if !ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is gcp only")
+	if testing.Short() || !RunOnGCP() {
+		t.Skip("skipping GCP integration test")
 	}
 
 	testutil.Run(t, "", func(t *testutil.T) {
@@ -317,11 +311,8 @@ func failNowIfError(t *testing.T, err error) {
 
 // TestExpectedBuildFailures verifies that `skaffold build` fails in expected ways
 func TestExpectedBuildFailures(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	tests := []struct {
@@ -350,14 +341,10 @@ func TestExpectedBuildFailures(t *testing.T) {
 	}
 }
 
+// run on GCP as this test requires a load balancer
 func TestBuildKanikoInsecureRegistry(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-
-	// run on GCP as this test requires a load balancer
-	if !ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is gcp only")
+	if testing.Short() || !RunOnGCP() {
+		t.Skip("skipping GCP integration test")
 	}
 
 	ns, k8sClient, cleanupNs := SetupNamespace(t)
@@ -397,11 +384,8 @@ func getExternalIP(t *testing.T, c *NSKubernetesClient, ns string) string {
 }
 
 func TestBuildGCBWithDefaultRepo(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if !ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is gcp only")
+	if testing.Short() || !RunOnGCP() {
+		t.Skip("skipping GCP integration test")
 	}
 
 	// The GCB project (k8s-skaffold) has to be deduced from artifact's image name
@@ -411,11 +395,8 @@ func TestBuildGCBWithDefaultRepo(t *testing.T) {
 }
 
 func TestBuildKanikoWithDefaultRepo(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if !ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is gcp only")
+	if testing.Short() || !RunOnGCP() {
+		t.Skip("skipping GCP integration test")
 	}
 
 	// The GCS project (k8s-skaffold) has to be deduced from artifact's image name

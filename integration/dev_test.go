@@ -36,6 +36,10 @@ import (
 )
 
 func TestDev(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
 	tests := []struct {
 		description string
 		trigger     string
@@ -51,13 +55,6 @@ func TestDev(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if testing.Short() {
-				t.Skip("skipping integration test")
-			}
-			if ShouldRunGCPOnlyTests() {
-				t.Skip("skipping test that is not gcp only")
-			}
-
 			Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 			defer Run(t, "testdata/dev", "rm", "foo")
 
@@ -86,11 +83,8 @@ func TestDev(t *testing.T) {
 }
 
 func TestDevAPITriggers(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
@@ -173,11 +167,8 @@ func TestDevAPITriggers(t *testing.T) {
 }
 
 func TestDevPortForward(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	// Run skaffold build first to fail quickly on a build failure
@@ -231,11 +222,8 @@ func TestDevPortForward(t *testing.T) {
 }
 
 func TestDevPortForwardGKELoadBalancer(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if !ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is gcp only")
+	if testing.Short() || !RunOnGCP() {
+		t.Skip("skipping GCP integration test")
 	}
 
 	// Run skaffold build first to fail quickly on a build failure
@@ -369,11 +357,11 @@ func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retrie
 }
 
 func TestDev_WithKubecontextOverride(t *testing.T) {
-	testutil.Run(t, "skaffold run with kubecontext override", func(t *testutil.T) {
-		if testing.Short() {
-			t.Skip("skipping integration test")
-		}
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
 
+	testutil.Run(t, "skaffold run with kubecontext override", func(t *testutil.T) {
 		dir := "examples/getting-started"
 		pods := []string{"getting-started"}
 

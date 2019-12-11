@@ -29,6 +29,10 @@ import (
 )
 
 func TestKubectlRender(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
 	tests := []struct {
 		description string
 		builds      []build.Artifact
@@ -141,9 +145,6 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			if testing.Short() {
-				t.Skip("skipping integration test")
-			}
 			t.NewTempDir().
 				Write("deployment.yaml", test.input).
 				Chdir()
