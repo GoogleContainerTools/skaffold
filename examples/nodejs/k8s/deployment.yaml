@@ -24,6 +24,6 @@ spec:
     spec:
       containers:
       - name: node
-        image: gcr.io/k8s-skaffold/node-example
+        image: node-example
         ports:
         - containerPort: 3000

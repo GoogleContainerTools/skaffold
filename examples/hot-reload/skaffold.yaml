@@ -2,12 +2,12 @@ apiVersion: skaffold/v2alpha1
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/node-example
+  - image: node-example
     context: node
     sync:
       infer:
       - 'src/**/*.js'
-  - image: gcr.io/k8s-skaffold/python-reload
+  - image: python-reload
     context: python
     sync:
       infer:

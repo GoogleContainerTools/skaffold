@@ -8,7 +8,7 @@ your `skaffold.yaml` in the `test` stanza, e.g.
 
 ```yaml
 test:
-    - image: gcr.io/k8s-skaffold/skaffold-example
+    - image: skaffold-example
     structureTests:
         - ./test/*
 ```
@@ -19,7 +19,7 @@ Tests can also be configured through profiles, e.g.
 profiles:
   - name: test
     test:
-      - image: gcr.io/k8s-skaffold/skaffold-example
+      - image: skaffold-example
         structureTests:
           - ./test/profile_structure_test.yaml
 ```
