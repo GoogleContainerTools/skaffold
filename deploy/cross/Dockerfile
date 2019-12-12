@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM karalabe/xgo-1.12
+FROM karalabe/xgo-1.12.13
 
 ARG PROJECT
 ARG FLAG_LDFLAGS
