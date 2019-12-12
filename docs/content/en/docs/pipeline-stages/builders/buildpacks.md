@@ -3,6 +3,7 @@ title: "Cloud Native Buildpacks"
 linkTitle: "Buildpacks"
 weight: 50
 featureId: build.buildpacks
+aliases: [/docs/how-tos/buildpacks]
 ---
 
 [Cloud Native Buildpacks](https://buildpacks.io/) enable building

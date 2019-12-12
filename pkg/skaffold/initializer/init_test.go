@@ -18,11 +18,15 @@ package initializer
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 
+	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -346,7 +350,9 @@ func TestResolveBuilderImages(t *testing.T) {
 		description      string
 		buildConfigs     []InitBuilder
 		images           []string
+		force            bool
 		shouldMakeChoice bool
+		shouldErr        bool
 		expectedPairs    []builderImagePair
 	}{
 		{
@@ -384,6 +390,27 @@ func TestResolveBuilderImages(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:      "successful force",
+			buildConfigs:     []InitBuilder{jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"}},
+			images:           []string{"image1"},
+			shouldMakeChoice: false,
+			force:            true,
+			expectedPairs: []builderImagePair{
+				{
+					Builder:   jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"},
+					ImageName: "image1",
+				},
+			},
+		},
+		{
+			description:      "error with ambiguous force",
+			buildConfigs:     []InitBuilder{docker.Docker{File: "Dockerfile1"}, jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"}},
+			images:           []string{"image1", "image2"},
+			shouldMakeChoice: false,
+			force:            true,
+			shouldErr:        true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -395,10 +422,9 @@ func TestResolveBuilderImages(t *testing.T) {
 				return choices[0], nil
 			})
 
-			pairs, err := resolveBuilderImages(test.buildConfigs, test.images)
+			pairs, err := resolveBuilderImages(test.buildConfigs, test.images, test.force)
 
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expectedPairs, pairs)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, pairs)
 		})
 	}
 }
@@ -583,10 +609,48 @@ func Test_canonicalizeName(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.in, func(t *testing.T) {
+		testutil.Run(t, test.in, func(t *testutil.T) {
 			actual := canonicalizeName(test.in)
-			if actual != test.out {
-				t.Errorf("%s: expected %s, found %s", test.in, test.out, actual)
+
+			t.CheckDeepEqual(test.out, actual)
+		})
+	}
+}
+
+func TestRunKompose(t *testing.T) {
+	tests := []struct {
+		description   string
+		composeFile   string
+		commands      util.Command
+		expectedError string
+	}{
+		{
+			description: "success",
+			composeFile: "docker-compose.yaml",
+			commands:    testutil.CmdRunOut("kompose convert -f docker-compose.yaml", ""),
+		},
+		{
+			description:   "not found",
+			composeFile:   "not-found.yaml",
+			expectedError: "(no such file or directory|cannot find the file specified)",
+		},
+		{
+			description:   "failure",
+			composeFile:   "docker-compose.yaml",
+			commands:      testutil.CmdRunOutErr("kompose convert -f docker-compose.yaml", "", errors.New("BUG")),
+			expectedError: "BUG",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().Touch("docker-compose.yaml").Chdir()
+			t.Override(&util.DefaultExecCommand, test.commands)
+
+			err := runKompose(context.Background(), test.composeFile)
+
+			if test.expectedError != "" {
+				t.CheckMatches(test.expectedError, err.Error())
 			}
 		})
 	}

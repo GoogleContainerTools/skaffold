@@ -1,5 +1,3 @@
-// +build release
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -16,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package credits
 
 import (
 	"io"
@@ -26,54 +24,52 @@ import (
 	"path"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	"github.com/rakyll/statik/fs"
-
-	//required for rakyll/statik embedded content
-	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/credits/statik"
 )
 
-func exportCredits(out io.Writer) error {
-	statikFS, err := fs.New()
+var Path string
+
+// Export writes all the licenses and credit files to the `Path` folder.
+func Export(out io.Writer) error {
+	statikFS, err := statikFS()
 	if err != nil {
-		log.Fatalf("error opening embedded filesystem: %s", err)
-		return err
+		return errors.Wrap(err, "opening embedded filesystem")
 	}
-	err = fs.Walk(statikFS, "/", func(filePath string, fileInfo os.FileInfo, err error) error {
-		newPath := path.Join(creditsPath, filePath)
+
+	if err := fs.Walk(statikFS, "/", func(filePath string, fileInfo os.FileInfo, err error) error {
+		newPath := path.Join(Path, filePath)
 		if fileInfo.IsDir() {
 			err := os.Mkdir(newPath, 0755)
 			if err != nil && !os.IsExist(err) {
-				log.Fatalf("error creating directory %s: %s", newPath, err)
-				return err
+				return errors.Wrapf(err, "creating directory %s", newPath)
 			}
-		}
-		if !fileInfo.IsDir() {
+		} else {
 			file, err := statikFS.Open(filePath)
 			if err != nil {
-				log.Fatalf("error opening %s in embedded filesystem: %s", filePath, err)
-				return err
+				return errors.Wrapf(err, "opening %s in embedded filesystem", filePath)
 			}
+
 			buf, err := ioutil.ReadAll(file)
 			if err != nil {
-				log.Fatalf("error reading %s in embedded filesystem: %s", filePath, err)
-				return err
+				return errors.Wrapf(err, "reading %s in embedded filesystem", filePath)
 			}
+
 			err = ioutil.WriteFile(newPath, buf, 0664)
 			if err != nil {
-				log.Fatalf("error writing %s to %s: %s", filePath, newPath, err)
-				return err
+				return errors.Wrapf(err, "writing %s to %s", filePath, newPath)
 			}
 		}
 		return nil
-	})
-	if err != nil {
-		log.Fatal(err)
+	}); err != nil {
 		return err
 	}
-	s, err := filepath.Abs(creditsPath)
+
+	s, err := filepath.Abs(Path)
 	if err != nil {
-		log.Printf("Successfully exported third party notices to %s", creditsPath)
+		return err
 	}
+
 	log.Printf("Successfully exported third party notices to %s", s)
 	return nil
 }

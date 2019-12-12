@@ -18,11 +18,13 @@ package jib
 
 import (
 	"context"
+	"io"
 	"os/exec"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -32,6 +34,38 @@ const MinimumJibMavenVersion = "1.4.0"
 
 // MavenCommand stores Maven executable and wrapper name
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
+
+func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
+	args := GenerateMavenArgs("dockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
+	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
+		return "", err
+	}
+
+	return b.localDocker.ImageID(ctx, tag)
+}
+
+func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
+	args := GenerateMavenArgs("build", tag, artifact, b.skipTests, b.insecureRegistries)
+	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
+		return "", err
+	}
+
+	return docker.RemoteDigest(tag, b.insecureRegistries)
+}
+
+func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
+	cmd := MavenCommand.CreateCommand(ctx, workspace, args)
+	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
+	cmd.Stdout = out
+	cmd.Stderr = out
+
+	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
+	if err := util.RunCmd(&cmd); err != nil {
+		return errors.Wrap(err, "maven build failed")
+	}
+
+	return nil
+}
 
 // getDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.

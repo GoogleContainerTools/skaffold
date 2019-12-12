@@ -71,8 +71,8 @@ Examples of user facing changes:
 - Skaffold config changes like
   e.g. "Add buildArgs to `Kustomize` deployer skaffold config."
 - Bug fixes
-  e.g. "Improve skaffold init behaviour when tags are used in manifests"
+  e.g. "Improve skaffold init behavior when tags are used in manifests"
 - Any changes in skaffold behavior
-  e.g. "Artiface cachine is turned on by default."
+  e.g. "Artifact caching is turned on by default."
 
 ```

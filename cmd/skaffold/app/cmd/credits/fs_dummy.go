@@ -1,3 +1,5 @@
+// +build !release
+
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -14,18 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package local
+package credits
 
-import (
-	"context"
-	"io"
+import "net/http"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-)
-
-func (b *Builder) buildBuildpack(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	buildpackBuilder := buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages)
-
-	return buildpackBuilder.Build(ctx, out, artifact, tag)
+// statikFS with !release build tag is just here for compilation purposes
+// this file does not depend on the generated statik.go file that is not checked
+// in by default to git
+var statikFS = func() (http.FileSystem, error) {
+	panic("not implemented, skaffold should be built with make ('release' build tag)")
 }

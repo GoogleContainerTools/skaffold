@@ -2,6 +2,7 @@
 title: "Working With Skaffold"
 linkTitle: "Working With Skaffold"
 weight: 30
+aliases: [/docs/how-tos,/docs/concepts/workflow,/docs/concepts/modes]
 ---
 
 | Skaffold Workflow | |

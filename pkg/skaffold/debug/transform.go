@@ -311,3 +311,50 @@ func describe(obj runtime.Object) (group, version, kind, description string) {
 	}
 	return
 }
+
+// exposePort adds a `ContainerPort` instance or amends an existing entry with the same port.
+func exposePort(entries []v1.ContainerPort, portName string, port int32) []v1.ContainerPort {
+	found := false
+	for i := 0; i < len(entries); {
+		switch {
+		case entries[i].Name == portName:
+			// Ports and names must be unique so rewrite an existing entry if found
+			logrus.Warnf("skaffold debug needs to expose port %d with name %s. Replacing clashing port definition %d (%s)", port, portName, entries[i].ContainerPort, entries[i].Name)
+			entries[i].Name = portName
+			entries[i].ContainerPort = port
+			found = true
+			i++
+		case entries[i].ContainerPort == port:
+			// Cut any entries with a clashing port
+			logrus.Warnf("skaffold debug needs to expose port %d for %s. Removing clashing port definition %d (%s)", port, portName, entries[i].ContainerPort, entries[i].Name)
+			entries = append(entries[:i], entries[i+1:]...)
+		default:
+			i++
+		}
+	}
+	if found {
+		return entries
+	}
+	entry := v1.ContainerPort{
+		Name:          portName,
+		ContainerPort: port,
+	}
+	return append(entries, entry)
+}
+
+// setEnvVar adds a `EnvVar` instance or replaced an existing entry
+func setEnvVar(entries []v1.EnvVar, varName, value string) []v1.EnvVar {
+	for i := range entries {
+		// env variable names must be unique so rewrite an existing entry if found
+		if entries[i].Name == varName {
+			entries[i].Value = value
+			return entries
+		}
+	}
+
+	entry := v1.EnvVar{
+		Name:  varName,
+		Value: value,
+	}
+	return append(entries, entry)
+}

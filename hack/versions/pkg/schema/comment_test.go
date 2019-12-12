@@ -109,7 +109,8 @@ func TestUpdateComments(t *testing.T) {
 			aFile := dir.Path("a.go")
 			t.CheckNoError(ioutil.WriteFile(aFile, []byte(tc.orig), 0666))
 			modified, err := updateVersionComment(aFile, tc.released)
-			t.CheckErrorAndDeepEqual(false, err, tc.expected, string(modified))
+			t.CheckNoError(err)
+			t.CheckDeepEqual(tc.expected, string(modified))
 		})
 	}
 }

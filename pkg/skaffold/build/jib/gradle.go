@@ -19,11 +19,13 @@ package jib
 import (
 	"context"
 	"fmt"
+	"io"
 	"os/exec"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -33,6 +35,38 @@ const MinimumJibGradleVersion = "1.4.0"
 
 // GradleCommand stores Gradle executable and wrapper name
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
+
+func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
+	args := GenerateGradleArgs("jibDockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
+	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
+		return "", err
+	}
+
+	return b.localDocker.ImageID(ctx, tag)
+}
+
+func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
+	args := GenerateGradleArgs("jib", tag, artifact, b.skipTests, b.insecureRegistries)
+	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
+		return "", err
+	}
+
+	return docker.RemoteDigest(tag, b.insecureRegistries)
+}
+
+func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
+	cmd := GradleCommand.CreateCommand(ctx, workspace, args)
+	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
+	cmd.Stdout = out
+	cmd.Stderr = out
+
+	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
+	if err := util.RunCmd(&cmd); err != nil {
+		return errors.Wrap(err, "gradle build failed")
+	}
+
+	return nil
+}
 
 // getDependenciesGradle finds the source dependencies for the given jib-gradle artifact.
 // All paths are absolute.

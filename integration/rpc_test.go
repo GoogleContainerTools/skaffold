@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -45,11 +46,8 @@ var (
 )
 
 func TestEventsRPC(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	rpcAddr := randomPort()
@@ -134,6 +132,10 @@ func TestEventsRPC(t *testing.T) {
 }
 
 func TestEventLogHTTP(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
 	tests := []struct {
 		description string
 		endpoint    string
@@ -148,16 +150,8 @@ func TestEventLogHTTP(t *testing.T) {
 			endpoint:    "/v1/events",
 		},
 	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
-	}
-
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if testing.Short() {
-				t.Skip("skipping integration test")
-			}
-
 			httpAddr := randomPort()
 			teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
 			defer teardown()
@@ -223,11 +217,8 @@ func TestEventLogHTTP(t *testing.T) {
 }
 
 func TestGetStateRPC(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	rpcAddr := randomPort()
@@ -279,11 +270,8 @@ func TestGetStateRPC(t *testing.T) {
 }
 
 func TestGetStateHTTP(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	httpAddr := randomPort()
@@ -364,8 +352,9 @@ func setupSkaffoldWithArgs(t *testing.T, args ...string) func() {
 	}
 }
 
+// randomPort chooses a port in range [1024, 65535]
 func randomPort() string {
-	return fmt.Sprintf("%d", rand.Intn(65535))
+	return strconv.Itoa(1024 + rand.Intn(65536-1024))
 }
 
 func checkBuildAndDeployComplete(state proto.State) bool {

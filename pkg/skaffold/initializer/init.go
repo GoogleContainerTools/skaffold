@@ -37,10 +37,10 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -117,11 +117,8 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	rootDir := "."
 
 	if c.ComposeFile != "" {
-		// run kompose first to generate k8s manifests, then run skaffold init
-		logrus.Infof("running 'kompose convert' for file %s", c.ComposeFile)
-		komposeCmd := exec.CommandContext(ctx, "kompose", "convert", "-f", c.ComposeFile)
-		if err := util.RunCmd(komposeCmd); err != nil {
-			return errors.Wrap(err, "running kompose")
+		if err := runKompose(ctx, c.ComposeFile); err != nil {
+			return err
 		}
 	}
 
@@ -177,7 +174,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 			}
 			pairs = append(pairs, newPairs...)
 		} else {
-			resolved, err := resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages)
+			resolved, err := resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages, c.Force)
 			if err != nil {
 				return err
 			}
@@ -226,6 +223,18 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	tips.PrintForInit(out, c.Opts)
 
 	return nil
+}
+
+// runKompose runs the `kompose` CLI before running skaffold init
+func runKompose(ctx context.Context, composeFile string) error {
+	if _, err := os.Stat(composeFile); os.IsNotExist(err) {
+		return err
+	}
+
+	logrus.Infof("running 'kompose convert' for file %s", composeFile)
+	komposeCmd := exec.CommandContext(ctx, "kompose", "convert", "-f", composeFile)
+	_, err := util.RunCmdOut(komposeCmd)
+	return err
 }
 
 // autoSelectBuilders takes a list of builders and images, checks if any of the builders' configured target
@@ -343,7 +352,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 }
 
 // For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
-func resolveBuilderImages(builderConfigs []InitBuilder, images []string) ([]builderImagePair, error) {
+func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force bool) ([]builderImagePair, error) {
 	// If nothing to choose, don't bother prompting
 	if len(images) == 0 || len(builderConfigs) == 0 {
 		return []builderImagePair{}, nil
@@ -355,6 +364,10 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) ([]buil
 			Builder:   builderConfigs[0],
 			ImageName: images[0],
 		}}, nil
+	}
+
+	if force {
+		return nil, errors.New("unable to automatically resolve builder/image pairs; run `skaffold init` without `--force` to manually resolve ambiguities")
 	}
 
 	// Build map from choice string to builder config struct

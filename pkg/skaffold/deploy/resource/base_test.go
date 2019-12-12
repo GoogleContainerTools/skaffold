@@ -47,9 +47,9 @@ func TestReportSinceLastUpdated(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			dep := NewDeployment("test", "test-ns", 1)
 			dep.UpdateStatus(test.message, test.err)
+
 			t.CheckDeepEqual(test.expected, dep.ReportSinceLastUpdated())
-			// Check reported is set to true.
-			t.CheckDeepEqual(true, dep.status.reported)
+			t.CheckTrue(dep.status.reported)
 		})
 	}
 }

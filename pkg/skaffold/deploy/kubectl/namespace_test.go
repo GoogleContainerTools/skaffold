@@ -118,7 +118,8 @@ spec:
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual, err := test.manifests.CollectNamespaces()
-			t.CheckErrorAndDeepEqual(false, err, test.expected, actual)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }

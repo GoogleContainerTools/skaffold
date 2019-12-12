@@ -128,7 +128,6 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-#	kubectl get nodes -oyaml
 	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
@@ -143,18 +142,6 @@ release: cross $(BUILD_DIR)/VERSION
 	gsutil -m cp $(BUILD_DIR)/VERSION $(GSC_RELEASE_PATH)/VERSION
 	gsutil -m cp -r $(GSC_RELEASE_PATH)/* $(GSC_RELEASE_LATEST)
 
-.PHONY: release-in-docker
-release-in-docker:
-	docker build \
-		-f deploy/skaffold/Dockerfile \
-		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		--target builder \
-		.
-	docker run --rm \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
-		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release VERSION=$(VERSION) RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
-
 .PHONY: release-build
 release-build: cross
 	docker build \
@@ -165,45 +152,32 @@ release-build: cross
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_BUILD_PATH)/
 	gsutil -m cp -r $(GSC_BUILD_PATH)/* $(GSC_BUILD_LATEST)
 
-.PHONY: release-build-in-docker
-release-build-in-docker:
-	docker build \
-		-f deploy/skaffold/Dockerfile \
-		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		--target builder \
-		.
-	docker run --rm \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
-		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release-build RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
-
 .PHONY: clean
 clean:
 	rm -rf $(BUILD_DIR) hack/bin
 
 .PHONY: kind-cluster
 kind-cluster:
-	kind get clusters | grep -q kind || kind create cluster --image=kindest/node:v1.13.10@sha256:2f5f882a6d0527a2284d29042f3a6a07402e1699d792d0d5a9b9a48ef155fa2a
+	kind get clusters | grep -q kind || TERM=dumb time kind create cluster --image=kindest/node:v1.13.12@sha256:ad1dd06aca2b85601f882ba1df4fdc03d5a57b304652d0e81476580310ba6289
 
 .PHONY: skaffold-builder
 skaffold-builder:
-	-docker pull gcr.io/$(GCP_PROJECT)/skaffold-builder
-	docker build \
-		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
+	time docker build \
 		-f deploy/skaffold/Dockerfile \
-		--target integration \
-		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
+		--target builder \
+		-t gcr.io/$(GCP_PROJECT)/skaffold-builder .
 
 .PHONY: integration-in-kind
 integration-in-kind: kind-cluster skaffold-builder
-	docker exec -it kind-control-plane cat /etc/kubernetes/admin.conf > /tmp/kind-config
+	kind get kubeconfig --internal > /tmp/kind-config
 	echo '{}' > /tmp/docker-config
-	docker run --rm \
+	time docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v /tmp/kind-config:/kind-config \
 		-v /tmp/docker-config:/root/.docker/config.json \
 		-e KUBECONFIG=/kind-config \
-		gcr.io/$(GCP_PROJECT)/skaffold-integration
+		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		make integration
 
 .PHONY: integration-in-docker
 integration-in-docker: skaffold-builder
@@ -218,7 +192,8 @@ integration-in-docker: skaffold-builder
 		-e DOCKER_CONFIG=/root/.docker \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
-		gcr.io/$(GCP_PROJECT)/skaffold-integration
+		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		make integration
 
 .PHONY: submit-build-trigger
 submit-build-trigger:

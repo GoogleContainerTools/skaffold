@@ -36,7 +36,7 @@ type metadata struct {
 }
 
 // TODO(dgageot): mirrors
-func (b *BuildpackBuilder) findRunImage(ctx context.Context, a *latest.BuildpackArtifact, builder string) (string, error) {
+func (b *Builder) findRunImage(ctx context.Context, a *latest.BuildpackArtifact, builder string) (string, error) {
 	if a.RunImage != "" {
 		return a.RunImage, nil
 	}

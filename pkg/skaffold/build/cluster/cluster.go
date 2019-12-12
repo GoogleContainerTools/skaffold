@@ -27,7 +27,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -56,20 +55,11 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return b.buildArtifactWithKaniko(ctx, out, artifact, tag)
 
 	case artifact.CustomArtifact != nil:
-		return b.buildArtifactWithCustomBuilder(ctx, out, artifact, tag)
+		return custom.NewArtifactBuilder(nil, b.insecureRegistries, true, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
 
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
 	}
-}
-
-func (b *Builder) buildArtifactWithCustomBuilder(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	extraEnv := b.retrieveExtraEnv()
-	customArtifactBuilder := custom.NewArtifactBuilder(true, extraEnv)
-	if err := customArtifactBuilder.Build(ctx, out, artifact, tag); err != nil {
-		return "", errors.Wrapf(err, "building custom artifact %s", artifact.ImageName)
-	}
-	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
 
 func (b *Builder) retrieveExtraEnv() []string {

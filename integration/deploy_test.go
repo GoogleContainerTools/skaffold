@@ -28,11 +28,8 @@ import (
 )
 
 func TestBuildDeploy(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	ns, client, deleteNs := SetupNamespace(t)
@@ -83,11 +80,8 @@ func TestBuildDeploy(t *testing.T) {
 }
 
 func TestDeploy(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	ns, client, deleteNs := SetupNamespace(t)
@@ -102,11 +96,8 @@ func TestDeploy(t *testing.T) {
 }
 
 func TestDeployTail(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	ns, _, deleteNs := SetupNamespace(t)
@@ -139,11 +130,8 @@ func TestDeployTail(t *testing.T) {
 }
 
 func TestDeployWithInCorrectConfig(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	ns, _, deleteNs := SetupNamespace(t)

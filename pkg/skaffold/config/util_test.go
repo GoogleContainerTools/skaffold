@@ -72,7 +72,8 @@ func TestReadConfig(t *testing.T) {
 
 			cfg, err := ReadConfigFile(test.filename)
 
-			t.CheckErrorAndDeepEqual(false, err, test.expectedCfg, cfg)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedCfg, cfg)
 		})
 	}
 }
@@ -90,7 +91,8 @@ func TestResolveConfigFile(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		cfg := t.TempFile("givenConfigurationFile", nil)
 		actual, err := ResolveConfigFile(cfg)
-		t.CheckErrorAndDeepEqual(false, err, cfg, actual)
+		t.CheckNoError(err)
+		t.CheckDeepEqual(cfg, actual)
 	})
 }
 
@@ -213,7 +215,8 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual, err := getConfigForKubeContextWithGlobalDefaults(test.cfg, test.kubecontext)
-			t.CheckErrorAndDeepEqual(false, err, test.expectedConfig, actual)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedConfig, actual)
 		})
 	}
 }
@@ -256,6 +259,53 @@ func TestIsUpdateCheckEnabled(t *testing.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, test.readErr })
 			actual := IsUpdateCheckEnabled("dummyconfig")
 			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+func TestIsDefaultLocal(t *testing.T) {
+	tests := []struct {
+		context       string
+		expectedLocal bool
+	}{
+		{context: "kind-other", expectedLocal: true},
+		{context: "kind@kind", expectedLocal: true},
+		{context: "docker-for-desktop", expectedLocal: true},
+		{context: "minikube", expectedLocal: true},
+		{context: "docker-for-desktop", expectedLocal: true},
+		{context: "docker-desktop", expectedLocal: true},
+		{context: "anything-else", expectedLocal: false},
+		{context: "kind@blah", expectedLocal: false},
+		{context: "other-kind", expectedLocal: false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			local := isDefaultLocal(test.context)
+
+			t.CheckDeepEqual(test.expectedLocal, local)
+		})
+	}
+}
+
+func TestIsKindCluster(t *testing.T) {
+	tests := []struct {
+		context        string
+		expectedName   string
+		expectedIsKind bool
+	}{
+		{context: "kind-kind", expectedName: "kind", expectedIsKind: true},
+		{context: "kind-other", expectedName: "other", expectedIsKind: true},
+		{context: "kind@kind", expectedName: "kind", expectedIsKind: true},
+		{context: "other@kind", expectedName: "other", expectedIsKind: true},
+		{context: "docker-for-desktop", expectedName: "", expectedIsKind: false},
+		{context: "not-kind", expectedName: "", expectedIsKind: false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			isKind, name := IsKindCluster(test.context)
+
+			t.CheckDeepEqual(test.expectedIsKind, isKind)
+			t.CheckDeepEqual(test.expectedName, name)
 		})
 	}
 }

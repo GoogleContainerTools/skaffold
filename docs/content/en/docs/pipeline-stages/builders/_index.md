@@ -3,6 +3,7 @@ title: "Build"
 linkTitle: "Build"
 weight: 10
 featureId: build
+aliases: [/docs/how-tos/builders]
 ---
 
 Skaffold has native support for several different tools for building images:
