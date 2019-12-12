@@ -117,7 +117,7 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
     jq \
     apt-transport-https && \
     rm -rf /var/lib/apt/lists/*
-COPY --from=golang:1.12 /usr/local/go /usr/local/go
+COPY --from=golang:1.13 /usr/local/go /usr/local/go
 ENV PATH /usr/local/go/bin:/root/go/bin:$PATH
 WORKDIR /skaffold
 COPY . .
