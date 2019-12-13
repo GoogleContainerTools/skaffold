@@ -65,13 +65,14 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 				b.builtImages = append(b.builtImages, imageID)
 			}
 		}
+
 		digest := digestOrImageID
-		return tag + "@" + digest, nil
+		return build.TagWithDigest(tag, digest), nil
 	}
 
 	imageID := digestOrImageID
 	b.builtImages = append(b.builtImages, imageID)
-	return b.localDocker.TagWithImageID(ctx, tag, imageID)
+	return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {

@@ -70,7 +70,7 @@ func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.
 
 			built = append(built, build.Artifact{
 				ImageName: artifact.ImageName,
-				Tag:       tag + "@" + digest,
+				Tag:       build.TagWithDigest(tag, digest),
 			})
 		} else {
 			built = append(built, build.Artifact{
