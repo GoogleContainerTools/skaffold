@@ -38,9 +38,7 @@ func TestBuildDeploy(t *testing.T) {
 	outputBytes := skaffold.Build("--quiet").InDir("examples/microservices").InNs(ns.Name).RunOrFailOutput(t)
 	// Parse the Build Output
 	buildArtifacts, err := flags.ParseBuildOutput(outputBytes)
-	if err != nil {
-		t.Fatalf("Unparsable build output %s", string(outputBytes))
-	}
+	failNowIfError(t, err)
 	if len(buildArtifacts.Builds) != 2 {
 		t.Fatalf("expected 2 artifacts to be built, but found %d", len(buildArtifacts.Builds))
 	}
@@ -75,8 +73,6 @@ func TestBuildDeploy(t *testing.T) {
 
 	depWeb := client.GetDeployment("leeroy-web")
 	testutil.CheckDeepEqual(t, webTag, depWeb.Spec.Template.Spec.Containers[0].Image)
-
-	skaffold.Delete().InDir("examples/microservices").InNs(ns.Name).RunOrFail(t)
 }
 
 func TestDeploy(t *testing.T) {
@@ -91,8 +87,6 @@ func TestDeploy(t *testing.T) {
 
 	dep := client.GetDeployment("kustomize-test")
 	testutil.CheckDeepEqual(t, "index.docker.io/library/busybox:1", dep.Spec.Template.Spec.Containers[0].Image)
-
-	skaffold.Delete().InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
 }
 
 func TestDeployTail(t *testing.T) {
