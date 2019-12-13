@@ -16,3 +16,5 @@ skaffold dev
 * Make some changes to `python/src/app.py`:
     * The file will be synchronized to the cluster
     * `flask` will restart the application
+
+<a href="vscode://googlecloudtools.cloudcode/shell?repo=https://github.com/GoogleContainerTools/skaffold.git&subpath=/examples/hot-reload"><img width="286" height="50" src="/docs/static/images/open-cloud-code.png"></a>

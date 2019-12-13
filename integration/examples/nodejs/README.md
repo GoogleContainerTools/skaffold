@@ -16,4 +16,4 @@ skaffold dev
 * Make some changes to `package.json`:
     * The full build/push/deploy process will be triggered, fetching dependencies from `npm`
 
-
+<a href="vscode://googlecloudtools.cloudcode/shell?repo=https://github.com/GoogleContainerTools/skaffold.git&subpath=/examples/nodejs"><img width="286" height="50" src="/docs/static/images/open-cloud-code.png"></a>

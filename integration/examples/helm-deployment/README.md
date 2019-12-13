@@ -35,3 +35,5 @@ This part tells skaffold to set the `image` parameter of the values file to the 
       values:
         image: skaffold-helm
 ```
+
+<a href="vscode://googlecloudtools.cloudcode/shell?repo=https://github.com/GoogleContainerTools/skaffold.git&subpath=/examples/helm-deployment"><img width="286" height="50" src="/docs/static/images/open-cloud-code.png"></a>

@@ -36,3 +36,5 @@ root module of the project.  This is easily done through a `pluginManagement`
 block.
 
 - The artifact modules must have a `jib:xxx` goal bound to the `package` phase.
+
+<a href="vscode://googlecloudtools.cloudcode/shell?repo=https://github.com/GoogleContainerTools/skaffold.git&subpath=/examples/jib-multimodule"><img width="286" height="50" src="/docs/static/images/open-cloud-code.png"></a>
