@@ -18,5 +18,3 @@ Please note that this example is for a standalone Maven project, where
 all dependencies are resolved from outside. The Jib builder requires
 that the projects are configured to use the Jib plugins for Maven or Gradle.
 Multi-module builds require a bit additional configuration.
-
-<a href="vscode://googlecloudtools.cloudcode/shell?repo=https://github.com/GoogleContainerTools/skaffold.git&subpath=/examples/jib"><img width="286" height="50" src="/docs/static/images/open-cloud-code.png"></a>

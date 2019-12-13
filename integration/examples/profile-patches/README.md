@@ -12,5 +12,3 @@ Use the `--profile` option to add profiles `skaffold dev --profile hello,world`
 
 * Build only the `base-service` when using the main profile
 * Build `hello` and/or `world` when specified via `-p` flag. Multiple `-p` flags are supported as well as comma separated values.
-
-<a href="vscode://googlecloudtools.cloudcode/shell?repo=https://github.com/GoogleContainerTools/skaffold.git&subpath=/examples/profile-patches"><img width="286" height="50" src="/docs/static/images/open-cloud-code.png"></a>

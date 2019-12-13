@@ -13,5 +13,3 @@ skaffold init --compose-file docker-compose.yaml
 1. This will invoke the [kompose](https://github.com/kubernetes/kompose) binary to generate
 kubernetes manifests based off of the Docker Compose configuration.
 2. This will generate the `skaffold.yaml` configuration.
-
-<a href="vscode://googlecloudtools.cloudcode/shell?repo=https://github.com/GoogleContainerTools/skaffold.git&subpath=/examples/compose"><img width="286" height="50" src="/docs/static/images/open-cloud-code.png"></a>

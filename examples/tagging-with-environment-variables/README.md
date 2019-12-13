@@ -15,5 +15,3 @@ build:
 1. define `tagPolicy` to be `envTemplate`
 2. use [go templates](https://golang.org/pkg/text/template) syntax
 3. The `IMAGE_NAME` variable is built-in and reuses the value defined in the artifacts' `image`.
-
-<a href="vscode://googlecloudtools.cloudcode/shell?repo=https://github.com/GoogleContainerTools/skaffold.git&subpath=/examples/tagging-with-environment-variables"><img width="286" height="50" src="/docs/static/images/open-cloud-code.png"></a>
