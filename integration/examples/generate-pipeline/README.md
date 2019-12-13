@@ -25,5 +25,3 @@ To generate and run a pipeline:
 * kubectl apply -f pipeline.yaml
 * Create a pipelinerun.yaml
 * kubectl apply -f pipelinerun.yaml
-
-<a href="vscode://googlecloudtools.cloudcode/shell?repo=https://github.com/GoogleContainerTools/skaffold.git&subpath=/examples/generate-pipeline"><img width="286" height="50" src="/docs/static/images/open-cloud-code.png"></a>

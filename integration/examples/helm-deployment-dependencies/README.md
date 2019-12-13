@@ -20,5 +20,3 @@ deploy:
       valuesFiles:
         - helm-values-file.yaml
 ```
-
-<a href="vscode://googlecloudtools.cloudcode/shell?repo=https://github.com/GoogleContainerTools/skaffold.git&subpath=/examples/helm-deployment-dependencies"><img width="286" height="50" src="/docs/static/images/open-cloud-code.png"></a>
