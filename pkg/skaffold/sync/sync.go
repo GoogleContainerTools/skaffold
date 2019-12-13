@@ -33,6 +33,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -47,7 +48,7 @@ var (
 	SyncMap    = syncMapForArtifact
 )
 
-func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
+func NewItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
 	if !e.HasChanged() || a.Sync == nil {
 		return nil, nil
 	}
@@ -82,6 +83,9 @@ func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, inse
 
 	case len(a.Sync.Infer) > 0:
 		return inferredSyncItem(a, tag, e, insecureRegistries)
+
+	case a.Sync.Auto != nil:
+		return autoSyncItem(ctx, a, e, builds)
 
 	default:
 		return nil, nil
@@ -169,6 +173,30 @@ func syncMapForArtifact(a *latest.Artifact, insecureRegistries map[string]bool) 
 
 	default:
 		return nil, build.ErrSyncMapNotSupported{}
+	}
+}
+
+func autoSyncItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds []build.Artifact) (*Item, error) {
+	tag := latestTag(a.ImageName, builds)
+	if tag == "" {
+		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
+	}
+
+	switch {
+	case a.JibArtifact != nil:
+		toCopy, toDelete, err := jib.GetSyncDiff(ctx, a.Workspace, a.JibArtifact, e)
+		if err != nil {
+			return nil, err
+		}
+		if toCopy == nil && toDelete == nil {
+			// do a rebuild
+			return nil, nil
+		}
+		return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
+
+	default:
+		// TODO: this error does appear a little late in the build, perhaps it could surface at first run, rather than first sync?
+		return nil, fmt.Errorf("Sync: Auto is not supported by the build of %s", a.ImageName)
 	}
 }
 
@@ -341,6 +369,22 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 
 	if numSynced == 0 {
 		return errors.New("didn't sync any files")
+	}
+	return nil
+}
+
+func Init(ctx context.Context, artifacts []*latest.Artifact) error {
+	for _, a := range artifacts {
+		if a.Sync == nil {
+			continue
+		}
+
+		if a.Sync.Auto != nil && a.JibArtifact != nil {
+			err := jib.InitSync(ctx, a.Workspace, a.JibArtifact)
+			if err != nil {
+				return errors.Wrapf(err, "failed to initialize sync state for %s", a.ImageName)
+			}
+		}
 	}
 	return nil
 }
