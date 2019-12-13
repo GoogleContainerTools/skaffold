@@ -42,3 +42,4 @@ if ! [[ -f ${STATIK} ]]; then
 fi
 
 ${STATIK} -f -src=${TMP_DIR}/skaffold-credits/ -m -dest cmd/skaffold/app/cmd/credits
+${STATIK} -f -src=docs/content/en/schemas -m -dest cmd/skaffold/app/cmd/schema
