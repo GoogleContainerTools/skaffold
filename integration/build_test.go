@@ -223,7 +223,11 @@ func nowInChicago() string {
 	return time.Now().In(loc).Format("2006-01-02")
 }
 
-func failNowIfError(t *testing.T, err error) {
+type Fataler interface {
+	Fatal(args ...interface{})
+}
+
+func failNowIfError(t Fataler, err error) {
 	if err != nil {
 		t.Fatal(err)
 	}

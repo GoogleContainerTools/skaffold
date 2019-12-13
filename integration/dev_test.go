@@ -287,28 +287,21 @@ func TestDev_WithKubecontextOverride(t *testing.T) {
 	}
 
 	testutil.Run(t, "skaffold run with kubecontext override", func(t *testutil.T) {
-		dir := "examples/getting-started"
-		pods := []string{"getting-started"}
-
 		ns, client, deleteNs := SetupNamespace(t.T)
 		defer deleteNs()
 
 		modifiedKubeconfig, kubecontext, err := createModifiedKubeconfig(ns.Name)
-		if err != nil {
-			t.Fatal(err)
-		}
+		failNowIfError(t, err)
+
 		kubeconfig := t.NewTempDir().
 			Write("kubeconfig", string(modifiedKubeconfig)).
 			Path("kubeconfig")
 		env := []string{fmt.Sprintf("KUBECONFIG=%s", kubeconfig)}
 
 		// n.b. for the sake of this test the namespace must not be given explicitly
-		skaffold.Run("--kube-context", kubecontext).InDir(dir).WithEnv(env).RunOrFail(t.T)
+		skaffold.Run("--kube-context", kubecontext).InDir("examples/getting-started").WithEnv(env).RunOrFail(t.T)
 
-		client.WaitForPodsReady(pods...)
-
-		// n.b. for the sake of this test the namespace must not be given explicitly
-		skaffold.Delete("--kube-context", kubecontext).InDir(dir).WithEnv(env).RunOrFail(t.T)
+		client.WaitForPodsReady("getting-started")
 	})
 }
 
