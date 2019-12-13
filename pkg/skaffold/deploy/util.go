@@ -21,9 +21,10 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os"
 
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 
@@ -81,4 +82,19 @@ func getObjectNamespaceIfDefined(doc []byte, ns string) (string, error) {
 		}
 	}
 	return ns, nil
+}
+
+func dumpToFileOrWriter(renderedManifests string, filepath string, manifestOut io.Writer) error {
+	if filepath == "" {
+		_, err := fmt.Fprintln(manifestOut, renderedManifests)
+		return err
+	}
+
+	f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
+	if err != nil {
+		return errors.Wrap(err, "opening file for writing manifests")
+	}
+	defer f.Close()
+	_, err = f.WriteString(renderedManifests + "\n")
+	return err
 }
