@@ -76,7 +76,7 @@ func TestRun(t *testing.T) {
 		},
 		{
 			description: "jib gradle",
-			dir:         "testdata/jib-gradle",
+			dir:         "examples/jib-gradle",
 			deployments: []string{"web"},
 		},
 		{
@@ -166,7 +166,7 @@ func TestRunGCPOnly(t *testing.T) {
 		},
 		{
 			description: "jib gradle in googlecloudbuild",
-			dir:         "testdata/jib-gradle",
+			dir:         "examples/jib-gradle",
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
 		},
