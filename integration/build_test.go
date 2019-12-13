@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"4d63.com/tz"
-	"github.com/docker/docker/api/types"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -104,14 +103,10 @@ func TestBuild(t *testing.T) {
 			}
 
 			// Run without artifact caching
-			removeImage(t, test.expectImage)
 			skaffold.Build(append(test.args, "--cache-artifacts=false")...).InDir(test.dir).RunOrFail(t)
-			checkImageExists(t, test.expectImage)
 
 			// Run with artifact caching
-			removeImage(t, test.expectImage)
 			skaffold.Build(append(test.args, "--cache-artifacts=true")...).InDir(test.dir).RunOrFail(t)
-			checkImageExists(t, test.expectImage)
 
 			// Run a second time with artifact caching
 			out := skaffold.Build(append(test.args, "--cache-artifacts=true")...).InDir(test.dir).RunOrFailOutput(t)
@@ -153,25 +148,6 @@ func TestExpectedBuildFailures(t *testing.T) {
 			}
 		})
 	}
-}
-
-// removeImage removes the given image if present.
-func removeImage(t *testing.T, image string) {
-	t.Helper()
-
-	if image == "" {
-		return
-	}
-
-	client, err := docker.NewAPIClient(&runcontext.RunContext{})
-	failNowIfError(t, err)
-
-	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
-	defer cancel()
-	_, _ = client.ImageRemove(ctx, image, types.ImageRemoveOptions{
-		Force:         true,
-		PruneChildren: true,
-	})
 }
 
 // checkImageExists asserts that the given image is present
@@ -223,7 +199,11 @@ func nowInChicago() string {
 	return time.Now().In(loc).Format("2006-01-02")
 }
 
-func failNowIfError(t *testing.T, err error) {
+type Fataler interface {
+	Fatal(args ...interface{})
+}
+
+func failNowIfError(t Fataler, err error) {
 	if err != nil {
 		t.Fatal(err)
 	}

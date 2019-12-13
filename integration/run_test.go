@@ -35,6 +35,7 @@ func TestRun(t *testing.T) {
 		deployments []string
 		pods        []string
 		env         []string
+		setup       func(t *testing.T, workdir string) (teardown func())
 	}{
 		{
 			description: "getting-started",
@@ -76,13 +77,8 @@ func TestRun(t *testing.T) {
 		},
 		{
 			description: "jib gradle",
-			dir:         "testdata/jib-gradle",
+			dir:         "examples/jib-gradle",
 			deployments: []string{"web"},
-		},
-		{
-			description: "custom builder",
-			dir:         "testdata/custom",
-			pods:        []string{"bazel"},
 		},
 		{
 			description: "profiles",
@@ -93,6 +89,11 @@ func TestRun(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			if test.setup != nil {
+				teardown := test.setup(t, test.dir)
+				defer teardown()
+			}
+
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
@@ -166,7 +167,7 @@ func TestRunGCPOnly(t *testing.T) {
 		},
 		{
 			description: "jib gradle in googlecloudbuild",
-			dir:         "testdata/jib-gradle",
+			dir:         "examples/jib-gradle",
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
 		},
@@ -175,6 +176,12 @@ func TestRunGCPOnly(t *testing.T) {
 			description: "buildpacks",
 			dir:         "examples/buildpacks",
 			deployments: []string{"web"},
+		},
+		// Don't run on kind because of this issue: https://github.com/buildpack/pack/issues/277
+		{
+			description: "custom builder",
+			dir:         "examples/custom",
+			pods:        []string{"getting-started"},
 		},
 		{
 			description: "buildpacks on Cloud Build",
