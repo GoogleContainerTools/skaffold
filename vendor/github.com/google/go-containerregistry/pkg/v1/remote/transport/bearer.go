@@ -92,29 +92,25 @@ func (bt *bearerTransport) RoundTrip(in *http.Request) (*http.Response, error) {
 // The basic token exchange is attempted first, falling back to the oauth flow.
 // If the IdentityToken is set, this indicates that we should start with the oauth flow.
 func (bt *bearerTransport) refresh() error {
-	first, second := bt.refreshBasic, bt.refreshOauth
-
 	auth, err := bt.basic.Authorization()
 	if err != nil {
 		return err
 	}
+	var content []byte
 	if auth.IdentityToken != "" {
 		// If the secret being stored is an identity token,
 		// the Username should be set to <token>, which indicates
 		// we are using an oauth flow.
-		first, second = bt.refreshOauth, bt.refreshBasic
-	}
-
-	content, err := func() ([]byte, error) {
-		b, err := first()
-		if err != nil {
-			b, err = second()
-			if err != nil {
-				return nil, err
-			}
+		content, err = bt.refreshOauth()
+		if terr, ok := err.(*Error); ok && terr.StatusCode == http.StatusNotFound {
+			// Note: Not all token servers implement oauth2.
+			// If the request to the endpoint returns 404 using the HTTP POST method,
+			// refer to Token Documentation for using the HTTP GET method supported by all token servers.
+			content, err = bt.refreshBasic()
 		}
-		return b, err
-	}()
+	} else {
+		content, err = bt.refreshBasic()
+	}
 	if err != nil {
 		return err
 	}
@@ -209,6 +205,7 @@ func (bt *bearerTransport) refreshOauth() ([]byte, error) {
 		v.Set("grant_type", "refresh_token")
 		v.Set("refresh_token", auth.IdentityToken)
 	} else if auth.Username != "" && auth.Password != "" {
+		// TODO(#629): This is unreachable.
 		v.Set("grant_type", "password")
 		v.Set("username", auth.Username)
 		v.Set("password", auth.Password)

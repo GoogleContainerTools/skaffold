@@ -34,7 +34,7 @@ func (t *logTransport) RoundTrip(in *http.Request) (out *http.Response, err erro
 		if out.Request != nil {
 			msg = fmt.Sprintf("%s %s", msg, out.Request.URL)
 		}
-		logs.Debug.Printf(msg)
+		logs.Debug.Print(msg)
 		b, err := httputil.DumpResponse(out, true)
 		if err == nil {
 			logs.Debug.Println(string(b))
