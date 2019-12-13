@@ -114,6 +114,7 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
     lsb-release \
     openjdk-8-jdk \
     software-properties-common \
+    jq \
     apt-transport-https && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=golang:1.12 /usr/local/go /usr/local/go
