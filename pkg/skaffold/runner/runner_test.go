@@ -341,6 +341,31 @@ func TestNewForConfig(t *testing.T) {
 			expectedDeployer: &deploy.KubectlDeployer{},
 			cacheArtifacts:   true,
 		},
+		{
+			description: "multiple deployers",
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
+					},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy:   &latest.KubectlDeploy{},
+						KustomizeDeploy: &latest.KustomizeDeploy{},
+						HelmDeploy:      &latest.HelmDeploy{},
+					},
+				},
+			},
+			expectedBuilder: &local.Builder{},
+			expectedTester:  &test.FullTester{},
+			expectedDeployer: deploy.DeployerMux([]deploy.Deployer{
+				&deploy.HelmDeployer{},
+				&deploy.KubectlDeployer{},
+				&deploy.KustomizeDeployer{},
+			}),
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

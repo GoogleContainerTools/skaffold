@@ -377,17 +377,18 @@ type DeployConfig struct {
 }
 
 // DeployType contains the specific implementation and parameters needed
-// for the deploy step. Only one field should be populated.
+// for the deploy step. All three deployer types can be used at the same
+// time for hybrid workflows.
 type DeployType struct {
 	// HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
-	HelmDeploy *HelmDeploy `yaml:"helm,omitempty" yamltags:"oneOf=deploy"`
+	HelmDeploy *HelmDeploy `yaml:"helm,omitempty"`
 
 	// KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
 	// You'll need a `kubectl` CLI version installed that's compatible with your cluster.
-	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty" yamltags:"oneOf=deploy"`
+	KubectlDeploy *KubectlDeploy `yaml:"kubectl,omitempty"`
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
-	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty" yamltags:"oneOf=deploy"`
+	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty"`
 }
 
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
