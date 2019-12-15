@@ -242,6 +242,7 @@ func TestApplyProfiles(t *testing.T) {
 					withGitTagger(),
 				),
 				withHelmDeploy(),
+				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{
