@@ -1447,6 +1447,13 @@
           "x-intellij-html-description": "locates the Dockerfile relative to workspace.",
           "default": "Dockerfile"
         },
+        "env": {
+          "items": {},
+          "type": "array",
+          "description": "environment variables passed to the kaniko pod.",
+          "x-intellij-html-description": "environment variables passed to the kaniko pod.",
+          "default": "[]"
+        },
         "flags": {
           "items": {
             "type": "string"
@@ -1484,6 +1491,7 @@
         "dockerfile",
         "target",
         "buildArgs",
+        "env",
         "buildContext",
         "image",
         "cache",
