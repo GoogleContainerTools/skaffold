@@ -220,11 +220,29 @@ TODO (comment here if you need this be elaborated more on)
 
 ## Implementation plan
 
-Synchonization will require the following changes to the `skaffold dev` flow.
-- Add `Auto` to the schema under `Sync`
-- A *initializer* that runs before first build to initialize the sync state
-- 
+- [`schemas/<version>.go`] Add `Auto` to the schema under `Sync`
+- Before first build, initialize the `sync` state for builders in `auto` mode, this
+sync state is saved in the builder's specific implementation of `auto`
 
+- On file change in dev mode: 
+```
+if (files were deleted)
+  return REBUILD
+
+if (changes were made to build def)
+  return REBUILD
+
+lastSyncState = syncStates["this project"]
+
+if (if all files changes are in lastSyncState.direct)
+  return SYNC{list of direct files}
+
+newSyncState = buildAndCalculateNewSyncState("this project")
+syncStates["this project"] = newSyncState
+
+diff = diff(lastSyncState, newSyncState)
+return SYNC{files in diff}
+```
 
 ## Integration test plan
 
