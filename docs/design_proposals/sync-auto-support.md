@@ -24,7 +24,7 @@ really only aware of `.java` files in a build.
 2. If this is a redesign, what are the drawbacks of the current implementation?
   - This is not a redesign, but a new sync mode that may or may not be available
     in the skaffold.yaml directly to users. It could simply be an internal API
-    that is usuable by builders like Jib.
+    that is usable by builders like Jib.
   - This is similar to `_smart_` described in [sync-improvements](sync-improvements.md)
 
 3. Is there any another workaround, and if so, what are its drawbacks?
@@ -142,7 +142,6 @@ type Direct struct {
 type Syncables struct {
   src String
   dest String
-  strip String
 }
 ```
 
@@ -155,39 +154,48 @@ json output for the skaffold-jib intergration to consume and forward to the sync
 system. And example output might look like:
 
 ```
-BEGIN JIB JSON
+BEGIN JIB JSON: SYNCMAP/1
 {
-  "generated": {
-    “target/classes”: "app/classes",
-    "target": "dest2"
-  },
-  "direct": {
-    "src/main/extra1": "/",
-    "src/main/extra2": "/"
-    ".m2/some/dep/my-dep-SNAPSHOT.jar": "app/dependencies/my-dep-SNAPSHOT.jar"
+  "generated": [
+    {
+      src: “target/classes”
+      dest: "app/classes",
+    },
+    {
+      src: “target/resources"
+      dest: "app/resources",
+    }
+  ]
+  "direct": [
+    {
+      src: "src/main/extra1",
+      dest: "/"
+    },
+    {
+      src: "src/main/extra2",
+      dest: "/"
+    },
+    {
+      src: ".m2/some/dep/my-dep-SNAPSHOT.jar",
+      dest: "app/dependencies/my-dep-SNAPSHOT.jar"
+    }
   }
 }
 ```
 
-perhaps jib should also tell the system what task/goals are required to build
-the generated files??
+Files in the `generated` section will trigger a partial rebuild of the container 
+(everything before containerization) while files in the `direct` section can
+just be synchronized to the running container without a rebuild of anything.
 
-```
-{
-  ...
-  "generator-tasks": ["classes", "resources"]
-  "generated": ...
-}
-```
+##### Sync or Rebuild?
+
+Each builder implementing an `auto` builder should be able to decide when a sync
+should be skipped and a rebuild done instead. In the jib case for instance, a
+rebuild will be triggered if:
+- a build file has changed (`build.gradle`, `pom.xml`, etc)
+- a file is deleted
 
 #### Open Issues/Questions
-
-**What happens if the build definition changes?**
-
-I'm not sure if we should just allow the user to go nuts, or if we should
-explicitly disallow this, because changing the build definition might result in
-a post-sync state that is broken. The underlying `auto` implementation for the
-build can make these decisions.
 
 **What about files that have specific permissions?**
 
@@ -212,7 +220,11 @@ TODO (comment here if you need this be elaborated more on)
 
 ## Implementation plan
 
-*TBD*
+Synchonization will require the following changes to the `skaffold dev` flow.
+- Add `Auto` to the schema under `Sync`
+- A *initializer* that runs before first build to initialize the sync state
+- 
+
 
 ## Integration test plan
 
