@@ -99,7 +99,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 
 	event.DeployComplete()
 
-	labels := merge(labellers...)
+	labels := merge(h, labellers...)
 	labelDeployResults(labels, dRes)
 
 	// Collect namespaces in a string
