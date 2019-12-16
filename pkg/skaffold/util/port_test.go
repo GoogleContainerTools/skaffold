@@ -22,7 +22,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
-	"time"
 )
 
 func TestGetAvailablePort(t *testing.T) {
@@ -49,7 +48,6 @@ func AssertCompetingProcessesCanSucceed(ports ForwardedPorts, t *testing.T) {
 			} else {
 				l.Close()
 			}
-			time.Sleep(2 * time.Second)
 			wg.Done()
 		}()
 	}

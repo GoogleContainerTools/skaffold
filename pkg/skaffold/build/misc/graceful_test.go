@@ -37,10 +37,15 @@ func TestGracefulBuildCancel(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
+			description: "terminate before timeout",
+			command:     "echo done",
+		},
+		{
 			description: "terminate gracefully and exit 0",
-			command:     "trap 'echo trap' INT; sleep 2",
-		}, {
-			description: "terminate gracefully and kill process",
+			command:     "trap 'echo trap' INT; sleep .1",
+		},
+		{
+			description: "kill process after sigint",
 			command:     "trap 'echo trap' INT; sleep 5",
 			shouldErr:   true,
 		},
@@ -48,17 +53,15 @@ func TestGracefulBuildCancel(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Parallel()
-
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			t.Override(&gracePeriod, 100*time.Millisecond)
+			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+			defer cancel()
 
 			cmd := exec.Command("bash", "-c", test.command)
 			t.CheckNoError(cmd.Start())
 
 			err := HandleGracefulTermination(ctx, cmd)
 			t.CheckError(test.shouldErr, err)
-
-			cancel()
 		})
 	}
 }
