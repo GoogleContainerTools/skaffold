@@ -53,6 +53,7 @@ func TestUnavailablePort(t *testing.T) {
 		var buf bytes.Buffer
 		k := KubectlForwarder{
 			out: &buf,
+			takenPortRetryInterval: 100 * time.Millisecond,
 		}
 		pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false)
 

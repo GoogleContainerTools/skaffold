@@ -40,15 +40,17 @@ type EntryForwarder interface {
 }
 
 type KubectlForwarder struct {
-	kubectl *kubectl.CLI
-	out     io.Writer
+	kubectl                *kubectl.CLI
+	out                    io.Writer
+	takenPortRetryInterval time.Duration
 }
 
 // NewKubectlForwarder returns a new KubectlForwarder
 func NewKubectlForwarder(out io.Writer, cli *kubectl.CLI) *KubectlForwarder {
 	return &KubectlForwarder{
-		out:     out,
-		kubectl: cli,
+		out:                    out,
+		kubectl:                cli,
+		takenPortRetryInterval: 5 * time.Second,
 	}
 }
 
@@ -85,7 +87,7 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 			//since the dev loop kicked off. We are notifying the user in the hope that they can fix it
 			color.Red.Fprintf(k.out, "failed to port forward %v, port %d is taken, retrying...\n", pfe, pfe.localPort)
 			notifiedUser = true
-			time.Sleep(5 * time.Second)
+			time.Sleep(k.takenPortRetryInterval)
 			continue
 		}
 
