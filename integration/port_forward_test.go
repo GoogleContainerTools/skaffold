@@ -55,10 +55,28 @@ func TestPortForward(t *testing.T) {
 	portforward.WhiteBoxPortForwardCycle(t, kubectlCLI, ns.Name)
 }
 
-// TestPortForwardDeletePod tests that port forwarding works
+func TestRunPortForwardDeletePod(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	stop := skaffold.Run("--port-forward").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
+	defer stop()
+
+	_, entries, shutdown := apiEvents(t, "50051")
+	defer shutdown()
+
+	address, localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)
+	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
+}
+
+// TestDevPortForwardDeletePod tests that port forwarding works
 // as expected. Then, the test force deletes a pod,
 // and tests that the pod eventually comes up at the same port again.
-func TestPortForwardDeletePod(t *testing.T) {
+func TestDevPortForwardDeletePod(t *testing.T) {
 	if testing.Short() || RunOnGCP() {
 		t.Skip("skipping kind integration test")
 	}
