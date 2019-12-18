@@ -24,6 +24,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -126,13 +127,14 @@ func TestPrintAnalyzeJSONNoJib(t *testing.T) {
 func TestWalk(t *testing.T) {
 	emptyFile := ""
 	tests := []struct {
-		description       string
-		filesWithContents map[string]string
-		expectedConfigs   []string
-		expectedPaths     []string
-		force             bool
-		enableJibInit     bool
-		shouldErr         bool
+		description         string
+		filesWithContents   map[string]string
+		expectedConfigs     []string
+		expectedPaths       []string
+		force               bool
+		enableJibInit       bool
+		enableBuildpackInit bool
+		shouldErr           bool
 	}{
 		{
 			description: "should return correct k8 configs and build files (backwards compatibility)",
@@ -166,9 +168,11 @@ func TestWalk(t *testing.T) {
 				"gradle/build.gradle": emptyFile,
 				"maven/pom.xml":       emptyFile,
 				"Dockerfile":          emptyFile,
+				"node/package.json":   emptyFile,
 			},
-			force:         false,
-			enableJibInit: true,
+			force:               false,
+			enableJibInit:       true,
+			enableBuildpackInit: true,
 			expectedConfigs: []string{
 				"k8pod.yml",
 				"config/test.yaml",
@@ -178,6 +182,7 @@ func TestWalk(t *testing.T) {
 				"deploy/Dockerfile",
 				"gradle/build.gradle",
 				"maven/pom.xml",
+				"node/package.json",
 			},
 			shouldErr: false,
 		},
@@ -315,7 +320,7 @@ deploy:
 			t.Override(&docker.ValidateDockerfileFunc, fakeValidateDockerfile)
 			t.Override(&jib.ValidateJibConfigFunc, fakeValidateJibConfig)
 
-			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, test.enableJibInit)
+			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, test.enableJibInit, test.enableBuildpackInit)
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
@@ -550,6 +555,7 @@ func TestProcessCliArtifacts(t *testing.T) {
 				`{"builder":"Docker","payload":{"path":"/path/to/Dockerfile"},"image":"image1"}`,
 				`{"builder":"Jib Gradle Plugin","payload":{"path":"/path/to/build.gradle"},"image":"image2"}`,
 				`{"builder":"Jib Maven Plugin","payload":{"path":"/path/to/pom.xml","project":"project-name","image":"testImage"},"image":"image3"}`,
+				`{"builder":"Buildpacks","payload":{"path":"/path/to/package.json"},"image":"image4"}`,
 			},
 			expectedPairs: []builderImagePair{
 				{
@@ -563,6 +569,10 @@ func TestProcessCliArtifacts(t *testing.T) {
 				{
 					Builder:   jib.Jib{BuilderName: "Jib Maven Plugin", FilePath: "/path/to/pom.xml", Project: "project-name", Image: "testImage"},
 					ImageName: "image3",
+				},
+				{
+					Builder:   buildpacks.Buildpacks{File: "/path/to/package.json"},
+					ImageName: "image4",
 				},
 			},
 		},
