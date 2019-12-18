@@ -61,32 +61,8 @@ func CreateService(pr *github.PullRequestEvent) (*v1.Service, error) {
 	return client.CoreV1().Services(constants.Namespace).Create(svc)
 }
 
-// GetExternalIP polls the service until an external IP is available and returns it
-func GetExternalIP(s *v1.Service) (string, error) {
-	var ip string
-	err := wait.PollImmediate(time.Second*5, time.Minute*5, func() (bool, error) {
-		svc, err := getService(s)
-		if err != nil {
-			return false, nil
-		}
-		if len(svc.Status.LoadBalancer.Ingress) > 0 {
-			ip = svc.Status.LoadBalancer.Ingress[0].IP
-			return true, nil
-		}
-		return false, nil
-	})
-	return ip, err
-}
+
 
 func serviceName(prNumber int) string {
 	return fmt.Sprintf("docs-controller-svc-%d", prNumber)
-}
-
-func getService(svc *v1.Service) (*v1.Service, error) {
-	client, err := kubernetes.Client()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting Kubernetes client")
-	}
-
-	return client.CoreV1().Services(svc.Namespace).Get(svc.Name, metav1.GetOptions{})
 }

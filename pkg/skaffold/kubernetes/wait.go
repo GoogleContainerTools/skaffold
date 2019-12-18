@@ -35,6 +35,10 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
+var (
+	PodInitializedTimeOut = 10 * time.Minute
+)
+
 // WatchUntil reads items from the watch until the provided condition succeeds or the context is cancelled.
 func watchUntilTimeout(ctx context.Context, timeout time.Duration, w watch.Interface, condition func(event *watch.Event) (bool, error)) error {
 	ctx, cancelTimeout := context.WithTimeout(ctx, timeout)
@@ -103,7 +107,8 @@ func WaitForPodInitialized(ctx context.Context, pods corev1.PodInterface, podNam
 	}
 	defer w.Stop()
 
-	return watchUntilTimeout(ctx, 10*time.Minute, w, func(event *watch.Event) (bool, error) {
+
+	return watchUntilTimeout(ctx, PodInitializedTimeOut, w, func(event *watch.Event) (bool, error) {
 		pod := event.Object.(*v1.Pod)
 		if pod.Name != podName {
 			return false, nil
