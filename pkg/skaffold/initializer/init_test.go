@@ -126,6 +126,8 @@ func TestPrintAnalyzeJSONNoJib(t *testing.T) {
 
 func TestWalk(t *testing.T) {
 	emptyFile := ""
+	validK8sManifest := "apiVersion: v1\nkind: Service\nmetadata:\n  name: test\n"
+
 	tests := []struct {
 		description         string
 		filesWithContents   map[string]string
@@ -139,8 +141,9 @@ func TestWalk(t *testing.T) {
 		{
 			description: "should return correct k8 configs and build files (backwards compatibility)",
 			filesWithContents: map[string]string{
-				"config/test.yaml":    emptyFile,
-				"k8pod.yml":           emptyFile,
+				"config/test.yaml":    validK8sManifest,
+				"config/invalid.yaml": emptyFile,
+				"k8pod.yml":           validK8sManifest,
 				"README":              emptyFile,
 				"deploy/Dockerfile":   emptyFile,
 				"gradle/build.gradle": emptyFile,
@@ -161,8 +164,9 @@ func TestWalk(t *testing.T) {
 		{
 			description: "should return correct k8 configs and build files",
 			filesWithContents: map[string]string{
-				"config/test.yaml":    emptyFile,
-				"k8pod.yml":           emptyFile,
+				"config/test.yaml":    validK8sManifest,
+				"config/invalid.yaml": emptyFile,
+				"k8pod.yml":           validK8sManifest,
 				"README":              emptyFile,
 				"deploy/Dockerfile":   emptyFile,
 				"gradle/build.gradle": emptyFile,
@@ -189,8 +193,8 @@ func TestWalk(t *testing.T) {
 		{
 			description: "skip validating nested jib configs",
 			filesWithContents: map[string]string{
-				"config/test.yaml":               emptyFile,
-				"k8pod.yml":                      emptyFile,
+				"config/test.yaml":               validK8sManifest,
+				"k8pod.yml":                      validK8sManifest,
 				"gradle/build.gradle":            emptyFile,
 				"gradle/subproject/build.gradle": emptyFile,
 				"maven/asubproject/pom.xml":      emptyFile,
@@ -213,9 +217,9 @@ func TestWalk(t *testing.T) {
 			filesWithContents: map[string]string{
 				"build.gradle":                 emptyFile,
 				"ignored-builder/build.gradle": emptyFile,
-				"not-ignored-config/test.yaml": emptyFile,
+				"not-ignored-config/test.yaml": validK8sManifest,
 				"Dockerfile":                   emptyFile,
-				"k8pod.yml":                    emptyFile,
+				"k8pod.yml":                    validK8sManifest,
 				"pom.xml":                      emptyFile,
 			},
 			force:         false,
@@ -234,8 +238,8 @@ func TestWalk(t *testing.T) {
 		{
 			description: "should skip hidden dir",
 			filesWithContents: map[string]string{
-				".hidden/test.yaml":  emptyFile,
-				"k8pod.yml":          emptyFile,
+				".hidden/test.yaml":  validK8sManifest,
+				"k8pod.yml":          validK8sManifest,
 				"README":             emptyFile,
 				".hidden/Dockerfile": emptyFile,
 				"Dockerfile":         emptyFile,
@@ -257,8 +261,8 @@ func TestWalk(t *testing.T) {
 kind: Config
 deploy:
   kustomize: {}`,
-				"config/test.yaml":  emptyFile,
-				"k8pod.yml":         emptyFile,
+				"config/test.yaml":  validK8sManifest,
+				"k8pod.yml":         validK8sManifest,
 				"README":            emptyFile,
 				"deploy/Dockerfile": emptyFile,
 				"Dockerfile":        emptyFile,
@@ -278,8 +282,8 @@ deploy:
 		{
 			description: "should error when skaffold.config present and force = false",
 			filesWithContents: map[string]string{
-				"config/test.yaml":  emptyFile,
-				"k8pod.yml":         emptyFile,
+				"config/test.yaml":  validK8sManifest,
+				"k8pod.yml":         validK8sManifest,
 				"README":            emptyFile,
 				"deploy/Dockerfile": emptyFile,
 				"Dockerfile":        emptyFile,
@@ -297,8 +301,8 @@ deploy:
 		{
 			description: "should error when skaffold.config present with jib config",
 			filesWithContents: map[string]string{
-				"config/test.yaml": emptyFile,
-				"k8pod.yml":        emptyFile,
+				"config/test.yaml": validK8sManifest,
+				"k8pod.yml":        validK8sManifest,
 				"README":           emptyFile,
 				"pom.xml":          emptyFile,
 				"skaffold.yaml": `apiVersion: skaffold/v1beta6

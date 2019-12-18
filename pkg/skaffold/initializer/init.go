@@ -674,11 +674,9 @@ func checkConfigFile(filePath string, force bool, potentialConfigs *[]string) (b
 		return true, nil
 	}
 
-	if IsSupportedKubernetesFileExtension(filePath) {
-		if filepath.Base(filePath) != "package.json" { // Not a valid k8s manifest
-			*potentialConfigs = append(*potentialConfigs, filePath)
-			return true, nil
-		}
+	if kubectl.IsKubernetesManifest(filePath) {
+		*potentialConfigs = append(*potentialConfigs, filePath)
+		return true, nil
 	}
 
 	return false, nil

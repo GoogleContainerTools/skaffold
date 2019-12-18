@@ -16,24 +16,7 @@ limitations under the License.
 
 package initializer
 
-import (
-	"strings"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
-)
-
-// IsSupportedKubernetesFileExtension is for determining if a file under a glob pattern
-// is deployable file format. It makes no attempt to check whether or not the file
-// is actually deployable or has the correct contents.
-func IsSupportedKubernetesFileExtension(n string) bool {
-	for _, s := range kubectl.ValidSuffixes {
-		if strings.HasSuffix(n, s) {
-			return true
-		}
-	}
-	return false
-}
+import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 
 // IsSkaffoldConfig is for determining if a file is skaffold config file.
 func IsSkaffoldConfig(file string) bool {
