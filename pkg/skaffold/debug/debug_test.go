@@ -483,6 +483,28 @@ spec:
 status:
   replicas: 0`,
 		},
+		{
+			description: "skip unhandled yamls like crds",
+			shouldErr:   false,
+			in: `---
+apiVersion: openfaas.com/v1alpha2
+kind: Function
+metadata:
+  name: myfunction
+  namespace: openfaas-fn
+spec:
+  name: myfunction
+  image: myfunction`,
+			out: `---
+apiVersion: openfaas.com/v1alpha2
+kind: Function
+metadata:
+  name: myfunction
+  namespace: openfaas-fn
+spec:
+  name: myfunction
+  image: myfunction`,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
