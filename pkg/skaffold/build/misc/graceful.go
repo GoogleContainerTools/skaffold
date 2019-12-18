@@ -21,16 +21,26 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/sirupsen/logrus"
 )
 
+// For testing
+var (
+	gracePeriod = 2 * time.Second
+)
+
 func HandleGracefulTermination(ctx context.Context, cmd *exec.Cmd) error {
-	done := make(chan struct{})
+	done := make(chan bool, 1) // Non blocking
 	defer close(done)
 
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
+
 		select {
 		case <-ctx.Done():
 			// On windows we can't send specific signals to processes, so we kill the process immediately
@@ -39,17 +49,18 @@ func HandleGracefulTermination(ctx context.Context, cmd *exec.Cmd) error {
 				return
 			}
 
-			logrus.Debugf("Sending SIGINT to process %v\n", cmd.Process.Pid)
+			logrus.Debugln("Sending SIGINT to process", cmd.Process.Pid)
 			if err := cmd.Process.Signal(os.Interrupt); err != nil {
 				// kill process on error
 				cmd.Process.Kill()
+				return
 			}
 
 			// wait 2 seconds or wait for the process to complete
 			select {
-			case <-time.After(2 * time.Second):
-				logrus.Debugf("Killing process %v\n", cmd.Process.Pid)
-				// forcefully kill process after 2 seconds grace period
+			case <-time.After(gracePeriod):
+				logrus.Debugln("Killing process", cmd.Process.Pid)
+				// forcefully kill process after grace period
 				cmd.Process.Kill()
 			case <-done:
 				return
@@ -59,5 +70,8 @@ func HandleGracefulTermination(ctx context.Context, cmd *exec.Cmd) error {
 		}
 	}()
 
-	return cmd.Wait()
+	err := cmd.Wait()
+	done <- true
+	wg.Wait()
+	return err
 }
