@@ -485,7 +485,7 @@ status:
 		},
 		{
 			description: "skip unhandled yamls like crds",
-			shouldErr: false,
+			shouldErr:   false,
 			in: `---
 apiVersion: openfaas.com/v1alpha2
 kind: Function
