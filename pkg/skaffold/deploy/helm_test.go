@@ -380,6 +380,23 @@ func TestHelmDeploy(t *testing.T) {
 			builds:     testBuilds,
 		},
 		{
+			description: "image values should be set using --set-string",
+			commands: &MockHelm{
+				getResult: fmt.Errorf("not found"),
+				installMatcher: func(cmd *exec.Cmd) bool {
+					setStringIndex := util.StrSliceIndex(cmd.Args, "--set-string")
+					if setStringIndex == -1 {
+						return false
+					}
+					expected := fmt.Sprintf("image.repository=%s,image.tag=%s", "docker.io:5000/skaffold-helm", "3605e7bc17cf46e53f4d81c4cbc24e5b4c495184")
+					return setStringIndex+1 < len(cmd.Args) && cmd.Args[setStringIndex+1] == expected
+				},
+				upgradeResult: fmt.Errorf("should not have called upgrade"),
+			},
+			runContext: makeRunContext(testDeployHelmStyleConfig, false),
+			builds:     testBuilds,
+		},
+		{
 			description: "helm image strategy with explicit registry should set the Helm registry value",
 			commands: &MockHelm{
 				getResult: fmt.Errorf("not found"),
