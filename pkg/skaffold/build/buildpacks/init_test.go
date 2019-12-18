@@ -71,20 +71,17 @@ func TestDescribe(t *testing.T) {
 	}
 }
 
-func TestCreateArtifact(t *testing.T) {
+func TestUpdateArtifact(t *testing.T) {
 	var tests = []struct {
 		description      string
 		config           Buildpacks
-		manifestImage    string
 		expectedArtifact latest.Artifact
 		expectedImage    string
 	}{
 		{
-			description:   "buildpacks",
-			config:        Buildpacks{File: filepath.Join("path", "to", "package.json")},
-			manifestImage: "image",
+			description: "buildpacks",
+			config:      Buildpacks{File: filepath.Join("path", "to", "package.json")},
 			expectedArtifact: latest.Artifact{
-				ImageName: "image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{BuildpackArtifact: &latest.BuildpackArtifact{
 					Builder: "heroku/buildpacks",
@@ -92,11 +89,9 @@ func TestCreateArtifact(t *testing.T) {
 			},
 		},
 		{
-			description:   "ignore workspace",
-			config:        Buildpacks{File: "build.gradle"},
-			manifestImage: "other-image",
+			description: "ignore workspace",
+			config:      Buildpacks{File: "build.gradle"},
 			expectedArtifact: latest.Artifact{
-				ImageName: "other-image",
 				ArtifactType: latest.ArtifactType{BuildpackArtifact: &latest.BuildpackArtifact{
 					Builder: "heroku/buildpacks",
 				}},
@@ -105,7 +100,9 @@ func TestCreateArtifact(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := test.config.CreateArtifact(test.manifestImage)
+			artifact := &latest.Artifact{}
+
+			test.config.UpdateArtifact(artifact)
 
 			t.CheckDeepEqual(test.expectedArtifact, *artifact)
 		})

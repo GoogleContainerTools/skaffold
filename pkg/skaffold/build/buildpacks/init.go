@@ -47,13 +47,10 @@ func (b Buildpacks) Describe() string {
 }
 
 // CreateArtifact creates an Artifact to be included in the generated Build Config
-func (b Buildpacks) CreateArtifact(manifestImage string) *latest.Artifact {
-	a := &latest.Artifact{
-		ImageName: manifestImage,
-		ArtifactType: latest.ArtifactType{
-			BuildpackArtifact: &latest.BuildpackArtifact{
-				Builder: "heroku/buildpacks",
-			},
+func (b Buildpacks) UpdateArtifact(a *latest.Artifact) {
+	a.ArtifactType = latest.ArtifactType{
+		BuildpackArtifact: &latest.BuildpackArtifact{
+			Builder: "heroku/buildpacks",
 		},
 	}
 
@@ -61,8 +58,6 @@ func (b Buildpacks) CreateArtifact(manifestImage string) *latest.Artifact {
 	if workspace != "." {
 		a.Workspace = workspace
 	}
-
-	return a
 }
 
 // ConfiguredImage returns the target image configured by the builder, or empty string if no image is configured

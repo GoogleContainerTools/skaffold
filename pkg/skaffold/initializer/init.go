@@ -73,8 +73,8 @@ type InitBuilder interface {
 	// Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
 	// Must be unique between artifacts.
 	Describe() string
-	// CreateArtifact creates an Artifact to be included in the generated Build Config
-	CreateArtifact(image string) *latest.Artifact
+	// UpdateArtifact updates the Artifact to be included in the generated Build Config
+	UpdateArtifact(*latest.Artifact)
 	// ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured.
 	// This should be a cheap operation.
 	ConfiguredImage() string
@@ -443,14 +443,21 @@ func promptUserForBuildConfig(image string, choices []string) (string, error) {
 }
 
 func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {
-	var config latest.BuildConfig
-	if len(pairs) > 0 {
-		config.Artifacts = make([]*latest.Artifact, len(pairs))
-		for i, pair := range pairs {
-			config.Artifacts[i] = pair.Builder.CreateArtifact(pair.ImageName)
+	var artifacts []*latest.Artifact
+
+	for _, pair := range pairs {
+		artifact := &latest.Artifact{
+			ImageName: pair.ImageName,
 		}
+
+		pair.Builder.UpdateArtifact(artifact)
+
+		artifacts = append(artifacts, artifact)
 	}
-	return config
+
+	return latest.BuildConfig{
+		Artifacts: artifacts,
+	}
 }
 
 func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) ([]byte, error) {

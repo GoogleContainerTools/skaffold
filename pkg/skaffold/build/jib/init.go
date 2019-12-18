@@ -59,22 +59,17 @@ func (j Jib) Describe() string {
 }
 
 // CreateArtifact creates an Artifact to be included in the generated Build Config
-func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
+func (j Jib) UpdateArtifact(a *latest.Artifact) {
+	a.ArtifactType = latest.ArtifactType{
+		JibArtifact: &latest.JibArtifact{
+			Project: j.Project,
+		},
+	}
+
 	workspace := filepath.Dir(j.FilePath)
-
-	a := &latest.Artifact{ImageName: manifestImage}
-
 	if workspace != "." {
 		a.Workspace = workspace
 	}
-
-	jib := &latest.JibArtifact{}
-	if j.Project != "" {
-		jib.Project = j.Project
-	}
-	a.ArtifactType = latest.ArtifactType{JibArtifact: jib}
-
-	return a
 }
 
 // ConfiguredImage returns the target image configured by the builder, or empty string if no image is configured

@@ -174,67 +174,59 @@ func TestDescribe(t *testing.T) {
 	}
 }
 
-func TestCreateArtifact(t *testing.T) {
+func TestUpdateArtifact(t *testing.T) {
 	var tests = []struct {
 		description      string
 		config           Jib
-		manifestImage    string
 		expectedArtifact latest.Artifact
 		expectedImage    string
 	}{
 		{
-			description:   "jib gradle with image and project",
-			config:        Jib{BuilderName: "Jib Gradle Plugin", FilePath: filepath.Join("path", "to", "build.gradle"), Image: "image", Project: "project"},
-			manifestImage: "different-image",
+			description: "jib gradle with image and project",
+			config:      Jib{BuilderName: "Jib Gradle Plugin", FilePath: filepath.Join("path", "to", "build.gradle"), Image: "image", Project: "project"},
 			expectedArtifact: latest.Artifact{
-				ImageName:    "different-image",
 				Workspace:    filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project"}},
 			},
 		},
 		{
-			description:   "jib gradle without image and project",
-			config:        Jib{BuilderName: "Jib Gradle Plugin", FilePath: filepath.Join("path", "to", "build.gradle")},
-			manifestImage: "different-image",
+			description: "jib gradle without image and project",
+			config:      Jib{BuilderName: "Jib Gradle Plugin", FilePath: filepath.Join("path", "to", "build.gradle")},
 			expectedArtifact: latest.Artifact{
-				ImageName:    "different-image",
 				Workspace:    filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
 			},
 		},
 		{
-			description:   "jib maven with image and project",
-			config:        Jib{BuilderName: "Jib Maven Plugin", FilePath: filepath.Join("path", "to", "pom.xml"), Image: "image", Project: "project"},
-			manifestImage: "different-image",
+			description: "jib maven with image and project",
+			config:      Jib{BuilderName: "Jib Maven Plugin", FilePath: filepath.Join("path", "to", "pom.xml"), Image: "image", Project: "project"},
 			expectedArtifact: latest.Artifact{
-				ImageName:    "different-image",
 				Workspace:    filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project"}},
 			},
 		},
 		{
-			description:   "jib maven without image and project",
-			config:        Jib{BuilderName: "Jib Maven Plugin", FilePath: filepath.Join("path", "to", "pom.xml")},
-			manifestImage: "different-image",
+			description: "jib maven without image and project",
+			config:      Jib{BuilderName: "Jib Maven Plugin", FilePath: filepath.Join("path", "to", "pom.xml")},
 			expectedArtifact: latest.Artifact{
-				ImageName:    "different-image",
 				Workspace:    filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
 			},
 		},
 		{
-			description:   "ignore workspace",
-			config:        Jib{BuilderName: "Jib Gradle Plugin", FilePath: "build.gradle", Image: "image"},
-			manifestImage: "different-image",
+			description: "ignore workspace",
+			config:      Jib{BuilderName: "Jib Gradle Plugin", FilePath: "build.gradle", Image: "image"},
 			expectedArtifact: latest.Artifact{
-				ImageName:    "different-image",
 				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := test.config.CreateArtifact(test.manifestImage)
+			artifact := &latest.Artifact{}
+
+			test.config.UpdateArtifact(artifact)
+
 			t.CheckDeepEqual(test.expectedArtifact, *artifact)
 		})
 	}

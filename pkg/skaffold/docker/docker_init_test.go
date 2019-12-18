@@ -86,29 +86,24 @@ func TestDescribe(t *testing.T) {
 	}
 }
 
-func TestCreateArtifact(t *testing.T) {
+func TestUpdateArtifact(t *testing.T) {
 	tests := []struct {
 		description      string
 		dockerfile       Docker
-		manifestImage    string
 		expectedArtifact latest.Artifact
 	}{
 		{
-			description:   "default filename",
-			dockerfile:    Docker{File: filepath.Join("path", "to", "Dockerfile")},
-			manifestImage: "image",
+			description: "default filename",
+			dockerfile:  Docker{File: filepath.Join("path", "to", "Dockerfile")},
 			expectedArtifact: latest.Artifact{
-				ImageName:    "image",
 				Workspace:    filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{},
 			},
 		},
 		{
-			description:   "non-default filename",
-			dockerfile:    Docker{File: filepath.Join("path", "to", "Dockerfile1")},
-			manifestImage: "image",
+			description: "non-default filename",
+			dockerfile:  Docker{File: filepath.Join("path", "to", "Dockerfile1")},
 			expectedArtifact: latest.Artifact{
-				ImageName: "image",
 				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{DockerfilePath: filepath.Join("path", "to", "Dockerfile1")},
@@ -116,18 +111,18 @@ func TestCreateArtifact(t *testing.T) {
 			},
 		},
 		{
-			description:   "ignore workspace",
-			dockerfile:    Docker{File: "Dockerfile"},
-			manifestImage: "image",
+			description: "ignore workspace",
+			dockerfile:  Docker{File: "Dockerfile"},
 			expectedArtifact: latest.Artifact{
-				ImageName:    "image",
 				ArtifactType: latest.ArtifactType{},
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := test.dockerfile.CreateArtifact(test.manifestImage)
+			artifact := &latest.Artifact{}
+
+			test.dockerfile.UpdateArtifact(artifact)
 
 			t.CheckDeepEqual(test.expectedArtifact, *artifact)
 		})

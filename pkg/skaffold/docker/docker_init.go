@@ -53,19 +53,17 @@ func (d Docker) Describe() string {
 }
 
 // CreateArtifact creates an Artifact to be included in the generated Build Config
-func (d Docker) CreateArtifact(manifestImage string) *latest.Artifact {
-	workspace := filepath.Dir(d.File)
-	a := &latest.Artifact{ImageName: manifestImage}
-	if workspace != "." {
-		a.Workspace = workspace
-	}
+func (d Docker) UpdateArtifact(a *latest.Artifact) {
 	if filepath.Base(d.File) != constants.DefaultDockerfilePath {
 		a.ArtifactType = latest.ArtifactType{
 			DockerArtifact: &latest.DockerArtifact{DockerfilePath: d.File},
 		}
 	}
 
-	return a
+	workspace := filepath.Dir(d.File)
+	if workspace != "." {
+		a.Workspace = workspace
+	}
 }
 
 // ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured
