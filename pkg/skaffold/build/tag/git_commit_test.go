@@ -315,6 +315,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Parallel()
 
