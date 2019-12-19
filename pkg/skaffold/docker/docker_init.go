@@ -25,7 +25,6 @@ import (
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -54,12 +53,10 @@ func (d Docker) Describe() string {
 
 // CreateArtifact creates an Artifact to be included in the generated Build Config
 func (d Docker) UpdateArtifact(a *latest.Artifact) {
-	if filepath.Base(d.File) != constants.DefaultDockerfilePath {
-		a.ArtifactType = latest.ArtifactType{
-			DockerArtifact: &latest.DockerArtifact{
-				DockerfilePath: d.File,
-			},
-		}
+	a.ArtifactType = latest.ArtifactType{
+		DockerArtifact: &latest.DockerArtifact{
+			DockerfilePath: filepath.Base(d.File),
+		},
 	}
 }
 

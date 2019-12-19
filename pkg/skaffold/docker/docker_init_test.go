@@ -89,22 +89,28 @@ func TestDescribe(t *testing.T) {
 func TestUpdateArtifact(t *testing.T) {
 	tests := []struct {
 		description      string
-		dockerfile       Docker
+		config           Docker
 		expectedArtifact latest.Artifact
 	}{
 		{
 			description: "default filename",
-			dockerfile:  Docker{File: filepath.Join("path", "to", "Dockerfile")},
+			config:      Docker{File: filepath.Join("path", "to", "Dockerfile")},
 			expectedArtifact: latest.Artifact{
-				ArtifactType: latest.ArtifactType{},
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{
+						DockerfilePath: "Dockerfile",
+					},
+				},
 			},
 		},
 		{
 			description: "non-default filename",
-			dockerfile:  Docker{File: filepath.Join("path", "to", "Dockerfile1")},
+			config:      Docker{File: filepath.Join("path", "to", "Dockerfile1")},
 			expectedArtifact: latest.Artifact{
 				ArtifactType: latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{DockerfilePath: filepath.Join("path", "to", "Dockerfile1")},
+					DockerArtifact: &latest.DockerArtifact{
+						DockerfilePath: "Dockerfile1",
+					},
 				},
 			},
 		},
@@ -113,7 +119,7 @@ func TestUpdateArtifact(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := &latest.Artifact{}
 
-			test.dockerfile.UpdateArtifact(artifact)
+			test.config.UpdateArtifact(artifact)
 
 			t.CheckDeepEqual(test.expectedArtifact, *artifact)
 		})
