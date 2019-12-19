@@ -55,7 +55,7 @@ func TestPortForward(t *testing.T) {
 	portforward.WhiteBoxPortForwardCycle(t, kubectlCLI, ns.Name)
 }
 
-func TestRunPortForwardDeletePod(t *testing.T) {
+func TestRunPortForward(t *testing.T) {
 	if testing.Short() || RunOnGCP() {
 		t.Skip("skipping kind integration test")
 	}
@@ -63,10 +63,11 @@ func TestRunPortForwardDeletePod(t *testing.T) {
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	stop := skaffold.Run("--port-forward").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
+	rpcAddr := randomPort()
+	stop := skaffold.Run("--port-forward", "--rpc-port", rpcAddr, "--enable-rpc").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
 	defer stop()
 
-	_, entries, shutdown := apiEvents(t, "50051")
+	_, entries, shutdown := apiEvents(t, rpcAddr)
 	defer shutdown()
 
 	address, localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)
