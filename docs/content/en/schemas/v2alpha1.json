@@ -1496,8 +1496,7 @@
         "image",
         "cache",
         "reproducible",
-        "skipTLS",
-        "envs"
+        "skipTLS"
       ],
       "additionalProperties": false,
       "description": "describes an artifact built from a Dockerfile, with kaniko.",
