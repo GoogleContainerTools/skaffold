@@ -57,7 +57,7 @@ func (c ArtifactConfig) UpdateArtifact(a *latest.Artifact) {
 
 // ConfiguredImage returns the target image configured by the builder, or empty string if no image is configured
 func (c ArtifactConfig) ConfiguredImage() string {
-	// Target image is not configured in dockerfiles
+	// Target image is not configured in buildpacks
 	return ""
 }
 
