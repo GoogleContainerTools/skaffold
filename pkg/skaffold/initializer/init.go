@@ -546,12 +546,7 @@ func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePa
 		}
 	}
 
-	contents, err := json.Marshal(a)
-	if err != nil {
-		return errors.Wrap(err, "marshalling contents")
-	}
-	_, err = out.Write(contents)
-	return err
+	return printJSON(out, a)
 }
 
 // printAnalyzeJSON takes the automatically resolved builder/image pairs, the unresolved images, and the unresolved builders, and generates
@@ -609,10 +604,15 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 		a.Images = append(a.Images, Image{Name: image, FoundMatch: false})
 	}
 
-	contents, err := json.Marshal(a)
+	return printJSON(out, a)
+}
+
+func printJSON(out io.Writer, v interface{}) error {
+	contents, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "marshalling contents")
 	}
+
 	_, err = out.Write(contents)
 	return err
 }
