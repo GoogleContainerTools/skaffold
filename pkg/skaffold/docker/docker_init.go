@@ -56,13 +56,10 @@ func (d Docker) Describe() string {
 func (d Docker) UpdateArtifact(a *latest.Artifact) {
 	if filepath.Base(d.File) != constants.DefaultDockerfilePath {
 		a.ArtifactType = latest.ArtifactType{
-			DockerArtifact: &latest.DockerArtifact{DockerfilePath: d.File},
+			DockerArtifact: &latest.DockerArtifact{
+				DockerfilePath: d.File,
+			},
 		}
-	}
-
-	workspace := filepath.Dir(d.File)
-	if workspace != "." {
-		a.Workspace = workspace
 	}
 }
 

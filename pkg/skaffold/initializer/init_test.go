@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -668,4 +669,49 @@ func TestRunKompose(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestArtifacts(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		artifacts := artifacts([]builderImagePair{
+			{
+				Builder: docker.Docker{
+					File: "Dockerfile",
+				},
+				ImageName: "image1",
+			},
+			{
+				Builder: docker.Docker{
+					File: "front/Dockerfile",
+				},
+				ImageName: "image2",
+			},
+			{
+				Builder: buildpacks.Buildpacks{
+					File: "package.json",
+				},
+				ImageName: "image3",
+			},
+		})
+
+		expected := []*latest.Artifact{
+			{
+				ImageName: "image1",
+			},
+			{
+				ImageName: "image2",
+				Workspace: "front",
+			},
+			{
+				ImageName: "image3",
+				ArtifactType: latest.ArtifactType{
+					BuildpackArtifact: &latest.BuildpackArtifact{
+						Builder: "heroku/buildpacks",
+					},
+				},
+			},
+		}
+
+		t.CheckDeepEqual(expected, artifacts)
+	})
 }

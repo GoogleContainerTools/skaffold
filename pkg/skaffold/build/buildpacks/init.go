@@ -53,11 +53,6 @@ func (b Buildpacks) UpdateArtifact(a *latest.Artifact) {
 			Builder: "heroku/buildpacks",
 		},
 	}
-
-	workspace := filepath.Dir(b.File)
-	if workspace != "." {
-		a.Workspace = workspace
-	}
 }
 
 // ConfiguredImage returns the target image configured by the builder, or empty string if no image is configured

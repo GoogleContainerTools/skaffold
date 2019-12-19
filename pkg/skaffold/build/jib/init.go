@@ -65,11 +65,6 @@ func (j Jib) UpdateArtifact(a *latest.Artifact) {
 			Project: j.Project,
 		},
 	}
-
-	workspace := filepath.Dir(j.FilePath)
-	if workspace != "." {
-		a.Workspace = workspace
-	}
 }
 
 // ConfiguredImage returns the target image configured by the builder, or empty string if no image is configured

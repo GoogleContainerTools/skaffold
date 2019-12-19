@@ -76,21 +76,10 @@ func TestUpdateArtifact(t *testing.T) {
 		description      string
 		config           Buildpacks
 		expectedArtifact latest.Artifact
-		expectedImage    string
 	}{
 		{
 			description: "buildpacks",
 			config:      Buildpacks{File: filepath.Join("path", "to", "package.json")},
-			expectedArtifact: latest.Artifact{
-				Workspace: filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{BuildpackArtifact: &latest.BuildpackArtifact{
-					Builder: "heroku/buildpacks",
-				}},
-			},
-		},
-		{
-			description: "ignore workspace",
-			config:      Buildpacks{File: "build.gradle"},
 			expectedArtifact: latest.Artifact{
 				ArtifactType: latest.ArtifactType{BuildpackArtifact: &latest.BuildpackArtifact{
 					Builder: "heroku/buildpacks",

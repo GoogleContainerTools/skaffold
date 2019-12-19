@@ -96,7 +96,6 @@ func TestUpdateArtifact(t *testing.T) {
 			description: "default filename",
 			dockerfile:  Docker{File: filepath.Join("path", "to", "Dockerfile")},
 			expectedArtifact: latest.Artifact{
-				Workspace:    filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{},
 			},
 		},
@@ -104,17 +103,9 @@ func TestUpdateArtifact(t *testing.T) {
 			description: "non-default filename",
 			dockerfile:  Docker{File: filepath.Join("path", "to", "Dockerfile1")},
 			expectedArtifact: latest.Artifact{
-				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{DockerfilePath: filepath.Join("path", "to", "Dockerfile1")},
 				},
-			},
-		},
-		{
-			description: "ignore workspace",
-			dockerfile:  Docker{File: "Dockerfile"},
-			expectedArtifact: latest.Artifact{
-				ArtifactType: latest.ArtifactType{},
 			},
 		},
 	}

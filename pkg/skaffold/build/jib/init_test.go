@@ -179,43 +179,31 @@ func TestUpdateArtifact(t *testing.T) {
 		description      string
 		config           Jib
 		expectedArtifact latest.Artifact
-		expectedImage    string
 	}{
 		{
-			description: "jib gradle with image and project",
-			config:      Jib{BuilderName: "Jib Gradle Plugin", FilePath: filepath.Join("path", "to", "build.gradle"), Image: "image", Project: "project"},
+			description: "jib gradle",
+			config:      Jib{BuilderName: "Jib Gradle Plugin", FilePath: filepath.Join("path", "to", "build.gradle"), Project: "project"},
 			expectedArtifact: latest.Artifact{
-				Workspace:    filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project"}},
 			},
 		},
 		{
-			description: "jib gradle without image and project",
+			description: "jib gradle without project",
 			config:      Jib{BuilderName: "Jib Gradle Plugin", FilePath: filepath.Join("path", "to", "build.gradle")},
 			expectedArtifact: latest.Artifact{
-				Workspace:    filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
 			},
 		},
 		{
-			description: "jib maven with image and project",
-			config:      Jib{BuilderName: "Jib Maven Plugin", FilePath: filepath.Join("path", "to", "pom.xml"), Image: "image", Project: "project"},
+			description: "jib maven",
+			config:      Jib{BuilderName: "Jib Maven Plugin", FilePath: filepath.Join("path", "to", "pom.xml"), Project: "project"},
 			expectedArtifact: latest.Artifact{
-				Workspace:    filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project"}},
 			},
 		},
 		{
-			description: "jib maven without image and project",
+			description: "jib maven without project",
 			config:      Jib{BuilderName: "Jib Maven Plugin", FilePath: filepath.Join("path", "to", "pom.xml")},
-			expectedArtifact: latest.Artifact{
-				Workspace:    filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
-			},
-		},
-		{
-			description: "ignore workspace",
-			config:      Jib{BuilderName: "Jib Gradle Plugin", FilePath: "build.gradle", Image: "image"},
 			expectedArtifact: latest.Artifact{
 				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
 			},

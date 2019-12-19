@@ -442,7 +442,7 @@ func promptUserForBuildConfig(image string, choices []string) (string, error) {
 	return selectedBuildConfig, nil
 }
 
-func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {
+func artifacts(pairs []builderImagePair) []*latest.Artifact {
 	var artifacts []*latest.Artifact
 
 	for _, pair := range pairs {
@@ -450,13 +450,22 @@ func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {
 			ImageName: pair.ImageName,
 		}
 
+		workspace := filepath.Dir(pair.Builder.Path())
+		if workspace != "." {
+			artifact.Workspace = workspace
+		}
+
 		pair.Builder.UpdateArtifact(artifact)
 
 		artifacts = append(artifacts, artifact)
 	}
 
+	return artifacts
+}
+
+func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {
 	return latest.BuildConfig{
-		Artifacts: artifacts,
+		Artifacts: artifacts(pairs),
 	}
 }
 
