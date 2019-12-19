@@ -482,21 +482,19 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 	cfg := &latest.SkaffoldConfig{
 		APIVersion: latest.Version,
 		Kind:       "Config",
-		Metadata:   latest.Metadata{Name: name},
+		Metadata: latest.Metadata{
+			Name: name,
+		},
+		Pipeline: latest.Pipeline{
+			Build:  processBuildArtifacts(buildConfigPairs),
+			Deploy: k.GenerateDeployConfig(),
+		},
 	}
 	if err := defaults.Set(cfg); err != nil {
 		return nil, errors.Wrap(err, "generating default pipeline")
 	}
 
-	cfg.Build = processBuildArtifacts(buildConfigPairs)
-	cfg.Deploy = k.GenerateDeployConfig()
-
-	pipelineStr, err := yaml.Marshal(cfg)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshaling generated pipeline")
-	}
-
-	return pipelineStr, nil
+	return yaml.Marshal(cfg)
 }
 
 func suggestConfigName() (string, error) {
