@@ -463,12 +463,6 @@ func artifacts(pairs []builderImagePair) []*latest.Artifact {
 	return artifacts
 }
 
-func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {
-	return latest.BuildConfig{
-		Artifacts: artifacts(pairs),
-	}
-}
-
 func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) ([]byte, error) {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
@@ -486,7 +480,9 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 			Name: name,
 		},
 		Pipeline: latest.Pipeline{
-			Build:  processBuildArtifacts(buildConfigPairs),
+			Build: latest.BuildConfig{
+				Artifacts: artifacts(buildConfigPairs),
+			},
 			Deploy: k.GenerateDeployConfig(),
 		},
 	}
