@@ -30,49 +30,49 @@ import (
 
 // For testing
 var (
-	ValidateDockerfileFunc = ValidateDockerfile
+	Validate = validate
 )
 
 // Name is the name of the Docker builder
 var Name = "Docker"
 
-// Docker is the path to a dockerfile. Implements the InitBuilder interface.
-type Docker struct {
+// ArtifactConfig holds information about a Docker build based project
+type ArtifactConfig struct {
 	File string `json:"path"`
 }
 
 // Name returns the name of the builder, "Docker"
-func (d Docker) Name() string {
+func (c ArtifactConfig) Name() string {
 	return Name
 }
 
 // Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
-func (d Docker) Describe() string {
-	return fmt.Sprintf("%s (%s)", d.Name(), d.File)
+func (c ArtifactConfig) Describe() string {
+	return fmt.Sprintf("%s (%s)", c.Name(), c.File)
 }
 
 // CreateArtifact creates an Artifact to be included in the generated Build Config
-func (d Docker) UpdateArtifact(a *latest.Artifact) {
+func (c ArtifactConfig) UpdateArtifact(a *latest.Artifact) {
 	a.ArtifactType = latest.ArtifactType{
 		DockerArtifact: &latest.DockerArtifact{
-			DockerfilePath: filepath.Base(d.File),
+			DockerfilePath: filepath.Base(c.File),
 		},
 	}
 }
 
 // ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured
-func (d Docker) ConfiguredImage() string {
+func (c ArtifactConfig) ConfiguredImage() string {
 	// Target image is not configured in dockerfiles
 	return ""
 }
 
 // Path returns the path to the dockerfile
-func (d Docker) Path() string {
-	return d.File
+func (c ArtifactConfig) Path() string {
+	return c.File
 }
 
-// ValidateDockerfile makes sure the given Dockerfile is existing and valid.
-func ValidateDockerfile(path string) bool {
+// validateConfig makes sure the given Dockerfile is existing and valid.
+func validate(path string) bool {
 	f, err := os.Open(path)
 	if err != nil {
 		logrus.Warnf("opening file %s: %s", path, err.Error())

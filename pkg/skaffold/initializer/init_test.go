@@ -44,14 +44,14 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 	}{
 		{
 			description: "builders and images with pairs",
-			pairs:       []builderImagePair{{jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), Image: "image1", FilePath: "build.gradle", Project: "project"}, "image1"}},
-			builders:    []InitBuilder{docker.Docker{File: "Dockerfile"}},
+			pairs:       []builderImagePair{{jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), Image: "image1", File: "build.gradle", Project: "project"}, "image1"}},
+			builders:    []InitBuilder{docker.ArtifactConfig{File: "Dockerfile"}},
 			images:      []string{"image2"},
 			expected:    `{"builders":[{"name":"Jib Gradle Plugin","payload":{"image":"image1","path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":false}]}`,
 		},
 		{
 			description: "builders and images with no pairs",
-			builders:    []InitBuilder{jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle", Project: "project"}, docker.Docker{File: "Dockerfile"}},
+			builders:    []InitBuilder{jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle", Project: "project"}, docker.ArtifactConfig{File: "Dockerfile"}},
 			images:      []string{"image1", "image2"},
 			expected:    `{"builders":[{"name":"Jib Gradle Plugin","payload":{"path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":false}]}`,
 		},
@@ -94,7 +94,7 @@ func TestPrintAnalyzeJSONNoJib(t *testing.T) {
 	}{
 		{
 			description: "builders and images (backwards compatibility)",
-			builders:    []InitBuilder{docker.Docker{File: "Dockerfile1"}, docker.Docker{File: "Dockerfile2"}},
+			builders:    []InitBuilder{docker.ArtifactConfig{File: "Dockerfile1"}, docker.ArtifactConfig{File: "Dockerfile2"}},
 			images:      []string{"image1", "image2"},
 			expected:    `{"dockerfiles":["Dockerfile1","Dockerfile2"],"images":["image1","image2"]}`,
 		},
@@ -322,8 +322,8 @@ deploy:
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir().WriteFiles(test.filesWithContents)
 
-			t.Override(&docker.ValidateDockerfileFunc, fakeValidateDockerfile)
-			t.Override(&jib.ValidateJibConfigFunc, fakeValidateJibConfig)
+			t.Override(&docker.Validate, fakeValidateDockerfile)
+			t.Override(&jib.Validate, fakeValidateJibConfig)
 
 			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, test.enableJibInit, test.enableBuildpackInit)
 
@@ -345,12 +345,12 @@ func fakeValidateDockerfile(path string) bool {
 	return strings.HasSuffix(path, "Dockerfile")
 }
 
-func fakeValidateJibConfig(path string) []jib.Jib {
+func fakeValidateJibConfig(path string) []jib.ArtifactConfig {
 	if strings.HasSuffix(path, "build.gradle") {
-		return []jib.Jib{{BuilderName: jib.PluginName(jib.JibGradle), FilePath: path}}
+		return []jib.ArtifactConfig{{BuilderName: jib.PluginName(jib.JibGradle), File: path}}
 	}
 	if strings.HasSuffix(path, "pom.xml") {
-		return []jib.Jib{{BuilderName: jib.PluginName(jib.JibMaven), FilePath: path}}
+		return []jib.ArtifactConfig{{BuilderName: jib.PluginName(jib.JibMaven), File: path}}
 	}
 	return nil
 }
@@ -374,48 +374,48 @@ func TestResolveBuilderImages(t *testing.T) {
 		},
 		{
 			description:      "don't prompt for single dockerfile and image",
-			buildConfigs:     []InitBuilder{docker.Docker{File: "Dockerfile1"}},
+			buildConfigs:     []InitBuilder{docker.ArtifactConfig{File: "Dockerfile1"}},
 			images:           []string{"image1"},
 			shouldMakeChoice: false,
 			expectedPairs: []builderImagePair{
 				{
-					Builder:   docker.Docker{File: "Dockerfile1"},
+					Builder:   docker.ArtifactConfig{File: "Dockerfile1"},
 					ImageName: "image1",
 				},
 			},
 		},
 		{
 			description:      "prompt for multiple builders and images",
-			buildConfigs:     []InitBuilder{docker.Docker{File: "Dockerfile1"}, jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"}, jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), Project: "project", FilePath: "pom.xml"}},
+			buildConfigs:     []InitBuilder{docker.ArtifactConfig{File: "Dockerfile1"}, jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"}, jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), Project: "project", File: "pom.xml"}},
 			images:           []string{"image1", "image2"},
 			shouldMakeChoice: true,
 			expectedPairs: []builderImagePair{
 				{
-					Builder:   docker.Docker{File: "Dockerfile1"},
+					Builder:   docker.ArtifactConfig{File: "Dockerfile1"},
 					ImageName: "image1",
 				},
 				{
-					Builder:   jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"},
+					Builder:   jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"},
 					ImageName: "image2",
 				},
 			},
 		},
 		{
 			description:      "successful force",
-			buildConfigs:     []InitBuilder{jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"}},
+			buildConfigs:     []InitBuilder{jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"}},
 			images:           []string{"image1"},
 			shouldMakeChoice: false,
 			force:            true,
 			expectedPairs: []builderImagePair{
 				{
-					Builder:   jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"},
+					Builder:   jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"},
 					ImageName: "image1",
 				},
 			},
 		},
 		{
 			description:      "error with ambiguous force",
-			buildConfigs:     []InitBuilder{docker.Docker{File: "Dockerfile1"}, jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"}},
+			buildConfigs:     []InitBuilder{docker.ArtifactConfig{File: "Dockerfile1"}, jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"}},
 			images:           []string{"image1", "image2"},
 			shouldMakeChoice: false,
 			force:            true,
@@ -451,51 +451,51 @@ func TestAutoSelectBuilders(t *testing.T) {
 		{
 			description: "no automatic matches",
 			builderConfigs: []InitBuilder{
-				docker.Docker{File: "Dockerfile"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "not a k8s image"},
+				docker.ArtifactConfig{File: "Dockerfile"},
+				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"},
+				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "not a k8s image"},
 			},
 			images:        []string{"image1", "image2"},
 			expectedPairs: nil,
 			expectedBuildersLeft: []InitBuilder{
-				docker.Docker{File: "Dockerfile"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "not a k8s image"},
+				docker.ArtifactConfig{File: "Dockerfile"},
+				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"},
+				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "not a k8s image"},
 			},
 			expectedFilteredImages: []string{"image1", "image2"},
 		},
 		{
 			description: "automatic jib matches",
 			builderConfigs: []InitBuilder{
-				docker.Docker{File: "Dockerfile"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle", Image: "image1"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "image2"},
+				docker.ArtifactConfig{File: "Dockerfile"},
+				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle", Image: "image1"},
+				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "image2"},
 			},
 			images: []string{"image1", "image2", "image3"},
 			expectedPairs: []builderImagePair{
 				{
-					jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle", Image: "image1"},
+					jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle", Image: "image1"},
 					"image1",
 				},
 				{
-					jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "image2"},
+					jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "image2"},
 					"image2",
 				},
 			},
-			expectedBuildersLeft:   []InitBuilder{docker.Docker{File: "Dockerfile"}},
+			expectedBuildersLeft:   []InitBuilder{docker.ArtifactConfig{File: "Dockerfile"}},
 			expectedFilteredImages: []string{"image3"},
 		},
 		{
 			description: "multiple matches for one image",
 			builderConfigs: []InitBuilder{
-				jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle", Image: "image1"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "image1"},
+				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle", Image: "image1"},
+				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "image1"},
 			},
 			images:        []string{"image1", "image2"},
 			expectedPairs: nil,
 			expectedBuildersLeft: []InitBuilder{
-				jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle", Image: "image1"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "image1"},
+				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle", Image: "image1"},
+				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "image1"},
 			},
 			expectedFilteredImages: []string{"image1", "image2"},
 		},
@@ -545,11 +545,11 @@ func TestProcessCliArtifacts(t *testing.T) {
 			},
 			expectedPairs: []builderImagePair{
 				{
-					Builder:   docker.Docker{File: "/path/to/Dockerfile"},
+					Builder:   docker.ArtifactConfig{File: "/path/to/Dockerfile"},
 					ImageName: "image1",
 				},
 				{
-					Builder:   docker.Docker{File: "/path/to/Dockerfile2"},
+					Builder:   docker.ArtifactConfig{File: "/path/to/Dockerfile2"},
 					ImageName: "image2",
 				},
 			},
@@ -564,19 +564,19 @@ func TestProcessCliArtifacts(t *testing.T) {
 			},
 			expectedPairs: []builderImagePair{
 				{
-					Builder:   docker.Docker{File: "/path/to/Dockerfile"},
+					Builder:   docker.ArtifactConfig{File: "/path/to/Dockerfile"},
 					ImageName: "image1",
 				},
 				{
-					Builder:   jib.Jib{BuilderName: "Jib Gradle Plugin", FilePath: "/path/to/build.gradle"},
+					Builder:   jib.ArtifactConfig{BuilderName: "Jib Gradle Plugin", File: "/path/to/build.gradle"},
 					ImageName: "image2",
 				},
 				{
-					Builder:   jib.Jib{BuilderName: "Jib Maven Plugin", FilePath: "/path/to/pom.xml", Project: "project-name", Image: "testImage"},
+					Builder:   jib.ArtifactConfig{BuilderName: "Jib Maven Plugin", File: "/path/to/pom.xml", Project: "project-name", Image: "testImage"},
 					ImageName: "image3",
 				},
 				{
-					Builder:   buildpacks.Buildpacks{File: "/path/to/package.json"},
+					Builder:   buildpacks.ArtifactConfig{File: "/path/to/package.json"},
 					ImageName: "image4",
 				},
 			},
@@ -676,19 +676,19 @@ func TestArtifacts(t *testing.T) {
 		artifacts := artifacts([]builderImagePair{
 			{
 				ImageName: "image1",
-				Builder: docker.Docker{
+				Builder: docker.ArtifactConfig{
 					File: "Dockerfile",
 				},
 			},
 			{
 				ImageName: "image2",
-				Builder: docker.Docker{
+				Builder: docker.ArtifactConfig{
 					File: "front/Dockerfile2",
 				},
 			},
 			{
 				ImageName: "image3",
-				Builder: buildpacks.Buildpacks{
+				Builder: buildpacks.ArtifactConfig{
 					File: "package.json",
 				},
 			},

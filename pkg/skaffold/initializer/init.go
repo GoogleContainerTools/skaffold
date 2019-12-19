@@ -279,7 +279,7 @@ func detectBuilders(enableJibInit, enableBuildpackInit bool, path string) ([]Ini
 	// TODO: Remove backwards compatibility if statement (not entire block)
 	if enableJibInit {
 		// Check for jib
-		if builders := jib.ValidateJibConfigFunc(path); builders != nil {
+		if builders := jib.Validate(path); builders != nil {
 			results := make([]InitBuilder, len(builders))
 			for i := range builders {
 				results[i] = builders[i]
@@ -289,16 +289,16 @@ func detectBuilders(enableJibInit, enableBuildpackInit bool, path string) ([]Ini
 	}
 
 	// Check for Dockerfile
-	if docker.ValidateDockerfileFunc(path) {
-		results := []InitBuilder{docker.Docker{File: path}}
+	if docker.Validate(path) {
+		results := []InitBuilder{docker.ArtifactConfig{File: path}}
 		return results, true
 	}
 
 	// TODO: Remove backwards compatibility if statement (not entire block)
 	if enableBuildpackInit {
 		// Check for buildpacks
-		if buildpacks.ValidateConfig(path) {
-			results := []InitBuilder{buildpacks.Buildpacks{File: path}}
+		if buildpacks.Validate(path) {
+			results := []InitBuilder{buildpacks.ArtifactConfig{File: path}}
 			return results, true
 		}
 	}
@@ -325,7 +325,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 				return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
 			}
 			pairs = append(pairs, builderImagePair{
-				Builder:   docker.Docker{File: parts[0]},
+				Builder:   docker.ArtifactConfig{File: parts[0]},
 				ImageName: parts[1],
 			})
 			continue
@@ -335,7 +335,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 		switch a.Name {
 		case docker.Name:
 			parsed := struct {
-				Payload docker.Docker `json:"payload"`
+				Payload docker.ArtifactConfig `json:"payload"`
 			}{}
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
@@ -346,7 +346,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 		// FIXME: shouldn't use a human-readable name?
 		case jib.PluginName(jib.JibGradle), jib.PluginName(jib.JibMaven):
 			parsed := struct {
-				Payload jib.Jib `json:"payload"`
+				Payload jib.ArtifactConfig `json:"payload"`
 			}{}
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
@@ -357,7 +357,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 
 		case buildpacks.Name:
 			parsed := struct {
-				Payload buildpacks.Buildpacks `json:"payload"`
+				Payload buildpacks.ArtifactConfig `json:"payload"`
 			}{}
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err

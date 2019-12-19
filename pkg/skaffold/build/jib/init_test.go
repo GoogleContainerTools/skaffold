@@ -25,14 +25,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestValidateJibConfig(t *testing.T) {
+func TestValidate(t *testing.T) {
 	var tests = []struct {
 		description    string
 		path           string
 		fileContents   string
 		command        string
 		stdout         string
-		expectedConfig []Jib
+		expectedConfig []ArtifactConfig
 	}{
 		{
 			description:    "not a jib file",
@@ -61,8 +61,8 @@ func TestValidateJibConfig(t *testing.T) {
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project"}
 `,
-			expectedConfig: []Jib{
-				{BuilderName: PluginName(JibGradle), FilePath: "path/to/build.gradle", Image: "image", Project: "project"},
+			expectedConfig: []ArtifactConfig{
+				{BuilderName: PluginName(JibGradle), File: "path/to/build.gradle", Image: "image", Project: "project"},
 			},
 		},
 		{
@@ -73,8 +73,8 @@ func TestValidateJibConfig(t *testing.T) {
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project"}
 `,
-			expectedConfig: []Jib{
-				{BuilderName: PluginName(JibGradle), FilePath: "path/to/build.gradle.kts", Image: "image", Project: "project"},
+			expectedConfig: []ArtifactConfig{
+				{BuilderName: PluginName(JibGradle), File: "path/to/build.gradle.kts", Image: "image", Project: "project"},
 			},
 		},
 		{
@@ -88,9 +88,9 @@ func TestValidateJibConfig(t *testing.T) {
 BEGIN JIB JSON
 {"project":"project2"}
 `,
-			expectedConfig: []Jib{
-				{BuilderName: PluginName(JibGradle), FilePath: "path/to/build.gradle", Image: "image", Project: "project1"},
-				{BuilderName: PluginName(JibGradle), FilePath: "path/to/build.gradle", Project: "project2"},
+			expectedConfig: []ArtifactConfig{
+				{BuilderName: PluginName(JibGradle), File: "path/to/build.gradle", Image: "image", Project: "project1"},
+				{BuilderName: PluginName(JibGradle), File: "path/to/build.gradle", Project: "project2"},
 			},
 		},
 		{
@@ -100,8 +100,8 @@ BEGIN JIB JSON
 			command:      "mvn jib:_skaffold-init -q",
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project"}`,
-			expectedConfig: []Jib{
-				{BuilderName: PluginName(JibMaven), FilePath: "path/to/pom.xml", Image: "image", Project: "project"},
+			expectedConfig: []ArtifactConfig{
+				{BuilderName: PluginName(JibMaven), File: "path/to/pom.xml", Image: "image", Project: "project"},
 			},
 		},
 		{
@@ -115,9 +115,9 @@ BEGIN JIB JSON
 BEGIN JIB JSON
 {"project":"project2"}
 `,
-			expectedConfig: []Jib{
-				{BuilderName: PluginName(JibMaven), FilePath: "path/to/pom.xml", Image: "image", Project: "project1"},
-				{BuilderName: PluginName(JibMaven), FilePath: "path/to/pom.xml", Project: "project2"},
+			expectedConfig: []ArtifactConfig{
+				{BuilderName: PluginName(JibMaven), File: "path/to/pom.xml", Image: "image", Project: "project1"},
+				{BuilderName: PluginName(JibMaven), File: "path/to/pom.xml", Project: "project2"},
 			},
 		},
 	}
@@ -125,7 +125,7 @@ BEGIN JIB JSON
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir().Write(test.path, test.fileContents)
 			for i := range test.expectedConfig {
-				test.expectedConfig[i].FilePath = tmpDir.Path(test.expectedConfig[i].FilePath)
+				test.expectedConfig[i].File = tmpDir.Path(test.expectedConfig[i].File)
 			}
 
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
@@ -133,7 +133,7 @@ BEGIN JIB JSON
 				test.stdout,
 			))
 
-			validated := ValidateJibConfig(tmpDir.Path(test.path))
+			validated := Validate(tmpDir.Path(test.path))
 
 			t.CheckDeepEqual(test.expectedConfig, validated)
 		})
@@ -143,27 +143,27 @@ BEGIN JIB JSON
 func TestDescribe(t *testing.T) {
 	var tests = []struct {
 		description    string
-		config         Jib
+		config         ArtifactConfig
 		expectedPrompt string
 	}{
 		{
 			description:    "gradle without project",
-			config:         Jib{BuilderName: PluginName(JibGradle), FilePath: "path/to/build.gradle"},
+			config:         ArtifactConfig{BuilderName: PluginName(JibGradle), File: "path/to/build.gradle"},
 			expectedPrompt: "Jib Gradle Plugin (path/to/build.gradle)",
 		},
 		{
 			description:    "gradle with project",
-			config:         Jib{BuilderName: PluginName(JibGradle), Project: "project", FilePath: "path/to/build.gradle"},
+			config:         ArtifactConfig{BuilderName: PluginName(JibGradle), Project: "project", File: "path/to/build.gradle"},
 			expectedPrompt: "Jib Gradle Plugin (project, path/to/build.gradle)",
 		},
 		{
 			description:    "maven without project",
-			config:         Jib{BuilderName: PluginName(JibMaven), FilePath: "path/to/pom.xml"},
+			config:         ArtifactConfig{BuilderName: PluginName(JibMaven), File: "path/to/pom.xml"},
 			expectedPrompt: "Jib Maven Plugin (path/to/pom.xml)",
 		},
 		{
 			description:    "maven with project",
-			config:         Jib{BuilderName: PluginName(JibMaven), Project: "project", FilePath: "path/to/pom.xml"},
+			config:         ArtifactConfig{BuilderName: PluginName(JibMaven), Project: "project", File: "path/to/pom.xml"},
 			expectedPrompt: "Jib Maven Plugin (project, path/to/pom.xml)",
 		},
 	}
@@ -177,33 +177,33 @@ func TestDescribe(t *testing.T) {
 func TestUpdateArtifact(t *testing.T) {
 	var tests = []struct {
 		description      string
-		config           Jib
+		config           ArtifactConfig
 		expectedArtifact latest.Artifact
 	}{
 		{
 			description: "jib gradle",
-			config:      Jib{BuilderName: "Jib Gradle Plugin", FilePath: filepath.Join("path", "to", "build.gradle"), Project: "project"},
+			config:      ArtifactConfig{BuilderName: "Jib Gradle Plugin", File: filepath.Join("path", "to", "build.gradle"), Project: "project"},
 			expectedArtifact: latest.Artifact{
 				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project"}},
 			},
 		},
 		{
 			description: "jib gradle without project",
-			config:      Jib{BuilderName: "Jib Gradle Plugin", FilePath: filepath.Join("path", "to", "build.gradle")},
+			config:      ArtifactConfig{BuilderName: "Jib Gradle Plugin", File: filepath.Join("path", "to", "build.gradle")},
 			expectedArtifact: latest.Artifact{
 				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
 			},
 		},
 		{
 			description: "jib maven",
-			config:      Jib{BuilderName: "Jib Maven Plugin", FilePath: filepath.Join("path", "to", "pom.xml"), Project: "project"},
+			config:      ArtifactConfig{BuilderName: "Jib Maven Plugin", File: filepath.Join("path", "to", "pom.xml"), Project: "project"},
 			expectedArtifact: latest.Artifact{
 				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{Project: "project"}},
 			},
 		},
 		{
 			description: "jib maven without project",
-			config:      Jib{BuilderName: "Jib Maven Plugin", FilePath: filepath.Join("path", "to", "pom.xml")},
+			config:      ArtifactConfig{BuilderName: "Jib Maven Plugin", File: filepath.Join("path", "to", "pom.xml")},
 			expectedArtifact: latest.Artifact{
 				ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}},
 			},

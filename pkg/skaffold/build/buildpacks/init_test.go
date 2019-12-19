@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestValidateConfig(t *testing.T) {
+func TestValidate(t *testing.T) {
 	var tests = []struct {
 		description   string
 		path          string
@@ -45,7 +45,7 @@ func TestValidateConfig(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			tmpDir := t.NewTempDir().Touch(test.path)
 
-			isValid := ValidateConfig(tmpDir.Path(test.path))
+			isValid := Validate(tmpDir.Path(test.path))
 
 			t.CheckDeepEqual(test.expectedValid, isValid)
 		})
@@ -55,12 +55,12 @@ func TestValidateConfig(t *testing.T) {
 func TestDescribe(t *testing.T) {
 	var tests = []struct {
 		description    string
-		config         Buildpacks
+		config         ArtifactConfig
 		expectedPrompt string
 	}{
 		{
 			description:    "buildpacks",
-			config:         Buildpacks{File: "/path/to/package.json"},
+			config:         ArtifactConfig{File: "/path/to/package.json"},
 			expectedPrompt: "Buildpacks (/path/to/package.json)",
 		},
 	}
@@ -74,12 +74,12 @@ func TestDescribe(t *testing.T) {
 func TestUpdateArtifact(t *testing.T) {
 	var tests = []struct {
 		description      string
-		config           Buildpacks
+		config           ArtifactConfig
 		expectedArtifact latest.Artifact
 	}{
 		{
 			description: "buildpacks",
-			config:      Buildpacks{File: filepath.Join("path", "to", "package.json")},
+			config:      ArtifactConfig{File: filepath.Join("path", "to", "package.json")},
 			expectedArtifact: latest.Artifact{
 				ArtifactType: latest.ArtifactType{BuildpackArtifact: &latest.BuildpackArtifact{
 					Builder: "heroku/buildpacks",

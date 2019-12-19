@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestValidateDockerfile(t *testing.T) {
+func TestValidate(t *testing.T) {
 	tests := []struct {
 		description    string
 		content        string
@@ -60,7 +60,7 @@ func TestValidateDockerfile(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Write("Dockerfile", test.content)
 
-			valid := ValidateDockerfile(tmpDir.Path(test.fileToValidate))
+			valid := Validate(tmpDir.Path(test.fileToValidate))
 
 			t.CheckDeepEqual(test.expectedValid, valid)
 		})
@@ -70,12 +70,12 @@ func TestValidateDockerfile(t *testing.T) {
 func TestDescribe(t *testing.T) {
 	tests := []struct {
 		description    string
-		dockerfile     Docker
+		dockerfile     ArtifactConfig
 		expectedPrompt string
 	}{
 		{
 			description:    "Dockerfile prompt",
-			dockerfile:     Docker{File: "path/to/Dockerfile"},
+			dockerfile:     ArtifactConfig{File: "path/to/Dockerfile"},
 			expectedPrompt: "Docker (path/to/Dockerfile)",
 		},
 	}
@@ -89,12 +89,12 @@ func TestDescribe(t *testing.T) {
 func TestUpdateArtifact(t *testing.T) {
 	tests := []struct {
 		description      string
-		config           Docker
+		config           ArtifactConfig
 		expectedArtifact latest.Artifact
 	}{
 		{
 			description: "default filename",
-			config:      Docker{File: filepath.Join("path", "to", "Dockerfile")},
+			config:      ArtifactConfig{File: filepath.Join("path", "to", "Dockerfile")},
 			expectedArtifact: latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
@@ -105,7 +105,7 @@ func TestUpdateArtifact(t *testing.T) {
 		},
 		{
 			description: "non-default filename",
-			config:      Docker{File: filepath.Join("path", "to", "Dockerfile1")},
+			config:      ArtifactConfig{File: filepath.Join("path", "to", "Dockerfile1")},
 			expectedArtifact: latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					DockerArtifact: &latest.DockerArtifact{
