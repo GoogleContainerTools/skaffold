@@ -17,9 +17,9 @@ limitations under the License.
 package latest
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
@@ -743,7 +743,7 @@ type DockerfileDependency struct {
 
 	// BuildArgs are arguments passed to the docker build.
 	// It also accepts environment variables via the go template syntax.
-	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 }
 
@@ -764,8 +764,11 @@ type KanikoArtifact struct {
 
 	// BuildArgs are arguments passed to the docker build.
 	// It also accepts environment variables via the go template syntax.
-	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
+
+	// Env are environment variables passed to the kaniko pod.
+	Env []v1.EnvVar `yaml:"env,omitempty"`
 
 	// BuildContext is where the build context for this artifact resides.
 	BuildContext *KanikoBuildContext `yaml:"buildContext,omitempty"`
@@ -783,9 +786,6 @@ type KanikoArtifact struct {
 
 	// SkipTLS skips TLS verification when pulling and pushing the image.
 	SkipTLS bool `yaml:"skipTLS,omitempty"`
-
-	// Envs is array of all the environment variable to be passed to the pod building _all_ of the artifacts.
-	Envs []v1.EnvVar `yaml:"envs,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,

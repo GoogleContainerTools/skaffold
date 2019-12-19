@@ -45,9 +45,9 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 		color.Green.Fprintln(out, "   local images can't be referenced by digest. They are tagged and referenced by a unique ID instead")
 	}
 
-	if config.IsKindCluster(r.runCtx.KubeContext) {
+	if isKind, kindCluster := config.IsKindCluster(r.runCtx.KubeContext); isKind {
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
-		if err := r.loadImagesInKindNodes(ctx, out, artifacts); err != nil {
+		if err := r.loadImagesInKindNodes(ctx, out, kindCluster, artifacts); err != nil {
 			return errors.Wrapf(err, "loading images into kind nodes")
 		}
 	}

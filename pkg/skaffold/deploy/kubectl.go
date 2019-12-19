@@ -86,7 +86,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return NewDeploySuccessResult(nil)
 	}
 
-	manifests, err = manifests.SetLabels(merge(labellers...))
+	manifests, err = manifests.SetLabels(merge(k, labellers...))
 	if err != nil {
 		event.DeployFailed(err)
 		return NewDeployErrorResult(errors.Wrap(err, "setting labels in manifests"))

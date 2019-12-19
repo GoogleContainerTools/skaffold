@@ -340,9 +340,22 @@ func fromInstruction(node *parser.Node) from {
 	}
 
 	return from{
-		image: node.Next.Value,
+		image: unquote(node.Next.Value),
 		as:    strings.ToLower(as),
 	}
+}
+
+// unquote remove single quote/double quote pairs around a string value.
+// It looks like FROM "scratch" and FROM 'scratch' and FROM """scratch"""...
+// are valid forms of FROM scratch.
+func unquote(v string) string {
+	unquoted := strings.TrimFunc(v, func(r rune) bool { return r == '"' })
+	if unquoted != v {
+		return unquoted
+	}
+
+	unquoted = strings.TrimFunc(v, func(r rune) bool { return r == '\'' })
+	return unquoted
 }
 
 func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {

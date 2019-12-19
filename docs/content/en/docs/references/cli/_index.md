@@ -11,6 +11,7 @@ End-to-end pipelines:
 
 * [skaffold run](#skaffold-run) - to build & deploy once
 * [skaffold dev](#skaffold-dev) - to trigger the watch loop build & deploy workflow with cleanup on exit
+* [skaffold debug](#skaffold-debug) - to run a pipeline in debug mode
 
 Pipeline building blocks for CI/CD:
 
@@ -30,7 +31,9 @@ Other Commands:
 * [skaffold version](#skaffold-version) - get Skaffold version
 * [skaffold completion](#skaffold-completion) - setup tab completion for the CLI
 * [skaffold config](#skaffold-config) - manage context specific parameters
+* [skaffold credits](#skaffold-credits) - export third party notices to given path (./skaffold-credits by default)
 * [skaffold diagnose](#skaffold-diagnose) - diagnostics of Skaffold works in your project
+* [skaffold schema](#skaffold-schema) - list and print json schemas used to validate skaffold.yaml configuration
 
 
 ## Global flags
@@ -83,6 +86,7 @@ Other Commands:
   config            Interact with the Skaffold configuration
   credits           Export third party notices to given path (./skaffold-credits by default)
   diagnose          Run a diagnostic on Skaffold
+  schema            List and print json schemas used to validate skaffold.yaml configuration
   version           Print the version information
 
 Use "skaffold <command> --help" for more information about a given command.
@@ -738,6 +742,60 @@ Env vars:
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
+
+### skaffold schema
+
+List and print json schemas used to validate skaffold.yaml configuration
+
+```
+
+
+Available Commands:
+  get         Print a given skaffold.yaml's json schema
+  list        List skaffold.yaml's json schema versions
+
+Use "skaffold <command> --help" for more information about a given command.
+
+
+```
+
+### skaffold schema get
+
+Print a given skaffold.yaml's json schema
+
+```
+
+
+Examples:
+  # Print the schema in version `skaffold/v1`
+  skaffold schema get skaffold/v1
+
+Usage:
+  skaffold schema get [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+
+### skaffold schema list
+
+List skaffold.yaml's json schema versions
+
+```
+
+
+Examples:
+  # List all the versions
+  skaffold schema list
+
+Usage:
+  skaffold schema list [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
 
 ### skaffold version
 

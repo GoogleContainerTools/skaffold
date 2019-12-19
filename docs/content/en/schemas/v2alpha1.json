@@ -920,7 +920,7 @@
           "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
           "default": "{}",
           "examples": [
-            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"{{.ENV_VARIABLE}}\"}"
+            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"'{{.ENV_VARIABLE}}'\"}"
           ]
         },
         "path": {
@@ -1428,7 +1428,7 @@
           "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
           "default": "{}",
           "examples": [
-            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"{{.ENV_VARIABLE}}\"}"
+            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"'{{.ENV_VARIABLE}}'\"}"
           ]
         },
         "buildContext": {
@@ -1447,11 +1447,11 @@
           "x-intellij-html-description": "locates the Dockerfile relative to workspace.",
           "default": "Dockerfile"
         },
-        "envs": {
+        "env": {
           "items": {},
           "type": "array",
-          "description": "array of all the environment variable to be passed to the pod building _all_ of the artifacts.",
-          "x-intellij-html-description": "array of all the environment variable to be passed to the pod building <em>all</em> of the artifacts.",
+          "description": "environment variables passed to the kaniko pod.",
+          "x-intellij-html-description": "environment variables passed to the kaniko pod.",
           "default": "[]"
         },
         "flags": {
@@ -1491,6 +1491,7 @@
         "dockerfile",
         "target",
         "buildArgs",
+        "env",
         "buildContext",
         "image",
         "cache",

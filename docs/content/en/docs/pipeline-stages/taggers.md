@@ -3,6 +3,7 @@ title: "Tag"
 linkTitle: "Tag"
 weight: 15
 featureId: tagpolicy
+aliases: [/docs/how-tos/taggers]
 ---
 
 Skaffold supports the following policies for tagging images:
@@ -42,7 +43,7 @@ specified explicitly:
 
 ### Configuration
 
-`gitCommit` tag policy features no options.
+{{< schema root="GitTagger" >}}
 
 ## `sha256`: uses Sha256 hashes of contents as tags
 

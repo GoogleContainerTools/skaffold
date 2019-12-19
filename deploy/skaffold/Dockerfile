@@ -49,7 +49,7 @@ RUN chmod +x container-structure-test
 
 # Download kind
 FROM alpine:3.10 as download-kind
-ENV KIND_VERSION v0.4.0
+ENV KIND_VERSION v0.6.1
 ENV KIND_URL https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64
 RUN wget -O kind "${KIND_URL}"
 RUN chmod +x kind
@@ -91,6 +91,7 @@ COPY --from=download-container-structure-test container-structure-test /usr/loca
 COPY --from=download-bazel bazel /usr/local/bin/
 COPY --from=download-gcloud google-cloud-sdk/ /google-cloud-sdk/
 COPY --from=download-pack pack /usr/local/bin/
+COPY --from=download-kind kind /usr/local/bin/
 
 # Finish installation of bazel
 RUN bazel version
@@ -113,19 +114,18 @@ RUN apt-get update && apt-get install --no-install-recommends --no-install-sugge
     lsb-release \
     openjdk-8-jdk \
     software-properties-common \
+    jq \
     apt-transport-https && \
     rm -rf /var/lib/apt/lists/*
 COPY --from=golang:1.12 /usr/local/go /usr/local/go
-ENV PATH /usr/local/go/bin:/go/bin:$PATH
+ENV PATH /usr/local/go/bin:/root/go/bin:$PATH
 WORKDIR /skaffold
 COPY . .
 
-FROM builder as integration
+FROM builder as build-skaffold
 ARG VERSION
-COPY --from=download-kind kind /usr/local/bin/
 RUN make clean && make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
-CMD ["make", "integration"]
 
 FROM runtime_deps as distribution
-COPY --from=integration /usr/bin/skaffold /usr/bin/skaffold
+COPY --from=build-skaffold /usr/bin/skaffold /usr/bin/skaffold
 RUN skaffold credits -d /THIRD_PARTY_NOTICES

@@ -19,16 +19,16 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-)
 
-var creditsPath string
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/credits"
+)
 
 func NewCmdCredits() *cobra.Command {
 	return NewCmd("credits").
 		WithDescription("Export third party notices to given path (./skaffold-credits by default)").
 		WithExample("export third party licenses to ~/skaffold-credits", "credits -d ~/skaffold-credits").
 		WithFlags(func(f *pflag.FlagSet) {
-			f.StringVarP(&creditsPath, "dir", "d", "./skaffold-credits", "destination directory to place third party licenses")
+			f.StringVarP(&credits.Path, "dir", "d", "./skaffold-credits", "destination directory to place third party licenses")
 		}).
-		NoArgs(exportCredits)
+		NoArgs(credits.Export)
 }

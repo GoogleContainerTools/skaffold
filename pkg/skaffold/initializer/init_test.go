@@ -18,11 +18,16 @@ package initializer
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 
+	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -122,13 +127,14 @@ func TestPrintAnalyzeJSONNoJib(t *testing.T) {
 func TestWalk(t *testing.T) {
 	emptyFile := ""
 	tests := []struct {
-		description       string
-		filesWithContents map[string]string
-		expectedConfigs   []string
-		expectedPaths     []string
-		force             bool
-		enableJibInit     bool
-		shouldErr         bool
+		description         string
+		filesWithContents   map[string]string
+		expectedConfigs     []string
+		expectedPaths       []string
+		force               bool
+		enableJibInit       bool
+		enableBuildpackInit bool
+		shouldErr           bool
 	}{
 		{
 			description: "should return correct k8 configs and build files (backwards compatibility)",
@@ -162,9 +168,11 @@ func TestWalk(t *testing.T) {
 				"gradle/build.gradle": emptyFile,
 				"maven/pom.xml":       emptyFile,
 				"Dockerfile":          emptyFile,
+				"node/package.json":   emptyFile,
 			},
-			force:         false,
-			enableJibInit: true,
+			force:               false,
+			enableJibInit:       true,
+			enableBuildpackInit: true,
 			expectedConfigs: []string{
 				"k8pod.yml",
 				"config/test.yaml",
@@ -174,6 +182,7 @@ func TestWalk(t *testing.T) {
 				"deploy/Dockerfile",
 				"gradle/build.gradle",
 				"maven/pom.xml",
+				"node/package.json",
 			},
 			shouldErr: false,
 		},
@@ -311,7 +320,7 @@ deploy:
 			t.Override(&docker.ValidateDockerfileFunc, fakeValidateDockerfile)
 			t.Override(&jib.ValidateJibConfigFunc, fakeValidateJibConfig)
 
-			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, test.enableJibInit)
+			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, test.enableJibInit, test.enableBuildpackInit)
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
@@ -346,7 +355,9 @@ func TestResolveBuilderImages(t *testing.T) {
 		description      string
 		buildConfigs     []InitBuilder
 		images           []string
+		force            bool
 		shouldMakeChoice bool
+		shouldErr        bool
 		expectedPairs    []builderImagePair
 	}{
 		{
@@ -384,6 +395,27 @@ func TestResolveBuilderImages(t *testing.T) {
 				},
 			},
 		},
+		{
+			description:      "successful force",
+			buildConfigs:     []InitBuilder{jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"}},
+			images:           []string{"image1"},
+			shouldMakeChoice: false,
+			force:            true,
+			expectedPairs: []builderImagePair{
+				{
+					Builder:   jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"},
+					ImageName: "image1",
+				},
+			},
+		},
+		{
+			description:      "error with ambiguous force",
+			buildConfigs:     []InitBuilder{docker.Docker{File: "Dockerfile1"}, jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"}},
+			images:           []string{"image1", "image2"},
+			shouldMakeChoice: false,
+			force:            true,
+			shouldErr:        true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -395,10 +427,9 @@ func TestResolveBuilderImages(t *testing.T) {
 				return choices[0], nil
 			})
 
-			pairs, err := resolveBuilderImages(test.buildConfigs, test.images)
+			pairs, err := resolveBuilderImages(test.buildConfigs, test.images, test.force)
 
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expectedPairs, pairs)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, pairs)
 		})
 	}
 }
@@ -524,6 +555,7 @@ func TestProcessCliArtifacts(t *testing.T) {
 				`{"builder":"Docker","payload":{"path":"/path/to/Dockerfile"},"image":"image1"}`,
 				`{"builder":"Jib Gradle Plugin","payload":{"path":"/path/to/build.gradle"},"image":"image2"}`,
 				`{"builder":"Jib Maven Plugin","payload":{"path":"/path/to/pom.xml","project":"project-name","image":"testImage"},"image":"image3"}`,
+				`{"builder":"Buildpacks","payload":{"path":"/path/to/package.json"},"image":"image4"}`,
 			},
 			expectedPairs: []builderImagePair{
 				{
@@ -537,6 +569,10 @@ func TestProcessCliArtifacts(t *testing.T) {
 				{
 					Builder:   jib.Jib{BuilderName: "Jib Maven Plugin", FilePath: "/path/to/pom.xml", Project: "project-name", Image: "testImage"},
 					ImageName: "image3",
+				},
+				{
+					Builder:   buildpacks.Buildpacks{File: "/path/to/package.json"},
+					ImageName: "image4",
 				},
 			},
 		},
@@ -583,10 +619,48 @@ func Test_canonicalizeName(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.in, func(t *testing.T) {
+		testutil.Run(t, test.in, func(t *testutil.T) {
 			actual := canonicalizeName(test.in)
-			if actual != test.out {
-				t.Errorf("%s: expected %s, found %s", test.in, test.out, actual)
+
+			t.CheckDeepEqual(test.out, actual)
+		})
+	}
+}
+
+func TestRunKompose(t *testing.T) {
+	tests := []struct {
+		description   string
+		composeFile   string
+		commands      util.Command
+		expectedError string
+	}{
+		{
+			description: "success",
+			composeFile: "docker-compose.yaml",
+			commands:    testutil.CmdRunOut("kompose convert -f docker-compose.yaml", ""),
+		},
+		{
+			description:   "not found",
+			composeFile:   "not-found.yaml",
+			expectedError: "(no such file or directory|cannot find the file specified)",
+		},
+		{
+			description:   "failure",
+			composeFile:   "docker-compose.yaml",
+			commands:      testutil.CmdRunOutErr("kompose convert -f docker-compose.yaml", "", errors.New("BUG")),
+			expectedError: "BUG",
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().Touch("docker-compose.yaml").Chdir()
+			t.Override(&util.DefaultExecCommand, test.commands)
+
+			err := runKompose(context.Background(), test.composeFile)
+
+			if test.expectedError != "" {
+				t.CheckMatches(test.expectedError, err.Error())
 			}
 		})
 	}

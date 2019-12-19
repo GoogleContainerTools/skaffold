@@ -416,7 +416,7 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			opts := config.SkaffoldOptions{
 				Trigger:           "polling",
 				WatchPollInterval: 100,
@@ -445,9 +445,10 @@ func TestTriggerCallbackAndIntents(t *testing.T) {
 			r.intents.resetBuild()
 			r.intents.resetSync()
 			r.intents.resetDeploy()
-			testutil.CheckDeepEqual(t, test.expectedBuildIntent, r.intents.build)
-			testutil.CheckDeepEqual(t, test.expectedSyncIntent, r.intents.sync)
-			testutil.CheckDeepEqual(t, test.expectedDeployIntent, r.intents.deploy)
+
+			t.CheckDeepEqual(test.expectedBuildIntent, r.intents.build)
+			t.CheckDeepEqual(test.expectedSyncIntent, r.intents.sync)
+			t.CheckDeepEqual(test.expectedDeployIntent, r.intents.deploy)
 		})
 	}
 }

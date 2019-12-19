@@ -66,8 +66,16 @@ func podTemplate(clusterDetails *latest.ClusterDetails, artifact *latest.KanikoA
 		Value: userAgent,
 	}}
 
+	// Add any user provided env.
+	if artifact.Env != nil {
+		for _, v := range artifact.Env {
+			if v.Name != "" && v.Value != "" {
+				env = append(env, v)
+			}
+		}
+	}
+
 	env = setProxy(clusterDetails, env)
-	env = append(env, artifact.Envs...)
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "kaniko-",

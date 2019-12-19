@@ -125,7 +125,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 		return NewDeployErrorResult(errors.Wrap(err, "replacing images in manifests"))
 	}
 
-	manifests, err = manifests.SetLabels(merge(labellers...))
+	manifests, err = manifests.SetLabels(merge(k, labellers...))
 	if err != nil {
 		event.DeployFailed(err)
 		return NewDeployErrorResult(errors.Wrap(err, "setting labels in manifests"))

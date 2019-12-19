@@ -37,6 +37,9 @@ const (
 	DockerPluginConfig          MediaType = "application/vnd.docker.plugin.v1+json"
 	DockerForeignLayer          MediaType = "application/vnd.docker.image.rootfs.foreign.diff.tar.gzip"
 	DockerUncompressedLayer     MediaType = "application/vnd.docker.image.rootfs.diff.tar"
+
+	OCIVendorPrefix    = "vnd.oci"
+	DockerVendorPrefix = "vnd.docker"
 )
 
 // IsDistributable returns true if a layer is distributable, see:

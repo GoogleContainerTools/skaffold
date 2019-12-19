@@ -364,3 +364,19 @@ func Canonical(img v1.Image) (v1.Image, error) {
 
 	return ConfigFile(img, cfg)
 }
+
+// MediaType modifies the MediaType() of the given image.
+func MediaType(img v1.Image, mt types.MediaType) v1.Image {
+	return &image{
+		base:      img,
+		mediaType: &mt,
+	}
+}
+
+// IndexMediaType modifies the MediaType() of the given index.
+func IndexMediaType(idx v1.ImageIndex, mt types.MediaType) v1.ImageIndex {
+	return &index{
+		base:      idx,
+		mediaType: &mt,
+	}
+}
