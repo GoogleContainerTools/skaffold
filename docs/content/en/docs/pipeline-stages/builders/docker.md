@@ -92,7 +92,7 @@ build:
 ```
 Note that the Kubernetes secret must not be of type `kubernetes.io/dockerconfigjson` which stores the config json under the key `".dockerconfigjson"`, but an opaque secret with the key `"config.json"`.
 
-To set up envrionment variable for Kaniko pod.
+You can set up environment variables for each artifact's Kaniko pod:
 ```
 build:
   artifacts:
