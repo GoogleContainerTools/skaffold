@@ -45,7 +45,7 @@ func TestDiagnose(t *testing.T) {
 			}
 
 			out := skaffold.Diagnose("-vdebug").InDir(dir).RunOrFailOutput(t)
-			t.Log(out)
+			t.Log(string(out))
 		})
 	}
 }
