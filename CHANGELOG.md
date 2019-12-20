@@ -1,3 +1,87 @@
+# v1.1.0 Release - 12/20/2019
+
+*Note*: This release comes with a new config version `v2alpha1`. To upgrade your `skaffold.yaml`, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best it can.
+
+Highlights:
+- The `--port-forward` flag has been added to `skaffold run` and `skaffold deploy`
+- `skaffold init` can now recognize nodeJS projects, and default to building them with Buildpacks
+- Skaffold has been upgraded to build with Go 1.13
+- Skaffold's `kind` version has been bumped to `v0.6.1`
+- Skaffold will now default to using `gcloud` authentication when available
+
+
+New Features: 
+* Add `—port-forward` to `skaffold deploy` [#3418](https://github.com/GoogleContainerTools/skaffold/pull/3418)
+* Add --port-forward to skaffold run [#3263](https://github.com/GoogleContainerTools/skaffold/pull/3263)
+* Skaffold init recognises nodeJS projects built with Buildpacks [#3394](https://github.com/GoogleContainerTools/skaffold/pull/3394)
+* Add env vars to kaniko specs [#3389](https://github.com/GoogleContainerTools/skaffold/pull/3389)
+* Default to gcloud auth [#3282](https://github.com/GoogleContainerTools/skaffold/pull/3282)
+* Apply resource labels in the deployer [#3390](https://github.com/GoogleContainerTools/skaffold/pull/3390)
+* Add commands to list/print json schemas [#3355](https://github.com/GoogleContainerTools/skaffold/pull/3355)
+
+
+Fixes:
+* fix wait logic in TestWaitForPodSucceeded [#3414](https://github.com/GoogleContainerTools/skaffold/pull/3414)
+* Support FROM “scratch” [#3379](https://github.com/GoogleContainerTools/skaffold/pull/3379)
+* Fix two issues with profiles [#3278](https://github.com/GoogleContainerTools/skaffold/pull/3278)
+* `debug` should replace existing ports or environment values [#3195](https://github.com/GoogleContainerTools/skaffold/pull/3195)
+
+
+Updates & Refactors:
+* No buffering of test output [#3420](https://github.com/GoogleContainerTools/skaffold/pull/3420)
+* Simplify skaffold init code [#3406](https://github.com/GoogleContainerTools/skaffold/pull/3406)
+* Setup kind and build the docker image in // [#3413](https://github.com/GoogleContainerTools/skaffold/pull/3413)
+* Upgrade to Go 1.13 [#3412](https://github.com/GoogleContainerTools/skaffold/pull/3412)
+* Convert git tag into proper docker tag [#3407](https://github.com/GoogleContainerTools/skaffold/pull/3407)
+* Better check for valid Kubernetes manifests [#3404](https://github.com/GoogleContainerTools/skaffold/pull/3404)
+* add a resourceCounter to track pods [#3016](https://github.com/GoogleContainerTools/skaffold/pull/3016)
+* Use --set-string for helm image values [#3313](https://github.com/GoogleContainerTools/skaffold/pull/3313)
+* Bump kind to v0.6.1 [#3357](https://github.com/GoogleContainerTools/skaffold/pull/3357)
+* Improve code that chooses random port for tests [#3304](https://github.com/GoogleContainerTools/skaffold/pull/3304)
+* add container spec args to to go debug [#3276](https://github.com/GoogleContainerTools/skaffold/pull/3276)
+* Cache expensive Go compilation and linting [#3341](https://github.com/GoogleContainerTools/skaffold/pull/3341)
+* Change SyncMap supported types check style [#3328](https://github.com/GoogleContainerTools/skaffold/pull/3328)
+* Improve error output when kompose fails [#3299](https://github.com/GoogleContainerTools/skaffold/pull/3299)
+* Bump default Kaniko image [#3306](https://github.com/GoogleContainerTools/skaffold/pull/3306)
+* Error instead of opening interactive prompt with --force init [#3252](https://github.com/GoogleContainerTools/skaffold/pull/3252)
+
+
+Docs Updates: 
+* document IDE setup [#3397](https://github.com/GoogleContainerTools/skaffold/pull/3397)
+* Convert Asciidoc to simpler markdown [#3365](https://github.com/GoogleContainerTools/skaffold/pull/3365)
+* [doc] Add missing configuration to the git tagger [#3283](https://github.com/GoogleContainerTools/skaffold/pull/3283)
+* document skaffold debug & credits [#3285](https://github.com/GoogleContainerTools/skaffold/pull/3285)
+
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Appu Goundan
+- Balint Pato
+- Brian de Alwis
+- Chuck Dries
+- Cornelius Weig
+- Cyril Diagne
+- David Gageot
+- David Sabatie
+- Idan Bidani
+- Martin Hoefling
+- Michael Beaumont
+- Naoki Oketani
+- Nick Kubala
+- Nick Taylor
+- Nicklas Wallgren
+- Peter Jausovec
+- Philippe Martin
+- Pradip Caulagi
+- Tad Cordle
+- Tejal Desai
+- ansky
+- balopat
+
+# v1.0.1 Release - 11/18/2019
+
+This is a minor release to fix auto-project selection for GCB and Kaniko #3245.
+
 # v1.0.0 Release - 11/07/2019
 
 🎉🎉🎉🎉🎉🎉 
