@@ -444,6 +444,7 @@ E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace='': Run deployments in the specified namespace
+      --port-forward=false: Port-forward exposed container ports within pods
   -p, --profile=[]: Activate profiles by name
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -470,6 +471,7 @@ Env vars:
 * `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
