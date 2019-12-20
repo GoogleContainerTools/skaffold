@@ -22,7 +22,7 @@ set -e
 # - It lists the 20 slowest tests
 
 RED='\033[0;31m'
-BLUE='\033[0;33m'
+YELLOW='\033[0;33m'
 RESET='\033[0m'
 
 LOG=$(mktemp -t tests.json.XXXXXX)
@@ -35,7 +35,7 @@ else
 fi
 
 echo "go test $@"
-go test -json $@ | tee $LOG | jq --unbuffered -j "${JQ_FILTER}" | awk -v FAIL="${RED}FAIL${RESET}" '{ gsub("FAIL", FAIL, $0); print $0 }'
+go test -json $@ | tee $LOG | jq --unbuffered -j "${JQ_FILTER}" | sed ''/FAIL/s//`printf "${RED}FAIL${RESET}"`/''
 RESULT=${PIPESTATUS[0]}
 
 if [ $RESULT != 0 ]; then
@@ -45,7 +45,7 @@ if [ $RESULT != 0 ]; then
     cat $LOG | jq -r "select(.Action==\"fail\" and has(\"Test\")) | \"\(.Package|ltrimstr(\"${MODULE}/\"))/\(.Test)\""
 fi
 
-echo -e "\n${BLUE}=== Slow Tests ===${RESET}"
+echo -e "\n${YELLOW}=== Slow Tests ===${RESET}"
 cat $LOG | jq -rs 'map(select(.Elapsed > 0 and has("Test"))) | sort_by(.Elapsed) | reverse | map("\(.Elapsed)\t\(.Test)")[]' | head -n20
 
 exit $RESULT
