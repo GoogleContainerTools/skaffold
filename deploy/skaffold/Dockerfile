@@ -35,7 +35,7 @@ RUN chmod +x kustomize
 
 # Download kompose
 FROM alpine:3.10 as download-kompose
-ENV KOMPOSE_VERSION v1.18.0
+ENV KOMPOSE_VERSION v1.19.0
 ENV KOMPOSE_URL https://github.com/kubernetes/kompose/releases/download/${KOMPOSE_VERSION}/kompose-linux-amd64
 RUN wget -O kompose "${KOMPOSE_URL}"
 RUN chmod +x kompose
@@ -56,21 +56,21 @@ RUN chmod +x kind
 
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
-ENV GCLOUD_VERSION 245.0.0
+ENV GCLOUD_VERSION 274.0.0
 ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz
 RUN wget -O gcloud.tar.gz "${GCLOUD_URL}"
 RUN tar -zxf gcloud.tar.gz
 
 # Download bazel
 FROM alpine:3.10 as download-bazel
-ENV BAZEL_VERSION 0.27.0
+ENV BAZEL_VERSION 2.0.0
 ENV BAZEL_URL https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-x86_64
 RUN wget -O bazel "${BAZEL_URL}"
 RUN chmod +x bazel
 
 # Download pack
 FROM alpine:3.10 as download-pack
-ENV PACK_VERSION 0.4.1
+ENV PACK_VERSION 0.6.0
 ENV PACK_URL https://github.com/buildpack/pack/releases/download/v${PACK_VERSION}/pack-v${PACK_VERSION}-linux.tgz
 RUN wget -O pack.tgz "${PACK_URL}"
 RUN tar -zxf pack.tgz
