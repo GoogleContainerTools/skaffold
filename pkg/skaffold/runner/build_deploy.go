@@ -30,7 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -88,30 +87,30 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		r.podSelector.Add(artifact.Tag)
 	}
 
+	r.createLoggerForImages(out, imageNames)
+	defer r.logger.Stop()
+
+	r.createForwarder(out)
+	defer r.forwarderManager.Stop()
+
+	// Logs should be retrieved up to just before the deploy
+	r.logger.SetSince(time.Now())
+
+	// First deploy
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
 		return err
 	}
 
-	if r.runCtx.Opts.Tail {
-		logger := r.newLoggerForImages(out, imageNames)
-		defer logger.Stop()
-
-		// Logs should be retrieve up to just before the deploy
-		logger.SetSince(time.Now())
-
-		// Start printing the logs after deploy is finished
-		if err := logger.Start(ctx); err != nil {
-			return errors.Wrap(err, "starting logger")
+	if r.runCtx.Opts.PortForward.Enabled {
+		if err := r.forwarderManager.Start(ctx); err != nil {
+			logrus.Warnln("Error starting port forwarding:", err)
 		}
 	}
 
-	if r.runCtx.Opts.PortForward.Enabled {
-		kubectlCLI := kubectl.NewFromRunContext(r.runCtx)
-		r.createForwarder(out, kubectlCLI)
-		defer r.forwarderManager.Stop()
-
-		if err := r.forwarderManager.Start(ctx); err != nil {
-			logrus.Warnln("Error starting port forwarding:", err)
+	// Start printing the logs after deploy is finished
+	if r.runCtx.Opts.Tail {
+		if err := r.logger.Start(ctx); err != nil {
+			return errors.Wrap(err, "starting logger")
 		}
 	}
 
