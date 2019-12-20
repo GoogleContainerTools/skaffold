@@ -44,7 +44,7 @@ func TestDiagnose(t *testing.T) {
 				t.Skip("skipping diagnose in " + dir)
 			}
 
-			skaffold.Diagnose().InDir(dir).RunOrFail(t)
+			skaffold.Diagnose("-vdebug").InDir(dir).RunOrFail(t)
 		})
 	}
 }

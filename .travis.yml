@@ -14,43 +14,6 @@ branches:
 jobs:
   include:
     - os: linux
-      name: "checks"
-      env:
-        - STATICCHECK_CACHE=$HOME/linting
-      script:
-        - make checks
-      cache:
-        directories:
-          - $STATICCHECK_CACHE
-          - $HOME/.cache/go-build
-    - os: linux
-      name: "Linux unit"
-      script:
-        - make coverage
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-    - os: osx
-      name: "OSX unit"
-      before_install:
-        - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5rc2/jq-osx-x86_64
-        - chmod +x ${HOME}/bin/jq
-      script:
-        - make quicktest
-      cache:
-        directories:
-          - $HOME/.cache/go-build
-    - os: windows
-      name: "Windows unit"
-      env:
-        - GO111MODULE=on
-        - GOFLAGS="-mod=vendor"
-      script:
-        - go test -short -timeout 60s ./...
-      cache:
-        directories:
-          - C:\\Users\\travis\\AppData\\Local\\go-build
-    - os: linux
       name: "integration"
       language: minimal
       before_install:
