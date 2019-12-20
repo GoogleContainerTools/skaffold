@@ -35,7 +35,7 @@ else
 fi
 
 echo "go test $@"
-go test -json $@ | tee $LOG | jq --unbuffered -j "${JQ_FILTER}" | awk -v FAIL="${RED}FAIL${RESET}" '{ gsub("FAIL", FAIL, $0); print $0 }'
+go test -json $@ | tee $LOG | jq --unbuffered -j "${JQ_FILTER}" | sed ''/FAIL/s//`printf "${RED}FAIL${RESET}"`/''
 RESULT=${PIPESTATUS[0]}
 
 if [ $RESULT != 0 ]; then
