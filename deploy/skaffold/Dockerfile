@@ -35,7 +35,7 @@ RUN chmod +x kustomize
 
 # Download kompose
 FROM alpine:3.10 as download-kompose
-ENV KOMPOSE_VERSION v1.18.0
+ENV KOMPOSE_VERSION v1.19.0
 ENV KOMPOSE_URL https://github.com/kubernetes/kompose/releases/download/${KOMPOSE_VERSION}/kompose-linux-amd64
 RUN wget -O kompose "${KOMPOSE_URL}"
 RUN chmod +x kompose
