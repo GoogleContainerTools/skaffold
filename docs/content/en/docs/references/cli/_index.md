@@ -701,6 +701,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
+      --port-forward=false: Port-forward exposed container ports within pods
   -p, --profile=[]: Activate profiles by name
       --render-only=false: Print rendered Kubernetes manifests instead of deploying them
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
@@ -734,6 +735,7 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
+* `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RENDER_ONLY` (same as `--render-only`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)

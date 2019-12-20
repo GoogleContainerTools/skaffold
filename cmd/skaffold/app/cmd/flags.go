@@ -209,7 +209,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.PortForward.Enabled,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "debug"},
+		DefinedOn:     []string{"dev", "debug", "run"},
 	},
 	{
 		Name:          "status-check",
