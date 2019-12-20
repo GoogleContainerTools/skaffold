@@ -40,8 +40,6 @@ type MockDeployer struct {
 	renderErr        error
 }
 
-var _ Deployer = &MockDeployer{}
-
 func (m *MockDeployer) Labels() map[string]string                { return m.labels }
 func (m *MockDeployer) Dependencies() ([]string, error)          { return m.dependencies, m.dependenciesErr }
 func (m *MockDeployer) Cleanup(context.Context, io.Writer) error { return m.cleanupErr }

@@ -20,9 +20,8 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"sort"
 	"strings"
-
-	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 )
@@ -32,7 +31,31 @@ import (
 // it collects the results and returns it in bulk.
 type DeployerMux []Deployer
 
-var _ Deployer = DeployerMux{}
+type unit struct{}
+
+// stringSet helps to de-duplicate a set of strings.
+type stringSet map[string]unit
+
+func newStringSet() stringSet {
+	return make(map[string]unit)
+}
+
+// insert adds strings to the set.
+func (s stringSet) insert(strings ...string) {
+	for _, item := range strings {
+		s[item] = unit{}
+	}
+}
+
+// toList returns the sorted list of inserted strings.
+func (s stringSet) toList() []string {
+	res := make([]string, 0, len(s))
+	for item := range s {
+		res = append(res, item)
+	}
+	sort.Strings(res)
+	return res
+}
 
 func (m DeployerMux) Labels() map[string]string {
 	labels := make(map[string]string)
@@ -43,27 +66,27 @@ func (m DeployerMux) Labels() map[string]string {
 }
 
 func (m DeployerMux) Deploy(ctx context.Context, w io.Writer, as []build.Artifact, ls []Labeller) *Result {
-	seenNamespaces := sets.String{}
+	seenNamespaces := newStringSet()
 	for _, deployer := range m {
 		result := deployer.Deploy(ctx, w, as, ls)
 		if result.err != nil {
 			return result
 		}
-		seenNamespaces.Insert(result.Namespaces()...)
+		seenNamespaces.insert(result.Namespaces()...)
 	}
-	return NewDeploySuccessResult(seenNamespaces.List())
+	return NewDeploySuccessResult(seenNamespaces.toList())
 }
 
 func (m DeployerMux) Dependencies() ([]string, error) {
-	deps := sets.String{}
+	deps := newStringSet()
 	for _, deployer := range m {
 		result, err := deployer.Dependencies()
 		if err != nil {
 			return nil, err
 		}
-		deps.Insert(result...)
+		deps.insert(result...)
 	}
-	return deps.List(), nil
+	return deps.toList(), nil
 }
 
 func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer) error {
