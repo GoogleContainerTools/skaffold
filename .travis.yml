@@ -58,3 +58,7 @@ jobs:
         - chmod +x ${HOME}/bin/kind
       script:
         - make -j integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
