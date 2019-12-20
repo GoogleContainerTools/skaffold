@@ -106,10 +106,7 @@ RUN gcloud auth configure-docker
 
 FROM runtime_deps as builder
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
-    ca-certificates \
-    curl \
     build-essential \
-    gcc \
     python-setuptools \
     lsb-release \
     openjdk-8-jdk \
