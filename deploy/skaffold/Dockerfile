@@ -56,7 +56,7 @@ RUN chmod +x kind
 
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
-ENV GCLOUD_VERSION 245.0.0
+ENV GCLOUD_VERSION 274.0.0
 ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz
 RUN wget -O gcloud.tar.gz "${GCLOUD_URL}"
 RUN tar -zxf gcloud.tar.gz
