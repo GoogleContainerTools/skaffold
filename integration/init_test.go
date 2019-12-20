@@ -63,10 +63,12 @@ func TestInit(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			initArgs := append([]string{"--force"}, test.args...)
+
 			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
 
 			checkGeneratedConfig(t, test.dir)
 
+			// Make sure the skaffold yaml can be parsed
 			skaffold.Diagnose().InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
 		})
 	}
@@ -98,6 +100,7 @@ func TestInitCompose(t *testing.T) {
 
 			checkGeneratedConfig(t, test.dir)
 
+			// Make sure the skaffold yaml and the kubernetes manifests created by kompose are ok
 			skaffold.Run().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
 		})
 	}
