@@ -42,7 +42,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -73,8 +72,8 @@ type InitBuilder interface {
 	// Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
 	// Must be unique between artifacts.
 	Describe() string
-	// CreateArtifact creates an Artifact to be included in the generated Build Config
-	CreateArtifact(image string) *latest.Artifact
+	// UpdateArtifact updates the Artifact to be included in the generated Build Config
+	UpdateArtifact(*latest.Artifact)
 	// ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured.
 	// This should be a cheap operation.
 	ConfiguredImage() string
@@ -279,7 +278,7 @@ func detectBuilders(enableJibInit, enableBuildpackInit bool, path string) ([]Ini
 	// TODO: Remove backwards compatibility if statement (not entire block)
 	if enableJibInit {
 		// Check for jib
-		if builders := jib.ValidateJibConfigFunc(path); builders != nil {
+		if builders := jib.Validate(path); builders != nil {
 			results := make([]InitBuilder, len(builders))
 			for i := range builders {
 				results[i] = builders[i]
@@ -289,16 +288,16 @@ func detectBuilders(enableJibInit, enableBuildpackInit bool, path string) ([]Ini
 	}
 
 	// Check for Dockerfile
-	if docker.ValidateDockerfileFunc(path) {
-		results := []InitBuilder{docker.Docker{File: path}}
+	if docker.Validate(path) {
+		results := []InitBuilder{docker.ArtifactConfig{File: path}}
 		return results, true
 	}
 
 	// TODO: Remove backwards compatibility if statement (not entire block)
 	if enableBuildpackInit {
 		// Check for buildpacks
-		if buildpacks.ValidateConfig(path) {
-			results := []InitBuilder{buildpacks.Buildpacks{File: path}}
+		if buildpacks.Validate(path) {
+			results := []InitBuilder{buildpacks.ArtifactConfig{File: path}}
 			return results, true
 		}
 	}
@@ -325,7 +324,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 				return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
 			}
 			pairs = append(pairs, builderImagePair{
-				Builder:   docker.Docker{File: parts[0]},
+				Builder:   docker.ArtifactConfig{File: parts[0]},
 				ImageName: parts[1],
 			})
 			continue
@@ -335,7 +334,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 		switch a.Name {
 		case docker.Name:
 			parsed := struct {
-				Payload docker.Docker `json:"payload"`
+				Payload docker.ArtifactConfig `json:"payload"`
 			}{}
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
@@ -346,7 +345,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 		// FIXME: shouldn't use a human-readable name?
 		case jib.PluginName(jib.JibGradle), jib.PluginName(jib.JibMaven):
 			parsed := struct {
-				Payload jib.Jib `json:"payload"`
+				Payload jib.ArtifactConfig `json:"payload"`
 			}{}
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
@@ -357,7 +356,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 
 		case buildpacks.Name:
 			parsed := struct {
-				Payload buildpacks.Buildpacks `json:"payload"`
+				Payload buildpacks.ArtifactConfig `json:"payload"`
 			}{}
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
@@ -442,15 +441,25 @@ func promptUserForBuildConfig(image string, choices []string) (string, error) {
 	return selectedBuildConfig, nil
 }
 
-func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {
-	var config latest.BuildConfig
-	if len(pairs) > 0 {
-		config.Artifacts = make([]*latest.Artifact, len(pairs))
-		for i, pair := range pairs {
-			config.Artifacts[i] = pair.Builder.CreateArtifact(pair.ImageName)
+func artifacts(pairs []builderImagePair) []*latest.Artifact {
+	var artifacts []*latest.Artifact
+
+	for _, pair := range pairs {
+		artifact := &latest.Artifact{
+			ImageName: pair.ImageName,
 		}
+
+		workspace := filepath.Dir(pair.Builder.Path())
+		if workspace != "." {
+			artifact.Workspace = workspace
+		}
+
+		pair.Builder.UpdateArtifact(artifact)
+
+		artifacts = append(artifacts, artifact)
 	}
-	return config
+
+	return artifacts
 }
 
 func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) ([]byte, error) {
@@ -463,24 +472,19 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 		warnings.Printf("Couldn't generate default config name: %s", err.Error())
 	}
 
-	cfg := &latest.SkaffoldConfig{
+	return yaml.Marshal(&latest.SkaffoldConfig{
 		APIVersion: latest.Version,
 		Kind:       "Config",
-		Metadata:   latest.Metadata{Name: name},
-	}
-	if err := defaults.Set(cfg); err != nil {
-		return nil, errors.Wrap(err, "generating default pipeline")
-	}
-
-	cfg.Build = processBuildArtifacts(buildConfigPairs)
-	cfg.Deploy = k.GenerateDeployConfig()
-
-	pipelineStr, err := yaml.Marshal(cfg)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshaling generated pipeline")
-	}
-
-	return pipelineStr, nil
+		Metadata: latest.Metadata{
+			Name: name,
+		},
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				Artifacts: artifacts(buildConfigPairs),
+			},
+			Deploy: k.GenerateDeployConfig(),
+		},
+	})
 }
 
 func suggestConfigName() (string, error) {
@@ -532,12 +536,7 @@ func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePa
 		}
 	}
 
-	contents, err := json.Marshal(a)
-	if err != nil {
-		return errors.Wrap(err, "marshalling contents")
-	}
-	_, err = out.Write(contents)
-	return err
+	return printJSON(out, a)
 }
 
 // printAnalyzeJSON takes the automatically resolved builder/image pairs, the unresolved images, and the unresolved builders, and generates
@@ -595,10 +594,15 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 		a.Images = append(a.Images, Image{Name: image, FoundMatch: false})
 	}
 
-	contents, err := json.Marshal(a)
+	return printJSON(out, a)
+}
+
+func printJSON(out io.Writer, v interface{}) error {
+	contents, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "marshalling contents")
 	}
+
 	_, err = out.Write(contents)
 	return err
 }

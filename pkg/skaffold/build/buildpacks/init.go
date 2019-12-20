@@ -25,58 +25,48 @@ import (
 
 // For testing
 var (
-	ValidateConfig = validateConfig
+	Validate = validate
 )
 
 // Name is the name of the Buildpack builder
 var Name = "Buildpacks"
 
-// Buildpack holds information about a Buildpack project
-type Buildpacks struct {
+// ArtifactConfig holds information about a Buildpack project
+type ArtifactConfig struct {
 	File string `json:"path,omitempty"`
 }
 
 // Name returns the name of the builder
-func (b Buildpacks) Name() string {
+func (c ArtifactConfig) Name() string {
 	return Name
 }
 
 // Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
-func (b Buildpacks) Describe() string {
-	return fmt.Sprintf("%s (%s)", b.Name(), b.File)
+func (c ArtifactConfig) Describe() string {
+	return fmt.Sprintf("%s (%s)", c.Name(), c.File)
 }
 
 // CreateArtifact creates an Artifact to be included in the generated Build Config
-func (b Buildpacks) CreateArtifact(manifestImage string) *latest.Artifact {
-	a := &latest.Artifact{
-		ImageName: manifestImage,
-		ArtifactType: latest.ArtifactType{
-			BuildpackArtifact: &latest.BuildpackArtifact{
-				Builder: "heroku/buildpacks",
-			},
+func (c ArtifactConfig) UpdateArtifact(a *latest.Artifact) {
+	a.ArtifactType = latest.ArtifactType{
+		BuildpackArtifact: &latest.BuildpackArtifact{
+			Builder: "heroku/buildpacks",
 		},
 	}
-
-	workspace := filepath.Dir(b.File)
-	if workspace != "." {
-		a.Workspace = workspace
-	}
-
-	return a
 }
 
 // ConfiguredImage returns the target image configured by the builder, or empty string if no image is configured
-func (b Buildpacks) ConfiguredImage() string {
-	// Target image is not configured in dockerfiles
+func (c ArtifactConfig) ConfiguredImage() string {
+	// Target image is not configured in buildpacks
 	return ""
 }
 
 // Path returns the path to the build definition
-func (b Buildpacks) Path() string {
-	return b.File
+func (c ArtifactConfig) Path() string {
+	return c.File
 }
 
-// validateConfig checks if a file is a valid Buildpack configuration.
-func validateConfig(path string) bool {
+// validate checks if a file is a valid Buildpack configuration.
+func validate(path string) bool {
 	return filepath.Base(path) == "package.json"
 }
