@@ -42,7 +42,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -473,7 +472,7 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 		warnings.Printf("Couldn't generate default config name: %s", err.Error())
 	}
 
-	cfg := &latest.SkaffoldConfig{
+	return yaml.Marshal(&latest.SkaffoldConfig{
 		APIVersion: latest.Version,
 		Kind:       "Config",
 		Metadata: latest.Metadata{
@@ -485,12 +484,7 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 			},
 			Deploy: k.GenerateDeployConfig(),
 		},
-	}
-	if err := defaults.Set(cfg); err != nil {
-		return nil, errors.Wrap(err, "generating default pipeline")
-	}
-
-	return yaml.Marshal(cfg)
+	})
 }
 
 func suggestConfigName() (string, error) {

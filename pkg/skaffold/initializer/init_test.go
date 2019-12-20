@@ -696,12 +696,8 @@ func TestArtifacts(t *testing.T) {
 
 		expected := []*latest.Artifact{
 			{
-				ImageName: "image1",
-				ArtifactType: latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{
-						DockerfilePath: "Dockerfile",
-					},
-				},
+				ImageName:    "image1",
+				ArtifactType: latest.ArtifactType{},
 			},
 			{
 				ImageName: "image2",

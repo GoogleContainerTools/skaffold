@@ -93,15 +93,9 @@ func TestUpdateArtifact(t *testing.T) {
 		expectedArtifact latest.Artifact
 	}{
 		{
-			description: "default filename",
-			config:      ArtifactConfig{File: filepath.Join("path", "to", "Dockerfile")},
-			expectedArtifact: latest.Artifact{
-				ArtifactType: latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{
-						DockerfilePath: "Dockerfile",
-					},
-				},
-			},
+			description:      "default filename",
+			config:           ArtifactConfig{File: filepath.Join("path", "to", "Dockerfile")},
+			expectedArtifact: latest.Artifact{},
 		},
 		{
 			description: "non-default filename",
