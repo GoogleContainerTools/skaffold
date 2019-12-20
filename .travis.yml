@@ -57,4 +57,4 @@ jobs:
         - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.6.1/kind-linux-amd64
         - chmod +x ${HOME}/bin/kind
       script:
-        - make integration-in-kind
+        - make -j integration-in-kind
