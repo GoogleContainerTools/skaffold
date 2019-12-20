@@ -336,7 +336,7 @@ func Glob(pattern string) (matches []string, err error) {
 	// volumeName will be an empty string. If it is absolute and we're on a
 	// Windows machine, volumeName will be a drive letter ("C:") for filesystem
 	// paths or \\<server>\<share> for UNC paths.
-	isAbs := filepath.IsAbs(pattern)
+	isAbs := filepath.IsAbs(pattern) || pattern[0] == '\\' || pattern[0] == '/'
 	volumeName := filepath.VolumeName(pattern)
 	isWindowsUNC := strings.HasPrefix(volumeName, `\\`)
 	if isWindowsUNC || isAbs {
