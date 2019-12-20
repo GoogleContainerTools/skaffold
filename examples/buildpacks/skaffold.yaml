@@ -1,7 +1,14 @@
-apiVersion: skaffold/v1
+apiVersion: skaffold/v2alpha1
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-buildpacks
     buildpack:
       builder: "heroku/buildpacks"
+      env:
+      - GOVERSION=1.13.1
+      - GOPROXY={{.GOPROXY}}
+profiles:
+- name: gcb
+  build:
+    googleCloudBuild: {}
