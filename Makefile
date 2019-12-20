@@ -173,6 +173,8 @@ integration-in-kind: kind-cluster skaffold-builder
 	echo '{}' > /tmp/docker-config
 	time docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v $(HOME)/.gradle:/root/.gradle \
+		-v $(HOME)/.cache:/root/.cache \
 		-v /tmp/kind-config:/kind-config \
 		-v /tmp/docker-config:/root/.docker/config.json \
 		-e KUBECONFIG=/kind-config \
