@@ -18,7 +18,6 @@ package integration
 
 import (
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -30,24 +29,9 @@ func TestDiagnose(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	examples, err := folders("examples")
+	out, err := skaffold.Diagnose("-vdebug").InDir(filepath.Join("examples", "jib-gradle")).RunWithCombinedOutput(t)
 	failNowIfError(t, err)
-	if len(examples) == 0 {
-		t.Fatal("didn't find any example")
-	}
-
-	for _, example := range examples {
-		t.Run(example, func(t *testing.T) {
-			dir := filepath.Join("examples", example)
-
-			if _, err := os.Stat(filepath.Join(dir, "skaffold.yaml")); os.IsNotExist(err) {
-				t.Skip("skipping diagnose in " + dir)
-			}
-
-			out := skaffold.Diagnose("-vdebug").InDir(dir).RunOrFailOutput(t)
-			t.Log(string(out))
-		})
-	}
+	t.Log(string(out))
 }
 
 func folders(root string) ([]string, error) {
