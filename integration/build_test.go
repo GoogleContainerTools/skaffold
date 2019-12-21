@@ -81,7 +81,15 @@ func TestBuild(t *testing.T) {
 			description: "custom",
 			dir:         "examples/custom",
 			setup: func(t *testing.T, _ string) func() {
-				cmd := exec.Command("pack", "set-default-builder", "heroku/buildpacks")
+				// Create a simple Buildpacks builder
+				cmd := exec.Command("./create-builder.sh")
+				cmd.Dir = "testdata/buildpack-builder"
+				if err := cmd.Run(); err != nil {
+					t.Fatalf("error creating buildpacks builder: %v", err)
+				}
+
+				// Set that builder as the default
+				cmd = exec.Command("pack", "set-default-builder", "my-stack/builder:1.0")
 				if err := cmd.Run(); err != nil {
 					t.Fatalf("error setting default buildpacks builder: %v", err)
 				}

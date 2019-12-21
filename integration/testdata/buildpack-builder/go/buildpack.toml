@@ -1,0 +1,16 @@
+api = "0.2"
+
+[buildpack]
+id = "my-stack.go"
+name = "Sample Go Buildpack"
+version = "0.0.1"
+
+[[stacks]]
+id = "my-stack"
+
+[metadata]
+include_files = [
+  "bin/build",
+  "bin/detect",
+  "buildpack.toml",
+]

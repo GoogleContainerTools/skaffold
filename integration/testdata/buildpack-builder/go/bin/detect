@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+if [ -f go.mod ]; then
+  echo "Go Buildpack"
+  exit 0
+else
+  exit 1
+fi

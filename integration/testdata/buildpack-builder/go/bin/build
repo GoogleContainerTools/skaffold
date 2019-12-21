@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -eo pipefail
+shopt -s extglob
+
+LAYERS=$1
+
+echo "---> Go Buildpack"
+cd /workspace
+go build -o app
+rm -rfv !(app)
+
+echo -e "processes = [{ type = \"web\", direct = true, command = \"/workspace/app\"}]" > "$LAYERS/launch.toml"
