@@ -156,10 +156,6 @@ release-build: cross
 clean:
 	rm -rf $(BUILD_DIR) hack/bin
 
-.PHONY: kind-cluster
-kind-cluster:
-	kind get clusters | grep -q kind || TERM=dumb time kind create cluster --image=kindest/node:v1.13.12@sha256:ad1dd06aca2b85601f882ba1df4fdc03d5a57b304652d0e81476580310ba6289
-
 .PHONY: skaffold-builder
 skaffold-builder:
 	time docker build \
@@ -168,7 +164,8 @@ skaffold-builder:
 		-t gcr.io/$(GCP_PROJECT)/skaffold-builder .
 
 .PHONY: integration-in-kind
-integration-in-kind: kind-cluster skaffold-builder
+integration-in-kind: skaffold-builder
+	kind get clusters | grep -q kind || TERM=dumb time kind create cluster --image=kindest/node:v1.13.12@sha256:ad1dd06aca2b85601f882ba1df4fdc03d5a57b304652d0e81476580310ba6289
 	kind get kubeconfig --internal > /tmp/kind-config
 	echo '{}' > /tmp/docker-config
 	time docker run --rm \

@@ -1,0 +1,19 @@
+description = "Sample Builder"
+
+[[buildpacks]]
+id = "my-stack.go"
+version = "0.0.1"
+uri = "./go"
+
+[[order]]
+[[order.group]]
+id = "my-stack.go"
+version = "0.0.1"
+
+[stack]
+id = "my-stack"
+build-image = "my-stack/build:1.0"
+run-image = "my-stack/run:1.0"
+
+[lifecycle]
+version = "0.4.0"
