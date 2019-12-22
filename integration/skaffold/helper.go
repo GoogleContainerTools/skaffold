@@ -249,13 +249,13 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 
 func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	args := []string{b.command}
-	if b.ns != "" {
+	if b.ns != "" && isCoreCommand(b.command) {
 		args = append(args, "--namespace", b.ns)
 	}
 	if b.configFile != "" {
 		args = append(args, "-f", b.configFile)
 	}
-	if b.repo != "" {
+	if b.repo != "" && isCoreCommand(b.command) {
 		args = append(args, "--default-repo", b.repo)
 	}
 	args = append(args, b.args...)
@@ -284,6 +284,15 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	cmd.Stderr = struct{ io.Writer }{os.Stderr}
 
 	return cmd
+}
+
+func isCoreCommand(command string) bool {
+	switch command {
+	case "build", "debug", "delete", "deploy", "dev", "generate-pipeline", "render", "run":
+		return true
+	default:
+		return false
+	}
 }
 
 // removeSkaffoldEnvVariables makes sure Skaffold runs without
