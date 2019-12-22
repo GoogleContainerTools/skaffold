@@ -46,7 +46,7 @@ func TestCacheAPITriggers(t *testing.T) {
 	defer shutdown()
 
 	waitForEvent(t, entries, func(e *proto.LogEntry) bool {
-		return e.GetEvent().GetBuildEvent().GetArtifact() == "gcr.io/k8s-skaffold/skaffold-example"
+		return e.GetEvent().GetBuildEvent().GetArtifact() == "skaffold-example"
 	})
 }
 

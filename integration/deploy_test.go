@@ -45,10 +45,10 @@ func TestBuildDeploy(t *testing.T) {
 
 	var webTag, appTag string
 	for _, a := range buildArtifacts.Builds {
-		if a.ImageName == "gcr.io/k8s-skaffold/leeroy-web" {
+		if a.ImageName == "leeroy-web" {
 			webTag = a.Tag
 		}
-		if a.ImageName == "gcr.io/k8s-skaffold/leeroy-app" {
+		if a.ImageName == "leeroy-app" {
 			appTag = a.Tag
 		}
 	}
@@ -135,7 +135,7 @@ func TestDeployWithInCorrectConfig(t *testing.T) {
 	output, err := skaffold.Deploy().InDir("examples/getting-started").InNs(ns.Name).RunWithCombinedOutput(t)
 	if err == nil {
 		t.Errorf("expected to see an error since not every image tag is provided: %s", output)
-	} else if !strings.Contains(string(output), "no tag provided for image [gcr.io/k8s-skaffold/skaffold-example]") {
+	} else if !strings.Contains(string(output), "no tag provided for image [skaffold-example]") {
 		t.Errorf("failed without saying the reason: %s", output)
 	}
 }

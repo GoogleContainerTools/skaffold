@@ -34,7 +34,7 @@ func TestHelmDeploy(t *testing.T) {
 
 	// To fix #1823, we make use of env variable templating for release name
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	skaffold.Deploy("--images", "gcr.io/k8s-skaffold/skaffold-helm").InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
+	skaffold.Deploy("--images", "skaffold-helm").InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
 
 	// check if labels are set correctly for deployment
 	dep := client.GetDeployment("skaffold-helm-" + ns.Name)

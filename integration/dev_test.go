@@ -123,7 +123,7 @@ func TestDevAPITriggers(t *testing.T) {
 	// Ensure we see a build triggered in the event log
 	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
-		return e.GetEvent().GetBuildEvent().GetArtifact() == "gcr.io/k8s-skaffold/test-dev", nil
+		return e.GetEvent().GetBuildEvent().GetArtifact() == "test-dev", nil
 	})
 	failNowIfError(t, err)
 
