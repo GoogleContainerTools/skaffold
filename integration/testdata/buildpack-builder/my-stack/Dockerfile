@@ -1,6 +1,6 @@
-FROM alpine:3.10
+FROM golang:1.12.9-alpine3.10
 
-RUN apk add --no-cache ca-certificates bash musl-dev go
+RUN apk add --no-cache ca-certificates bash
 
 ARG cnb_uid=1000
 ARG cnb_gid=1000
