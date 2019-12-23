@@ -163,11 +163,6 @@ skaffold-builder:
 		--target builder \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-builder .
 
-.PHONY: kind-cluster
-kind-cluster:
-	kind get clusters | grep -q kind || TERM=dumb kind create cluster --image=kindest/node:v1.13.12@sha256:ad1dd06aca2b85601f882ba1df4fdc03d5a57b304652d0e81476580310ba6289
-	kind get kubeconfig --internal > /tmp/kind-config
-
 .PHONY: integration-in-kind
 integration-in-kind: skaffold-builder
 	echo '{}' > /tmp/docker-config
@@ -178,7 +173,11 @@ integration-in-kind: skaffold-builder
 		-v /tmp/docker-config:/root/.docker/config.json \
 		-e KUBECONFIG=/tmp/kind-config \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		make kind-cluster integration
+		sh -c ' \
+			kind get clusters | grep -q kind || TERM=dumb kind create cluster --image=kindest/node:v1.13.12@sha256:ad1dd06aca2b85601f882ba1df4fdc03d5a57b304652d0e81476580310ba6289; \
+			kind get kubeconfig --internal > /tmp/kind-config \
+			make integration \
+		'
 
 .PHONY: integration-in-docker
 integration-in-docker: skaffold-builder
