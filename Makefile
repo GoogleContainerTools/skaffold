@@ -178,7 +178,7 @@ integration-in-kind: skaffold-builder
 		-v /tmp/docker-config:/root/.docker/config.json \
 		-e KUBECONFIG=/tmp/kind-config \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
-		make kind-cluster integration
+		bash -c 'make kind-cluster integration'
 
 .PHONY: integration-in-docker
 integration-in-docker: skaffold-builder
