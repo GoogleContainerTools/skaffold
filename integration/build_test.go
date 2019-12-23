@@ -80,13 +80,6 @@ func TestBuild(t *testing.T) {
 		{
 			description: "custom",
 			dir:         "examples/custom",
-			setup: func(t *testing.T, _ string) func() {
-				cmd := exec.Command("pack", "set-default-builder", "heroku/buildpacks")
-				if err := cmd.Run(); err != nil {
-					t.Fatalf("error setting default buildpacks builder: %v", err)
-				}
-				return func() {}
-			},
 		},
 		{
 			description: "--tag arg",
