@@ -36,6 +36,7 @@ require (
 	github.com/aws/aws-sdk-go v1.25.33 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.2
+	github.com/buildpacks/pack v0.6.0
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/docker/cli v0.0.0-20191212191748-ebca1413117a
 	github.com/docker/distribution v2.7.1+incompatible
@@ -69,8 +70,6 @@ require (
 	github.com/krishicks/yaml-patch v0.0.10
 	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
-	github.com/mattn/go-colorable v0.1.4 // indirect
-	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.6.3
 	github.com/onsi/ginkgo v1.10.3 // indirect

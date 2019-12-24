@@ -24,7 +24,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
@@ -67,9 +66,6 @@ type LocalDaemon interface {
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
 	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error
-	ContainerRun(ctx context.Context, out io.Writer, runs ...ContainerRun) error
-	CopyToContainer(ctx context.Context, container string, dest string, root string, paths []string, uid, gid int, modTime time.Time) error
-	VolumeRemove(ctx context.Context, volumeID string, force bool) error
 }
 
 type localDaemon struct {
