@@ -93,6 +93,11 @@ func Diagnose(args ...string) *RunBuilder {
 	return &RunBuilder{command: "diagnose", args: args}
 }
 
+// Schema runs `skaffold schema` with the given arguments.
+func Schema(args ...string) *RunBuilder {
+	return &RunBuilder{command: "schema", args: args}
+}
+
 func GeneratePipeline(args ...string) *RunBuilder {
 	return &RunBuilder{command: "generate-pipeline", args: args}
 }
