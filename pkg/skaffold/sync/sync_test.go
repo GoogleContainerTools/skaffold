@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -637,12 +638,10 @@ func TestNewSyncItem(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) {
-				return test.workingDir, nil
-			})
+			t.Override(&WorkingDir, func(string, *runcontext.RunContext) (string, error) { return test.workingDir, nil })
 
 			provider := func() (map[string][]string, error) { return test.dependencies, nil }
-			actual, err := NewItem(test.artifact, test.evt, test.builds, nil, provider)
+			actual, err := NewItem(test.artifact, test.evt, test.builds, &runcontext.RunContext{}, provider)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})

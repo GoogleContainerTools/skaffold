@@ -27,30 +27,40 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
-func RetrieveWorkingDir(tagged string, insecureRegistries map[string]bool) (string, error) {
+func RetrieveConfigFile(tagged string, runCtx *runcontext.RunContext) (*v1.ConfigFile, error) {
+	if strings.ToLower(tagged) == "scratch" {
+		return nil, nil
+	}
+
 	var cf *v1.ConfigFile
 	var err error
 
-	if strings.ToLower(tagged) == "scratch" {
-		return "/", nil
-	}
-
-	// TODO: use the proper RunContext
-	localDocker, err := NewAPIClient(&runcontext.RunContext{})
+	localDocker, err := NewAPIClient(runCtx)
 	if err == nil {
 		cf, err = localDocker.ConfigFile(context.Background(), tagged)
 	}
 	if err != nil {
 		// No local Docker is available
-		cf, err = RetrieveRemoteConfig(tagged, insecureRegistries)
+		cf, err = RetrieveRemoteConfig(tagged, runCtx.InsecureRegistries)
 	}
 	if err != nil {
-		return "", errors.Wrap(err, "retrieving image config")
+		return nil, errors.Wrap(err, "retrieving image config")
 	}
 
-	if cf.Config.WorkingDir == "" {
+	return cf, err
+}
+
+func RetrieveWorkingDir(tagged string, runCtx *runcontext.RunContext) (string, error) {
+	cf, err := RetrieveConfigFile(tagged, runCtx)
+	switch {
+	case err != nil:
+		return "", err
+	case cf == nil:
+		return "/", nil
+	case cf.Config.WorkingDir == "":
 		logrus.Debugf("Using default workdir '/' for %s", tagged)
 		return "/", nil
+	default:
+		return cf.Config.WorkingDir, nil
 	}
-	return cf.Config.WorkingDir, nil
 }

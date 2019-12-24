@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -44,29 +45,29 @@ var (
 	WorkingDir = docker.RetrieveWorkingDir
 )
 
-func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool, destProvider DestinationProvider) (*Item, error) {
-	if !e.HasChanged() || a.Sync == nil {
+func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, runCtx *runcontext.RunContext, destProvider DestinationProvider) (*Item, error) {
+	switch {
+	case !e.HasChanged():
+		return nil, nil
+
+	case a.Sync != nil && len(a.Sync.Manual) > 0:
+		return manualSyncItem(a, e, builds, runCtx)
+
+	case a.Sync != nil && len(a.Sync.Infer) > 0:
+		return inferredSyncItem(a, e, builds, destProvider)
+
+	default:
 		return nil, nil
 	}
-
-	if len(a.Sync.Manual) > 0 {
-		return manualSyncItem(a, e, builds, insecureRegistries)
-	}
-
-	if len(a.Sync.Infer) > 0 {
-		return inferredSyncItem(a, e, builds, destProvider)
-	}
-
-	return nil, nil
 }
 
-func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
+func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, runCtx *runcontext.RunContext) (*Item, error) {
 	tag := latestTag(a.ImageName, builds)
 	if tag == "" {
 		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
 	}
 
-	containerWd, err := WorkingDir(tag, insecureRegistries)
+	containerWd, err := WorkingDir(tag, runCtx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "retrieving working dir for %s", tag)
 	}
