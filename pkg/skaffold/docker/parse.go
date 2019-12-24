@@ -245,20 +245,19 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 	}
 
 	var paths []string
-	for value := value.Next; value != nil && !strings.HasPrefix(value.Value, "#"); value = value.Next {
-		paths = append(paths, value.Value)
-	}
-
 	slex := shell.NewLex('\\')
-
-	// All paths are sources except the last one
-	var srcs []string
-	for _, src := range paths[0 : len(paths)-1] {
-		src, err := slex.ProcessWord(src, envs)
+	for value := value.Next; value != nil && !strings.HasPrefix(value.Value, "#"); value = value.Next {
+		path, err := slex.ProcessWord(value.Value, envs)
 		if err != nil {
 			return nil, errors.Wrap(err, "expanding src")
 		}
 
+		paths = append(paths, path)
+	}
+
+	// All paths are sources except the last one
+	var srcs []string
+	for _, src := range paths[0 : len(paths)-1] {
 		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
 			logrus.Debugln("Skipping watch on remote dependency", src)
 			continue
