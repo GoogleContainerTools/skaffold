@@ -19,22 +19,23 @@ set -euo pipefail
 export GOFLAGS="-mod=vendor"
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 BIN=${DIR}/bin
-LICENSES=${BIN}/licenses
 STATIK=${BIN}/statik
 
 mkdir -p ${BIN}
 
-if ! [[ -f ${LICENSES} ]]; then
-  pushd ${DIR}/tools
-  echo >&2 'Installing licenses tool'
-  GOBIN=${BIN} GO111MODULE=on go install -tags tools github.com/google/trillian/scripts/licenses
-  popd
-fi
-
 TMP_DIR=$(mktemp -d)
 trap "rm -rf $TMP_DIR" EXIT
 
-${LICENSES} save "github.com/GoogleContainerTools/skaffold/cmd/skaffold" --save_path="${TMP_DIR}/skaffold-credits"
+# Copy licenses
+pushd vendor
+LICENSES=$(find . \( -type f -name 'LICENSE*' -or -name 'COPYING*' -or -name 'NOTICE*' \))
+for LICENSE in $LICENSES; do
+    mkdir -p "$(dirname "${TMP_DIR}/skaffold-credits/$LICENSE")"
+    cp $LICENSE ${TMP_DIR}/skaffold-credits/$LICENSE
+done
+popd
+
+# Copy schemas
 cp -R docs/content/en/schemas "${TMP_DIR}/schemas"
 
 if ! [[ -f ${STATIK} ]]; then
