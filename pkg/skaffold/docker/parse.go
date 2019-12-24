@@ -238,41 +238,45 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegis
 }
 
 func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCommand, error) {
-	var srcs []string
-	var dest string
-	var destIsDir bool
-
-	slex := shell.NewLex('\\')
-	for i := 0; ; i++ {
-		// Skip last node, since it is the destination, and stop if we arrive at a comment
-		v := value.Next.Value
-		if value.Next.Next == nil || strings.HasPrefix(value.Next.Next.Value, "#") {
-			// COPY or ADD with multiple files must have a directory destination
-			if i > 1 || strings.HasSuffix(v, "/") || path.Base(v) == "." || path.Base(v) == ".." {
-				destIsDir = true
-			}
-			dest = resolveDir(workdir, v)
-			break
-		}
-		src, err := slex.ProcessWord(v, envs)
-		if err != nil {
-			return nil, errors.Wrap(err, "processing word")
-		}
-		// If the --from flag is provided, we are dealing with a multi-stage dockerfile
-		// Adding a dependency from a different stage does not imply a source dependency
-		if hasMultiStageFlag(value.Flags) {
-			return nil, nil
-		}
-		if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") {
-			srcs = append(srcs, src)
-		} else {
-			logrus.Debugf("Skipping watch on remote dependency %s", src)
-		}
-
-		value = value.Next
+	// If the --from flag is provided, we are dealing with a multi-stage dockerfile
+	// Adding a dependency from a different stage does not imply a source dependency
+	if hasMultiStageFlag(value.Flags) {
+		return nil, nil
 	}
 
-	return &copyCommand{srcs: srcs, dest: dest, destIsDir: destIsDir}, nil
+	var paths []string
+	for value := value.Next; value != nil && !strings.HasPrefix(value.Value, "#"); value = value.Next {
+		paths = append(paths, value.Value)
+	}
+
+	slex := shell.NewLex('\\')
+
+	// All paths are sources except the last one
+	var srcs []string
+	for _, src := range paths[0 : len(paths)-1] {
+		src, err := slex.ProcessWord(src, envs)
+		if err != nil {
+			return nil, errors.Wrap(err, "expanding src")
+		}
+
+		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
+			logrus.Debugln("Skipping watch on remote dependency", src)
+			continue
+		}
+
+		srcs = append(srcs, src)
+	}
+
+	// Destination is last
+	dest := paths[len(paths)-1]
+	destIsDir := strings.HasSuffix(dest, "/") || path.Base(dest) == "." || path.Base(dest) == ".."
+	dest = resolveDir(workdir, dest)
+
+	return &copyCommand{
+		srcs:      srcs,
+		dest:      dest,
+		destIsDir: destIsDir,
+	}, nil
 }
 
 func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[string]bool) ([]*parser.Node, error) {
