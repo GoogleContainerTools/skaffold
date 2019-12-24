@@ -23,6 +23,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -57,12 +58,12 @@ func (f *fakeFile) Close() error {
 func TestPrint(t *testing.T) {
 	fs := &fakeFileSystem{
 		Files: map[string][]byte{
-			"/v1.json": []byte("{SCHEMA}"),
+			"/schemas/v1.json": []byte("{SCHEMA}"),
 		},
 	}
 
 	testutil.Run(t, "found", func(t *testutil.T) {
-		t.Override(&statikFS, func() (http.FileSystem, error) { return fs, nil })
+		t.Override(&statik.FS, func() (http.FileSystem, error) { return fs, nil })
 
 		var out bytes.Buffer
 		err := Print(&out, "skaffold/v1")
@@ -72,7 +73,7 @@ func TestPrint(t *testing.T) {
 	})
 
 	testutil.Run(t, "not found", func(t *testutil.T) {
-		t.Override(&statikFS, func() (http.FileSystem, error) { return fs, nil })
+		t.Override(&statik.FS, func() (http.FileSystem, error) { return fs, nil })
 
 		var out bytes.Buffer
 		err := Print(&out, "skaffold/v0")

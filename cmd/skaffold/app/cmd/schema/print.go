@@ -18,25 +18,28 @@ package schema
 
 import (
 	"io"
+	"path"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/rakyll/statik/fs"
+
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 )
 
 // Print prints the json schema for a given version.
 func Print(out io.Writer, version string) error {
-	statikFS, err := statikFS()
+	statikFS, err := statik.FS()
 	if err != nil {
 		return err
 	}
 
-	path := "/" + strings.TrimPrefix(version, "skaffold/") + ".json"
+	path := path.Join("/schemas", strings.TrimPrefix(version, "skaffold/")+".json")
 	content, err := fs.ReadFile(statikFS, path)
 	if err != nil {
 		return errors.Wrapf(err, "schema %q not found", version)
 	}
 
-	out.Write(content)
-	return nil
+	_, err = out.Write(content)
+	return err
 }
