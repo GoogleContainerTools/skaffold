@@ -211,15 +211,15 @@ type GoogleCloudBuild struct {
 	ProjectID string `yaml:"projectId,omitempty"`
 
 	// DiskSizeGb is the disk size of the VM that runs the build.
-	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v2alpha1/projects.builds#buildoptions).
+	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).
 	DiskSizeGb int64 `yaml:"diskSizeGb,omitempty"`
 
 	// MachineType is the type of the VM that runs the build.
-	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v2alpha1/projects.builds#buildoptions).
+	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).
 	MachineType string `yaml:"machineType,omitempty"`
 
 	// Timeout is the amount of time (in seconds) that this build should be allowed to run.
-	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v2alpha1/projects.builds#resource-build).
+	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build).
 	Timeout string `yaml:"timeout,omitempty"`
 
 	// DockerImage is the image that runs a Docker build.
