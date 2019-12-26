@@ -14,25 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v2alpha1
 
 import (
 	"testing"
 
 	yaml "gopkg.in/yaml.v2"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha1"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v1
+	yaml := `apiVersion: skaffold/v2alpha1
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
     docker:
       dockerfile: path/to/Dockerfile
+  - image: gcr.io/k8s-skaffold/buildpack
+    buildpack:
+      builder: my-builder
   - image: gcr.io/k8s-skaffold/bazel
     bazel:
       target: //mytarget
@@ -86,13 +89,16 @@ profiles:
         manifests:
         - k8s-*
 `
-	expected := `apiVersion: skaffold/v2alpha1
+	expected := `apiVersion: skaffold/v2alpha2
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
     docker:
       dockerfile: path/to/Dockerfile
+  - image: gcr.io/k8s-skaffold/buildpack
+    buildpack:
+      builder: my-builder
   - image: gcr.io/k8s-skaffold/bazel
     bazel:
       target: //mytarget
