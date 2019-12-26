@@ -115,6 +115,12 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 								CustomArtifact: &latest.CustomArtifact{},
 							},
 						},
+						{
+							ImageName: "buildpacks",
+							ArtifactType: latest.ArtifactType{
+								BuildpackArtifact: &latest.BuildpackArtifact{},
+							},
+						},
 					},
 					BuildType: latest.BuildType{
 						Cluster: &latest.ClusterDetails{},
@@ -132,6 +138,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		t.CheckNotNil(cfg.Pipeline.Build.Artifacts[0].KanikoArtifact)
 		t.CheckNotNil(cfg.Pipeline.Build.Artifacts[1].KanikoArtifact)
 		t.CheckNil(cfg.Pipeline.Build.Artifacts[2].KanikoArtifact)
+		t.CheckNil(cfg.Pipeline.Build.Artifacts[3].KanikoArtifact)
 
 		// pull secret set
 		cfg = &latest.SkaffoldConfig{
