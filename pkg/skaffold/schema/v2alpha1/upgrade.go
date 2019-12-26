@@ -26,6 +26,7 @@ import (
 // Config changes from v2alpha1 to v2alpha2
 // 1. Additions:
 // 2. Removals:
+//    kaniko.buildContext
 // 3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
@@ -40,6 +41,29 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 }
 
 // Placeholder for upgrade logic
-func upgradeOnePipeline(_, _ interface{}) error {
+func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldBuild := &oldPipeline.(*Pipeline).Build
+	newBuild := &newPipeline.(*next.Pipeline).Build
+
+	// move: kaniko.BuildContext.LocalDir.InitImage
+	//   to: kaniko.InitImage
+	for i, newArtifact := range newBuild.Artifacts {
+		oldArtifact := oldBuild.Artifacts[i]
+
+		kaniko := oldArtifact.KanikoArtifact
+		if kaniko == nil {
+			continue
+		}
+
+		buildContext := kaniko.BuildContext
+		if buildContext == nil {
+			continue
+		}
+
+		if buildContext.LocalDir != nil {
+			newArtifact.KanikoArtifact.InitImage = buildContext.LocalDir.InitImage
+		}
+	}
+
 	return nil
 }

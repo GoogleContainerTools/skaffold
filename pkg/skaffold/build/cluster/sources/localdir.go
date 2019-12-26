@@ -81,7 +81,7 @@ func (g *LocalDir) Pod(args []string) *v1.Pod {
 	// Generate the init container, which will run until the /tmp/complete file is created
 	ic := v1.Container{
 		Name:         initContainer,
-		Image:        g.artifact.BuildContext.LocalDir.InitImage,
+		Image:        g.artifact.InitImage,
 		Command:      []string{"sh", "-c", "while [ ! -f /tmp/complete ]; do sleep 1; done"},
 		VolumeMounts: []v1.VolumeMount{vm},
 		Resources:    resourceRequirements(g.clusterDetails.Resources),

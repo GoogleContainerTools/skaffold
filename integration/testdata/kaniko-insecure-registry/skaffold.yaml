@@ -8,8 +8,6 @@ profiles:
           context: app
           kaniko:
             cache: {}
-            buildContext:
-              localDir: {}
       cluster:
         pullSecretName: e2esecret
   - name: deploy-insecure-registry

@@ -40,17 +40,10 @@ type BuildContextSource interface {
 
 // Retrieve returns the correct build context based on the config
 func Retrieve(cli *kubectl.CLI, clusterDetails *latest.ClusterDetails, artifact *latest.KanikoArtifact) BuildContextSource {
-	if artifact.BuildContext.LocalDir != nil {
-		return &LocalDir{
-			clusterDetails: clusterDetails,
-			artifact:       artifact,
-			kubectl:        cli,
-		}
-	}
-
-	return &GCSBucket{
+	return &LocalDir{
 		clusterDetails: clusterDetails,
 		artifact:       artifact,
+		kubectl:        cli,
 	}
 }
 

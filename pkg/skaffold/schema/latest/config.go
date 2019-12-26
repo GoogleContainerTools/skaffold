@@ -247,23 +247,6 @@ type GoogleCloudBuild struct {
 	Concurrency int `yaml:"concurrency,omitempty"`
 }
 
-// LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
-type LocalDir struct {
-	// InitImage is the image used to run init container which mounts kaniko context.
-	InitImage string `yaml:"initImage,omitempty"`
-}
-
-// KanikoBuildContext contains the different fields available to specify
-// a Kaniko build context.
-type KanikoBuildContext struct {
-	// GCSBucket is the GCS bucket to which sources are uploaded.
-	// Kaniko will need access to that bucket to download the sources.
-	GCSBucket string `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext"`
-
-	// LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
-	LocalDir *LocalDir `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext"`
-}
-
 // KanikoCache configures Kaniko caching. If a cache is specified, Kaniko will
 // use a remote cache which will speed up builds.
 type KanikoCache struct {
@@ -770,8 +753,8 @@ type KanikoArtifact struct {
 	// Env are environment variables passed to the kaniko pod.
 	Env []v1.EnvVar `yaml:"env,omitempty"`
 
-	// BuildContext is where the build context for this artifact resides.
-	BuildContext *KanikoBuildContext `yaml:"buildContext,omitempty"`
+	// InitImage is the image used to run init container which mounts kaniko context.
+	InitImage string `yaml:"initImage,omitempty"`
 
 	// Image is the Docker image used by the Kaniko pod.
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.

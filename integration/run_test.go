@@ -140,17 +140,12 @@ func TestRunGCPOnly(t *testing.T) {
 			pods:        []string{"getting-started-kaniko"},
 		},
 		{
-			description: "kaniko local",
-			dir:         "examples/kaniko-local",
-			pods:        []string{"getting-started-kaniko"},
-		},
-		{
-			description: "kaniko local with target",
+			description: "kaniko with target",
 			dir:         "testdata/kaniko-target",
 			pods:        []string{"getting-started-kaniko"},
 		},
 		{
-			description: "kaniko local with sub folder",
+			description: "kaniko with sub folder",
 			dir:         "testdata/kaniko-sub-folder",
 			pods:        []string{"getting-started-kaniko"},
 		},
