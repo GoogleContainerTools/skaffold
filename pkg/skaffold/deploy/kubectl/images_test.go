@@ -24,6 +24,40 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func TestGetImages(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: ["invalid-image-ref"]
+  - image: not valid
+  - image: gcr.io/k8s-skaffold/example:latest
+    name: latest
+  - image: skaffold/other
+    name: other
+  - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
+    name: digest
+`)}
+	expectedImages := []build.Artifact{
+		{
+			ImageName: "gcr.io/k8s-skaffold/example",
+			Tag:       "gcr.io/k8s-skaffold/example:latest",
+		}, {
+			ImageName: "skaffold/other",
+			Tag:       "skaffold/other",
+		}, {
+			ImageName: "gcr.io/k8s-skaffold/example",
+			Tag:       "gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+		},
+	}
+
+	actual, err := manifests.GetImages()
+	testutil.CheckErrorAndDeepEqual(t, false, err, expectedImages, actual)
+}
+
 func TestReplaceImages(t *testing.T) {
 	manifests := ManifestList{[]byte(`
 apiVersion: v1
