@@ -2453,7 +2453,7 @@ New Features
 * Added options for GCR auth
 * Set default log level to warn
 * Change git commit to use short ID instead
-* Helm deployer now acceptes namespace and values file
+* Helm deployer now accepts namespace and values file
 * Local builder now accepts docker build-args
 * Added --tag flag for skaffold run
 * Cache image configs by name
