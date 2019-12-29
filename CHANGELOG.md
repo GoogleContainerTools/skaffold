@@ -934,7 +934,7 @@ Bug Fixes:
 * Docker is case sensitive about networks [#2288](https://github.com/GoogleContainerTools/skaffold/pull/2288)
 * cluster builder fails to detect insecure registries [#2266](https://github.com/GoogleContainerTools/skaffold/pull/2266)
 * fix static linking of linux binary [#2252](https://github.com/GoogleContainerTools/skaffold/pull/2252)
-* fix racey test [#2251](https://github.com/GoogleContainerTools/skaffold/pull/2251)
+* fix racy test [#2251](https://github.com/GoogleContainerTools/skaffold/pull/2251)
 
 Updates & Refactors:
 * Remove the `config out of date` warning [#2298](https://github.com/GoogleContainerTools/skaffold/pull/2298)
