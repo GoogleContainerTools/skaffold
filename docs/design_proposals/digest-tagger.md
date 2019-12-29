@@ -61,7 +61,7 @@ Here are some rules about how tagging currently works:
  + An `inputDigest` is added. It uses the digest of the artifact's inputs as the tag.
    [#2301](https://github.com/GoogleContainerTools/skaffold/pull/2301) tried to implement
    such tagger by computing the digest of the whole workspace. We should instead compute
-   the digest of the artifact's dependencies, inluding the artifact's configuration. This
+   the digest of the artifact's dependencies, including the artifact's configuration. This
    is exactly what the caching mechanism currently does.
  + `envTemplate` learns how to replace `{{.DIGEST}}` with a digest of the artifact's
     inputs as computed by the `inputDigest` tagger.
