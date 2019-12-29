@@ -96,7 +96,7 @@ var (
 	// KubeContext is the expected kubecontext to build an artifact with a custom build script on cluster
 	KubeContext = "KUBE_CONTEXT"
 
-	// Namespace is the expected namsepace to build an artifact with a custom build script on cluster.
+	// Namespace is the expected namespace to build an artifact with a custom build script on cluster.
 	Namespace = "NAMESPACE"
 
 	// PullSecretName is the secret with authentication required to pull a base image/push the final image built on cluster.
