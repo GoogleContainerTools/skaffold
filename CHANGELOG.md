@@ -325,7 +325,7 @@ Docs:
 * Fix sample’s version [#3015](https://github.com/GoogleContainerTools/skaffold/pull/3015)
 * Fix versions used in examples [#2999](https://github.com/GoogleContainerTools/skaffold/pull/2999)
 * Docs Splash Page Update [#3031](https://github.com/GoogleContainerTools/skaffold/pull/3031)
-* [docs] readd exceptions in deprecation policy [#3029](https://github.com/GoogleContainerTools/skaffold/pull/3029)
+* [docs] re-add exceptions in deprecation policy [#3029](https://github.com/GoogleContainerTools/skaffold/pull/3029)
 * add links to docs which are present [#3026](https://github.com/GoogleContainerTools/skaffold/pull/3026)
 * moving deprecation policy to skaffold.dev [#3017](https://github.com/GoogleContainerTools/skaffold/pull/3017)
 * add survey link and reword community office hours [#3019](https://github.com/GoogleContainerTools/skaffold/pull/3019)
