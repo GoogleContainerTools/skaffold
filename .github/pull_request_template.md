@@ -26,7 +26,7 @@ If behavior changes: describe succinctly the current behavior
 **After**
 
 If log/output changes: Paste skaffold output after your change
-If behavior changes: describe succintly the behavior after your change
+If behavior changes: describe succinctly the behavior after your change
 
 **Next PRs.**
 
