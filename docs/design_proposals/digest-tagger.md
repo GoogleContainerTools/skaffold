@@ -20,7 +20,7 @@ Here are some rules about how tagging currently works:
    to compute tags after the build. It made the process super complex with a lot of retagging.
    It also produced images that were tagged with their own digest or imageID which is superfluous
    since those can be used to reference the images directly.
- + **No matter the tagger, Skaffold always uses immutable references in Kubenetes manifests**.
+ + **No matter the tagger, Skaffold always uses immutable references in Kubernetes manifests**.
    Which reference is used depends on whether the images are pushed or not:
      + **When images are pushed**, their immutable digest is available. Skaffold then references
        images both by tag and digest. Something like `image:tag@sha256:abacabac...`.
