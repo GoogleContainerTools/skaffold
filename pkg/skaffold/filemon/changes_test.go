@@ -120,7 +120,7 @@ func TestStatNotExist(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
-			description: "no error when deps returns nonexisting file",
+			description: "no error when deps returns nonexistent file",
 			deps:        []string{"file/that/does/not/exist/anymore"},
 		},
 		{
