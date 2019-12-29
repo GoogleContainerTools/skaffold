@@ -2400,7 +2400,7 @@ New Features
 Bug Fixes
 * Logs use relative time instead of host time, which fixes issues with clock sync on local clusters
 * Removed duplicate error
-* Docker build args passsed to Google Container Builder
+* Docker build args passed to Google Container Builder
 * Fixed unreliable file detection when using IntelliJ or other IDEs
 * Better handling of default values
 * Fixed issue with some logs being displayed twice
