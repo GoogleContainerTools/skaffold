@@ -53,14 +53,14 @@ func TestPortForwardEntryKey(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			acutalKey := test.pfe.key()
+			actualKey := test.pfe.key()
 
-			if acutalKey != test.expected {
-				t.Fatalf("port forward entry key is incorrect: \n actual: %s \n expected: %s", acutalKey, test.expected)
+			if actualKey != test.expected {
+				t.Fatalf("port forward entry key is incorrect: \n actual: %s \n expected: %s", actualKey, test.expected)
 			}
 
 			if test.pfe.String() != test.expected {
-				t.Fatalf("port forward entry string is incorrect: \n actual: %s \n expected: %s", acutalKey, test.expected)
+				t.Fatalf("port forward entry string is incorrect: \n actual: %s \n expected: %s", actualKey, test.expected)
 			}
 		})
 	}
@@ -86,13 +86,13 @@ func TestAutomaticPodForwardingKey(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			acutalKey := test.pfe.key()
+			actualKey := test.pfe.key()
 
-			if acutalKey != test.expected {
-				t.Fatalf("port forward entry key is incorrect: \n actual: %s \n expected: %s", acutalKey, test.expected)
+			if actualKey != test.expected {
+				t.Fatalf("port forward entry key is incorrect: \n actual: %s \n expected: %s", actualKey, test.expected)
 			}
 
-			if strings.Contains(acutalKey, "pod") {
+			if strings.Contains(actualKey, "pod") {
 				t.Fatal("key should not contain podname, otherwise containers will be mapped to a new port every time a pod is regenerated. See Issues #1815 and #1594.")
 			}
 		})
