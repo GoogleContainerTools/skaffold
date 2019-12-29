@@ -451,7 +451,7 @@ Bug Fixes:
 * Small random fixes to tests and code [#2801](https://github.com/GoogleContainerTools/skaffold/pull/2801)
 * skaffold init can be interrupted when kompose is running [#2803](https://github.com/GoogleContainerTools/skaffold/pull/2803)
 * Fix portforward flake [#2824](https://github.com/GoogleContainerTools/skaffold/pull/2824)
-* Improve `skaffold init` behaviour when tags are used in manifests [#2773](https://github.com/GoogleContainerTools/skaffold/pull/2773)
+* Improve `skaffold init` behavior when tags are used in manifests [#2773](https://github.com/GoogleContainerTools/skaffold/pull/2773)
 * Skip secret creation/check [#2783](https://github.com/GoogleContainerTools/skaffold/pull/2783)
 
 Updates & Refactors:
@@ -1941,7 +1941,7 @@ Bug fixes:
 
 * Improve Kaniko builder [#1168](https://github.com/GoogleContainerTools/skaffold/pull/1168)
 * Use os.SameFile() to check for mvnw working-dir echo bug [#1167](https://github.com/GoogleContainerTools/skaffold/pull/1167)
-* Fix kaniko default behaviour [#1139](https://github.com/GoogleContainerTools/skaffold/pull/1139)
+* Fix kaniko default behavior [#1139](https://github.com/GoogleContainerTools/skaffold/pull/1139)
 
 Updates:
 

@@ -40,7 +40,7 @@ Here are some rules about how tagging currently works:
    **So the `git` tagger seems like a wrong choice for a default tagger**.
  + `sha256` is a misleading name. It is named like that because, in the end, when Skaffold
    deploys to a remote cluster, the image's sha256 digest is used as the immutable tag.
-   **Users are confused with this name and behaviour**.
+   **Users are confused with this name and behavior**.
  + the `sha256` used to be able to use the image tags provided in the artifact definition,
    instead of `latest`. This was not documented and is not possible anymore because artifact
    definitions are now considered invalid if images names have a tag.
