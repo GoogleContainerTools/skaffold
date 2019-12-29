@@ -180,7 +180,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 			},
 		},
 		{
-			description: "paches",
+			description: "patches",
 			yaml:        `patches: [patch1.yaml, path/patch2.yaml]`,
 			expected:    []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
 		},
