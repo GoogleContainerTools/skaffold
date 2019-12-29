@@ -1554,7 +1554,7 @@ Fixes:
 * `[kubectl]` apply labels by patching yaml [#1489](https://github.com/GoogleContainerTools/skaffold/pull/1489)
 
 Updates & refactorings:
-* Optimise sync [#1641](https://github.com/GoogleContainerTools/skaffold/pull/1641)
+* Optimize sync [#1641](https://github.com/GoogleContainerTools/skaffold/pull/1641)
 * kubectl deployer: warn when pattern matches no file [#1647](https://github.com/GoogleContainerTools/skaffold/pull/1647)
 * Add integration tests for taggers [#1635](https://github.com/GoogleContainerTools/skaffold/pull/1635)
 * Adding a few tests for `skaffold build` [#1628](https://github.com/GoogleContainerTools/skaffold/pull/1628)
