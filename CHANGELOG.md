@@ -547,7 +547,7 @@ Updates & Refactors:
 * more debugging for kubectl portforward [#2707](https://github.com/GoogleContainerTools/skaffold/pull/2707)
 * Remove time sensitive tests [#2655](https://github.com/GoogleContainerTools/skaffold/pull/2655)
 * Log a warning and rebuild if needed when caching fails [#2685](https://github.com/GoogleContainerTools/skaffold/pull/2685)
-* Improve logging warning when enountering profile field of unhandled type [#2691](https://github.com/GoogleContainerTools/skaffold/pull/2691)
+* Improve logging warning when encountering profile field of unhandled type [#2691](https://github.com/GoogleContainerTools/skaffold/pull/2691)
 * refactor: Add upgrade utility to handle all pipelines in a SkaffoldConfig [#2582](https://github.com/GoogleContainerTools/skaffold/pull/2582)
 * Add struct for generate_pipeline to keep track of related data [#2686](https://github.com/GoogleContainerTools/skaffold/pull/2686)
 * Add unit tests to kubectl forwarder [#2661](https://github.com/GoogleContainerTools/skaffold/pull/2661)
