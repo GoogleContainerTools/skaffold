@@ -121,11 +121,11 @@ func TestStatNotExist(t *testing.T) {
 	}{
 		{
 			description: "no error when deps returns nonexisting file",
-			deps:        []string{"file/that/doesnt/exist/anymore"},
+			deps:        []string{"file/that/does/not/exist/anymore"},
 		},
 		{
 			description: "deps function error",
-			deps:        []string{"file/that/doesnt/exist/anymore"},
+			deps:        []string{"file/that/does/not/exist/anymore"},
 			depsErr:     fmt.Errorf(""),
 			shouldErr:   true,
 		},
