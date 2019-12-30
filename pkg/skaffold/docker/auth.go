@@ -106,7 +106,7 @@ func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 	return authConfigs, nil
 }
 
-func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {
+func (l *LocalDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {
 	ref, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing image name for registry")
@@ -135,7 +135,7 @@ func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelpe
 	return base64.URLEncoding.EncodeToString(buf), nil
 }
 
-func (l *localDaemon) officialRegistry(ctx context.Context) string {
+func (l *LocalDaemon) officialRegistry(ctx context.Context) string {
 	serverAddress := registry.IndexServer
 
 	// The daemon `/info` endpoint informs us of the default registry being used.

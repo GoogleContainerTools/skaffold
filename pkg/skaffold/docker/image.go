@@ -24,7 +24,6 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
@@ -52,28 +51,7 @@ type ContainerRun struct {
 }
 
 // LocalDaemon talks to a local Docker API.
-type LocalDaemon interface {
-	Close() error
-	ExtraEnv() []string
-	ServerVersion(ctx context.Context) (types.Version, error)
-	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
-	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error)
-	Push(ctx context.Context, out io.Writer, ref string) (string, error)
-	Pull(ctx context.Context, out io.Writer, ref string) error
-	Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error)
-	Tag(ctx context.Context, image, ref string) error
-	TagWithImageID(ctx context.Context, ref string, imageID string) (string, error)
-	ImageID(ctx context.Context, ref string) (string, error)
-	ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error)
-	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
-	ImageExists(ctx context.Context, ref string) bool
-	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error
-	ContainerRun(ctx context.Context, out io.Writer, runs ...ContainerRun) error
-	CopyToContainer(ctx context.Context, container string, dest string, root string, paths []string, uid, gid int, modTime time.Time) error
-	VolumeRemove(ctx context.Context, volumeID string, force bool) error
-}
-
-type localDaemon struct {
+type LocalDaemon struct {
 	forceRemove        bool
 	insecureRegistries map[string]bool
 	apiClient          client.CommonAPIClient
@@ -83,8 +61,8 @@ type localDaemon struct {
 }
 
 // NewLocalDaemon creates a new LocalDaemon.
-func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool, insecureRegistries map[string]bool) LocalDaemon {
-	return &localDaemon{
+func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool, insecureRegistries map[string]bool) *LocalDaemon {
+	return &LocalDaemon{
 		apiClient:          apiClient,
 		extraEnv:           extraEnv,
 		forceRemove:        forceRemove,
@@ -95,7 +73,7 @@ func NewLocalDaemon(apiClient client.CommonAPIClient, extraEnv []string, forceRe
 
 // ExtraEnv returns the env variables needed to point at this local Docker
 // eg. minikube. This has be set in addition to the current environment.
-func (l *localDaemon) ExtraEnv() []string {
+func (l *LocalDaemon) ExtraEnv() []string {
 	return l.extraEnv
 }
 
@@ -110,17 +88,17 @@ type BuildResult struct {
 }
 
 // Close closes the connection with the local daemon.
-func (l *localDaemon) Close() error {
+func (l *LocalDaemon) Close() error {
 	return l.apiClient.Close()
 }
 
 // ServerVersion retrieves the version information from the server.
-func (l *localDaemon) ServerVersion(ctx context.Context) (types.Version, error) {
+func (l *LocalDaemon) ServerVersion(ctx context.Context) (types.Version, error) {
 	return l.apiClient.ServerVersion(ctx)
 }
 
 // ConfigFile retrieves and caches image configurations.
-func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error) {
+func (l *LocalDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error) {
 	l.imageCacheLock.Lock()
 	defer l.imageCacheLock.Unlock()
 
@@ -149,7 +127,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 }
 
 // Build performs a docker build and returns the imageID.
-func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error) {
+func (l *LocalDaemon) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error) {
 	logrus.Debugf("Running docker build: context: %s, dockerfile: %s", workspace, a.DockerfilePath)
 
 	// Like `docker build`, we ignore the errors
@@ -230,7 +208,7 @@ func streamDockerMessages(dst io.Writer, src io.Reader, auxCallback func(jsonmes
 }
 
 // Push pushes an image reference to a registry. Returns the image digest.
-func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (string, error) {
+func (l *LocalDaemon) Push(ctx context.Context, out io.Writer, ref string) (string, error) {
 	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting auth config for %s", ref)
@@ -280,7 +258,7 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 }
 
 // isAlreadyPushed quickly checks if the local image has already been pushed.
-func (l *localDaemon) isAlreadyPushed(ctx context.Context, ref, registryAuth string) (bool, string, error) {
+func (l *LocalDaemon) isAlreadyPushed(ctx context.Context, ref, registryAuth string) (bool, string, error) {
 	localImage, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
 	if err != nil {
 		return false, "", err
@@ -308,7 +286,7 @@ func (l *localDaemon) isAlreadyPushed(ctx context.Context, ref, registryAuth str
 }
 
 // Pull pulls an image reference from a registry.
-func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string) error {
+func (l *LocalDaemon) Pull(ctx context.Context, out io.Writer, ref string) error {
 	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
 	if err != nil {
 		return errors.Wrapf(err, "getting auth config for %s", ref)
@@ -326,7 +304,7 @@ func (l *localDaemon) Pull(ctx context.Context, out io.Writer, ref string) error
 }
 
 // Load loads an image from a tar file. Returns the imageID for the loaded image.
-func (l *localDaemon) Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error) {
+func (l *LocalDaemon) Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error) {
 	resp, err := l.apiClient.ImageLoad(ctx, input, false)
 	if err != nil {
 		return "", errors.Wrap(err, "loading image into docker daemon")
@@ -342,7 +320,7 @@ func (l *localDaemon) Load(ctx context.Context, out io.Writer, input io.Reader, 
 }
 
 // Tag adds a tag to an image.
-func (l *localDaemon) Tag(ctx context.Context, image, ref string) error {
+func (l *LocalDaemon) Tag(ctx context.Context, image, ref string) error {
 	return l.apiClient.ImageTag(ctx, image, ref)
 }
 
@@ -351,7 +329,7 @@ func (l *localDaemon) Tag(ctx context.Context, image, ref string) error {
 // suffixed with the imageID, as a valid image name.
 // So, the solution we chose is to create a tag, just for Skaffold, from
 // the imageID, and use that in the manifests.
-func (l *localDaemon) TagWithImageID(ctx context.Context, ref string, imageID string) (string, error) {
+func (l *LocalDaemon) TagWithImageID(ctx context.Context, ref string, imageID string) (string, error) {
 	parsed, err := ParseReference(ref)
 	if err != nil {
 		return "", err
@@ -366,7 +344,7 @@ func (l *localDaemon) TagWithImageID(ctx context.Context, ref string, imageID st
 }
 
 // ImageID returns the image ID for a corresponding reference.
-func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
+func (l *LocalDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 	image, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
 	if err != nil {
 		if client.IsErrNotFound(err) {
@@ -378,16 +356,16 @@ func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 	return image.ID, nil
 }
 
-func (l *localDaemon) ImageExists(ctx context.Context, ref string) bool {
+func (l *LocalDaemon) ImageExists(ctx context.Context, ref string) bool {
 	_, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
 	return err == nil
 }
 
-func (l *localDaemon) ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error) {
+func (l *LocalDaemon) ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error) {
 	return l.apiClient.ImageInspectWithRaw(ctx, image)
 }
 
-func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error) {
+func (l *LocalDaemon) ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error) {
 	return l.apiClient.ImageRemove(ctx, image, opts)
 }
 
@@ -464,7 +442,7 @@ func EvaluateBuildArgs(args map[string]*string) (map[string]*string, error) {
 	return evaluated, nil
 }
 
-func (l *localDaemon) Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error {
+func (l *LocalDaemon) Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error {
 	for _, id := range images {
 		resp, err := l.ImageRemove(ctx, id, types.ImageRemoveOptions{
 			Force:         true,

@@ -69,13 +69,13 @@ type DockerAPI interface {
 
 type dockerAPI struct {
 	runCtx         *runcontext.RunContext
-	getLocalDaemon func() (LocalDaemon, error)
+	getLocalDaemon func() (*LocalDaemon, error)
 }
 
 func NewDockerAPI(runCtx *runcontext.RunContext) DockerAPI {
 	return &dockerAPI{
 		runCtx:         runCtx,
-		getLocalDaemon: func() (LocalDaemon, error) { return NewAPIClient(runCtx) },
+		getLocalDaemon: func() (*LocalDaemon, error) { return NewAPIClient(runCtx) },
 	}
 }
 
@@ -84,7 +84,7 @@ func NewDockerAPIForTests(apiClient client.CommonAPIClient, extraEnv []string, f
 		runCtx: &runcontext.RunContext{
 			InsecureRegistries: insecureRegistries,
 		},
-		getLocalDaemon: func() (LocalDaemon, error) {
+		getLocalDaemon: func() (*LocalDaemon, error) {
 			return NewLocalDaemon(apiClient, extraEnv, forceRemove, insecureRegistries), nil
 		},
 	}

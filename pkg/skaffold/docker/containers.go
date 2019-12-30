@@ -31,7 +31,7 @@ import (
 // ContainerRun runs a list of containers in sequence, stopping on the first error.
 // TODO: by properly interleaving calls to the Docker API, we could speed
 // things up by roughly 700ms.
-func (l *localDaemon) ContainerRun(ctx context.Context, out io.Writer, runs ...ContainerRun) error {
+func (l *LocalDaemon) ContainerRun(ctx context.Context, out io.Writer, runs ...ContainerRun) error {
 	for _, run := range runs {
 		container, err := l.apiClient.ContainerCreate(ctx, &container.Config{
 			Image: run.Image,
@@ -64,7 +64,7 @@ func (l *localDaemon) ContainerRun(ctx context.Context, out io.Writer, runs ...C
 	return nil
 }
 
-func (l *localDaemon) runAndLog(ctx context.Context, out io.Writer, containerID string) error {
+func (l *LocalDaemon) runAndLog(ctx context.Context, out io.Writer, containerID string) error {
 	if err := l.apiClient.ContainerStart(ctx, containerID, types.ContainerStartOptions{}); err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func (l *localDaemon) runAndLog(ctx context.Context, out io.Writer, containerID 
 }
 
 // CopyToContainer copies files to a running container.
-func (l *localDaemon) CopyToContainer(ctx context.Context, container string, dest string, root string, paths []string, uid, gid int, modTime time.Time) error {
+func (l *LocalDaemon) CopyToContainer(ctx context.Context, container string, dest string, root string, paths []string, uid, gid int, modTime time.Time) error {
 	r, w := io.Pipe()
 	go func() {
 		if err := util.CreateTarWithParents(w, root, paths, uid, gid, modTime); err != nil {
@@ -98,6 +98,6 @@ func (l *localDaemon) CopyToContainer(ctx context.Context, container string, des
 }
 
 // VolumeRemove removes a volume.
-func (l *localDaemon) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
+func (l *LocalDaemon) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
 	return l.apiClient.VolumeRemove(ctx, volumeID, force)
 }

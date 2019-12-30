@@ -47,12 +47,12 @@ var (
 
 var (
 	dockerAPIClientOnce sync.Once
-	dockerAPIClient     LocalDaemon
+	dockerAPIClient     *LocalDaemon
 	dockerAPIClientErr  error
 )
 
 // NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.
-func NewAPIClientImpl(runCtx *runcontext.RunContext) (LocalDaemon, error) {
+func NewAPIClientImpl(runCtx *runcontext.RunContext) (*LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
 		env, apiClient, err := newAPIClient(runCtx.KubeContext)
 		dockerAPIClient = NewLocalDaemon(apiClient, env, runCtx.Opts.Prune(), runCtx.InsecureRegistries)
