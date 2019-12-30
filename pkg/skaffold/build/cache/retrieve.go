@@ -103,7 +103,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		var uniqueTag string
 		if c.imagesAreLocal {
 			var err error
-			uniqueTag, err = build.TagWithImageIDNew(ctx, tag, entry.ID, c.docker)
+			uniqueTag, err = build.TagWithImageID(ctx, tag, entry.ID, c.docker)
 			if err != nil {
 				return nil, err
 			}

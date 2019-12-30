@@ -34,12 +34,8 @@ type fakeDockerAPI struct {
 	docker.DockerAPI
 }
 
-func (f *fakeDockerAPI) HasLocalDaemon() bool {
-	return true
-}
-
-func (f *fakeDockerAPI) ExtraEnv() []string {
-	return nil
+func (f *fakeDockerAPI) ExtraEnv() ([]string, error) {
+	return nil, nil
 }
 
 func TestNoTestDependencies(t *testing.T) {

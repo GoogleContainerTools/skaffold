@@ -56,10 +56,6 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 	return imageID, nil
 }
 
-func (b *Builder) retrieveExtraEnv() []string {
-	return b.docker.ExtraEnv()
-}
-
 func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, tag string) (string, error) {
 	dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.DockerfilePath)
 	if err != nil {
@@ -77,8 +73,13 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 		args = append(args, "--force-rm")
 	}
 
+	extraEnv, err := b.docker.ExtraEnv()
+	if err != nil {
+		return "", err
+	}
+
 	cmd := exec.CommandContext(ctx, "docker", args...)
-	cmd.Env = append(util.OSEnviron(), b.retrieveExtraEnv()...)
+	cmd.Env = append(util.OSEnviron(), extraEnv...)
 	if b.cfg.UseBuildkit {
 		cmd.Env = append(cmd.Env, "DOCKER_BUILDKIT=1")
 	}

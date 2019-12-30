@@ -60,8 +60,13 @@ func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, w
 }
 
 func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
+	extraEnv, err := b.docker.ExtraEnv()
+	if err != nil {
+		return err
+	}
+
 	cmd := GradleCommand.CreateCommand(ctx, workspace, args)
-	cmd.Env = append(util.OSEnviron(), b.docker.ExtraEnv()...)
+	cmd.Env = append(util.OSEnviron(), extraEnv...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 

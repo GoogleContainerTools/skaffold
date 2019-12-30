@@ -85,13 +85,18 @@ func (b *Builder) retrieveEnv(a *latest.Artifact, tag string) ([]string, error) 
 		return nil, errors.Wrap(err, "getting absolute path for artifact build context")
 	}
 
+	extraEnv, err := b.docker.ExtraEnv()
+	if err != nil {
+		return nil, err
+	}
+
 	envs := []string{
 		fmt.Sprintf("%s=%s", constants.Image, tag),
 		fmt.Sprintf("%s=%s", constants.DeprecatedImages, tag),
 		fmt.Sprintf("%s=%t", constants.PushImage, b.pushImages),
 		fmt.Sprintf("%s=%s", constants.BuildContext, buildContext),
 	}
-	envs = append(envs, b.additionalEnv...)
+	envs = append(envs, extraEnv...)
 	envs = append(envs, util.OSEnviron()...)
 	return envs, nil
 }

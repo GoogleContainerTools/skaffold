@@ -27,7 +27,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"sync"
 
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
@@ -35,32 +34,9 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
-
-// For testing
-var (
-	NewAPIClient = NewAPIClientImpl
-)
-
-var (
-	dockerAPIClientOnce sync.Once
-	dockerAPIClient     *LocalDaemon
-	dockerAPIClientErr  error
-)
-
-// NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.
-func NewAPIClientImpl(runCtx *runcontext.RunContext) (*LocalDaemon, error) {
-	dockerAPIClientOnce.Do(func() {
-		env, apiClient, err := newAPIClient(runCtx.KubeContext)
-		dockerAPIClient = NewLocalDaemon(apiClient, env, runCtx.Opts.Prune(), runCtx.InsecureRegistries)
-		dockerAPIClientErr = err
-	})
-
-	return dockerAPIClient, dockerAPIClientErr
-}
 
 // newAPIClient guesses the docker client to use based on current Kubernetes context.
 func newAPIClient(kubeContext string) ([]string, client.CommonAPIClient, error) {

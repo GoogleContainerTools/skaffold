@@ -23,17 +23,32 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/pkg/stdcopy"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+type ContainerRun struct {
+	Image       string
+	User        string
+	Command     []string
+	Mounts      []mount.Mount
+	Env         []string
+	BeforeStart func(context.Context, string) error
+}
+
 // ContainerRun runs a list of containers in sequence, stopping on the first error.
 // TODO: by properly interleaving calls to the Docker API, we could speed
 // things up by roughly 700ms.
-func (l *LocalDaemon) ContainerRun(ctx context.Context, out io.Writer, runs ...ContainerRun) error {
+func (d *dockerAPI) ContainerRun(ctx context.Context, out io.Writer, runs ...ContainerRun) error {
+	_, apiClient, err := d.getAPIClient()
+	if err != nil {
+		return err
+	}
+
 	for _, run := range runs {
-		container, err := l.apiClient.ContainerCreate(ctx, &container.Config{
+		container, err := apiClient.ContainerCreate(ctx, &container.Config{
 			Image: run.Image,
 			Cmd:   run.Command,
 			User:  run.User,
@@ -49,10 +64,10 @@ func (l *LocalDaemon) ContainerRun(ctx context.Context, out io.Writer, runs ...C
 			run.BeforeStart(ctx, container.ID)
 		}
 
-		errRun := l.runAndLog(ctx, out, container.ID)
+		errRun := d.runAndLog(ctx, out, container.ID)
 
 		// Don't use ctx. It might have been cancelled by Ctrl-C
-		if err := l.apiClient.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{Force: true}); err != nil {
+		if err := apiClient.ContainerRemove(context.Background(), container.ID, types.ContainerRemoveOptions{Force: true}); err != nil {
 			return err
 		}
 
@@ -64,12 +79,17 @@ func (l *LocalDaemon) ContainerRun(ctx context.Context, out io.Writer, runs ...C
 	return nil
 }
 
-func (l *LocalDaemon) runAndLog(ctx context.Context, out io.Writer, containerID string) error {
-	if err := l.apiClient.ContainerStart(ctx, containerID, types.ContainerStartOptions{}); err != nil {
+func (d *dockerAPI) runAndLog(ctx context.Context, out io.Writer, containerID string) error {
+	_, apiClient, err := d.getAPIClient()
+	if err != nil {
 		return err
 	}
 
-	logs, err := l.apiClient.ContainerLogs(ctx, containerID, types.ContainerLogsOptions{
+	if err := apiClient.ContainerStart(ctx, containerID, types.ContainerStartOptions{}); err != nil {
+		return err
+	}
+
+	logs, err := apiClient.ContainerLogs(ctx, containerID, types.ContainerLogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
 		Follow:     true,
@@ -84,7 +104,12 @@ func (l *LocalDaemon) runAndLog(ctx context.Context, out io.Writer, containerID 
 }
 
 // CopyToContainer copies files to a running container.
-func (l *LocalDaemon) CopyToContainer(ctx context.Context, container string, dest string, root string, paths []string, uid, gid int, modTime time.Time) error {
+func (d *dockerAPI) CopyToContainer(ctx context.Context, container string, dest string, root string, paths []string, uid, gid int, modTime time.Time) error {
+	_, apiClient, err := d.getAPIClient()
+	if err != nil {
+		return err
+	}
+
 	r, w := io.Pipe()
 	go func() {
 		if err := util.CreateTarWithParents(w, root, paths, uid, gid, modTime); err != nil {
@@ -94,10 +119,15 @@ func (l *LocalDaemon) CopyToContainer(ctx context.Context, container string, des
 		}
 	}()
 
-	return l.apiClient.CopyToContainer(ctx, container, dest, r, types.CopyToContainerOptions{})
+	return apiClient.CopyToContainer(ctx, container, dest, r, types.CopyToContainerOptions{})
 }
 
 // VolumeRemove removes a volume.
-func (l *LocalDaemon) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
-	return l.apiClient.VolumeRemove(ctx, volumeID, force)
+func (d *dockerAPI) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
+	_, apiClient, err := d.getAPIClient()
+	if err != nil {
+		return err
+	}
+
+	return apiClient.VolumeRemove(ctx, volumeID, force)
 }

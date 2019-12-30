@@ -27,16 +27,26 @@ import (
 
 // for testing
 var (
-	getInsecureRegistryImpl = getInsecureRegistry
-	getRemoteImageImpl      = getRemoteImage
-	RemoteDigest            = getRemoteDigest
+	getRemoteImageImpl = getRemoteImage
+	RemoteDigest       = getRemoteDigest
 )
 
-func AddRemoteTag(src, target string, insecureRegistries map[string]bool) error {
+// Remote Operations
+
+func (d *dockerAPI) InsecureRegistries() map[string]bool {
+	return d.insecureRegistries
+}
+
+func (d *dockerAPI) RemoteDigest(identifier string) (string, error) {
+	return RemoteDigest(identifier, d.insecureRegistries)
+}
+
+func (d *dockerAPI) AddRemoteTag(src, target string) error {
 	logrus.Debugf("attempting to add tag %s to src %s", target, src)
-	img, err := remoteImage(src, insecureRegistries)
+
+	img, err := remoteImage(src, d.insecureRegistries)
 	if err != nil {
-		return errors.Wrap(err, "getting image")
+		return err
 	}
 
 	targetRef, err := name.ParseReference(target, name.WeakValidation)
@@ -44,8 +54,8 @@ func AddRemoteTag(src, target string, insecureRegistries map[string]bool) error 
 		return errors.Wrap(err, "getting target reference")
 	}
 
-	if IsInsecure(targetRef.Context().Registry.Name(), insecureRegistries) {
-		targetRef, err = getInsecureRegistryImpl(target)
+	if IsInsecure(targetRef.Context().Registry.Name(), d.insecureRegistries) {
+		targetRef, err = name.ParseReference(target, name.Insecure)
 		if err != nil {
 			logrus.Warnf("error getting insecure registry: %s\nremote references may not be retrieved", err.Error())
 		}
@@ -53,6 +63,37 @@ func AddRemoteTag(src, target string, insecureRegistries map[string]bool) error 
 
 	return remote.Write(targetRef, img, remote.WithAuth(authenticators.For(targetRef)))
 }
+
+// RetrieveRemoteConfig retrieves the remote config file for an image
+func (d *dockerAPI) RetrieveRemoteConfig(identifier string) (*v1.ConfigFile, error) {
+	img, err := remoteImage(identifier, d.insecureRegistries)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting image")
+	}
+
+	return img.ConfigFile()
+}
+
+// Push pushes the tarball image
+func (d *dockerAPI) PushTar(tarPath, tag string) (string, error) {
+	t, err := name.NewTag(tag, name.WeakValidation)
+	if err != nil {
+		return "", errors.Wrapf(err, "parsing tag %q", tag)
+	}
+
+	i, err := tarball.ImageFromPath(tarPath, nil)
+	if err != nil {
+		return "", errors.Wrapf(err, "reading image %q", tarPath)
+	}
+
+	if err := remote.Write(t, i, remote.WithAuth(authenticators.For(t))); err != nil {
+		return "", errors.Wrapf(err, "writing image %q", t)
+	}
+
+	return getRemoteDigest(tag, d.insecureRegistries)
+}
+
+// Implementation
 
 func getRemoteDigest(identifier string, insecureRegistries map[string]bool) (string, error) {
 	img, err := remoteImage(identifier, insecureRegistries)
@@ -68,57 +109,20 @@ func getRemoteDigest(identifier string, insecureRegistries map[string]bool) (str
 	return h.String(), nil
 }
 
-// RetrieveRemoteConfig retrieves the remote config file for an image
-func RetrieveRemoteConfig(identifier string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {
-	img, err := remoteImage(identifier, insecureRegistries)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting image")
-	}
-
-	return img.ConfigFile()
-}
-
-// Push pushes the tarball image
-func Push(tarPath, tag string, insecureRegistries map[string]bool) (string, error) {
-	t, err := name.NewTag(tag, name.WeakValidation)
-	if err != nil {
-		return "", errors.Wrapf(err, "parsing tag %q", tag)
-	}
-
-	i, err := tarball.ImageFromPath(tarPath, nil)
-	if err != nil {
-		return "", errors.Wrapf(err, "reading image %q", tarPath)
-	}
-
-	if err := remote.Write(t, i, remote.WithAuth(authenticators.For(t))); err != nil {
-		return "", errors.Wrapf(err, "writing image %q", t)
-	}
-
-	return getRemoteDigest(tag, insecureRegistries)
-}
-
-func remoteImage(identifier string, insecureRegistries map[string]bool) (v1.Image, error) {
-	ref, err := name.ParseReference(identifier)
+func remoteImage(identifier string, insecureRegistries map[string]bool, opts ...name.Option) (v1.Image, error) {
+	ref, err := name.ParseReference(identifier, opts...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "parsing reference [%s]", identifier)
 	}
 
 	if IsInsecure(ref.Context().Registry.Name(), insecureRegistries) {
-		ref, err = getInsecureRegistryImpl(identifier)
+		ref, err = name.ParseReference(identifier, name.Insecure)
 		if err != nil {
 			logrus.Warnf("error getting insecure registry: %s\nremote references may not be retrieved", err.Error())
 		}
 	}
 
 	return getRemoteImageImpl(ref)
-}
-
-func getInsecureRegistry(identifier string) (name.Reference, error) {
-	ref, err := name.ParseReference(identifier, name.Insecure)
-	if err != nil {
-		return nil, errors.Wrapf(err, "parsing reference [%s]", identifier)
-	}
-	return ref, nil
 }
 
 // IsInsecure tests if the registry is listed as an insecure registry; default is false

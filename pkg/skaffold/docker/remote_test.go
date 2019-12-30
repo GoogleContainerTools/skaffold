@@ -19,6 +19,11 @@ package docker
 import (
 	"testing"
 
+	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/random"
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -39,6 +44,59 @@ func TestIsInsecure(t *testing.T) {
 			result := IsInsecure(test.registry, test.insecureRegistries)
 
 			t.CheckDeepEqual(test.result, result)
+		})
+	}
+}
+
+func TestGetRemoteDigest(t *testing.T) {
+	tests := []struct {
+		description        string
+		image              string
+		insecureRegistries map[string]bool
+		insecure           bool
+		shouldErr          bool
+	}{
+		{
+			description: "secure image",
+			image:       "gcr.io/secure/image",
+		},
+		{
+			description: "insecure image",
+			image:       "my.insecure.registry/image",
+			insecureRegistries: map[string]bool{
+				"my.insecure.registry": true,
+			},
+			insecure: true,
+		},
+		{
+			description: "unknown insecure registry",
+			image:       "my.insecure.registry/image",
+			insecure:    true,
+			shouldErr:   true,
+		},
+		{
+			description: "secure image provided in insecure registries list",
+			image:       "gcr.io/secure/image",
+			insecureRegistries: map[string]bool{
+				"gcr.io": true,
+			},
+			shouldErr: true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&getRemoteImageImpl, func(ref name.Reference) (v1.Image, error) {
+				sheme := ref.Context().Scheme()
+				if (sheme == "http" && !test.insecure) || (sheme == "https" && test.insecure) {
+					return nil, errors.New("BUG")
+				}
+
+				return random.Image(0, 1)
+			})
+
+			_, err := getRemoteDigest(test.image, test.insecureRegistries)
+
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }

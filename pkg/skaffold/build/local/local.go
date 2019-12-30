@@ -72,7 +72,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 
 	imageID := digestOrImageID
 	b.builtImages = append(b.builtImages, imageID)
-	return build.TagWithImageIDNew(ctx, tag, imageID, b.docker)
+	return build.TagWithImageID(ctx, tag, imageID, b.docker)
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
@@ -87,7 +87,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return jib.NewArtifactBuilder(b.docker, b.pushImages, b.skipTests).Build(ctx, out, artifact, tag)
 
 	case artifact.CustomArtifact != nil:
-		return custom.NewArtifactBuilder(b.docker, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
+		return custom.NewArtifactBuilder(b.docker, b.pushImages).Build(ctx, out, artifact, tag)
 
 	case artifact.BuildpackArtifact != nil:
 		return buildpacks.NewArtifactBuilder(b.docker, b.pushImages).Build(ctx, out, artifact, tag)

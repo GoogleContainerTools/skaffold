@@ -23,6 +23,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -68,8 +69,9 @@ func TestRetrieveEnv(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.environ })
 			t.Override(&buildContext, func(string) (string, error) { return test.buildContext, nil })
+			docker := docker.NewDockerAPIForTests(&testutil.FakeAPIClient{}, test.additionalEnv, false, nil)
 
-			builder := NewArtifactBuilder(nil, test.pushImages, test.additionalEnv)
+			builder := NewArtifactBuilder(docker, test.pushImages)
 			actual, err := builder.retrieveEnv(&latest.Artifact{}, test.tag)
 
 			t.CheckNoError(err)
@@ -117,8 +119,9 @@ func TestRetrieveCmd(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.OSEnviron, func() []string { return nil })
 			t.Override(&buildContext, func(string) (string, error) { return test.artifact.Workspace, nil })
+			docker := docker.NewDockerAPIForTests(&testutil.FakeAPIClient{}, nil, false, nil)
 
-			builder := NewArtifactBuilder(nil, false, nil)
+			builder := NewArtifactBuilder(docker, false)
 			cmd, err := builder.retrieveCmd(context.Background(), ioutil.Discard, test.artifact, test.tag)
 
 			t.CheckNoError(err)

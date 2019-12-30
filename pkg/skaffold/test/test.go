@@ -34,14 +34,16 @@ import (
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
 func NewTester(runCtx *runcontext.RunContext, docker docker.DockerAPI) Tester {
-	if !docker.HasLocalDaemon() {
+	extraEnv, err := docker.ExtraEnv()
+	if err != nil {
+		// No local daemon
 		return nil
 	}
 
 	return FullTester{
 		testCases:  runCtx.Cfg.Test,
 		workingDir: runCtx.WorkingDir,
-		extraEnv:   docker.ExtraEnv(),
+		extraEnv:   extraEnv,
 	}
 }
 

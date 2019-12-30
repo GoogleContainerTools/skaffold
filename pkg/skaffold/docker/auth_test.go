@@ -80,7 +80,7 @@ func TestGetEncodedRegistryAuth(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&DefaultAuthHelper, test.authType)
 
-			l := &localDaemon{}
+			l := &dockerAPI{}
 			out, err := l.encodedRegistryAuth(context.Background(), test.authType, test.image)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out)

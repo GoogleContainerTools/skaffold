@@ -25,9 +25,6 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
-	"github.com/google/go-containerregistry/pkg/name"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/random"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -69,8 +66,8 @@ func TestPush(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
 
-			localDocker := NewLocalDaemon(test.api, nil, false, nil)
-			digest, err := localDocker.Push(context.Background(), ioutil.Discard, test.imageName)
+			docker := NewDockerAPIForTests(test.api, nil, false, nil)
+			digest, err := docker.Push(context.Background(), ioutil.Discard, test.imageName)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDigest, digest)
 		})
@@ -83,16 +80,16 @@ func TestDoNotPushAlreadyPushed(t *testing.T) {
 
 		api := &testutil.FakeAPIClient{}
 		api.Add("image", "sha256:imageIDabcab")
-		localDocker := NewLocalDaemon(api, nil, false, nil)
 
-		digest, err := localDocker.Push(context.Background(), ioutil.Discard, "image")
+		docker := NewDockerAPIForTests(api, nil, false, nil)
+		digest, err := docker.Push(context.Background(), ioutil.Discard, "image")
 		t.CheckNoError(err)
 		t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
 
 		// Images already pushed don't need being pushed.
 		api.ErrImagePush = true
 
-		digest, err = localDocker.Push(context.Background(), ioutil.Discard, "image")
+		digest, err = docker.Push(context.Background(), ioutil.Discard, "image")
 		t.CheckNoError(err)
 		t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
 	})
@@ -189,8 +186,8 @@ func TestBuild(t *testing.T) {
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
 			t.SetEnvs(test.env)
 
-			localDocker := NewLocalDaemon(test.api, nil, false, nil)
-			_, err := localDocker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage")
+			docker := NewDockerAPIForTests(test.api, nil, false, nil)
+			_, err := docker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage")
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
@@ -239,95 +236,11 @@ func TestImageID(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			localDocker := NewLocalDaemon(test.api, nil, false, nil)
+			docker := NewDockerAPIForTests(test.api, nil, false, nil)
 
-			imageID, err := localDocker.ImageID(context.Background(), test.ref)
+			imageID, err := docker.ImageID(context.Background(), test.ref)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, imageID)
-		})
-	}
-}
-
-func TestGetBuildArgs(t *testing.T) {
-	tests := []struct {
-		description string
-		artifact    *latest.DockerArtifact
-		env         []string
-		want        []string
-		shouldErr   bool
-	}{
-		{
-			description: "build args",
-			artifact: &latest.DockerArtifact{
-				BuildArgs: map[string]*string{
-					"key1": util.StringPtr("value1"),
-					"key2": nil,
-					"key3": util.StringPtr("{{.FOO}}"),
-				},
-			},
-			env:  []string{"FOO=bar"},
-			want: []string{"--build-arg", "key1=value1", "--build-arg", "key2", "--build-arg", "key3=bar"},
-		},
-		{
-			description: "invalid build arg",
-			artifact: &latest.DockerArtifact{
-				BuildArgs: map[string]*string{
-					"key": util.StringPtr("{{INVALID"),
-				},
-			},
-			shouldErr: true,
-		},
-		{
-			description: "cache from",
-			artifact: &latest.DockerArtifact{
-				CacheFrom: []string{"gcr.io/foo/bar", "baz:latest"},
-			},
-			want: []string{"--cache-from", "gcr.io/foo/bar", "--cache-from", "baz:latest"},
-		},
-		{
-			description: "target",
-			artifact: &latest.DockerArtifact{
-				Target: "stage1",
-			},
-			want: []string{"--target", "stage1"},
-		},
-		{
-			description: "network mode",
-			artifact: &latest.DockerArtifact{
-				NetworkMode: "Bridge",
-			},
-			want: []string{"--network", "bridge"},
-		},
-		{
-			description: "no-cache",
-			artifact: &latest.DockerArtifact{
-				NoCache: true,
-			},
-			want: []string{"--no-cache"},
-		},
-		{
-			description: "all",
-			artifact: &latest.DockerArtifact{
-				BuildArgs: map[string]*string{
-					"key1": util.StringPtr("value1"),
-				},
-				CacheFrom:   []string{"foo"},
-				Target:      "stage1",
-				NetworkMode: "None",
-			},
-			want: []string{"--build-arg", "key1=value1", "--cache-from", "foo", "--target", "stage1", "--network", "none"},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.OSEnviron, func() []string { return test.env })
-
-			result, err := GetBuildArgs(test.artifact)
-
-			t.CheckError(test.shouldErr, err)
-			if !test.shouldErr {
-				t.CheckDeepEqual(test.want, result)
-			}
 		})
 	}
 }
@@ -359,70 +272,11 @@ func TestImageExists(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			localDocker := NewLocalDaemon(test.api, nil, false, nil)
+			docker := NewDockerAPIForTests(test.api, nil, false, nil)
 
-			actual := localDocker.ImageExists(context.Background(), test.image)
+			actual, _ := docker.ImageExists(context.Background(), test.image)
 
 			t.CheckDeepEqual(test.expected, actual)
-		})
-	}
-}
-
-func TestInsecureRegistry(t *testing.T) {
-	tests := []struct {
-		description        string
-		image              string
-		insecureRegistries map[string]bool
-		insecure           bool
-		shouldErr          bool
-	}{
-		{
-			description:        "secure image",
-			image:              "gcr.io/secure/image",
-			insecureRegistries: map[string]bool{},
-		},
-		{
-			description: "insecure image",
-			image:       "my.insecure.registry/image",
-			insecureRegistries: map[string]bool{
-				"my.insecure.registry": true,
-			},
-			insecure: true,
-		},
-		{
-			description: "insecure image not provided by user",
-			image:       "my.insecure.registry/image",
-			insecure:    true,
-			shouldErr:   true,
-		},
-		{
-			description: "secure image provided in insecure registries list",
-			image:       "gcr.io/secure/image",
-			insecureRegistries: map[string]bool{
-				"gcr.io": true,
-			},
-			shouldErr: true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			called := false // variable to make sure we've called our getInsecureRegistry function
-
-			t.Override(&getInsecureRegistryImpl, func(string) (name.Reference, error) {
-				called = true
-				return name.Tag{}, nil
-			})
-			t.Override(&getRemoteImageImpl, func(name.Reference) (v1.Image, error) {
-				return random.Image(0, 0)
-			})
-
-			_, err := remoteImage(test.image, test.insecureRegistries)
-
-			t.CheckNoError(err)
-			if !test.shouldErr {
-				t.CheckFalse(test.insecure && !called)
-				t.CheckFalse(!test.insecure && called)
-			}
 		})
 	}
 }
@@ -430,8 +284,8 @@ func TestInsecureRegistry(t *testing.T) {
 func TestConfigFile(t *testing.T) {
 	api := (&testutil.FakeAPIClient{}).Add("gcr.io/image", "sha256:imageIDabcab")
 
-	localDocker := NewLocalDaemon(api, nil, false, nil)
-	cfg, err := localDocker.ConfigFile(context.Background(), "gcr.io/image")
+	docker := NewDockerAPIForTests(api, nil, false, nil)
+	cfg, err := docker.ConfigFile(context.Background(), "gcr.io/image")
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, "sha256:imageIDabcab", cfg.Config.Image)
 }
@@ -451,13 +305,13 @@ func TestConfigFileConcurrentCalls(t *testing.T) {
 		CommonAPIClient: (&testutil.FakeAPIClient{}).Add("gcr.io/image", "sha256:imageIDabcab"),
 	}
 
-	localDocker := NewLocalDaemon(api, nil, false, nil)
+	docker := NewDockerAPIForTests(api, nil, false, nil)
 
 	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
 		wg.Add(1)
 		go func() {
-			localDocker.ConfigFile(context.Background(), "gcr.io/image")
+			docker.ConfigFile(context.Background(), "gcr.io/image")
 			wg.Done()
 		}()
 	}
@@ -503,8 +357,8 @@ func TestTagWithImageID(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			api := (&testutil.FakeAPIClient{}).Add("sha256:imageID", "sha256:imageID")
 
-			localDocker := NewLocalDaemon(api, nil, false, nil)
-			tag, err := localDocker.TagWithImageID(context.Background(), test.imageName, test.imageID)
+			docker := NewDockerAPIForTests(api, nil, false, nil)
+			tag, err := docker.TagWithImageID(context.Background(), test.imageName, test.imageID)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, tag)

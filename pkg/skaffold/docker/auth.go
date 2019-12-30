@@ -106,7 +106,7 @@ func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
 	return authConfigs, nil
 }
 
-func (l *LocalDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {
+func (d *dockerAPI) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {
 	ref, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing image name for registry")
@@ -119,7 +119,7 @@ func (l *LocalDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelpe
 
 	configKey := repoInfo.Index.Name
 	if repoInfo.Index.Official {
-		configKey = l.officialRegistry(ctx)
+		configKey = d.officialRegistry(ctx)
 	}
 
 	ac, err := a.GetAuthConfig(configKey)
@@ -135,11 +135,17 @@ func (l *LocalDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelpe
 	return base64.URLEncoding.EncodeToString(buf), nil
 }
 
-func (l *LocalDaemon) officialRegistry(ctx context.Context) string {
+func (d *dockerAPI) officialRegistry(ctx context.Context) string {
 	serverAddress := registry.IndexServer
 
+	_, apiClient, err := d.getAPIClient()
+	if err != nil {
+		logrus.Warnf("failed to get default registry endpoint from daemon (%v). Using system default: %s\n", err, serverAddress)
+		return serverAddress
+	}
+
 	// The daemon `/info` endpoint informs us of the default registry being used.
-	info, err := l.apiClient.Info(ctx)
+	info, err := apiClient.Info(ctx)
 	switch {
 	case err != nil:
 		logrus.Warnf("failed to get default registry endpoint from daemon (%v). Using system default: %s\n", err, serverAddress)

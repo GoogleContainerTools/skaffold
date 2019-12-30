@@ -59,8 +59,13 @@ func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, wo
 }
 
 func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
+	extraEnv, err := b.docker.ExtraEnv()
+	if err != nil {
+		return err
+	}
+
 	cmd := MavenCommand.CreateCommand(ctx, workspace, args)
-	cmd.Env = append(util.OSEnviron(), b.docker.ExtraEnv()...)
+	cmd.Env = append(util.OSEnviron(), extraEnv...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 
