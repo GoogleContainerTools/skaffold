@@ -173,7 +173,7 @@ func TestKubectlDeploy(t *testing.T) {
 					Namespace: testNamespace,
 					Force:     test.forceDeploy,
 				},
-			})
+			}, nil)
 
 			err := k.Deploy(context.Background(), ioutil.Discard, test.builds, nil).GetError()
 
@@ -243,7 +243,7 @@ func TestKubectlCleanup(t *testing.T) {
 				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
-			})
+			}, nil)
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
 			t.CheckError(test.shouldErr, err)
@@ -298,7 +298,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
 				},
-			})
+			}, nil)
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
 			t.CheckNoError(err)
@@ -366,7 +366,7 @@ spec:
 			Opts: config.SkaffoldOptions{
 				Namespace: testNamespace,
 			},
-		})
+		}, nil)
 
 		// Deploy one manifest
 		err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
@@ -451,7 +451,7 @@ func TestDependencies(t *testing.T) {
 						},
 					},
 				},
-			})
+			}, nil)
 			dependencies, err := k.Dependencies()
 
 			t.CheckNoError(err)
@@ -523,7 +523,7 @@ spec:
 					},
 				},
 				KubeContext: testKubeContext,
-			})
+			}, nil)
 			var b bytes.Buffer
 			err := deployer.Render(context.Background(), &b, test.builds, "")
 			t.CheckNoError(err)

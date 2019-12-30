@@ -29,8 +29,6 @@ import (
 func TestDockerContext(t *testing.T) {
 	for _, dir := range []string{".", "sub"} {
 		testutil.Run(t, dir, func(t *testutil.T) {
-			imageFetcher := fakeImageFetcher{}
-			t.Override(&RetrieveImage, imageFetcher.fetch)
 			t.NewTempDir().
 				Write(dir+"/.dockerignore", "**/ignored.txt\nalsoignored.txt").
 				Write(dir+"/Dockerfile", "FROM busybox\nCOPY ./files /files").
@@ -46,7 +44,7 @@ func TestDockerContext(t *testing.T) {
 
 			reader, writer := io.Pipe()
 			go func() {
-				err := CreateDockerTarContext(context.Background(), writer, dir, artifact, nil)
+				err := CreateDockerTarContext(context.Background(), writer, dir, artifact, &fakeImageFetcher{})
 				if err != nil {
 					writer.CloseWithError(err)
 				} else {

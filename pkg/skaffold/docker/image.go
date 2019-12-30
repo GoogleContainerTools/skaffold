@@ -37,6 +37,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -162,7 +163,9 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a, l.insecureRegistries)
+		err := CreateDockerTarContext(ctx, buildCtxWriter, workspace, a, NewDockerAPI(&runcontext.RunContext{
+			InsecureRegistries: l.insecureRegistries,
+		}))
 		if err != nil {
 			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
 			return

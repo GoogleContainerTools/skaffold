@@ -381,9 +381,6 @@ func TestSyncMap(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			imageFetcher := fakeImageFetcher{}
-			t.Override(&RetrieveImage, imageFetcher.fetch)
-
 			tmpDir := t.NewTempDir().
 				Touch("docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot")
 
@@ -395,7 +392,7 @@ func TestSyncMap(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := SyncMap(context.Background(), workspace, "Dockerfile", test.buildArgs, nil)
+			deps, err := SyncMap(context.Background(), workspace, "Dockerfile", test.buildArgs, &fakeImageFetcher{})
 
 			// destinations are not sorted, but for the test assertion they must be
 			for _, dsts := range deps {
@@ -483,16 +480,13 @@ ADD * .
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			imageFetcher := fakeImageFetcher{}
-			t.Override(&RetrieveImage, imageFetcher.fetch)
-
 			tmpDir := t.NewTempDir().
 				Touch("subfolder/bar", "baz", "foo", "bar", "ignored/bar").
 				Write(".dockerignore", "Dockerfile\n.dockerignore\nignored/bar").
 				Write("Dockerfile", test.dockerfile)
 
 			for i := 0; i < repeat; i++ {
-				deps, err := SyncMap(context.Background(), tmpDir.Root(), "Dockerfile", nil, nil)
+				deps, err := SyncMap(context.Background(), tmpDir.Root(), "Dockerfile", nil, &fakeImageFetcher{})
 
 				// destinations are not sorted, but for the test assertion they must be
 				for _, dsts := range deps {

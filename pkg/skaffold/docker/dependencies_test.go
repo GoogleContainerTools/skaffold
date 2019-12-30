@@ -215,9 +215,11 @@ FROM stage
 ADD ./file /etc/file
 `
 
-type fakeImageFetcher struct{}
+type fakeImageFetcher struct {
+	DockerAPI
+}
 
-func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*v1.ConfigFile, error) {
+func (f *fakeImageFetcher) ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error) {
 	switch image {
 	case "ubuntu:14.04", "busybox", "nginx", "golang:1.9.2", "jboss/wildfly:14.0.1.Final", "gcr.io/distroless/base":
 		return &v1.ConfigFile{}, nil
@@ -526,8 +528,6 @@ func TestGetDependencies(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			imageFetcher := fakeImageFetcher{}
-			t.Override(&RetrieveImage, imageFetcher.fetch)
 			t.Override(&util.OSEnviron, func() []string { return test.env })
 
 			tmpDir := t.NewTempDir().
@@ -542,7 +542,7 @@ func TestGetDependencies(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := GetDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs, nil)
+			deps, err := GetDependencies(context.Background(), workspace, "Dockerfile", test.buildArgs, &fakeImageFetcher{})
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, deps)

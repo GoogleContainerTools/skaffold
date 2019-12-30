@@ -55,7 +55,7 @@ type cache struct {
 type DependencyLister func(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 
 // NewCache returns the current state of the cache
-func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies DependencyLister) Cache {
+func NewCache(runCtx *runcontext.RunContext, docker docker.DockerAPI, imagesAreLocal bool, dependencies DependencyLister) Cache {
 	if !runCtx.Opts.CacheArtifacts {
 		return &noCache{}
 	}
@@ -75,7 +75,7 @@ func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies D
 	return &cache{
 		artifactCache:  artifactCache,
 		dependencies:   dependencies,
-		docker:         docker.NewDockerAPI(runCtx),
+		docker:         docker,
 		cacheFile:      cacheFile,
 		imagesAreLocal: imagesAreLocal,
 	}

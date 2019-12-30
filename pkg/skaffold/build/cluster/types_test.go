@@ -35,7 +35,7 @@ func TestNewBuilderFail(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		_, err := NewBuilder(stubRunContext(&latest.ClusterDetails{
 			Timeout: "illegal",
-		}, nil))
+		}, nil), nil)
 
 		t.CheckError(true, err)
 	})

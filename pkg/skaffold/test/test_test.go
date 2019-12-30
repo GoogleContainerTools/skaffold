@@ -23,16 +23,30 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+type fakeDockerAPI struct {
+	docker.DockerAPI
+}
+
+func (f *fakeDockerAPI) HasLocalDaemon() bool {
+	return true
+}
+
+func (f *fakeDockerAPI) ExtraEnv() []string {
+	return nil
+}
+
 func TestNoTestDependencies(t *testing.T) {
 	runCtx := &runcontext.RunContext{}
 
-	deps, err := NewTester(runCtx).TestDependencies()
+	tester := NewTester(runCtx, &fakeDockerAPI{})
+	deps, err := tester.TestDependencies()
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, 0, len(deps))
 }
@@ -54,7 +68,8 @@ func TestTestDependencies(t *testing.T) {
 		},
 	}
 
-	deps, err := NewTester(runCtx).TestDependencies()
+	tester := NewTester(runCtx, &fakeDockerAPI{})
+	deps, err := tester.TestDependencies()
 
 	expectedDeps := tmpDir.Paths("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 	testutil.CheckErrorAndDeepEqual(t, false, err, expectedDeps, deps)
@@ -69,7 +84,7 @@ func TestWrongPattern(t *testing.T) {
 		},
 	}
 
-	tester := NewTester(runCtx)
+	tester := NewTester(runCtx, &fakeDockerAPI{})
 
 	_, err := tester.TestDependencies()
 	testutil.CheckError(t, true, err)
@@ -81,7 +96,8 @@ func TestWrongPattern(t *testing.T) {
 func TestNoTest(t *testing.T) {
 	runCtx := &runcontext.RunContext{}
 
-	err := NewTester(runCtx).Test(context.Background(), ioutil.Discard, nil)
+	tester := NewTester(runCtx, &fakeDockerAPI{})
+	err := tester.Test(context.Background(), ioutil.Discard, nil)
 
 	testutil.CheckError(t, false, err)
 }
@@ -112,7 +128,8 @@ func TestTestSuccess(t *testing.T) {
 			},
 		}
 
-		err := NewTester(runCtx).Test(context.Background(), ioutil.Discard, []build.Artifact{{
+		tester := NewTester(runCtx, &fakeDockerAPI{})
+		err := tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{
 			ImageName: "image",
 			Tag:       "TAG",
 		}})
@@ -142,7 +159,9 @@ func TestTestFailure(t *testing.T) {
 			},
 		}
 
-		err := NewTester(runCtx).Test(context.Background(), ioutil.Discard, []build.Artifact{{}})
+		tester := NewTester(runCtx, &fakeDockerAPI{})
+		err := tester.Test(context.Background(), ioutil.Discard, []build.Artifact{{}})
+
 		t.CheckError(true, err)
 	})
 }

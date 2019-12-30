@@ -51,7 +51,7 @@ type Builder struct {
 var getLocalCluster = config.GetLocalCluster
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
+func NewBuilder(runCtx *runcontext.RunContext, docker docker.DockerAPI) (*Builder, error) {
 	localCluster, err := getLocalCluster(runCtx.Opts.GlobalConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting localCluster")
@@ -68,7 +68,7 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	return &Builder{
 		cfg:           runCtx.Cfg.Build.LocalBuild,
 		kubeContext:   runCtx.KubeContext,
-		docker:        docker.NewDockerAPI(runCtx),
+		docker:        docker,
 		localCluster:  localCluster,
 		pushImages:    pushImages,
 		skipTests:     runCtx.Opts.SkipTests,

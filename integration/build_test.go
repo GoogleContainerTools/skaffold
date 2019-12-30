@@ -151,12 +151,14 @@ func checkImageExists(t *testing.T, image string) {
 		return
 	}
 
-	client, err := docker.NewAPIClient(&runcontext.RunContext{})
-	failNowIfError(t, err)
-
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
 	defer cancel()
-	if !client.ImageExists(ctx, image) {
+
+	docker := docker.NewDockerAPI(&runcontext.RunContext{})
+	exists, err := docker.ImageExists(ctx, image)
+	failNowIfError(t, err)
+
+	if !exists {
 		t.Errorf("expected image '%s' not present", image)
 	}
 }

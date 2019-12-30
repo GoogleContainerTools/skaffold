@@ -45,7 +45,7 @@ func TestRetrieveEnv(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, nil)
 	testutil.CheckError(t, false, err)
 
 	actual := builder.retrieveExtraEnv()
@@ -64,7 +64,7 @@ func TestRetrieveEnvMinimal(t *testing.T) {
 				},
 			},
 		},
-	})
+	}, nil)
 	testutil.CheckError(t, false, err)
 
 	actual := builder.retrieveExtraEnv()

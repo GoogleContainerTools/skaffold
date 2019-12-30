@@ -20,10 +20,19 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
+
+type fakeDockerAPI struct {
+	docker.DockerAPI
+}
+
+func (f *fakeDockerAPI) InsecureRegistries() map[string]bool {
+	return nil
+}
 
 func TestBuildSpecFail(t *testing.T) {
 	tests := []struct {
@@ -64,5 +73,5 @@ func newBuilder(gcb latest.GoogleCloudBuild) *Builder {
 				},
 			},
 		},
-	})
+	}, &fakeDockerAPI{})
 }

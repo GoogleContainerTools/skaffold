@@ -31,11 +31,11 @@ import (
 )
 
 // GetDependencies returns dependencies listed for a custom artifact
-func GetDependencies(ctx context.Context, workspace string, a *latest.CustomArtifact, insecureRegistries map[string]bool) ([]string, error) {
+func GetDependencies(ctx context.Context, workspace string, a *latest.CustomArtifact, dockerAPI docker.DockerAPI) ([]string, error) {
 	switch {
 	case a.Dependencies.Dockerfile != nil:
 		dockerfile := a.Dependencies.Dockerfile
-		return docker.GetDependencies(ctx, workspace, dockerfile.Path, dockerfile.BuildArgs, insecureRegistries)
+		return docker.GetDependencies(ctx, workspace, dockerfile.Path, dockerfile.BuildArgs, dockerAPI)
 
 	case a.Dependencies.Command != "":
 		split := strings.Split(a.Dependencies.Command, " ")

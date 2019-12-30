@@ -24,6 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
@@ -49,6 +50,7 @@ type Runner interface {
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
+	docker           docker.DockerAPI
 	builder          build.Builder
 	deployer         deploy.Deployer
 	tester           test.Tester

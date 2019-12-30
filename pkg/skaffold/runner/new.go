@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -43,12 +44,14 @@ import (
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
+	docker := docker.NewDockerAPI(runCtx)
+
 	tagger, err := getTagger(runCtx)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing tag config")
 	}
 
-	builder, err := getBuilder(runCtx)
+	builder, err := getBuilder(runCtx, docker)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing build config")
 	}
@@ -59,14 +62,13 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-		return build.DependenciesForArtifact(ctx, artifact, runCtx.InsecureRegistries)
+		return build.DependenciesForArtifact(ctx, artifact, docker)
 	}
-
-	artifactCache := cache.NewCache(runCtx, imagesAreLocal, depLister)
-	tester := getTester(runCtx)
+	artifactCache := cache.NewCache(runCtx, docker, imagesAreLocal, depLister)
+	tester := getTester(runCtx, docker)
 	syncer := getSyncer(runCtx)
 
-	deployer, err := getDeployer(runCtx)
+	deployer, err := getDeployer(runCtx, docker)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing deploy config")
 	}
@@ -93,6 +95,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	intentChan := make(chan bool, 1)
 
 	r := &SkaffoldRunner{
+		docker:   docker,
 		builder:  builder,
 		tester:   tester,
 		deployer: deployer,
@@ -177,43 +180,43 @@ func (r *SkaffoldRunner) setupTriggerCallback(triggerName string, c chan<- bool)
 	return nil
 }
 
-func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
+func getBuilder(runCtx *runcontext.RunContext, docker docker.DockerAPI) (build.Builder, error) {
 	switch {
 	case runCtx.Cfg.Build.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
-		return local.NewBuilder(runCtx)
+		return local.NewBuilder(runCtx, docker)
 
 	case runCtx.Cfg.Build.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
-		return gcb.NewBuilder(runCtx), nil
+		return gcb.NewBuilder(runCtx, docker), nil
 
 	case runCtx.Cfg.Build.Cluster != nil:
 		logrus.Debugln("Using builder: cluster")
-		return cluster.NewBuilder(runCtx)
+		return cluster.NewBuilder(runCtx, docker)
 
 	default:
 		return nil, fmt.Errorf("unknown builder for config %+v", runCtx.Cfg.Build)
 	}
 }
 
-func getTester(runCtx *runcontext.RunContext) test.Tester {
-	return test.NewTester(runCtx)
+func getTester(runCtx *runcontext.RunContext, docker docker.DockerAPI) test.Tester {
+	return test.NewTester(runCtx, docker)
 }
 
 func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
 	return sync.NewSyncer(runCtx)
 }
 
-func getDeployer(runCtx *runcontext.RunContext) (deploy.Deployer, error) {
+func getDeployer(runCtx *runcontext.RunContext, docker docker.DockerAPI) (deploy.Deployer, error) {
 	switch {
 	case runCtx.Cfg.Deploy.HelmDeploy != nil:
 		return deploy.NewHelmDeployer(runCtx), nil
 
 	case runCtx.Cfg.Deploy.KubectlDeploy != nil:
-		return deploy.NewKubectlDeployer(runCtx), nil
+		return deploy.NewKubectlDeployer(runCtx, docker), nil
 
 	case runCtx.Cfg.Deploy.KustomizeDeploy != nil:
-		return deploy.NewKustomizeDeployer(runCtx), nil
+		return deploy.NewKustomizeDeployer(runCtx, docker), nil
 
 	default:
 		return nil, fmt.Errorf("unknown deployer for config %+v", runCtx.Cfg.Deploy)

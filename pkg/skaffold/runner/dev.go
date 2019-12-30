@@ -142,11 +142,11 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		default:
 			if err := r.monitor.Register(
 				func() ([]string, error) {
-					return build.DependenciesForArtifact(ctx, artifact, r.runCtx.InsecureRegistries)
+					return build.DependenciesForArtifact(ctx, artifact, r.docker)
 				},
 				func(e filemon.Events) {
 					syncMap := func() (map[string][]string, error) { return r.builder.SyncMap(ctx, artifact) }
-					s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries, syncMap)
+					s, err := sync.NewItem(artifact, e, r.builds, r.docker, syncMap)
 					switch {
 					case err != nil:
 						logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())

@@ -24,14 +24,12 @@ import (
 	"path/filepath"
 	"strings"
 
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -59,12 +57,7 @@ type fromTo struct {
 	toIsDir bool
 }
 
-var (
-	// RetrieveImage is overridden for unit testing
-	RetrieveImage = retrieveImage
-)
-
-func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]fromTo, error) {
+func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, docker DockerAPI) ([]fromTo, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
@@ -83,12 +76,12 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 		return nil, errors.Wrap(err, "putting build arguments")
 	}
 
-	dockerfileLinesWithOnbuild, err := expandOnbuildInstructions(dockerfileLines, insecureRegistries)
+	dockerfileLinesWithOnbuild, err := expandOnbuildInstructions(dockerfileLines, docker)
 	if err != nil {
 		return nil, errors.Wrap(err, "expanding ONBUILD instructions")
 	}
 
-	cpCmds, err := extractCopyCommands(dockerfileLinesWithOnbuild, onlyLastImage, insecureRegistries)
+	cpCmds, err := extractCopyCommands(dockerfileLinesWithOnbuild, onlyLastImage, docker)
 	if err != nil {
 		return nil, errors.Wrap(err, "listing copied files")
 	}
@@ -175,7 +168,7 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, e
 	return fts, nil
 }
 
-func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegistries map[string]bool) ([]*copyCommand, error) {
+func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, docker DockerAPI) ([]*copyCommand, error) {
 	stages := map[string]bool{
 		"scratch": true,
 	}
@@ -197,7 +190,7 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegis
 			// If `from` references a previous stage, then the `workdir`
 			// was already changed.
 			if !stages[strings.ToLower(from.image)] {
-				img, err := RetrieveImage(from.image, insecureRegistries)
+				img, err := docker.ConfigFile(context.TODO(), from.image)
 				if err != nil {
 					return nil, err
 				}
@@ -278,7 +271,7 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 	}, nil
 }
 
-func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[string]bool) ([]*parser.Node, error) {
+func expandOnbuildInstructions(nodes []*parser.Node, docker DockerAPI) ([]*parser.Node, error) {
 	onbuildNodesCache := map[string][]*parser.Node{
 		"scratch": nil,
 	}
@@ -295,7 +288,7 @@ func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[stri
 			var onbuildNodes []*parser.Node
 			if ons, found := onbuildNodesCache[strings.ToLower(from.image)]; found {
 				onbuildNodes = ons
-			} else if ons, err := parseOnbuild(from.image, insecureRegistries); err == nil {
+			} else if ons, err := parseOnbuild(from.image, docker); err == nil {
 				onbuildNodes = ons
 			} else {
 				return nil, errors.Wrap(err, "parsing ONBUILD instructions")
@@ -313,11 +306,11 @@ func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[stri
 	return expandedNodes, nil
 }
 
-func parseOnbuild(image string, insecureRegistries map[string]bool) ([]*parser.Node, error) {
+func parseOnbuild(image string, docker DockerAPI) ([]*parser.Node, error) {
 	logrus.Tracef("Checking base image %s for ONBUILD triggers.", image)
 
 	// Image names are case SENSITIVE
-	img, err := RetrieveImage(image, insecureRegistries)
+	img, err := docker.ConfigFile(context.TODO(), image)
 	if err != nil {
 		return nil, fmt.Errorf("processing base image (%s) for ONBUILD triggers: %s", image, err)
 	}
@@ -359,18 +352,6 @@ func unquote(v string) string {
 
 	unquoted = strings.TrimFunc(v, func(r rune) bool { return r == '\'' })
 	return unquoted
-}
-
-func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {
-	// TODO: use the proper RunContext
-	localDaemon, err := NewAPIClient(&runcontext.RunContext{
-		InsecureRegistries: insecureRegistries,
-	})
-	if err != nil {
-		return nil, errors.Wrap(err, "getting docker client")
-	}
-
-	return localDaemon.ConfigFile(context.Background(), image)
 }
 
 func hasMultiStageFlag(flags []string) bool {

@@ -80,7 +80,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", errors.Wrap(err, "checking bucket is in correct project")
 	}
 
-	dependencies, err := build.DependenciesForArtifact(ctx, artifact, b.docker.InsecureRegistries())
+	dependencies, err := build.DependenciesForArtifact(ctx, artifact, b.docker)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
 	}

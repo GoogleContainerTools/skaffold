@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
 var (
@@ -49,13 +48,13 @@ var (
 )
 
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
-func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool) (kubectl.ManifestList, error) {
+func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, docker docker.DockerAPI) (kubectl.ManifestList, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	retriever := func(image string) (imageConfiguration, error) {
 		if artifact := findArtifact(image, builds); artifact != nil {
-			return retrieveImageConfiguration(ctx, artifact, insecureRegistries)
+			return retrieveImageConfiguration(ctx, artifact, docker)
 		}
 		return imageConfiguration{}, errors.Errorf("no build artifact for %q", image)
 	}
@@ -96,17 +95,9 @@ func findArtifact(image string, builds []build.Artifact) *build.Artifact {
 
 // retrieveImageConfiguration retrieves the image container configuration for
 // the given build artifact
-func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact, insecureRegistries map[string]bool) (imageConfiguration, error) {
-	// TODO: use the proper RunContext
-	apiClient, err := docker.NewAPIClient(&runcontext.RunContext{
-		InsecureRegistries: insecureRegistries,
-	})
-	if err != nil {
-		return imageConfiguration{}, errors.Wrap(err, "could not connect to local docker daemon")
-	}
-
+func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact, docker docker.DockerAPI) (imageConfiguration, error) {
 	// the apiClient will go to the remote registry if local docker daemon is not available
-	manifest, err := apiClient.ConfigFile(ctx, artifact.Tag)
+	manifest, err := docker.ConfigFile(ctx, artifact.Tag)
 	if err != nil {
 		logrus.Debugf("Error retrieving image manifest for %v: %v", artifact.Tag, err)
 		return imageConfiguration{}, errors.Wrapf(err, "retrieving image config for %q", artifact.Tag)

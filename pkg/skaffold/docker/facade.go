@@ -19,18 +19,26 @@ package docker
 import (
 	"context"
 	"io"
+	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type DockerAPI interface {
 	// TEMP
 	InsecureRegistries() map[string]bool
+	HasLocalDaemon() bool
+
+	// Local or Remote
+	WorkingDir(ctx context.Context, tagged string) (string, error)
 
 	// Remote Operations
 	RemoteDigest(identifier string) (string, error)
@@ -86,6 +94,38 @@ func NewDockerAPIForTests(apiClient client.CommonAPIClient, extraEnv []string, f
 
 func (d *dockerAPI) InsecureRegistries() map[string]bool {
 	return d.runCtx.InsecureRegistries
+}
+
+func (d *dockerAPI) HasLocalDaemon() bool {
+	_, err := d.getLocalDaemon()
+	return err == nil
+}
+
+// Local or Remote
+func (d *dockerAPI) WorkingDir(ctx context.Context, tagged string) (string, error) {
+	var cf *v1.ConfigFile
+	var err error
+
+	if strings.ToLower(tagged) == "scratch" {
+		return "/", nil
+	}
+
+	docker, err := d.getLocalDaemon()
+	if err == nil {
+		cf, err = docker.ConfigFile(ctx, tagged)
+	}
+	if err != nil {
+		cf, err = d.RetrieveRemoteConfig(tagged)
+		if err != nil {
+			return "", errors.Wrap(err, "retrieving image config")
+		}
+	}
+
+	if cf.Config.WorkingDir == "" {
+		logrus.Debugf("Using default workdir '/' for %s", tagged)
+		return "/", nil
+	}
+	return cf.Config.WorkingDir, nil
 }
 
 // Remote Operations

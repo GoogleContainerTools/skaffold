@@ -37,7 +37,7 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) e
 		color.Default.Fprintf(out, "\n%s: %s\n", typeOfArtifact(artifact), artifact.ImageName)
 
 		if artifact.DockerArtifact != nil {
-			size, err := sizeOfDockerContext(ctx, artifact, r.runCtx.InsecureRegistries)
+			size, err := sizeOfDockerContext(ctx, artifact, r.docker)
 			if err != nil {
 				return errors.Wrap(err, "computing the size of the Docker context")
 			}
@@ -45,11 +45,11 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) e
 			fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
 		}
 
-		timeDeps1, deps, err := timeToListDependencies(ctx, artifact, r.runCtx.InsecureRegistries)
+		timeDeps1, deps, err := timeToListDependencies(ctx, artifact, r.docker)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
-		timeDeps2, _, err := timeToListDependencies(ctx, artifact, r.runCtx.InsecureRegistries)
+		timeDeps2, _, err := timeToListDependencies(ctx, artifact, r.docker)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
@@ -106,9 +106,9 @@ func typeOfArtifact(a *latest.Artifact) string {
 	}
 }
 
-func timeToListDependencies(ctx context.Context, a *latest.Artifact, insecureRegistries map[string]bool) (time.Duration, []string, error) {
+func timeToListDependencies(ctx context.Context, a *latest.Artifact, docker docker.DockerAPI) (time.Duration, []string, error) {
 	start := time.Now()
-	paths, err := build.DependenciesForArtifact(ctx, a, insecureRegistries)
+	paths, err := build.DependenciesForArtifact(ctx, a, docker)
 	return time.Since(start), paths, err
 }
 
@@ -128,10 +128,10 @@ func timeToComputeMTimes(deps []string) (time.Duration, error) {
 	return time.Since(start), nil
 }
 
-func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, insecureRegistries map[string]bool) (int64, error) {
+func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, dockerAPI docker.DockerAPI) (int64, error) {
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
-		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, a.Workspace, a.DockerArtifact, insecureRegistries)
+		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, a.Workspace, a.DockerArtifact, dockerAPI)
 		if err != nil {
 			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
 			return

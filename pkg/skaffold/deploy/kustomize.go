@@ -35,6 +35,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -70,12 +71,12 @@ type secretGenerator struct {
 type KustomizeDeployer struct {
 	*latest.KustomizeDeploy
 
-	kubectl            deploy.CLI
-	insecureRegistries map[string]bool
-	BuildArgs          []string
+	kubectl   deploy.CLI
+	docker    docker.DockerAPI
+	BuildArgs []string
 }
 
-func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
+func NewKustomizeDeployer(runCtx *runcontext.RunContext, docker docker.DockerAPI) *KustomizeDeployer {
 	return &KustomizeDeployer{
 		KustomizeDeploy: runCtx.Cfg.Deploy.KustomizeDeploy,
 		kubectl: deploy.CLI{
@@ -83,8 +84,8 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 			Flags:       runCtx.Cfg.Deploy.KustomizeDeploy.Flags,
 			ForceDeploy: runCtx.Opts.Force,
 		},
-		insecureRegistries: runCtx.InsecureRegistries,
-		BuildArgs:          runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
+		docker:    docker,
+		BuildArgs: runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
 	}
 }
 
@@ -132,7 +133,7 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 	}
 
 	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds, k.insecureRegistries)
+		manifests, err = transform(manifests, builds, k.docker)
 		if err != nil {
 			event.DeployFailed(err)
 			return NewDeployErrorResult(errors.Wrap(err, "unable to transform manifests"))

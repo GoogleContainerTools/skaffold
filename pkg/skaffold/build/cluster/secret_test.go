@@ -52,7 +52,7 @@ func TestCreateSecret(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, nil)
 		t.CheckNoError(err)
 
 		// Should create a secret
@@ -89,7 +89,7 @@ func TestExistingSecretNotFound(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, nil)
 		t.CheckNoError(err)
 
 		// should fail to retrieve an existing secret
@@ -120,7 +120,7 @@ func TestExistingSecret(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, nil)
 		t.CheckNoError(err)
 
 		// should retrieve an existing secret
@@ -147,7 +147,7 @@ func TestSkipSecretCreation(t *testing.T) {
 					},
 				},
 			},
-		})
+		}, nil)
 		t.CheckNoError(err)
 
 		// should retrieve an existing secret

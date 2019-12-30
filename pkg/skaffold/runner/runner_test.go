@@ -238,6 +238,7 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 	runner.deployer = testBench
 	runner.listener = testBench
 	runner.monitor = monitor
+	runner.docker = &fakeDockerAPI{}
 
 	testBench.devLoop = func(context.Context, io.Writer) error {
 		if err := monitor.Run(true); err != nil {

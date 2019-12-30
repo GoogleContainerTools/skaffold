@@ -39,18 +39,13 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-var (
-	// WorkingDir is here for testing
-	WorkingDir = docker.RetrieveWorkingDir
-)
-
-func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool, destProvider DestinationProvider) (*Item, error) {
+func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, docker docker.DockerAPI, destProvider DestinationProvider) (*Item, error) {
 	switch {
 	case !e.HasChanged():
 		return nil, nil
 
 	case a.Sync != nil && len(a.Sync.Manual) > 0:
-		return manualSyncItem(a, e, builds, insecureRegistries)
+		return manualSyncItem(a, e, builds, docker)
 
 	case a.Sync != nil && len(a.Sync.Infer) > 0:
 		return inferredSyncItem(a, e, builds, destProvider)
@@ -60,13 +55,13 @@ func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, inse
 	}
 }
 
-func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
+func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, docker docker.DockerAPI) (*Item, error) {
 	tag := latestTag(a.ImageName, builds)
 	if tag == "" {
 		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
 	}
 
-	containerWd, err := WorkingDir(tag, insecureRegistries)
+	containerWd, err := docker.WorkingDir(context.TODO(), tag)
 	if err != nil {
 		return nil, errors.Wrapf(err, "retrieving working dir for %s", tag)
 	}

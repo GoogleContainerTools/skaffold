@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -36,16 +37,25 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+type fakeDockerAPI struct {
+	docker.DockerAPI
+	workingDirs map[string]string
+}
+
+func (f *fakeDockerAPI) WorkingDir(_ context.Context, tagged string) (string, error) {
+	return f.workingDirs[tagged], nil
+}
+
 func TestNewSyncItem(t *testing.T) {
 	tests := []struct {
 		description  string
 		artifact     *latest.Artifact
 		dependencies map[string][]string
+		workingDirs  map[string]string
 		evt          filemon.Events
 		builds       []build.Artifact
 		shouldErr    bool
 		expected     *Item
-		workingDir   string
 	}{
 		// manual sync cases
 		{
@@ -149,7 +159,7 @@ func TestNewSyncItem(t *testing.T) {
 			evt: filemon.Events{
 				Modified: []string{filepath.Join("node", "src/app/server/server.js")},
 			},
-			workingDir: "/",
+			workingDirs: map[string]string{"test:123": "/"},
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string][]string{
@@ -275,7 +285,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			workingDir: "/some",
+			workingDirs: map[string]string{"test:123": "/some"},
 			builds: []build.Artifact{
 				{
 					ImageName: "test",
@@ -304,7 +314,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			workingDir: "/some/dir",
+			workingDirs: map[string]string{"test:123": "/some/dir"},
 			builds: []build.Artifact{
 				{
 					ImageName: "test",
@@ -334,7 +344,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			workingDir: "/some",
+			workingDirs: map[string]string{"test:123": "/some"},
 			builds: []build.Artifact{
 				{
 					ImageName: "test",
@@ -364,7 +374,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			workingDir: "/some/dir",
+			workingDirs: map[string]string{"test:123": "/some/dir"},
 			builds: []build.Artifact{
 				{
 					ImageName: "test",
@@ -522,7 +532,7 @@ func TestNewSyncItem(t *testing.T) {
 				Modified: []string{filepath.Join("node", "src", "app", "server", "server.js")},
 			},
 			dependencies: map[string][]string{filepath.Join("src", "app", "server", "server.js"): {"/dest/server.js"}},
-			workingDir:   "/",
+			workingDirs:  map[string]string{"test:123": "/"},
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string][]string{
@@ -616,7 +626,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Workspace: ".",
 			},
-			workingDir: "/some",
+			workingDirs: map[string]string{"test:123": "/some"},
 			builds: []build.Artifact{
 				{
 					ImageName: "test",
@@ -637,10 +647,12 @@ func TestNewSyncItem(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return test.workingDir, nil })
+			docker := &fakeDockerAPI{
+				workingDirs: test.workingDirs,
+			}
 
 			provider := func() (map[string][]string, error) { return test.dependencies, nil }
-			actual, err := NewItem(test.artifact, test.evt, test.builds, nil, provider)
+			actual, err := NewItem(test.artifact, test.evt, test.builds, docker, provider)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})

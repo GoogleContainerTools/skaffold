@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -77,11 +76,9 @@ func TestDockerCLIBuild(t *testing.T) {
 				test.expectedEnv,
 			))
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
-			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
-				return docker.NewLocalDaemon(&testutil.FakeAPIClient{}, test.extraEnv, false, nil), nil
-			})
+			docker := docker.NewDockerAPIForTests(&testutil.FakeAPIClient{}, test.extraEnv, false, nil)
 
-			builder, err := NewBuilder(stubRunContext(test.localBuild))
+			builder, err := NewBuilder(stubRunContext(test.localBuild), docker)
 			t.CheckNoError(err)
 
 			artifact := &latest.Artifact{

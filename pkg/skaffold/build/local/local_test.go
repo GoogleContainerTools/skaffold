@@ -214,9 +214,7 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
-				return docker.NewLocalDaemon(test.api, nil, false, nil), nil
-			})
+			docker := docker.NewDockerAPIForTests(test.api, nil, false, nil)
 
 			event.InitializeState(latest.BuildConfig{
 				BuildType: latest.BuildType{
@@ -226,7 +224,7 @@ func TestLocalRun(t *testing.T) {
 
 			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
 				Push: util.BoolPtr(test.pushImages),
-			}))
+			}), docker)
 			t.CheckNoError(err)
 
 			res, err := builder.Build(context.Background(), ioutil.Discard, test.tags, test.artifacts)
@@ -294,7 +292,7 @@ func TestNewBuilder(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&getLocalCluster, test.localClusterFn)
 
-			builder, err := NewBuilder(stubRunContext(test.localBuild))
+			builder, err := NewBuilder(stubRunContext(test.localBuild), nil)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {

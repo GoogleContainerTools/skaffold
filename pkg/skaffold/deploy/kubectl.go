@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -43,15 +44,15 @@ import (
 type KubectlDeployer struct {
 	*latest.KubectlDeploy
 
-	originalImages     []build.Artifact
-	workingDir         string
-	kubectl            deploy.CLI
-	insecureRegistries map[string]bool
+	originalImages []build.Artifact
+	workingDir     string
+	kubectl        deploy.CLI
+	docker         docker.DockerAPI
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
+func NewKubectlDeployer(runCtx *runcontext.RunContext, docker docker.DockerAPI) *KubectlDeployer {
 	return &KubectlDeployer{
 		KubectlDeploy: runCtx.Cfg.Deploy.KubectlDeploy,
 		workingDir:    runCtx.WorkingDir,
@@ -60,7 +61,7 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 			Flags:       runCtx.Cfg.Deploy.KubectlDeploy.Flags,
 			ForceDeploy: runCtx.Opts.Force,
 		},
-		insecureRegistries: runCtx.InsecureRegistries,
+		docker: docker,
 	}
 }
 
@@ -277,7 +278,7 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 	}
 
 	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds, k.insecureRegistries)
+		manifests, err = transform(manifests, builds, k.docker)
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to transform manifests")
 		}

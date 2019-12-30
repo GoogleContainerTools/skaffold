@@ -85,11 +85,11 @@ type Builder struct {
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
-func NewBuilder(runCtx *runcontext.RunContext) *Builder {
+func NewBuilder(runCtx *runcontext.RunContext, docker docker.DockerAPI) *Builder {
 	return &Builder{
 		GoogleCloudBuild: runCtx.Cfg.Build.GoogleCloudBuild,
 		skipTests:        runCtx.Opts.SkipTests,
-		docker:           docker.NewDockerAPI(runCtx),
+		docker:           docker,
 	}
 }
 
