@@ -35,15 +35,14 @@ import (
 type Builder struct {
 	cfg *latest.LocalBuild
 
-	localDocker        docker.LocalDaemon
-	localCluster       bool
-	pushImages         bool
-	prune              bool
-	pruneChildren      bool
-	skipTests          bool
-	kubeContext        string
-	builtImages        []string
-	insecureRegistries map[string]bool
+	docker        docker.DockerAPI
+	localCluster  bool
+	pushImages    bool
+	prune         bool
+	pruneChildren bool
+	skipTests     bool
+	kubeContext   string
+	builtImages   []string
 }
 
 // external dependencies are wrapped
@@ -53,11 +52,6 @@ var getLocalCluster = config.GetLocalCluster
 
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
-	localDocker, err := docker.NewAPIClient(runCtx)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting docker client")
-	}
-
 	localCluster, err := getLocalCluster(runCtx.Opts.GlobalConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting localCluster")
@@ -72,15 +66,14 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	}
 
 	return &Builder{
-		cfg:                runCtx.Cfg.Build.LocalBuild,
-		kubeContext:        runCtx.KubeContext,
-		localDocker:        localDocker,
-		localCluster:       localCluster,
-		pushImages:         pushImages,
-		skipTests:          runCtx.Opts.SkipTests,
-		prune:              runCtx.Opts.Prune(),
-		pruneChildren:      !runCtx.Opts.NoPruneChildren,
-		insecureRegistries: runCtx.InsecureRegistries,
+		cfg:           runCtx.Cfg.Build.LocalBuild,
+		kubeContext:   runCtx.KubeContext,
+		docker:        docker.NewDockerAPI(runCtx),
+		localCluster:  localCluster,
+		pushImages:    pushImages,
+		skipTests:     runCtx.Opts.SkipTests,
+		prune:         runCtx.Opts.Prune(),
+		pruneChildren: !runCtx.Opts.NoPruneChildren,
 	}, nil
 }
 
@@ -94,7 +87,7 @@ func (b *Builder) Labels() map[string]string {
 		constants.Labels.Builder: "local",
 	}
 
-	v, err := b.localDocker.ServerVersion(context.Background())
+	v, err := b.docker.ServerVersion(context.Background())
 	if err == nil {
 		labels[constants.Labels.DockerAPIVersion] = fmt.Sprintf("%v", v.APIVersion)
 	}
@@ -104,5 +97,5 @@ func (b *Builder) Labels() map[string]string {
 
 // Prune uses the docker API client to remove all images built with Skaffold
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
-	return b.localDocker.Prune(ctx, out, b.builtImages, b.pruneChildren)
+	return b.docker.Prune(ctx, out, b.builtImages, b.pruneChildren)
 }

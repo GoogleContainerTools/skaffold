@@ -32,8 +32,8 @@ func TestBuildBazel(t *testing.T) {
 		t.NewTempDir().Mkdir("bin").Chdir()
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar").AndRunOut("bazel info bazel-bin", "bin"))
 		testutil.CreateFakeImageTar("bazel:app", "bin/app.tar")
+		docker := docker.NewDockerAPIForTests(&testutil.FakeAPIClient{}, nil, false, nil)
 
-		localDocker := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
 		artifact := &latest.Artifact{
 			Workspace: ".",
 			ArtifactType: latest.ArtifactType{
@@ -43,7 +43,7 @@ func TestBuildBazel(t *testing.T) {
 			},
 		}
 
-		builder := NewArtifactBuilder(localDocker, nil, false)
+		builder := NewArtifactBuilder(docker, false)
 		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag")
 
 		t.CheckNoError(err)
@@ -60,7 +60,7 @@ func TestBuildBazelFailInvalidTarget(t *testing.T) {
 			},
 		}
 
-		builder := NewArtifactBuilder(nil, nil, false)
+		builder := NewArtifactBuilder(nil, false)
 		_, err := builder.Build(context.Background(), ioutil.Discard, artifact, "img:tag")
 
 		t.CheckErrorContains("the bazel build target should end with .tar", err)

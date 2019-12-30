@@ -83,7 +83,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		gid := 1000
 		modTime := time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
 
-		return b.localDocker.CopyToContainer(ctx, container, "/workspace", workspace, paths, uid, gid, modTime)
+		return b.docker.CopyToContainer(ctx, container, "/workspace", workspace, paths, uid, gid, modTime)
 	}
 
 	// These volumes store the state shared between build steps.
@@ -102,15 +102,15 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 
 	defer func() {
 		// Don't use ctx. It might have been cancelled by Ctrl-C
-		if err := b.localDocker.VolumeRemove(context.Background(), packWorkspace.Source, true); err != nil {
+		if err := b.docker.VolumeRemove(context.Background(), packWorkspace.Source, true); err != nil {
 			logrus.Warnf("unable to delete the docker volume [%s]", packWorkspace.Source)
 		}
-		if err := b.localDocker.VolumeRemove(context.Background(), layers.Source, true); err != nil {
+		if err := b.docker.VolumeRemove(context.Background(), layers.Source, true); err != nil {
 			logrus.Warnf("unable to delete the docker volume [%s]", layers.Source)
 		}
 	}()
 
-	if err := b.localDocker.ContainerRun(ctx, out,
+	if err := b.docker.ContainerRun(ctx, out,
 		docker.ContainerRun{
 			Image:       builderImage,
 			Command:     []string{"/lifecycle/detector"},
@@ -146,10 +146,16 @@ func volume(mountType mount.Type, source, target string) mount.Mount {
 
 // pull makes sure the given image is pre-pulled.
 func (b *Builder) pull(ctx context.Context, out io.Writer, image string, force bool) error {
-	if force || !b.localDocker.ImageExists(ctx, image) {
-		if err := b.localDocker.Pull(ctx, out, image); err != nil {
+	if !force {
+		exists, err := b.docker.ImageExists(ctx, image)
+		if err != nil {
 			return err
 		}
+
+		if exists {
+			return nil
+		}
 	}
-	return nil
+
+	return b.docker.Pull(ctx, out, image)
 }

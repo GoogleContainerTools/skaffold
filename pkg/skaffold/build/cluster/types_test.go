@@ -18,14 +18,9 @@ package cluster
 
 import (
 	"context"
-	"sync"
 	"testing"
-	"time"
-
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -36,73 +31,14 @@ const (
 	namespace   = "test-namespace"
 )
 
-func TestNewBuilder(t *testing.T) {
-	tests := []struct {
-		description     string
-		shouldErr       bool
-		runCtx          *runcontext.RunContext
-		expectedBuilder *Builder
-	}{
-		{
-			description: "failed to parse cluster build timeout",
-			runCtx: stubRunContext(&latest.ClusterDetails{
-				Timeout: "illegal",
-			}, nil),
-			shouldErr: true,
-		},
-		{
-			description: "cluster builder inherits the config",
-			runCtx: stubRunContext(&latest.ClusterDetails{
-				Timeout:   "100s",
-				Namespace: "test-ns",
-			}, nil),
-			shouldErr: false,
-			expectedBuilder: &Builder{
-				ClusterDetails: &latest.ClusterDetails{
-					Timeout:   "100s",
-					Namespace: "test-ns",
-				},
-				timeout:            100 * time.Second,
-				insecureRegistries: nil,
-				kubeContext:        kubeContext,
-				kubectlcli: &kubectl.CLI{
-					KubeContext: kubeContext,
-					Namespace:   namespace,
-				},
-			},
-		},
-		{
-			description: "insecure registries are taken from the run context",
-			runCtx: stubRunContext(&latest.ClusterDetails{
-				Timeout:   "100s",
-				Namespace: "test-ns",
-			}, map[string]bool{"insecure-reg1": true}),
-			shouldErr: false,
-			expectedBuilder: &Builder{
-				ClusterDetails: &latest.ClusterDetails{
-					Timeout:   "100s",
-					Namespace: "test-ns",
-				},
-				timeout:            100 * time.Second,
-				insecureRegistries: map[string]bool{"insecure-reg1": true},
-				kubeContext:        kubeContext,
-				kubectlcli: &kubectl.CLI{
-					KubeContext: kubeContext,
-					Namespace:   namespace,
-				},
-			},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			builder, err := NewBuilder(test.runCtx)
+func TestNewBuilderFail(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		_, err := NewBuilder(stubRunContext(&latest.ClusterDetails{
+			Timeout: "illegal",
+		}, nil))
 
-			t.CheckError(test.shouldErr, err)
-			if !test.shouldErr {
-				t.CheckDeepEqual(test.expectedBuilder, builder, cmp.AllowUnexported(Builder{}, kubectl.CLI{}, sync.Once{}, sync.Mutex{}))
-			}
-		})
-	}
+		t.CheckError(true, err)
+	})
 }
 
 func TestLabels(t *testing.T) {

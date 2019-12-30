@@ -41,7 +41,7 @@ func (b *Builder) findRunImage(ctx context.Context, a *latest.BuildpackArtifact,
 		return a.RunImage, nil
 	}
 
-	cfg, err := b.localDocker.ConfigFile(ctx, builder)
+	cfg, err := b.docker.ConfigFile(ctx, builder)
 	if err != nil {
 		return "", err
 	}

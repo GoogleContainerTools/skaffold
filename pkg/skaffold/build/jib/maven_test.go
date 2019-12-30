@@ -74,9 +74,9 @@ func TestBuildJibMavenToDocker(t *testing.T) {
 			t.NewTempDir().Touch("pom.xml").Chdir()
 			t.Override(&util.DefaultExecCommand, test.commands)
 			api := (&testutil.FakeAPIClient{}).Add("img:tag", "imageID")
-			localDocker := docker.NewLocalDaemon(api, nil, false, nil)
+			docker := docker.NewDockerAPIForTests(api, nil, false, nil)
 
-			builder := NewArtifactBuilder(localDocker, nil, false, false)
+			builder := NewArtifactBuilder(docker, false, false)
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,
@@ -138,9 +138,9 @@ func TestBuildJibMavenToRegistry(t *testing.T) {
 				}
 				return "", errors.New("unknown remote tag")
 			})
-			localDocker := docker.NewLocalDaemon(&testutil.FakeAPIClient{}, nil, false, nil)
+			docker := docker.NewDockerAPIForTests(&testutil.FakeAPIClient{}, nil, false, nil)
 
-			builder := NewArtifactBuilder(localDocker, nil, true, false)
+			builder := NewArtifactBuilder(docker, true, false)
 			result, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					JibArtifact: test.artifact,

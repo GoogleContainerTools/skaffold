@@ -25,6 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -34,10 +35,10 @@ import (
 type Builder struct {
 	*latest.ClusterDetails
 
-	kubectlcli         *kubectl.CLI
-	kubeContext        string
-	timeout            time.Duration
-	insecureRegistries map[string]bool
+	docker      docker.DockerAPI
+	kubectlcli  *kubectl.CLI
+	kubeContext string
+	timeout     time.Duration
 }
 
 // NewBuilder creates a new Builder that builds artifacts on cluster.
@@ -48,11 +49,11 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	}
 
 	return &Builder{
-		ClusterDetails:     runCtx.Cfg.Build.Cluster,
-		kubectlcli:         kubectl.NewFromRunContext(runCtx),
-		timeout:            timeout,
-		kubeContext:        runCtx.KubeContext,
-		insecureRegistries: runCtx.InsecureRegistries,
+		ClusterDetails: runCtx.Cfg.Build.Cluster,
+		kubectlcli:     kubectl.NewFromRunContext(runCtx),
+		timeout:        timeout,
+		kubeContext:    runCtx.KubeContext,
+		docker:         docker.NewDockerAPI(runCtx),
 	}, nil
 }
 

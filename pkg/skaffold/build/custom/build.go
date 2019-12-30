@@ -23,7 +23,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -34,10 +33,10 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 	}
 
 	if b.pushImages {
-		return docker.RemoteDigest(tag, b.insecureRegistries)
+		return b.docker.RemoteDigest(tag)
 	}
 
-	imageID, err := b.localDocker.ImageID(ctx, tag)
+	imageID, err := b.docker.ImageID(ctx, tag)
 	if err != nil {
 		return "", err
 	}

@@ -33,12 +33,12 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 		return "", err
 	}
 
-	if err := b.localDocker.Tag(ctx, built, tag); err != nil {
+	if err := b.docker.Tag(ctx, built, tag); err != nil {
 		return "", errors.Wrapf(err, "tagging %s->%s", built, tag)
 	}
 
 	if b.pushImages {
-		return b.localDocker.Push(ctx, out, tag)
+		return b.docker.Push(ctx, out, tag)
 	}
-	return b.localDocker.ImageID(ctx, tag)
+	return b.docker.ImageID(ctx, tag)
 }

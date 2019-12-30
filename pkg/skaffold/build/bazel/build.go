@@ -27,7 +27,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -42,7 +41,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 	}
 
 	if b.pushImages {
-		return docker.Push(tarPath, tag, b.insecureRegistries)
+		return b.docker.PushTar(tarPath, tag)
 	}
 	return b.loadImage(ctx, out, tarPath, a, tag)
 }
@@ -82,12 +81,12 @@ func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, 
 	defer imageTar.Close()
 
 	bazelTag := buildImageTag(a.BuildTarget)
-	imageID, err := b.localDocker.Load(ctx, out, imageTar, bazelTag)
+	imageID, err := b.docker.Load(ctx, out, imageTar, bazelTag)
 	if err != nil {
 		return "", errors.Wrap(err, "loading image into docker daemon")
 	}
 
-	if err := b.localDocker.Tag(ctx, imageID, tag); err != nil {
+	if err := b.docker.Tag(ctx, imageID, tag); err != nil {
 		return "", errors.Wrap(err, "tagging the image")
 	}
 

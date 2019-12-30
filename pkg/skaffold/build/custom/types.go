@@ -20,18 +20,16 @@ import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 
 // Builder is a builder for custom artifacts
 type Builder struct {
-	localDocker        docker.LocalDaemon
-	insecureRegistries map[string]bool
-	pushImages         bool
-	additionalEnv      []string
+	docker        docker.DockerAPI
+	pushImages    bool
+	additionalEnv []string
 }
 
 // NewArtifactBuilder returns a new custom artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, insecureRegistries map[string]bool, pushImages bool, additionalEnv []string) *Builder {
+func NewArtifactBuilder(docker docker.DockerAPI, pushImages bool, additionalEnv []string) *Builder {
 	return &Builder{
-		localDocker:        localDocker,
-		insecureRegistries: insecureRegistries,
-		pushImages:         pushImages,
-		additionalEnv:      additionalEnv,
+		docker:        docker,
+		pushImages:    pushImages,
+		additionalEnv: additionalEnv,
 	}
 }

@@ -41,7 +41,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	if b.localCluster {
 		color.Default.Fprintf(out, "Found [%s] context, using local docker daemon.\n", b.kubeContext)
 	}
-	defer b.localDocker.Close()
+	defer b.docker.Close()
 
 	// TODO(dgageot): parallel builds
 	return build.InSequence(ctx, out, tags, artifacts, b.buildArtifact)
@@ -72,7 +72,7 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 
 	imageID := digestOrImageID
 	b.builtImages = append(b.builtImages, imageID)
-	return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
+	return build.TagWithImageIDNew(ctx, tag, imageID, b.docker)
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
@@ -81,16 +81,16 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return b.buildDocker(ctx, out, artifact, tag)
 
 	case artifact.BazelArtifact != nil:
-		return bazel.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages).Build(ctx, out, artifact, tag)
+		return bazel.NewArtifactBuilder(b.docker, b.pushImages).Build(ctx, out, artifact, tag)
 
 	case artifact.JibArtifact != nil:
-		return jib.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.skipTests).Build(ctx, out, artifact, tag)
+		return jib.NewArtifactBuilder(b.docker, b.pushImages, b.skipTests).Build(ctx, out, artifact, tag)
 
 	case artifact.CustomArtifact != nil:
-		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
+		return custom.NewArtifactBuilder(b.docker, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
 
 	case artifact.BuildpackArtifact != nil:
-		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages).Build(ctx, out, artifact, tag)
+		return buildpacks.NewArtifactBuilder(b.docker, b.pushImages).Build(ctx, out, artifact, tag)
 
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
@@ -98,7 +98,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 }
 
 func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, error) {
-	insp, _, err := b.localDocker.ImageInspectWithRaw(ctx, tag)
+	insp, _, err := b.docker.ImageInspectWithRaw(ctx, tag)
 	if err != nil {
 		return "", errors.Wrap(err, "inspecting image")
 	}
@@ -107,7 +107,7 @@ func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, err
 
 func (b *Builder) SyncMap(ctx context.Context, a *latest.Artifact) (map[string][]string, error) {
 	if a.DockerArtifact != nil {
-		return docker.SyncMap(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
+		return docker.SyncMap(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.docker.InsecureRegistries())
 	}
 	return nil, build.ErrSyncMapNotSupported{}
 }

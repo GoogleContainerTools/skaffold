@@ -64,7 +64,8 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return b.runKanikoBuild(ctx, out, artifact, tag)
 
 	case artifact.CustomArtifact != nil:
-		return custom.NewArtifactBuilder(nil, b.insecureRegistries, true, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
+		// TODO
+		return custom.NewArtifactBuilder(nil, true, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
 
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)

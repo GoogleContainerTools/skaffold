@@ -42,7 +42,7 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 	if b.cfg.UseDockerCLI || b.cfg.UseBuildkit {
 		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag)
 	} else {
-		imageID, err = b.localDocker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag)
+		imageID, err = b.docker.Build(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag)
 	}
 
 	if err != nil {
@@ -50,14 +50,14 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 	}
 
 	if b.pushImages {
-		return b.localDocker.Push(ctx, out, tag)
+		return b.docker.Push(ctx, out, tag)
 	}
 
 	return imageID, nil
 }
 
 func (b *Builder) retrieveExtraEnv() []string {
-	return b.localDocker.ExtraEnv()
+	return b.docker.ExtraEnv()
 }
 
 func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, tag string) (string, error) {
@@ -89,7 +89,7 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 		return "", errors.Wrap(err, "running build")
 	}
 
-	return b.localDocker.ImageID(ctx, tag)
+	return b.docker.ImageID(ctx, tag)
 }
 
 func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *latest.DockerArtifact) error {
@@ -98,7 +98,7 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 	}
 
 	for _, image := range a.CacheFrom {
-		imageID, err := b.localDocker.ImageID(ctx, image)
+		imageID, err := b.docker.ImageID(ctx, image)
 		if err != nil {
 			return errors.Wrapf(err, "getting imageID for %s", image)
 		}
@@ -107,7 +107,7 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 			continue
 		}
 
-		if err := b.localDocker.Pull(ctx, out, image); err != nil {
+		if err := b.docker.Pull(ctx, out, image); err != nil {
 			warnings.Printf("Cache-From image couldn't be pulled: %s\n", image)
 		}
 	}

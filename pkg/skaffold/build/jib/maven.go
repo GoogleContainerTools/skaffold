@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -42,26 +41,26 @@ const MinimumJibMavenVersion = "1.4.0"
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
 func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, b.skipTests, b.docker.InsecureRegistries())
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
 
-	return b.localDocker.ImageID(ctx, tag)
+	return b.docker.ImageID(ctx, tag)
 }
 
 func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateMavenBuildArgs("build", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateMavenBuildArgs("build", tag, artifact, b.skipTests, b.docker.InsecureRegistries())
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
 
-	return docker.RemoteDigest(tag, b.insecureRegistries)
+	return b.docker.RemoteDigest(tag)
 }
 
 func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
 	cmd := MavenCommand.CreateCommand(ctx, workspace, args)
-	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
+	cmd.Env = append(util.OSEnviron(), b.docker.ExtraEnv()...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 

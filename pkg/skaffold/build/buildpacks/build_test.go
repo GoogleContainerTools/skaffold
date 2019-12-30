@@ -115,9 +115,9 @@ func TestBuild(t *testing.T) {
 				Add(test.artifact.Builder, "builderImageID").
 				Add(test.artifact.RunImage, "runImageID").
 				Add("img:latest", "builtImageID")
-			localDocker := docker.NewLocalDaemon(test.api, nil, false, nil)
+			docker := docker.NewDockerAPIForTests(test.api, nil, false, nil)
 
-			builder := NewArtifactBuilder(localDocker, test.pushImages)
+			builder := NewArtifactBuilder(docker, test.pushImages)
 			_, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
 				Workspace: ".",
 				ArtifactType: latest.ArtifactType{

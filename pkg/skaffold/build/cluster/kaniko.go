@@ -39,7 +39,7 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	// Prepare context
 	s := sources.Retrieve(b.kubectlcli, b.ClusterDetails, artifact.KanikoArtifact)
 
-	dependencies, err := build.DependenciesForArtifact(ctx, artifact, b.insecureRegistries)
+	dependencies, err := build.DependenciesForArtifact(ctx, artifact, b.docker.InsecureRegistries())
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
 	}
@@ -50,7 +50,7 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 	}
 	defer s.Cleanup(ctx)
 
-	args, err := args(artifact.KanikoArtifact, context, tag, b.insecureRegistries)
+	args, err := args(artifact.KanikoArtifact, context, tag, b.docker.InsecureRegistries())
 	if err != nil {
 		return "", errors.Wrap(err, "building args list")
 	}
@@ -87,7 +87,7 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 
 	waitForLogs()
 
-	return docker.RemoteDigest(tag, b.insecureRegistries)
+	return b.docker.RemoteDigest(tag)
 }
 
 func args(artifact *latest.KanikoArtifact, context, tag string, insecureRegistries map[string]bool) ([]string, error) {

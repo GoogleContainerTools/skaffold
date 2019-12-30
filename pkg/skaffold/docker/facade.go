@@ -24,15 +24,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
-// For testing
-var (
-	NewDockerAPI = NewDockerAPIImpl
-)
-
 type DockerAPI interface {
+	// TEMP
+	InsecureRegistries() map[string]bool
+
 	// Remote Operations
 	RemoteDigest(identifier string) (string, error)
 	AddRemoteTag(src, target string) error
@@ -41,7 +40,7 @@ type DockerAPI interface {
 
 	// Local Operations
 	Close() error
-	ExtraEnv() ([]string, error)
+	ExtraEnv() []string
 	ServerVersion(ctx context.Context) (types.Version, error)
 	ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error)
 	Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error)
@@ -61,13 +60,32 @@ type DockerAPI interface {
 }
 
 type dockerAPI struct {
-	runCtx *runcontext.RunContext
+	runCtx         *runcontext.RunContext
+	getLocalDaemon func() (LocalDaemon, error)
 }
 
-func NewDockerAPIImpl(runCtx *runcontext.RunContext) DockerAPI {
+func NewDockerAPI(runCtx *runcontext.RunContext) DockerAPI {
 	return &dockerAPI{
-		runCtx: runCtx,
+		runCtx:         runCtx,
+		getLocalDaemon: func() (LocalDaemon, error) { return NewAPIClient(runCtx) },
 	}
+}
+
+func NewDockerAPIForTests(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool, insecureRegistries map[string]bool) DockerAPI {
+	return &dockerAPI{
+		runCtx: &runcontext.RunContext{
+			InsecureRegistries: insecureRegistries,
+		},
+		getLocalDaemon: func() (LocalDaemon, error) {
+			return NewLocalDaemon(apiClient, extraEnv, forceRemove, insecureRegistries), nil
+		},
+	}
+}
+
+// TEMP
+
+func (d *dockerAPI) InsecureRegistries() map[string]bool {
+	return d.runCtx.InsecureRegistries
 }
 
 // Remote Operations
@@ -91,7 +109,7 @@ func (d *dockerAPI) PushTar(tarPath, tag string) (string, error) {
 // Local Operations
 
 func (d *dockerAPI) Close() error {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return err
 	}
@@ -99,17 +117,14 @@ func (d *dockerAPI) Close() error {
 	return docker.Close()
 }
 
-func (d *dockerAPI) ExtraEnv() ([]string, error) {
-	docker, err := NewAPIClient(d.runCtx)
-	if err != nil {
-		return nil, err
-	}
-
-	return docker.ExtraEnv(), nil
+func (d *dockerAPI) ExtraEnv() []string {
+	// TODO: make it safe to ignore this error
+	docker, _ := d.getLocalDaemon()
+	return docker.ExtraEnv()
 }
 
 func (d *dockerAPI) ServerVersion(ctx context.Context) (types.Version, error) {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return types.Version{}, err
 	}
@@ -118,7 +133,7 @@ func (d *dockerAPI) ServerVersion(ctx context.Context) (types.Version, error) {
 }
 
 func (d *dockerAPI) ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error) {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return nil, err
 	}
@@ -127,7 +142,7 @@ func (d *dockerAPI) ConfigFile(ctx context.Context, image string) (*v1.ConfigFil
 }
 
 func (d *dockerAPI) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error) {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return "", err
 	}
@@ -136,7 +151,7 @@ func (d *dockerAPI) Build(ctx context.Context, out io.Writer, workspace string, 
 }
 
 func (d *dockerAPI) Push(ctx context.Context, out io.Writer, ref string) (string, error) {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return "", err
 	}
@@ -145,7 +160,7 @@ func (d *dockerAPI) Push(ctx context.Context, out io.Writer, ref string) (string
 }
 
 func (d *dockerAPI) Pull(ctx context.Context, out io.Writer, ref string) error {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return err
 	}
@@ -154,7 +169,7 @@ func (d *dockerAPI) Pull(ctx context.Context, out io.Writer, ref string) error {
 }
 
 func (d *dockerAPI) Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error) {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return "", err
 	}
@@ -163,7 +178,7 @@ func (d *dockerAPI) Load(ctx context.Context, out io.Writer, input io.Reader, re
 }
 
 func (d *dockerAPI) Tag(ctx context.Context, image, ref string) error {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return err
 	}
@@ -172,7 +187,7 @@ func (d *dockerAPI) Tag(ctx context.Context, image, ref string) error {
 }
 
 func (d *dockerAPI) TagWithImageID(ctx context.Context, ref string, imageID string) (string, error) {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return "", err
 	}
@@ -181,7 +196,7 @@ func (d *dockerAPI) TagWithImageID(ctx context.Context, ref string, imageID stri
 }
 
 func (d *dockerAPI) ImageID(ctx context.Context, ref string) (string, error) {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return "", err
 	}
@@ -190,7 +205,7 @@ func (d *dockerAPI) ImageID(ctx context.Context, ref string) (string, error) {
 }
 
 func (d *dockerAPI) ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error) {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return types.ImageInspect{}, nil, err
 	}
@@ -199,7 +214,7 @@ func (d *dockerAPI) ImageInspectWithRaw(ctx context.Context, image string) (type
 }
 
 func (d *dockerAPI) ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error) {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +223,7 @@ func (d *dockerAPI) ImageRemove(ctx context.Context, image string, opts types.Im
 }
 
 func (d *dockerAPI) ImageExists(ctx context.Context, ref string) (bool, error) {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return false, err
 	}
@@ -217,7 +232,7 @@ func (d *dockerAPI) ImageExists(ctx context.Context, ref string) (bool, error) {
 }
 
 func (d *dockerAPI) Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return err
 	}
@@ -226,7 +241,7 @@ func (d *dockerAPI) Prune(ctx context.Context, out io.Writer, images []string, p
 }
 
 func (d *dockerAPI) ContainerRun(ctx context.Context, out io.Writer, runs ...ContainerRun) error {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return err
 	}
@@ -235,7 +250,7 @@ func (d *dockerAPI) ContainerRun(ctx context.Context, out io.Writer, runs ...Con
 }
 
 func (d *dockerAPI) CopyToContainer(ctx context.Context, container string, dest string, root string, paths []string, uid, gid int, modTime time.Time) error {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return err
 	}
@@ -244,7 +259,7 @@ func (d *dockerAPI) CopyToContainer(ctx context.Context, container string, dest 
 }
 
 func (d *dockerAPI) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
-	docker, err := NewAPIClient(d.runCtx)
+	docker, err := d.getLocalDaemon()
 	if err != nil {
 		return err
 	}

@@ -69,7 +69,7 @@ func TestRetrieveEnv(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return test.environ })
 			t.Override(&buildContext, func(string) (string, error) { return test.buildContext, nil })
 
-			builder := NewArtifactBuilder(nil, nil, test.pushImages, test.additionalEnv)
+			builder := NewArtifactBuilder(nil, test.pushImages, test.additionalEnv)
 			actual, err := builder.retrieveEnv(&latest.Artifact{}, test.tag)
 
 			t.CheckNoError(err)
@@ -118,7 +118,7 @@ func TestRetrieveCmd(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return nil })
 			t.Override(&buildContext, func(string) (string, error) { return test.artifact.Workspace, nil })
 
-			builder := NewArtifactBuilder(nil, nil, false, nil)
+			builder := NewArtifactBuilder(nil, false, nil)
 			cmd, err := builder.retrieveCmd(context.Background(), ioutil.Discard, test.artifact, test.tag)
 
 			t.CheckNoError(err)

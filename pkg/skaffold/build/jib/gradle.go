@@ -25,7 +25,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
@@ -43,26 +42,26 @@ const MinimumJibGradleVersion = "1.4.0"
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
 
 func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, b.skipTests, b.docker.InsecureRegistries())
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
 
-	return b.localDocker.ImageID(ctx, tag)
+	return b.docker.ImageID(ctx, tag)
 }
 
 func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateGradleBuildArgs("jib", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateGradleBuildArgs("jib", tag, artifact, b.skipTests, b.docker.InsecureRegistries())
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
 
-	return docker.RemoteDigest(tag, b.insecureRegistries)
+	return b.docker.RemoteDigest(tag)
 }
 
 func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace string, args []string) error {
 	cmd := GradleCommand.CreateCommand(ctx, workspace, args)
-	cmd.Env = append(util.OSEnviron(), b.localDocker.ExtraEnv()...)
+	cmd.Env = append(util.OSEnviron(), b.docker.ExtraEnv()...)
 	cmd.Stdout = out
 	cmd.Stderr = out
 
