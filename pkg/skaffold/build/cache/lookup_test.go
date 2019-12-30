@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -105,11 +106,14 @@ func TestLookupLocal(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&hashForArtifact, test.hasher)
 			t.Override(&buildInProgress, func(string) {})
+			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+				return docker.NewLocalDaemon(test.api, nil, false, nil), nil
+			})
 
 			cache := &cache{
 				imagesAreLocal: true,
 				artifactCache:  test.cache,
-				client:         docker.NewLocalDaemon(test.api, nil, false, nil),
+				docker:         docker.NewDockerAPI(&runcontext.RunContext{}),
 			}
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
 				ImageName: "artifact",
@@ -190,11 +194,14 @@ func TestLookupRemote(t *testing.T) {
 				}
 			})
 			t.Override(&buildInProgress, func(string) {})
+			t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+				return docker.NewLocalDaemon(test.api, nil, false, nil), nil
+			})
 
 			cache := &cache{
 				imagesAreLocal: false,
 				artifactCache:  test.cache,
-				client:         docker.NewLocalDaemon(test.api, nil, false, nil),
+				docker:         docker.NewDockerAPI(&runcontext.RunContext{}),
 			}
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
 				ImageName: "artifact",

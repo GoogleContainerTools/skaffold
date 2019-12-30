@@ -103,7 +103,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		var uniqueTag string
 		if c.imagesAreLocal {
 			var err error
-			uniqueTag, err = build.TagWithImageID(ctx, tag, entry.ID, c.client)
+			uniqueTag, err = build.TagWithImageIDNew(ctx, tag, entry.ID, c.docker)
 			if err != nil {
 				return nil, err
 			}
@@ -165,7 +165,7 @@ func (c *cache) addArtifacts(ctx context.Context, bRes []build.Artifact, hashByN
 			entry.Digest = ref.Digest
 		}
 
-		imageID, err := c.client.ImageID(ctx, a.Tag)
+		imageID, err := c.docker.ImageID(ctx, a.Tag)
 		if err != nil {
 			return err
 		}

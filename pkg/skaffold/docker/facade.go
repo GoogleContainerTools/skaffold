@@ -34,6 +34,7 @@ var (
 
 type DockerAPI interface {
 	// Remote Operations
+	RemoteDigest(identifier string) (string, error)
 	AddRemoteTag(src, target string) error
 	RetrieveRemoteConfig(identifier string) (*v1.ConfigFile, error)
 	PushTar(tarPath, tag string) (string, error)
@@ -71,6 +72,10 @@ func NewDockerAPIImpl(runCtx *runcontext.RunContext) DockerAPI {
 
 // Remote Operations
 
+func (d *dockerAPI) RemoteDigest(identifier string) (string, error) {
+	return RemoteDigest(identifier, d.runCtx.InsecureRegistries)
+}
+
 func (d *dockerAPI) AddRemoteTag(src, target string) error {
 	return AddRemoteTag(src, target, d.runCtx.InsecureRegistries)
 }
@@ -86,7 +91,7 @@ func (d *dockerAPI) PushTar(tarPath, tag string) (string, error) {
 // Local Operations
 
 func (d *dockerAPI) Close() error {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return err
 	}
@@ -95,7 +100,7 @@ func (d *dockerAPI) Close() error {
 }
 
 func (d *dockerAPI) ExtraEnv() ([]string, error) {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +109,7 @@ func (d *dockerAPI) ExtraEnv() ([]string, error) {
 }
 
 func (d *dockerAPI) ServerVersion(ctx context.Context) (types.Version, error) {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return types.Version{}, err
 	}
@@ -113,7 +118,7 @@ func (d *dockerAPI) ServerVersion(ctx context.Context) (types.Version, error) {
 }
 
 func (d *dockerAPI) ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error) {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +127,7 @@ func (d *dockerAPI) ConfigFile(ctx context.Context, image string) (*v1.ConfigFil
 }
 
 func (d *dockerAPI) Build(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, ref string) (string, error) {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return "", err
 	}
@@ -131,7 +136,7 @@ func (d *dockerAPI) Build(ctx context.Context, out io.Writer, workspace string, 
 }
 
 func (d *dockerAPI) Push(ctx context.Context, out io.Writer, ref string) (string, error) {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return "", err
 	}
@@ -140,7 +145,7 @@ func (d *dockerAPI) Push(ctx context.Context, out io.Writer, ref string) (string
 }
 
 func (d *dockerAPI) Pull(ctx context.Context, out io.Writer, ref string) error {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return err
 	}
@@ -149,7 +154,7 @@ func (d *dockerAPI) Pull(ctx context.Context, out io.Writer, ref string) error {
 }
 
 func (d *dockerAPI) Load(ctx context.Context, out io.Writer, input io.Reader, ref string) (string, error) {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return "", err
 	}
@@ -158,7 +163,7 @@ func (d *dockerAPI) Load(ctx context.Context, out io.Writer, input io.Reader, re
 }
 
 func (d *dockerAPI) Tag(ctx context.Context, image, ref string) error {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return err
 	}
@@ -167,7 +172,7 @@ func (d *dockerAPI) Tag(ctx context.Context, image, ref string) error {
 }
 
 func (d *dockerAPI) TagWithImageID(ctx context.Context, ref string, imageID string) (string, error) {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return "", err
 	}
@@ -176,7 +181,7 @@ func (d *dockerAPI) TagWithImageID(ctx context.Context, ref string, imageID stri
 }
 
 func (d *dockerAPI) ImageID(ctx context.Context, ref string) (string, error) {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return "", err
 	}
@@ -185,7 +190,7 @@ func (d *dockerAPI) ImageID(ctx context.Context, ref string) (string, error) {
 }
 
 func (d *dockerAPI) ImageInspectWithRaw(ctx context.Context, image string) (types.ImageInspect, []byte, error) {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return types.ImageInspect{}, nil, err
 	}
@@ -194,7 +199,7 @@ func (d *dockerAPI) ImageInspectWithRaw(ctx context.Context, image string) (type
 }
 
 func (d *dockerAPI) ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error) {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +208,7 @@ func (d *dockerAPI) ImageRemove(ctx context.Context, image string, opts types.Im
 }
 
 func (d *dockerAPI) ImageExists(ctx context.Context, ref string) (bool, error) {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return false, err
 	}
@@ -212,7 +217,7 @@ func (d *dockerAPI) ImageExists(ctx context.Context, ref string) (bool, error) {
 }
 
 func (d *dockerAPI) Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return err
 	}
@@ -221,7 +226,7 @@ func (d *dockerAPI) Prune(ctx context.Context, out io.Writer, images []string, p
 }
 
 func (d *dockerAPI) ContainerRun(ctx context.Context, out io.Writer, runs ...ContainerRun) error {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return err
 	}
@@ -230,7 +235,7 @@ func (d *dockerAPI) ContainerRun(ctx context.Context, out io.Writer, runs ...Con
 }
 
 func (d *dockerAPI) CopyToContainer(ctx context.Context, container string, dest string, root string, paths []string, uid, gid int, modTime time.Time) error {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return err
 	}
@@ -239,7 +244,7 @@ func (d *dockerAPI) CopyToContainer(ctx context.Context, container string, dest 
 }
 
 func (d *dockerAPI) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
-	docker, err := NewAPIClientImpl(d.runCtx)
+	docker, err := NewAPIClient(d.runCtx)
 	if err != nil {
 		return err
 	}

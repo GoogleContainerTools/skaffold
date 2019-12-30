@@ -64,3 +64,12 @@ func TagWithImageID(ctx context.Context, tag string, imageID string, localDocker
 
 	return fqTag, nil
 }
+
+func TagWithImageIDNew(ctx context.Context, tag string, imageID string, localDocker docker.DockerAPI) (string, error) {
+	fqTag, err := localDocker.TagWithImageID(ctx, tag, imageID)
+	if err != nil {
+		return "", err
+	}
+
+	return fqTag, nil
+}

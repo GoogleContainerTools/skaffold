@@ -62,11 +62,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return build.DependenciesForArtifact(ctx, artifact, runCtx.InsecureRegistries)
 	}
 
-	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, depLister)
-	if err != nil {
-		return nil, errors.Wrap(err, "initializing cache")
-	}
-
+	artifactCache := cache.NewCache(runCtx, imagesAreLocal, depLister)
 	tester := getTester(runCtx)
 	syncer := getSyncer(runCtx)
 

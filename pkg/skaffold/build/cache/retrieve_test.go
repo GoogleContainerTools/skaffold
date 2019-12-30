@@ -126,8 +126,7 @@ func TestCacheBuildLocal(t *testing.T) {
 		})
 
 		// Create cache
-		artifactCache, err := NewCache(runCtx, true, deps)
-		t.CheckNoError(err)
+		artifactCache := NewCache(runCtx, true, deps)
 
 		// First build: Need to build both artifacts
 		builder := &mockBuilder{dockerDaemon: dockerDaemon, push: false}
@@ -222,8 +221,7 @@ func TestCacheBuildRemote(t *testing.T) {
 		})
 
 		// Create cache
-		artifactCache, err := NewCache(runCtx, false, deps)
-		t.CheckNoError(err)
+		artifactCache := NewCache(runCtx, false, deps)
 
 		// First build: Need to build both artifacts
 		builder := &mockBuilder{dockerDaemon: dockerDaemon, push: true}

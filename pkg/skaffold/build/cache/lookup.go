@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -75,7 +74,7 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 	}
 
 	// Check the imageID for the tag
-	idForTag, err := c.client.ImageID(ctx, tag)
+	idForTag, err := c.docker.ImageID(ctx, tag)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting imageID for %s: %v", tag, err)}
 	}
@@ -86,7 +85,11 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 	}
 
 	// Image exists locally with a different tag
-	if c.client.ImageExists(ctx, entry.ID) {
+	exists, err := c.docker.ImageExists(ctx, entry.ID)
+	if err != nil {
+		return failed{err: fmt.Errorf("checking if image exists %s: %v", entry.ID, err)}
+	}
+	if exists {
 		return needsLocalTagging{hash: hash, tag: tag, imageID: entry.ID}
 	}
 
@@ -94,7 +97,7 @@ func (c *cache) lookupLocal(ctx context.Context, hash, tag string, entry ImageDe
 }
 
 func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageDetails) cacheDetails {
-	if remoteDigest, err := docker.RemoteDigest(tag, c.insecureRegistries); err == nil {
+	if remoteDigest, err := c.docker.RemoteDigest(tag); err == nil {
 		// Image exists remotely with the same tag and digest
 		if remoteDigest == entry.Digest {
 			return found{hash: hash}
@@ -103,15 +106,17 @@ func (c *cache) lookupRemote(ctx context.Context, hash, tag string, entry ImageD
 
 	// Image exists remotely with a different tag
 	fqn := tag + "@" + entry.Digest // Actual tag will be ignored but we need the registry and the digest part of it.
-	if remoteDigest, err := docker.RemoteDigest(fqn, c.insecureRegistries); err == nil {
+	if remoteDigest, err := c.docker.RemoteDigest(fqn); err == nil {
 		if remoteDigest == entry.Digest {
 			return needsRemoteTagging{hash: hash, tag: tag, digest: entry.Digest}
 		}
 	}
 
-	// Image exists locally
-	if entry.ID != "" && c.client != nil && c.client.ImageExists(ctx, entry.ID) {
-		return needsPushing{hash: hash, tag: tag, imageID: entry.ID}
+	// Image exists locally (ignore if no local daemon is found)
+	if entry.ID != "" {
+		if exists, _ := c.docker.ImageExists(ctx, entry.ID); exists {
+			return needsPushing{hash: hash, tag: tag, imageID: entry.ID}
+		}
 	}
 
 	return needsBuilding{hash: hash}

@@ -44,48 +44,41 @@ type ArtifactCache map[string]ImageDetails
 
 // cache holds any data necessary for accessing the cache
 type cache struct {
-	artifactCache      ArtifactCache
-	dependencies       DependencyLister
-	client             docker.LocalDaemon
-	insecureRegistries map[string]bool
-	cacheFile          string
-	imagesAreLocal     bool
+	artifactCache  ArtifactCache
+	dependencies   DependencyLister
+	docker         docker.DockerAPI
+	cacheFile      string
+	imagesAreLocal bool
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
 type DependencyLister func(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 
 // NewCache returns the current state of the cache
-func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies DependencyLister) (Cache, error) {
+func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies DependencyLister) Cache {
 	if !runCtx.Opts.CacheArtifacts {
-		return &noCache{}, nil
+		return &noCache{}
 	}
 
 	cacheFile, err := resolveCacheFile(runCtx.Opts.CacheFile)
 	if err != nil {
 		logrus.Warnf("Error resolving cache file, not using skaffold cache: %v", err)
-		return &noCache{}, nil
+		return &noCache{}
 	}
 
 	artifactCache, err := retrieveArtifactCache(cacheFile)
 	if err != nil {
 		logrus.Warnf("Error retrieving artifact cache, not using skaffold cache: %v", err)
-		return &noCache{}, nil
-	}
-
-	client, err := docker.NewAPIClient(runCtx)
-	if imagesAreLocal && err != nil {
-		return nil, errors.Wrap(err, "getting local Docker client")
+		return &noCache{}
 	}
 
 	return &cache{
-		artifactCache:      artifactCache,
-		dependencies:       dependencies,
-		client:             client,
-		insecureRegistries: runCtx.InsecureRegistries,
-		cacheFile:          cacheFile,
-		imagesAreLocal:     imagesAreLocal,
-	}, nil
+		artifactCache:  artifactCache,
+		dependencies:   dependencies,
+		docker:         docker.NewDockerAPI(runCtx),
+		cacheFile:      cacheFile,
+		imagesAreLocal: imagesAreLocal,
+	}
 }
 
 // resolveCacheFile makes sure that either a passed in cache file or the default cache file exists

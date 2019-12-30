@@ -19,8 +19,6 @@ package cache
 import (
 	"context"
 	"io"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
 type cacheDetails interface {
@@ -70,7 +68,7 @@ func (d needsLocalTagging) Hash() string {
 }
 
 func (d needsLocalTagging) Tag(ctx context.Context, c *cache) error {
-	return c.client.Tag(ctx, d.imageID, d.tag)
+	return c.docker.Tag(ctx, d.imageID, d.tag)
 }
 
 // Found remotely with wrong tag. Needs retagging
@@ -86,7 +84,7 @@ func (d needsRemoteTagging) Hash() string {
 
 func (d needsRemoteTagging) Tag(ctx context.Context, c *cache) error {
 	fqn := d.tag + "@" + d.digest // Tag is not important. We just need the registry and the digest to locate the image.
-	return docker.AddRemoteTag(fqn, d.tag, c.insecureRegistries)
+	return c.docker.AddRemoteTag(fqn, d.tag)
 }
 
 // Found locally. Needs pushing
@@ -101,11 +99,11 @@ func (d needsPushing) Hash() string {
 }
 
 func (d needsPushing) Push(ctx context.Context, out io.Writer, c *cache) error {
-	if err := c.client.Tag(ctx, d.imageID, d.tag); err != nil {
+	if err := c.docker.Tag(ctx, d.imageID, d.tag); err != nil {
 		return err
 	}
 
-	digest, err := c.client.Push(ctx, out, d.tag)
+	digest, err := c.docker.Push(ctx, out, d.tag)
 	if err != nil {
 		return err
 	}
