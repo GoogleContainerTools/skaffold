@@ -66,7 +66,7 @@ func TestPush(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
 
-			docker := NewDockerAPIForTests(test.api, nil, false, nil)
+			docker := NewAPIForTests(test.api, nil, false, nil)
 			digest, err := docker.Push(context.Background(), ioutil.Discard, test.imageName)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDigest, digest)
@@ -81,7 +81,7 @@ func TestDoNotPushAlreadyPushed(t *testing.T) {
 		api := &testutil.FakeAPIClient{}
 		api.Add("image", "sha256:imageIDabcab")
 
-		docker := NewDockerAPIForTests(api, nil, false, nil)
+		docker := NewAPIForTests(api, nil, false, nil)
 		digest, err := docker.Push(context.Background(), ioutil.Discard, "image")
 		t.CheckNoError(err)
 		t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
@@ -186,7 +186,7 @@ func TestBuild(t *testing.T) {
 			t.Override(&DefaultAuthHelper, testAuthHelper{})
 			t.SetEnvs(test.env)
 
-			docker := NewDockerAPIForTests(test.api, nil, false, nil)
+			docker := NewAPIForTests(test.api, nil, false, nil)
 			_, err := docker.Build(context.Background(), ioutil.Discard, test.workspace, test.artifact, "finalimage")
 
 			if test.shouldErr {
@@ -236,7 +236,7 @@ func TestImageID(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			docker := NewDockerAPIForTests(test.api, nil, false, nil)
+			docker := NewAPIForTests(test.api, nil, false, nil)
 
 			imageID, err := docker.ImageID(context.Background(), test.ref)
 
@@ -272,7 +272,7 @@ func TestImageExists(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			docker := NewDockerAPIForTests(test.api, nil, false, nil)
+			docker := NewAPIForTests(test.api, nil, false, nil)
 
 			actual, _ := docker.ImageExists(context.Background(), test.image)
 
@@ -284,7 +284,7 @@ func TestImageExists(t *testing.T) {
 func TestConfigFile(t *testing.T) {
 	api := (&testutil.FakeAPIClient{}).Add("gcr.io/image", "sha256:imageIDabcab")
 
-	docker := NewDockerAPIForTests(api, nil, false, nil)
+	docker := NewAPIForTests(api, nil, false, nil)
 	cfg, err := docker.ConfigFile(context.Background(), "gcr.io/image")
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, "sha256:imageIDabcab", cfg.Config.Image)
@@ -305,7 +305,7 @@ func TestConfigFileConcurrentCalls(t *testing.T) {
 		CommonAPIClient: (&testutil.FakeAPIClient{}).Add("gcr.io/image", "sha256:imageIDabcab"),
 	}
 
-	docker := NewDockerAPIForTests(api, nil, false, nil)
+	docker := NewAPIForTests(api, nil, false, nil)
 
 	var wg sync.WaitGroup
 	for i := 0; i < 100; i++ {
@@ -357,7 +357,7 @@ func TestTagWithImageID(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			api := (&testutil.FakeAPIClient{}).Add("sha256:imageID", "sha256:imageID")
 
-			docker := NewDockerAPIForTests(api, nil, false, nil)
+			docker := NewAPIForTests(api, nil, false, nil)
 			tag, err := docker.TagWithImageID(context.Background(), test.imageName, test.imageID)
 
 			t.CheckError(test.shouldErr, err)

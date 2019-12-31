@@ -47,7 +47,7 @@ func depLister(files map[string][]string) DependencyLister {
 type mockBuilder struct {
 	built  []*latest.Artifact
 	push   bool
-	docker docker.DockerAPI
+	docker docker.API
 }
 
 func (b *mockBuilder) BuildAndTest(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
@@ -120,7 +120,7 @@ func TestCacheBuildLocal(t *testing.T) {
 
 		// Mock Docker
 		t.Override(&docker.DefaultAuthHelper, stubAuth{})
-		docker := docker.NewDockerAPIForTests(&testutil.FakeAPIClient{}, nil, false, nil)
+		docker := docker.NewAPIForTests(&testutil.FakeAPIClient{}, nil, false, nil)
 
 		// Create cache
 		artifactCache := NewCache(runCtx, docker, true, deps)
@@ -214,7 +214,7 @@ func TestCacheBuildRemote(t *testing.T) {
 		})
 
 		// Create cache
-		docker := docker.NewDockerAPIForTests(&testutil.FakeAPIClient{}, nil, false, nil)
+		docker := docker.NewAPIForTests(&testutil.FakeAPIClient{}, nil, false, nil)
 		artifactCache := NewCache(runCtx, docker, false, deps)
 
 		// First build: Need to build both artifacts

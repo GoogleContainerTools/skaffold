@@ -56,7 +56,7 @@ func TagWithDigest(tag, digest string) string {
 	return tag + "@" + digest
 }
 
-func TagWithImageID(ctx context.Context, tag string, imageID string, docker docker.DockerAPI) (string, error) {
+func TagWithImageID(ctx context.Context, tag string, imageID string, docker docker.API) (string, error) {
 	fqTag, err := docker.TagWithImageID(ctx, tag, imageID)
 	if err != nil {
 		return "", err

@@ -38,7 +38,7 @@ import (
 )
 
 type fakeDockerAPI struct {
-	docker.DockerAPI
+	docker.API
 	workingDirs map[string]string
 }
 

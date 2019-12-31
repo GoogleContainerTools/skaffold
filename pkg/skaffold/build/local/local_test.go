@@ -214,7 +214,7 @@ func TestLocalRun(t *testing.T) {
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			docker := docker.NewDockerAPIForTests(test.api, nil, false, nil)
+			docker := docker.NewAPIForTests(test.api, nil, false, nil)
 
 			event.InitializeState(latest.BuildConfig{
 				BuildType: latest.BuildType{

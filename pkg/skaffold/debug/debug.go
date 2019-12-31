@@ -48,7 +48,7 @@ var (
 )
 
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
-func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, docker docker.DockerAPI) (kubectl.ManifestList, error) {
+func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, docker docker.API) (kubectl.ManifestList, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -95,7 +95,7 @@ func findArtifact(image string, builds []build.Artifact) *build.Artifact {
 
 // retrieveImageConfiguration retrieves the image container configuration for
 // the given build artifact
-func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact, docker docker.DockerAPI) (imageConfiguration, error) {
+func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact, docker docker.API) (imageConfiguration, error) {
 	// the apiClient will go to the remote registry if local docker daemon is not available
 	manifest, err := docker.ConfigFile(ctx, artifact.Tag)
 	if err != nil {

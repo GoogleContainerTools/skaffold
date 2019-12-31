@@ -35,7 +35,7 @@ import (
 type Builder struct {
 	cfg *latest.LocalBuild
 
-	docker        docker.DockerAPI
+	docker        docker.API
 	localCluster  bool
 	pushImages    bool
 	prune         bool
@@ -51,7 +51,7 @@ type Builder struct {
 var getLocalCluster = config.GetLocalCluster
 
 // NewBuilder returns an new instance of a local Builder.
-func NewBuilder(runCtx *runcontext.RunContext, docker docker.DockerAPI) (*Builder, error) {
+func NewBuilder(runCtx *runcontext.RunContext, docker docker.API) (*Builder, error) {
 	localCluster, err := getLocalCluster(runCtx.Opts.GlobalConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting localCluster")

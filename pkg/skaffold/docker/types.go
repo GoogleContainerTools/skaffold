@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-type DockerAPI interface {
+type API interface {
 	// Local or Remote
 	WorkingDir(ctx context.Context, tagged string) (string, error)
 
@@ -70,7 +70,7 @@ type dockerAPI struct {
 	imageCacheLock     sync.Mutex
 }
 
-func NewDockerAPI(runCtx *runcontext.RunContext) DockerAPI {
+func NewAPI(runCtx *runcontext.RunContext) API {
 	var dockerAPIClientOnce sync.Once
 	var extraEnv []string
 	var apiClient client.CommonAPIClient
@@ -89,7 +89,7 @@ func NewDockerAPI(runCtx *runcontext.RunContext) DockerAPI {
 	}
 }
 
-func NewDockerAPIForTests(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool, insecureRegistries map[string]bool) DockerAPI {
+func NewAPIForTests(apiClient client.CommonAPIClient, extraEnv []string, forceRemove bool, insecureRegistries map[string]bool) API {
 	return &dockerAPI{
 		getAPIClient: func() ([]string, client.CommonAPIClient, error) {
 			return extraEnv, apiClient, nil

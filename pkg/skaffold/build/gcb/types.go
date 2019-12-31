@@ -81,11 +81,11 @@ func NewStatusBackoff() *wait.Backoff {
 type Builder struct {
 	*latest.GoogleCloudBuild
 	skipTests bool
-	docker    docker.DockerAPI
+	docker    docker.API
 }
 
 // NewBuilder creates a new Builder that builds artifacts with Google Cloud Build.
-func NewBuilder(runCtx *runcontext.RunContext, docker docker.DockerAPI) *Builder {
+func NewBuilder(runCtx *runcontext.RunContext, docker docker.API) *Builder {
 	return &Builder{
 		GoogleCloudBuild: runCtx.Cfg.Build.GoogleCloudBuild,
 		skipTests:        runCtx.Opts.SkipTests,

@@ -20,12 +20,12 @@ import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 
 // Builder is a builder for custom artifacts
 type Builder struct {
-	docker     docker.DockerAPI
+	docker     docker.API
 	pushImages bool
 }
 
 // NewArtifactBuilder returns a new custom artifact builder
-func NewArtifactBuilder(docker docker.DockerAPI, pushImages bool) *Builder {
+func NewArtifactBuilder(docker docker.API, pushImages bool) *Builder {
 	return &Builder{
 		docker:     docker,
 		pushImages: pushImages,

@@ -30,7 +30,7 @@ import (
 )
 
 // DependenciesForArtifact returns the dependencies for a given artifact.
-func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, dockerAPI docker.DockerAPI) ([]string, error) {
+func DependenciesForArtifact(ctx context.Context, a *latest.Artifact, dockerAPI docker.API) ([]string, error) {
 	var (
 		paths []string
 		err   error

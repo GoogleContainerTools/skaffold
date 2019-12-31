@@ -27,7 +27,7 @@ import (
 )
 
 type fakeDockerAPI struct {
-	docker.DockerAPI
+	docker.API
 }
 
 func (f *fakeDockerAPI) InsecureRegistries() map[string]bool {

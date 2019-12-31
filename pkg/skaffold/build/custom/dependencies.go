@@ -31,7 +31,7 @@ import (
 )
 
 // GetDependencies returns dependencies listed for a custom artifact
-func GetDependencies(ctx context.Context, workspace string, a *latest.CustomArtifact, dockerAPI docker.DockerAPI) ([]string, error) {
+func GetDependencies(ctx context.Context, workspace string, a *latest.CustomArtifact, dockerAPI docker.API) ([]string, error) {
 	switch {
 	case a.Dependencies.Dockerfile != nil:
 		dockerfile := a.Dependencies.Dockerfile

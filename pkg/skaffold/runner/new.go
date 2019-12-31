@@ -44,7 +44,7 @@ import (
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
-	docker := docker.NewDockerAPI(runCtx)
+	docker := docker.NewAPI(runCtx)
 
 	tagger, err := getTagger(runCtx)
 	if err != nil {
@@ -180,7 +180,7 @@ func (r *SkaffoldRunner) setupTriggerCallback(triggerName string, c chan<- bool)
 	return nil
 }
 
-func getBuilder(runCtx *runcontext.RunContext, docker docker.DockerAPI) (build.Builder, error) {
+func getBuilder(runCtx *runcontext.RunContext, docker docker.API) (build.Builder, error) {
 	switch {
 	case runCtx.Cfg.Build.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
@@ -199,7 +199,7 @@ func getBuilder(runCtx *runcontext.RunContext, docker docker.DockerAPI) (build.B
 	}
 }
 
-func getTester(runCtx *runcontext.RunContext, docker docker.DockerAPI) test.Tester {
+func getTester(runCtx *runcontext.RunContext, docker docker.API) test.Tester {
 	return test.NewTester(runCtx, docker)
 }
 
@@ -207,7 +207,7 @@ func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
 	return sync.NewSyncer(runCtx)
 }
 
-func getDeployer(runCtx *runcontext.RunContext, docker docker.DockerAPI) (deploy.Deployer, error) {
+func getDeployer(runCtx *runcontext.RunContext, docker docker.API) (deploy.Deployer, error) {
 	switch {
 	case runCtx.Cfg.Deploy.HelmDeploy != nil:
 		return deploy.NewHelmDeployer(runCtx), nil

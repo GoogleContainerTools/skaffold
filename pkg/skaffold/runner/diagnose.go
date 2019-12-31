@@ -106,7 +106,7 @@ func typeOfArtifact(a *latest.Artifact) string {
 	}
 }
 
-func timeToListDependencies(ctx context.Context, a *latest.Artifact, docker docker.DockerAPI) (time.Duration, []string, error) {
+func timeToListDependencies(ctx context.Context, a *latest.Artifact, docker docker.API) (time.Duration, []string, error) {
 	start := time.Now()
 	paths, err := build.DependenciesForArtifact(ctx, a, docker)
 	return time.Since(start), paths, err
@@ -128,7 +128,7 @@ func timeToComputeMTimes(deps []string) (time.Duration, error) {
 	return time.Since(start), nil
 }
 
-func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, dockerAPI docker.DockerAPI) (int64, error) {
+func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, dockerAPI docker.API) (int64, error) {
 	buildCtx, buildCtxWriter := io.Pipe()
 	go func() {
 		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, a.Workspace, a.DockerArtifact, dockerAPI)

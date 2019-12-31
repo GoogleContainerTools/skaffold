@@ -35,14 +35,14 @@ import (
 type Builder struct {
 	*latest.ClusterDetails
 
-	docker      docker.DockerAPI
+	docker      docker.API
 	kubectlcli  *kubectl.CLI
 	kubeContext string
 	timeout     time.Duration
 }
 
 // NewBuilder creates a new Builder that builds artifacts on cluster.
-func NewBuilder(runCtx *runcontext.RunContext, docker docker.DockerAPI) (*Builder, error) {
+func NewBuilder(runCtx *runcontext.RunContext, docker docker.API) (*Builder, error) {
 	timeout, err := time.ParseDuration(runCtx.Cfg.Build.Cluster.Timeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing timeout")

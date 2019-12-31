@@ -76,7 +76,7 @@ func TestDockerCLIBuild(t *testing.T) {
 				test.expectedEnv,
 			))
 			t.Override(&util.OSEnviron, func() []string { return []string{"KEY=VALUE"} })
-			docker := docker.NewDockerAPIForTests(&testutil.FakeAPIClient{}, test.extraEnv, false, nil)
+			docker := docker.NewAPIForTests(&testutil.FakeAPIClient{}, test.extraEnv, false, nil)
 
 			builder, err := NewBuilder(stubRunContext(test.localBuild), docker)
 			t.CheckNoError(err)

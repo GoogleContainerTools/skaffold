@@ -39,7 +39,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, docker docker.DockerAPI, destProvider DestinationProvider) (*Item, error) {
+func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, docker docker.API, destProvider DestinationProvider) (*Item, error) {
 	switch {
 	case !e.HasChanged():
 		return nil, nil
@@ -55,7 +55,7 @@ func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, dock
 	}
 }
 
-func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, docker docker.DockerAPI) (*Item, error) {
+func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, docker docker.API) (*Item, error) {
 	tag := latestTag(a.ImageName, builds)
 	if tag == "" {
 		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)

@@ -32,7 +32,7 @@ func TestBuildBazel(t *testing.T) {
 		t.NewTempDir().Mkdir("bin").Chdir()
 		t.Override(&util.DefaultExecCommand, testutil.CmdRun("bazel build //:app.tar").AndRunOut("bazel info bazel-bin", "bin"))
 		testutil.CreateFakeImageTar("bazel:app", "bin/app.tar")
-		docker := docker.NewDockerAPIForTests(&testutil.FakeAPIClient{}, nil, false, nil)
+		docker := docker.NewAPIForTests(&testutil.FakeAPIClient{}, nil, false, nil)
 
 		artifact := &latest.Artifact{
 			Workspace: ".",

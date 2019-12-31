@@ -72,11 +72,11 @@ type KustomizeDeployer struct {
 	*latest.KustomizeDeploy
 
 	kubectl   deploy.CLI
-	docker    docker.DockerAPI
+	docker    docker.API
 	BuildArgs []string
 }
 
-func NewKustomizeDeployer(runCtx *runcontext.RunContext, docker docker.DockerAPI) *KustomizeDeployer {
+func NewKustomizeDeployer(runCtx *runcontext.RunContext, docker docker.API) *KustomizeDeployer {
 	return &KustomizeDeployer{
 		KustomizeDeploy: runCtx.Cfg.Deploy.KustomizeDeploy,
 		kubectl: deploy.CLI{

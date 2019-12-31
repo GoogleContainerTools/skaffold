@@ -47,12 +47,12 @@ type KubectlDeployer struct {
 	originalImages []build.Artifact
 	workingDir     string
 	kubectl        deploy.CLI
-	docker         docker.DockerAPI
+	docker         docker.API
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
 // with the needed configuration for `kubectl apply`
-func NewKubectlDeployer(runCtx *runcontext.RunContext, docker docker.DockerAPI) *KubectlDeployer {
+func NewKubectlDeployer(runCtx *runcontext.RunContext, docker docker.API) *KubectlDeployer {
 	return &KubectlDeployer{
 		KubectlDeploy: runCtx.Cfg.Deploy.KubectlDeploy,
 		workingDir:    runCtx.WorkingDir,

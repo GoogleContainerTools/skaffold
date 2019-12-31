@@ -50,7 +50,7 @@ type Runner interface {
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
-	docker           docker.DockerAPI
+	docker           docker.API
 	builder          build.Builder
 	deployer         deploy.Deployer
 	tester           test.Tester

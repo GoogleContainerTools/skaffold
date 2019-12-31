@@ -22,7 +22,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
-type ManifestTransform func(l kubectl.ManifestList, builds []build.Artifact, docker docker.DockerAPI) (kubectl.ManifestList, error)
+type ManifestTransform func(l kubectl.ManifestList, builds []build.Artifact, docker docker.API) (kubectl.ManifestList, error)
 
 // Transforms are applied to manifests
 var manifestTransforms []ManifestTransform

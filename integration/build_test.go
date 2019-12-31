@@ -154,7 +154,7 @@ func checkImageExists(t *testing.T, image string) {
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(5*time.Second))
 	defer cancel()
 
-	docker := docker.NewDockerAPI(&runcontext.RunContext{})
+	docker := docker.NewAPI(&runcontext.RunContext{})
 	exists, err := docker.ImageExists(ctx, image)
 	failNowIfError(t, err)
 

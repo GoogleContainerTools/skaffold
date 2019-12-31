@@ -109,7 +109,7 @@ func TestLookupLocal(t *testing.T) {
 			cache := &cache{
 				imagesAreLocal: true,
 				artifactCache:  test.cache,
-				docker:         docker.NewDockerAPIForTests(test.api, nil, false, nil),
+				docker:         docker.NewAPIForTests(test.api, nil, false, nil),
 			}
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
 				ImageName: "artifact",
@@ -194,7 +194,7 @@ func TestLookupRemote(t *testing.T) {
 			cache := &cache{
 				imagesAreLocal: false,
 				artifactCache:  test.cache,
-				docker:         docker.NewDockerAPIForTests(test.api, nil, false, nil),
+				docker:         docker.NewAPIForTests(test.api, nil, false, nil),
 			}
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
 				ImageName: "artifact",

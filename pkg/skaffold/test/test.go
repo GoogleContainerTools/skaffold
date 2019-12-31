@@ -33,7 +33,7 @@ import (
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
-func NewTester(runCtx *runcontext.RunContext, docker docker.DockerAPI) Tester {
+func NewTester(runCtx *runcontext.RunContext, docker docker.API) Tester {
 	extraEnv, err := docker.ExtraEnv()
 	if err != nil {
 		// No local daemon

@@ -20,13 +20,13 @@ import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 
 // Builder is a builder for jib artifacts
 type Builder struct {
-	docker     docker.DockerAPI
+	docker     docker.API
 	pushImages bool
 	skipTests  bool
 }
 
 // NewArtifactBuilder returns a new customjib artifact builder
-func NewArtifactBuilder(docker docker.DockerAPI, pushImages, skipTests bool) *Builder {
+func NewArtifactBuilder(docker docker.API, pushImages, skipTests bool) *Builder {
 	return &Builder{
 		docker:     docker,
 		pushImages: pushImages,

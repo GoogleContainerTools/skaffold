@@ -85,7 +85,7 @@ func (t *TestMonitor) Run(bool) error {
 func (t *TestMonitor) Reset() {}
 
 type fakeDockerAPI struct {
-	docker.DockerAPI
+	docker.API
 }
 
 func (f *fakeDockerAPI) WorkingDir(context.Context, string) (string, error) {

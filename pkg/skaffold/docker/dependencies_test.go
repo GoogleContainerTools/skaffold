@@ -216,7 +216,7 @@ ADD ./file /etc/file
 `
 
 type fakeImageFetcher struct {
-	DockerAPI
+	API
 }
 
 func (f *fakeImageFetcher) ConfigFile(ctx context.Context, image string) (*v1.ConfigFile, error) {

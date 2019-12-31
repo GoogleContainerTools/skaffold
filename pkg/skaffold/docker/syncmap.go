@@ -30,7 +30,7 @@ import (
 // SyncMap creates a map of syncable files by looking at the COPY/ADD commands in the Dockerfile.
 // All keys are relative to the Skaffold root, the destinations are absolute container paths.
 // TODO(corneliusweig) destinations are not resolved across stages in multistage dockerfiles. Is there a use-case for that?
-func SyncMap(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, docker DockerAPI) (map[string][]string, error) {
+func SyncMap(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, docker API) (map[string][]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "normalizing dockerfile path")

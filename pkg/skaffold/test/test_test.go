@@ -31,7 +31,7 @@ import (
 )
 
 type fakeDockerAPI struct {
-	docker.DockerAPI
+	docker.API
 }
 
 func (f *fakeDockerAPI) ExtraEnv() ([]string, error) {

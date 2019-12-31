@@ -57,7 +57,7 @@ type fromTo struct {
 	toIsDir bool
 }
 
-func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, docker DockerAPI) ([]fromTo, error) {
+func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, docker API) ([]fromTo, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
@@ -168,7 +168,7 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, e
 	return fts, nil
 }
 
-func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, docker DockerAPI) ([]*copyCommand, error) {
+func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, docker API) ([]*copyCommand, error) {
 	stages := map[string]bool{
 		"scratch": true,
 	}
@@ -271,7 +271,7 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 	}, nil
 }
 
-func expandOnbuildInstructions(nodes []*parser.Node, docker DockerAPI) ([]*parser.Node, error) {
+func expandOnbuildInstructions(nodes []*parser.Node, docker API) ([]*parser.Node, error) {
 	onbuildNodesCache := map[string][]*parser.Node{
 		"scratch": nil,
 	}
@@ -306,7 +306,7 @@ func expandOnbuildInstructions(nodes []*parser.Node, docker DockerAPI) ([]*parse
 	return expandedNodes, nil
 }
 
-func parseOnbuild(image string, docker DockerAPI) ([]*parser.Node, error) {
+func parseOnbuild(image string, docker API) ([]*parser.Node, error) {
 	logrus.Tracef("Checking base image %s for ONBUILD triggers.", image)
 
 	// Image names are case SENSITIVE
