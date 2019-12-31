@@ -33,7 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-const sourceQuery = "kind('source file', deps('%[1]s')) union buildfiles('%[1]s')"
+const sourceQuery = "kind('source file', deps('%[1]s')) union buildfiles(deps('%[1]s'))"
 
 func query(target string) string {
 	return fmt.Sprintf(sourceQuery, target)
