@@ -27,16 +27,60 @@ import (
 )
 
 func TestKanikoBuildSpec(t *testing.T) {
-	artifact := &latest.Artifact{
-		ArtifactType: latest.ArtifactType{
-			KanikoArtifact: &latest.KanikoArtifact{
+	tests := []struct {
+		description  string
+		artifact     *latest.KanikoArtifact
+		expectedArgs []string
+	}{
+		{
+			description: "simple build",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+			},
+			expectedArgs: []string{},
+		},
+		{
+			description: "with BuildArgs",
+			artifact: &latest.KanikoArtifact{
 				DockerfilePath: "Dockerfile",
 				BuildArgs: map[string]*string{
 					"arg1": util.StringPtr("value1"),
 					"arg2": nil,
 				},
-				Cache:  &latest.KanikoCache{},
-				Target: "builder",
+			},
+			expectedArgs: []string{
+				"--build-arg", "arg1=value1",
+				"--build-arg", "arg2",
+			},
+		},
+		{
+			description: "with cache layer",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Cache:          &latest.KanikoCache{},
+			},
+			expectedArgs: []string{
+				"--cache",
+			},
+		},
+		{
+			description: "with reproduceible",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Reproducible:   true,
+			},
+			expectedArgs: []string{
+				"--reproducible",
+			},
+		},
+		{
+			description: "with target",
+			artifact: &latest.KanikoArtifact{
+				DockerfilePath: "Dockerfile",
+				Target:         "builder",
+			},
+			expectedArgs: []string{
+				"--target", "builder",
 			},
 		},
 	}
@@ -47,33 +91,42 @@ func TestKanikoBuildSpec(t *testing.T) {
 		MachineType: "n1-standard-1",
 		Timeout:     "10m",
 	})
-	desc, err := builder.buildSpec(artifact, "nginx", "bucket", "object")
 
-	expected := cloudbuild.Build{
-		LogsBucket: "bucket",
-		Source: &cloudbuild.Source{
-			StorageSource: &cloudbuild.StorageSource{
-				Bucket: "bucket",
-				Object: "object",
-			},
-		},
-		Steps: []*cloudbuild.BuildStep{{
-			Name: "gcr.io/kaniko-project/executor",
-			Args: []string{
-				"--destination", "nginx",
-				"--dockerfile", "Dockerfile",
-				"--build-arg", "arg1=value1",
-				"--build-arg", "arg2",
-				"--cache",
-				"--target", "builder",
-			},
-		}},
-		Options: &cloudbuild.BuildOptions{
-			DiskSizeGb:  100,
-			MachineType: "n1-standard-1",
-		},
-		Timeout: "10m",
+	defaultExpectedArgs := []string{
+		"--destination", "nginx",
+		"--dockerfile", "Dockerfile",
 	}
 
-	testutil.CheckErrorAndDeepEqual(t, false, err, expected, desc)
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			artifact := &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					KanikoArtifact: test.artifact,
+				},
+			}
+
+			desc, err := builder.buildSpec(artifact, "nginx", "bucket", "object")
+
+			expected := cloudbuild.Build{
+				LogsBucket: "bucket",
+				Source: &cloudbuild.Source{
+					StorageSource: &cloudbuild.StorageSource{
+						Bucket: "bucket",
+						Object: "object",
+					},
+				},
+				Steps: []*cloudbuild.BuildStep{{
+					Name: "gcr.io/kaniko-project/executor",
+					Args: append(defaultExpectedArgs, test.expectedArgs...),
+				}},
+				Options: &cloudbuild.BuildOptions{
+					DiskSizeGb:  100,
+					MachineType: "n1-standard-1",
+				},
+				Timeout: "10m",
+			}
+
+			t.CheckErrorAndDeepEqual(false, err, expected, desc)
+		})
+	}
 }
