@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	containerderrors "github.com/containerd/containerd/errdefs"
 	"github.com/docker/distribution/registry/api/errcode"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -29,7 +28,7 @@ func GetHTTPErrorStatusCode(err error) int {
 		statusCode = http.StatusNotFound
 	case IsInvalidParameter(err):
 		statusCode = http.StatusBadRequest
-	case IsConflict(err):
+	case IsConflict(err) || IsAlreadyExists(err):
 		statusCode = http.StatusConflict
 	case IsUnauthorized(err):
 		statusCode = http.StatusUnauthorized
@@ -45,10 +44,6 @@ func GetHTTPErrorStatusCode(err error) int {
 		statusCode = http.StatusInternalServerError
 	default:
 		statusCode = statusCodeFromGRPCError(err)
-		if statusCode != http.StatusInternalServerError {
-			return statusCode
-		}
-		statusCode = statusCodeFromContainerdError(err)
 		if statusCode != http.StatusInternalServerError {
 			return statusCode
 		}
@@ -141,6 +136,9 @@ func statusCodeFromGRPCError(err error) int {
 	case codes.Unavailable: // code 14
 		return http.StatusServiceUnavailable
 	default:
+		if e, ok := err.(causer); ok {
+			return statusCodeFromGRPCError(e.Cause())
+		}
 		// codes.Canceled(1)
 		// codes.Unknown(2)
 		// codes.DeadlineExceeded(4)
@@ -165,27 +163,10 @@ func statusCodeFromDistributionError(err error) int {
 		}
 	case errcode.ErrorCoder:
 		return errs.ErrorCode().Descriptor().HTTPStatusCode
+	default:
+		if e, ok := err.(causer); ok {
+			return statusCodeFromDistributionError(e.Cause())
+		}
 	}
 	return http.StatusInternalServerError
-}
-
-// statusCodeFromContainerdError returns status code for containerd errors when
-// consumed directly (not through gRPC)
-func statusCodeFromContainerdError(err error) int {
-	switch {
-	case containerderrors.IsInvalidArgument(err):
-		return http.StatusBadRequest
-	case containerderrors.IsNotFound(err):
-		return http.StatusNotFound
-	case containerderrors.IsAlreadyExists(err):
-		return http.StatusConflict
-	case containerderrors.IsFailedPrecondition(err):
-		return http.StatusPreconditionFailed
-	case containerderrors.IsUnavailable(err):
-		return http.StatusServiceUnavailable
-	case containerderrors.IsNotImplemented(err):
-		return http.StatusNotImplemented
-	default:
-		return http.StatusInternalServerError
-	}
 }
