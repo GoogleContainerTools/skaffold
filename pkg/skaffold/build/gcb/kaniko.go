@@ -36,7 +36,6 @@ func (b *Builder) kanikoBuildSpec(artifact *latest.KanikoArtifact, tag string) (
 	kanikoArgs := []string{
 		"--destination", tag,
 		"--dockerfile", artifact.DockerfilePath,
-		"--target", artifact.Target,
 	}
 	kanikoArgs = append(kanikoArgs, buildArgs...)
 
@@ -50,6 +49,10 @@ func (b *Builder) kanikoBuildSpec(artifact *latest.KanikoArtifact, tag string) (
 
 	if artifact.Reproducible {
 		kanikoArgs = append(kanikoArgs, "--reproducible")
+	}
+
+	if artifact.Target != "" {
+		kanikoArgs = append(kanikoArgs, "--target", artifact.Target)
 	}
 
 	steps := []*cloudbuild.BuildStep{

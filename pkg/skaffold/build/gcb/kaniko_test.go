@@ -62,10 +62,10 @@ func TestKanikoBuildSpec(t *testing.T) {
 			Args: []string{
 				"--destination", "nginx",
 				"--dockerfile", "Dockerfile",
-				"--target", "builder",
 				"--build-arg", "arg1=value1",
 				"--build-arg", "arg2",
 				"--cache",
+				"--target", "builder",
 			},
 		}},
 		Options: &cloudbuild.BuildOptions{
