@@ -77,7 +77,7 @@ func TestPush(t *testing.T) {
 	}
 }
 
-func TestDontPushAlreadyPushed(t *testing.T) {
+func TestDoNotPushAlreadyPushed(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&DefaultAuthHelper, testAuthHelper{})
 

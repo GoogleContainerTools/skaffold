@@ -119,7 +119,7 @@ func TestLocalRun(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "dont push on build error",
+			description: "Don't push on build error",
 			artifacts: []*latest.Artifact{{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{

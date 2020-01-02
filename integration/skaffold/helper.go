@@ -263,7 +263,7 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 }
 
 // removeSkaffoldEnvVariables makes sure Skaffold runs without
-// any env variable that might change its behaviour, such as
+// any env variable that might change its behavior, such as
 // enabling caching.
 func removeSkaffoldEnvVariables(env []string) []string {
 	var clean []string

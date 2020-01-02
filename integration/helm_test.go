@@ -36,7 +36,7 @@ func TestHelmDeploy(t *testing.T) {
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
 	skaffold.Deploy("--images", "gcr.io/k8s-skaffold/skaffold-helm").InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
 
-	// check if labels are set correctly for deploment
+	// check if labels are set correctly for deployment
 	dep := client.GetDeployment("skaffold-helm-" + ns.Name)
 	testutil.CheckDeepEqual(t, dep.Name, dep.ObjectMeta.Labels["release"])
 	testutil.CheckDeepEqual(t, "helm", dep.ObjectMeta.Labels["skaffold.dev/deployer"])

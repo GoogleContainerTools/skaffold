@@ -13,7 +13,7 @@ Highlights:
 New Features: 
 * Add `—port-forward` to `skaffold deploy` [#3418](https://github.com/GoogleContainerTools/skaffold/pull/3418)
 * Add --port-forward to skaffold run [#3263](https://github.com/GoogleContainerTools/skaffold/pull/3263)
-* Skaffold init recognises nodeJS projects built with Buildpacks [#3394](https://github.com/GoogleContainerTools/skaffold/pull/3394)
+* Skaffold init recognizes nodeJS projects built with Buildpacks [#3394](https://github.com/GoogleContainerTools/skaffold/pull/3394)
 * Add env vars to kaniko specs [#3389](https://github.com/GoogleContainerTools/skaffold/pull/3389)
 * Default to gcloud auth [#3282](https://github.com/GoogleContainerTools/skaffold/pull/3282)
 * Apply resource labels in the deployer [#3390](https://github.com/GoogleContainerTools/skaffold/pull/3390)
@@ -325,7 +325,7 @@ Docs:
 * Fix sample’s version [#3015](https://github.com/GoogleContainerTools/skaffold/pull/3015)
 * Fix versions used in examples [#2999](https://github.com/GoogleContainerTools/skaffold/pull/2999)
 * Docs Splash Page Update [#3031](https://github.com/GoogleContainerTools/skaffold/pull/3031)
-* [docs] readd exceptions in deprecation policy [#3029](https://github.com/GoogleContainerTools/skaffold/pull/3029)
+* [docs] re-add exceptions in deprecation policy [#3029](https://github.com/GoogleContainerTools/skaffold/pull/3029)
 * add links to docs which are present [#3026](https://github.com/GoogleContainerTools/skaffold/pull/3026)
 * moving deprecation policy to skaffold.dev [#3017](https://github.com/GoogleContainerTools/skaffold/pull/3017)
 * add survey link and reword community office hours [#3019](https://github.com/GoogleContainerTools/skaffold/pull/3019)
@@ -451,7 +451,7 @@ Bug Fixes:
 * Small random fixes to tests and code [#2801](https://github.com/GoogleContainerTools/skaffold/pull/2801)
 * skaffold init can be interrupted when kompose is running [#2803](https://github.com/GoogleContainerTools/skaffold/pull/2803)
 * Fix portforward flake [#2824](https://github.com/GoogleContainerTools/skaffold/pull/2824)
-* Improve `skaffold init` behaviour when tags are used in manifests [#2773](https://github.com/GoogleContainerTools/skaffold/pull/2773)
+* Improve `skaffold init` behavior when tags are used in manifests [#2773](https://github.com/GoogleContainerTools/skaffold/pull/2773)
 * Skip secret creation/check [#2783](https://github.com/GoogleContainerTools/skaffold/pull/2783)
 
 Updates & Refactors:
@@ -547,7 +547,7 @@ Updates & Refactors:
 * more debugging for kubectl portforward [#2707](https://github.com/GoogleContainerTools/skaffold/pull/2707)
 * Remove time sensitive tests [#2655](https://github.com/GoogleContainerTools/skaffold/pull/2655)
 * Log a warning and rebuild if needed when caching fails [#2685](https://github.com/GoogleContainerTools/skaffold/pull/2685)
-* Improve logging warning when enountering profile field of unhandled type [#2691](https://github.com/GoogleContainerTools/skaffold/pull/2691)
+* Improve logging warning when encountering profile field of unhandled type [#2691](https://github.com/GoogleContainerTools/skaffold/pull/2691)
 * refactor: Add upgrade utility to handle all pipelines in a SkaffoldConfig [#2582](https://github.com/GoogleContainerTools/skaffold/pull/2582)
 * Add struct for generate_pipeline to keep track of related data [#2686](https://github.com/GoogleContainerTools/skaffold/pull/2686)
 * Add unit tests to kubectl forwarder [#2661](https://github.com/GoogleContainerTools/skaffold/pull/2661)
@@ -934,7 +934,7 @@ Bug Fixes:
 * Docker is case sensitive about networks [#2288](https://github.com/GoogleContainerTools/skaffold/pull/2288)
 * cluster builder fails to detect insecure registries [#2266](https://github.com/GoogleContainerTools/skaffold/pull/2266)
 * fix static linking of linux binary [#2252](https://github.com/GoogleContainerTools/skaffold/pull/2252)
-* fix racey test [#2251](https://github.com/GoogleContainerTools/skaffold/pull/2251)
+* fix racy test [#2251](https://github.com/GoogleContainerTools/skaffold/pull/2251)
 
 Updates & Refactors:
 * Remove the `config out of date` warning [#2298](https://github.com/GoogleContainerTools/skaffold/pull/2298)
@@ -1554,7 +1554,7 @@ Fixes:
 * `[kubectl]` apply labels by patching yaml [#1489](https://github.com/GoogleContainerTools/skaffold/pull/1489)
 
 Updates & refactorings:
-* Optimise sync [#1641](https://github.com/GoogleContainerTools/skaffold/pull/1641)
+* Optimize sync [#1641](https://github.com/GoogleContainerTools/skaffold/pull/1641)
 * kubectl deployer: warn when pattern matches no file [#1647](https://github.com/GoogleContainerTools/skaffold/pull/1647)
 * Add integration tests for taggers [#1635](https://github.com/GoogleContainerTools/skaffold/pull/1635)
 * Adding a few tests for `skaffold build` [#1628](https://github.com/GoogleContainerTools/skaffold/pull/1628)
@@ -1941,7 +1941,7 @@ Bug fixes:
 
 * Improve Kaniko builder [#1168](https://github.com/GoogleContainerTools/skaffold/pull/1168)
 * Use os.SameFile() to check for mvnw working-dir echo bug [#1167](https://github.com/GoogleContainerTools/skaffold/pull/1167)
-* Fix kaniko default behaviour [#1139](https://github.com/GoogleContainerTools/skaffold/pull/1139)
+* Fix kaniko default behavior [#1139](https://github.com/GoogleContainerTools/skaffold/pull/1139)
 
 Updates:
 
@@ -2400,7 +2400,7 @@ New Features
 Bug Fixes
 * Logs use relative time instead of host time, which fixes issues with clock sync on local clusters
 * Removed duplicate error
-* Docker build args passsed to Google Container Builder
+* Docker build args passed to Google Container Builder
 * Fixed unreliable file detection when using IntelliJ or other IDEs
 * Better handling of default values
 * Fixed issue with some logs being displayed twice
@@ -2453,7 +2453,7 @@ New Features
 * Added options for GCR auth
 * Set default log level to warn
 * Change git commit to use short ID instead
-* Helm deployer now acceptes namespace and values file
+* Helm deployer now accepts namespace and values file
 * Local builder now accepts docker build-args
 * Added --tag flag for skaffold run
 * Cache image configs by name

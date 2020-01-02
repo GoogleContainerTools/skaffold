@@ -394,7 +394,7 @@ func TestConvertBuildArgsToStringArray(t *testing.T) {
 			},
 			expected: []string{"one=", "two="},
 		}, {
-			description: "build args with nil vlaue",
+			description: "build args with nil value",
 			buildArgs: map[string]*string{
 				"one": nil,
 				"two": nil,
