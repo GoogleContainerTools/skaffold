@@ -60,6 +60,10 @@ func Set(c *latest.SkaffoldConfig) error {
 		}
 	}
 
+	withLocalBuild(c,
+		setDefaultConcurrency,
+	)
+
 	withCloudBuildConfig(c,
 		setDefaultCloudBuildDockerImage,
 		setDefaultCloudBuildMavenImage,
@@ -103,7 +107,21 @@ func defaultToKubectlDeploy(c *latest.SkaffoldConfig) {
 	c.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{}
 }
 
-func withCloudBuildConfig(c *latest.SkaffoldConfig, operations ...func(kaniko *latest.GoogleCloudBuild)) {
+func withLocalBuild(c *latest.SkaffoldConfig, operations ...func(*latest.LocalBuild)) {
+	if local := c.Build.LocalBuild; local != nil {
+		for _, operation := range operations {
+			operation(local)
+		}
+	}
+}
+
+func setDefaultConcurrency(local *latest.LocalBuild) {
+	if local.Concurrency == nil {
+		local.Concurrency = &constants.DefaultLocalConcurrency
+	}
+}
+
+func withCloudBuildConfig(c *latest.SkaffoldConfig, operations ...func(*latest.GoogleCloudBuild)) {
 	if gcb := c.Build.GoogleCloudBuild; gcb != nil {
 		for _, operation := range operations {
 			operation(gcb)
@@ -182,7 +200,7 @@ func setDefaultWorkspace(a *latest.Artifact) {
 	a.Workspace = valueOrDefault(a.Workspace, ".")
 }
 
-func withClusterConfig(c *latest.SkaffoldConfig, opts ...func(cluster *latest.ClusterDetails) error) error {
+func withClusterConfig(c *latest.SkaffoldConfig, opts ...func(*latest.ClusterDetails) error) error {
 	clusterDetails := c.Build.BuildType.Cluster
 	if clusterDetails == nil {
 		return nil

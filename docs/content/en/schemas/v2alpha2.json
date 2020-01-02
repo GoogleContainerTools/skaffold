@@ -1652,6 +1652,11 @@
     },
     "LocalBuild": {
       "properties": {
+        "concurrency": {
+          "type": "integer",
+          "description": "how many artifacts can be built concurrently. 0 means \"no-limit\" Defaults to 1.",
+          "x-intellij-html-description": "how many artifacts can be built concurrently. 0 means &quot;no-limit&quot; Defaults to 1."
+        },
         "push": {
           "type": "boolean",
           "description": "should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster.",
@@ -1673,7 +1678,8 @@
       "preferredOrder": [
         "push",
         "useDockerCLI",
-        "useBuildkit"
+        "useBuildkit",
+        "concurrency"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",

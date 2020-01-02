@@ -44,7 +44,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	defer b.localDocker.Close()
 
 	// TODO(dgageot): parallel builds
-	return build.InSequence(ctx, out, tags, artifacts, b.buildArtifact)
+	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifact, *b.cfg.Concurrency)
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {

@@ -249,6 +249,15 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildGradleImage, cfg.Build.GoogleCloudBuild.GradleImage)
 }
 
+func TestSetDefaultsOnLocalBuild(t *testing.T) {
+	cfg := &latest.SkaffoldConfig{}
+
+	err := Set(cfg)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, 1, *cfg.Build.LocalBuild.Concurrency)
+}
+
 func TestSetDefaultPortForwardNamespace(t *testing.T) {
 	tests := []struct {
 		description        string
