@@ -1,5 +1,3 @@
-// +build release
-
 /*
 Copyright 2019 The Skaffold Authors
 
@@ -16,13 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package credits
+package statik
 
-import (
-	"github.com/rakyll/statik/fs"
+import "github.com/rakyll/statik/fs"
 
-	//required for rakyll/statik embedded content
-	_ "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/credits/statik"
+// For testing
+var (
+	FS = fs.New
 )
-
-var statikFS = fs.New

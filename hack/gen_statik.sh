@@ -32,7 +32,10 @@ if ! [[ -f ${LICENSES} ]]; then
 fi
 
 TMP_DIR=$(mktemp -d)
+trap "rm -rf $TMP_DIR" EXIT
+
 ${LICENSES} save "github.com/GoogleContainerTools/skaffold/cmd/skaffold" --save_path="${TMP_DIR}/skaffold-credits"
+cp -R docs/content/en/schemas "${TMP_DIR}/schemas"
 
 if ! [[ -f ${STATIK} ]]; then
   pushd ${DIR}/tools
@@ -41,5 +44,4 @@ if ! [[ -f ${STATIK} ]]; then
   popd
 fi
 
-${STATIK} -f -src=${TMP_DIR}/skaffold-credits/ -m -dest cmd/skaffold/app/cmd/credits
-${STATIK} -f -src=docs/content/en/schemas -m -dest cmd/skaffold/app/cmd/schema
+${STATIK} -f -src=${TMP_DIR} -m -dest cmd/skaffold/app/cmd
