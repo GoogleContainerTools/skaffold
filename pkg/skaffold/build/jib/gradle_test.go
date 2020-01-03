@@ -291,10 +291,10 @@ func TestGetCommandGradle(t *testing.T) {
 func TestGetSyncMapCommandGradle(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
-		description      string
-		workspace        string
-		jibArtifact      latest.JibArtifact
-		expectedCmd      func(workspace string) exec.Cmd
+		description string
+		workspace   string
+		jibArtifact latest.JibArtifact
+		expectedCmd func(workspace string) exec.Cmd
 	}{
 		{
 			description: "single module",
@@ -325,7 +325,7 @@ func TestGetSyncMapCommandGradle(t *testing.T) {
 
 func TestGenerateGradleArgs(t *testing.T) {
 	tests := []struct {
-		description string
+		description        string
 		in                 latest.JibArtifact
 		image              string
 		skipTests          bool
@@ -343,25 +343,25 @@ func TestGenerateGradleArgs(t *testing.T) {
 			t.Override(&gradleBuildArgsFunc, gradleBuildArgsFuncFake)
 			command := GenerateGradleArgs("testTask", test.image, &test.in, test.skipTests, test.insecureRegistries)
 			t.CheckDeepEqual(test.out, command)
-		});
+		})
 	}
 }
 
 func TestGradleArgs(t *testing.T) {
 	tests := []struct {
-		description	string
+		description string
 		jibArtifact latest.JibArtifact
-		expected []string
-	} {
+		expected    []string
+	}{
 		{
 			description: "single module",
 			jibArtifact: latest.JibArtifact{},
-			expected: []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":testTask"},
+			expected:    []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":testTask"},
 		},
 		{
 			description: "multi module",
 			jibArtifact: latest.JibArtifact{Project: "module"},
-			expected: []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":module:testTask"},
+			expected:    []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":module:testTask"},
 		},
 	}
 	for _, test := range tests {
@@ -374,44 +374,44 @@ func TestGradleBuildArgs(t *testing.T) {
 	tests := []struct {
 		description string
 		jibArtifact latest.JibArtifact
-		skipTests bool
-		expected []string
-	} {
+		skipTests   bool
+		expected    []string
+	}{
 		{
 			description: "single module",
 			jibArtifact: latest.JibArtifact{},
-			skipTests: false,
-			expected: []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask"},
+			skipTests:   false,
+			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask"},
 		},
 		{
 			description: "single module skip tests",
 			jibArtifact: latest.JibArtifact{},
-			skipTests: true,
-			expected: []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask", "-x", "test"},
+			skipTests:   true,
+			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask", "-x", "test"},
 		},
 		{
 			description: "single module with extra flags",
-			jibArtifact: latest.JibArtifact{Flags: []string{"--flag1", "--flag2"},},
-			skipTests: false,
-			expected: []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask", "--flag1", "--flag2"},
+			jibArtifact: latest.JibArtifact{Flags: []string{"--flag1", "--flag2"}},
+			skipTests:   false,
+			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask", "--flag1", "--flag2"},
 		},
 		{
 			description: "multi module",
 			jibArtifact: latest.JibArtifact{Project: "module"},
-			skipTests: false,
-			expected: []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask"},
+			skipTests:   false,
+			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask"},
 		},
 		{
 			description: "single module skip tests",
 			jibArtifact: latest.JibArtifact{Project: "module"},
-			skipTests: true,
-			expected: []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask", "-x", "test"},
+			skipTests:   true,
+			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask", "-x", "test"},
 		},
 		{
 			description: "multi module with extra flags",
 			jibArtifact: latest.JibArtifact{Project: "module", Flags: []string{"--flag1", "--flag2"}},
-			skipTests: false,
-			expected: []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask", "--flag1", "--flag2"},
+			skipTests:   false,
+			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask", "--flag1", "--flag2"},
 		},
 	}
 	for _, test := range tests {
@@ -427,7 +427,7 @@ func gradleArgsFuncFake(a *latest.JibArtifact, task string) []string {
 	if a.Project == "" {
 		return []string{"fake-gradleArgs-for-" + task}
 	} else {
-		return []string{"fake-gradleArgs-for-" + a.Project + "-for-" + task }
+		return []string{"fake-gradleArgs-for-" + a.Project + "-for-" + task}
 	}
 }
 
@@ -438,8 +438,8 @@ func gradleBuildArgsFuncFake(task string, a *latest.JibArtifact, skipTests bool)
 		testString = "-skipTests"
 	}
 	if a.Project == "" {
-		return []string{"fake-gradleBuildArgs-for-" + task + testString};
+		return []string{"fake-gradleBuildArgs-for-" + task + testString}
 	} else {
-		return []string{"fake-gradleBuildArgs-for-" + a.Project + "-for-" + task + testString};
+		return []string{"fake-gradleBuildArgs-for-" + a.Project + "-for-" + task + testString}
 	}
 }

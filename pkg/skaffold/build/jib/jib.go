@@ -89,7 +89,7 @@ type filesLists struct {
 var watchedFiles = map[string]filesLists{}
 
 func GetBuildDefinitions(a *latest.JibArtifact) []string {
-		return watchedFiles[a.Project].BuildDefinitions
+	return watchedFiles[a.Project].BuildDefinitions
 }
 
 // GetDependencies returns a list of files to watch for changes to rebuild

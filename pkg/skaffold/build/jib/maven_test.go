@@ -283,10 +283,10 @@ func TestGetCommandMaven(t *testing.T) {
 func TestGetSyncMapCommandMaven(t *testing.T) {
 	ctx := context.Background()
 	tests := []struct {
-		description      string
-		workspace        string
-		jibArtifact      latest.JibArtifact
-		expectedCmd      func(workspace string) exec.Cmd
+		description string
+		workspace   string
+		jibArtifact latest.JibArtifact
+		expectedCmd func(workspace string) exec.Cmd
 	}{
 		{
 			description: "single module",
@@ -343,34 +343,34 @@ func TestMavenBuildArgs(t *testing.T) {
 	tests := []struct {
 		description string
 		jibArtifact latest.JibArtifact
-		skipTests bool
-		expected []string
-	} {
+		skipTests   bool
+		expected    []string
+	}{
 		{
 			description: "single module",
 			jibArtifact: latest.JibArtifact{},
-			skipTests: false,
-			expected: []string{"-Djib.console=plain", "fake-mavenArgs", "prepare-package", "jib:test-goal"},
+			skipTests:   false,
+			expected:    []string{"-Djib.console=plain", "fake-mavenArgs", "prepare-package", "jib:test-goal"},
 		},
 		{
 			description: "single module skip tests",
 			jibArtifact: latest.JibArtifact{},
-			skipTests: true,
-			expected: []string{"-Djib.console=plain", "fake-mavenArgs", "-DskipTests=true", "prepare-package", "jib:test-goal"},
+			skipTests:   true,
+			expected:    []string{"-Djib.console=plain", "fake-mavenArgs", "-DskipTests=true", "prepare-package", "jib:test-goal"},
 		},
 		{
 			description: "multi module",
 			jibArtifact: latest.JibArtifact{Project: "module"},
-			skipTests: false,
-			expected: []string{"-Djib.console=plain", "fake-mavenArgs-for-module", "package", "jib:test-goal", "-Djib.containerize=module"},
+			skipTests:   false,
+			expected:    []string{"-Djib.console=plain", "fake-mavenArgs-for-module", "package", "jib:test-goal", "-Djib.containerize=module"},
 		},
 		{
 			description: "single module skip tests",
 			jibArtifact: latest.JibArtifact{Project: "module"},
-			skipTests: true,
-			expected: []string{"-Djib.console=plain", "fake-mavenArgs-for-module", "-DskipTests=true", "package", "jib:test-goal", "-Djib.containerize=module"},
+			skipTests:   true,
+			expected:    []string{"-Djib.console=plain", "fake-mavenArgs-for-module", "-DskipTests=true", "package", "jib:test-goal", "-Djib.containerize=module"},
 		},
-  }
+	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&mavenArgsFunc, mavenArgsFuncFake)
@@ -382,14 +382,14 @@ func TestMavenBuildArgs(t *testing.T) {
 
 func TestMavenArgs(t *testing.T) {
 	tests := []struct {
-		description	string
+		description string
 		jibArtifact latest.JibArtifact
-		expected []string
-	} {
+		expected    []string
+	}{
 		{
 			description: "single module",
 			jibArtifact: latest.JibArtifact{},
-			expected: []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--non-recursive"},
+			expected:    []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--non-recursive"},
 		},
 		{
 			description: "single module with extra flags",
@@ -401,13 +401,13 @@ func TestMavenArgs(t *testing.T) {
 		{
 			description: "multi module",
 			jibArtifact: latest.JibArtifact{Project: "module"},
-			expected: []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--projects", "module", "--also-make"},
+			expected:    []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--projects", "module", "--also-make"},
 		},
 		{
 			description: "multi module with extra falgs",
 			jibArtifact: latest.JibArtifact{
 				Project: "module",
-				Flags: []string{"--flag1", "--flag2"},
+				Flags:   []string{"--flag1", "--flag2"},
 			},
 			expected: []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion, "--flag1", "--flag2", "--projects", "module", "--also-make"},
 		},
@@ -433,8 +433,8 @@ func mavenBuildArgsFuncFake(goal string, a *latest.JibArtifact, skipTests bool) 
 		testString = "-skipTests"
 	}
 	if a.Project == "" {
-		return []string{"fake-mavenBuildArgs-for-" + goal + testString};
+		return []string{"fake-mavenBuildArgs-for-" + goal + testString}
 	} else {
-		return []string{"fake-mavenBuildArgs-for-" + a.Project + "-for-" + goal + testString};
+		return []string{"fake-mavenBuildArgs-for-" + a.Project + "-for-" + goal + testString}
 	}
 }
