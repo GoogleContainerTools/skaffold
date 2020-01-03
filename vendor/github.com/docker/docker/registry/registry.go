@@ -14,11 +14,9 @@ import (
 	"time"
 
 	"github.com/docker/distribution/registry/client/transport"
+	"github.com/docker/go-connections/sockets"
 	"github.com/docker/go-connections/tlsconfig"
 	"github.com/sirupsen/logrus"
-
-	"github.com/docker/docker/pkg/homedir"
-	"github.com/docker/docker/rootless"
 )
 
 var (
@@ -34,19 +32,7 @@ func newTLSConfig(hostname string, isSecure bool) (*tls.Config, error) {
 	tlsConfig.InsecureSkipVerify = !isSecure
 
 	if isSecure && CertsDir != "" {
-		certsDir := CertsDir
-
-		if rootless.RunningWithRootlessKit() {
-			configHome, err := homedir.GetConfigHome()
-			if err != nil {
-				return nil, err
-			}
-
-			certsDir = filepath.Join(configHome, "docker/certs.d")
-		}
-
-		hostDir := filepath.Join(certsDir, cleanPath(hostname))
-
+		hostDir := filepath.Join(CertsDir, cleanPath(hostname))
 		logrus.Debugf("hostDir: %s", hostDir)
 		if err := ReadCertsDirectory(tlsConfig, hostDir); err != nil {
 			return nil, err
@@ -70,7 +56,7 @@ func hasFile(files []os.FileInfo, name string) bool {
 // provided TLS configuration.
 func ReadCertsDirectory(tlsConfig *tls.Config, directory string) error {
 	fs, err := ioutil.ReadDir(directory)
-	if err != nil && !os.IsNotExist(err) && !os.IsPermission(err) {
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
@@ -190,12 +176,16 @@ func NewTransport(tlsConfig *tls.Config) *http.Transport {
 
 	base := &http.Transport{
 		Proxy:               http.ProxyFromEnvironment,
-		DialContext:         direct.DialContext,
+		Dial:                direct.Dial,
 		TLSHandshakeTimeout: 10 * time.Second,
 		TLSClientConfig:     tlsConfig,
 		// TODO(dmcgowan): Call close idle connections when complete and use keep alive
 		DisableKeepAlives: true,
 	}
 
+	proxyDialer, err := sockets.DialerFromEnvironment(direct)
+	if err == nil {
+		base.Dial = proxyDialer.Dial
+	}
 	return base
 }
