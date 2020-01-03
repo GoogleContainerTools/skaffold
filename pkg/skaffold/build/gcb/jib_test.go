@@ -80,7 +80,7 @@ func TestJibGradleBuildSpec(t *testing.T) {
 		{
 			description:  "skip tests",
 			skipTests:    true,
-			expectedArgs: []string{"-c", "gradle -Duser.home=$$HOME -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + jib.MinimumJibGradleVersion + " :jib --image=img -x test"},
+			expectedArgs: []string{"-c", "gradle -Duser.home=$$HOME -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + jib.MinimumJibGradleVersion + " :jib -x test --image=img"},
 		},
 		{
 			description:  "do not skip tests",

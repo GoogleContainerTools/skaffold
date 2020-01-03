@@ -46,28 +46,21 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 			description: "build",
 			artifact:    &latest.JibArtifact{},
 			commands: testutil.CmdRun(
-				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + MinimumJibGradleVersion + " :jibDockerBuild --image=img:tag",
-			),
-		},
-		{
-			description: "build with additional flags",
-			artifact:    &latest.JibArtifact{Flags: []string{"--flag1", "--flag2"}},
-			commands: testutil.CmdRun(
-				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + MinimumJibGradleVersion + " :jibDockerBuild --image=img:tag --flag1 --flag2",
+				"gradle fake-gradleBuildArgs-for-jibDockerBuild --image=img:tag",
 			),
 		},
 		{
 			description: "build with project",
 			artifact:    &latest.JibArtifact{Project: "project"},
 			commands: testutil.CmdRun(
-				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + MinimumJibGradleVersion + " :project:jibDockerBuild --image=img:tag",
+				"gradle fake-gradleBuildArgs-for-project-for-jibDockerBuild --image=img:tag",
 			),
 		},
 		{
 			description: "fail build",
 			artifact:    &latest.JibArtifact{},
 			commands: testutil.CmdRunErr(
-				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion="+MinimumJibGradleVersion+" :jibDockerBuild --image=img:tag",
+				"gradle fake-gradleBuildArgs-for-jibDockerBuild --image=img:tag",
 				errors.New("BUG"),
 			),
 			shouldErr:     true,
@@ -78,6 +71,7 @@ func TestBuildJibGradleToDocker(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Touch("build.gradle").Chdir()
+			t.Override(&gradleBuildArgsFunc, gradleBuildArgsFuncFake)
 			t.Override(&util.DefaultExecCommand, test.commands)
 			api := (&testutil.FakeAPIClient{}).Add("img:tag", "imageID")
 			localDocker := docker.NewLocalDaemon(api, nil, false, nil)
@@ -111,28 +105,21 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 			description: "remote build",
 			artifact:    &latest.JibArtifact{},
 			commands: testutil.CmdRun(
-				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + MinimumJibGradleVersion + " :jib --image=img:tag",
-			),
-		},
-		{
-			description: "build with additional flags",
-			artifact:    &latest.JibArtifact{Flags: []string{"--flag1", "--flag2"}},
-			commands: testutil.CmdRun(
-				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + MinimumJibGradleVersion + " :jib --image=img:tag --flag1 --flag2",
+				"gradle fake-gradleBuildArgs-for-jib --image=img:tag",
 			),
 		},
 		{
 			description: "build with project",
 			artifact:    &latest.JibArtifact{Project: "project"},
 			commands: testutil.CmdRun(
-				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + MinimumJibGradleVersion + " :project:jib --image=img:tag",
+				"gradle fake-gradleBuildArgs-for-project-for-jib --image=img:tag",
 			),
 		},
 		{
 			description: "fail build",
 			artifact:    &latest.JibArtifact{},
 			commands: testutil.CmdRunErr(
-				"gradle -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion="+MinimumJibGradleVersion+" :jib --image=img:tag",
+				"gradle fake-gradleBuildArgs-for-jib --image=img:tag",
 				errors.New("BUG"),
 			),
 			shouldErr:     true,
@@ -143,6 +130,7 @@ func TestBuildJibGradleToRegistry(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Touch("build.gradle").Chdir()
+			t.Override(&gradleBuildArgsFunc, gradleBuildArgsFuncFake)
 			t.Override(&util.DefaultExecCommand, test.commands)
 			t.Override(&docker.RemoteDigest, func(identifier string, _ map[string]bool) (string, error) {
 				if identifier == "img:tag" {
@@ -300,24 +288,158 @@ func TestGetCommandGradle(t *testing.T) {
 	}
 }
 
+func TestGetSyncMapCommandGradle(t *testing.T) {
+	ctx := context.Background()
+	tests := []struct {
+		description      string
+		workspace        string
+		jibArtifact      latest.JibArtifact
+		expectedCmd      func(workspace string) exec.Cmd
+	}{
+		{
+			description: "single module",
+			jibArtifact: latest.JibArtifact{},
+			expectedCmd: func(workspace string) exec.Cmd {
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"fake-gradleBuildArgs-for-_jibSkaffoldSyncMap-skipTests"})
+			},
+		},
+		{
+			description: "multi module",
+			jibArtifact: latest.JibArtifact{Project: "project"},
+			expectedCmd: func(workspace string) exec.Cmd {
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"fake-gradleBuildArgs-for-project-for-_jibSkaffoldSyncMap-skipTests"})
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&gradleBuildArgsFunc, gradleBuildArgsFuncFake)
+			cmd := getSyncMapCommandGradle(ctx, test.workspace, &test.jibArtifact)
+			expectedCmd := test.expectedCmd(test.workspace)
+			t.CheckDeepEqual(expectedCmd.Path, cmd.Path)
+			t.CheckDeepEqual(expectedCmd.Args, cmd.Args)
+			t.CheckDeepEqual(expectedCmd.Dir, cmd.Dir)
+		})
+	}
+}
+
 func TestGenerateGradleArgs(t *testing.T) {
 	tests := []struct {
+		description string
 		in                 latest.JibArtifact
 		image              string
 		skipTests          bool
 		insecureRegistries map[string]bool
 		out                []string
 	}{
-		{latest.JibArtifact{}, "image", false, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image"}},
-		{latest.JibArtifact{Flags: []string{"-extra", "args"}}, "image", false, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image", "-extra", "args"}},
-		{latest.JibArtifact{}, "image", true, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":task", "--image=image", "-x", "test"}},
-		{latest.JibArtifact{Project: "project"}, "image", false, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "--image=image"}},
-		{latest.JibArtifact{Project: "project"}, "image", true, nil, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "--image=image", "-x", "test"}},
-		{latest.JibArtifact{Project: "project"}, "registry.tld/image", true, map[string]bool{"registry.tld": true}, []string{"-Djib.console=plain", "_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:task", "-Djib.allowInsecureRegistries=true", "--image=registry.tld/image", "-x", "test"}},
+		{"single module", latest.JibArtifact{}, "image", false, nil, []string{"fake-gradleBuildArgs-for-testTask", "--image=image"}},
+		{"single module without tests", latest.JibArtifact{}, "image", true, nil, []string{"fake-gradleBuildArgs-for-testTask-skipTests", "--image=image"}},
+		{"multi module", latest.JibArtifact{Project: "project"}, "image", false, nil, []string{"fake-gradleBuildArgs-for-project-for-testTask", "--image=image"}},
+		{"multi module without tests", latest.JibArtifact{Project: "project"}, "image", true, nil, []string{"fake-gradleBuildArgs-for-project-for-testTask-skipTests", "--image=image"}},
+		{"multi module without tests with insecure registries", latest.JibArtifact{Project: "project"}, "registry.tld/image", true, map[string]bool{"registry.tld": true}, []string{"fake-gradleBuildArgs-for-project-for-testTask-skipTests", "-Djib.allowInsecureRegistries=true", "--image=registry.tld/image"}},
 	}
 	for _, test := range tests {
-		command := GenerateGradleArgs("task", test.image, &test.in, test.skipTests, test.insecureRegistries)
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&gradleBuildArgsFunc, gradleBuildArgsFuncFake)
+			command := GenerateGradleArgs("testTask", test.image, &test.in, test.skipTests, test.insecureRegistries)
+			t.CheckDeepEqual(test.out, command)
+		});
+	}
+}
 
-		testutil.CheckDeepEqual(t, test.out, command)
+func TestGradleArgs(t *testing.T) {
+	tests := []struct {
+		description	string
+		jibArtifact latest.JibArtifact
+		expected []string
+	} {
+		{
+			description: "single module",
+			jibArtifact: latest.JibArtifact{},
+			expected: []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":testTask"},
+		},
+		{
+			description: "multi module",
+			jibArtifact: latest.JibArtifact{Project: "module"},
+			expected: []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":module:testTask"},
+		},
+	}
+	for _, test := range tests {
+		args := gradleArgs(&test.jibArtifact, "testTask")
+		testutil.CheckDeepEqual(t, test.expected, args)
+	}
+}
+
+func TestGradleBuildArgs(t *testing.T) {
+	tests := []struct {
+		description string
+		jibArtifact latest.JibArtifact
+		skipTests bool
+		expected []string
+	} {
+		{
+			description: "single module",
+			jibArtifact: latest.JibArtifact{},
+			skipTests: false,
+			expected: []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask"},
+		},
+		{
+			description: "single module skip tests",
+			jibArtifact: latest.JibArtifact{},
+			skipTests: true,
+			expected: []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask", "-x", "test"},
+		},
+		{
+			description: "single module with extra flags",
+			jibArtifact: latest.JibArtifact{Flags: []string{"--flag1", "--flag2"},},
+			skipTests: false,
+			expected: []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask", "--flag1", "--flag2"},
+		},
+		{
+			description: "multi module",
+			jibArtifact: latest.JibArtifact{Project: "module"},
+			skipTests: false,
+			expected: []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask"},
+		},
+		{
+			description: "single module skip tests",
+			jibArtifact: latest.JibArtifact{Project: "module"},
+			skipTests: true,
+			expected: []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask", "-x", "test"},
+		},
+		{
+			description: "multi module with extra flags",
+			jibArtifact: latest.JibArtifact{Project: "module", Flags: []string{"--flag1", "--flag2"}},
+			skipTests: false,
+			expected: []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask", "--flag1", "--flag2"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&gradleArgsFunc, gradleArgsFuncFake)
+			args := gradleBuildArgs("testTask", &test.jibArtifact, test.skipTests)
+			t.CheckDeepEqual(test.expected, args)
+		})
+	}
+}
+
+func gradleArgsFuncFake(a *latest.JibArtifact, task string) []string {
+	if a.Project == "" {
+		return []string{"fake-gradleArgs-for-" + task}
+	} else {
+		return []string{"fake-gradleArgs-for-" + a.Project + "-for-" + task }
+	}
+}
+
+// check that parameters are actually passed though
+func gradleBuildArgsFuncFake(task string, a *latest.JibArtifact, skipTests bool) []string {
+	testString := ""
+	if skipTests {
+		testString = "-skipTests"
+	}
+	if a.Project == "" {
+		return []string{"fake-gradleBuildArgs-for-" + task + testString};
+	} else {
+		return []string{"fake-gradleBuildArgs-for-" + a.Project + "-for-" + task + testString};
 	}
 }
