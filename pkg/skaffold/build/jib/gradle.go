@@ -120,7 +120,6 @@ func gradleBuildArgs(task string, a *latest.JibArtifact, skipTests bool) []strin
 	}
 	args = append(args, a.Flags...)
 	return args
-
 }
 
 // Do not use directly, use gradleArgsFunc

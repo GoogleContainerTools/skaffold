@@ -426,9 +426,8 @@ func TestGradleBuildArgs(t *testing.T) {
 func gradleArgsFuncFake(a *latest.JibArtifact, task string) []string {
 	if a.Project == "" {
 		return []string{"fake-gradleArgs-for-" + task}
-	} else {
-		return []string{"fake-gradleArgs-for-" + a.Project + "-for-" + task}
 	}
+	return []string{"fake-gradleArgs-for-" + a.Project + "-for-" + task}
 }
 
 // check that parameters are actually passed though
@@ -437,9 +436,9 @@ func gradleBuildArgsFuncFake(task string, a *latest.JibArtifact, skipTests bool)
 	if skipTests {
 		testString = "-skipTests"
 	}
+
 	if a.Project == "" {
 		return []string{"fake-gradleBuildArgs-for-" + task + testString}
-	} else {
-		return []string{"fake-gradleBuildArgs-for-" + a.Project + "-for-" + task + testString}
 	}
+	return []string{"fake-gradleBuildArgs-for-" + a.Project + "-for-" + task + testString}
 }

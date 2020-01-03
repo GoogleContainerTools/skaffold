@@ -421,9 +421,8 @@ func TestMavenArgs(t *testing.T) {
 func mavenArgsFuncFake(a *latest.JibArtifact) []string {
 	if a.Project == "" {
 		return []string{"fake-mavenArgs"}
-	} else {
-		return []string{"fake-mavenArgs-for-" + a.Project}
 	}
+	return []string{"fake-mavenArgs-for-" + a.Project}
 }
 
 // check that parameters are actually passed though
@@ -432,9 +431,9 @@ func mavenBuildArgsFuncFake(goal string, a *latest.JibArtifact, skipTests bool) 
 	if skipTests {
 		testString = "-skipTests"
 	}
+
 	if a.Project == "" {
 		return []string{"fake-mavenBuildArgs-for-" + goal + testString}
-	} else {
-		return []string{"fake-mavenBuildArgs-for-" + a.Project + "-for-" + goal + testString}
 	}
+	return []string{"fake-mavenBuildArgs-for-" + a.Project + "-for-" + goal + testString}
 }
