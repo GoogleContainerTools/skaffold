@@ -14,20 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1
+package v2alpha1
 
 import (
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha1"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v1 to v2alpha1
+// Config changes from v2alpha1 to v2alpha2
 // 1. Additions:
-//    PortForwardResource.Address
-//    BuildpackArtifact.Env
-//    KanikoArtifact.Env
 // 2. Removals:
 // 3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
