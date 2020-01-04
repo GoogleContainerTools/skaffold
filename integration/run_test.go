@@ -86,6 +86,11 @@ func TestRun(t *testing.T) {
 			args:        []string{"-p", "minikube-profile"},
 			pods:        []string{"hello-service"},
 		},
+		{
+			description: "multiple deployers",
+			dir:         "testdata/deploy-multiple",
+			pods:        []string{"deploy-kubectl", "deploy-kustomize"},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
