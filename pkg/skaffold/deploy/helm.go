@@ -82,7 +82,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 	for _, r := range h.Releases {
 		results, err := h.deployRelease(ctx, out, r, builds)
 		if err != nil {
-			releaseName, _ := evaluateReleaseName(r.Name)
+			releaseName, _ := expandTemplate(r.Name)
 
 			event.DeployFailed(err)
 			return NewDeployErrorResult(errors.Wrapf(err, "deploying %s", releaseName))
@@ -151,7 +151,7 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	for _, r := range h.Releases {
 		if err := h.deleteRelease(ctx, out, r); err != nil {
-			releaseName, _ := evaluateReleaseName(r.Name)
+			releaseName, _ := expandTemplate(r.Name)
 			return errors.Wrapf(err, "deploying %s", releaseName)
 		}
 	}
@@ -177,7 +177,7 @@ func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, useSecrets bool,
 }
 
 func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact) ([]Artifact, error) {
-	releaseName, err := evaluateReleaseName(r.Name)
+	releaseName, err := expandTemplate(r.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse the release name template")
 	}
@@ -371,14 +371,14 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 	tmp := os.TempDir()
 	packageArgs := []string{"package", r.ChartPath, "--destination", tmp}
 	if r.Packaged.Version != "" {
-		v, err := concretize(r.Packaged.Version)
+		v, err := expandTemplate(r.Packaged.Version)
 		if err != nil {
 			return "", errors.Wrap(err, `concretize "packaged.version" template`)
 		}
 		packageArgs = append(packageArgs, "--version", v)
 	}
 	if r.Packaged.AppVersion != "" {
-		av, err := concretize(r.Packaged.AppVersion)
+		av, err := expandTemplate(r.Packaged.AppVersion)
 		if err != nil {
 			return "", errors.Wrap(err, `concretize "packaged.appVersion" template`)
 		}
@@ -456,7 +456,7 @@ func (h *HelmDeployer) getDeployResults(ctx context.Context, namespace string, r
 }
 
 func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r latest.HelmRelease) error {
-	releaseName, err := evaluateReleaseName(r.Name)
+	releaseName, err := expandTemplate(r.Name)
 	if err != nil {
 		return errors.Wrap(err, "cannot parse the release name template")
 	}
@@ -501,18 +501,9 @@ func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, stri
 	return errors.New("not yet implemented")
 }
 
-func evaluateReleaseName(nameTemplate string) (string, error) {
-	tmpl, err := util.ParseEnvTemplate(nameTemplate)
-	if err != nil {
-		return "", errors.Wrap(err, "parsing template")
-	}
-
-	return util.ExecuteEnvTemplate(tmpl, nil)
-}
-
-// concretize parses and executes template s with OS environment variables.
+// expandTemplate parses and executes template s with OS environment variables.
 // If s is not a template but a simple string, returns unchanged s.
-func concretize(s string) (string, error) {
+func expandTemplate(s string) (string, error) {
 	tmpl, err := util.ParseEnvTemplate(s)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing template")
