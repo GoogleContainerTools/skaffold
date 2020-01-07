@@ -27,8 +27,8 @@ import (
 
 // Build builds an artifact with Cloud Native Buildpacks:
 // https://buildpacks.io/
-func (b *Builder) Build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
-	built, err := b.build(ctx, out, a.Workspace, a.BuildpackArtifact, tag)
+func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	built, err := b.build(ctx, out, artifact, tag)
 	if err != nil {
 		return "", err
 	}

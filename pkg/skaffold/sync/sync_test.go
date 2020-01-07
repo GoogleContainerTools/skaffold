@@ -637,9 +637,7 @@ func TestNewSyncItem(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) {
-				return test.workingDir, nil
-			})
+			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return test.workingDir, nil })
 
 			provider := func() (map[string][]string, error) { return test.dependencies, nil }
 			actual, err := NewItem(test.artifact, test.evt, test.builds, nil, provider)

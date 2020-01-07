@@ -45,19 +45,19 @@ var (
 )
 
 func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool, destProvider DestinationProvider) (*Item, error) {
-	if !e.HasChanged() || a.Sync == nil {
+	switch {
+	case !e.HasChanged():
+		return nil, nil
+
+	case a.Sync != nil && len(a.Sync.Manual) > 0:
+		return manualSyncItem(a, e, builds, insecureRegistries)
+
+	case a.Sync != nil && len(a.Sync.Infer) > 0:
+		return inferredSyncItem(a, e, builds, destProvider)
+
+	default:
 		return nil, nil
 	}
-
-	if len(a.Sync.Manual) > 0 {
-		return manualSyncItem(a, e, builds, insecureRegistries)
-	}
-
-	if len(a.Sync.Infer) > 0 {
-		return inferredSyncItem(a, e, builds, destProvider)
-	}
-
-	return nil, nil
 }
 
 func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {

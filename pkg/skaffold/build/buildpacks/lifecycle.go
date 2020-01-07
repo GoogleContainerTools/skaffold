@@ -33,7 +33,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func (b *Builder) build(ctx context.Context, out io.Writer, workspace string, artifact *latest.BuildpackArtifact, tag string) (string, error) {
+func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+	artifact := a.BuildpackArtifact
+	workspace := a.Workspace
+
 	// To improve caching, we always build the image with [:latest] tag
 	// This way, the lifecycle is able to "bootstrap" from the previously built image.
 	// The image will then be tagged as usual with the tag provided by the tag policy.
