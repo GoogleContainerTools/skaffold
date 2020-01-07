@@ -306,29 +306,19 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	logrus.Debugf("EnvVarMap: %#v\n", envMap)
 
 	for k, v := range r.SetValueTemplates {
-		t, err := util.ParseEnvTemplate(v)
+		v, err := templatedField(v, envMap)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse setValueTemplates")
+			return nil, err
 		}
-
-		v, err := util.ExecuteEnvTemplate(t, envMap)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate setValueTemplates")
-		}
-
 		valuesSet[v] = true
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
 	}
 
 	// ValuesFiles
-	for _, tmplValuesFile := range expandPaths(r.ValuesFiles) {
-		t, err := util.ParseEnvTemplate(tmplValuesFile)
+	for _, v := range expandPaths(r.ValuesFiles) {
+		v, err := templatedField(v, envMap)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse valuesFileTemplate")
-		}
-		v, err := util.ExecuteEnvTemplate(t, envMap)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate valuesFileTemplate")
+			return nil, err
 		}
 		args = append(args, "-f", v)
 	}
@@ -350,6 +340,18 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	helmErr := h.helm(ctx, out, r.UseHelmSecrets, args...)
 
 	return h.getDeployResults(ctx, ns, releaseName), helmErr
+}
+
+func templatedField(tmpl string, envMap map[string]string) (string, error) {
+	t, err := util.ParseEnvTemplate(tmpl)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse template")
+	}
+	v, err := util.ExecuteEnvTemplate(t, envMap)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to generate template")
+	}
+	return v, nil
 }
 
 func createEnvVarMap(imageName string, fqn string) map[string]string {
