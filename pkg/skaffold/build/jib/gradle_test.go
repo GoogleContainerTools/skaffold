@@ -323,7 +323,7 @@ func TestGetSyncMapCommandGradle(t *testing.T) {
 	}
 }
 
-func TestGenerateGradleArgs(t *testing.T) {
+func TestGenerateGradleBuildArgs(t *testing.T) {
 	tests := []struct {
 		description        string
 		in                 latest.JibArtifact
@@ -341,7 +341,7 @@ func TestGenerateGradleArgs(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&gradleBuildArgsFunc, gradleBuildArgsFuncFake)
-			command := GenerateGradleArgs("testTask", test.image, &test.in, test.skipTests, test.insecureRegistries)
+			command := GenerateGradleBuildArgs("testTask", test.image, &test.in, test.skipTests, test.insecureRegistries)
 			t.CheckDeepEqual(test.out, command)
 		})
 	}
