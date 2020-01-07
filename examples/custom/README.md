@@ -1,9 +1,9 @@
-### Example: use the custom builder with Cloud Native Buildpacks
+### Example: use the custom builder with ko
 
 This example shows how the custom builder can be used to
-build artifacts with Cloud Native Buildpacks.
+build artifacts with [ko](https://github.com/google/ko).
 
-* **building** a single Go file app with buildpacks
+* **building** a single Go file app with ko
 * **tagging** using the default tagPolicy (`gitCommit`)
 * **deploying** a single container pod using `kubectl`
 
@@ -12,31 +12,32 @@ build artifacts with Cloud Native Buildpacks.
 For this tutorial to work, you will need to have Skaffold and a Kubernetes cluster set up.
 To learn more about how to set up Skaffold and a Kubernetes cluster, see the [getting started docs](https://skaffold.dev/docs/getting-started).
 
-To use buildpacks with Skaffold, please install the following additional tools:
-
-* [pack](https://buildpacks.io/docs/install-pack/)
-* [docker](https://docs.docker.com/install/)
-
 #### Tutorial
 
-This tutorial will demonstrate how Skaffold can build a simple Hello World Go application with buildpacks and deploy it to a Kubernetes cluster.
+This tutorial will demonstrate how Skaffold can build a simple Hello World Go application with ko and deploy it to a Kubernetes cluster.
 
-First, clone the Skaffold [repo](https://github.com/GoogleContainerTools/skaffold) and navigate to the [buildpacks example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/buildpacks) for sample code:
+First, clone the Skaffold [repo](https://github.com/GoogleContainerTools/skaffold) and navigate to the [custom example](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/custom) for sample code:
 
 ```shell
 $ git clone https://github.com/GoogleContainerTools/skaffold
-$ cd skaffold/examples/buildpacks
+$ cd skaffold/examples/custom
 ```
 
-Take a look at the `build.sh` file, which uses `pack` to containerize source code with buildpacks:
+Take a look at the `build.sh` file, which uses `ko` to containerize source code:
 
 ```shell
 $ cat build.sh
 #!/usr/bin/env bash
 set -e
 
-pack build --builder=heroku/buildpacks $IMAGE
+if ! [ -x "$(command -v ko)" ]; then
+    GO111MODULE=on go get -mod=readonly github.com/google/ko/cmd/ko
+fi
 
+output=$(ko publish --local --preserve-import-paths --tags= . | tee)
+ref=$(echo $output | tail -n1)
+
+docker tag $ref $IMAGE
 if $PUSH_IMAGE; then
     docker push $IMAGE
 fi
@@ -50,7 +51,7 @@ apiVersion: skaffold/v2alpha1
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-example
+  - image: gcr.io/k8s-skaffold/skaffold-custom
     custom:
       buildCommand: ./build.sh
 ```
@@ -63,7 +64,7 @@ Now, use Skaffold to deploy this application to your Kubernetes cluster:
 $ skaffold run --tail --default-repo <your repo>
 ```
 
-With this command, Skaffold will build the `skaffold-example` artifact with buildpacks and deploy the application to Kubernetes.
+With this command, Skaffold will build the `skaffold-example` artifact with ko and deploy the application to Kubernetes.
 You should be able to see *Hello, World!* printed every second in the Skaffold logs.
 
 #### Cleanup
