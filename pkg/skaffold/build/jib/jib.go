@@ -88,6 +88,10 @@ type filesLists struct {
 // watchedFiles maps from project name to watched files
 var watchedFiles = map[string]filesLists{}
 
+func GetBuildDefinitions(a *latest.JibArtifact) []string {
+	return watchedFiles[a.Project].BuildDefinitions
+}
+
 // GetDependencies returns a list of files to watch for changes to rebuild
 func GetDependencies(ctx context.Context, workspace string, artifact *latest.JibArtifact) ([]string, error) {
 	t, err := DeterminePluginType(workspace, artifact)
