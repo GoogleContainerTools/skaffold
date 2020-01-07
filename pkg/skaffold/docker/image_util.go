@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
-func RetrieveConfigFile(tagged string, runCtx *runcontext.RunContext) (*v1.ConfigFile, error) {
+func RetrieveConfigFile(tagged string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {
 	if strings.ToLower(tagged) == "scratch" {
 		return nil, nil
 	}
@@ -35,13 +35,14 @@ func RetrieveConfigFile(tagged string, runCtx *runcontext.RunContext) (*v1.Confi
 	var cf *v1.ConfigFile
 	var err error
 
-	localDocker, err := NewAPIClient(runCtx)
+	// TODO: use the proper RunContext
+	localDocker, err := NewAPIClient(&runcontext.RunContext{})
 	if err == nil {
 		cf, err = localDocker.ConfigFile(context.Background(), tagged)
 	}
 	if err != nil {
 		// No local Docker is available
-		cf, err = RetrieveRemoteConfig(tagged, runCtx.InsecureRegistries)
+		cf, err = RetrieveRemoteConfig(tagged, insecureRegistries)
 	}
 	if err != nil {
 		return nil, errors.Wrap(err, "retrieving image config")
@@ -50,8 +51,8 @@ func RetrieveConfigFile(tagged string, runCtx *runcontext.RunContext) (*v1.Confi
 	return cf, err
 }
 
-func RetrieveWorkingDir(tagged string, runCtx *runcontext.RunContext) (string, error) {
-	cf, err := RetrieveConfigFile(tagged, runCtx)
+func RetrieveWorkingDir(tagged string, insecureRegistries map[string]bool) (string, error) {
+	cf, err := RetrieveConfigFile(tagged, insecureRegistries)
 	switch {
 	case err != nil:
 		return "", err

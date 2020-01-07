@@ -25,7 +25,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -347,7 +346,7 @@ func TestDevSync(t *testing.T) {
 			t.Override(&fileSyncInProgress, func(int, string) { actualFileSyncEventCalls.InProgress++ })
 			t.Override(&fileSyncFailed, func(int, string, error) { actualFileSyncEventCalls.Failed++ })
 			t.Override(&fileSyncSucceeded, func(int, string) { actualFileSyncEventCalls.Succeeded++ })
-			t.Override(&sync.WorkingDir, func(string, *runcontext.RunContext) (string, error) { return "/", nil })
+			t.Override(&sync.WorkingDir, func(string, map[string]bool) (string, error) { return "/", nil })
 			test.testBench.cycles = len(test.watchEvents)
 
 			runner := createRunner(t, test.testBench, &TestMonitor{
