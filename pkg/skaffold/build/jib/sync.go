@@ -17,16 +17,23 @@ limitations under the License.
 package jib
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"time"
 
 	"github.com/pkg/errors"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
+
+var syncLists = map[projectKey]SyncMap{}
 
 type SyncMap map[string]SyncEntry
 
@@ -44,6 +51,131 @@ type JSONSyncMap struct {
 type JSONSyncEntry struct {
 	Src  string `json:"src"`
 	Dest string `json:"dest"`
+}
+
+func InitSync(ctx context.Context, workspace string, a *latest.JibArtifact) error {
+	syncMap, err := getSyncMapFunc(ctx, workspace, a)
+	if err != nil {
+		return err
+	}
+	syncLists[getProjectKey(workspace, a)] = *syncMap
+	return nil
+}
+
+// returns toCopy, toDelete, error
+func GetSyncDiff(ctx context.Context, workspace string, a *latest.JibArtifact, e filemon.Events) (map[string][]string, map[string][]string, error) {
+	// if anything that was modified was a buildfile, do NOT sync, do a rebuild
+	buildFiles := GetBuildDefinitions(workspace, a)
+	for _, f := range e.Modified {
+		f, err := toAbs(f)
+		if err != nil {
+			return nil, nil, errors.WithStack(err)
+		}
+		for _, bf := range buildFiles {
+			if f == bf {
+				return nil, nil, nil
+			}
+		}
+	}
+
+	// no deletions
+	if len(e.Deleted) != 0 {
+		// change into logging
+		fmt.Println("Deletions are not supported by jib auto sync at the moment")
+		return nil, nil, nil
+	}
+
+	currSyncMap := syncLists[getProjectKey(workspace, a)]
+
+	// if all files are modified and direct, we don't need to build anything
+	if len(e.Deleted) == 0 && len(e.Added) == 0 {
+		matches := make(map[string][]string)
+		for _, f := range e.Modified {
+			f, err := toAbs(f)
+			if err != nil {
+				return nil, nil, errors.WithStack(err)
+			}
+			if val, ok := currSyncMap[f]; ok {
+				if !val.IsDirect {
+					break
+				}
+				matches[f] = val.Dest
+				// update file times in sync entries for these direct files, in case all matches are direct and we don't update the syncmap using a build
+				infog, err := os.Stat(f)
+				if err != nil {
+					return nil, nil, errors.Wrap(err, "could not obtain file mod time")
+				}
+				val.FileTime = infog.ModTime()
+				currSyncMap[f] = val
+			} else {
+				break
+			}
+		}
+		if len(matches) == len(e.Modified) {
+			return matches, nil, nil
+		}
+	}
+
+	// we need to do another build and get a new sync map
+	nextSyncMap, err := getSyncMapFunc(ctx, workspace, a)
+	if err != nil {
+		return nil, nil, err
+	}
+	syncLists[getProjectKey(workspace, a)] = *nextSyncMap
+
+	fmt.Println("curr", currSyncMap)
+	fmt.Println("next", nextSyncMap)
+
+	toCopy := make(map[string][]string)
+	// calculate the diff of the syncmaps
+	for k, v := range *nextSyncMap {
+		if curr, ok := currSyncMap[k]; ok {
+			if v.FileTime != curr.FileTime {
+				// file updated
+				toCopy[k] = v.Dest
+			}
+		} else {
+			// new file was created
+			toCopy[k] = v.Dest
+		}
+	}
+
+	return toCopy, nil, nil
+}
+
+// for testing
+var (
+	getSyncMapFunc = getSyncMap
+)
+
+func getSyncMap(ctx context.Context, workspace string, artifact *latest.JibArtifact) (*SyncMap, error) {
+	// cmd will hold context that identifies the project
+	cmd, err := getSyncMapCommand(ctx, workspace, artifact)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	sm, err := getSyncMapFromSystem(cmd)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return sm, nil
+}
+
+func getSyncMapCommand(ctx context.Context, workspace string, artifact *latest.JibArtifact) (*exec.Cmd, error) {
+	t, err := DeterminePluginType(workspace, artifact)
+	if err != nil {
+		return nil, err
+	}
+
+	switch t {
+	case JibMaven:
+		return getSyncMapCommandMaven(ctx, workspace, artifact), nil
+	case JibGradle:
+		return getSyncMapCommandGradle(ctx, workspace, artifact), nil
+	default:
+		return nil, errors.Errorf("unable to determine Jib builder type for %s", workspace)
+	}
 }
 
 func getSyncMapFromSystem(cmd *exec.Cmd) (*SyncMap, error) {
@@ -88,4 +220,15 @@ func (sm SyncMap) addEntries(entries []JSONSyncEntry, direct bool) error {
 		}
 	}
 	return nil
+}
+
+func toAbs(f string) (string, error) {
+	if !filepath.IsAbs(f) {
+		af, err := filepath.Abs(f)
+		if err != nil {
+			return "", errors.WithStack(err)
+		}
+		return af, nil
+	}
+	return f, nil
 }
