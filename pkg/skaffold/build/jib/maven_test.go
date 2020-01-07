@@ -315,7 +315,7 @@ func TestGetSyncMapCommandMaven(t *testing.T) {
 	}
 }
 
-func TestGenerateMavenArgs(t *testing.T) {
+func TestGenerateMavenBuildArgs(t *testing.T) {
 	tests := []struct {
 		description        string
 		a                  latest.JibArtifact
@@ -333,7 +333,7 @@ func TestGenerateMavenArgs(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&mavenBuildArgsFunc, mavenBuildArgsFuncFake)
-			args := GenerateMavenArgs("test-goal", test.image, &test.a, test.skipTests, test.insecureRegistries)
+			args := GenerateMavenBuildArgs("test-goal", test.image, &test.a, test.skipTests, test.insecureRegistries)
 			t.CheckDeepEqual(test.out, args)
 		})
 	}

@@ -42,7 +42,7 @@ const MinimumJibMavenVersion = "1.4.0"
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
 func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateMavenArgs("dockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -51,7 +51,7 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 }
 
 func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateMavenArgs("build", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateMavenBuildArgs("build", tag, artifact, b.skipTests, b.insecureRegistries)
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -96,8 +96,8 @@ func getSyncMapCommandMaven(ctx context.Context, workspace string, a *latest.Jib
 	return &cmd
 }
 
-// GenerateMavenArgs generates the arguments to Maven for building the project as an image.
-func GenerateMavenArgs(goal string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
+// GenerateMavenBuildArgs generates the arguments to Maven for building the project as an image.
+func GenerateMavenBuildArgs(goal string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
 	args := mavenBuildArgsFunc(goal, a, skipTests)
 	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
