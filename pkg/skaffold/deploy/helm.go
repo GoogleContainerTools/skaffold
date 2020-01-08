@@ -74,19 +74,22 @@ func (h *HelmDeployer) Labels() map[string]string {
 }
 
 func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
-	var dRes []Artifact
-
 	event.DeployInProgress()
-	nsMap := map[string]struct{}{}
 
+	var dRes []Artifact
+	nsMap := map[string]struct{}{}
+	valuesSet := map[string]bool{}
+
+	// Deploy every release
 	for _, r := range h.Releases {
-		results, err := h.deployRelease(ctx, out, r, builds)
+		results, err := h.deployRelease(ctx, out, r, builds, valuesSet)
 		if err != nil {
 			releaseName, _ := expandTemplate(r.Name)
 
 			event.DeployFailed(err)
 			return NewDeployErrorResult(errors.Wrapf(err, "deploying %s", releaseName))
 		}
+
 		// collect namespaces
 		for _, r := range results {
 			if trimmed := strings.TrimSpace(r.Namespace); trimmed != "" {
@@ -95,6 +98,16 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		}
 
 		dRes = append(dRes, results...)
+	}
+
+	// Let's make sure that every image tag is set with `--set`.
+	// Otherwise, templates have no way to use the images that were built.
+	for _, build := range builds {
+		if !valuesSet[build.Tag] {
+			warnings.Printf("image [%s] is not used.", build.Tag)
+			warnings.Printf("image [%s] is used instead.", build.ImageName)
+			warnings.Printf("See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml")
+		}
 	}
 
 	event.DeployComplete()
@@ -176,7 +189,7 @@ func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, useSecrets bool,
 	return util.RunCmd(cmd)
 }
 
-func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact) ([]Artifact, error) {
+func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool) ([]Artifact, error) {
 	releaseName, err := expandTemplate(r.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse the release name template")
@@ -276,8 +289,6 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		return nil, errors.Wrap(err, "matching build results to chart values")
 	}
 
-	valuesSet := make(map[string]bool)
-
 	for k, v := range params {
 		var value string
 
@@ -326,16 +337,6 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 
 		valuesSet[v] = true
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
-	}
-
-	// Let's make sure that every image tag is set with `--set`.
-	// Otherwise, templates have no way to use the images that were built.
-	for _, build := range builds {
-		if !valuesSet[build.Tag] {
-			warnings.Printf("image [%s] is not used.", build.Tag)
-			warnings.Printf("image [%s] is used instead.", build.ImageName)
-			warnings.Printf("See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml")
-		}
 	}
 
 	if r.Wait {

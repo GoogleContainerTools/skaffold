@@ -219,6 +219,18 @@ var testDeployWithoutTags = latest.HelmDeploy{
 	}},
 }
 
+var testTwoReleases = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "other",
+		ChartPath: "examples/test",
+	}, {
+		Name: "skaffold-helm",
+		Values: map[string]string{
+			"image.tag": "skaffold-helm",
+		},
+	}},
+}
+
 var testNamespace = "testNamespace"
 
 var validDeployYaml = `
@@ -496,6 +508,12 @@ func TestHelmDeploy(t *testing.T) {
 				"image [docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184] is not used.",
 				"image [skaffold-helm] is used instead.",
 			},
+		},
+		{
+			description: "first release without tag, second with tag",
+			commands:    &MockHelm{},
+			runContext:  makeRunContext(testTwoReleases, false),
+			builds:      testBuilds,
 		},
 	}
 	for _, test := range tests {
