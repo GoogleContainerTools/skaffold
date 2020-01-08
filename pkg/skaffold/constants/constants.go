@@ -78,6 +78,8 @@ const (
 var (
 	Pod     latest.ResourceType = "pod"
 	Service latest.ResourceType = "service"
+
+	DefaultLocalConcurrency = 1
 )
 
 var (

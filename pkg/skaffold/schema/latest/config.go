@@ -196,6 +196,10 @@ type LocalBuild struct {
 
 	// UseBuildkit use BuildKit to build Docker images.
 	UseBuildkit bool `yaml:"useBuildkit,omitempty"`
+
+	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
+	// Defaults to 1.
+	Concurrency *int `yaml:"concurrency,omitempty"`
 }
 
 // GoogleCloudBuild *beta* describes how to do a remote build on
