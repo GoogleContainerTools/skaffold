@@ -272,17 +272,7 @@ func defaultToKanikoArtifact(artifact *latest.Artifact) {
 func setKanikoArtifactDefaults(a *latest.KanikoArtifact) {
 	a.Image = valueOrDefault(a.Image, constants.DefaultKanikoImage)
 	a.DockerfilePath = valueOrDefault(a.DockerfilePath, constants.DefaultDockerfilePath)
-
-	if a.BuildContext == nil {
-		a.BuildContext = &latest.KanikoBuildContext{
-			LocalDir: &latest.LocalDir{},
-		}
-	}
-
-	localDir := a.BuildContext.LocalDir
-	if localDir != nil {
-		localDir.InitImage = valueOrDefault(localDir.InitImage, constants.DefaultBusyboxImage)
-	}
+	a.InitImage = valueOrDefault(a.InitImage, constants.DefaultBusyboxImage)
 }
 
 func valueOrDefault(v, def string) string {

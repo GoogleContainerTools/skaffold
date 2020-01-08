@@ -48,12 +48,8 @@ func TestPod(t *testing.T) {
 
 	localDir := &LocalDir{
 		artifact: &latest.KanikoArtifact{
-			Image: "image",
-			BuildContext: &latest.KanikoBuildContext{
-				LocalDir: &latest.LocalDir{
-					InitImage: "init/image",
-				},
-			},
+			Image:     "image",
+			InitImage: "init/image",
 		},
 		clusterDetails: &latest.ClusterDetails{
 			Namespace:           "ns",

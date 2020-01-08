@@ -9,8 +9,6 @@ build:
     - image: gcr.io/k8s-skaffold/leeroy-app
       context: ./leeroy-app/
       kaniko:
-        buildContext:
-          localDir: {}
         cache: {}
         target: target_stage
   cluster:

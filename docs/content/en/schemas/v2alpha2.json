@@ -1431,11 +1431,6 @@
             "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"'{{.ENV_VARIABLE}}'\"}"
           ]
         },
-        "buildContext": {
-          "$ref": "#/definitions/KanikoBuildContext",
-          "description": "where the build context for this artifact resides.",
-          "x-intellij-html-description": "where the build context for this artifact resides."
-        },
         "cache": {
           "$ref": "#/definitions/KanikoCache",
           "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
@@ -1468,6 +1463,11 @@
           "description": "Docker image used by the Kaniko pod. Defaults to the latest released version of `gcr.io/kaniko-project/executor`.",
           "x-intellij-html-description": "Docker image used by the Kaniko pod. Defaults to the latest released version of <code>gcr.io/kaniko-project/executor</code>."
         },
+        "initImage": {
+          "type": "string",
+          "description": "image used to run init container which mounts kaniko context.",
+          "x-intellij-html-description": "image used to run init container which mounts kaniko context."
+        },
         "reproducible": {
           "type": "boolean",
           "description": "used to strip timestamps out of the built image.",
@@ -1492,7 +1492,7 @@
         "target",
         "buildArgs",
         "env",
-        "buildContext",
+        "initImage",
         "image",
         "cache",
         "reproducible",
@@ -1501,27 +1501,6 @@
       "additionalProperties": false,
       "description": "describes an artifact built from a Dockerfile, with kaniko.",
       "x-intellij-html-description": "describes an artifact built from a Dockerfile, with kaniko."
-    },
-    "KanikoBuildContext": {
-      "properties": {
-        "gcsBucket": {
-          "type": "string",
-          "description": "GCS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources.",
-          "x-intellij-html-description": "GCS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources."
-        },
-        "localDir": {
-          "$ref": "#/definitions/LocalDir",
-          "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
-          "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
-        }
-      },
-      "preferredOrder": [
-        "gcsBucket",
-        "localDir"
-      ],
-      "additionalProperties": false,
-      "description": "contains the different fields available to specify a Kaniko build context.",
-      "x-intellij-html-description": "contains the different fields available to specify a Kaniko build context."
     },
     "KanikoCache": {
       "properties": {
@@ -1684,21 +1663,6 @@
       "additionalProperties": false,
       "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",
       "x-intellij-html-description": "<em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository."
-    },
-    "LocalDir": {
-      "properties": {
-        "initImage": {
-          "type": "string",
-          "description": "image used to run init container which mounts kaniko context.",
-          "x-intellij-html-description": "image used to run init container which mounts kaniko context."
-        }
-      },
-      "preferredOrder": [
-        "initImage"
-      ],
-      "additionalProperties": false,
-      "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
-      "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
     },
     "Metadata": {
       "properties": {

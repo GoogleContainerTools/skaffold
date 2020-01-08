@@ -46,6 +46,13 @@ build:
   - image: gcr.io/k8s-skaffold/jib-gradle
     jib:
       args: ['-v']
+  - image: gcr.io/k8s-skaffold/kaniko
+    kaniko: {}
+  - image: gcr.io/k8s-skaffold/kaniko-local
+    kaniko:
+      buildContext:
+        localDir:
+          initImage: "alpine"
   googleCloudBuild:
     projectId: test-project
 test:
@@ -109,6 +116,11 @@ build:
   - image: gcr.io/k8s-skaffold/jib-gradle
     jib:
       args: ['-v']
+  - image: gcr.io/k8s-skaffold/kaniko
+    kaniko: {}
+  - image: gcr.io/k8s-skaffold/kaniko-local
+    kaniko:
+      initImage: "alpine"
   googleCloudBuild:
     projectId: test-project
 test:
@@ -125,8 +137,6 @@ profiles:
       artifacts:
       - image: gcr.io/k8s-skaffold/skaffold-example
         kaniko:
-          buildContext:
-            gcsBucket: skaffold-kaniko
           cache: {}
       cluster:
         pullSecretName: e2esecret

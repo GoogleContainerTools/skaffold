@@ -1,4 +1,4 @@
-### Example: kaniko-local
+### Example: kaniko
 
 This is an example demonstrating:
 
