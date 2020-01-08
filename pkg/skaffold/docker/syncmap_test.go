@@ -73,6 +73,12 @@ WORKDIR ${foo}
 COPY server.go .
 `
 
+const envCopyTest = `
+FROM busybox
+ENV foo bar
+COPY server.go ${foo}
+`
+
 func TestSyncMap(t *testing.T) {
 	tests := []struct {
 		description string
@@ -195,6 +201,12 @@ func TestSyncMap(t *testing.T) {
 			dockerfile:  envWorkdirTest,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/bar/server.go"}},
+		},
+		{
+			description: "copy depends on env",
+			dockerfile:  envCopyTest,
+			workspace:   ".",
+			expected:    map[string][]string{"server.go": {"/bar"}},
 		},
 		{
 			description: "multiple env test",
