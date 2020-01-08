@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -103,11 +102,4 @@ func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, err
 		return "", errors.Wrap(err, "inspecting image")
 	}
 	return insp.ID, nil
-}
-
-func (b *Builder) SyncMap(ctx context.Context, a *latest.Artifact) (map[string][]string, error) {
-	if a.DockerArtifact != nil {
-		return docker.SyncMap(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
-	}
-	return nil, build.ErrSyncMapNotSupported{}
 }

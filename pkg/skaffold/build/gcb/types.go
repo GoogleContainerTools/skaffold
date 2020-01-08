@@ -23,7 +23,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -101,8 +100,4 @@ func (b *Builder) Labels() map[string]string {
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	return nil // noop
-}
-
-func (b *Builder) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
-	return nil, build.ErrSyncMapNotSupported{}
 }
