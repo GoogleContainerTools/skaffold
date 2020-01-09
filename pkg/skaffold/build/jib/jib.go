@@ -86,10 +86,16 @@ type filesLists struct {
 }
 
 // watchedFiles maps from project name to watched files
-var watchedFiles = map[string]filesLists{}
+var watchedFiles = map[projectKey]filesLists{}
 
-func GetBuildDefinitions(a *latest.JibArtifact) []string {
-	return watchedFiles[a.Project].BuildDefinitions
+type projectKey string
+
+func getProjectKey(workspace string, a *latest.JibArtifact) projectKey {
+	return projectKey(workspace + "+" + a.Project)
+}
+
+func GetBuildDefinitions(workspace string, a *latest.JibArtifact) []string {
+	return watchedFiles[getProjectKey(workspace, a)].BuildDefinitions
 }
 
 // GetDependencies returns a list of files to watch for changes to rebuild
@@ -132,9 +138,9 @@ func DeterminePluginType(workspace string, artifact *latest.JibArtifact) (Plugin
 }
 
 // getDependencies returns a list of files to watch for changes to rebuild
-func getDependencies(workspace string, cmd exec.Cmd, projectName string) ([]string, error) {
+func getDependencies(workspace string, cmd exec.Cmd, a *latest.JibArtifact) ([]string, error) {
 	var dependencyList []string
-	files, ok := watchedFiles[projectName]
+	files, ok := watchedFiles[getProjectKey(workspace, a)]
 	if !ok {
 		files = filesLists{}
 	}
@@ -175,7 +181,7 @@ func getDependencies(workspace string, cmd exec.Cmd, projectName string) ([]stri
 	}
 
 	// Store updated files list information
-	watchedFiles[projectName] = files
+	watchedFiles[getProjectKey(workspace, a)] = files
 
 	sort.Strings(dependencyList)
 	return dependencyList, nil
