@@ -142,14 +142,16 @@ func TestWalk(t *testing.T) {
 		{
 			description: "should return correct k8 configs and build files (backwards compatibility)",
 			filesWithContents: map[string]string{
-				"config/test.yaml":    validK8sManifest,
-				"config/invalid.yaml": emptyFile,
-				"k8pod.yml":           validK8sManifest,
-				"README":              emptyFile,
-				"deploy/Dockerfile":   emptyFile,
-				"gradle/build.gradle": emptyFile,
-				"maven/pom.xml":       emptyFile,
-				"Dockerfile":          emptyFile,
+				"config/test.yaml":      validK8sManifest,
+				"config/invalid.yaml":   emptyFile,
+				"k8pod.yml":             validK8sManifest,
+				"README":                emptyFile,
+				"deploy/Dockerfile":     emptyFile,
+				"deploy/Dockerfile.dev": emptyFile,
+				"deploy/dev.Dockerfile": emptyFile,
+				"gradle/build.gradle":   emptyFile,
+				"maven/pom.xml":         emptyFile,
+				"Dockerfile":            emptyFile,
 			},
 			force: false,
 			expectedConfigs: []string{
@@ -159,6 +161,8 @@ func TestWalk(t *testing.T) {
 			expectedPaths: []string{
 				"Dockerfile",
 				"deploy/Dockerfile",
+				"deploy/Dockerfile.dev",
+				"deploy/dev.Dockerfile",
 			},
 			shouldErr: false,
 		},
@@ -342,7 +346,7 @@ deploy:
 }
 
 func fakeValidateDockerfile(path string) bool {
-	return strings.HasSuffix(path, "Dockerfile")
+	return strings.Contains(path, "Dockerfile")
 }
 
 func fakeValidateJibConfig(path string) []jib.ArtifactConfig {
