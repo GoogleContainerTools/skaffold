@@ -117,11 +117,11 @@ quicktest:
 	@ ./hack/gotest.sh -short -timeout=60s ./...
 
 .PHONY: install
-install: generate-statik $(GO_FILES) $(BUILD_DIR)
+install: $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
-integration: install
+integration: generate-statik install
 ifeq ($(GCP_ONLY),true)
 	gcloud container clusters get-credentials \
 		$(GKE_CLUSTER_NAME) \
@@ -225,4 +225,4 @@ generate-schemas:
 
 .PHONY: generate-statik
 generate-statik:
-	hack/gen_statik.sh
+	hack/generate-statik.sh
