@@ -49,7 +49,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return nil, errors.Wrap(err, "normalizing dockerfile path")
 	}
 
-	fts, err := readCopyCmdsFromDockerfile(false, absDockerfilePath, workspace, buildArgs, insecureRegistries)
+	fts, err := expandCopyCmdsFromDockerfile(false, absDockerfilePath, workspace, buildArgs, insecureRegistries)
 	if err != nil {
 		return nil, err
 	}

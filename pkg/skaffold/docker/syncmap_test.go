@@ -17,10 +17,9 @@ limitations under the License.
 package docker
 
 import (
-	"path/filepath"
-	"sort"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -78,7 +77,12 @@ ENV foo bar
 COPY server.go ${foo}
 `
 
-func TestSyncMap(t *testing.T) {
+const multipleSubFolders = `
+FROM busybox
+COPY foo/bar/qix/server.go .
+`
+
+func TestSyncRules(t *testing.T) {
 	tests := []struct {
 		description string
 		dockerfile  string
@@ -86,7 +90,7 @@ func TestSyncMap(t *testing.T) {
 		ignore      string
 		buildArgs   map[string]*string
 
-		expected  map[string][]string
+		expected  []*latest.SyncRule
 		badReader bool
 		shouldErr bool
 	}{
@@ -94,73 +98,73 @@ func TestSyncMap(t *testing.T) {
 			description: "copy dependency",
 			dockerfile:  copyServerGo,
 			workspace:   ".",
-			expected:    map[string][]string{"server.go": {"/server.go"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/"}},
 		},
 		{
 			description: "add dependency",
 			dockerfile:  addNginx,
 			workspace:   "docker",
-			expected:    map[string][]string{"nginx.conf": {"/etc/nginx"}},
+			expected:    []*latest.SyncRule{{Src: "nginx.conf", Dest: "/etc/nginx"}},
 		},
 		{
 			description: "copy subdirectory",
 			dockerfile:  copySubdirectory,
 			workspace:   ".",
-			expected:    map[string][]string{filepath.Join("docker", "nginx.conf"): {"/nginx.conf"}, filepath.Join("docker", "bar"): {"/bar"}},
+			expected:    []*latest.SyncRule{{Src: "docker/**", Dest: "/", Strip: "docker"}},
 		},
 		{
 			description: "copy file after workdir",
 			dockerfile:  copyWorkdir,
 			workspace:   ".",
-			expected:    map[string][]string{"server.go": {"/app/server.go"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/app"}},
 		},
 		{
 			description: "copy file with absolute dest after workdir",
 			dockerfile:  copyWorkdirAbsDest,
 			workspace:   ".",
-			expected:    map[string][]string{"server.go": {"/bar"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/bar"}},
 		},
 		{
 			description: "two copy commands with same destination",
 			dockerfile:  copySameDest,
 			workspace:   ".",
-			expected:    map[string][]string{"server.go": {"/server.go"}, "test.conf": {"/test.conf"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/"}, {Src: "test.conf", Dest: "/"}},
 		},
 		{
 			description: "copy file with absolute dest dir after workdir",
 			dockerfile:  copyWorkdirAbsDestDir,
 			workspace:   ".",
-			expected:    map[string][]string{"server.go": {"/bar/server.go"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/bar"}},
 		},
 		{
 			description: "wildcards",
 			dockerfile:  wildcards,
 			workspace:   ".",
-			expected:    map[string][]string{"server.go": {"/tmp/server.go"}, "worker.go": {"/tmp/worker.go"}},
+			expected:    []*latest.SyncRule{{Src: "*.go", Dest: "/tmp"}},
 		},
 		{
 			description: "wildcards after workdir",
 			dockerfile:  wildcardsWorkdir,
 			workspace:   ".",
-			expected:    map[string][]string{"server.go": {"/app/server.go"}, "worker.go": {"/app/worker.go"}},
+			expected:    []*latest.SyncRule{{Src: "*.go", Dest: "/app"}},
 		},
 		{
 			description: "wildcards matches none",
 			dockerfile:  wildcardsMatchesNone,
 			workspace:   ".",
-			shouldErr:   true,
+			expected:    []*latest.SyncRule{{Src: "*.none", Dest: "/tmp"}},
 		},
 		{
 			description: "one wildcard matches none",
 			dockerfile:  oneWilcardMatchesNone,
 			workspace:   ".",
-			expected:    map[string][]string{"server.go": {"/tmp/server.go"}, "worker.go": {"/tmp/worker.go"}},
+			expected:    []*latest.SyncRule{{Src: "*.go", Dest: "/tmp"}, {Src: "*.none", Dest: "/tmp"}},
 		},
 		{
-			description: "wildcard matches directory, flattens contents",
+			description: "wildcard matches directory",
 			dockerfile:  wildcardsMatchesDirectory,
 			workspace:   ".",
-			expected:    map[string][]string{".dot": {"/tmp/.dot"}, "Dockerfile": {"/tmp/Dockerfile"}, filepath.Join("docker", "bar"): {"/tmp/bar"}, filepath.Join("docker", "nginx.conf"): {"/tmp/nginx.conf"}, "file": {"/tmp/file"}, "server.go": {"/tmp/server.go"}, "test.conf": {"/tmp/test.conf"}, "worker.go": {"/tmp/worker.go"}},
+			expected:    []*latest.SyncRule{{Src: "*", Dest: "/tmp"}},
 		},
 		{
 			description: "bad read",
@@ -171,114 +175,113 @@ func TestSyncMap(t *testing.T) {
 			// https://github.com/GoogleContainerTools/skaffold/issues/158
 			description: "no dependencies on remote files",
 			dockerfile:  remoteFileAdd,
-			expected:    map[string][]string{},
+			expected:    nil,
 		},
 		{
 			description: "multistage dockerfile",
 			dockerfile:  multiStageDockerfile1,
-			expected:    map[string][]string{},
+			expected:    nil,
 		},
 		{
 			description: "multistage dockerfile, only dependencies in the latest image are syncable",
 			dockerfile:  multiStageDockerfile2,
-			expected:    map[string][]string{"server.go": {"/server.go"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/"}},
 		},
 		{
 			description: "copy twice",
 			dockerfile:  multiCopy,
-			workspace:   ".",
-			expected:    map[string][]string{"test.conf": {"/etc/test1", "/etc/test2"}},
+			expected:    []*latest.SyncRule{{Src: "test.conf", Dest: "/etc/test1"}, {Src: "test.conf", Dest: "/etc/test2"}},
 		},
 		{
 			description: "env test",
 			dockerfile:  envTest,
 			workspace:   ".",
-			expected:    map[string][]string{"bar": {"/quux"}},
+			expected:    []*latest.SyncRule{{Src: "bar", Dest: "/quux"}},
 		},
 		{
 			description: "workdir depends on env",
 			dockerfile:  envWorkdirTest,
 			workspace:   ".",
-			expected:    map[string][]string{"server.go": {"/bar/server.go"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/bar"}},
 		},
 		{
 			description: "copy depends on env",
 			dockerfile:  envCopyTest,
 			workspace:   ".",
-			expected:    map[string][]string{"server.go": {"/bar"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/bar"}},
 		},
 		{
 			description: "multiple env test",
 			dockerfile:  multiEnvTest,
 			workspace:   ".",
-			expected:    map[string][]string{filepath.Join("docker", "nginx.conf"): {"/nginx.conf"}},
+			expected:    []*latest.SyncRule{{Src: "docker/nginx.conf", Dest: "/", Strip: "docker"}},
 		},
 		{
 			description: "multi file copy",
 			dockerfile:  multiFileCopy,
 			workspace:   ".",
-			expected:    map[string][]string{"file": {"/file"}, "server.go": {"/server.go"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/"}, {Src: "file", Dest: "/"}},
 		},
 		{
 			description: "dockerignore test",
 			dockerfile:  copyDirectory,
 			ignore:      "bar\ndocker/*",
 			workspace:   ".",
-			expected:    map[string][]string{".dockerignore": {"/etc/.dockerignore"}, ".dot": {"/etc/.dot"}, "Dockerfile": {"/etc/Dockerfile"}, "file": {"/etc/file"}, "server.go": {"/etc/server.go"}, "test.conf": {"/etc/test.conf"}, "worker.go": {"/etc/worker.go"}},
+			expected:    []*latest.SyncRule{{Src: "**", Dest: "/etc"}, {Src: "./file", Dest: "/etc/file"}},
 		},
 		{
 			description: "dockerignore dockerfile",
 			dockerfile:  copyServerGo,
 			ignore:      "Dockerfile",
 			workspace:   ".",
-			expected:    map[string][]string{"server.go": {"/server.go"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/"}},
 		},
 		{
 			description: "dockerignore with non canonical workspace",
 			dockerfile:  contextDockerfile,
 			workspace:   "docker/../docker",
 			ignore:      "bar\ndocker/*",
-			expected:    map[string][]string{".dockerignore": {"/files/.dockerignore"}, "Dockerfile": {"/files/Dockerfile"}, "nginx.conf": {"/etc/nginx", "/files/nginx.conf"}},
+			expected:    []*latest.SyncRule{{Src: "nginx.conf", Dest: "/etc/nginx"}, {Src: "**", Dest: "/files"}},
 		},
 		{
 			description: "ignore none",
 			dockerfile:  copyAll,
 			workspace:   ".",
-			expected:    map[string][]string{".dot": {"/.dot"}, "Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/docker/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {"/worker.go"}},
+			expected:    []*latest.SyncRule{{Src: "**", Dest: "/"}},
 		},
 		{
 			description: "ignore dotfiles",
 			dockerfile:  copyAll,
 			workspace:   ".",
 			ignore:      ".*",
-			expected:    map[string][]string{"Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/docker/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {"/worker.go"}},
+			expected:    []*latest.SyncRule{{Src: "**", Dest: "/"}},
 		},
 		{
 			description: "ignore dotfiles (root syntax)",
 			dockerfile:  copyAll,
 			workspace:   ".",
 			ignore:      "/.*",
-			expected:    map[string][]string{"Dockerfile": {"/Dockerfile"}, "bar": {"/bar"}, filepath.Join("docker", "bar"): {"/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/docker/nginx.conf"}, "file": {"/file"}, "server.go": {"/server.go"}, "test.conf": {"/test.conf"}, "worker.go": {"/worker.go"}},
+			expected:    []*latest.SyncRule{{Src: "**", Dest: "/"}},
 		},
 		{
 			description: "dockerignore with context in parent directory",
 			dockerfile:  copyDirectory,
 			workspace:   "docker/..",
 			ignore:      "bar\ndocker/*\n*.go",
-			expected:    map[string][]string{".dockerignore": {"/etc/.dockerignore"}, ".dot": {"/etc/.dot"}, "Dockerfile": {"/etc/Dockerfile"}, "file": {"/etc/file"}, "test.conf": {"/etc/test.conf"}},
+			expected:    []*latest.SyncRule{{Src: "**", Dest: "/etc"}, {Src: "./file", Dest: "/etc/file"}},
 		},
 		{
 			description: "onbuild test",
 			dockerfile:  onbuild,
 			workspace:   ".",
-			expected:    map[string][]string{".dot": {"/onbuild/.dot"}, "Dockerfile": {"/onbuild/Dockerfile"}, "bar": {"/onbuild/bar"}, filepath.Join("docker", "bar"): {"/onbuild/docker/bar"}, filepath.Join("docker", "nginx.conf"): {"/onbuild/docker/nginx.conf"}, "file": {"/onbuild/file"}, "server.go": {"/onbuild/server.go"}, "test.conf": {"/onbuild/test.conf"}, "worker.go": {"/onbuild/worker.go"}},
+			expected:    []*latest.SyncRule{{Src: "**", Dest: "/onbuild"}},
 		},
 		{
 			description: "onbuild with dockerignore",
 			dockerfile:  onbuild,
 			workspace:   ".",
 			ignore:      "bar\ndocker/*",
-			expected:    map[string][]string{".dockerignore": {"/onbuild/.dockerignore"}, ".dot": {"/onbuild/.dot"}, "Dockerfile": {"/onbuild/Dockerfile"}, "file": {"/onbuild/file"}, "server.go": {"/onbuild/server.go"}, "test.conf": {"/onbuild/test.conf"}, "worker.go": {"/onbuild/worker.go"}},
+			expected:    []*latest.SyncRule{{Src: "**", Dest: "/onbuild"}},
 		},
 		{
 			description: "base image not found",
@@ -291,90 +294,96 @@ func TestSyncMap(t *testing.T) {
 			dockerfile:  copyServerGoBuildArg,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
-			expected:    map[string][]string{"server.go": {"/server.go"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/"}},
 		},
 		{
 			description: "build args with same prefix",
 			dockerfile:  copyWorkerGoBuildArgSamePrefix,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO2": util.StringPtr("worker.go")},
-			expected:    map[string][]string{"worker.go": {"/worker.go"}},
+			expected:    []*latest.SyncRule{{Src: "worker.go", Dest: "/"}},
 		},
 		{
 			description: "build args with curly braces",
 			dockerfile:  copyServerGoBuildArgCurlyBraces,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
-			expected:    map[string][]string{"server.go": {"/server.go"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/"}},
 		},
 		{
 			description: "build args with extra whitespace",
 			dockerfile:  copyServerGoBuildArgExtraWhitespace,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("server.go")},
-			expected:    map[string][]string{"server.go": {"/server.go"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/"}},
 		},
 		{
 			description: "build args with default value",
 			dockerfile:  copyServerGoBuildArgDefaultValue,
 			workspace:   ".",
-			expected:    map[string][]string{"server.go": {"/server.go"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/"}},
 		},
 		{
 			description: "build args with redefined default value",
 			dockerfile:  copyWorkerGoBuildArgRedefinedDefaultValue,
 			workspace:   ".",
-			expected:    map[string][]string{"worker.go": {"/worker.go"}},
+			expected:    []*latest.SyncRule{{Src: "worker.go", Dest: "/"}},
 		},
 		{
 			description: "build args all defined a the top",
 			dockerfile:  copyServerGoBuildArgsAtTheTop,
 			workspace:   ".",
-			expected:    map[string][]string{"server.go": {"/server.go"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/"}},
 		},
 		{
 			description: "override default build arg",
 			dockerfile:  copyServerGoBuildArgDefaultValue,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": util.StringPtr("worker.go")},
-			expected:    map[string][]string{"worker.go": {"/worker.go"}},
+			expected:    []*latest.SyncRule{{Src: "worker.go", Dest: "/"}},
 		},
 		{
 			description: "ignore build arg and use default arg value",
 			dockerfile:  copyServerGoBuildArgDefaultValue,
 			workspace:   ".",
 			buildArgs:   map[string]*string{"FOO": nil},
-			expected:    map[string][]string{"server.go": {"/server.go"}},
+			expected:    []*latest.SyncRule{{Src: "server.go", Dest: "/"}},
 		},
 		{
 			description: "from base stage",
 			dockerfile:  fromStage,
 			workspace:   ".",
-			expected:    map[string][]string{},
+			expected:    nil,
 		},
 		{
 			description: "from base stage, ignoring case",
 			dockerfile:  fromStageIgnoreCase,
 			workspace:   ".",
-			expected:    map[string][]string{},
+			expected:    nil,
 		},
 		{
 			description: "from scratch",
 			dockerfile:  fromScratch,
 			workspace:   ".",
-			expected:    map[string][]string{"file": {"/etc/file"}},
+			expected:    []*latest.SyncRule{{Src: "./file", Dest: "/etc/file"}},
 		},
 		{
 			description: "from scratch, ignoring case",
 			dockerfile:  fromScratchUppercase,
 			workspace:   ".",
-			expected:    map[string][]string{"file": {"/etc/file"}},
+			expected:    []*latest.SyncRule{{Src: "./file", Dest: "/etc/file"}},
 		},
 		{
 			description: "case sensitive",
 			dockerfile:  fromImageCaseSensitive,
 			workspace:   ".",
-			expected:    map[string][]string{"file": {"/etc/file"}},
+			expected:    []*latest.SyncRule{{Src: "./file", Dest: "/etc/file"}},
+		},
+		{
+			description: "multiple sub-folders",
+			dockerfile:  multipleSubFolders,
+			workspace:   ".",
+			expected:    []*latest.SyncRule{{Src: "foo/bar/qix/server.go", Dest: "/", Strip: "foo/bar/qix"}},
 		},
 	}
 
@@ -384,7 +393,7 @@ func TestSyncMap(t *testing.T) {
 			t.Override(&RetrieveImage, imageFetcher.fetch)
 
 			tmpDir := t.NewTempDir().
-				Touch("docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot")
+				Touch("docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot", "foo/bar/qix/server.go")
 
 			if !test.badReader {
 				tmpDir.Write(test.workspace+"/Dockerfile", test.dockerfile)
@@ -394,113 +403,10 @@ func TestSyncMap(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := SyncMap(workspace, "Dockerfile", test.buildArgs, nil)
-
-			// destinations are not sorted, but for the test assertion they must be
-			for _, dsts := range deps {
-				sort.Strings(dsts)
-			}
+			deps, err := SyncRules(workspace, "Dockerfile", test.buildArgs, nil)
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, deps)
-		})
-	}
-}
-
-func TestSyncMap_deterministicOverwrite(t *testing.T) {
-	const (
-		simpleOverwrite = `
-FROM ubuntu:14.04
-ADD subfolder/bar bar
-COPY baz /bar
-ADD bar .
-COPY foo bar
-`
-		implicitOverwrite1 = `
-FROM ubuntu:14.04
-COPY subfolder .
-ADD baz bar
-`
-		implicitOverwrite2 = `
-FROM ubuntu:14.04
-ADD baz bar
-COPY subfolder .
-`
-		implicitOverwrite3 = `
-FROM ubuntu:14.04
-COPY . .
-COPY subfolder .
-`
-		implicitOverwrite4 = `
-FROM ubuntu:14.04
-COPY subfolder .
-COPY . .
-`
-		implicitOverwrite5 = `
-FROM ubuntu:14.04
-ADD * .
-`
-		repeat = 3
-	)
-
-	tests := []struct {
-		name       string
-		dockerfile string
-		expected   map[string][]string
-	}{
-		{
-			name:       "simple overwrite",
-			dockerfile: simpleOverwrite,
-			expected:   map[string][]string{"foo": {"/bar"}},
-		},
-		{
-			name:       "explicit overwrite by `baz`",
-			dockerfile: implicitOverwrite1,
-			expected:   map[string][]string{"baz": {"/bar"}},
-		},
-		{
-			name:       "implicit overwrite by subfolder `bar`",
-			dockerfile: implicitOverwrite2,
-			expected:   map[string][]string{filepath.Join("subfolder", "bar"): {"/bar"}},
-		},
-		{
-			name:       "implicit overwrite by subfolder of implicitly added `bar`",
-			dockerfile: implicitOverwrite3,
-			expected:   map[string][]string{filepath.Join("subfolder", "bar"): {"/bar", "/subfolder/bar"}, "baz": {"/baz"}, "foo": {"/foo"}},
-		},
-		{
-			name:       "implicit overwrite by root folder of implicit subfolder file `bar`",
-			dockerfile: implicitOverwrite4,
-			expected:   map[string][]string{filepath.Join("subfolder", "bar"): {"/subfolder/bar"}, "bar": {"/bar"}, "baz": {"/baz"}, "foo": {"/foo"}},
-		},
-		{
-			name:       "implicit overwrite by glob flattening according to alphabetical ordering (later wins)",
-			dockerfile: implicitOverwrite5,
-			expected:   map[string][]string{filepath.Join("subfolder", "bar"): {"/bar"}, "baz": {"/baz"}, "foo": {"/foo"}},
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.name, func(t *testutil.T) {
-			imageFetcher := fakeImageFetcher{}
-			t.Override(&RetrieveImage, imageFetcher.fetch)
-
-			tmpDir := t.NewTempDir().
-				Touch("subfolder/bar", "baz", "foo", "bar", "ignored/bar").
-				Write(".dockerignore", "Dockerfile\n.dockerignore\nignored/bar").
-				Write("Dockerfile", test.dockerfile)
-
-			for i := 0; i < repeat; i++ {
-				deps, err := SyncMap(tmpDir.Root(), "Dockerfile", nil, nil)
-
-				// destinations are not sorted, but for the test assertion they must be
-				for _, dsts := range deps {
-					sort.Strings(dsts)
-				}
-
-				t.CheckNoError(err)
-				t.CheckDeepEqual(test.expected, deps)
-			}
 		})
 	}
 }

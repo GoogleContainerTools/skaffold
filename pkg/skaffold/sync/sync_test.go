@@ -38,14 +38,14 @@ import (
 
 func TestNewSyncItem(t *testing.T) {
 	tests := []struct {
-		description  string
-		artifact     *latest.Artifact
-		dependencies map[string][]string
-		evt          filemon.Events
-		builds       []build.Artifact
-		shouldErr    bool
-		expected     *Item
-		workingDir   string
+		description string
+		artifact    *latest.Artifact
+		syncRules   []*latest.SyncRule
+		evt         filemon.Events
+		builds      []build.Artifact
+		shouldErr   bool
+		expected    *Item
+		workingDir  string
 	}{
 		// manual sync cases
 		{
@@ -406,12 +406,13 @@ func TestNewSyncItem(t *testing.T) {
 			evt: filemon.Events{
 				Added: []string{"index.html"},
 			},
-			dependencies: map[string][]string{"index.html": {"/index.html"}},
+			syncRules: []*latest.SyncRule{{Src: "index.html", Dest: "/"}},
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string][]string{
 					"index.html": {"/index.html"},
 				},
+				Delete: map[string][]string{},
 			},
 		},
 		{
@@ -432,7 +433,7 @@ func TestNewSyncItem(t *testing.T) {
 			evt: filemon.Events{
 				Added: []string{"index.html"},
 			},
-			dependencies: map[string][]string{},
+			syncRules: nil,
 		},
 		{
 			description: "infer: file not specified for syncing",
@@ -452,7 +453,12 @@ func TestNewSyncItem(t *testing.T) {
 			evt: filemon.Events{
 				Added: []string{"index.html"},
 			},
-			dependencies: map[string][]string{"index.html": {"/index.html"}},
+			syncRules: []*latest.SyncRule{{Src: "index.html", Dest: "/"}},
+			expected: &Item{
+				Image:  "test:123",
+				Copy:   map[string][]string{},
+				Delete: map[string][]string{},
+			},
 		},
 		{
 			description: "infer: no tag for image",
@@ -472,8 +478,8 @@ func TestNewSyncItem(t *testing.T) {
 			evt: filemon.Events{
 				Added: []string{"index.html"},
 			},
-			dependencies: map[string][]string{"index.html": {"/index.html"}},
-			shouldErr:    true,
+			syncRules: []*latest.SyncRule{{Src: "index.html", Dest: "/"}},
+			shouldErr: true,
 		},
 		{
 			description: "infer: multiple sync patterns",
@@ -494,13 +500,14 @@ func TestNewSyncItem(t *testing.T) {
 				Added:    []string{filepath.Join("node", "index.html")},
 				Modified: []string{filepath.Join("node", "server.js")},
 			},
-			dependencies: map[string][]string{"index.html": {"/index.html"}, "server.js": {"/server.js"}},
+			syncRules: []*latest.SyncRule{{Src: "index.html", Dest: "/"}, {Src: "server.js", Dest: "/"}},
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string][]string{
 					filepath.Join("node", "server.js"):  {"/server.js"},
 					filepath.Join("node", "index.html"): {"/index.html"},
 				},
+				Delete: map[string][]string{},
 			},
 		},
 		{
@@ -521,13 +528,14 @@ func TestNewSyncItem(t *testing.T) {
 			evt: filemon.Events{
 				Modified: []string{filepath.Join("node", "src", "app", "server", "server.js")},
 			},
-			dependencies: map[string][]string{filepath.Join("src", "app", "server", "server.js"): {"/dest/server.js"}},
-			workingDir:   "/",
+			syncRules:  []*latest.SyncRule{{Src: "src/app/server/server.js", Dest: "/dest", Strip: "src/app/server"}},
+			workingDir: "/",
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string][]string{
 					filepath.Join("node", "src", "app", "server", "server.js"): {"/dest/server.js"},
 				},
+				Delete: map[string][]string{},
 			},
 		},
 		{
@@ -549,31 +557,41 @@ func TestNewSyncItem(t *testing.T) {
 				Added:    []string{filepath.Join("node", "index.html")},
 				Modified: []string{filepath.Join("node", "server.js")},
 			},
-			dependencies: map[string][]string{"index.html": {"/index.html"}, "server.js": {"/server.js"}},
+			syncRules: []*latest.SyncRule{{Src: "index.html", Dest: "/"}, {Src: "server.js", Dest: "/"}},
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string][]string{
 					filepath.Join("node", "server.js"):  {"/server.js"},
 					filepath.Join("node", "index.html"): {"/index.html"},
 				},
+				Delete: map[string][]string{},
 			},
 		},
 		{
-			description: "infer: delete not syncable",
+			description: "infer: delete",
 			artifact: &latest.Artifact{
 				Sync: &latest.Sync{
 					Infer: []string{"*"},
 				},
 				Workspace: ".",
 			},
+			builds: []build.Artifact{
+				{
+					Tag: "test:123",
+				},
+			},
 			evt: filemon.Events{
 				Added:   []string{"index.html"},
 				Deleted: []string{"server.html"},
 			},
-			dependencies: map[string][]string{"index.html": {"/index.html"}, "server.html": {"/server.html"}},
-			builds: []build.Artifact{
-				{
-					Tag: "placeholder",
+			syncRules: []*latest.SyncRule{{Src: "index.html", Dest: "/"}, {Src: "server.html", Dest: "/"}},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string][]string{
+					filepath.Join("index.html"): {"/index.html"},
+				},
+				Delete: map[string][]string{
+					filepath.Join("server.html"): {"/server.html"},
 				},
 			},
 		},
@@ -588,8 +606,8 @@ func TestNewSyncItem(t *testing.T) {
 			evt: filemon.Events{
 				Added: []string{"index.html"},
 			},
-			dependencies: map[string][]string{"index.html": {"/index.html"}},
-			shouldErr:    true,
+			syncRules: []*latest.SyncRule{{Src: "index.html", Dest: "/"}},
+			shouldErr: true,
 		},
 		{
 			description: "infer: no change no sync",
@@ -605,7 +623,7 @@ func TestNewSyncItem(t *testing.T) {
 					Tag:       "test:123",
 				},
 			},
-			dependencies: map[string][]string{"index.html": {"/index.html"}},
+			syncRules: []*latest.SyncRule{{Src: "index.html", Dest: "/"}},
 		},
 		{
 			description: "infer: slashes in glob pattern",
@@ -626,19 +644,20 @@ func TestNewSyncItem(t *testing.T) {
 			evt: filemon.Events{
 				Added: []string{filepath.Join("dir1", "dir2", "node.js")},
 			},
-			dependencies: map[string][]string{filepath.Join("dir1", "dir2", "node.js"): {"/some/node.js"}},
+			syncRules: []*latest.SyncRule{{Src: "dir1/dir2/node.js", Strip: "dir1/dir2", Dest: "/some"}},
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string][]string{
 					filepath.Join("dir1", "dir2", "node.js"): {"/some/node.js"},
 				},
+				Delete: map[string][]string{},
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return test.workingDir, nil })
-			t.Override(&SyncMap, func(*latest.Artifact, map[string]bool) (map[string][]string, error) { return test.dependencies, nil })
+			t.Override(&SyncRules, func(*latest.Artifact, map[string]bool) ([]*latest.SyncRule, error) { return test.syncRules, nil })
 
 			actual, err := NewItem(test.artifact, test.evt, test.builds, nil)
 
@@ -664,9 +683,7 @@ func TestIntersect(t *testing.T) {
 		{
 			description: "copy nested file to correct destination",
 			files:       []string{filepath.Join("static", "index.html"), filepath.Join("static", "test.html")},
-			syncRules: []*latest.SyncRule{
-				{Src: filepath.Join("static", "*.html"), Dest: "/html", Strip: "static/"},
-			},
+			syncRules:   []*latest.SyncRule{{Src: "static/*.html", Dest: "/html", Strip: "static/"}},
 			expected: map[string][]string{
 				filepath.Join("static", "index.html"): {"/html/index.html"},
 				filepath.Join("static", "test.html"):  {"/html/test.html"},
@@ -675,9 +692,7 @@ func TestIntersect(t *testing.T) {
 		{
 			description: "double-star matches depth zero",
 			files:       []string{"index.html"},
-			syncRules: []*latest.SyncRule{
-				{Src: filepath.Join("**", "*.html"), Dest: "/html"},
-			},
+			syncRules:   []*latest.SyncRule{{Src: "**/*.html", Dest: "/html"}},
 			expected: map[string][]string{
 				"index.html": {"/html/index.html"},
 			},
@@ -686,9 +701,7 @@ func TestIntersect(t *testing.T) {
 			description: "file not in . copies to correct destination",
 			files:       []string{filepath.Join("node", "server.js")},
 			context:     "node",
-			syncRules: []*latest.SyncRule{
-				{Src: "*.js", Dest: "/"},
-			},
+			syncRules:   []*latest.SyncRule{{Src: "*.js", Dest: "/"}},
 			expected: map[string][]string{
 				filepath.Join("node", "server.js"): {"/server.js"},
 			},
@@ -697,10 +710,8 @@ func TestIntersect(t *testing.T) {
 			description: "file change not relative to context throws error",
 			files:       []string{filepath.Join("node", "server.js"), filepath.Join("/", "something", "test.js")},
 			context:     "node",
-			syncRules: []*latest.SyncRule{
-				{Src: "*.js", Dest: "/"},
-			},
-			shouldErr: true,
+			syncRules:   []*latest.SyncRule{{Src: "*.js", Dest: "/"}},
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
@@ -852,13 +863,13 @@ func TestPerform(t *testing.T) {
 	}
 }
 
-func TestSyncMap(t *testing.T) {
+func TestSyncRules(t *testing.T) {
 	tests := []struct {
 		description  string
 		artifactType latest.ArtifactType
 		files        map[string]string
 		shouldErr    bool
-		expectedMap  map[string][]string
+		expectedMap  []*latest.SyncRule
 	}{
 		{
 			description: "docker - supported",
@@ -871,7 +882,12 @@ func TestSyncMap(t *testing.T) {
 				"Dockerfile": "FROM alpine\nCOPY *.go /app/",
 				"main.go":    "",
 			},
-			expectedMap: map[string][]string{"main.go": {"/app/main.go"}},
+			expectedMap: []*latest.SyncRule{
+				{
+					Src:  "*.go",
+					Dest: "/app",
+				},
+			},
 		},
 		{
 			description: "kaniko - supported",
@@ -884,7 +900,12 @@ func TestSyncMap(t *testing.T) {
 				"Dockerfile": "FROM alpine\nCOPY *.go /app/",
 				"main.go":    "",
 			},
-			expectedMap: map[string][]string{"main.go": {"/app/main.go"}},
+			expectedMap: []*latest.SyncRule{
+				{
+					Src:  "*.go",
+					Dest: "/app",
+				},
+			},
 		},
 		{
 			description:  "not supported",
@@ -896,10 +917,10 @@ func TestSyncMap(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().WriteFiles(test.files).Chdir()
 
-			syncMap, err := SyncMap(&latest.Artifact{ArtifactType: test.artifactType}, nil)
+			syncRules, err := SyncRules(&latest.Artifact{ArtifactType: test.artifactType}, nil)
 
 			t.CheckError(test.shouldErr, err)
-			t.CheckDeepEqual(test.expectedMap, syncMap)
+			t.CheckDeepEqual(test.expectedMap, syncRules)
 		})
 	}
 }

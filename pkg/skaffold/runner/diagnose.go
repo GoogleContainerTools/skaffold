@@ -58,19 +58,19 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) e
 		fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
 		fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
 
-		timeSyncMap1, err := timeToConstructSyncMap(artifact, r.runCtx.InsecureRegistries)
+		timeSyncRules1, err := timeToConstructSyncRules(artifact, r.runCtx.InsecureRegistries)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return errors.Wrap(err, "construct artifact dependencies")
 			}
 		}
-		timeSyncMap2, err := timeToConstructSyncMap(artifact, r.runCtx.InsecureRegistries)
+		timeSyncRules2, err := timeToConstructSyncRules(artifact, r.runCtx.InsecureRegistries)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return errors.Wrap(err, "construct artifact dependencies")
 			}
 		} else {
-			fmt.Fprintf(out, " - Time to construct sync-map: %v (2nd time: %v)\n", timeSyncMap1, timeSyncMap2)
+			fmt.Fprintf(out, " - Time to construct sync-map: %v (2nd time: %v)\n", timeSyncRules1, timeSyncRules2)
 		}
 
 		timeMTimes1, err := timeToComputeMTimes(deps)
@@ -113,9 +113,9 @@ func timeToListDependencies(ctx context.Context, a *latest.Artifact, insecureReg
 	return time.Since(start), paths, err
 }
 
-func timeToConstructSyncMap(a *latest.Artifact, insecureRegistries map[string]bool) (time.Duration, error) {
+func timeToConstructSyncRules(a *latest.Artifact, insecureRegistries map[string]bool) (time.Duration, error) {
 	start := time.Now()
-	_, err := sync.SyncMap(a, insecureRegistries)
+	_, err := sync.SyncRules(a, insecureRegistries)
 	return time.Since(start), err
 }
 

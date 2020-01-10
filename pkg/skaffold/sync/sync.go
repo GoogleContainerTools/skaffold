@@ -42,26 +42,50 @@ import (
 // For testing
 var (
 	WorkingDir = docker.RetrieveWorkingDir
-	SyncMap    = syncMapForArtifact
+	SyncRules  = syncRulesForArtifact
 )
 
 func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
-	switch {
-	case !e.HasChanged():
-		return nil, nil
-
-	case a.Sync != nil && len(a.Sync.Manual) > 0:
-		return manualSyncItem(a, e, builds, insecureRegistries)
-
-	case a.Sync != nil && len(a.Sync.Infer) > 0:
-		return inferredSyncItem(a, e, builds, insecureRegistries)
-
-	default:
+	if a.Sync == nil || !e.HasChanged() {
 		return nil, nil
 	}
+
+	if len(a.Sync.Manual) > 0 {
+		return syncItem(a.Sync.Manual, a, e, builds, insecureRegistries)
+	}
+
+	if len(a.Sync.Infer) > 0 {
+		// only consider files that are listed in Infer
+		added, err := filter(a.Workspace, e.Added, a.Sync.Infer)
+		if err != nil {
+			return nil, err
+		}
+		modified, err := filter(a.Workspace, e.Modified, a.Sync.Infer)
+		if err != nil {
+			return nil, err
+		}
+		deleted, err := filter(a.Workspace, e.Deleted, a.Sync.Infer)
+		if err != nil {
+			return nil, err
+		}
+		e = filemon.Events{
+			Added:    added,
+			Modified: modified,
+			Deleted:  deleted,
+		}
+
+		syncRules, err := SyncRules(a, insecureRegistries)
+		if err != nil {
+			return nil, errors.Wrapf(err, "inferring syncmap for image %s", a.ImageName)
+		}
+
+		return syncItem(syncRules, a, e, builds, insecureRegistries)
+	}
+
+	return nil, nil
 }
 
-func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
+func syncItem(rules []*latest.SyncRule, a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
 	tag := latestTag(a.ImageName, builds)
 	if tag == "" {
 		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
@@ -72,12 +96,12 @@ func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifac
 		return nil, errors.Wrapf(err, "retrieving working dir for %s", tag)
 	}
 
-	toCopy, err := intersect(a.Workspace, containerWd, a.Sync.Manual, append(e.Added, e.Modified...))
+	toCopy, err := intersect(a.Workspace, containerWd, rules, append(e.Added, e.Modified...))
 	if err != nil {
 		return nil, errors.Wrap(err, "intersecting sync map and added, modified files")
 	}
 
-	toDelete, err := intersect(a.Workspace, containerWd, a.Sync.Manual, e.Deleted)
+	toDelete, err := intersect(a.Workspace, containerWd, rules, e.Deleted)
 	if err != nil {
 		return nil, errors.Wrap(err, "intersecting sync map and deleted files")
 	}
@@ -90,62 +114,13 @@ func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifac
 	return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
 }
 
-func inferredSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
-	// deleted files are no longer contained in the syncMap, so we need to rebuild
-	if len(e.Deleted) > 0 {
-		return nil, nil
-	}
-
-	tag := latestTag(a.ImageName, builds)
-	if tag == "" {
-		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
-	}
-
-	syncMap, err := SyncMap(a, insecureRegistries)
-	if err != nil {
-		return nil, errors.Wrapf(err, "inferring syncmap for image %s", a.ImageName)
-	}
-
-	toCopy := make(map[string][]string)
-	for _, f := range append(e.Modified, e.Added...) {
-		relPath, err := filepath.Rel(a.Workspace, f)
-		if err != nil {
-			return nil, errors.Wrapf(err, "finding changed file %s relative to context %s", f, a.Workspace)
-		}
-
-		matches := false
-		for _, p := range a.Sync.Infer {
-			matches, err = doublestar.PathMatch(filepath.FromSlash(p), relPath)
-			if err != nil {
-				return nil, errors.Wrapf(err, "pattern error for %s", relPath)
-			}
-			if matches {
-				break
-			}
-		}
-		if !matches {
-			logrus.Infof("Changed file %s does not match any sync pattern. Skipping sync", relPath)
-			return nil, nil
-		}
-
-		if dsts, ok := syncMap[relPath]; ok {
-			toCopy[f] = dsts
-		} else {
-			logrus.Infof("Changed file %s is not syncable. Skipping sync", relPath)
-			return nil, nil
-		}
-	}
-
-	return &Item{Image: tag, Copy: toCopy}, nil
-}
-
-func syncMapForArtifact(a *latest.Artifact, insecureRegistries map[string]bool) (map[string][]string, error) {
+func syncRulesForArtifact(a *latest.Artifact, insecureRegistries map[string]bool) ([]*latest.SyncRule, error) {
 	switch {
 	case a.DockerArtifact != nil:
-		return docker.SyncMap(a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, insecureRegistries)
+		return docker.SyncRules(a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, insecureRegistries)
 
 	case a.KanikoArtifact != nil:
-		return docker.SyncMap(a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, insecureRegistries)
+		return docker.SyncRules(a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, insecureRegistries)
 
 	default:
 		return nil, build.ErrSyncMapNotSupported{}
@@ -182,6 +157,31 @@ func intersect(contextWd, containerWd string, syncRules []*latest.SyncRule, file
 		ret[f] = dsts
 	}
 	return ret, nil
+}
+
+func filter(contextWd string, paths []string, patterns []string) ([]string, error) {
+	var filtered []string
+
+	for _, path := range paths {
+		for _, pattern := range patterns {
+			relPath, err := filepath.Rel(contextWd, path)
+			if err != nil {
+				return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", path, contextWd)
+			}
+
+			matches, err := doublestar.PathMatch(filepath.FromSlash(pattern), relPath)
+			if err != nil {
+				return nil, err
+			}
+
+			if matches {
+				filtered = append(filtered, path)
+				break
+			}
+		}
+	}
+
+	return filtered, nil
 }
 
 func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) ([]string, error) {

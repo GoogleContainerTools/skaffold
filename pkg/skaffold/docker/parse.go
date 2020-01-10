@@ -64,7 +64,7 @@ var (
 	RetrieveImage = retrieveImage
 )
 
-func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]fromTo, error) {
+func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]*copyCommand, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
@@ -88,12 +88,16 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 		return nil, errors.Wrap(err, "expanding ONBUILD instructions")
 	}
 
-	cpCmds, err := extractCopyCommands(dockerfileLinesWithOnbuild, onlyLastImage, insecureRegistries)
+	return extractCopyCommands(dockerfileLinesWithOnbuild, onlyLastImage, insecureRegistries)
+}
+
+func expandCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]fromTo, error) {
+	copyCommands, err := readCopyCmdsFromDockerfile(onlyLastImage, absDockerfilePath, buildArgs, insecureRegistries)
 	if err != nil {
-		return nil, errors.Wrap(err, "listing copied files")
+		return nil, err
 	}
 
-	return expandSrcGlobPatterns(workspace, cpCmds)
+	return expandSrcGlobPatterns(workspace, copyCommands)
 }
 
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
