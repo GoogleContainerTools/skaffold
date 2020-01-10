@@ -14,16 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1
 
 import (
-	v1 "k8s.io/api/core/v1"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2alpha2"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v1"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -90,9 +88,6 @@ type PortForwardResource struct {
 
 	// Port is the resource port that will be forwarded.
 	Port int `yaml:"port,omitempty"`
-
-	// Address is the local address to bind to. Defaults to the loopback address 127.0.0.1.
-	Address string `yaml:"address,omitempty"`
 
 	// LocalPort is the local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
 	LocalPort int `yaml:"localPort,omitempty"`
@@ -196,10 +191,6 @@ type LocalBuild struct {
 
 	// UseBuildkit use BuildKit to build Docker images.
 	UseBuildkit bool `yaml:"useBuildkit,omitempty"`
-
-	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
-	// Defaults to 1.
-	Concurrency *int `yaml:"concurrency,omitempty"`
 }
 
 // GoogleCloudBuild *beta* describes how to do a remote build on
@@ -249,6 +240,23 @@ type GoogleCloudBuild struct {
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
 	// Defaults to 0.
 	Concurrency int `yaml:"concurrency,omitempty"`
+}
+
+// LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
+type LocalDir struct {
+	// InitImage is the image used to run init container which mounts kaniko context.
+	InitImage string `yaml:"initImage,omitempty"`
+}
+
+// KanikoBuildContext contains the different fields available to specify
+// a Kaniko build context.
+type KanikoBuildContext struct {
+	// GCSBucket is the GCS bucket to which sources are uploaded.
+	// Kaniko will need access to that bucket to download the sources.
+	GCSBucket string `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext"`
+
+	// LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
+	LocalDir *LocalDir `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext"`
 }
 
 // KanikoCache configures Kaniko caching. If a cache is specified, Kaniko will
@@ -382,7 +390,7 @@ type DeployType struct {
 
 // CloudRunDeploy uses `gcloud beta run` to deploy Cloud Run.
 type CloudRunDeploy struct {
-	Name   string            `yaml:"name" yamltags:"required"`
+	Name   string            `yam:"region" yamltags:"required"`
 	Region string            `yaml:"region" yamltags:"required"`
 	Env    map[string]string `yaml:"env"`
 }
@@ -691,11 +699,6 @@ type BuildpackArtifact struct {
 	// RunImage overrides the stack's default run image.
 	RunImage string `yaml:"runImage,omitempty"`
 
-	// Env are environment variables, in the `key=value` form,  passed to the build.
-	// Values can use the go template syntax.
-	// For example: `["key1=value1", "key2=value2", "key3={{.ENV_VARIABLE}}"]`.
-	Env []string `yaml:"env,omitempty"`
-
 	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`
 }
@@ -740,7 +743,7 @@ type DockerfileDependency struct {
 
 	// BuildArgs are arguments passed to the docker build.
 	// It also accepts environment variables via the go template syntax.
-	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 }
 
@@ -761,14 +764,11 @@ type KanikoArtifact struct {
 
 	// BuildArgs are arguments passed to the docker build.
 	// It also accepts environment variables via the go template syntax.
-	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 
-	// Env are environment variables passed to the kaniko pod.
-	Env []v1.EnvVar `yaml:"env,omitempty"`
-
-	// InitImage is the image used to run init container which mounts kaniko context.
-	InitImage string `yaml:"initImage,omitempty"`
+	// BuildContext is where the build context for this artifact resides.
+	BuildContext *KanikoBuildContext `yaml:"buildContext,omitempty"`
 
 	// Image is the Docker image used by the Kaniko pod.
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
