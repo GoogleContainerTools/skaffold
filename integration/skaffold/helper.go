@@ -28,7 +28,9 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/cobra"
 
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -249,13 +251,15 @@ func (b *RunBuilder) RunOrFailOutput(t *testing.T) []byte {
 
 func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	args := []string{b.command}
-	if b.ns != "" && isCoreCommand(b.command) {
+	command := b.getCobraCommand()
+
+	if b.ns != "" && command.Flags().Lookup("namespace") != nil {
 		args = append(args, "--namespace", b.ns)
 	}
-	if b.configFile != "" {
+	if b.configFile != "" && command.Flags().ShorthandLookup("f") != nil {
 		args = append(args, "-f", b.configFile)
 	}
-	if b.repo != "" && isCoreCommand(b.command) {
+	if b.repo != "" && command.Flags().Lookup("default-repo") != nil {
 		args = append(args, "--default-repo", b.repo)
 	}
 	args = append(args, b.args...)
@@ -286,13 +290,16 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	return cmd
 }
 
-func isCoreCommand(command string) bool {
-	switch command {
-	case "build", "debug", "delete", "deploy", "dev", "generate-pipeline", "render", "run":
-		return true
-	default:
-		return false
+// getCobraCommand returns the matching cobra command for the command
+// in b, or return a dummy without flags
+func (b *RunBuilder) getCobraCommand() *cobra.Command {
+	c := cmd.NewSkaffoldCommand(os.Stdout, os.Stderr)
+	for _, comm := range c.Commands() {
+		if comm.Name() == b.command {
+			return comm
+		}
 	}
+	return &cobra.Command{}
 }
 
 // removeSkaffoldEnvVariables makes sure Skaffold runs without
