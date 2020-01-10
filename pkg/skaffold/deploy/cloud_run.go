@@ -140,7 +140,7 @@ func (c *CloudRunDeployer) deployArtifact(runService *run.APIService, build Buil
 			Template: &run.RevisionTemplate{
 				Spec: &run.RevisionSpec{
 					Containers: []*run.Container{
-						&run.Container{
+						{
 							Image: build.containerImageName(),
 							Env:   envVars,
 						},
@@ -165,7 +165,7 @@ func (c *CloudRunDeployer) deployArtifact(runService *run.APIService, build Buil
 	_, err = runService.Projects.Locations.Services.SetIamPolicy(name, &run.SetIamPolicyRequest{
 		Policy: &run.Policy{
 			Bindings: []*run.Binding{
-				&run.Binding{
+				{
 					Members: []string{"allUsers"},
 					Role:    "roles/run.invoker",
 				},
