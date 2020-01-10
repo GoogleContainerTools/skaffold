@@ -6,22 +6,17 @@ featureId: build
 aliases: [/docs/how-tos/builders]
 ---
 
-Skaffold has native support for several different tools for building images:
+Skaffold supports different tools for building images:
 
-* [Dockerfile]({{< relref "/docs/pipeline-stages/builders/docker" >}})
-  - locally with [Docker]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-locally" >}})
-  - in-cluster with [Kaniko]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-in-cluster-with-kaniko" >}})
-  - on cloud with [Google Cloud Build]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-remotely-with-google-cloud-build" >}})
-* [Jib Maven and Gradle]({{< relref "/docs/pipeline-stages/builders/jib" >}})
-  - [locally]({{< relref "/docs/pipeline-stages/builders/jib#jib-maven-and-gradle-locally" >}})
-  - on cloud with [Google Cloud Build]({{< relref "/docs/pipeline-stages/builders/jib#remotely-with-google-cloud-build" >}})
-* [Bazel]({{< relref "/docs/pipeline-stages/builders/bazel" >}}) locally
-* [Cloud Native Buildpacks]({{< relref "/docs/pipeline-stages/builders/buildpacks" >}})
-  - locally with Docker
-  - on cloud with Google Cloud Build
-* [Custom script] ({{< relref "/docs/pipeline-stages/builders/custom" >}})
-  - [locally]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-locally" >}}) and
-  - [in cluster]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-in-cluster" >}}) 
+|    | Local Build | In Cluster Build | Remote on Google Cloud Build |
+|----|:-----------:|:----------------:|:----------------------------:|
+| **Dockerfile** | [Yes]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-locally" >}}) | [Yes]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-in-cluster-with-kaniko" >}}) | [Yes]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-remotely-with-google-cloud-build" >}}) |
+| **Jib Maven and Gradle** | [Yes]({{< relref "/docs/pipeline-stages/builders/jib#jib-maven-and-gradle-locally" >}}) | - | [Yes]({{< relref "/docs/pipeline-stages/builders/jib#remotely-with-google-cloud-build" >}}) |
+| **Cloud Native Buildpacks** | [Yes]({{< relref "/docs/pipeline-stages/builders/buildpacks" >}}) | - | [Yes]({{< relref "/docs/pipeline-stages/builders/buildpacks" >}}) |
+| **Bazel** | [Yes]({{< relref "/docs/pipeline-stages/builders/bazel" >}}) | - | - |
+| **Custom Script** | [Yes]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-locally" >}}) | [Yes]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-in-cluster" >}}) | - |
+
+**Configuration**
 
 The `build` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how artifacts are built. To use a specific tool for building
@@ -30,14 +25,6 @@ to the `build` section.
 
 For a detailed discussion on [Skaffold Configuration]({{< relref "/docs/design/config.md" >}}),
 see [skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
-
-
-Skaffold supports building artifacts in following execution contexts:
-
-1. Local
-2. In Cluster
-3. Remotely on Google Cloud Build.
-
 
 ## Local Build
 Local build execution is the default execution context.
@@ -111,15 +98,3 @@ build:
 The following options can optionally be configured:
 
 {{< schema root="GoogleCloudBuild" >}}
-
-
-Skaffold currently supports  [Docker]({{<relref "/docs/pipeline-stages/builders/docker#dockerfile-remotely-with-google-cloud-build">}})
-and [Jib]({{<relref "/docs/pipeline-stages/builders/jib#remotely-with-google-cloud-build">}}) Google Cloud Builders.
-
-
-
-
-
-
-
-
