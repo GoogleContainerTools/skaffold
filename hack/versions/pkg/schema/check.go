@@ -74,7 +74,7 @@ func RunSchemaCheckOnChangedFiles() error {
 		}
 		baseFile := path.Join(root, "base.go")
 		if err = ioutil.WriteFile(baseFile, content, 0666); err != nil {
-			return errors.Wrapf(err, "writing master version of %s", configFile)
+			return errors.Wrapf(err, "writing %s version of %s", baseRef, configFile)
 		}
 
 		diff, err := diff.CompareGoStructs(baseFile, changedFile)
@@ -122,8 +122,8 @@ func changeDetected(configFile string) string {
 Structural change detected in a released config: %s
 Please create a new PR first with a new version.
 You can use 'hack/new_version.sh' to generate the new config version.
-If you are running this locally, make sure you have the master branch up to date!
+If you are running this locally, make sure you have the %s branch up to date!
 Admin rights are required to merge this PR!
 --------
-`, configFile)
+`, configFile, baseRef)
 }
