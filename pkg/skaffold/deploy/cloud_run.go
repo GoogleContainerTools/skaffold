@@ -95,11 +95,6 @@ func (c *CloudRunDeployer) Deploy(ctx context.Context, out io.Writer, builds []b
 	return NewDeploySuccessResult(nil)
 }
 
-func (build Build) serviceName() string {
-	parts := strings.Split(build.ImageName, "/")
-	return parts[len(parts)-1]
-}
-
 func (build Build) containerImageName() string {
 	return strings.Split(build.Tag, "@sha25")[0]
 }
