@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1cloudrun
+package v2cloudrun
 
 import (
 	v1 "k8s.io/api/core/v1"
@@ -23,7 +23,7 @@ import (
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2alpha2"
+const Version string = "skaffold/v2cloudrun"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -382,9 +382,12 @@ type DeployType struct {
 
 // CloudRunDeploy uses `gcloud beta run` to deploy Cloud Run.
 type CloudRunDeploy struct {
-	Name   string            `yaml:"name" yamltags:"required"`
-	Region string            `yaml:"region" yamltags:"required"`
-	Env    map[string]string `yaml:"env"`
+	// Defaults to `["k8s/*.yaml"]`.
+	Name string `yaml:"name" yamltags:"required"`
+	// Defaults to `["k8s/*.yaml"]`.
+	Region string `yaml:"region" yamltags:"required"`
+	// Defaults to `["k8s/*.yaml"]`.
+	Env map[string]string `yaml:"env"`
 }
 
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.

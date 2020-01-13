@@ -375,6 +375,19 @@ type DeployType struct {
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty" yamltags:"oneOf=deploy"`
+
+	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
+	CloudRunDeploy *CloudRunDeploy `yaml:"cloudRun,omitempty" yamltags:"oneOf=deploy"`
+}
+
+// CloudRunDeploy uses `gcloud beta run` to deploy Cloud Run.
+type CloudRunDeploy struct {
+	// Defaults to `["k8s/*.yaml"]`.
+	Name string `yaml:"name" yamltags:"required"`
+	// Defaults to `["k8s/*.yaml"]`.
+	Region string `yaml:"region" yamltags:"required"`
+	// Defaults to `["k8s/*.yaml"]`.
+	Env map[string]string `yaml:"env"`
 }
 
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
