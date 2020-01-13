@@ -289,7 +289,7 @@ func detectBuilders(enableJibInit, enableBuildpackInit bool, path string) ([]Ini
 
 	// Check for Dockerfile
 	base := filepath.Base(path)
-	if strings.Contains(base, "Dockerfile") {
+	if strings.Contains(strings.ToLower(base), "dockerfile") {
 		if docker.Validate(path) {
 			results := []InitBuilder{docker.ArtifactConfig{File: path}}
 			return results, true
