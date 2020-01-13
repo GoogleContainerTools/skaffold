@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v1cloudrun
 
 import (
 	v1 "k8s.io/api/core/v1"
@@ -375,6 +375,16 @@ type DeployType struct {
 
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty" yamltags:"oneOf=deploy"`
+
+	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
+	CloudRunDeploy *CloudRunDeploy `yaml:"cloudRun,omitempty" yamltags:"oneOf=deploy"`
+}
+
+// CloudRunDeploy uses `gcloud beta run` to deploy Cloud Run.
+type CloudRunDeploy struct {
+	Name   string            `yaml:"name" yamltags:"required"`
+	Region string            `yaml:"region" yamltags:"required"`
+	Env    map[string]string `yaml:"env"`
 }
 
 // KubectlDeploy *beta* uses a client side `kubectl apply` to deploy manifests.
