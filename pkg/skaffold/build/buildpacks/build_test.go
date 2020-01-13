@@ -127,7 +127,7 @@ func TestBuild(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Touch("file").Chdir()
 			pack := &fakePack{}
-			t.Override(&runPackFunc, pack.runPack)
+			t.Override(&runPackBuildFunc, pack.runPack)
 
 			test.api.
 				Add(test.artifact.Builder, "builderImageID").

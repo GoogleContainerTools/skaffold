@@ -32,7 +32,7 @@ import (
 
 // For testing
 var (
-	runPackFunc = runPack
+	runPackBuildFunc = runPackBuild
 )
 
 func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
@@ -77,7 +77,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		return "", errors.Wrap(err, "unable to evaluate env variables")
 	}
 
-	if err := runPackFunc(ctx, out, pack.BuildOptions{
+	if err := runPackBuildFunc(ctx, out, pack.BuildOptions{
 		AppPath:  workspace,
 		Builder:  builderImage,
 		RunImage: runImage,
@@ -91,7 +91,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	return latest, nil
 }
 
-func runPack(ctx context.Context, out io.Writer, opts pack.BuildOptions) error {
+func runPackBuild(ctx context.Context, out io.Writer, opts pack.BuildOptions) error {
 	packClient, err := pack.NewClient(pack.WithLogger(NewLogger(out)))
 	if err != nil {
 		return errors.Wrap(err, "unable to create pack client")

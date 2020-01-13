@@ -24,6 +24,7 @@ import (
 	"github.com/buildpacks/pack/logging"
 )
 
+// logger exists to meet the requirements of the pack logger.
 type logger struct {
 	*logrus.Logger
 	out io.Writer
