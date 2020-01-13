@@ -62,6 +62,7 @@ const (
 	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
 	DefaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
 	DefaultCloudBuildKanikoImage = "gcr.io/kaniko-project/executor"
+	DefaultCloudBuildPackImage   = "gcr.io/k8s-skaffold/pack"
 
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"

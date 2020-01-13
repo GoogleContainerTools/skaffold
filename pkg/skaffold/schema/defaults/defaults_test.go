@@ -254,6 +254,7 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildDockerImage, cfg.Build.GoogleCloudBuild.DockerImage)
 	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildMavenImage, cfg.Build.GoogleCloudBuild.MavenImage)
 	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildGradleImage, cfg.Build.GoogleCloudBuild.GradleImage)
+	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildPackImage, cfg.Build.GoogleCloudBuild.PackImage)
 }
 
 func TestSetDefaultsOnLocalBuild(t *testing.T) {

@@ -69,6 +69,7 @@ func Set(c *latest.SkaffoldConfig) error {
 		setDefaultCloudBuildMavenImage,
 		setDefaultCloudBuildGradleImage,
 		setDefaultCloudBuildKanikoImage,
+		setDefaultCloudBuildPackImage,
 	)
 
 	if err := withClusterConfig(c,
@@ -143,6 +144,10 @@ func setDefaultCloudBuildGradleImage(gcb *latest.GoogleCloudBuild) {
 
 func setDefaultCloudBuildKanikoImage(gcb *latest.GoogleCloudBuild) {
 	gcb.KanikoImage = valueOrDefault(gcb.KanikoImage, constants.DefaultCloudBuildKanikoImage)
+}
+
+func setDefaultCloudBuildPackImage(gcb *latest.GoogleCloudBuild) {
+	gcb.PackImage = valueOrDefault(gcb.PackImage, constants.DefaultCloudBuildPackImage)
 }
 
 func setDefaultTagger(c *latest.SkaffoldConfig) {
