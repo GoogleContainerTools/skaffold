@@ -376,17 +376,17 @@ type DeployType struct {
 	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 	KustomizeDeploy *KustomizeDeploy `yaml:"kustomize,omitempty" yamltags:"oneOf=deploy"`
 
-	// KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
+	// CloudRunDeploy *beta* uses the `Cloud Run API` to deploy Cloud Run Service.
 	CloudRunDeploy *CloudRunDeploy `yaml:"cloudRun,omitempty" yamltags:"oneOf=deploy"`
 }
 
-// CloudRunDeploy uses `gcloud beta run` to deploy Cloud Run.
+// CloudRunDeploy *beta* uses the `Cloud Run API` to deploy Cloud Run Service.
 type CloudRunDeploy struct {
-	// Defaults to `["k8s/*.yaml"]`.
+	// Name is service name
 	Name string `yaml:"name" yamltags:"required"`
-	// Defaults to `["k8s/*.yaml"]`.
+	// Region is the region of the Cloud Run.
 	Region string `yaml:"region" yamltags:"required"`
-	// Defaults to `["k8s/*.yaml"]`.
+	// Env is environment variables.
 	Env map[string]string `yaml:"env"`
 }
 
