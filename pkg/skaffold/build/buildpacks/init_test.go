@@ -36,6 +36,11 @@ func TestValidate(t *testing.T) {
 			expectedValid: true,
 		},
 		{
+			description:   "Go",
+			path:          "path/to/go.mod",
+			expectedValid: true,
+		},
+		{
 			description:   "Unknown language",
 			path:          "path/to/something.txt",
 			expectedValid: false,
@@ -59,7 +64,7 @@ func TestDescribe(t *testing.T) {
 		expectedPrompt string
 	}{
 		{
-			description:    "buildpacks",
+			description:    "buildpacks - NodeJS",
 			config:         ArtifactConfig{File: "/path/to/package.json"},
 			expectedPrompt: "Buildpacks (/path/to/package.json)",
 		},
@@ -78,7 +83,7 @@ func TestUpdateArtifact(t *testing.T) {
 		expectedArtifact latest.Artifact
 	}{
 		{
-			description: "buildpacks",
+			description: "buildpacks - NodeJS",
 			config:      ArtifactConfig{File: filepath.Join("path", "to", "package.json")},
 			expectedArtifact: latest.Artifact{
 				ArtifactType: latest.ArtifactType{BuildpackArtifact: &latest.BuildpackArtifact{

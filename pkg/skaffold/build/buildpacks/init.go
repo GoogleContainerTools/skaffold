@@ -68,5 +68,7 @@ func (c ArtifactConfig) Path() string {
 
 // validate checks if a file is a valid Buildpack configuration.
 func validate(path string) bool {
-	return filepath.Base(path) == "package.json"
+	name := filepath.Base(path)
+
+	return name == "package.json" || name == "go.mod"
 }
