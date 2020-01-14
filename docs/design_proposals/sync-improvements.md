@@ -5,6 +5,10 @@
 * Date: 03/20/2019
 * Status: Reviewed
 
+## Warning
+
+This document is outdated but can help understand the current design.
+
 ## Background
 
 Currently, skaffold config supports `artifact.sync` as a way to sync files

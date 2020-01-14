@@ -43,8 +43,8 @@ type Builder interface {
 	Prune(context.Context, io.Writer) error
 }
 
-type ErrSyncMapNotSupported struct{}
+type ErrSyncRulesNotSupported struct{}
 
-func (ErrSyncMapNotSupported) Error() string {
-	return "SyncMap is not supported by this builder"
+func (ErrSyncRulesNotSupported) Error() string {
+	return "SyncRules is not supported by this builder"
 }

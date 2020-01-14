@@ -30,7 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
 func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) error {
@@ -57,21 +56,6 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) e
 
 		fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
 		fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
-
-		timeSyncRules1, err := timeToConstructSyncRules(artifact, r.runCtx.InsecureRegistries)
-		if err != nil {
-			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
-				return errors.Wrap(err, "construct artifact dependencies")
-			}
-		}
-		timeSyncRules2, err := timeToConstructSyncRules(artifact, r.runCtx.InsecureRegistries)
-		if err != nil {
-			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
-				return errors.Wrap(err, "construct artifact dependencies")
-			}
-		} else {
-			fmt.Fprintf(out, " - Time to construct sync-map: %v (2nd time: %v)\n", timeSyncRules1, timeSyncRules2)
-		}
 
 		timeMTimes1, err := timeToComputeMTimes(deps)
 		if err != nil {
@@ -111,12 +95,6 @@ func timeToListDependencies(ctx context.Context, a *latest.Artifact, insecureReg
 	start := time.Now()
 	paths, err := build.DependenciesForArtifact(ctx, a, insecureRegistries)
 	return time.Since(start), paths, err
-}
-
-func timeToConstructSyncRules(a *latest.Artifact, insecureRegistries map[string]bool) (time.Duration, error) {
-	start := time.Now()
-	_, err := sync.SyncRules(a, insecureRegistries)
-	return time.Since(start), err
 }
 
 func timeToComputeMTimes(deps []string) (time.Duration, error) {

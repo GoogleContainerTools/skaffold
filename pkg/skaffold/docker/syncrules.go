@@ -20,6 +20,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -45,16 +46,29 @@ func SyncRules(workspace string, dockerfilePath string, buildArgs map[string]*st
 
 	for _, copyCommand := range copyCommands {
 		for _, copySrc := range copyCommand.srcs {
-			fi, err := os.Stat(filepath.Join(workspace, copySrc))
-
 			var src, strip string
-			if err != nil || fi.Mode().IsRegular() {
+
+			if strings.Contains(copySrc, "*") {
+				// Glob
 				src = copySrc
 				strip = path.Dir(copySrc)
 			} else {
-				src = path.Join(copySrc, "**")
-				strip = copySrc
+				fi, err := os.Stat(filepath.Join(workspace, copySrc))
+				if err != nil && !os.IsNotExist(err) {
+					return nil, err
+				}
+
+				if fi.Mode().IsDir() {
+					// Directory
+					src = path.Join(copySrc, "**")
+					strip = copySrc
+				} else {
+					// File
+					src = copySrc
+					strip = path.Dir(copySrc)
+				}
 			}
+
 			if strip == "." {
 				strip = ""
 			}

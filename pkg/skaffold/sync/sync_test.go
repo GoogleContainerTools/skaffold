@@ -588,10 +588,10 @@ func TestNewSyncItem(t *testing.T) {
 			expected: &Item{
 				Image: "test:123",
 				Copy: map[string][]string{
-					filepath.Join("index.html"): {"/index.html"},
+					"index.html": {"/index.html"},
 				},
 				Delete: map[string][]string{
-					filepath.Join("server.html"): {"/server.html"},
+					"server.html": {"/server.html"},
 				},
 			},
 		},

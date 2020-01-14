@@ -76,7 +76,7 @@ func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, inse
 
 		syncRules, err := SyncRules(a, insecureRegistries)
 		if err != nil {
-			return nil, errors.Wrapf(err, "inferring syncmap for image %s", a.ImageName)
+			return nil, errors.Wrapf(err, "inferring sync rules for image %s", a.ImageName)
 		}
 
 		return syncItem(syncRules, a, e, builds, insecureRegistries)
@@ -123,7 +123,7 @@ func syncRulesForArtifact(a *latest.Artifact, insecureRegistries map[string]bool
 		return docker.SyncRules(a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, insecureRegistries)
 
 	default:
-		return nil, build.ErrSyncMapNotSupported{}
+		return nil, build.ErrSyncRulesNotSupported{}
 	}
 }
 
