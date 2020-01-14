@@ -58,14 +58,14 @@ func SyncRules(workspace string, dockerfilePath string, buildArgs map[string]*st
 					return nil, err
 				}
 
-				if fi.Mode().IsDir() {
-					// Directory
-					src = path.Join(copySrc, "**")
-					strip = copySrc
-				} else {
+				if os.IsNotExist(err) || fi.Mode().IsRegular() {
 					// File
 					src = copySrc
 					strip = path.Dir(copySrc)
+				} else {
+					// Directory
+					src = path.Join(copySrc, "**")
+					strip = copySrc
 				}
 			}
 
