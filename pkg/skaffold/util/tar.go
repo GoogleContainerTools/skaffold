@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -52,6 +53,40 @@ func CreateTar(w io.Writer, root string, paths []string) error {
 	for _, path := range paths {
 		if err := addFileToTar(root, path, "", tw, nil); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func CreateTarWithParents(w io.Writer, root string, paths []string, uid, gid int, modTime time.Time) error {
+	headerModifier := func(header *tar.Header) {
+		header.ModTime = modTime
+		header.Uid = uid
+		header.Gid = gid
+		header.Uname = ""
+		header.Gname = ""
+	}
+
+	tw := tar.NewWriter(w)
+	defer tw.Close()
+
+	// Make sure parent folders are added before files
+	// TODO(dgageot): this should probably also be done in CreateTar
+	// but I'd rather not break things that people didn't complain about!
+	added := map[string]bool{}
+
+	for _, path := range paths {
+		var parentsFirst []string
+		for p := path; p != "." && !added[p]; p = filepath.Dir(p) {
+			parentsFirst = append(parentsFirst, p)
+			added[p] = true
+		}
+
+		for i := len(parentsFirst) - 1; i >= 0; i-- {
+			if err := addFileToTar(root, parentsFirst[i], "", tw, headerModifier); err != nil {
+				return err
+			}
 		}
 	}
 
