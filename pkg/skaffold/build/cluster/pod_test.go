@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestArgs(t *testing.T) {
+func TestKanikoArgs(t *testing.T) {
 	tests := []struct {
 		description        string
 		artifact           *latest.KanikoArtifact
@@ -145,7 +145,7 @@ func TestArgs(t *testing.T) {
 			if test.tag != "" {
 				tag = test.tag
 			}
-			args, err := args(test.artifact, tag, test.insecureRegistries)
+			args, err := kanikoArgs(test.artifact, tag, test.insecureRegistries)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
@@ -155,7 +155,7 @@ func TestArgs(t *testing.T) {
 	}
 }
 
-func TestPodSpec(t *testing.T) {
+func TestKanikoPodSpec(t *testing.T) {
 	artifact := &latest.KanikoArtifact{
 		Image:          "image",
 		DockerfilePath: "Dockerfile",
@@ -183,7 +183,7 @@ func TestPodSpec(t *testing.T) {
 			},
 		},
 	}
-	pod, _ := builder.podSpec(artifact, "tag")
+	pod, _ := builder.kanikoPodSpec(artifact, "tag")
 
 	expectedPod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
