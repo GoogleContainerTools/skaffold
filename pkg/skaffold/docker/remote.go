@@ -19,6 +19,7 @@ package docker
 import (
 	"fmt"
 
+	"github.com/buildpacks/lifecycle/auth"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -129,4 +130,8 @@ func IsInsecure(reg string, insecureRegistries map[string]bool) bool {
 
 func getRemoteImage(ref name.Reference) (v1.Image, error) {
 	return remote.Image(ref, remote.WithAuthFromKeychain(masterKeychain))
+}
+
+func BuildEnvVar(tag string) (string, error) {
+	return auth.BuildEnvVar(masterKeychain, tag)
 }

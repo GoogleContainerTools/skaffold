@@ -185,6 +185,12 @@ func TestRunGCPOnly(t *testing.T) {
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
 		},
+		{
+			description: "buildpacks in Cluster",
+			dir:         "examples/buildpacks",
+			args:        []string{"-p", "k8s"},
+			deployments: []string{"web"},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {

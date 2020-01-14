@@ -104,6 +104,62 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 	return pod, nil
 }
 
+func (b *Builder) buildpacksPodSpec(artifact *latest.BuildpackArtifact, tag string) (*v1.Pod, error) {
+	authEnv, err := docker.BuildEnvVar(tag)
+	if err != nil {
+		return nil, err
+	}
+
+	workspace := v1.VolumeMount{
+		Name:      "workspace",
+		MountPath: "/workspace",
+	}
+
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			GenerateName: "kaniko-",
+			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
+			Namespace:    b.ClusterDetails.Namespace,
+		},
+		Spec: v1.PodSpec{
+			InitContainers: []v1.Container{
+				{
+					Name:            "upload",
+					Image:           artifact.Builder,
+					ImagePullPolicy: v1.PullIfNotPresent,
+					Command:         []string{"sh", "-c", "while [ ! -f /tmp/complete ]; do sleep 1; done"},
+					VolumeMounts:    []v1.VolumeMount{workspace},
+					Resources:       resourceRequirements(b.ClusterDetails.Resources),
+				},
+			},
+			Containers: []v1.Container{{
+				Name:            constants.DefaultKanikoContainerName,
+				Image:           artifact.Builder,
+				ImagePullPolicy: v1.PullIfNotPresent,
+				Command:         []string{"sh", "-c", "/lifecycle/detector && /lifecycle/builder && /lifecycle/exporter " + tag},
+				WorkingDir:      "/workspace",
+				VolumeMounts:    []v1.VolumeMount{workspace},
+				Resources:       resourceRequirements(b.ClusterDetails.Resources),
+				Env: []v1.EnvVar{{
+					Name:  "CNB_REGISTRY_AUTH",
+					Value: authEnv,
+				}},
+			}},
+			RestartPolicy: v1.RestartPolicyNever,
+			Volumes: []v1.Volume{
+				{
+					Name: workspace.Name,
+					VolumeSource: v1.VolumeSource{
+						EmptyDir: &v1.EmptyDirVolumeSource{},
+					},
+				},
+			},
+		},
+	}
+
+	return pod, nil
+}
+
 func env(artifact *latest.KanikoArtifact, httpProxy, httpsProxy string) []v1.EnvVar {
 	env := []v1.EnvVar{{
 		Name:  "GOOGLE_APPLICATION_CREDENTIALS",

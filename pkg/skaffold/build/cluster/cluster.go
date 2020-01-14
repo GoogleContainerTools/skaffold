@@ -64,6 +64,9 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 	case artifact.CustomArtifact != nil:
 		return custom.NewArtifactBuilder(nil, b.insecureRegistries, true, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
 
+	case artifact.BuildpackArtifact != nil:
+		return b.buildWithBuildpacks(ctx, out, artifact.Workspace, artifact.BuildpackArtifact, tag)
+
 	default:
 		return "", fmt.Errorf("unsupported artifact type: %+v", artifact.ArtifactType)
 	}
