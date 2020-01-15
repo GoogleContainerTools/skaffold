@@ -86,6 +86,16 @@ func TestRun(t *testing.T) {
 			args:        []string{"-p", "minikube-profile"},
 			pods:        []string{"hello-service"},
 		},
+		{
+			description: "buildpacks",
+			dir:         "examples/buildpacks",
+			deployments: []string{"web"},
+		},
+		{
+			description: "custom builder",
+			dir:         "examples/custom",
+			pods:        []string{"getting-started"},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -165,18 +175,6 @@ func TestRunGCPOnly(t *testing.T) {
 			dir:         "examples/jib-gradle",
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
-		},
-		// Don't run on kind because of this issue: https://github.com/buildpack/pack/issues/277
-		{
-			description: "buildpacks",
-			dir:         "examples/buildpacks",
-			deployments: []string{"web"},
-		},
-		// Don't run on kind because of this issue: https://github.com/buildpack/pack/issues/277
-		{
-			description: "custom builder",
-			dir:         "examples/custom",
-			pods:        []string{"getting-started"},
 		},
 		{
 			description: "buildpacks on Cloud Build",
