@@ -36,7 +36,6 @@ func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error)
 }
 
 type labelsSetter struct {
-	ReplaceAny
 	labels map[string]string
 }
 
@@ -46,34 +45,34 @@ func newLabelsSetter(labels map[string]string) *labelsSetter {
 	}
 }
 
-func (r *labelsSetter) Matches(key interface{}) bool {
-	return key == "metadata"
-}
-
-func (r *labelsSetter) NewValue(old interface{}) (bool, interface{}) {
-	if len(r.labels) == 0 {
-		return false, nil
+func (r *labelsSetter) Visit(o map[interface{}]interface{}, k interface{}, v interface{}) bool {
+	if k != "metadata" {
+		return true
 	}
 
-	metadata, ok := old.(map[interface{}]interface{})
+	if len(r.labels) == 0 {
+		return false
+	}
+
+	metadata, ok := v.(map[interface{}]interface{})
 	if !ok {
-		return false, nil
+		return true
 	}
 
 	l, present := metadata["labels"]
 	if !present {
 		metadata["labels"] = r.labels
-		return true, metadata
+		return false
 	}
 
 	labels, ok := l.(map[interface{}]interface{})
 	if !ok {
-		return false, nil
+		return true
 	}
 
 	for k, v := range r.labels {
 		labels[k] = v
 	}
 
-	return true, metadata
+	return false
 }
