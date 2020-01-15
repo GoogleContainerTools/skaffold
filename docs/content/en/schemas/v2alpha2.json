@@ -595,8 +595,8 @@
         },
         "pullSecretName": {
           "type": "string",
-          "description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key `kaniko-secret`.",
-          "x-intellij-html-description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key <code>kaniko-secret</code>.",
+          "description": "name of the Kubernetes secret for pulling base images and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key `kaniko-secret`.",
+          "x-intellij-html-description": "name of the Kubernetes secret for pulling base images and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key <code>kaniko-secret</code>.",
           "default": "kaniko-secret"
         },
         "resources": {

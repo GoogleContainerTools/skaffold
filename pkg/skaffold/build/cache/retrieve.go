@@ -121,7 +121,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 	bRes, err := buildAndTest(ctx, out, tags, needToBuild)
 	if err != nil {
-		return nil, errors.Wrap(err, "build failed")
+		return nil, err
 	}
 
 	if err := c.addArtifacts(ctx, bRes, hashByName); err != nil {

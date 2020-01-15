@@ -52,7 +52,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	digest, err := b.runBuildForArtifact(ctx, out, artifact, tag)
 	if err != nil {
-		return "", errors.Wrap(err, "build artifact")
+		return "", err
 	}
 
 	return build.TagWithDigest(tag, digest), nil
@@ -61,13 +61,13 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	switch {
 	case artifact.KanikoArtifact != nil:
-		return b.runKanikoBuild(ctx, out, artifact, tag)
+		return b.buildWithKaniko(ctx, out, artifact.Workspace, artifact.KanikoArtifact, tag)
 
 	case artifact.CustomArtifact != nil:
 		return custom.NewArtifactBuilder(nil, b.insecureRegistries, true, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
 
 	default:
-		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
+		return "", fmt.Errorf("unsupported artifact type: %+v", artifact.ArtifactType)
 	}
 }
 

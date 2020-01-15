@@ -39,7 +39,7 @@ func Set(c *latest.SkaffoldConfig) error {
 	for _, a := range c.Build.Artifacts {
 		setDefaultWorkspace(a)
 
-		if c.Build.Cluster != nil && a.CustomArtifact == nil {
+		if c.Build.Cluster != nil && a.CustomArtifact == nil && a.BuildpackArtifact == nil {
 			defaultToKanikoArtifact(a)
 		} else {
 			defaultToDockerArtifact(a)
