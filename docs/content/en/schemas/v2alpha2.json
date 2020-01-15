@@ -595,8 +595,8 @@
         },
         "pullSecretName": {
           "type": "string",
-          "description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key `kaniko-secret`.",
-          "x-intellij-html-description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key <code>kaniko-secret</code>.",
+          "description": "name of the Kubernetes secret for pulling base images and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key `kaniko-secret`.",
+          "x-intellij-html-description": "name of the Kubernetes secret for pulling base images and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key <code>kaniko-secret</code>.",
           "default": "kaniko-secret"
         },
         "resources": {
@@ -951,6 +951,12 @@
           "x-intellij-html-description": "image that runs a Maven build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
           "default": "gcr.io/cloud-builders/mvn"
         },
+        "packImage": {
+          "type": "string",
+          "description": "image that runs a Cloud Native Buildpacks build. See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).",
+          "x-intellij-html-description": "image that runs a Cloud Native Buildpacks build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
+          "default": "gcr.io/k8s-skaffold/pack"
+        },
         "projectId": {
           "type": "string",
           "description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name `gcr.io/myproject/image`, Skaffold will use the `myproject` GCP project.",
@@ -971,6 +977,7 @@
         "kanikoImage",
         "mavenImage",
         "gradleImage",
+        "packImage",
         "concurrency"
       ],
       "additionalProperties": false,
@@ -1361,11 +1368,6 @@
             "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"'{{.ENV_VARIABLE}}'\"}"
           ]
         },
-        "buildContext": {
-          "$ref": "#/definitions/KanikoBuildContext",
-          "description": "where the build context for this artifact resides.",
-          "x-intellij-html-description": "where the build context for this artifact resides."
-        },
         "cache": {
           "$ref": "#/definitions/KanikoCache",
           "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
@@ -1398,6 +1400,11 @@
           "description": "Docker image used by the Kaniko pod. Defaults to the latest released version of `gcr.io/kaniko-project/executor`.",
           "x-intellij-html-description": "Docker image used by the Kaniko pod. Defaults to the latest released version of <code>gcr.io/kaniko-project/executor</code>."
         },
+        "initImage": {
+          "type": "string",
+          "description": "image used to run init container which mounts kaniko context.",
+          "x-intellij-html-description": "image used to run init container which mounts kaniko context."
+        },
         "reproducible": {
           "type": "boolean",
           "description": "used to strip timestamps out of the built image.",
@@ -1422,7 +1429,7 @@
         "target",
         "buildArgs",
         "env",
-        "buildContext",
+        "initImage",
         "image",
         "cache",
         "reproducible",
@@ -1431,27 +1438,6 @@
       "additionalProperties": false,
       "description": "describes an artifact built from a Dockerfile, with kaniko.",
       "x-intellij-html-description": "describes an artifact built from a Dockerfile, with kaniko."
-    },
-    "KanikoBuildContext": {
-      "properties": {
-        "gcsBucket": {
-          "type": "string",
-          "description": "GCS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources.",
-          "x-intellij-html-description": "GCS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources."
-        },
-        "localDir": {
-          "$ref": "#/definitions/LocalDir",
-          "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
-          "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
-        }
-      },
-      "preferredOrder": [
-        "gcsBucket",
-        "localDir"
-      ],
-      "additionalProperties": false,
-      "description": "contains the different fields available to specify a Kaniko build context.",
-      "x-intellij-html-description": "contains the different fields available to specify a Kaniko build context."
     },
     "KanikoCache": {
       "properties": {
@@ -1582,6 +1568,11 @@
     },
     "LocalBuild": {
       "properties": {
+        "concurrency": {
+          "type": "integer",
+          "description": "how many artifacts can be built concurrently. 0 means \"no-limit\" Defaults to 1.",
+          "x-intellij-html-description": "how many artifacts can be built concurrently. 0 means &quot;no-limit&quot; Defaults to 1."
+        },
         "push": {
           "type": "boolean",
           "description": "should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster.",
@@ -1603,26 +1594,12 @@
       "preferredOrder": [
         "push",
         "useDockerCLI",
-        "useBuildkit"
+        "useBuildkit",
+        "concurrency"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",
       "x-intellij-html-description": "<em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository."
-    },
-    "LocalDir": {
-      "properties": {
-        "initImage": {
-          "type": "string",
-          "description": "image used to run init container which mounts kaniko context.",
-          "x-intellij-html-description": "image used to run init container which mounts kaniko context."
-        }
-      },
-      "preferredOrder": [
-        "initImage"
-      ],
-      "additionalProperties": false,
-      "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
-      "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
     },
     "Metadata": {
       "properties": {

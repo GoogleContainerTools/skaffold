@@ -288,9 +288,12 @@ func detectBuilders(enableJibInit, enableBuildpackInit bool, path string) ([]Ini
 	}
 
 	// Check for Dockerfile
-	if docker.Validate(path) {
-		results := []InitBuilder{docker.ArtifactConfig{File: path}}
-		return results, true
+	base := filepath.Base(path)
+	if strings.Contains(strings.ToLower(base), "dockerfile") {
+		if docker.Validate(path) {
+			results := []InitBuilder{docker.ArtifactConfig{File: path}}
+			return results, true
+		}
 	}
 
 	// TODO: Remove backwards compatibility if statement (not entire block)

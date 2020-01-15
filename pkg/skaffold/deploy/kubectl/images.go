@@ -33,29 +33,29 @@ func (l *ManifestList) GetImages() ([]build.Artifact, error) {
 }
 
 type imageSaver struct {
-	ReplaceAny
 	Images []build.Artifact
 }
 
-func (is *imageSaver) Matches(key interface{}) bool {
-	return key == "image"
-}
+func (is *imageSaver) Visit(o map[interface{}]interface{}, k interface{}, v interface{}) bool {
+	if k != "image" {
+		return true
+	}
 
-func (is *imageSaver) NewValue(old interface{}) (bool, interface{}) {
-	image, ok := old.(string)
+	image, ok := v.(string)
 	if !ok {
-		return false, nil
+		return true
 	}
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
-		return false, err
+		warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
+		return false
 	}
 
 	is.Images = append(is.Images, build.Artifact{
 		Tag:       image,
 		ImageName: parsed.BaseName,
 	})
-	return false, nil
+	return false
 }
 
 // ReplaceImages replaces image names in a list of manifests.
@@ -74,7 +74,6 @@ func (l *ManifestList) ReplaceImages(builds []build.Artifact) (ManifestList, err
 }
 
 type imageReplacer struct {
-	ReplaceAny
 	tagsByImageName map[string]string
 	found           map[string]bool
 }
@@ -91,37 +90,32 @@ func newImageReplacer(builds []build.Artifact) *imageReplacer {
 	}
 }
 
-func (r *imageReplacer) Matches(key interface{}) bool {
-	return key == "image"
-}
-
-func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
-	image, ok := old.(string)
-	if !ok {
-		return false, nil
+func (r *imageReplacer) Visit(o map[interface{}]interface{}, k interface{}, v interface{}) bool {
+	if k != "image" {
+		return true
 	}
 
-	return r.parseAndReplace(image)
-}
-
-func (r *imageReplacer) parseAndReplace(image string) (bool, interface{}) {
+	image, ok := v.(string)
+	if !ok {
+		return true
+	}
 	parsed, err := docker.ParseReference(image)
 	if err != nil {
 		warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
-		return false, nil
+		return false
 	}
 
 	// Leave images referenced by digest as they are
 	if parsed.Digest != "" {
-		return false, nil
+		return false
 	}
 
 	if tag, present := r.tagsByImageName[parsed.BaseName]; present {
+		// Apply new image tag
 		r.found[parsed.BaseName] = true
-		return true, tag
+		o[k] = tag
 	}
-
-	return false, nil
+	return false
 }
 
 func (r *imageReplacer) Check() {

@@ -13,9 +13,7 @@ profiles:
     artifacts:
     - image: gcr.io/first-week-244218/getting-started-pipeline
       context: .
-      kaniko:
-        buildContext:
-          gcsBucket: skaffold-kaniko
+      kaniko: {}
     tagPolicy:
       gitCommit: {}
     cluster:

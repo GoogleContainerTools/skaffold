@@ -5,8 +5,6 @@ build:
     - image: gcr.io/k8s-skaffold/skaffold-example
       kaniko:
         target: runner
-        buildContext:
-          localDir: {}
         cache: {}
   cluster:
     pullSecretName: e2esecret

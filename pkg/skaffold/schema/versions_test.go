@@ -74,24 +74,20 @@ deploy:
    - dep.yaml
    - svc.yaml
 `
-	minimalKanikoConfig = `
+	minimalClusterConfig = `
 build:
   artifacts:
   - image: image1
     context: ./examples/app1
-    kaniko:
-      buildContext:
-        gcsBucket: demo
+    kaniko: {}
   cluster: {}
 `
-	completeKanikoConfig = `
+	completeClusterConfig = `
 build:
   artifacts:
   - image: image1
     context: ./examples/app1
-    kaniko:
-      buildContext:
-        localDir: {}
+    kaniko: {}
   cluster:
     pullSecret: /secret.json
     pullSecretName: secret-name
@@ -170,25 +166,25 @@ func TestParseConfig(t *testing.T) {
 		},
 		{
 			apiVersion:  latest.Version,
-			description: "Minimal Kaniko config",
-			config:      minimalKanikoConfig,
+			description: "Minimal Cluster config",
+			config:      minimalClusterConfig,
 			expected: config(
 				withClusterBuild("", "/secret", "default", "", "20m",
 					withGitTagger(),
-					withKanikoArtifact("image1", "./examples/app1", "Dockerfile", "demo"),
+					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{
 			apiVersion:  latest.Version,
-			description: "Complete Kaniko config",
-			config:      completeKanikoConfig,
+			description: "Complete Cluster config",
+			config:      completeClusterConfig,
 			expected: config(
 				withClusterBuild("secret-name", "/secret", "nskaniko", "/secret.json", "120m",
 					withGitTagger(),
 					withDockerConfig("config-name", "/kaniko/.docker"),
-					withKanikoArtifact("image1", "./examples/app1", "Dockerfile", ""),
+					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
 				),
 				withKubectlDeploy("k8s/*.yaml"),
 			),
@@ -260,7 +256,7 @@ func config(ops ...func(*latest.SkaffoldConfig)) *latest.SkaffoldConfig {
 
 func withLocalBuild(ops ...func(*latest.BuildConfig)) func(*latest.SkaffoldConfig) {
 	return func(cfg *latest.SkaffoldConfig) {
-		b := latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{}}}
+		b := latest.BuildConfig{BuildType: latest.BuildType{LocalBuild: &latest.LocalBuild{Concurrency: &constants.DefaultLocalConcurrency}}}
 		for _, op := range ops {
 			op(&b)
 		}
@@ -276,6 +272,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 			MavenImage:  "gcr.io/cloud-builders/mvn",
 			GradleImage: "gcr.io/cloud-builders/gradle",
 			KanikoImage: "gcr.io/kaniko-project/executor",
+			PackImage:   "gcr.io/k8s-skaffold/pack",
 		}}}
 		for _, op := range ops {
 			op(&b)
@@ -359,24 +356,15 @@ func withBazelArtifact(image, workspace, target string) func(*latest.BuildConfig
 	}
 }
 
-func withKanikoArtifact(image, workspace, dockerfile, bucket string) func(*latest.BuildConfig) {
+func withKanikoArtifact(image, workspace, dockerfile string) func(*latest.BuildConfig) {
 	return func(cfg *latest.BuildConfig) {
-		bc := &latest.KanikoBuildContext{}
-		if bucket == "" {
-			bc.LocalDir = &latest.LocalDir{
-				InitImage: constants.DefaultBusyboxImage,
-			}
-		} else {
-			bc.GCSBucket = bucket
-		}
-
 		cfg.Artifacts = append(cfg.Artifacts, &latest.Artifact{
 			ImageName: image,
 			Workspace: workspace,
 			ArtifactType: latest.ArtifactType{
 				KanikoArtifact: &latest.KanikoArtifact{
 					DockerfilePath: dockerfile,
-					BuildContext:   bc,
+					InitImage:      constants.DefaultBusyboxImage,
 					Image:          constants.DefaultKanikoImage,
 				},
 			},

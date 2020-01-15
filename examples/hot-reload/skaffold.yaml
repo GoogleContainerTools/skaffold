@@ -5,14 +5,10 @@ build:
   - image: gcr.io/k8s-skaffold/node-example
     context: node
     sync:
-      manual:
-      - src: 'src/**/*.js'
-        dest: .
-        strip: src/
+      infer:
+      - 'src/**/*.js'
   - image: gcr.io/k8s-skaffold/python-reload
     context: python
     sync:
-      manual:
-      - src: 'src/**/*.py'
-        dest: .
-        strip: src/
+      infer:
+      - 'src/**/*.py'

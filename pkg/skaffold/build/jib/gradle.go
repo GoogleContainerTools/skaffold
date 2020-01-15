@@ -30,6 +30,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+// For testing
+var (
+	gradleArgsFunc      = gradleArgs
+	gradleBuildArgsFunc = gradleBuildArgs
+)
+
 // Skaffold-Jib depends on functionality introduced with Jib-Gradle 1.4.0
 const MinimumJibGradleVersion = "1.4.0"
 
@@ -37,7 +43,7 @@ const MinimumJibGradleVersion = "1.4.0"
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
 
 func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateGradleArgs("jibDockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateGradleBuildArgs("jibDockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -46,7 +52,7 @@ func (b *Builder) buildJibGradleToDocker(ctx context.Context, out io.Writer, wor
 }
 
 func (b *Builder) buildJibGradleToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateGradleArgs("jib", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateGradleBuildArgs("jib", tag, artifact, b.skipTests, b.insecureRegistries)
 	if err := b.runGradleCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -72,7 +78,7 @@ func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace
 // All paths are absolute.
 func getDependenciesGradle(ctx context.Context, workspace string, a *latest.JibArtifact) ([]string, error) {
 	cmd := getCommandGradle(ctx, workspace, a)
-	deps, err := getDependencies(workspace, cmd, a.Project)
+	deps, err := getDependencies(workspace, cmd, a)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jib-gradle dependencies")
 	}
@@ -81,23 +87,34 @@ func getDependenciesGradle(ctx context.Context, workspace string, a *latest.JibA
 }
 
 func getCommandGradle(ctx context.Context, workspace string, a *latest.JibArtifact) exec.Cmd {
-	args := append(gradleCommand(a, "_jibSkaffoldFilesV2"), "-q")
+	args := append(gradleArgsFunc(a, "_jibSkaffoldFilesV2"), "-q")
 	return GradleCommand.CreateCommand(ctx, workspace, args)
 }
 
-// GenerateGradleArgs generates the arguments to Gradle for building the project as an image.
-func GenerateGradleArgs(task string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
-	// disable jib's rich progress footer; we could use `--console=plain`
-	// but it also disables colour which can be helpful
-	args := []string{"-Djib.console=plain"}
-	args = append(args, gradleCommand(a, task)...)
+func getSyncMapCommandGradle(ctx context.Context, workspace string, a *latest.JibArtifact) *exec.Cmd {
+	cmd := GradleCommand.CreateCommand(ctx, workspace, gradleBuildArgsFunc("_jibSkaffoldSyncMap", a, true))
+	return &cmd
+}
 
+// GenerateGradleBuildArgs generates the arguments to Gradle for building the project as an image.
+func GenerateGradleBuildArgs(task string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
+	args := gradleBuildArgsFunc(task, a, skipTests)
 	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
 	}
 
 	args = append(args, "--image="+imageName)
+	return args
+}
+
+// Do not use directly, use gradleBuildArgsFunc
+func gradleBuildArgs(task string, a *latest.JibArtifact, skipTests bool) []string {
+	// disable jib's rich progress footer; we could use `--console=plain`
+	// but it also disables colour which can be helpful
+	args := []string{"-Djib.console=plain"}
+	args = append(args, gradleArgsFunc(a, task)...)
+
 	if skipTests {
 		args = append(args, "-x", "test")
 	}
@@ -105,7 +122,8 @@ func GenerateGradleArgs(task string, imageName string, a *latest.JibArtifact, sk
 	return args
 }
 
-func gradleCommand(a *latest.JibArtifact, task string) []string {
+// Do not use directly, use gradleArgsFunc
+func gradleArgs(a *latest.JibArtifact, task string) []string {
 	args := []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion}
 	if a.Project == "" {
 		return append(args, ":"+task)

@@ -49,7 +49,7 @@ RUN chmod +x container-structure-test
 
 # Download kind
 FROM alpine:3.10 as download-kind
-ENV KIND_VERSION v0.6.1
+ENV KIND_VERSION v0.7.0
 ENV KIND_URL https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64
 RUN wget -O kind "${KIND_URL}"
 RUN chmod +x kind
@@ -68,13 +68,6 @@ ENV BAZEL_URL https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERS
 RUN wget -O bazel "${BAZEL_URL}"
 RUN chmod +x bazel
 
-# Download pack
-FROM alpine:3.10 as download-pack
-ENV PACK_VERSION 0.6.0
-ENV PACK_URL https://github.com/buildpack/pack/releases/download/v${PACK_VERSION}/pack-v${PACK_VERSION}-linux.tgz
-RUN wget -O pack.tgz "${PACK_URL}"
-RUN tar -zxf pack.tgz
-
 FROM gcr.io/gcp-runtimes/ubuntu_16_0_4 as runtime_deps
 
 RUN apt-get update && \
@@ -90,7 +83,6 @@ COPY --from=download-kompose kompose /usr/local/bin/
 COPY --from=download-container-structure-test container-structure-test /usr/local/bin/
 COPY --from=download-bazel bazel /usr/local/bin/
 COPY --from=download-gcloud google-cloud-sdk/ /google-cloud-sdk/
-COPY --from=download-pack pack /usr/local/bin/
 COPY --from=download-kind kind /usr/local/bin/
 
 # Finish installation of bazel

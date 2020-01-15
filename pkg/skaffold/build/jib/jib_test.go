@@ -104,7 +104,7 @@ func TestGetDependencies(t *testing.T) {
 				test.stdout,
 			))
 
-			results, err := getDependencies(tmpDir.Root(), exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, util.RandomID())
+			results, err := getDependencies(tmpDir.Root(), exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}, &latest.JibArtifact{Project: util.RandomID()})
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedDeps, results)
 		})
@@ -123,10 +123,10 @@ func TestGetUpdatedDependencies(t *testing.T) {
 		)
 
 		listCmd := exec.Cmd{Args: []string{"ignored"}, Dir: tmpDir.Root()}
-		projectID := util.RandomID()
+		artifact := &latest.JibArtifact{Project: util.RandomID()}
 
 		// List dependencies
-		_, err := getDependencies(tmpDir.Root(), listCmd, projectID)
+		_, err := getDependencies(tmpDir.Root(), listCmd, artifact)
 		t.CheckNoError(err)
 
 		// Create new build definition files
@@ -135,7 +135,7 @@ func TestGetUpdatedDependencies(t *testing.T) {
 			Write("settings.gradle", "")
 
 		// Update dependencies
-		_, err = getDependencies(tmpDir.Root(), listCmd, projectID)
+		_, err = getDependencies(tmpDir.Root(), listCmd, artifact)
 		t.CheckNoError(err)
 	})
 }
@@ -191,5 +191,31 @@ func TestDeterminePluginType(t *testing.T) {
 			PluginType, err := DeterminePluginType(buildDir.Root(), test.artifact)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.PluginType, PluginType)
 		})
+	}
+}
+
+func TestGetProjectKey(t *testing.T) {
+	tests := []struct {
+		description string
+		artifact    *latest.JibArtifact
+		workspace   string
+		expected    projectKey
+	}{
+		{
+			"empty project",
+			&latest.JibArtifact{},
+			"dir",
+			projectKey("dir+"),
+		},
+		{
+			"non-empty project",
+			&latest.JibArtifact{Project: "project"},
+			"dir",
+			projectKey("dir+project"),
+		},
+	}
+	for _, test := range tests {
+		projectKey := getProjectKey(test.workspace, test.artifact)
+		testutil.CheckDeepEqual(t, test.expected, projectKey)
 	}
 }

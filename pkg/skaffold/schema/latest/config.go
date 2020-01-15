@@ -196,6 +196,10 @@ type LocalBuild struct {
 
 	// UseBuildkit use BuildKit to build Docker images.
 	UseBuildkit bool `yaml:"useBuildkit,omitempty"`
+
+	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
+	// Defaults to 1.
+	Concurrency *int `yaml:"concurrency,omitempty"`
 }
 
 // GoogleCloudBuild *beta* describes how to do a remote build on
@@ -242,26 +246,14 @@ type GoogleCloudBuild struct {
 	// Defaults to `gcr.io/cloud-builders/gradle`.
 	GradleImage string `yaml:"gradleImage,omitempty"`
 
+	// PackImage is the image that runs a Cloud Native Buildpacks build.
+	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
+	// Defaults to `gcr.io/k8s-skaffold/pack`.
+	PackImage string `yaml:"packImage,omitempty"`
+
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
 	// Defaults to 0.
 	Concurrency int `yaml:"concurrency,omitempty"`
-}
-
-// LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
-type LocalDir struct {
-	// InitImage is the image used to run init container which mounts kaniko context.
-	InitImage string `yaml:"initImage,omitempty"`
-}
-
-// KanikoBuildContext contains the different fields available to specify
-// a Kaniko build context.
-type KanikoBuildContext struct {
-	// GCSBucket is the GCS bucket to which sources are uploaded.
-	// Kaniko will need access to that bucket to download the sources.
-	GCSBucket string `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext"`
-
-	// LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
-	LocalDir *LocalDir `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext"`
 }
 
 // KanikoCache configures Kaniko caching. If a cache is specified, Kaniko will
@@ -286,9 +278,9 @@ type ClusterDetails struct {
 	// PullSecret is the path to the Google Cloud service account secret key file.
 	PullSecret string `yaml:"pullSecret,omitempty"`
 
-	// PullSecretName is the name of the Kubernetes secret for pulling the files
-	// from the build context and pushing the final image. If given, the secret needs to
-	// contain the Google Cloud service account secret key under the key `kaniko-secret`.
+	// PullSecretName is the name of the Kubernetes secret for pulling base images
+	// and pushing the final image. If given, the secret needs to contain the Google Cloud
+	// service account secret key under the key `kaniko-secret`.
 	// Defaults to `kaniko-secret`.
 	PullSecretName string `yaml:"pullSecretName,omitempty"`
 
@@ -771,8 +763,8 @@ type KanikoArtifact struct {
 	// Env are environment variables passed to the kaniko pod.
 	Env []v1.EnvVar `yaml:"env,omitempty"`
 
-	// BuildContext is where the build context for this artifact resides.
-	BuildContext *KanikoBuildContext `yaml:"buildContext,omitempty"`
+	// InitImage is the image used to run init container which mounts kaniko context.
+	InitImage string `yaml:"initImage,omitempty"`
 
 	// Image is the Docker image used by the Kaniko pod.
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.

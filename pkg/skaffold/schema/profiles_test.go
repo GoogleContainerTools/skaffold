@@ -140,6 +140,7 @@ func TestApplyProfiles(t *testing.T) {
 									MavenImage:  "gcr.io/cloud-builders/mvn",
 									GradleImage: "gcr.io/cloud-builders/gradle",
 									KanikoImage: "gcr.io/kaniko-project/executor",
+									PackImage:   "gcr.io/k8s-skaffold/pack",
 								},
 							},
 						},

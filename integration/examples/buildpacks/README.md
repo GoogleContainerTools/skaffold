@@ -1,4 +1,4 @@
-### Example: kaniko
+### Example: buildpacks (Go)
 
 This is an example demonstrating:
 

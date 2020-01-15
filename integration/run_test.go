@@ -91,6 +91,11 @@ func TestRun(t *testing.T) {
 			dir:         "testdata/deploy-multiple",
 			pods:        []string{"deploy-kubectl", "deploy-kustomize"},
 		},
+		{
+			description: "custom builder",
+			dir:         "examples/custom",
+			pods:        []string{"getting-started"},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -145,17 +150,12 @@ func TestRunGCPOnly(t *testing.T) {
 			pods:        []string{"getting-started-kaniko"},
 		},
 		{
-			description: "kaniko local",
-			dir:         "examples/kaniko-local",
-			pods:        []string{"getting-started-kaniko"},
-		},
-		{
-			description: "kaniko local with target",
+			description: "kaniko with target",
 			dir:         "testdata/kaniko-target",
 			pods:        []string{"getting-started-kaniko"},
 		},
 		{
-			description: "kaniko local with sub folder",
+			description: "kaniko with sub folder",
 			dir:         "testdata/kaniko-sub-folder",
 			pods:        []string{"getting-started-kaniko"},
 		},
@@ -183,11 +183,6 @@ func TestRunGCPOnly(t *testing.T) {
 			deployments: []string{"web"},
 		},
 		// Don't run on kind because of this issue: https://github.com/buildpack/pack/issues/277
-		{
-			description: "custom builder",
-			dir:         "examples/custom",
-			pods:        []string{"getting-started"},
-		},
 		{
 			description: "buildpacks on Cloud Build",
 			dir:         "examples/buildpacks",

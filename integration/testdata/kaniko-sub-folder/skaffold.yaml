@@ -4,8 +4,6 @@ build:
   artifacts:
     - image: gcr.io/k8s-skaffold/skaffold-example-sub
       context: sub
-      kaniko:
-        buildContext:
-          localDir: {}
+      kaniko: {}
   cluster:
     pullSecretName: e2esecret

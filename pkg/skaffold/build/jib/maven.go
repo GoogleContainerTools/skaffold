@@ -29,6 +29,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+// For testing
+var (
+	mavenArgsFunc      = mavenArgs
+	mavenBuildArgsFunc = mavenBuildArgs
+)
+
 // Skaffold-Jib depends on functionality introduced with Jib-Maven 1.4.0
 const MinimumJibMavenVersion = "1.4.0"
 
@@ -36,7 +42,7 @@ const MinimumJibMavenVersion = "1.4.0"
 var MavenCommand = util.CommandWrapper{Executable: "mvn", Wrapper: "mvnw"}
 
 func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateMavenArgs("dockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateMavenBuildArgs("dockerBuild", tag, artifact, b.skipTests, b.insecureRegistries)
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -45,7 +51,7 @@ func (b *Builder) buildJibMavenToDocker(ctx context.Context, out io.Writer, work
 }
 
 func (b *Builder) buildJibMavenToRegistry(ctx context.Context, out io.Writer, workspace string, artifact *latest.JibArtifact, tag string) (string, error) {
-	args := GenerateMavenArgs("build", tag, artifact, b.skipTests, b.insecureRegistries)
+	args := GenerateMavenBuildArgs("build", tag, artifact, b.skipTests, b.insecureRegistries)
 	if err := b.runMavenCommand(ctx, out, workspace, args); err != nil {
 		return "", err
 	}
@@ -70,7 +76,7 @@ func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace 
 // getDependenciesMaven finds the source dependencies for the given jib-maven artifact.
 // All paths are absolute.
 func getDependenciesMaven(ctx context.Context, workspace string, a *latest.JibArtifact) ([]string, error) {
-	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a), a.Project)
+	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a), a)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting jib-maven dependencies")
 	}
@@ -79,18 +85,35 @@ func getDependenciesMaven(ctx context.Context, workspace string, a *latest.JibAr
 }
 
 func getCommandMaven(ctx context.Context, workspace string, a *latest.JibArtifact) exec.Cmd {
-	args := mavenArgs(a)
+	args := mavenArgsFunc(a)
 	args = append(args, "jib:_skaffold-files-v2", "--quiet")
 
 	return MavenCommand.CreateCommand(ctx, workspace, args)
 }
 
-// GenerateMavenArgs generates the arguments to Maven for building the project as an image.
-func GenerateMavenArgs(goal string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
+func getSyncMapCommandMaven(ctx context.Context, workspace string, a *latest.JibArtifact) *exec.Cmd {
+	cmd := MavenCommand.CreateCommand(ctx, workspace, mavenBuildArgsFunc("_skaffold-sync-map", a, true))
+	return &cmd
+}
+
+// GenerateMavenBuildArgs generates the arguments to Maven for building the project as an image.
+func GenerateMavenBuildArgs(goal string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
+	args := mavenBuildArgsFunc(goal, a, skipTests)
+	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
+		// jib doesn't support marking specific registries as insecure
+		args = append(args, "-Djib.allowInsecureRegistries=true")
+	}
+	args = append(args, "-Dimage="+imageName)
+
+	return args
+}
+
+// Do not use directly, use mavenBuildArgsFunc
+func mavenBuildArgs(goal string, a *latest.JibArtifact, skipTests bool) []string {
 	// disable jib's rich progress footer on builds; we could use --batch-mode
 	// but it also disables colour which can be helpful
 	args := []string{"-Djib.console=plain"}
-	args = append(args, mavenArgs(a)...)
+	args = append(args, mavenArgsFunc(a)...)
 
 	if skipTests {
 		args = append(args, "-DskipTests=true")
@@ -103,16 +126,10 @@ func GenerateMavenArgs(goal string, imageName string, a *latest.JibArtifact, ski
 		// multi-module project: instruct jib to containerize only the given module
 		args = append(args, "package", "jib:"+goal, "-Djib.containerize="+a.Project)
 	}
-
-	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
-		// jib doesn't support marking specific registries as insecure
-		args = append(args, "-Djib.allowInsecureRegistries=true")
-	}
-	args = append(args, "-Dimage="+imageName)
-
 	return args
 }
 
+// Do not use directly, use mavenArgsFunc
 func mavenArgs(a *latest.JibArtifact) []string {
 	args := []string{"jib:_skaffold-fail-if-jib-out-of-date", "-Djib.requiredVersion=" + MinimumJibMavenVersion}
 	args = append(args, a.Flags...)
