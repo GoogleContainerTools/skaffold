@@ -85,6 +85,20 @@ var testDeployConfigTemplated = latest.HelmDeploy{
 	}},
 }
 
+var testDeployConfigValuesFilesTemplated = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+		Values: map[string]string{
+			"image": "skaffold-helm",
+		},
+		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+		ValuesFiles: []string{
+			"/some/file-{{.FOO}}.yaml",
+		},
+	}},
+}
+
 var testDeployRecreatePodsConfig = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
@@ -496,6 +510,16 @@ func TestHelmDeploy(t *testing.T) {
 				},
 			},
 			runContext: makeRunContext(testDeployConfigTemplated, false),
+			builds:     testBuilds,
+		},
+		{
+			description: "deploy with valuesFiles templated",
+			commands: &MockHelm{
+				upgradeMatcher: func(cmd *exec.Cmd) bool {
+					return util.StrSliceContains(cmd.Args, "/some/file-FOOBAR.yaml")
+				},
+			},
+			runContext: makeRunContext(testDeployConfigValuesFilesTemplated, false),
 			builds:     testBuilds,
 		},
 		{
