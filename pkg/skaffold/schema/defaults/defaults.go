@@ -28,6 +28,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
+const (
+	defaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
+	defaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
+	defaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
+	defaultCloudBuildKanikoImage = "gcr.io/kaniko-project/executor"
+	defaultCloudBuildPackImage   = "gcr.io/k8s-skaffold/pack"
+)
+
 // Set makes sure default values are set on a SkaffoldConfig.
 func Set(c *latest.SkaffoldConfig) error {
 	defaultToLocalBuild(c)
@@ -131,23 +139,23 @@ func withCloudBuildConfig(c *latest.SkaffoldConfig, operations ...func(*latest.G
 }
 
 func setDefaultCloudBuildDockerImage(gcb *latest.GoogleCloudBuild) {
-	gcb.DockerImage = valueOrDefault(gcb.DockerImage, constants.DefaultCloudBuildDockerImage)
+	gcb.DockerImage = valueOrDefault(gcb.DockerImage, defaultCloudBuildDockerImage)
 }
 
 func setDefaultCloudBuildMavenImage(gcb *latest.GoogleCloudBuild) {
-	gcb.MavenImage = valueOrDefault(gcb.MavenImage, constants.DefaultCloudBuildMavenImage)
+	gcb.MavenImage = valueOrDefault(gcb.MavenImage, defaultCloudBuildMavenImage)
 }
 
 func setDefaultCloudBuildGradleImage(gcb *latest.GoogleCloudBuild) {
-	gcb.GradleImage = valueOrDefault(gcb.GradleImage, constants.DefaultCloudBuildGradleImage)
+	gcb.GradleImage = valueOrDefault(gcb.GradleImage, defaultCloudBuildGradleImage)
 }
 
 func setDefaultCloudBuildKanikoImage(gcb *latest.GoogleCloudBuild) {
-	gcb.KanikoImage = valueOrDefault(gcb.KanikoImage, constants.DefaultCloudBuildKanikoImage)
+	gcb.KanikoImage = valueOrDefault(gcb.KanikoImage, defaultCloudBuildKanikoImage)
 }
 
 func setDefaultCloudBuildPackImage(gcb *latest.GoogleCloudBuild) {
-	gcb.PackImage = valueOrDefault(gcb.PackImage, constants.DefaultCloudBuildPackImage)
+	gcb.PackImage = valueOrDefault(gcb.PackImage, defaultCloudBuildPackImage)
 }
 
 func setDefaultTagger(c *latest.SkaffoldConfig) {
