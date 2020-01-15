@@ -68,27 +68,26 @@ func getSyncMapFromSystem(cmd *exec.Cmd) (*SyncMap, error) {
 	}
 
 	sm := make(SyncMap)
-	for _, de := range jsm.Direct {
-		info, err := os.Stat(de.Src)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not obtain file mod time")
-		}
-		sm[de.Src] = SyncEntry{
-			Dest:     []string{de.Dest},
-			FileTime: info.ModTime(),
-			IsDirect: true,
-		}
+	if err := sm.addEntries(jsm.Direct, true); err != nil {
+		return nil, errors.WithStack(err)
 	}
-	for _, ge := range jsm.Generated {
-		info, err := os.Stat(ge.Src)
-		if err != nil {
-			return nil, errors.Wrap(err, "could not obtain file mod time")
-		}
-		sm[ge.Src] = SyncEntry{
-			Dest:     []string{ge.Dest},
-			FileTime: info.ModTime(),
-			IsDirect: false,
-		}
+	if err := sm.addEntries(jsm.Generated, false); err != nil {
+		return nil, errors.WithStack(err)
 	}
 	return &sm, nil
+}
+
+func (sm SyncMap) addEntries(entries []JSONSyncEntry, direct bool) error {
+	for _, entry := range entries {
+		info, err := os.Stat(entry.Src)
+		if err != nil {
+			return errors.Wrapf(err, "could not obtain file mod time for %s", entry.Src)
+		}
+		sm[entry.Src] = SyncEntry{
+			Dest:     []string{entry.Dest},
+			FileTime: info.ModTime(),
+			IsDirect: direct,
+		}
+	}
+	return nil
 }

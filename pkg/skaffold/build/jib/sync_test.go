@@ -68,7 +68,7 @@ func TestGetSyncMapFromSystem(t *testing.T) {
 		{
 			description: "direct only",
 			stdout: "BEGIN JIB JSON: SYNCMAP/1\n" +
-				fmt.Sprintf("{\"direct\":[{\"src\":\"%s\",\"dest\":\"%s\"}]}", dep1, dep1Target),
+				fmt.Sprintf(`{"direct":[{"src":"%s","dest":"%s"}]}`, dep1, dep1Target),
 			shouldErr: false,
 			expected: &SyncMap{
 				dep1: SyncEntry{
@@ -81,7 +81,7 @@ func TestGetSyncMapFromSystem(t *testing.T) {
 		{
 			description: "generated only",
 			stdout: "BEGIN JIB JSON: SYNCMAP/1\n" +
-				fmt.Sprintf("{\"generated\":[{\"src\":\"%s\",\"dest\":\"%s\"}]}", dep1, dep1Target),
+				fmt.Sprintf(`{"generated":[{"src":"%s","dest":"%s"}]}`, dep1, dep1Target),
 			shouldErr: false,
 			expected: &SyncMap{
 				dep1: SyncEntry{
@@ -94,7 +94,7 @@ func TestGetSyncMapFromSystem(t *testing.T) {
 		{
 			description: "generated and direct",
 			stdout: "BEGIN JIB JSON: SYNCMAP/1\n" +
-				fmt.Sprintf("{\"direct\":[{\"src\":\"%s\",\"dest\":\"%s\"}],\"generated\":[{\"src\":\"%s\",\"dest\":\"%s\"}]}", dep1, dep1Target, dep2, dep2Target),
+				fmt.Sprintf(`{"direct":[{"src":"%s","dest":"%s"}],"generated":[{"src":"%s","dest":"%s"}]}"`, dep1, dep1Target, dep2, dep2Target),
 			shouldErr: false,
 			expected: &SyncMap{
 				dep1: SyncEntry{
