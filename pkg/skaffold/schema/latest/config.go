@@ -197,8 +197,8 @@ type LocalBuild struct {
 	// UseBuildkit use BuildKit to build Docker images.
 	UseBuildkit bool `yaml:"useBuildkit,omitempty"`
 
-	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
-	// Defaults to 1.
+	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
+	// Defaults to `1`.
 	Concurrency *int `yaml:"concurrency,omitempty"`
 }
 
@@ -251,8 +251,8 @@ type GoogleCloudBuild struct {
 	// Defaults to `gcr.io/k8s-skaffold/pack`.
 	PackImage string `yaml:"packImage,omitempty"`
 
-	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
-	// Defaults to 0.
+	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
+	// Defaults to `0`.
 	Concurrency int `yaml:"concurrency,omitempty"`
 }
 
@@ -301,8 +301,8 @@ type ClusterDetails struct {
 	// Resources define the resource requirements for the kaniko pod.
 	Resources *ResourceRequirements `yaml:"resources,omitempty"`
 
-	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
-	// Defaults to 0.
+	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
+	// Defaults to `0`.
 	Concurrency int `yaml:"concurrency,omitempty"`
 }
 

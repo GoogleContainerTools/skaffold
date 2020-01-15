@@ -570,8 +570,9 @@
         },
         "concurrency": {
           "type": "integer",
-          "description": "how many artifacts can be built concurrently. 0 means \"no-limit\" Defaults to 0.",
-          "x-intellij-html-description": "how many artifacts can be built concurrently. 0 means &quot;no-limit&quot; Defaults to 0."
+          "description": "how many artifacts can be built concurrently. 0 means \"no-limit\".",
+          "x-intellij-html-description": "how many artifacts can be built concurrently. 0 means &quot;no-limit&quot;.",
+          "default": "0"
         },
         "dockerConfig": {
           "$ref": "#/definitions/DockerConfig",
@@ -914,8 +915,9 @@
       "properties": {
         "concurrency": {
           "type": "integer",
-          "description": "how many artifacts can be built concurrently. 0 means \"no-limit\" Defaults to 0.",
-          "x-intellij-html-description": "how many artifacts can be built concurrently. 0 means &quot;no-limit&quot; Defaults to 0."
+          "description": "how many artifacts can be built concurrently. 0 means \"no-limit\".",
+          "x-intellij-html-description": "how many artifacts can be built concurrently. 0 means &quot;no-limit&quot;.",
+          "default": "0"
         },
         "diskSizeGb": {
           "type": "integer",
@@ -1570,8 +1572,9 @@
       "properties": {
         "concurrency": {
           "type": "integer",
-          "description": "how many artifacts can be built concurrently. 0 means \"no-limit\" Defaults to 1.",
-          "x-intellij-html-description": "how many artifacts can be built concurrently. 0 means &quot;no-limit&quot; Defaults to 1."
+          "description": "how many artifacts can be built concurrently. 0 means \"no-limit\".",
+          "x-intellij-html-description": "how many artifacts can be built concurrently. 0 means &quot;no-limit&quot;.",
+          "default": "1"
         },
         "push": {
           "type": "boolean",
