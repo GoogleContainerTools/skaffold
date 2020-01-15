@@ -19,9 +19,7 @@ package deploy
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -220,24 +218,11 @@ func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) (
 
 func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, filepath string) error {
 	manifests, err := k.renderManifests(ctx, out, builds)
-
 	if err != nil {
 		return err
 	}
 
-	manifestOut := out
-	if filepath != "" {
-		f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
-		if err != nil {
-			return errors.Wrap(err, "opening file for writing manifests")
-		}
-		defer f.Close()
-		f.WriteString(manifests.String() + "\n")
-	} else {
-		fmt.Fprintln(manifestOut, manifests.String())
-	}
-
-	return nil
+	return dumpToFileOrWriter(manifests.String(), filepath, out)
 }
 
 func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact) (deploy.ManifestList, error) {
