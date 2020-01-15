@@ -24,7 +24,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestValidateDockerfile(t *testing.T) {
+func TestValidate(t *testing.T) {
 	tests := []struct {
 		description    string
 		content        string
@@ -60,7 +60,7 @@ func TestValidateDockerfile(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Write("Dockerfile", test.content)
 
-			valid := ValidateDockerfile(tmpDir.Path(test.fileToValidate))
+			valid := Validate(tmpDir.Path(test.fileToValidate))
 
 			t.CheckDeepEqual(test.expectedValid, valid)
 		})
@@ -70,12 +70,12 @@ func TestValidateDockerfile(t *testing.T) {
 func TestDescribe(t *testing.T) {
 	tests := []struct {
 		description    string
-		dockerfile     Docker
+		dockerfile     ArtifactConfig
 		expectedPrompt string
 	}{
 		{
 			description:    "Dockerfile prompt",
-			dockerfile:     Docker{File: "path/to/Dockerfile"},
+			dockerfile:     ArtifactConfig{File: "path/to/Dockerfile"},
 			expectedPrompt: "Docker (path/to/Dockerfile)",
 		},
 	}
@@ -86,48 +86,34 @@ func TestDescribe(t *testing.T) {
 	}
 }
 
-func TestCreateArtifact(t *testing.T) {
+func TestUpdateArtifact(t *testing.T) {
 	tests := []struct {
 		description      string
-		dockerfile       Docker
-		manifestImage    string
+		config           ArtifactConfig
 		expectedArtifact latest.Artifact
 	}{
 		{
-			description:   "default filename",
-			dockerfile:    Docker{File: filepath.Join("path", "to", "Dockerfile")},
-			manifestImage: "image",
-			expectedArtifact: latest.Artifact{
-				ImageName:    "image",
-				Workspace:    filepath.Join("path", "to"),
-				ArtifactType: latest.ArtifactType{},
-			},
+			description:      "default filename",
+			config:           ArtifactConfig{File: filepath.Join("path", "to", "Dockerfile")},
+			expectedArtifact: latest.Artifact{},
 		},
 		{
-			description:   "non-default filename",
-			dockerfile:    Docker{File: filepath.Join("path", "to", "Dockerfile1")},
-			manifestImage: "image",
+			description: "non-default filename",
+			config:      ArtifactConfig{File: filepath.Join("path", "to", "Dockerfile1")},
 			expectedArtifact: latest.Artifact{
-				ImageName: "image",
-				Workspace: filepath.Join("path", "to"),
 				ArtifactType: latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{DockerfilePath: filepath.Join("path", "to", "Dockerfile1")},
+					DockerArtifact: &latest.DockerArtifact{
+						DockerfilePath: "Dockerfile1",
+					},
 				},
-			},
-		},
-		{
-			description:   "ignore workspace",
-			dockerfile:    Docker{File: "Dockerfile"},
-			manifestImage: "image",
-			expectedArtifact: latest.Artifact{
-				ImageName:    "image",
-				ArtifactType: latest.ArtifactType{},
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := test.dockerfile.CreateArtifact(test.manifestImage)
+			artifact := &latest.Artifact{}
+
+			test.config.UpdateArtifact(artifact)
 
 			t.CheckDeepEqual(test.expectedArtifact, *artifact)
 		})

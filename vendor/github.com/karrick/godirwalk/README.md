@@ -54,9 +54,9 @@ How does it obtain this performance boost? It does less work to give
 you nearly the same output. This library calls the same `syscall`
 functions to do the work, but it makes fewer calls, does not throw
 away information that it might need, and creates less memory churn
-along the way by reusing the same scratch buffer rather than
-reallocating a new buffer every time it reads data from the operating
-system.
+along the way by reusing the same scratch buffer for reading from a
+directory rather than reallocating a new buffer every time it reads
+file system entry data from the operating system.
 
 While traversing a file system directory tree, `filepath.Walk` obtains
 the list of immediate descendants of a directory, and throws away the
@@ -85,31 +85,37 @@ entire `os.FileInfo` data structure, the callback can easiy invoke
 ##### macOS
 
 ```Bash
-go test -bench=.
+$ go test -bench=. -benchmem
 goos: darwin
 goarch: amd64
 pkg: github.com/karrick/godirwalk
-BenchmarkFilepathWalk-8             	       1	3001274570 ns/op
-BenchmarkGoDirWalk-8                	       3	 465573172 ns/op
-BenchmarkFlameGraphFilepathWalk-8   	       1	6957916936 ns/op
-BenchmarkFlameGraphGoDirWalk-8      	       1	4210582571 ns/op
+BenchmarkReadDirnamesStandardLibrary-12   50000       26250  ns/op       10360  B/op       16  allocs/op
+BenchmarkReadDirnamesThisLibrary-12       50000       24372  ns/op        5064  B/op       20  allocs/op
+BenchmarkFilepathWalk-12                      1  1099524875  ns/op   228415912  B/op   416952  allocs/op
+BenchmarkGodirwalk-12                         2   526754589  ns/op   103110464  B/op   451442  allocs/op
+BenchmarkGodirwalkUnsorted-12                 3   509219296  ns/op   100751400  B/op   378800  allocs/op
+BenchmarkFlameGraphFilepathWalk-12            1  7478618820  ns/op  2284138176  B/op  4169453  allocs/op
+BenchmarkFlameGraphGodirwalk-12               1  4977264058  ns/op  1031105328  B/op  4514423  allocs/op
 PASS
-ok  	github.com/karrick/godirwalk	16.822s
+ok  	github.com/karrick/godirwalk	21.219s
 ```
 
 ##### Linux
 
 ```Bash
-go test -bench=.
+$ go test -bench=. -benchmem
 goos: linux
 goarch: amd64
 pkg: github.com/karrick/godirwalk
-BenchmarkFilepathWalk-12              	       1	1609189170 ns/op
-BenchmarkGoDirWalk-12                 	       5	 211336628 ns/op
-BenchmarkFlameGraphFilepathWalk-12    	       1	3968119932 ns/op
-BenchmarkFlameGraphGoDirWalk-12       	       1	2139598998 ns/op
+BenchmarkReadDirnamesStandardLibrary-12  100000       15458  ns/op       10360  B/op       16  allocs/op
+BenchmarkReadDirnamesThisLibrary-12      100000       14646  ns/op        5064  B/op       20  allocs/op
+BenchmarkFilepathWalk-12                      2   631034745  ns/op   228210216  B/op   416939  allocs/op
+BenchmarkGodirwalk-12                         3   358714883  ns/op   102988664  B/op   451437  allocs/op
+BenchmarkGodirwalkUnsorted-12                 3   355363915  ns/op   100629234  B/op   378796  allocs/op
+BenchmarkFlameGraphFilepathWalk-12            1  6086913991  ns/op  2282104720  B/op  4169417  allocs/op
+BenchmarkFlameGraphGodirwalk-12               1  3456398824  ns/op  1029886400  B/op  4514373  allocs/op
 PASS
-ok  	github.com/karrick/godirwalk	9.007s
+ok      github.com/karrick/godirwalk    19.179s
 ```
 
 ### It's more correct on Windows than `filepath.Walk`
@@ -183,11 +189,21 @@ can be invoked in manner to do so, by setting the
 The default behavior of this library is to always sort the immediate
 descendants of a directory prior to visiting each node, just like
 `filepath.Walk` does. This is usually the desired behavior. However,
-this does come at a performance penalty to sort the names when a
-directory node has many entries. If a particular use case exists that
-does not require sorting the directory's immediate descendants prior
-to visiting its nodes, this library will skip the sorting step when
-the `Unsorted` parameter is set to true.
+this does come at slight performance and memory penalties required to
+sort the names when a directory node has many entries. Additionally if
+caller specifies `Unsorted` enumeration, reading directories is lazily
+performed as the caller consumes entries. If a particular use case
+exists that does not require sorting the directory's immediate
+descendants prior to visiting its nodes, this library will skip the
+sorting step when the `Unsorted` parameter is set to true.
+
+Here's an interesting read of the potential hazzards of traversing a
+file system hierarchy in a non-deterministic order. If you know the
+problem you are solving is not affected by the order files are
+visited, then I encourage you to use `Unsorted`. Otherwise skip
+setting this option.
+
+[Researchers find bug in Python script may have affected hundreds of studies](https://arstechnica.com/information-technology/2019/10/chemists-discover-cross-platform-python-scripts-not-so-cross-platform/)
 
 #### Configurable Post Children Callback
 

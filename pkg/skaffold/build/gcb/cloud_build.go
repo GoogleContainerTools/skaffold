@@ -50,12 +50,12 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 }
 
 func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	cbclient, err := gcp.CloudBuildClient()
+	cbclient, err := cloudbuild.NewService(ctx, gcp.ClientOptions()...)
 	if err != nil {
 		return "", errors.Wrap(err, "getting cloudbuild client")
 	}
 
-	c, err := gcp.CloudStorageClient()
+	c, err := cstorage.NewClient(ctx, gcp.ClientOptions()...)
 	if err != nil {
 		return "", errors.Wrap(err, "getting cloud storage client")
 	}
@@ -63,7 +63,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 
 	projectID := b.ProjectID
 	if projectID == "" {
-		guessedProjectID, err := gcp.ExtractProjectID(artifact.ImageName)
+		guessedProjectID, err := gcp.ExtractProjectID(tag)
 		if err != nil {
 			return "", errors.Wrap(err, "extracting projectID from image name")
 		}
@@ -81,7 +81,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 		return "", errors.Wrap(err, "checking bucket is in correct project")
 	}
 
-	dependencies, err := b.DependenciesForArtifact(ctx, artifact)
+	dependencies, err := build.DependenciesForArtifact(ctx, artifact, b.insecureRegistries)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
 	}
@@ -169,7 +169,7 @@ watch:
 	}
 	logrus.Infof("Deleted object %s", buildObject)
 
-	return tag + "@" + digest, nil
+	return build.TagWithDigest(tag, digest), nil
 }
 
 func getBuildID(op *cloudbuild.Operation) (string, error) {

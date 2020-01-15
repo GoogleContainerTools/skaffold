@@ -32,34 +32,34 @@ type ForwardedPorts interface {
 	LoadOrStore(key, value interface{}) (actual interface{}, loaded bool)
 }
 
-// First, check if the provided port is available. If so, use it.
+// First, check if the provided port is available on the specified address. If so, use it.
 // If not, check if any of the next 10 subsequent ports are available.
 // If not, check if any of ports 4503-4533 are available.
 // If not, return a random port, which hopefully won't collide with any future containers
 
 // See https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.txt,
-func GetAvailablePort(port int, forwardedPorts ForwardedPorts) int {
-	if getPortIfAvailable(port, forwardedPorts) {
+func GetAvailablePort(address string, port int, forwardedPorts ForwardedPorts) int {
+	if getPortIfAvailable(address, port, forwardedPorts) {
 		return port
 	}
 
 	// try the next 10 ports after the provided one
 	for i := 0; i < 10; i++ {
 		port++
-		if getPortIfAvailable(port, forwardedPorts) {
+		if getPortIfAvailable(address, port, forwardedPorts) {
 			logrus.Debugf("found open port: %d", port)
 			return port
 		}
 	}
 
 	for port = 4503; port <= 4533; port++ {
-		if getPortIfAvailable(port, forwardedPorts) {
+		if getPortIfAvailable(address, port, forwardedPorts) {
 			logrus.Debugf("found open port: %d", port)
 			return port
 		}
 	}
 
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:0", Loopback))
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:0", address))
 	if err != nil {
 		return -1
 	}
@@ -71,17 +71,17 @@ func GetAvailablePort(port int, forwardedPorts ForwardedPorts) int {
 	return p
 }
 
-func getPortIfAvailable(p int, forwardedPorts ForwardedPorts) bool {
+func getPortIfAvailable(address string, p int, forwardedPorts ForwardedPorts) bool {
 	_, loaded := forwardedPorts.LoadOrStore(p, struct{}{})
 	if loaded {
 		return false
 	}
 
-	return IsPortFree(p)
+	return IsPortFree(address, p)
 }
 
-func IsPortFree(p int) bool {
-	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", Loopback, p))
+func IsPortFree(address string, p int) bool {
+	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", address, p))
 	if err != nil {
 		return false
 	}

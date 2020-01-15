@@ -1,7 +1,8 @@
 ---
-title: "Skaffold pipeline"
-linkTitle: "Skaffold pipeline"
+title: "Skaffold Pipeline"
+linkTitle: "Skaffold Pipeline"
 weight: 40
+aliases: [/docs/concepts/config]
 ---
 
 You can configure Skaffold with the Skaffold configuration file,

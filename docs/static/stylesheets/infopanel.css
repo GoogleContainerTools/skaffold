@@ -1,0 +1,36 @@
+.infopanel {
+    font-size: 12px;
+    position: relative;
+    background: var(--header-footer) !important;
+}
+
+.infopanel td {
+    vertical-align: top;
+    padding-right: 10px;
+}
+
+.infopanel td {
+    /*border-bottom: 1px solid var(--main-bg-color);*/
+}
+
+.infopanel .maturity-alpha {
+    background: var(--maturity-alpha);
+}
+
+.infopanel .maturity-beta {
+    background: var(--maturity-beta);
+}
+
+.infopanel table, tr, tbody {
+    width: 100%;
+}
+
+sup {
+    font-size: 18px;
+    line-height: 2em;
+}
+
+.maturity{
+    font-size: 12px;
+    width: fit-content;
+}

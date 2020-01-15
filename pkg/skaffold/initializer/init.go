@@ -30,17 +30,18 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/AlecAivazis/survey.v1"
 	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -71,8 +72,8 @@ type InitBuilder interface {
 	// Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
 	// Must be unique between artifacts.
 	Describe() string
-	// CreateArtifact creates an Artifact to be included in the generated Build Config
-	CreateArtifact(image string) *latest.Artifact
+	// UpdateArtifact updates the Artifact to be included in the generated Build Config
+	UpdateArtifact(*latest.Artifact)
 	// ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured.
 	// This should be a cheap operation.
 	ConfiguredImage() string
@@ -82,13 +83,14 @@ type InitBuilder interface {
 
 // Config defines the Initializer Config for Init API of skaffold.
 type Config struct {
-	ComposeFile   string
-	CliArtifacts  []string
-	SkipBuild     bool
-	Force         bool
-	Analyze       bool
-	EnableJibInit bool // TODO: Remove this parameter
-	Opts          config.SkaffoldOptions
+	ComposeFile         string
+	CliArtifacts        []string
+	SkipBuild           bool
+	Force               bool
+	Analyze             bool
+	EnableJibInit       bool // TODO: Remove this parameter
+	EnableBuildpackInit bool
+	Opts                config.SkaffoldOptions
 }
 
 // builderImagePair defines a builder and the image it builds
@@ -97,20 +99,31 @@ type builderImagePair struct {
 	ImageName string
 }
 
+type set map[string]interface{}
+
+func (s set) add(value string) {
+	s[value] = value
+}
+
+func (s set) values() (values []string) {
+	for val := range s {
+		values = append(values, val)
+	}
+	sort.Strings(values)
+	return values
+}
+
 // DoInit executes the `skaffold init` flow.
 func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	rootDir := "."
 
 	if c.ComposeFile != "" {
-		// run kompose first to generate k8s manifests, then run skaffold init
-		logrus.Infof("running 'kompose convert' for file %s", c.ComposeFile)
-		komposeCmd := exec.CommandContext(ctx, "kompose", "convert", "-f", c.ComposeFile)
-		if err := util.RunCmd(komposeCmd); err != nil {
-			return errors.Wrap(err, "running kompose")
+		if err := runKompose(ctx, c.ComposeFile); err != nil {
+			return err
 		}
 	}
 
-	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, c.EnableJibInit, detectBuilders)
+	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, c.EnableJibInit, c.EnableBuildpackInit)
 	if err != nil {
 		return err
 	}
@@ -142,7 +155,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 
 	if c.Analyze {
 		// TODO: Remove backwards compatibility block
-		if !c.EnableJibInit {
+		if !c.EnableJibInit && !c.EnableBuildpackInit {
 			return printAnalyzeJSONNoJib(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
 		}
 
@@ -162,7 +175,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 			}
 			pairs = append(pairs, newPairs...)
 		} else {
-			resolved, err := resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages)
+			resolved, err := resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages, c.Force)
 			if err != nil {
 				return err
 			}
@@ -213,12 +226,24 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	return nil
 }
 
+// runKompose runs the `kompose` CLI before running skaffold init
+func runKompose(ctx context.Context, composeFile string) error {
+	if _, err := os.Stat(composeFile); os.IsNotExist(err) {
+		return err
+	}
+
+	logrus.Infof("running 'kompose convert' for file %s", composeFile)
+	komposeCmd := exec.CommandContext(ctx, "kompose", "convert", "-f", composeFile)
+	_, err := util.RunCmdOut(komposeCmd)
+	return err
+}
+
 // autoSelectBuilders takes a list of builders and images, checks if any of the builders' configured target
 // images match an image in the image list, and returns a list of the matching builder/image pairs. Also
 // separately returns the builder configs and images that didn't have any matches.
 func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
 	var pairs []builderImagePair
-	var unresolvedImages []string
+	var unresolvedImages = make(set)
 	for _, image := range images {
 		matchingConfigIndex := -1
 		for i, config := range builderConfigs {
@@ -240,34 +265,49 @@ func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builde
 			builderConfigs = append(builderConfigs[:matchingConfigIndex], builderConfigs[matchingConfigIndex+1:]...)
 		} else {
 			// No definite pair found, add to images list
-			unresolvedImages = append(unresolvedImages, image)
+			unresolvedImages.add(image)
 		}
 	}
-	return pairs, builderConfigs, unresolvedImages
+	return pairs, builderConfigs, unresolvedImages.values()
 }
 
-func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, error) {
+// detectBuilders checks if a path is a builder config, and if it is, returns the InitBuilders representing the
+// configs. Also returns a boolean marking search completion for subdirectories (true = subdirectories should
+// continue to be searched, false = subdirectories should not be searched for more builders)
+func detectBuilders(enableJibInit, enableBuildpackInit bool, path string) ([]InitBuilder, bool) {
 	// TODO: Remove backwards compatibility if statement (not entire block)
 	if enableJibInit {
 		// Check for jib
-		if builders := jib.ValidateJibConfigFunc(path); builders != nil {
+		if builders := jib.Validate(path); builders != nil {
 			results := make([]InitBuilder, len(builders))
 			for i := range builders {
 				results[i] = builders[i]
 			}
-			return results, filepath.SkipDir
+			return results, false
 		}
 	}
 
 	// Check for Dockerfile
-	if docker.ValidateDockerfileFunc(path) {
-		results := []InitBuilder{docker.Docker{File: path}}
-		return results, nil
+	base := filepath.Base(path)
+	if strings.Contains(strings.ToLower(base), "dockerfile") {
+		if docker.Validate(path) {
+			results := []InitBuilder{docker.ArtifactConfig{File: path}}
+			return results, true
+		}
+	}
+
+	// TODO: Remove backwards compatibility if statement (not entire block)
+	if enableBuildpackInit {
+		// Check for buildpacks
+		if buildpacks.Validate(path) {
+			results := []InitBuilder{buildpacks.ArtifactConfig{File: path}}
+			return results, true
+		}
 	}
 
 	// TODO: Check for more builders
 
-	return nil, nil
+	return nil, true
 }
 
 func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
@@ -287,7 +327,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 				return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
 			}
 			pairs = append(pairs, builderImagePair{
-				Builder:   docker.Docker{File: parts[0]},
+				Builder:   docker.ArtifactConfig{File: parts[0]},
 				ImageName: parts[1],
 			})
 			continue
@@ -297,7 +337,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 		switch a.Name {
 		case docker.Name:
 			parsed := struct {
-				Payload docker.Docker `json:"payload"`
+				Payload docker.ArtifactConfig `json:"payload"`
 			}{}
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
@@ -308,12 +348,22 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 		// FIXME: shouldn't use a human-readable name?
 		case jib.PluginName(jib.JibGradle), jib.PluginName(jib.JibMaven):
 			parsed := struct {
-				Payload jib.Jib `json:"payload"`
+				Payload jib.ArtifactConfig `json:"payload"`
 			}{}
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
 			}
 			parsed.Payload.BuilderName = a.Name
+			pair := builderImagePair{Builder: parsed.Payload, ImageName: a.Image}
+			pairs = append(pairs, pair)
+
+		case buildpacks.Name:
+			parsed := struct {
+				Payload buildpacks.ArtifactConfig `json:"payload"`
+			}{}
+			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
+				return nil, err
+			}
 			pair := builderImagePair{Builder: parsed.Payload, ImageName: a.Image}
 			pairs = append(pairs, pair)
 
@@ -325,7 +375,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 }
 
 // For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
-func resolveBuilderImages(builderConfigs []InitBuilder, images []string) ([]builderImagePair, error) {
+func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force bool) ([]builderImagePair, error) {
 	// If nothing to choose, don't bother prompting
 	if len(images) == 0 || len(builderConfigs) == 0 {
 		return []builderImagePair{}, nil
@@ -337,6 +387,10 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string) ([]buil
 			Builder:   builderConfigs[0],
 			ImageName: images[0],
 		}}, nil
+	}
+
+	if force {
+		return nil, errors.New("unable to automatically resolve builder/image pairs; run `skaffold init` without `--force` to manually resolve ambiguities")
 	}
 
 	// Build map from choice string to builder config struct
@@ -390,15 +444,25 @@ func promptUserForBuildConfig(image string, choices []string) (string, error) {
 	return selectedBuildConfig, nil
 }
 
-func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {
-	var config latest.BuildConfig
-	if len(pairs) > 0 {
-		config.Artifacts = make([]*latest.Artifact, len(pairs))
-		for i, pair := range pairs {
-			config.Artifacts[i] = pair.Builder.CreateArtifact(pair.ImageName)
+func artifacts(pairs []builderImagePair) []*latest.Artifact {
+	var artifacts []*latest.Artifact
+
+	for _, pair := range pairs {
+		artifact := &latest.Artifact{
+			ImageName: pair.ImageName,
 		}
+
+		workspace := filepath.Dir(pair.Builder.Path())
+		if workspace != "." {
+			artifact.Workspace = workspace
+		}
+
+		pair.Builder.UpdateArtifact(artifact)
+
+		artifacts = append(artifacts, artifact)
 	}
-	return config
+
+	return artifacts
 }
 
 func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) ([]byte, error) {
@@ -411,24 +475,19 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 		warnings.Printf("Couldn't generate default config name: %s", err.Error())
 	}
 
-	cfg := &latest.SkaffoldConfig{
+	return yaml.Marshal(&latest.SkaffoldConfig{
 		APIVersion: latest.Version,
 		Kind:       "Config",
-		Metadata:   latest.Metadata{Name: name},
-	}
-	if err := defaults.Set(cfg); err != nil {
-		return nil, errors.Wrap(err, "generating default pipeline")
-	}
-
-	cfg.Build = processBuildArtifacts(buildConfigPairs)
-	cfg.Deploy = k.GenerateDeployConfig()
-
-	pipelineStr, err := yaml.Marshal(cfg)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshaling generated pipeline")
-	}
-
-	return pipelineStr, nil
+		Metadata: latest.Metadata{
+			Name: name,
+		},
+		Pipeline: latest.Pipeline{
+			Build: latest.BuildConfig{
+				Artifacts: artifacts(buildConfigPairs),
+			},
+			Deploy: k.GenerateDeployConfig(),
+		},
+	})
 }
 
 func suggestConfigName() (string, error) {
@@ -480,12 +539,7 @@ func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePa
 		}
 	}
 
-	contents, err := json.Marshal(a)
-	if err != nil {
-		return errors.Wrap(err, "marshalling contents")
-	}
-	_, err = out.Write(contents)
-	return err
+	return printJSON(out, a)
 }
 
 // printAnalyzeJSON takes the automatically resolved builder/image pairs, the unresolved images, and the unresolved builders, and generates
@@ -543,48 +597,94 @@ func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, u
 		a.Images = append(a.Images, Image{Name: image, FoundMatch: false})
 	}
 
-	contents, err := json.Marshal(a)
+	return printJSON(out, a)
+}
+
+func printJSON(out io.Writer, v interface{}) error {
+	contents, err := json.Marshal(v)
 	if err != nil {
 		return errors.Wrap(err, "marshalling contents")
 	}
+
 	_, err = out.Write(contents)
 	return err
 }
 
-func walk(dir string, force, enableJibInit bool, validateBuildFile func(bool, string) ([]InitBuilder, error)) ([]string, []InitBuilder, error) {
+// walk recursively walks a directory and returns the k8s configs and builder configs that it finds
+func walk(dir string, force, enableJibInit, enableBuildpackInit bool) ([]string, []InitBuilder, error) {
 	var potentialConfigs []string
 	var foundBuilders []InitBuilder
-	err := filepath.Walk(dir, func(path string, f os.FileInfo, e error) error {
-		if f.IsDir() && util.IsHiddenDir(f.Name()) {
-			logrus.Debugf("skip walking hidden dir %s", f.Name())
-			return filepath.SkipDir
-		}
-		if f.IsDir() || util.IsHiddenFile(f.Name()) {
-			return nil
-		}
-		if IsSkaffoldConfig(path) {
-			if !force {
-				return fmt.Errorf("pre-existing %s found", path)
-			}
-			logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", path)
-			return nil
-		}
-		if IsSupportedKubernetesFileExtension(path) {
-			potentialConfigs = append(potentialConfigs, path)
-			return nil
-		}
-		// try and parse build file
-		if builderConfigs, err := validateBuildFile(enableJibInit, path); builderConfigs != nil {
-			for _, buildConfig := range builderConfigs {
-				logrus.Infof("existing builder found: %s", buildConfig.Describe())
-				foundBuilders = append(foundBuilders, buildConfig)
-			}
+
+	var searchConfigsAndBuilders func(path string, findBuilders bool) error
+	searchConfigsAndBuilders = func(path string, findBuilders bool) error {
+		dirents, err := godirwalk.ReadDirents(path, nil)
+		if err != nil {
 			return err
 		}
+
+		var subdirectories []*godirwalk.Dirent
+		searchForBuildersInSubdirectories := findBuilders
+		sort.Sort(dirents)
+
+		// Traverse files
+		for _, file := range dirents {
+			if util.IsHiddenFile(file.Name()) || util.IsHiddenDir(file.Name()) {
+				continue
+			}
+
+			// If we found a directory, keep track of it until we've gone through all the files first
+			if file.IsDir() {
+				subdirectories = append(subdirectories, file)
+				continue
+			}
+
+			// Check for skaffold.yaml/k8s manifest
+			filePath := filepath.Join(path, file.Name())
+			var foundConfig bool
+			if foundConfig, err = checkConfigFile(filePath, force, &potentialConfigs); err != nil {
+				return err
+			}
+
+			// Check for builder config
+			if !foundConfig && findBuilders {
+				builderConfigs, continueSearchingBuilders := detectBuilders(enableJibInit, enableBuildpackInit, filePath)
+				foundBuilders = append(foundBuilders, builderConfigs...)
+				searchForBuildersInSubdirectories = searchForBuildersInSubdirectories && continueSearchingBuilders
+			}
+		}
+
+		// Recurse into subdirectories
+		for _, dir := range subdirectories {
+			if err = searchConfigsAndBuilders(filepath.Join(path, dir.Name()), searchForBuildersInSubdirectories); err != nil {
+				return err
+			}
+		}
+
 		return nil
-	})
+	}
+
+	err := searchConfigsAndBuilders(dir, true)
 	if err != nil {
 		return nil, nil, err
 	}
 	return potentialConfigs, foundBuilders, nil
+}
+
+// checkConfigFile checks if filePath is a skaffold config or k8s config, or builder config. Detected k8s configs are added to potentialConfigs.
+// Returns true if filePath is a config file, and false if not.
+func checkConfigFile(filePath string, force bool, potentialConfigs *[]string) (bool, error) {
+	if IsSkaffoldConfig(filePath) {
+		if !force {
+			return true, fmt.Errorf("pre-existing %s found", filePath)
+		}
+		logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", filePath)
+		return true, nil
+	}
+
+	if kubectl.IsKubernetesManifest(filePath) {
+		*potentialConfigs = append(*potentialConfigs, filePath)
+		return true, nil
+	}
+
+	return false, nil
 }

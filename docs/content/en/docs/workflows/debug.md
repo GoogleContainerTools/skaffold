@@ -1,14 +1,10 @@
 ---
-title: "Debugging with Skaffold"
+title: "Debugging With Skaffold"
 linkTitle: "Debugging"
-weight: 2
+weight: 30
+featureId: debug
+aliases: [/docs/how-tos/debug]
 ---
-
-{{< alert title="Note" >}}
-The `debug` functionality is in an alpha state and may change without warning.
-{{< /alert >}}
-
-## Debugging with Skaffold
 
 `skaffold debug` acts like `skaffold dev`, but it configures containers in pods
 for debugging as required for each container's runtime technology.
@@ -16,7 +12,7 @@ The associated debugging ports are exposed and labelled so that they can be port
 local machine. Helper metadata is also added to allow IDEs to detect the debugging
 configuration parameters.
  
-## How it works
+## How It Works
 
 `skaffold debug` examines the built artifacts to determine the underlying runtime technology.
 Any Kubernetes manifest that references these artifacts are transformed to enable the runtime technology's
@@ -46,9 +42,6 @@ For these languages, a special set of [runtime-specific images](https://github.c
 are configured as _init-containers_ to populate a shared-volume that is mounted into
 each of the appropriate containers.  These images are hosted at `gcr.io/gcp-dev-tools/duct-tape`.
 
-{{< alert title="Caution" >}}
-`skaffold debug` does not support deprecated versions of Workload API objects such as `apps/v1beta1`.
-{{< /alert >}}
 
 ### Supported Language Runtimes
 
@@ -62,7 +55,7 @@ Go-based applications are configured to run under [Delve](https://github.com/go-
     environment variables](https://godoc.org/runtime) such as `GODEBUG`, `GOGC`, `GOMAXPROCS`,
     or `GOTRACEBACK`. `GOTRACEBACK=all` is a generally useful configuration.
   - Go applications should be built without optimizations, so your build should be capable of building with
-    `-gcflags='all=-N -l'`. Skaffold [_Profiles_](../profiles/) are a useful option.
+    `-gcflags='all=-N -l'`. Skaffold [_Profiles_]({{< relref "/docs/environment/profiles.md" >}}) are a useful option.
 
 Note for users of [VS Code's debug adapter for Go](https://github.com/Microsoft/vscode-go): Delve seems
 to treat the source location for headless launches as being relative to `/go`.  The following
@@ -80,7 +73,7 @@ to treat the source location for headless launches as being relative to `/go`.  
 }
 ```
 
-#### Java and other JVM languages
+#### Java and Other JVM Languages
 
 Java/JVM applications are configured to expose the JDWP agent using the `JAVA_TOOL_OPTIONS`
 environment variable.  
@@ -108,9 +101,31 @@ DAP is not yet supported by JetBrains IDEs like PyCharm.
 
 ## Limitations
 
-`skaffold debug` has some limitations:
+`skaffold debug` has some limitations.
 
-  - Only the `kubectl` and `kustomize` deployers are supported at the moment: support for
-    the Helm deployer is not yet available.
-  - File sync is disabled for all artifacts.
-    
+### Unsupported Container Entrypoints
+
+`skaffold debug` requires being able to examine and alter the
+command-line used in the container entrypoint.  This transformation
+will not work with images that use intermediate launch scripts or
+binaries.  For example, `debug` cannot work with an image produced
+by the Cloud Native Buildpacks builder as it uses a `launcher`
+binary to run commands that are specified in a set of configuration
+files.
+
+### Supported Deployers
+
+`skaffold debug` is only supported with the `kubectl` and `kustomize` deployers at the moment: support for
+the Helm deployer is not yet available ([#2350](https://github.com/GoogleContainerTools/skaffold/issues/2350)).
+
+### Deprecated Workload API Objects
+
+`skaffold debug` does not support deprecated versions of Workload API objects:
+
+  - `apps/v1beta1` was [deprecated in Kubernetes 1.8](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.8.md#other-notable-changes-16)
+  - `apps/v1beta2` was [deprecated in Kubernetes 1.9](https://github.com/kubernetes/kubernetes/blob/master/CHANGELOG-1.9.md#apps)
+
+Both have been [removed in Kubernetes 1.16](https://kubernetes.io/blog/2019/07/18/api-deprecations-in-1-16/).
+Applications should transition to the `apps/v1` APIs,
+[introduced in Kubernetes 1.9](https://kubernetes.io/blog/2017/12/kubernetes-19-workloads-expanded-ecosystem/).
+

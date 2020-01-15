@@ -1,4 +1,4 @@
-apiVersion: skaffold/v1beta15
+apiVersion: skaffold/v2alpha2
 kind: Config
 profiles:
   - name: build-artifact
@@ -8,8 +8,6 @@ profiles:
           context: app
           kaniko:
             cache: {}
-            buildContext:
-              localDir: {}
       cluster:
         pullSecretName: e2esecret
   - name: deploy-insecure-registry

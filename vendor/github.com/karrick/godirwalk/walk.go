@@ -5,26 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 )
 
-// DefaultScratchBufferSize specifies the size of the scratch buffer that will
-// be allocated by Walk, ReadDirents, or ReadDirnames when a scratch buffer is
-// not provided or the scratch buffer that is provided is smaller than
-// MinimumScratchBufferSize bytes. This may seem like a large value; however,
-// when a program intends to enumerate large directories, having a larger
-// scratch buffer results in fewer operating system calls.
-const DefaultScratchBufferSize = 64 * 1024
-
-// MinimumScratchBufferSize specifies the minimum size of the scratch buffer
-// that Walk, ReadDirents, and ReadDirnames will use when reading file entries
-// from the operating system. It is initialized to the result from calling
-// `os.Getpagesize()` during program startup.
-var MinimumScratchBufferSize int
-
-func init() {
-	MinimumScratchBufferSize = os.Getpagesize()
-}
+// DefaultScratchBuffer is a deprecated config parameter, whose usage was
+// obsoleted by the introduction of the Scanner struct, and migrating
+// ReadDirents, ReadDirnames, and Walk to use Scanner for enumerating directory
+// contents.
+const DefaultScratchBufferSize = 0
 
 // Options provide parameters for how the Walk function operates.
 type Options struct {
@@ -80,13 +67,17 @@ type Options struct {
 	// processed.
 	PostChildrenCallback WalkFunc
 
-	// ScratchBuffer is an optional byte slice to use as a scratch buffer for
-	// Walk to use when reading directory entries, to reduce amount of garbage
-	// generation. Not all architectures take advantage of the scratch
-	// buffer. If omitted or the provided buffer has fewer bytes than
-	// MinimumScratchBufferSize, then a buffer with DefaultScratchBufferSize
-	// bytes will be created and used once per Walk invocation.
+	// ScratchBuffer is a deprecated config parameter, whose usage was obsoleted
+	// by the introduction of the Scanner struct, and migrating ReadDirents,
+	// ReadDirnames, and Walk to use Scanner for enumerating directory contents.
 	ScratchBuffer []byte
+
+	// AllowNonDirectory causes Walk to bypass the check that ensures it is
+	// being called on a directory node, or when FollowSymbolicLinks is true, a
+	// symbolic link that points to a directory. Leave this value false to have
+	// Walk return an error when called on a non-directory. Set this true to
+	// have Walk run even when called on a non-directory node.
+	AllowNonDirectory bool
 }
 
 // ErrorAction defines a set of actions the Walk function could take based on
@@ -135,9 +126,7 @@ type WalkFunc func(osPathname string, directoryEntry *Dirent) error
 
 // Walk walks the file tree rooted at the specified directory, calling the
 // specified callback function for each file system node in the tree, including
-// root, symbolic links, and other node types. The nodes are walked in lexical
-// order, which makes the output deterministic but means that for very large
-// directories this function can be inefficient.
+// root, symbolic links, and other node types.
 //
 // This function is often much faster than filepath.Walk because it does not
 // invoke os.Stat for every node it encounters, but rather obtains the file
@@ -175,8 +164,8 @@ type WalkFunc func(osPathname string, directoryEntry *Dirent) error
 //        }
 //    }
 func Walk(pathname string, options *Options) error {
-	if options.Callback == nil {
-		return errors.New("cannot walk without a specified Callback function")
+	if options == nil || options.Callback == nil {
+		return errors.New("cannot walk without non-nil options and Callback function")
 	}
 
 	pathname = filepath.Clean(pathname)
@@ -186,19 +175,21 @@ func Walk(pathname string, options *Options) error {
 
 	if options.FollowSymbolicLinks {
 		fi, err = os.Stat(pathname)
-		if err != nil {
-			return err
-		}
 	} else {
 		fi, err = os.Lstat(pathname)
-		if err != nil {
-			return err
-		}
+	}
+	if err != nil {
+		return err
 	}
 
 	mode := fi.Mode()
-	if mode&os.ModeDir == 0 {
+	if !options.AllowNonDirectory && mode&os.ModeDir == 0 {
 		return fmt.Errorf("cannot Walk non-directory: %s", pathname)
+	}
+
+	dirent := &Dirent{
+		name:     filepath.Base(pathname),
+		modeType: mode & os.ModeType,
 	}
 
 	// If ErrorCallback is nil, set to a default value that halts the walk
@@ -208,20 +199,10 @@ func Walk(pathname string, options *Options) error {
 		options.ErrorCallback = defaultErrorCallback
 	}
 
-	if len(options.ScratchBuffer) < MinimumScratchBufferSize {
-		options.ScratchBuffer = make([]byte, DefaultScratchBufferSize)
+	if err = walk(pathname, dirent, options); err != filepath.SkipDir {
+		return err
 	}
-
-	dirent := &Dirent{
-		name:     filepath.Base(pathname),
-		modeType: mode & os.ModeType,
-	}
-
-	err = walk(pathname, dirent, options)
-	if err == filepath.SkipDir {
-		return nil // silence SkipDir for top level
-	}
-	return err
+	return nil // silence SkipDir for top level
 }
 
 // defaultErrorCallback always returns Halt because if the upstream code did not
@@ -263,7 +244,19 @@ func walk(osPathname string, dirent *Dirent, options *Options) error {
 
 	// If get here, then specified pathname refers to a directory or a
 	// symbolic link to a directory.
-	deChildren, err := ReadDirents(osPathname, options.ScratchBuffer)
+
+	var ds scanner
+
+	if options.Unsorted {
+		// When upstream does not request a sorted iteration, it's more memory
+		// efficient to read a single child at a time from the file system.
+		ds, err = NewScanner(osPathname)
+	} else {
+		// When upstream wants a sorted iteration, we must read the entire
+		// directory and sort through the child names, and then iterate on each
+		// child.
+		ds, err = newSortedScanner(osPathname)
+	}
 	if err != nil {
 		if action := options.ErrorCallback(osPathname, err); action == SkipNode {
 			return nil
@@ -271,13 +264,17 @@ func walk(osPathname string, dirent *Dirent, options *Options) error {
 		return err
 	}
 
-	if !options.Unsorted {
-		sort.Sort(deChildren) // sort children entries unless upstream says to leave unsorted
-	}
-
-	for _, deChild := range deChildren {
+	for ds.Scan() {
+		deChild, err := ds.Dirent()
 		osChildname := filepath.Join(osPathname, deChild.name)
+		if err != nil {
+			if action := options.ErrorCallback(osChildname, err); action == SkipNode {
+				return nil
+			}
+			return err
+		}
 		err = walk(osChildname, deChild, options)
+		debug("osChildname: %q; error: %v\n", osChildname, err)
 		if err == nil {
 			continue
 		}
@@ -299,6 +296,9 @@ func walk(osPathname string, dirent *Dirent, options *Options) error {
 			break // stop processing remaining siblings, but allow post children callback
 		}
 		// continue processing remaining siblings
+	}
+	if err = ds.Err(); err != nil {
+		return err
 	}
 
 	if options.PostChildrenCallback == nil {

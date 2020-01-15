@@ -19,11 +19,11 @@ package deploy
 import (
 	"bytes"
 	"context"
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -208,6 +208,7 @@ type mockResource struct {
 }
 
 func (m *mockResource) UpdateStatus(s string, err error) {
+	err = errors.Cause(err)
 	if err == context.DeadlineExceeded {
 		m.inErr = true
 	}
@@ -244,7 +245,7 @@ func TestPollResourceStatus(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&defaultPollPeriodInMilliseconds, 0)
 			pollResourceStatus(context.Background(), nil, test.dummyResource)
-			t.CheckDeepEqual(test.dummyResource.inErr, test.isInErr)
+			t.CheckDeepEqual(test.isInErr, test.dummyResource.inErr)
 		})
 	}
 }
@@ -325,11 +326,12 @@ func TestPrintSummaryStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
+			rc := newResourceCounter(10)
+			rc.deployments.pending = test.pending
 			printStatusCheckSummary(
 				out,
 				withStatus(resource.NewDeployment("dep", "test", 0), "", test.err),
-				int(test.pending),
-				10,
+				*rc,
 			)
 			t.CheckDeepEqual(test.expected, out.String())
 		})
@@ -412,4 +414,73 @@ func TestPrintStatus(t *testing.T) {
 func withStatus(d *resource.Deployment, details string, err error) *resource.Deployment {
 	d.UpdateStatus(details, err)
 	return d
+}
+
+func TestCounterCopy(t *testing.T) {
+	tests := []struct {
+		description string
+		c           *counter
+		expected    counter
+	}{
+		{
+			description: "initial counter is copied correctly ",
+			c:           newCounter(10),
+			expected:    *newCounter(10),
+		},
+		{
+			description: "counter with updated pending is copied correctly",
+			c:           &counter{total: 10, pending: 2},
+			expected:    counter{total: 10, pending: 2},
+		},
+		{
+			description: "counter with updated failed and pending is copied correctly",
+			c:           &counter{total: 10, pending: 5, failed: 3},
+			expected:    counter{total: 10, pending: 5, failed: 3},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expected, test.c.copy(), cmp.AllowUnexported(counter{}))
+		})
+	}
+}
+
+func TestResourceMarkProcessed(t *testing.T) {
+	tests := []struct {
+		description string
+		c           *resourceCounter
+		err         error
+		expected    resourceCounter
+	}{
+		{
+			description: "when deployment failed, counter is updated",
+			c:           newResourceCounter(10),
+			err:         errors.New("some err"),
+			expected: resourceCounter{
+				deployments: &counter{total: 10, failed: 1, pending: 9},
+				pods:        newCounter(0),
+			},
+		},
+		{
+			description: "when deployment is successful, counter is updated",
+			c:           newResourceCounter(10),
+			expected: resourceCounter{
+				deployments: &counter{total: 10, failed: 0, pending: 9},
+				pods:        newCounter(0),
+			},
+		},
+		{
+			description: "counter when 1 deployment is updated correctly",
+			c:           newResourceCounter(1),
+			expected: resourceCounter{
+				deployments: &counter{total: 1, failed: 0, pending: 0},
+				pods:        newCounter(0),
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expected, test.c.markProcessed(test.err), cmp.AllowUnexported(resourceCounter{}, counter{}))
+		})
+	}
 }

@@ -22,7 +22,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
@@ -37,9 +36,6 @@ func NewCmdRun() *cobra.Command {
 		WithExample("Build, test, deploy and tail the logs", "run --tail").
 		WithExample("Run with a given profile", "run -p <profile>").
 		WithCommonFlags().
-		WithFlags(func(f *pflag.FlagSet) {
-			f.StringVarP(&opts.CustomTag, "tag", "t", "", "The optional custom tag to use for images which overrides the current Tagger configuration")
-		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doRun))
 }
 

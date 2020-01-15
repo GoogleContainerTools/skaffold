@@ -1,7 +1,9 @@
 ---
-title: "Port forwarding"
-linkTitle: "Port forwarding"
+title: "Port Forwarding"
+linkTitle: "Port Forwarding"
 weight: 50
+featureId: portforward
+aliases: [/docs/how-tos/portforward]
 ---
 
 Skaffold has built-in support for forwarding ports for exposed Kubernetes resources on your cluster
@@ -52,8 +54,9 @@ Acceptable resource types include: `Service`, `Pod` and Controller resource type
 | ------------- |-------------| -----|
 | resourceType     | `pod`, `service`, `deployment`, `replicaset`, `statefulset`, `replicationcontroller`, `daemonset`, `job`, `cronjob` | Yes | 
 | resourceName     | Name of the resource to forward.     | Yes | 
-| namespace  | The namespace of the resource to port forward.     | No. Defaults to `default` | 
+| namespace  | The namespace of the resource to port forward.     | No. Defaults to current namespace, or `default` if no current namespace is defined | 
 | port | Port is the resource port that will be forwarded. | Yes |
+| address | Address is the address on which the forward will be bound. | No. Defaults to `127.0.0.1` |
 | localPort | LocalPort is the local port to forward too. | No. Defaults to value set for `port`. |
 
 
@@ -72,3 +75,16 @@ portForward:
 ```
 
 ![portforward_deployment](/images/portforward.png)
+
+If you want the port forward to to be available from other hosts and not from the local host only, you can bind
+the port forward to the address `0.0.0.0`:
+
+```yaml
+portForward:
+- resourceType: deployment
+  resourceName: myDep
+  namespace: mynamespace
+  port: 8080
+  address: 0.0.0.0
+  localPort: 9000
+```

@@ -4,22 +4,32 @@ linkTitle: "Resources"
 weight: 130
 ---
 
+## 2020 Roadmap
+
+Coming soon!  
+
 ## 2019 Roadmap
 
 * Plugin model for builders
-* IDE integration - VSCode and IntelliJ Skaffold dev/build/run/deploy support, Skaffold Config code completion
-* Debugging JVM applications
-* Provide help with integration testing
+   * DONE - see custom artifacts
+* IDE integration VSCode and IntelliJ Skaffold dev/build/run/deploy support, Skaffold Config code completion
+   * DONE, see [Cloud Code](http://cloud.google.com/code)
+* Debugging JVM applications 
+    * DONE, we have Java, go, python and node for [debugging]({{<relref "/docs/workflows/debug">}})
 * Skaffold keeps track of what it built, for faster restarts
-* Automated Kubernetes manifest generation
+    * DONE, artifact caching is enabled by default, can be controlled with the `--cache-artifacts` flag
 * Pipeline CRD integration
+    * DONE - we have Tekton pipeline generation in alpha, docs to come
+
+In 2019 we also focused a major part of our efforts in fixing bugs, improve our triage, pull request and design processes, created better documentation, and continuously increased test coverage.
+
+We reprioritized these items for next year: 
+
+* Provide help with integration testing
+* Automated Kubernetes manifest generation
 * Infrastructure scaffolding for CI/CD on GCP/GKE
 * Document end-to-end solutions
 * Status dashboard for build (test) and deployment besides logging
-
-{{< alert title="Note" >}}
-The roadmap is subject to change and aspirational but we would like to share our plans with the user and contributor community.
-{{< /alert >}}
 
 ## Contributing
 
@@ -45,7 +55,3 @@ Hangouts. Everyone is welcome to add suggestions to the [Meeting Agenda](https:/
 and [attend the meeting](https://hangouts.google.com/hangouts/_/google.com/skaffold).
 If you join the Skaffold Mailing List, a calendar invite will be sent to your Google
 Calendar.
-
-## FAQ
-
-## Troubleshooting

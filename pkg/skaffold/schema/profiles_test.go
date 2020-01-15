@@ -140,6 +140,7 @@ func TestApplyProfiles(t *testing.T) {
 									MavenImage:  "gcr.io/cloud-builders/mvn",
 									GradleImage: "gcr.io/cloud-builders/gradle",
 									KanikoImage: "gcr.io/kaniko-project/executor",
+									PackImage:   "gcr.io/k8s-skaffold/pack",
 								},
 							},
 						},
@@ -610,6 +611,17 @@ func TestActivatedProfiles(t *testing.T) {
 				},
 			},
 			expected: []string{"one", "one-as-well", "not-two"},
+		},
+		{
+			description: "Profiles on the command line are activated after auto-activated profiles",
+			opts: cfg.SkaffoldOptions{
+				Command:  "run",
+				Profiles: []string{"activated", "also-activated"},
+			},
+			profiles: []latest.Profile{
+				{Name: "run-profile", Activation: []latest.Activation{{Command: "run"}}},
+			},
+			expected: []string{"run-profile", "activated", "also-activated"},
 		},
 	}
 

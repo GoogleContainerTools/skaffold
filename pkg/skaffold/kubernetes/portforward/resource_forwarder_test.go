@@ -65,10 +65,10 @@ func newTestForwarder() *testForwarder {
 	}
 }
 
-func mockRetrieveAvailablePort(taken map[int]struct{}, availablePorts []int) func(int, util.ForwardedPorts) int {
+func mockRetrieveAvailablePort(_ string, taken map[int]struct{}, availablePorts []int) func(string, int, util.ForwardedPorts) int {
 	// Return first available port in ports that isn't taken
-	lock := sync.Mutex{}
-	return func(int, util.ForwardedPorts) int {
+	var lock sync.Mutex
+	return func(string, int, util.ForwardedPorts) int {
 		for _, p := range availablePorts {
 			lock.Lock()
 			if _, ok := taken[p]; ok {
@@ -127,7 +127,7 @@ func TestStart(t *testing.T) {
 			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", nil)
 			rf.EntryForwarder = fakeForwarder
 
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, test.availablePorts))
 			t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
 				return test.resources, nil
 			})
@@ -197,7 +197,7 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 				lock:      &sync.Mutex{},
 			}
 
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, test.availablePorts))
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, test.availablePorts))
 
 			actualEntry := rf.getCurrentEntry(test.resource)
 			t.CheckDeepEqual(expectedEntry, actualEntry, cmp.AllowUnexported(portForwardEntry{}, sync.Mutex{}))
@@ -237,7 +237,7 @@ func TestUserDefinedResources(t *testing.T) {
 		rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", []*latest.PortForwardResource{pod})
 		rf.EntryForwarder = fakeForwarder
 
-		t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(map[int]struct{}{}, []int{8080, 9000}))
+		t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, []int{8080, 9000}))
 		t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
 			return []*latest.PortForwardResource{svc}, nil
 		})
@@ -297,12 +297,14 @@ func TestRetrieveServices(t *testing.T) {
 				Name:      "svc1",
 				Namespace: "test",
 				Port:      8080,
+				Address:   "127.0.0.1",
 				LocalPort: 8080,
 			}, {
 				Type:      constants.Service,
 				Name:      "svc2",
 				Namespace: "test1",
 				Port:      8081,
+				Address:   "127.0.0.1",
 				LocalPort: 8081,
 			}},
 		}, {

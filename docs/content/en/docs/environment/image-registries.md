@@ -1,7 +1,9 @@
 ---
-title: "Image repository handling"
-linkTitle: "Image repository handling"
+title: "Image Repository Handling"
+linkTitle: "Image Repository Handling"
 weight: 70
+featureId: default_repo
+aliases: [/docs/concepts/image_repositories]
 ---
 
 Often, a Kubernetes manifest (or `skaffold.yaml`) makes references to images that push to

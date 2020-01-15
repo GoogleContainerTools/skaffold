@@ -17,11 +17,13 @@ limitations under the License.
 package latest
 
 import (
+	v1 "k8s.io/api/core/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
 // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v1beta17"
+const Version string = "skaffold/v2alpha2"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -88,6 +90,9 @@ type PortForwardResource struct {
 
 	// Port is the resource port that will be forwarded.
 	Port int `yaml:"port,omitempty"`
+
+	// Address is the local address to bind to. Defaults to the loopback address 127.0.0.1.
+	Address string `yaml:"address,omitempty"`
 
 	// LocalPort is the local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
 	LocalPort int `yaml:"localPort,omitempty"`
@@ -191,6 +196,10 @@ type LocalBuild struct {
 
 	// UseBuildkit use BuildKit to build Docker images.
 	UseBuildkit bool `yaml:"useBuildkit,omitempty"`
+
+	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
+	// Defaults to 1.
+	Concurrency *int `yaml:"concurrency,omitempty"`
 }
 
 // GoogleCloudBuild *beta* describes how to do a remote build on
@@ -237,26 +246,14 @@ type GoogleCloudBuild struct {
 	// Defaults to `gcr.io/cloud-builders/gradle`.
 	GradleImage string `yaml:"gradleImage,omitempty"`
 
+	// PackImage is the image that runs a Cloud Native Buildpacks build.
+	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
+	// Defaults to `gcr.io/k8s-skaffold/pack`.
+	PackImage string `yaml:"packImage,omitempty"`
+
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
 	// Defaults to 0.
 	Concurrency int `yaml:"concurrency,omitempty"`
-}
-
-// LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
-type LocalDir struct {
-	// InitImage is the image used to run init container which mounts kaniko context.
-	InitImage string `yaml:"initImage,omitempty"`
-}
-
-// KanikoBuildContext contains the different fields available to specify
-// a Kaniko build context.
-type KanikoBuildContext struct {
-	// GCSBucket is the GCS bucket to which sources are uploaded.
-	// Kaniko will need access to that bucket to download the sources.
-	GCSBucket string `yaml:"gcsBucket,omitempty" yamltags:"oneOf=buildContext"`
-
-	// LocalDir configures how Kaniko mounts sources directly via an `emptyDir` volume.
-	LocalDir *LocalDir `yaml:"localDir,omitempty" yamltags:"oneOf=buildContext"`
 }
 
 // KanikoCache configures Kaniko caching. If a cache is specified, Kaniko will
@@ -281,9 +278,9 @@ type ClusterDetails struct {
 	// PullSecret is the path to the Google Cloud service account secret key file.
 	PullSecret string `yaml:"pullSecret,omitempty"`
 
-	// PullSecretName is the name of the Kubernetes secret for pulling the files
-	// from the build context and pushing the final image. If given, the secret needs to
-	// contain the Google Cloud service account secret key under the key `kaniko-secret`.
+	// PullSecretName is the name of the Kubernetes secret for pulling base images
+	// and pushing the final image. If given, the secret needs to contain the Google Cloud
+	// service account secret key under the key `kaniko-secret`.
 	// Defaults to `kaniko-secret`.
 	PullSecretName string `yaml:"pullSecretName,omitempty"`
 
@@ -337,6 +334,14 @@ type ResourceRequirement struct {
 	// Memory the amount of memory to allocate to the pod.
 	// For example: `1Gi` or `1000Mi`.
 	Memory string `yaml:"memory,omitempty"`
+
+	// EphemeralStorage the amount of Ephemeral storage to allocate to the pod.
+	// For example: `1Gi` or `1000Mi`.
+	EphemeralStorage string `yaml:"ephemeralStorage,omitempty"`
+
+	// ResourceStorage the amount of resource storage to allocate to the pod.
+	// For example: `1Gi` or `1000Mi`.
+	ResourceStorage string `yaml:"resourceStorage,omitempty"`
 }
 
 // TestCase is a list of structure tests to run on images that Skaffold builds.
@@ -552,7 +557,7 @@ type Artifact struct {
 	// Defaults to `.`.
 	Workspace string `yaml:"context,omitempty"`
 
-	// Sync *alpha* lists local files synced to pods instead
+	// Sync *beta* lists local files synced to pods instead
 	// of triggering an image build when modified.
 	Sync *Sync `yaml:"sync,omitempty"`
 
@@ -560,7 +565,7 @@ type Artifact struct {
 	ArtifactType `yaml:",inline"`
 }
 
-// Sync *alpha* specifies what files to sync into the container.
+// Sync *beta* specifies what files to sync into the container.
 // This is a list of sync rules indicating the intent to sync for source files.
 type Sync struct {
 	// Manual lists manual sync rules indicating the source and destination.
@@ -589,7 +594,7 @@ type SyncRule struct {
 	Strip string `yaml:"strip,omitempty"`
 }
 
-// Profile *beta* profiles are used to override any `build`, `test` or `deploy` configuration.
+// Profile is used to override any `build`, `test` or `deploy` configuration.
 type Profile struct {
 	// Name is a unique profile name.
 	// For example: `profile-prod`.
@@ -655,18 +660,52 @@ type ArtifactType struct {
 	// contain [Bazel](https://bazel.build/) configuration files.
 	BazelArtifact *BazelArtifact `yaml:"bazel,omitempty" yamltags:"oneOf=artifact"`
 
-	// JibArtifact *alpha* builds images using the
+	// JibArtifact builds images using the
 	// [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).
 	JibArtifact *JibArtifact `yaml:"jib,omitempty" yamltags:"oneOf=artifact"`
 
-	// KanikoArtifact *alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).
+	// KanikoArtifact builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).
 	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty" yamltags:"oneOf=artifact"`
 
-	// CustomArtifact *alpha* builds images using a custom build script written by the user.
+	// BuildpackArtifact builds images using [Cloud Native Buildpacks](https://buildpacks.io/).
+	BuildpackArtifact *BuildpackArtifact `yaml:"buildpack,omitempty" yamltags:"oneOf=artifact"`
+
+	// CustomArtifact *beta* builds images using a custom build script written by the user.
 	CustomArtifact *CustomArtifact `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
 }
 
-// CustomArtifact *alpha* describes an artifact built from a custom build script
+// BuildpackArtifact *alpha* describes an artifact built using [Cloud Native Buildpacks](https://buildpacks.io/).
+// It can be used to build images out of project's sources without any additional configuration.
+type BuildpackArtifact struct {
+	// ForcePull should the builder image be pull before each build.
+	ForcePull bool `yaml:"forcePull,omitempty"`
+
+	// Builder is the builder image used.
+	Builder string `yaml:"builder" yamltags:"required"`
+
+	// RunImage overrides the stack's default run image.
+	RunImage string `yaml:"runImage,omitempty"`
+
+	// Env are environment variables, in the `key=value` form,  passed to the build.
+	// Values can use the go template syntax.
+	// For example: `["key1=value1", "key2=value2", "key3={{.ENV_VARIABLE}}"]`.
+	Env []string `yaml:"env,omitempty"`
+
+	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
+	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`
+}
+
+// BuildpackDependencies *alpha* is used to specify dependencies for an artifact built by a buildpack.
+type BuildpackDependencies struct {
+	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
+	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
+
+	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
+	// Will only work in conjunction with `paths`.
+	Ignore []string `yaml:"ignore,omitempty"`
+}
+
+// CustomArtifact *beta* describes an artifact built from a custom build script
 // written by the user. It can be used to build images with builders that aren't directly integrated with skaffold.
 type CustomArtifact struct {
 	// BuildCommand is the command executed to build the image.
@@ -675,7 +714,7 @@ type CustomArtifact struct {
 	Dependencies *CustomDependencies `yaml:"dependencies,omitempty"`
 }
 
-// CustomDependencies *alpha* is used to specify dependencies for an artifact built by a custom build script.
+// CustomDependencies *beta* is used to specify dependencies for an artifact built by a custom build script.
 // Either `dockerfile` or `paths` should be specified for file watching to work as expected.
 type CustomDependencies struct {
 	// Dockerfile should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies.
@@ -689,18 +728,18 @@ type CustomDependencies struct {
 	Ignore []string `yaml:"ignore,omitempty"`
 }
 
-// DockerfileDependency *alpha* is used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile.
+// DockerfileDependency *beta* is used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile.
 type DockerfileDependency struct {
 	// Path locates the Dockerfile relative to workspace.
 	Path string `yaml:"path,omitempty"`
 
 	// BuildArgs are arguments passed to the docker build.
 	// It also accepts environment variables via the go template syntax.
-	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 }
 
-// KanikoArtifact *alpha* describes an artifact built from a Dockerfile,
+// KanikoArtifact describes an artifact built from a Dockerfile,
 // with kaniko.
 type KanikoArtifact struct {
 	// AdditionalFlags are additional flags to be passed to Kaniko command line.
@@ -717,11 +756,14 @@ type KanikoArtifact struct {
 
 	// BuildArgs are arguments passed to the docker build.
 	// It also accepts environment variables via the go template syntax.
-	// For example: `{"key1": "value1", "key2": "value2", "key3": "{{.ENV_VARIABLE}}"}`.
+	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 
-	// BuildContext is where the build context for this artifact resides.
-	BuildContext *KanikoBuildContext `yaml:"buildContext,omitempty"`
+	// Env are environment variables passed to the kaniko pod.
+	Env []v1.EnvVar `yaml:"env,omitempty"`
+
+	// InitImage is the image used to run init container which mounts kaniko context.
+	InitImage string `yaml:"initImage,omitempty"`
 
 	// Image is the Docker image used by the Kaniko pod.
 	// Defaults to the latest released version of `gcr.io/kaniko-project/executor`.
@@ -738,7 +780,7 @@ type KanikoArtifact struct {
 	SkipTLS bool `yaml:"skipTLS,omitempty"`
 }
 
-// DockerArtifact *beta* describes an artifact built from a Dockerfile,
+// DockerArtifact describes an artifact built from a Dockerfile,
 // usually using `docker build`.
 type DockerArtifact struct {
 	// DockerfilePath locates the Dockerfile relative to workspace.
@@ -768,7 +810,7 @@ type DockerArtifact struct {
 	NoCache bool `yaml:"noCache,omitempty"`
 }
 
-// BazelArtifact *beta* describes an artifact built with [Bazel](https://bazel.build/).
+// BazelArtifact describes an artifact built with [Bazel](https://bazel.build/).
 type BazelArtifact struct {
 	// BuildTarget is the `bazel build` target to run.
 	// For example: `//:skaffold_example.tar`.
@@ -779,7 +821,7 @@ type BazelArtifact struct {
 	BuildArgs []string `yaml:"args,omitempty"`
 }
 
-// JibArtifact *alpha* builds images using the
+// JibArtifact builds images using the
 // [Jib plugins for Maven and Gradle](https://github.com/GoogleContainerTools/jib/).
 type JibArtifact struct {
 	// Project selects which sub-project to build for multi-module builds.
@@ -789,6 +831,8 @@ type JibArtifact struct {
 	// For example: `["--no-build-cache"]`.
 	Flags []string `yaml:"args,omitempty"`
 
-	// Type the Jib builder type (internal: see jib.PluginType)
-	Type int `yaml:"-"`
+	// Type the Jib builder type; normally determined automatically. Valid types are
+	// `maven`: for Maven.
+	// `gradle`: for Gradle.
+	Type string `yaml:"type,omitempty"`
 }

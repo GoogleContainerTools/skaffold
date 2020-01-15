@@ -56,17 +56,20 @@ func TestFileMonitor(t *testing.T) {
 			// Register files
 			changed := callback{}
 			err := monitor.Register(tmpDir.List, changed.call)
-			t.CheckErrorAndDeepEqual(false, err, 0, changed.calls())
+			t.CheckNoError(err)
+			t.CheckDeepEqual(0, changed.calls())
 
 			test.makeChanges(tmpDir)
 
 			// Verify the Monitor detects a change
 			err = monitor.Run(false)
-			t.CheckErrorAndDeepEqual(false, err, 1, changed.calls())
+			t.CheckNoError(err)
+			t.CheckDeepEqual(1, changed.calls())
 
 			// Verify the Monitor doesn't detect more changes
 			err = monitor.Run(false)
-			t.CheckErrorAndDeepEqual(false, err, 1, changed.calls())
+			t.CheckNoError(err)
+			t.CheckDeepEqual(1, changed.calls())
 		})
 	}
 }

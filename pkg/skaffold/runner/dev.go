@@ -24,16 +24,23 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
 // ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
 var ErrorConfigurationChanged = errors.New("configuration changed")
+
+var (
+	// For testing
+	fileSyncInProgress = event.FileSyncInProgress
+	fileSyncFailed     = event.FileSyncFailed
+	fileSyncSucceeded  = event.FileSyncSucceeded
+)
 
 func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	if r.changeSet.needsReload {
@@ -60,12 +67,17 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		}()
 
 		for _, s := range r.changeSet.needsResync {
-			color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
+			fileCount := len(s.Copy) + len(s.Delete)
+			color.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
+			fileSyncInProgress(fileCount, s.Image)
 
 			if err := r.syncer.Sync(ctx, s); err != nil {
 				logrus.Warnln("Skipping deploy due to sync error:", err)
+				fileSyncFailed(fileCount, s.Image, err)
 				return nil
 			}
+
+			fileSyncSucceeded(fileCount, s.Image)
 		}
 	}
 
@@ -109,8 +121,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	r.createLogger(out, artifacts)
 	defer r.logger.Stop()
 
-	kubectlCLI := kubectl.NewFromRunContext(r.runCtx)
-	r.createForwarder(out, kubectlCLI)
+	r.createForwarder(out)
 	defer r.forwarderManager.Stop()
 
 	// Watch artifacts
@@ -130,10 +141,11 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			return context.Canceled
 		default:
 			if err := r.monitor.Register(
-				func() ([]string, error) { return r.builder.DependenciesForArtifact(ctx, artifact) },
+				func() ([]string, error) {
+					return build.DependenciesForArtifact(ctx, artifact, r.runCtx.InsecureRegistries)
+				},
 				func(e filemon.Events) {
-					syncMap := func() (map[string][]string, error) { return r.builder.SyncMap(ctx, artifact) }
-					s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries, syncMap)
+					s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries)
 					switch {
 					case err != nil:
 						logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
@@ -173,7 +185,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return errors.Wrapf(err, "watching skaffold configuration %s", r.runCtx.Opts.ConfigurationFile)
 	}
 
-	color.Default.Fprintln(out, "List generated in", time.Since(start))
+	logrus.Infoln("List generated in", time.Since(start))
 
 	// First build
 	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {

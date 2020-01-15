@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -42,7 +43,6 @@ type SkaffoldOptions struct {
 	CacheArtifacts     bool
 	EnableRPC          bool
 	Force              bool
-	ForceDev           bool
 	NoPrune            bool
 	NoPruneChildren    bool
 	StatusCheck        bool
@@ -56,6 +56,7 @@ type SkaffoldOptions struct {
 	CacheFile          string
 	Trigger            string
 	KubeContext        string
+	KubeConfig         string
 	WatchPollInterval  int
 	DefaultRepo        string
 	CustomLabels       []string
@@ -81,8 +82,9 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 	if opts.Namespace != "" {
 		labels["skaffold.dev/namespace"] = opts.Namespace
 	}
-	if len(opts.Profiles) > 0 {
-		labels["skaffold.dev/profiles"] = strings.Join(opts.Profiles, "__")
+	for i, profile := range opts.Profiles {
+		key := fmt.Sprintf("skaffold.dev/profile.%d", i)
+		labels[key] = profile
 	}
 	for _, cl := range opts.CustomLabels {
 		l := strings.SplitN(cl, "=", 2)
@@ -99,10 +101,6 @@ func (opts *SkaffoldOptions) Labels() map[string]string {
 // and the user did NOT specify the --cache-artifacts flag.
 func (opts *SkaffoldOptions) Prune() bool {
 	return !opts.NoPrune && !opts.CacheArtifacts
-}
-
-func (opts *SkaffoldOptions) ForceDeploy() bool {
-	return opts.ForceDev || opts.Force
 }
 
 func (opts *SkaffoldOptions) IsTargetImage(artifact *latest.Artifact) bool {

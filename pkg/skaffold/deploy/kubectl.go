@@ -17,7 +17,6 @@ limitations under the License.
 package deploy
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"fmt"
@@ -47,7 +46,6 @@ type KubectlDeployer struct {
 	originalImages     []build.Artifact
 	workingDir         string
 	kubectl            deploy.CLI
-	defaultRepo        string
 	insecureRegistries map[string]bool
 }
 
@@ -60,9 +58,8 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 		kubectl: deploy.CLI{
 			CLI:         kubectl.NewFromRunContext(runCtx),
 			Flags:       runCtx.Cfg.Deploy.KubectlDeploy.Flags,
-			ForceDeploy: runCtx.Opts.ForceDeploy(),
+			ForceDeploy: runCtx.Opts.Force,
 		},
-		defaultRepo:        runCtx.DefaultRepo,
 		insecureRegistries: runCtx.InsecureRegistries,
 	}
 }
@@ -89,7 +86,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 		return NewDeploySuccessResult(nil)
 	}
 
-	manifests, err = manifests.SetLabels(merge(labellers...))
+	manifests, err = manifests.SetLabels(merge(k, labellers...))
 	if err != nil {
 		event.DeployFailed(err)
 		return NewDeployErrorResult(errors.Wrap(err, "setting labels in manifests"))
@@ -129,16 +126,18 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 			}
 			rm = append(rm, manifest)
 		}
-		upd, err := rm.ReplaceImages(k.originalImages, k.defaultRepo)
+
+		upd, err := rm.ReplaceImages(k.originalImages)
 		if err != nil {
 			return errors.Wrap(err, "replacing with originals")
 		}
+
 		if err := k.kubectl.Apply(ctx, out, upd); err != nil {
 			return errors.Wrap(err, "apply original")
 		}
 	}
 
-	if err := k.kubectl.Delete(ctx, out, manifests); err != nil {
+	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		return errors.Wrap(err, "delete")
 	}
 
@@ -228,14 +227,16 @@ func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []bu
 
 	manifestOut := out
 	if filepath != "" {
-		f, err := os.Open(filepath)
+		f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
 			return errors.Wrap(err, "opening file for writing manifests")
 		}
-		manifestOut = bufio.NewWriter(f)
+		defer f.Close()
+		f.WriteString(manifests.String() + "\n")
+	} else {
+		fmt.Fprintln(manifestOut, manifests.String())
 	}
 
-	fmt.Fprintln(manifestOut, manifests.String())
 	return nil
 }
 
@@ -270,7 +271,7 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 		return nil, nil
 	}
 
-	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
+	manifests, err = manifests.ReplaceImages(builds)
 	if err != nil {
 		return nil, errors.Wrap(err, "replacing images in manifests")
 	}

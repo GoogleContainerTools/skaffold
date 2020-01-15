@@ -1,12 +1,10 @@
 ---
-title: "File sync"
-linkTitle: "File sync"
+title: "File Sync"
+linkTitle: "File Sync"
 weight: 40
+featureId: sync
+aliases: [/docs/how-tos/filesync]
 ---
-
-{{< alert title="Note" >}}
-File sync is alpha and may change between releases.
-{{< /alert >}}
 
 Skaffold supports copying changed files to a deployed container so as to avoid the need to rebuild, redeploy, and restart the corresponding pod.
 The file copying is enabled by adding a `sync` section with _sync rules_ to the `artifact` in the `skaffold.yaml`.

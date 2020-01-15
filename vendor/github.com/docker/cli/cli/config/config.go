@@ -10,6 +10,7 @@ import (
 	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/cli/cli/config/credentials"
 	"github.com/docker/cli/cli/config/types"
+	"github.com/docker/docker/pkg/homedir"
 	"github.com/pkg/errors"
 )
 
@@ -27,10 +28,7 @@ var (
 
 func init() {
 	if configDir == "" {
-		homedir, err := os.UserHomeDir()
-		if err == nil {
-			configDir = filepath.Join(homedir, configFileDir)
-		}
+		configDir = filepath.Join(homedir.Get(), configFileDir)
 	}
 }
 

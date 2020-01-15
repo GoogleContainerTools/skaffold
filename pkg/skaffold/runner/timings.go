@@ -21,6 +21,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -59,27 +60,25 @@ func (w withTimings) Build(ctx context.Context, out io.Writer, tags tag.ImageTag
 		return nil, nil
 	}
 	start := time.Now()
-	color.Default.Fprintln(out, "Starting build...")
 
 	bRes, err := w.Builder.Build(ctx, out, tags, artifacts)
 	if err != nil {
 		return nil, err
 	}
 
-	color.Default.Fprintln(out, "Build complete in", time.Since(start))
+	logrus.Infoln("Build complete in", time.Since(start))
 	return bRes, nil
 }
 
 func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Artifact) error {
 	start := time.Now()
-	color.Default.Fprintln(out, "Starting test...")
 
 	err := w.Tester.Test(ctx, out, builds)
 	if err != nil {
 		return err
 	}
 
-	color.Default.Fprintln(out, "Test complete in", time.Since(start))
+	logrus.Infoln("Test complete in", time.Since(start))
 	return nil
 }
 
@@ -92,7 +91,7 @@ func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.A
 		return dr
 	}
 
-	color.Default.Fprintln(out, "Deploy complete in", time.Since(start))
+	logrus.Infoln("Deploy complete in", time.Since(start))
 	return dr
 }
 
@@ -105,7 +104,7 @@ func (w withTimings) Cleanup(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	color.Default.Fprintln(out, "Cleanup complete in", time.Since(start))
+	logrus.Infoln("Cleanup complete in", time.Since(start))
 	return nil
 }
 
@@ -118,6 +117,6 @@ func (w withTimings) Prune(ctx context.Context, out io.Writer) error {
 		return err
 	}
 
-	color.Default.Fprintln(out, "Image prune complete in", time.Since(start))
+	logrus.Infoln("Image prune complete in", time.Since(start))
 	return nil
 }

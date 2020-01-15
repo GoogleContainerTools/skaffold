@@ -9,7 +9,7 @@ This doc explains the development workflow so you can get started
 You must install these tools:
 
 1. [`go`](https://golang.org/doc/install): The language skaffold is
-   built in (version >= go 1.12)
+   built in (version >= go 1.13)
 1. [`git`](https://help.github.com/articles/set-up-git/): For source control
 1. [`make`](https://www.gnu.org/software/make/): For building skaffold.
 1. [`golangci-lint`](https://github.com/golangci/golangci-lint): You can use the
@@ -55,6 +55,21 @@ Once you've done this, clone your fork to your local machine:
 
    _Adding the `upstream` remote sets you up nicely for regularly [syncing your
    fork](https://help.github.com/articles/syncing-a-fork/)._
+
+## IDE setup 
+
+Skaffold uses go modules and we commit to the `vendor` directory all our dependencies to make CI faster.  
+We recommend checking out Skaffold outside of the `GOPATH`. 
+
+JetBrains Goland: 
+1. `File > Open...` (choose your skaffold directory) 
+2. ensure `Go > Go modules > Vendoring mode` is checked
+
+JetBrains IntelliJ with [Go plugin](https://plugins.jetbrains.com/plugin/9568-go): 
+1. `File > Open...` (choose your skaffold directory) 
+  
+Visual Studio Code with [Go plugin](https://github.com/Microsoft/vscode-go): 
+1. `File > Open...` 
 
 ## Making a config change
 
@@ -121,7 +136,7 @@ To build with your local changes you have two options:
 If you are iterating on skaffold and want to see your changes in action, you can:
 
 1. [Build skaffold](#building-skaffold)
-2. [Use the quickstart example](examples/getting-started/README.md)
+2. [Use the quickstart example](examples/getting-started/README.adoc)
 
 ## Testing skaffold
 

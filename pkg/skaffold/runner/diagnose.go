@@ -26,11 +26,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cache"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
 func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) error {
@@ -46,11 +46,11 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) e
 			fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
 		}
 
-		timeDeps1, deps, err := timeToListDependencies(ctx, r.builder, artifact)
+		timeDeps1, deps, err := timeToListDependencies(ctx, artifact, r.runCtx.InsecureRegistries)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
-		timeDeps2, _, err := timeToListDependencies(ctx, r.builder, artifact)
+		timeDeps2, _, err := timeToListDependencies(ctx, artifact, r.runCtx.InsecureRegistries)
 		if err != nil {
 			return errors.Wrap(err, "listing artifact dependencies")
 		}
@@ -58,13 +58,13 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) e
 		fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
 		fmt.Fprintf(out, " - Time to list dependencies: %v (2nd time: %v)\n", timeDeps1, timeDeps2)
 
-		timeSyncMap1, err := timeToConstructSyncMap(ctx, r.builder, artifact)
+		timeSyncMap1, err := timeToConstructSyncMap(artifact, r.runCtx.InsecureRegistries)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return errors.Wrap(err, "construct artifact dependencies")
 			}
 		}
-		timeSyncMap2, err := timeToConstructSyncMap(ctx, r.builder, artifact)
+		timeSyncMap2, err := timeToConstructSyncMap(artifact, r.runCtx.InsecureRegistries)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
 				return errors.Wrap(err, "construct artifact dependencies")
@@ -100,20 +100,22 @@ func typeOfArtifact(a *latest.Artifact) string {
 		return "Kaniko artifact"
 	case a.CustomArtifact != nil:
 		return "Custom artifact"
+	case a.BuildpackArtifact != nil:
+		return "Buildpack artifact"
 	default:
 		panic("Unknown artifact")
 	}
 }
 
-func timeToListDependencies(ctx context.Context, builder cache.DependencyLister, a *latest.Artifact) (time.Duration, []string, error) {
+func timeToListDependencies(ctx context.Context, a *latest.Artifact, insecureRegistries map[string]bool) (time.Duration, []string, error) {
 	start := time.Now()
-	paths, err := builder.DependenciesForArtifact(ctx, a)
+	paths, err := build.DependenciesForArtifact(ctx, a, insecureRegistries)
 	return time.Since(start), paths, err
 }
 
-func timeToConstructSyncMap(ctx context.Context, builder build.Builder, a *latest.Artifact) (time.Duration, error) {
+func timeToConstructSyncMap(a *latest.Artifact, insecureRegistries map[string]bool) (time.Duration, error) {
 	start := time.Now()
-	_, err := builder.SyncMap(ctx, a)
+	_, err := sync.SyncMap(a, insecureRegistries)
 	return time.Since(start), err
 }
 

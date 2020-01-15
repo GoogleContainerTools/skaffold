@@ -194,6 +194,11 @@ FROM scratch
 ADD ./file /etc/file
 `
 
+const fromScratchQuoted = `
+FROM "scratch"
+ADD ./file /etc/file
+`
+
 const fromScratchUppercase = `
 FROM SCRATCH
 ADD ./file /etc/file
@@ -461,6 +466,12 @@ func TestGetDependencies(t *testing.T) {
 		{
 			description: "from scratch",
 			dockerfile:  fromScratch,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file"},
+		},
+		{
+			description: "from scratch quoted",
+			dockerfile:  fromScratchQuoted,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "file"},
 		},

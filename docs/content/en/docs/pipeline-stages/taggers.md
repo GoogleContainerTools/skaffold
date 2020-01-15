@@ -2,6 +2,8 @@
 title: "Tag"
 linkTitle: "Tag"
 weight: 15
+featureId: tagpolicy
+aliases: [/docs/how-tos/taggers]
 ---
 
 Skaffold supports the following policies for tagging images:
@@ -29,7 +31,7 @@ the artifact's `context` directory and tag according to those rules:
 
  + If the workspace is on a Git tag, that tag is used to tag images
  + If the workspace is on a Git commit, the short commit is used
- + It the workspace has uncommited changes, a `-dirty` suffix is appended to the image tag
+ + It the workspace has uncommitted changes, a `-dirty` suffix is appended to the image tag
 
 ### Example
 
@@ -41,7 +43,7 @@ specified explicitly:
 
 ### Configuration
 
-`gitCommit` tag policy features no options.
+{{< schema root="GitTagger" >}}
 
 ## `sha256`: uses Sha256 hashes of contents as tags
 
@@ -76,8 +78,8 @@ image.
 {{< alert >}}
 <b>Note</b><br>
 
-<code>IMAGE_NAME</code> is a built-in variable whose value is the <code>imageName</code> field in
-the <code>artifacts</code> part of the <code>build</code> section.
+`IMAGE_NAME` is a built-in variable whose value is the `imageName` field in
+the `artifacts` part of the `build` section.
 {{< /alert >}}
 
 ### Example

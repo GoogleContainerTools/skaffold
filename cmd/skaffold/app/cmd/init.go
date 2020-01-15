@@ -27,18 +27,19 @@ import (
 )
 
 var (
-	composeFile   string
-	cliArtifacts  []string
-	skipBuild     bool
-	force         bool
-	analyze       bool
-	enableJibInit bool
+	composeFile         string
+	cliArtifacts        []string
+	skipBuild           bool
+	force               bool
+	analyze             bool
+	enableJibInit       bool
+	enableBuildpackInit bool
 )
 
 // NewCmdInit describes the CLI command to generate a Skaffold configuration.
 func NewCmdInit() *cobra.Command {
 	return NewCmd("init").
-		WithDescription("Generate configuration for deploying an application").
+		WithDescription("[alpha] Generate configuration for deploying an application").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 			f.BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in Skaffold config")
@@ -48,18 +49,21 @@ func NewCmdInit() *cobra.Command {
 			f.BoolVar(&analyze, "analyze", false, "Print all discoverable Dockerfiles and images in JSON format to stdout")
 			f.BoolVar(&enableJibInit, "XXenableJibInit", false, "")
 			f.MarkHidden("XXenableJibInit")
+			f.BoolVar(&enableBuildpackInit, "XXenableBuildpackInit", false, "")
+			f.MarkHidden("XXenableBuildpackInit")
 		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doInit))
 }
 
 func doInit(ctx context.Context, out io.Writer) error {
 	return initializer.DoInit(ctx, out, initializer.Config{
-		ComposeFile:   composeFile,
-		CliArtifacts:  cliArtifacts,
-		SkipBuild:     skipBuild,
-		Force:         force,
-		Analyze:       analyze,
-		EnableJibInit: enableJibInit,
-		Opts:          opts,
+		ComposeFile:         composeFile,
+		CliArtifacts:        cliArtifacts,
+		SkipBuild:           skipBuild,
+		Force:               force,
+		Analyze:             analyze,
+		EnableJibInit:       enableJibInit,
+		EnableBuildpackInit: enableBuildpackInit,
+		Opts:                opts,
 	})
 }

@@ -98,15 +98,17 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		// Image is already built
 		buildComplete(artifact.ImageName)
 		entry := c.artifactCache[result.Hash()]
+		tag := tags[artifact.ImageName]
+
 		var uniqueTag string
 		if c.imagesAreLocal {
 			var err error
-			uniqueTag, err = c.client.TagWithImageID(ctx, artifact.ImageName, entry.ID)
+			uniqueTag, err = build.TagWithImageID(ctx, tag, entry.ID, c.client)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			uniqueTag = tags[artifact.ImageName] + "@" + entry.Digest
+			uniqueTag = build.TagWithDigest(tag, entry.Digest)
 		}
 
 		alreadyBuilt = append(alreadyBuilt, build.Artifact{
@@ -115,11 +117,11 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		})
 	}
 
-	color.Default.Fprintln(out, "Cache check complete in", time.Since(start))
+	logrus.Infoln("Cache check complete in", time.Since(start))
 
 	bRes, err := buildAndTest(ctx, out, tags, needToBuild)
 	if err != nil {
-		return nil, errors.Wrap(err, "build failed")
+		return nil, err
 	}
 
 	if err := c.addArtifacts(ctx, bRes, hashByName); err != nil {
@@ -132,7 +134,22 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		return append(bRes, alreadyBuilt...), nil
 	}
 
-	return append(bRes, alreadyBuilt...), err
+	return maintainArtifactOrder(append(bRes, alreadyBuilt...), artifacts), err
+}
+
+func maintainArtifactOrder(built []build.Artifact, artifacts []*latest.Artifact) []build.Artifact {
+	byName := make(map[string]build.Artifact)
+	for _, build := range built {
+		byName[build.ImageName] = build
+	}
+
+	var ordered []build.Artifact
+
+	for _, artifact := range artifacts {
+		ordered = append(ordered, byName[artifact.ImageName])
+	}
+
+	return ordered
 }
 
 func (c *cache) addArtifacts(ctx context.Context, bRes []build.Artifact, hashByName map[string]string) error {

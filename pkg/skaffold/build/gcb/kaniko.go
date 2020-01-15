@@ -51,6 +51,10 @@ func (b *Builder) kanikoBuildSpec(artifact *latest.KanikoArtifact, tag string) (
 		kanikoArgs = append(kanikoArgs, "--reproducible")
 	}
 
+	if artifact.Target != "" {
+		kanikoArgs = append(kanikoArgs, "--target", artifact.Target)
+	}
+
 	steps := []*cloudbuild.BuildStep{
 		{
 			Name: b.KanikoImage,

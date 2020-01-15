@@ -2,17 +2,41 @@
 title: "Local Cluster"
 linkTitle: "Local Cluster"
 weight: 60
+aliases: [/docs/concepts/local_development]
 ---
 
-Skaffold can be easily configured to deploy against a cluster hosted locally, most commonly with
-[`minikube`](https://github.com/kubernetes/minikube/) or `docker-for-desktop`.
-The advantage of this setup is that no images need to be pushed, since the local cluster
-uses images straight from your local docker daemon.
+Skaffold can be easily configured to deploy against a cluster hosted locally, most commonly
+with [`minikube`] or [`Docker Desktop`].
 
-For non-standard local setups, such as a custom `minikube` profile or [kind](https://github.com/kubernetes-sigs/kind),
+The advantage of this setup is that no images need to be pushed, since the local cluster
+uses images straight from your local docker daemon. It leads to much faster development cycles.
+
+### Auto detection
+
+Skaffold's heuristic to detect local clusters is based on the Kubernetes context name.
+The following context names are checked:
+
+| Kubernetes context | Local cluster type | Notes |
+| ------------------ | ------------------ | ----- |
+| docker-desktop     | [`Docker Desktop`] | |
+| docker-for-desktop | [`Docker Desktop`] | This context name is deprecated |
+| minikube           | [`minikube`]       | |
+| kind-(.*)          | [`kind`]           | This pattern is used by kind >= v0.6.0 |
+| (.*)@kind          | [`kind`]           | This pattern was used by kind < v0.6.0 |
+
+For any other name, Skaffold assumes that the cluster is remote and that images
+have to be pushed.
+
+ [`minikube`]: https://github.com/kubernetes/minikube/
+ [`Docker Desktop`]: https://www.docker.com/products/docker-desktop
+ [`kind`]: https://github.com/kubernetes-sigs/kind
+
+### Manual override
+
+For non-standard local setups, such as a custom `minikube` profile,
 some extra configuration is necessary. The essential steps are:
 
-1. Ensure that Skaffold builds the images with the docker daemon, which also runs the containers.
+1. Ensure that Skaffold builds the images with the same docker daemon that runs the pods' containers.
 1. Tell Skaffold to skip pushing images either by configuring
 
     ```yaml
@@ -34,3 +58,4 @@ For example, when running `minikube` with a custom profile (e.g. `minikube start
     ```bash
     skaffold config set --kube-context my-profile local-cluster true
     ```
+

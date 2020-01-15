@@ -93,6 +93,16 @@ func Diagnose(args ...string) *RunBuilder {
 	return &RunBuilder{command: "diagnose", args: args}
 }
 
+// Schema runs `skaffold schema` with the given arguments.
+func Schema(args ...string) *RunBuilder {
+	return &RunBuilder{command: "schema", args: args}
+}
+
+// Credits runs `skaffold credits` with the given arguments.
+func Credits(args ...string) *RunBuilder {
+	return &RunBuilder{command: "credits", args: args}
+}
+
 func GeneratePipeline(args ...string) *RunBuilder {
 	return &RunBuilder{command: "generate-pipeline", args: args}
 }
@@ -263,7 +273,7 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 }
 
 // removeSkaffoldEnvVariables makes sure Skaffold runs without
-// any env variable that might change its behaviour, such as
+// any env variable that might change its behavior, such as
 // enabling caching.
 func removeSkaffoldEnvVariables(env []string) []string {
 	var clean []string

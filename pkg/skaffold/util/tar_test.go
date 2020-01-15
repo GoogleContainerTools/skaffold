@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -58,6 +59,46 @@ func TestCreateTar(t *testing.T) {
 		}
 
 		t.CheckDeepEqual(files, tarFiles)
+	})
+}
+
+func TestCreateTarWithParents(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		files := map[string]string{
+			"foo":     "baz1",
+			"bar/bat": "baz2",
+			"bar/baz": "baz3",
+		}
+		_, paths := prepareFiles(t, files)
+
+		var b bytes.Buffer
+		err := CreateTarWithParents(&b, ".", paths, 10, 100, time.Now())
+		t.CheckNoError(err)
+
+		// Make sure the contents match.
+		tarFiles := make(map[string]string)
+		tr := tar.NewReader(&b)
+		for {
+			hdr, err := tr.Next()
+			if err == io.EOF {
+				break
+			}
+			t.CheckNoError(err)
+			t.CheckDeepEqual(10, hdr.Uid)
+			t.CheckDeepEqual(100, hdr.Gid)
+
+			content, err := ioutil.ReadAll(tr)
+			t.CheckNoError(err)
+
+			tarFiles[hdr.Name] = string(content)
+		}
+
+		t.CheckDeepEqual(map[string]string{
+			"foo":     "baz1",
+			"bar":     "",
+			"bar/bat": "baz2",
+			"bar/baz": "baz3",
+		}, tarFiles)
 	})
 }
 

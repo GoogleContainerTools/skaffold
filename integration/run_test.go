@@ -24,19 +24,18 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	tests := []struct {
 		description string
 		dir         string
-		filename    string
 		args        []string
 		deployments []string
 		pods        []string
 		env         []string
-		gcpOnly     bool
+		setup       func(t *testing.T, workdir string) (teardown func())
 	}{
 		{
 			description: "getting-started",
@@ -72,81 +71,14 @@ func TestRun(t *testing.T) {
 			pods:        []string{"bazel"},
 		},
 		{
-			description: "Google Cloud Build",
-			dir:         "examples/google-cloud-build",
-			pods:        []string{"getting-started"},
-			gcpOnly:     true,
-		},
-		{
-			description: "Google Cloud Build with sub folder",
-			dir:         "testdata/gcb-sub-folder",
-			pods:        []string{"getting-started"},
-			gcpOnly:     true,
-		},
-		{
-			description: "Google Cloud Build with Kaniko",
-			dir:         "examples/gcb-kaniko",
-			pods:        []string{"getting-started-kaniko"},
-			gcpOnly:     true,
-		},
-		{
-			description: "kaniko",
-			dir:         "examples/kaniko",
-			pods:        []string{"getting-started-kaniko"},
-			gcpOnly:     true,
-		},
-		{
-			description: "kaniko local",
-			dir:         "examples/kaniko-local",
-			pods:        []string{"getting-started-kaniko"},
-			gcpOnly:     true,
-		},
-		{
-			description: "kaniko local with target",
-			dir:         "testdata/kaniko-target",
-			pods:        []string{"getting-started-kaniko"},
-			gcpOnly:     true,
-		},
-		{
-			description: "kaniko local with sub folder",
-			dir:         "testdata/kaniko-sub-folder",
-			pods:        []string{"getting-started-kaniko"},
-			gcpOnly:     true,
-		},
-		{
-			description: "kaniko microservices",
-			dir:         "testdata/kaniko-microservices",
-			deployments: []string{"leeroy-app", "leeroy-web"},
-			gcpOnly:     true,
-		},
-		{
 			description: "jib",
 			dir:         "testdata/jib",
 			deployments: []string{"web"},
 		},
 		{
-			description: "jib in googlecloudbuild",
-			dir:         "testdata/jib",
-			args:        []string{"-p", "gcb"},
-			deployments: []string{"web"},
-			gcpOnly:     true,
-		},
-		{
 			description: "jib gradle",
-			dir:         "testdata/jib-gradle",
+			dir:         "examples/jib-gradle",
 			deployments: []string{"web"},
-		},
-		{
-			description: "jib gradle in googlecloudbuild",
-			dir:         "testdata/jib-gradle",
-			args:        []string{"-p", "gcb"},
-			deployments: []string{"web"},
-			gcpOnly:     true,
-		},
-		{
-			description: "custom builder",
-			dir:         "testdata/custom",
-			pods:        []string{"bazel"},
 		},
 		{
 			description: "profiles",
@@ -154,35 +86,123 @@ func TestRun(t *testing.T) {
 			args:        []string{"-p", "minikube-profile"},
 			pods:        []string{"hello-service"},
 		},
+		{
+			description: "custom builder",
+			dir:         "examples/custom",
+			pods:        []string{"getting-started"},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if test.gcpOnly && !ShouldRunGCPOnlyTests() {
-				t.Skip("skipping gcp only test")
-			}
-			if !test.gcpOnly && ShouldRunGCPOnlyTests() {
-				t.Skip("skipping test that is not gcp only")
+			if test.setup != nil {
+				teardown := test.setup(t, test.dir)
+				defer teardown()
 			}
 
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			skaffold.Run(test.args...).WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)
 
-			skaffold.Delete().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+		})
+	}
+}
+
+func TestRunGCPOnly(t *testing.T) {
+	if testing.Short() || !RunOnGCP() {
+		t.Skip("skipping GCP integration test")
+	}
+
+	tests := []struct {
+		description string
+		dir         string
+		args        []string
+		deployments []string
+		pods        []string
+	}{
+		{
+			description: "Google Cloud Build",
+			dir:         "examples/google-cloud-build",
+			pods:        []string{"getting-started"},
+		},
+		{
+			description: "Google Cloud Build with sub folder",
+			dir:         "testdata/gcb-sub-folder",
+			pods:        []string{"getting-started"},
+		},
+		{
+			description: "Google Cloud Build with Kaniko",
+			dir:         "examples/gcb-kaniko",
+			pods:        []string{"getting-started-kaniko"},
+		},
+		{
+			description: "kaniko",
+			dir:         "examples/kaniko",
+			pods:        []string{"getting-started-kaniko"},
+		},
+		{
+			description: "kaniko with target",
+			dir:         "testdata/kaniko-target",
+			pods:        []string{"getting-started-kaniko"},
+		},
+		{
+			description: "kaniko with sub folder",
+			dir:         "testdata/kaniko-sub-folder",
+			pods:        []string{"getting-started-kaniko"},
+		},
+		{
+			description: "kaniko microservices",
+			dir:         "testdata/kaniko-microservices",
+			deployments: []string{"leeroy-app", "leeroy-web"},
+		},
+		{
+			description: "jib in googlecloudbuild",
+			dir:         "testdata/jib",
+			args:        []string{"-p", "gcb"},
+			deployments: []string{"web"},
+		},
+		{
+			description: "jib gradle in googlecloudbuild",
+			dir:         "examples/jib-gradle",
+			args:        []string{"-p", "gcb"},
+			deployments: []string{"web"},
+		},
+		// Don't run on kind because of this issue: https://github.com/buildpack/pack/issues/277
+		{
+			description: "buildpacks",
+			dir:         "examples/buildpacks",
+			deployments: []string{"web"},
+		},
+		// Don't run on kind because of this issue: https://github.com/buildpack/pack/issues/277
+		{
+			description: "buildpacks on Cloud Build",
+			dir:         "examples/buildpacks",
+			args:        []string{"-p", "gcb"},
+			deployments: []string{"web"},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			ns, client, deleteNs := SetupNamespace(t)
+			defer deleteNs()
+
+			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
+
+			client.WaitForPodsReady(test.pods...)
+			client.WaitForDeploymentsToStabilize(test.deployments...)
+
+			skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 		})
 	}
 }
 
 func TestRunIdempotent(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	ns, _, deleteNs := SetupNamespace(t)
@@ -209,11 +229,8 @@ func TestRunIdempotent(t *testing.T) {
 }
 
 func TestRunUnstableChecked(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	ns, _, deleteNs := SetupNamespace(t)
@@ -228,11 +245,8 @@ func TestRunUnstableChecked(t *testing.T) {
 }
 
 func TestRunUnstableNotChecked(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	ns, _, deleteNs := SetupNamespace(t)

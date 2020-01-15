@@ -76,7 +76,7 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 	if originalRPCPort == -1 {
 		return func() error { return nil }, nil
 	}
-	rpcPort := util.GetAvailablePort(originalRPCPort, &sync.Map{})
+	rpcPort := util.GetAvailablePort(util.Loopback, originalRPCPort, &sync.Map{})
 	if rpcPort != originalRPCPort {
 		logrus.Warnf("port %d for gRPC server already in use: using %d instead", originalRPCPort, rpcPort)
 	}
@@ -88,7 +88,7 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 	m.Store(rpcPort, true)
 
 	originalHTTPPort := opts.RPCHTTPPort
-	httpPort := util.GetAvailablePort(originalHTTPPort, m)
+	httpPort := util.GetAvailablePort(util.Loopback, originalHTTPPort, m)
 	if httpPort != originalHTTPPort {
 		logrus.Warnf("port %d for gRPC HTTP server already in use: using %d instead", originalHTTPPort, httpPort)
 	}

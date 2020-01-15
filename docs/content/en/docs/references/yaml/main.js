@@ -1,5 +1,5 @@
-import { html, render } from 'https://unpkg.com/lit-html@1.0.0/lit-html.js';
-import { unsafeHTML } from 'https://unpkg.com/lit-html@1.0.0/directives/unsafe-html.js';
+import { html, render } from 'https://unpkg.com/lit-html@1.1.2/lit-html.js';
+import { unsafeHTML } from 'https://unpkg.com/lit-html@1.1.2/directives/unsafe-html.js';
 
 var version;
 (async function() {

@@ -21,16 +21,11 @@ import (
 	"io"
 	"time"
 
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 const (
@@ -103,33 +98,6 @@ func (b *Builder) Labels() map[string]string {
 	}
 }
 
-// DependenciesForArtifact returns the dependencies for this artifact
-func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
-	var paths []string
-	var err error
-
-	switch {
-	case a.KanikoArtifact != nil:
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, b.insecureRegistries)
-
-	case a.DockerArtifact != nil:
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
-
-	case a.JibArtifact != nil:
-		paths, err = jib.GetDependencies(ctx, a.Workspace, a.JibArtifact)
-	}
-
-	if err != nil {
-		return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
-	}
-
-	return util.AbsolutePaths(a.Workspace, paths), nil
-}
-
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	return nil // noop
-}
-
-func (b *Builder) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
-	return nil, build.ErrSyncMapNotSupported{}
 }

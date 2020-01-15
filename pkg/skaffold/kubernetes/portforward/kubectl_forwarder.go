@@ -25,13 +25,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type EntryForwarder interface {
@@ -52,11 +50,13 @@ func NewKubectlForwarder(out io.Writer, cli *kubectl.CLI) *KubectlForwarder {
 	}
 }
 
+// For testing
 var (
-	// For testing
-	isPortFree     = util.IsPortFree
-	portForwardCmd = portForwardCommand
-	deferFunc      = func() {}
+	isPortFree      = util.IsPortFree
+	portForwardCmd  = portForwardCommand
+	deferFunc       = func() {}
+	waitPortNotFree = 5 * time.Second
+	waitErrorLogs   = 1 * time.Second
 )
 
 // Forward port-forwards a pod using kubectl port-forward in the background
@@ -80,12 +80,12 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 		}
 		pfe.terminationLock.Unlock()
 
-		if !isPortFree(pfe.localPort) {
+		if !isPortFree(util.Loopback, pfe.localPort) {
 			//assuming that Skaffold brokered ports don't overlap, this has to be an external process that started
 			//since the dev loop kicked off. We are notifying the user in the hope that they can fix it
 			color.Red.Fprintf(k.out, "failed to port forward %v, port %d is taken, retrying...\n", pfe, pfe.localPort)
 			notifiedUser = true
-			time.Sleep(5 * time.Second)
+			time.Sleep(waitPortNotFree)
 			continue
 		}
 
@@ -128,13 +128,16 @@ func (k *KubectlForwarder) forward(parentCtx context.Context, pfe *portForwardEn
 }
 
 func portForwardCommand(ctx context.Context, k *kubectl.CLI, pfe *portForwardEntry, buf io.Writer) *exec.Cmd {
-	cmd := k.Command(ctx,
-		"port-forward",
+	args := []string{
 		"--pod-running-timeout", "1s",
 		fmt.Sprintf("%s/%s", pfe.resource.Type, pfe.resource.Name),
 		fmt.Sprintf("%d:%d", pfe.localPort, pfe.resource.Port),
 		"--namespace", pfe.resource.Namespace,
-	)
+	}
+	if pfe.resource.Address != "" && pfe.resource.Address != util.Loopback {
+		args = append(args, []string{"--address", pfe.resource.Address}...)
+	}
+	cmd := k.Command(ctx, "port-forward", args...)
 	cmd.Stdout = buf
 	cmd.Stderr = buf
 	return cmd
@@ -162,21 +165,24 @@ func (*KubectlForwarder) monitorErrorLogs(ctx context.Context, buf *bytes.Buffer
 		case <-ctx.Done():
 			return
 		default:
-			time.Sleep(1 * time.Second)
-			s, _ := buf.ReadString(byte('\n'))
-			if s != "" {
-				logrus.Tracef("[port-forward] %s", s)
+			time.Sleep(waitErrorLogs)
 
-				if strings.Contains(s, "error forwarding port") ||
-					strings.Contains(s, "unable to forward") ||
-					strings.Contains(s, "error upgrading connection") {
-					// kubectl is having an error. retry the command
-					logrus.Tracef("killing port forwarding %v", p)
-					if err := cmd.Process.Kill(); err != nil {
-						logrus.Tracef("failed to kill port forwarding %v, err: %s", p, err)
-					}
-					return
+			s, _ := buf.ReadString(byte('\n'))
+			if s == "" {
+				continue
+			}
+
+			logrus.Tracef("[port-forward] %s", s)
+
+			if strings.Contains(s, "error forwarding port") ||
+				strings.Contains(s, "unable to forward") ||
+				strings.Contains(s, "error upgrading connection") {
+				// kubectl is having an error. retry the command
+				logrus.Tracef("killing port forwarding %v", p)
+				if err := cmd.Process.Kill(); err != nil {
+					logrus.Tracef("failed to kill port forwarding %v, err: %s", p, err)
 				}
+				return
 			}
 		}
 	}
