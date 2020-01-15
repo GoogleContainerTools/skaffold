@@ -50,6 +50,9 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 
 	builderImage := artifact.Builder
 	logrus.Debugln("Builder image", builderImage)
+	// If ForcePull is false: we pull the image only if it's not there already.
+	// If ForcePull is true: we will let `pack` always pull.
+	// Ideally, we add a `--pullIdNotPresent` option to upstream `pack`.
 	if !artifact.ForcePull {
 		if err := b.pull(ctx, out, builderImage); err != nil {
 			return "", err
@@ -58,7 +61,9 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 
 	runImage := artifact.RunImage
 	if !artifact.ForcePull {
-		// If ForcePull is true, we let pack find and pull the run image
+		// If ForcePull is false: we pull the image only if it's not there already.
+		// If ForcePull is true: we will let `pack` always pull.
+		// Ideally, we add a `--pullIdNotPresent` option to upstream `pack`.
 		var err error
 		runImage, err = b.findRunImage(ctx, artifact, builderImage)
 		if err != nil {
