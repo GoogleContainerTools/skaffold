@@ -1021,6 +1021,12 @@
           "x-intellij-html-description": "image that runs a Maven build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
           "default": "gcr.io/cloud-builders/mvn"
         },
+        "packImage": {
+          "type": "string",
+          "description": "image that runs a Cloud Native Buildpacks build. See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).",
+          "x-intellij-html-description": "image that runs a Cloud Native Buildpacks build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
+          "default": "gcr.io/k8s-skaffold/pack"
+        },
         "projectId": {
           "type": "string",
           "description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name `gcr.io/myproject/image`, Skaffold will use the `myproject` GCP project.",
@@ -1041,6 +1047,7 @@
         "kanikoImage",
         "mavenImage",
         "gradleImage",
+        "packImage",
         "concurrency"
       ],
       "additionalProperties": false,

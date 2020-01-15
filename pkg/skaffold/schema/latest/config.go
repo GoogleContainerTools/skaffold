@@ -246,6 +246,11 @@ type GoogleCloudBuild struct {
 	// Defaults to `gcr.io/cloud-builders/gradle`.
 	GradleImage string `yaml:"gradleImage,omitempty"`
 
+	// PackImage is the image that runs a Cloud Native Buildpacks build.
+	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
+	// Defaults to `gcr.io/k8s-skaffold/pack`.
+	PackImage string `yaml:"packImage,omitempty"`
+
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit"
 	// Defaults to 0.
 	Concurrency int `yaml:"concurrency,omitempty"`

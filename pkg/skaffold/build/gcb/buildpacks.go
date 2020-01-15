@@ -25,59 +25,26 @@ import (
 )
 
 func (b *Builder) buildpackBuildSpec(artifact *latest.BuildpackArtifact, tag string) (cloudbuild.Build, error) {
+	args := []string{"pack", "build", tag, "--builder", artifact.Builder}
+
+	if artifact.RunImage != "" {
+		args = append(args, "--run-image", artifact.RunImage)
+	}
+
 	env, err := misc.EvaluateEnv(artifact.Env)
 	if err != nil {
 		return cloudbuild.Build{}, errors.Wrap(err, "unable to evaluate env variables")
 	}
 
-	steps := []*cloudbuild.BuildStep{
-		{
-			Name: artifact.Builder,
-			Args: []string{"sh", "-c", "chown -R $$CNB_USER_ID:$$CNB_GROUP_ID /workspace /layers $$HOME"},
-		},
-		{
-			Name:       artifact.Builder,
-			Entrypoint: "/lifecycle/detector",
-			Env:        env,
-		},
-		{
-			Name:       artifact.Builder,
-			Entrypoint: "/lifecycle/analyzer",
-			Args:       []string{tag},
-		},
-		{
-			Name:       artifact.Builder,
-			Entrypoint: "/lifecycle/builder",
-			Env:        env,
-		},
-	}
-
-	if artifact.RunImage == "" {
-		steps = append(steps,
-			&cloudbuild.BuildStep{
-				Name:       artifact.Builder,
-				Entrypoint: "/lifecycle/exporter",
-				Args:       []string{tag},
-			},
-		)
-	} else {
-		steps = append(steps,
-			&cloudbuild.BuildStep{
-				Name: b.DockerImage,
-				Args: []string{"pull", artifact.RunImage},
-			},
-			&cloudbuild.BuildStep{
-				Name:       artifact.Builder,
-				Entrypoint: "/lifecycle/exporter",
-				Args:       []string{"-image", artifact.RunImage, tag},
-			},
-		)
+	for _, kv := range env {
+		args = append(args, "--env", kv)
 	}
 
 	return cloudbuild.Build{
-		Options: &cloudbuild.BuildOptions{
-			Volumes: []*cloudbuild.Volume{{Name: "layers", Path: "/layers"}},
-		},
-		Steps: steps,
+		Steps: []*cloudbuild.BuildStep{{
+			Name: b.PackImage,
+			Args: args,
+		}},
+		Images: []string{tag},
 	}, nil
 }

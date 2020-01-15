@@ -37,38 +37,27 @@ func TestBuildpackBuildSpec(t *testing.T) {
 			description: "default run image",
 			artifact: &latest.BuildpackArtifact{
 				Builder: "builder",
+			},
+			expected: cloudbuild.Build{
+				Steps: []*cloudbuild.BuildStep{{
+					Name: "pack/image",
+					Args: []string{"pack", "build", "img", "--builder", "builder"},
+				}},
+				Images: []string{"img"},
+			},
+		},
+		{
+			description: "env variables",
+			artifact: &latest.BuildpackArtifact{
+				Builder: "builder",
 				Env:     []string{"KEY=VALUE", "FOO={{.BAR}}"},
 			},
 			expected: cloudbuild.Build{
-				Options: &cloudbuild.BuildOptions{
-					Volumes: []*cloudbuild.Volume{{Name: "layers", Path: "/layers"}},
-				},
-				Steps: []*cloudbuild.BuildStep{
-					{
-						Name: "builder",
-						Args: []string{"sh", "-c", "chown -R $$CNB_USER_ID:$$CNB_GROUP_ID /workspace /layers $$HOME"},
-					},
-					{
-						Name:       "builder",
-						Entrypoint: "/lifecycle/detector",
-						Env:        []string{"KEY=VALUE", "FOO=bar"},
-					},
-					{
-						Name:       "builder",
-						Entrypoint: "/lifecycle/analyzer",
-						Args:       []string{"img"},
-					},
-					{
-						Name:       "builder",
-						Entrypoint: "/lifecycle/builder",
-						Env:        []string{"KEY=VALUE", "FOO=bar"},
-					},
-					{
-						Name:       "builder",
-						Entrypoint: "/lifecycle/exporter",
-						Args:       []string{"img"},
-					},
-				},
+				Steps: []*cloudbuild.BuildStep{{
+					Name: "pack/image",
+					Args: []string{"pack", "build", "img", "--builder", "builder", "--env", "KEY=VALUE", "--env", "FOO=bar"},
+				}},
+				Images: []string{"img"},
 			},
 		},
 		{
@@ -78,37 +67,11 @@ func TestBuildpackBuildSpec(t *testing.T) {
 				RunImage: "run/image",
 			},
 			expected: cloudbuild.Build{
-				Options: &cloudbuild.BuildOptions{
-					Volumes: []*cloudbuild.Volume{{Name: "layers", Path: "/layers"}},
-				},
-				Steps: []*cloudbuild.BuildStep{
-					{
-						Name: "otherbuilder",
-						Args: []string{"sh", "-c", "chown -R $$CNB_USER_ID:$$CNB_GROUP_ID /workspace /layers $$HOME"},
-					},
-					{
-						Name:       "otherbuilder",
-						Entrypoint: "/lifecycle/detector",
-					},
-					{
-						Name:       "otherbuilder",
-						Entrypoint: "/lifecycle/analyzer",
-						Args:       []string{"img"},
-					},
-					{
-						Name:       "otherbuilder",
-						Entrypoint: "/lifecycle/builder",
-					},
-					{
-						Name: "docker/docker",
-						Args: []string{"pull", "run/image"},
-					},
-					{
-						Name:       "otherbuilder",
-						Entrypoint: "/lifecycle/exporter",
-						Args:       []string{"-image", "run/image", "img"},
-					},
-				},
+				Steps: []*cloudbuild.BuildStep{{
+					Name: "pack/image",
+					Args: []string{"pack", "build", "img", "--builder", "otherbuilder", "--run-image", "run/image"},
+				}},
+				Images: []string{"img"},
 			},
 		},
 		{
@@ -131,15 +94,14 @@ func TestBuildpackBuildSpec(t *testing.T) {
 			}
 
 			builder := newBuilder(latest.GoogleCloudBuild{
-				DockerImage: "docker/docker",
+				PackImage: "pack/image",
 			})
 			buildSpec, err := builder.buildSpec(artifact, "img", "bucket", "object")
 			t.CheckError(test.shouldErr, err)
 
 			if !test.shouldErr {
 				t.CheckDeepEqual(test.expected.Steps, buildSpec.Steps)
-				t.CheckDeepEqual(test.expected.Options.Volumes, buildSpec.Options.Volumes)
-				t.CheckEmpty(buildSpec.Images)
+				t.CheckDeepEqual(test.expected.Images, buildSpec.Images)
 			}
 		})
 	}
