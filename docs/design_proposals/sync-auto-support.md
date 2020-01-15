@@ -1,7 +1,7 @@
 # Title
 
 * Author(s): Appu Goundan (@loosebazooka)
-* Design Shepherd: Tejal Desai (@tejal29), Priya Wadhwa (@priyawadhwa)
+* Design Shepherds: Tejal Desai (@tejal29), Balint Pato (@balopat)
 * Date: 09/17/2019
 * Status: New
 
