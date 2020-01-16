@@ -30,15 +30,49 @@ github.com/Azure/go-autorest/tracing
 github.com/BurntSushi/toml
 # github.com/MakeNowJust/heredoc v1.0.0
 github.com/MakeNowJust/heredoc
+# github.com/Masterminds/semver v1.4.2
+github.com/Masterminds/semver
 # github.com/Microsoft/go-winio v0.4.14
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
+# github.com/apex/log v1.1.2-0.20190827100214-baa5455d1012
+github.com/apex/log
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
 # github.com/blang/semver v3.5.1+incompatible
 github.com/blang/semver
 # github.com/bmatcuk/doublestar v1.2.2
 github.com/bmatcuk/doublestar
+# github.com/buildpacks/imgutil v0.0.0-20191212154113-dc184e0d403b
+github.com/buildpacks/imgutil
+github.com/buildpacks/imgutil/local
+github.com/buildpacks/imgutil/remote
+# github.com/buildpacks/lifecycle v0.5.1-0.20191217221752-3b74c943b7b3
+github.com/buildpacks/lifecycle
+github.com/buildpacks/lifecycle/archive
+github.com/buildpacks/lifecycle/auth
+github.com/buildpacks/lifecycle/cmd
+# github.com/buildpacks/pack v0.6.0
+github.com/buildpacks/pack
+github.com/buildpacks/pack/builder
+github.com/buildpacks/pack/cmd
+github.com/buildpacks/pack/internal/api
+github.com/buildpacks/pack/internal/app
+github.com/buildpacks/pack/internal/archive
+github.com/buildpacks/pack/internal/blob
+github.com/buildpacks/pack/internal/build
+github.com/buildpacks/pack/internal/builder
+github.com/buildpacks/pack/internal/buildpackage
+github.com/buildpacks/pack/internal/cache
+github.com/buildpacks/pack/internal/config
+github.com/buildpacks/pack/internal/container
+github.com/buildpacks/pack/internal/dist
+github.com/buildpacks/pack/internal/image
+github.com/buildpacks/pack/internal/paths
+github.com/buildpacks/pack/internal/stack
+github.com/buildpacks/pack/internal/stringset
+github.com/buildpacks/pack/internal/style
+github.com/buildpacks/pack/logging
 # github.com/cespare/xxhash/v2 v2.1.0
 github.com/cespare/xxhash/v2
 # github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6
@@ -207,6 +241,8 @@ github.com/grpc-ecosystem/grpc-gateway/utilities
 # github.com/hashicorp/golang-lru v0.5.3
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
+# github.com/heroku/color v0.0.6
+github.com/heroku/color
 # github.com/imdario/mergo v0.3.8
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0
@@ -243,6 +279,8 @@ github.com/mgutz/ansi
 github.com/mitchellh/go-homedir
 # github.com/mitchellh/go-wordwrap v1.0.0
 github.com/mitchellh/go-wordwrap
+# github.com/mitchellh/ioprogress v0.0.0-20180201004757-6a23b12fa88e
+github.com/mitchellh/ioprogress
 # github.com/moby/buildkit v0.6.3
 github.com/moby/buildkit/frontend/dockerfile/command
 github.com/moby/buildkit/frontend/dockerfile/parser
@@ -372,6 +410,7 @@ golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
 # golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 golang.org/x/sync/errgroup
+golang.org/x/sync/singleflight
 # golang.org/x/sys v0.0.0-20191127021746-63cb32ae39b2
 golang.org/x/sys/cpu
 golang.org/x/sys/unix

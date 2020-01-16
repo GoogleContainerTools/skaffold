@@ -18,22 +18,35 @@ package buildpacks
 
 import (
 	"context"
+	"io"
 	"io/ioutil"
 	"testing"
+
+	"github.com/buildpacks/pack"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+type fakePack struct {
+	Opts pack.BuildOptions
+}
+
+func (f *fakePack) runPack(_ context.Context, _ io.Writer, opts pack.BuildOptions) error {
+	f.Opts = opts
+	return nil
+}
+
 func TestBuild(t *testing.T) {
 	tests := []struct {
-		description string
-		artifact    *latest.BuildpackArtifact
-		tag         string
-		api         *testutil.FakeAPIClient
-		pushImages  bool
-		shouldErr   bool
+		description     string
+		artifact        *latest.BuildpackArtifact
+		tag             string
+		api             *testutil.FakeAPIClient
+		pushImages      bool
+		shouldErr       bool
+		expectedOptions *pack.BuildOptions
 	}{
 		{
 			description: "success",
@@ -44,6 +57,14 @@ func TestBuild(t *testing.T) {
 			},
 			tag: "img:tag",
 			api: &testutil.FakeAPIClient{},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:  ".",
+				Builder:  "my/builder",
+				RunImage: "my/run",
+				Env:      map[string]string{},
+				Image:    "img:latest",
+				NoPull:   true,
+			},
 		},
 		{
 			description: "invalid ref",
@@ -66,20 +87,14 @@ func TestBuild(t *testing.T) {
 			},
 			tag: "img:tag",
 			api: &testutil.FakeAPIClient{},
-		},
-		{
-			description: "force pull error",
-			artifact: &latest.BuildpackArtifact{
-				Builder:      "my/builder",
-				RunImage:     "my/run",
-				ForcePull:    true,
-				Dependencies: defaultBuildpackDependencies(),
+			expectedOptions: &pack.BuildOptions{
+				AppPath:  ".",
+				Builder:  "my/builder",
+				RunImage: "my/run",
+				Env:      map[string]string{},
+				Image:    "img:latest",
+				NoPull:   false,
 			},
-			tag: "img:tag",
-			api: &testutil.FakeAPIClient{
-				ErrImagePull: true,
-			},
-			shouldErr: true,
 		},
 		{
 			description: "push error",
@@ -111,6 +126,9 @@ func TestBuild(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Touch("file").Chdir()
+			pack := &fakePack{}
+			t.Override(&runPackBuildFunc, pack.runPack)
+
 			test.api.
 				Add(test.artifact.Builder, "builderImageID").
 				Add(test.artifact.RunImage, "runImageID").
@@ -126,6 +144,9 @@ func TestBuild(t *testing.T) {
 			}, test.tag)
 
 			t.CheckError(test.shouldErr, err)
+			if test.expectedOptions != nil {
+				t.CheckDeepEqual(*test.expectedOptions, pack.Opts)
+			}
 		})
 	}
 }
