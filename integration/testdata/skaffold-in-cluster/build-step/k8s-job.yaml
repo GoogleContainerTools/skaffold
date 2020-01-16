@@ -6,7 +6,7 @@ spec:
     serviceAccountName: skaffold-svc
     containers:
     - name: skaffold-in-cluster
-      image: gcr.io/k8s-skaffold/skaffold-in-cluster-builder
+      image: skaffold-in-cluster-builder
       command: ["/usr/bin/skaffold"]
       args: ["build", "--cache-artifacts=false", "-p", "build-target", "-v", "debug"]
       imagePullPolicy: Always

@@ -28,7 +28,7 @@
                 <artifactId>jib-maven-plugin</artifactId>
                 <configuration>
                     <to>
-                        <image>gcr.io/k8s-skaffold/project2</image>
+                        <image>project2</image>
                     </to>
                     <container>
                         <jvmFlags>

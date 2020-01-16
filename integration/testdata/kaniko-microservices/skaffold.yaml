@@ -2,11 +2,11 @@ apiVersion: skaffold/v2alpha2
 kind: Config
 build:
   artifacts:
-    - image: gcr.io/k8s-skaffold/leeroy-web
+    - image: leeroy-web
       context: ./leeroy-web/
       kaniko:
         cache: {}
-    - image: gcr.io/k8s-skaffold/leeroy-app
+    - image: leeroy-app
       context: ./leeroy-app/
       kaniko:
         cache: {}

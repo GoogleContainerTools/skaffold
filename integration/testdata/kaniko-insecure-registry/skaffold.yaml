@@ -13,7 +13,7 @@ profiles:
   - name: deploy-insecure-registry
     build:
       artifacts:
-        - image: gcr.io/k8s-skaffold/devreg
+        - image: devreg
           context: insecure-registry
           docker: {}
     deploy:

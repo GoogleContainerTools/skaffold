@@ -10,7 +10,7 @@ profiles:
   - name: create-build-step
     build:
       artifacts:
-        - image: gcr.io/k8s-skaffold/skaffold-in-cluster-builder
+        - image: skaffold-in-cluster-builder
           kaniko:
             cache: {}
     deploy:

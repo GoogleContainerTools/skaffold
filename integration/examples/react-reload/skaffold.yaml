@@ -2,7 +2,7 @@ apiVersion: skaffold/v2alpha2
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/react-reload
+  - image: react-reload
     context: app
     sync:
       manual:

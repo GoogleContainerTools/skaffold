@@ -2,11 +2,11 @@ apiVersion: skaffold/v2alpha1
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-jib-1
+  - image: skaffold-jib-1
     jib:
       # project can be the relative directory
       project: project1
-  - image: gcr.io/k8s-skaffold/skaffold-jib-2
+  - image: skaffold-jib-2
     jib:
       # project can be [groupId]:artifactId
       project: :skaffold-project-2

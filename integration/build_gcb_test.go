@@ -22,13 +22,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
-func TestBuildGCBWithDefaultRepo(t *testing.T) {
+func TestBuildGCBWithExplicitRepo(t *testing.T) {
 	if testing.Short() || !RunOnGCP() {
 		t.Skip("skipping GCP integration test")
 	}
 
-	// The GCB project (k8s-skaffold) has to be deduced from artifact's image name
-	// after the default repo is applied.
-	// If it's not properly resolved, the build will fail.
-	skaffold.Build("-d", "gcr.io/k8s-skaffold").InDir("testdata/gcb-default-repo").RunOrFail(t)
+	// Other integration tests run with the --default-repo option.
+	// This one explicitly specifies the full image name.
+	skaffold.Build().WithRepo("").InDir("testdata/gcb-explicit-repo").RunOrFail(t)
 }

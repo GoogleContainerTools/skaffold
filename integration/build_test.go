@@ -33,7 +33,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-const imageName = "simple-build:"
+const imageName = "gcr.io/k8s-skaffold/simple-build:"
 
 func TestBuild(t *testing.T) {
 	if testing.Short() || RunOnGCP() {

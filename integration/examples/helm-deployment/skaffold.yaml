@@ -4,7 +4,7 @@ build:
   tagPolicy:
     sha256: {}
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-helm
+  - image: skaffold-helm
 deploy:
   helm:
     releases:
@@ -14,7 +14,7 @@ deploy:
       #valuesFiles:
       #- helm-skaffold-values.yaml
       values:
-        image: gcr.io/k8s-skaffold/skaffold-helm
+        image: skaffold-helm
       #recreatePods will pass --recreate-pods to helm upgrade
       #recreatePods: true
       #overrides builds an override values.yaml file to run with the helm deploy

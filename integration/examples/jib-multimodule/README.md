@@ -13,7 +13,7 @@ The way you configure it in `skaffold.yaml` is the following build stanza:
 ```yaml
 build:
      artifacts:
-     - image: gcr.io/k8s-skaffold/skaffold-jib-1
+     - image: skaffold-jib-1
        # context is the root of the multi-module project
        context: .
        jib:
@@ -23,7 +23,7 @@ build:
           # For Gradle, this is the project name (defaults to the
           # directory name).
           project: moduleLocation
-     - image: gcr.io/k8s-skaffold/skaffold-jib-2
+     - image: skaffold-jib-2
        context: .
        jib:
           project: :artifactId

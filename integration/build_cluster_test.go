@@ -47,18 +47,17 @@ func TestBuildKanikoInsecureRegistry(t *testing.T) {
 	ip := client.ExternalIP("registry")
 	registry := fmt.Sprintf("%s:5000", ip)
 
-	skaffold.Build("--insecure-registry", registry, "-d", registry, "-p", "build-artifact").InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
+	skaffold.Build("--insecure-registry", registry, "-p", "build-artifact").WithRepo(registry).InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
 }
 
-func TestBuildKanikoWithDefaultRepo(t *testing.T) {
+func TestBuildKanikoWithExplicitRepo(t *testing.T) {
 	if testing.Short() || !RunOnGCP() {
 		t.Skip("skipping GCP integration test")
 	}
 
-	// The GCS project (k8s-skaffold) has to be deduced from artifact's image name
-	// after the default repo is applied.
-	// If it's not properly resolved, the build will fail.
-	skaffold.Build("-d", "gcr.io/k8s-skaffold").InDir("testdata/kaniko-default-repo").RunOrFail(t)
+	// Other integration tests run with the --default-repo option.
+	// This one explicitly specifies the full image name.
+	skaffold.Build().WithRepo("").InDir("testdata/kaniko-explicit-repo").RunOrFail(t)
 }
 
 //see integration/testdata/README.md for details

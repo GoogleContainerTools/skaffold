@@ -2,7 +2,7 @@ apiVersion: skaffold/v2alpha2
 kind: Config
 build:
   artifacts:
-    - image: skaffold-default-repo
+    - image: gcr.io/k8s-skaffold/skaffold-explicit-repo
       kaniko: {}
   cluster:
     pullSecretName: e2esecret

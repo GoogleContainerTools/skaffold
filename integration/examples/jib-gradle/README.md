@@ -9,7 +9,7 @@ The way you configure it in `skaffold.yaml` is the following build stanza:
 ```yaml
 build:
      artifacts:
-     - image: gcr.io/k8s-skaffold/skaffold-example
+     - image: skaffold-example
        context: .
        jib: {}
 ```

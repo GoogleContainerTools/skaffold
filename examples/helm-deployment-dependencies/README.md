@@ -16,7 +16,7 @@ deploy:
       skipBuildDependencies: true # Skip helm dep build
       values:
         image: skaffold-helm
-        "subchart.image": gcr.io/k8s-skaffold/skaffold-helm # Set image for subchart
+        "subchart.image": skaffold-helm # Set image for subchart
       valuesFiles:
         - helm-values-file.yaml
 ```

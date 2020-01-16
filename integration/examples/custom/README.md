@@ -43,7 +43,7 @@ if $PUSH_IMAGE; then
 fi
 ```
 
-and the skaffold config, which configures artifact `gcr.io/k8s-skaffold/skaffold-example` to build with `build.sh`:
+and the skaffold config, which configures artifact `skaffold-example` to build with `build.sh`:
 
 ```yaml
 $ cat skaffold.yaml
@@ -51,7 +51,7 @@ apiVersion: skaffold/v2alpha1
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-custom
+  - image: skaffold-custom
     custom:
       buildCommand: ./build.sh
 ```

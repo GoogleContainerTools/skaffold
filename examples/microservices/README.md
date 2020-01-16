@@ -57,9 +57,9 @@ Let's walk through the first part of the skaffold.yaml
 
 ```yaml
   artifacts:
-  - image: gcr.io/k8s-skaffold/leeroy-web
+  - image: leeroy-web
     context: ./leeroy-web/
-  - image: gcr.io/k8s-skaffold/leeroy-app
+  - image: leeroy-app
     context: ./leeroy-app/
 ```
 

@@ -2,6 +2,6 @@ apiVersion: skaffold/v1beta4
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-example-sub
+  - image: skaffold-example-sub
     context: sub
   googleCloudBuild: {}
