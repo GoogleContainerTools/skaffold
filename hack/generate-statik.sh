@@ -20,7 +20,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 BIN=${DIR}/bin
 STATIK=${BIN}/statik
-LICENSES=go-licenses
+LICENSES=${BIN}/go-licenses
 
 TMP_DIR=$(mktemp -d)
 trap "rm -rf $TMP_DIR" EXIT
@@ -31,7 +31,7 @@ if ! [ -x "$(command -v ${LICENSES})" ]; then
     # from a dependency.
     echo "Installing go-licenses"
     pushd $(mktemp -d)
-    go mod init tmp; go get -mod='' github.com/google/go-licenses
+    go mod init tmp; GOBIN=${BIN} go get -mod='' github.com/google/go-licenses
     popd
 fi
 
