@@ -1,3 +1,108 @@
+# v1.2.0 Release - 01/16/2019
+
+Highlights:
+- The deployer section in `skaffold.yaml` now accepts multiple deployers in a single pipeline.
+- ValuesFiles can be rendered with environment and build variables
+- CRD support: skaffold now doesn't throw an error on CRDs [#1737](https://github.com/GoogleContainerTools/skaffold/issues/1737) is fixed!
+- `skaffold render` now supports the `kustomize` deployer
+- parallel local builds are now supported - just set `build.local.concurrency` to 0 (no-limit) or >2   
+
+New Features: 
+* Enable multiple deployers in `skaffold.yaml` [#3392](https://github.com/GoogleContainerTools/skaffold/pull/3392)
+    - The deployer section in `skaffold.yaml` now accepts multiple deployers in a single pipeline.
+    - When applying profiles, deployers in the base profile no longer get wiped when merging in the deployer from the profile.
+* Add forwarding deployer muxer to enable multiple deployers [#3391](https://github.com/GoogleContainerTools/skaffold/pull/3391)
+* Related to #2849: Allows ValuesFiles to be templatable [#3111](https://github.com/GoogleContainerTools/skaffold/pull/3111)
+    * ValuesFiles can be rendered with environment and build variables
+* Implement render for kustomize [#3110](https://github.com/GoogleContainerTools/skaffold/pull/3110)
+* Support parallel local builds (defaults to sequential) [#3471](https://github.com/GoogleContainerTools/skaffold/pull/3471)
+* Add --target parameter with kaniko on Google Cloud Build [#3462](https://github.com/GoogleContainerTools/skaffold/pull/3462)
+
+Fixes: 
+* fix licenses path [#3517](https://github.com/GoogleContainerTools/skaffold/pull/3517)
+* Dockerfile detector will only check files containing "Dockerfile" in the name [#3499](https://github.com/GoogleContainerTools/skaffold/pull/3499)
+* Exclude CRD schema from transformation, fix #1737. [#3456](https://github.com/GoogleContainerTools/skaffold/pull/3456)  
+* Kaniko: Cancel log streaming when pod fails to complete [#3481](https://github.com/GoogleContainerTools/skaffold/pull/3481)
+* Use unique key for jib caches [#3483](https://github.com/GoogleContainerTools/skaffold/pull/3483)
+* Remove false warnings when deploying multiple releases [#3470](https://github.com/GoogleContainerTools/skaffold/pull/3470)
+* Fix sync infer when COPY destination contains an env variable [#3439](https://github.com/GoogleContainerTools/skaffold/pull/3439)
+* Fix `skaffold credits` [#3436](https://github.com/GoogleContainerTools/skaffold/pull/3436)
+* Track changes of transitive BUILD files [#3460](https://github.com/GoogleContainerTools/skaffold/pull/3460)
+
+Updates & Refactors
+* Spelling [#3458](https://github.com/GoogleContainerTools/skaffold/pull/3458) 
+* Remove a few more references to gcr.io/k8s-skaffold [#3513](https://github.com/GoogleContainerTools/skaffold/pull/3513)
+* Vendor pack CLI code to build with Buildpacks [#3445](https://github.com/GoogleContainerTools/skaffold/pull/3445)
+* Remove gcr.io/k8s-skaffold repository from examples [#3368](https://github.com/GoogleContainerTools/skaffold/pull/3368)
+* Allow 2020 copyright year [#3511](https://github.com/GoogleContainerTools/skaffold/pull/3511)
+* This test can run on Travis, with kind [#3510](https://github.com/GoogleContainerTools/skaffold/pull/3510)
+* Move default images next to where they are used [#3509](https://github.com/GoogleContainerTools/skaffold/pull/3509)
+* Kind 0.7.0 [#3507](https://github.com/GoogleContainerTools/skaffold/pull/3507)
+* Use origin/master as baseline for schema version check [#3501](https://github.com/GoogleContainerTools/skaffold/pull/3501)
+* Use pack CLI to build on GCB [#3503](https://github.com/GoogleContainerTools/skaffold/pull/3503)
+* Simplify kaniko after we removed the GCS build context [#3455](https://github.com/GoogleContainerTools/skaffold/pull/3455)
+* Switch to go-licenses for credits collection [#3493](https://github.com/GoogleContainerTools/skaffold/pull/3493)
+* Add missing package-lock.json files [#3494](https://github.com/GoogleContainerTools/skaffold/pull/3494)
+* Build Go projects with Buildpacks [#3504](https://github.com/GoogleContainerTools/skaffold/pull/3504)
+* SyncMap is a matter of artifact type, not builder [#3450](https://github.com/GoogleContainerTools/skaffold/pull/3450)
+* Remove Kaniko build context. [#3480](https://github.com/GoogleContainerTools/skaffold/pull/3480)
+* [buildpacks] Refactor code to simplify #3395 [#3441](https://github.com/GoogleContainerTools/skaffold/pull/3441)
+* Rename jib args functions [#3478](https://github.com/GoogleContainerTools/skaffold/pull/3478)
+* Add gradle/maven sync parts + restructure tests [#3474](https://github.com/GoogleContainerTools/skaffold/pull/3474)
+* helm deployer: Remove duplication [#3469](https://github.com/GoogleContainerTools/skaffold/pull/3469)
+* Update lit-html [#3466](https://github.com/GoogleContainerTools/skaffold/pull/3466)
+* Update Bazel sample [#3435](https://github.com/GoogleContainerTools/skaffold/pull/3435)
+* Use the kind that’s inside skaffold-builder [#3430](https://github.com/GoogleContainerTools/skaffold/pull/3430)
+* Move man generation to hack folder [#3464](https://github.com/GoogleContainerTools/skaffold/pull/3464)
+* Upgrade golangci-lint to v1.22.2 [#3465](https://github.com/GoogleContainerTools/skaffold/pull/3465)
+* Schema v2alpha2 [#3453](https://github.com/GoogleContainerTools/skaffold/pull/3453)
+* Sync vendor folder [#3467](https://github.com/GoogleContainerTools/skaffold/pull/3467)
+* Commit annoying go.sum [#3437](https://github.com/GoogleContainerTools/skaffold/pull/3437)
+* Cache Gradle downloads and Go build cache [#3425](https://github.com/GoogleContainerTools/skaffold/pull/3425)
+
+
+Docs Updates: 
+* [doc] Improve documentation for concurrency settings. [#3491](https://github.com/GoogleContainerTools/skaffold/pull/3491)
+* [doc] Supported builders matrix [#3492](https://github.com/GoogleContainerTools/skaffold/pull/3492)
+* [doc] There’s no `gcsBucket` config anymore [#3514](https://github.com/GoogleContainerTools/skaffold/pull/3514)
+* Clarify GCP service account and secret creation [#3488](https://github.com/GoogleContainerTools/skaffold/pull/3488)
+* Demonstrate inferred sync [#3495](https://github.com/GoogleContainerTools/skaffold/pull/3495)
+* Use ko instead of buildpacks for the custom builder [#3432](https://github.com/GoogleContainerTools/skaffold/pull/3432)
+* Buildpacks node sample [#3440](https://github.com/GoogleContainerTools/skaffold/pull/3440)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- ansky
+- Appu Goundan
+- Arjan Topolovec
+- Armin Buerkle
+- Balint Pato
+- Brian de Alwis
+- Cedric Kring
+- Chuck Dries
+- Cornelius Weig
+- Cyril Diagne
+- David Gageot
+- David Sabatie
+- Farhad Vildanov
+- Hwanjin Jeong
+- Idan Bidani
+- Josh Soref
+- Marc
+- Martin Hoefling
+- Max Goltzsche
+- Michael Beaumont
+- Naoki Oketani
+- Nick Kubala
+- Nicklas Wallgren
+- Nick Taylor
+- Peter Jausovec
+- Philippe Martin
+- Pradip Caulagi
+- Tad Cordle
+- Tejal Desai
+- Warren Strange
+
 # v1.1.0 Release - 12/20/2019
 
 *Note*: This release comes with a new config version `v2alpha1`. To upgrade your `skaffold.yaml`, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best it can.
