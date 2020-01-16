@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: deploy-kustomize
+spec:
+  terminationGracePeriodSeconds: 0
+  containers:
+    - name: deploy-kustomize
+      image: index.docker.io/library/busybox
+      command:
+        - sleep
+        - "3600"

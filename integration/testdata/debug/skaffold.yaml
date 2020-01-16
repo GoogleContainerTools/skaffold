@@ -31,3 +31,4 @@ profiles:
   - name: kustomize
     deploy:
       kustomize: {}
+      kubectl: {}

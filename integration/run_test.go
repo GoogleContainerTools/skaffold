@@ -87,6 +87,11 @@ func TestRun(t *testing.T) {
 			pods:        []string{"hello-service"},
 		},
 		{
+			description: "multiple deployers",
+			dir:         "testdata/deploy-multiple",
+			pods:        []string{"deploy-kubectl", "deploy-kustomize"},
+		},
+		{
 			description: "custom builder",
 			dir:         "examples/custom",
 			pods:        []string{"getting-started"},
