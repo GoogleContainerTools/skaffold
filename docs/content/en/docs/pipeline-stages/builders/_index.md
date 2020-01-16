@@ -28,7 +28,7 @@ see [skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
 ## Local Build
 Local build execution is the default execution context.
-Skaffold will use the build tools locally installed on your machine to execute the build.
+Skaffold will use your locally-installed build tools (such as Docker, Bazel, Maven or Gradle) to execute the build.
 
 **Configuration**
 
@@ -36,16 +36,29 @@ To configure the local execution explicitly, add build type `local` to the build
 
 ```yaml
 build:
-  local:
-    ...
+  local: {}
 ```
+
+The following options can optionally be configured:
 
 {{< schema root="LocalBuild" >}}
 
-If you are deploying to [local cluster]({{<relref "/docs/environment/local-cluster" >}}), you can additional set `push` to `false` to speed up builds.
+**Faster builds**
 
+When deploying to a [local cluster]({{<relref "/docs/environment/local-cluster" >}}), 
+Skaffold will default `push` to `false` to speed up builds.
+
+Skaffold can build artifacts in parallel by setting `concurrency` to a value other than `1`, and `0` means there are no limits.
+For local builds, this is however disabled by default since local builds could have side effects that are
+not compatible with parallel builds. Feel free to increase the `concurrency` if you know that your builds
+can run in parallel.
+
+{{<alert title="Note">}}
+When artifacts are built in parallel, the build logs are still printed in sequence to make them easier to read.
+{{</alert>}}
 
 ## In Cluster Build
+
 Skaffold supports building in cluster via [Kaniko]({{< relref "/docs/pipeline-stages/builders/docker#dockerfile-in-cluster-with-kaniko" >}}) 
 or [Custom Build Script]({{<relref "/docs/pipeline-stages/builders/custom#custom-build-script-in-cluster" >}}).
 
@@ -55,13 +68,22 @@ To configure in-cluster Build, add build type `cluster` to the build section of 
 
 ```yaml
 build:
-  cluster:
-    ...
+  cluster: {}
 ```
 
 The following options can optionally be configured:
 
 {{< schema root="ClusterDetails" >}}
+
+**Faster builds**
+
+Skaffold can build multiple artifacts in parallel, by settings a value higher than `1` to `concurrency`.
+For in-cluster builds, the default is to build all the artifacts in parallel. If your cluster is too
+small, you might want to reduce the `concurrency`. Setting `concurrency` to `1` will cause artifacts to be built sequentially.
+
+{{<alert title="Note">}}
+When artifacts are built in parallel, the build logs are still printed in sequence to make them easier to read.
+{{</alert>}}
 
 ## Remotely on Google Cloud Build
 
@@ -91,10 +113,25 @@ section of `skaffold.yaml`.
 
 ```yaml
 build:
-  googleCloudBuild:
-    ...
+  googleCloudBuild: {}
 ```
 
 The following options can optionally be configured:
 
 {{< schema root="GoogleCloudBuild" >}}
+
+**Faster builds**
+
+Skaffold can build multiple artifacts in parallel, by settings a value higher than `1` to `concurrency`.
+For Google Cloud Build, the default is to build all the artifacts in parallel. If you hit a quota restriction,
+you might want to reduce  the `concurrency`.
+
+{{<alert title="Note">}}
+When artifacts are built in parallel, the build logs are still printed in sequence to make them easier to read.
+{{</alert>}}
+
+**Restrictions**
+
+Skaffold currently supports [Docker]({{<relref "/docs/pipeline-stages/builders/docker#dockerfile-remotely-with-google-cloud-build">}}),
+[Jib]({{<relref "/docs/pipeline-stages/builders/jib#remotely-with-google-cloud-build">}})
+on Google Cloud Build.
