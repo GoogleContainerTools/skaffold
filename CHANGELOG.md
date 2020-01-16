@@ -1,5 +1,8 @@
 # v1.2.0 Release - 01/16/2019
 
+*Note*: This release comes with a new config version `v2alpha2`. To upgrade your `skaffold.yaml`, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best it can.
+Also: Happy New Year to all our users and contributors! 
+
 Highlights:
 - The deployer section in `skaffold.yaml` now accepts multiple deployers in a single pipeline.
 - ValuesFiles can be rendered with environment and build variables
