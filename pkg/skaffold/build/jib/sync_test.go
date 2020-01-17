@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -135,7 +136,5 @@ func getFileTime(file string, t *testing.T) time.Time {
 
 // for paths that contain "\", they must be escaped in json strings
 func escapeBackslashes(path string) string {
-	// currently don't do anything so I can verify windows tests fail
-	return path
-	//return strings.Replace(path, `\`, `\\`, -1)
+	return strings.Replace(path, `\`, `\\`, -1)
 }
