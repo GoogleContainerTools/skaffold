@@ -14,28 +14,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2alpha1
+package v2alpha2
 
 import (
 	"testing"
 
 	yaml "gopkg.in/yaml.v2"
 
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha2"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestUpgrade(t *testing.T) {
-	yaml := `apiVersion: skaffold/v2alpha1
+	yaml := `apiVersion: skaffold/v2alpha2
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
     docker:
       dockerfile: path/to/Dockerfile
-  - image: gcr.io/k8s-skaffold/buildpack
-    buildpack:
-      builder: my-builder
   - image: gcr.io/k8s-skaffold/bazel
     bazel:
       target: //mytarget
@@ -46,13 +43,6 @@ build:
   - image: gcr.io/k8s-skaffold/jib-gradle
     jib:
       args: ['-v']
-  - image: gcr.io/k8s-skaffold/kaniko
-    kaniko: {}
-  - image: gcr.io/k8s-skaffold/kaniko-local
-    kaniko:
-      buildContext:
-        localDir:
-          initImage: "alpine"
   googleCloudBuild:
     projectId: test-project
 test:
@@ -69,8 +59,6 @@ profiles:
       artifacts:
       - image: gcr.io/k8s-skaffold/skaffold-example
         kaniko:
-          buildContext:
-            gcsBucket: skaffold-kaniko
           cache: {}
       cluster:
         pullSecretName: e2esecret
@@ -96,16 +84,13 @@ profiles:
         manifests:
         - k8s-*
 `
-	expected := `apiVersion: skaffold/v2alpha2
+	expected := `apiVersion: skaffold/v2alpha3
 kind: Config
 build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-example
     docker:
       dockerfile: path/to/Dockerfile
-  - image: gcr.io/k8s-skaffold/buildpack
-    buildpack:
-      builder: my-builder
   - image: gcr.io/k8s-skaffold/bazel
     bazel:
       target: //mytarget
@@ -116,11 +101,6 @@ build:
   - image: gcr.io/k8s-skaffold/jib-gradle
     jib:
       args: ['-v']
-  - image: gcr.io/k8s-skaffold/kaniko
-    kaniko: {}
-  - image: gcr.io/k8s-skaffold/kaniko-local
-    kaniko:
-      initImage: "alpine"
   googleCloudBuild:
     projectId: test-project
 test:
