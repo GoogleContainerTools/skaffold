@@ -331,17 +331,22 @@ deploy:
 			t.Override(&docker.Validate, fakeValidateDockerfile)
 			t.Override(&jib.Validate, fakeValidateJibConfig)
 
-			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, test.enableJibInit, test.enableBuildpackInit)
+			a := analysis{
+				force:               test.force,
+				enableJibInit:       test.enableJibInit,
+				enableBuildpackInit: test.enableBuildpackInit,
+			}
+			err := a.walk(tmpDir.Root())
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
 				return
 			}
 
-			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), potentialConfigs)
-			t.CheckDeepEqual(len(test.expectedPaths), len(builders))
-			for i := range builders {
-				t.CheckDeepEqual(tmpDir.Path(test.expectedPaths[i]), builders[i].Path())
+			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), a.potentialConfigs)
+			t.CheckDeepEqual(len(test.expectedPaths), len(a.foundBuilders))
+			for i := range a.foundBuilders {
+				t.CheckDeepEqual(tmpDir.Path(test.expectedPaths[i]), a.foundBuilders[i].Path())
 			}
 		})
 	}
