@@ -101,3 +101,24 @@ func canonicalizeName(name string) string {
 	}
 	return canonicalized[:253]
 }
+
+func artifacts(pairs []builderImagePair) []*latest.Artifact {
+	var artifacts []*latest.Artifact
+
+	for _, pair := range pairs {
+		artifact := &latest.Artifact{
+			ImageName: pair.ImageName,
+		}
+
+		workspace := filepath.Dir(pair.Builder.Path())
+		if workspace != "." {
+			artifact.Workspace = workspace
+		}
+
+		pair.Builder.UpdateArtifact(artifact)
+
+		artifacts = append(artifacts, artifact)
+	}
+
+	return artifacts
+}

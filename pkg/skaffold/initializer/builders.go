@@ -30,7 +30,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -238,25 +237,4 @@ func promptUserForBuildConfig(image string, choices []string) (string, error) {
 	}
 
 	return selectedBuildConfig, nil
-}
-
-func artifacts(pairs []builderImagePair) []*latest.Artifact {
-	var artifacts []*latest.Artifact
-
-	for _, pair := range pairs {
-		artifact := &latest.Artifact{
-			ImageName: pair.ImageName,
-		}
-
-		workspace := filepath.Dir(pair.Builder.Path())
-		if workspace != "." {
-			artifact.Workspace = workspace
-		}
-
-		pair.Builder.UpdateArtifact(artifact)
-
-		artifacts = append(artifacts, artifact)
-	}
-
-	return artifacts
 }
