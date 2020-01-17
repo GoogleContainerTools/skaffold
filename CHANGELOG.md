@@ -34,9 +34,10 @@ Fixes:
 
 Updates & Refactors
 * Spelling [#3458](https://github.com/GoogleContainerTools/skaffold/pull/3458) 
-* Remove a few more references to gcr.io/k8s-skaffold [#3513](https://github.com/GoogleContainerTools/skaffold/pull/3513)
 * Vendor pack CLI code to build with Buildpacks [#3445](https://github.com/GoogleContainerTools/skaffold/pull/3445)
-* Remove gcr.io/k8s-skaffold repository from examples [#3368](https://github.com/GoogleContainerTools/skaffold/pull/3368)
+* Remove gcr.io/k8s-skaffold repository from examples 
+    * [#3368](https://github.com/GoogleContainerTools/skaffold/pull/3368)
+    * Remove a few more references to gcr.io/k8s-skaffold [#3513](https://github.com/GoogleContainerTools/skaffold/pull/3513)
 * Allow 2020 copyright year [#3511](https://github.com/GoogleContainerTools/skaffold/pull/3511)
 * This test can run on Travis, with kind [#3510](https://github.com/GoogleContainerTools/skaffold/pull/3510)
 * Move default images next to where they are used [#3509](https://github.com/GoogleContainerTools/skaffold/pull/3509)
@@ -53,14 +54,10 @@ Updates & Refactors
 * Rename jib args functions [#3478](https://github.com/GoogleContainerTools/skaffold/pull/3478)
 * Add gradle/maven sync parts + restructure tests [#3474](https://github.com/GoogleContainerTools/skaffold/pull/3474)
 * helm deployer: Remove duplication [#3469](https://github.com/GoogleContainerTools/skaffold/pull/3469)
-* Update lit-html [#3466](https://github.com/GoogleContainerTools/skaffold/pull/3466)
 * Update Bazel sample [#3435](https://github.com/GoogleContainerTools/skaffold/pull/3435)
 * Use the kind that’s inside skaffold-builder [#3430](https://github.com/GoogleContainerTools/skaffold/pull/3430)
 * Move man generation to hack folder [#3464](https://github.com/GoogleContainerTools/skaffold/pull/3464)
-* Upgrade golangci-lint to v1.22.2 [#3465](https://github.com/GoogleContainerTools/skaffold/pull/3465)
 * Schema v2alpha2 [#3453](https://github.com/GoogleContainerTools/skaffold/pull/3453)
-* Sync vendor folder [#3467](https://github.com/GoogleContainerTools/skaffold/pull/3467)
-* Commit annoying go.sum [#3437](https://github.com/GoogleContainerTools/skaffold/pull/3437)
 * Cache Gradle downloads and Go build cache [#3425](https://github.com/GoogleContainerTools/skaffold/pull/3425)
 
 
