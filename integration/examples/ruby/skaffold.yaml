@@ -5,7 +5,7 @@ build:
   - image: ruby-example
     context: backend
     sync:
-      manual:
-      # Sync only app.rb file, being watch with rack-unreloader
-      - src: 'app.rb'
-        dest: .
+      # Sync app.rb file, being watch with rack-unreloader
+      # or add any other rb file to your aplication 
+      infer:
+      - '*.rb'

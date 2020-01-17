@@ -1,9 +1,9 @@
 FROM ruby:2.7
 
 WORKDIR /app
-ADD Gemfile* /app/
+ADD Gemfile* ./
 RUN bundle install
 
-ADD . /app/
+ADD . ./
 
 CMD ["bundle","exec","puma"]
