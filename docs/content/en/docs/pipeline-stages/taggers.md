@@ -31,7 +31,7 @@ the artifact's `context` directory and tag according to those rules:
 
  + If the workspace is on a Git tag, that tag is used to tag images
  + If the workspace is on a Git commit, the short commit is used
- + It the workspace has uncommitted changes, a `-dirty` suffix is appended to the image tag
+ + If the workspace has uncommitted changes, a `-dirty` suffix is appended to the image tag
 
 ### Example
 
