@@ -27,6 +27,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
 
@@ -115,12 +117,17 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		}
 	}
 
-	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, c.EnableJibInit, c.EnableBuildpackInit)
-	if err != nil {
+	a := &analysis{
+		force:               c.Force,
+		enableJibInit:       c.EnableJibInit,
+		enableBuildpackInit: c.EnableBuildpackInit,
+	}
+
+	if err := a.walk(rootDir); err != nil {
 		return err
 	}
 
-	k, err := kubectl.New(potentialConfigs)
+	k, err := kubectl.New(a.potentialConfigs)
 	if err != nil {
 		return err
 	}
@@ -143,7 +150,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	}
 
 	// Determine which builders/images require prompting
-	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(builderConfigs, images)
+	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(a.foundBuilders, images)
 
 	if c.Analyze {
 		// TODO: Remove backwards compatibility block
@@ -156,7 +163,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 
 	// conditionally generate build artifacts
 	if !c.SkipBuild {
-		if len(builderConfigs) == 0 {
+		if len(a.foundBuilders) == 0 {
 			return errors.New("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
 		}
 
@@ -218,11 +225,17 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	return nil
 }
 
-// walk recursively walks a directory and returns the k8s configs and builder configs that it finds
-func walk(dir string, force, enableJibInit, enableBuildpackInit bool) ([]string, []InitBuilder, error) {
-	var potentialConfigs []string
-	var foundBuilders []InitBuilder
+type analysis struct {
+	force               bool
+	enableJibInit       bool
+	enableBuildpackInit bool
 
+	potentialConfigs []string
+	foundBuilders    []InitBuilder
+}
+
+// walk recursively walks a directory and returns the k8s configs and builder configs that it finds
+func (a *analysis) walk(dir string) error {
 	var searchConfigsAndBuilders func(path string, findBuilders bool) error
 	searchConfigsAndBuilders = func(path string, findBuilders bool) error {
 		dirents, err := godirwalk.ReadDirents(path, nil)
@@ -248,15 +261,22 @@ func walk(dir string, force, enableJibInit, enableBuildpackInit bool) ([]string,
 
 			// Check for skaffold.yaml/k8s manifest
 			filePath := filepath.Join(path, file.Name())
-			var foundConfig bool
-			if foundConfig, err = checkConfigFile(filePath, force, &potentialConfigs); err != nil {
-				return err
+			isSkaffoldConfig := IsSkaffoldConfig(filePath)
+			isKubernetesManifest := false
+			if isSkaffoldConfig {
+				if !a.force {
+					return fmt.Errorf("pre-existing %s found (you may continue with --force)", filePath)
+				}
+				logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", filePath)
+			} else if kubectl.IsKubernetesManifest(filePath) {
+				isKubernetesManifest = true
+				a.potentialConfigs = append(a.potentialConfigs, filePath)
 			}
 
 			// Check for builder config
-			if !foundConfig && findBuilders {
-				builderConfigs, continueSearchingBuilders := detectBuilders(enableJibInit, enableBuildpackInit, filePath)
-				foundBuilders = append(foundBuilders, builderConfigs...)
+			if !isSkaffoldConfig && !isKubernetesManifest && findBuilders {
+				builderConfigs, continueSearchingBuilders := detectBuilders(a.enableJibInit, a.enableBuildpackInit, filePath)
+				a.foundBuilders = append(a.foundBuilders, builderConfigs...)
 				searchForBuildersInSubdirectories = searchForBuildersInSubdirectories && continueSearchingBuilders
 			}
 		}
@@ -271,9 +291,5 @@ func walk(dir string, force, enableJibInit, enableBuildpackInit bool) ([]string,
 		return nil
 	}
 
-	err := searchConfigsAndBuilders(dir, true)
-	if err != nil {
-		return nil, nil, err
-	}
-	return potentialConfigs, foundBuilders, nil
+	return searchConfigsAndBuilders(dir, true)
 }
