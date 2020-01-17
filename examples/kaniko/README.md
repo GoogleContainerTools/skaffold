@@ -6,9 +6,9 @@ This is an example demonstrating:
 * **tagging** using the default tagPolicy (`gitCommit`)
 * **deploying** a single container pod using `kubectl`
 
-### GCP 
+### GCP
 
-If you are on GCP, create a [Service Account](https://cloud.google.com/iam/docs/understanding-service-accounts) for Kaniko that has permissions to pull and push images to gcr.io. If your build context uses a `gcsBucket` the service account must also have read and write permissions for the bucket. 
+If you are on GCP, create a [Service Account](https://cloud.google.com/iam/docs/understanding-service-accounts) for Kaniko that has permissions to pull and push images from/to `gcr.io`.
 
 Download the json service account file, rename the file to `kaniko-secret` (do not append .json to the filename) and create a Kubernetes secret using the following example:
 

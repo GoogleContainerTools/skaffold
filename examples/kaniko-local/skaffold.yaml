@@ -1,11 +1,9 @@
-apiVersion: skaffold/v2alpha1
+apiVersion: skaffold/v2alpha2
 kind: Config
 build:
   artifacts:
     - image: skaffold-example
       kaniko:
-        buildContext:
-          localDir: {}
         cache: {}
   cluster:
     pullSecretName: e2esecret
