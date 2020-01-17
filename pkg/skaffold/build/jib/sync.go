@@ -17,7 +17,6 @@ limitations under the License.
 package jib
 
 import (
-	"bytes"
 	"encoding/json"
 	"os"
 	"os/exec"
@@ -62,8 +61,7 @@ func getSyncMapFromSystem(cmd *exec.Cmd) (*SyncMap, error) {
 		return nil, errors.New("failed to get Jib Sync data")
 	}
 
-	line := bytes.Replace(matches[1], []byte(`\`), []byte(`\\`), -1)
-	if err := json.Unmarshal(line, &jsm); err != nil {
+	if err := json.Unmarshal(matches[1], &jsm); err != nil {
 		return nil, errors.WithStack(err)
 	}
 
