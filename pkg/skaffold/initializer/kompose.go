@@ -18,10 +18,12 @@ package initializer
 
 import (
 	"context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
+
+	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // runKompose runs the `kompose` CLI before running skaffold init

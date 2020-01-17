@@ -20,16 +20,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"sort"
+	"strings"
+
+	"github.com/sirupsen/logrus"
+	"gopkg.in/AlecAivazis/survey.v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/AlecAivazis/survey.v1"
-	"path/filepath"
-	"sort"
-	"strings"
 )
 
 // autoSelectBuilders takes a list of builders and images, checks if any of the builders' configured target

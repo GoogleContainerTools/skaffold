@@ -18,9 +18,11 @@ package initializer
 
 import (
 	"encoding/json"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/pkg/errors"
 	"io"
+
+	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
 func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {

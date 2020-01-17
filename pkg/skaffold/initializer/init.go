@@ -27,6 +27,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/karrick/godirwalk"
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -34,8 +37,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/karrick/godirwalk"
-	"github.com/pkg/errors"
 )
 
 // For testing

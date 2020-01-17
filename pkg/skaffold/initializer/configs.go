@@ -18,15 +18,17 @@ package initializer
 
 import (
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 // checkConfigFile checks if filePath is a skaffold config or k8s config, or builder config. Detected k8s configs are added to potentialConfigs.
