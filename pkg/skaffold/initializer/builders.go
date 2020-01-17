@@ -38,7 +38,7 @@ import (
 // separately returns the builder configs and images that didn't have any matches.
 func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
 	var pairs []builderImagePair
-	var unresolvedImages = make(set)
+	var unresolvedImages = make(sortedSet)
 	for _, image := range images {
 		matchingConfigIndex := -1
 		for i, config := range builderConfigs {
