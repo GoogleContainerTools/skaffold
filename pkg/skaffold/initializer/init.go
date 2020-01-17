@@ -91,20 +91,6 @@ type builderImagePair struct {
 	ImageName string
 }
 
-type set map[string]interface{}
-
-func (s set) add(value string) {
-	s[value] = value
-}
-
-func (s set) values() (values []string) {
-	for val := range s {
-		values = append(values, val)
-	}
-	sort.Strings(values)
-	return values
-}
-
 // DoInit executes the `skaffold init` flow.
 func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	rootDir := "."
