@@ -578,14 +578,6 @@
           "description": "describes how to mount the local Docker configuration into a pod.",
           "x-intellij-html-description": "describes how to mount the local Docker configuration into a pod."
         },
-        "envVars": {
-          "items": {
-            "$ref": "#/definitions/EnvVar"
-          },
-          "type": "array",
-          "description": "defines Environment Variables for the containers in the Kaniko Pod.",
-          "x-intellij-html-description": "defines Environment Variables for the containers in the Kaniko Pod."
-        },
         "namespace": {
           "type": "string",
           "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.",
@@ -616,14 +608,6 @@
           "type": "string",
           "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
           "x-intellij-html-description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>)."
-        },
-        "volumes": {
-          "items": {
-            "$ref": "#/definitions/VolumeMount"
-          },
-          "type": "array",
-          "description": "define container mounts for ConfigMap and Secret resources.",
-          "x-intellij-html-description": "define container mounts for ConfigMap and Secret resources."
         }
       },
       "preferredOrder": [
@@ -636,85 +620,11 @@
         "timeout",
         "dockerConfig",
         "resources",
-        "concurrency",
-        "volumes",
-        "envVars"
+        "concurrency"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build.",
       "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
-    },
-    "ConfigMapKeyRef": {
-      "required": [
-        "name",
-        "key"
-      ],
-      "properties": {
-        "key": {
-          "type": "string",
-          "description": "sets the Key from the Secret to set as the Env Var value.",
-          "x-intellij-html-description": "sets the Key from the Secret to set as the Env Var value."
-        },
-        "name": {
-          "type": "string",
-          "description": "sets the name of the Secret which is used to get value for the Env Var.",
-          "x-intellij-html-description": "sets the name of the Secret which is used to get value for the Env Var."
-        }
-      },
-      "preferredOrder": [
-        "name",
-        "key"
-      ],
-      "additionalProperties": false,
-      "description": "describes a ConfigMap source for Environent Variable value.",
-      "x-intellij-html-description": "describes a ConfigMap source for Environent Variable value."
-    },
-    "ConfigMapMount": {
-      "required": [
-        "name",
-        "mountPath",
-        "volumeName"
-      ],
-      "properties": {
-        "defaultMode": {
-          "type": "integer",
-          "description": "UNIX mode bits to set on mounted files. Must be a value between 0 and 0777. Defaults to 0644.",
-          "x-intellij-html-description": "UNIX mode bits to set on mounted files. Must be a value between 0 and 0777. Defaults to 0644."
-        },
-        "items": {
-          "items": {
-            "$ref": "#/definitions/KeyToPath"
-          },
-          "type": "array",
-          "description": "if specified then only defined keys of the ConfigMap will be projected to the pod filesystem using relative paths as described in [volumes configMap](https://kubernetes.io/docs/concepts/storage/volumes/#configmap).",
-          "x-intellij-html-description": "if specified then only defined keys of the ConfigMap will be projected to the pod filesystem using relative paths as described in <a href=\"https://kubernetes.io/docs/concepts/storage/volumes/#configmap\">volumes configMap</a>."
-        },
-        "mountPath": {
-          "type": "string",
-          "description": "defines the path to mount the ConfigMap.",
-          "x-intellij-html-description": "defines the path to mount the ConfigMap."
-        },
-        "name": {
-          "type": "string",
-          "description": "Kubernetes ConfigMap name.",
-          "x-intellij-html-description": "Kubernetes ConfigMap name."
-        },
-        "volumeName": {
-          "type": "string",
-          "description": "defines Kubernetes pod.spec.volumes[].name for the Pod.",
-          "x-intellij-html-description": "defines Kubernetes pod.spec.volumes[].name for the Pod."
-        }
-      },
-      "preferredOrder": [
-        "name",
-        "items",
-        "mountPath",
-        "volumeName",
-        "defaultMode"
-      ],
-      "additionalProperties": false,
-      "description": "describes one ConfigMap mount to the kaniko container filesystem.",
-      "x-intellij-html-description": "describes one ConfigMap mount to the kaniko container filesystem."
     },
     "CustomArtifact": {
       "properties": {
@@ -1047,42 +957,6 @@
       "additionalProperties": false,
       "description": "*beta* tags images with a configurable template string.",
       "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string."
-    },
-    "EnvVar": {
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "configMap": {
-          "$ref": "#/definitions/ConfigMapKeyRef",
-          "description": "sets the given Kubernetes Config Map as a value for the Env Var.",
-          "x-intellij-html-description": "sets the given Kubernetes Config Map as a value for the Env Var."
-        },
-        "name": {
-          "type": "string",
-          "description": "sets name for configured Environment Variable.",
-          "x-intellij-html-description": "sets name for configured Environment Variable."
-        },
-        "secret": {
-          "$ref": "#/definitions/SecretKeyRef",
-          "description": "sets the given Kubernetes Secret as a value for the Env Var.",
-          "x-intellij-html-description": "sets the given Kubernetes Secret as a value for the Env Var."
-        },
-        "value": {
-          "type": "string",
-          "description": "sets the Value for the Env Var.",
-          "x-intellij-html-description": "sets the Value for the Env Var."
-        }
-      },
-      "preferredOrder": [
-        "name",
-        "secret",
-        "configMap",
-        "value"
-      ],
-      "additionalProperties": false,
-      "description": "describes one Environment Variable to set to the Kaniko Pod.",
-      "x-intellij-html-description": "describes one Environment Variable to set to the Kaniko Pod."
     },
     "GitTagger": {
       "properties": {
@@ -1670,37 +1544,6 @@
       "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
       "x-intellij-html-description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds."
     },
-    "KeyToPath": {
-      "required": [
-        "key",
-        "path"
-      ],
-      "properties": {
-        "key": {
-          "type": "string",
-          "description": "key to get from the Resource.",
-          "x-intellij-html-description": "key to get from the Resource."
-        },
-        "mode": {
-          "type": "integer",
-          "description": "UNIX mode bits to set on mounted files. Must be a value between 0 and 0777. Defaults to 0644.",
-          "x-intellij-html-description": "UNIX mode bits to set on mounted files. Must be a value between 0 and 0777. Defaults to 0644."
-        },
-        "path": {
-          "type": "string",
-          "description": "relative path to mount Key to.",
-          "x-intellij-html-description": "relative path to mount Key to."
-        }
-      },
-      "preferredOrder": [
-        "key",
-        "path",
-        "mode"
-      ],
-      "additionalProperties": false,
-      "description": "describes mapping from ConfigMap or Secret resource key to a path within a volume.",
-      "x-intellij-html-description": "describes mapping from ConfigMap or Secret resource key to a path within a volume."
-    },
     "KubectlDeploy": {
       "properties": {
         "flags": {
@@ -2051,78 +1894,6 @@
       "description": "describes the Kubernetes resource types used for port forwarding.",
       "x-intellij-html-description": "describes the Kubernetes resource types used for port forwarding."
     },
-    "SecretKeyRef": {
-      "required": [
-        "name",
-        "key"
-      ],
-      "properties": {
-        "key": {
-          "type": "string",
-          "description": "sets the Key from the Secret to set as the Env Var value.",
-          "x-intellij-html-description": "sets the Key from the Secret to set as the Env Var value."
-        },
-        "name": {
-          "type": "string",
-          "description": "sets the name of the Secret which is used to get value for the Env Var.",
-          "x-intellij-html-description": "sets the name of the Secret which is used to get value for the Env Var."
-        }
-      },
-      "preferredOrder": [
-        "name",
-        "key"
-      ],
-      "additionalProperties": false,
-      "description": "describes a Secret source for Environent Variable value.",
-      "x-intellij-html-description": "describes a Secret source for Environent Variable value."
-    },
-    "SecretMount": {
-      "required": [
-        "name",
-        "mountPath",
-        "volumeName"
-      ],
-      "properties": {
-        "defaultMode": {
-          "type": "integer",
-          "description": "UNIX mode bits to set on mounted files. Must be a value between 0 and 0777. Defaults to 0644.",
-          "x-intellij-html-description": "UNIX mode bits to set on mounted files. Must be a value between 0 and 0777. Defaults to 0644."
-        },
-        "items": {
-          "items": {
-            "$ref": "#/definitions/KeyToPath"
-          },
-          "type": "array",
-          "description": "if specified then only defined keys of the Secret will be projected to the pod filesystem using relative paths as described in [volumes secret](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets).",
-          "x-intellij-html-description": "if specified then only defined keys of the Secret will be projected to the pod filesystem using relative paths as described in <a href=\"https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets\">volumes secret</a>."
-        },
-        "mountPath": {
-          "type": "string",
-          "description": "defines the path to mount the Secret.",
-          "x-intellij-html-description": "defines the path to mount the Secret."
-        },
-        "name": {
-          "type": "string",
-          "description": "Kubernetes Secret name.",
-          "x-intellij-html-description": "Kubernetes Secret name."
-        },
-        "volumeName": {
-          "type": "string",
-          "description": "defines Kubernetes pod.spec.volumes[].name for the Pod.",
-          "x-intellij-html-description": "defines Kubernetes pod.spec.volumes[].name for the Pod."
-        }
-      },
-      "preferredOrder": [
-        "name",
-        "items",
-        "mountPath",
-        "volumeName",
-        "defaultMode"
-      ],
-      "additionalProperties": false,
-      "description": "describes one Secret mount to a kaniko container filesystem.",
-      "x-intellij-html-description": "describes one Secret mount to a kaniko container filesystem."
-    },
     "ShaTagger": {
       "description": "*beta* tags images with their sha256 digest.",
       "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest."
@@ -2332,27 +2103,6 @@
       "additionalProperties": false,
       "description": "a list of structure tests to run on images that Skaffold builds.",
       "x-intellij-html-description": "a list of structure tests to run on images that Skaffold builds."
-    },
-    "VolumeMount": {
-      "properties": {
-        "configMap": {
-          "$ref": "#/definitions/ConfigMapMount",
-          "description": "specifies a ConfigMap mount into the kaniko pod container.",
-          "x-intellij-html-description": "specifies a ConfigMap mount into the kaniko pod container."
-        },
-        "secret": {
-          "$ref": "#/definitions/SecretMount",
-          "description": "specifies a Secret mount into the kaniko pod container.",
-          "x-intellij-html-description": "specifies a Secret mount into the kaniko pod container."
-        }
-      },
-      "preferredOrder": [
-        "configMap",
-        "secret"
-      ],
-      "additionalProperties": false,
-      "description": "represents a volume to mount to the kaniko container. Only one of its members may be specified.",
-      "x-intellij-html-description": "represents a volume to mount to the kaniko container. Only one of its members may be specified."
     }
   }
 }

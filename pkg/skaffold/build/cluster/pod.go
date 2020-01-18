@@ -94,9 +94,7 @@ func (b *Builder) podSpec(artifact *latest.KanikoArtifact, tag string) (*v1.Pod,
 	}
 
 	// Add used-defines Volumes
-	for _, v := range b.Volumes {
-		pod.Spec.Volumes = append(pod.Spec.Volumes, v)
-	}
+	pod.Spec.Volumes = append(pod.Spec.Volumes, b.Volumes...)
 
 	// Add user-defined VolumeMounts
 	for _, vm := range artifact.VolumeMounts {
