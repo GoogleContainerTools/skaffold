@@ -16,5 +16,5 @@
 
 cat \
   docs/content/en/docs/references/cli/index_header \
-  <(go run cmd/skaffold/man/man.go) \
+  <(go run hack/man/man.go) \
   > docs/content/en/docs/references/cli/_index.md

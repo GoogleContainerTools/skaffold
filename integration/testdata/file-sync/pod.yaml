@@ -5,4 +5,4 @@ metadata:
 spec:
   containers:
   - name: test-file-sync
-    image: gcr.io/k8s-skaffold/test-file-sync
+    image: test-file-sync

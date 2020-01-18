@@ -34,7 +34,7 @@ type Authenticators struct {
 	lock       sync.Mutex
 }
 
-// For retrieves the authentiator for a given image reference.
+// For retrieves the authenticator for a given image reference.
 func (a *Authenticators) For(ref name.Reference) authn.Authenticator {
 	registry := ref.Context().Registry.Name()
 

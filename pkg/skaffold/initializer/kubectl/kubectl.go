@@ -27,10 +27,8 @@ import (
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
-
-// ValidSuffixes are the supported file formats for Kubernetes manifests
-var ValidSuffixes = []string{".yml", ".yaml", ".json"}
 
 var requiredFields = []string{"apiVersion", "kind", "metadata"}
 
@@ -60,6 +58,16 @@ func New(potentialConfigs []string) (*Kubectl, error) {
 		configs: k8sConfigs,
 		images:  images,
 	}, nil
+}
+
+// IsKubernetesManifest is for determining if a file is a valid Kubernetes manifest
+func IsKubernetesManifest(file string) bool {
+	if !util.IsSupportedKubernetesFormat(file) {
+		return false
+	}
+
+	_, err := parseImagesFromKubernetesYaml(file)
+	return err == nil
 }
 
 // GenerateDeployConfig implements the Initializer interface and generates

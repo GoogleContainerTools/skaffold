@@ -1,7 +1,7 @@
-apiVersion: skaffold/v1
+apiVersion: skaffold/v2alpha2
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-bazel
+  - image: skaffold-bazel
     bazel:
       target: //:skaffold_example.tar

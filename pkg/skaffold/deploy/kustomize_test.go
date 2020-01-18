@@ -17,6 +17,7 @@ limitations under the License.
 package deploy
 
 import (
+	"bytes"
 	"context"
 	"io/ioutil"
 	"testing"
@@ -180,7 +181,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 			},
 		},
 		{
-			description: "paches",
+			description: "patches",
 			yaml:        `patches: [patch1.yaml, path/patch2.yaml]`,
 			expected:    []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
 		},
@@ -398,26 +399,71 @@ func TestKustomizeBuildCommandArgs(t *testing.T) {
 func TestKustomizeRender(t *testing.T) {
 	tests := []struct {
 		description string
+		builds      []build.Artifact
+		input       string
+		expected    string
 		shouldErr   bool
 	}{
 		{
-			description: "calling render returns error",
-			shouldErr:   true,
+			description: "should succeed without error",
+			builds: []build.Artifact{
+				{
+					ImageName: "gcr.io/project/image1",
+					Tag:       "gcr.io/project/image1:tag1",
+				},
+				{
+					ImageName: "gcr.io/project/image2",
+					Tag:       "gcr.io/project/image2:tag2",
+				},
+			},
+			input: `apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - image: gcr.io/project/image1
+    name: image1
+  - image: gcr.io/project/image2
+    name: image2
+`,
+			expected: `apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - image: gcr.io/project/image1:tag1
+    name: image1
+  - image: gcr.io/project/image2:tag2
+    name: image2
+`,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployer := NewKustomizeDeployer(&runcontext.RunContext{
+			t.Override(&util.DefaultExecCommand, testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				AndRunOut("kustomize build .", test.input))
+			t.NewTempDir().
+				Chdir()
+
+			k := NewKustomizeDeployer(&runcontext.RunContext{
+				WorkingDir: ".",
 				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
-							KustomizeDeploy: &latest.KustomizeDeploy{},
+							KustomizeDeploy: &latest.KustomizeDeploy{
+								KustomizePath: ".",
+							},
 						},
 					},
 				},
+				KubeContext: testKubeContext,
+				Opts: config.SkaffoldOptions{
+					Namespace: testNamespace,
+				},
 			})
-			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, "tmp/dir")
-			t.CheckError(test.shouldErr, actual)
+			var b bytes.Buffer
+			err := k.Render(context.Background(), &b, test.builds, "")
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expected, b.String())
 		})
 	}
 }

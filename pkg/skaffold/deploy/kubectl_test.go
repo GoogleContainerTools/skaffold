@@ -301,7 +301,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 			})
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
-			t.CheckError(false, err)
+			t.CheckNoError(err)
 		})
 	}
 }
@@ -367,27 +367,26 @@ spec:
 				Namespace: testNamespace,
 			},
 		})
-		labellers := []Labeller{deployer}
 
 		// Deploy one manifest
 		err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-		}, labellers).GetError()
+		}, nil).GetError()
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, labellers).GetError()
+		}, nil).GetError()
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, labellers).GetError()
+		}, nil).GetError()
 		t.CheckNoError(err)
 	})
 }
@@ -527,7 +526,7 @@ spec:
 			})
 			var b bytes.Buffer
 			err := deployer.Render(context.Background(), &b, test.builds, "")
-			t.CheckError(false, err)
+			t.CheckNoError(err)
 		})
 	}
 }

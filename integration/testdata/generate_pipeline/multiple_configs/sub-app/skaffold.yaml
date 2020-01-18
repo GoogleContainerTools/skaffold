@@ -2,7 +2,7 @@ apiVersion: skaffold/v1beta13
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/extra-config
+  - image: extra-config
 deploy:
   kubectl:
     manifests:

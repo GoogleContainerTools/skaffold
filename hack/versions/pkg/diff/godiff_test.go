@@ -284,7 +284,8 @@ func TestCompareSchemas(t *testing.T) {
 			a := path.Join(schemaDir, tc.a, "config.go")
 			b := path.Join(schemaDir, tc.b, "config.go")
 			diff, err := CompareGoStructs(filepath.FromSlash(a), filepath.FromSlash(b))
-			t.CheckErrorAndDeepEqual(false, err, tc.a == tc.b, diff == "")
+			t.CheckNoError(err)
+			t.CheckDeepEqual(tc.a == tc.b, diff == "")
 			if diff != "" && tc.a == tc.b {
 				t.Errorf(diff)
 			}

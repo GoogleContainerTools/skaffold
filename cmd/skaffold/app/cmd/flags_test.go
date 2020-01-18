@@ -61,7 +61,7 @@ func TestHasCmdAnnotation(t *testing.T) {
 func TestAddFlagsSmoke(t *testing.T) {
 	testCmd := &cobra.Command{
 		Use:   "test",
-		Short: "Test commanf for smoke testing",
+		Short: "Test command for smoke testing",
 	}
 	SetupFlags()
 	AddFlags(testCmd.Flags(), "test")

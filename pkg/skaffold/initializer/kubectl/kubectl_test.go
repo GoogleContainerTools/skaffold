@@ -123,3 +123,64 @@ spec:
 		})
 	}
 }
+
+func TestIsKubernetesManifest(t *testing.T) {
+	tests := []struct {
+		description string
+		filename    string
+		content     string
+		expected    bool
+	}{
+		{
+			description: "valid k8 yaml filename format",
+			filename:    "test1.yaml",
+			content:     "apiVersion: v1\nkind: Service\nmetadata:\n  name: test\n",
+			expected:    true,
+		},
+		{
+			description: "valid k8 json filename format",
+			filename:    "test1.json",
+			content:     `{"apiVersion":"v1","kind":"Service","metadata":{"name": "test"}}`,
+			expected:    true,
+		},
+		{
+			description: "valid k8 yaml filename format",
+			filename:    "test1.yml",
+			content:     "apiVersion: v1\nkind: Service\nmetadata:\n  name: test\n",
+			expected:    true,
+		},
+		{
+			description: "invalid k8 yaml",
+			filename:    "test1.yaml",
+			content:     "key: value",
+			expected:    false,
+		},
+		{
+			description: "invalid k8 json",
+			filename:    "test1.json",
+			content:     `{}`,
+			expected:    false,
+		},
+		{
+			description: "invalid k8s yml",
+			filename:    "test1.yml",
+			content:     "key: value",
+			expected:    false,
+		},
+		{
+			description: "invalid file",
+			filename:    "some.config",
+			content:     "",
+			expected:    false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().Write(test.filename, test.content).Chdir()
+
+			supported := IsKubernetesManifest(test.filename)
+
+			t.CheckDeepEqual(test.expected, supported)
+		})
+	}
+}

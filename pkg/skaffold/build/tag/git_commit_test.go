@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -57,6 +58,25 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 					write("source.go", "code").
 					add("source.go").
 					commit("initial")
+			},
+		},
+		{
+			description:            "clean worktree with tag containing a slash",
+			variantTags:            "test:v_2",
+			variantCommitSha:       "test:aea33bcc86b5af8c8570ff45d8a643202d63c808",
+			variantAbbrevCommitSha: "test:aea33bc",
+			variantTreeSha:         "test:bc69d50cda6897a6f2054e64b9059f038dc6fb0e",
+			variantAbbrevTreeSha:   "test:bc69d50",
+			createGitRepo: func(dir string) {
+				gitInit(t, dir).
+					write("source.go", "code").
+					add("source.go").
+					commit("initial").
+					tag("v/1").
+					write("other.go", "other").
+					add("other.go").
+					commit("second commit").
+					tag("v/2")
 			},
 		},
 		{
@@ -315,6 +335,7 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Parallel()
 
@@ -338,6 +359,23 @@ func TestGitCommit_GenerateFullyQualifiedImageName(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestSanitizeTag(t *testing.T) {
+	testutil.Run(t, "valid tags", func(t *testutil.T) {
+		t.CheckDeepEqual("abcdefghijklmnopqrstuvwxyz", sanitizeTag("abcdefghijklmnopqrstuvwxyz"))
+		t.CheckDeepEqual("ABCDEFGHIJKLMNOPQRSTUVWXYZ", sanitizeTag("ABCDEFGHIJKLMNOPQRSTUVWXYZ"))
+		t.CheckDeepEqual("0123456789-_.", sanitizeTag("0123456789-_."))
+		t.CheckDeepEqual("_v1", sanitizeTag("_v1"))
+	})
+
+	testutil.Run(t, "sanitized tags", func(t *testutil.T) {
+		t.CheckDeepEqual("v_1", sanitizeTag("v/1"))
+		t.CheckDeepEqual("v____1", sanitizeTag("v%$@!1"))
+		t.CheckDeepEqual("__v1", sanitizeTag("--v1"))
+		t.CheckDeepEqual("__v1", sanitizeTag("..v1"))
+		t.CheckDeepEqual(128, len(sanitizeTag(strings.Repeat("0123456789", 20))))
+	})
 }
 
 // gitRepo deals with test git repositories

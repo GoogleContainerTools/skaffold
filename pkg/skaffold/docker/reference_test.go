@@ -30,7 +30,7 @@ func TestParseReference(t *testing.T) {
 		expectedTag            string
 		expectedDigest         string
 		expectedFullyQualified bool
-		shoudErr               bool
+		shouldErr              bool
 	}{
 		{
 			description:            "port and tag",
@@ -85,15 +85,15 @@ func TestParseReference(t *testing.T) {
 		{
 			description: "invalid reference",
 			image:       "!!invalid!!",
-			shoudErr:    true,
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			parsed, err := ParseReference(test.image)
 
-			t.CheckError(test.shoudErr, err)
-			if !test.shoudErr {
+			t.CheckError(test.shouldErr, err)
+			if !test.shouldErr {
 				t.CheckDeepEqual(test.expectedName, parsed.BaseName)
 				t.CheckDeepEqual(test.expectedTag, parsed.Tag)
 				t.CheckDeepEqual(test.expectedDigest, parsed.Digest)

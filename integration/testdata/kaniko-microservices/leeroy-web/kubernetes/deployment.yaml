@@ -32,6 +32,6 @@ spec:
     spec:
       containers:
       - name: leeroy-web
-        image: gcr.io/k8s-skaffold/leeroy-web
+        image: leeroy-web
         ports:
         - containerPort: 8080

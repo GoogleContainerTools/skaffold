@@ -19,29 +19,23 @@ package initializer
 import (
 	"bufio"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/AlecAivazis/survey.v1"
-	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -72,8 +66,8 @@ type InitBuilder interface {
 	// Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
 	// Must be unique between artifacts.
 	Describe() string
-	// CreateArtifact creates an Artifact to be included in the generated Build Config
-	CreateArtifact(image string) *latest.Artifact
+	// UpdateArtifact updates the Artifact to be included in the generated Build Config
+	UpdateArtifact(*latest.Artifact)
 	// ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured.
 	// This should be a cheap operation.
 	ConfiguredImage() string
@@ -83,13 +77,14 @@ type InitBuilder interface {
 
 // Config defines the Initializer Config for Init API of skaffold.
 type Config struct {
-	ComposeFile   string
-	CliArtifacts  []string
-	SkipBuild     bool
-	Force         bool
-	Analyze       bool
-	EnableJibInit bool // TODO: Remove this parameter
-	Opts          config.SkaffoldOptions
+	ComposeFile         string
+	CliArtifacts        []string
+	SkipBuild           bool
+	Force               bool
+	Analyze             bool
+	EnableJibInit       bool // TODO: Remove this parameter
+	EnableBuildpackInit bool
+	Opts                config.SkaffoldOptions
 }
 
 // builderImagePair defines a builder and the image it builds
@@ -98,39 +93,27 @@ type builderImagePair struct {
 	ImageName string
 }
 
-type set map[string]interface{}
-
-func (s set) add(value string) {
-	s[value] = value
-}
-
-func (s set) values() (values []string) {
-	for val := range s {
-		values = append(values, val)
-	}
-	sort.Strings(values)
-	return values
-}
-
 // DoInit executes the `skaffold init` flow.
 func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	rootDir := "."
 
 	if c.ComposeFile != "" {
-		// run kompose first to generate k8s manifests, then run skaffold init
-		logrus.Infof("running 'kompose convert' for file %s", c.ComposeFile)
-		komposeCmd := exec.CommandContext(ctx, "kompose", "convert", "-f", c.ComposeFile)
-		if err := util.RunCmd(komposeCmd); err != nil {
-			return errors.Wrap(err, "running kompose")
+		if err := runKompose(ctx, c.ComposeFile); err != nil {
+			return err
 		}
 	}
 
-	potentialConfigs, builderConfigs, err := walk(rootDir, c.Force, c.EnableJibInit)
-	if err != nil {
+	a := &analysis{
+		force:               c.Force,
+		enableJibInit:       c.EnableJibInit,
+		enableBuildpackInit: c.EnableBuildpackInit,
+	}
+
+	if err := a.walk(rootDir); err != nil {
 		return err
 	}
 
-	k, err := kubectl.New(potentialConfigs)
+	k, err := kubectl.New(a.potentialConfigs)
 	if err != nil {
 		return err
 	}
@@ -153,11 +136,11 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	}
 
 	// Determine which builders/images require prompting
-	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(builderConfigs, images)
+	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(a.foundBuilders, images)
 
 	if c.Analyze {
 		// TODO: Remove backwards compatibility block
-		if !c.EnableJibInit {
+		if !c.EnableJibInit && !c.EnableBuildpackInit {
 			return printAnalyzeJSONNoJib(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
 		}
 
@@ -166,7 +149,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 
 	// conditionally generate build artifacts
 	if !c.SkipBuild {
-		if len(builderConfigs) == 0 {
+		if len(a.foundBuilders) == 0 {
 			return errors.New("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
 		}
 
@@ -228,356 +211,17 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	return nil
 }
 
-// autoSelectBuilders takes a list of builders and images, checks if any of the builders' configured target
-// images match an image in the image list, and returns a list of the matching builder/image pairs. Also
-// separately returns the builder configs and images that didn't have any matches.
-func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
-	var pairs []builderImagePair
-	var unresolvedImages = make(set)
-	for _, image := range images {
-		matchingConfigIndex := -1
-		for i, config := range builderConfigs {
-			if image != config.ConfiguredImage() {
-				continue
-			}
+type analysis struct {
+	force               bool
+	enableJibInit       bool
+	enableBuildpackInit bool
 
-			// Found more than one match; can't auto-select.
-			if matchingConfigIndex != -1 {
-				matchingConfigIndex = -1
-				break
-			}
-			matchingConfigIndex = i
-		}
-
-		if matchingConfigIndex != -1 {
-			// Exactly one pair found; save the pair and remove from remaining build configs
-			pairs = append(pairs, builderImagePair{ImageName: image, Builder: builderConfigs[matchingConfigIndex]})
-			builderConfigs = append(builderConfigs[:matchingConfigIndex], builderConfigs[matchingConfigIndex+1:]...)
-		} else {
-			// No definite pair found, add to images list
-			unresolvedImages.add(image)
-		}
-	}
-	return pairs, builderConfigs, unresolvedImages.values()
-}
-
-// detectBuilders checks if a path is a builder config, and if it is, returns the InitBuilders representing the
-// configs. Also returns a boolean marking search completion for subdirectories (true = subdirectories should
-// continue to be searched, false = subdirectories should not be searched for more builders)
-func detectBuilders(enableJibInit bool, path string) ([]InitBuilder, bool) {
-	// TODO: Remove backwards compatibility if statement (not entire block)
-	if enableJibInit {
-		// Check for jib
-		if builders := jib.ValidateJibConfigFunc(path); builders != nil {
-			results := make([]InitBuilder, len(builders))
-			for i := range builders {
-				results[i] = builders[i]
-			}
-			return results, false
-		}
-	}
-
-	// Check for Dockerfile
-	if docker.ValidateDockerfileFunc(path) {
-		results := []InitBuilder{docker.Docker{File: path}}
-		return results, true
-	}
-
-	// TODO: Check for more builders
-
-	return nil, true
-}
-
-func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
-	var pairs []builderImagePair
-	for _, artifact := range artifacts {
-		// Parses JSON in the form of: {"builder":"Name of Builder","payload":{...},"image":"image.name"}.
-		// The builder field is parsed first to determine the builder type, and the payload is parsed
-		// afterwards once the type is determined.
-		a := struct {
-			Name  string `json:"builder"`
-			Image string `json:"image"`
-		}{}
-		if err := json.Unmarshal([]byte(artifact), &a); err != nil {
-			// Not JSON, use backwards compatible method
-			parts := strings.Split(artifact, "=")
-			if len(parts) != 2 {
-				return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
-			}
-			pairs = append(pairs, builderImagePair{
-				Builder:   docker.Docker{File: parts[0]},
-				ImageName: parts[1],
-			})
-			continue
-		}
-
-		// Use builder type to parse payload
-		switch a.Name {
-		case docker.Name:
-			parsed := struct {
-				Payload docker.Docker `json:"payload"`
-			}{}
-			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
-				return nil, err
-			}
-			pair := builderImagePair{Builder: parsed.Payload, ImageName: a.Image}
-			pairs = append(pairs, pair)
-
-		// FIXME: shouldn't use a human-readable name?
-		case jib.PluginName(jib.JibGradle), jib.PluginName(jib.JibMaven):
-			parsed := struct {
-				Payload jib.Jib `json:"payload"`
-			}{}
-			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
-				return nil, err
-			}
-			parsed.Payload.BuilderName = a.Name
-			pair := builderImagePair{Builder: parsed.Payload, ImageName: a.Image}
-			pairs = append(pairs, pair)
-
-		default:
-			return nil, errors.New("unknown builder type in CLI artifacts")
-		}
-	}
-	return pairs, nil
-}
-
-// For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
-func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force bool) ([]builderImagePair, error) {
-	// If nothing to choose, don't bother prompting
-	if len(images) == 0 || len(builderConfigs) == 0 {
-		return []builderImagePair{}, nil
-	}
-
-	// if we only have 1 image and 1 build config, don't bother prompting
-	if len(images) == 1 && len(builderConfigs) == 1 {
-		return []builderImagePair{{
-			Builder:   builderConfigs[0],
-			ImageName: images[0],
-		}}, nil
-	}
-
-	if force {
-		return nil, errors.New("unable to automatically resolve builder/image pairs; run `skaffold init` without `--force` to manually resolve ambiguities")
-	}
-
-	// Build map from choice string to builder config struct
-	choices := make([]string, len(builderConfigs))
-	choiceMap := make(map[string]InitBuilder, len(builderConfigs))
-	for i, buildConfig := range builderConfigs {
-		choice := buildConfig.Describe()
-		choices[i] = choice
-		choiceMap[choice] = buildConfig
-	}
-	sort.Strings(choices)
-
-	// For each choice, use prompt string to pair builder config with k8s image
-	pairs := []builderImagePair{}
-	for {
-		if len(images) == 0 {
-			break
-		}
-
-		image := images[0]
-		choice, err := promptUserForBuildConfigFunc(image, choices)
-		if err != nil {
-			return nil, err
-		}
-
-		if choice != NoBuilder {
-			pairs = append(pairs, builderImagePair{Builder: choiceMap[choice], ImageName: image})
-			choices = util.RemoveFromSlice(choices, choice)
-		}
-		images = util.RemoveFromSlice(images, image)
-	}
-	if len(choices) > 0 {
-		logrus.Warnf("unused builder configs found in repository: %v", choices)
-	}
-	return pairs, nil
-}
-
-func promptUserForBuildConfig(image string, choices []string) (string, error) {
-	var selectedBuildConfig string
-	options := append(choices, NoBuilder)
-	prompt := &survey.Select{
-		Message:  fmt.Sprintf("Choose the builder to build image %s", image),
-		Options:  options,
-		PageSize: 15,
-	}
-	err := survey.AskOne(prompt, &selectedBuildConfig, nil)
-	if err != nil {
-		return "", err
-	}
-
-	return selectedBuildConfig, nil
-}
-
-func processBuildArtifacts(pairs []builderImagePair) latest.BuildConfig {
-	var config latest.BuildConfig
-	if len(pairs) > 0 {
-		config.Artifacts = make([]*latest.Artifact, len(pairs))
-		for i, pair := range pairs {
-			config.Artifacts[i] = pair.Builder.CreateArtifact(pair.ImageName)
-		}
-	}
-	return config
-}
-
-func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) ([]byte, error) {
-	// if we're here, the user has no skaffold yaml so we need to generate one
-	// if the user doesn't have any k8s yamls, generate one for each dockerfile
-	logrus.Info("generating skaffold config")
-
-	name, err := suggestConfigName()
-	if err != nil {
-		warnings.Printf("Couldn't generate default config name: %s", err.Error())
-	}
-
-	cfg := &latest.SkaffoldConfig{
-		APIVersion: latest.Version,
-		Kind:       "Config",
-		Metadata:   latest.Metadata{Name: name},
-	}
-	if err := defaults.Set(cfg); err != nil {
-		return nil, errors.Wrap(err, "generating default pipeline")
-	}
-
-	cfg.Build = processBuildArtifacts(buildConfigPairs)
-	cfg.Deploy = k.GenerateDeployConfig()
-
-	pipelineStr, err := yaml.Marshal(cfg)
-	if err != nil {
-		return nil, errors.Wrap(err, "marshaling generated pipeline")
-	}
-
-	return pipelineStr, nil
-}
-
-func suggestConfigName() (string, error) {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	base := filepath.Base(cwd)
-
-	// give up for edge cases
-	if base == "." || base == string(filepath.Separator) {
-		return "", nil
-	}
-
-	return canonicalizeName(base), nil
-}
-
-// canonicalizeName converts a given string to a valid k8s name string.
-// See https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names for details
-func canonicalizeName(name string) string {
-	forbidden := regexp.MustCompile(`[^-.a-z]+`)
-	canonicalized := forbidden.ReplaceAllString(strings.ToLower(name), "-")
-	if len(canonicalized) <= 253 {
-		return canonicalized
-	}
-	return canonicalized[:253]
-}
-
-func printAnalyzeJSONNoJib(out io.Writer, skipBuild bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
-	if !skipBuild && len(unresolvedBuilders) == 0 {
-		return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again, or run `skaffold init --skip-build`")
-	}
-
-	a := struct {
-		Dockerfiles []string `json:"dockerfiles,omitempty"`
-		Images      []string `json:"images,omitempty"`
-	}{Images: unresolvedImages}
-
-	for _, pair := range pairs {
-		if pair.Builder.Name() == docker.Name {
-			a.Dockerfiles = append(a.Dockerfiles, pair.Builder.Path())
-		}
-		a.Images = append(a.Images, pair.ImageName)
-	}
-	for _, config := range unresolvedBuilders {
-		if config.Name() == docker.Name {
-			a.Dockerfiles = append(a.Dockerfiles, config.Path())
-		}
-	}
-
-	contents, err := json.Marshal(a)
-	if err != nil {
-		return errors.Wrap(err, "marshalling contents")
-	}
-	_, err = out.Write(contents)
-	return err
-}
-
-// printAnalyzeJSON takes the automatically resolved builder/image pairs, the unresolved images, and the unresolved builders, and generates
-// a JSON string containing builder config information,
-func printAnalyzeJSON(out io.Writer, skipBuild bool, pairs []builderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
-	if !skipBuild && len(unresolvedBuilders) == 0 {
-		return errors.New("one or more valid Dockerfiles must be present to build images with skaffold; please provide at least one Dockerfile and try again, or run `skaffold init --skip-build`")
-	}
-
-	// Build JSON output. Example schema is below:
-	// {
-	//     "builders":[
-	//         {
-	//             "name":"Docker",
-	//             "payload":"path/to/Dockerfile"
-	//         },
-	//         {
-	//             "name":"Name of Builder",
-	//             "payload": { // Payload structure may vary depending on builder type
-	//                 "path":"path/to/builder.config",
-	//                 "targetImage":"gcr.io/project/images",
-	//                 ...
-	//             }
-	//         },
-	//     ],
-	//     "images":[
-	//         {"name":"gcr.io/project/images", "foundMatch":"true"}, // No need to prompt for this image since its builder was automatically resolved
-	//         {"name":"another/image", "foundMatch":"false"},
-	//     ],
-	// }
-	//
-	// "builders" is the list of builder configurations, and contains a builder name and a builder-specific payload
-	// "images" contains an image name and a boolean that indicates whether a builder/image pair can be automatically resolved (true) or if it requires prompting (false)
-	type Builder struct {
-		Name    string      `json:"name,omitempty"`
-		Payload InitBuilder `json:"payload"`
-	}
-	type Image struct {
-		Name       string `json:"name"`
-		FoundMatch bool   `json:"foundMatch"`
-	}
-	a := struct {
-		Builders []Builder `json:"builders,omitempty"`
-		Images   []Image   `json:"images,omitempty"`
-	}{}
-
-	for _, pair := range pairs {
-		a.Builders = append(a.Builders, Builder{Name: pair.Builder.Name(), Payload: pair.Builder})
-		a.Images = append(a.Images, Image{Name: pair.ImageName, FoundMatch: true})
-	}
-	for _, config := range unresolvedBuilders {
-		a.Builders = append(a.Builders, Builder{Name: config.Name(), Payload: config})
-	}
-	for _, image := range unresolvedImages {
-		a.Images = append(a.Images, Image{Name: image, FoundMatch: false})
-	}
-
-	contents, err := json.Marshal(a)
-	if err != nil {
-		return errors.Wrap(err, "marshalling contents")
-	}
-	_, err = out.Write(contents)
-	return err
+	potentialConfigs []string
+	foundBuilders    []InitBuilder
 }
 
 // walk recursively walks a directory and returns the k8s configs and builder configs that it finds
-func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error) {
-	var potentialConfigs []string
-	var foundBuilders []InitBuilder
-
+func (a *analysis) walk(dir string) error {
 	var searchConfigsAndBuilders func(path string, findBuilders bool) error
 	searchConfigsAndBuilders = func(path string, findBuilders bool) error {
 		dirents, err := godirwalk.ReadDirents(path, nil)
@@ -603,15 +247,22 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 
 			// Check for skaffold.yaml/k8s manifest
 			filePath := filepath.Join(path, file.Name())
-			var foundConfig bool
-			if foundConfig, err = checkConfigFile(filePath, force, &potentialConfigs); err != nil {
-				return err
+			isSkaffoldConfig := IsSkaffoldConfig(filePath)
+			isKubernetesManifest := false
+			if isSkaffoldConfig {
+				if !a.force {
+					return fmt.Errorf("pre-existing %s found (you may continue with --force)", filePath)
+				}
+				logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", filePath)
+			} else if kubectl.IsKubernetesManifest(filePath) {
+				isKubernetesManifest = true
+				a.potentialConfigs = append(a.potentialConfigs, filePath)
 			}
 
 			// Check for builder config
-			if !foundConfig && findBuilders {
-				builderConfigs, continueSearchingBuilders := detectBuilders(enableJibInit, filePath)
-				foundBuilders = append(foundBuilders, builderConfigs...)
+			if !isSkaffoldConfig && !isKubernetesManifest && findBuilders {
+				builderConfigs, continueSearchingBuilders := detectBuilders(a.enableJibInit, a.enableBuildpackInit, filePath)
+				a.foundBuilders = append(a.foundBuilders, builderConfigs...)
 				searchForBuildersInSubdirectories = searchForBuildersInSubdirectories && continueSearchingBuilders
 			}
 		}
@@ -626,28 +277,5 @@ func walk(dir string, force, enableJibInit bool) ([]string, []InitBuilder, error
 		return nil
 	}
 
-	err := searchConfigsAndBuilders(dir, true)
-	if err != nil {
-		return nil, nil, err
-	}
-	return potentialConfigs, foundBuilders, nil
-}
-
-// checkConfigFile checks if filePath is a skaffold config or k8s config, or builder config. Detected k8s configs are added to potentialConfigs.
-// Returns true if filePath is a config file, and false if not.
-func checkConfigFile(filePath string, force bool, potentialConfigs *[]string) (bool, error) {
-	if IsSkaffoldConfig(filePath) {
-		if !force {
-			return true, fmt.Errorf("pre-existing %s found", filePath)
-		}
-		logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", filePath)
-		return true, nil
-	}
-
-	if IsSupportedKubernetesFileExtension(filePath) {
-		*potentialConfigs = append(*potentialConfigs, filePath)
-		return true, nil
-	}
-
-	return false, nil
+	return searchConfigsAndBuilders(dir, true)
 }

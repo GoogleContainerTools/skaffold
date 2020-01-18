@@ -42,7 +42,7 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:4ce8b8db817047f0be7a78c0fdffab71f797e8f8@sha256:fe1b5a428273309088fb6df563f4d88ab806fe602a7b0b3e8fbe1d7ee5f9ead0"
+	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.14.0@sha256:9c40a04cf1bc9d886f7f000e0b7fa5300c31c89e2ad001e97eeeecdce9f07a29"
 	DefaultKanikoSecretName             = "kaniko-secret"
 	DefaultKanikoTimeout                = "20m"
 	DefaultKanikoContainerName          = "kaniko"
@@ -57,11 +57,6 @@ const (
 	DefaultBusyboxImage = "busybox"
 
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
-
-	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
-	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
-	DefaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
-	DefaultCloudBuildKanikoImage = "gcr.io/kaniko-project/executor"
 
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"
@@ -78,6 +73,8 @@ const (
 var (
 	Pod     latest.ResourceType = "pod"
 	Service latest.ResourceType = "service"
+
+	DefaultLocalConcurrency = 1
 )
 
 var (
@@ -96,7 +93,7 @@ var (
 	// KubeContext is the expected kubecontext to build an artifact with a custom build script on cluster
 	KubeContext = "KUBE_CONTEXT"
 
-	// Namespace is the expected namsepace to build an artifact with a custom build script on cluster.
+	// Namespace is the expected namespace to build an artifact with a custom build script on cluster.
 	Namespace = "NAMESPACE"
 
 	// PullSecretName is the secret with authentication required to pull a base image/push the final image built on cluster.

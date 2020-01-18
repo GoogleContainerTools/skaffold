@@ -127,11 +127,7 @@ func generateProfile(out io.Writer, namespace string, config *latest.SkaffoldCon
 		if artifact.DockerArtifact != nil {
 			color.Default.Fprintf(out, "Cannot use Docker to build %s on cluster. Adding config for building with Kaniko.\n", artifact.ImageName)
 			artifact.DockerArtifact = nil
-			artifact.KanikoArtifact = &latest.KanikoArtifact{
-				BuildContext: &latest.KanikoBuildContext{
-					GCSBucket: "skaffold-kaniko",
-				},
-			}
+			artifact.KanikoArtifact = &latest.KanikoArtifact{}
 			addKaniko = true
 		}
 	}

@@ -165,7 +165,7 @@ func TestIsErrAndNotRetriable(t *testing.T) {
 			expected:    true,
 		},
 		{
-			description: "rollout status parent conetct timed out",
+			description: "rollout status parent context timed out",
 			err:         context.DeadlineExceeded,
 			expected:    true,
 		},

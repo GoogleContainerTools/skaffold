@@ -29,70 +29,67 @@ import (
 func TestAutoConfigureGCRCredentialHelper(t *testing.T) {
 	tests := []struct {
 		description  string
-		registry     string
 		helperInPath bool
 		config       *configfile.ConfigFile
 		expected     *configfile.ConfigFile
 	}{
 		{
 			description:  "add to nil map",
-			registry:     "gcr.io",
 			helperInPath: true,
 			config:       &configfile.ConfigFile{},
 			expected: &configfile.ConfigFile{
 				CredentialHelpers: map[string]string{
-					"gcr.io": "gcloud",
+					"gcr.io":             "gcloud",
+					"us.gcr.io":          "gcloud",
+					"eu.gcr.io":          "gcloud",
+					"asia.gcr.io":        "gcloud",
+					"staging-k8s.gcr.io": "gcloud",
+					"marketplace.gcr.io": "gcloud",
 				},
 			},
 		},
 		{
 			description:  "add to empty map",
-			registry:     "gcr.io",
 			helperInPath: true,
 			config: &configfile.ConfigFile{
 				CredentialHelpers: map[string]string{},
 			},
 			expected: &configfile.ConfigFile{
 				CredentialHelpers: map[string]string{
-					"gcr.io": "gcloud",
+					"gcr.io":             "gcloud",
+					"us.gcr.io":          "gcloud",
+					"eu.gcr.io":          "gcloud",
+					"asia.gcr.io":        "gcloud",
+					"staging-k8s.gcr.io": "gcloud",
+					"marketplace.gcr.io": "gcloud",
 				},
 			},
 		},
 		{
 			description: "leave existing helper",
-			registry:    "gcr.io",
 			config: &configfile.ConfigFile{
 				CredentialHelpers: map[string]string{
-					"gcr.io": "existing",
+					"gcr.io":             "existing",
+					"us.gcr.io":          "existing",
+					"eu.gcr.io":          "existing",
+					"asia.gcr.io":        "existing",
+					"staging-k8s.gcr.io": "existing",
+					"marketplace.gcr.io": "existing",
 				},
 			},
 			expected: &configfile.ConfigFile{
 				CredentialHelpers: map[string]string{
-					"gcr.io": "existing",
+					"gcr.io":             "existing",
+					"us.gcr.io":          "existing",
+					"eu.gcr.io":          "existing",
+					"asia.gcr.io":        "existing",
+					"staging-k8s.gcr.io": "existing",
+					"marketplace.gcr.io": "existing",
 				},
 			},
-		},
-		{
-			description:  "any.gcr.io",
-			registry:     "any.gcr.io",
-			helperInPath: true,
-			config:       &configfile.ConfigFile{},
-			expected: &configfile.ConfigFile{
-				CredentialHelpers: map[string]string{
-					"any.gcr.io": "gcloud",
-				},
-			},
-		},
-		{
-			description:  "case is important",
-			registry:     "GCR.io",
-			helperInPath: true,
-			config:       &configfile.ConfigFile{},
-			expected:     &configfile.ConfigFile{},
 		},
 		{
 			description:  "ignore if gcloud is not in PATH",
-			registry:     "gcr.io",
 			helperInPath: false,
 			config:       &configfile.ConfigFile{},
 			expected:     &configfile.ConfigFile{},
@@ -107,7 +104,7 @@ func TestAutoConfigureGCRCredentialHelper(t *testing.T) {
 				tmpDir.Write("docker-credential-gcloud", "")
 			}
 
-			AutoConfigureGCRCredentialHelper(test.config, test.registry)
+			AutoConfigureGCRCredentialHelper(test.config)
 
 			t.CheckDeepEqual(test.expected, test.config)
 		})

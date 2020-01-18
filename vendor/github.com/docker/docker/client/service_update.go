@@ -79,7 +79,6 @@ func (cli *Client) ServiceUpdate(ctx context.Context, serviceID string, version 
 
 	var response types.ServiceUpdateResponse
 	resp, err := cli.post(ctx, "/services/"+serviceID+"/update", query, service, headers)
-	defer ensureReaderClosed(resp)
 	if err != nil {
 		return response, err
 	}
@@ -90,5 +89,6 @@ func (cli *Client) ServiceUpdate(ctx context.Context, serviceID string, version 
 		response.Warnings = append(response.Warnings, digestWarning(service.TaskTemplate.ContainerSpec.Image))
 	}
 
+	ensureReaderClosed(resp)
 	return response, err
 }

@@ -23,11 +23,8 @@ import (
 )
 
 func TestDebug(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	tests := []struct {

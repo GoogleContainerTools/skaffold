@@ -1,0 +1,7 @@
+apiVersion: skaffold/v2alpha1
+kind: Config
+build:
+  artifacts:
+  - image: skaffold-buildpacks-node
+    buildpack:
+      builder: "heroku/buildpacks"

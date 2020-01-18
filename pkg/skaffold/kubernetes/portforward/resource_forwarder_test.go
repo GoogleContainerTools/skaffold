@@ -67,7 +67,7 @@ func newTestForwarder() *testForwarder {
 
 func mockRetrieveAvailablePort(_ string, taken map[int]struct{}, availablePorts []int) func(string, int, util.ForwardedPorts) int {
 	// Return first available port in ports that isn't taken
-	lock := sync.Mutex{}
+	var lock sync.Mutex
 	return func(string, int, util.ForwardedPorts) int {
 		for _, p := range availablePorts {
 			lock.Lock()

@@ -256,12 +256,12 @@ func TestInParallelConcurrency(t *testing.T) {
 			maxConcurrency: 10,
 		},
 		{
-			artifacts:      100,
+			artifacts:      50,
 			limit:          1,
 			maxConcurrency: 1,
 		},
 		{
-			artifacts:      100,
+			artifacts:      50,
 			limit:          10,
 			maxConcurrency: 10,
 		},
@@ -285,7 +285,7 @@ func TestInParallelConcurrency(t *testing.T) {
 				if atomic.AddInt32(&actualConcurrency, 1) > int32(test.maxConcurrency) {
 					return "", fmt.Errorf("only %d build can run at a time", test.maxConcurrency)
 				}
-				time.Sleep(10 * time.Millisecond)
+				time.Sleep(5 * time.Millisecond)
 				atomic.AddInt32(&actualConcurrency, -1)
 
 				return tag, nil
