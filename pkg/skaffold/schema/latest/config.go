@@ -305,107 +305,8 @@ type ClusterDetails struct {
 	// Defaults to `0`.
 	Concurrency int `yaml:"concurrency,omitempty"`
 
-	// Volumes define container mounts for ConfigMap and Secret resources.
-	Volumes []VolumeMount `yaml:"volumes,omitempty"`
-
-	// EnvVars defines Environment Variables for the containers in the Kaniko Pod.
-	EnvVars []EnvVar `yaml:"envVars,omitempty"`
-}
-
-// VolumeMount represents a volume to mount to the kaniko container.
-// Only one of its members may be specified.
-type VolumeMount struct {
-	// ConfigMap specifies a ConfigMap mount into the kaniko pod container.
-	ConfigMap *ConfigMapMount `yaml:"configMap,omitempty" yamltags:"oneOf=volumeType"`
-
-	// Secret specifies a Secret mount into the kaniko pod container.
-	Secret *SecretMount `yaml:"secret,omitempty" yamltags:"oneOf=volumeType"`
-}
-
-// ConfigMapMount describes one ConfigMap mount to the kaniko container filesystem.
-type ConfigMapMount struct {
-	// Name is the Kubernetes ConfigMap name.
-	Name string `yaml:"name" yamltags:"required"`
-
-	// Items if specified then only defined keys of the ConfigMap will be projected to the pod filesystem using relative paths as
-	// described in [volumes configMap](https://kubernetes.io/docs/concepts/storage/volumes/#configmap).
-	Items []KeyToPath `yaml:"items,omitempty"`
-
-	// MountPath defines the path to mount the ConfigMap.
-	MountPath string `yaml:"mountPath" yamltags:"required"`
-
-	// VolumeName defines Kubernetes pod.spec.volumes[].name for the Pod.
-	VolumeName string `yaml:"volumeName" yamltags:"required"`
-
-	// DefaultMode UNIX mode bits to set on mounted files. Must be a
-	// value between 0 and 0777. Defaults to 0644.
-	DefaultMode *int32 `yaml:"defaultMode,omitempty"`
-}
-
-// SecretMount describes one Secret mount to a kaniko container filesystem.
-type SecretMount struct {
-	// Name is the Kubernetes Secret name.
-	Name string `yaml:"name" yamltags:"required"`
-
-	// Items if specified then only defined keys of the Secret will be projected to the pod filesystem using relative paths as
-	// described in [volumes secret](https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets).
-	Items []KeyToPath `yaml:"items,omitempty"`
-
-	// MountPath defines the path to mount the Secret.
-	MountPath string `yaml:"mountPath" yamltags:"required"`
-
-	// VolumeName defines Kubernetes pod.spec.volumes[].name for the Pod.
-	VolumeName string `yaml:"volumeName" yamltags:"required"`
-
-	// DefaultMode UNIX mode bits to set on mounted files. Must be a
-	// value between 0 and 0777. Defaults to 0644.
-	DefaultMode *int32 `yaml:"defaultMode,omitempty"`
-}
-
-// KeyToPath describes mapping from ConfigMap or Secret resource key to a path within a volume.
-type KeyToPath struct {
-	// Key is the key to get from the Resource.
-	Key string `yaml:"key" yamltags:"required"`
-
-	// Path is the relative path to mount Key to.
-	Path string `yaml:"path" yamltags:"required"`
-
-	// Mode UNIX mode bits to set on mounted files. Must be a
-	// value between 0 and 0777. Defaults to 0644.
-	Mode *int32 `yaml:"mode,omitempty"`
-}
-
-// EnvVar describes one Environment Variable to set to the Kaniko Pod.
-type EnvVar struct {
-	// Name sets name for configured Environment Variable.
-	Name string `yaml:"name" yamltags:"required"`
-
-	// Secret sets the given Kubernetes Secret as a value for the Env Var.
-	Secret *SecretKeyRef `yaml:"secret" yamltags:"oneOf=envVarSource"`
-
-	// ConfigMap sets the given Kubernetes Config Map as a value for the Env Var.
-	ConfigMap *ConfigMapKeyRef `yaml:"configMap" yamltags:"oneOf=envVarSource"`
-
-	// Value sets the Value for the Env Var.
-	Value *string `yaml:"value" yamltags:"oneOf=envVarSource"`
-}
-
-// SecretKeyRef describes a Secret source for Environent Variable value.
-type SecretKeyRef struct {
-	// Name sets the name of the Secret which is used to get value for the Env Var.
-	Name string `yaml:"name" yamltags:"required"`
-
-	// Key sets the Key from the Secret to set as the Env Var value.
-	Key string `yaml:"key" yamltags:"required"`
-}
-
-// ConfigMapKeyRef describes a ConfigMap source for Environent Variable value.
-type ConfigMapKeyRef struct {
-	// Name sets the name of the Secret which is used to get value for the Env Var.
-	Name string `yaml:"name" yamltags:"required"`
-
-	// Key sets the Key from the Secret to set as the Env Var value.
-	Key string `yaml:"key" yamltags:"required"`
+	// Volume defines container mounts for ConfigMap and Secret resources.
+	Volumes []v1.Volume `yaml:"volumes,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
@@ -881,6 +782,9 @@ type KanikoArtifact struct {
 
 	// SkipTLS skips TLS verification when pulling and pushing the image.
 	SkipTLS bool `yaml:"skipTLS,omitempty"`
+
+	// VolumeMounts are volume mounts passed to kaniko pod.
+	VolumeMounts []v1.VolumeMount `yaml:"volumeMounts,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,
