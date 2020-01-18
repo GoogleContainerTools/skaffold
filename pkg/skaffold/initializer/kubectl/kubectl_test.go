@@ -23,7 +23,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGenerateKubeCtlPipeline(t *testing.T) {
+func TestGenerateKubectlPipeline(t *testing.T) {
 	tmpDir, delete := testutil.NewTempDir(t)
 	defer delete()
 
