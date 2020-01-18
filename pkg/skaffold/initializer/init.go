@@ -107,6 +107,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		force:               c.Force,
 		enableJibInit:       c.EnableJibInit,
 		enableBuildpackInit: c.EnableBuildpackInit,
+		skipBuild:           c.SkipBuild,
 	}
 
 	if err := a.walk(rootDir); err != nil {
@@ -215,6 +216,7 @@ type analysis struct {
 	force               bool
 	enableJibInit       bool
 	enableBuildpackInit bool
+	skipBuild           bool
 
 	potentialConfigs []string
 	foundBuilders    []InitBuilder
@@ -277,5 +279,5 @@ func (a *analysis) walk(dir string) error {
 		return nil
 	}
 
-	return searchConfigsAndBuilders(dir, true)
+	return searchConfigsAndBuilders(dir, !a.skipBuild)
 }
