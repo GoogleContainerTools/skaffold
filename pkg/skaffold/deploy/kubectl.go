@@ -161,7 +161,7 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 
 	var filteredManifests []string
 	for _, f := range list {
-		if !util.IsSupportedKubernetesFormat(f) {
+		if !util.HasKubernetesFileExtension(f) {
 			if !util.StrSliceContains(manifests, f) {
 				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", f)
 				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
