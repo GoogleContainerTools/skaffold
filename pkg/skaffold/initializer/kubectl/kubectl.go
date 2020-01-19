@@ -62,11 +62,11 @@ func New(potentialConfigs []string) (*Kubectl, error) {
 
 // IsKubernetesManifest is for determining if a file is a valid Kubernetes manifest
 func IsKubernetesManifest(file string) bool {
-	if !util.IsSupportedKubernetesFormat(file) {
+	if !util.HasKubernetesFileExtension(file) {
 		return false
 	}
 
-	_, err := parseImagesFromKubernetesYaml(file)
+	_, err := parseKubernetesObjects(file)
 	return err == nil
 }
 
@@ -88,20 +88,35 @@ func (k *Kubectl) GetImages() []string {
 	return k.images
 }
 
-// parseImagesFromKubernetesYaml uses required fields from the k8s spec
+type yamlObject map[interface{}]interface{}
+
+// parseImagesFromKubernetesYaml parses the kubernetes yamls, and if it finds at least one
+// valid Kubernetes object, it will return the images referenced in them.
+func parseImagesFromKubernetesYaml(filepath string) ([]string, error) {
+	k8sObjects, err := parseKubernetesObjects(filepath)
+	if err != nil {
+		return nil, err
+	}
+
+	images := []string{}
+	for _, k8sObject := range k8sObjects {
+		images = append(images, parseImagesFromYaml(k8sObject)...)
+	}
+	return images, nil
+}
+
+// parseKubernetesObjects uses required fields from the k8s spec
 // to determine if a provided yaml file is a valid k8s manifest, as detailed in
 // https://kubernetes.io/docs/concepts/overview/working-with-objects/kubernetes-objects/#required-fields.
-// if so, it will return the images referenced in the k8s config
-// so they can be built by the generated skaffold yaml
-func parseImagesFromKubernetesYaml(filepath string) ([]string, error) {
+// If so, it will return the parsed objects.
+func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
 		return nil, errors.Wrap(err, "opening config file")
 	}
 	r := k8syaml.NewYAMLReader(bufio.NewReader(f))
 
-	yamlsFound := 0
-	images := []string{}
+	var k8sObjects []yamlObject
 
 	for {
 		doc, err := r.Read()
@@ -112,26 +127,25 @@ func parseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 			return nil, errors.Wrap(err, "reading config file")
 		}
 
-		m := make(map[interface{}]interface{})
-		if err := yaml.Unmarshal(doc, &m); err != nil {
+		obj := make(yamlObject)
+		if err := yaml.Unmarshal(doc, &obj); err != nil {
 			return nil, errors.Wrap(err, "reading Kubernetes YAML")
 		}
 
-		if !isKubernetesYaml(m) {
+		if !hasRequiredK8sManifestFields(obj) {
 			continue
 		}
 
-		yamlsFound++
+		k8sObjects = append(k8sObjects, obj)
 
-		images = append(images, parseImagesFromYaml(m)...)
 	}
-	if yamlsFound == 0 {
+	if len(k8sObjects) == 0 {
 		return nil, errors.New("no valid Kubernetes objects decoded")
 	}
-	return images, nil
+	return k8sObjects, nil
 }
 
-func isKubernetesYaml(doc map[interface{}]interface{}) bool {
+func hasRequiredK8sManifestFields(doc map[interface{}]interface{}) bool {
 	for _, field := range requiredFields {
 		if _, ok := doc[field]; !ok {
 			logrus.Debugf("%s not present in yaml, continuing", field)
@@ -142,14 +156,14 @@ func isKubernetesYaml(doc map[interface{}]interface{}) bool {
 }
 
 // adapted from pkg/skaffold/deploy/kubectl/recursiveReplaceImage()
-func parseImagesFromYaml(doc interface{}) []string {
+func parseImagesFromYaml(obj interface{}) []string {
 	images := []string{}
-	switch t := doc.(type) {
+	switch t := obj.(type) {
 	case []interface{}:
 		for _, v := range t {
 			images = append(images, parseImagesFromYaml(v)...)
 		}
-	case map[interface{}]interface{}:
+	case yamlObject:
 		for k, v := range t {
 			if k.(string) != "image" {
 				images = append(images, parseImagesFromYaml(v)...)

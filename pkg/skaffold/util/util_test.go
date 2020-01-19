@@ -53,7 +53,7 @@ func TestSupportedKubernetesFormats(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual := IsSupportedKubernetesFormat(test.in)
+			actual := HasKubernetesFileExtension(test.in)
 
 			t.CheckDeepEqual(test.out, actual)
 		})

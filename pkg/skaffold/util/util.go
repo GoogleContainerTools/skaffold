@@ -51,10 +51,10 @@ func RandomID() string {
 // These are the supported file formats for Kubernetes manifests
 var validSuffixes = []string{".yml", ".yaml", ".json"}
 
-// IsSupportedKubernetesFormat is for determining if a file under a glob pattern
+// HasKubernetesFileExtension is for determining if a file under a glob pattern
 // is deployable file format. It makes no attempt to check whether or not the file
 // is actually deployable or has the correct contents.
-func IsSupportedKubernetesFormat(n string) bool {
+func HasKubernetesFileExtension(n string) bool {
 	for _, s := range validSuffixes {
 		if strings.HasSuffix(n, s) {
 			return true
