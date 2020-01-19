@@ -137,7 +137,6 @@ func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
 		}
 
 		k8sObjects = append(k8sObjects, obj)
-
 	}
 	if len(k8sObjects) == 0 {
 		return nil, errors.New("no valid Kubernetes objects decoded")
