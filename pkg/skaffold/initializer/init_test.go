@@ -27,7 +27,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -331,22 +330,28 @@ deploy:
 			t.Override(&docker.Validate, fakeValidateDockerfile)
 			t.Override(&jib.Validate, fakeValidateJibConfig)
 
-			a := analysis{
-				force:               test.force,
-				enableJibInit:       test.enableJibInit,
-				enableBuildpackInit: test.enableBuildpackInit,
+			a := &analysis{
+				kubectlAnalyzer: &kubectlAnalyzer{},
+				builderAnalyzer: &builderAnalyzer{
+					findBuilders:        true,
+					enableJibInit:       test.enableJibInit,
+					enableBuildpackInit: test.enableBuildpackInit,
+				},
+				skaffoldAnalyzer: &skaffoldConfigAnalyzer{
+					force: test.force,
+				},
 			}
-			err := a.walk(tmpDir.Root())
+			err := a.analyze(tmpDir.Root())
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
 				return
 			}
 
-			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), a.potentialConfigs)
-			t.CheckDeepEqual(len(test.expectedPaths), len(a.foundBuilders))
-			for i := range a.foundBuilders {
-				t.CheckDeepEqual(tmpDir.Path(test.expectedPaths[i]), a.foundBuilders[i].Path())
+			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), a.kubectlAnalyzer.kubernetesManifests)
+			t.CheckDeepEqual(len(test.expectedPaths), len(a.builderAnalyzer.foundBuilders))
+			for i := range a.builderAnalyzer.foundBuilders {
+				t.CheckDeepEqual(tmpDir.Path(test.expectedPaths[i]), a.builderAnalyzer.foundBuilders[i].Path())
 			}
 		})
 	}
@@ -680,55 +685,4 @@ func TestRunKompose(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestArtifacts(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		artifacts := artifacts([]builderImagePair{
-			{
-				ImageName: "image1",
-				Builder: docker.ArtifactConfig{
-					File: "Dockerfile",
-				},
-			},
-			{
-				ImageName: "image2",
-				Builder: docker.ArtifactConfig{
-					File: "front/Dockerfile2",
-				},
-			},
-			{
-				ImageName: "image3",
-				Builder: buildpacks.ArtifactConfig{
-					File: "package.json",
-				},
-			},
-		})
-
-		expected := []*latest.Artifact{
-			{
-				ImageName:    "image1",
-				ArtifactType: latest.ArtifactType{},
-			},
-			{
-				ImageName: "image2",
-				Workspace: "front",
-				ArtifactType: latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{
-						DockerfilePath: "Dockerfile2",
-					},
-				},
-			},
-			{
-				ImageName: "image3",
-				ArtifactType: latest.ArtifactType{
-					BuildpackArtifact: &latest.BuildpackArtifact{
-						Builder: "heroku/buildpacks",
-					},
-				},
-			},
-		}
-
-		t.CheckDeepEqual(expected, artifacts)
-	})
 }
