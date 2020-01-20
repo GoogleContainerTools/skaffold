@@ -30,7 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
-// Fot testing
+// For testing
 var (
 	GetLatestAndCurrentVersion = getLatestAndCurrentVersion
 	isConfigUpdateCheckEnabled = config.IsUpdateCheckEnabled
