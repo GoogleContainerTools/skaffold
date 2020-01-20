@@ -27,7 +27,6 @@ import (
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
-
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/pipeline"

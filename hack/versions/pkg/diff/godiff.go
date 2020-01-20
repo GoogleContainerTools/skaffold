@@ -24,9 +24,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/google/go-cmp/cmp"
+	"github.com/sirupsen/logrus"
 )
 
 // CompareGoStructs returns an empty string iff aFile and bFile are valid go files

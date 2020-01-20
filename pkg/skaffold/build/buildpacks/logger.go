@@ -19,9 +19,8 @@ package buildpacks
 import (
 	"io"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/buildpacks/pack/logging"
+	"github.com/sirupsen/logrus"
 )
 
 // logger exists to meet the requirements of the pack logger.

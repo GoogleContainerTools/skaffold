@@ -23,6 +23,7 @@ scripts=(
     "hack/check-schema-changes.sh"
     "hack/boilerplate.sh"
     "hack/gofmt.sh"
+    "hack/pedantic-imports.sh"
     "hack/linter.sh"
     "hack/check-samples.sh"
     "hack/check-docs.sh"

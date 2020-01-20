@@ -25,12 +25,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	yamlv2 "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-
-	yamlv2 "gopkg.in/yaml.v2"
 )
 
 func CreateSkaffoldProfile(out io.Writer, runCtx *runcontext.RunContext, configFile *ConfigFile) error {

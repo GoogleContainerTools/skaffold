@@ -32,7 +32,6 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
