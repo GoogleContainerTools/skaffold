@@ -24,10 +24,9 @@ import (
 	"regexp"
 	"strings"
 
-	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
-
 	"github.com/sirupsen/logrus"
 
+	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"

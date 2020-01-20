@@ -25,9 +25,8 @@ import (
 	"os"
 	"strings"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
