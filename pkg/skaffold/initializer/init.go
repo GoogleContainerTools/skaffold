@@ -23,13 +23,10 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"path/filepath"
-	"sort"
 	"strings"
 
-	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
 
-	"github.com/karrick/godirwalk"
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
@@ -37,22 +34,15 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-)
-
-// For testing
-var (
-	promptUserForBuildConfigFunc = promptUserForBuildConfig
 )
 
 // NoBuilder allows users to specify they don't want to build
 // an image we parse out from a Kubernetes manifest
 const NoBuilder = "None (image not built from these sources)"
 
-// Initializer is the Init API of skaffold and responsible for generating
-// skaffold configuration file.
-type Initializer interface {
+// DeploymentInitializer detects a deployment type and is able to extract image names from it
+type DeploymentInitializer interface {
 	// GenerateDeployConfig generates Deploy Config for skaffold configuration.
 	GenerateDeployConfig() latest.DeployConfig
 	// GetImages fetches all the images defined in the manifest files.
@@ -75,7 +65,7 @@ type InitBuilder interface {
 	Path() string
 }
 
-// Config defines the Initializer Config for Init API of skaffold.
+// Config contains all the parameters for the initializer package
 type Config struct {
 	ComposeFile         string
 	CliArtifacts        []string
@@ -104,17 +94,22 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	}
 
 	a := &analysis{
-		force:               c.Force,
-		enableJibInit:       c.EnableJibInit,
-		enableBuildpackInit: c.EnableBuildpackInit,
-		skipBuild:           c.SkipBuild,
+		kubectlAnalyzer: &KubectlAnalyzer{},
+		builderAnalyzer: &BuilderAnalyzer{
+			findBuilders:        !c.SkipBuild,
+			enableJibInit:       c.EnableJibInit,
+			enableBuildpackInit: c.EnableBuildpackInit,
+		},
+		skaffoldAnalyzer: &SkaffoldConfigAnalyzer{
+			force: c.Force,
+		},
 	}
 
 	if err := a.walk(rootDir); err != nil {
 		return err
 	}
 
-	k, err := kubectl.New(a.potentialConfigs)
+	k, err := kubectl.New(a.kubectlAnalyzer.kubernetesManifests)
 	if err != nil {
 		return err
 	}
@@ -137,7 +132,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	}
 
 	// Determine which builders/images require prompting
-	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(a.foundBuilders, images)
+	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(a.builderAnalyzer.foundBuilders, images)
 
 	if c.Analyze {
 		// TODO: Remove backwards compatibility block
@@ -150,7 +145,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 
 	// conditionally generate build artifacts
 	if !c.SkipBuild {
-		if len(a.foundBuilders) == 0 {
+		if len(a.builderAnalyzer.foundBuilders) == 0 {
 			return errors.New("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
 		}
 
@@ -169,11 +164,10 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		}
 	}
 
-	pipeline, err := generateSkaffoldConfig(k, pairs)
+	pipeline, err := yaml.Marshal(generateSkaffoldConfig(k, pairs))
 	if err != nil {
 		return err
 	}
-
 	if c.Opts.ConfigurationFile == "-" {
 		out.Write(pipeline)
 		return nil
@@ -210,74 +204,4 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	tips.PrintForInit(out, c.Opts)
 
 	return nil
-}
-
-type analysis struct {
-	force               bool
-	enableJibInit       bool
-	enableBuildpackInit bool
-	skipBuild           bool
-
-	potentialConfigs []string
-	foundBuilders    []InitBuilder
-}
-
-// walk recursively walks a directory and returns the k8s configs and builder configs that it finds
-func (a *analysis) walk(dir string) error {
-	var searchConfigsAndBuilders func(path string, findBuilders bool) error
-	searchConfigsAndBuilders = func(path string, findBuilders bool) error {
-		dirents, err := godirwalk.ReadDirents(path, nil)
-		if err != nil {
-			return err
-		}
-
-		var subdirectories []*godirwalk.Dirent
-		searchForBuildersInSubdirectories := findBuilders
-		sort.Sort(dirents)
-
-		// Traverse files
-		for _, file := range dirents {
-			if util.IsHiddenFile(file.Name()) || util.IsHiddenDir(file.Name()) {
-				continue
-			}
-
-			// If we found a directory, keep track of it until we've gone through all the files first
-			if file.IsDir() {
-				subdirectories = append(subdirectories, file)
-				continue
-			}
-
-			// Check for skaffold.yaml/k8s manifest
-			filePath := filepath.Join(path, file.Name())
-			isSkaffoldConfig := IsSkaffoldConfig(filePath)
-			isKubernetesManifest := false
-			if isSkaffoldConfig {
-				if !a.force {
-					return fmt.Errorf("pre-existing %s found (you may continue with --force)", filePath)
-				}
-				logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", filePath)
-			} else if kubectl.IsKubernetesManifest(filePath) {
-				isKubernetesManifest = true
-				a.potentialConfigs = append(a.potentialConfigs, filePath)
-			}
-
-			// Check for builder config
-			if !isSkaffoldConfig && !isKubernetesManifest && findBuilders {
-				builderConfigs, continueSearchingBuilders := detectBuilders(a.enableJibInit, a.enableBuildpackInit, filePath)
-				a.foundBuilders = append(a.foundBuilders, builderConfigs...)
-				searchForBuildersInSubdirectories = searchForBuildersInSubdirectories && continueSearchingBuilders
-			}
-		}
-
-		// Recurse into subdirectories
-		for _, dir := range subdirectories {
-			if err = searchConfigsAndBuilders(filepath.Join(path, dir.Name()), searchForBuildersInSubdirectories); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
-
-	return searchConfigsAndBuilders(dir, !a.skipBuild)
 }

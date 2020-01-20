@@ -25,7 +25,6 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"gopkg.in/AlecAivazis/survey.v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
@@ -221,20 +220,4 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force b
 		logrus.Warnf("unused builder configs found in repository: %v", choices)
 	}
 	return pairs, nil
-}
-
-func promptUserForBuildConfig(image string, choices []string) (string, error) {
-	var selectedBuildConfig string
-	options := append(choices, NoBuilder)
-	prompt := &survey.Select{
-		Message:  fmt.Sprintf("Choose the builder to build image %s", image),
-		Options:  options,
-		PageSize: 15,
-	}
-	err := survey.AskOne(prompt, &selectedBuildConfig, nil)
-	if err != nil {
-		return "", err
-	}
-
-	return selectedBuildConfig, nil
 }

@@ -23,13 +23,17 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
-func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) ([]byte, error) {
+var (
+	// for testing
+	getWd = os.Getwd
+)
+
+func generateSkaffoldConfig(k DeploymentInitializer, buildConfigPairs []builderImagePair) *latest.SkaffoldConfig {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
@@ -39,7 +43,7 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 		warnings.Printf("Couldn't generate default config name: %s", err.Error())
 	}
 
-	return yaml.Marshal(&latest.SkaffoldConfig{
+	return &latest.SkaffoldConfig{
 		APIVersion: latest.Version,
 		Kind:       "Config",
 		Metadata: latest.Metadata{
@@ -51,11 +55,11 @@ func generateSkaffoldConfig(k Initializer, buildConfigPairs []builderImagePair) 
 			},
 			Deploy: k.GenerateDeployConfig(),
 		},
-	})
+	}
 }
 
 func suggestConfigName() (string, error) {
-	cwd, err := os.Getwd()
+	cwd, err := getWd()
 	if err != nil {
 		return "", err
 	}
