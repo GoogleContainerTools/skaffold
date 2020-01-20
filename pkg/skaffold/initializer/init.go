@@ -17,22 +17,17 @@ limitations under the License.
 package initializer
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
-	"strings"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 // NoBuilder allows users to specify they don't want to build
@@ -91,17 +86,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		}
 	}
 
-	a := &analysis{
-		kubectlAnalyzer: &kubectlAnalyzer{},
-		builderAnalyzer: &builderAnalyzer{
-			findBuilders:        !c.SkipBuild,
-			enableJibInit:       c.EnableJibInit,
-			enableBuildpackInit: c.EnableBuildpackInit,
-		},
-		skaffoldAnalyzer: &skaffoldConfigAnalyzer{
-			force: c.Force,
-		},
-	}
+	a := newAnalysis(c)
 
 	if err := a.analyze(rootDir); err != nil {
 		return err
@@ -112,25 +97,8 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		return err
 	}
 
-	// Remove tags from image names
-	var images []string
-	for _, image := range k.GetImages() {
-		parsed, err := docker.ParseReference(image)
-		if err != nil {
-			// It's possible that it's a templatized name that can't be parsed as is.
-			warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
-			continue
-		}
-		if parsed.Digest != "" {
-			warnings.Printf("Ignoring image referenced by digest: [%s]", image)
-			continue
-		}
-
-		images = append(images, parsed.BaseName)
-	}
-
 	// Determine which builders/images require prompting
-	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(a.builderAnalyzer.foundBuilders, images)
+	pairs, unresolvedBuilderConfigs, unresolvedImages := matchBuildersToImages(a.builderAnalyzer.foundBuilders, stripTags(k.GetImages()))
 
 	if c.Analyze {
 		// TODO: Remove backwards compatibility block
@@ -140,13 +108,10 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 
 		return printAnalyzeJSON(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
 	}
-
-	// conditionally generate build artifacts
 	if !c.SkipBuild {
 		if len(a.builderAnalyzer.foundBuilders) == 0 {
 			return errors.New("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
 		}
-
 		if c.CliArtifacts != nil {
 			newPairs, err := processCliArtifacts(c.CliArtifacts)
 			if err != nil {
@@ -172,25 +137,8 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	}
 
 	if !c.Force {
-		fmt.Fprintln(out, string(pipeline))
-
-		reader := bufio.NewReader(os.Stdin)
-	confirmLoop:
-		for {
-			fmt.Fprintf(out, "Do you want to write this configuration to %s? [y/n]: ", c.Opts.ConfigurationFile)
-
-			response, err := reader.ReadString('\n')
-			if err != nil {
-				return errors.Wrap(err, "reading user confirmation")
-			}
-
-			response = strings.ToLower(strings.TrimSpace(response))
-			switch response {
-			case "y", "yes":
-				break confirmLoop
-			case "n", "no":
-				return nil
-			}
+		if done, err := promptWritingConfig(out, pipeline, c.Opts.ConfigurationFile); done {
+			return err
 		}
 	}
 

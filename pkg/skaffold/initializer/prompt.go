@@ -17,7 +17,13 @@ limitations under the License.
 package initializer
 
 import (
+	"bufio"
 	"fmt"
+	"io"
+	"os"
+	"strings"
+
+	"github.com/pkg/errors"
 
 	"gopkg.in/AlecAivazis/survey.v1"
 )
@@ -41,4 +47,28 @@ func promptUserForBuildConfig(image string, choices []string) (string, error) {
 	}
 
 	return selectedBuildConfig, nil
+}
+
+func promptWritingConfig(out io.Writer, pipeline []byte, filePath string) (bool, error) {
+	fmt.Fprintln(out, string(pipeline))
+
+	reader := bufio.NewReader(os.Stdin)
+confirmLoop:
+	for {
+		fmt.Fprintf(out, "Do you want to write this configuration to %s? [y/n]: ", filePath)
+
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			return true, errors.Wrap(err, "reading user confirmation")
+		}
+
+		response = strings.ToLower(strings.TrimSpace(response))
+		switch response {
+		case "y", "yes":
+			break confirmLoop
+		case "n", "no":
+			return true, nil
+		}
+	}
+	return false, nil
 }

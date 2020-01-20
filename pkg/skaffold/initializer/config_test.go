@@ -171,3 +171,83 @@ func TestArtifacts(t *testing.T) {
 		t.CheckDeepEqual(expected, artifacts)
 	})
 }
+
+func TestIsSkaffoldConfig(t *testing.T) {
+	tests := []struct {
+		description string
+		contents    string
+		isValid     bool
+	}{
+		{
+			description: "valid skaffold config",
+			contents: `apiVersion: skaffold/v1beta6
+kind: Config
+deploy:
+  kustomize: {}`,
+			isValid: true,
+		},
+		{
+			description: "not a valid format",
+			contents:    "test",
+			isValid:     false,
+		},
+		{
+			description: "invalid skaffold config version",
+			contents: `apiVersion: skaffold/v2beta1
+kind: Config
+deploy:
+  kustomize: {}`,
+			isValid: false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Write("skaffold.yaml", test.contents)
+
+			isValid := isSkaffoldConfig(tmpDir.Path("skaffold.yaml"))
+
+			t.CheckDeepEqual(test.isValid, isValid)
+		})
+	}
+}
+
+func Test_canonicalizeName(t *testing.T) {
+	const length253 = "aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa-aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa-aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaa"
+	tests := []struct {
+		in, out string
+	}{
+		{
+			in:  "abc def",
+			out: "abc-def",
+		},
+		{
+			in:  "abc    def",
+			out: "abc-def",
+		},
+		{
+			in:  "abc...def",
+			out: "abc...def",
+		},
+		{
+			in:  "abc---def",
+			out: "abc---def",
+		},
+		{
+			in:  "aBc DeF",
+			out: "abc-def",
+		},
+		{
+			in:  length253 + "XXXXXXX",
+			out: length253,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.in, func(t *testutil.T) {
+			actual := canonicalizeName(test.in)
+
+			t.CheckDeepEqual(test.out, actual)
+		})
+	}
+}
