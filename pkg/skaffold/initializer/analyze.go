@@ -17,14 +17,11 @@ limitations under the License.
 package initializer
 
 import (
-	"fmt"
 	"path/filepath"
 	"sort"
 
 	"github.com/karrick/godirwalk"
-	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -34,86 +31,9 @@ type analysis struct {
 	builderAnalyzer  *builderAnalyzer
 }
 
-// analyzer is a generic Visitor that is called on every file in the directory
-// It can manage state and react to walking events assuming a bread first search
-type analyzer interface {
-	enterDir(dir string)
-	analyzeFile(file string) error
-	exitDir(dir string)
-}
-
-type directoryAnalyzer struct {
-	currentDir string
-}
-
-func (a *directoryAnalyzer) analyzeFile(filePath string) error {
-	return nil
-}
-
-func (a *directoryAnalyzer) enterDir(dir string) {
-	a.currentDir = dir
-}
-
-func (a *directoryAnalyzer) exitDir(dir string) {
-	//pass
-}
-
-type kubectlAnalyzer struct {
-	directoryAnalyzer
-	kubernetesManifests []string
-}
-
-func (a *kubectlAnalyzer) analyzeFile(filePath string) error {
-	if kubectl.IsKubernetesManifest(filePath) && !IsSkaffoldConfig(filePath) {
-		a.kubernetesManifests = append(a.kubernetesManifests, filePath)
-	}
-	return nil
-}
-
-type skaffoldConfigAnalyzer struct {
-	directoryAnalyzer
-	force bool
-}
-
-func (a *skaffoldConfigAnalyzer) analyzeFile(filePath string) error {
-	if !IsSkaffoldConfig(filePath) {
-		return nil
-	}
-	if !a.force {
-		return fmt.Errorf("pre-existing %s found (you may continue with --force)", filePath)
-	}
-	logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", filePath)
-	return nil
-}
-
-type builderAnalyzer struct {
-	directoryAnalyzer
-	enableJibInit       bool
-	enableBuildpackInit bool
-	findBuilders        bool
-	foundBuilders       []InitBuilder
-
-	parentDirToStopFindBuilders string
-}
-
-func (a *builderAnalyzer) analyzeFile(filePath string) error {
-	if a.findBuilders && (a.parentDirToStopFindBuilders == "" || a.parentDirToStopFindBuilders == a.currentDir) {
-		builderConfigs, continueSearchingBuilders := detectBuilders(a.enableJibInit, a.enableBuildpackInit, filePath)
-		a.foundBuilders = append(a.foundBuilders, builderConfigs...)
-		if !continueSearchingBuilders {
-			a.parentDirToStopFindBuilders = a.currentDir
-		}
-	}
-	return nil
-}
-
-func (a *builderAnalyzer) exitDir(dir string) {
-	if a.parentDirToStopFindBuilders == dir {
-		a.parentDirToStopFindBuilders = ""
-	}
-}
-
-// analyze recursively walks a directory and returns the k8s configs and builder configs that it finds
+// analyze recursively walks a directory and notifies the analyzers of files and enterDir and exitDir events
+// at the end of the analyze function the analysis struct's analyzers should contain the state that we can
+// use to do further computation.
 func (a *analysis) analyze(dir string) error {
 	for _, analyzer := range a.analyzers() {
 		analyzer.enterDir(dir)
@@ -167,4 +87,32 @@ func (a *analysis) analyzers() []analyzer {
 		a.skaffoldAnalyzer,
 		a.builderAnalyzer,
 	}
+}
+
+// analyzer is following the visitor pattern. It is called on every file
+// as the analysis.analyze function walks the directory structure recursively.
+// It can manage state and react to walking events assuming a breadth first search.
+type analyzer interface {
+	enterDir(dir string)
+	analyzeFile(file string) error
+	exitDir(dir string)
+}
+
+// directoryAnalyzer is a base analyzer that can be included in every analyzer as a convenience
+// it saves the current directory on enterDir events. Benefits to include this into other analyzers is that
+// they can rely on the current directory var, but also they don't have to implement enterDir and exitDir.
+type directoryAnalyzer struct {
+	currentDir string
+}
+
+func (a *directoryAnalyzer) analyzeFile(filePath string) error {
+	return nil
+}
+
+func (a *directoryAnalyzer) enterDir(dir string) {
+	a.currentDir = dir
+}
+
+func (a *directoryAnalyzer) exitDir(dir string) {
+	//pass
 }

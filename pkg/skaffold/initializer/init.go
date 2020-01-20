@@ -32,7 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
@@ -41,10 +40,10 @@ import (
 // an image we parse out from a Kubernetes manifest
 const NoBuilder = "None (image not built from these sources)"
 
-// DeploymentInitializer detects a deployment type and is able to extract image names from it
-type DeploymentInitializer interface {
-	// GenerateDeployConfig generates Deploy Config for skaffold configuration.
-	GenerateDeployConfig() latest.DeployConfig
+// deploymentInitializer detects a deployment type and is able to extract image names from it
+type deploymentInitializer interface {
+	// deployConfig generates Deploy Config for skaffold configuration.
+	deployConfig() latest.DeployConfig
 	// GetImages fetches all the images defined in the manifest files.
 	GetImages() []string
 }
@@ -109,7 +108,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		return err
 	}
 
-	k, err := kubectl.New(a.kubectlAnalyzer.kubernetesManifests)
+	k, err := newKubectlInitializer(a.kubectlAnalyzer.kubernetesManifests)
 	if err != nil {
 		return err
 	}

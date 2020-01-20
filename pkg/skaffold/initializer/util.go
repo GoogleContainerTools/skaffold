@@ -18,8 +18,8 @@ package initializer
 
 import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 
-// IsSkaffoldConfig is for determining if a file is skaffold config file.
-func IsSkaffoldConfig(file string) bool {
+// isSkaffoldConfig is for determining if a file is skaffold config file.
+func isSkaffoldConfig(file string) bool {
 	if config, err := schema.ParseConfig(file, false); err == nil && config != nil {
 		return true
 	}
