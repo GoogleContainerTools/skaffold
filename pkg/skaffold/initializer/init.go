@@ -94,18 +94,18 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	}
 
 	a := &analysis{
-		kubectlAnalyzer: &KubectlAnalyzer{},
-		builderAnalyzer: &BuilderAnalyzer{
+		kubectlAnalyzer: &kubectlAnalyzer{},
+		builderAnalyzer: &builderAnalyzer{
 			findBuilders:        !c.SkipBuild,
 			enableJibInit:       c.EnableJibInit,
 			enableBuildpackInit: c.EnableBuildpackInit,
 		},
-		skaffoldAnalyzer: &SkaffoldConfigAnalyzer{
+		skaffoldAnalyzer: &skaffoldConfigAnalyzer{
 			force: c.Force,
 		},
 	}
 
-	if err := a.walk(rootDir); err != nil {
+	if err := a.analyze(rootDir); err != nil {
 		return err
 	}
 

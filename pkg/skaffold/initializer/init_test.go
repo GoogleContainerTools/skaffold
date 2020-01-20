@@ -331,17 +331,17 @@ deploy:
 			t.Override(&jib.Validate, fakeValidateJibConfig)
 
 			a := &analysis{
-				kubectlAnalyzer: &KubectlAnalyzer{},
-				builderAnalyzer: &BuilderAnalyzer{
+				kubectlAnalyzer: &kubectlAnalyzer{},
+				builderAnalyzer: &builderAnalyzer{
 					findBuilders:        true,
 					enableJibInit:       test.enableJibInit,
 					enableBuildpackInit: test.enableBuildpackInit,
 				},
-				skaffoldAnalyzer: &SkaffoldConfigAnalyzer{
+				skaffoldAnalyzer: &skaffoldConfigAnalyzer{
 					force: test.force,
 				},
 			}
-			err := a.walk(tmpDir.Root())
+			err := a.analyze(tmpDir.Root())
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {

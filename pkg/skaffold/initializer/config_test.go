@@ -22,9 +22,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
