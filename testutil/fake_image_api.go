@@ -23,19 +23,14 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/docker/docker/api/types"
-	containertypes "github.com/docker/docker/api/types/container"
-	networktypes "github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/api/types/registry"
 	"github.com/docker/docker/client"
 	reg "github.com/docker/docker/registry"
 	digest "github.com/opencontainers/go-digest"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
-	"github.com/pkg/errors"
 )
 
 type ContainerState int
@@ -58,10 +53,6 @@ type FakeAPIClient struct {
 	nextImageID int
 	Pushed      map[string]string
 	Built       []types.ImageBuildOptions
-
-	nextContainerID int
-	containerStates map[string]ContainerState
-	containerLock   sync.Mutex
 }
 
 func (f *FakeAPIClient) Add(tag, imageID string) *FakeAPIClient {
@@ -208,93 +199,6 @@ func (f *FakeAPIClient) ImageLoad(ctx context.Context, input io.Reader, quiet bo
 	return types.ImageLoadResponse{
 		Body: f.body(imageID),
 	}, nil
-}
-
-func (f *FakeAPIClient) ContainerCreate(ctx context.Context, config *containertypes.Config, hostConfig *containertypes.HostConfig, networkingConfig *networktypes.NetworkingConfig, containerName string) (containertypes.ContainerCreateCreatedBody, error) {
-	f.containerLock.Lock()
-	defer f.containerLock.Unlock()
-
-	f.nextContainerID++
-	containerID := strconv.Itoa(f.nextContainerID)
-
-	if f.containerStates == nil {
-		f.containerStates = make(map[string]ContainerState)
-	}
-	f.containerStates[containerID] = Created
-
-	return containertypes.ContainerCreateCreatedBody{
-		ID: containerID,
-	}, nil
-}
-
-func (f *FakeAPIClient) ContainerStart(ctx context.Context, container string, options types.ContainerStartOptions) error {
-	f.containerLock.Lock()
-	defer f.containerLock.Unlock()
-
-	state, present := f.containerStates[container]
-	if !present {
-		return errors.New("not found")
-	}
-
-	if state == Started {
-		return errors.New("already started")
-	}
-
-	f.containerStates[container] = Started
-	return nil
-}
-
-func (f *FakeAPIClient) CopyToContainer(ctx context.Context, container, path string, content io.Reader, options types.CopyToContainerOptions) error {
-	f.containerLock.Lock()
-	defer f.containerLock.Unlock()
-
-	state, present := f.containerStates[container]
-	if !present {
-		return errors.New("not found")
-	}
-
-	if state != Started {
-		return errors.New("not started")
-	}
-
-	return nil
-}
-
-func (f *FakeAPIClient) ContainerLogs(ctx context.Context, container string, config types.ContainerLogsOptions) (io.ReadCloser, error) {
-	f.containerLock.Lock()
-	defer f.containerLock.Unlock()
-
-	state, present := f.containerStates[container]
-	if !present {
-		return nil, errors.New("not found")
-	}
-
-	if state != Started {
-		return nil, errors.New("not started")
-	}
-
-	return ioutil.NopCloser(strings.NewReader("")), nil
-}
-
-func (f *FakeAPIClient) ContainerRemove(ctx context.Context, container string, options types.ContainerRemoveOptions) error {
-	f.containerLock.Lock()
-	defer f.containerLock.Unlock()
-
-	state, present := f.containerStates[container]
-	if !present {
-		return errors.New("not found")
-	}
-
-	if state != Started {
-		return errors.New("not started")
-	}
-
-	delete(f.containerStates, container)
-	return nil
-}
-
-func (f *FakeAPIClient) VolumeRemove(ctx context.Context, volumeID string, force bool) error {
-	return nil
 }
 
 func (f *FakeAPIClient) Close() error { return nil }

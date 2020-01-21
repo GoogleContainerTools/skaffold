@@ -573,7 +573,7 @@
       }
     }
   },
-  "revision": "20191109",
+  "revision": "20191207",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ArtifactObjects": {
@@ -896,7 +896,7 @@
           "type": "array"
         },
         "workerPool": {
-          "description": "Option to specify a `WorkerPool` for the build. User specifies the pool\nwith the format \"[WORKERPOOL_PROJECT_ID]/[WORKERPOOL_NAME]\".\nThis is an experimental field.",
+          "description": "Option to specify a `WorkerPool` for the build.\nFormat: projects/{project}/workerPools/{workerPool}\n\nThis field is experimental.",
           "type": "string"
         }
       },
@@ -1045,7 +1045,7 @@
           "type": "array"
         },
         "name": {
-          "description": "User assigned name of the trigger. Must be unique within the project.",
+          "description": "User-assigned name of the trigger. Must be unique within the project.\nTrigger names must meet the following requirements:\n\n+ They must contain only alphanumeric characters and dashes.\n+ They can be 1-64 characters long.\n+ They must begin and end with an alphanumeric character.",
           "type": "string"
         },
         "substitutions": {
@@ -1272,7 +1272,7 @@
           "type": "string"
         },
         "commentControl": {
-          "description": "Whether to block builds on a \"/gcbrun\" comment from a repository owner or\ncollaborator.",
+          "description": "Whether to block builds on a \"/gcbrun\" comment from a repository admin or\ncollaborator.",
           "enum": [
             "COMMENTS_DISABLED",
             "COMMENTS_ENABLED"

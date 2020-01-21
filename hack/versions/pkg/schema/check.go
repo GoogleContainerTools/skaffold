@@ -31,8 +31,10 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 )
 
+const baseRef = "origin/master"
+
 func RunSchemaCheckOnChangedFiles() error {
-	git, err := newGit()
+	git, err := newGit(baseRef)
 	if err != nil {
 		return err
 	}
@@ -52,7 +54,6 @@ func RunSchemaCheckOnChangedFiles() error {
 		return err
 	}
 	var filesInError []string
-	baseRef := "master"
 	for _, configFile := range changedConfigFiles {
 		content, err := ioutil.ReadFile(configFile)
 		if err != nil {
@@ -63,7 +64,7 @@ func RunSchemaCheckOnChangedFiles() error {
 			return errors.Wrapf(err, "writing changed version of %s", configFile)
 		}
 
-		content, err = git.getFileFromRef(configFile, baseRef)
+		content, err = git.getFileFromBaseline(configFile)
 		if err != nil {
 			if strings.Contains(err.Error(), fmt.Sprintf("config.go' exists on disk, but not in '%s'", baseRef)) {
 				logrus.Warnf("Can't find %s in %s. Assuming this PR is for a new version creation, skipping...", configFile, baseRef)
@@ -73,7 +74,7 @@ func RunSchemaCheckOnChangedFiles() error {
 		}
 		baseFile := path.Join(root, "base.go")
 		if err = ioutil.WriteFile(baseFile, content, 0666); err != nil {
-			return errors.Wrapf(err, "writing master version of %s", configFile)
+			return errors.Wrapf(err, "writing %s version of %s", baseRef, configFile)
 		}
 
 		diff, err := diff.CompareGoStructs(baseFile, changedFile)
@@ -102,7 +103,7 @@ func RunSchemaCheckOnChangedFiles() error {
 
 	for _, file := range filesInError {
 		logrus.Errorf(changeDetected(file))
-		changes, err := git.diffWithRef(file, baseRef)
+		changes, err := git.diffWithBaseline(file)
 		if err != nil {
 			logrus.Errorf("failed to get diff: %s", err)
 		}
@@ -121,8 +122,8 @@ func changeDetected(configFile string) string {
 Structural change detected in a released config: %s
 Please create a new PR first with a new version.
 You can use 'hack/new_version.sh' to generate the new config version.
-If you are running this locally, make sure you have the master branch up to date!
+If you are running this locally, make sure you have the %s branch up to date!
 Admin rights are required to merge this PR!
 --------
-`, configFile)
+`, configFile, baseRef)
 }

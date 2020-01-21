@@ -30,24 +30,58 @@ github.com/Azure/go-autorest/tracing
 github.com/BurntSushi/toml
 # github.com/MakeNowJust/heredoc v1.0.0
 github.com/MakeNowJust/heredoc
+# github.com/Masterminds/semver v1.4.2
+github.com/Masterminds/semver
 # github.com/Microsoft/go-winio v0.4.14
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
+# github.com/apex/log v1.1.2-0.20190827100214-baa5455d1012
+github.com/apex/log
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
 # github.com/blang/semver v3.5.1+incompatible
 github.com/blang/semver
-# github.com/bmatcuk/doublestar v1.1.5
+# github.com/bmatcuk/doublestar v1.2.2
 github.com/bmatcuk/doublestar
+# github.com/buildpacks/imgutil v0.0.0-20191212154113-dc184e0d403b
+github.com/buildpacks/imgutil
+github.com/buildpacks/imgutil/local
+github.com/buildpacks/imgutil/remote
+# github.com/buildpacks/lifecycle v0.5.1-0.20191217221752-3b74c943b7b3
+github.com/buildpacks/lifecycle
+github.com/buildpacks/lifecycle/archive
+github.com/buildpacks/lifecycle/auth
+github.com/buildpacks/lifecycle/cmd
+# github.com/buildpacks/pack v0.6.0
+github.com/buildpacks/pack
+github.com/buildpacks/pack/builder
+github.com/buildpacks/pack/cmd
+github.com/buildpacks/pack/internal/api
+github.com/buildpacks/pack/internal/app
+github.com/buildpacks/pack/internal/archive
+github.com/buildpacks/pack/internal/blob
+github.com/buildpacks/pack/internal/build
+github.com/buildpacks/pack/internal/builder
+github.com/buildpacks/pack/internal/buildpackage
+github.com/buildpacks/pack/internal/cache
+github.com/buildpacks/pack/internal/config
+github.com/buildpacks/pack/internal/container
+github.com/buildpacks/pack/internal/dist
+github.com/buildpacks/pack/internal/image
+github.com/buildpacks/pack/internal/paths
+github.com/buildpacks/pack/internal/stack
+github.com/buildpacks/pack/internal/stringset
+github.com/buildpacks/pack/internal/style
+github.com/buildpacks/pack/logging
 # github.com/cespare/xxhash/v2 v2.1.0
 github.com/cespare/xxhash/v2
-# github.com/containerd/containerd v1.3.0 => github.com/containerd/containerd v1.3.1
-github.com/containerd/containerd/errdefs
+# github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6
+github.com/containerd/continuity/pathdriver
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
-# github.com/docker/cli v0.0.0-20191126203649-54d085b857e9
+# github.com/docker/cli v0.0.0-20191212191748-ebca1413117a
 github.com/docker/cli/cli/config
 github.com/docker/cli/cli/config/configfile
 github.com/docker/cli/cli/config/credentials
@@ -65,7 +99,7 @@ github.com/docker/distribution/registry/client/auth/challenge
 github.com/docker/distribution/registry/client/transport
 github.com/docker/distribution/registry/storage/cache
 github.com/docker/distribution/registry/storage/cache/memory
-# github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c => github.com/docker/docker v1.4.2-0.20190924003213-a8608b5b67c7
+# github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c => github.com/docker/docker v1.4.2-0.20190319215453-e7b5f7dbe98c
 github.com/docker/docker/api
 github.com/docker/docker/api/types
 github.com/docker/docker/api/types/blkiodev
@@ -87,13 +121,16 @@ github.com/docker/docker/client
 github.com/docker/docker/errdefs
 github.com/docker/docker/pkg/fileutils
 github.com/docker/docker/pkg/homedir
+github.com/docker/docker/pkg/idtools
 github.com/docker/docker/pkg/ioutils
 github.com/docker/docker/pkg/jsonmessage
 github.com/docker/docker/pkg/longpath
+github.com/docker/docker/pkg/mount
 github.com/docker/docker/pkg/progress
 github.com/docker/docker/pkg/stdcopy
 github.com/docker/docker/pkg/streamformatter
 github.com/docker/docker/pkg/stringid
+github.com/docker/docker/pkg/system
 github.com/docker/docker/pkg/tarsum
 github.com/docker/docker/pkg/term
 github.com/docker/docker/pkg/term/windows
@@ -155,7 +192,7 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-containerregistry v0.0.0-20191115225042-f8574ec722f4
+# github.com/google/go-containerregistry v0.0.0-20191218175032-34fb8ff33bed
 github.com/google/go-containerregistry/pkg/authn
 github.com/google/go-containerregistry/pkg/internal/retry
 github.com/google/go-containerregistry/pkg/internal/retry/wait
@@ -204,6 +241,8 @@ github.com/grpc-ecosystem/grpc-gateway/utilities
 # github.com/hashicorp/golang-lru v0.5.3
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
+# github.com/heroku/color v0.0.6
+github.com/heroku/color
 # github.com/imdario/mergo v0.3.8
 github.com/imdario/mergo
 # github.com/inconshreveable/mousetrap v1.0.0
@@ -216,7 +255,7 @@ github.com/json-iterator/go
 github.com/jstemmer/go-junit-report
 github.com/jstemmer/go-junit-report/formatter
 github.com/jstemmer/go-junit-report/parser
-# github.com/karrick/godirwalk v1.13.0
+# github.com/karrick/godirwalk v1.13.4
 github.com/karrick/godirwalk
 # github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 github.com/kballard/go-shellquote
@@ -240,6 +279,8 @@ github.com/mgutz/ansi
 github.com/mitchellh/go-homedir
 # github.com/mitchellh/go-wordwrap v1.0.0
 github.com/mitchellh/go-wordwrap
+# github.com/mitchellh/ioprogress v0.0.0-20180201004757-6a23b12fa88e
+github.com/mitchellh/ioprogress
 # github.com/moby/buildkit v0.6.3
 github.com/moby/buildkit/frontend/dockerfile/command
 github.com/moby/buildkit/frontend/dockerfile/parser
@@ -255,6 +296,8 @@ github.com/opencontainers/go-digest
 # github.com/opencontainers/image-spec v1.0.1
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
+# github.com/opencontainers/runc v1.0.0-rc8
+github.com/opencontainers/runc/libcontainer/user
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
 # github.com/prometheus/client_golang v1.2.1
@@ -324,7 +367,7 @@ go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/propagation
 go.opencensus.io/trace/tracestate
-# golang.org/x/crypto v0.0.0-20191112222119-e1110fd1c708
+# golang.org/x/crypto v0.0.0-20191219195013-becbf705a915
 golang.org/x/crypto/cast5
 golang.org/x/crypto/chacha20
 golang.org/x/crypto/curve25519
@@ -359,7 +402,7 @@ golang.org/x/net/internal/socks
 golang.org/x/net/internal/timeseries
 golang.org/x/net/proxy
 golang.org/x/net/trace
-# golang.org/x/oauth2 v0.0.0-20191122200657-5d9234df094c
+# golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6
 golang.org/x/oauth2
 golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
@@ -367,6 +410,7 @@ golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
 # golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 golang.org/x/sync/errgroup
+golang.org/x/sync/singleflight
 # golang.org/x/sys v0.0.0-20191127021746-63cb32ae39b2
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
@@ -378,7 +422,7 @@ golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 # golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 golang.org/x/time/rate
-# golang.org/x/tools v0.0.0-20191127064951-724660f1afeb
+# golang.org/x/tools v0.0.0-20191213032237-7093a17b0467
 golang.org/x/tools/cmd/goimports
 golang.org/x/tools/go/analysis
 golang.org/x/tools/go/analysis/passes/inspect
@@ -396,11 +440,10 @@ golang.org/x/tools/internal/gopathwalk
 golang.org/x/tools/internal/imports
 golang.org/x/tools/internal/module
 golang.org/x/tools/internal/semver
-golang.org/x/tools/internal/span
 # golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898
 golang.org/x/xerrors
 golang.org/x/xerrors/internal
-# google.golang.org/api v0.14.0
+# google.golang.org/api v0.15.0
 google.golang.org/api/cloudbuild/v1
 google.golang.org/api/googleapi
 google.golang.org/api/googleapi/transport
@@ -423,7 +466,7 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
+# google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f
 google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/api/httpbody
 google.golang.org/genproto/googleapis/iam/v1
@@ -431,8 +474,9 @@ google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/status
 google.golang.org/genproto/googleapis/type/expr
 google.golang.org/genproto/protobuf/field_mask
-# google.golang.org/grpc v1.25.1
+# google.golang.org/grpc v1.26.0
 google.golang.org/grpc
+google.golang.org/grpc/attributes
 google.golang.org/grpc/backoff
 google.golang.org/grpc/balancer
 google.golang.org/grpc/balancer/base
@@ -523,7 +567,7 @@ gopkg.in/src-d/go-git.v4/utils/merkletrie/internal/frame
 gopkg.in/src-d/go-git.v4/utils/merkletrie/noder
 # gopkg.in/warnings.v0 v0.1.2
 gopkg.in/warnings.v0
-# gopkg.in/yaml.v2 v2.2.5
+# gopkg.in/yaml.v2 v2.2.7
 gopkg.in/yaml.v2
 # honnef.co/go/tools v0.0.1-2019.2.3
 honnef.co/go/tools/arg

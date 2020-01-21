@@ -47,7 +47,7 @@ func TestGetDependencies(t *testing.T) {
 				"dep1":      "",
 				"dep2":      "",
 			},
-			expectedQuery: "bazel query kind('source file', deps('target')) union buildfiles('target') --noimplicit_deps --order_output=no --output=label",
+			expectedQuery: "bazel query kind('source file', deps('target')) union buildfiles(deps('target')) --noimplicit_deps --order_output=no --output=label",
 			output:        "@ignored\n//:BUILD\n//external/ignored\n\n//:dep1\n//:dep2\n",
 			expected:      []string{"BUILD", "dep1", "dep2", "WORKSPACE"},
 		},
@@ -63,7 +63,7 @@ func TestGetDependencies(t *testing.T) {
 				"sub/folder/dep2":     "",
 				"sub/folder/baz/dep3": "",
 			},
-			expectedQuery: "bazel query kind('source file', deps('target2')) union buildfiles('target2') --noimplicit_deps --order_output=no --output=label",
+			expectedQuery: "bazel query kind('source file', deps('target2')) union buildfiles(deps('target2')) --noimplicit_deps --order_output=no --output=label",
 			output:        "@ignored\n//:BUILD\n//sub/folder:BUILD\n//external/ignored\n\n//sub/folder:dep1\n//sub/folder:dep2\n//sub/folder/baz:dep3\n",
 			expected:      []string{filepath.Join("..", "..", "BUILD"), "BUILD", "dep1", "dep2", filepath.Join("baz", "dep3"), filepath.Join("..", "..", "WORKSPACE")},
 		},
@@ -94,7 +94,7 @@ func TestGetDependencies(t *testing.T) {
 func TestQuery(t *testing.T) {
 	query := query("//:skaffold_example.tar")
 
-	expectedQuery := `kind('source file', deps('//:skaffold_example.tar')) union buildfiles('//:skaffold_example.tar')`
+	expectedQuery := `kind('source file', deps('//:skaffold_example.tar')) union buildfiles(deps('//:skaffold_example.tar'))`
 	if query != expectedQuery {
 		t.Errorf("Expected [%s]. Got [%s]", expectedQuery, query)
 	}

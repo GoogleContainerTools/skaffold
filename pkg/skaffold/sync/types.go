@@ -32,8 +32,6 @@ type Item struct {
 	Delete map[string][]string
 }
 
-type DestinationProvider func() (map[string][]string, error)
-
 type Syncer interface {
 	Sync(context.Context, *Item) error
 }

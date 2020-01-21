@@ -21,7 +21,7 @@ The dev loop will run until the user cancels the Skaffold process with `Ctrl+C`.
 
 ## Precedence of Actions
 
-The actions performed by Skaffold during the dev loop have precendence over one another, so that behavior is always predictable. The order of actions is:
+The actions performed by Skaffold during the dev loop have precedence over one another, so that behavior is always predictable. The order of actions is:
 
 1. File Sync
 1. Build

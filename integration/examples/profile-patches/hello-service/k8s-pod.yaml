@@ -5,4 +5,4 @@ metadata:
 spec:
   containers:
   - name: hello-service
-    image: gcr.io/k8s-skaffold/skaffold-hello
+    image: skaffold-hello

@@ -33,7 +33,7 @@ import (
 
 // Builder uses the host docker daemon to build and tag the image.
 type Builder struct {
-	cfg *latest.LocalBuild
+	cfg latest.LocalBuild
 
 	localDocker        docker.LocalDaemon
 	localCluster       bool
@@ -72,7 +72,7 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	}
 
 	return &Builder{
-		cfg:                runCtx.Cfg.Build.LocalBuild,
+		cfg:                *runCtx.Cfg.Build.LocalBuild,
 		kubeContext:        runCtx.KubeContext,
 		localDocker:        localDocker,
 		localCluster:       localCluster,

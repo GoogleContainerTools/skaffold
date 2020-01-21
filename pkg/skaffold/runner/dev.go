@@ -28,7 +28,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
@@ -122,8 +121,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	r.createLogger(out, artifacts)
 	defer r.logger.Stop()
 
-	kubectlCLI := kubectl.NewFromRunContext(r.runCtx)
-	r.createForwarder(out, kubectlCLI)
+	r.createForwarder(out)
 	defer r.forwarderManager.Stop()
 
 	// Watch artifacts
@@ -147,8 +145,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 					return build.DependenciesForArtifact(ctx, artifact, r.runCtx.InsecureRegistries)
 				},
 				func(e filemon.Events) {
-					syncMap := func() (map[string][]string, error) { return r.builder.SyncMap(ctx, artifact) }
-					s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries, syncMap)
+					s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries)
 					switch {
 					case err != nil:
 						logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())

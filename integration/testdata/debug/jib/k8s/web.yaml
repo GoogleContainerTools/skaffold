@@ -13,6 +13,6 @@ spec:
     spec:
       containers:
       - name: web
-        image: gcr.io/k8s-skaffold/skaffold-debug-jib
+        image: skaffold-debug-jib
         ports:
           - containerPort: 8080

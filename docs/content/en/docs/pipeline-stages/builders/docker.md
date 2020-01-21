@@ -62,10 +62,6 @@ To use Kaniko, add build type `kaniko` to the `build` section of
 
 {{< schema root="KanikoArtifact" >}}
 
-The `buildContext` can be either:
-
-{{< schema root="KanikoBuildContext" >}}
-
 Since Kaniko builds images directly to a registry, it requires active cluster credentials.
 These credentials are configured in the `cluster` section with the following options:
 

@@ -2,7 +2,7 @@ apiVersion: skaffold/v1beta12
 kind: Config
 build:
   artifacts:
-    - image: gcr.io/k8s-skaffold/incorrect-example
+    - image: incorrect-example
 deploy:
   kubectl:
     manifests:

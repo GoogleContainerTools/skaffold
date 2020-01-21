@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -56,10 +57,10 @@ func TestWaitForPodSucceeded(t *testing.T) {
 			fakeWatcher := watch.NewRaceFreeFake()
 			client.PrependWatchReactor("*", testutil.SetupFakeWatcher(fakeWatcher))
 			fakePods := client.CoreV1().Pods("")
-
+			kubectlcli := &kubectl.CLI{KubeContext: "kubeContext", Namespace: "namespace"}
 			errChan := make(chan error)
 			go func() {
-				errChan <- WaitForPodSucceeded(context.TODO(), fakePods, "", 50*time.Millisecond)
+				errChan <- WaitForPodSucceeded(context.TODO(), fakePods, "", 10*time.Millisecond, kubectlcli)
 			}()
 
 			for _, phase := range test.phases {
@@ -71,7 +72,7 @@ func TestWaitForPodSucceeded(t *testing.T) {
 						Phase: phase,
 					},
 				})
-				time.Sleep(10 * time.Millisecond)
+				time.Sleep(1 * time.Millisecond)
 			}
 			err := <-errChan
 
@@ -126,8 +127,8 @@ func TestIsPodSucceeded(t *testing.T) {
 				Type:   "dummyEvent",
 				Object: pod,
 			}
-
-			actual, err := isPodSucceeded(test.podName)(dummyEvent)
+                        kubectlcli := &kubectl.CLI{KubeContext: "kubeContext", Namespace: "namespace"}
+			actual, err := isPodSucceeded(test.podName, kubectlcli, context.TODO())(dummyEvent)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, actual, test.expected)
 		})

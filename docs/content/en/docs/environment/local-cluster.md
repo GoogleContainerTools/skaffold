@@ -21,7 +21,7 @@ The following context names are checked:
 | docker-desktop     | [`Docker Desktop`] | |
 | docker-for-desktop | [`Docker Desktop`] | This context name is deprecated |
 | minikube           | [`minikube`]       | |
-| kind-(.*)          | [`kind`]           | This pattern is used by kind v0.6.0 |
+| kind-(.*)          | [`kind`]           | This pattern is used by kind >= v0.6.0 |
 | (.*)@kind          | [`kind`]           | This pattern was used by kind < v0.6.0 |
 
 For any other name, Skaffold assumes that the cluster is remote and that images

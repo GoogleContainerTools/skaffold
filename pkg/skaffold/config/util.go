@@ -204,7 +204,7 @@ func IsKindCluster(kubeContext string) (bool, string) {
 	case strings.HasSuffix(kubeContext, "@kind"):
 		return true, strings.TrimSuffix(kubeContext, "@kind")
 
-	// With kind version == 0.6.0, the k8s context
+	// With kind version >= 0.6.0, the k8s context
 	// is `kind-[CLUSTER NAME]`.
 	// For eg: `kind-cluster`
 	// the default name is `kind-kind`

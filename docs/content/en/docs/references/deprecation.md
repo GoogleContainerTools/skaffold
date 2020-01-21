@@ -47,8 +47,8 @@ In order to be transparent about the maturity of feature areas and things that m
 
 You can safely depend on the skaffold config with the assumption that skaffold will auto-upgrade to the latest version:
 
-- Removal and other non-upgradable changes are subject to the deprecation policy for all (even new) features under the config.
-- Auto-upgradable changes are not considered breaking changes.
+- Removal and other non-upgradeable changes are subject to the deprecation policy for all (even new) features under the config.
+- Auto-upgradeable changes are not considered breaking changes.
 
 ## Skaffold features
 

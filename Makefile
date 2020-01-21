@@ -69,10 +69,10 @@ GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
 
-$(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): generate-licenses $(GO_FILES) $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): generate-statik $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
 
-$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): generate-licenses $(GO_FILES) $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): generate-statik $(GO_FILES) $(BUILD_DIR)
 	docker build --build-arg PROJECT=$(REPOPATH) \
 		--build-arg TARGETS=$*/$(GOARCH) \
 		--build-arg FLAG_LDFLAGS=$(GO_LDFLAGS_$(*)) \
@@ -100,12 +100,12 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 
 .PHONY: test
 test: $(BUILD_DIR)
-	@ ./hack/test.sh
+	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s ./...
 	@ ./hack/checks.sh
 
 .PHONY: coverage
 coverage: $(BUILD_DIR)
-	@ ./hack/test.sh
+	@ ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." ./...
 	@- curl -s https://codecov.io/bash > $(BUILD_DIR)/upload_coverage && bash $(BUILD_DIR)/upload_coverage
 
 .PHONY: checks
@@ -114,21 +114,21 @@ checks: $(BUILD_DIR)
 
 .PHONY: quicktest
 quicktest:
-	go test -short -timeout=60s ./...
+	@ ./hack/gotest.sh -short -timeout=60s ./...
 
 .PHONY: install
-install: generate-licenses $(GO_FILES) $(BUILD_DIR)
+install: $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
-integration: install
+integration: generate-statik install
 ifeq ($(GCP_ONLY),true)
 	gcloud container clusters get-credentials \
 		$(GKE_CLUSTER_NAME) \
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
+	@ GCP_ONLY=$(GCP_ONLY) ./hack/gotest.sh -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
@@ -156,29 +156,28 @@ release-build: cross
 clean:
 	rm -rf $(BUILD_DIR) hack/bin
 
-.PHONY: kind-cluster
-kind-cluster:
-	kind get clusters | grep -q kind || TERM=dumb time kind create cluster --image=kindest/node:v1.13.12@sha256:ad1dd06aca2b85601f882ba1df4fdc03d5a57b304652d0e81476580310ba6289
-
 .PHONY: skaffold-builder
 skaffold-builder:
-	-time docker pull gcr.io/$(GCP_PROJECT)/skaffold-builder
 	time docker build \
-		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		-f deploy/skaffold/Dockerfile \
-		--target integration \
-		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
+		--target builder \
+		-t gcr.io/$(GCP_PROJECT)/skaffold-builder .
 
 .PHONY: integration-in-kind
-integration-in-kind: kind-cluster skaffold-builder
-	kind get kubeconfig --internal > /tmp/kind-config
+integration-in-kind: skaffold-builder
 	echo '{}' > /tmp/docker-config
-	time docker run --rm \
+	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v /tmp/kind-config:/kind-config \
+		-v $(HOME)/.gradle:/root/.gradle \
+		-v $(HOME)/.cache:/root/.cache \
 		-v /tmp/docker-config:/root/.docker/config.json \
-		-e KUBECONFIG=/kind-config \
-		gcr.io/$(GCP_PROJECT)/skaffold-integration
+		-e KUBECONFIG=/tmp/kind-config \
+		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		sh -c ' \
+			kind get clusters | grep -q kind || TERM=dumb kind create cluster --image=kindest/node:v1.13.12@sha256:ad1dd06aca2b85601f882ba1df4fdc03d5a57b304652d0e81476580310ba6289; \
+			kind get kubeconfig --internal > /tmp/kind-config; \
+			make integration \
+		'
 
 .PHONY: integration-in-docker
 integration-in-docker: skaffold-builder
@@ -193,7 +192,8 @@ integration-in-docker: skaffold-builder
 		-e DOCKER_CONFIG=/root/.docker \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
-		gcr.io/$(GCP_PROJECT)/skaffold-integration
+		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		make integration
 
 .PHONY: submit-build-trigger
 submit-build-trigger:
@@ -223,6 +223,6 @@ build-docs-preview:
 generate-schemas:
 	go run hack/schemas/main.go
 
-.PHONY: generate-licenses
-generate-licenses:
-	hack/gen_licenses.sh
+.PHONY: generate-statik
+generate-statik:
+	hack/generate-statik.sh

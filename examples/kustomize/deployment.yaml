@@ -16,4 +16,4 @@ spec:
     spec:
       containers:
       - name: kustomize-test
-        image: gcr.io/k8s-skaffold/not/a/valid/image
+        image: not/a/valid/image

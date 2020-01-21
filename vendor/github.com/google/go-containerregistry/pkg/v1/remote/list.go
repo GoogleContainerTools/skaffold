@@ -15,10 +15,12 @@
 package remote
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
@@ -29,9 +31,14 @@ type tags struct {
 	Tags []string `json:"tags"`
 }
 
-// List calls /tags/list for the given repository, returning the list of tags
-// in the "tags" property.
+// List wraps ListWithContext using the background context.
 func List(repo name.Repository, options ...Option) ([]string, error) {
+	return ListWithContext(context.Background(), repo, options...)
+}
+
+// ListWithContext calls /tags/list for the given repository, returning the list of tags
+// in the "tags" property.
+func ListWithContext(ctx context.Context, repo name.Repository, options ...Option) ([]string, error) {
 	o, err := makeOptions(repo, options...)
 	if err != nil {
 		return nil, err
@@ -42,27 +49,89 @@ func List(repo name.Repository, options ...Option) ([]string, error) {
 		return nil, err
 	}
 
-	uri := url.URL{
-		Scheme: repo.Registry.Scheme(),
-		Host:   repo.Registry.RegistryStr(),
-		Path:   fmt.Sprintf("/v2/%s/tags/list", repo.RepositoryStr()),
+	uri := &url.URL{
+		Scheme:   repo.Registry.Scheme(),
+		Host:     repo.Registry.RegistryStr(),
+		Path:     fmt.Sprintf("/v2/%s/tags/list", repo.RepositoryStr()),
+		RawQuery: "n=10000",
 	}
 
 	client := http.Client{Transport: tr}
-	resp, err := client.Get(uri.String())
+	tagList := []string{}
+	parsed := tags{}
+
+	// get responses until there is no next page
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		req, err := http.NewRequest("GET", uri.String(), nil)
+		if err != nil {
+			return nil, err
+		}
+		req = req.WithContext(ctx)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := transport.CheckError(resp, http.StatusOK); err != nil {
+			return nil, err
+		}
+
+		if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
+			return nil, err
+		}
+
+		if err := resp.Body.Close(); err != nil {
+			return nil, err
+		}
+
+		tagList = append(tagList, parsed.Tags...)
+
+		uri, err = getNextPageURL(resp)
+		if err != nil {
+			return nil, err
+		}
+		// no next page
+		if uri == nil {
+			break
+		}
+	}
+
+	return tagList, nil
+}
+
+// getNextPageURL checks if there is a Link header in a http.Response which
+// contains a link to the next page. If yes it returns the url.URL of the next
+// page otherwise it returns nil.
+func getNextPageURL(resp *http.Response) (*url.URL, error) {
+	link := resp.Header.Get("Link")
+	if link == "" {
+		return nil, nil
+	}
+
+	if link[0] != '<' {
+		return nil, fmt.Errorf("failed to parse link header: missing '<' in: %s", link)
+	}
+
+	end := strings.Index(link, ">")
+	if end == -1 {
+		return nil, fmt.Errorf("failed to parse link header: missing '>' in: %s", link)
+	}
+	link = link[1:end]
+
+	linkURL, err := url.Parse(link)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-
-	if err := transport.CheckError(resp, http.StatusOK); err != nil {
-		return nil, err
+	if resp.Request == nil || resp.Request.URL == nil {
+		return nil, nil
 	}
-
-	parsed := tags{}
-	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
-		return nil, err
-	}
-
-	return parsed.Tags, nil
+	linkURL = resp.Request.URL.ResolveReference(linkURL)
+	return linkURL, nil
 }

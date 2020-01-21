@@ -39,25 +39,26 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+// For testing
 var (
-	// WorkingDir is here for testing
 	WorkingDir = docker.RetrieveWorkingDir
+	SyncMap    = syncMapForArtifact
 )
 
-func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool, destProvider DestinationProvider) (*Item, error) {
-	if !e.HasChanged() || a.Sync == nil {
+func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
+	switch {
+	case !e.HasChanged():
+		return nil, nil
+
+	case a.Sync != nil && len(a.Sync.Manual) > 0:
+		return manualSyncItem(a, e, builds, insecureRegistries)
+
+	case a.Sync != nil && len(a.Sync.Infer) > 0:
+		return inferredSyncItem(a, e, builds, insecureRegistries)
+
+	default:
 		return nil, nil
 	}
-
-	if len(a.Sync.Manual) > 0 {
-		return manualSyncItem(a, e, builds, insecureRegistries)
-	}
-
-	if len(a.Sync.Infer) > 0 {
-		return inferredSyncItem(a, e, builds, destProvider)
-	}
-
-	return nil, nil
 }
 
 func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
@@ -89,7 +90,7 @@ func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifac
 	return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
 }
 
-func inferredSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, provider DestinationProvider) (*Item, error) {
+func inferredSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
 	// deleted files are no longer contained in the syncMap, so we need to rebuild
 	if len(e.Deleted) > 0 {
 		return nil, nil
@@ -100,7 +101,7 @@ func inferredSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artif
 		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
 	}
 
-	syncMap, err := provider()
+	syncMap, err := SyncMap(a, insecureRegistries)
 	if err != nil {
 		return nil, errors.Wrapf(err, "inferring syncmap for image %s", a.ImageName)
 	}
@@ -136,6 +137,19 @@ func inferredSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artif
 	}
 
 	return &Item{Image: tag, Copy: toCopy}, nil
+}
+
+func syncMapForArtifact(a *latest.Artifact, insecureRegistries map[string]bool) (map[string][]string, error) {
+	switch {
+	case a.DockerArtifact != nil:
+		return docker.SyncMap(a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, insecureRegistries)
+
+	case a.KanikoArtifact != nil:
+		return docker.SyncMap(a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, insecureRegistries)
+
+	default:
+		return nil, build.ErrSyncMapNotSupported{}
+	}
 }
 
 func latestTag(image string, builds []build.Artifact) string {

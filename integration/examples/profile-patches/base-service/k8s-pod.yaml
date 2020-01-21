@@ -5,4 +5,4 @@ metadata:
 spec:
   containers:
   - name: base-service
-    image: gcr.io/k8s-skaffold/skaffold-base
+    image: skaffold-base

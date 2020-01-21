@@ -20,6 +20,5 @@ package main
 
 import (
 	_ "github.com/corneliusweig/release-notes"
-	_ "github.com/google/trillian/scripts/licenses"
 	_ "github.com/rakyll/statik"
 )

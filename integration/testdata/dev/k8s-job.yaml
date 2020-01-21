@@ -13,4 +13,4 @@ spec:
     spec:
       containers:
       - name: test-dev
-        image: gcr.io/k8s-skaffold/test-dev
+        image: test-dev

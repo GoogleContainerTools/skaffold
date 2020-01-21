@@ -114,12 +114,6 @@ func TestPruneIsNoop(t *testing.T) {
 	testutil.CheckDeepEqual(t, nil, pruneError)
 }
 
-func TestSyncMapNotSupported(t *testing.T) {
-	syncMap, err := (&Builder{}).SyncMap(context.TODO(), nil)
-	var expected map[string][]string
-	testutil.CheckErrorAndDeepEqual(t, true, err, expected, syncMap)
-}
-
 func stubRunContext(clusterDetails *latest.ClusterDetails, insecureRegistries map[string]bool) *runcontext.RunContext {
 	pipeline := latest.Pipeline{}
 	pipeline.Build.BuildType.Cluster = clusterDetails

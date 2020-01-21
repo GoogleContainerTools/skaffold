@@ -33,6 +33,7 @@ Other Commands:
 * [skaffold config](#skaffold-config) - manage context specific parameters
 * [skaffold credits](#skaffold-credits) - export third party notices to given path (./skaffold-credits by default)
 * [skaffold diagnose](#skaffold-diagnose) - diagnostics of Skaffold works in your project
+* [skaffold schema](#skaffold-schema) - list and print json schemas used to validate skaffold.yaml configuration
 
 
 ## Global flags
@@ -85,6 +86,7 @@ Other Commands:
   config            Interact with the Skaffold configuration
   credits           Export third party notices to given path (./skaffold-credits by default)
   diagnose          Run a diagnostic on Skaffold
+  schema            List and print json schemas used to validate skaffold.yaml configuration
   version           Print the version information
 
 Use "skaffold <command> --help" for more information about a given command.
@@ -442,6 +444,7 @@ E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace='': Run deployments in the specified namespace
+      --port-forward=false: Port-forward exposed container ports within pods
   -p, --profile=[]: Activate profiles by name
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -468,6 +471,7 @@ Env vars:
 * `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
@@ -699,6 +703,7 @@ Options:
   -n, --namespace='': Run deployments in the specified namespace
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
+      --port-forward=false: Port-forward exposed container ports within pods
   -p, --profile=[]: Activate profiles by name
       --render-only=false: Print rendered Kubernetes manifests instead of deploying them
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
@@ -732,6 +737,7 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_NO_PRUNE` (same as `--no-prune`)
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
+* `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_RENDER_ONLY` (same as `--render-only`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
@@ -740,6 +746,60 @@ Env vars:
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
+
+### skaffold schema
+
+List and print json schemas used to validate skaffold.yaml configuration
+
+```
+
+
+Available Commands:
+  get         Print a given skaffold.yaml's json schema
+  list        List skaffold.yaml's json schema versions
+
+Use "skaffold <command> --help" for more information about a given command.
+
+
+```
+
+### skaffold schema get
+
+Print a given skaffold.yaml's json schema
+
+```
+
+
+Examples:
+  # Print the schema in version `skaffold/v1`
+  skaffold schema get skaffold/v1
+
+Usage:
+  skaffold schema get [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+
+### skaffold schema list
+
+List skaffold.yaml's json schema versions
+
+```
+
+
+Examples:
+  # List all the versions
+  skaffold schema list
+
+Usage:
+  skaffold schema list [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
 
 ### skaffold version
 
