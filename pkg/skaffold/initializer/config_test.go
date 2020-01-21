@@ -28,11 +28,11 @@ import (
 )
 
 type stubDeploymentInitializer struct {
-	deployConfig latest.DeployConfig
+	config latest.DeployConfig
 }
 
-func (s stubDeploymentInitializer) GenerateDeployConfig() latest.DeployConfig {
-	return s.deployConfig
+func (s stubDeploymentInitializer) deployConfig() latest.DeployConfig {
+	return s.config
 }
 
 func (s stubDeploymentInitializer) GetImages() []string {

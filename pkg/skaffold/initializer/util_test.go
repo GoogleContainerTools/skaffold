@@ -55,7 +55,7 @@ deploy:
 			tmpDir := t.NewTempDir().
 				Write("skaffold.yaml", test.contents)
 
-			isValid := IsSkaffoldConfig(tmpDir.Path("skaffold.yaml"))
+			isValid := isSkaffoldConfig(tmpDir.Path("skaffold.yaml"))
 
 			t.CheckDeepEqual(test.isValid, isValid)
 		})

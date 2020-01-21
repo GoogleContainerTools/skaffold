@@ -32,6 +32,33 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+type builderAnalyzer struct {
+	directoryAnalyzer
+	enableJibInit       bool
+	enableBuildpackInit bool
+	findBuilders        bool
+	foundBuilders       []InitBuilder
+
+	parentDirToStopFindBuilders string
+}
+
+func (a *builderAnalyzer) analyzeFile(filePath string) error {
+	if a.findBuilders && (a.parentDirToStopFindBuilders == "" || a.parentDirToStopFindBuilders == a.currentDir) {
+		builderConfigs, continueSearchingBuilders := detectBuilders(a.enableJibInit, a.enableBuildpackInit, filePath)
+		a.foundBuilders = append(a.foundBuilders, builderConfigs...)
+		if !continueSearchingBuilders {
+			a.parentDirToStopFindBuilders = a.currentDir
+		}
+	}
+	return nil
+}
+
+func (a *builderAnalyzer) exitDir(dir string) {
+	if a.parentDirToStopFindBuilders == dir {
+		a.parentDirToStopFindBuilders = ""
+	}
+}
+
 // autoSelectBuilders takes a list of builders and images, checks if any of the builders' configured target
 // images match an image in the image list, and returns a list of the matching builder/image pairs. Also
 // separately returns the builder configs and images that didn't have any matches.

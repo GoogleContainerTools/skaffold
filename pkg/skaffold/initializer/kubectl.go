@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubectl
+package initializer
 
 import (
 	"bufio"
@@ -32,29 +32,39 @@ import (
 
 var requiredFields = []string{"apiVersion", "kind", "metadata"}
 
-// Kubectl holds parameters to run kubectl.
-type Kubectl struct {
+// kubectl implements deploymentInitializer for the kubectl deployer.
+type kubectl struct {
 	configs []string
 	images  []string
 }
 
-// New returns a Kubectl skaffold generator.
-func New(potentialConfigs []string) (*Kubectl, error) {
+// kubectlAnalyzer is a Visitor during the directory analysis that collects kubernetes manifests
+type kubectlAnalyzer struct {
+	directoryAnalyzer
+	kubernetesManifests []string
+}
+
+func (a *kubectlAnalyzer) analyzeFile(filePath string) error {
+	if IsKubernetesManifest(filePath) && !isSkaffoldConfig(filePath) {
+		a.kubernetesManifests = append(a.kubernetesManifests, filePath)
+	}
+	return nil
+}
+
+// newKubectlInitializer returns a kubectl skaffold generator.
+func newKubectlInitializer(potentialConfigs []string) (*kubectl, error) {
 	var k8sConfigs, images []string
 	for _, file := range potentialConfigs {
 		imgs, err := parseImagesFromKubernetesYaml(file)
 		if err == nil {
-			logrus.Infof("found valid k8s yaml: %s", file)
 			k8sConfigs = append(k8sConfigs, file)
 			images = append(images, imgs...)
-		} else {
-			logrus.Infof("invalid k8s yaml %s: %s", file, err.Error())
 		}
 	}
 	if len(k8sConfigs) == 0 {
 		return nil, errors.New("one or more valid Kubernetes manifests is required to run skaffold")
 	}
-	return &Kubectl{
+	return &kubectl{
 		configs: k8sConfigs,
 		images:  images,
 	}, nil
@@ -70,9 +80,9 @@ func IsKubernetesManifest(file string) bool {
 	return err == nil
 }
 
-// GenerateDeployConfig implements the Initializer interface and generates
+// deployConfig implements the Initializer interface and generates
 // skaffold kubectl deployment config.
-func (k *Kubectl) GenerateDeployConfig() latest.DeployConfig {
+func (k *kubectl) deployConfig() latest.DeployConfig {
 	return latest.DeployConfig{
 		DeployType: latest.DeployType{
 			KubectlDeploy: &latest.KubectlDeploy{
@@ -84,7 +94,7 @@ func (k *Kubectl) GenerateDeployConfig() latest.DeployConfig {
 
 // GetImages implements the Initializer interface and lists all the
 // images present in the k8 manifest files.
-func (k *Kubectl) GetImages() []string {
+func (k *kubectl) GetImages() []string {
 	return k.images
 }
 

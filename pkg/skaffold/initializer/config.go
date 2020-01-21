@@ -17,6 +17,7 @@ limitations under the License.
 package initializer
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -33,7 +34,23 @@ var (
 	getWd = os.Getwd
 )
 
-func generateSkaffoldConfig(k DeploymentInitializer, buildConfigPairs []builderImagePair) *latest.SkaffoldConfig {
+type skaffoldConfigAnalyzer struct {
+	directoryAnalyzer
+	force bool
+}
+
+func (a *skaffoldConfigAnalyzer) analyzeFile(filePath string) error {
+	if !isSkaffoldConfig(filePath) {
+		return nil
+	}
+	if !a.force {
+		return fmt.Errorf("pre-existing %s found (you may continue with --force)", filePath)
+	}
+	logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", filePath)
+	return nil
+}
+
+func generateSkaffoldConfig(k deploymentInitializer, buildConfigPairs []builderImagePair) *latest.SkaffoldConfig {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
@@ -53,7 +70,7 @@ func generateSkaffoldConfig(k DeploymentInitializer, buildConfigPairs []builderI
 			Build: latest.BuildConfig{
 				Artifacts: artifacts(buildConfigPairs),
 			},
-			Deploy: k.GenerateDeployConfig(),
+			Deploy: k.deployConfig(),
 		},
 	}
 }
