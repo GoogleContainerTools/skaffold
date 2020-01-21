@@ -105,7 +105,7 @@ test: $(BUILD_DIR)
 
 .PHONY: coverage
 coverage: $(BUILD_DIR)
-	@ ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." ./...
+	@ ./hack/gotest.sh -v -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." ./...
 	@- curl -s https://codecov.io/bash > $(BUILD_DIR)/upload_coverage && bash $(BUILD_DIR)/upload_coverage
 
 .PHONY: checks
