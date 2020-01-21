@@ -100,7 +100,7 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 
 .PHONY: test
 test: $(BUILD_DIR)
-	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s ./...
+	@ ./hack/gotest.sh -v -count=1 -race -short -timeout=90s ./...
 	@ ./hack/checks.sh
 
 .PHONY: coverage
