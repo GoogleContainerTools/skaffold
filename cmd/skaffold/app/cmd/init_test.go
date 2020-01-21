@@ -17,13 +17,11 @@ limitations under the License.
 package cmd
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
-
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -60,7 +58,6 @@ func TestInit(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			config := "skaffold.yaml.out"
 			initArgs := append([]string{"init", "--force", "-f", config}, test.args...)
@@ -73,19 +70,15 @@ func TestInit(t *testing.T) {
 				t.Fail()
 			}
 			checkGeneratedConfig(t, ".")
-
-			// Make sure the skaffold yaml can be parsed
-			_, err := schema.ParseConfig(config, false)
-			t.CheckError(false, err)
 		})
 	}
 }
 
 func checkGeneratedConfig(t *testutil.T, dir string) {
-	expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml"))
+	expectedOutput, err := schema.ParseConfig(filepath.Join(dir, "skaffold.yaml"), false)
 	t.CheckNoError(err)
 
-	output, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml.out"))
+	output, err := schema.ParseConfig(filepath.Join(dir, "skaffold.yaml.out"), false)
 	t.CheckNoError(err)
-	t.CheckDeepEqual(string(expectedOutput), string(output))
+	t.CheckDeepEqual(expectedOutput, output)
 }
