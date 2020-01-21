@@ -220,11 +220,7 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force b
 		return nil, errors.New("unable to automatically resolve builder/image pairs; run `skaffold init` without `--force` to manually resolve ambiguities")
 	}
 
-	pairs, err := resolveBuilderImagesInteractively(builderConfigs, images)
-	if err != nil {
-		return pairs, err
-	}
-	return pairs, nil
+	return resolveBuilderImagesInteractively(builderConfigs, images)
 }
 
 func resolveBuilderImagesInteractively(builderConfigs []InitBuilder, images []string) ([]builderImagePair, error) {

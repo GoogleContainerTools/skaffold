@@ -41,14 +41,13 @@ func newAnalysis(c Config) *analysis {
 			enableBuildpackInit: c.EnableBuildpackInit,
 		}
 	}
-	a := &analysis{
+	return &analysis{
 		kubectlAnalyzer: &kubectlAnalyzer{},
 		builderAnalyzer: builders,
 		skaffoldAnalyzer: &skaffoldConfigAnalyzer{
 			force: c.Force,
 		},
 	}
-	return a
 }
 
 // analyze recursively walks a directory and notifies the analyzers of files and enterDir and exitDir events
