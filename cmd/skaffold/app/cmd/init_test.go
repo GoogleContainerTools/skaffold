@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package cmd
 
 import (
 	"io/ioutil"
@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -69,7 +68,7 @@ func TestInit(t *testing.T) {
 			wd, _ := os.Getwd()
 			os.Chdir(test.dir)
 			defer os.Chdir(wd)
-			init := cmd.NewCmdInit()
+			init := NewCmdInit()
 			if err := init.Execute(); err != nil {
 				t.Fail()
 			}
