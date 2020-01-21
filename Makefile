@@ -114,7 +114,7 @@ checks: $(BUILD_DIR)
 
 .PHONY: quicktest
 quicktest:
-	@ ./hack/gotest.sh -short -timeout=60s ./...
+	@ ./hack/gotest.sh -v -short -timeout=60s ./...
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
