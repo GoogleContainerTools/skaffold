@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-
 	"gopkg.in/AlecAivazis/survey.v1"
 )
 
