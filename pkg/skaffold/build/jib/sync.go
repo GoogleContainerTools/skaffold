@@ -64,12 +64,20 @@ func InitSync(ctx context.Context, workspace string, a *latest.JibArtifact) erro
 
 // returns toCopy, toDelete, error
 func GetSyncDiff(ctx context.Context, workspace string, a *latest.JibArtifact, e filemon.Events) (map[string][]string, map[string][]string, error) {
-	// if anything that was modified was a buildfile, do NOT sync, do a rebuild
+
+	// no deletions allowed
+	if len(e.Deleted) != 0 {
+		// change into logging
+		fmt.Println("Deletions are not supported by jib auto sync at the moment")
+		return nil, nil, nil
+	}
+
+	// if anything that was modified was a build file, do NOT sync, do a rebuild
 	buildFiles := GetBuildDefinitions(workspace, a)
 	for _, f := range e.Modified {
 		f, err := toAbs(f)
 		if err != nil {
-			return nil, nil, errors.WithStack(err)
+			return nil, nil, errors.Wrap(err, "failed to calculate absolute path")
 		}
 		for _, bf := range buildFiles {
 			if f == bf {
@@ -78,29 +86,25 @@ func GetSyncDiff(ctx context.Context, workspace string, a *latest.JibArtifact, e
 		}
 	}
 
-	// no deletions
-	if len(e.Deleted) != 0 {
-		// change into logging
-		fmt.Println("Deletions are not supported by jib auto sync at the moment")
-		return nil, nil, nil
-	}
-
 	currSyncMap := syncLists[getProjectKey(workspace, a)]
 
-	// if all files are modified and direct, we don't need to build anything
+	// if we're only dealing with 1. modified and 2. directly syncable files,
+	// then we can sync those files directly without triggering a build
 	if len(e.Deleted) == 0 && len(e.Added) == 0 {
 		matches := make(map[string][]string)
 		for _, f := range e.Modified {
 			f, err := toAbs(f)
 			if err != nil {
-				return nil, nil, errors.WithStack(err)
+				return nil, nil, errors.Wrap(err, "failed to calculate absolute path")
 			}
 			if val, ok := currSyncMap[f]; ok {
 				if !val.IsDirect {
 					break
 				}
 				matches[f] = val.Dest
-				// update file times in sync entries for these direct files, in case all matches are direct and we don't update the syncmap using a build
+				// if we decide that we don't need to do a call to getSyncMapFromSystem,
+				// (which would update these file times), we have to update
+				// our state for these files manually here.
 				infog, err := os.Stat(f)
 				if err != nil {
 					return nil, nil, errors.Wrap(err, "could not obtain file mod time")
@@ -123,10 +127,8 @@ func GetSyncDiff(ctx context.Context, workspace string, a *latest.JibArtifact, e
 	}
 	syncLists[getProjectKey(workspace, a)] = *nextSyncMap
 
-	fmt.Println("curr", currSyncMap)
-	fmt.Println("next", nextSyncMap)
-
 	toCopy := make(map[string][]string)
+
 	// calculate the diff of the syncmaps
 	for k, v := range *nextSyncMap {
 		if curr, ok := currSyncMap[k]; ok {
@@ -152,12 +154,12 @@ func getSyncMap(ctx context.Context, workspace string, artifact *latest.JibArtif
 	// cmd will hold context that identifies the project
 	cmd, err := getSyncMapCommand(ctx, workspace, artifact)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errors.Wrap(err, "failed to get sync command")
 	}
 
 	sm, err := getSyncMapFromSystem(cmd)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errors.Wrap(err, "failed to obtain sync map from jib builder")
 	}
 	return sm, nil
 }
@@ -174,7 +176,7 @@ func getSyncMapCommand(ctx context.Context, workspace string, artifact *latest.J
 	case JibGradle:
 		return getSyncMapCommandGradle(ctx, workspace, artifact), nil
 	default:
-		return nil, errors.Errorf("unable to determine Jib builder type for %s", workspace)
+		return nil, errors.Errorf("unable to handle Jib builder type %s for %s", t, workspace)
 	}
 }
 
@@ -194,15 +196,15 @@ func getSyncMapFromSystem(cmd *exec.Cmd) (*SyncMap, error) {
 	}
 
 	if err := json.Unmarshal(matches[1], &jsm); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errors.Wrap(err, "failed to unmarshal jib sync JSON")
 	}
 
 	sm := make(SyncMap)
 	if err := sm.addEntries(jsm.Direct, true); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errors.Wrap(err, "failed to add jib json direct entries to sync state")
 	}
 	if err := sm.addEntries(jsm.Generated, false); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errors.Wrap(err, "failed to add jib json generated entries to sync state")
 	}
 	return &sm, nil
 }
@@ -226,7 +228,7 @@ func toAbs(f string) (string, error) {
 	if !filepath.IsAbs(f) {
 		af, err := filepath.Abs(f)
 		if err != nil {
-			return "", errors.WithStack(err)
+			return "", errors.Wrap(err, "failed to calculate absolute path")
 		}
 		return af, nil
 	}

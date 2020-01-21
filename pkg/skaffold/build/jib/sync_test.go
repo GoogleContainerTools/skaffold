@@ -250,25 +250,25 @@ func TestGetSyncDiff(t *testing.T) {
 	}
 }
 
-func TestGetSyncDiff_directChecksUpdateFileTime(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
+func TestGetSyncDiff_directChecksUpdateFileTime(testing *testing.T) {
+	tmpDir, cleanup := testutil.NewTempDir(testing)
 	defer cleanup()
 
 	ctx := context.Background()
 	workspace := "testworkspace"
 	artifact := &latest.JibArtifact{}
 
-	tmpDir.Touch("direct", "dir/generated")
+	tmpDir.Touch("direct")
 
 	directFile := tmpDir.Path("direct")
 	directTarget := []string{"/target/direct"}
-	directFileTime := getFileTime(directFile, t)
+	directFileTime := getFileTime(directFile, testing)
 
 	currSyncMap := SyncMap{
 		directFile: SyncEntry{directTarget, directFileTime, true},
 	}
 
-	testutil.Run(t, "asdf", func(t *testutil.T) {
+	testutil.Run(testing, "Checks on direct files also update file times", func(t *testutil.T) {
 		pk := getProjectKey(workspace, artifact)
 		t.Override(&getSyncMapFunc, func(_ context.Context, _ string, _ *latest.JibArtifact) (*SyncMap, error) {
 			t.Fatal("getSyncMapFunc should not have been called in this test")
@@ -281,8 +281,10 @@ func TestGetSyncDiff_directChecksUpdateFileTime(t *testing.T) {
 			pk: currSyncMap,
 		})
 
-		updatedFileTime := time.Now()
-		tmpDir.Chtimes("direct", updatedFileTime)
+		// turns out macOS doesn't exactly set the time you pass to Chtimes so set the time and then read it in.
+		tmpDir.Chtimes("direct", time.Now())
+		updatedFileTime := getFileTime(directFile, testing)
+
 		_, _, err := GetSyncDiff(ctx, workspace, artifact, filemon.Events{Modified: []string{directFile}})
 		t.CheckError(false, err)
 
