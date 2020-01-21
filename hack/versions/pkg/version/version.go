@@ -23,10 +23,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 )
 
 func GetLatestVersion() (string, bool) {

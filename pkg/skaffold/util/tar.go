@@ -28,13 +28,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type headerModifier func(*tar.Header)
+
 func CreateMappedTar(w io.Writer, root string, pathMap map[string][]string) error {
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 
 	for src, dsts := range pathMap {
 		for _, dst := range dsts {
-			if err := addFileToTar(root, src, dst, tw); err != nil {
+			if err := addFileToTar(root, src, dst, tw, nil); err != nil {
 				return err
 			}
 		}
@@ -48,7 +50,7 @@ func CreateTar(w io.Writer, root string, paths []string) error {
 	defer tw.Close()
 
 	for _, path := range paths {
-		if err := addFileToTar(root, path, "", tw); err != nil {
+		if err := addFileToTar(root, path, "", tw, nil); err != nil {
 			return err
 		}
 	}
@@ -62,109 +64,75 @@ func CreateTarGz(w io.Writer, root string, paths []string) error {
 	return CreateTar(gw, root, paths)
 }
 
-func addFileToTar(root string, src string, dst string, tw *tar.Writer) error {
-	var (
-		absPath string
-		err     error
-	)
-
-	absRoot, err := filepath.Abs(root)
+func addFileToTar(root string, src string, dst string, tw *tar.Writer, hm headerModifier) error {
+	fi, err := os.Lstat(src)
 	if err != nil {
 		return err
 	}
 
-	if filepath.IsAbs(src) {
-		absPath = src
+	mode := fi.Mode()
+	if mode&os.ModeSocket != 0 {
+		return nil
+	}
+
+	var header *tar.Header
+	if mode&os.ModeSymlink != 0 {
+		target, err := os.Readlink(src)
+		if err != nil {
+			return err
+		}
+
+		if filepath.IsAbs(target) {
+			logrus.Warnf("Skipping %s. Only relative symlinks are supported.", src)
+			return nil
+		}
+
+		header, err = tar.FileInfoHeader(fi, target)
+		if err != nil {
+			return err
+		}
 	} else {
-		absPath, err = filepath.Abs(src)
+		header, err = tar.FileInfoHeader(fi, "")
 		if err != nil {
 			return err
 		}
 	}
 
-	tarPath := dst
-	if tarPath == "" {
-		tarPath, err = filepath.Rel(absRoot, absPath)
+	if dst == "" {
+		tarPath, err := filepath.Rel(root, src)
 		if err != nil {
 			return err
 		}
-	}
-	tarPath = filepath.ToSlash(tarPath)
 
-	fi, err := os.Lstat(absPath)
-	if err != nil {
+		header.Name = filepath.ToSlash(tarPath)
+	} else {
+		header.Name = filepath.ToSlash(dst)
+	}
+
+	// Code copied from https://github.com/moby/moby/blob/master/pkg/archive/archive_windows.go
+	if runtime.GOOS == "windows" {
+		header.Mode = int64(chmodTarEntry(os.FileMode(header.Mode)))
+	}
+	if hm != nil {
+		hm(header)
+	}
+	if err := tw.WriteHeader(header); err != nil {
 		return err
 	}
-	switch mode := fi.Mode(); {
-	case mode.IsDir():
-		tarHeader, err := tar.FileInfoHeader(fi, tarPath)
-		if err != nil {
-			return err
-		}
-		tarHeader.Name = tarPath
 
-		if err := writeHeader(tw, tarHeader); err != nil {
-			return err
-		}
-	case mode.IsRegular():
-		tarHeader, err := tar.FileInfoHeader(fi, tarPath)
-		if err != nil {
-			return err
-		}
-		tarHeader.Name = tarPath
-
-		if err := writeHeader(tw, tarHeader); err != nil {
-			return err
-		}
-
-		f, err := os.Open(absPath)
+	if mode.IsRegular() {
+		f, err := os.Open(src)
 		if err != nil {
 			return err
 		}
 		defer f.Close()
 
 		if _, err := io.Copy(tw, f); err != nil {
-			return errors.Wrapf(err, "writing real file %s", absPath)
-		}
-	case (mode & os.ModeSymlink) != 0:
-		target, err := os.Readlink(absPath)
-		if err != nil {
-			return err
-		}
-		if filepath.IsAbs(target) {
-			logrus.Warnf("Skipping %s. Only relative symlinks are supported.", absPath)
-			return nil
-		}
-
-		tarHeader, err := tar.FileInfoHeader(fi, target)
-		if err != nil {
-			return err
-		}
-		tarHeader.Name = tarPath
-		if err := writeHeader(tw, tarHeader); err != nil {
-			return err
-		}
-	default:
-		logrus.Warnf("Adding possibly unsupported file %s of type %s.", absPath, mode)
-		// Try to add it anyway?
-		tarHeader, err := tar.FileInfoHeader(fi, "")
-		if err != nil {
-			return err
-		}
-		if err := writeHeader(tw, tarHeader); err != nil {
-			return err
+			return errors.Wrapf(err, "writing real file %s", src)
 		}
 	}
+
 	return nil
-}
-
-// Code copied from https://github.com/moby/moby/blob/master/pkg/archive/archive_windows.go
-func writeHeader(tw *tar.Writer, tarHeader *tar.Header) error {
-	if runtime.GOOS == "windows" {
-		tarHeader.Mode = int64(chmodTarEntry(os.FileMode(tarHeader.Mode)))
-	}
-
-	return tw.WriteHeader(tarHeader)
 }
 
 // Code copied from https://github.com/moby/moby/blob/master/pkg/archive/archive_windows.go

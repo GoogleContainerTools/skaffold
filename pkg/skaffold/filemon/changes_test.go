@@ -106,7 +106,8 @@ func TestStat(t *testing.T) {
 		t.CheckDeepEqual(len(list), len(actual))
 		for _, f := range list {
 			_, present := actual[f]
-			t.CheckDeepEqual(true, present)
+
+			t.CheckTrue(present)
 		}
 	})
 }
@@ -119,12 +120,12 @@ func TestStatNotExist(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
-			description: "no error when deps returns nonexisting file",
-			deps:        []string{"file/that/doesnt/exist/anymore"},
+			description: "no error when deps returns nonexistent file",
+			deps:        []string{"file/that/does/not/exist/anymore"},
 		},
 		{
 			description: "deps function error",
-			deps:        []string{"file/that/doesnt/exist/anymore"},
+			deps:        []string{"file/that/does/not/exist/anymore"},
 			depsErr:     fmt.Errorf(""),
 			shouldErr:   true,
 		},

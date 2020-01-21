@@ -19,12 +19,12 @@ package debug
 import (
 	"testing"
 
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func TestFindArtifact(t *testing.T) {
@@ -482,6 +482,28 @@ spec:
         resources: {}
 status:
   replicas: 0`,
+		},
+		{
+			description: "skip unhandled yamls like crds",
+			shouldErr:   false,
+			in: `---
+apiVersion: openfaas.com/v1alpha2
+kind: Function
+metadata:
+  name: myfunction
+  namespace: openfaas-fn
+spec:
+  name: myfunction
+  image: myfunction`,
+			out: `---
+apiVersion: openfaas.com/v1alpha2
+kind: Function
+metadata:
+  name: myfunction
+  namespace: openfaas-fn
+spec:
+  name: myfunction
+  image: myfunction`,
 		},
 	}
 	for _, test := range tests {

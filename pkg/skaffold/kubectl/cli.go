@@ -29,6 +29,7 @@ import (
 // CLI holds parameters to run kubectl.
 type CLI struct {
 	KubeContext string
+	KubeConfig  string
 	Namespace   string
 
 	version     ClientVersion
@@ -38,6 +39,7 @@ type CLI struct {
 func NewFromRunContext(runCtx *runcontext.RunContext) *CLI {
 	return &CLI{
 		KubeContext: runCtx.KubeContext,
+		KubeConfig:  runCtx.Opts.KubeConfig,
 		Namespace:   runCtx.Opts.Namespace,
 	}
 }
@@ -85,6 +87,9 @@ func (c *CLI) args(command string, namespace string, arg ...string) []string {
 	namespace = c.resolveNamespace(namespace)
 	if namespace != "" {
 		args = append(args, "--namespace", namespace)
+	}
+	if c.KubeConfig != "" {
+		args = append(args, "--kubeconfig", c.KubeConfig)
 	}
 	args = append(args, command)
 	args = append(args, arg...)

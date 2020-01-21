@@ -21,11 +21,12 @@ import (
 	"io"
 	"os/exec"
 
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/pkg/errors"
 )
 
 func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
@@ -53,6 +54,10 @@ func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Arti
 	}
 
 	return imageID, nil
+}
+
+func (b *Builder) retrieveExtraEnv() []string {
+	return b.localDocker.ExtraEnv()
 }
 
 func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, tag string) (string, error) {

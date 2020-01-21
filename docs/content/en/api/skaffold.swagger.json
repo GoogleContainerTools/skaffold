@@ -1,0 +1,608 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "skaffold.proto",
+    "version": "version not set"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/event_log": {
+      "get": {
+        "summary": "DEPRECATED. Events should be used instead.\nTODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)",
+        "operationId": "EventLog",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/protoLogEntry"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "timestamp",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "event.metaEvent.entry",
+            "description": "entry, for example: `\"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}\"`.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.buildEvent.artifact",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.buildEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.buildEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.deployEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.deployEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.localPort",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.portEvent.remotePort",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.portEvent.podName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.containerName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.namespace",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.portName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.resourceType",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.resourceName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.address",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.statusCheckEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.statusCheckEvent.message",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.statusCheckEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.resource",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.message",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.fileCount",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.fileSyncEvent.image",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "entry",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v1/events": {
+      "get": {
+        "summary": "Returns all the events of the current Skaffold execution from the start",
+        "operationId": "Events",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/protoLogEntry"
+            }
+          }
+        },
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v1/events/handle": {
+      "post": {
+        "summary": "EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.",
+        "operationId": "Handle",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoEvent"
+            }
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v1/execute": {
+      "post": {
+        "summary": "Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.",
+        "operationId": "Execute",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoIntent"
+            }
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v1/state": {
+      "get": {
+        "summary": "Returns the state of the current Skaffold execution",
+        "operationId": "GetState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoState"
+            }
+          }
+        },
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "protoBuildEvent": {
+      "type": "object",
+      "properties": {
+        "artifact": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        }
+      },
+      "description": "`BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."
+    },
+    "protoBuildState": {
+      "type": "object",
+      "properties": {
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A map of `artifact name -\u003e build-state`.\nArtifact name is defined in the `skaffold.yaml`.\nThe `build-state` can be: \u003cbr\u003e\n- `\"Not started\"`: not yet started \u003cbr\u003e\n- `\"In progress\"`: build started \u003cbr\u003e\n- `\"Complete\"`: build succeeded \u003cbr\u003e\n- `\"Failed\"`: build failed"
+        }
+      },
+      "description": "`BuildState` maps Skaffold artifacts to their current build states"
+    },
+    "protoDeployEvent": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        }
+      },
+      "description": "`DeployEvent` represents the status of a deployment, and is emitted by Skaffold\nanytime a deployment starts or completes, successfully or not."
+    },
+    "protoDeployState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      },
+      "description": "`DeployState` describes the status of the current deploy"
+    },
+    "protoEvent": {
+      "type": "object",
+      "properties": {
+        "metaEvent": {
+          "$ref": "#/definitions/protoMetaEvent"
+        },
+        "buildEvent": {
+          "$ref": "#/definitions/protoBuildEvent"
+        },
+        "deployEvent": {
+          "$ref": "#/definitions/protoDeployEvent"
+        },
+        "portEvent": {
+          "$ref": "#/definitions/protoPortEvent"
+        },
+        "statusCheckEvent": {
+          "$ref": "#/definitions/protoStatusCheckEvent"
+        },
+        "resourceStatusCheckEvent": {
+          "$ref": "#/definitions/protoResourceStatusCheckEvent"
+        },
+        "fileSyncEvent": {
+          "$ref": "#/definitions/protoFileSyncEvent"
+        }
+      },
+      "description": "`Event` describes an event in the Skaffold process.\nIt is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent or FileSyncEvent."
+    },
+    "protoFileSyncEvent": {
+      "type": "object",
+      "properties": {
+        "fileCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "image": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        }
+      },
+      "description": "FileSyncEvent describes the sync status."
+    },
+    "protoFileSyncState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      },
+      "description": "`FileSyncState` contains the status of the current file sync"
+    },
+    "protoIntent": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "sync": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "deploy": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "description": "Intent represents user intents for a given phase to be unblocked, once."
+    },
+    "protoLogEntry": {
+      "type": "object",
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "event": {
+          "$ref": "#/definitions/protoEvent"
+        },
+        "entry": {
+          "type": "string"
+        }
+      },
+      "description": "LogEntry describes an event and a string description of the event."
+    },
+    "protoMetaEvent": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "type": "string",
+          "description": "entry, for example: `\"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}\"`"
+        }
+      },
+      "description": "`MetaEvent` provides general information regarding Skaffold"
+    },
+    "protoPortEvent": {
+      "type": "object",
+      "properties": {
+        "localPort": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "remotePort": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "containerName": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "portName": {
+          "type": "string"
+        },
+        "resourceType": {
+          "type": "string"
+        },
+        "resourceName": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        }
+      },
+      "description": "PortEvent Event describes each port forwarding event."
+    },
+    "protoResourceStatusCheckEvent": {
+      "type": "object",
+      "properties": {
+        "resource": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        }
+      },
+      "description": "A Resource StatusCheck Event, indicates progress for each kubernetes deployment.\nFor every resource, there will be exactly one event with `status` *Succeeded* or *Failed* event.\nThere can be multiple events with `status` *Pending*.\nSkaffold polls for resource status every 0.5 second. If the resource status changes, an event with `status` “Pending”, “Complete” and “Failed”\nwill be sent with the new status."
+    },
+    "protoState": {
+      "type": "object",
+      "properties": {
+        "buildState": {
+          "$ref": "#/definitions/protoBuildState"
+        },
+        "deployState": {
+          "$ref": "#/definitions/protoDeployState"
+        },
+        "forwardedPorts": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/protoPortEvent"
+          }
+        },
+        "statusCheckState": {
+          "$ref": "#/definitions/protoStatusCheckState"
+        },
+        "fileSyncState": {
+          "$ref": "#/definitions/protoFileSyncState"
+        }
+      },
+      "description": "`State` represents the current state of the Skaffold components"
+    },
+    "protoStatusCheckEvent": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        }
+      },
+      "description": "`StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed."
+    },
+    "protoStatusCheckState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "resources": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A map of `resource name -\u003e status-check-state`. Where `resource-name` is the kubernetes resource name.\nThe `status-check-state` can be \u003cbr\u003e\n- `\"Not started\"`: indicates that `status-check` has just started. \u003cbr\u003e\n- `\"In progress\"`: InProgress is sent after every resource check is complete. \u003cbr\u003e\n- `\"Succeeded\"`:\n- `\"Failed\"`:"
+        }
+      },
+      "description": "`StatusCheckState` describes the state of status check of current deployed resources."
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "runtimeStreamError": {
+      "type": "object",
+      "properties": {
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  },
+  "x-stream-definitions": {
+    "protoLogEntry": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/protoLogEntry"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "description": "Stream result of protoLogEntry"
+    }
+  }
+}

@@ -48,6 +48,25 @@ func (r *mockRunner) Stop() error {
 	return nil
 }
 
+func TestTagFlag(t *testing.T) {
+	mockCreateRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
+	}
+
+	testutil.Run(t, "override tag with argument", func(t *testutil.T) {
+		t.Override(&quietFlag, true)
+		t.Override(&opts.CustomTag, "tag")
+		t.Override(&createRunner, mockCreateRunner)
+
+		var output bytes.Buffer
+
+		err := doBuild(context.Background(), &output)
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual(string([]byte(`{"builds":[{"imageName":"gcr.io/skaffold/example","tag":"test"}]}`)), output.String())
+	})
+}
+
 func TestQuietFlag(t *testing.T) {
 	mockCreateRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
 		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
@@ -146,11 +165,13 @@ func TestFileOutputFlag(t *testing.T) {
 			// Check that stdout is correct
 			var output bytes.Buffer
 			err := doBuild(context.Background(), &output)
-			t.CheckErrorAndDeepEqual(false, err, string(test.expectedOutput), output.String())
+			t.CheckNoError(err)
+			t.CheckDeepEqual(string(test.expectedOutput), output.String())
 
 			// Check that file contents are correct
 			fileContent, err := ioutil.ReadFile(test.filename)
-			t.CheckErrorAndDeepEqual(false, err, string(test.expectedFileContent), string(fileContent))
+			t.CheckNoError(err)
+			t.CheckDeepEqual(string(test.expectedFileContent), string(fileContent))
 		})
 	}
 }

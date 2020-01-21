@@ -55,30 +55,19 @@ var portMap = map[string]string{
 // RoundTrip implements http.RoundTripper
 func (bt *bearerTransport) RoundTrip(in *http.Request) (*http.Response, error) {
 	sendRequest := func() (*http.Response, error) {
-		auth, err := bt.bearer.Authorization()
-		if err != nil {
-			return nil, err
-		}
-
 		// http.Client handles redirects at a layer above the http.RoundTripper
 		// abstraction, so to avoid forwarding Authorization headers to places
 		// we are redirected, only set it when the authorization header matches
 		// the registry with which we are interacting.
 		// In case of redirect http.Client can use an empty Host, check URL too.
-		canonicalHeaderHost := bt.canonicalAddress(in.Host)
-		canonicalURLHost := bt.canonicalAddress(in.URL.Host)
-		canonicalRegistryHost := bt.canonicalAddress(bt.registry.RegistryStr())
-		if canonicalHeaderHost == canonicalRegistryHost || canonicalURLHost == canonicalRegistryHost {
+		if matchesHost(bt.registry, in, bt.scheme) {
+			auth, err := bt.bearer.Authorization()
+			if err != nil {
+				return nil, err
+			}
 			hdr := fmt.Sprintf("Bearer %s", auth.RegistryToken)
 			in.Header.Set("Authorization", hdr)
-
-			// When we ping() the registry, we determine whether to use http or https
-			// based on which scheme was successful. That is only valid for the
-			// registry server and not e.g. a separate token server or blob storage,
-			// so we should only override the scheme if the host is the registry.
-			in.URL.Scheme = bt.scheme
 		}
-		in.Header.Set("User-Agent", transportName)
 		return bt.inner.RoundTrip(in)
 	}
 
@@ -103,29 +92,25 @@ func (bt *bearerTransport) RoundTrip(in *http.Request) (*http.Response, error) {
 // The basic token exchange is attempted first, falling back to the oauth flow.
 // If the IdentityToken is set, this indicates that we should start with the oauth flow.
 func (bt *bearerTransport) refresh() error {
-	first, second := bt.refreshBasic, bt.refreshOauth
-
 	auth, err := bt.basic.Authorization()
 	if err != nil {
 		return err
 	}
+	var content []byte
 	if auth.IdentityToken != "" {
 		// If the secret being stored is an identity token,
 		// the Username should be set to <token>, which indicates
 		// we are using an oauth flow.
-		first, second = bt.refreshOauth, bt.refreshBasic
-	}
-
-	content, err := func() ([]byte, error) {
-		b, err := first()
-		if err != nil {
-			b, err = second()
-			if err != nil {
-				return nil, err
-			}
+		content, err = bt.refreshOauth()
+		if terr, ok := err.(*Error); ok && terr.StatusCode == http.StatusNotFound {
+			// Note: Not all token servers implement oauth2.
+			// If the request to the endpoint returns 404 using the HTTP POST method,
+			// refer to Token Documentation for using the HTTP GET method supported by all token servers.
+			content, err = bt.refreshBasic()
 		}
-		return b, err
-	}()
+	} else {
+		content, err = bt.refreshBasic()
+	}
 	if err != nil {
 		return err
 	}
@@ -168,7 +153,14 @@ func (bt *bearerTransport) refresh() error {
 	return nil
 }
 
-func (bt *bearerTransport) canonicalAddress(host string) (address string) {
+func matchesHost(reg name.Registry, in *http.Request, scheme string) bool {
+	canonicalHeaderHost := canonicalAddress(in.Host, scheme)
+	canonicalURLHost := canonicalAddress(in.URL.Host, scheme)
+	canonicalRegistryHost := canonicalAddress(reg.RegistryStr(), scheme)
+	return canonicalHeaderHost == canonicalRegistryHost || canonicalURLHost == canonicalRegistryHost
+}
+
+func canonicalAddress(host, scheme string) (address string) {
 	// The host may be any one of:
 	// - hostname
 	// - hostname:port
@@ -184,13 +176,13 @@ func (bt *bearerTransport) canonicalAddress(host string) (address string) {
 			return host
 		}
 		if port == "" {
-			port = portMap[bt.scheme]
+			port = portMap[scheme]
 		}
 
 		return net.JoinHostPort(hostname, port)
 	}
 
-	return net.JoinHostPort(host, portMap[bt.scheme])
+	return net.JoinHostPort(host, portMap[scheme])
 }
 
 // https://docs.docker.com/registry/spec/auth/oauth/
@@ -213,6 +205,7 @@ func (bt *bearerTransport) refreshOauth() ([]byte, error) {
 		v.Set("grant_type", "refresh_token")
 		v.Set("refresh_token", auth.IdentityToken)
 	} else if auth.Username != "" && auth.Password != "" {
+		// TODO(#629): This is unreachable.
 		v.Set("grant_type", "password")
 		v.Set("username", auth.Username)
 		v.Set("password", auth.Password)

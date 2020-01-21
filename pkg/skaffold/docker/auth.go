@@ -23,14 +23,16 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/docker/cli/cli/config"
+	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/docker/docker/registry"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 )
 
 const (
@@ -60,13 +62,22 @@ type AuthConfigHelper interface {
 
 type credsHelper struct{}
 
-func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
+func loadDockerConfig() (*configfile.ConfigFile, error) {
 	cf, err := config.Load(configDir)
 	if err != nil {
-		return types.AuthConfig{}, errors.Wrap(err, "docker config")
+		return nil, errors.Wrap(err, "docker config")
 	}
 
-	gcp.AutoConfigureGCRCredentialHelper(cf, registry)
+	gcp.AutoConfigureGCRCredentialHelper(cf)
+
+	return cf, nil
+}
+
+func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
+	cf, err := loadDockerConfig()
+	if err != nil {
+		return types.AuthConfig{}, err
+	}
 
 	auth, err := cf.GetAuthConfig(registry)
 	if err != nil {
@@ -77,9 +88,9 @@ func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
 }
 
 func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
-	cf, err := config.Load(configDir)
+	cf, err := loadDockerConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "docker config")
+		return nil, err
 	}
 
 	credentials, err := cf.GetAllCredentials()

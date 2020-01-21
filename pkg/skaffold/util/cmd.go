@@ -74,7 +74,7 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 
 	err = cmd.Wait()
 	if err != nil {
-		return stdout, errors.Wrapf(err, "Running %s: stdout %s, stderr: %s, err: %v", cmd.Args, stdout, stderr, err)
+		return stdout, errors.Wrapf(err, "Running %s\n - stdout: %s\n - stderr: %s", cmd.Args, stdout, stderr)
 	}
 
 	if len(stderr) > 0 {

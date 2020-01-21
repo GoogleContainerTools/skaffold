@@ -24,17 +24,19 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/pkg/errors"
 )
 
 const (
 	testKubeContext = "kubecontext"
+	testKubeConfig  = "kubeconfig"
 	kubectlVersion  = `{"clientVersion":{"major":"1","minor":"12"}}`
 )
 
@@ -78,7 +80,7 @@ func TestKubectlDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
@@ -299,7 +301,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 			})
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
-			t.CheckError(false, err)
+			t.CheckNoError(err)
 		})
 	}
 }
@@ -365,27 +367,26 @@ spec:
 				Namespace: testNamespace,
 			},
 		})
-		labellers := []Labeller{deployer}
 
 		// Deploy one manifest
 		err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-		}, labellers).GetError()
+		}, nil).GetError()
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, labellers).GetError()
+		}, nil).GetError()
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, labellers).GetError()
+		}, nil).GetError()
 		t.CheckNoError(err)
 	})
 }
@@ -525,7 +526,7 @@ spec:
 			})
 			var b bytes.Buffer
 			err := deployer.Render(context.Background(), &b, test.builds, "")
-			t.CheckError(false, err)
+			t.CheckNoError(err)
 		})
 	}
 }

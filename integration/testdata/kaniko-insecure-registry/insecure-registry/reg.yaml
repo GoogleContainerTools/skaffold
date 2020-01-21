@@ -30,6 +30,6 @@ spec:
     spec:
       containers:
         - name: registry
-          image: gcr.io/k8s-skaffold/devreg
+          image: devreg
           ports:
             - containerPort: 50051

@@ -29,6 +29,8 @@ import (
 	"strings"
 	"testing"
 
+	homedir "github.com/mitchellh/go-homedir"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -39,7 +41,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 var testBuilds = []build.Artifact{{
@@ -80,6 +81,20 @@ var testDeployConfigTemplated = latest.HelmDeploy{
 			"missing.key": "{{.MISSING}}",
 			"image.name":  "{{.IMAGE_NAME}}",
 			"image.tag":   "{{.DIGEST}}",
+		},
+	}},
+}
+
+var testDeployConfigValuesFilesTemplated = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+		Values: map[string]string{
+			"image": "skaffold-helm",
+		},
+		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+		ValuesFiles: []string{
+			"/some/file-{{.FOO}}.yaml",
 		},
 	}},
 }
@@ -215,6 +230,18 @@ var testDeployWithoutTags = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
+	}},
+}
+
+var testTwoReleases = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "other",
+		ChartPath: "examples/test",
+	}, {
+		Name: "skaffold-helm",
+		Values: map[string]string{
+			"image.tag": "skaffold-helm",
+		},
 	}},
 }
 
@@ -379,6 +406,23 @@ func TestHelmDeploy(t *testing.T) {
 			builds:     testBuilds,
 		},
 		{
+			description: "image values should be set using --set-string",
+			commands: &MockHelm{
+				getResult: fmt.Errorf("not found"),
+				installMatcher: func(cmd *exec.Cmd) bool {
+					setStringIndex := util.StrSliceIndex(cmd.Args, "--set-string")
+					if setStringIndex == -1 {
+						return false
+					}
+					expected := fmt.Sprintf("image.repository=%s,image.tag=%s", "docker.io:5000/skaffold-helm", "3605e7bc17cf46e53f4d81c4cbc24e5b4c495184")
+					return setStringIndex+1 < len(cmd.Args) && cmd.Args[setStringIndex+1] == expected
+				},
+				upgradeResult: fmt.Errorf("should not have called upgrade"),
+			},
+			runContext: makeRunContext(testDeployHelmStyleConfig, false),
+			builds:     testBuilds,
+		},
+		{
 			description: "helm image strategy with explicit registry should set the Helm registry value",
 			commands: &MockHelm{
 				getResult: fmt.Errorf("not found"),
@@ -469,6 +513,16 @@ func TestHelmDeploy(t *testing.T) {
 			builds:     testBuilds,
 		},
 		{
+			description: "deploy with valuesFiles templated",
+			commands: &MockHelm{
+				upgradeMatcher: func(cmd *exec.Cmd) bool {
+					return util.StrSliceContains(cmd.Args, "/some/file-FOOBAR.yaml")
+				},
+			},
+			runContext: makeRunContext(testDeployConfigValuesFilesTemplated, false),
+			builds:     testBuilds,
+		},
+		{
 			description: "deploy without actual tags",
 			commands:    &MockHelm{},
 			runContext:  makeRunContext(testDeployWithoutTags, false),
@@ -478,6 +532,12 @@ func TestHelmDeploy(t *testing.T) {
 				"image [docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184] is not used.",
 				"image [skaffold-helm] is used instead.",
 			},
+		},
+		{
+			description: "first release without tag, second with tag",
+			commands:    &MockHelm{},
+			runContext:  makeRunContext(testTwoReleases, false),
+			builds:      testBuilds,
 		},
 	}
 	for _, test := range tests {
@@ -528,8 +588,12 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 		m.t.Errorf("Not enough args in command %v", c)
 	}
 
-	if c.Args[1] != "--kube-context" || c.Args[2] != testKubeContext {
-		m.t.Errorf("Invalid kubernetes context %v", c)
+	argString := strings.Join(c.Args, " ")
+	if !strings.Contains(argString, "--kube-context "+testKubeContext) {
+		m.t.Errorf("Invalid Kubernetes context %v", c)
+	}
+	if !strings.Contains(argString, "--kubeconfig "+testKubeConfig) {
+		m.t.Errorf("Invalid Kubernetes config %v", c)
 	}
 
 	if c.Args[3] == "get" || c.Args[3] == "upgrade" {
@@ -862,8 +926,9 @@ func makeRunContext(deploy latest.HelmDeploy, force bool) *runcontext.RunContext
 		Cfg:         pipeline,
 		KubeContext: testKubeContext,
 		Opts: config.SkaffoldOptions{
-			Namespace: testNamespace,
-			Force:     force,
+			Namespace:  testNamespace,
+			KubeConfig: testKubeConfig,
+			Force:      force,
 		},
 	}
 }

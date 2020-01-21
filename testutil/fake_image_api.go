@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/docker/docker/api/types"
@@ -30,6 +31,13 @@ import (
 	reg "github.com/docker/docker/registry"
 	digest "github.com/opencontainers/go-digest"
 	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+)
+
+type ContainerState int
+
+const (
+	Created ContainerState = 0
+	Started ContainerState = 1
 )
 
 type FakeAPIClient struct {
@@ -178,4 +186,33 @@ func (f *FakeAPIClient) Info(context.Context) (types.Info, error) {
 	}, nil
 }
 
+func (f *FakeAPIClient) ImageLoad(ctx context.Context, input io.Reader, quiet bool) (types.ImageLoadResponse, error) {
+	ref, err := ReadRefFromFakeTar(input)
+	if err != nil {
+		return types.ImageLoadResponse{}, fmt.Errorf("reading tar")
+	}
+
+	f.nextImageID++
+	imageID := fmt.Sprintf("sha256:%d", f.nextImageID)
+	f.Add(ref, imageID)
+
+	return types.ImageLoadResponse{
+		Body: f.body(imageID),
+	}, nil
+}
+
 func (f *FakeAPIClient) Close() error { return nil }
+
+// TODO(dgageot): create something that looks more like an actual tar file.
+func CreateFakeImageTar(ref string, path string) error {
+	return ioutil.WriteFile(path, []byte(ref), os.ModePerm)
+}
+
+func ReadRefFromFakeTar(input io.Reader) (string, error) {
+	buf, err := ioutil.ReadAll(input)
+	if err != nil {
+		return "", fmt.Errorf("reading tar")
+	}
+
+	return string(buf), nil
+}

@@ -81,6 +81,11 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				opts.EnableRPC = true
 			}
 
+			// In dev mode, the default is to force deployments
+			if cmd.Use == "dev" && !cmd.Flag("force").Changed {
+				opts.Force = true
+			}
+
 			// Start API Server
 			shutdown, err := server.Initialize(opts)
 			if err != nil {
@@ -153,6 +158,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdFindConfigs())
 	rootCmd.AddCommand(NewCmdDiagnose())
 	rootCmd.AddCommand(NewCmdOptions())
+	rootCmd.AddCommand(NewCmdCredits())
+	rootCmd.AddCommand(NewCmdSchema())
 
 	rootCmd.AddCommand(NewCmdGeneratePipeline())
 

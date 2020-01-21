@@ -19,6 +19,7 @@ package debug
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -26,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestJdwpTransformer_RuntimeSupportImage(t *testing.T) {
@@ -126,6 +126,18 @@ func TestJdwpTransformerApply(t *testing.T) {
 			result: v1.Container{
 				Env:   []v1.EnvVar{{Name: "JAVA_TOOL_OPTIONS", Value: "-agentlib:jdwp=transport=dt_socket,server=y,address=8000,suspend=n,quiet=y"}},
 				Ports: []v1.ContainerPort{{ContainerPort: 5005}, {Name: "jdwp", ContainerPort: 8000}},
+			},
+		},
+		{
+			description: "existing jdwp port and JAVA_TOOL_OPTIONS",
+			containerSpec: v1.Container{
+				Env:   []v1.EnvVar{{Name: "FOO", Value: "BAR"}},
+				Ports: []v1.ContainerPort{{Name: "jdwp", ContainerPort: 8000}},
+			},
+			configuration: imageConfiguration{env: map[string]string{"JAVA_TOOL_OPTIONS": "-Xms1g"}},
+			result: v1.Container{
+				Env:   []v1.EnvVar{{Name: "FOO", Value: "BAR"}, {Name: "JAVA_TOOL_OPTIONS", Value: "-Xms1g -agentlib:jdwp=transport=dt_socket,server=y,address=5005,suspend=n,quiet=y"}},
+				Ports: []v1.ContainerPort{{Name: "jdwp", ContainerPort: 5005}},
 			},
 		},
 	}

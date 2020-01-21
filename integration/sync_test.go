@@ -24,13 +24,17 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/proto"
-	"github.com/GoogleContainerTools/skaffold/testutil"
-	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 func TestDevSync(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
 	tests := []struct {
 		description string
 		trigger     string
@@ -54,13 +58,6 @@ func TestDevSync(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if testing.Short() {
-				t.Skip("skipping integration test")
-			}
-			if ShouldRunGCPOnlyTests() {
-				t.Skip("skipping test that is not gcp only")
-			}
-
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().InDir("testdata/file-sync").WithConfig(test.config).RunOrFail(t)
 
@@ -79,45 +76,62 @@ func TestDevSync(t *testing.T) {
 				out, _ := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "cat", "foo").Output()
 				return string(out) == "foo", nil
 			})
-			testutil.CheckError(t, false, err)
+			failNowIfError(t, err)
 		})
 	}
 }
 
 func TestDevSyncAPITrigger(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
-	ns, k8sclient, deleteNs := SetupNamespace(t)
+	ns, client, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
 	skaffold.Build().InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunOrFail(t)
 
 	rpcAddr := randomPort()
-	client, shutdown := setupRPCClient(t, rpcAddr)
-	defer shutdown()
 
 	stop := skaffold.Dev("--auto-sync=false", "--rpc-port", rpcAddr).InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunBackground(t)
 	defer stop()
 
-	k8sclient.WaitForPodsReady("test-file-sync")
+	rpcClient, entries, shutdown := apiEvents(t, rpcAddr)
+	defer shutdown()
+
+	// throw away first 5 entries of log (from first run of dev loop)
+	for i := 0; i < 5; i++ {
+		<-entries
+	}
+
+	client.WaitForPodsReady("test-file-sync")
 
 	ioutil.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
 	defer func() { os.Truncate("testdata/file-sync/foo", 0) }()
 
-	client.Execute(context.Background(), &proto.UserIntentRequest{
+	rpcClient.Execute(context.Background(), &proto.UserIntentRequest{
 		Intent: &proto.Intent{
 			Sync: true,
 		},
 	})
 
-	err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+	// Ensure we see a file sync in progress triggered in the event log
+	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
+		e := <-entries
+		return e.GetEvent().GetFileSyncEvent().GetStatus() == "In Progress", nil
+	})
+	failNowIfError(t, err)
+
+	err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 		out, _ := exec.Command("kubectl", "exec", "test-file-sync", "-n", ns.Name, "--", "cat", "foo").Output()
 		return string(out) == "foo", nil
 	})
-	testutil.CheckError(t, false, err)
+	failNowIfError(t, err)
+
+	// Ensure we see a file sync succeeded triggered in the event log
+	err = wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
+		e := <-entries
+		return e.GetEvent().GetFileSyncEvent().GetStatus() == "Succeeded", nil
+	})
+	failNowIfError(t, err)
 }

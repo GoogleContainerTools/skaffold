@@ -22,14 +22,15 @@ import (
 	"os"
 	"strings"
 
+	"github.com/blang/semver"
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/blang/semver"
-	"github.com/pkg/errors"
 )
 
-// Fot testing
+// For testing
 var (
 	GetLatestAndCurrentVersion = getLatestAndCurrentVersion
 	isConfigUpdateCheckEnabled = config.IsUpdateCheckEnabled

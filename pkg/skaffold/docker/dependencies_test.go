@@ -22,9 +22,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 )
 
 const copyServerGo = `
@@ -190,6 +191,11 @@ COPY . /
 
 const fromScratch = `
 FROM scratch
+ADD ./file /etc/file
+`
+
+const fromScratchQuoted = `
+FROM "scratch"
 ADD ./file /etc/file
 `
 
@@ -460,6 +466,12 @@ func TestGetDependencies(t *testing.T) {
 		{
 			description: "from scratch",
 			dockerfile:  fromScratch,
+			workspace:   ".",
+			expected:    []string{"Dockerfile", "file"},
+		},
+		{
+			description: "from scratch quoted",
+			dockerfile:  fromScratchQuoted,
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "file"},
 		},

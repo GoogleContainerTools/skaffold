@@ -19,10 +19,11 @@ package gcb
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
+	cloudbuild "google.golang.org/api/cloudbuild/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	cloudbuild "google.golang.org/api/cloudbuild/v1"
 )
 
 func TestJibMavenBuildSpec(t *testing.T) {
@@ -46,7 +47,7 @@ func TestJibMavenBuildSpec(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Type: int(jib.JibMaven)},
+					JibArtifact: &latest.JibArtifact{Type: string(jib.JibMaven)},
 				},
 			}
 
@@ -65,7 +66,7 @@ func TestJibMavenBuildSpec(t *testing.T) {
 			}}
 
 			t.CheckDeepEqual(expected, buildSpec.Steps)
-			t.CheckDeepEqual(0, len(buildSpec.Images))
+			t.CheckEmpty(buildSpec.Images)
 		})
 	}
 }
@@ -79,7 +80,7 @@ func TestJibGradleBuildSpec(t *testing.T) {
 		{
 			description:  "skip tests",
 			skipTests:    true,
-			expectedArgs: []string{"-c", "gradle -Duser.home=$$HOME -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + jib.MinimumJibGradleVersion + " :jib --image=img -x test"},
+			expectedArgs: []string{"-c", "gradle -Duser.home=$$HOME -Djib.console=plain _skaffoldFailIfJibOutOfDate -Djib.requiredVersion=" + jib.MinimumJibGradleVersion + " :jib -x test --image=img"},
 		},
 		{
 			description:  "do not skip tests",
@@ -91,7 +92,7 @@ func TestJibGradleBuildSpec(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			artifact := &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
-					JibArtifact: &latest.JibArtifact{Type: int(jib.JibGradle)},
+					JibArtifact: &latest.JibArtifact{Type: string(jib.JibGradle)},
 				},
 			}
 
@@ -110,7 +111,7 @@ func TestJibGradleBuildSpec(t *testing.T) {
 			}}
 
 			t.CheckDeepEqual(expected, buildSpec.Steps)
-			t.CheckDeepEqual(0, len(buildSpec.Images))
+			t.CheckEmpty(buildSpec.Images)
 		})
 	}
 }

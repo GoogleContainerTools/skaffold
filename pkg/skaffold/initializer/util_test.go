@@ -22,42 +22,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestIsSupportedKubernetesFileExtension(t *testing.T) {
-	tests := []struct {
-		description string
-		filename    string
-		expected    bool
-	}{
-		{
-			description: "valid k8 yaml filename format",
-			filename:    "test1.yaml",
-			expected:    true,
-		},
-		{
-			description: "valid k8 json filename format",
-			filename:    "test1.json",
-			expected:    true,
-		},
-		{
-			description: "valid k8 yaml filename format",
-			filename:    "test1.yml",
-			expected:    true,
-		},
-		{
-			description: "invalid file",
-			filename:    "some.config",
-			expected:    false,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			supported := IsSupportedKubernetesFileExtension(test.filename)
-
-			t.CheckDeepEqual(test.expected, supported)
-		})
-	}
-}
-
 func TestIsSkaffoldConfig(t *testing.T) {
 	tests := []struct {
 		description string
@@ -91,7 +55,7 @@ deploy:
 			tmpDir := t.NewTempDir().
 				Write("skaffold.yaml", test.contents)
 
-			isValid := IsSkaffoldConfig(tmpDir.Path("skaffold.yaml"))
+			isValid := isSkaffoldConfig(tmpDir.Path("skaffold.yaml"))
 
 			t.CheckDeepEqual(test.isValid, isValid)
 		})

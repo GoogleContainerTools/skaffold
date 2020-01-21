@@ -18,6 +18,7 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
@@ -33,9 +34,20 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 		return r.Render(ctx, out, artifacts, "")
 	}
 
-	if config.IsKindCluster(r.runCtx.KubeContext) {
+	color.Default.Fprintln(out, "Tags used in deployment:")
+
+	for _, artifact := range artifacts {
+		color.Default.Fprintf(out, " - %s -> ", artifact.ImageName)
+		fmt.Fprintln(out, artifact.Tag)
+	}
+
+	if r.imagesAreLocal && len(artifacts) > 0 {
+		color.Green.Fprintln(out, "   local images can't be referenced by digest. They are tagged and referenced by a unique ID instead")
+	}
+
+	if isKind, kindCluster := config.IsKindCluster(r.runCtx.KubeContext); isKind {
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
-		if err := r.loadImagesInKindNodes(ctx, out, artifacts); err != nil {
+		if err := r.loadImagesInKindNodes(ctx, out, kindCluster, artifacts); err != nil {
 			return errors.Wrapf(err, "loading images into kind nodes")
 		}
 	}

@@ -59,7 +59,6 @@ var configWithReleasedComment = fmt.Sprintf(configFileTemplate, releasedComment+
 var configWithUnreleasedComment = fmt.Sprintf(configFileTemplate, unreleasedComment+"\n")
 
 func TestUpdateComments(t *testing.T) {
-
 	tcs := []struct {
 		name     string
 		orig     string
@@ -106,13 +105,12 @@ func TestUpdateComments(t *testing.T) {
 
 	for _, tc := range tcs {
 		testutil.Run(t, tc.name, func(t *testutil.T) {
-
 			dir := t.NewTempDir()
 			aFile := dir.Path("a.go")
 			t.CheckNoError(ioutil.WriteFile(aFile, []byte(tc.orig), 0666))
 			modified, err := updateVersionComment(aFile, tc.released)
-			t.CheckErrorAndDeepEqual(false, err, tc.expected, string(modified))
+			t.CheckNoError(err)
+			t.CheckDeepEqual(tc.expected, string(modified))
 		})
 	}
-
 }

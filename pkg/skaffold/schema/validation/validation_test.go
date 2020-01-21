@@ -613,3 +613,106 @@ func TestValidateImageNames(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateJibPluginType(t *testing.T) {
+	tests := []struct {
+		description string
+		artifacts   []*latest.Artifact
+		shouldErr   bool
+	}{
+		{
+			description: "no type",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/jib",
+					ArtifactType: latest.ArtifactType{
+						JibArtifact: &latest.JibArtifact{},
+					},
+				},
+			},
+		},
+		{
+			description: "maven",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/jib",
+					ArtifactType: latest.ArtifactType{
+						JibArtifact: &latest.JibArtifact{
+							Type: "maven",
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "gradle",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/jib",
+					ArtifactType: latest.ArtifactType{
+						JibArtifact: &latest.JibArtifact{
+							Type: "gradle",
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "empty",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/jib",
+					ArtifactType: latest.ArtifactType{
+						JibArtifact: &latest.JibArtifact{
+							Type: "",
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "cAsE inSenSiTiVe",
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/jib",
+					ArtifactType: latest.ArtifactType{
+						JibArtifact: &latest.JibArtifact{
+							Type: "gRaDlE",
+						},
+					},
+				},
+			},
+		},
+		{
+			description: "invalid type",
+			shouldErr:   true,
+			artifacts: []*latest.Artifact{
+				{
+					ImageName: "image/jib",
+					ArtifactType: latest.ArtifactType{
+						JibArtifact: &latest.JibArtifact{
+							Type: "invalid",
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// disable yamltags validation
+			t.Override(&validateYamltags, func(interface{}) error { return nil })
+
+			err := Process(
+				&latest.SkaffoldConfig{
+					Pipeline: latest.Pipeline{
+						Build: latest.BuildConfig{
+							Artifacts: test.artifacts,
+						},
+					},
+				})
+
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}

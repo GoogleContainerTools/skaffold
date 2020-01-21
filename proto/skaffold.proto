@@ -6,152 +6,194 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 
 message StateResponse {
-  State state = 1;
+    State state = 1;
 }
 
 message Response {
-  string msg = 1;
+    string msg = 1;
 }
 
 message Request {
-  string name = 1;
+    string name = 1;
 }
 
+// `State` represents the current state of the Skaffold components
 message State {
-  BuildState buildState = 1;
-  DeployState deployState = 2;
-  reserved 3; // field 3 is obsolete
-  map<int32, PortEvent> forwardedPorts = 4;
-  StatusCheckState statusCheckState = 5;
-  FileSyncState fileSyncState = 6;
+    BuildState buildState = 1;
+    DeployState deployState = 2;
+    reserved 3; // field 3 is obsolete
+    map<int32, PortEvent> forwardedPorts = 4;
+    StatusCheckState statusCheckState = 5;
+    FileSyncState fileSyncState = 6;
 }
 
-// BuildState contains a map of all skaffold artifacts to their current build
-// states
+// `BuildState` maps Skaffold artifacts to their current build states
 message BuildState {
-  map<string, string> artifacts = 1;
+    // A map of `artifact name -> build-state`.
+    // Artifact name is defined in the `skaffold.yaml`.
+    // The `build-state` can be: <br>
+    // - `"Not started"`: not yet started <br>
+    // - `"In progress"`: build started <br>
+    // - `"Complete"`: build succeeded <br>
+    // - `"Failed"`: build failed
+    map<string, string> artifacts = 1;
 }
 
-// DeployState contains the status of the current deploy
+// `DeployState` describes the status of the current deploy
 message DeployState {
-  string status = 1;
+    string status = 1;
 }
 
-// StatusCheckState contains the state of status check of current deployed resources.
+// `StatusCheckState` describes the state of status check of current deployed resources.
 message StatusCheckState {
-  string status = 1;
-  map<string, string> resources = 2;
+    string status = 1;
+    // A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name.
+    // The `status-check-state` can be <br>
+    // - `"Not started"`: indicates that `status-check` has just started. <br>
+    // - `"In progress"`: InProgress is sent after every resource check is complete. <br>
+    // - `"Succeeded"`:
+    // - `"Failed"`:
+    map<string, string> resources = 2;
+
 }
 
-// FileSyncState contains the status of the current file sync
+// `FileSyncState` contains the status of the current file sync
 message FileSyncState {
-  string status = 1;
+    string status = 1;
 }
 
+// `Event` describes an event in the Skaffold process.
+// It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent or FileSyncEvent.
 message Event {
-  oneof event_type {
-    MetaEvent metaEvent = 1;
-    BuildEvent buildEvent = 2;
-    DeployEvent deployEvent = 3;
-    PortEvent portEvent = 4;
-    StatusCheckEvent statusCheckEvent = 5;
-    ResourceStatusCheckEvent resourceStatusCheckEvent = 6;
-    FileSyncEvent fileSyncEvent = 7;
-  }
+    oneof event_type {
+        MetaEvent metaEvent = 1; // contains general information regarding Skaffold like version info
+        BuildEvent buildEvent = 2; // describes if the build status per artifact. Status could be one of "InProgress", "Completed" or "Failed".
+        DeployEvent deployEvent = 3; // describes if the deployment has started, is in progress or is complete.
+        PortEvent portEvent = 4; //  describes each port forwarding event.
+        StatusCheckEvent statusCheckEvent = 5; // describes if the Status check has started, is in progress, has succeeded or failed.
+        ResourceStatusCheckEvent resourceStatusCheckEvent = 6; // indicates progress for each kubernetes deployment.
+        FileSyncEvent fileSyncEvent = 7; // describes the sync status.
+    }
 }
 
+// `MetaEvent` provides general information regarding Skaffold
 message MetaEvent {
-  string entry = 1;
+    // entry, for example: `"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"`
+    string entry = 1;
 }
 
+// `BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
+// If the build fails, an error will be attached to the event.
 message BuildEvent {
-  string artifact = 1;
-  string status = 2;
-  string err = 3;
+    string artifact = 1; // artifact name
+    string status = 2; // artifact build status oneof: InProgress, Completed, Failed
+    string err = 3; // error when build status is Failed.
 }
 
+// `DeployEvent` represents the status of a deployment, and is emitted by Skaffold
+// anytime a deployment starts or completes, successfully or not.
 message DeployEvent {
-  string status = 1;
-  string err = 2;
+    string status = 1; // deployment status oneof: InProgress, Completed, Failed
+    string err = 2; // error when status is Failed
 }
 
+// `StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed.
 message StatusCheckEvent {
-  string status = 1;
-  string message = 2;
-  string err = 3;
+    string status = 1;
+    string message = 2;
+    string err = 3;
 }
 
+// A Resource StatusCheck Event, indicates progress for each kubernetes deployment.
+// For every resource, there will be exactly one event with `status` *Succeeded* or *Failed* event.
+// There can be multiple events with `status` *Pending*.
+// Skaffold polls for resource status every 0.5 second. If the resource status changes, an event with `status` “Pending”, “Complete” and “Failed”
+// will be sent with the new status.
 message ResourceStatusCheckEvent {
-  string resource = 1;
-  string status = 2;
-  string message = 3;
-  string err = 4;
+    string resource = 1;
+    string status = 2;
+    string message = 3;
+    string err = 4;
 }
 
+// PortEvent Event describes each port forwarding event.
 message PortEvent {
-  int32 localPort = 1;
-  int32 remotePort = 2;
-  string podName = 3;
-  string containerName = 4;
-  string namespace = 5;
-  string portName = 6;
-  string resourceType=7;
-  string resourceName=8;
+    int32 localPort = 1; // local port for forwarded resource
+    int32 remotePort = 2; // remote port is the resource port that will be forwarded.
+    string podName = 3; // pod name if port forwarded resourceType is Pod
+    string containerName = 4; // container name if specified in the kubernetes spec
+    string namespace = 5; // 	the namespace of the resource to port forward.
+    string portName = 6;
+    string resourceType = 7; // resource type e.g. "pod", "service".
+    string resourceName = 8; // name of the resource to forward.
+    string address=9; // address on which to bind
 }
 
+// FileSyncEvent describes the sync status.
 message FileSyncEvent {
-  int32 fileCount = 1;
-  string image = 2;
-  string status = 3;
-  string err = 4;
+    int32 fileCount = 1; // number of files synced
+    string image = 2; // the container image to which files are sycned.
+    string status = 3; // status of file sync. one of: Not Started, In progress, Succeeded, Failed.
+    string err = 4; // error in case of status failed.
 }
 
+// LogEntry describes an event and a string description of the event.
 message LogEntry {
-  google.protobuf.Timestamp timestamp = 1;
-  Event event = 2;
-  string entry = 3;
+    google.protobuf.Timestamp timestamp = 1; // timestamp of the event.
+    Event event = 2; // the actual event that is one of
+    string entry = 3; // description of the event.
 }
 
 message UserIntentRequest {
-  Intent intent = 1;
+    Intent intent = 1;
 }
 
+// Intent represents user intents for a given phase to be unblocked, once.
 message Intent {
-  bool build = 1;
-  bool sync = 2;
-  bool deploy = 3;
+    bool build = 1; // in case skaffold dev is ran with autoBuild=false, a build intent enables building once
+    bool sync = 2; // in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once
+    bool deploy = 3; // in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once
 }
 
+// Describes all the methods for the Skaffold API
 service SkaffoldService {
-  rpc GetState(google.protobuf.Empty) returns (State) {
-    option (google.api.http) = {
-      get: "/v1/state"
-    };
-  }
 
-  rpc EventLog(stream LogEntry) returns (stream LogEntry) {
-    option (google.api.http) = {
-      get: "/v1/event_log"
+    // Returns the state of the current Skaffold execution
+    rpc GetState (google.protobuf.Empty) returns (State) {
+        option (google.api.http) = {
+            get: "/v1/state"
     };
-  }
+    }
 
-  rpc Events(stream LogEntry) returns (stream LogEntry) {
-    option (google.api.http) = {
-      get: "/v1/events"
-    };
-  }
+    // DEPRECATED. Events should be used instead.
+    // TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)
+    rpc EventLog(stream LogEntry) returns (stream LogEntry) {
+        option (google.api.http) = {
+            get: "/v1/event_log"
+        };
+    }
 
-  rpc Handle(Event) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      post: "/v1/events/handle"
-      body: "*"
-    };
-  }
+    // Returns all the events of the current Skaffold execution from the start
+    rpc Events(google.protobuf.Empty) returns (stream LogEntry) {
+        option (google.api.http) = {
+            get: "/v1/events"
+        };
+    }
 
-  rpc Execute(UserIntentRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      post: "/v1/execute"
-      body: "intent"
+    // Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
+    rpc Execute (UserIntentRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/execute"
+            body: "intent"
     };
-  }
+    }
+
+    // EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.
+    rpc Handle(Event) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/events/handle"
+            body: "*"
+        };
+    }
+
 }

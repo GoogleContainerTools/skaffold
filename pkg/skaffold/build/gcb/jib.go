@@ -19,10 +19,11 @@ package gcb
 import (
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 func (b *Builder) jibBuildSpec(artifact *latest.Artifact, tag string) (cloudbuild.Build, error) {
@@ -37,7 +38,7 @@ func (b *Builder) jibBuildSpec(artifact *latest.Artifact, tag string) (cloudbuil
 			Steps: []*cloudbuild.BuildStep{{
 				Name:       b.MavenImage,
 				Entrypoint: "sh",
-				Args:       fixHome("mvn", jib.GenerateMavenArgs("build", tag, artifact.JibArtifact, b.skipTests, b.insecureRegistries)),
+				Args:       fixHome("mvn", jib.GenerateMavenBuildArgs("build", tag, artifact.JibArtifact, b.skipTests, b.insecureRegistries)),
 			}},
 		}, nil
 	case jib.JibGradle:
@@ -45,7 +46,7 @@ func (b *Builder) jibBuildSpec(artifact *latest.Artifact, tag string) (cloudbuil
 			Steps: []*cloudbuild.BuildStep{{
 				Name:       b.GradleImage,
 				Entrypoint: "sh",
-				Args:       fixHome("gradle", jib.GenerateGradleArgs("jib", tag, artifact.JibArtifact, b.skipTests, b.insecureRegistries)),
+				Args:       fixHome("gradle", jib.GenerateGradleBuildArgs("jib", tag, artifact.JibArtifact, b.skipTests, b.insecureRegistries)),
 			}},
 		}, nil
 	default:

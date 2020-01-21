@@ -57,6 +57,13 @@ func makeOptions(target authn.Resource, opts ...Option) (*options, error) {
 		o.auth = auth
 	}
 
+	// Wrap the transport in something that logs requests and responses.
+	// It's expensive to generate the dumps, so skip it if we're writing
+	// to nothing.
+	if logs.Enabled(logs.Debug) {
+		o.transport = transport.NewLogger(o.transport)
+	}
+
 	// Wrap the transport in something that can retry network flakes.
 	o.transport = transport.NewRetry(o.transport)
 

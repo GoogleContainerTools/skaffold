@@ -12,43 +12,45 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Install protoc
-FROM alpine:3.10 AS protoc
-RUN apk add --no-cache unzip
+FROM golang:1.13.4-alpine3.10 AS generate-files
+RUN apk add --no-cache protobuf=3.6.1-r1 unzip
 
-ENV PROTOC_VERSION=3.8.0
+WORKDIR /protoc
+ENV PROTOC_VERSION=3.11.0
 RUN wget -O protoc.zip https://github.com/google/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip
-RUN unzip protoc.zip -d protoc
+RUN unzip protoc.zip
 
-# Install protoc-gen-go and grpc-gateway binaries; then generate files.
-FROM golang:1.12.9-alpine3.10 AS generateFiles
-RUN apk add --no-cache protobuf=3.6.1-r1 git
+WORKDIR /grpc-gateway
+RUN wget -q -O- https://github.com/grpc-ecosystem/grpc-gateway/tarball/v1.9.1 | tar --strip-components 1 -zx
 
-COPY --from=protoc /protoc/include /usr/local/include
-
-ENV GIT_TAG=v1.2.0
-RUN go get -d -u github.com/golang/protobuf/protoc-gen-go
-RUN git -C "$(go env GOPATH)"/src/github.com/golang/protobuf checkout $GIT_TAG
-RUN go install github.com/golang/protobuf/protoc-gen-go
-
-WORKDIR /go/src/github.com/grpc-ecosystem
-RUN git clone https://github.com/grpc-ecosystem/grpc-gateway.git
-
-ENV GRPC_GATEWAY_REVISION=e6f18d33a7b3bfa5b94f3d5fb513252184ce2d90
-WORKDIR /go/src/github.com/grpc-ecosystem/grpc-gateway
-RUN git checkout ${GRPC_GATEWAY_REVISION} && git checkout -b v${GRPC_GATEWAY_REVISION}
-
+WORKDIR /tmp
+ENV GOPROXY=https://proxy.golang.org
 ENV GO111MODULE=on
-RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
-RUN go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
-RUN go get -u github.com/golang/protobuf/protoc-gen-go
+RUN go get \
+    github.com/golang/protobuf/protoc-gen-go@v1.3.2 \
+    github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway@v1.9.1 \
+    github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger@v1.9.1 \
+    github.com/pseudomuto/protoc-gen-doc/cmd/protoc-gen-doc@v1.3.0
 
 WORKDIR /proto
-COPY skaffold.proto ./
-RUN protoc -I /usr/local/include -I . -I $GOPATH/src -I $GOPATH/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis --grpc-gateway_out=logtostderr=true:. skaffold.proto --go_out=plugins=grpc:.
+COPY skaffold.proto markdown.tmpl ./
+RUN protoc \
+  -I . \
+  -I /protoc/include  \
+  -I /grpc-gateway/third_party/googleapis \
+  --grpc-gateway_out=logtostderr=true:. \
+  --go_out=plugins=grpc:. \
+  --doc_out=. \
+  --doc_opt=./markdown.tmpl,index.md \
+  --swagger_out=logtostderr=true:. \
+  *.proto
+
+# this is a hack - seemingly grpc-gateway-swagger-gen is sometimes generating titles when they should be descriptions
+RUN sed -i 's/"title"/"description"/g' *.swagger.json
 
 # Compare the proto files with the existing proto files
-FROM generateFiles AS compare
+FROM generate-files AS compare
 WORKDIR /compare
 COPY *.go ./
+COPY --from=generate-files /proto/index.md ./
 CMD cmp /proto/skaffold.pb.go skaffold.pb.go && cmp /proto/skaffold.pb.gw.go skaffold.pb.gw.go

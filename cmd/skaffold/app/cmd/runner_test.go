@@ -20,11 +20,12 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/blang/semver"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/blang/semver"
 )
 
 func TestCreateNewRunner(t *testing.T) {

@@ -22,11 +22,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/version"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
+	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/version"
 )
 
 func main() {
@@ -41,5 +40,4 @@ func main() {
 	}); err != nil {
 		logrus.Fatalf("%s", err)
 	}
-
 }

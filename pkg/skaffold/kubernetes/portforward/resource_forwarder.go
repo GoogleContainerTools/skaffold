@@ -19,12 +19,13 @@ package portforward
 import (
 	"context"
 
+	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // ResourceForwarder is responsible for forwarding user defined port forwarding resources and automatically forwarding
@@ -93,7 +94,7 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = retrieveAvailablePort(resource.LocalPort, &p.forwardedPorts)
+	entry.localPort = retrieveAvailablePort(resource.Address, resource.LocalPort, &p.forwardedPorts)
 	return entry
 }
 
@@ -102,7 +103,7 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 func retrieveServiceResources(label string, namespaces []string) ([]*latest.PortForwardResource, error) {
 	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting kubernetes client")
+		return nil, errors.Wrap(err, "getting Kubernetes client")
 	}
 
 	var resources []*latest.PortForwardResource
@@ -120,6 +121,7 @@ func retrieveServiceResources(label string, namespaces []string) ([]*latest.Port
 					Name:      s.Name,
 					Namespace: s.Namespace,
 					Port:      int(p.Port),
+					Address:   constants.DefaultPortForwardAddress,
 					LocalPort: int(p.Port),
 				})
 			}

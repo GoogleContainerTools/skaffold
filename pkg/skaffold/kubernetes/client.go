@@ -21,10 +21,10 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-
 	// Initialize all known client auth plugins
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
 
 // for tests
@@ -36,7 +36,7 @@ var (
 func getClientset() (kubernetes.Interface, error) {
 	config, err := context.GetRestClientConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting client config for kubernetes client")
+		return nil, errors.Wrap(err, "getting client config for Kubernetes client")
 	}
 	return kubernetes.NewForConfig(config)
 }

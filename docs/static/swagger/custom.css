@@ -1,0 +1,9 @@
+.scheme-container, .information-container {
+    display: none;
+}
+
+
+/*TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)*/
+#operations-SkaffoldService-EventLog div.opblock-section, div.execute-wrapper {
+    display: none;
+}

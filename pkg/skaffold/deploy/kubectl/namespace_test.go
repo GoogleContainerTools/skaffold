@@ -22,7 +22,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestCollectLabels(t *testing.T) {
+func TestCollectNamespaces(t *testing.T) {
 	tests := []struct {
 		description string
 		manifests   ManifestList
@@ -113,12 +113,17 @@ spec:
 			description: "empty manifest",
 			manifests:   ManifestList{[]byte(``)},
 			expected:    []string{},
+		}, {
+			description: "unexpected metadata type",
+			manifests:   ManifestList{[]byte(`metadata: []`)},
+			expected:    []string{},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual, err := test.manifests.CollectNamespaces()
-			t.CheckErrorAndDeepEqual(false, err, test.expected, actual)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, actual)
 		})
 	}
 }

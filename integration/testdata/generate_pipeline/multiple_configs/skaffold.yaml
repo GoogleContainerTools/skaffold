@@ -13,9 +13,7 @@ profiles:
     artifacts:
     - image: gcr.io/k8s-skaffold/main-config-pipeline
       context: .
-      kaniko:
-        buildContext:
-          gcsBucket: skaffold-kaniko
+      kaniko: {}
     tagPolicy:
       gitCommit: {}
     cluster:

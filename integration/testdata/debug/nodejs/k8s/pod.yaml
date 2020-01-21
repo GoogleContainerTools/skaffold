@@ -5,6 +5,6 @@ metadata:
 spec:
   containers:
   - name: web
-    image: gcr.io/k8s-skaffold/skaffold-debug-nodejs
+    image: skaffold-debug-nodejs
     ports:
     - containerPort: 3000

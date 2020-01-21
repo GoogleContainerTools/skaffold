@@ -7,16 +7,20 @@ linters:
   enable:
     - bodyclose
     - deadcode
+    - dogsled
     - goconst
     - gocritic
     - goimports
     - golint
+    - goprintffuncname
     - gosimple
     - govet
     - ineffassign
     - interfacer
     - maligned
     - misspell
+    - nakedret
+    - rowserrcheck
     - staticcheck
     - structcheck
     - stylecheck
@@ -25,3 +29,8 @@ linters:
     - unparam
     - unused
     - varcheck
+    - whitespace
+
+linters-settings:
+  goimports:
+    local-prefixes: github.com/GoogleContainerTools/skaffold

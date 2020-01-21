@@ -17,6 +17,7 @@ limitations under the License.
 package runner
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -57,7 +58,11 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		imagesAreLocal = !localBuilder.PushImages()
 	}
 
-	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, builder)
+	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
+		return build.DependenciesForArtifact(ctx, artifact, runCtx.InsecureRegistries)
+	}
+
+	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, depLister)
 	if err != nil {
 		return nil, errors.Wrap(err, "initializing cache")
 	}
@@ -72,7 +77,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	defaultLabeller := deploy.NewLabeller("")
 	// runCtx.Opts is last to let users override/remove any label
-	labellers := []deploy.Labeller{builder, deployer, tagger, defaultLabeller, &runCtx.Opts}
+	// deployer labels are added during deployment
+	labellers := []deploy.Labeller{builder, tagger, defaultLabeller, &runCtx.Opts}
 
 	builder, tester, deployer = WithTimings(builder, tester, deployer, runCtx.Opts.CacheArtifacts)
 	if runCtx.Opts.Notification {
@@ -203,19 +209,30 @@ func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
 }
 
 func getDeployer(runCtx *runcontext.RunContext) (deploy.Deployer, error) {
-	switch {
-	case runCtx.Cfg.Deploy.HelmDeploy != nil:
-		return deploy.NewHelmDeployer(runCtx), nil
+	deployers := deploy.DeployerMux(nil)
 
-	case runCtx.Cfg.Deploy.KubectlDeploy != nil:
-		return deploy.NewKubectlDeployer(runCtx), nil
+	if runCtx.Cfg.Deploy.HelmDeploy != nil {
+		deployers = append(deployers, deploy.NewHelmDeployer(runCtx))
+	}
 
-	case runCtx.Cfg.Deploy.KustomizeDeploy != nil:
-		return deploy.NewKustomizeDeployer(runCtx), nil
+	if runCtx.Cfg.Deploy.KubectlDeploy != nil {
+		deployers = append(deployers, deploy.NewKubectlDeployer(runCtx))
+	}
 
-	default:
+	if runCtx.Cfg.Deploy.KustomizeDeploy != nil {
+		deployers = append(deployers, deploy.NewKustomizeDeployer(runCtx))
+	}
+
+	if deployers == nil {
 		return nil, fmt.Errorf("unknown deployer for config %+v", runCtx.Cfg.Deploy)
 	}
+
+	// avoid muxing overhead when only a single deployer is configured
+	if len(deployers) == 1 {
+		return deployers[0], nil
+	}
+
+	return deployers, nil
 }
 
 func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {

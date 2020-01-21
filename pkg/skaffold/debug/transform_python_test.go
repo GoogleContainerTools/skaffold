@@ -20,13 +20,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestExtractPtvsdArg(t *testing.T) {
@@ -132,7 +133,7 @@ func TestPythonTransformer_RuntimeSupportImage(t *testing.T) {
 	testutil.CheckDeepEqual(t, "python", pythonTransformer{}.RuntimeSupportImage())
 }
 
-func TestPythonTransformerApply(t *testing.T) {
+func TestPythonTransformer_Apply(t *testing.T) {
 	tests := []struct {
 		description   string
 		containerSpec v1.Container
@@ -165,6 +166,18 @@ func TestPythonTransformerApply(t *testing.T) {
 				Command: []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678"},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "dap", ContainerPort: 5678}},
 				Env:     []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
+			},
+		},
+		{
+			description: "existing port and env",
+			containerSpec: v1.Container{
+				Ports: []v1.ContainerPort{{Name: "dap", ContainerPort: 8080}},
+			},
+			configuration: imageConfiguration{entrypoint: []string{"python"}, env: map[string]string{"PYTHONUSERBASE": "/foo"}},
+			result: v1.Container{
+				Command: []string{"python", "-mptvsd", "--host", "localhost", "--port", "5678"},
+				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
+				Env:     []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python:/foo"}},
 			},
 		},
 		{

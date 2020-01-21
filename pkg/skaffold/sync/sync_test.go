@@ -23,16 +23,17 @@ import (
 	"strings"
 	"testing"
 
+	v1 "k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/fake"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestNewSyncItem(t *testing.T) {
@@ -636,12 +637,10 @@ func TestNewSyncItem(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) {
-				return test.workingDir, nil
-			})
+			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return test.workingDir, nil })
+			t.Override(&SyncMap, func(*latest.Artifact, map[string]bool) (map[string][]string, error) { return test.dependencies, nil })
 
-			provider := func() (map[string][]string, error) { return test.dependencies, nil }
-			actual, err := NewItem(test.artifact, test.evt, test.builds, nil, provider)
+			actual, err := NewItem(test.artifact, test.evt, test.builds, nil)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
@@ -849,6 +848,58 @@ func TestPerform(t *testing.T) {
 			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cmdRecord.cmds)
+		})
+	}
+}
+
+func TestSyncMap(t *testing.T) {
+	tests := []struct {
+		description  string
+		artifactType latest.ArtifactType
+		files        map[string]string
+		shouldErr    bool
+		expectedMap  map[string][]string
+	}{
+		{
+			description: "docker - supported",
+			artifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					DockerfilePath: "Dockerfile",
+				},
+			},
+			files: map[string]string{
+				"Dockerfile": "FROM alpine\nCOPY *.go /app/",
+				"main.go":    "",
+			},
+			expectedMap: map[string][]string{"main.go": {"/app/main.go"}},
+		},
+		{
+			description: "kaniko - supported",
+			artifactType: latest.ArtifactType{
+				KanikoArtifact: &latest.KanikoArtifact{
+					DockerfilePath: "Dockerfile",
+				},
+			},
+			files: map[string]string{
+				"Dockerfile": "FROM alpine\nCOPY *.go /app/",
+				"main.go":    "",
+			},
+			expectedMap: map[string][]string{"main.go": {"/app/main.go"}},
+		},
+		{
+			description:  "not supported",
+			artifactType: latest.ArtifactType{},
+			shouldErr:    true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().WriteFiles(test.files).Chdir()
+
+			syncMap, err := SyncMap(&latest.Artifact{ArtifactType: test.artifactType}, nil)
+
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expectedMap, syncMap)
 		})
 	}
 }

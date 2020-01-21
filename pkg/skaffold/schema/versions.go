@@ -27,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha3"
@@ -39,6 +40,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta13"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta14"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta15"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta16"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta17"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta4"
@@ -47,6 +50,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta7"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta8"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta9"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha2"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -75,6 +80,11 @@ var SchemaVersions = Versions{
 	{v1beta13.Version, v1beta13.NewSkaffoldConfig},
 	{v1beta14.Version, v1beta14.NewSkaffoldConfig},
 	{v1beta15.Version, v1beta15.NewSkaffoldConfig},
+	{v1beta16.Version, v1beta16.NewSkaffoldConfig},
+	{v1beta17.Version, v1beta17.NewSkaffoldConfig},
+	{v1.Version, v1.NewSkaffoldConfig},
+	{v2alpha1.Version, v2alpha1.NewSkaffoldConfig},
+	{v2alpha2.Version, v2alpha2.NewSkaffoldConfig},
 	{latest.Version, latest.NewSkaffoldConfig},
 }
 

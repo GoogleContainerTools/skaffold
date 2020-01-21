@@ -25,9 +25,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/progress"
@@ -36,7 +35,19 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
+
+type ContainerRun struct {
+	Image       string
+	User        string
+	Command     []string
+	Mounts      []mount.Mount
+	Env         []string
+	BeforeStart func(context.Context, string) error
+}
 
 // LocalDaemon talks to a local Docker API.
 type LocalDaemon interface {
@@ -334,8 +345,12 @@ func (l *localDaemon) Tag(ctx context.Context, image, ref string) error {
 // So, the solution we chose is to create a tag, just for Skaffold, from
 // the imageID, and use that in the manifests.
 func (l *localDaemon) TagWithImageID(ctx context.Context, ref string, imageID string) (string, error) {
-	uniqueTag := ref + ":" + strings.TrimPrefix(imageID, "sha256:")
+	parsed, err := ParseReference(ref)
+	if err != nil {
+		return "", err
+	}
 
+	uniqueTag := parsed.BaseName + ":" + strings.TrimPrefix(imageID, "sha256:")
 	if err := l.Tag(ctx, imageID, uniqueTag); err != nil {
 		return "", err
 	}

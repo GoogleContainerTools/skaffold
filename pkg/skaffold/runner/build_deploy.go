@@ -22,11 +22,15 @@ import (
 	"io"
 	"time"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
 )
 
 // BuildAndTest builds and tests a list of artifacts.
@@ -68,24 +72,12 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
 
-	color.Default.Fprintln(out, "Tags used in deployment:")
-
-	if r.imagesAreLocal {
-		color.Yellow.Fprintln(out, " - Since images are not pushed, they can't be referenced by digest")
-		color.Yellow.Fprintln(out, "   They are tagged and referenced by a unique ID instead")
-	}
-
-	for _, build := range r.builds {
-		color.Default.Fprintf(out, " - %s -> ", build.ImageName)
-		fmt.Fprintln(out, build.Tag)
-	}
-
 	return bRes, nil
 }
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
-	if !r.runCtx.Opts.Tail {
+	if !r.runCtx.Opts.Tail && !r.runCtx.Opts.PortForward.Enabled {
 		return r.Deploy(ctx, out, artifacts)
 	}
 
@@ -95,19 +87,31 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		r.podSelector.Add(artifact.Tag)
 	}
 
-	logger := r.newLoggerForImages(out, imageNames)
-	defer logger.Stop()
+	r.createLoggerForImages(out, imageNames)
+	defer r.logger.Stop()
 
-	// Logs should be retrieve up to just before the deploy
-	logger.SetSince(time.Now())
+	r.createForwarder(out)
+	defer r.forwarderManager.Stop()
 
+	// Logs should be retrieved up to just before the deploy
+	r.logger.SetSince(time.Now())
+
+	// First deploy
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
 		return err
 	}
 
+	if r.runCtx.Opts.PortForward.Enabled {
+		if err := r.forwarderManager.Start(ctx); err != nil {
+			logrus.Warnln("Error starting port forwarding:", err)
+		}
+	}
+
 	// Start printing the logs after deploy is finished
-	if err := logger.Start(ctx); err != nil {
-		return errors.Wrap(err, "starting logger")
+	if r.runCtx.Opts.Tail {
+		if err := r.logger.Start(ctx); err != nil {
+			return errors.Wrap(err, "starting logger")
+		}
 	}
 
 	<-ctx.Done()
@@ -124,6 +128,11 @@ type tagErr struct {
 func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
+
+	defaultRepo, err := config.GetDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting default repo")
+	}
 
 	tagErrs := make([]chan tagErr, len(artifacts))
 
@@ -148,18 +157,20 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 			return nil, context.Canceled
 
 		case t := <-tagErrs[i]:
-			tag := t.tag
-			err := t.err
-			if err != nil {
-				return nil, errors.Wrapf(err, "generating tag for %s", imageName)
+			if t.err != nil {
+				return nil, errors.Wrapf(t.err, "generating tag for %s", imageName)
 			}
 
+			tag, err := docker.SubstituteDefaultRepoIntoImage(defaultRepo, t.tag)
+			if err != nil {
+				return nil, errors.Wrapf(t.err, "applying default repo to %s", t.tag)
+			}
 			fmt.Fprintln(out, tag)
 
 			imageTags[imageName] = tag
 		}
 	}
 
-	color.Default.Fprintln(out, "Tags generated in", time.Since(start))
+	logrus.Infoln("Tags generated in", time.Since(start))
 	return imageTags, nil
 }

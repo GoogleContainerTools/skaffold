@@ -19,9 +19,10 @@ package gcb
 import (
 	"fmt"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 func (b *Builder) buildSpec(artifact *latest.Artifact, tag, bucket, object string) (cloudbuild.Build, error) {
@@ -39,10 +40,11 @@ func (b *Builder) buildSpec(artifact *latest.Artifact, tag, bucket, object strin
 			Object: object,
 		},
 	}
-	buildSpec.Options = &cloudbuild.BuildOptions{
-		DiskSizeGb:  b.DiskSizeGb,
-		MachineType: b.MachineType,
+	if buildSpec.Options == nil {
+		buildSpec.Options = &cloudbuild.BuildOptions{}
 	}
+	buildSpec.Options.DiskSizeGb = b.DiskSizeGb
+	buildSpec.Options.MachineType = b.MachineType
 	buildSpec.Timeout = b.Timeout
 
 	return buildSpec, nil
@@ -61,6 +63,12 @@ func (b *Builder) buildSpecForArtifact(artifact *latest.Artifact, tag string) (c
 
 	case artifact.BazelArtifact != nil:
 		return cloudbuild.Build{}, errors.New("skaffold can't build a bazel artifact with Google Cloud Build")
+
+	case artifact.CustomArtifact != nil:
+		return cloudbuild.Build{}, errors.New("skaffold can't build a custom artifact with Google Cloud Build")
+
+	case artifact.BuildpackArtifact != nil:
+		return b.buildpackBuildSpec(artifact.BuildpackArtifact, tag)
 
 	default:
 		return cloudbuild.Build{}, fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
