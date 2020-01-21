@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -46,6 +47,8 @@ type kubectlAnalyzer struct {
 
 func (a *kubectlAnalyzer) analyzeFile(filePath string) error {
 	if IsKubernetesManifest(filePath) && !isSkaffoldConfig(filePath) {
+		// to make skaffold.yaml more portable across OS-es we should generate always / based filePaths
+		filePath = strings.ReplaceAll(filePath, string(os.PathSeparator), "/")
 		a.kubernetesManifests = append(a.kubernetesManifests, filePath)
 	}
 	return nil
