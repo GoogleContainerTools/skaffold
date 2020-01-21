@@ -25,6 +25,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
@@ -121,4 +122,12 @@ func artifacts(pairs []builderImagePair) []*latest.Artifact {
 	}
 
 	return artifacts
+}
+
+// isSkaffoldConfig is for determining if a file is skaffold config file.
+func isSkaffoldConfig(file string) bool {
+	if config, err := schema.ParseConfig(file, false); err == nil && config != nil {
+		return true
+	}
+	return false
 }

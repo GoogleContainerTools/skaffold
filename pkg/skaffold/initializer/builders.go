@@ -30,6 +30,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 type builderAnalyzer struct {
@@ -59,37 +60,42 @@ func (a *builderAnalyzer) exitDir(dir string) {
 	}
 }
 
-// autoSelectBuilders takes a list of builders and images, checks if any of the builders' configured target
+// matchBuildersToImages takes a list of builders and images, checks if any of the builders' configured target
 // images match an image in the image list, and returns a list of the matching builder/image pairs. Also
 // separately returns the builder configs and images that didn't have any matches.
-func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
+func matchBuildersToImages(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
 	var pairs []builderImagePair
 	var unresolvedImages = make(sortedSet)
 	for _, image := range images {
-		matchingConfigIndex := -1
-		for i, config := range builderConfigs {
-			if image != config.ConfiguredImage() {
-				continue
-			}
+		builderIdx := findExactlyOnceMatchingBuilder(builderConfigs, image)
 
-			// Found more than one match; can't auto-select.
-			if matchingConfigIndex != -1 {
-				matchingConfigIndex = -1
-				break
-			}
-			matchingConfigIndex = i
-		}
-
-		if matchingConfigIndex != -1 {
-			// Exactly one pair found; save the pair and remove from remaining build configs
-			pairs = append(pairs, builderImagePair{ImageName: image, Builder: builderConfigs[matchingConfigIndex]})
-			builderConfigs = append(builderConfigs[:matchingConfigIndex], builderConfigs[matchingConfigIndex+1:]...)
+		// exactly one builder found for the image
+		if builderIdx != -1 {
+			// save the pair
+			pairs = append(pairs, builderImagePair{ImageName: image, Builder: builderConfigs[builderIdx]})
+			// remove matched builder from builderConfigs
+			builderConfigs = append(builderConfigs[:builderIdx], builderConfigs[builderIdx+1:]...)
 		} else {
 			// No definite pair found, add to images list
 			unresolvedImages.add(image)
 		}
 	}
 	return pairs, builderConfigs, unresolvedImages.values()
+}
+
+func findExactlyOnceMatchingBuilder(builderConfigs []InitBuilder, image string) int {
+	matchingConfigIndex := -1
+	for i, config := range builderConfigs {
+		if image != config.ConfiguredImage() {
+			continue
+		}
+		// Found more than one match;
+		if matchingConfigIndex != -1 {
+			return -1
+		}
+		matchingConfigIndex = i
+	}
+	return matchingConfigIndex
 }
 
 // detectBuilders checks if a path is a builder config, and if it is, returns the InitBuilders representing the
@@ -214,6 +220,10 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force b
 		return nil, errors.New("unable to automatically resolve builder/image pairs; run `skaffold init` without `--force` to manually resolve ambiguities")
 	}
 
+	return resolveBuilderImagesInteractively(builderConfigs, images)
+}
+
+func resolveBuilderImagesInteractively(builderConfigs []InitBuilder, images []string) ([]builderImagePair, error) {
 	// Build map from choice string to builder config struct
 	choices := make([]string, len(builderConfigs))
 	choiceMap := make(map[string]InitBuilder, len(builderConfigs))
@@ -247,4 +257,24 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force b
 		logrus.Warnf("unused builder configs found in repository: %v", choices)
 	}
 	return pairs, nil
+}
+
+func stripTags(taggedImages []string) []string {
+	// Remove tags from image names
+	var images []string
+	for _, image := range taggedImages {
+		parsed, err := docker.ParseReference(image)
+		if err != nil {
+			// It's possible that it's a templatized name that can't be parsed as is.
+			warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
+			continue
+		}
+		if parsed.Digest != "" {
+			warnings.Printf("Ignoring image referenced by digest: [%s]", image)
+			continue
+		}
+
+		images = append(images, parsed.BaseName)
+	}
+	return images
 }

@@ -31,6 +31,25 @@ type analysis struct {
 	builderAnalyzer  *builderAnalyzer
 }
 
+// newAnalysis sets up the analysis of the directory based on the initializer configuration
+func newAnalysis(c Config) *analysis {
+	var builders *builderAnalyzer
+	if !c.SkipBuild {
+		builders = &builderAnalyzer{
+			findBuilders:        !c.SkipBuild,
+			enableJibInit:       c.EnableJibInit,
+			enableBuildpackInit: c.EnableBuildpackInit,
+		}
+	}
+	return &analysis{
+		kubectlAnalyzer: &kubectlAnalyzer{},
+		builderAnalyzer: builders,
+		skaffoldAnalyzer: &skaffoldConfigAnalyzer{
+			force: c.Force,
+		},
+	}
+}
+
 // analyze recursively walks a directory and notifies the analyzers of files and enterDir and exitDir events
 // at the end of the analyze function the analysis struct's analyzers should contain the state that we can
 // use to do further computation.
@@ -105,7 +124,7 @@ type directoryAnalyzer struct {
 	currentDir string
 }
 
-func (a *directoryAnalyzer) analyzeFile(filePath string) error {
+func (a *directoryAnalyzer) analyzeFile(_ string) error {
 	return nil
 }
 
@@ -113,6 +132,6 @@ func (a *directoryAnalyzer) enterDir(dir string) {
 	a.currentDir = dir
 }
 
-func (a *directoryAnalyzer) exitDir(dir string) {
+func (a *directoryAnalyzer) exitDir(_ string) {
 	//pass
 }
