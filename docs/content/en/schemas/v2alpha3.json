@@ -66,8 +66,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -100,8 +101,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -135,8 +137,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -170,8 +173,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -205,8 +209,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -240,8 +245,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -275,8 +281,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -1904,8 +1911,9 @@
         "infer"
       ],
       "additionalProperties": false,
-      "description": "*beta* specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files.",
-      "x-intellij-html-description": "<em>beta</em> specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files."
+      "description": "*beta* specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files. If no files are listed, sync all the files and infer the destination.",
+      "x-intellij-html-description": "<em>beta</em> specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files. If no files are listed, sync all the files and infer the destination.",
+      "default": "infer: [\"**/*\"]"
     },
     "SyncRule": {
       "required": [

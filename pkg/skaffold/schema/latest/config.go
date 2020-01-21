@@ -560,6 +560,8 @@ type Artifact struct {
 
 	// Sync *beta* lists local files synced to pods instead
 	// of triggering an image build when modified.
+	// If no files are listed, sync all the files and infer the destination.
+	// Defaults to `infer: ["**/*"]`.
 	Sync *Sync `yaml:"sync,omitempty"`
 
 	// ArtifactType describes how to build an artifact.
@@ -568,6 +570,8 @@ type Artifact struct {
 
 // Sync *beta* specifies what files to sync into the container.
 // This is a list of sync rules indicating the intent to sync for source files.
+// If no files are listed, sync all the files and infer the destination.
+// Defaults to `infer: ["**/*"]`.
 type Sync struct {
 	// Manual lists manual sync rules indicating the source and destination.
 	Manual []*SyncRule `yaml:"manual,omitempty" yamltags:"oneOf=sync"`
