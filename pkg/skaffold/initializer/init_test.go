@@ -16,31 +16,77 @@ limitations under the License.
 
 package initializer
 
-// TODO(balintp): write testcases
-//func TestDoInit(t *testing.T) {
-//	tcs := []struct {
-//		name string
-//	}{
-//		{
-//			name: "Kompose",
-//		},
-//		{
-//			name: "printJSONNoJib (neither jib nor buildpacks)",
-//		},
-//		{
-//			name: "printJSON (jib or buildpacks)",
-//		},
-//		{
-//			name: "print config to stdout",
-//		},
-//		{
-//			name: "!force -> prompt for writing config",
-//		},
-//	}
-//
-//	for _, tc := range tcs {
-//		testutil.Run(t, tc.name, func(t *testutil.T) {
-//
-//		})
-//	}
-//}
+import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
+)
+
+func TestInit(t *testing.T) {
+	tests := []struct {
+		name string
+		dir  string
+		args []string
+	}{
+		//TODO: mocked kompose test
+		{
+			name: "getting-started",
+			dir:  "testdata/init/hello",
+		},
+		{
+			name: "ignore existing tags",
+			dir:  "testdata/init/ignore-tags",
+		},
+		{
+			name: "microservices (backwards compatibility)",
+			dir:  "testdata/init/microservices",
+			args: []string{
+				"-a", `leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app`,
+				"-a", `leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web`,
+			},
+		},
+		{
+			name: "microservices",
+			dir:  "testdata/init/microservices",
+			args: []string{
+				"-a", `{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
+				"-a", `{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
+			},
+		},
+	}
+	for _, test := range tests {
+
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			config := "skaffold.yaml.out"
+			initArgs := append([]string{"init", "--force", "-f", config}, test.args...)
+			os.Args = initArgs
+			wd, _ := os.Getwd()
+			os.Chdir(test.dir)
+			defer os.Chdir(wd)
+			init := cmd.NewCmdInit()
+			if err := init.Execute(); err != nil {
+				t.Fail()
+			}
+			checkGeneratedConfig(t, ".")
+
+			// Make sure the skaffold yaml can be parsed
+			_, err := schema.ParseConfig(config, false)
+			t.CheckError(false, err)
+		})
+	}
+}
+
+func checkGeneratedConfig(t *testutil.T, dir string) {
+	expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml"))
+	t.CheckNoError(err)
+
+	output, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml.out"))
+	t.CheckNoError(err)
+	t.CheckDeepEqual(string(expectedOutput), string(output))
+}

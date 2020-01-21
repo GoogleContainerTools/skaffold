@@ -25,55 +25,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestInit(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
-
-	tests := []struct {
-		name string
-		dir  string
-		args []string
-	}{
-		{
-			name: "getting-started",
-			dir:  "testdata/init/hello",
-		},
-		{
-			name: "ignore existing tags",
-			dir:  "testdata/init/ignore-tags",
-		},
-		{
-			name: "microservices (backwards compatibility)",
-			dir:  "testdata/init/microservices",
-			args: []string{
-				"-a", `leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app`,
-				"-a", `leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web`,
-			},
-		},
-		{
-			name: "microservices",
-			dir:  "testdata/init/microservices",
-			args: []string{
-				"-a", `{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
-				"-a", `{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
-			},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.name, func(t *testutil.T) {
-			initArgs := append([]string{"--force"}, test.args...)
-
-			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
-
-			checkGeneratedConfig(t, test.dir)
-
-			// Make sure the skaffold yaml can be parsed
-			skaffold.Diagnose().InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
-		})
-	}
-}
-
 func TestInitCompose(t *testing.T) {
 	if testing.Short() || RunOnGCP() {
 		t.Skip("skipping kind integration test")
