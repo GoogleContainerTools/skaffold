@@ -184,6 +184,23 @@ func (t *T) NewTempDir() *TempDir {
 	return tmpDir
 }
 
+func (t *T) Chdir(dir string) {
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal("unable to get current directory")
+	}
+
+	if err = os.Chdir(dir); err != nil {
+		t.Fatal("unable to change current directory")
+	}
+
+	t.teardownActions = append(t.teardownActions, func() {
+		if err = os.Chdir(pwd); err != nil {
+			t.Fatal("unable to reset working direcrory")
+		}
+	})
+}
+
 func Run(t *testing.T, name string, f func(t *T)) {
 	if name == "" {
 		name = t.Name()
