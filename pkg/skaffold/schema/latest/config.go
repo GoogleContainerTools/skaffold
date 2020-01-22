@@ -409,6 +409,10 @@ type KubectlFlags struct {
 
 	// Delete are additional flags passed on deletions (`kubectl delete`).
 	Delete []string `yaml:"delete,omitempty"`
+
+	// DisableValidation passes the `--validate=false` flag to supported
+	// `kubectl` commands when enabled.
+	DisableValidation bool `yaml:"disableValidation,omitempty"`
 }
 
 // HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.

@@ -73,6 +73,23 @@ func TestKubectlDeploy(t *testing.T) {
 			commands:    testutil.CmdRunOut("kubectl version --client -ojson", kubectlVersion),
 		},
 		{
+			description: "deploy success (disable validation)",
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
+				Flags: latest.KubectlFlags{
+					DisableValidation: true,
+				},
+			},
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml --validate=false", deploymentWebYAML).
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --validate=false"),
+			builds: []build.Artifact{{
+				ImageName: "leeroy-web",
+				Tag:       "leeroy-web:123",
+			}},
+		},
+		{
 			description: "deploy success (forced)",
 			cfg: &latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},

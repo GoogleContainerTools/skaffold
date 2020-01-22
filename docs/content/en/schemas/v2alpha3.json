@@ -1524,6 +1524,12 @@
           "x-intellij-html-description": "additional flags passed on deletions (<code>kubectl delete</code>).",
           "default": "[]"
         },
+        "disableValidation": {
+          "type": "boolean",
+          "description": "passes the `--validate=false` flag to supported `kubectl` commands when enabled.",
+          "x-intellij-html-description": "passes the <code>--validate=false</code> flag to supported <code>kubectl</code> commands when enabled.",
+          "default": "false"
+        },
         "global": {
           "items": {
             "type": "string"
@@ -1537,7 +1543,8 @@
       "preferredOrder": [
         "global",
         "apply",
-        "delete"
+        "delete",
+        "disableValidation"
       ],
       "additionalProperties": false,
       "description": "additional flags passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete).",

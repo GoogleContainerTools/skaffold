@@ -62,6 +62,10 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 		args = append(args, "--force", "--grace-period=0")
 	}
 
+	if c.Flags.DisableValidation {
+		args = append(args, "--validate=false")
+	}
+
 	if err := c.Run(ctx, updated.Reader(), out, "apply", c.args(c.Flags.Apply, args...)...); err != nil {
 		return errors.Wrap(err, "kubectl apply")
 	}
@@ -77,6 +81,10 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (ManifestLi
 	}
 
 	args := c.args([]string{"--dry-run", "-oyaml"}, list...)
+	if c.Flags.DisableValidation {
+		args = append(args, "--validate=false")
+	}
+
 	buf, err := c.RunOut(ctx, "create", args...)
 	if err != nil {
 		return nil, errors.Wrap(err, "kubectl create")
