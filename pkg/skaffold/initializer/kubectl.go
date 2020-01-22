@@ -18,17 +18,14 @@ package initializer
 
 import (
 	"bufio"
-	"io"
-	"os"
-	"strings"
-
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
-	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+	"io"
+	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
+	"os"
 )
 
 var requiredFields = []string{"apiVersion", "kind", "metadata"}
@@ -47,8 +44,6 @@ type kubectlAnalyzer struct {
 
 func (a *kubectlAnalyzer) analyzeFile(filePath string) error {
 	if IsKubernetesManifest(filePath) && !isSkaffoldConfig(filePath) {
-		// to make skaffold.yaml more portable across OS-es we should generate always / based filePaths
-		filePath = strings.ReplaceAll(filePath, string(os.PathSeparator), "/")
 		a.kubernetesManifests = append(a.kubernetesManifests, filePath)
 	}
 	return nil

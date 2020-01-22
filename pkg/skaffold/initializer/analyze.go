@@ -17,8 +17,10 @@ limitations under the License.
 package initializer
 
 import (
+	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/karrick/godirwalk"
 
@@ -81,6 +83,8 @@ func (a *analysis) analyze(dir string) error {
 
 		filePath := filepath.Join(dir, file.Name())
 		for _, analyzer := range a.analyzers() {
+			// to make skaffold.yaml more portable across OS-es we should generate always / based filePaths
+			filePath = strings.ReplaceAll(filePath, string(os.PathSeparator), "/")
 			if err := analyzer.analyzeFile(filePath); err != nil {
 				return err
 			}

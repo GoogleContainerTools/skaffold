@@ -17,6 +17,7 @@ limitations under the License.
 package initializer
 
 import (
+	"os"
 	"strings"
 	"testing"
 
@@ -254,17 +255,18 @@ deploy:
 			t.Override(&jib.Validate, fakeValidateJibConfig)
 
 			a := newAnalysis(test.config)
-			err := a.analyze(tmpDir.Root())
+			os.Chdir(tmpDir.Root())
+			err := a.analyze(".")
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
 				return
 			}
 
-			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), a.kubectlAnalyzer.kubernetesManifests)
+			t.CheckDeepEqual(test.expectedConfigs, a.kubectlAnalyzer.kubernetesManifests)
 			t.CheckDeepEqual(len(test.expectedPaths), len(a.builderAnalyzer.foundBuilders))
 			for i := range a.builderAnalyzer.foundBuilders {
-				t.CheckDeepEqual(tmpDir.Path(test.expectedPaths[i]), a.builderAnalyzer.foundBuilders[i].Path())
+				t.CheckDeepEqual(test.expectedPaths[i], a.builderAnalyzer.foundBuilders[i].Path())
 			}
 		})
 	}
