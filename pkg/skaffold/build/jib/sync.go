@@ -64,7 +64,6 @@ func InitSync(ctx context.Context, workspace string, a *latest.JibArtifact) erro
 
 // returns toCopy, toDelete, error
 func GetSyncDiff(ctx context.Context, workspace string, a *latest.JibArtifact, e filemon.Events) (map[string][]string, map[string][]string, error) {
-
 	// no deletions allowed
 	if len(e.Deleted) != 0 {
 		// change into logging
