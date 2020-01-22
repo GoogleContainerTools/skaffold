@@ -18,9 +18,16 @@ set -e -o pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+VERSION=1.23.1
+
+if [[ $(golangci-lint --version | grep $VERSION | wc -l) -eq 0 ]]; then
+  echo "golangci-lint needs update, removing old version: $(golangci-lint --version)"
+  rm $(which golangci-lint)
+fi
+
 if ! [ -x "$(command -v golangci-lint)" ]; then
 	echo "Installing GolangCI-Lint"
-	${DIR}/install_golint.sh -b $GOPATH/bin v1.23.0
+	${DIR}/install_golint.sh -b $GOPATH/bin v$VERSION
 fi
 
 VERBOSE=""
