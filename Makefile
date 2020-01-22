@@ -104,12 +104,12 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 
 .PHONY: test
 test: $(BUILD_DIR)
-	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s ./...
+	@ ./hack/gotest.sh -v -count=1 -race -short -timeout=90s ./...
 	@ ./hack/checks.sh
 
 .PHONY: coverage
 coverage: $(BUILD_DIR)
-	@ ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." ./...
+	@ ./hack/gotest.sh -v -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." ./...
 	@- curl -s https://codecov.io/bash > $(BUILD_DIR)/upload_coverage && bash $(BUILD_DIR)/upload_coverage
 
 .PHONY: checks
@@ -118,7 +118,7 @@ checks: $(BUILD_DIR)
 
 .PHONY: quicktest
 quicktest:
-	@ ./hack/gotest.sh -short -timeout=60s ./...
+	@ ./hack/gotest.sh -v -short -timeout=60s ./...
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
