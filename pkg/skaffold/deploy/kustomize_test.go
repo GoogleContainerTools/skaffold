@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"context"
 	"io/ioutil"
-	"path/filepath"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -442,6 +441,7 @@ func TestKustomizeRender(t *testing.T) {
 	tests := []struct {
 		description    string
 		builds         []build.Artifact
+		labels      []Labeller
 		kustomizations []kustomizationCall
 		expected       string
 		shouldErr      bool
@@ -494,11 +494,14 @@ spec:
 					Tag:       "gcr.io/project/image2:tag2",
 				},
 			},
+			labels: []Labeller{},
 			kustomizations: []kustomizationCall{
 				{
 					folder: "a",
 					buildResult: `apiVersion: v1
 kind: Pod
+metadata:
+  namespace: default
 spec:
   containers:
   - image: gcr.io/project/image1
@@ -518,6 +521,10 @@ spec:
 			},
 			expected: `apiVersion: v1
 kind: Pod
+metadata:
+  labels:
+    skaffold.dev/deployer: kustomize
+  namespace: default
 spec:
   containers:
   - image: gcr.io/project/image1:tag1
@@ -562,7 +569,7 @@ spec:
 				},
 			})
 			var b bytes.Buffer
-			err := k.Render(context.Background(), &b, test.builds, nil, "")
+			err := k.Render(context.Background(), &b, test.builds, test.labels, "")
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})
