@@ -867,7 +867,7 @@ func TestHelmRender(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			deployer := NewHelmDeployer(&runcontext.RunContext{})
-			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, "tmp/dir")
+			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, nil, "tmp/dir")
 			t.CheckError(test.shouldErr, actual)
 		})
 	}

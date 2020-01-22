@@ -41,7 +41,7 @@ type Deployer interface {
 
 	// Render generates the Kubernetes manifests replacing the build results and
 	// writes them to the given file path
-	Render(context.Context, io.Writer, []build.Artifact, string) error
+	Render(context.Context, io.Writer, []build.Artifact, []Labeller, string) error
 }
 
 type Result struct {

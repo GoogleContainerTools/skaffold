@@ -24,5 +24,5 @@ import (
 )
 
 func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []build.Artifact, filepath string) error {
-	return r.deployer.Render(ctx, out, builds, filepath)
+	return r.deployer.Render(ctx, out, builds, r.labellers, filepath)
 }

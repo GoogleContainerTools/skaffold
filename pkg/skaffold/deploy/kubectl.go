@@ -72,7 +72,7 @@ func (k *KubectlDeployer) Labels() map[string]string {
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
 	event.DeployInProgress()
-	manifests, err := k.renderManifests(ctx, out, builds)
+	manifests, err := k.renderManifests(ctx, out, builds, labellers)
 
 	if err != nil {
 		event.DeployFailed(err)
@@ -82,12 +82,6 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	if len(manifests) == 0 {
 		event.DeployComplete()
 		return NewDeploySuccessResult(nil)
-	}
-
-	manifests, err = manifests.SetLabels(merge(k, labellers...))
-	if err != nil {
-		event.DeployFailed(err)
-		return NewDeployErrorResult(errors.Wrap(err, "setting labels in manifests"))
 	}
 
 	namespaces, err := manifests.CollectNamespaces()
@@ -216,8 +210,8 @@ func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) (
 	return manifest.Bytes(), nil
 }
 
-func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, filepath string) error {
-	manifests, err := k.renderManifests(ctx, out, builds)
+func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, filepath string) error {
+	manifests, err := k.renderManifests(ctx, out, builds, labellers)
 	if err != nil {
 		return err
 	}
@@ -225,7 +219,7 @@ func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []bu
 	return dumpToFileOrWriter(manifests.String(), filepath, out)
 }
 
-func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact) (deploy.ManifestList, error) {
+func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) (deploy.ManifestList, error) {
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
 		color.Default.Fprintln(out, err)
@@ -266,6 +260,11 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to transform manifests")
 		}
+	}
+
+	manifests, err = manifests.SetLabels(merge(k, labellers...))
+	if err != nil {
+		return nil, errors.Wrap(err, "setting labels in manifests")
 	}
 
 	return manifests, nil

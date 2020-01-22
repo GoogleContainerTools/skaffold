@@ -444,6 +444,7 @@ func TestKustomizeRender(t *testing.T) {
 		builds         []build.Artifact
 		kustomizations []kustomizationCall
 		expected       string
+		shouldErr      bool
 	}{
 		{
 			description: "single kustomization",
@@ -561,8 +562,8 @@ spec:
 				},
 			})
 			var b bytes.Buffer
-			err := k.Render(context.Background(), &b, test.builds, "")
-			t.CheckError(false, err)
+			err := k.Render(context.Background(), &b, test.builds, nil, "")
+			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})
 	}
