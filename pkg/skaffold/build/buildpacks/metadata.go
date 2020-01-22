@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -36,20 +38,20 @@ type metadata struct {
 }
 
 // TODO(dgageot): mirrors
-func (b *Builder) findRunImage(ctx context.Context, a *latest.BuildpackArtifact, builder string) (string, error) {
+func (b *Builder) findRunImage(ctx context.Context, a *latest.BuildpackArtifact) (string, error) {
 	if a.RunImage != "" {
 		return a.RunImage, nil
 	}
 
-	cfg, err := b.localDocker.ConfigFile(ctx, builder)
+	cfg, err := b.localDocker.ConfigFile(ctx, a.Builder)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "unable to find image %q", a.Builder)
 	}
 
 	var m metadata
 	label := cfg.Config.Labels["io.buildpacks.builder.metadata"]
 	if err := json.Unmarshal([]byte(label), &m); err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "unable to decode image labels for %q", a.Builder)
 	}
 
 	return m.Stack.RunImage.Image, nil

@@ -65,7 +65,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		// If ForcePull is true: we will let `pack` always pull.
 		// Ideally, we add a `--pullIfNotPresent` option to upstream `pack`.
 		var err error
-		runImage, err = b.findRunImage(ctx, artifact, builderImage)
+		runImage, err = b.findRunImage(ctx, artifact)
 		if err != nil {
 			return "", err
 		}
