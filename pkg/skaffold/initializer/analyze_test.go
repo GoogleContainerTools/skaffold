@@ -17,7 +17,6 @@ limitations under the License.
 package initializer
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -249,13 +248,13 @@ deploy:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().WriteFiles(test.filesWithContents)
+			t.NewTempDir().WriteFiles(test.filesWithContents).Chdir()
 
 			t.Override(&docker.Validate, fakeValidateDockerfile)
 			t.Override(&jib.Validate, fakeValidateJibConfig)
 
 			a := newAnalysis(test.config)
-			os.Chdir(tmpDir.Root())
+
 			err := a.analyze(".")
 
 			t.CheckError(test.shouldErr, err)

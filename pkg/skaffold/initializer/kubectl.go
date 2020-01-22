@@ -18,14 +18,16 @@ package initializer
 
 import (
 	"bufio"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"io"
+	"os"
+
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
-	"io"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
-	"os"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 var requiredFields = []string{"apiVersion", "kind", "metadata"}
