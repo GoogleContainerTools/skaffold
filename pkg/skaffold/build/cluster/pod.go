@@ -33,8 +33,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
-func (b *Builder) podSpec(artifact *latest.KanikoArtifact, tag string) (*v1.Pod, error) {
-	args, err := args(artifact, tag, b.insecureRegistries)
+func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v1.Pod, error) {
+	args, err := kanikoArgs(artifact, tag, b.insecureRegistries)
 	if err != nil {
 		return nil, errors.Wrap(err, "building args list")
 	}
@@ -204,7 +204,7 @@ func resourceRequirements(rr *latest.ResourceRequirements) v1.ResourceRequiremen
 	return req
 }
 
-func args(artifact *latest.KanikoArtifact, tag string, insecureRegistries map[string]bool) ([]string, error) {
+func kanikoArgs(artifact *latest.KanikoArtifact, tag string, insecureRegistries map[string]bool) ([]string, error) {
 	// Create pod spec
 	args := []string{
 		"--dockerfile", artifact.DockerfilePath,
