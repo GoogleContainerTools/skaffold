@@ -31,6 +31,7 @@ trap "rm -f $LOG" EXIT
 if [[ " ${@} " =~ "-v" ]]; then
     JQ_FILTER='select(has("Output") and (.Action=="output")) | .Output'
 else
+    #POTATO=1
     JQ_FILTER='select(has("Output") and (.Action=="output") and (has("Test")|not) and (.Output!="PASS\n") and (.Output!="FAIL\n") and (.Output|startswith("coverage:")|not) and (.Output|contains("[no test files]")|not)) | .Output'
 fi
 
@@ -39,10 +40,19 @@ go test -json $@ | tee $LOG | jq --unbuffered -j "${JQ_FILTER}" | sed ''/FAIL/s/
 RESULT=${PIPESTATUS[0]}
 
 if [ $RESULT != 0 ]; then
-    MODULE="$(go list -m)"
+  MODULE="$(go list -m)"
+  echo -e "\n${RED}=== Failed Tests ===${RESET}"
 
-    echo -e "\n${RED}=== Failed Tests ===${RESET}"
-    cat $LOG | jq -r "select(.Action==\"fail\" and has(\"Test\")) | \"\(.Package|ltrimstr(\"${MODULE}/\"))/\(.Test)\""
+  FAILED_TESTS=$(cat $LOG | jq -r 'select(.Action=="fail" and has("Test")) | "\(.Package) \(.Test)"')
+  while IFS= read -r line; do
+    ID=( $FAILED_TESTS )
+    PACKAGE_NAME=${ID[0]}
+    TRIMMED_PACKAGE_NAME=${PACKAGE_NAME#"$MODULE"}
+    TEST_NAME=${ID[1]}
+    echo -e "$TRIMMED_PACKAGE_NAME/$TEST_NAME"
+    JQ_FILTER="select(.Action==\"output\" and has(\"Test\") and .Package==\"$PACKAGE_NAME\" and .Test==\"$TEST_NAME\" and has(\"Output\") and (.Output|startswith(\"=== RUN\")|not)) | \"\(.Output|rtrimstr(\"\\n\"))\""
+    cat $LOG | jq -r "${JQ_FILTER}"
+  done <<< "$FAILED_TESTS"
 fi
 
 echo -e "\n${YELLOW}=== Slow Tests ===${RESET}"
