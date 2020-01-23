@@ -48,7 +48,11 @@ type Labeller interface {
 }
 
 // merge merges the labels from multiple sources.
-func merge(deployer Labeller, sources ...Labeller) map[string]string {
+func merge(addSkaffoldLabels bool, deployer Labeller, sources ...Labeller) map[string]string {
+	if !addSkaffoldLabels {
+		return map[string]string{}
+	}
+
 	merged := deployer.Labels()
 
 	for _, src := range sources {

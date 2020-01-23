@@ -19,9 +19,18 @@ package integration
 import (
 	"bytes"
 	"context"
+	"io/ioutil"
+	"os"
+	"path"
+	"regexp"
+	"strconv"
 	"testing"
 
+	yaml "gopkg.in/yaml.v2"
+
+	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -49,6 +58,8 @@ func TestKubectlRender(t *testing.T) {
 			labels: []deploy.Labeller{},
 			input: `apiVersion: v1
 kind: Pod
+metadata:
+  name: my-pod-123
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold
@@ -59,6 +70,7 @@ kind: Pod
 metadata:
   labels:
     skaffold.dev/deployer: kubectl
+  name: my-pod-123
   namespace: default
 spec:
   containers:
@@ -81,6 +93,8 @@ spec:
 			labels: []deploy.Labeller{},
 			input: `apiVersion: v1
 kind: Pod
+metadata:
+  name: my-pod-123
 spec:
   containers:
   - image: gcr.io/project/image1
@@ -93,6 +107,7 @@ kind: Pod
 metadata:
   labels:
     skaffold.dev/deployer: kubectl
+  name: my-pod-123
   namespace: default
 spec:
   containers:
@@ -116,6 +131,8 @@ spec:
 			},
 			input: `apiVersion: v1
 kind: Pod
+metadata:
+  name: my-pod-123
 spec:
   containers:
   - image: gcr.io/project/image1
@@ -123,6 +140,8 @@ spec:
 ---
 apiVersion: v1
 kind: Pod
+metadata:
+  name: my-pod-456
 spec:
   containers:
   - image: gcr.io/project/image2
@@ -133,6 +152,7 @@ kind: Pod
 metadata:
   labels:
     skaffold.dev/deployer: kubectl
+  name: my-pod-123
   namespace: default
 spec:
   containers:
@@ -144,6 +164,7 @@ kind: Pod
 metadata:
   labels:
     skaffold.dev/deployer: kubectl
+  name: my-pod-456
   namespace: default
 spec:
   containers:
@@ -169,9 +190,12 @@ spec:
 						},
 					},
 				},
+				Opts: config.SkaffoldOptions{
+					AddSkaffoldLabels: true,
+				},
 			})
 			var b bytes.Buffer
-			err := deployer.Render(context.Background(), &b, test.builds, test.labels, "")
+			err := deployer.Render(context.Background(), &b, test.builds, test.labels, false, "")
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedOut, b.String())
@@ -359,10 +383,317 @@ spec:
 				},
 			})
 			var b bytes.Buffer
-			err := deployer.Render(context.Background(), &b, test.builds, test.labels, "")
+			err := deployer.Render(context.Background(), &b, test.builds, test.labels, true, "")
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedOut, b.String())
+		})
+	}
+}
+
+func TestRenderFromBuildOutput(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
+	tests := []struct {
+		description         string
+		config              string
+		buildOutputFilePath string
+		offline             bool
+		addSkaffoldLabels   bool
+		input               map[string]string // file path => content
+		expectedOut         string
+	}{
+		{
+			description: "kubectl render from build output, online, no labels",
+			config: `
+apiVersion: skaffold/v2alpha1
+kind: Config
+
+# Irrelevant for rendering from previous build output
+build:
+  artifacts: []
+
+deploy:
+  kubectl:
+    manifests:
+      - deployment.yaml
+`,
+			buildOutputFilePath: "testdata/render/build-output.json",
+			offline:             false,
+			addSkaffoldLabels:   false,
+			input: map[string]string{"deployment.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-123
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+    name: a
+  - image: gcr.io/my/project-b
+    name: b
+`},
+			// `metadata.namespace` is injected by `kubectl create` in non-offline mode
+			expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-123
+  namespace: default
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+    name: a
+  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+    name: b
+`,
+		},
+
+		{
+			description: "kubectl render from build output, offline, no labels",
+			config: `
+apiVersion: skaffold/v2alpha1
+kind: Config
+
+# Irrelevant for rendering from previous build output
+build:
+  artifacts: []
+
+deploy:
+  kubectl:
+    manifests:
+      - deployment.yaml
+`,
+			buildOutputFilePath: "testdata/render/build-output.json",
+			offline:             true,
+			addSkaffoldLabels:   false,
+			input: map[string]string{"deployment.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-123
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+    name: a
+  - image: gcr.io/my/project-b
+    name: b
+`},
+			// No `metadata.namespace` in offline mode
+			expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-123
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+    name: a
+  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+    name: b
+`,
+		},
+
+		{
+			description: "kubectl render from build output, offline, with labels",
+			config: `
+apiVersion: skaffold/v2alpha1
+kind: Config
+
+# Irrelevant for rendering from previous build output
+build:
+  artifacts: []
+
+deploy:
+  kubectl:
+    manifests:
+      - deployment.yaml
+`,
+			buildOutputFilePath: "testdata/render/build-output.json",
+			offline:             true,
+			addSkaffoldLabels:   true,
+			input: map[string]string{"deployment.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-123
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+    name: a
+  - image: gcr.io/my/project-b
+    name: b
+`},
+			// No `metadata.namespace` in offline mode
+			expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: SOMEDYNAMICVALUE
+    skaffold.dev/builder: local
+    skaffold.dev/cleanup: "true"
+    skaffold.dev/deployer: kubectl
+    skaffold.dev/docker-api-version: SOMEDYNAMICVALUE
+    skaffold.dev/run-id: SOMEDYNAMICVALUE
+    skaffold.dev/tag-policy: git-commit
+  name: my-pod-123
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+    name: a
+  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+    name: b
+`,
+		},
+
+		{
+			description: "kustomize render from build output, offline, no labels",
+			config: `
+apiVersion: skaffold/v2alpha1
+kind: Config
+
+# Irrelevant for rendering from previous build output
+build:
+  artifacts: []
+
+deploy:
+  kustomize: {} # defaults to current working directory
+`,
+			buildOutputFilePath: "testdata/render/build-output.json",
+			offline:             true,
+			addSkaffoldLabels:   false,
+			input: map[string]string{"deployment.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-123
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+    name: a
+  - image: gcr.io/my/project-b
+    name: b
+`,
+				"kustomization.yaml": `
+commonLabels:
+  this-is-from: kustomization.yaml
+
+resources:
+  - deployment.yaml
+`},
+			// No `metadata.namespace` in offline mode
+			expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    this-is-from: kustomization.yaml
+  name: my-pod-123
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+    name: a
+  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+    name: b
+`,
+		},
+
+		{
+			description: "kustomize render from build output, offline, with labels",
+			config: `
+apiVersion: skaffold/v2alpha1
+kind: Config
+
+# Irrelevant for rendering from previous build output
+build:
+  artifacts: []
+
+deploy:
+  kustomize: {} # defaults to current working directory
+`,
+			buildOutputFilePath: "testdata/render/build-output.json",
+			offline:             true,
+			addSkaffoldLabels:   true,
+			input: map[string]string{"deployment.yaml": `
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod-123
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a
+    name: a
+  - image: gcr.io/my/project-b
+    name: b
+`,
+				"kustomization.yaml": `
+commonLabels:
+  this-is-from: kustomization.yaml
+
+resources:
+  - deployment.yaml
+`},
+			// No `metadata.namespace` in offline mode
+			expectedOut: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: SOMEDYNAMICVALUE
+    skaffold.dev/builder: local
+    skaffold.dev/cleanup: "true"
+    skaffold.dev/deployer: kustomize
+    skaffold.dev/docker-api-version: SOMEDYNAMICVALUE
+    skaffold.dev/run-id: SOMEDYNAMICVALUE
+    skaffold.dev/tag-policy: git-commit
+    this-is-from: kustomization.yaml
+  name: my-pod-123
+spec:
+  containers:
+  - image: 12345.dkr.ecr.eu-central-1.amazonaws.com/my/project-a:4da6a56988057d23f68a4e988f4905dd930ea438-dirty@sha256:d8a33c260c50385ea54077bc7032dba0a860dc8870464f6795fd0aa548d117bf
+    name: a
+  - image: gcr.io/my/project-b:764841f8bac17e625724adcbf0d28013f22d058f-dirty@sha256:79e160161fd8190acae2d04d8f296a27a562c8a59732c64ac71c99009a6e89bc
+    name: b
+`,
+		},
+	}
+
+	testDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			tmpDir.Write("skaffold.yaml", test.config)
+
+			for filePath, content := range test.input {
+				tmpDir.Write(filePath, content)
+			}
+
+			tmpDir.Chdir()
+
+			args := []string{"--build-artifacts=" + path.Join(testDir, test.buildOutputFilePath), "--add-skaffold-labels=" + strconv.FormatBool(test.addSkaffoldLabels), "--output", "rendered.yaml"}
+
+			if test.offline {
+				env := []string{"KUBECONFIG=not-supposed-to-be-used-in-offline-mode"}
+				args = append(args, "--offline")
+				skaffold.Render(args...).WithEnv(env).RunOrFail(t.T)
+			} else {
+				skaffold.Render(args...).RunOrFail(t.T)
+			}
+
+			fileContent, err := ioutil.ReadFile("rendered.yaml")
+			t.RequireNoError(err)
+
+			// Tests are written in a way that actual output is valid YAML
+			parsed := make(map[string]interface{})
+			err = yaml.UnmarshalStrict(fileContent, parsed)
+			t.CheckNoError(err)
+
+			fileContentReplaced := regexp.MustCompile("(?m)(app.kubernetes.io/managed-by|skaffold.dev/run-id|skaffold.dev/docker-api-version): .+$").ReplaceAll(fileContent, []byte("$1: SOMEDYNAMICVALUE"))
+
+			t.RequireNoError(err)
+			t.CheckDeepEqual(test.expectedOut, string(fileContentReplaced))
 		})
 	}
 }

@@ -652,11 +652,12 @@ spec:
 				},
 				KubeContext: testKubeContext,
 				Opts: config.SkaffoldOptions{
-					Namespace: testNamespace,
+					Namespace:         testNamespace,
+					AddSkaffoldLabels: true,
 				},
 			})
 			var b bytes.Buffer
-			err := k.Render(context.Background(), &b, test.builds, test.labels, "")
+			err := k.Render(context.Background(), &b, test.builds, test.labels, true, "")
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})
