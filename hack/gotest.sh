@@ -32,7 +32,6 @@ trap "rm -f $LOG" EXIT
 if [[ " ${@} " =~ "-v" ]]; then
     JQ_FILTER='select(has("Output") and (.Action=="output")) | .Output'
 else
-    #POTATO=1
     JQ_FILTER='select(has("Output") and (.Action=="output") and (has("Test")|not) and (.Output!="PASS\n") and (.Output!="FAIL\n") and (.Output|startswith("coverage:")|not) and (.Output|contains("[no test files]")|not)) | .Output'
 fi
 
