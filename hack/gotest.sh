@@ -45,7 +45,7 @@ if [ $RESULT != 0 ]; then
 
   FAILED_TESTS=$(cat $LOG | jq -r 'select(.Action=="fail" and has("Test")) | "\(.Package) \(.Test)"')
   while IFS= read -r line; do
-    ID=( $FAILED_TESTS )
+    ID=( $line )
     PACKAGE_NAME=${ID[0]}
     TRIMMED_PACKAGE_NAME=${PACKAGE_NAME#"$MODULE"}
     TEST_NAME=${ID[1]}
