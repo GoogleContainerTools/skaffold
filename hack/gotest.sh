@@ -21,6 +21,7 @@ set -e
 # - It recaps the failures at the end
 # - It lists the 20 slowest tests
 
+BOLD='\033[1m'
 RED='\033[0;31m'
 YELLOW='\033[0;33m'
 RESET='\033[0m'
@@ -49,7 +50,7 @@ if [ $RESULT != 0 ]; then
     PACKAGE_NAME=${ID[0]}
     TRIMMED_PACKAGE_NAME=${PACKAGE_NAME#"$MODULE"}
     TEST_NAME=${ID[1]}
-    echo -e "$TRIMMED_PACKAGE_NAME/$TEST_NAME"
+    echo -e "${BOLD}$TRIMMED_PACKAGE_NAME/$TEST_NAME${RESET}"
     JQ_FILTER="select(.Action==\"output\" and has(\"Test\") and .Package==\"$PACKAGE_NAME\" and .Test==\"$TEST_NAME\" and has(\"Output\") and (.Output|startswith(\"=== RUN\")|not)) | \"\(.Output|rtrimstr(\"\\n\"))\""
     cat $LOG | jq -r "${JQ_FILTER}"
   done <<< "$FAILED_TESTS"
