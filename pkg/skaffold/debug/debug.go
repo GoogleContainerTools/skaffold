@@ -48,6 +48,18 @@ var (
 	}
 )
 
+// ContainerDebugConfiguration captures debugging information for a specific container
+type ContainerDebugConfiguration struct {
+	// ArtifactImage is the image reference used in the skaffold.yaml
+	ArtifactImage string `json:"artifactImage,omitempty"`
+	// Runtime represents the underlying language runtime (`go`, `jvm`, `nodejs`, `python`)
+	Runtime string `json:"runtime,omitempty"`
+	// WorkingDir is the working directory in the image configuration; may be empty
+	WorkingDir string `json:"workingDir,omitempty"`
+	// Ports is the list of debugging ports, keyed by protocol type
+	Ports map[string]uint32 `json:"ports,omitempty"`
+}
+
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
 func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool) (kubectl.ManifestList, error) {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -115,10 +127,12 @@ func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact, i
 	config := manifest.Config
 	logrus.Debugf("Retrieved local image configuration for %v: %v", artifact.Tag, config)
 	return imageConfiguration{
+		name:       artifact.ImageName,
 		env:        envAsMap(config.Env),
 		entrypoint: config.Entrypoint,
 		arguments:  config.Cmd,
 		labels:     config.Labels,
+		workingDir: config.WorkingDir,
 	}, nil
 }
 
