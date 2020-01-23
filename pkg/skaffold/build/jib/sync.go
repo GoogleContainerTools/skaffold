@@ -19,7 +19,6 @@ package jib
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,6 +26,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -67,7 +67,7 @@ func GetSyncDiff(ctx context.Context, workspace string, a *latest.JibArtifact, e
 	// no deletions allowed
 	if len(e.Deleted) != 0 {
 		// change into logging
-		fmt.Println("Deletions are not supported by jib auto sync at the moment")
+		logrus.Debug("Deletions are not supported by jib auto sync at the moment")
 		return nil, nil, nil
 	}
 
