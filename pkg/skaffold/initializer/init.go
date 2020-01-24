@@ -87,11 +87,12 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	}
 
 	var deployInitializer deploymentInitializer
-	if c.SkipDeploy {
+	switch {
+	case c.SkipDeploy:
 		deployInitializer = &emptyDeployInit{}
-	} else if len(c.CliKubectlManifests) > 0 {
+	case len(c.CliKubectlManifests) > 0:
 		deployInitializer = &cliDeployInit{c.CliKubectlManifests}
-	} else {
+	default:
 		k, err := newKubectlInitializer(a.kubectlAnalyzer.kubernetesManifests)
 		if err != nil {
 			return err

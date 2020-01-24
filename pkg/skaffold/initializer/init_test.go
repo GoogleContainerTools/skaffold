@@ -186,7 +186,7 @@ func TestDoInitAnalyze(t *testing.T) {
 				},
 			},
 
-			expectedOut: strip(`{"dockerfiles":["Dockerfile"]}`),
+			expectedOut: strip(`{"dockerfiles":["Dockerfile"]}`) + "\n",
 		},
 	}
 
