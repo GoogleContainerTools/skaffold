@@ -38,8 +38,8 @@ var (
 type skaffoldConfigAnalyzer struct {
 	directoryAnalyzer
 	force        bool
-	targetConfig string
 	analyzeMode  bool
+	targetConfig string
 }
 
 func (a *skaffoldConfigAnalyzer) analyzeFile(filePath string) error {
