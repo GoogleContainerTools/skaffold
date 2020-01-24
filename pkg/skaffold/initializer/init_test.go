@@ -128,7 +128,7 @@ func TestDoInitAnalyze(t *testing.T) {
 			expectedOut: strip(`{
 							"dockerfiles":["leeroy-app/Dockerfile","leeroy-web/Dockerfile"],
 							"images":["gcr.io/k8s-skaffold/leeroy-app","gcr.io/k8s-skaffold/leeroy-web"]
-							}`),
+							}`) + "\n",
 		},
 		{
 			name: "analyze microservices new format",
@@ -144,7 +144,7 @@ func TestDoInitAnalyze(t *testing.T) {
 									],
 									"images":[
 										{"name":"gcr.io/k8s-skaffold/leeroy-app","foundMatch":false},
-										{"name":"gcr.io/k8s-skaffold/leeroy-web","foundMatch":false}]}`),
+										{"name":"gcr.io/k8s-skaffold/leeroy-web","foundMatch":false}]}`) + "\n",
 		},
 	}
 

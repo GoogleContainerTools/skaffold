@@ -40,19 +40,19 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 			pairs:       []builderImagePair{{jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), Image: "image1", File: "build.gradle", Project: "project"}, "image1"}},
 			builders:    []InitBuilder{docker.ArtifactConfig{File: "Dockerfile"}},
 			images:      []string{"image2"},
-			expected:    `{"builders":[{"name":"Jib Gradle Plugin","payload":{"image":"image1","path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":false}]}`,
+			expected:    `{"builders":[{"name":"Jib Gradle Plugin","payload":{"image":"image1","path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":false}]}` + "\n",
 		},
 		{
 			description: "builders and images with no pairs",
 			builders:    []InitBuilder{jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle", Project: "project"}, docker.ArtifactConfig{File: "Dockerfile"}},
 			images:      []string{"image1", "image2"},
-			expected:    `{"builders":[{"name":"Jib Gradle Plugin","payload":{"path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":false}]}`,
+			expected:    `{"builders":[{"name":"Jib Gradle Plugin","payload":{"path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":false}]}` + "\n",
 		},
 		{
 			description: "no dockerfile, skip build",
 			images:      []string{"image1", "image2"},
 			skipBuild:   true,
-			expected:    `{"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":false}]}`,
+			expected:    `{"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":false}]}` + "\n",
 		},
 		{
 			description: "no dockerfile",
@@ -89,13 +89,13 @@ func TestPrintAnalyzeJSONNoJib(t *testing.T) {
 			description: "builders and images (backwards compatibility)",
 			builders:    []InitBuilder{docker.ArtifactConfig{File: "Dockerfile1"}, docker.ArtifactConfig{File: "Dockerfile2"}},
 			images:      []string{"image1", "image2"},
-			expected:    `{"dockerfiles":["Dockerfile1","Dockerfile2"],"images":["image1","image2"]}`,
+			expected:    `{"dockerfiles":["Dockerfile1","Dockerfile2"],"images":["image1","image2"]}` + "\n",
 		},
 		{
 			description: "no dockerfile, skip build (backwards compatibility)",
 			images:      []string{"image1", "image2"},
 			skipBuild:   true,
-			expected:    `{"images":["image1","image2"]}`,
+			expected:    `{"images":["image1","image2"]}` + "\n",
 		},
 		{
 			description: "no dockerfile",
