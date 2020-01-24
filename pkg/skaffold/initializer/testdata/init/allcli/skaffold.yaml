@@ -1,7 +1,7 @@
 apiVersion: skaffold/v2alpha3
 kind: Config
 metadata:
-  name: empty
+  name: allcli
 build:
   artifacts:
     - image: passed-in-artifact

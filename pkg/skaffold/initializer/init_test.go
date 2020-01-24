@@ -84,7 +84,7 @@ func TestDoInit(t *testing.T) {
 		},
 		{
 			name: "CLI artifacts + manifest placeholders",
-			dir:  "testdata/init/empty",
+			dir:  "testdata/init/allcli",
 			config: Config{
 				CliArtifacts: []string{
 					`{"builder":"Docker","payload":{"path":"Dockerfile"},"image":"passed-in-artifact"}`,
