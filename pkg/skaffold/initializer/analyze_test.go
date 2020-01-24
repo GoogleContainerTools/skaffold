@@ -20,6 +20,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -219,6 +221,9 @@ deploy:
 				Force:               false,
 				EnableBuildpackInit: false,
 				EnableJibInit:       true,
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml",
+				},
 			},
 			expectedConfigs: nil,
 			expectedPaths:   nil,
@@ -240,6 +245,9 @@ deploy:
 				Force:               false,
 				EnableBuildpackInit: false,
 				EnableJibInit:       true,
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml",
+				},
 			},
 			expectedConfigs: nil,
 			expectedPaths:   nil,

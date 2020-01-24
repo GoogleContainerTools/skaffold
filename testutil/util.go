@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -199,6 +200,14 @@ func (t *T) Chdir(dir string) {
 			t.Fatal("unable to reset working direcrory")
 		}
 	})
+}
+
+func Abs(t *testing.T, path string) string {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		t.Fatalf("Failed to get absolute path for file %s: %s", path, absPath)
+	}
+	return absPath
 }
 
 func Run(t *testing.T, name string, f func(t *T)) {

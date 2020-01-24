@@ -42,7 +42,6 @@ func TestDoInit(t *testing.T) {
 			name: "getting-started",
 			dir:  "testdata/init/hello",
 			config: Config{
-				Force: true,
 				Opts: config.SkaffoldOptions{
 					ConfigurationFile: "skaffold.yaml.out",
 				},
@@ -52,7 +51,6 @@ func TestDoInit(t *testing.T) {
 			name: "ignore existing tags",
 			dir:  "testdata/init/ignore-tags",
 			config: Config{
-				Force: true,
 				Opts: config.SkaffoldOptions{
 					ConfigurationFile: "skaffold.yaml.out",
 				},
@@ -62,7 +60,6 @@ func TestDoInit(t *testing.T) {
 			name: "microservices (backwards compatibility)",
 			dir:  "testdata/init/microservices",
 			config: Config{
-				Force: true,
 				CliArtifacts: []string{
 					"leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app",
 					"leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web",
@@ -76,7 +73,6 @@ func TestDoInit(t *testing.T) {
 			name: "microservices",
 			dir:  "testdata/init/microservices",
 			config: Config{
-				Force: true,
 				CliArtifacts: []string{
 					`{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
 					`{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
@@ -91,7 +87,6 @@ func TestDoInit(t *testing.T) {
 			dir:  "testdata/init/microservices",
 
 			config: Config{
-				Force: true,
 				CliArtifacts: []string{
 					`{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
 					`{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
@@ -107,6 +102,8 @@ func TestDoInit(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			t.Chdir(test.dir)
+			// we still need as a "no-prompt" mode
+			test.config.Force = true
 			err := DoInit(context.TODO(), os.Stdout, test.config)
 			t.CheckError(test.shouldErr, err)
 			checkGeneratedConfig(t, ".")
@@ -126,7 +123,6 @@ func TestDoInitAnalyze(t *testing.T) {
 			name: "analyze microservices",
 			dir:  "testdata/init/microservices",
 			config: Config{
-				Force:   true,
 				Analyze: true,
 			},
 			expectedOut: strip(`{
@@ -138,7 +134,6 @@ func TestDoInitAnalyze(t *testing.T) {
 			name: "analyze microservices new format",
 			dir:  "testdata/init/microservices",
 			config: Config{
-				Force:         true,
 				Analyze:       true,
 				EnableJibInit: true,
 			},
