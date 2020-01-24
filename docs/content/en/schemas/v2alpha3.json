@@ -511,12 +511,6 @@
             "[\"key1=value1\", \"key2=value2\", \"key3={{.ENV_VARIABLE}}\"]"
           ]
         },
-        "forcePull": {
-          "type": "boolean",
-          "description": "should the builder image be pull before each build.",
-          "x-intellij-html-description": "should the builder image be pull before each build.",
-          "default": "false"
-        },
         "runImage": {
           "type": "string",
           "description": "overrides the stack's default run image.",
@@ -524,7 +518,6 @@
         }
       },
       "preferredOrder": [
-        "forcePull",
         "builder",
         "runImage",
         "env",
