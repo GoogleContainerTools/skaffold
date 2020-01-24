@@ -1,13 +1,18 @@
-apiVersion: skaffold/v2alpha3
+apiVersion: skaffold/v2alpha2
 kind: Config
-metadata:
-  name: microservices
 build:
   artifacts:
-  - image: leeroy-app
-    context: leeroy-app
+    - image: leeroy-web
+      context: ./leeroy-web/
+    - image: leeroy-app
+      context: ./leeroy-app/
 deploy:
   kubectl:
     manifests:
-    - leeroy-app/kubernetes/deployment.yaml
-    - leeroy-web/kubernetes/deployment.yaml
+      - ./leeroy-web/kubernetes/*
+      - ./leeroy-app/kubernetes/*
+portForward:
+  - resourceType: deployment
+    resourceName: leeroy-web
+    port: 8080
+    localPort: 9000
