@@ -47,7 +47,9 @@ func newAnalysis(c Config) *analysis {
 		kubectlAnalyzer: &kubectlAnalyzer{},
 		builderAnalyzer: builders,
 		skaffoldAnalyzer: &skaffoldConfigAnalyzer{
-			force: c.Force,
+			force:        c.Force,
+			analyzeMode:  c.Analyze,
+			targetConfig: c.Opts.ConfigurationFile,
 		},
 	}
 }
