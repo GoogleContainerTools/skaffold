@@ -39,10 +39,10 @@ If you want to deploy against a different Kubernetes cluster, e.g. Kind, GKE clu
     git clone https://github.com/GoogleContainerTools/skaffold
     ```
 
-1. Change to the `examples/getting-started` directory.
+1. Change to the `examples/getting-started` in skaffold directory.
 
     ```bash
-    cd examples/getting-started
+    cd skaffold/examples/getting-started
     ```
 
 ## `skaffold dev`: continuous build & deploy on code changes
