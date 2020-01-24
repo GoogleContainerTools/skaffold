@@ -45,6 +45,7 @@ func TestBuild(t *testing.T) {
 		tag             string
 		api             *testutil.FakeAPIClient
 		pushImages      bool
+		noPull          bool
 		shouldErr       bool
 		expectedOptions *pack.BuildOptions
 	}{
@@ -63,7 +64,6 @@ func TestBuild(t *testing.T) {
 				RunImage: "my/run",
 				Env:      map[string]string{},
 				Image:    "img:latest",
-				NoPull:   true,
 			},
 		},
 		{
@@ -76,25 +76,6 @@ func TestBuild(t *testing.T) {
 			tag:       "in valid ref",
 			api:       &testutil.FakeAPIClient{},
 			shouldErr: true,
-		},
-		{
-			description: "force pull",
-			artifact: &latest.BuildpackArtifact{
-				Builder:      "my/builder",
-				RunImage:     "my/run",
-				ForcePull:    true,
-				Dependencies: defaultBuildpackDependencies(),
-			},
-			tag: "img:tag",
-			api: &testutil.FakeAPIClient{},
-			expectedOptions: &pack.BuildOptions{
-				AppPath:  ".",
-				Builder:  "my/builder",
-				RunImage: "my/run",
-				Env:      map[string]string{},
-				Image:    "img:latest",
-				NoPull:   false,
-			},
 		},
 		{
 			description: "push error",
