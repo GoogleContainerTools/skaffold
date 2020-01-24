@@ -26,7 +26,7 @@ function install_linter() {
 
 if ! [ -x "$(command -v golangci-lint)" ] ; then
   install_linter
-elif [[ $(golangci-lint --version | grep $VERSION | wc -l) -eq 0 ]]
+elif [[ $(golangci-lint --version | grep -c " $VERSION ") -eq 0 ]]
 then
   echo "required golangci-lint: v$VERSION"
   echo "current version: $(golangci-lint --version)"
