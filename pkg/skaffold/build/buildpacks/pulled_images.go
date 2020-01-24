@@ -19,11 +19,11 @@ package buildpacks
 import "sync"
 
 type pulledImages struct {
-	images map[builderRunnerPair]bool
+	images map[imageTuple]bool
 	lock   sync.Mutex
 }
 
-type builderRunnerPair struct {
+type imageTuple struct {
 	builder string
 	runner  string
 }
@@ -32,10 +32,7 @@ func (p *pulledImages) AreAlreadyPulled(builder, runImage string) bool {
 	p.lock.Lock()
 	defer p.lock.Unlock()
 
-	return p.images[builderRunnerPair{
-		builder: builder,
-		runner:  runImage,
-	}]
+	return p.images[tuple(builder, runImage)]
 }
 
 func (p *pulledImages) MarkAsPulled(builder, runImage string) {
@@ -43,11 +40,15 @@ func (p *pulledImages) MarkAsPulled(builder, runImage string) {
 	defer p.lock.Unlock()
 
 	if p.images == nil {
-		p.images = map[builderRunnerPair]bool{}
+		p.images = map[imageTuple]bool{}
 	}
 
-	p.images[builderRunnerPair{
+	p.images[tuple(builder, runImage)] = true
+}
+
+func tuple(builder, runImage string) imageTuple {
+	return imageTuple{
 		builder: builder,
 		runner:  runImage,
-	}] = true
+	}
 }
