@@ -36,6 +36,9 @@ var (
 	enableBuildpackInit bool
 )
 
+// for testing
+var initEntrypoint = initializer.DoInit
+
 // NewCmdInit describes the CLI command to generate a Skaffold configuration.
 func NewCmdInit() *cobra.Command {
 	return NewCmd("init").
@@ -56,7 +59,7 @@ func NewCmdInit() *cobra.Command {
 }
 
 func doInit(ctx context.Context, out io.Writer) error {
-	return initializer.DoInit(ctx, out, initializer.Config{
+	return initEntrypoint(ctx, out, initializer.Config{
 		ComposeFile:         composeFile,
 		CliArtifacts:        cliArtifacts,
 		SkipBuild:           skipBuild,
