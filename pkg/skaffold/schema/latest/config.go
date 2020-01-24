@@ -686,9 +686,6 @@ type ArtifactType struct {
 // BuildpackArtifact *alpha* describes an artifact built using [Cloud Native Buildpacks](https://buildpacks.io/).
 // It can be used to build images out of project's sources without any additional configuration.
 type BuildpackArtifact struct {
-	// ForcePull should the builder image be pull before each build.
-	ForcePull bool `yaml:"forcePull,omitempty"`
-
 	// Builder is the builder image used.
 	Builder string `yaml:"builder" yamltags:"required"`
 
