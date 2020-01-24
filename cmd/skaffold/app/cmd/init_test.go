@@ -43,6 +43,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 			expectedConfig: initializer.Config{
 				ComposeFile:         "",
 				CliArtifacts:        nil,
+				CliKubectlManifests: nil,
 				SkipBuild:           false,
 				SkipDeploy:          false,
 				Force:               false,
@@ -58,6 +59,8 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				"--compose-file=a-compose-file",
 				"--artifact", "a1=b1",
 				"-a", "a2=b2",
+				"--kubectl-manifest", "m1",
+				"--kubectl-manifest", "m2",
 				"--skip-build",
 				"--skip-deploy",
 				"--force",
@@ -68,6 +71,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 			expectedConfig: initializer.Config{
 				ComposeFile:         "a-compose-file",
 				CliArtifacts:        []string{"a1=b1", "a2=b2"},
+				CliKubectlManifests: []string{"m1", "m2"},
 				SkipBuild:           true,
 				SkipDeploy:          true,
 				Force:               true,

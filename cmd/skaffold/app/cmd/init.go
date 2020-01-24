@@ -29,6 +29,7 @@ import (
 var (
 	composeFile         string
 	cliArtifacts        []string
+	cliKubectlManifests []string
 	skipBuild           bool
 	skipDeploy          bool
 	force               bool
@@ -52,6 +53,7 @@ func NewCmdInit() *cobra.Command {
 			f.BoolVar(&force, "force", false, "Force the generation of the Skaffold config")
 			f.StringVar(&composeFile, "compose-file", "", "Initialize from a docker-compose file")
 			f.StringArrayVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited Dockerfile/image pair, or JSON string, to generate build artifact\n(example: --artifact='{\"builder\":\"Docker\",\"payload\":{\"path\":\"/web/Dockerfile.web\"},\"image\":\"gcr.io/web-project/image\"}')")
+			f.StringArrayVarP(&cliKubectlManifests, "kubectl-manifest", "k", nil, "list of predefined kubectl manifests (overrides detection)")
 			f.BoolVar(&analyze, "analyze", false, "Print all discoverable Dockerfiles and images in JSON format to stdout")
 			f.BoolVar(&enableJibInit, "XXenableJibInit", false, "")
 			f.MarkHidden("XXenableJibInit")
@@ -65,6 +67,7 @@ func doInit(ctx context.Context, out io.Writer) error {
 	return initEntrypoint(ctx, out, initializer.Config{
 		ComposeFile:         composeFile,
 		CliArtifacts:        cliArtifacts,
+		CliKubectlManifests: cliKubectlManifests,
 		SkipBuild:           skipBuild,
 		SkipDeploy:          skipDeploy,
 		Force:               force,
