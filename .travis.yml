@@ -46,7 +46,7 @@ jobs:
         - GO111MODULE=on
         - GOFLAGS="-mod=vendor"
       script:
-        - go test -v -short -timeout 60s ./...
+        - go test -short -timeout 60s ./...
       cache:
         directories:
           - C:\\Users\\travis\\AppData\\Local\\go-build
