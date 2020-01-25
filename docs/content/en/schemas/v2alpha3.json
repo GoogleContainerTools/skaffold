@@ -1559,15 +1559,18 @@
           "description": "additional flags passed to `kubectl`.",
           "x-intellij-html-description": "additional flags passed to <code>kubectl</code>."
         },
-        "path": {
-          "type": "string",
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
           "description": "path to Kustomization files.",
           "x-intellij-html-description": "path to Kustomization files.",
           "default": "."
         }
       },
       "preferredOrder": [
-        "path",
+        "paths",
         "flags",
         "buildArgs"
       ],

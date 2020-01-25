@@ -44,7 +44,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		{
 			description: "no manifest",
 			cfg: &latest.KustomizeDeploy{
-				KustomizePath: ".",
+				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
@@ -53,7 +53,7 @@ func TestKustomizeDeploy(t *testing.T) {
 		{
 			description: "deploy success",
 			cfg: &latest.KustomizeDeploy{
-				KustomizePath: ".",
+				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
@@ -107,7 +107,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		{
 			description: "cleanup success",
 			cfg: &latest.KustomizeDeploy{
-				KustomizePath: tmpDir.Root(),
+				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
 				CmdRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
@@ -116,7 +116,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		{
 			description: "cleanup error",
 			cfg: &latest.KustomizeDeploy{
-				KustomizePath: tmpDir.Root(),
+				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
 				CmdRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
@@ -126,7 +126,7 @@ func TestKustomizeCleanup(t *testing.T) {
 		{
 			description: "fail to read manifests",
 			cfg: &latest.KustomizeDeploy{
-				KustomizePath: tmpDir.Root(),
+				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.CmdRunOutErr(
 				"kustomize build "+tmpDir.Root(),
@@ -317,7 +317,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: &latest.KustomizeDeploy{
-								KustomizePath: tmpDir.Root(),
+								KustomizePaths: []string{tmpDir.Root()},
 							},
 						},
 					},
@@ -339,49 +339,49 @@ func TestKustomizeBuildCommandArgs(t *testing.T) {
 		expectedArgs  []string
 	}{
 		{
-			description:   "no BuildArgs, empty KustomizePath ",
+			description:   "no BuildArgs, empty KustomizePaths ",
 			buildArgs:     []string{},
 			kustomizePath: "",
 			expectedArgs:  []string{"build"},
 		},
 		{
-			description:   "One BuildArg, empty KustomizePath",
+			description:   "One BuildArg, empty KustomizePaths",
 			buildArgs:     []string{"--foo"},
 			kustomizePath: "",
 			expectedArgs:  []string{"build", "--foo"},
 		},
 		{
-			description:   "no BuildArgs, non-empty KustomizePath",
+			description:   "no BuildArgs, non-empty KustomizePaths",
 			buildArgs:     []string{},
 			kustomizePath: "foo",
 			expectedArgs:  []string{"build", "foo"},
 		},
 		{
-			description:   "One BuildArg, non-empty KustomizePath",
+			description:   "One BuildArg, non-empty KustomizePaths",
 			buildArgs:     []string{"--foo"},
 			kustomizePath: "bar",
 			expectedArgs:  []string{"build", "--foo", "bar"},
 		},
 		{
-			description:   "Multiple BuildArg, empty KustomizePath",
+			description:   "Multiple BuildArg, empty KustomizePaths",
 			buildArgs:     []string{"--foo", "--bar"},
 			kustomizePath: "",
 			expectedArgs:  []string{"build", "--foo", "--bar"},
 		},
 		{
-			description:   "Multiple BuildArg with spaces, empty KustomizePath",
+			description:   "Multiple BuildArg with spaces, empty KustomizePaths",
 			buildArgs:     []string{"--foo bar", "--baz"},
 			kustomizePath: "",
 			expectedArgs:  []string{"build", "--foo", "bar", "--baz"},
 		},
 		{
-			description:   "Multiple BuildArg with spaces, non-empty KustomizePath",
+			description:   "Multiple BuildArg with spaces, non-empty KustomizePaths",
 			buildArgs:     []string{"--foo bar", "--baz"},
 			kustomizePath: "barfoo",
 			expectedArgs:  []string{"build", "--foo", "bar", "--baz", "barfoo"},
 		},
 		{
-			description:   "Multiple BuildArg no spaces, non-empty KustomizePath",
+			description:   "Multiple BuildArg no spaces, non-empty KustomizePaths",
 			buildArgs:     []string{"--foo", "bar", "--baz"},
 			kustomizePath: "barfoo",
 			expectedArgs:  []string{"build", "--foo", "bar", "--baz", "barfoo"},
@@ -450,7 +450,7 @@ spec:
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: &latest.KustomizeDeploy{
-								KustomizePath: ".",
+								KustomizePaths: []string{"."},
 							},
 						},
 					},
