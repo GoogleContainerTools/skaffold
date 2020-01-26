@@ -24,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -174,16 +173,15 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 // Dependencies lists all the files that can change what needs to be deployed.
 func (k *KustomizeDeployer) Dependencies() ([]string, error) {
-	var deps []string
+	deps := newStringSet()
 	for _, kustomizePath := range k.KustomizePaths {
 		depsForKustomization, err := dependenciesForKustomization(kustomizePath)
 		if err != nil {
 			return nil, err
 		}
-		deps = append(deps, depsForKustomization...)
+		deps.insert(depsForKustomization...)
 	}
-	sort.Strings(deps)
-	return deps, nil
+	return deps.toList(), nil
 }
 
 func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, filepath string) error {
