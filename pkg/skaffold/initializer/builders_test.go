@@ -113,12 +113,12 @@ func TestResolveBuilderImages(t *testing.T) {
 
 func TestAutoSelectBuilders(t *testing.T) {
 	tests := []struct {
-		description            string
-		builderConfigs         []InitBuilder
-		images                 []string
-		expectedPairs          []builderImagePair
-		expectedBuildersLeft   []InitBuilder
-		expectedFilteredImages []string
+		description              string
+		builderConfigs           []InitBuilder
+		images                   []string
+		expectedPairs            []builderImagePair
+		expectedBuildersLeft     []InitBuilder
+		expectedUnresolvedImages []string
 	}{
 		{
 			description: "no automatic matches",
@@ -134,7 +134,7 @@ func TestAutoSelectBuilders(t *testing.T) {
 				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"},
 				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "not a k8s image"},
 			},
-			expectedFilteredImages: []string{"image1", "image2"},
+			expectedUnresolvedImages: []string{"image1", "image2"},
 		},
 		{
 			description: "automatic jib matches",
@@ -154,8 +154,8 @@ func TestAutoSelectBuilders(t *testing.T) {
 					"image2",
 				},
 			},
-			expectedBuildersLeft:   []InitBuilder{docker.ArtifactConfig{File: "Dockerfile"}},
-			expectedFilteredImages: []string{"image3"},
+			expectedBuildersLeft:     []InitBuilder{docker.ArtifactConfig{File: "Dockerfile"}},
+			expectedUnresolvedImages: []string{"image3"},
 		},
 		{
 			description: "multiple matches for one image",
@@ -169,25 +169,25 @@ func TestAutoSelectBuilders(t *testing.T) {
 				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle", Image: "image1"},
 				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "image1"},
 			},
-			expectedFilteredImages: []string{"image1", "image2"},
+			expectedUnresolvedImages: []string{"image1", "image2"},
 		},
 		{
-			description:            "show unique image names",
-			builderConfigs:         nil,
-			images:                 []string{"image1", "image1"},
-			expectedPairs:          nil,
-			expectedBuildersLeft:   nil,
-			expectedFilteredImages: []string{"image1"},
+			description:              "show unique image names",
+			builderConfigs:           nil,
+			images:                   []string{"image1", "image1"},
+			expectedPairs:            nil,
+			expectedBuildersLeft:     nil,
+			expectedUnresolvedImages: []string{"image1"},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pairs, builderConfigs, filteredImages := matchBuildersToImages(test.builderConfigs, test.images)
+			pairs, builderConfigs, unresolvedImages := matchBuildersToImages(test.builderConfigs, test.images)
 
 			t.CheckDeepEqual(test.expectedPairs, pairs)
 			t.CheckDeepEqual(test.expectedBuildersLeft, builderConfigs)
-			t.CheckDeepEqual(test.expectedFilteredImages, filteredImages)
+			t.CheckDeepEqual(test.expectedUnresolvedImages, unresolvedImages)
 		})
 	}
 }

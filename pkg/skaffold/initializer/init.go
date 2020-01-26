@@ -63,6 +63,7 @@ type Config struct {
 	ComposeFile         string
 	CliArtifacts        []string
 	SkipBuild           bool
+	SkipDeploy          bool
 	Force               bool
 	Analyze             bool
 	EnableJibInit       bool // TODO: Remove this parameter
@@ -92,13 +93,22 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		return err
 	}
 
-	k, err := newKubectlInitializer(a.kubectlAnalyzer.kubernetesManifests)
-	if err != nil {
-		return err
+	var deployInitializer deploymentInitializer
+	var imagesFromManifests []string
+	if !c.SkipDeploy {
+		k, err := newKubectlInitializer(a.kubectlAnalyzer.kubernetesManifests)
+		if err != nil {
+			return err
+		}
+		deployInitializer = k
+		imagesFromManifests = deployInitializer.GetImages()
 	}
 
 	// Determine which builders/images require prompting
-	pairs, unresolvedBuilderConfigs, unresolvedImages := matchBuildersToImages(a.builderAnalyzer.foundBuilders, stripTags(k.GetImages()))
+	pairs, unresolvedBuilderConfigs, unresolvedImages :=
+		matchBuildersToImages(
+			a.builderAnalyzer.foundBuilders,
+			stripTags(imagesFromManifests))
 
 	if c.Analyze {
 		// TODO: Remove backwards compatibility block
@@ -127,7 +137,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		}
 	}
 
-	pipeline, err := yaml.Marshal(generateSkaffoldConfig(k, pairs))
+	pipeline, err := yaml.Marshal(generateSkaffoldConfig(deployInitializer, pairs))
 	if err != nil {
 		return err
 	}
