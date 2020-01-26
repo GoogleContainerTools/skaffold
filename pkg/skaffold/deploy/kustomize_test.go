@@ -174,7 +174,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 		{
 			description: "resources",
 			yaml:        `resources: [pod1.yaml, path/pod2.yaml]`,
-			expected:    []string{"kustomization.yaml", "pod1.yaml", "path/pod2.yaml"},
+			expected:    []string{"kustomization.yaml", "path/pod2.yaml", "pod1.yaml"},
 			createFiles: map[string]string{
 				"pod1.yaml":      "",
 				"path/pod2.yaml": "",
@@ -193,7 +193,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 		{
 			description: "crds",
 			yaml:        `patches: [crd1.yaml, path/crd2.yaml]`,
-			expected:    []string{"kustomization.yaml", "crd1.yaml", "path/crd2.yaml"},
+			expected:    []string{"crd1.yaml", "kustomization.yaml", "path/crd2.yaml"},
 		},
 		{
 			description: "patches json 6902",
@@ -207,7 +207,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 			yaml: `configMapGenerator:
 - files: [app1.properties]
 - files: [app2.properties, app3.properties]`,
-			expected: []string{"kustomization.yaml", "app1.properties", "app2.properties", "app3.properties"},
+			expected: []string{"app1.properties", "app2.properties", "app3.properties", "kustomization.yaml"},
 		},
 		{
 			description: "secretGenerator",
@@ -219,7 +219,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 		{
 			description: "base exists locally",
 			yaml:        `bases: [base]`,
-			expected:    []string{"kustomization.yaml", "base/kustomization.yaml", "base/app.yaml"},
+			expected:    []string{"base/app.yaml", "base/kustomization.yaml", "kustomization.yaml"},
 			createFiles: map[string]string{
 				"base/kustomization.yaml": `resources: [app.yaml]`,
 				"base/app.yaml":           "",
@@ -233,7 +233,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 		{
 			description: "local kustomization resource",
 			yaml:        `resources: [app.yaml, base]`,
-			expected:    []string{"kustomization.yaml", "app.yaml", "base/kustomization.yaml", "base/app.yaml"},
+			expected:    []string{"app.yaml", "base/app.yaml", "base/kustomization.yaml", "kustomization.yaml"},
 			createFiles: map[string]string{
 				"app.yaml":                "",
 				"base/kustomization.yaml": `resources: [app.yaml]`,
@@ -243,7 +243,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 		{
 			description: "missing local kustomization resource",
 			yaml:        `resources: [app.yaml, missing-or-remote-base]`,
-			expected:    []string{"kustomization.yaml", "app.yaml"},
+			expected:    []string{"app.yaml", "kustomization.yaml"},
 			createFiles: map[string]string{
 				"app.yaml": "",
 			},
@@ -251,7 +251,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 		{
 			description: "mixed resource types",
 			yaml:        `resources: [app.yaml, missing-or-remote-base, base]`,
-			expected:    []string{"kustomization.yaml", "app.yaml", "base/kustomization.yaml", "base/app.yaml"},
+			expected:    []string{"app.yaml", "base/app.yaml", "base/kustomization.yaml", "kustomization.yaml"},
 			createFiles: map[string]string{
 				"app.yaml":                "",
 				"base/kustomization.yaml": `resources: [app.yaml]`,
@@ -261,7 +261,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 		{
 			description: "alt config name: kustomization.yml",
 			yaml:        `resources: [app.yaml]`,
-			expected:    []string{"kustomization.yml", "app.yaml"},
+			expected:    []string{"app.yaml", "kustomization.yml"},
 			createFiles: map[string]string{
 				"app.yaml": "",
 			},
@@ -279,7 +279,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 		{
 			description: "mixture of config names",
 			yaml:        `resources: [app.yaml, base1, base2]`,
-			expected:    []string{"Kustomization", "app.yaml", "base1/kustomization.yml", "base1/app.yaml", "base2/kustomization.yaml", "base2/app.yaml"},
+			expected:    []string{"Kustomization", "app.yaml", "base1/app.yaml", "base1/kustomization.yml", "base2/app.yaml", "base2/kustomization.yaml"},
 			createFiles: map[string]string{
 				"app.yaml":                 "",
 				"base1/kustomization.yml":  `resources: [app.yaml]`,
