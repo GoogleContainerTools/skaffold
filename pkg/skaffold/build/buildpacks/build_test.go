@@ -67,6 +67,25 @@ func TestBuild(t *testing.T) {
 			},
 		},
 		{
+			description: "success with buildpacks",
+			artifact: &latest.BuildpackArtifact{
+				Builder:      "my/otherBuilder",
+				RunImage:     "my/otherRun",
+				Buildpacks:   []string{"my/buildpack", "my/otherBuildpack"},
+				Dependencies: defaultBuildpackDependencies(),
+			},
+			tag: "img:tag",
+			api: &testutil.FakeAPIClient{},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:    ".",
+				Builder:    "my/otherBuilder",
+				RunImage:   "my/otherRun",
+				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
+				Env:        map[string]string{},
+				Image:      "img:latest",
+			},
+		},
+		{
 			description: "invalid ref",
 			artifact: &latest.BuildpackArtifact{
 				Builder:      "my/builder",
