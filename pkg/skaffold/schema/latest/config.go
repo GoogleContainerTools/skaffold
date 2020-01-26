@@ -697,6 +697,11 @@ type BuildpackArtifact struct {
 	// For example: `["key1=value1", "key2=value2", "key3={{.ENV_VARIABLE}}"]`.
 	Env []string `yaml:"env,omitempty"`
 
+	// Buildpacks is a list of strings, where each string is a specific buildpack to use with the builder.
+	// If you specify buildpacks the builder image automatic detection will be ignored. These buildpacks will be used to build the Image from your source code.
+	// Order matters.
+	Buildpacks []string `yaml:"buildpacks,omitempty"`
+
 	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`
 }
