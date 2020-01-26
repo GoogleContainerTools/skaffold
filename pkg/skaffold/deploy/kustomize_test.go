@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"io/ioutil"
+	"path/filepath"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -163,77 +164,75 @@ func TestKustomizeCleanup(t *testing.T) {
 
 func TestDependenciesForKustomization(t *testing.T) {
 	tests := []struct {
-		description        string
-		yaml               string
-		expected           []string
-		shouldErr          bool
-		skipConfigCreation bool
-		createFiles        map[string]string
-		configName         string
+		description    string
+		expected       []string
+		shouldErr      bool
+		createFiles    map[string]string
+		kustomizations map[string]string
 	}{
 		{
-			description: "resources",
-			yaml:        `resources: [pod1.yaml, path/pod2.yaml]`,
-			expected:    []string{"kustomization.yaml", "path/pod2.yaml", "pod1.yaml"},
+			description:    "resources",
+			kustomizations: map[string]string{"kustomization.yaml": `resources: [pod1.yaml, path/pod2.yaml]`},
+			expected:       []string{"kustomization.yaml", "path/pod2.yaml", "pod1.yaml"},
 			createFiles: map[string]string{
 				"pod1.yaml":      "",
 				"path/pod2.yaml": "",
 			},
 		},
 		{
-			description: "patches",
-			yaml:        `patches: [patch1.yaml, path/patch2.yaml]`,
-			expected:    []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
+			description:    "patches",
+			kustomizations: map[string]string{"kustomization.yaml": `patches: [patch1.yaml, path/patch2.yaml]`},
+			expected:       []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
 		},
 		{
-			description: "patchesStrategicMerge",
-			yaml:        `patchesStrategicMerge: [patch1.yaml, path/patch2.yaml]`,
-			expected:    []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
+			description:    "patchesStrategicMerge",
+			kustomizations: map[string]string{"kustomization.yaml": `patchesStrategicMerge: [patch1.yaml, path/patch2.yaml]`},
+			expected:       []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
 		},
 		{
-			description: "crds",
-			yaml:        `patches: [crd1.yaml, path/crd2.yaml]`,
-			expected:    []string{"crd1.yaml", "kustomization.yaml", "path/crd2.yaml"},
+			description:    "crds",
+			kustomizations: map[string]string{"kustomization.yaml": `patches: [crd1.yaml, path/crd2.yaml]`},
+			expected:       []string{"crd1.yaml", "kustomization.yaml", "path/crd2.yaml"},
 		},
 		{
 			description: "patches json 6902",
-			yaml: `patchesJson6902:
+			kustomizations: map[string]string{"kustomization.yaml": `patchesJson6902:
 - path: patch1.json
-- path: path/patch2.json`,
+- path: path/patch2.json`},
 			expected: []string{"kustomization.yaml", "patch1.json", "path/patch2.json"},
 		},
 		{
 			description: "configMapGenerator",
-			yaml: `configMapGenerator:
+			kustomizations: map[string]string{"kustomization.yaml": `configMapGenerator:
 - files: [app1.properties]
-- files: [app2.properties, app3.properties]`,
+- files: [app2.properties, app3.properties]`},
 			expected: []string{"app1.properties", "app2.properties", "app3.properties", "kustomization.yaml"},
 		},
 		{
 			description: "secretGenerator",
-			yaml: `secretGenerator:
+			kustomizations: map[string]string{"kustomization.yaml": `secretGenerator:
 - files: [secret1.file]
-- files: [secret2.file, secret3.file]`,
+- files: [secret2.file, secret3.file]`},
 			expected: []string{"kustomization.yaml", "secret1.file", "secret2.file", "secret3.file"},
 		},
 		{
-			description: "base exists locally",
-			yaml:        `bases: [base]`,
-			expected:    []string{"base/app.yaml", "base/kustomization.yaml", "kustomization.yaml"},
+			description:    "base exists locally",
+			kustomizations: map[string]string{"kustomization.yaml": `bases: [base]`},
+			expected:       []string{"base/app.yaml", "base/kustomization.yaml", "kustomization.yaml"},
 			createFiles: map[string]string{
 				"base/kustomization.yaml": `resources: [app.yaml]`,
 				"base/app.yaml":           "",
 			},
 		},
 		{
-			description: "missing base locally",
-			yaml:        `bases: [missing-or-remote-base]`,
-			expected:    []string{"kustomization.yaml"},
+			description:    "missing base locally",
+			kustomizations: map[string]string{"kustomization.yaml": `bases: [missing-or-remote-base]`},
+			expected:       []string{"kustomization.yaml"},
 		},
 		{
-			description: "local kustomization resource",
-			yaml:        `resources: [app.yaml, base]`,
-			expected:    []string{"app.yaml", "base/app.yaml", "base/kustomization.yaml", "kustomization.yaml"},
+			description:    "local kustomization resource",
+			kustomizations: map[string]string{"kustomization.yaml": `resources: [app.yaml, base]`},
+			expected:       []string{"app.yaml", "base/app.yaml", "base/kustomization.yaml", "kustomization.yaml"},
 			createFiles: map[string]string{
 				"app.yaml":                "",
 				"base/kustomization.yaml": `resources: [app.yaml]`,
@@ -241,17 +240,17 @@ func TestDependenciesForKustomization(t *testing.T) {
 			},
 		},
 		{
-			description: "missing local kustomization resource",
-			yaml:        `resources: [app.yaml, missing-or-remote-base]`,
-			expected:    []string{"app.yaml", "kustomization.yaml"},
+			description:    "missing local kustomization resource",
+			kustomizations: map[string]string{"kustomization.yaml": `resources: [app.yaml, missing-or-remote-base]`},
+			expected:       []string{"app.yaml", "kustomization.yaml"},
 			createFiles: map[string]string{
 				"app.yaml": "",
 			},
 		},
 		{
-			description: "mixed resource types",
-			yaml:        `resources: [app.yaml, missing-or-remote-base, base]`,
-			expected:    []string{"app.yaml", "base/app.yaml", "base/kustomization.yaml", "kustomization.yaml"},
+			description:    "mixed resource types",
+			kustomizations: map[string]string{"kustomization.yaml": `resources: [app.yaml, missing-or-remote-base, base]`},
+			expected:       []string{"app.yaml", "base/app.yaml", "base/kustomization.yaml", "kustomization.yaml"},
 			createFiles: map[string]string{
 				"app.yaml":                "",
 				"base/kustomization.yaml": `resources: [app.yaml]`,
@@ -259,27 +258,25 @@ func TestDependenciesForKustomization(t *testing.T) {
 			},
 		},
 		{
-			description: "alt config name: kustomization.yml",
-			yaml:        `resources: [app.yaml]`,
-			expected:    []string{"app.yaml", "kustomization.yml"},
+			description:    "alt config name: kustomization.yml",
+			kustomizations: map[string]string{"kustomization.yml": `resources: [app.yaml]`},
+			expected:       []string{"app.yaml", "kustomization.yml"},
 			createFiles: map[string]string{
 				"app.yaml": "",
 			},
-			configName: "kustomization.yml",
 		},
 		{
-			description: "alt config name: Kustomization",
-			yaml:        `resources: [app.yaml]`,
-			expected:    []string{"Kustomization", "app.yaml"},
+			description:    "alt config name: Kustomization",
+			kustomizations: map[string]string{"Kustomization": `resources: [app.yaml]`},
+			expected:       []string{"Kustomization", "app.yaml"},
 			createFiles: map[string]string{
 				"app.yaml": "",
 			},
-			configName: "Kustomization",
 		},
 		{
-			description: "mixture of config names",
-			yaml:        `resources: [app.yaml, base1, base2]`,
-			expected:    []string{"Kustomization", "app.yaml", "base1/app.yaml", "base1/kustomization.yml", "base2/app.yaml", "base2/kustomization.yaml"},
+			description:    "mixture of config names",
+			kustomizations: map[string]string{"Kustomization": `resources: [app.yaml, base1, base2]`},
+			expected:       []string{"Kustomization", "app.yaml", "base1/app.yaml", "base1/kustomization.yml", "base2/app.yaml", "base2/kustomization.yaml"},
 			createFiles: map[string]string{
 				"app.yaml":                 "",
 				"base1/kustomization.yml":  `resources: [app.yaml]`,
@@ -287,25 +284,20 @@ func TestDependenciesForKustomization(t *testing.T) {
 				"base2/kustomization.yaml": `resources: [app.yaml]`,
 				"base2/app.yaml":           "",
 			},
-			configName: "Kustomization",
 		},
 		{
-			description:        "remote or missing root kustomization config",
-			expected:           []string{},
-			configName:         "missing-or-remote-root-config",
-			skipConfigCreation: true,
+			description: "remote or missing root kustomization config",
+			expected:    []string{},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			if test.configName == "" {
-				test.configName = "kustomization.yaml"
-			}
-
 			tmpDir := t.NewTempDir()
 
-			if !test.skipConfigCreation {
-				tmpDir.Write(test.configName, test.yaml)
+			var kustomizePaths []string
+			for path, contents := range test.kustomizations {
+				tmpDir.Write(path, contents)
+				kustomizePaths = append(kustomizePaths, filepath.Dir(tmpDir.Path(path)))
 			}
 
 			for path, contents := range test.createFiles {
@@ -317,7 +309,7 @@ func TestDependenciesForKustomization(t *testing.T) {
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: &latest.KustomizeDeploy{
-								KustomizePaths: []string{tmpDir.Root()},
+								KustomizePaths: kustomizePaths,
 							},
 						},
 					},
@@ -397,12 +389,16 @@ func TestKustomizeBuildCommandArgs(t *testing.T) {
 }
 
 func TestKustomizeRender(t *testing.T) {
+	type kustomizationCall struct {
+		folder      string
+		buildResult string
+	}
 	tests := []struct {
-		description string
-		builds      []build.Artifact
-		input       string
-		expected    string
-		shouldErr   bool
+		description    string
+		builds         []build.Artifact
+		kustomizations []kustomizationCall
+		expected       string
+		shouldErr      bool
 	}{
 		{
 			description: "should succeed without error",
@@ -416,7 +412,10 @@ func TestKustomizeRender(t *testing.T) {
 					Tag:       "gcr.io/project/image2:tag2",
 				},
 			},
-			input: `apiVersion: v1
+			kustomizations: []kustomizationCall{
+				{
+					folder: ".",
+					buildResult: `apiVersion: v1
 kind: Pod
 spec:
   containers:
@@ -425,6 +424,8 @@ spec:
   - image: gcr.io/project/image2
     name: image2
 `,
+				},
+			},
 			expected: `apiVersion: v1
 kind: Pod
 spec:
@@ -438,9 +439,14 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
-				AndRunOut("kustomize build .", test.input))
+			var kustomizationPaths []string
+			fakeCmd := testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion)
+			for _, kustomizationCall := range test.kustomizations {
+				fakeCmd.AndRunOut("kustomize build "+kustomizationCall.folder, kustomizationCall.buildResult)
+				kustomizationPaths = append(kustomizationPaths, kustomizationCall.folder)
+			}
+			t.Override(&util.DefaultExecCommand, fakeCmd)
 			t.NewTempDir().
 				Chdir()
 
@@ -450,7 +456,7 @@ spec:
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KustomizeDeploy: &latest.KustomizeDeploy{
-								KustomizePaths: []string{"."},
+								KustomizePaths: kustomizationPaths,
 							},
 						},
 					},
