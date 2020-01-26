@@ -66,6 +66,28 @@ func TestKustomizeDeploy(t *testing.T) {
 			}},
 			forceDeploy: true,
 		},
+		{
+			description: "deploy success with multiple kustomizations",
+			cfg: &latest.KustomizeDeploy{
+				KustomizePaths: []string{"a", "b"},
+			},
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				AndRunOut("kustomize build a", deploymentWebYAML).
+				AndRunOut("kustomize build b", deploymentAppYAML).
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
+			builds: []build.Artifact{
+				{
+					ImageName: "leeroy-web",
+					Tag:       "leeroy-web:123",
+				},
+				{
+					ImageName: "leeroy-app",
+					Tag:       "leeroy-app:123",
+				},
+			},
+			forceDeploy: true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -112,6 +134,16 @@ func TestKustomizeCleanup(t *testing.T) {
 			},
 			commands: testutil.
 				CmdRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
+				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
+		},
+		{
+			description: "cleanup success with multiple kustomizations",
+			cfg: &latest.KustomizeDeploy{
+				KustomizePaths: tmpDir.Paths("a", "b"),
+			},
+			commands: testutil.
+				CmdRunOut("kustomize build "+tmpDir.Path("a"), deploymentWebYAML).
+				AndRunOut("kustomize build "+tmpDir.Path("b"), deploymentAppYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
 		},
 		{
@@ -286,6 +318,20 @@ func TestDependenciesForKustomization(t *testing.T) {
 			},
 		},
 		{
+			description: "multiple kustomizations",
+			kustomizations: map[string]string{
+				"a/kustomization.yaml": `resources: [../base1]`,
+				"b/Kustomization":      `resources: [../base2]`,
+			},
+			expected: []string{"a/kustomization.yaml", "b/Kustomization", "base1/app.yaml", "base1/kustomization.yml", "base2/app.yaml", "base2/kustomization.yaml"},
+			createFiles: map[string]string{
+				"base1/kustomization.yml":  `resources: [app.yaml]`,
+				"base1/app.yaml":           "",
+				"base2/kustomization.yaml": `resources: [app.yaml]`,
+				"base2/app.yaml":           "",
+			},
+		},
+		{
 			description: "remote or missing root kustomization config",
 			expected:    []string{},
 		},
@@ -398,10 +444,9 @@ func TestKustomizeRender(t *testing.T) {
 		builds         []build.Artifact
 		kustomizations []kustomizationCall
 		expected       string
-		shouldErr      bool
 	}{
 		{
-			description: "should succeed without error",
+			description: "single kustomization",
 			builds: []build.Artifact{
 				{
 					ImageName: "gcr.io/project/image1",
@@ -432,6 +477,55 @@ spec:
   containers:
   - image: gcr.io/project/image1:tag1
     name: image1
+  - image: gcr.io/project/image2:tag2
+    name: image2
+`,
+		},
+		{
+			description: "multiple kustomizations",
+			builds: []build.Artifact{
+				{
+					ImageName: "gcr.io/project/image1",
+					Tag:       "gcr.io/project/image1:tag1",
+				},
+				{
+					ImageName: "gcr.io/project/image2",
+					Tag:       "gcr.io/project/image2:tag2",
+				},
+			},
+			kustomizations: []kustomizationCall{
+				{
+					folder: "a",
+					buildResult: `apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - image: gcr.io/project/image1
+    name: image1
+`,
+				},
+				{
+					folder: "b",
+					buildResult: `apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - image: gcr.io/project/image2
+    name: image2
+`,
+				},
+			},
+			expected: `apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - image: gcr.io/project/image1:tag1
+    name: image1
+---
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
   - image: gcr.io/project/image2:tag2
     name: image2
 `,
@@ -468,7 +562,7 @@ spec:
 			})
 			var b bytes.Buffer
 			err := k.Render(context.Background(), &b, test.builds, "")
-			t.CheckError(test.shouldErr, err)
+			t.CheckError(false, err)
 			t.CheckDeepEqual(test.expected, b.String())
 		})
 	}
