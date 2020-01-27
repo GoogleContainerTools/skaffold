@@ -164,6 +164,20 @@ func TestKanikoPodSpec(t *testing.T) {
 			Name:  "KEY",
 			Value: "VALUE",
 		}},
+		VolumeMounts: []v1.VolumeMount{
+			{
+				Name:      "cm-volume-1",
+				ReadOnly:  true,
+				MountPath: "/cm-test-mount-path",
+				SubPath:   "/subpath",
+			},
+			{
+				Name:      "secret-volume-1",
+				ReadOnly:  true,
+				MountPath: "/secret-test-mount-path",
+				SubPath:   "/subpath",
+			},
+		},
 	}
 
 	builder := &Builder{
@@ -179,6 +193,26 @@ func TestKanikoPodSpec(t *testing.T) {
 				},
 				Limits: &latest.ResourceRequirement{
 					CPU: "0.5",
+				},
+			},
+			Volumes: []v1.Volume{
+				{
+					Name: "cm-volume-1",
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: "cm-1",
+							},
+						},
+					},
+				},
+				{
+					Name: "secret-volume-1",
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							SecretName: "secret-1",
+						},
+					},
 				},
 			},
 		},
@@ -199,6 +233,16 @@ func TestKanikoPodSpec(t *testing.T) {
 				VolumeMounts: []v1.VolumeMount{{
 					Name:      constants.DefaultKanikoEmptyDirName,
 					MountPath: constants.DefaultKanikoEmptyDirMountPath,
+				}, {
+					Name:      "cm-volume-1",
+					ReadOnly:  true,
+					MountPath: "/cm-secret-mount-path",
+					SubPath:   "/subpath",
+				}, {
+					Name:      "secret-volume-1",
+					ReadOnly:  true,
+					MountPath: "/secret-secret-mount-path",
+					SubPath:   "/subpath",
 				}},
 				Resources: v1.ResourceRequirements{
 					Requests: map[v1.ResourceName]resource.Quantity{
@@ -239,6 +283,18 @@ func TestKanikoPodSpec(t *testing.T) {
 						Name:      constants.DefaultKanikoSecretName,
 						MountPath: "/secret",
 					},
+					{
+						Name:      "cm-volume-1",
+						ReadOnly:  true,
+						MountPath: "/cm-secret-mount-path",
+						SubPath:   "/subpath",
+					},
+					{
+						Name:      "secret-volume-1",
+						ReadOnly:  true,
+						MountPath: "/secret-secret-mount-path",
+						SubPath:   "/subpath",
+					},
 				},
 				Resources: v1.ResourceRequirements{
 					Requests: map[v1.ResourceName]resource.Quantity{
@@ -262,6 +318,24 @@ func TestKanikoPodSpec(t *testing.T) {
 					VolumeSource: v1.VolumeSource{
 						Secret: &v1.SecretVolumeSource{
 							SecretName: "secret",
+						},
+					},
+				},
+				{
+					Name: "cm-volume-1",
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: "cm-1",
+							},
+						},
+					},
+				},
+				{
+					Name: "secret-volume-1",
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							SecretName: "secret-1",
 						},
 					},
 				},

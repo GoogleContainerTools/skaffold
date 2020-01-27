@@ -494,6 +494,15 @@
           "description": "builder image used.",
           "x-intellij-html-description": "builder image used."
         },
+        "buildpacks": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "a list of strings, where each string is a specific buildpack to use with the builder. If you specify buildpacks the builder image automatic detection will be ignored. These buildpacks will be used to build the Image from your source code. Order matters.",
+          "x-intellij-html-description": "a list of strings, where each string is a specific buildpack to use with the builder. If you specify buildpacks the builder image automatic detection will be ignored. These buildpacks will be used to build the Image from your source code. Order matters.",
+          "default": "[]"
+        },
         "dependencies": {
           "$ref": "#/definitions/BuildpackDependencies",
           "description": "file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.",
@@ -521,6 +530,7 @@
         "builder",
         "runImage",
         "env",
+        "buildpacks",
         "dependencies"
       ],
       "additionalProperties": false,
@@ -609,6 +619,13 @@
           "type": "string",
           "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
           "x-intellij-html-description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>)."
+        },
+        "volumes": {
+          "items": {},
+          "type": "array",
+          "description": "defines container mounts for ConfigMap and Secret resources.",
+          "x-intellij-html-description": "defines container mounts for ConfigMap and Secret resources.",
+          "default": "[]"
         }
       },
       "preferredOrder": [
@@ -621,7 +638,8 @@
         "timeout",
         "dockerConfig",
         "resources",
-        "concurrency"
+        "concurrency",
+        "volumes"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build.",
@@ -1423,6 +1441,13 @@
           "type": "string",
           "description": "Dockerfile target name to build.",
           "x-intellij-html-description": "Dockerfile target name to build."
+        },
+        "volumeMounts": {
+          "items": {},
+          "type": "array",
+          "description": "volume mounts passed to kaniko pod.",
+          "x-intellij-html-description": "volume mounts passed to kaniko pod.",
+          "default": "[]"
         }
       },
       "preferredOrder": [
@@ -1435,7 +1460,8 @@
         "image",
         "cache",
         "reproducible",
-        "skipTLS"
+        "skipTLS",
+        "volumeMounts"
       ],
       "additionalProperties": false,
       "description": "describes an artifact built from a Dockerfile, with kaniko.",
@@ -1559,15 +1585,18 @@
           "description": "additional flags passed to `kubectl`.",
           "x-intellij-html-description": "additional flags passed to <code>kubectl</code>."
         },
-        "path": {
-          "type": "string",
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
           "description": "path to Kustomization files.",
           "x-intellij-html-description": "path to Kustomization files.",
           "default": "."
         }
       },
       "preferredOrder": [
-        "path",
+        "paths",
         "flags",
         "buildArgs"
       ],

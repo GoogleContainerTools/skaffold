@@ -41,23 +41,19 @@ func (f *fakePack) runPack(_ context.Context, _ io.Writer, opts pack.BuildOption
 func TestBuild(t *testing.T) {
 	tests := []struct {
 		description     string
-		artifact        *latest.BuildpackArtifact
+		artifact        *latest.Artifact
 		tag             string
 		api             *testutil.FakeAPIClient
 		pushImages      bool
-		noPull          bool
+		devMode         bool
 		shouldErr       bool
 		expectedOptions *pack.BuildOptions
 	}{
 		{
 			description: "success",
-			artifact: &latest.BuildpackArtifact{
-				Builder:      "my/builder",
-				RunImage:     "my/run",
-				Dependencies: defaultBuildpackDependencies(),
-			},
-			tag: "img:tag",
-			api: &testutil.FakeAPIClient{},
+			artifact:    buildpacksArtifact("my/builder", "my/run"),
+			tag:         "img:tag",
+			api:         &testutil.FakeAPIClient{},
 			expectedOptions: &pack.BuildOptions{
 				AppPath:  ".",
 				Builder:  "my/builder",
@@ -67,25 +63,61 @@ func TestBuild(t *testing.T) {
 			},
 		},
 		{
-			description: "invalid ref",
-			artifact: &latest.BuildpackArtifact{
-				Builder:      "my/builder",
-				RunImage:     "my/run",
-				Dependencies: defaultBuildpackDependencies(),
+			description: "success with buildpacks",
+			artifact:    withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun")),
+			tag:         "img:tag",
+			api:         &testutil.FakeAPIClient{},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:    ".",
+				Builder:    "my/otherBuilder",
+				RunImage:   "my/otherRun",
+				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
+				Env:        map[string]string{},
+				Image:      "img:latest",
 			},
-			tag:       "in valid ref",
-			api:       &testutil.FakeAPIClient{},
-			shouldErr: true,
+		},
+		{
+			description: "dev mode",
+			artifact:    withSync(&latest.Sync{Infer: []string{"**/*"}}, buildpacksArtifact("another/builder", "another/run")),
+			tag:         "img:tag",
+			api:         &testutil.FakeAPIClient{},
+			devMode:     true,
+			expectedOptions: &pack.BuildOptions{
+				AppPath:  ".",
+				Builder:  "another/builder",
+				RunImage: "another/run",
+				Env: map[string]string{
+					"GOOGLE_DEVMODE": "1",
+				},
+				Image: "img:latest",
+			},
+		},
+		{
+			description: "dev mode but no sync",
+			artifact:    buildpacksArtifact("my/other-builder", "my/run"),
+			tag:         "img:tag",
+			api:         &testutil.FakeAPIClient{},
+			devMode:     true,
+			expectedOptions: &pack.BuildOptions{
+				AppPath:  ".",
+				Builder:  "my/other-builder",
+				RunImage: "my/run",
+				Env:      map[string]string{},
+				Image:    "img:latest",
+			},
+		},
+		{
+			description: "invalid ref",
+			artifact:    buildpacksArtifact("my/builder", "my/run"),
+			tag:         "in valid ref",
+			api:         &testutil.FakeAPIClient{},
+			shouldErr:   true,
 		},
 		{
 			description: "push error",
-			artifact: &latest.BuildpackArtifact{
-				Builder:      "my/builder",
-				RunImage:     "my/run",
-				Dependencies: defaultBuildpackDependencies(),
-			},
-			tag:        "img:tag",
-			pushImages: true,
+			artifact:    buildpacksArtifact("my/builder", "my/run"),
+			tag:         "img:tag",
+			pushImages:  true,
 			api: &testutil.FakeAPIClient{
 				ErrImagePush: true,
 			},
@@ -93,15 +125,10 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			description: "invalid env",
-			artifact: &latest.BuildpackArtifact{
-				Builder:      "my/builder",
-				RunImage:     "my/run",
-				Env:          []string{"INVALID"},
-				Dependencies: defaultBuildpackDependencies(),
-			},
-			tag:       "img:tag",
-			api:       &testutil.FakeAPIClient{},
-			shouldErr: true,
+			artifact:    withEnv([]string{"INVALID"}, buildpacksArtifact("my/builder", "my/run")),
+			tag:         "img:tag",
+			api:         &testutil.FakeAPIClient{},
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
@@ -111,18 +138,13 @@ func TestBuild(t *testing.T) {
 			t.Override(&runPackBuildFunc, pack.runPack)
 
 			test.api.
-				Add(test.artifact.Builder, "builderImageID").
-				Add(test.artifact.RunImage, "runImageID").
+				Add(test.artifact.BuildpackArtifact.Builder, "builderImageID").
+				Add(test.artifact.BuildpackArtifact.RunImage, "runImageID").
 				Add("img:latest", "builtImageID")
 			localDocker := docker.NewLocalDaemon(test.api, nil, false, nil)
 
-			builder := NewArtifactBuilder(localDocker, test.pushImages)
-			_, err := builder.Build(context.Background(), ioutil.Discard, &latest.Artifact{
-				Workspace: ".",
-				ArtifactType: latest.ArtifactType{
-					BuildpackArtifact: test.artifact,
-				},
-			}, test.tag)
+			builder := NewArtifactBuilder(localDocker, test.pushImages, test.devMode)
+			_, err := builder.Build(context.Background(), ioutil.Discard, test.artifact, test.tag)
 
 			t.CheckError(test.shouldErr, err)
 			if test.expectedOptions != nil {
@@ -132,8 +154,32 @@ func TestBuild(t *testing.T) {
 	}
 }
 
-func defaultBuildpackDependencies() *latest.BuildpackDependencies {
-	return &latest.BuildpackDependencies{
-		Paths: []string{"."},
+func buildpacksArtifact(builder, runImage string) *latest.Artifact {
+	return &latest.Artifact{
+		Workspace: ".",
+		ArtifactType: latest.ArtifactType{
+			BuildpackArtifact: &latest.BuildpackArtifact{
+				Builder:  builder,
+				RunImage: runImage,
+				Dependencies: &latest.BuildpackDependencies{
+					Paths: []string{"."},
+				},
+			},
+		},
 	}
+}
+
+func withEnv(env []string, artifact *latest.Artifact) *latest.Artifact {
+	artifact.BuildpackArtifact.Env = env
+	return artifact
+}
+
+func withSync(sync *latest.Sync, artifact *latest.Artifact) *latest.Artifact {
+	artifact.Sync = sync
+	return artifact
+}
+
+func withBuildpacks(buildpacks []string, artifact *latest.Artifact) *latest.Artifact {
+	artifact.BuildpackArtifact.Buildpacks = buildpacks
+	return artifact
 }

@@ -6,7 +6,8 @@ build:
       context: ./kubectl
 deploy:
   kustomize:
-    path: ./kustomize
+    paths:
+    - ./kustomize
 
   kubectl:
     manifests:

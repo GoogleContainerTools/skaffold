@@ -93,6 +93,15 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 		addSecretVolume(pod, constants.DefaultKanikoDockerConfigSecretName, constants.DefaultKanikoDockerConfigPath, b.ClusterDetails.DockerConfig.SecretName)
 	}
 
+	// Add used-defines Volumes
+	pod.Spec.Volumes = append(pod.Spec.Volumes, b.Volumes...)
+
+	// Add user-defined VolumeMounts
+	for _, vm := range artifact.VolumeMounts {
+		pod.Spec.InitContainers[0].VolumeMounts = append(pod.Spec.InitContainers[0].VolumeMounts, vm)
+		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, vm)
+	}
+
 	return pod, nil
 }
 
