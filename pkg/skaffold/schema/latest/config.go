@@ -304,6 +304,9 @@ type ClusterDetails struct {
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `0`.
 	Concurrency int `yaml:"concurrency,omitempty"`
+
+	// Volumes defines container mounts for ConfigMap and Secret resources.
+	Volumes []v1.Volume `yaml:"volumes,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
@@ -789,6 +792,9 @@ type KanikoArtifact struct {
 
 	// SkipTLS skips TLS verification when pulling and pushing the image.
 	SkipTLS bool `yaml:"skipTLS,omitempty"`
+
+	// VolumeMounts are volume mounts passed to kaniko pod.
+	VolumeMounts []v1.VolumeMount `yaml:"volumeMounts,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,

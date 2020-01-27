@@ -619,6 +619,13 @@
           "type": "string",
           "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
           "x-intellij-html-description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>)."
+        },
+        "volumes": {
+          "items": {},
+          "type": "array",
+          "description": "defines container mounts for ConfigMap and Secret resources.",
+          "x-intellij-html-description": "defines container mounts for ConfigMap and Secret resources.",
+          "default": "[]"
         }
       },
       "preferredOrder": [
@@ -631,7 +638,8 @@
         "timeout",
         "dockerConfig",
         "resources",
-        "concurrency"
+        "concurrency",
+        "volumes"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build.",
@@ -1433,6 +1441,13 @@
           "type": "string",
           "description": "Dockerfile target name to build.",
           "x-intellij-html-description": "Dockerfile target name to build."
+        },
+        "volumeMounts": {
+          "items": {},
+          "type": "array",
+          "description": "volume mounts passed to kaniko pod.",
+          "x-intellij-html-description": "volume mounts passed to kaniko pod.",
+          "default": "[]"
         }
       },
       "preferredOrder": [
@@ -1445,7 +1460,8 @@
         "image",
         "cache",
         "reproducible",
-        "skipTLS"
+        "skipTLS",
+        "volumeMounts"
       ],
       "additionalProperties": false,
       "description": "describes an artifact built from a Dockerfile, with kaniko.",
