@@ -98,6 +98,17 @@ func TestDoInit(t *testing.T) {
 			},
 			shouldErr: true,
 		},
+		{
+			name: "error no manifests",
+			dir:  "testdata/init/hello-no-manifest",
+
+			config: Config{
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+			shouldErr: true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
@@ -106,7 +117,9 @@ func TestDoInit(t *testing.T) {
 			test.config.Force = true
 			err := DoInit(context.TODO(), os.Stdout, test.config)
 			t.CheckError(test.shouldErr, err)
-			checkGeneratedConfig(t, ".")
+			if !test.shouldErr {
+				checkGeneratedConfig(t, ".")
+			}
 		})
 	}
 }
@@ -117,7 +130,6 @@ func TestDoInitAnalyze(t *testing.T) {
 		dir         string
 		config      Config
 		expectedOut string
-		shouldErr   bool
 	}{
 		{
 			name: "analyze microservices",
@@ -146,6 +158,20 @@ func TestDoInitAnalyze(t *testing.T) {
 										{"name":"gcr.io/k8s-skaffold/leeroy-app","foundMatch":false},
 										{"name":"gcr.io/k8s-skaffold/leeroy-web","foundMatch":false}]}`) + "\n",
 		},
+		{
+			name: "no error with no manifests in analyze mode with skip-deploy",
+			dir:  "testdata/init/hello-no-manifest",
+
+			config: Config{
+				Analyze:    true,
+				SkipDeploy: true,
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+
+			expectedOut: strip(`{"dockerfiles":["Dockerfile"]}`) + "\n",
+		},
 	}
 
 	for _, test := range tests {
@@ -153,7 +179,7 @@ func TestDoInitAnalyze(t *testing.T) {
 			var out bytes.Buffer
 			t.Chdir(test.dir)
 			err := DoInit(context.TODO(), &out, test.config)
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedOut, out.String())
+			t.CheckErrorAndDeepEqual(false, err, test.expectedOut, out.String())
 		})
 	}
 }

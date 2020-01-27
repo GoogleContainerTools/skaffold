@@ -22,12 +22,14 @@ import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 type Builder struct {
 	localDocker docker.LocalDaemon
 	pushImages  bool
+	devMode     bool
 }
 
 // NewArtifactBuilder returns a new buildpack artifact builder
-func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages bool) *Builder {
+func NewArtifactBuilder(localDocker docker.LocalDaemon, pushImages, devMode bool) *Builder {
 	return &Builder{
 		localDocker: localDocker,
 		pushImages:  pushImages,
+		devMode:     devMode,
 	}
 }

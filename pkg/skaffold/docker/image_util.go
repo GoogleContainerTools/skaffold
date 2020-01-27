@@ -65,3 +65,15 @@ func RetrieveWorkingDir(tagged string, insecureRegistries map[string]bool) (stri
 		return cf.Config.WorkingDir, nil
 	}
 }
+
+func RetrieveLabels(tagged string, insecureRegistries map[string]bool) (map[string]string, error) {
+	cf, err := RetrieveConfigFile(tagged, insecureRegistries)
+	switch {
+	case err != nil:
+		return nil, err
+	case cf == nil:
+		return nil, nil
+	default:
+		return cf.Config.Labels, nil
+	}
+}

@@ -122,6 +122,8 @@ The `kustomize` type offers the following options:
 
 {{< schema root="KustomizeDeploy" >}}
 
+Each entry in `paths` should point to a folder with a kustomization file.
+
 `flags` section offers the following options:
 
 {{< schema root="KubectlFlags" >}}

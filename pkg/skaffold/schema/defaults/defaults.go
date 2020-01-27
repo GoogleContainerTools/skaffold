@@ -172,8 +172,9 @@ func setDefaultKustomizePath(c *latest.SkaffoldConfig) {
 	if kustomize == nil {
 		return
 	}
-
-	kustomize.KustomizePath = valueOrDefault(kustomize.KustomizePath, constants.DefaultKustomizationPath)
+	if len(kustomize.KustomizePaths) == 0 {
+		kustomize.KustomizePaths = []string{constants.DefaultKustomizationPath}
+	}
 }
 
 func setDefaultKubectlManifests(c *latest.SkaffoldConfig) {

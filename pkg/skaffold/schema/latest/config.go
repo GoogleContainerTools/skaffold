@@ -440,9 +440,9 @@ type HelmDeployFlags struct {
 
 // KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 type KustomizeDeploy struct {
-	// KustomizePath is the path to Kustomization files.
+	// KustomizePaths is the path to Kustomization files.
 	// Defaults to `.`.
-	KustomizePath string `yaml:"path,omitempty"`
+	KustomizePaths []string `yaml:"paths,omitempty"`
 
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
