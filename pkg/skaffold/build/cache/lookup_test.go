@@ -30,7 +30,7 @@ import (
 func TestLookupLocal(t *testing.T) {
 	tests := []struct {
 		description string
-		hasher      func(context.Context, DependencyLister, *latest.Artifact) (string, error)
+		hasher      func(context.Context, DependencyLister, *latest.Artifact, bool) (string, error)
 		cache       map[string]ImageDetails
 		api         *testutil.FakeAPIClient
 		expected    cacheDetails
@@ -126,7 +126,7 @@ func TestLookupLocal(t *testing.T) {
 func TestLookupRemote(t *testing.T) {
 	tests := []struct {
 		description string
-		hasher      func(context.Context, DependencyLister, *latest.Artifact) (string, error)
+		hasher      func(context.Context, DependencyLister, *latest.Artifact, bool) (string, error)
 		cache       map[string]ImageDetails
 		api         *testutil.FakeAPIClient
 		expected    cacheDetails
@@ -208,14 +208,14 @@ func TestLookupRemote(t *testing.T) {
 	}
 }
 
-func mockHasher(value string) func(context.Context, DependencyLister, *latest.Artifact) (string, error) {
-	return func(context.Context, DependencyLister, *latest.Artifact) (string, error) {
+func mockHasher(value string) func(context.Context, DependencyLister, *latest.Artifact, bool) (string, error) {
+	return func(context.Context, DependencyLister, *latest.Artifact, bool) (string, error) {
 		return value, nil
 	}
 }
 
-func failingHasher(errMessage string) func(context.Context, DependencyLister, *latest.Artifact) (string, error) {
-	return func(context.Context, DependencyLister, *latest.Artifact) (string, error) {
+func failingHasher(errMessage string) func(context.Context, DependencyLister, *latest.Artifact, bool) (string, error) {
+	return func(context.Context, DependencyLister, *latest.Artifact, bool) (string, error) {
 		return "", errors.New(errMessage)
 	}
 }
