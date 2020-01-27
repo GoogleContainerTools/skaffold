@@ -34,14 +34,6 @@ import (
 // an image we parse out from a Kubernetes manifest
 const NoBuilder = "None (image not built from these sources)"
 
-// deploymentInitializer detects a deployment type and is able to extract image names from it
-type deploymentInitializer interface {
-	// deployConfig generates Deploy Config for skaffold configuration.
-	deployConfig() latest.DeployConfig
-	// GetImages fetches all the images defined in the manifest files.
-	GetImages() []string
-}
-
 // InitBuilder represents a builder that can be chosen by skaffold init.
 type InitBuilder interface {
 	// Name returns the name of the builder
@@ -60,15 +52,16 @@ type InitBuilder interface {
 
 // Config contains all the parameters for the initializer package
 type Config struct {
-	ComposeFile         string
-	CliArtifacts        []string
-	SkipBuild           bool
-	SkipDeploy          bool
-	Force               bool
-	Analyze             bool
-	EnableJibInit       bool // TODO: Remove this parameter
-	EnableBuildpackInit bool
-	Opts                config.SkaffoldOptions
+	ComposeFile            string
+	CliArtifacts           []string
+	CliKubernetesManifests []string
+	SkipBuild              bool
+	SkipDeploy             bool
+	Force                  bool
+	Analyze                bool
+	EnableJibInit          bool // TODO: Remove this parameter
+	EnableBuildpackInit    bool
+	Opts                   config.SkaffoldOptions
 }
 
 // builderImagePair defines a builder and the image it builds
@@ -94,21 +87,24 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	}
 
 	var deployInitializer deploymentInitializer
-	var imagesFromManifests []string
-	if !c.SkipDeploy {
+	switch {
+	case c.SkipDeploy:
+		deployInitializer = &emptyDeployInit{}
+	case len(c.CliKubernetesManifests) > 0:
+		deployInitializer = &cliDeployInit{c.CliKubernetesManifests}
+	default:
 		k, err := newKubectlInitializer(a.kubectlAnalyzer.kubernetesManifests)
 		if err != nil {
 			return err
 		}
 		deployInitializer = k
-		imagesFromManifests = deployInitializer.GetImages()
 	}
 
 	// Determine which builders/images require prompting
 	pairs, unresolvedBuilderConfigs, unresolvedImages :=
 		matchBuildersToImages(
 			a.builderAnalyzer.foundBuilders,
-			stripTags(imagesFromManifests))
+			stripTags(deployInitializer.GetImages()))
 
 	if c.Analyze {
 		// TODO: Remove backwards compatibility block
@@ -119,7 +115,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		return printAnalyzeJSON(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
 	}
 	if !c.SkipBuild {
-		if len(a.builderAnalyzer.foundBuilders) == 0 {
+		if len(a.builderAnalyzer.foundBuilders) == 0 && c.CliArtifacts == nil {
 			return errors.New("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
 		}
 		if c.CliArtifacts != nil {

@@ -83,6 +83,22 @@ func TestDoInit(t *testing.T) {
 			},
 		},
 		{
+			name: "CLI artifacts + manifest placeholders",
+			dir:  "testdata/init/allcli",
+			config: Config{
+				CliArtifacts: []string{
+					`{"builder":"Docker","payload":{"path":"Dockerfile"},"image":"passed-in-artifact"}`,
+				},
+				CliKubernetesManifests: []string{
+					"manifest-placeholder1.yaml",
+					"manifest-placeholder2.yaml",
+				},
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+		},
+		{
 			name: "error writing config file",
 			dir:  "testdata/init/microservices",
 
