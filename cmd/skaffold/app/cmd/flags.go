@@ -234,10 +234,9 @@ var FlagRegistry = []Flag{
 		DefinedOn:     []string{"dev", "run"},
 	},
 	{
-		Name:          "output",
-		Shorthand:     "o",
+		Name:          "render-output",
 		Usage:         "Writes '--render-only' output to the specified file",
-		Value:         &opts.Output,
+		Value:         &opts.RenderOutput,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"dev", "run"},
