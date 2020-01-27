@@ -71,7 +71,6 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		insecureRegistries[r] = true
 	}
 
-	// TODO(dgageot): what about debug?
 	devMode := opts.Command == "dev"
 
 	return &RunContext{
