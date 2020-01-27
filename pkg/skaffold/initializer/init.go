@@ -52,16 +52,16 @@ type InitBuilder interface {
 
 // Config contains all the parameters for the initializer package
 type Config struct {
-	ComposeFile         string
-	CliArtifacts        []string
-	CliKubectlManifests []string
-	SkipBuild           bool
-	SkipDeploy          bool
-	Force               bool
-	Analyze             bool
-	EnableJibInit       bool // TODO: Remove this parameter
-	EnableBuildpackInit bool
-	Opts                config.SkaffoldOptions
+	ComposeFile            string
+	CliArtifacts           []string
+	CliKubernetesManifests []string
+	SkipBuild              bool
+	SkipDeploy             bool
+	Force                  bool
+	Analyze                bool
+	EnableJibInit          bool // TODO: Remove this parameter
+	EnableBuildpackInit    bool
+	Opts                   config.SkaffoldOptions
 }
 
 // builderImagePair defines a builder and the image it builds
@@ -90,8 +90,8 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	switch {
 	case c.SkipDeploy:
 		deployInitializer = &emptyDeployInit{}
-	case len(c.CliKubectlManifests) > 0:
-		deployInitializer = &cliDeployInit{c.CliKubectlManifests}
+	case len(c.CliKubernetesManifests) > 0:
+		deployInitializer = &cliDeployInit{c.CliKubernetesManifests}
 	default:
 		k, err := newKubectlInitializer(a.kubectlAnalyzer.kubernetesManifests)
 		if err != nil {

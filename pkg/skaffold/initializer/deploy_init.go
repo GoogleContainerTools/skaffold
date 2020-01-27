@@ -27,14 +27,14 @@ type deploymentInitializer interface {
 }
 
 type cliDeployInit struct {
-	cliKubectlManifests []string
+	cliKubernetesManifests []string
 }
 
 func (c *cliDeployInit) deployConfig() latest.DeployConfig {
 	return latest.DeployConfig{
 		DeployType: latest.DeployType{
 			KubectlDeploy: &latest.KubectlDeploy{
-				Manifests: c.cliKubectlManifests,
+				Manifests: c.cliKubernetesManifests,
 			}},
 	}
 }

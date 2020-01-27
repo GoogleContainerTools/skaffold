@@ -611,7 +611,7 @@ Options:
       --compose-file='': Initialize from a docker-compose file
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
       --force=false: Force the generation of the Skaffold config
-  -k, --kubectl-manifest=[]: list of predefined kubectl manifests (overrides detection)
+  -k, --kubernetes-manifest=[]: list of predefined kubectl manifests (overrides detection)
       --skip-build=false: Skip generating build artifacts in Skaffold config
 
 Usage:
@@ -628,7 +628,7 @@ Env vars:
 * `SKAFFOLD_COMPOSE_FILE` (same as `--compose-file`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_FORCE` (same as `--force`)
-* `SKAFFOLD_KUBECTL_MANIFEST` (same as `--kubectl-manifest`)
+* `SKAFFOLD_KUBERNETES_MANIFEST` (same as `--kubernetes-manifest`)
 * `SKAFFOLD_SKIP_BUILD` (same as `--skip-build`)
 
 ### skaffold options

@@ -89,7 +89,7 @@ func TestDoInit(t *testing.T) {
 				CliArtifacts: []string{
 					`{"builder":"Docker","payload":{"path":"Dockerfile"},"image":"passed-in-artifact"}`,
 				},
-				CliKubectlManifests: []string{
+				CliKubernetesManifests: []string{
 					"manifest-placeholder1.yaml",
 					"manifest-placeholder2.yaml",
 				},
