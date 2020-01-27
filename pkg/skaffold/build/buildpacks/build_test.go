@@ -63,6 +63,20 @@ func TestBuild(t *testing.T) {
 			},
 		},
 		{
+			description: "success with buildpacks",
+			artifact:    withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun")),
+			tag:         "img:tag",
+			api:         &testutil.FakeAPIClient{},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:    ".",
+				Builder:    "my/otherBuilder",
+				RunImage:   "my/otherRun",
+				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
+				Env:        map[string]string{},
+				Image:      "img:latest",
+			},
+		},
+		{
 			description: "dev mode",
 			artifact:    withSync(&latest.Sync{Infer: []string{"**/*"}}, buildpacksArtifact("another/builder", "another/run")),
 			tag:         "img:tag",
@@ -162,5 +176,10 @@ func withEnv(env []string, artifact *latest.Artifact) *latest.Artifact {
 
 func withSync(sync *latest.Sync, artifact *latest.Artifact) *latest.Artifact {
 	artifact.Sync = sync
+	return artifact
+}
+
+func withBuildpacks(buildpacks []string, artifact *latest.Artifact) *latest.Artifact {
+	artifact.BuildpackArtifact.Buildpacks = buildpacks
 	return artifact
 }
