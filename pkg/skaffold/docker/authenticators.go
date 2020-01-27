@@ -90,7 +90,7 @@ func (a *Authenticators) newAuthenticator(ref name.Reference) authn.Authenticato
 	}
 
 	// 2. Use whatever `non anonymous` credential helper is configured
-	if auth, _ := authn.DefaultKeychain.Resolve(ref.Context().Registry); auth != authn.Anonymous {
+	if auth, _ := authn.DefaultKeychain.Resolve(ref.Context().Registry); auth != authn.Anonymous && auth != nil {
 		return auth
 	}
 
