@@ -53,7 +53,7 @@ func NewCmdInit() *cobra.Command {
 			f.BoolVar(&force, "force", false, "Force the generation of the Skaffold config")
 			f.StringVar(&composeFile, "compose-file", "", "Initialize from a docker-compose file")
 			f.StringArrayVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited Dockerfile/image pair, or JSON string, to generate build artifact\n(example: --artifact='{\"builder\":\"Docker\",\"payload\":{\"path\":\"/web/Dockerfile.web\"},\"image\":\"gcr.io/web-project/image\"}')")
-			f.StringArrayVarP(&cliKubernetesManifests, "kubernetes-manifest", "k", nil, "list of predefined kubectl manifests (overrides detection)")
+			f.StringArrayVarP(&cliKubernetesManifests, "kubernetes-manifest", "k", nil, "a path or a glob pattern to kubernetes manifests (can be non-existent) to be added to the kubectl deployer (overrides detection of kubernetes manifests). Repeat the flag for multiple entries. E.g.: skaffold init -k pod.yaml -k k8s/*.yml")
 			f.BoolVar(&analyze, "analyze", false, "Print all discoverable Dockerfiles and images in JSON format to stdout")
 			f.BoolVar(&enableJibInit, "XXenableJibInit", false, "")
 			f.MarkHidden("XXenableJibInit")

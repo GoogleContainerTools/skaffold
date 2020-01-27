@@ -611,7 +611,7 @@ Options:
       --compose-file='': Initialize from a docker-compose file
   -f, --filename='skaffold.yaml': Filename or URL to the pipeline file
       --force=false: Force the generation of the Skaffold config
-  -k, --kubernetes-manifest=[]: list of predefined kubectl manifests (overrides detection)
+  -k, --kubernetes-manifest=[]: a path or a glob pattern to kubernetes manifests (can be non-existent) to be added to the kubectl deployer (overrides detection of kubernetes manifests). Repeat the flag for multiple entries. E.g.: skaffold init -k pod.yaml -k k8s/*.yml
       --skip-build=false: Skip generating build artifacts in Skaffold config
 
 Usage:
