@@ -173,7 +173,15 @@ func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 
 // Dependencies lists all the files that can change what needs to be deployed.
 func (k *KustomizeDeployer) Dependencies() ([]string, error) {
-	return dependenciesForKustomization(k.KustomizePath)
+	deps := newStringSet()
+	for _, kustomizePath := range k.KustomizePaths {
+		depsForKustomization, err := dependenciesForKustomization(kustomizePath)
+		if err != nil {
+			return nil, err
+		}
+		deps.insert(depsForKustomization...)
+	}
+	return deps.toList(), nil
 }
 
 func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, filepath string) error {
@@ -280,18 +288,19 @@ func pathExistsLocally(filename string, workingDir string) (bool, os.FileMode) {
 }
 
 func (k *KustomizeDeployer) readManifests(ctx context.Context) (deploy.ManifestList, error) {
-	cmd := exec.CommandContext(ctx, "kustomize", buildCommandArgs(k.BuildArgs, k.KustomizePath)...)
-	out, err := util.RunCmdOut(cmd)
-	if err != nil {
-		return nil, errors.Wrap(err, "kustomize build")
-	}
-
-	if len(out) == 0 {
-		return nil, nil
-	}
-
 	var manifests deploy.ManifestList
-	manifests.Append(out)
+	for _, kustomizePath := range k.KustomizePaths {
+		cmd := exec.CommandContext(ctx, "kustomize", buildCommandArgs(k.BuildArgs, kustomizePath)...)
+		out, err := util.RunCmdOut(cmd)
+		if err != nil {
+			return nil, errors.Wrap(err, "kustomize build")
+		}
+
+		if len(out) == 0 {
+			continue
+		}
+		manifests.Append(out)
+	}
 	return manifests, nil
 }
 
