@@ -195,7 +195,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 			pairs = append(pairs, pair)
 
 		default:
-			return nil, errors.New("unknown builder type in CLI artifacts")
+			return nil, fmt.Errorf("unknown builder type in CLI artifacts: %q", a.Name)
 		}
 	}
 	return pairs, nil
