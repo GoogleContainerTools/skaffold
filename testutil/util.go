@@ -157,6 +157,15 @@ func (t *T) CheckErrorContains(message string, err error) {
 	}
 }
 
+// SetArgs override os.Args for the duration of a test.
+func (t *T) SetArgs(args []string) {
+	prevArgs := os.Args
+	os.Args = args
+	t.teardownActions = append(t.teardownActions, func() {
+		os.Args = prevArgs
+	})
+}
+
 // SetStdin replaces os.Stdin with a given content.
 func (t *T) SetStdin(content []byte) {
 	origStdin := os.Stdin

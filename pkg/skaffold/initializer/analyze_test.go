@@ -55,9 +55,9 @@ func TestAnalyze(t *testing.T) {
 				"Dockerfile":             emptyFile,
 			},
 			config: Config{
-				Force:               false,
-				EnableBuildpackInit: false,
-				EnableJibInit:       false,
+				Force:                false,
+				EnableBuildpacksInit: false,
+				EnableJibInit:        false,
 			},
 			expectedConfigs: []string{
 				"k8pod.yml",
@@ -86,9 +86,9 @@ func TestAnalyze(t *testing.T) {
 				"node/package.json":   emptyFile,
 			},
 			config: Config{
-				Force:               false,
-				EnableBuildpackInit: true,
-				EnableJibInit:       true,
+				Force:                false,
+				EnableBuildpacksInit: true,
+				EnableJibInit:        true,
 			},
 			expectedConfigs: []string{
 				"k8pod.yml",
@@ -114,9 +114,9 @@ func TestAnalyze(t *testing.T) {
 				"maven/pom.xml":                  emptyFile,
 			},
 			config: Config{
-				Force:               false,
-				EnableBuildpackInit: false,
-				EnableJibInit:       true,
+				Force:                false,
+				EnableBuildpacksInit: false,
+				EnableJibInit:        true,
 			},
 			expectedConfigs: []string{
 				"k8pod.yml",
@@ -139,9 +139,9 @@ func TestAnalyze(t *testing.T) {
 				"pom.xml":                      emptyFile,
 			},
 			config: Config{
-				Force:               false,
-				EnableBuildpackInit: false,
-				EnableJibInit:       true,
+				Force:                false,
+				EnableBuildpacksInit: false,
+				EnableJibInit:        true,
 			},
 			expectedConfigs: []string{
 				"k8pod.yml",
@@ -164,9 +164,9 @@ func TestAnalyze(t *testing.T) {
 				"Dockerfile":         emptyFile,
 			},
 			config: Config{
-				Force:               false,
-				EnableBuildpackInit: false,
-				EnableJibInit:       true,
+				Force:                false,
+				EnableBuildpacksInit: false,
+				EnableJibInit:        true,
 			},
 			expectedConfigs: []string{
 				"k8pod.yml",
@@ -190,9 +190,9 @@ deploy:
 				"Dockerfile":        emptyFile,
 			},
 			config: Config{
-				Force:               true,
-				EnableBuildpackInit: false,
-				EnableJibInit:       true,
+				Force:                true,
+				EnableBuildpacksInit: false,
+				EnableJibInit:        true,
 			},
 			expectedConfigs: []string{
 				"k8pod.yml",
@@ -218,9 +218,9 @@ deploy:
   kustomize: {}`,
 			},
 			config: Config{
-				Force:               false,
-				EnableBuildpackInit: false,
-				EnableJibInit:       true,
+				Force:                false,
+				EnableBuildpacksInit: false,
+				EnableJibInit:        true,
 				Opts: config.SkaffoldOptions{
 					ConfigurationFile: "skaffold.yaml",
 				},
@@ -242,9 +242,9 @@ deploy:
   kustomize: {}`,
 			},
 			config: Config{
-				Force:               false,
-				EnableBuildpackInit: false,
-				EnableJibInit:       true,
+				Force:                false,
+				EnableBuildpacksInit: false,
+				EnableJibInit:        true,
 				Opts: config.SkaffoldOptions{
 					ConfigurationFile: "skaffold.yaml",
 				},

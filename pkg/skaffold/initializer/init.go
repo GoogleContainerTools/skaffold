@@ -60,7 +60,8 @@ type Config struct {
 	Force                  bool
 	Analyze                bool
 	EnableJibInit          bool // TODO: Remove this parameter
-	EnableBuildpackInit    bool
+	EnableBuildpacksInit   bool
+	BuildpacksBuilder      string
 	Opts                   config.SkaffoldOptions
 }
 
@@ -108,7 +109,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 
 	if c.Analyze {
 		// TODO: Remove backwards compatibility block
-		if !c.EnableJibInit && !c.EnableBuildpackInit {
+		if !c.EnableJibInit && !c.EnableBuildpacksInit {
 			return printAnalyzeJSONNoJib(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
 		}
 

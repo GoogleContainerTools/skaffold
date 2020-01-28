@@ -84,10 +84,13 @@ func TestUpdateArtifact(t *testing.T) {
 	}{
 		{
 			description: "buildpacks - NodeJS",
-			config:      ArtifactConfig{File: filepath.Join("path", "to", "package.json")},
+			config: ArtifactConfig{
+				File:    filepath.Join("path", "to", "package.json"),
+				Builder: "some/builder",
+			},
 			expectedArtifact: latest.Artifact{
 				ArtifactType: latest.ArtifactType{BuildpackArtifact: &latest.BuildpackArtifact{
-					Builder: "heroku/buildpacks",
+					Builder: "some/builder",
 				}},
 			},
 		},

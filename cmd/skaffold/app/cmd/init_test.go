@@ -20,11 +20,9 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
-
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -37,7 +35,10 @@ func TestFlagsToConfigVersion(t *testing.T) {
 		shouldErr      bool
 	}{
 		{
-			name:       "error + default values of flags mapped to config values",
+			name: "error + default values of flags mapped to config values",
+			args: []string{
+				"init",
+			},
 			initResult: errors.New("test error"),
 			shouldErr:  true,
 			expectedConfig: initializer.Config{
@@ -49,13 +50,15 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				Force:                  false,
 				Analyze:                false,
 				EnableJibInit:          false,
-				EnableBuildpackInit:    false,
+				EnableBuildpacksInit:   false,
+				BuildpacksBuilder:      "heroku/buildpacks",
 				Opts:                   opts,
 			},
 		},
 		{
 			name: "no error + non-default values for flags mapped to config values",
 			args: []string{
+				"init",
 				"--compose-file=a-compose-file",
 				"--artifact", "a1=b1",
 				"-a", "a2=b2",
@@ -66,7 +69,8 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				"--force",
 				"--analyze",
 				"--XXenableJibInit",
-				"--XXenableBuildpackInit",
+				"--XXenableBuildpacksInit",
+				"--XXdefaultBuildpacksBuilder", "buildpacks/builder",
 			},
 			expectedConfig: initializer.Config{
 				ComposeFile:            "a-compose-file",
@@ -77,7 +81,8 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				Force:                  true,
 				Analyze:                true,
 				EnableJibInit:          true,
-				EnableBuildpackInit:    true,
+				EnableBuildpacksInit:   true,
+				BuildpacksBuilder:      "buildpacks/builder",
 				Opts:                   opts,
 			},
 		},
@@ -85,15 +90,14 @@ func TestFlagsToConfigVersion(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			var capturedConfig initializer.Config
-			mockFunc := func(ctx context.Context, out io.Writer, c initializer.Config) error {
+			t.Override(&initEntrypoint, func(_ context.Context, _ io.Writer, c initializer.Config) error {
 				capturedConfig = c
 				return test.initResult
-			}
-			t.Override(&initEntrypoint, mockFunc)
-			initArgs := append([]string{"init"}, test.args...)
-			os.Args = initArgs
-			init := NewCmdInit()
-			err := init.Execute()
+			})
+			t.SetArgs(test.args)
+
+			err := NewCmdInit().Execute()
+
 			// we ignore Skaffold options
 			test.expectedConfig.Opts = capturedConfig.Opts
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedConfig, capturedConfig)
