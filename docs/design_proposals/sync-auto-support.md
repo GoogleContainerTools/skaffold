@@ -27,7 +27,7 @@ really only aware of `.java` files in a build.
         picks up the change.
       - And one or both of the following:
           - Skaffold can be configured to run a custom script to when certain files change.
-            Motivating example. Jib by default will run a full container build
+            Motivating example: Jib by default will run a full container build
             on "build", but we only want to generate intermediate assets (class
             files, etc) when doing a sync build.
           - Skaffold can sync an externally generated tar file to a remote container (see
