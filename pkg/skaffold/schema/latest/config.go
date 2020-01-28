@@ -284,9 +284,6 @@ type ClusterDetails struct {
 	// Defaults to `kaniko-secret`.
 	PullSecretName string `yaml:"pullSecretName,omitempty"`
 
-	// RandomPullSecret adds a random UUID postfix to the default name of the secret to facilitate parallel builds, e.g. kaniko-secretdocker-cfgfd154022-c761-416f-8eb3-cf8258450b85.
-	RandomPullSecret bool `yaml:"randomPullSecret,omitempty"`
-
 	// PullSecretMountPath is the path the pull secret will be mounted at within the running container.
 	PullSecretMountPath string `yaml:"pullSecretMountPath,omitempty"`
 
@@ -301,9 +298,6 @@ type ClusterDetails struct {
 	// DockerConfig describes how to mount the local Docker configuration into a pod.
 	DockerConfig *DockerConfig `yaml:"dockerConfig,omitempty"`
 
-	// RandomPullSecret adds a random UUID postfix to the default name of the secret to facilitate parallel builds, e.g. docker-cfgfd154022-c761-416f-8eb3-cf8258450b85.
-	RandomDockerConfigSecret bool `yaml:"randomDockerConfigSecret,omitempty"`
-
 	// Resources define the resource requirements for the kaniko pod.
 	Resources *ResourceRequirements `yaml:"resources,omitempty"`
 
@@ -313,6 +307,12 @@ type ClusterDetails struct {
 
 	// Volumes defines container mounts for ConfigMap and Secret resources.
 	Volumes []v1.Volume `yaml:"volumes,omitempty"`
+
+	// RandomPullSecret adds a random UUID postfix to the default name of the secret to facilitate parallel builds, e.g. kaniko-secretdocker-cfgfd154022-c761-416f-8eb3-cf8258450b85.
+	RandomPullSecret bool `yaml:"randomPullSecret,omitempty"`
+
+	// RandomPullSecret adds a random UUID postfix to the default name of the secret to facilitate parallel builds, e.g. docker-cfgfd154022-c761-416f-8eb3-cf8258450b85.
+	RandomDockerConfigSecret bool `yaml:"randomDockerConfigSecret,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
