@@ -19,6 +19,7 @@ package defaults
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -258,7 +259,12 @@ func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
 			return fmt.Errorf("unable to expand pullSecret %s", cluster.PullSecret)
 		}
 		cluster.PullSecret = absPath
-		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName)
+		random := ""
+		if cluster.RandomPullSecret {
+			uid, _ := uuid.NewUUID()
+			random = uid.String()
+		}
+		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName+random)
 		return nil
 	}
 	return nil
@@ -269,7 +275,13 @@ func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
 		return nil
 	}
 
-	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
+	random := ""
+	if cluster.RandomDockerConfigSecret {
+		uid, _ := uuid.NewUUID()
+		random = uid.String()
+	}
+
+	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName+random)
 
 	if cluster.DockerConfig.Path == "" {
 		return nil
