@@ -308,10 +308,10 @@ type ClusterDetails struct {
 	// Volumes defines container mounts for ConfigMap and Secret resources.
 	Volumes []v1.Volume `yaml:"volumes,omitempty"`
 
-	// RandomPullSecret adds a random UUID postfix to the default name of the secret to facilitate parallel builds, e.g. kaniko-secretdocker-cfgfd154022-c761-416f-8eb3-cf8258450b85.
+	// RandomPullSecret adds a random UUID postfix to the default name of the pull secret to facilitate parallel builds, e.g. kaniko-secretdocker-cfgfd154022-c761-416f-8eb3-cf8258450b85.
 	RandomPullSecret bool `yaml:"randomPullSecret,omitempty"`
 
-	// RandomPullSecret adds a random UUID postfix to the default name of the secret to facilitate parallel builds, e.g. docker-cfgfd154022-c761-416f-8eb3-cf8258450b85.
+	// RandomDockerConfigSecret adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds, e.g. docker-cfgfd154022-c761-416f-8eb3-cf8258450b85.
 	RandomDockerConfigSecret bool `yaml:"randomDockerConfigSecret,omitempty"`
 }
 
