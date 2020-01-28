@@ -84,6 +84,7 @@ func TestAnalyze(t *testing.T) {
 				"maven/pom.xml":       emptyFile,
 				"Dockerfile":          emptyFile,
 				"node/package.json":   emptyFile,
+				"go/go.mod":           emptyFile,
 			},
 			config: Config{
 				Force:               false,
@@ -97,6 +98,7 @@ func TestAnalyze(t *testing.T) {
 			expectedPaths: []string{
 				"Dockerfile",
 				"deploy/Dockerfile",
+				"go/go.mod",
 				"gradle/build.gradle",
 				"maven/pom.xml",
 				"node/package.json",
@@ -129,6 +131,30 @@ func TestAnalyze(t *testing.T) {
 			shouldErr: false,
 		},
 		{
+			description: "skip validating nested go.mod",
+			filesWithContents: map[string]string{
+				"config/test.yaml":              validK8sManifest,
+				"k8pod.yml":                     validK8sManifest,
+				"go.mod":                        emptyFile,
+				"vendor/dep/go.mod":             emptyFile,
+				"package.json":                  emptyFile,
+				"node_modules/dep/package.json": emptyFile,
+			},
+			config: Config{
+				Force:               false,
+				EnableBuildpackInit: true,
+				EnableJibInit:       false,
+			},
+			expectedConfigs: []string{
+				"k8pod.yml",
+				"config/test.yaml",
+			},
+			expectedPaths: []string{
+				"go.mod",
+				"package.json",
+			},
+			shouldErr: false,
+		}, {
 			description: "multiple builders in same directory",
 			filesWithContents: map[string]string{
 				"build.gradle":                 emptyFile,

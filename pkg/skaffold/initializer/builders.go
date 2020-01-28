@@ -128,7 +128,7 @@ func detectBuilders(enableJibInit, enableBuildpackInit bool, path string) ([]Ini
 		// Check for buildpacks
 		if buildpacks.Validate(path) {
 			results := []InitBuilder{buildpacks.ArtifactConfig{File: path}}
-			return results, true
+			return results, false
 		}
 	}
 
