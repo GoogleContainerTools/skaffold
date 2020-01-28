@@ -239,7 +239,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.RenderOutput,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"dev", "run"},
+		DefinedOn:     []string{"run"},
 	},
 	{
 		Name:          "config",
