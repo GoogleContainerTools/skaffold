@@ -18,6 +18,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/singleflight"
 
@@ -26,7 +27,7 @@ import (
 
 type Image struct {
 	repoName         string
-	docker           *client.Client
+	docker           client.CommonAPIClient
 	inspect          types.ImageInspect
 	layerPaths       []string
 	currentTempImage string
@@ -72,7 +73,7 @@ func FromBaseImage(imageName string) ImageOption {
 	}
 }
 
-func NewImage(repoName string, dockerClient *client.Client, ops ...ImageOption) (imgutil.Image, error) {
+func NewImage(repoName string, dockerClient client.CommonAPIClient, ops ...ImageOption) (imgutil.Image, error) {
 	inspect := defaultInspect()
 
 	image := &Image{
@@ -419,16 +420,11 @@ func (i *Image) doSave() (types.ImageInspect, error) {
 }
 
 func (i *Image) newConfigFile() ([]byte, error) {
-	imgConfig := map[string]interface{}{
-		"os":      "linux",
-		"created": time.Now().Format(time.RFC3339),
-		"config":  i.inspect.Config,
-		"rootfs": map[string][]string{
-			"diff_ids": i.inspect.RootFS.Layers,
-		},
-		"history": make([]struct{}, len(i.inspect.RootFS.Layers)),
+	cfg, err := v1Config(i.inspect)
+	if err != nil {
+		return nil, err
 	}
-	return json.Marshal(imgConfig)
+	return json.Marshal(cfg)
 }
 
 func (i *Image) Delete() error {
@@ -455,7 +451,7 @@ func (i *Image) downloadImageOnce(imageName string) (*FileSystemLocalImage, erro
 	return v.(*FileSystemLocalImage), nil
 }
 
-func downloadImage(docker *client.Client, imageName string) (*FileSystemLocalImage, error) {
+func downloadImage(docker client.CommonAPIClient, imageName string) (*FileSystemLocalImage, error) {
 	ctx := context.Background()
 
 	tarFile, err := docker.ImageSave(ctx, []string{imageName})
@@ -592,7 +588,7 @@ func untar(r io.Reader, dest string) error {
 	}
 }
 
-func inspectOptionalImage(docker *client.Client, imageName string) (types.ImageInspect, error) {
+func inspectOptionalImage(docker client.CommonAPIClient, imageName string) (types.ImageInspect, error) {
 	var (
 		err     error
 		inspect types.ImageInspect
@@ -611,6 +607,80 @@ func inspectOptionalImage(docker *client.Client, imageName string) (types.ImageI
 
 func defaultInspect() types.ImageInspect {
 	return types.ImageInspect{
-		Config: &container.Config{},
+		Os:           "linux",
+		Architecture: "amd64",
+		Config:       &container.Config{},
 	}
+}
+
+func v1Config(inspect types.ImageInspect) (v1.ConfigFile, error) {
+	history := make([]v1.History, len(inspect.RootFS.Layers))
+	for i, _ := range history {
+		// zero history
+		history[i] = v1.History{
+			Created: v1.Time{Time: imgutil.NormalizedDateTime},
+		}
+	}
+	diffIDs := make([]v1.Hash, len(inspect.RootFS.Layers))
+	for i, layer := range inspect.RootFS.Layers {
+		hash, err := v1.NewHash(layer)
+		if err != nil {
+			return v1.ConfigFile{}, err
+		}
+		diffIDs[i] = hash
+	}
+	exposedPorts := make(map[string]struct{}, len(inspect.Config.ExposedPorts))
+	for key, val := range inspect.Config.ExposedPorts {
+		exposedPorts[string(key)] = val
+	}
+	var config v1.Config
+	if inspect.Config != nil {
+		var healthcheck *v1.HealthConfig
+		if inspect.Config.Healthcheck != nil {
+			healthcheck = &v1.HealthConfig{
+				Test:        inspect.Config.Healthcheck.Test,
+				Interval:    inspect.Config.Healthcheck.Interval,
+				Timeout:     inspect.Config.Healthcheck.Timeout,
+				StartPeriod: inspect.Config.Healthcheck.StartPeriod,
+				Retries:     inspect.Config.Healthcheck.Retries,
+			}
+		}
+		config = v1.Config{
+			AttachStderr:    inspect.Config.AttachStderr,
+			AttachStdin:     inspect.Config.AttachStdin,
+			AttachStdout:    inspect.Config.AttachStdout,
+			Cmd:             inspect.Config.Cmd,
+			Healthcheck:     healthcheck,
+			Domainname:      inspect.Config.Domainname,
+			Entrypoint:      inspect.Config.Entrypoint,
+			Env:             inspect.Config.Env,
+			Hostname:        inspect.Config.Hostname,
+			Image:           inspect.Config.Image,
+			Labels:          inspect.Config.Labels,
+			OnBuild:         inspect.Config.OnBuild,
+			OpenStdin:       inspect.Config.OpenStdin,
+			StdinOnce:       inspect.Config.StdinOnce,
+			Tty:             inspect.Config.Tty,
+			User:            inspect.Config.User,
+			Volumes:         inspect.Config.Volumes,
+			WorkingDir:      inspect.Config.WorkingDir,
+			ExposedPorts:    exposedPorts,
+			ArgsEscaped:     inspect.Config.ArgsEscaped,
+			NetworkDisabled: inspect.Config.NetworkDisabled,
+			MacAddress:      inspect.Config.MacAddress,
+			StopSignal:      inspect.Config.StopSignal,
+			Shell:           inspect.Config.Shell,
+		}
+	}
+	return v1.ConfigFile{
+		Architecture: inspect.Architecture,
+		Created:      v1.Time{Time: imgutil.NormalizedDateTime},
+		History:      history,
+		OS:           inspect.Os,
+		RootFS: v1.RootFS{
+			Type:    "layers",
+			DiffIDs: diffIDs,
+		},
+		Config: config,
+	}, nil
 }

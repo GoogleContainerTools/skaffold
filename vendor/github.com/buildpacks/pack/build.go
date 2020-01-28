@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 
 	"github.com/buildpacks/imgutil"
@@ -56,6 +57,8 @@ type ContainerConfig struct {
 	Network string
 }
 
+const fromBuilderPrefix = "from=builder"
+
 func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 	imageRef, err := c.parseTagReference(opts.Image)
 	if err != nil {
@@ -95,7 +98,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		return err
 	}
 
-	fetchedBPs, group, err := c.processBuildpacks(ctx, opts.Buildpacks)
+	fetchedBPs, order, err := c.processBuildpacks(ctx, bldr.Order(), opts.Buildpacks)
 	if err != nil {
 		return err
 	}
@@ -104,7 +107,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		return errors.Wrap(err, "validating stack mixins")
 	}
 
-	ephemeralBuilder, err := c.createEphemeralBuilder(rawBuilderImage, opts.Env, group, fetchedBPs)
+	ephemeralBuilder, err := c.createEphemeralBuilder(rawBuilderImage, opts.Env, order, fetchedBPs)
 	if err != nil {
 		return err
 	}
@@ -152,6 +155,15 @@ func (c *Client) getBuilder(img imgutil.Image) (*builder.Builder, error) {
 	}
 	if bldr.Stack().RunImage.Image == "" {
 		return nil, errors.New("builder metadata is missing runImage")
+	}
+	if bldr.LifecycleDescriptor().Info.Version == nil {
+		return nil, errors.New("lifecycle version must be specified in builder")
+	}
+	if bldr.LifecycleDescriptor().API.BuildpackVersion == nil {
+		return nil, errors.New("lifecycle buildpack api version must be specified in builder")
+	}
+	if bldr.LifecycleDescriptor().API.PlatformVersion == nil {
+		return nil, errors.New("lifecycle platform api version must be specified in builder")
 	}
 	return bldr, nil
 }
@@ -222,6 +234,8 @@ func assembleAvailableMixins(buildMixins, runMixins []string) []string {
 	return append(common, append(buildOnly, runOnly...)...)
 }
 
+// allBuildpacks aggregates all buildpacks declared on the image with additional buildpacks passed in. They are sorted
+// by ID then Version.
 func allBuildpacks(builderImage imgutil.Image, additionalBuildpacks []dist.Buildpack) ([]dist.BuildpackDescriptor, error) {
 	var all []dist.BuildpackDescriptor
 	var bpLayers dist.BuildpackLayers
@@ -244,6 +258,14 @@ func allBuildpacks(builderImage imgutil.Image, additionalBuildpacks []dist.Build
 	for _, bp := range additionalBuildpacks {
 		all = append(all, bp.Descriptor())
 	}
+
+	sort.Slice(all, func(i, j int) bool {
+		if all[i].Info.ID != all[j].Info.ID {
+			return all[i].Info.ID < all[j].Info.ID
+		}
+		return all[i].Info.Version < all[j].Info.Version
+	})
+
 	return all, nil
 }
 
@@ -316,45 +338,119 @@ func (c *Client) processProxyConfig(config *ProxyConfig) ProxyConfig {
 	}
 }
 
-func (c *Client) processBuildpacks(ctx context.Context, buildpacks []string) ([]dist.Buildpack, dist.OrderEntry, error) {
-	group := dist.OrderEntry{Group: []dist.BuildpackRef{}}
-	var bps []dist.Buildpack
-	for _, bp := range buildpacks {
-		if isBuildpackID(bp) {
+// processBuildpacks computes an order group based on the existing builder order and declared buildpacks. Additionally,
+// it returns buildpacks that should be added to the builder.
+//
+// Visual examples:
+//
+// 	BUILDER ORDER
+// 	----------
+//  - group:
+//		- A
+//		- B
+//  - group:
+//		- A
+//
+//	WITH DECLARED: "from=builder", X
+// 	----------
+// 	- group:
+//		- A
+//		- B
+//		- X
+// 	 - group:
+//		- A
+//		- X
+//
+//	WITH DECLARED: X, "from=builder", Y
+// 	----------
+// 	- group:
+//		- X
+//		- A
+//		- B
+//      - Y
+// 	- group:
+//		- X
+//		- A
+//      - Y
+//
+//	WITH DECLARED: X
+// 	----------
+//	- group:
+//		- X
+//
+//	WITH DECLARED: A
+// 	----------
+// 	- group:
+//		- A
+func (c *Client) processBuildpacks(ctx context.Context, builderOrder dist.Order, declaredBPs []string) (fetchedBPs []dist.Buildpack, order dist.Order, err error) {
+	order = dist.Order{{Group: []dist.BuildpackRef{}}}
+	for _, bp := range declaredBPs {
+		switch {
+		case bp == fromBuilderPrefix:
+			switch {
+			case len(order) == 0 || len(order[0].Group) == 0:
+				order = builderOrder
+			case len(order) > 1:
+				// This should only ever be possible if they are using from=builder twice which we don't allow
+				return nil, nil, errors.New("buildpacks from builder can only be defined once")
+			default:
+				newOrder := dist.Order{}
+				groupToAdd := order[0].Group
+				for _, bOrderEntry := range builderOrder {
+					newEntry := dist.OrderEntry{Group: append(groupToAdd, bOrderEntry.Group...)}
+					newOrder = append(newOrder, newEntry)
+				}
+
+				order = newOrder
+			}
+		case isBuildpackID(bp):
 			id, version := c.parseBuildpack(bp)
-			group.Group = append(group.Group, dist.BuildpackRef{
-				BuildpackInfo: dist.BuildpackInfo{
-					ID:      id,
-					Version: version,
-				},
+			order = appendBuildpackToOrder(order, dist.BuildpackInfo{
+				ID:      id,
+				Version: version,
 			})
-		} else {
+		default:
 			err := ensureBPSupport(bp)
 			if err != nil {
-				return nil, dist.OrderEntry{}, errors.Wrapf(err, "checking buildpack path")
+				return fetchedBPs, order, errors.Wrapf(err, "checking support")
 			}
 
 			blob, err := c.downloader.Download(ctx, bp)
 			if err != nil {
-				return nil, dist.OrderEntry{}, errors.Wrapf(err, "downloading buildpack from %s", style.Symbol(bp))
+				return fetchedBPs, order, errors.Wrapf(err, "downloading buildpack from %s", style.Symbol(bp))
 			}
 
 			fetchedBP, err := dist.BuildpackFromRootBlob(blob)
 			if err != nil {
-				return nil, dist.OrderEntry{}, errors.Wrapf(err, "creating buildpack from %s", style.Symbol(bp))
+				return fetchedBPs, order, errors.Wrapf(err, "creating buildpack from %s", style.Symbol(bp))
 			}
 
-			bps = append(bps, fetchedBP)
-
-			group.Group = append(group.Group, dist.BuildpackRef{
-				BuildpackInfo: fetchedBP.Descriptor().Info,
-			})
+			fetchedBPs = append(fetchedBPs, fetchedBP)
+			order = appendBuildpackToOrder(order, fetchedBP.Descriptor().Info)
 		}
 	}
-	return bps, group, nil
+
+	return fetchedBPs, order, nil
+}
+
+func appendBuildpackToOrder(order dist.Order, bpInfo dist.BuildpackInfo) (newOrder dist.Order) {
+	for _, orderEntry := range order {
+		newEntry := orderEntry
+		newEntry.Group = append(newEntry.Group, dist.BuildpackRef{
+			BuildpackInfo: bpInfo,
+			Optional:      false,
+		})
+		newOrder = append(newOrder, newEntry)
+	}
+
+	return newOrder
 }
 
 func isBuildpackID(bp string) bool {
+	if strings.HasPrefix(bp, fromBuilderPrefix+":") {
+		return true
+	}
+
 	if !paths.IsURI(bp) {
 		if _, err := os.Stat(bp); err != nil {
 			return true
@@ -395,7 +491,7 @@ func ensureBPSupport(bpPath string) (err error) {
 }
 
 func (c *Client) parseBuildpack(bp string) (string, string) {
-	parts := strings.Split(bp, "@")
+	parts := strings.Split(strings.TrimPrefix(bp, fromBuilderPrefix+":"), "@")
 	if len(parts) == 2 {
 		if parts[1] == "latest" {
 			c.logger.Warn("@latest syntax is deprecated, will not work in future releases")
@@ -408,7 +504,7 @@ func (c *Client) parseBuildpack(bp string) (string, string) {
 	return parts[0], ""
 }
 
-func (c *Client) createEphemeralBuilder(rawBuilderImage imgutil.Image, env map[string]string, group dist.OrderEntry, buildpacks []dist.Buildpack) (*builder.Builder, error) {
+func (c *Client) createEphemeralBuilder(rawBuilderImage imgutil.Image, env map[string]string, order dist.Order, buildpacks []dist.Buildpack) (*builder.Builder, error) {
 	origBuilderName := rawBuilderImage.Name()
 	bldr, err := builder.New(rawBuilderImage, fmt.Sprintf("pack.local/builder/%x:latest", randString(10)))
 	if err != nil {
@@ -421,9 +517,9 @@ func (c *Client) createEphemeralBuilder(rawBuilderImage imgutil.Image, env map[s
 		c.logger.Debugf("Adding buildpack %s version %s to builder", style.Symbol(bpInfo.ID), style.Symbol(bpInfo.Version))
 		bldr.AddBuildpack(bp)
 	}
-	if len(group.Group) > 0 {
+	if len(order) > 0 && len(order[0].Group) > 0 {
 		c.logger.Debug("Setting custom order")
-		bldr.SetOrder([]dist.OrderEntry{group})
+		bldr.SetOrder(order)
 	}
 
 	if err := bldr.Save(c.logger); err != nil {

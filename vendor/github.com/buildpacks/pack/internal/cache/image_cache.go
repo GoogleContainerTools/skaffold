@@ -11,11 +11,11 @@ import (
 )
 
 type ImageCache struct {
-	docker *client.Client
+	docker client.CommonAPIClient
 	image  string
 }
 
-func NewImageCache(imageRef name.Reference, dockerClient *client.Client) *ImageCache {
+func NewImageCache(imageRef name.Reference, dockerClient client.CommonAPIClient) *ImageCache {
 	sum := sha256.Sum256([]byte(imageRef.Name()))
 	return &ImageCache{
 		image:  fmt.Sprintf("pack-cache-%x", sum[:6]),

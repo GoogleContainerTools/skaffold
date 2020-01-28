@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func Run(ctx context.Context, docker *client.Client, ctrID string, out, errOut io.Writer) error {
+func Run(ctx context.Context, docker client.CommonAPIClient, ctrID string, out, errOut io.Writer) error {
 	bodyChan, errChan := docker.ContainerWait(ctx, ctrID, dcontainer.WaitConditionNextExit)
 
 	if err := docker.ContainerStart(ctx, ctrID, types.ContainerStartOptions{}); err != nil {

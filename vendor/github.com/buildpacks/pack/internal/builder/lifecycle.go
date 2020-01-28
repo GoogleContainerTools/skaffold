@@ -12,16 +12,11 @@ import (
 
 	"github.com/buildpacks/pack/internal/api"
 	"github.com/buildpacks/pack/internal/archive"
-	"github.com/buildpacks/pack/internal/dist"
 )
 
 const (
-	AssumedLifecycleVersion   = "0.3.0"
-	AssumedPlatformAPIVersion = "0.1"
-
-	DefaultLifecycleVersion    = "0.5.0"
+	DefaultLifecycleVersion    = "0.6.0"
 	DefaultBuildpackAPIVersion = "0.2"
-	DefaultPlatformAPIVersion  = "0.1"
 )
 
 type Blob interface {
@@ -65,20 +60,8 @@ func NewLifecycle(blob Blob) (Lifecycle, error) {
 	var descriptor LifecycleDescriptor
 	_, buf, err := archive.ReadTarEntry(br, "lifecycle.toml")
 
-	//TODO: make lifecycle descriptor required after v0.4.0 release [https://github.com/buildpacks/pack/issues/267]
 	if err != nil && errors.Cause(err) == archive.ErrEntryNotExist {
-		return &lifecycle{
-			Blob: blob,
-			descriptor: LifecycleDescriptor{
-				Info: LifecycleInfo{
-					Version: VersionMustParse(AssumedLifecycleVersion),
-				},
-				API: LifecycleAPI{
-					BuildpackVersion: api.MustParse(dist.AssumedBuildpackAPIVersion),
-					PlatformVersion:  api.MustParse(AssumedPlatformAPIVersion),
-				},
-			},
-		}, nil
+		return nil, err
 	} else if err != nil {
 		return nil, errors.Wrap(err, "decode lifecycle descriptor")
 	}

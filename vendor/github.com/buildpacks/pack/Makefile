@@ -48,7 +48,7 @@ unit: format lint
 
 acceptance: format lint
 	@echo "> Running acceptance tests..."
-	$(GOCMD) test -v -count=1 -parallel=1 -timeout=0 -tags=acceptance ./acceptance
+	COMPILE_PACK_WITH_VERSION=$(or ${COMPILE_PACK_WITH_VERSION}, 0.0.0) $(GOCMD) test -v -count=1 -parallel=1 -timeout=0 -tags=acceptance ./acceptance
 
 acceptance-all: format lint
 	@echo "> Running acceptance tests..."
