@@ -46,15 +46,15 @@ func TestGracefulBuildCancel(t *testing.T) {
 		},
 		{
 			description: "kill process after sigint",
-			command:     "trap 'echo trap' INT; sleep 5",
+			command:     "trap 'echo trap' INT; sleep 100",
 			shouldErr:   true,
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&gracePeriod, 100*time.Millisecond)
-			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+			t.Override(&gracePeriod, 200*time.Millisecond)
+			ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
 			defer cancel()
 
 			cmd := exec.Command("bash", "-c", test.command)
