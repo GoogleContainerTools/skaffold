@@ -38,9 +38,10 @@ func newAnalysis(c Config) *analysis {
 	var builders *builderAnalyzer
 	if !c.SkipBuild {
 		builders = &builderAnalyzer{
-			findBuilders:        !c.SkipBuild,
-			enableJibInit:       c.EnableJibInit,
-			enableBuildpackInit: c.EnableBuildpackInit,
+			findBuilders:         !c.SkipBuild,
+			enableJibInit:        c.EnableJibInit,
+			enableBuildpacksInit: c.EnableBuildpacksInit,
+			buildpacksBuilder:    c.BuildpacksBuilder,
 		}
 	}
 	return &analysis{

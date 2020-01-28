@@ -35,7 +35,8 @@ var (
 	force                  bool
 	analyze                bool
 	enableJibInit          bool
-	enableBuildpackInit    bool
+	enableBuildpacksInit   bool
+	buildpacksBuilder      string
 )
 
 // for testing
@@ -57,8 +58,10 @@ func NewCmdInit() *cobra.Command {
 			f.BoolVar(&analyze, "analyze", false, "Print all discoverable Dockerfiles and images in JSON format to stdout")
 			f.BoolVar(&enableJibInit, "XXenableJibInit", false, "")
 			f.MarkHidden("XXenableJibInit")
-			f.BoolVar(&enableBuildpackInit, "XXenableBuildpackInit", false, "")
-			f.MarkHidden("XXenableBuildpackInit")
+			f.BoolVar(&enableBuildpacksInit, "XXenableBuildpacksInit", false, "")
+			f.MarkHidden("XXenableBuildpacksInit")
+			f.StringVar(&buildpacksBuilder, "XXdefaultBuildpacksBuilder", "heroku/buildpacks", "")
+			f.MarkHidden("XXdefaultBuildpacksBuilder")
 		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doInit))
 }
@@ -73,7 +76,8 @@ func doInit(ctx context.Context, out io.Writer) error {
 		Force:                  force,
 		Analyze:                analyze,
 		EnableJibInit:          enableJibInit,
-		EnableBuildpackInit:    enableBuildpackInit,
+		EnableBuildpacksInit:   enableBuildpacksInit,
+		BuildpacksBuilder:      buildpacksBuilder,
 		Opts:                   opts,
 	})
 }

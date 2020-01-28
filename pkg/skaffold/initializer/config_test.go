@@ -197,7 +197,8 @@ func TestArtifacts(t *testing.T) {
 			{
 				ImageName: "image3",
 				Builder: buildpacks.ArtifactConfig{
-					File: "package.json",
+					File:    "package.json",
+					Builder: "some/builder",
 				},
 			},
 		})
@@ -220,7 +221,7 @@ func TestArtifacts(t *testing.T) {
 				ImageName: "image3",
 				ArtifactType: latest.ArtifactType{
 					BuildpackArtifact: &latest.BuildpackArtifact{
-						Builder: "heroku/buildpacks",
+						Builder: "some/builder",
 					},
 				},
 			},

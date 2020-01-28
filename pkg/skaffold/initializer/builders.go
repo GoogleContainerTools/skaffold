@@ -35,17 +35,18 @@ import (
 
 type builderAnalyzer struct {
 	directoryAnalyzer
-	enableJibInit       bool
-	enableBuildpackInit bool
-	findBuilders        bool
-	foundBuilders       []InitBuilder
+	enableJibInit        bool
+	enableBuildpacksInit bool
+	findBuilders         bool
+	buildpacksBuilder    string
+	foundBuilders        []InitBuilder
 
 	parentDirToStopFindBuilders string
 }
 
 func (a *builderAnalyzer) analyzeFile(filePath string) error {
 	if a.findBuilders && (a.parentDirToStopFindBuilders == "" || a.parentDirToStopFindBuilders == a.currentDir) {
-		builderConfigs, continueSearchingBuilders := detectBuilders(a.enableJibInit, a.enableBuildpackInit, filePath)
+		builderConfigs, continueSearchingBuilders := a.detectBuilders(filePath)
 		a.foundBuilders = append(a.foundBuilders, builderConfigs...)
 		if !continueSearchingBuilders {
 			a.parentDirToStopFindBuilders = a.currentDir
@@ -101,9 +102,9 @@ func findExactlyOnceMatchingBuilder(builderConfigs []InitBuilder, image string) 
 // detectBuilders checks if a path is a builder config, and if it is, returns the InitBuilders representing the
 // configs. Also returns a boolean marking search completion for subdirectories (true = subdirectories should
 // continue to be searched, false = subdirectories should not be searched for more builders)
-func detectBuilders(enableJibInit, enableBuildpackInit bool, path string) ([]InitBuilder, bool) {
+func (a *builderAnalyzer) detectBuilders(path string) ([]InitBuilder, bool) {
 	// TODO: Remove backwards compatibility if statement (not entire block)
-	if enableJibInit {
+	if a.enableJibInit {
 		// Check for jib
 		if builders := jib.Validate(path); builders != nil {
 			results := make([]InitBuilder, len(builders))
@@ -124,10 +125,13 @@ func detectBuilders(enableJibInit, enableBuildpackInit bool, path string) ([]Ini
 	}
 
 	// TODO: Remove backwards compatibility if statement (not entire block)
-	if enableBuildpackInit {
+	if a.enableBuildpacksInit {
 		// Check for buildpacks
 		if buildpacks.Validate(path) {
-			results := []InitBuilder{buildpacks.ArtifactConfig{File: path}}
+			results := []InitBuilder{buildpacks.ArtifactConfig{
+				File:    path,
+				Builder: a.buildpacksBuilder,
+			}}
 			return results, true
 		}
 	}
