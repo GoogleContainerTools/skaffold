@@ -256,7 +256,15 @@ return SYNC{files in diff}
 
 ## Integration test plan
 
-*TBD*
+
+This can be a Kind based test, we don't need GCP secrets. 
+Hence: 
+- need to install gradle or maven on travis integration test jobs outside the cluster for testing the build script
+- the test would do the following steps: 
+    - spin up a simple java app built by jib with skaffold dev + autosync enabled
+    - get pod name
+    - change a .java file (should trigger generation of a class file) 
+    - check with kubectl inside the pod (if pod not found as rebuild was triggered, fail) that the class file is copied over (compare content with external version) 
 
 ## Alternatives Explored
 
