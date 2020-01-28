@@ -10,11 +10,11 @@ import (
 )
 
 type VolumeCache struct {
-	docker *client.Client
+	docker client.CommonAPIClient
 	volume string
 }
 
-func NewVolumeCache(imageRef name.Reference, suffix string, dockerClient *client.Client) *VolumeCache {
+func NewVolumeCache(imageRef name.Reference, suffix string, dockerClient client.CommonAPIClient) *VolumeCache {
 	sum := sha256.Sum256([]byte(imageRef.Name()))
 	return &VolumeCache{
 		volume: fmt.Sprintf("pack-cache-%x.%s", sum[:6], suffix),

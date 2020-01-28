@@ -40,7 +40,7 @@ type Client struct {
 	imageFetcher ImageFetcher
 	downloader   Downloader
 	lifecycle    Lifecycle
-	docker       *dockerClient.Client
+	docker       dockerClient.CommonAPIClient
 	imageFactory ImageFactory
 }
 
@@ -84,7 +84,7 @@ func WithCacheDir(path string) ClientOption {
 }
 
 // WithDockerClient supply your own docker client.
-func WithDockerClient(docker *dockerClient.Client) ClientOption {
+func WithDockerClient(docker dockerClient.CommonAPIClient) ClientOption {
 	return func(c *Client) {
 		c.docker = docker
 	}

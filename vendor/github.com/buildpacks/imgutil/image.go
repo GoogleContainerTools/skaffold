@@ -7,6 +7,8 @@ import (
 	"time"
 )
 
+var NormalizedDateTime = time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
+
 type SaveDiagnostic struct {
 	ImageName string
 	Cause     error

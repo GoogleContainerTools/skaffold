@@ -25,7 +25,7 @@ var (
 type Lifecycle struct {
 	builder            *builder.Builder
 	logger             logging.Logger
-	docker             *client.Client
+	docker             client.CommonAPIClient
 	appPath            string
 	appOnce            *sync.Once
 	httpProxy          string
@@ -46,7 +46,7 @@ func init() {
 	rand.Seed(time.Now().UTC().UnixNano())
 }
 
-func NewLifecycle(docker *client.Client, logger logging.Logger) *Lifecycle {
+func NewLifecycle(docker client.CommonAPIClient, logger logging.Logger) *Lifecycle {
 	return &Lifecycle{logger: logger, docker: docker}
 }
 

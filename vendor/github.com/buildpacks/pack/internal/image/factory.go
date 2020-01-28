@@ -9,11 +9,11 @@ import (
 )
 
 type DefaultImageFactory struct {
-	dockerClient *client.Client
+	dockerClient client.CommonAPIClient
 	keychain     authn.Keychain
 }
 
-func NewFactory(dockerClient *client.Client, keychain authn.Keychain) *DefaultImageFactory {
+func NewFactory(dockerClient client.CommonAPIClient, keychain authn.Keychain) *DefaultImageFactory {
 	return &DefaultImageFactory{
 		dockerClient: dockerClient,
 		keychain:     keychain,

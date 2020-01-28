@@ -9,7 +9,6 @@ const (
 type Metadata struct {
 	Description string              `json:"description"`
 	Buildpacks  []BuildpackMetadata `json:"buildpacks"`
-	Groups      V1Order             `json:"groups"` // deprecated
 	Stack       StackMetadata       `json:"stack"`
 	Lifecycle   LifecycleMetadata   `json:"lifecycle"`
 	CreatedBy   CreatorMetadata     `json:"createdBy"`
