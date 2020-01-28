@@ -23,11 +23,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// For testing
-var (
-	Validate = validate
-)
-
 // Name is the name of the Buildpack builder
 var Name = "Buildpacks"
 
@@ -66,8 +61,8 @@ func (c ArtifactConfig) Path() string {
 	return c.File
 }
 
-// validate checks if a file is a valid Buildpack configuration.
-func validate(path string) bool {
+// Validate checks if a file is a valid Buildpack configuration.
+func Validate(path string) bool {
 	name := filepath.Base(path)
 
 	return name == "package.json" || name == "go.mod"
