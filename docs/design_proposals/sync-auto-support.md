@@ -228,7 +228,7 @@ sync:
     - "src/main/jib/myExtraFilesThatBreakADeployment"
 ```
 
-## Implementation plan
+## Implementation plan for jib
 
 - [`schemas/<version>.go`] Add `Auto` to the schema under `Sync`
 - Before first build, initialize the `sync` state for builders in `auto` mode, this
