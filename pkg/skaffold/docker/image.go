@@ -66,6 +66,7 @@ type LocalDaemon interface {
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
 	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error
+	RawClient() client.CommonAPIClient
 }
 
 type localDaemon struct {
@@ -102,6 +103,10 @@ type PushResult struct {
 // BuildResult gives the information on an image that has been built.
 type BuildResult struct {
 	ID string
+}
+
+func (l *localDaemon) RawClient() client.CommonAPIClient {
+	return l.apiClient
 }
 
 // Close closes the connection with the local daemon.

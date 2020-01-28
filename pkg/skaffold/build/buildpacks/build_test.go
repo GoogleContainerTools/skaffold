@@ -33,7 +33,7 @@ type fakePack struct {
 	Opts pack.BuildOptions
 }
 
-func (f *fakePack) runPack(_ context.Context, _ io.Writer, opts pack.BuildOptions) error {
+func (f *fakePack) runPack(_ context.Context, _ io.Writer, _ docker.LocalDaemon, opts pack.BuildOptions) error {
 	f.Opts = opts
 	return nil
 }
