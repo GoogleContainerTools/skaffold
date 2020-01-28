@@ -249,7 +249,7 @@ var testNamespace = "testNamespace"
 
 var validDeployYaml = `
 # Source: skaffold-helm/templates/deployment.yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: skaffold-helm
@@ -260,6 +260,10 @@ metadata:
     heritage: Tiller
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: skaffold-helm
+      release: skaffold-helm
   template:
     metadata:
       labels:

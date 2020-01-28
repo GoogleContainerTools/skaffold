@@ -17,6 +17,7 @@ limitations under the License.
 package debug
 
 import (
+	"strings"
 	"testing"
 
 	v1 "k8s.io/api/core/v1"
@@ -114,14 +115,14 @@ func (t testTransformer) RuntimeSupportImage() string {
 	return ""
 }
 
-func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
+func (t testTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *ContainerDebugConfiguration {
 	port := portAlloc(9999)
 	container.Ports = append(container.Ports, v1.ContainerPort{Name: "test", ContainerPort: port})
 
 	testEnv := v1.EnvVar{Name: "KEY", Value: "value"}
 	container.Env = append(container.Env, testEnv)
 
-	return map[string]interface{}{"key": "value"}
+	return &ContainerDebugConfiguration{Runtime: "test"}
 }
 
 func TestApplyDebuggingTransforms(t *testing.T) {
@@ -149,7 +150,7 @@ spec:
 kind: Pod
 metadata:
   annotations:
-    debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+    debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
   creationTimestamp: null
   name: pod
 spec:
@@ -200,7 +201,7 @@ spec:
   template:
     metadata:
       annotations:
-        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
       creationTimestamp: null
       labels:
         app: debug-app
@@ -252,7 +253,7 @@ spec:
   template:
     metadata:
       annotations:
-        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
       creationTimestamp: null
       labels:
         app: debug-app
@@ -307,7 +308,7 @@ spec:
   template:
     metadata:
       annotations:
-        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
       creationTimestamp: null
       labels:
         app: debug-app
@@ -359,7 +360,7 @@ spec:
   template:
     metadata:
       annotations:
-        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
       creationTimestamp: null
       labels:
         app: debug-app
@@ -414,7 +415,7 @@ spec:
   template:
     metadata:
       annotations:
-        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
       creationTimestamp: null
       labels:
         app: debug-app
@@ -464,7 +465,7 @@ spec:
   template:
     metadata:
       annotations:
-        debug.cloud.google.com/config: '{"example":{"key":"value"}}'
+        debug.cloud.google.com/config: '{"example":{"runtime":"test"}}'
       creationTimestamp: null
       labels:
         app: debug-app
@@ -517,4 +518,42 @@ spec:
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, result.String())
 		})
 	}
+}
+
+func TestWorkingDir(t *testing.T) {
+	defer func(c []containerTransformer) { containerTransforms = c }(containerTransforms)
+	containerTransforms = append(containerTransforms, testTransformer{})
+
+	pod := &v1.Pod{
+		TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+		ObjectMeta: metav1.ObjectMeta{Name: "podname"},
+		Spec:       v1.PodSpec{Containers: []v1.Container{{Name: "name1", Image: "image1"}}}}
+
+	retriever := func(image string) (imageConfiguration, error) {
+		return imageConfiguration{workingDir: "/a/dir"}, nil
+	}
+
+	result := transformManifest(pod, retriever)
+	testutil.CheckDeepEqual(t, true, result)
+	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
+	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"workingDir":"/a/dir"`))
+}
+
+func TestArtifactImage(t *testing.T) {
+	defer func(c []containerTransformer) { containerTransforms = c }(containerTransforms)
+	containerTransforms = append(containerTransforms, testTransformer{})
+
+	pod := &v1.Pod{
+		TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+		ObjectMeta: metav1.ObjectMeta{Name: "podname"},
+		Spec:       v1.PodSpec{Containers: []v1.Container{{Name: "name1", Image: "image1"}}}}
+
+	retriever := func(image string) (imageConfiguration, error) {
+		return imageConfiguration{name: "gcr.io/random/image"}, nil
+	}
+
+	result := transformManifest(pod, retriever)
+	testutil.CheckDeepEqual(t, true, result)
+	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
+	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"artifactImage":"gcr.io/random/image"`))
 }

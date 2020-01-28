@@ -41,6 +41,7 @@ func TestNewSyncItem(t *testing.T) {
 		description  string
 		artifact     *latest.Artifact
 		dependencies map[string][]string
+		labels       map[string]string
 		evt          filemon.Events
 		builds       []build.Artifact
 		shouldErr    bool
@@ -634,11 +635,54 @@ func TestNewSyncItem(t *testing.T) {
 				},
 			},
 		},
+
+		// Buildpacks
+		{
+			description: "infer with buildpacks",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					BuildpackArtifact: &latest.BuildpackArtifact{},
+				},
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Infer: []string{"**/*.go"},
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"file.go", "ignored.txt"},
+			},
+			labels: map[string]string{
+				"io.buildpacks.build.metadata": `{
+					"bom":[{
+						"metadata":{
+							"devmode.sync": [
+								{"src":"*.go","dest":"/some"}
+							]
+						}
+					}]
+				}`,
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string][]string{
+					"file.go": {"/some/file.go"},
+				},
+				Delete: map[string][]string{},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return test.workingDir, nil })
 			t.Override(&SyncMap, func(*latest.Artifact, map[string]bool) (map[string][]string, error) { return test.dependencies, nil })
+			t.Override(&Labels, func(string, map[string]bool) (map[string]string, error) { return test.labels, nil })
 
 			actual, err := NewItem(test.artifact, test.evt, test.builds, nil)
 

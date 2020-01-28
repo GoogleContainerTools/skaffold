@@ -47,6 +47,7 @@ func Set(c *latest.SkaffoldConfig) error {
 
 	for _, a := range c.Build.Artifacts {
 		setDefaultWorkspace(a)
+		setDefaultSync(a)
 
 		if c.Build.Cluster != nil && a.CustomArtifact == nil && a.BuildpackArtifact == nil {
 			defaultToKanikoArtifact(a)
@@ -172,8 +173,9 @@ func setDefaultKustomizePath(c *latest.SkaffoldConfig) {
 	if kustomize == nil {
 		return
 	}
-
-	kustomize.KustomizePath = valueOrDefault(kustomize.KustomizePath, constants.DefaultKustomizationPath)
+	if len(kustomize.KustomizePaths) == 0 {
+		kustomize.KustomizePaths = []string{constants.DefaultKustomizationPath}
+	}
 }
 
 func setDefaultKubectlManifests(c *latest.SkaffoldConfig) {
@@ -212,6 +214,12 @@ func setDockerArtifactDefaults(a *latest.DockerArtifact) {
 
 func setDefaultWorkspace(a *latest.Artifact) {
 	a.Workspace = valueOrDefault(a.Workspace, ".")
+}
+
+func setDefaultSync(a *latest.Artifact) {
+	if a.Sync != nil && len(a.Sync.Manual) == 0 && len(a.Sync.Infer) == 0 {
+		a.Sync.Infer = []string{"**/*"}
+	}
 }
 
 func withClusterConfig(c *latest.SkaffoldConfig, opts ...func(*latest.ClusterDetails) error) error {

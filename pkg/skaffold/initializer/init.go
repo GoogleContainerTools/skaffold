@@ -17,35 +17,22 @@ limitations under the License.
 package initializer
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"os"
-	"strings"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 // NoBuilder allows users to specify they don't want to build
 // an image we parse out from a Kubernetes manifest
 const NoBuilder = "None (image not built from these sources)"
-
-// deploymentInitializer detects a deployment type and is able to extract image names from it
-type deploymentInitializer interface {
-	// deployConfig generates Deploy Config for skaffold configuration.
-	deployConfig() latest.DeployConfig
-	// GetImages fetches all the images defined in the manifest files.
-	GetImages() []string
-}
 
 // InitBuilder represents a builder that can be chosen by skaffold init.
 type InitBuilder interface {
@@ -65,14 +52,17 @@ type InitBuilder interface {
 
 // Config contains all the parameters for the initializer package
 type Config struct {
-	ComposeFile         string
-	CliArtifacts        []string
-	SkipBuild           bool
-	Force               bool
-	Analyze             bool
-	EnableJibInit       bool // TODO: Remove this parameter
-	EnableBuildpackInit bool
-	Opts                config.SkaffoldOptions
+	ComposeFile            string
+	CliArtifacts           []string
+	CliKubernetesManifests []string
+	SkipBuild              bool
+	SkipDeploy             bool
+	Force                  bool
+	Analyze                bool
+	EnableJibInit          bool // TODO: Remove this parameter
+	EnableBuildpacksInit   bool
+	BuildpacksBuilder      string
+	Opts                   config.SkaffoldOptions
 }
 
 // builderImagePair defines a builder and the image it builds
@@ -91,62 +81,44 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		}
 	}
 
-	a := &analysis{
-		kubectlAnalyzer: &kubectlAnalyzer{},
-		builderAnalyzer: &builderAnalyzer{
-			findBuilders:        !c.SkipBuild,
-			enableJibInit:       c.EnableJibInit,
-			enableBuildpackInit: c.EnableBuildpackInit,
-		},
-		skaffoldAnalyzer: &skaffoldConfigAnalyzer{
-			force: c.Force,
-		},
-	}
+	a := newAnalysis(c)
 
 	if err := a.analyze(rootDir); err != nil {
 		return err
 	}
 
-	k, err := newKubectlInitializer(a.kubectlAnalyzer.kubernetesManifests)
-	if err != nil {
-		return err
-	}
-
-	// Remove tags from image names
-	var images []string
-	for _, image := range k.GetImages() {
-		parsed, err := docker.ParseReference(image)
+	var deployInitializer deploymentInitializer
+	switch {
+	case c.SkipDeploy:
+		deployInitializer = &emptyDeployInit{}
+	case len(c.CliKubernetesManifests) > 0:
+		deployInitializer = &cliDeployInit{c.CliKubernetesManifests}
+	default:
+		k, err := newKubectlInitializer(a.kubectlAnalyzer.kubernetesManifests)
 		if err != nil {
-			// It's possible that it's a templatized name that can't be parsed as is.
-			warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
-			continue
+			return err
 		}
-		if parsed.Digest != "" {
-			warnings.Printf("Ignoring image referenced by digest: [%s]", image)
-			continue
-		}
-
-		images = append(images, parsed.BaseName)
+		deployInitializer = k
 	}
 
 	// Determine which builders/images require prompting
-	pairs, unresolvedBuilderConfigs, unresolvedImages := autoSelectBuilders(a.builderAnalyzer.foundBuilders, images)
+	pairs, unresolvedBuilderConfigs, unresolvedImages :=
+		matchBuildersToImages(
+			a.builderAnalyzer.foundBuilders,
+			stripTags(deployInitializer.GetImages()))
 
 	if c.Analyze {
 		// TODO: Remove backwards compatibility block
-		if !c.EnableJibInit && !c.EnableBuildpackInit {
+		if !c.EnableJibInit && !c.EnableBuildpacksInit {
 			return printAnalyzeJSONNoJib(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
 		}
 
 		return printAnalyzeJSON(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
 	}
-
-	// conditionally generate build artifacts
 	if !c.SkipBuild {
-		if len(a.builderAnalyzer.foundBuilders) == 0 {
+		if len(a.builderAnalyzer.foundBuilders) == 0 && c.CliArtifacts == nil {
 			return errors.New("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
 		}
-
 		if c.CliArtifacts != nil {
 			newPairs, err := processCliArtifacts(c.CliArtifacts)
 			if err != nil {
@@ -162,7 +134,7 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 		}
 	}
 
-	pipeline, err := yaml.Marshal(generateSkaffoldConfig(k, pairs))
+	pipeline, err := yaml.Marshal(generateSkaffoldConfig(deployInitializer, pairs))
 	if err != nil {
 		return err
 	}
@@ -172,25 +144,8 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	}
 
 	if !c.Force {
-		fmt.Fprintln(out, string(pipeline))
-
-		reader := bufio.NewReader(os.Stdin)
-	confirmLoop:
-		for {
-			fmt.Fprintf(out, "Do you want to write this configuration to %s? [y/n]: ", c.Opts.ConfigurationFile)
-
-			response, err := reader.ReadString('\n')
-			if err != nil {
-				return errors.Wrap(err, "reading user confirmation")
-			}
-
-			response = strings.ToLower(strings.TrimSpace(response))
-			switch response {
-			case "y", "yes":
-				break confirmLoop
-			case "n", "no":
-				return nil
-			}
+		if done, err := promptWritingConfig(out, pipeline, c.Opts.ConfigurationFile); done {
+			return err
 		}
 	}
 

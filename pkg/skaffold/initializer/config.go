@@ -25,6 +25,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
@@ -36,18 +37,35 @@ var (
 
 type skaffoldConfigAnalyzer struct {
 	directoryAnalyzer
-	force bool
+	force        bool
+	analyzeMode  bool
+	targetConfig string
 }
 
 func (a *skaffoldConfigAnalyzer) analyzeFile(filePath string) error {
-	if !isSkaffoldConfig(filePath) {
+	if !isSkaffoldConfig(filePath) || a.force || a.analyzeMode {
 		return nil
 	}
-	if !a.force {
-		return fmt.Errorf("pre-existing %s found (you may continue with --force)", filePath)
+	sameFiles, err := sameFiles(filePath, a.targetConfig)
+	if err != nil {
+		return fmt.Errorf("failed to analyze file %s: %s", filePath, err)
 	}
-	logrus.Debugf("%s is a valid skaffold configuration: continuing since --force=true", filePath)
-	return nil
+	if !sameFiles {
+		return nil
+	}
+	return fmt.Errorf("pre-existing %s found (you may continue with --force)", filePath)
+}
+
+func sameFiles(a, b string) (bool, error) {
+	absA, err := filepath.Abs(a)
+	if err != nil {
+		return false, err
+	}
+	absB, err := filepath.Abs(b)
+	if err != nil {
+		return false, err
+	}
+	return absA == absB, nil
 }
 
 func generateSkaffoldConfig(k deploymentInitializer, buildConfigPairs []builderImagePair) *latest.SkaffoldConfig {
@@ -121,4 +139,12 @@ func artifacts(pairs []builderImagePair) []*latest.Artifact {
 	}
 
 	return artifacts
+}
+
+// isSkaffoldConfig is for determining if a file is skaffold config file.
+func isSkaffoldConfig(file string) bool {
+	if config, err := schema.ParseConfig(file, false); err == nil && config != nil {
+		return true
+	}
+	return false
 }

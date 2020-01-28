@@ -1,0 +1,12 @@
+apiVersion: skaffold/v2alpha3
+kind: Config
+metadata:
+  name: allcli
+build:
+  artifacts:
+    - image: passed-in-artifact
+deploy:
+  kubectl:
+    manifests:
+      - manifest-placeholder1.yaml
+      - manifest-placeholder2.yaml

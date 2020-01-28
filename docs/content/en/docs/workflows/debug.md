@@ -32,10 +32,20 @@ describing the debug configurations for the pod's containers (linebreaks for rea
 ```
 
 For example the following annotation indicates that the container named `web` is a Go application
-that is being debugged by a headless Delve session on port `56268`:
+that is being debugged by a headless Delve session on port `56268` (linebreaks for readability):
 ```
-debug.cloud.google.com/config={"web":{"dlv":56268,"runtime":"go"}}
+debug.cloud.google.com/config={
+  "web":{
+    "artifactName":"gcr.io/random/image",
+    "runtime":"go",
+    "ports":{"dlv":56268},
+    "workingDir":"/some/path"}}
 ```
+
+`artifactName` is the corresponding artifact's name in the `skaffold.yaml`.
+`runtime` is the language runtime detected.
+`ports` is a list of debug ports keyed by the language runtime debugging protocol.
+`workingDir` is the working directory (if not an empty string).
 
 Some language runtimes require additional support files to enable debugging.
 For these languages, a special set of [runtime-specific images](https://github.com/GoogleContainerTools/container-debug-support)

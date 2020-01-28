@@ -49,7 +49,7 @@ func (s stringSet) insert(strings ...string) {
 
 // toList returns the sorted list of inserted strings.
 func (s stringSet) toList() []string {
-	res := make([]string, 0, len(s))
+	var res []string
 	for item := range s {
 		res = append(res, item)
 	}

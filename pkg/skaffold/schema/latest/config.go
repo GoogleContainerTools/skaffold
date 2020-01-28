@@ -310,6 +310,9 @@ type ClusterDetails struct {
 	// Concurrency is how many artifacts can be built concurrently. 0 means "no-limit".
 	// Defaults to `0`.
 	Concurrency int `yaml:"concurrency,omitempty"`
+
+	// Volumes defines container mounts for ConfigMap and Secret resources.
+	Volumes []v1.Volume `yaml:"volumes,omitempty"`
 }
 
 // DockerConfig contains information about the docker `config.json` to mount.
@@ -415,6 +418,10 @@ type KubectlFlags struct {
 
 	// Delete are additional flags passed on deletions (`kubectl delete`).
 	Delete []string `yaml:"delete,omitempty"`
+
+	// DisableValidation passes the `--validate=false` flag to supported
+	// `kubectl` commands when enabled.
+	DisableValidation bool `yaml:"disableValidation,omitempty"`
 }
 
 // HelmDeploy *beta* uses the `helm` CLI to apply the charts to the cluster.
@@ -442,9 +449,9 @@ type HelmDeployFlags struct {
 
 // KustomizeDeploy *beta* uses the `kustomize` CLI to "patch" a deployment for a target environment.
 type KustomizeDeploy struct {
-	// KustomizePath is the path to Kustomization files.
+	// KustomizePaths is the path to Kustomization files.
 	// Defaults to `.`.
-	KustomizePath string `yaml:"path,omitempty"`
+	KustomizePaths []string `yaml:"paths,omitempty"`
 
 	// Flags are additional flags passed to `kubectl`.
 	Flags KubectlFlags `yaml:"flags,omitempty"`
@@ -566,6 +573,8 @@ type Artifact struct {
 
 	// Sync *beta* lists local files synced to pods instead
 	// of triggering an image build when modified.
+	// If no files are listed, sync all the files and infer the destination.
+	// Defaults to `infer: ["**/*"]`.
 	Sync *Sync `yaml:"sync,omitempty"`
 
 	// ArtifactType describes how to build an artifact.
@@ -574,6 +583,8 @@ type Artifact struct {
 
 // Sync *beta* specifies what files to sync into the container.
 // This is a list of sync rules indicating the intent to sync for source files.
+// If no files are listed, sync all the files and infer the destination.
+// Defaults to `infer: ["**/*"]`.
 type Sync struct {
 	// Manual lists manual sync rules indicating the source and destination.
 	Manual []*SyncRule `yaml:"manual,omitempty" yamltags:"oneOf=sync"`
@@ -684,9 +695,6 @@ type ArtifactType struct {
 // BuildpackArtifact *alpha* describes an artifact built using [Cloud Native Buildpacks](https://buildpacks.io/).
 // It can be used to build images out of project's sources without any additional configuration.
 type BuildpackArtifact struct {
-	// ForcePull should the builder image be pull before each build.
-	ForcePull bool `yaml:"forcePull,omitempty"`
-
 	// Builder is the builder image used.
 	Builder string `yaml:"builder" yamltags:"required"`
 
@@ -697,6 +705,11 @@ type BuildpackArtifact struct {
 	// Values can use the go template syntax.
 	// For example: `["key1=value1", "key2=value2", "key3={{.ENV_VARIABLE}}"]`.
 	Env []string `yaml:"env,omitempty"`
+
+	// Buildpacks is a list of strings, where each string is a specific buildpack to use with the builder.
+	// If you specify buildpacks the builder image automatic detection will be ignored. These buildpacks will be used to build the Image from your source code.
+	// Order matters.
+	Buildpacks []string `yaml:"buildpacks,omitempty"`
 
 	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`
@@ -785,6 +798,9 @@ type KanikoArtifact struct {
 
 	// SkipTLS skips TLS verification when pulling and pushing the image.
 	SkipTLS bool `yaml:"skipTLS,omitempty"`
+
+	// VolumeMounts are volume mounts passed to kaniko pod.
+	VolumeMounts []v1.VolumeMount `yaml:"volumeMounts,omitempty"`
 }
 
 // DockerArtifact describes an artifact built from a Dockerfile,

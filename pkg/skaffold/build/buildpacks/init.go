@@ -33,7 +33,8 @@ var Name = "Buildpacks"
 
 // ArtifactConfig holds information about a Buildpack project
 type ArtifactConfig struct {
-	File string `json:"path,omitempty"`
+	File    string `json:"path,omitempty"`
+	Builder string `json:"builder,omitempty"`
 }
 
 // Name returns the name of the builder
@@ -50,7 +51,7 @@ func (c ArtifactConfig) Describe() string {
 func (c ArtifactConfig) UpdateArtifact(a *latest.Artifact) {
 	a.ArtifactType = latest.ArtifactType{
 		BuildpackArtifact: &latest.BuildpackArtifact{
-			Builder: "heroku/buildpacks",
+			Builder: c.Builder,
 		},
 	}
 }

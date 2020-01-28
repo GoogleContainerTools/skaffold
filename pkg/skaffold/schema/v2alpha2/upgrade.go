@@ -26,8 +26,8 @@ import (
 // Config changes from v2alpha2 to v2alpha3
 // 1. Additions:
 // 2. Removals:
-//    kaniko.buildContext
-// 3. No updates
+// 3. Updates:
+//    - kustomize deployer supports multiple paths
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 
@@ -40,7 +40,15 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	return &newConfig, nil
 }
 
-// Placeholder for upgrade logic
-func upgradeOnePipeline(_, _ interface{}) error {
+func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldDeploy := &oldPipeline.(*Pipeline).Deploy
+	newDeploy := &newPipeline.(*next.Pipeline).Deploy
+
+	if oldKustomize := oldDeploy.KustomizeDeploy; oldKustomize != nil {
+		if path := oldKustomize.KustomizePath; path != "" {
+			newDeploy.KustomizeDeploy.KustomizePaths = []string{path}
+		}
+	}
+
 	return nil
 }

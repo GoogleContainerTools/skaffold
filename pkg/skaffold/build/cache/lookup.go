@@ -29,7 +29,6 @@ import (
 
 var (
 	// For testing
-	hashForArtifact = getHashForArtifact
 	buildInProgress = event.BuildInProgress
 )
 
@@ -53,7 +52,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 }
 
 func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string) cacheDetails {
-	hash, err := hashForArtifact(ctx, c.dependencies, a)
+	hash, err := c.hashForArtifact(ctx, a)
 	if err != nil {
 		return failed{err: fmt.Errorf("getting hash for artifact %s: %v", a.ImageName, err)}
 	}
