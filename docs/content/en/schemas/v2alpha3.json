@@ -610,6 +610,18 @@
           "x-intellij-html-description": "name of the Kubernetes secret for pulling base images and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key <code>kaniko-secret</code>.",
           "default": "kaniko-secret"
         },
+        "randomDockerConfigSecret": {
+          "type": "boolean",
+          "description": "adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds, e.g. docker-cfgfd154022-c761-416f-8eb3-cf8258450b85.",
+          "x-intellij-html-description": "adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds, e.g. docker-cfgfd154022-c761-416f-8eb3-cf8258450b85.",
+          "default": "false"
+        },
+        "randomPullSecret": {
+          "type": "boolean",
+          "description": "adds a random UUID postfix to the default name of the pull secret to facilitate parallel builds, e.g. kaniko-secretdocker-cfgfd154022-c761-416f-8eb3-cf8258450b85.",
+          "x-intellij-html-description": "adds a random UUID postfix to the default name of the pull secret to facilitate parallel builds, e.g. kaniko-secretdocker-cfgfd154022-c761-416f-8eb3-cf8258450b85.",
+          "default": "false"
+        },
         "resources": {
           "$ref": "#/definitions/ResourceRequirements",
           "description": "define the resource requirements for the kaniko pod.",
@@ -639,7 +651,9 @@
         "dockerConfig",
         "resources",
         "concurrency",
-        "volumes"
+        "volumes",
+        "randomPullSecret",
+        "randomDockerConfigSecret"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build.",
