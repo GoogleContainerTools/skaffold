@@ -114,8 +114,8 @@ const (
 	// debuggingSupportVolume is the name of the volume used to hold language runtime debugging support files.
 	debuggingSupportFilesVolume = "debugging-support-files"
 
-	// debugConfigAnnotation is the name of the podspec annotation that records debugging configuration information.
-	debugConfigAnnotation = "debug.cloud.google.com/config"
+	// DebugConfigAnnotation is the name of the podspec annotation that records debugging configuration information.
+	DebugConfigAnnotation = "debug.cloud.google.com/config"
 )
 
 var containerTransforms []containerTransformer
@@ -240,7 +240,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		if metadata.Annotations == nil {
 			metadata.Annotations = make(map[string]string)
 		}
-		metadata.Annotations[debugConfigAnnotation] = encodeConfigurations(configurations)
+		metadata.Annotations[DebugConfigAnnotation] = encodeConfigurations(configurations)
 		return true
 	}
 	return false

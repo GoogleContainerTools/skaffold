@@ -26,6 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -49,14 +50,15 @@ type Runner interface {
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
-	builder          build.Builder
-	deployer         deploy.Deployer
-	tester           test.Tester
-	tagger           tag.Tagger
-	syncer           sync.Syncer
-	monitor          filemon.Monitor
-	listener         Listener
-	forwarderManager *portforward.ForwarderManager
+	builder               build.Builder
+	deployer              deploy.Deployer
+	tester                test.Tester
+	tagger                tag.Tagger
+	syncer                sync.Syncer
+	monitor               filemon.Monitor
+	listener              Listener
+	forwarderManager      *portforward.ForwarderManager
+	debugContainerManager *debugging.ContainerManager
 
 	logger               *kubernetes.LogAggregator
 	cache                cache.Cache
