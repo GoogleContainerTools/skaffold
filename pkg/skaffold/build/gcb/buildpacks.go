@@ -31,6 +31,10 @@ func (b *Builder) buildpackBuildSpec(artifact *latest.BuildpackArtifact, tag str
 		args = append(args, "--run-image", artifact.RunImage)
 	}
 
+	for _, buildpack := range artifact.Buildpacks {
+		args = append(args, "--buildpack", buildpack)
+	}
+
 	env, err := misc.EvaluateEnv(artifact.Env)
 	if err != nil {
 		return cloudbuild.Build{}, errors.Wrap(err, "unable to evaluate env variables")

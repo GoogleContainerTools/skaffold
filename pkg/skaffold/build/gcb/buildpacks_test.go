@@ -82,6 +82,20 @@ func TestBuildpackBuildSpec(t *testing.T) {
 			},
 			shouldErr: true,
 		},
+		{
+			description: "buildpacks list",
+			artifact: &latest.BuildpackArtifact{
+				Builder:    "builder",
+				Buildpacks: []string{"buildpack1", "buildpack2"},
+			},
+			expected: cloudbuild.Build{
+				Steps: []*cloudbuild.BuildStep{{
+					Name: "pack/image",
+					Args: []string{"pack", "build", "img", "--builder", "builder", "--buildpack", "buildpack1", "--buildpack", "buildpack2"},
+				}},
+				Images: []string{"img"},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
