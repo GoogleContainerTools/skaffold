@@ -43,7 +43,7 @@ github.com/beorn7/perks/quantile
 github.com/blang/semver
 # github.com/bmatcuk/doublestar v1.2.2
 github.com/bmatcuk/doublestar
-# github.com/buildpacks/imgutil v0.0.0-20191212154113-dc184e0d403b
+# github.com/buildpacks/imgutil v0.0.0-20200127205531-eec2000815b1
 github.com/buildpacks/imgutil
 github.com/buildpacks/imgutil/local
 github.com/buildpacks/imgutil/remote
@@ -52,12 +52,11 @@ github.com/buildpacks/lifecycle
 github.com/buildpacks/lifecycle/archive
 github.com/buildpacks/lifecycle/auth
 github.com/buildpacks/lifecycle/cmd
-# github.com/buildpacks/pack v0.6.0
+# github.com/buildpacks/pack v0.8.1-0.20200128153201-c4636375b6a7
 github.com/buildpacks/pack
 github.com/buildpacks/pack/builder
 github.com/buildpacks/pack/cmd
 github.com/buildpacks/pack/internal/api
-github.com/buildpacks/pack/internal/app
 github.com/buildpacks/pack/internal/archive
 github.com/buildpacks/pack/internal/blob
 github.com/buildpacks/pack/internal/build

@@ -141,7 +141,7 @@ func (d *downloader) downloadAsStream(ctx context.Context, uri string, etag stri
 
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		d.logger.Infof("Downloading from %s", style.Symbol(uri))
-		return withProgress(logging.GetInfoWriter(d.logger), resp.Body, resp.ContentLength), resp.Header.Get("Etag"), nil
+		return withProgress(logging.GetWriterForLevel(d.logger, logging.InfoLevel), resp.Body, resp.ContentLength), resp.Header.Get("Etag"), nil
 	}
 
 	if resp.StatusCode == 304 {

@@ -30,21 +30,23 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 type builderAnalyzer struct {
 	directoryAnalyzer
-	enableJibInit       bool
-	enableBuildpackInit bool
-	findBuilders        bool
-	foundBuilders       []InitBuilder
+	enableJibInit        bool
+	enableBuildpacksInit bool
+	findBuilders         bool
+	buildpacksBuilder    string
+	foundBuilders        []InitBuilder
 
 	parentDirToStopFindBuilders string
 }
 
 func (a *builderAnalyzer) analyzeFile(filePath string) error {
 	if a.findBuilders && (a.parentDirToStopFindBuilders == "" || a.parentDirToStopFindBuilders == a.currentDir) {
-		builderConfigs, continueSearchingBuilders := detectBuilders(a.enableJibInit, a.enableBuildpackInit, filePath)
+		builderConfigs, continueSearchingBuilders := a.detectBuilders(filePath)
 		a.foundBuilders = append(a.foundBuilders, builderConfigs...)
 		if !continueSearchingBuilders {
 			a.parentDirToStopFindBuilders = a.currentDir
@@ -59,31 +61,21 @@ func (a *builderAnalyzer) exitDir(dir string) {
 	}
 }
 
-// autoSelectBuilders takes a list of builders and images, checks if any of the builders' configured target
+// matchBuildersToImages takes a list of builders and images, checks if any of the builders' configured target
 // images match an image in the image list, and returns a list of the matching builder/image pairs. Also
 // separately returns the builder configs and images that didn't have any matches.
-func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
+func matchBuildersToImages(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
 	var pairs []builderImagePair
 	var unresolvedImages = make(sortedSet)
 	for _, image := range images {
-		matchingConfigIndex := -1
-		for i, config := range builderConfigs {
-			if image != config.ConfiguredImage() {
-				continue
-			}
+		builderIdx := findExactlyOnceMatchingBuilder(builderConfigs, image)
 
-			// Found more than one match; can't auto-select.
-			if matchingConfigIndex != -1 {
-				matchingConfigIndex = -1
-				break
-			}
-			matchingConfigIndex = i
-		}
-
-		if matchingConfigIndex != -1 {
-			// Exactly one pair found; save the pair and remove from remaining build configs
-			pairs = append(pairs, builderImagePair{ImageName: image, Builder: builderConfigs[matchingConfigIndex]})
-			builderConfigs = append(builderConfigs[:matchingConfigIndex], builderConfigs[matchingConfigIndex+1:]...)
+		// exactly one builder found for the image
+		if builderIdx != -1 {
+			// save the pair
+			pairs = append(pairs, builderImagePair{ImageName: image, Builder: builderConfigs[builderIdx]})
+			// remove matched builder from builderConfigs
+			builderConfigs = append(builderConfigs[:builderIdx], builderConfigs[builderIdx+1:]...)
 		} else {
 			// No definite pair found, add to images list
 			unresolvedImages.add(image)
@@ -92,12 +84,27 @@ func autoSelectBuilders(builderConfigs []InitBuilder, images []string) ([]builde
 	return pairs, builderConfigs, unresolvedImages.values()
 }
 
+func findExactlyOnceMatchingBuilder(builderConfigs []InitBuilder, image string) int {
+	matchingConfigIndex := -1
+	for i, config := range builderConfigs {
+		if image != config.ConfiguredImage() {
+			continue
+		}
+		// Found more than one match;
+		if matchingConfigIndex != -1 {
+			return -1
+		}
+		matchingConfigIndex = i
+	}
+	return matchingConfigIndex
+}
+
 // detectBuilders checks if a path is a builder config, and if it is, returns the InitBuilders representing the
 // configs. Also returns a boolean marking search completion for subdirectories (true = subdirectories should
 // continue to be searched, false = subdirectories should not be searched for more builders)
-func detectBuilders(enableJibInit, enableBuildpackInit bool, path string) ([]InitBuilder, bool) {
+func (a *builderAnalyzer) detectBuilders(path string) ([]InitBuilder, bool) {
 	// TODO: Remove backwards compatibility if statement (not entire block)
-	if enableJibInit {
+	if a.enableJibInit {
 		// Check for jib
 		if builders := jib.Validate(path); builders != nil {
 			results := make([]InitBuilder, len(builders))
@@ -118,10 +125,13 @@ func detectBuilders(enableJibInit, enableBuildpackInit bool, path string) ([]Ini
 	}
 
 	// TODO: Remove backwards compatibility if statement (not entire block)
-	if enableBuildpackInit {
+	if a.enableBuildpacksInit {
 		// Check for buildpacks
 		if buildpacks.Validate(path) {
-			results := []InitBuilder{buildpacks.ArtifactConfig{File: path}}
+			results := []InitBuilder{buildpacks.ArtifactConfig{
+				File:    path,
+				Builder: a.buildpacksBuilder,
+			}}
 			return results, true
 		}
 	}
@@ -189,7 +199,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 			pairs = append(pairs, pair)
 
 		default:
-			return nil, errors.New("unknown builder type in CLI artifacts")
+			return nil, fmt.Errorf("unknown builder type in CLI artifacts: %q", a.Name)
 		}
 	}
 	return pairs, nil
@@ -214,6 +224,10 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force b
 		return nil, errors.New("unable to automatically resolve builder/image pairs; run `skaffold init` without `--force` to manually resolve ambiguities")
 	}
 
+	return resolveBuilderImagesInteractively(builderConfigs, images)
+}
+
+func resolveBuilderImagesInteractively(builderConfigs []InitBuilder, images []string) ([]builderImagePair, error) {
 	// Build map from choice string to builder config struct
 	choices := make([]string, len(builderConfigs))
 	choiceMap := make(map[string]InitBuilder, len(builderConfigs))
@@ -247,4 +261,24 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force b
 		logrus.Warnf("unused builder configs found in repository: %v", choices)
 	}
 	return pairs, nil
+}
+
+func stripTags(taggedImages []string) []string {
+	// Remove tags from image names
+	var images []string
+	for _, image := range taggedImages {
+		parsed, err := docker.ParseReference(image)
+		if err != nil {
+			// It's possible that it's a templatized name that can't be parsed as is.
+			warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
+			continue
+		}
+		if parsed.Digest != "" {
+			warnings.Printf("Ignoring image referenced by digest: [%s]", image)
+			continue
+		}
+
+		images = append(images, parsed.BaseName)
+	}
+	return images
 }

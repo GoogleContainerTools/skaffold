@@ -241,7 +241,7 @@ func TestTransformManifestPython(t *testing.T) {
 			true,
 			&v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+					Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{
@@ -283,7 +283,7 @@ func TestTransformManifestPython(t *testing.T) {
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
@@ -325,7 +325,7 @@ func TestTransformManifestPython(t *testing.T) {
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
@@ -367,7 +367,7 @@ func TestTransformManifestPython(t *testing.T) {
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
@@ -407,7 +407,7 @@ func TestTransformManifestPython(t *testing.T) {
 				Spec: appsv1.DaemonSetSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
@@ -447,7 +447,7 @@ func TestTransformManifestPython(t *testing.T) {
 				Spec: batchv1.JobSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
@@ -489,7 +489,7 @@ func TestTransformManifestPython(t *testing.T) {
 					Replicas: int32p(1),
 					Template: &v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
@@ -541,7 +541,7 @@ func TestTransformManifestPython(t *testing.T) {
 						}},
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dap":5678,"runtime":"python"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"python","ports":{"dap":5678}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{

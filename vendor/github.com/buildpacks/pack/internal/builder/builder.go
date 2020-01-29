@@ -32,12 +32,13 @@ const (
 
 	cnbDir = "/cnb"
 
-	orderPath    = "/cnb/order.toml"
-	stackPath    = "/cnb/stack.toml"
-	platformDir  = "/platform"
-	lifecycleDir = "/cnb/lifecycle"
-	workspaceDir = "/workspace"
-	layersDir    = "/layers"
+	orderPath          = "/cnb/order.toml"
+	stackPath          = "/cnb/stack.toml"
+	platformDir        = "/platform"
+	lifecycleDir       = "/cnb/lifecycle"
+	compatLifecycleDir = "/lifecycle"
+	workspaceDir       = "/workspace"
+	layersDir          = "/layers"
 
 	metadataLabel = "io.buildpacks.builder.metadata"
 	stackLabel    = "io.buildpacks.stack.id"
@@ -109,26 +110,24 @@ func constructBuilder(img imgutil.Image, newName string, metadata Metadata) (*Bu
 		img.Rename(newName)
 	}
 
-	lifecycleVersion := VersionMustParse(AssumedLifecycleVersion)
+	var lifecycleVersion *Version
 	if metadata.Lifecycle.Version != nil {
 		lifecycleVersion = metadata.Lifecycle.Version
 	}
 
-	buildpackAPIVersion := api.MustParse(dist.AssumedBuildpackAPIVersion)
+	var buildpackAPIVersion *api.Version
 	if metadata.Lifecycle.API.BuildpackVersion != nil {
 		buildpackAPIVersion = metadata.Lifecycle.API.BuildpackVersion
 	}
 
-	platformAPIVersion := api.MustParse(AssumedPlatformAPIVersion)
+	var platformAPIVersion *api.Version
 	if metadata.Lifecycle.API.PlatformVersion != nil {
 		platformAPIVersion = metadata.Lifecycle.API.PlatformVersion
 	}
 
 	var order dist.Order
-	if ok, err := dist.GetLabel(img, OrderLabel, &order); err != nil {
+	if _, err := dist.GetLabel(img, OrderLabel, &order); err != nil {
 		return nil, err
-	} else if !ok {
-		order = metadata.Groups.ToOrder()
 	}
 
 	return &Builder{
@@ -229,7 +228,6 @@ func (b *Builder) Save(logger logging.Logger) error {
 		return errors.Wrap(err, "processing order")
 	}
 
-	b.metadata.Groups = orderToV1Order(resolvedOrder)
 	processMetadata(&b.metadata)
 
 	tmpDir, err := ioutil.TempDir("", "create-builder-scratch")
@@ -258,7 +256,7 @@ func (b *Builder) Save(logger logging.Logger) error {
 		}
 	}
 
-	if err := validateBuildpacks(b.StackID, b.Mixins(), b.LifecycleDescriptor(), b.additionalBuildpacks); err != nil {
+	if err := validateBuildpacks(b.StackID, b.Mixins(), b.LifecycleDescriptor(), b.Buildpacks(), b.additionalBuildpacks); err != nil {
 		return errors.Wrap(err, "validating buildpacks")
 	}
 
@@ -323,15 +321,6 @@ func (b *Builder) Save(logger logging.Logger) error {
 	}
 	if err := b.image.AddLayer(stackTar); err != nil {
 		return errors.Wrap(err, "adding stack.tar layer")
-	}
-
-	compatTar, err := b.compatLayer(resolvedOrder, tmpDir)
-	if err != nil {
-		return err
-	}
-
-	if err := b.image.AddLayer(compatTar); err != nil {
-		return errors.Wrap(err, "adding compat.tar layer")
 	}
 
 	envTar, err := b.envLayer(tmpDir, b.env)
@@ -408,14 +397,14 @@ func hasBuildpackWithVersion(bps []dist.BuildpackInfo, version string) bool {
 	return false
 }
 
-func validateBuildpacks(stackID string, mixins []string, lifecycleDescriptor LifecycleDescriptor, bps []dist.Buildpack) error {
+func validateBuildpacks(stackID string, mixins []string, lifecycleDescriptor LifecycleDescriptor, allBuildpacks []BuildpackMetadata, bpsToValidate []dist.Buildpack) error {
 	bpLookup := map[string]interface{}{}
 
-	for _, bp := range bps {
-		bpLookup[bp.Descriptor().Info.FullName()] = nil
+	for _, bp := range allBuildpacks {
+		bpLookup[bp.FullName()] = nil
 	}
 
-	for _, bp := range bps {
+	for _, bp := range bpsToValidate {
 		bpd := bp.Descriptor()
 
 		if !bpd.API.SupportsVersion(lifecycleDescriptor.API.BuildpackVersion) {
@@ -670,6 +659,16 @@ func (b *Builder) lifecycleLayer(dest string) (string, error) {
 	err = b.embedLifecycleTar(tw)
 	if err != nil {
 		return "", errors.Wrap(err, "embedding lifecycle tar")
+	}
+
+	if err := tw.WriteHeader(&tar.Header{
+		Name:     compatLifecycleDir,
+		Linkname: lifecycleDir,
+		Typeflag: tar.TypeSymlink,
+		Mode:     0644,
+		ModTime:  archive.NormalizedDateTime,
+	}); err != nil {
+		return "", errors.Wrapf(err, "creating %s symlink", style.Symbol(compatLifecycleDir))
 	}
 
 	return fh.Name(), nil

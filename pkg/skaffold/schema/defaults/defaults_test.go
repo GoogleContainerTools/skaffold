@@ -56,6 +56,7 @@ func TestSetDefaults(t *testing.T) {
 						ArtifactType: latest.ArtifactType{
 							BuildpackArtifact: &latest.BuildpackArtifact{},
 						},
+						Sync: &latest.Sync{},
 					},
 				},
 			},
@@ -81,6 +82,7 @@ func TestSetDefaults(t *testing.T) {
 	testutil.CheckDeepEqual(t, "fourth", cfg.Build.Artifacts[3].ImageName)
 	testutil.CheckDeepEqual(t, []string{"."}, cfg.Build.Artifacts[3].BuildpackArtifact.Dependencies.Paths)
 	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[3].BuildpackArtifact.Dependencies.Ignore)
+	testutil.CheckDeepEqual(t, []string{"**/*"}, cfg.Build.Artifacts[3].Sync.Infer)
 }
 
 func TestSetDefaultsOnCluster(t *testing.T) {
@@ -155,7 +157,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		err = Set(cfg)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
+
 		t.CheckDeepEqual(constants.DefaultKanikoSecretMountPath, cfg.Build.Cluster.PullSecretMountPath)
 
 		// pull secret mount path set
@@ -175,7 +177,6 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 
 		err = Set(cfg)
 		t.CheckNoError(err)
-		t.CheckDeepEqual(constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
 		t.CheckDeepEqual(path, cfg.Build.Cluster.PullSecretMountPath)
 
 		// default docker config
@@ -183,7 +184,6 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		err = Set(cfg)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(constants.DefaultKanikoDockerConfigSecretName, cfg.Build.Cluster.DockerConfig.SecretName)
 
 		// docker config with path
 		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{
@@ -192,7 +192,6 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		err = Set(cfg)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("docker-cfg", cfg.Build.Cluster.DockerConfig.SecretName)
 		t.CheckDeepEqual("/path", cfg.Build.Cluster.DockerConfig.Path)
 
 		// docker config with secret name

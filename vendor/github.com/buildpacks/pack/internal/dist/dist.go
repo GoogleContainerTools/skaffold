@@ -32,7 +32,7 @@ type BuildpackLayers map[string]map[string]BuildpackLayerInfo
 
 type BuildpackLayerInfo struct {
 	API         *api.Version `json:"api"`
-	Stacks      []Stack      `json:"stacks"`
+	Stacks      []Stack      `json:"stacks,omitempty"`
 	Order       Order        `json:"order,omitempty"`
 	LayerDiffID string       `json:"layerDiffID"`
 }

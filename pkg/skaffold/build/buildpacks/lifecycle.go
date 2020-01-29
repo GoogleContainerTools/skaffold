@@ -35,6 +35,11 @@ var (
 	runPackBuildFunc = runPackBuild
 )
 
+// images is a global list of builder/runner image pairs that are already pulled.
+// In a skaffold session, typically a skaffold dev loop, we want to avoid asking `pack`
+// to pull the images that are already pulled.
+var images pulledImages
+
 func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
 	artifact := a.BuildpackArtifact
 	workspace := a.Workspace
@@ -48,56 +53,40 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	}
 	latest := parsed.BaseName + ":latest"
 
-	builderImage := artifact.Builder
-	logrus.Debugln("Builder image", builderImage)
-	// If ForcePull is false: we pull the image only if it's not there already.
-	// If ForcePull is true: we will let `pack` always pull.
-	// Ideally, we add a `--pullIfNotPresent` option to upstream `pack`.
-	if !artifact.ForcePull {
-		if err := b.pull(ctx, out, builderImage); err != nil {
-			return "", err
-		}
-	}
-
-	runImage := artifact.RunImage
-	if !artifact.ForcePull {
-		// If ForcePull is false: we pull the image only if it's not there already.
-		// If ForcePull is true: we will let `pack` always pull.
-		// Ideally, we add a `--pullIfNotPresent` option to upstream `pack`.
-		var err error
-		runImage, err = b.findRunImage(ctx, artifact, builderImage)
-		if err != nil {
-			return "", err
-		}
-		logrus.Debugln("Run image", runImage)
-
-		if err := b.pull(ctx, out, runImage); err != nil {
-			return "", err
-		}
-	}
-
 	logrus.Debugln("Evaluate env variables")
 	env, err := misc.EvaluateEnv(artifact.Env)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to evaluate env variables")
 	}
 
-	if err := runPackBuildFunc(ctx, out, pack.BuildOptions{
-		AppPath:  workspace,
-		Builder:  builderImage,
-		RunImage: runImage,
-		Env:      envMap(env),
-		Image:    latest,
-		NoPull:   !artifact.ForcePull,
+	if b.devMode && a.Sync != nil && len(a.Sync.Infer) > 0 {
+		env = append(env, "GOOGLE_DEVMODE=1")
+	}
+
+	alreadyPulled := images.AreAlreadyPulled(artifact.Builder, artifact.RunImage)
+
+	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
+		AppPath:    workspace,
+		Builder:    artifact.Builder,
+		RunImage:   artifact.RunImage,
+		Buildpacks: artifact.Buildpacks,
+		Env:        envMap(env),
+		Image:      latest,
+		NoPull:     alreadyPulled,
 	}); err != nil {
 		return "", err
 	}
 
+	images.MarkAsPulled(artifact.Builder, artifact.RunImage)
+
 	return latest, nil
 }
 
-func runPackBuild(ctx context.Context, out io.Writer, opts pack.BuildOptions) error {
-	packClient, err := pack.NewClient(pack.WithLogger(NewLogger(out)))
+func runPackBuild(ctx context.Context, out io.Writer, localDocker docker.LocalDaemon, opts pack.BuildOptions) error {
+	packClient, err := pack.NewClient(
+		pack.WithDockerClient(localDocker.RawClient()),
+		pack.WithLogger(NewLogger(out)),
+	)
 	if err != nil {
 		return errors.Wrap(err, "unable to create pack client")
 	}
@@ -114,12 +103,4 @@ func envMap(env []string) map[string]string {
 	}
 
 	return kv
-}
-
-// pull makes sure the given image is pre-pulled.
-func (b *Builder) pull(ctx context.Context, out io.Writer, image string) error {
-	if b.localDocker.ImageExists(ctx, image) {
-		return nil
-	}
-	return b.localDocker.Pull(ctx, out, image)
 }

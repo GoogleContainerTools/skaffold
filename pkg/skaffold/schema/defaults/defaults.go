@@ -19,6 +19,7 @@ package defaults
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -46,6 +47,7 @@ func Set(c *latest.SkaffoldConfig) error {
 
 	for _, a := range c.Build.Artifacts {
 		setDefaultWorkspace(a)
+		setDefaultSync(a)
 
 		if c.Build.Cluster != nil && a.CustomArtifact == nil && a.BuildpackArtifact == nil {
 			defaultToKanikoArtifact(a)
@@ -171,8 +173,9 @@ func setDefaultKustomizePath(c *latest.SkaffoldConfig) {
 	if kustomize == nil {
 		return
 	}
-
-	kustomize.KustomizePath = valueOrDefault(kustomize.KustomizePath, constants.DefaultKustomizationPath)
+	if len(kustomize.KustomizePaths) == 0 {
+		kustomize.KustomizePaths = []string{constants.DefaultKustomizationPath}
+	}
 }
 
 func setDefaultKubectlManifests(c *latest.SkaffoldConfig) {
@@ -213,6 +216,12 @@ func setDefaultWorkspace(a *latest.Artifact) {
 	a.Workspace = valueOrDefault(a.Workspace, ".")
 }
 
+func setDefaultSync(a *latest.Artifact) {
+	if a.Sync != nil && len(a.Sync.Manual) == 0 && len(a.Sync.Infer) == 0 {
+		a.Sync.Infer = []string{"**/*"}
+	}
+}
+
 func withClusterConfig(c *latest.SkaffoldConfig, opts ...func(*latest.ClusterDetails) error) error {
 	clusterDetails := c.Build.BuildType.Cluster
 	if clusterDetails == nil {
@@ -250,7 +259,12 @@ func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
 			return fmt.Errorf("unable to expand pullSecret %s", cluster.PullSecret)
 		}
 		cluster.PullSecret = absPath
-		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName)
+		random := ""
+		if cluster.RandomPullSecret {
+			uid, _ := uuid.NewUUID()
+			random = uid.String()
+		}
+		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName+random)
 		return nil
 	}
 	return nil
@@ -261,7 +275,13 @@ func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
 		return nil
 	}
 
-	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
+	random := ""
+	if cluster.RandomDockerConfigSecret {
+		uid, _ := uuid.NewUUID()
+		random = uid.String()
+	}
+
+	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName+random)
 
 	if cluster.DockerConfig.Path == "" {
 		return nil

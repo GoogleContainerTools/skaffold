@@ -67,10 +67,10 @@ func WaitForPodSucceeded(ctx context.Context, pods corev1.PodInterface, podName 
 	}
 	defer w.Stop()
 
-	return watchUntilTimeout(ctx, timeout, w, isPodSucceeded(podName, b, ctx))
+	return watchUntilTimeout(ctx, timeout, w, isPodSucceeded(ctx, podName, b))
 }
 
-func isPodSucceeded(podName string, b *kubectl.CLI, ctx context.Context) func(event *watch.Event) (bool, error) {
+func isPodSucceeded(ctx context.Context, podName string, b *kubectl.CLI) func(event *watch.Event) (bool, error) {
 	return func(event *watch.Event) (bool, error) {
 		if event.Object == nil {
 			return false, nil

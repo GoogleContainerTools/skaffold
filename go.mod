@@ -36,7 +36,7 @@ require (
 	github.com/aws/aws-sdk-go v1.25.33 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.2
-	github.com/buildpacks/pack v0.6.0
+	github.com/buildpacks/pack v0.8.1-0.20200128153201-c4636375b6a7
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/docker/cli v0.0.0-20191212191748-ebca1413117a
 	github.com/docker/distribution v2.7.1+incompatible

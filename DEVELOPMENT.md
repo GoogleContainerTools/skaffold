@@ -75,7 +75,7 @@ Visual Studio Code with [Go plugin](https://github.com/Microsoft/vscode-go):
 
 Some changes to the skaffold code require a change to the skaffold config. These changes require a few extra steps:
 
-* Open the latest Config at [pkg/skaffold/schema/latest/config.go](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/config.go#L23) and inspect the comment at [L13](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/config.go#L23)
+* Open the latest Config at [pkg/skaffold/schema/latest/config.go](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/config.go#L25) and inspect the comment at [L25](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/config.go#L25)
 * If the line mentions the config version is not released, proceed making your changes.
   ```
   // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.

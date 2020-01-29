@@ -4,7 +4,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/Masterminds/semver v1.4.2
 	github.com/apex/log v1.1.2-0.20190827100214-baa5455d1012
-	github.com/buildpacks/imgutil v0.0.0-20191212154113-dc184e0d403b
+	github.com/buildpacks/imgutil v0.0.0-20200127205531-eec2000815b1
 	github.com/buildpacks/lifecycle v0.5.1-0.20191217221752-3b74c943b7b3
 	github.com/dgodd/dockerdial v1.0.1
 	github.com/docker/docker v1.4.2-0.20190924003213-a8608b5b67c7

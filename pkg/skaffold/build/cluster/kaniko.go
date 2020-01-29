@@ -40,7 +40,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	}
 	pods := client.CoreV1().Pods(b.Namespace)
 
-	podSpec, err := b.podSpec(artifact, tag)
+	podSpec, err := b.kanikoPodSpec(artifact, tag)
 	if err != nil {
 		return "", err
 	}
@@ -57,7 +57,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 		}
 	}()
 
-	if err := b.copyBuildContext(ctx, workspace, artifact, pods, pod.Name); err != nil {
+	if err := b.copyKanikoBuildContext(ctx, workspace, artifact, pods, pod.Name); err != nil {
 		return "", errors.Wrap(err, "copying sources")
 	}
 
@@ -77,7 +77,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 // first copy over the buildcontext tarball into the init container tmp dir via kubectl cp
 // Via kubectl exec, we extract the tarball to the empty dir
 // Then, via kubectl exec, create the /tmp/complete file via kubectl exec to complete the init container
-func (b *Builder) copyBuildContext(ctx context.Context, workspace string, artifact *latest.KanikoArtifact, pods corev1.PodInterface, podName string) error {
+func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, artifact *latest.KanikoArtifact, pods corev1.PodInterface, podName string) error {
 	if err := kubernetes.WaitForPodInitialized(ctx, pods, podName); err != nil {
 		return errors.Wrap(err, "waiting for pod to initialize")
 	}
@@ -95,9 +95,8 @@ func (b *Builder) copyBuildContext(ctx context.Context, workspace string, artifa
 		buildCtxWriter.Close()
 	}()
 
-	err := b.kubectlcli.Run(ctx, buildCtx, nil, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", constants.DefaultKanikoEmptyDirMountPath)
-	if err != nil {
-		return errors.Wrap(err, "copying and extracting buildcontext to empty dir")
+	if err := b.kubectlcli.Run(ctx, buildCtx, nil, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", constants.DefaultKanikoEmptyDirMountPath); err != nil {
+		return errors.Wrap(err, "uploading build context")
 	}
 
 	// Generate a file to successfully terminate the init container

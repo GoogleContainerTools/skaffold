@@ -127,8 +127,8 @@ func TestIsPodSucceeded(t *testing.T) {
 				Type:   "dummyEvent",
 				Object: pod,
 			}
-                       kubiectlcli := &kubectl.CLI{KubeContext: "kubeContext", Namespace: "namespace"}
-			actual, err := isPodSucceeded(test.podName, kubectlcli, context.TODO())(dummyEvent)
+			kubectlcli := &kubectl.CLI{KubeContext: "kubeContext", Namespace: "namespace"}
+			actual, err := isPodSucceeded(context.TODO(), test.podName, kubectlcli)(dummyEvent)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, actual, test.expected)
 		})

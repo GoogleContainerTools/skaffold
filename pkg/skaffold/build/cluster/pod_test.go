@@ -29,7 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestArgs(t *testing.T) {
+func TestKanikoArgs(t *testing.T) {
 	tests := []struct {
 		description        string
 		artifact           *latest.KanikoArtifact
@@ -145,7 +145,7 @@ func TestArgs(t *testing.T) {
 			if test.tag != "" {
 				tag = test.tag
 			}
-			args, err := args(test.artifact, tag, test.insecureRegistries)
+			args, err := kanikoArgs(test.artifact, tag, test.insecureRegistries)
 
 			t.CheckError(test.shouldErr, err)
 			if !test.shouldErr {
@@ -155,7 +155,7 @@ func TestArgs(t *testing.T) {
 	}
 }
 
-func TestPodSpec(t *testing.T) {
+func TestKanikoPodSpec(t *testing.T) {
 	artifact := &latest.KanikoArtifact{
 		Image:          "image",
 		DockerfilePath: "Dockerfile",
@@ -164,6 +164,20 @@ func TestPodSpec(t *testing.T) {
 			Name:  "KEY",
 			Value: "VALUE",
 		}},
+		VolumeMounts: []v1.VolumeMount{
+			{
+				Name:      "cm-volume-1",
+				ReadOnly:  true,
+				MountPath: "/cm-test-mount-path",
+				SubPath:   "/subpath",
+			},
+			{
+				Name:      "secret-volume-1",
+				ReadOnly:  true,
+				MountPath: "/secret-test-mount-path",
+				SubPath:   "/subpath",
+			},
+		},
 	}
 
 	builder := &Builder{
@@ -181,9 +195,29 @@ func TestPodSpec(t *testing.T) {
 					CPU: "0.5",
 				},
 			},
+			Volumes: []v1.Volume{
+				{
+					Name: "cm-volume-1",
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: "cm-1",
+							},
+						},
+					},
+				},
+				{
+					Name: "secret-volume-1",
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							SecretName: "secret-1",
+						},
+					},
+				},
+			},
 		},
 	}
-	pod, _ := builder.podSpec(artifact, "tag")
+	pod, _ := builder.kanikoPodSpec(artifact, "tag")
 
 	expectedPod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -199,6 +233,16 @@ func TestPodSpec(t *testing.T) {
 				VolumeMounts: []v1.VolumeMount{{
 					Name:      constants.DefaultKanikoEmptyDirName,
 					MountPath: constants.DefaultKanikoEmptyDirMountPath,
+				}, {
+					Name:      "cm-volume-1",
+					ReadOnly:  true,
+					MountPath: "/cm-secret-mount-path",
+					SubPath:   "/subpath",
+				}, {
+					Name:      "secret-volume-1",
+					ReadOnly:  true,
+					MountPath: "/secret-secret-mount-path",
+					SubPath:   "/subpath",
 				}},
 				Resources: v1.ResourceRequirements{
 					Requests: map[v1.ResourceName]resource.Quantity{
@@ -239,6 +283,18 @@ func TestPodSpec(t *testing.T) {
 						Name:      constants.DefaultKanikoSecretName,
 						MountPath: "/secret",
 					},
+					{
+						Name:      "cm-volume-1",
+						ReadOnly:  true,
+						MountPath: "/cm-secret-mount-path",
+						SubPath:   "/subpath",
+					},
+					{
+						Name:      "secret-volume-1",
+						ReadOnly:  true,
+						MountPath: "/secret-secret-mount-path",
+						SubPath:   "/subpath",
+					},
 				},
 				Resources: v1.ResourceRequirements{
 					Requests: map[v1.ResourceName]resource.Quantity{
@@ -262,6 +318,24 @@ func TestPodSpec(t *testing.T) {
 					VolumeSource: v1.VolumeSource{
 						Secret: &v1.SecretVolumeSource{
 							SecretName: "secret",
+						},
+					},
+				},
+				{
+					Name: "cm-volume-1",
+					VolumeSource: v1.VolumeSource{
+						ConfigMap: &v1.ConfigMapVolumeSource{
+							LocalObjectReference: v1.LocalObjectReference{
+								Name: "cm-1",
+							},
+						},
+					},
+				},
+				{
+					Name: "secret-volume-1",
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
+							SecretName: "secret-1",
 						},
 					},
 				},

@@ -66,8 +66,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -100,8 +101,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -135,8 +137,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -170,8 +173,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -205,8 +209,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -240,8 +245,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -275,8 +281,9 @@
             },
             "sync": {
               "$ref": "#/definitions/Sync",
-              "description": "*beta* local files synced to pods instead of triggering an image build when modified.",
-              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified."
+              "description": "*beta* local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "x-intellij-html-description": "<em>beta</em> local files synced to pods instead of triggering an image build when modified. If no files are listed, sync all the files and infer the destination.",
+              "default": "infer: [\"**/*\"]"
             }
           },
           "preferredOrder": [
@@ -487,6 +494,15 @@
           "description": "builder image used.",
           "x-intellij-html-description": "builder image used."
         },
+        "buildpacks": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "a list of strings, where each string is a specific buildpack to use with the builder. If you specify buildpacks the builder image automatic detection will be ignored. These buildpacks will be used to build the Image from your source code. Order matters.",
+          "x-intellij-html-description": "a list of strings, where each string is a specific buildpack to use with the builder. If you specify buildpacks the builder image automatic detection will be ignored. These buildpacks will be used to build the Image from your source code. Order matters.",
+          "default": "[]"
+        },
         "dependencies": {
           "$ref": "#/definitions/BuildpackDependencies",
           "description": "file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.",
@@ -504,12 +520,6 @@
             "[\"key1=value1\", \"key2=value2\", \"key3={{.ENV_VARIABLE}}\"]"
           ]
         },
-        "forcePull": {
-          "type": "boolean",
-          "description": "should the builder image be pull before each build.",
-          "x-intellij-html-description": "should the builder image be pull before each build.",
-          "default": "false"
-        },
         "runImage": {
           "type": "string",
           "description": "overrides the stack's default run image.",
@@ -517,10 +527,10 @@
         }
       },
       "preferredOrder": [
-        "forcePull",
         "builder",
         "runImage",
         "env",
+        "buildpacks",
         "dependencies"
       ],
       "additionalProperties": false,
@@ -600,6 +610,18 @@
           "x-intellij-html-description": "name of the Kubernetes secret for pulling base images and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key <code>kaniko-secret</code>.",
           "default": "kaniko-secret"
         },
+        "randomDockerConfigSecret": {
+          "type": "boolean",
+          "description": "adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds, e.g. docker-cfgfd154022-c761-416f-8eb3-cf8258450b85.",
+          "x-intellij-html-description": "adds a random UUID postfix to the default name of the docker secret to facilitate parallel builds, e.g. docker-cfgfd154022-c761-416f-8eb3-cf8258450b85.",
+          "default": "false"
+        },
+        "randomPullSecret": {
+          "type": "boolean",
+          "description": "adds a random UUID postfix to the default name of the pull secret to facilitate parallel builds, e.g. kaniko-secretdocker-cfgfd154022-c761-416f-8eb3-cf8258450b85.",
+          "x-intellij-html-description": "adds a random UUID postfix to the default name of the pull secret to facilitate parallel builds, e.g. kaniko-secretdocker-cfgfd154022-c761-416f-8eb3-cf8258450b85.",
+          "default": "false"
+        },
         "resources": {
           "$ref": "#/definitions/ResourceRequirements",
           "description": "define the resource requirements for the kaniko pod.",
@@ -609,6 +631,13 @@
           "type": "string",
           "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
           "x-intellij-html-description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>)."
+        },
+        "volumes": {
+          "items": {},
+          "type": "array",
+          "description": "defines container mounts for ConfigMap and Secret resources.",
+          "x-intellij-html-description": "defines container mounts for ConfigMap and Secret resources.",
+          "default": "[]"
         }
       },
       "preferredOrder": [
@@ -621,7 +650,10 @@
         "timeout",
         "dockerConfig",
         "resources",
-        "concurrency"
+        "concurrency",
+        "volumes",
+        "randomPullSecret",
+        "randomDockerConfigSecret"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build.",
@@ -1423,6 +1455,13 @@
           "type": "string",
           "description": "Dockerfile target name to build.",
           "x-intellij-html-description": "Dockerfile target name to build."
+        },
+        "volumeMounts": {
+          "items": {},
+          "type": "array",
+          "description": "volume mounts passed to kaniko pod.",
+          "x-intellij-html-description": "volume mounts passed to kaniko pod.",
+          "default": "[]"
         }
       },
       "preferredOrder": [
@@ -1435,7 +1474,8 @@
         "image",
         "cache",
         "reproducible",
-        "skipTLS"
+        "skipTLS",
+        "volumeMounts"
       ],
       "additionalProperties": false,
       "description": "describes an artifact built from a Dockerfile, with kaniko.",
@@ -1517,6 +1557,12 @@
           "x-intellij-html-description": "additional flags passed on deletions (<code>kubectl delete</code>).",
           "default": "[]"
         },
+        "disableValidation": {
+          "type": "boolean",
+          "description": "passes the `--validate=false` flag to supported `kubectl` commands when enabled.",
+          "x-intellij-html-description": "passes the <code>--validate=false</code> flag to supported <code>kubectl</code> commands when enabled.",
+          "default": "false"
+        },
         "global": {
           "items": {
             "type": "string"
@@ -1530,7 +1576,8 @@
       "preferredOrder": [
         "global",
         "apply",
-        "delete"
+        "delete",
+        "disableValidation"
       ],
       "additionalProperties": false,
       "description": "additional flags passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete).",
@@ -1552,15 +1599,18 @@
           "description": "additional flags passed to `kubectl`.",
           "x-intellij-html-description": "additional flags passed to <code>kubectl</code>."
         },
-        "path": {
-          "type": "string",
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
           "description": "path to Kustomization files.",
           "x-intellij-html-description": "path to Kustomization files.",
           "default": "."
         }
       },
       "preferredOrder": [
-        "path",
+        "paths",
         "flags",
         "buildArgs"
       ],
@@ -1904,8 +1954,9 @@
         "infer"
       ],
       "additionalProperties": false,
-      "description": "*beta* specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files.",
-      "x-intellij-html-description": "<em>beta</em> specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files."
+      "description": "*beta* specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files. If no files are listed, sync all the files and infer the destination.",
+      "x-intellij-html-description": "<em>beta</em> specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files. If no files are listed, sync all the files and infer the destination.",
+      "default": "infer: [\"**/*\"]"
     },
     "SyncRule": {
       "required": [

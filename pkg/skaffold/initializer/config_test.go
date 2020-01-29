@@ -39,6 +39,64 @@ func (s stubDeploymentInitializer) GetImages() []string {
 	panic("implement me")
 }
 
+func TestConfigAnalyzer(t *testing.T) {
+	tests := []struct {
+		name      string
+		inputFile string
+		analyzer  skaffoldConfigAnalyzer
+		shouldErr bool
+	}{
+		{
+			name:      "not skaffold config",
+			inputFile: "testdata/init/hello/main.go",
+			analyzer:  skaffoldConfigAnalyzer{},
+			shouldErr: false,
+		},
+		{
+			name:      "skaffold config equals target config",
+			inputFile: "testdata/init/hello/skaffold.yaml",
+			analyzer: skaffoldConfigAnalyzer{
+				targetConfig: "testdata/init/hello/skaffold.yaml",
+			},
+			shouldErr: true,
+		},
+		{
+			name:      "skaffold config does not equal target config",
+			inputFile: "testdata/init/hello/skaffold.yaml",
+			analyzer: skaffoldConfigAnalyzer{
+				targetConfig: "testdata/init/hello/skaffold.yaml.out",
+			},
+			shouldErr: false,
+		},
+		{
+			name:      "force overrides",
+			inputFile: "testdata/init/hello/skaffold.yaml",
+			analyzer: skaffoldConfigAnalyzer{
+				force:        true,
+				targetConfig: "testdata/init/hello/skaffold.yaml",
+			},
+			shouldErr: false,
+		},
+		{
+			name:      "analyze mode can skip writing, no error",
+			inputFile: "testdata/init/hello/skaffold.yaml",
+			analyzer: skaffoldConfigAnalyzer{
+				force:        false,
+				analyzeMode:  true,
+				targetConfig: testutil.Abs(t, "testdata/init/hello/skaffold.yaml"),
+			},
+			shouldErr: false,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			err := test.analyzer.analyzeFile(test.inputFile)
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}
+
 func TestGenerateSkaffoldConfig(t *testing.T) {
 	tests := []struct {
 		name                   string
@@ -139,7 +197,8 @@ func TestArtifacts(t *testing.T) {
 			{
 				ImageName: "image3",
 				Builder: buildpacks.ArtifactConfig{
-					File: "package.json",
+					File:    "package.json",
+					Builder: "some/builder",
 				},
 			},
 		})
@@ -162,7 +221,7 @@ func TestArtifacts(t *testing.T) {
 				ImageName: "image3",
 				ArtifactType: latest.ArtifactType{
 					BuildpackArtifact: &latest.BuildpackArtifact{
-						Builder: "heroku/buildpacks",
+						Builder: "some/builder",
 					},
 				},
 			},
@@ -170,4 +229,84 @@ func TestArtifacts(t *testing.T) {
 
 		t.CheckDeepEqual(expected, artifacts)
 	})
+}
+
+func TestIsSkaffoldConfig(t *testing.T) {
+	tests := []struct {
+		description string
+		contents    string
+		isValid     bool
+	}{
+		{
+			description: "valid skaffold config",
+			contents: `apiVersion: skaffold/v1beta6
+kind: Config
+deploy:
+  kustomize: {}`,
+			isValid: true,
+		},
+		{
+			description: "not a valid format",
+			contents:    "test",
+			isValid:     false,
+		},
+		{
+			description: "invalid skaffold config version",
+			contents: `apiVersion: skaffold/v2beta1
+kind: Config
+deploy:
+  kustomize: {}`,
+			isValid: false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Write("skaffold.yaml", test.contents)
+
+			isValid := isSkaffoldConfig(tmpDir.Path("skaffold.yaml"))
+
+			t.CheckDeepEqual(test.isValid, isValid)
+		})
+	}
+}
+
+func Test_canonicalizeName(t *testing.T) {
+	const length253 = "aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa-aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa-aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaa"
+	tests := []struct {
+		in, out string
+	}{
+		{
+			in:  "abc def",
+			out: "abc-def",
+		},
+		{
+			in:  "abc    def",
+			out: "abc-def",
+		},
+		{
+			in:  "abc...def",
+			out: "abc...def",
+		},
+		{
+			in:  "abc---def",
+			out: "abc---def",
+		},
+		{
+			in:  "aBc DeF",
+			out: "abc-def",
+		},
+		{
+			in:  length253 + "XXXXXXX",
+			out: length253,
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.in, func(t *testutil.T) {
+			actual := canonicalizeName(test.in)
+
+			t.CheckDeepEqual(test.out, actual)
+		})
+	}
 }

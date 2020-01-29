@@ -11,8 +11,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
-	"github.com/google/go-containerregistry/pkg/v1/random"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
@@ -102,7 +102,15 @@ func newV1Image(keychain authn.Keychain, repoName string) (v1.Image, error) {
 }
 
 func emptyImage() (v1.Image, error) {
-	return random.Image(0, 0)
+	cfg := &v1.ConfigFile{
+		Architecture: "amd64",
+		OS:           "linux",
+		RootFS: v1.RootFS{
+			Type:    "layers",
+			DiffIDs: []v1.Hash{},
+		},
+	}
+	return mutate.ConfigFile(empty.Image, cfg)
 }
 
 func referenceForRepoName(keychain authn.Keychain, ref string) (name.Reference, authn.Authenticator, error) {
@@ -344,7 +352,7 @@ func (i *Image) Save(additionalNames ...string) error {
 
 	allNames := append([]string{i.repoName}, additionalNames...)
 
-	i.image, err = mutate.CreatedAt(i.image, v1.Time{Time: time.Now()})
+	i.image, err = mutate.CreatedAt(i.image, v1.Time{Time: imgutil.NormalizedDateTime})
 	if err != nil {
 		return errors.Wrap(err, "set creation time")
 	}
@@ -353,13 +361,21 @@ func (i *Image) Save(additionalNames ...string) error {
 	if err != nil {
 		return errors.Wrap(err, "get image config")
 	}
+	cfg = cfg.DeepCopy()
 
 	layers, err := i.image.Layers()
 	if err != nil {
 		return errors.Wrap(err, "get image layers")
 	}
-
 	cfg.History = make([]v1.History, len(layers))
+	for i, _ := range cfg.History {
+		cfg.History[i] = v1.History{
+			Created: v1.Time{Time: imgutil.NormalizedDateTime},
+		}
+	}
+
+	cfg.DockerVersion = ""
+	cfg.Container = ""
 	i.image, err = mutate.ConfigFile(i.image, cfg)
 	if err != nil {
 		return errors.Wrap(err, "zeroing history")

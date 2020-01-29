@@ -17,8 +17,10 @@ limitations under the License.
 package initializer
 
 import (
+	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/karrick/godirwalk"
 
@@ -29,6 +31,28 @@ type analysis struct {
 	kubectlAnalyzer  *kubectlAnalyzer
 	skaffoldAnalyzer *skaffoldConfigAnalyzer
 	builderAnalyzer  *builderAnalyzer
+}
+
+// newAnalysis sets up the analysis of the directory based on the initializer configuration
+func newAnalysis(c Config) *analysis {
+	var builders *builderAnalyzer
+	if !c.SkipBuild {
+		builders = &builderAnalyzer{
+			findBuilders:         !c.SkipBuild,
+			enableJibInit:        c.EnableJibInit,
+			enableBuildpacksInit: c.EnableBuildpacksInit,
+			buildpacksBuilder:    c.BuildpacksBuilder,
+		}
+	}
+	return &analysis{
+		kubectlAnalyzer: &kubectlAnalyzer{},
+		builderAnalyzer: builders,
+		skaffoldAnalyzer: &skaffoldConfigAnalyzer{
+			force:        c.Force,
+			analyzeMode:  c.Analyze,
+			targetConfig: c.Opts.ConfigurationFile,
+		},
+	}
 }
 
 // analyze recursively walks a directory and notifies the analyzers of files and enterDir and exitDir events
@@ -62,6 +86,8 @@ func (a *analysis) analyze(dir string) error {
 
 		filePath := filepath.Join(dir, file.Name())
 		for _, analyzer := range a.analyzers() {
+			// to make skaffold.yaml more portable across OS-es we should generate always / based filePaths
+			filePath = strings.ReplaceAll(filePath, string(os.PathSeparator), "/")
 			if err := analyzer.analyzeFile(filePath); err != nil {
 				return err
 			}
@@ -105,7 +131,7 @@ type directoryAnalyzer struct {
 	currentDir string
 }
 
-func (a *directoryAnalyzer) analyzeFile(filePath string) error {
+func (a *directoryAnalyzer) analyzeFile(_ string) error {
 	return nil
 }
 
@@ -113,6 +139,6 @@ func (a *directoryAnalyzer) enterDir(dir string) {
 	a.currentDir = dir
 }
 
-func (a *directoryAnalyzer) exitDir(dir string) {
+func (a *directoryAnalyzer) exitDir(_ string) {
 	//pass
 }

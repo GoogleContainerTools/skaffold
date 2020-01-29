@@ -21,6 +21,8 @@ github.com/aws/aws-sdk-go v1.20.6/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN
 github.com/aybabtme/rgbterm v0.0.0-20170906152045-cc83f3b3ce59/go.mod h1:q/89r3U2H7sSsE2t6Kca0lfwTK8JdoNGS/yzM/4iH5I=
 github.com/buildpacks/imgutil v0.0.0-20191212154113-dc184e0d403b h1:SDsB0hJtURA+5i5vIjLntzRNPEqdoz6q+0MShCWdctw=
 github.com/buildpacks/imgutil v0.0.0-20191212154113-dc184e0d403b/go.mod h1:E3lXJcNXcRefJQAHW5rqboonet+jtOml4qImbJhYGAo=
+github.com/buildpacks/imgutil v0.0.0-20200127205531-eec2000815b1 h1:1+v3XHezNuXCf7YWW77U8go0gYBmr4BbnSZyV0PYa80=
+github.com/buildpacks/imgutil v0.0.0-20200127205531-eec2000815b1/go.mod h1:E3lXJcNXcRefJQAHW5rqboonet+jtOml4qImbJhYGAo=
 github.com/buildpacks/lifecycle v0.5.1-0.20191217221752-3b74c943b7b3 h1:15zYyFmNbrtx5MmyVEKVgY2/eearqEqGJXLCjmvUo58=
 github.com/buildpacks/lifecycle v0.5.1-0.20191217221752-3b74c943b7b3/go.mod h1:ZIuIs9B6tjAW4dthhltKVyEUlhRfFWWix9eqoInMGX4=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=

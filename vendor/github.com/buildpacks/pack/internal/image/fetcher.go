@@ -22,11 +22,11 @@ import (
 )
 
 type Fetcher struct {
-	docker *client.Client
+	docker client.CommonAPIClient
 	logger logging.Logger
 }
 
-func NewFetcher(logger logging.Logger, docker *client.Client) *Fetcher {
+func NewFetcher(logger logging.Logger, docker client.CommonAPIClient) *Fetcher {
 	return &Fetcher{
 		logger: logger,
 		docker: docker,
@@ -87,7 +87,7 @@ func (f *Fetcher) pullImage(ctx context.Context, imageID string) error {
 	if err != nil {
 		return err
 	}
-	writer := logging.GetInfoWriter(f.logger)
+	writer := logging.GetWriterForLevel(f.logger, logging.InfoLevel)
 	type descriptor interface {
 		Fd() uintptr
 	}

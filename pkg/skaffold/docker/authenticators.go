@@ -26,10 +26,13 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/google"
 )
 
-var authenticators = Authenticators{}
+var authenticators = Authenticators{
+	configDir: configDir,
+}
 
 // Authenticators stores an authenticator per registry.
 type Authenticators struct {
+	configDir  string
 	byRegistry map[string]*lockedAuthenticator
 	lock       sync.Mutex
 }
@@ -82,7 +85,7 @@ func (a *Authenticators) newAuthenticator(ref name.Reference) authn.Authenticato
 	registry := ref.Context().Registry.Name()
 
 	// 1. Use google.NewGcloudAuthenticator() authenticator if `gcloud` is configured
-	cfg, err := config.Load(configDir)
+	cfg, err := config.Load(a.configDir)
 	if err == nil && cfg.CredentialHelpers[registry] == "gcloud" {
 		if auth, err := google.NewGcloudAuthenticator(); err == nil {
 			return auth
@@ -90,7 +93,8 @@ func (a *Authenticators) newAuthenticator(ref name.Reference) authn.Authenticato
 	}
 
 	// 2. Use whatever `non anonymous` credential helper is configured
-	if auth, _ := authn.DefaultKeychain.Resolve(ref.Context().Registry); auth != authn.Anonymous {
+	auth, err := authn.DefaultKeychain.Resolve(ref.Context().Registry)
+	if err == nil && auth != authn.Anonymous {
 		return auth
 	}
 

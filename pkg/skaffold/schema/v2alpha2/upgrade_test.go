@@ -53,6 +53,8 @@ deploy:
   kubectl:
     manifests:
     - k8s-*
+  kustomize:
+    path: kustomization-main
 profiles:
   - name: test profile
     build:
@@ -71,6 +73,8 @@ profiles:
       kubectl:
         manifests:
         - k8s-*
+      kustomize:
+        path: kustomization-test
   - name: test local
     build:
       artifacts:
@@ -83,6 +87,7 @@ profiles:
       kubectl:
         manifests:
         - k8s-*
+      kustomize: {}
 `
 	expected := `apiVersion: skaffold/v2alpha3
 kind: Config
@@ -111,6 +116,9 @@ deploy:
   kubectl:
     manifests:
     - k8s-*
+  kustomize:
+    paths:
+    - kustomization-main
 profiles:
   - name: test profile
     build:
@@ -129,6 +137,9 @@ profiles:
       kubectl:
         manifests:
         - k8s-*
+      kustomize:
+        paths:
+        - kustomization-test
   - name: test local
     build:
       artifacts:
@@ -141,6 +152,7 @@ profiles:
       kubectl:
         manifests:
         - k8s-*
+      kustomize: {}
 `
 	verifyUpgrade(t, yaml, expected)
 }
