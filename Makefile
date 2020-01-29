@@ -184,6 +184,7 @@ integration-in-kind: skaffold-builder
 		-v $(HOME)/.gradle:/root/.gradle \
 		-v $(HOME)/.cache:/root/.cache \
 		-v /tmp/docker-config:/root/.docker/config.json \
+		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
 		-e KUBECONFIG=/tmp/kind-config \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -c ' \
@@ -198,6 +199,7 @@ integration-in-docker: skaffold-builder
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
+		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
 		-e GCP_ONLY=$(GCP_ONLY) \
 		-e GCP_PROJECT=$(GCP_PROJECT) \
 		-e GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) \
