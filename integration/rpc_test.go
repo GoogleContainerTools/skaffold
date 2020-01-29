@@ -358,6 +358,10 @@ func randomPort() string {
 }
 
 func checkBuildAndDeployComplete(state proto.State) bool {
+	if state.BuildState == nil || state.DeployState == nil {
+		return false
+	}
+
 	for _, a := range state.BuildState.Artifacts {
 		if a != event.Complete {
 			return false
