@@ -18,11 +18,12 @@ set -e -o pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+DOCKERFILE=deploy/skaffold/Dockerfile
 SHA1=$("${DIR}/skaffold-deps-sha1.sh")
 UPDATED_DOCKERFILE=$(sed -E "s/FROM (.*):.*/FROM \1:${SHA1}/" deploy/skaffold/Dockerfile)
-echo "${UPDATED_DOCKERFILE}" > deploy/skaffold/Dockerfile
+echo "${UPDATED_DOCKERFILE}" > "${DOCKERFILE}"
 
-if [[ ! -z $(git status --porcelain) ]]; then
-    echo "Please commit deploy/skaffold/Dockerfile"
+if [[ ! -z $(git status --porcelain -- "${DOCKERFILE}") ]]; then
+    echo "Please commit ${DOCKERFILE}"
     exit 1
 fi
