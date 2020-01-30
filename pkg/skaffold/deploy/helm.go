@@ -508,7 +508,7 @@ func generateGetFilesArgs(m map[string]string, valuesSet map[string]bool) []stri
 	return args
 }
 
-func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {
+func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, []Labeller, string) error {
 	return errors.New("not yet implemented")
 }
 

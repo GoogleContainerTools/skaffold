@@ -98,11 +98,11 @@ func (m DeployerMux) Cleanup(ctx context.Context, w io.Writer) error {
 	return nil
 }
 
-func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []build.Artifact, filepath string) error {
+func (m DeployerMux) Render(ctx context.Context, w io.Writer, as []build.Artifact, ls []Labeller, filepath string) error {
 	resources, buf := []string{}, &bytes.Buffer{}
 	for _, deployer := range m {
 		buf.Reset()
-		if err := deployer.Render(ctx, buf, as, "" /* never write to files */); err != nil {
+		if err := deployer.Render(ctx, buf, as, ls, "" /* never write to files */); err != nil {
 			return err
 		}
 		resources = append(resources, buf.String())

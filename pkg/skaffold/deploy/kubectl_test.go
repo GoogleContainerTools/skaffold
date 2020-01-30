@@ -481,7 +481,9 @@ func TestKubectlRender(t *testing.T) {
 	tests := []struct {
 		description string
 		builds      []build.Artifact
+		labels      []Labeller
 		input       string
+		expected    string
 	}{
 		{
 			description: "normal render",
@@ -491,11 +493,25 @@ func TestKubectlRender(t *testing.T) {
 					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
 				},
 			},
+			labels: []Labeller{},
 			input: `apiVersion: v1
 kind: Pod
+metadata:
+  namespace: default
 spec:
   containers:
   - image: gcr.io/k8s-skaffold/skaffold
+    name: skaffold
+`,
+			expected: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold:test
     name: skaffold
 `,
 		},
@@ -512,21 +528,39 @@ spec:
 				},
 			},
 			input: `apiVersion: v1
-		kind: Pod
-		spec:
-		  containers:
-		  - image: gcr.io/project/image1
-		    name: image1
-		  - image: gcr.io/project/image2
-		    name: image2
-		`,
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1
+    name: image1
+  - image: gcr.io/project/image2
+    name: image2
+`,
+			expected: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1:tag1
+    name: image1
+  - image: gcr.io/project/image2:tag2
+    name: image2
+`,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Write("deployment.yaml", test.input)
+
 			t.Override(&util.DefaultExecCommand, testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
-				AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f deployment.yaml", test.input))
+				AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), test.input))
 
 			deployer := NewKubectlDeployer(&runcontext.RunContext{
 				WorkingDir: ".",
@@ -534,7 +568,7 @@ spec:
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KubectlDeploy: &latest.KubectlDeploy{
-								Manifests: []string{"deployment.yaml"},
+								Manifests: []string{tmpDir.Path("deployment.yaml")},
 							},
 						},
 					},
@@ -542,8 +576,9 @@ spec:
 				KubeContext: testKubeContext,
 			})
 			var b bytes.Buffer
-			err := deployer.Render(context.Background(), &b, test.builds, "")
+			err := deployer.Render(context.Background(), &b, test.builds, test.labels, "")
 			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, b.String())
 		})
 	}
 }

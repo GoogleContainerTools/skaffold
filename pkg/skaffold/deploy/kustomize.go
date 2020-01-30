@@ -184,8 +184,8 @@ func (k *KustomizeDeployer) Dependencies() ([]string, error) {
 	return deps.toList(), nil
 }
 
-func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, filepath string) error {
-	manifests, err := k.renderManifests(ctx, out, builds, nil)
+func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, filepath string) error {
+	manifests, err := k.renderManifests(ctx, out, builds, labellers)
 	if err != nil {
 		return err
 	}
