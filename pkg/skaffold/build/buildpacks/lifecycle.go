@@ -89,9 +89,13 @@ func runPackBuild(ctx context.Context, out io.Writer, localDocker docker.LocalDa
 		io.Writer
 	}
 
-	// If out is not a terminal, let's make sure pack doesn't output with colors
+	// If out is not a terminal, let's make sure pack doesn't output with colors.
 	if _, isTerm := util.IsTerminal(out); !isTerm {
+		// pack uses heroku/color under the hood.
 		color.Disable(true)
+
+		// pack is not good at detecting when something is not a terminal.
+		// https://github.com/buildpacks/pack/issues/477
 		out = &notATerminal{Writer: out}
 	}
 
