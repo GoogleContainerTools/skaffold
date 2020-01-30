@@ -22,12 +22,14 @@ import (
 	"strings"
 
 	"github.com/buildpacks/pack"
+	"github.com/heroku/color"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // For testing
@@ -83,6 +85,20 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 }
 
 func runPackBuild(ctx context.Context, out io.Writer, localDocker docker.LocalDaemon, opts pack.BuildOptions) error {
+	type notATerminal struct {
+		io.Writer
+	}
+
+	// If out is not a terminal, let's make sure pack doesn't output with colors.
+	if _, isTerm := util.IsTerminal(out); !isTerm {
+		// pack uses heroku/color under the hood.
+		color.Disable(true)
+
+		// pack is not good at detecting when something is not a terminal.
+		// https://github.com/buildpacks/pack/issues/477
+		out = &notATerminal{Writer: out}
+	}
+
 	packClient, err := pack.NewClient(
 		pack.WithDockerClient(localDocker.RawClient()),
 		pack.WithLogger(NewLogger(out)),

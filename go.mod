@@ -63,6 +63,7 @@ require (
 	github.com/gophercloud/gophercloud v0.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.12.1
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
+	github.com/heroku/color v0.0.6
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
 	github.com/imdario/mergo v0.3.8
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
