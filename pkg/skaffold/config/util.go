@@ -229,10 +229,8 @@ func IsUpdateCheckEnabled(configfile string) bool {
 }
 
 func ShouldDisplayPrompt(configfile string) bool {
-	if cfg, disabled := isSurveyPromptDisabled(configfile); !disabled {
-		return ifNotSurveyTakenOrPromptNotDisplayed(cfg)
-	}
-	return false
+	cfg, disabled := isSurveyPromptDisabled(configfile)
+	return !disabled && !recentlyPromptedOrTaken(cfg)
 }
 
 func isSurveyPromptDisabled(configfile string) (*ContextConfig, bool) {
@@ -243,14 +241,14 @@ func isSurveyPromptDisabled(configfile string) (*ContextConfig, bool) {
 	return cfg, cfg != nil && cfg.Survey != nil && *cfg.Survey.DisablePrompt
 }
 
-func ifNotSurveyTakenOrPromptNotDisplayed(cfg *ContextConfig) bool {
+func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
 	if cfg == nil || cfg.Survey == nil {
 		return false
 	}
-	return !isRecent(cfg.Survey.LastTaken, threeMonths) && !isRecent(cfg.Survey.LastPrompted, tenDays)
+	return lessThan(cfg.Survey.LastTaken, threeMonths) || lessThan(cfg.Survey.LastPrompted, tenDays)
 }
 
-func isRecent(date string, duration time.Duration) bool {
+func lessThan(date string, duration time.Duration) bool {
 	t, err := time.Parse(time.RFC3339, date)
 	if err != nil {
 		logrus.Debugf("could not parse data %s", date)

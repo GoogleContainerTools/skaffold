@@ -350,7 +350,7 @@ func TestIsSurveyPromptDisabled(t *testing.T) {
 	}
 }
 
-func TestIsRecent(t *testing.T) {
+func TestLessThan(t *testing.T) {
 	tests := []struct {
 		description string
 		date        string
@@ -358,13 +358,13 @@ func TestIsRecent(t *testing.T) {
 		expected    bool
 	}{
 		{
-			description: "date is recent than 10 days from 01/30/2019",
+			description: "date is less than 10 days from 01/30/2019",
 			date:        "2019-01-22T13:04:05Z",
 			duration:    10 * 24 * time.Hour,
 			expected:    true,
 		},
 		{
-			description: "date is not recent than 10 days from 01/30/2019",
+			description: "date is not less than 10 days from 01/30/2019",
 			date:        "2019-01-19T13:04:05Z",
 			duration:    10 * 24 * time.Hour,
 		},
@@ -380,7 +380,7 @@ func TestIsRecent(t *testing.T) {
 				t, _ := time.Parse(time.RFC3339, "2019-01-30T12:04:05Z")
 				return t
 			})
-			t.CheckDeepEqual(test.expected, isRecent(test.date, test.duration))
+			t.CheckDeepEqual(test.expected, lessThan(test.date, test.duration))
 		})
 	}
 }
