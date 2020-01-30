@@ -219,18 +219,9 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	return imageID, nil
 }
 
-type descriptor interface {
-	Fd() uintptr
-}
-
 // streamDockerMessages streams formatted json output from the docker daemon
 func streamDockerMessages(dst io.Writer, src io.Reader, auxCallback func(jsonmessage.JSONMessage)) error {
-	var termFd uintptr
-	f, isTerm := dst.(descriptor)
-	if isTerm {
-		termFd = f.Fd()
-	}
-
+	termFd, isTerm := util.IsTerminal(dst)
 	return jsonmessage.DisplayJSONMessagesStream(src, dst, termFd, isTerm, auxCallback)
 }
 

@@ -19,10 +19,9 @@ package color
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // IsTerminal will check if the specified output stream is a terminal. This can be changed
@@ -103,12 +102,8 @@ func isTerminal(w io.Writer) bool {
 		return true
 	}
 
-	switch v := w.(type) {
-	case *os.File:
-		return terminal.IsTerminal(int(v.Fd()))
-	default:
-		return false
-	}
+	_, isTerm := util.IsTerminal(w)
+	return isTerm
 }
 
 func ForceColors() func() {
