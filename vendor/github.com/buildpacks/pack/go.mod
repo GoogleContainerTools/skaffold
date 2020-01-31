@@ -18,6 +18,7 @@ require (
 	github.com/pkg/errors v0.8.1
 	github.com/sclevine/spec v1.4.0
 	github.com/spf13/cobra v0.0.5
+	golang.org/x/crypto v0.0.0-20190510104115-cbcb75029529
 )
 
 go 1.13

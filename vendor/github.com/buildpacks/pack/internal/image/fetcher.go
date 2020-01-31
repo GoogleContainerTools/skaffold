@@ -16,6 +16,7 @@ import (
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/pkg/errors"
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/buildpacks/pack/internal/style"
 	"github.com/buildpacks/pack/logging"
@@ -87,22 +88,30 @@ func (f *Fetcher) pullImage(ctx context.Context, imageID string) error {
 	if err != nil {
 		return err
 	}
+
 	writer := logging.GetWriterForLevel(f.logger, logging.InfoLevel)
-	type descriptor interface {
-		Fd() uintptr
-	}
-	var termFd uintptr
-	isTerm := false
-	if f, ok := writer.(descriptor); ok {
-		isTerm = true
-		termFd = f.Fd()
-	}
+	termFd, isTerm := isTerminal(writer)
+
 	err = jsonmessage.DisplayJSONMessagesStream(rc, &colorizedWriter{writer}, termFd, isTerm, nil)
 	if err != nil {
 		return err
 	}
 
 	return rc.Close()
+}
+
+func isTerminal(w io.Writer) (uintptr, bool) {
+	type descriptor interface {
+		Fd() uintptr
+	}
+
+	if f, ok := w.(descriptor); ok {
+		termFd := f.Fd()
+		isTerm := terminal.IsTerminal(int(termFd))
+		return termFd, isTerm
+	}
+
+	return 0, false
 }
 
 func registryAuth(ref string) (string, error) {

@@ -52,7 +52,7 @@ github.com/buildpacks/lifecycle
 github.com/buildpacks/lifecycle/archive
 github.com/buildpacks/lifecycle/auth
 github.com/buildpacks/lifecycle/cmd
-# github.com/buildpacks/pack v0.8.1-0.20200128153201-c4636375b6a7
+# github.com/buildpacks/pack v0.8.2-0.20200131162247-1a6e03a48c94
 github.com/buildpacks/pack
 github.com/buildpacks/pack/builder
 github.com/buildpacks/pack/cmd
