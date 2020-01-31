@@ -132,41 +132,40 @@ func (l *Lifecycle) Export(ctx context.Context, repoName string, runImage string
 }
 
 func (l *Lifecycle) newExport(repoName, runImage string, publish bool, launchCacheName, cacheName string) (*Phase, error) {
+	var binds []string
+	args := []string{
+		"-image", runImage,
+		"-layers", layersDir,
+		"-app", appDir,
+		repoName,
+	}
+
+	if l.CombinedExporterCacher() {
+		args = append([]string{"-cache-dir", cacheDir}, args...)
+		binds = []string{fmt.Sprintf("%s:%s", cacheName, cacheDir)}
+	}
+
 	if publish {
 		return l.NewPhase(
 			"exporter",
 			WithRegistryAccess(repoName, runImage),
 			WithArgs(
-				l.withLogLevel(
-					"-image", runImage,
-					"-layers", layersDir,
-					"-app", appDir,
-					repoName,
-				)...,
+				l.withLogLevel(args...)...,
 			),
+			WithRoot(),
+			WithBinds(binds...),
 		)
 	}
 
-	args := []string{
-		"-image", runImage,
-		"-layers", layersDir,
-		"-app", appDir,
-		"-daemon",
-		"-launch-cache", launchCacheDir,
-		repoName,
-	}
-	if l.CombinedExporterCacher() {
-		args = append([]string{"-cache-dir", cacheDir}, args...)
-	}
-
+	args = append([]string{"-daemon", "-launch-cache", launchCacheDir}, args...)
+	binds = append(binds, fmt.Sprintf("%s:%s", launchCacheName, launchCacheDir))
 	return l.NewPhase(
 		"exporter",
 		WithDaemonAccess(),
 		WithArgs(
 			l.withLogLevel(args...)...,
 		),
-		WithBinds(fmt.Sprintf("%s:%s", launchCacheName, launchCacheDir)),
-		WithBinds(fmt.Sprintf("%s:%s", cacheName, cacheDir)),
+		WithBinds(binds...),
 	)
 }
 

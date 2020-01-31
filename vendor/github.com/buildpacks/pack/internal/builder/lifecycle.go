@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	DefaultLifecycleVersion    = "0.6.0"
+	DefaultLifecycleVersion    = "0.6.1"
 	DefaultBuildpackAPIVersion = "0.2"
 )
 
