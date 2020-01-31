@@ -1,4 +1,10 @@
-# v1.3.0 Release - 01/30/2019
+# v1.3.1 Release - 01/31/2020
+
+This is a minor release to fix skaffold image `gcr.io/k8s-skaffold/skaffold:v1.3.0` issue [#3622](https://github.com/GoogleContainerTools/skaffold/issues/3622)
+
+No changes since [v1.3.0](#v130-release---01302020)
+ 
+# v1.3.0 Release - 01/30/2020
 
 *Note*: This release comes with a new config version `v2alpha2`. To upgrade your `skaffold.yaml`, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best it can.
 
