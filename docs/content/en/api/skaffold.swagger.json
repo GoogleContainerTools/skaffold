@@ -391,7 +391,7 @@
         "workingDir": {
           "type": "string"
         },
-        "ports": {
+        "debugPorts": {
           "type": "object",
           "additionalProperties": {
             "type": "integer",

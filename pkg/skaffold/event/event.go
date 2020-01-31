@@ -279,7 +279,7 @@ func PortForwarded(localPort, remotePort int32, podName, containerName, namespac
 }
 
 // DebuggingContainerStarted notifies that a debuggable container has appeared.
-func DebuggingContainerStarted(podName, containerName, namespace, artifactImage, runtime, workingDir string, ports map[string]uint32) {
+func DebuggingContainerStarted(podName, containerName, namespace, artifactImage, runtime, workingDir string, debugPorts map[string]uint32) {
 	go handler.handle(&proto.Event{
 		EventType: &proto.Event_DebuggingContainerEvent{
 			DebuggingContainerEvent: &proto.DebuggingContainerEvent{
@@ -290,14 +290,14 @@ func DebuggingContainerStarted(podName, containerName, namespace, artifactImage,
 				ArtifactImage: artifactImage,
 				Runtime:       runtime,
 				WorkingDir:    workingDir,
-				Ports:         ports,
+				DebugPorts:    debugPorts,
 			},
 		},
 	})
 }
 
 // DebuggingContainerTerminated notifies that a debuggable container has disappeared.
-func DebuggingContainerTerminated(podName, containerName, namespace, artifactImage, runtime, workingDir string, ports map[string]uint32) {
+func DebuggingContainerTerminated(podName, containerName, namespace, artifactImage, runtime, workingDir string, debugPorts map[string]uint32) {
 	go handler.handle(&proto.Event{
 		EventType: &proto.Event_DebuggingContainerEvent{
 			DebuggingContainerEvent: &proto.DebuggingContainerEvent{
@@ -308,7 +308,7 @@ func DebuggingContainerTerminated(podName, containerName, namespace, artifactIma
 				ArtifactImage: artifactImage,
 				Runtime:       runtime,
 				WorkingDir:    workingDir,
-				Ports:         ports,
+				DebugPorts:    debugPorts,
 			},
 		},
 	})

@@ -112,7 +112,7 @@ DebuggingContainerEvent is raised when a debugging container is started or termi
 | artifactImage | [string](#string) |  | the corresponding artifact `image` |
 | runtime | [string](#string) |  | the detected language runtime |
 | workingDir | [string](#string) |  | the working directory in the container image |
-| ports | [DebuggingContainerEvent.PortsEntry](#proto.DebuggingContainerEvent.PortsEntry) | repeated | the exposed debugging-related ports |
+| debugPorts | [DebuggingContainerEvent.DebugPortsEntry](#proto.DebuggingContainerEvent.DebugPortsEntry) | repeated | the exposed debugging-related ports |
 
 
 
@@ -120,8 +120,8 @@ DebuggingContainerEvent is raised when a debugging container is started or termi
 
 
 
-<a name="proto.DebuggingContainerEvent.PortsEntry"></a>
-#### DebuggingContainerEvent.PortsEntry
+<a name="proto.DebuggingContainerEvent.DebugPortsEntry"></a>
+#### DebuggingContainerEvent.DebugPortsEntry
 
 
 

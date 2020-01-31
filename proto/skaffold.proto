@@ -149,7 +149,7 @@ message DebuggingContainerEvent {
   string artifactImage = 5; // the corresponding artifact `image`
   string runtime = 6; // the detected language runtime
   string workingDir = 7; // the working directory in the container image
-  map<string,uint32> ports = 8; // the exposed debugging-related ports
+  map<string,uint32> debugPorts = 8; // the exposed debugging-related ports
 }
 
 // LogEntry describes an event and a string description of the event.
