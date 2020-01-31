@@ -1606,7 +1606,7 @@
           "type": "array",
           "description": "path to Kustomization files.",
           "x-intellij-html-description": "path to Kustomization files.",
-          "default": "."
+          "default": "[\".\"]"
         }
       },
       "preferredOrder": [
