@@ -38,6 +38,7 @@ var (
 
 // Skaffold-Jib depends on functionality introduced with Jib-Gradle 1.4.0
 const MinimumJibGradleVersion = "1.4.0"
+const MinimumJibGradleVersionForSync = "2.0.0"
 
 // GradleCommand stores Gradle executable and wrapper name
 var GradleCommand = util.CommandWrapper{Executable: "gradle", Wrapper: "gradlew"}
@@ -87,18 +88,18 @@ func getDependenciesGradle(ctx context.Context, workspace string, a *latest.JibA
 }
 
 func getCommandGradle(ctx context.Context, workspace string, a *latest.JibArtifact) exec.Cmd {
-	args := append(gradleArgsFunc(a, "_jibSkaffoldFilesV2"), "-q")
+	args := append(gradleArgsFunc(a, "_jibSkaffoldFilesV2", MinimumJibGradleVersion), "-q")
 	return GradleCommand.CreateCommand(ctx, workspace, args)
 }
 
 func getSyncMapCommandGradle(ctx context.Context, workspace string, a *latest.JibArtifact) *exec.Cmd {
-	cmd := GradleCommand.CreateCommand(ctx, workspace, gradleBuildArgsFunc("_jibSkaffoldSyncMap", a, true))
+	cmd := GradleCommand.CreateCommand(ctx, workspace, gradleBuildArgsFunc("_jibSkaffoldSyncMap", a, true, MinimumJibMavenVersionForSync))
 	return &cmd
 }
 
 // GenerateGradleBuildArgs generates the arguments to Gradle for building the project as an image.
 func GenerateGradleBuildArgs(task string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
-	args := gradleBuildArgsFunc(task, a, skipTests)
+	args := gradleBuildArgsFunc(task, a, skipTests, MinimumJibGradleVersion)
 	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
@@ -109,11 +110,11 @@ func GenerateGradleBuildArgs(task string, imageName string, a *latest.JibArtifac
 }
 
 // Do not use directly, use gradleBuildArgsFunc
-func gradleBuildArgs(task string, a *latest.JibArtifact, skipTests bool) []string {
+func gradleBuildArgs(task string, a *latest.JibArtifact, skipTests bool, minimumVersion string) []string {
 	// disable jib's rich progress footer; we could use `--console=plain`
 	// but it also disables colour which can be helpful
 	args := []string{"-Djib.console=plain"}
-	args = append(args, gradleArgsFunc(a, task)...)
+	args = append(args, gradleArgsFunc(a, task, minimumVersion)...)
 
 	if skipTests {
 		args = append(args, "-x", "test")
@@ -123,8 +124,8 @@ func gradleBuildArgs(task string, a *latest.JibArtifact, skipTests bool) []strin
 }
 
 // Do not use directly, use gradleArgsFunc
-func gradleArgs(a *latest.JibArtifact, task string) []string {
-	args := []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion}
+func gradleArgs(a *latest.JibArtifact, task string, minimumVersion string) []string {
+	args := []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + minimumVersion}
 	if a.Project == "" {
 		return append(args, ":"+task)
 	}
