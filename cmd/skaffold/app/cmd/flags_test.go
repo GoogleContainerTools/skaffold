@@ -19,8 +19,9 @@ package cmd
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/spf13/cobra"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestHasCmdAnnotation(t *testing.T) {
@@ -60,7 +61,7 @@ func TestHasCmdAnnotation(t *testing.T) {
 func TestAddFlagsSmoke(t *testing.T) {
 	testCmd := &cobra.Command{
 		Use:   "test",
-		Short: "Test commanf for smoke testing",
+		Short: "Test command for smoke testing",
 	}
 	SetupFlags()
 	AddFlags(testCmd.Flags(), "test")

@@ -33,10 +33,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type manifest interface {
+// Taggable is an interface that enables a manifest PUT (e.g. for tagging).
+type Taggable interface {
 	RawManifest() ([]byte, error)
-	MediaType() (types.MediaType, error)
-	Digest() (v1.Hash, error)
 }
 
 // Write pushes the provided img to the specified image reference.
@@ -46,7 +45,7 @@ func Write(ref name.Reference, img v1.Image, options ...Option) error {
 		return err
 	}
 
-	o, err := makeOptions(ref.Context().Registry, options...)
+	o, err := makeOptions(ref.Context(), options...)
 	if err != nil {
 		return err
 	}
@@ -68,6 +67,16 @@ func Write(ref name.Reference, img v1.Image, options ...Option) error {
 	uploaded := map[v1.Hash]bool{}
 	for _, l := range ls {
 		l := l
+
+		// Handle foreign layers.
+		mt, err := l.MediaType()
+		if err != nil {
+			return err
+		}
+		if !mt.IsDistributable() {
+			// TODO(jonjohnsonjr): Add "allow-nondistributable-artifacts" option.
+			continue
+		}
 
 		// Streaming layers calculate their digests while uploading them. Assume
 		// an error here indicates we need to upload the layer.
@@ -355,13 +364,55 @@ func (w *writer) uploadOne(l v1.Layer) error {
 	return retry.Retry(tryUpload, retry.IsTemporary, backoff)
 }
 
+type withMediaType interface {
+	MediaType() (types.MediaType, error)
+}
+
+// This is really silly, but go interfaces don't let me satisfy remote.Taggable
+// with remote.Descriptor because of name collisions between method names and
+// struct fields.
+//
+// Use reflection to either pull the v1.Descriptor out of remote.Descriptor or
+// create a descriptor based on the RawManifest and (optionally) MediaType.
+func unpackTaggable(t Taggable) (*v1.Descriptor, error) {
+	if d, ok := t.(*Descriptor); ok {
+		return &d.Descriptor, nil
+	}
+	b, err := t.RawManifest()
+	if err != nil {
+		return nil, err
+	}
+
+	// A reasonable default if Taggable doesn't implement MediaType.
+	mt := types.DockerManifestSchema2
+
+	if wmt, ok := t.(withMediaType); ok {
+		m, err := wmt.MediaType()
+		if err != nil {
+			return nil, err
+		}
+		mt = m
+	}
+
+	h, sz, err := v1.SHA256(bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1.Descriptor{
+		MediaType: mt,
+		Size:      sz,
+		Digest:    h,
+	}, nil
+}
+
 // commitImage does a PUT of the image's manifest.
-func (w *writer) commitImage(man manifest) error {
-	raw, err := man.RawManifest()
+func (w *writer) commitImage(t Taggable) error {
+	raw, err := t.RawManifest()
 	if err != nil {
 		return err
 	}
-	mt, err := man.MediaType()
+	desc, err := unpackTaggable(t)
 	if err != nil {
 		return err
 	}
@@ -373,7 +424,7 @@ func (w *writer) commitImage(man manifest) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Content-Type", string(mt))
+	req.Header.Set("Content-Type", string(desc.MediaType))
 
 	resp, err := w.client.Do(req)
 	if err != nil {
@@ -385,13 +436,8 @@ func (w *writer) commitImage(man manifest) error {
 		return err
 	}
 
-	digest, err := man.Digest()
-	if err != nil {
-		return err
-	}
-
 	// The image was successfully pushed!
-	logs.Progress.Printf("%v: digest: %v size: %d", w.ref, digest, len(raw))
+	logs.Progress.Printf("%v: digest: %v size: %d", w.ref, desc.Digest, len(raw))
 	return nil
 }
 
@@ -401,9 +447,10 @@ func scopesForUploadingImage(ref name.Reference, layers []v1.Layer) []string {
 
 	for _, l := range layers {
 		if ml, ok := l.(*MountableLayer); ok {
-			// we add push scope for ref.Context() after the loop
-			if ml.Reference.Context() != ref.Context() {
-				scopeSet[ml.Reference.Context().Scope(transport.PullScope)] = struct{}{}
+			// we will add push scope for ref.Context() after the loop.
+			// for now we ask pull scope for references of the same registry
+			if ml.Reference.Context() != ref.Context() && ml.Reference.Context().Registry == ref.Context().Registry {
+				scopeSet[ml.Reference.Scope(transport.PullScope)] = struct{}{}
 			}
 		}
 	}
@@ -428,7 +475,7 @@ func WriteIndex(ref name.Reference, ii v1.ImageIndex, options ...Option) error {
 		return err
 	}
 
-	o, err := makeOptions(ref.Context().Registry, options...)
+	o, err := makeOptions(ref.Context(), options...)
 	if err != nil {
 		return err
 	}
@@ -443,10 +490,7 @@ func WriteIndex(ref name.Reference, ii v1.ImageIndex, options ...Option) error {
 	}
 
 	for _, desc := range index.Manifests {
-		ref, err := name.ParseReference(fmt.Sprintf("%s@%s", ref.Context(), desc.Digest), name.StrictValidation)
-		if err != nil {
-			return err
-		}
+		ref := ref.Context().Digest(desc.Digest.String())
 		exists, err := w.checkExistingManifest(desc.Digest, desc.MediaType)
 		if err != nil {
 			return err
@@ -480,4 +524,49 @@ func WriteIndex(ref name.Reference, ii v1.ImageIndex, options ...Option) error {
 	// With all of the constituent elements uploaded, upload the manifest
 	// to commit the image.
 	return w.commitImage(ii)
+}
+
+// WriteLayer uploads the provided Layer to the specified name.Digest.
+func WriteLayer(ref name.Digest, layer v1.Layer, options ...Option) error {
+	o, err := makeOptions(ref.Context(), options...)
+	if err != nil {
+		return err
+	}
+	scopes := scopesForUploadingImage(ref, []v1.Layer{layer})
+	tr, err := transport.New(ref.Context().Registry, o.auth, o.transport, scopes)
+	if err != nil {
+		return err
+	}
+	w := writer{
+		ref:    ref,
+		client: &http.Client{Transport: tr},
+	}
+
+	return w.uploadOne(layer)
+}
+
+// Tag adds a tag to the given Taggable.
+func Tag(tag name.Tag, t Taggable, options ...Option) error {
+	o, err := makeOptions(tag.Context(), options...)
+	if err != nil {
+		return err
+	}
+	scopes := []string{tag.Scope(transport.PushScope)}
+
+	// TODO: This *always* does a token exchange. For some registries,
+	// that's pretty slow. Some ideas;
+	// * Tag could take a list of tags.
+	// * Allow callers to pass in a transport.Transport, typecheck
+	//   it to allow them to reuse the transport across multiple calls.
+	// * WithTag option to do multiple manifest PUTs in commitImage.
+	tr, err := transport.New(tag.Context().Registry, o.auth, o.transport, scopes)
+	if err != nil {
+		return err
+	}
+	w := writer{
+		ref:    tag,
+		client: &http.Client{Transport: tr},
+	}
+
+	return w.commitImage(t)
 }

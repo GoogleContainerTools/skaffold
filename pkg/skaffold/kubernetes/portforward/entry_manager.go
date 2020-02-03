@@ -38,7 +38,8 @@ var (
 			entry.resource.Namespace,
 			entry.portName,
 			string(entry.resource.Type),
-			entry.resource.Name)
+			entry.resource.Name,
+			entry.resource.Address)
 	}
 )
 
@@ -171,11 +172,12 @@ func (b *EntryManager) forwardPortForwardEntry(ctx context.Context, entry *portF
 
 	color.Green.Fprintln(
 		b.output,
-		fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %d -> local port %d",
+		fmt.Sprintf("Port forwarding %s/%s in namespace %s, remote port %d -> address %s port %d",
 			entry.resource.Type,
 			entry.resource.Name,
 			entry.resource.Namespace,
 			entry.resource.Port,
+			entry.resource.Address,
 			entry.localPort))
 	portForwardEvent(entry)
 }

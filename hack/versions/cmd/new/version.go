@@ -24,10 +24,12 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
+	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
-	"github.com/sirupsen/logrus"
 )
 
 // Before: prev -> current (latest)
@@ -70,6 +72,8 @@ func main() {
 
 	// Latest uses the new version
 	sed(path("latest", "config.go"), current, next)
+
+	hackschema.UpdateVersionComment(path("latest", "config.go"), false)
 
 	// Update skaffold.yaml in integration tests
 	walk("integration", func(path string, info os.FileInfo) {

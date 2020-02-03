@@ -20,14 +20,15 @@ import (
 	"context"
 	"strconv"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 var (
@@ -111,6 +112,7 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 				Name:      pod.Name,
 				Namespace: pod.Namespace,
 				Port:      int(port.ContainerPort),
+				Address:   constants.DefaultPortForwardAddress,
 				LocalPort: int(port.ContainerPort),
 			}
 
@@ -128,7 +130,6 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 				}
 			}
 			p.forwardPortForwardEntry(ctx, entry)
-
 		}
 	}
 	return nil
@@ -150,7 +151,7 @@ func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = retrieveAvailablePort(resource.Port, p.forwardedPorts)
+	entry.localPort = retrieveAvailablePort(resource.Address, resource.Port, p.forwardedPorts)
 
 	return entry, nil
 }

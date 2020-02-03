@@ -18,46 +18,33 @@ package cluster
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"sort"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/cluster/sources"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	// Prepare context
-	s := sources.Retrieve(b.kubectlcli, b.ClusterDetails, artifact.KanikoArtifact)
-	dependencies, err := b.DependenciesForArtifact(ctx, artifact)
-	if err != nil {
-		return "", errors.Wrapf(err, "getting dependencies for %s", artifact.ImageName)
-	}
-	context, err := s.Setup(ctx, out, artifact, util.RandomID(), dependencies)
-	if err != nil {
-		return "", errors.Wrap(err, "setting up build context")
-	}
-	defer s.Cleanup(ctx)
+const initContainer = "kaniko-init-container"
 
-	args, err := args(artifact.KanikoArtifact, context, tag)
-	if err != nil {
-		return "", errors.Wrap(err, "building args list")
-	}
-
-	// Create pod
+func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifact *latest.KanikoArtifact, tag string) (string, error) {
 	client, err := kubernetes.Client()
 	if err != nil {
-		return "", errors.Wrap(err, "getting kubernetes client")
+		return "", errors.Wrap(err, "getting Kubernetes client")
+	}
+	pods := client.CoreV1().Pods(b.Namespace)
+
+	podSpec, err := b.kanikoPodSpec(artifact, tag)
+	if err != nil {
+		return "", err
 	}
 
-	pods := client.CoreV1().Pods(b.Namespace)
-	podSpec := s.Pod(args)
 	pod, err := pods.Create(podSpec)
 	if err != nil {
 		return "", errors.Wrap(err, "creating kaniko pod")
@@ -70,74 +57,48 @@ func (b *Builder) runKanikoBuild(ctx context.Context, out io.Writer, artifact *l
 		}
 	}()
 
-	if err := s.ModifyPod(ctx, pod); err != nil {
-		return "", errors.Wrap(err, "modifying kaniko pod")
+	if err := b.copyKanikoBuildContext(ctx, workspace, artifact, pods, pod.Name); err != nil {
+		return "", errors.Wrap(err, "copying sources")
 	}
 
-	waitForLogs := streamLogs(out, pod.Name, pods)
+	// Wait for the pods to succeed while streaming the logs
+	waitForLogs := streamLogs(ctx, out, pod.Name, pods)
 
-	err = kubernetes.WaitForPodSucceeded(ctx, pods, pod.Name, b.timeout)
-	waitForLogs()
-	if err != nil {
+	if err := kubernetes.WaitForPodSucceeded(ctx, pods, pod.Name, b.timeout); err != nil {
+		waitForLogs()
 		return "", errors.Wrap(err, "waiting for pod to complete")
 	}
+
+	waitForLogs()
 
 	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
 
-func args(artifact *latest.KanikoArtifact, context, tag string) ([]string, error) {
-	// Create pod spec
-	args := []string{
-		"--dockerfile", artifact.DockerfilePath,
-		"--context", context,
-		"--destination", tag,
-		"-v", logLevel().String()}
-
-	// TODO: remove since AdditionalFlags will be deprecated (priyawadhwa@)
-	if artifact.AdditionalFlags != nil {
-		logrus.Warn("The additionalFlags field in kaniko is deprecated, please consult the current schema at skaffold.dev to update your skaffold.yaml.")
-		args = append(args, artifact.AdditionalFlags...)
+// first copy over the buildcontext tarball into the init container tmp dir via kubectl cp
+// Via kubectl exec, we extract the tarball to the empty dir
+// Then, via kubectl exec, create the /tmp/complete file via kubectl exec to complete the init container
+func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, artifact *latest.KanikoArtifact, pods corev1.PodInterface, podName string) error {
+	if err := kubernetes.WaitForPodInitialized(ctx, pods, podName); err != nil {
+		return errors.Wrap(err, "waiting for pod to initialize")
 	}
 
-	buildArgs, err := docker.EvaluateBuildArgs(artifact.BuildArgs)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to evaluate build args")
-	}
-
-	if buildArgs != nil {
-		var keys []string
-		for k := range buildArgs {
-			keys = append(keys, k)
+	buildCtx, buildCtxWriter := io.Pipe()
+	go func() {
+		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, workspace, &latest.DockerArtifact{
+			BuildArgs:      artifact.BuildArgs,
+			DockerfilePath: artifact.DockerfilePath,
+		}, b.insecureRegistries)
+		if err != nil {
+			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
+			return
 		}
-		sort.Strings(keys)
+		buildCtxWriter.Close()
+	}()
 
-		for _, k := range keys {
-			v := buildArgs[k]
-			if v == nil {
-				args = append(args, "--build-arg", k)
-			} else {
-				args = append(args, "--build-arg", fmt.Sprintf("%s=%s", k, *v))
-			}
-		}
+	if err := b.kubectlcli.Run(ctx, buildCtx, nil, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", constants.DefaultKanikoEmptyDirMountPath); err != nil {
+		return errors.Wrap(err, "uploading build context")
 	}
 
-	if artifact.Target != "" {
-		args = append(args, "--target", artifact.Target)
-	}
-
-	if artifact.Cache != nil {
-		args = append(args, "--cache=true")
-		if artifact.Cache.Repo != "" {
-			args = append(args, "--cache-repo", artifact.Cache.Repo)
-		}
-		if artifact.Cache.HostPath != "" {
-			args = append(args, "--cache-dir", artifact.Cache.HostPath)
-		}
-	}
-
-	if artifact.Reproducible {
-		args = append(args, "--reproducible")
-	}
-
-	return args, nil
+	// Generate a file to successfully terminate the init container
+	return b.kubectlcli.Run(ctx, nil, nil, "exec", podName, "-c", initContainer, "-n", b.Namespace, "--", "touch", "/tmp/complete")
 }

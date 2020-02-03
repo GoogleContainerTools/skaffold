@@ -24,6 +24,40 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func TestGetImages(t *testing.T) {
+	manifests := ManifestList{[]byte(`
+apiVersion: v1
+kind: Pod
+metadata:
+  name: getting-started
+spec:
+  containers:
+  - image: ["invalid-image-ref"]
+  - image: not valid
+  - image: gcr.io/k8s-skaffold/example:latest
+    name: latest
+  - image: skaffold/other
+    name: other
+  - image: gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883
+    name: digest
+`)}
+	expectedImages := []build.Artifact{
+		{
+			ImageName: "gcr.io/k8s-skaffold/example",
+			Tag:       "gcr.io/k8s-skaffold/example:latest",
+		}, {
+			ImageName: "skaffold/other",
+			Tag:       "skaffold/other",
+		}, {
+			ImageName: "gcr.io/k8s-skaffold/example",
+			Tag:       "gcr.io/k8s-skaffold/example@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+		},
+	}
+
+	actual, err := manifests.GetImages()
+	testutil.CheckErrorAndDeepEqual(t, false, err, expectedImages, actual)
+}
+
 func TestReplaceImages(t *testing.T) {
 	manifests := ManifestList{[]byte(`
 apiVersion: v1
@@ -87,7 +121,7 @@ spec:
 		fakeWarner := &warnings.Collect{}
 		t.Override(&warnings.Printf, fakeWarner.Warnf)
 
-		resultManifest, err := manifests.ReplaceImages(builds, "")
+		resultManifest, err := manifests.ReplaceImages(builds)
 
 		t.CheckNoError(err)
 		t.CheckDeepEqual(expected.String(), resultManifest.String())
@@ -102,7 +136,7 @@ func TestReplaceEmptyManifest(t *testing.T) {
 	manifests := ManifestList{[]byte(""), []byte("  ")}
 	expected := ManifestList{}
 
-	resultManifest, err := manifests.ReplaceImages(nil, "")
+	resultManifest, err := manifests.ReplaceImages(nil)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected.String(), resultManifest.String())
 }
@@ -110,7 +144,7 @@ func TestReplaceEmptyManifest(t *testing.T) {
 func TestReplaceInvalidManifest(t *testing.T) {
 	manifests := ManifestList{[]byte("INVALID")}
 
-	_, err := manifests.ReplaceImages(nil, "")
+	_, err := manifests.ReplaceImages(nil)
 
 	testutil.CheckError(t, true, err)
 }
@@ -123,7 +157,7 @@ image:
 - value2
 `)}
 
-	output, err := manifests.ReplaceImages(nil, "")
+	output, err := manifests.ReplaceImages(nil)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, manifests.String(), output.String())
 }

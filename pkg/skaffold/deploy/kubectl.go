@@ -44,7 +44,6 @@ type KubectlDeployer struct {
 	originalImages     []build.Artifact
 	workingDir         string
 	kubectl            deploy.CLI
-	defaultRepo        string
 	insecureRegistries map[string]bool
 }
 
@@ -57,9 +56,8 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 		kubectl: deploy.CLI{
 			CLI:         kubectl.NewFromRunContext(runCtx),
 			Flags:       runCtx.Cfg.Deploy.KubectlDeploy.Flags,
-			ForceDeploy: runCtx.Opts.ForceDeploy(),
+			ForceDeploy: runCtx.Opts.Force,
 		},
-		defaultRepo:        runCtx.DefaultRepo,
 		insecureRegistries: runCtx.InsecureRegistries,
 	}
 }
@@ -73,65 +71,23 @@ func (k *KubectlDeployer) Labels() map[string]string {
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
-	if err := k.kubectl.CheckVersion(ctx); err != nil {
-		color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
-		color.Default.Fprintln(out, err)
-	}
+	event.DeployInProgress()
+	manifests, err := k.renderManifests(ctx, out, builds, labellers)
 
-	manifests, err := k.readManifests(ctx)
 	if err != nil {
 		event.DeployFailed(err)
-		return NewDeployErrorResult(errors.Wrap(err, "reading manifests"))
+		return NewDeployErrorResult(err)
 	}
-
-	for _, m := range k.RemoteManifests {
-		manifest, err := k.readRemoteManifest(ctx, m)
-		if err != nil {
-			return NewDeployErrorResult(errors.Wrap(err, "get remote manifests"))
-		}
-
-		manifests = append(manifests, manifest)
-	}
-
-	if len(k.originalImages) == 0 {
-		k.originalImages, err = manifests.GetImages()
-		if err != nil {
-			return NewDeployErrorResult(errors.Wrap(err, "get images from manifests"))
-		}
-	}
-
-	logrus.Debugln("manifests", manifests.String())
 
 	if len(manifests) == 0 {
+		event.DeployComplete()
 		return NewDeploySuccessResult(nil)
 	}
-
-	event.DeployInProgress()
 
 	namespaces, err := manifests.CollectNamespaces()
 	if err != nil {
 		event.DeployInfoEvent(errors.Wrap(err, "could not fetch deployed resource namespace. "+
 			"This might cause port-forward and deploy health-check to fail."))
-	}
-
-	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
-	if err != nil {
-		event.DeployFailed(err)
-		return NewDeployErrorResult(errors.Wrap(err, "replacing images in manifests"))
-	}
-
-	manifests, err = manifests.SetLabels(merge(labellers...))
-	if err != nil {
-		event.DeployFailed(err)
-		return NewDeployErrorResult(errors.Wrap(err, "setting labels in manifests"))
-	}
-
-	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds, k.insecureRegistries)
-		if err != nil {
-			event.DeployFailed(err)
-			return NewDeployErrorResult(errors.Wrap(err, "unable to transform manifests"))
-		}
 	}
 
 	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
@@ -162,16 +118,18 @@ func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 			}
 			rm = append(rm, manifest)
 		}
-		upd, err := rm.ReplaceImages(k.originalImages, k.defaultRepo)
+
+		upd, err := rm.ReplaceImages(k.originalImages)
 		if err != nil {
 			return errors.Wrap(err, "replacing with originals")
 		}
+
 		if err := k.kubectl.Apply(ctx, out, upd); err != nil {
 			return errors.Wrap(err, "apply original")
 		}
 	}
 
-	if err := k.kubectl.Delete(ctx, out, manifests); err != nil {
+	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		return errors.Wrap(err, "delete")
 	}
 
@@ -197,7 +155,7 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 
 	var filteredManifests []string
 	for _, f := range list {
-		if !util.IsSupportedKubernetesFormat(f) {
+		if !util.HasKubernetesFileExtension(f) {
 			if !util.StrSliceContains(manifests, f) {
 				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", f)
 				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
@@ -252,6 +210,62 @@ func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) (
 	return manifest.Bytes(), nil
 }
 
-func (k *KubectlDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {
-	return errors.New("not yet implemented")
+func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, filepath string) error {
+	manifests, err := k.renderManifests(ctx, out, builds, labellers)
+	if err != nil {
+		return err
+	}
+
+	return dumpToFileOrWriter(manifests.String(), filepath, out)
+}
+
+func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) (deploy.ManifestList, error) {
+	if err := k.kubectl.CheckVersion(ctx); err != nil {
+		color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
+		color.Default.Fprintln(out, err)
+	}
+
+	manifests, err := k.readManifests(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "reading manifests")
+	}
+
+	for _, m := range k.RemoteManifests {
+		manifest, err := k.readRemoteManifest(ctx, m)
+		if err != nil {
+			return nil, errors.Wrap(err, "get remote manifests")
+		}
+
+		manifests = append(manifests, manifest)
+	}
+
+	if len(k.originalImages) == 0 {
+		k.originalImages, err = manifests.GetImages()
+		if err != nil {
+			return nil, errors.Wrap(err, "get images from manifests")
+		}
+	}
+
+	if len(manifests) == 0 {
+		return nil, nil
+	}
+
+	manifests, err = manifests.ReplaceImages(builds)
+	if err != nil {
+		return nil, errors.Wrap(err, "replacing images in manifests")
+	}
+
+	for _, transform := range manifestTransforms {
+		manifests, err = transform(manifests, builds, k.insecureRegistries)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to transform manifests")
+		}
+	}
+
+	manifests, err = manifests.SetLabels(merge(k, labellers...))
+	if err != nil {
+		return nil, errors.Wrap(err, "setting labels in manifests")
+	}
+
+	return manifests, nil
 }

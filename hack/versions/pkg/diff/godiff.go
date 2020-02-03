@@ -24,9 +24,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/google/go-cmp/cmp"
+	"github.com/sirupsen/logrus"
 )
 
 // CompareGoStructs returns an empty string iff aFile and bFile are valid go files
@@ -111,6 +110,8 @@ func baseTypeName(x ast.Expr) (name string) {
 		return baseTypeName(t.X)
 	case *ast.StarExpr:
 		return "*" + baseTypeName(t.X)
+	case *ast.InterfaceType:
+		return "interface{}"
 	default:
 		panic(fmt.Errorf("not covered %+v %+v ", t, x))
 	}

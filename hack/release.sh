@@ -14,15 +14,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+set -euo pipefail
+
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 EXAMPLES_DIR=${DIR}/../examples
 INTEGRATION_EXAMPLES_DIR=${DIR}/../integration/examples
 
+if ! [[ -x "${DIR}/release-notes" ]]; then
+  echo >&2 'Installing release-notes'
+  cd "${DIR}/tools"
+  GOBIN="$DIR" GO111MODULE=on go install github.com/corneliusweig/release-notes
+  cd -
+fi
+
 # you can pass your github token with --token here if you run out of requests
-go run ${DIR}/release_notes/listpullreqs.go
+"${DIR}/release-notes" GoogleContainerTools skaffold
 
 # sync files from integration examples to examples/
 rm -rf ${EXAMPLES_DIR} && rm -rf ${INTEGRATION_EXAMPLES_DIR}/bazel/bazel-* && cp -r ${INTEGRATION_EXAMPLES_DIR} ${EXAMPLES_DIR} && rm -rf ${EXAMPLES_DIR}/test-*
+
+go run hack/versions/cmd/mark_latest_released/main.go
 
 echo
 echo "Huge thanks goes out to all of our contributors for this release:"

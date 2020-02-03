@@ -33,11 +33,11 @@ type RunContext struct {
 	Opts config.SkaffoldOptions
 	Cfg  latest.Pipeline
 
-	DefaultRepo        string
 	KubeContext        string
 	WorkingDir         string
 	Namespaces         []string
 	InsecureRegistries map[string]bool
+	DevMode            bool
 }
 
 func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContext, error) {
@@ -59,11 +59,6 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		return nil, errors.Wrap(err, "getting namespace list")
 	}
 
-	defaultRepo, err := config.GetDefaultRepo(opts.GlobalConfig, opts.DefaultRepo)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting default repo")
-	}
-
 	// combine all provided lists of insecure registries into a map
 	cfgRegistries, err := config.GetInsecureRegistries(opts.GlobalConfig)
 	if err != nil {
@@ -76,14 +71,16 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		insecureRegistries[r] = true
 	}
 
+	devMode := opts.Command == "dev"
+
 	return &RunContext{
 		Opts:               opts,
 		Cfg:                cfg,
 		WorkingDir:         cwd,
-		DefaultRepo:        defaultRepo,
 		KubeContext:        kubeContext,
 		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
+		DevMode:            devMode,
 	}, nil
 }
 

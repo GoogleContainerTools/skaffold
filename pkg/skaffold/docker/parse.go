@@ -24,14 +24,15 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type from struct {
@@ -237,41 +238,44 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegis
 }
 
 func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCommand, error) {
-	var srcs []string
-	var dest string
-	var destIsDir bool
-
-	slex := shell.NewLex('\\')
-	for i := 0; ; i++ {
-		// Skip last node, since it is the destination, and stop if we arrive at a comment
-		v := value.Next.Value
-		if value.Next.Next == nil || strings.HasPrefix(value.Next.Next.Value, "#") {
-			// COPY or ADD with multiple files must have a directory destination
-			if i > 1 || strings.HasSuffix(v, "/") || path.Base(v) == "." || path.Base(v) == ".." {
-				destIsDir = true
-			}
-			dest = resolveDir(workdir, v)
-			break
-		}
-		src, err := slex.ProcessWord(v, envs)
-		if err != nil {
-			return nil, errors.Wrap(err, "processing word")
-		}
-		// If the --from flag is provided, we are dealing with a multi-stage dockerfile
-		// Adding a dependency from a different stage does not imply a source dependency
-		if hasMultiStageFlag(value.Flags) {
-			return nil, nil
-		}
-		if !strings.HasPrefix(src, "http://") && !strings.HasPrefix(src, "https://") {
-			srcs = append(srcs, src)
-		} else {
-			logrus.Debugf("Skipping watch on remote dependency %s", src)
-		}
-
-		value = value.Next
+	// If the --from flag is provided, we are dealing with a multi-stage dockerfile
+	// Adding a dependency from a different stage does not imply a source dependency
+	if hasMultiStageFlag(value.Flags) {
+		return nil, nil
 	}
 
-	return &copyCommand{srcs: srcs, dest: dest, destIsDir: destIsDir}, nil
+	var paths []string
+	slex := shell.NewLex('\\')
+	for value := value.Next; value != nil && !strings.HasPrefix(value.Value, "#"); value = value.Next {
+		path, err := slex.ProcessWord(value.Value, envs)
+		if err != nil {
+			return nil, errors.Wrap(err, "expanding src")
+		}
+
+		paths = append(paths, path)
+	}
+
+	// All paths are sources except the last one
+	var srcs []string
+	for _, src := range paths[0 : len(paths)-1] {
+		if strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") {
+			logrus.Debugln("Skipping watch on remote dependency", src)
+			continue
+		}
+
+		srcs = append(srcs, src)
+	}
+
+	// Destination is last
+	dest := paths[len(paths)-1]
+	destIsDir := strings.HasSuffix(dest, "/") || path.Base(dest) == "." || path.Base(dest) == ".."
+	dest = resolveDir(workdir, dest)
+
+	return &copyCommand{
+		srcs:      srcs,
+		dest:      dest,
+		destIsDir: destIsDir,
+	}, nil
 }
 
 func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[string]bool) ([]*parser.Node, error) {
@@ -339,9 +343,22 @@ func fromInstruction(node *parser.Node) from {
 	}
 
 	return from{
-		image: node.Next.Value,
+		image: unquote(node.Next.Value),
 		as:    strings.ToLower(as),
 	}
+}
+
+// unquote remove single quote/double quote pairs around a string value.
+// It looks like FROM "scratch" and FROM 'scratch' and FROM """scratch"""...
+// are valid forms of FROM scratch.
+func unquote(v string) string {
+	unquoted := strings.TrimFunc(v, func(r rune) bool { return r == '"' })
+	if unquoted != v {
+		return unquoted
+	}
+
+	unquoted = strings.TrimFunc(v, func(r rune) bool { return r == '\'' })
+	return unquoted
 }
 
 func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {

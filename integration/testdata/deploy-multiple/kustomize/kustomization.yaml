@@ -1,0 +1,2 @@
+resources:
+  - k8s-pod.yaml

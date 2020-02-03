@@ -144,13 +144,17 @@ func (m *Request) GetName() string {
 	return ""
 }
 
+// `State` represents the current state of the Skaffold components
 type State struct {
-	BuildState           *BuildState          `protobuf:"bytes,1,opt,name=buildState,proto3" json:"buildState,omitempty"`
-	DeployState          *DeployState         `protobuf:"bytes,2,opt,name=deployState,proto3" json:"deployState,omitempty"`
-	ForwardedPorts       map[int32]*PortEvent `protobuf:"bytes,4,rep,name=forwardedPorts,proto3" json:"forwardedPorts,omitempty" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
-	XXX_unrecognized     []byte               `json:"-"`
-	XXX_sizecache        int32                `json:"-"`
+	BuildState           *BuildState                `protobuf:"bytes,1,opt,name=buildState,proto3" json:"buildState,omitempty"`
+	DeployState          *DeployState               `protobuf:"bytes,2,opt,name=deployState,proto3" json:"deployState,omitempty"`
+	ForwardedPorts       map[int32]*PortEvent       `protobuf:"bytes,4,rep,name=forwardedPorts,proto3" json:"forwardedPorts,omitempty" protobuf_key:"varint,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	StatusCheckState     *StatusCheckState          `protobuf:"bytes,5,opt,name=statusCheckState,proto3" json:"statusCheckState,omitempty"`
+	FileSyncState        *FileSyncState             `protobuf:"bytes,6,opt,name=fileSyncState,proto3" json:"fileSyncState,omitempty"`
+	DebuggingContainers  []*DebuggingContainerEvent `protobuf:"bytes,7,rep,name=debuggingContainers,proto3" json:"debuggingContainers,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                   `json:"-"`
+	XXX_unrecognized     []byte                     `json:"-"`
+	XXX_sizecache        int32                      `json:"-"`
 }
 
 func (m *State) Reset()         { *m = State{} }
@@ -199,9 +203,36 @@ func (m *State) GetForwardedPorts() map[int32]*PortEvent {
 	return nil
 }
 
-// BuildState contains a map of all skaffold artifacts to their current build
-// states
+func (m *State) GetStatusCheckState() *StatusCheckState {
+	if m != nil {
+		return m.StatusCheckState
+	}
+	return nil
+}
+
+func (m *State) GetFileSyncState() *FileSyncState {
+	if m != nil {
+		return m.FileSyncState
+	}
+	return nil
+}
+
+func (m *State) GetDebuggingContainers() []*DebuggingContainerEvent {
+	if m != nil {
+		return m.DebuggingContainers
+	}
+	return nil
+}
+
+// `BuildState` maps Skaffold artifacts to their current build states
 type BuildState struct {
+	// A map of `artifact name -> build-state`.
+	// Artifact name is defined in the `skaffold.yaml`.
+	// The `build-state` can be: <br>
+	// - `"Not started"`: not yet started <br>
+	// - `"In progress"`: build started <br>
+	// - `"Complete"`: build succeeded <br>
+	// - `"Failed"`: build failed
 	Artifacts            map[string]string `protobuf:"bytes,1,rep,name=artifacts,proto3" json:"artifacts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
@@ -240,7 +271,7 @@ func (m *BuildState) GetArtifacts() map[string]string {
 	return nil
 }
 
-// DeployState contains the status of the current deploy
+// `DeployState` describes the status of the current deploy
 type DeployState struct {
 	Status               string   `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -280,12 +311,112 @@ func (m *DeployState) GetStatus() string {
 	return ""
 }
 
+// `StatusCheckState` describes the state of status check of current deployed resources.
+type StatusCheckState struct {
+	Status string `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	// A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name.
+	// The `status-check-state` can be <br>
+	// - `"Not started"`: indicates that `status-check` has just started. <br>
+	// - `"In progress"`: InProgress is sent after every resource check is complete. <br>
+	// - `"Succeeded"`:
+	// - `"Failed"`:
+	Resources            map[string]string `protobuf:"bytes,2,rep,name=resources,proto3" json:"resources,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *StatusCheckState) Reset()         { *m = StatusCheckState{} }
+func (m *StatusCheckState) String() string { return proto.CompactTextString(m) }
+func (*StatusCheckState) ProtoMessage()    {}
+func (*StatusCheckState) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{6}
+}
+
+func (m *StatusCheckState) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_StatusCheckState.Unmarshal(m, b)
+}
+func (m *StatusCheckState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_StatusCheckState.Marshal(b, m, deterministic)
+}
+func (m *StatusCheckState) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StatusCheckState.Merge(m, src)
+}
+func (m *StatusCheckState) XXX_Size() int {
+	return xxx_messageInfo_StatusCheckState.Size(m)
+}
+func (m *StatusCheckState) XXX_DiscardUnknown() {
+	xxx_messageInfo_StatusCheckState.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StatusCheckState proto.InternalMessageInfo
+
+func (m *StatusCheckState) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *StatusCheckState) GetResources() map[string]string {
+	if m != nil {
+		return m.Resources
+	}
+	return nil
+}
+
+// `FileSyncState` contains the status of the current file sync
+type FileSyncState struct {
+	Status               string   `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *FileSyncState) Reset()         { *m = FileSyncState{} }
+func (m *FileSyncState) String() string { return proto.CompactTextString(m) }
+func (*FileSyncState) ProtoMessage()    {}
+func (*FileSyncState) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{7}
+}
+
+func (m *FileSyncState) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FileSyncState.Unmarshal(m, b)
+}
+func (m *FileSyncState) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FileSyncState.Marshal(b, m, deterministic)
+}
+func (m *FileSyncState) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FileSyncState.Merge(m, src)
+}
+func (m *FileSyncState) XXX_Size() int {
+	return xxx_messageInfo_FileSyncState.Size(m)
+}
+func (m *FileSyncState) XXX_DiscardUnknown() {
+	xxx_messageInfo_FileSyncState.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FileSyncState proto.InternalMessageInfo
+
+func (m *FileSyncState) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+// `Event` describes an event in the Skaffold process.
+// It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
 type Event struct {
 	// Types that are valid to be assigned to EventType:
 	//	*Event_MetaEvent
 	//	*Event_BuildEvent
 	//	*Event_DeployEvent
 	//	*Event_PortEvent
+	//	*Event_StatusCheckEvent
+	//	*Event_ResourceStatusCheckEvent
+	//	*Event_FileSyncEvent
+	//	*Event_DebuggingContainerEvent
 	EventType            isEvent_EventType `protobuf_oneof:"event_type"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
@@ -296,7 +427,7 @@ func (m *Event) Reset()         { *m = Event{} }
 func (m *Event) String() string { return proto.CompactTextString(m) }
 func (*Event) ProtoMessage()    {}
 func (*Event) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{6}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{8}
 }
 
 func (m *Event) XXX_Unmarshal(b []byte) error {
@@ -337,6 +468,22 @@ type Event_PortEvent struct {
 	PortEvent *PortEvent `protobuf:"bytes,4,opt,name=portEvent,proto3,oneof"`
 }
 
+type Event_StatusCheckEvent struct {
+	StatusCheckEvent *StatusCheckEvent `protobuf:"bytes,5,opt,name=statusCheckEvent,proto3,oneof"`
+}
+
+type Event_ResourceStatusCheckEvent struct {
+	ResourceStatusCheckEvent *ResourceStatusCheckEvent `protobuf:"bytes,6,opt,name=resourceStatusCheckEvent,proto3,oneof"`
+}
+
+type Event_FileSyncEvent struct {
+	FileSyncEvent *FileSyncEvent `protobuf:"bytes,7,opt,name=fileSyncEvent,proto3,oneof"`
+}
+
+type Event_DebuggingContainerEvent struct {
+	DebuggingContainerEvent *DebuggingContainerEvent `protobuf:"bytes,8,opt,name=debuggingContainerEvent,proto3,oneof"`
+}
+
 func (*Event_MetaEvent) isEvent_EventType() {}
 
 func (*Event_BuildEvent) isEvent_EventType() {}
@@ -344,6 +491,14 @@ func (*Event_BuildEvent) isEvent_EventType() {}
 func (*Event_DeployEvent) isEvent_EventType() {}
 
 func (*Event_PortEvent) isEvent_EventType() {}
+
+func (*Event_StatusCheckEvent) isEvent_EventType() {}
+
+func (*Event_ResourceStatusCheckEvent) isEvent_EventType() {}
+
+func (*Event_FileSyncEvent) isEvent_EventType() {}
+
+func (*Event_DebuggingContainerEvent) isEvent_EventType() {}
 
 func (m *Event) GetEventType() isEvent_EventType {
 	if m != nil {
@@ -380,6 +535,34 @@ func (m *Event) GetPortEvent() *PortEvent {
 	return nil
 }
 
+func (m *Event) GetStatusCheckEvent() *StatusCheckEvent {
+	if x, ok := m.GetEventType().(*Event_StatusCheckEvent); ok {
+		return x.StatusCheckEvent
+	}
+	return nil
+}
+
+func (m *Event) GetResourceStatusCheckEvent() *ResourceStatusCheckEvent {
+	if x, ok := m.GetEventType().(*Event_ResourceStatusCheckEvent); ok {
+		return x.ResourceStatusCheckEvent
+	}
+	return nil
+}
+
+func (m *Event) GetFileSyncEvent() *FileSyncEvent {
+	if x, ok := m.GetEventType().(*Event_FileSyncEvent); ok {
+		return x.FileSyncEvent
+	}
+	return nil
+}
+
+func (m *Event) GetDebuggingContainerEvent() *DebuggingContainerEvent {
+	if x, ok := m.GetEventType().(*Event_DebuggingContainerEvent); ok {
+		return x.DebuggingContainerEvent
+	}
+	return nil
+}
+
 // XXX_OneofWrappers is for the internal use of the proto package.
 func (*Event) XXX_OneofWrappers() []interface{} {
 	return []interface{}{
@@ -387,10 +570,16 @@ func (*Event) XXX_OneofWrappers() []interface{} {
 		(*Event_BuildEvent)(nil),
 		(*Event_DeployEvent)(nil),
 		(*Event_PortEvent)(nil),
+		(*Event_StatusCheckEvent)(nil),
+		(*Event_ResourceStatusCheckEvent)(nil),
+		(*Event_FileSyncEvent)(nil),
+		(*Event_DebuggingContainerEvent)(nil),
 	}
 }
 
+// `MetaEvent` provides general information regarding Skaffold
 type MetaEvent struct {
+	// entry, for example: `"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"`
 	Entry                string   `protobuf:"bytes,1,opt,name=entry,proto3" json:"entry,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -401,7 +590,7 @@ func (m *MetaEvent) Reset()         { *m = MetaEvent{} }
 func (m *MetaEvent) String() string { return proto.CompactTextString(m) }
 func (*MetaEvent) ProtoMessage()    {}
 func (*MetaEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{7}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{9}
 }
 
 func (m *MetaEvent) XXX_Unmarshal(b []byte) error {
@@ -429,6 +618,8 @@ func (m *MetaEvent) GetEntry() string {
 	return ""
 }
 
+// `BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
+// If the build fails, an error will be attached to the event.
 type BuildEvent struct {
 	Artifact             string   `protobuf:"bytes,1,opt,name=artifact,proto3" json:"artifact,omitempty"`
 	Status               string   `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
@@ -442,7 +633,7 @@ func (m *BuildEvent) Reset()         { *m = BuildEvent{} }
 func (m *BuildEvent) String() string { return proto.CompactTextString(m) }
 func (*BuildEvent) ProtoMessage()    {}
 func (*BuildEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{8}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{10}
 }
 
 func (m *BuildEvent) XXX_Unmarshal(b []byte) error {
@@ -484,6 +675,8 @@ func (m *BuildEvent) GetErr() string {
 	return ""
 }
 
+// `DeployEvent` represents the status of a deployment, and is emitted by Skaffold
+// anytime a deployment starts or completes, successfully or not.
 type DeployEvent struct {
 	Status               string   `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	Err                  string   `protobuf:"bytes,2,opt,name=err,proto3" json:"err,omitempty"`
@@ -496,7 +689,7 @@ func (m *DeployEvent) Reset()         { *m = DeployEvent{} }
 func (m *DeployEvent) String() string { return proto.CompactTextString(m) }
 func (*DeployEvent) ProtoMessage()    {}
 func (*DeployEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{9}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{11}
 }
 
 func (m *DeployEvent) XXX_Unmarshal(b []byte) error {
@@ -531,6 +724,131 @@ func (m *DeployEvent) GetErr() string {
 	return ""
 }
 
+// `StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed.
+type StatusCheckEvent struct {
+	Status               string   `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	Message              string   `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	Err                  string   `protobuf:"bytes,3,opt,name=err,proto3" json:"err,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *StatusCheckEvent) Reset()         { *m = StatusCheckEvent{} }
+func (m *StatusCheckEvent) String() string { return proto.CompactTextString(m) }
+func (*StatusCheckEvent) ProtoMessage()    {}
+func (*StatusCheckEvent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{12}
+}
+
+func (m *StatusCheckEvent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_StatusCheckEvent.Unmarshal(m, b)
+}
+func (m *StatusCheckEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_StatusCheckEvent.Marshal(b, m, deterministic)
+}
+func (m *StatusCheckEvent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_StatusCheckEvent.Merge(m, src)
+}
+func (m *StatusCheckEvent) XXX_Size() int {
+	return xxx_messageInfo_StatusCheckEvent.Size(m)
+}
+func (m *StatusCheckEvent) XXX_DiscardUnknown() {
+	xxx_messageInfo_StatusCheckEvent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_StatusCheckEvent proto.InternalMessageInfo
+
+func (m *StatusCheckEvent) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *StatusCheckEvent) GetMessage() string {
+	if m != nil {
+		return m.Message
+	}
+	return ""
+}
+
+func (m *StatusCheckEvent) GetErr() string {
+	if m != nil {
+		return m.Err
+	}
+	return ""
+}
+
+// A Resource StatusCheck Event, indicates progress for each kubernetes deployment.
+// For every resource, there will be exactly one event with `status` *Succeeded* or *Failed* event.
+// There can be multiple events with `status` *Pending*.
+// Skaffold polls for resource status every 0.5 second. If the resource status changes, an event with `status` “Pending”, “Complete” and “Failed”
+// will be sent with the new status.
+type ResourceStatusCheckEvent struct {
+	Resource             string   `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
+	Status               string   `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	Message              string   `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	Err                  string   `protobuf:"bytes,4,opt,name=err,proto3" json:"err,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *ResourceStatusCheckEvent) Reset()         { *m = ResourceStatusCheckEvent{} }
+func (m *ResourceStatusCheckEvent) String() string { return proto.CompactTextString(m) }
+func (*ResourceStatusCheckEvent) ProtoMessage()    {}
+func (*ResourceStatusCheckEvent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{13}
+}
+
+func (m *ResourceStatusCheckEvent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ResourceStatusCheckEvent.Unmarshal(m, b)
+}
+func (m *ResourceStatusCheckEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ResourceStatusCheckEvent.Marshal(b, m, deterministic)
+}
+func (m *ResourceStatusCheckEvent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResourceStatusCheckEvent.Merge(m, src)
+}
+func (m *ResourceStatusCheckEvent) XXX_Size() int {
+	return xxx_messageInfo_ResourceStatusCheckEvent.Size(m)
+}
+func (m *ResourceStatusCheckEvent) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResourceStatusCheckEvent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ResourceStatusCheckEvent proto.InternalMessageInfo
+
+func (m *ResourceStatusCheckEvent) GetResource() string {
+	if m != nil {
+		return m.Resource
+	}
+	return ""
+}
+
+func (m *ResourceStatusCheckEvent) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *ResourceStatusCheckEvent) GetMessage() string {
+	if m != nil {
+		return m.Message
+	}
+	return ""
+}
+
+func (m *ResourceStatusCheckEvent) GetErr() string {
+	if m != nil {
+		return m.Err
+	}
+	return ""
+}
+
+// PortEvent Event describes each port forwarding event.
 type PortEvent struct {
 	LocalPort            int32    `protobuf:"varint,1,opt,name=localPort,proto3" json:"localPort,omitempty"`
 	RemotePort           int32    `protobuf:"varint,2,opt,name=remotePort,proto3" json:"remotePort,omitempty"`
@@ -540,6 +858,7 @@ type PortEvent struct {
 	PortName             string   `protobuf:"bytes,6,opt,name=portName,proto3" json:"portName,omitempty"`
 	ResourceType         string   `protobuf:"bytes,7,opt,name=resourceType,proto3" json:"resourceType,omitempty"`
 	ResourceName         string   `protobuf:"bytes,8,opt,name=resourceName,proto3" json:"resourceName,omitempty"`
+	Address              string   `protobuf:"bytes,9,opt,name=address,proto3" json:"address,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -549,7 +868,7 @@ func (m *PortEvent) Reset()         { *m = PortEvent{} }
 func (m *PortEvent) String() string { return proto.CompactTextString(m) }
 func (*PortEvent) ProtoMessage()    {}
 func (*PortEvent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{10}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{14}
 }
 
 func (m *PortEvent) XXX_Unmarshal(b []byte) error {
@@ -626,6 +945,174 @@ func (m *PortEvent) GetResourceName() string {
 	return ""
 }
 
+func (m *PortEvent) GetAddress() string {
+	if m != nil {
+		return m.Address
+	}
+	return ""
+}
+
+// FileSyncEvent describes the sync status.
+type FileSyncEvent struct {
+	FileCount            int32    `protobuf:"varint,1,opt,name=fileCount,proto3" json:"fileCount,omitempty"`
+	Image                string   `protobuf:"bytes,2,opt,name=image,proto3" json:"image,omitempty"`
+	Status               string   `protobuf:"bytes,3,opt,name=status,proto3" json:"status,omitempty"`
+	Err                  string   `protobuf:"bytes,4,opt,name=err,proto3" json:"err,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *FileSyncEvent) Reset()         { *m = FileSyncEvent{} }
+func (m *FileSyncEvent) String() string { return proto.CompactTextString(m) }
+func (*FileSyncEvent) ProtoMessage()    {}
+func (*FileSyncEvent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{15}
+}
+
+func (m *FileSyncEvent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FileSyncEvent.Unmarshal(m, b)
+}
+func (m *FileSyncEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FileSyncEvent.Marshal(b, m, deterministic)
+}
+func (m *FileSyncEvent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FileSyncEvent.Merge(m, src)
+}
+func (m *FileSyncEvent) XXX_Size() int {
+	return xxx_messageInfo_FileSyncEvent.Size(m)
+}
+func (m *FileSyncEvent) XXX_DiscardUnknown() {
+	xxx_messageInfo_FileSyncEvent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FileSyncEvent proto.InternalMessageInfo
+
+func (m *FileSyncEvent) GetFileCount() int32 {
+	if m != nil {
+		return m.FileCount
+	}
+	return 0
+}
+
+func (m *FileSyncEvent) GetImage() string {
+	if m != nil {
+		return m.Image
+	}
+	return ""
+}
+
+func (m *FileSyncEvent) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *FileSyncEvent) GetErr() string {
+	if m != nil {
+		return m.Err
+	}
+	return ""
+}
+
+// DebuggingContainerEvent is raised when a debugging container is started or terminated
+type DebuggingContainerEvent struct {
+	Status               string            `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	PodName              string            `protobuf:"bytes,2,opt,name=podName,proto3" json:"podName,omitempty"`
+	ContainerName        string            `protobuf:"bytes,3,opt,name=containerName,proto3" json:"containerName,omitempty"`
+	Namespace            string            `protobuf:"bytes,4,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	Artifact             string            `protobuf:"bytes,5,opt,name=artifact,proto3" json:"artifact,omitempty"`
+	Runtime              string            `protobuf:"bytes,6,opt,name=runtime,proto3" json:"runtime,omitempty"`
+	WorkingDir           string            `protobuf:"bytes,7,opt,name=workingDir,proto3" json:"workingDir,omitempty"`
+	DebugPorts           map[string]uint32 `protobuf:"bytes,8,rep,name=debugPorts,proto3" json:"debugPorts,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *DebuggingContainerEvent) Reset()         { *m = DebuggingContainerEvent{} }
+func (m *DebuggingContainerEvent) String() string { return proto.CompactTextString(m) }
+func (*DebuggingContainerEvent) ProtoMessage()    {}
+func (*DebuggingContainerEvent) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4f2d38e344f9dbf5, []int{16}
+}
+
+func (m *DebuggingContainerEvent) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DebuggingContainerEvent.Unmarshal(m, b)
+}
+func (m *DebuggingContainerEvent) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DebuggingContainerEvent.Marshal(b, m, deterministic)
+}
+func (m *DebuggingContainerEvent) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DebuggingContainerEvent.Merge(m, src)
+}
+func (m *DebuggingContainerEvent) XXX_Size() int {
+	return xxx_messageInfo_DebuggingContainerEvent.Size(m)
+}
+func (m *DebuggingContainerEvent) XXX_DiscardUnknown() {
+	xxx_messageInfo_DebuggingContainerEvent.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DebuggingContainerEvent proto.InternalMessageInfo
+
+func (m *DebuggingContainerEvent) GetStatus() string {
+	if m != nil {
+		return m.Status
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetPodName() string {
+	if m != nil {
+		return m.PodName
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetContainerName() string {
+	if m != nil {
+		return m.ContainerName
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetArtifact() string {
+	if m != nil {
+		return m.Artifact
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetRuntime() string {
+	if m != nil {
+		return m.Runtime
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetWorkingDir() string {
+	if m != nil {
+		return m.WorkingDir
+	}
+	return ""
+}
+
+func (m *DebuggingContainerEvent) GetDebugPorts() map[string]uint32 {
+	if m != nil {
+		return m.DebugPorts
+	}
+	return nil
+}
+
+// LogEntry describes an event and a string description of the event.
 type LogEntry struct {
 	Timestamp            *timestamp.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Event                *Event               `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
@@ -639,7 +1126,7 @@ func (m *LogEntry) Reset()         { *m = LogEntry{} }
 func (m *LogEntry) String() string { return proto.CompactTextString(m) }
 func (*LogEntry) ProtoMessage()    {}
 func (*LogEntry) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{11}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{17}
 }
 
 func (m *LogEntry) XXX_Unmarshal(b []byte) error {
@@ -692,7 +1179,7 @@ func (m *UserIntentRequest) Reset()         { *m = UserIntentRequest{} }
 func (m *UserIntentRequest) String() string { return proto.CompactTextString(m) }
 func (*UserIntentRequest) ProtoMessage()    {}
 func (*UserIntentRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{12}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{18}
 }
 
 func (m *UserIntentRequest) XXX_Unmarshal(b []byte) error {
@@ -720,6 +1207,7 @@ func (m *UserIntentRequest) GetIntent() *Intent {
 	return nil
 }
 
+// Intent represents user intents for a given phase to be unblocked, once.
 type Intent struct {
 	Build                bool     `protobuf:"varint,1,opt,name=build,proto3" json:"build,omitempty"`
 	Sync                 bool     `protobuf:"varint,2,opt,name=sync,proto3" json:"sync,omitempty"`
@@ -733,7 +1221,7 @@ func (m *Intent) Reset()         { *m = Intent{} }
 func (m *Intent) String() string { return proto.CompactTextString(m) }
 func (*Intent) ProtoMessage()    {}
 func (*Intent) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4f2d38e344f9dbf5, []int{13}
+	return fileDescriptor_4f2d38e344f9dbf5, []int{19}
 }
 
 func (m *Intent) XXX_Unmarshal(b []byte) error {
@@ -784,11 +1272,19 @@ func init() {
 	proto.RegisterType((*BuildState)(nil), "proto.BuildState")
 	proto.RegisterMapType((map[string]string)(nil), "proto.BuildState.ArtifactsEntry")
 	proto.RegisterType((*DeployState)(nil), "proto.DeployState")
+	proto.RegisterType((*StatusCheckState)(nil), "proto.StatusCheckState")
+	proto.RegisterMapType((map[string]string)(nil), "proto.StatusCheckState.ResourcesEntry")
+	proto.RegisterType((*FileSyncState)(nil), "proto.FileSyncState")
 	proto.RegisterType((*Event)(nil), "proto.Event")
 	proto.RegisterType((*MetaEvent)(nil), "proto.MetaEvent")
 	proto.RegisterType((*BuildEvent)(nil), "proto.BuildEvent")
 	proto.RegisterType((*DeployEvent)(nil), "proto.DeployEvent")
+	proto.RegisterType((*StatusCheckEvent)(nil), "proto.StatusCheckEvent")
+	proto.RegisterType((*ResourceStatusCheckEvent)(nil), "proto.ResourceStatusCheckEvent")
 	proto.RegisterType((*PortEvent)(nil), "proto.PortEvent")
+	proto.RegisterType((*FileSyncEvent)(nil), "proto.FileSyncEvent")
+	proto.RegisterType((*DebuggingContainerEvent)(nil), "proto.DebuggingContainerEvent")
+	proto.RegisterMapType((map[string]uint32)(nil), "proto.DebuggingContainerEvent.DebugPortsEntry")
 	proto.RegisterType((*LogEntry)(nil), "proto.LogEntry")
 	proto.RegisterType((*UserIntentRequest)(nil), "proto.UserIntentRequest")
 	proto.RegisterType((*Intent)(nil), "proto.Intent")
@@ -797,62 +1293,85 @@ func init() {
 func init() { proto.RegisterFile("skaffold.proto", fileDescriptor_4f2d38e344f9dbf5) }
 
 var fileDescriptor_4f2d38e344f9dbf5 = []byte{
-	// 874 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x55, 0x4b, 0x8f, 0xe3, 0x44,
-	0x10, 0xc6, 0xce, 0x63, 0xec, 0xca, 0x3c, 0x1b, 0x76, 0x15, 0x79, 0x07, 0x18, 0x5a, 0x2c, 0x1a,
-	0x71, 0x48, 0x76, 0x67, 0x10, 0xac, 0x46, 0x08, 0x89, 0x81, 0x61, 0x87, 0xd5, 0x80, 0x90, 0xb3,
-	0x48, 0xdc, 0x90, 0x27, 0xa9, 0x84, 0x68, 0x1d, 0xb7, 0x71, 0x77, 0x02, 0xb9, 0x70, 0xe0, 0xc8,
-	0x1e, 0x11, 0xbf, 0x8c, 0xbf, 0x80, 0xf8, 0x1d, 0xa8, 0xab, 0xbb, 0xe3, 0xf6, 0x3c, 0x24, 0x4e,
-	0xee, 0xaa, 0xfa, 0xea, 0x73, 0x55, 0x7d, 0xfd, 0x80, 0x5d, 0xf9, 0x2a, 0x9b, 0x4e, 0x45, 0x3e,
-	0x19, 0x94, 0x95, 0x50, 0x82, 0x75, 0xe8, 0x93, 0x1c, 0xce, 0x84, 0x98, 0xe5, 0x38, 0xcc, 0xca,
-	0xf9, 0x30, 0x2b, 0x0a, 0xa1, 0x32, 0x35, 0x17, 0x85, 0x34, 0xa0, 0xe4, 0x5d, 0x1b, 0x25, 0xeb,
-	0x7a, 0x39, 0x1d, 0xaa, 0xf9, 0x02, 0xa5, 0xca, 0x16, 0xa5, 0x05, 0x3c, 0xba, 0x09, 0xc0, 0x45,
-	0xa9, 0xd6, 0x26, 0xc8, 0x4f, 0x61, 0x67, 0xa4, 0x32, 0x85, 0x29, 0xca, 0x52, 0x14, 0x12, 0x19,
-	0x87, 0x8e, 0xd4, 0x8e, 0x7e, 0x70, 0x14, 0x1c, 0xf7, 0x4e, 0xb6, 0x0d, 0x6e, 0x60, 0x40, 0x26,
-	0xc4, 0x0f, 0x21, 0xda, 0xe0, 0xf7, 0xa1, 0xb5, 0x90, 0x33, 0x42, 0xc7, 0xa9, 0x5e, 0xf2, 0xb7,
-	0x61, 0x2b, 0xc5, 0x9f, 0x97, 0x28, 0x15, 0x63, 0xd0, 0x2e, 0xb2, 0x05, 0xda, 0x28, 0xad, 0xf9,
-	0x5f, 0x21, 0x74, 0x88, 0x8d, 0x3d, 0x05, 0xb8, 0x5e, 0xce, 0xf3, 0xc9, 0xc8, 0xfb, 0xdf, 0x81,
-	0xfd, 0xdf, 0xf9, 0x26, 0x90, 0x7a, 0x20, 0xf6, 0x11, 0xf4, 0x26, 0x58, 0xe6, 0x62, 0x6d, 0x72,
-	0x42, 0xca, 0x61, 0x36, 0xe7, 0xcb, 0x3a, 0x92, 0xfa, 0x30, 0x76, 0x09, 0xbb, 0x53, 0x51, 0xfd,
-	0x92, 0x55, 0x13, 0x9c, 0x7c, 0x27, 0x2a, 0x25, 0xfb, 0xed, 0xa3, 0xd6, 0x71, 0xef, 0xe4, 0xc8,
-	0x6f, 0x6e, 0xf0, 0x55, 0x03, 0x72, 0x51, 0xa8, 0x6a, 0x9d, 0xde, 0xc8, 0x4b, 0x46, 0xf0, 0xe6,
-	0x1d, 0x30, 0x3d, 0x84, 0x57, 0xb8, 0xa6, 0x16, 0x3a, 0xa9, 0x5e, 0xb2, 0x0f, 0xa0, 0xb3, 0xca,
-	0xf2, 0xa5, 0x2b, 0x71, 0xdf, 0xfe, 0x49, 0xe7, 0x5c, 0xac, 0xb0, 0x50, 0xa9, 0x09, 0x9f, 0x85,
-	0xcf, 0x82, 0x17, 0xed, 0xa8, 0xb5, 0xdf, 0xe6, 0x7f, 0x04, 0x00, 0x75, 0xd7, 0xec, 0x33, 0x88,
-	0xb3, 0x4a, 0xcd, 0xa7, 0xd9, 0x58, 0xc9, 0x7e, 0xd0, 0x28, 0xb7, 0x46, 0x0d, 0x3e, 0x77, 0x10,
-	0x53, 0x6e, 0x9d, 0x92, 0x7c, 0x0a, 0xbb, 0xcd, 0xa0, 0x5f, 0x64, 0x6c, 0x8a, 0x7c, 0xcb, 0x2f,
-	0x32, 0xf6, 0x4a, 0xe2, 0x8f, 0xa1, 0xe7, 0x4d, 0x93, 0x3d, 0x84, 0xae, 0x56, 0x7e, 0x29, 0x6d,
-	0xb6, 0xb5, 0xf8, 0xbf, 0x01, 0x74, 0xa8, 0x1d, 0xf6, 0x04, 0xe2, 0x05, 0xaa, 0x8c, 0x0c, 0x2b,
-	0xa5, 0xeb, 0xf9, 0x1b, 0xe7, 0xbf, 0x7c, 0x23, 0xad, 0x41, 0xec, 0xd4, 0xaa, 0x6f, 0x52, 0xc2,
-	0xdb, 0xea, 0xbb, 0x1c, 0x0f, 0xc6, 0x3e, 0x76, 0xfa, 0x9b, 0xac, 0xd6, 0x1d, 0xfa, 0xbb, 0x34,
-	0x1f, 0xa8, 0xcb, 0x2b, 0xdd, 0xe8, 0xfb, 0xed, 0xbb, 0x25, 0xd1, 0xe5, 0x6d, 0x40, 0xe7, 0xdb,
-	0x00, 0xa8, 0x17, 0x3f, 0xaa, 0x75, 0x89, 0xfc, 0x3d, 0x88, 0x37, 0x6d, 0xe8, 0xb1, 0xa1, 0x9e,
-	0xa8, 0x1d, 0x86, 0x31, 0x78, 0x6a, 0xe5, 0x33, 0x98, 0x04, 0x22, 0xa7, 0x85, 0x85, 0x6d, 0x6c,
-	0x6f, 0x9a, 0xa1, 0x3f, 0x4d, 0x2d, 0x10, 0x56, 0x15, 0x35, 0x15, 0xa7, 0x7a, 0xc9, 0x3f, 0x71,
-	0x32, 0x18, 0xd2, 0x7b, 0x64, 0x70, 0x89, 0x61, 0x9d, 0xf8, 0x3a, 0x84, 0x78, 0xd3, 0x18, 0x3b,
-	0x84, 0x38, 0x17, 0xe3, 0x2c, 0xd7, 0x1e, 0xbb, 0x49, 0x6b, 0x07, 0x7b, 0x07, 0xa0, 0xc2, 0x85,
-	0x50, 0x48, 0xe1, 0x90, 0xc2, 0x9e, 0x87, 0xf5, 0x61, 0xab, 0x14, 0x93, 0x6f, 0xf5, 0x39, 0x36,
-	0xa5, 0x39, 0x93, 0xbd, 0x0f, 0x3b, 0x63, 0x51, 0xa8, 0x6c, 0x5e, 0x60, 0x45, 0xf1, 0x36, 0xc5,
-	0x9b, 0x4e, 0xfd, 0x77, 0x7d, 0xf0, 0x65, 0x99, 0x8d, 0xb1, 0xdf, 0x21, 0x44, 0xed, 0xd0, 0x83,
-	0xd2, 0x43, 0xa7, 0xf4, 0xae, 0x19, 0x94, 0xb3, 0x19, 0x87, 0xed, 0x0a, 0xa5, 0x58, 0x56, 0x63,
-	0x7c, 0xb9, 0x2e, 0xb1, 0xbf, 0x45, 0xf1, 0x86, 0xcf, 0xc7, 0x10, 0x47, 0xd4, 0xc4, 0x68, 0x1f,
-	0xff, 0x0d, 0xa2, 0x2b, 0x31, 0x33, 0xa7, 0xe0, 0x19, 0xc4, 0x9b, 0x0b, 0xd2, 0x6e, 0xd4, 0x64,
-	0x60, 0x6e, 0xc8, 0x81, 0xbb, 0x21, 0x07, 0x2f, 0x1d, 0x22, 0xad, 0xc1, 0xfa, 0x66, 0x44, 0x6f,
-	0xaf, 0xba, 0x9b, 0xd1, 0x1e, 0x67, 0x6c, 0x6e, 0x8d, 0x96, 0xbf, 0x35, 0xce, 0xe0, 0xe0, 0x7b,
-	0x89, 0xd5, 0xd7, 0x85, 0xd2, 0x50, 0x7b, 0x37, 0x3e, 0x86, 0xee, 0x9c, 0x1c, 0xb6, 0x8a, 0x1d,
-	0xcb, 0x67, 0x51, 0x36, 0xc8, 0x5f, 0x40, 0xd7, 0x78, 0x34, 0x37, 0x9d, 0x04, 0xc2, 0x47, 0xa9,
-	0x31, 0xf4, 0x15, 0x2b, 0xd7, 0xc5, 0x98, 0x8a, 0x8a, 0x52, 0x5a, 0xeb, 0x7d, 0x62, 0x36, 0x3f,
-	0x95, 0x11, 0xa5, 0xd6, 0x3a, 0x79, 0xdd, 0x82, 0xbd, 0x91, 0x7d, 0x62, 0x46, 0x58, 0xad, 0xe6,
-	0x63, 0x64, 0x5f, 0x40, 0xf4, 0x1c, 0x95, 0x3d, 0xe6, 0xb7, 0x06, 0x71, 0xa1, 0x9f, 0x8a, 0xa4,
-	0xf1, 0x08, 0xf0, 0x83, 0xdf, 0xff, 0xfe, 0xe7, 0xcf, 0xb0, 0xc7, 0xe2, 0xe1, 0xea, 0xe9, 0x90,
-	0x1e, 0x04, 0xf6, 0x1c, 0x22, 0x1a, 0xc3, 0x95, 0x98, 0xb1, 0x3d, 0x0b, 0x76, 0x13, 0x4f, 0x6e,
-	0x3a, 0xf8, 0x03, 0x22, 0xd8, 0x63, 0x3b, 0x9a, 0xc0, 0x1c, 0xb2, 0x5c, 0xcc, 0x8e, 0x83, 0x27,
-	0x01, 0x3b, 0x87, 0x2e, 0x11, 0xc9, 0xff, 0x41, 0xc3, 0x88, 0x66, 0x9b, 0xc1, 0x86, 0x46, 0x12,
-	0xc7, 0x15, 0x74, 0x2f, 0xb3, 0x62, 0x92, 0x23, 0x6b, 0x48, 0x94, 0xdc, 0xd3, 0x1d, 0x3f, 0x24,
-	0x9e, 0x87, 0xfc, 0xa0, 0xe6, 0x19, 0xfe, 0x44, 0x04, 0x67, 0xc1, 0x87, 0xec, 0x07, 0xd8, 0xba,
-	0xf8, 0x15, 0xc7, 0x4b, 0x85, 0xac, 0x6f, 0xe9, 0x6e, 0x69, 0x79, 0x2f, 0xf5, 0x23, 0xa2, 0x7e,
-	0xc0, 0x7b, 0x44, 0x6d, 0x68, 0xce, 0xac, 0xb2, 0xd7, 0x5d, 0x02, 0x9f, 0xfe, 0x17, 0x00, 0x00,
-	0xff, 0xff, 0x27, 0x18, 0xf6, 0x7f, 0xf6, 0x07, 0x00, 0x00,
+	// 1240 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x57, 0xdd, 0x6e, 0xdc, 0x44,
+	0x14, 0xee, 0xda, 0xfb, 0x63, 0x9f, 0xcd, 0x36, 0x9b, 0xe9, 0x4f, 0xac, 0x6d, 0x68, 0x83, 0x45,
+	0x4b, 0xc4, 0xc5, 0x6e, 0x9a, 0x20, 0xa8, 0xa2, 0x82, 0x44, 0x93, 0x34, 0xa1, 0x0a, 0x55, 0x35,
+	0x5b, 0x10, 0x42, 0x42, 0xc8, 0x59, 0xcf, 0xba, 0x56, 0x76, 0x6d, 0xe3, 0xf1, 0xa6, 0x2c, 0x17,
+	0x5c, 0x70, 0xc9, 0x15, 0x12, 0xcf, 0x00, 0x97, 0xbc, 0x0c, 0xaf, 0xc0, 0x05, 0x0f, 0xc0, 0x03,
+	0xa0, 0xf9, 0xb3, 0xc7, 0xbb, 0xeb, 0x44, 0x5c, 0x65, 0xcf, 0x39, 0xdf, 0xf9, 0xe6, 0xcc, 0xf9,
+	0xf1, 0x9c, 0xc0, 0x4d, 0x7a, 0xe1, 0x8d, 0xc7, 0xf1, 0xc4, 0xef, 0x27, 0x69, 0x9c, 0xc5, 0xa8,
+	0xc1, 0xff, 0xf4, 0xb6, 0x82, 0x38, 0x0e, 0x26, 0x64, 0xe0, 0x25, 0xe1, 0xc0, 0x8b, 0xa2, 0x38,
+	0xf3, 0xb2, 0x30, 0x8e, 0xa8, 0x00, 0xf5, 0x1e, 0x48, 0x2b, 0x97, 0xce, 0x67, 0xe3, 0x41, 0x16,
+	0x4e, 0x09, 0xcd, 0xbc, 0x69, 0x22, 0x01, 0xf7, 0x16, 0x01, 0x64, 0x9a, 0x64, 0x73, 0x61, 0x74,
+	0xf7, 0xa1, 0x33, 0xcc, 0xbc, 0x8c, 0x60, 0x42, 0x93, 0x38, 0xa2, 0x04, 0xb9, 0xd0, 0xa0, 0x4c,
+	0xe1, 0xd4, 0xb6, 0x6b, 0x3b, 0xed, 0xbd, 0x35, 0x81, 0xeb, 0x0b, 0x90, 0x30, 0xb9, 0x5b, 0x60,
+	0xe5, 0xf8, 0x2e, 0x98, 0x53, 0x1a, 0x70, 0xb4, 0x8d, 0xd9, 0x4f, 0xf7, 0x1d, 0x68, 0x61, 0xf2,
+	0xfd, 0x8c, 0xd0, 0x0c, 0x21, 0xa8, 0x47, 0xde, 0x94, 0x48, 0x2b, 0xff, 0xed, 0xfe, 0x63, 0x42,
+	0x83, 0xb3, 0xa1, 0xc7, 0x00, 0xe7, 0xb3, 0x70, 0xe2, 0x0f, 0xb5, 0xf3, 0x36, 0xe4, 0x79, 0xcf,
+	0x72, 0x03, 0xd6, 0x40, 0xe8, 0x43, 0x68, 0xfb, 0x24, 0x99, 0xc4, 0x73, 0xe1, 0x63, 0x70, 0x1f,
+	0x24, 0x7d, 0x8e, 0x0a, 0x0b, 0xd6, 0x61, 0xe8, 0x14, 0x6e, 0x8e, 0xe3, 0xf4, 0xad, 0x97, 0xfa,
+	0xc4, 0x7f, 0x15, 0xa7, 0x19, 0x75, 0xea, 0xdb, 0xe6, 0x4e, 0x7b, 0x6f, 0x5b, 0xbf, 0x5c, 0xff,
+	0x79, 0x09, 0x72, 0x1c, 0x65, 0xe9, 0x1c, 0x2f, 0xf8, 0xa1, 0x43, 0xe8, 0xb2, 0x14, 0xcc, 0xe8,
+	0xe1, 0x1b, 0x32, 0xba, 0x10, 0x41, 0x34, 0x78, 0x10, 0x9b, 0x1a, 0x97, 0x6e, 0xc6, 0x4b, 0x0e,
+	0xe8, 0x00, 0x3a, 0xe3, 0x70, 0x42, 0x86, 0xf3, 0x68, 0x24, 0x18, 0x9a, 0x9c, 0xe1, 0xb6, 0x64,
+	0x78, 0xae, 0xdb, 0x70, 0x19, 0x8a, 0x5e, 0xc1, 0x2d, 0x9f, 0x9c, 0xcf, 0x82, 0x20, 0x8c, 0x82,
+	0xc3, 0x38, 0xca, 0xbc, 0x30, 0x22, 0x29, 0x75, 0x5a, 0xfc, 0x3e, 0xf7, 0xf3, 0x44, 0x2c, 0x22,
+	0x8e, 0x2f, 0x49, 0x94, 0xe1, 0x55, 0xae, 0xbd, 0x21, 0xdc, 0x5a, 0x71, 0x73, 0x56, 0xd7, 0x0b,
+	0x32, 0xe7, 0x55, 0x69, 0x60, 0xf6, 0x13, 0x3d, 0x82, 0xc6, 0xa5, 0x37, 0x99, 0xa9, 0xac, 0x77,
+	0xe5, 0x61, 0xcc, 0x47, 0xd0, 0x0b, 0xf3, 0x81, 0xf1, 0xa4, 0xf6, 0xa2, 0x6e, 0x99, 0xdd, 0xba,
+	0xfb, 0x4b, 0x0d, 0xa0, 0x28, 0x24, 0xfa, 0x14, 0x6c, 0x2f, 0xcd, 0xc2, 0xb1, 0x37, 0xca, 0xa8,
+	0x53, 0x2b, 0x55, 0xa0, 0x40, 0xf5, 0x3f, 0x53, 0x10, 0x51, 0x81, 0xc2, 0xa5, 0xf7, 0x14, 0x6e,
+	0x96, 0x8d, 0x7a, 0x90, 0xb6, 0x08, 0xf2, 0xb6, 0x1e, 0xa4, 0xad, 0x85, 0xe4, 0x3e, 0x84, 0xb6,
+	0xd6, 0x20, 0xe8, 0x2e, 0x34, 0x45, 0x61, 0xa4, 0xb7, 0x94, 0xdc, 0x3f, 0x6b, 0xd0, 0x5d, 0xac,
+	0x61, 0x15, 0x18, 0x1d, 0x81, 0x9d, 0x12, 0x1a, 0xcf, 0xd2, 0x11, 0xa1, 0x8e, 0xc1, 0x6f, 0xf4,
+	0xa8, 0xa2, 0x0f, 0xfa, 0x58, 0x01, 0xe5, 0xbd, 0x72, 0x47, 0x76, 0xaf, 0xb2, 0xf1, 0x7f, 0xdd,
+	0xeb, 0x7d, 0xe8, 0x94, 0x3a, 0xa6, 0xf2, 0x66, 0x7f, 0xd4, 0xa1, 0xc1, 0x0b, 0x85, 0x76, 0xc1,
+	0x9e, 0x92, 0xcc, 0xe3, 0x82, 0x9c, 0x3b, 0x55, 0xcd, 0x2f, 0x94, 0xfe, 0xf4, 0x06, 0x2e, 0x40,
+	0x68, 0x5f, 0x8e, 0xaa, 0x70, 0x31, 0x96, 0x47, 0x55, 0xf9, 0x68, 0x30, 0xf4, 0x91, 0x1a, 0x56,
+	0xe1, 0x65, 0xae, 0x18, 0x56, 0xe5, 0xa6, 0x03, 0x59, 0x78, 0x89, 0x6a, 0x2a, 0xa7, 0xbe, 0xba,
+	0xd9, 0x58, 0x78, 0x39, 0x08, 0x1d, 0x97, 0xc6, 0x52, 0x38, 0x56, 0x8e, 0xa5, 0xf2, 0x5f, 0x72,
+	0x41, 0xdf, 0x82, 0xa3, 0xaa, 0xb2, 0x88, 0x97, 0x33, 0xfa, 0x40, 0xd2, 0xe1, 0x0a, 0xd8, 0xe9,
+	0x0d, 0x5c, 0x49, 0x81, 0x9e, 0x16, 0x73, 0x2f, 0x38, 0x5b, 0x2b, 0xe7, 0x5e, 0x11, 0x95, 0xc1,
+	0xe8, 0x1b, 0xd8, 0xf4, 0x57, 0xcf, 0xb5, 0x63, 0x71, 0x9e, 0x6b, 0xa6, 0xff, 0xf4, 0x06, 0xae,
+	0x22, 0x78, 0xb6, 0x06, 0x40, 0xd8, 0x8f, 0xef, 0xb2, 0x79, 0x42, 0xdc, 0x77, 0xc1, 0xce, 0xdb,
+	0x80, 0x35, 0x1e, 0x61, 0x3d, 0x29, 0x9b, 0x49, 0x08, 0x2e, 0x96, 0x83, 0x2d, 0x30, 0x3d, 0xb0,
+	0xd4, 0x94, 0x4a, 0x58, 0x2e, 0x6b, 0xdd, 0x68, 0x94, 0x46, 0xa7, 0x0b, 0x26, 0x49, 0x53, 0xde,
+	0x14, 0x36, 0x66, 0x3f, 0xdd, 0x8f, 0xd5, 0x80, 0x0a, 0xd2, 0xaa, 0x99, 0x93, 0x8e, 0x46, 0xe1,
+	0xf8, 0x55, 0x69, 0x62, 0xaf, 0xf6, 0x76, 0xa0, 0x35, 0x25, 0x94, 0x7a, 0x81, 0x9a, 0x24, 0x25,
+	0xae, 0x08, 0xe8, 0x47, 0x70, 0xaa, 0xea, 0xcc, 0xae, 0xac, 0xea, 0xac, 0xae, 0xac, 0xe4, 0xca,
+	0x2b, 0x6b, 0x67, 0x9b, 0x2b, 0xcf, 0xae, 0x17, 0x67, 0xff, 0x6e, 0x80, 0x9d, 0x37, 0x3b, 0xda,
+	0x02, 0x7b, 0x12, 0x8f, 0xbc, 0x09, 0xd3, 0xc8, 0x4f, 0x72, 0xa1, 0x40, 0xf7, 0x01, 0x52, 0x32,
+	0x8d, 0x33, 0xc2, 0xcd, 0x06, 0x37, 0x6b, 0x1a, 0x76, 0x6e, 0x12, 0xfb, 0x2f, 0xd9, 0x43, 0x2c,
+	0xcf, 0x95, 0x22, 0x7a, 0x0f, 0x3a, 0x23, 0xd5, 0x09, 0xdc, 0x2e, 0x22, 0x28, 0x2b, 0xd9, 0xe9,
+	0xec, 0xe5, 0xa6, 0x89, 0x37, 0x12, 0xaf, 0x9d, 0x8d, 0x0b, 0x05, 0xcb, 0x04, 0x1b, 0x44, 0xee,
+	0xde, 0x14, 0x99, 0x50, 0x32, 0x72, 0x61, 0x4d, 0x65, 0xe5, 0xf5, 0x3c, 0x21, 0xbc, 0xe1, 0x6d,
+	0x5c, 0xd2, 0xe9, 0x18, 0xce, 0x61, 0x95, 0x31, 0x9c, 0xc7, 0x81, 0x96, 0xe7, 0xfb, 0x29, 0xa1,
+	0xd4, 0xb1, 0xc5, 0x0d, 0xa4, 0xe8, 0x4e, 0x8b, 0xaf, 0x5f, 0x9e, 0x2a, 0x36, 0x37, 0x87, 0xf1,
+	0x2c, 0xca, 0x53, 0x95, 0x2b, 0x58, 0x37, 0x87, 0xd3, 0xa2, 0xf8, 0x42, 0xd0, 0x0a, 0x66, 0xae,
+	0x6a, 0x35, 0xad, 0x2c, 0xff, 0x1a, 0xb0, 0x59, 0x31, 0x5f, 0x57, 0xb5, 0x9c, 0x4a, 0xbf, 0x71,
+	0x4d, 0xfa, 0xcd, 0x6b, 0xd3, 0x5f, 0x5f, 0x91, 0xfe, 0x7c, 0xf6, 0x1a, 0x0b, 0xb3, 0xe7, 0x40,
+	0x2b, 0x9d, 0x45, 0x6c, 0x1f, 0x94, 0x95, 0x51, 0x22, 0x6b, 0x99, 0xb7, 0x71, 0x7a, 0x11, 0x46,
+	0xc1, 0x51, 0x98, 0xca, 0xb2, 0x68, 0x1a, 0xf4, 0x12, 0x80, 0x7f, 0x2b, 0xc4, 0xb6, 0x64, 0xf1,
+	0x97, 0xad, 0x7f, 0xf5, 0xf7, 0x45, 0xe8, 0xb5, 0xdd, 0x49, 0x63, 0xe8, 0x7d, 0x02, 0xeb, 0x0b,
+	0xe6, 0xeb, 0xde, 0xb8, 0x8e, 0xfe, 0xc6, 0xfd, 0x04, 0xd6, 0x59, 0x1c, 0x08, 0xbf, 0x27, 0x60,
+	0xe7, 0x1b, 0xae, 0x7c, 0xbc, 0x7a, 0x7d, 0xb1, 0xe2, 0xf6, 0xd5, 0x8a, 0xdb, 0x7f, 0xad, 0x10,
+	0xb8, 0x00, 0xb3, 0xd5, 0x96, 0x68, 0xef, 0x97, 0x5a, 0x6d, 0xe5, 0xf2, 0x42, 0xca, 0x9f, 0x3b,
+	0x53, 0xff, 0xdc, 0x1d, 0xc0, 0xc6, 0x97, 0x94, 0xa4, 0x9f, 0x47, 0x19, 0x83, 0xca, 0xe5, 0xf6,
+	0x21, 0x34, 0x43, 0xae, 0x90, 0x51, 0x74, 0x24, 0x9f, 0x44, 0x49, 0xa3, 0xfb, 0x02, 0x9a, 0x42,
+	0xc3, 0xb8, 0xf9, 0xeb, 0xc8, 0xf1, 0x16, 0x16, 0x02, 0xdb, 0x91, 0xe9, 0x3c, 0x1a, 0xf1, 0xa0,
+	0x2c, 0xcc, 0x7f, 0xb3, 0x56, 0x12, 0x0f, 0x22, 0x0f, 0xc3, 0xc2, 0x52, 0xda, 0xfb, 0xd5, 0x84,
+	0xf5, 0xa1, 0xfc, 0x1f, 0x61, 0x48, 0xd2, 0xcb, 0x70, 0x44, 0xd0, 0x21, 0x58, 0x27, 0x24, 0x93,
+	0x4f, 0xff, 0x52, 0x22, 0x8e, 0xd9, 0xae, 0xdf, 0x2b, 0x6d, 0xf1, 0xee, 0xc6, 0xcf, 0x7f, 0xfd,
+	0xfd, 0x9b, 0xd1, 0x46, 0xf6, 0xe0, 0xf2, 0xf1, 0x80, 0x6f, 0xf4, 0xe8, 0x04, 0x2c, 0x9e, 0x86,
+	0xb3, 0x38, 0x40, 0xeb, 0x12, 0xac, 0x32, 0xde, 0x5b, 0x54, 0xb8, 0x77, 0x38, 0xc1, 0x3a, 0xea,
+	0x30, 0x02, 0xf1, 0x70, 0x4c, 0xe2, 0x60, 0xa7, 0xb6, 0x5b, 0x43, 0x27, 0xd0, 0xe4, 0x44, 0xb4,
+	0x32, 0x96, 0x25, 0x36, 0xc4, 0xd9, 0xd6, 0x10, 0xe4, 0x6c, 0x74, 0xb7, 0x86, 0xbe, 0x86, 0xd6,
+	0xf1, 0x0f, 0x64, 0x34, 0xcb, 0x08, 0x72, 0xa4, 0xc7, 0x52, 0x09, 0x7a, 0x15, 0x67, 0xb8, 0xf7,
+	0x38, 0xe5, 0x1d, 0xb7, 0xcd, 0x29, 0x05, 0xcd, 0x81, 0x2c, 0x08, 0x3a, 0x83, 0xe6, 0xa9, 0x17,
+	0xf9, 0x13, 0x82, 0x4a, 0x1d, 0x50, 0x49, 0xb6, 0xc5, 0xc9, 0xee, 0xba, 0x1b, 0x45, 0x7c, 0x83,
+	0x37, 0x9c, 0xe0, 0xa0, 0xf6, 0xc1, 0x79, 0x93, 0xa3, 0xf7, 0xff, 0x0b, 0x00, 0x00, 0xff, 0xff,
+	0x60, 0xbf, 0xc9, 0xa7, 0xbc, 0x0d, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -867,11 +1386,17 @@ const _ = grpc.SupportPackageIsVersion4
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type SkaffoldServiceClient interface {
+	// Returns the state of the current Skaffold execution
 	GetState(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*State, error)
+	// DEPRECATED. Events should be used instead.
+	// TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)
 	EventLog(ctx context.Context, opts ...grpc.CallOption) (SkaffoldService_EventLogClient, error)
-	Events(ctx context.Context, opts ...grpc.CallOption) (SkaffoldService_EventsClient, error)
-	Handle(ctx context.Context, in *Event, opts ...grpc.CallOption) (*empty.Empty, error)
+	// Returns all the events of the current Skaffold execution from the start
+	Events(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (SkaffoldService_EventsClient, error)
+	// Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
 	Execute(ctx context.Context, in *UserIntentRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	// EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.
+	Handle(ctx context.Context, in *Event, opts ...grpc.CallOption) (*empty.Empty, error)
 }
 
 type skaffoldServiceClient struct {
@@ -922,17 +1447,22 @@ func (x *skaffoldServiceEventLogClient) Recv() (*LogEntry, error) {
 	return m, nil
 }
 
-func (c *skaffoldServiceClient) Events(ctx context.Context, opts ...grpc.CallOption) (SkaffoldService_EventsClient, error) {
+func (c *skaffoldServiceClient) Events(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (SkaffoldService_EventsClient, error) {
 	stream, err := c.cc.NewStream(ctx, &_SkaffoldService_serviceDesc.Streams[1], "/proto.SkaffoldService/Events", opts...)
 	if err != nil {
 		return nil, err
 	}
 	x := &skaffoldServiceEventsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
 	return x, nil
 }
 
 type SkaffoldService_EventsClient interface {
-	Send(*LogEntry) error
 	Recv() (*LogEntry, error)
 	grpc.ClientStream
 }
@@ -941,25 +1471,12 @@ type skaffoldServiceEventsClient struct {
 	grpc.ClientStream
 }
 
-func (x *skaffoldServiceEventsClient) Send(m *LogEntry) error {
-	return x.ClientStream.SendMsg(m)
-}
-
 func (x *skaffoldServiceEventsClient) Recv() (*LogEntry, error) {
 	m := new(LogEntry)
 	if err := x.ClientStream.RecvMsg(m); err != nil {
 		return nil, err
 	}
 	return m, nil
-}
-
-func (c *skaffoldServiceClient) Handle(ctx context.Context, in *Event, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
-	err := c.cc.Invoke(ctx, "/proto.SkaffoldService/Handle", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
 }
 
 func (c *skaffoldServiceClient) Execute(ctx context.Context, in *UserIntentRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
@@ -971,13 +1488,28 @@ func (c *skaffoldServiceClient) Execute(ctx context.Context, in *UserIntentReque
 	return out, nil
 }
 
+func (c *skaffoldServiceClient) Handle(ctx context.Context, in *Event, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/proto.SkaffoldService/Handle", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // SkaffoldServiceServer is the server API for SkaffoldService service.
 type SkaffoldServiceServer interface {
+	// Returns the state of the current Skaffold execution
 	GetState(context.Context, *empty.Empty) (*State, error)
+	// DEPRECATED. Events should be used instead.
+	// TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)
 	EventLog(SkaffoldService_EventLogServer) error
-	Events(SkaffoldService_EventsServer) error
-	Handle(context.Context, *Event) (*empty.Empty, error)
+	// Returns all the events of the current Skaffold execution from the start
+	Events(*empty.Empty, SkaffoldService_EventsServer) error
+	// Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.
 	Execute(context.Context, *UserIntentRequest) (*empty.Empty, error)
+	// EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.
+	Handle(context.Context, *Event) (*empty.Empty, error)
 }
 
 // UnimplementedSkaffoldServiceServer can be embedded to have forward compatible implementations.
@@ -990,14 +1522,14 @@ func (*UnimplementedSkaffoldServiceServer) GetState(ctx context.Context, req *em
 func (*UnimplementedSkaffoldServiceServer) EventLog(srv SkaffoldService_EventLogServer) error {
 	return status.Errorf(codes.Unimplemented, "method EventLog not implemented")
 }
-func (*UnimplementedSkaffoldServiceServer) Events(srv SkaffoldService_EventsServer) error {
+func (*UnimplementedSkaffoldServiceServer) Events(req *empty.Empty, srv SkaffoldService_EventsServer) error {
 	return status.Errorf(codes.Unimplemented, "method Events not implemented")
-}
-func (*UnimplementedSkaffoldServiceServer) Handle(ctx context.Context, req *Event) (*empty.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Handle not implemented")
 }
 func (*UnimplementedSkaffoldServiceServer) Execute(ctx context.Context, req *UserIntentRequest) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Execute not implemented")
+}
+func (*UnimplementedSkaffoldServiceServer) Handle(ctx context.Context, req *Event) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Handle not implemented")
 }
 
 func RegisterSkaffoldServiceServer(s *grpc.Server, srv SkaffoldServiceServer) {
@@ -1049,12 +1581,15 @@ func (x *skaffoldServiceEventLogServer) Recv() (*LogEntry, error) {
 }
 
 func _SkaffoldService_Events_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(SkaffoldServiceServer).Events(&skaffoldServiceEventsServer{stream})
+	m := new(empty.Empty)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(SkaffoldServiceServer).Events(m, &skaffoldServiceEventsServer{stream})
 }
 
 type SkaffoldService_EventsServer interface {
 	Send(*LogEntry) error
-	Recv() (*LogEntry, error)
 	grpc.ServerStream
 }
 
@@ -1064,32 +1599,6 @@ type skaffoldServiceEventsServer struct {
 
 func (x *skaffoldServiceEventsServer) Send(m *LogEntry) error {
 	return x.ServerStream.SendMsg(m)
-}
-
-func (x *skaffoldServiceEventsServer) Recv() (*LogEntry, error) {
-	m := new(LogEntry)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
-func _SkaffoldService_Handle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Event)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SkaffoldServiceServer).Handle(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/proto.SkaffoldService/Handle",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SkaffoldServiceServer).Handle(ctx, req.(*Event))
-	}
-	return interceptor(ctx, in, info, handler)
 }
 
 func _SkaffoldService_Execute_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -1110,6 +1619,24 @@ func _SkaffoldService_Execute_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _SkaffoldService_Handle_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Event)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SkaffoldServiceServer).Handle(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/proto.SkaffoldService/Handle",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SkaffoldServiceServer).Handle(ctx, req.(*Event))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _SkaffoldService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "proto.SkaffoldService",
 	HandlerType: (*SkaffoldServiceServer)(nil),
@@ -1119,12 +1646,12 @@ var _SkaffoldService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _SkaffoldService_GetState_Handler,
 		},
 		{
-			MethodName: "Handle",
-			Handler:    _SkaffoldService_Handle_Handler,
-		},
-		{
 			MethodName: "Execute",
 			Handler:    _SkaffoldService_Execute_Handler,
+		},
+		{
+			MethodName: "Handle",
+			Handler:    _SkaffoldService_Handle_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
@@ -1138,7 +1665,6 @@ var _SkaffoldService_serviceDesc = grpc.ServiceDesc{
 			StreamName:    "Events",
 			Handler:       _SkaffoldService_Events_Handler,
 			ServerStreams: true,
-			ClientStreams: true,
 		},
 	},
 	Metadata: "skaffold.proto",

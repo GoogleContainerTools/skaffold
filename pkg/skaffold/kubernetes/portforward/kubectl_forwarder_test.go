@@ -20,59 +20,58 @@ import (
 	"bytes"
 	"context"
 	"os/exec"
-	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestUnavailablePort(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&waitPortNotFree, 100*time.Millisecond)
 
-	original := isPortFree
-	defer func() { isPortFree = original }()
+		// Return that the port is false, while also
+		// adding a sync group so we know when isPortFree
+		// has been called
+		var portFreeWG sync.WaitGroup
+		portFreeWG.Add(1)
+		t.Override(&isPortFree, func(string, int) bool {
+			portFreeWG.Done()
+			return false
+		})
 
-	// Return that the port is false, while also
-	// adding a sync group so we know when isPortFree
-	// has been called
-	portFreeWG := &sync.WaitGroup{}
-	portFreeWG.Add(1)
-	isPortFree = func(_ int) bool {
-		defer portFreeWG.Done()
-		return false
-	}
+		// Create a wait group that will only be
+		// fulfilled when the forward function returns
+		var forwardFunctionWG sync.WaitGroup
+		forwardFunctionWG.Add(1)
+		t.Override(&deferFunc, func() {
+			forwardFunctionWG.Done()
+		})
 
-	// Create a wait group that will only be
-	// fulfilled when the forward function returns
-	forwardFunctionWG := &sync.WaitGroup{}
-	forwardFunctionWG.Add(1)
-	originalDefer := deferFunc
-	defer func() { deferFunc = originalDefer }()
-	deferFunc = func() { defer forwardFunctionWG.Done() }
+		var buf bytes.Buffer
+		k := KubectlForwarder{
+			out: &buf,
+		}
+		pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false)
 
-	buf := bytes.NewBuffer([]byte{})
-	k := KubectlForwarder{
-		out: buf,
-	}
-	pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false)
+		k.Forward(context.Background(), pfe)
 
-	k.Forward(context.Background(), pfe)
+		// wait for isPortFree to be called
+		portFreeWG.Wait()
 
-	// wait for isPortFree to be called
-	portFreeWG.Wait()
+		// then, end port forwarding and wait for the forward function to return.
+		pfe.terminationLock.Lock()
+		pfe.terminated = true
+		pfe.terminationLock.Unlock()
+		forwardFunctionWG.Wait()
 
-	// then, end port forwarding and wait for the forward function to return.
-	pfe.terminationLock.Lock()
-	pfe.terminated = true
-	pfe.terminationLock.Unlock()
-	forwardFunctionWG.Wait()
-
-	// read output to make sure logs are expected
-	output := buf.String()
-	if !strings.Contains(output, "port 8080 is taken") {
-		t.Fatalf("port wasn't available but didn't get warning, got: \n%s", output)
-	}
+		// read output to make sure logs are expected
+		t.CheckContains("port 8080 is taken", buf.String())
+	})
 }
 
 func TestTerminate(t *testing.T) {
@@ -114,7 +113,9 @@ func TestMonitorErrorLogs(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&waitErrorLogs, 50*time.Millisecond)
+
 			ctx, cancel := context.WithCancel(context.Background())
 
 			cmd := exec.Command("sleep", "5")
@@ -122,7 +123,7 @@ func TestMonitorErrorLogs(t *testing.T) {
 				t.Fatal("error starting command")
 			}
 
-			wg := &sync.WaitGroup{}
+			var wg sync.WaitGroup
 			wg.Add(1)
 
 			go func() {
@@ -135,7 +136,7 @@ func TestMonitorErrorLogs(t *testing.T) {
 			// need to sleep for one second before cancelling the context
 			// because there is a one second sleep in the switch statement
 			// of monitorLogs
-			time.Sleep(1 * time.Second)
+			time.Sleep(50 * time.Millisecond)
 
 			// cancel the context and then wait for monitorErrorLogs to return
 			cancel()
@@ -152,14 +153,73 @@ func TestMonitorErrorLogs(t *testing.T) {
 	}
 }
 
-func assertCmdIsRunning(t *testing.T, cmd *exec.Cmd) {
+func assertCmdIsRunning(t *testutil.T, cmd *exec.Cmd) {
 	if cmd.ProcessState != nil {
 		t.Fatal("cmd was killed but expected to continue running")
 	}
 }
 
-func assertCmdWasKilled(t *testing.T, cmd *exec.Cmd) {
+func assertCmdWasKilled(t *testutil.T, cmd *exec.Cmd) {
 	if err := cmd.Wait(); err == nil {
 		t.Fatal("cmd was not killed but expected to be killed")
+	}
+}
+
+func TestAddressArg(t *testing.T) {
+	ctx := context.Background()
+	pfe := newPortForwardEntry(0, latest.PortForwardResource{Address: "0.0.0.0"}, "", "", "", "", 8080, false)
+	cli := kubectl.NewFromRunContext(&runcontext.RunContext{})
+	cmd := portForwardCommand(ctx, cli, pfe, nil)
+	assertCmdContainsArgs(t, cmd, true, "--address", "0.0.0.0")
+}
+
+func TestNoAddressArg(t *testing.T) {
+	ctx := context.Background()
+	pfe := newPortForwardEntry(0, latest.PortForwardResource{}, "", "", "", "", 8080, false)
+	cli := kubectl.NewFromRunContext(&runcontext.RunContext{})
+	cmd := portForwardCommand(ctx, cli, pfe, nil)
+	assertCmdContainsArgs(t, cmd, false, "--address")
+}
+
+func TestDefaultAddressArg(t *testing.T) {
+	ctx := context.Background()
+	pfe := newPortForwardEntry(0, latest.PortForwardResource{Address: "127.0.0.1"}, "", "", "", "", 8080, false)
+	cli := kubectl.NewFromRunContext(&runcontext.RunContext{})
+	cmd := portForwardCommand(ctx, cli, pfe, nil)
+	assertCmdContainsArgs(t, cmd, false, "--address")
+}
+
+func assertCmdContainsArgs(t *testing.T, cmd *exec.Cmd, expected bool, args ...string) {
+	if len(args) == 0 {
+		return
+	}
+	contains := false
+	cmdArgs := cmd.Args
+	var start int
+	var cmdArg string
+	for start, cmdArg = range cmdArgs {
+		if cmdArg == args[0] {
+			contains = true
+			break
+		}
+	}
+	if !contains {
+		if expected {
+			t.Fatalf("cmd expected to contain args %v but args are %v", args, cmdArgs)
+		}
+		return
+	}
+	for i, arg := range args[1:] {
+		if arg != cmdArgs[start+i+1] {
+			contains = false
+			break
+		}
+	}
+	if contains != expected {
+		if expected {
+			t.Fatalf("cmd expected to contain args %v but args are %v", args, cmdArgs)
+		} else {
+			t.Fatalf("cmd expected not to contain args %v but args are %v", args, cmdArgs)
+		}
 	}
 }

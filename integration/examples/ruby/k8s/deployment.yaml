@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ruby
+spec:
+  ports:
+  - port: 9292
+    targetPort: 9292
+  type: LoadBalancer
+  selector:
+    app: ruby
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ruby
+spec:
+  selector:
+    matchLabels:
+      app: ruby
+  template:
+    metadata:
+      labels:
+        app: ruby
+    spec:
+      containers:
+      - name: ruby
+        image: ruby-example
+        ports:
+        - containerPort: 9292
+        env:
+          - name: RACK_ENV
+            value: "development"

@@ -30,6 +30,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v2"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -39,18 +44,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
-	"github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
 )
 
 type HelmDeployer struct {
 	*latest.HelmDeploy
 
 	kubeContext string
+	kubeConfig  string
 	namespace   string
-	defaultRepo string
 	forceDeploy bool
 }
 
@@ -60,9 +61,9 @@ func NewHelmDeployer(runCtx *runcontext.RunContext) *HelmDeployer {
 	return &HelmDeployer{
 		HelmDeploy:  runCtx.Cfg.Deploy.HelmDeploy,
 		kubeContext: runCtx.KubeContext,
+		kubeConfig:  runCtx.Opts.KubeConfig,
 		namespace:   runCtx.Opts.Namespace,
-		defaultRepo: runCtx.DefaultRepo,
-		forceDeploy: runCtx.Opts.ForceDeploy(),
+		forceDeploy: runCtx.Opts.Force,
 	}
 }
 
@@ -73,19 +74,22 @@ func (h *HelmDeployer) Labels() map[string]string {
 }
 
 func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
-	var dRes []Artifact
-
 	event.DeployInProgress()
-	nsMap := map[string]struct{}{}
 
+	var dRes []Artifact
+	nsMap := map[string]struct{}{}
+	valuesSet := map[string]bool{}
+
+	// Deploy every release
 	for _, r := range h.Releases {
-		results, err := h.deployRelease(ctx, out, r, builds)
+		results, err := h.deployRelease(ctx, out, r, builds, valuesSet)
 		if err != nil {
-			releaseName, _ := evaluateReleaseName(r.Name)
+			releaseName, _ := expandTemplate(r.Name)
 
 			event.DeployFailed(err)
 			return NewDeployErrorResult(errors.Wrapf(err, "deploying %s", releaseName))
 		}
+
 		// collect namespaces
 		for _, r := range results {
 			if trimmed := strings.TrimSpace(r.Namespace); trimmed != "" {
@@ -96,9 +100,19 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 		dRes = append(dRes, results...)
 	}
 
+	// Let's make sure that every image tag is set with `--set`.
+	// Otherwise, templates have no way to use the images that were built.
+	for _, build := range builds {
+		if !valuesSet[build.Tag] {
+			warnings.Printf("image [%s] is not used.", build.Tag)
+			warnings.Printf("image [%s] is used instead.", build.ImageName)
+			warnings.Printf("See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml")
+		}
+	}
+
 	event.DeployComplete()
 
-	labels := merge(labellers...)
+	labels := merge(h, labellers...)
 	labelDeployResults(labels, dRes)
 
 	// Collect namespaces in a string
@@ -150,7 +164,7 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	for _, r := range h.Releases {
 		if err := h.deleteRelease(ctx, out, r); err != nil {
-			releaseName, _ := evaluateReleaseName(r.Name)
+			releaseName, _ := expandTemplate(r.Name)
 			return errors.Wrapf(err, "deploying %s", releaseName)
 		}
 	}
@@ -160,6 +174,9 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, useSecrets bool, arg ...string) error {
 	args := append([]string{"--kube-context", h.kubeContext}, arg...)
 	args = append(args, h.Flags.Global...)
+	if h.kubeConfig != "" {
+		args = append(args, "--kubeconfig", h.kubeConfig)
+	}
 
 	if useSecrets {
 		args = append([]string{"secrets"}, args...)
@@ -172,8 +189,8 @@ func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, useSecrets bool,
 	return util.RunCmd(cmd)
 }
 
-func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact) ([]Artifact, error) {
-	releaseName, err := evaluateReleaseName(r.Name)
+func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool) ([]Artifact, error) {
+	releaseName, err := expandTemplate(r.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse the release name template")
 	}
@@ -258,11 +275,6 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
 
-	// ValuesFiles
-	for _, valuesFile := range expandPaths(r.ValuesFiles) {
-		args = append(args, "-f", valuesFile)
-	}
-
 	// TODO(dgageot): we should merge `Values`, `SetValues` and `SetValueTemplates`
 	// as much as possible.
 
@@ -272,32 +284,17 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		return nil, errors.Wrap(err, "matching build results to chart values")
 	}
 
-	valuesSet := make(map[string]bool)
-
 	for k, v := range params {
 		var value string
 
-		if cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig; cfg != nil {
-			dockerRef, err := docker.ParseReference(v.Tag)
-			if err != nil {
-				return nil, errors.Wrapf(err, "cannot parse the image reference %s", v.Tag)
-			}
-
-			if cfg.ExplicitRegistry {
-				if dockerRef.Domain == "" {
-					return nil, errors.Wrapf(err, "image reference %s has no domain", v.Tag)
-				}
-
-				value = fmt.Sprintf("%[1]s.registry=%s,%[1]s.repository=%s,%[1]s.tag=%s", k, dockerRef.Domain, dockerRef.Path, v.Tag)
-			} else {
-				value = fmt.Sprintf("%[1]s.repository=%s,%[1]s.tag=%s", k, dockerRef.BaseName, v.Tag)
-			}
-		} else {
-			value = fmt.Sprintf("%s=%s", k, v.Tag)
+		cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
+		value, err = getImageSetValueFromHelmStrategy(cfg, k, v.Tag)
+		if err != nil {
+			return nil, err
 		}
 
 		valuesSet[v.Tag] = true
-		args = append(args, "--set", value)
+		args = append(args, "--set-string", value)
 	}
 
 	// SetValues
@@ -305,6 +302,9 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		valuesSet[v] = true
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
 	}
+
+	// SetFiles
+	args = append(args, generateGetFilesArgs(r.SetFiles, valuesSet)...)
 
 	envMap := map[string]string{}
 	for idx, b := range builds {
@@ -320,28 +320,21 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	logrus.Debugf("EnvVarMap: %#v\n", envMap)
 
 	for k, v := range r.SetValueTemplates {
-		t, err := util.ParseEnvTemplate(v)
+		v, err := templatedField(v, envMap)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse setValueTemplates")
+			return nil, err
 		}
-
-		v, err := util.ExecuteEnvTemplate(t, envMap)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to generate setValueTemplates")
-		}
-
 		valuesSet[v] = true
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
 	}
 
-	// Let's make sure that every image tag is set with `--set`.
-	// Otherwise, templates have no way to use the images that were built.
-	for _, build := range builds {
-		if !valuesSet[build.Tag] {
-			warnings.Printf("image [%s] is not used.", build.Tag)
-			warnings.Printf("image [%s] is used instead.", build.ImageName)
-			warnings.Printf("See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml")
+	// ValuesFiles
+	for _, v := range expandPaths(r.ValuesFiles) {
+		v, err := templatedField(v, envMap)
+		if err != nil {
+			return nil, err
 		}
+		args = append(args, "-f", v)
 	}
 
 	if r.Wait {
@@ -351,6 +344,18 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	helmErr := h.helm(ctx, out, r.UseHelmSecrets, args...)
 
 	return h.getDeployResults(ctx, ns, releaseName), helmErr
+}
+
+func templatedField(tmpl string, envMap map[string]string) (string, error) {
+	t, err := util.ParseEnvTemplate(tmpl)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse template")
+	}
+	v, err := util.ExecuteEnvTemplate(t, envMap)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to generate template")
+	}
+	return v, nil
 }
 
 func createEnvVarMap(imageName string, fqn string) map[string]string {
@@ -377,14 +382,14 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 	tmp := os.TempDir()
 	packageArgs := []string{"package", r.ChartPath, "--destination", tmp}
 	if r.Packaged.Version != "" {
-		v, err := concretize(r.Packaged.Version)
+		v, err := expandTemplate(r.Packaged.Version)
 		if err != nil {
 			return "", errors.Wrap(err, `concretize "packaged.version" template`)
 		}
 		packageArgs = append(packageArgs, "--version", v)
 	}
 	if r.Packaged.AppVersion != "" {
-		av, err := concretize(r.Packaged.AppVersion)
+		av, err := expandTemplate(r.Packaged.AppVersion)
 		if err != nil {
 			return "", errors.Wrap(err, `concretize "packaged.appVersion" template`)
 		}
@@ -414,6 +419,41 @@ func (h *HelmDeployer) getReleaseInfo(ctx context.Context, release string) (*buf
 	return bufio.NewReader(&releaseInfo), nil
 }
 
+func getImageSetValueFromHelmStrategy(cfg *latest.HelmConventionConfig, valueName string, tag string) (string, error) {
+	if cfg != nil {
+		dockerRef, err := docker.ParseReference(tag)
+		if err != nil {
+			return "", errors.Wrapf(err, "cannot parse the image reference %s", tag)
+		}
+
+		var imageTag string
+		if dockerRef.Digest != "" {
+			imageTag = fmt.Sprintf("%s@%s", dockerRef.Tag, dockerRef.Digest)
+		} else {
+			imageTag = dockerRef.Tag
+		}
+
+		if cfg.ExplicitRegistry {
+			if dockerRef.Domain == "" {
+				return "", errors.New(fmt.Sprintf("image reference %s has no domain", tag))
+			}
+			return fmt.Sprintf(
+				"%[1]s.registry=%[2]s,%[1]s.repository=%[3]s,%[1]s.tag=%[4]s",
+				valueName,
+				dockerRef.Domain,
+				dockerRef.Path,
+				imageTag,
+			), nil
+		}
+		return fmt.Sprintf(
+			"%[1]s.repository=%[2]s,%[1]s.tag=%[3]s",
+			valueName, dockerRef.BaseName,
+			imageTag,
+		), nil
+	}
+	return fmt.Sprintf("%s=%s", valueName, tag), nil
+}
+
 // Retrieve info about all releases using helm get
 // Skaffold labels will be applied to each deployed k8s object
 // Since helm isn't always consistent with retrieving results, don't return errors here
@@ -427,7 +467,7 @@ func (h *HelmDeployer) getDeployResults(ctx context.Context, namespace string, r
 }
 
 func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r latest.HelmRelease) error {
-	releaseName, err := evaluateReleaseName(r.Name)
+	releaseName, err := expandTemplate(r.Name)
 	if err != nil {
 		return errors.Wrap(err, "cannot parse the release name template")
 	}
@@ -448,9 +488,7 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 	paramToBuildResult := map[string]build.Artifact{}
 
 	for param, imageName := range params {
-		newImageName := util.SubstituteDefaultRepoIntoImage(h.defaultRepo, imageName)
-
-		b, ok := imageToBuildResult[newImageName]
+		b, ok := imageToBuildResult[imageName]
 		if !ok {
 			return nil, fmt.Errorf("no build present for %s", imageName)
 		}
@@ -461,22 +499,22 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 	return paramToBuildResult, nil
 }
 
-func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, string) error {
+func generateGetFilesArgs(m map[string]string, valuesSet map[string]bool) []string {
+	args := make([]string, 0, len(m))
+	for k, v := range m {
+		valuesSet[v] = true
+		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, v))
+	}
+	return args
+}
+
+func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, []Labeller, string) error {
 	return errors.New("not yet implemented")
 }
 
-func evaluateReleaseName(nameTemplate string) (string, error) {
-	tmpl, err := util.ParseEnvTemplate(nameTemplate)
-	if err != nil {
-		return "", errors.Wrap(err, "parsing template")
-	}
-
-	return util.ExecuteEnvTemplate(tmpl, nil)
-}
-
-// concretize parses and executes template s with OS environment variables.
+// expandTemplate parses and executes template s with OS environment variables.
 // If s is not a template but a simple string, returns unchanged s.
-func concretize(s string) (string, error) {
+func expandTemplate(s string) (string, error) {
 	tmpl, err := util.ParseEnvTemplate(s)
 	if err != nil {
 		return "", errors.Wrap(err, "parsing template")

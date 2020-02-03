@@ -33,7 +33,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -72,8 +71,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			color.OverwriteDefault(color.Color(defaultColor))
 			cmd.Root().SetOutput(out)
 
-			kubectx.UseKubeContext(opts.KubeContext)
-
 			// Setup logs
 			if err := setUpLogs(err, v); err != nil {
 				return err
@@ -82,6 +79,11 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			// In dev mode, the default is to enable the rpc server
 			if cmd.Use == "dev" && !cmd.Flag("enable-rpc").Changed {
 				opts.EnableRPC = true
+			}
+
+			// In dev mode, the default is to force deployments
+			if cmd.Use == "dev" && !cmd.Flag("force").Changed {
+				opts.Force = true
 			}
 
 			// Start API Server
@@ -136,6 +138,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 				NewCmdBuild(),
 				NewCmdDeploy(),
 				NewCmdDelete(),
+				NewCmdRender(),
 			},
 		},
 		{
@@ -155,6 +158,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdFindConfigs())
 	rootCmd.AddCommand(NewCmdDiagnose())
 	rootCmd.AddCommand(NewCmdOptions())
+	rootCmd.AddCommand(NewCmdCredits())
+	rootCmd.AddCommand(NewCmdSchema())
 
 	rootCmd.AddCommand(NewCmdGeneratePipeline())
 

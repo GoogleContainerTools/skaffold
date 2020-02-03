@@ -19,9 +19,10 @@ package v1beta13
 import (
 	"testing"
 
+	yaml "gopkg.in/yaml.v2"
+
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta14"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	yaml "gopkg.in/yaml.v2"
 )
 
 func TestUpgrade(t *testing.T) {
@@ -100,9 +101,11 @@ build:
     jib:
       args: ['-v', '--activate-profiles', 'prof']
       project: dir
+      type: maven
   - image: gcr.io/k8s-skaffold/jib-gradle
     jib:
       args: ['-v']
+      type: gradle
   googleCloudBuild:
     projectId: test-project
 test:

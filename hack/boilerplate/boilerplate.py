@@ -24,7 +24,7 @@ import sys
 
 
 SKIPPED_DIRS = ["Godeps", "third_party", ".git", "vendor", "examples", "testdata", "node_modules"]
-SKIPPED_FILES = ["install_golint.sh", "skaffold.pb.go", "skaffold.pb.gw.go", "build.sh"]
+SKIPPED_FILES = ["install_golint.sh", "skaffold.pb.go", "skaffold.pb.gw.go", "build.sh", "statik.go"]
 
 parser = argparse.ArgumentParser()
 parser.add_argument("filenames", help="list of files to check, all files if unspecified", nargs='*')
@@ -143,7 +143,7 @@ def get_regexs():
     # Search for "YEAR" which exists in the boilerplate, but shouldn't in the real thing
     regexs["year"] = re.compile( 'YEAR' )
     # dates can be 2018, company holder names can be anything
-    regexs["date"] = re.compile( '(2019)' )
+    regexs["date"] = re.compile( '(2019|2020)' )
     # strip // +build \n\n build constraints
     regexs["go_build_constraints"] = re.compile(r"^(// \+build.*\n)+\n", re.MULTILINE)
     # strip #!.* from shell scripts

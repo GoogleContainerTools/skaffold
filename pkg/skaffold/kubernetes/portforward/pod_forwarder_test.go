@@ -20,7 +20,6 @@ import (
 	"context"
 	"io/ioutil"
 	"reflect"
-	"sync"
 	"testing"
 	"time"
 
@@ -61,13 +60,13 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname",
 						Namespace: "namespace",
 						Port:      8080,
+						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
 					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					portName:               "portname",
 					localPort:              8080,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -105,6 +104,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname",
 						Namespace: "namespace",
 						Port:      8080,
+						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
 					ownerReference:         "owner",
@@ -112,7 +112,6 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					containerName:          "containername",
 					portName:               "portname",
 					localPort:              9000,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			availablePorts: []int{9000},
@@ -182,13 +181,13 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname",
 						Namespace: "namespace",
 						Port:      8080,
+						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
 					ownerReference:         "owner",
 					portName:               "portname",
 					automaticPodForwarding: true,
 					localPort:              8080,
-					terminationLock:        &sync.Mutex{},
 				},
 				"owner-containername2-namespace2-portname2-50051": {
 					resourceVersion: 1,
@@ -199,13 +198,13 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname2",
 						Namespace: "namespace2",
 						Port:      50051,
+						Address:   "127.0.0.1",
 						LocalPort: 50051,
 					},
 					ownerReference:         "owner",
 					portName:               "portname2",
 					automaticPodForwarding: true,
 					localPort:              50051,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -266,12 +265,12 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname",
 						Namespace: "namespace",
 						Port:      8080,
+						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
 					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					localPort:              8080,
-					terminationLock:        &sync.Mutex{},
 				},
 				"owner-containername2-namespace2-portname2-8080": {
 					resourceVersion: 1,
@@ -283,12 +282,12 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname2",
 						Namespace: "namespace2",
 						Port:      8080,
+						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
 					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					localPort:              9000,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -349,12 +348,12 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 						Name:      "podname",
 						Namespace: "namespace",
 						Port:      8080,
+						Address:   "127.0.0.1",
 						LocalPort: 8080,
 					},
 					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					localPort:              8080,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -406,7 +405,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			event.InitializeState(latest.BuildConfig{})
 			taken := map[int]struct{}{}
 
-			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort(taken, test.availablePorts))
+			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", taken, test.availablePorts))
 			t.Override(&topLevelOwnerKey, func(_ metav1.Object, _ string) string { return "owner" })
 
 			entryManager := EntryManager{

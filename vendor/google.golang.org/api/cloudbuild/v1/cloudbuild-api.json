@@ -217,13 +217,13 @@
               ],
               "parameters": {
                 "id": {
-                  "description": "ID of the build.",
+                  "description": "Required. ID of the build.",
                   "location": "path",
                   "required": true,
                   "type": "string"
                 },
                 "projectId": {
-                  "description": "ID of the project.",
+                  "description": "Required. ID of the project.",
                   "location": "path",
                   "required": true,
                   "type": "string"
@@ -250,7 +250,7 @@
               ],
               "parameters": {
                 "projectId": {
-                  "description": "ID of the project.",
+                  "description": "Required. ID of the project.",
                   "location": "path",
                   "required": true,
                   "type": "string"
@@ -278,13 +278,13 @@
               ],
               "parameters": {
                 "id": {
-                  "description": "ID of the build.",
+                  "description": "Required. ID of the build.",
                   "location": "path",
                   "required": true,
                   "type": "string"
                 },
                 "projectId": {
-                  "description": "ID of the project.",
+                  "description": "Required. ID of the project.",
                   "location": "path",
                   "required": true,
                   "type": "string"
@@ -324,7 +324,7 @@
                   "type": "string"
                 },
                 "projectId": {
-                  "description": "ID of the project.",
+                  "description": "Required. ID of the project.",
                   "location": "path",
                   "required": true,
                   "type": "string"
@@ -349,13 +349,13 @@
               ],
               "parameters": {
                 "id": {
-                  "description": "Build ID of the original build.",
+                  "description": "Required. Build ID of the original build.",
                   "location": "path",
                   "required": true,
                   "type": "string"
                 },
                 "projectId": {
-                  "description": "ID of the project.",
+                  "description": "Required. ID of the project.",
                   "location": "path",
                   "required": true,
                   "type": "string"
@@ -386,7 +386,7 @@
               ],
               "parameters": {
                 "projectId": {
-                  "description": "ID of the project for which to configure automatic builds.",
+                  "description": "Required. ID of the project for which to configure automatic builds.",
                   "location": "path",
                   "required": true,
                   "type": "string"
@@ -414,13 +414,13 @@
               ],
               "parameters": {
                 "projectId": {
-                  "description": "ID of the project that owns the trigger.",
+                  "description": "Required. ID of the project that owns the trigger.",
                   "location": "path",
                   "required": true,
                   "type": "string"
                 },
                 "triggerId": {
-                  "description": "ID of the `BuildTrigger` to delete.",
+                  "description": "Required. ID of the `BuildTrigger` to delete.",
                   "location": "path",
                   "required": true,
                   "type": "string"
@@ -445,13 +445,13 @@
               ],
               "parameters": {
                 "projectId": {
-                  "description": "ID of the project that owns the trigger.",
+                  "description": "Required. ID of the project that owns the trigger.",
                   "location": "path",
                   "required": true,
                   "type": "string"
                 },
                 "triggerId": {
-                  "description": "ID of the `BuildTrigger` to get.",
+                  "description": "Required. Identifier (`id` or `name`) of the `BuildTrigger` to get.",
                   "location": "path",
                   "required": true,
                   "type": "string"
@@ -486,7 +486,7 @@
                   "type": "string"
                 },
                 "projectId": {
-                  "description": "ID of the project for which to list BuildTriggers.",
+                  "description": "Required. ID of the project for which to list BuildTriggers.",
                   "location": "path",
                   "required": true,
                   "type": "string"
@@ -511,13 +511,13 @@
               ],
               "parameters": {
                 "projectId": {
-                  "description": "ID of the project that owns the trigger.",
+                  "description": "Required. ID of the project that owns the trigger.",
                   "location": "path",
                   "required": true,
                   "type": "string"
                 },
                 "triggerId": {
-                  "description": "ID of the `BuildTrigger` to update.",
+                  "description": "Required. ID of the `BuildTrigger` to update.",
                   "location": "path",
                   "required": true,
                   "type": "string"
@@ -545,13 +545,13 @@
               ],
               "parameters": {
                 "projectId": {
-                  "description": "ID of the project.",
+                  "description": "Required. ID of the project.",
                   "location": "path",
                   "required": true,
                   "type": "string"
                 },
                 "triggerId": {
-                  "description": "ID of the trigger.",
+                  "description": "Required. ID of the trigger.",
                   "location": "path",
                   "required": true,
                   "type": "string"
@@ -573,7 +573,7 @@
       }
     }
   },
-  "revision": "20190702",
+  "revision": "20191207",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ArtifactObjects": {
@@ -896,7 +896,7 @@
           "type": "array"
         },
         "workerPool": {
-          "description": "Option to specify a `WorkerPool` for the build. User specifies the pool\nwith the format \"[WORKERPOOL_PROJECT_ID]/[WORKERPOOL_NAME]\".\nThis is an experimental field.",
+          "description": "Option to specify a `WorkerPool` for the build.\nFormat: projects/{project}/workerPools/{workerPool}\n\nThis field is experimental.",
           "type": "string"
         }
       },
@@ -1024,7 +1024,7 @@
         },
         "github": {
           "$ref": "GitHubEventsConfig",
-          "description": "GitHubEventsConfig describes the configuration of a trigger that creates\na build whenever a GitHub event is received."
+          "description": "GitHubEventsConfig describes the configuration of a trigger that creates\na build whenever a GitHub event is received.\n\nMutually exclusive with `trigger_template`."
         },
         "id": {
           "description": "Output only. Unique identifier of the trigger.",
@@ -1044,6 +1044,10 @@
           },
           "type": "array"
         },
+        "name": {
+          "description": "User-assigned name of the trigger. Must be unique within the project.\nTrigger names must meet the following requirements:\n\n+ They must contain only alphanumeric characters and dashes.\n+ They can be 1-64 characters long.\n+ They must begin and end with an alphanumeric character.",
+          "type": "string"
+        },
         "substitutions": {
           "additionalProperties": {
             "type": "string"
@@ -1060,7 +1064,7 @@
         },
         "triggerTemplate": {
           "$ref": "RepoSource",
-          "description": "Template describing the types of source changes to trigger a build.\n\nBranch and tag names in trigger templates are interpreted as regular\nexpressions. Any branch or tag change that matches that regular expression\nwill trigger a build."
+          "description": "Template describing the types of source changes to trigger a build.\n\nBranch and tag names in trigger templates are interpreted as regular\nexpressions. Any branch or tag change that matches that regular expression\nwill trigger a build.\n\nMutually exclusive with `github`."
         }
       },
       "type": "object"
@@ -1268,7 +1272,7 @@
           "type": "string"
         },
         "commentControl": {
-          "description": "Whether to block builds on a \"/gcbrun\" comment from a repository owner or\ncollaborator.",
+          "description": "Whether to block builds on a \"/gcbrun\" comment from a repository admin or\ncollaborator.",
           "enum": [
             "COMMENTS_DISABLED",
             "COMMENTS_ENABLED"
@@ -1287,11 +1291,11 @@
       "id": "PushFilter",
       "properties": {
         "branch": {
-          "description": "Regexes of branches to match.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
+          "description": "Regexes matching branches to build.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
           "type": "string"
         },
         "tag": {
-          "description": "Regexes of tags to match.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
+          "description": "Regexes matching tags to build.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
           "type": "string"
         }
       },
@@ -1302,7 +1306,7 @@
       "id": "RepoSource",
       "properties": {
         "branchName": {
-          "description": "Name of the branch to build.",
+          "description": "Regex matching branches to build.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
           "type": "string"
         },
         "commitSha": {
@@ -1318,11 +1322,18 @@
           "type": "string"
         },
         "repoName": {
-          "description": "Name of the Cloud Source Repository. If omitted, the name \"default\" is\nassumed.",
+          "description": "Required. Name of the Cloud Source Repository.",
           "type": "string"
         },
+        "substitutions": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Substitutions to use in a triggered build.\nShould only be used with RunBuildTrigger",
+          "type": "object"
+        },
         "tagName": {
-          "description": "Name of the tag to build.",
+          "description": "Regex matching tags to build.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
           "type": "string"
         }
       },

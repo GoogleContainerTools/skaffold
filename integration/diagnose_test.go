@@ -17,33 +17,51 @@ limitations under the License.
 package integration
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
 func TestDiagnose(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
-	tests := []struct {
-		name string
-		dir  string
-	}{
-		{name: "kaniko builder", dir: "examples/kaniko"},
-		{name: "docker builder", dir: "examples/nodejs"},
-		{name: "jib maven builder", dir: "testdata/jib"},
-		{name: "jib gradle builder", dir: "testdata/jib-gradle"},
-		{name: "bazel builder", dir: "examples/bazel"},
-		{name: "custom builder", dir: "testdata/custom"},
+	examples, err := folders("examples")
+	failNowIfError(t, err)
+	if len(examples) == 0 {
+		t.Fatal("didn't find any example")
 	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			skaffold.Diagnose().InDir(test.dir).RunOrFail(t)
+
+	for _, example := range examples {
+		t.Run(example, func(t *testing.T) {
+			dir := filepath.Join("examples", example)
+
+			if _, err := os.Stat(filepath.Join(dir, "skaffold.yaml")); os.IsNotExist(err) {
+				t.Skip("skipping diagnose in " + dir)
+			}
+
+			skaffold.Diagnose().InDir(dir).RunOrFail(t)
 		})
 	}
+}
+
+func folders(root string) ([]string, error) {
+	var folders []string
+
+	files, err := ioutil.ReadDir(root)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, f := range files {
+		if f.Mode().IsDir() {
+			folders = append(folders, f.Name())
+		}
+	}
+
+	return folders, err
 }

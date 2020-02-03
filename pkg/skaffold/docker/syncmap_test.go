@@ -17,7 +17,6 @@ limitations under the License.
 package docker
 
 import (
-	"context"
 	"path/filepath"
 	"sort"
 	"testing"
@@ -71,6 +70,12 @@ FROM busybox
 ENV foo bar
 WORKDIR ${foo}
 COPY server.go .
+`
+
+const envCopyTest = `
+FROM busybox
+ENV foo bar
+COPY server.go ${foo}
 `
 
 func TestSyncMap(t *testing.T) {
@@ -195,6 +200,12 @@ func TestSyncMap(t *testing.T) {
 			dockerfile:  envWorkdirTest,
 			workspace:   ".",
 			expected:    map[string][]string{"server.go": {"/bar/server.go"}},
+		},
+		{
+			description: "copy depends on env",
+			dockerfile:  envCopyTest,
+			workspace:   ".",
+			expected:    map[string][]string{"server.go": {"/bar"}},
 		},
 		{
 			description: "multiple env test",
@@ -383,7 +394,7 @@ func TestSyncMap(t *testing.T) {
 			}
 
 			workspace := tmpDir.Path(test.workspace)
-			deps, err := SyncMap(context.Background(), workspace, "Dockerfile", test.buildArgs, nil)
+			deps, err := SyncMap(workspace, "Dockerfile", test.buildArgs, nil)
 
 			// destinations are not sorted, but for the test assertion they must be
 			for _, dsts := range deps {
@@ -480,7 +491,7 @@ ADD * .
 				Write("Dockerfile", test.dockerfile)
 
 			for i := 0; i < repeat; i++ {
-				deps, err := SyncMap(context.Background(), tmpDir.Root(), "Dockerfile", nil, nil)
+				deps, err := SyncMap(tmpDir.Root(), "Dockerfile", nil, nil)
 
 				// destinations are not sorted, but for the test assertion they must be
 				for _, dsts := range deps {

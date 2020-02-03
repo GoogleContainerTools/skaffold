@@ -18,19 +18,15 @@ package cluster
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"time"
 
 	"github.com/pkg/errors"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Builder builds docker artifacts on Kubernetes.
@@ -66,30 +62,6 @@ func (b *Builder) Labels() map[string]string {
 	}
 }
 
-// DependenciesForArtifact returns the Dockerfile dependencies for this artifact
-func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
-	var (
-		paths []string
-		err   error
-	)
-	switch {
-	case a.KanikoArtifact != nil:
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, b.insecureRegistries)
-
-	default:
-		return nil, fmt.Errorf("undefined artifact type: %+v", a.ArtifactType)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-	return util.AbsolutePaths(a.Workspace, paths), nil
-}
-
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	return nil
-}
-
-func (b *Builder) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
-	return nil, build.ErrSyncMapNotSupported{}
 }

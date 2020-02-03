@@ -21,13 +21,13 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
 )
 
 // Build builds a list of artifacts with Kaniko.
@@ -46,29 +46,29 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 		defer teardownDockerConfigSecret()
 	}
 
-	return build.InParallel(ctx, out, tags, artifacts, b.runBuildForArtifact, b.ClusterDetails.Concurrency)
+	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifact, b.ClusterDetails.Concurrency)
+}
+
+func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	digest, err := b.runBuildForArtifact(ctx, out, artifact, tag)
+	if err != nil {
+		return "", err
+	}
+
+	return build.TagWithDigest(tag, digest), nil
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	switch {
 	case artifact.KanikoArtifact != nil:
-		return b.buildArtifactWithKaniko(ctx, out, artifact, tag)
+		return b.buildWithKaniko(ctx, out, artifact.Workspace, artifact.KanikoArtifact, tag)
 
 	case artifact.CustomArtifact != nil:
-		return b.buildArtifactWithCustomBuilder(ctx, out, artifact, tag)
+		return custom.NewArtifactBuilder(nil, b.insecureRegistries, true, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
 
 	default:
-		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
+		return "", fmt.Errorf("unsupported artifact type: %+v", artifact.ArtifactType)
 	}
-}
-
-func (b *Builder) buildArtifactWithCustomBuilder(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	extraEnv := b.retrieveExtraEnv()
-	customArtifactBuilder := custom.NewArtifactBuilder(true, extraEnv)
-	if err := customArtifactBuilder.Build(ctx, out, artifact, tag); err != nil {
-		return "", errors.Wrapf(err, "building custom artifact %s", artifact.ImageName)
-	}
-	return docker.RemoteDigest(tag, b.insecureRegistries)
 }
 
 func (b *Builder) retrieveExtraEnv() []string {
@@ -82,13 +82,4 @@ func (b *Builder) retrieveExtraEnv() []string {
 		env = append(env, fmt.Sprintf("%s=%s", constants.DockerConfigSecretName, b.ClusterDetails.DockerConfig.SecretName))
 	}
 	return env
-}
-
-func (b *Builder) buildArtifactWithKaniko(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
-	digest, err := b.runKanikoBuild(ctx, out, artifact, tag)
-	if err != nil {
-		return "", errors.Wrapf(err, "kaniko build for [%s]", artifact.ImageName)
-	}
-
-	return tag + "@" + digest, nil
 }

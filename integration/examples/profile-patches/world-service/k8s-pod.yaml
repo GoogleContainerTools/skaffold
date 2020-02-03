@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: world-service
+spec:
+  containers:
+  - name: world-service
+    image: skaffold-world

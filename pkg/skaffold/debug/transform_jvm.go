@@ -70,10 +70,9 @@ func (t jdwpTransformer) RuntimeSupportImage() string {
 
 // Apply configures a container definition for JVM debugging.
 // Returns a simple map describing the debug configuration details.
-func (t jdwpTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
+func (t jdwpTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *ContainerDebugConfiguration {
 	logrus.Infof("Configuring %q for JVM debugging", container.Name)
 	// try to find existing JAVA_TOOL_OPTIONS or jdwp command argument
-	// todo: find existing containerPort "jdwp" and use port. But what if it conflicts with jdwp spec?
 	spec := retrieveJdwpSpec(config)
 
 	var port int32
@@ -81,23 +80,18 @@ func (t jdwpTransformer) Apply(container *v1.Container, config imageConfiguratio
 		port = int32(spec.port)
 	} else {
 		port = portAlloc(defaultJdwpPort)
-
-		javaToolOptions := v1.EnvVar{
-			Name:  "JAVA_TOOL_OPTIONS",
-			Value: fmt.Sprintf("-agentlib:jdwp=transport=dt_socket,server=y,address=%d,suspend=n,quiet=y", port),
+		jto := fmt.Sprintf("-agentlib:jdwp=transport=dt_socket,server=y,address=%d,suspend=n,quiet=y", port)
+		if existing, found := config.env["JAVA_TOOL_OPTIONS"]; found {
+			jto = existing + " " + jto
 		}
-		container.Env = append(container.Env, javaToolOptions)
+		container.Env = setEnvVar(container.Env, "JAVA_TOOL_OPTIONS", jto)
 	}
 
-	jdwpPort := v1.ContainerPort{
-		Name:          "jdwp",
-		ContainerPort: port,
-	}
-	container.Ports = append(container.Ports, jdwpPort)
+	container.Ports = exposePort(container.Ports, "jdwp", port)
 
-	return map[string]interface{}{
-		"runtime": "jvm",
-		"jdwp":    port,
+	return &ContainerDebugConfiguration{
+		Runtime: "jvm",
+		Ports:   map[string]uint32{"jdwp": uint32(port)},
 	}
 }
 

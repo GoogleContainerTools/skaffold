@@ -18,28 +18,20 @@ package sources
 
 import (
 	"context"
-	"io"
 
 	cstorage "cloud.google.com/go/storage"
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
-
-// TarGz creates a .tgz archive of the artifact's sources.
-func TarGz(ctx context.Context, w io.Writer, a *latest.Artifact, dependencies []string) error {
-	if err := util.CreateTarGz(w, a.Workspace, dependencies); err != nil {
-		return errors.Wrap(err, "creating tar gz")
-	}
-
-	return nil
-}
 
 // UploadToGCS uploads the artifact's sources to a GCS bucket.
 func UploadToGCS(ctx context.Context, c *cstorage.Client, a *latest.Artifact, bucket, objectName string, dependencies []string) error {
 	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
-	if err := TarGz(ctx, w, a, dependencies); err != nil {
-		return errors.Wrap(err, "uploading targz to google storage")
+
+	if err := util.CreateTarGz(w, a.Workspace, dependencies); err != nil {
+		return errors.Wrap(err, "uploading sources to google storage")
 	}
 
 	return w.Close()

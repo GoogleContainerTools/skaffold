@@ -20,15 +20,26 @@ import (
 	"context"
 	"time"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )
 
 type Resource interface {
 
+	// Name returns resource Name
+	Name() string
+
+	// Status returns resource status
+	Status() resource.Status
+
+	// ReportSinceLastUpdated returns the resource status only if it was updated
+	// since last time reported.
+	ReportSinceLastUpdated() string
+
 	// UpdateStatus updates the resource status
 	UpdateStatus(string, error)
 
-	// IsStatusCheckComplete returns if the resource status check is complele
+	// IsStatusCheckComplete returns if the resource status check is complete
 	IsStatusCheckComplete() bool
 
 	// Deadline returns the deadline for the resource
@@ -36,4 +47,7 @@ type Resource interface {
 
 	// CheckStatus checks resource status
 	CheckStatus(context.Context, *runcontext.RunContext)
+
+	// String represents the string representation of resource
+	String() string
 }

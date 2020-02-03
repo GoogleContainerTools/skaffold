@@ -20,9 +20,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type pythonTransformer struct{}
@@ -68,12 +69,11 @@ func (t pythonTransformer) RuntimeSupportImage() string {
 
 // Apply configures a container definition for Python with pydev/ptvsd
 // Returns a simple map describing the debug configuration details.
-func (t pythonTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
+func (t pythonTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *ContainerDebugConfiguration {
 	logrus.Infof("Configuring %q for python debugging", container.Name)
 
 	// try to find existing `-mptvsd` command
 	spec := retrievePtvsdSpec(config)
-	// todo: find existing containerPort "dap" (debug-adapter protocol) and use port. But what if it conflicts with command-line spec?
 
 	if spec == nil {
 		spec = &ptvsdSpec{host: "localhost", port: portAlloc(defaultPtvsdPort)}
@@ -90,21 +90,17 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 		}
 	}
 
-	ptvsdPort := v1.ContainerPort{
-		Name:          "dap", // debug adapter protocol
-		ContainerPort: spec.port,
+	pyUserBase := "/dbg/python"
+	if existing, found := config.env["PYTHONUSERBASE"]; found {
+		// todo: handle windows containers?
+		pyUserBase = pyUserBase + ":" + existing
 	}
-	container.Ports = append(container.Ports, ptvsdPort)
+	container.Env = setEnvVar(container.Env, "PYTHONUSERBASE", pyUserBase)
+	container.Ports = exposePort(container.Ports, "dap", spec.port)
 
-	pythonUserBase := v1.EnvVar{
-		Name:  "PYTHONUSERBASE",
-		Value: "/dbg/python",
-	}
-	container.Env = append(container.Env, pythonUserBase)
-
-	return map[string]interface{}{
-		"runtime": "python",
-		"dap":     spec.port,
+	return &ContainerDebugConfiguration{
+		Runtime: "python",
+		Ports:   map[string]uint32{"dap": uint32(spec.port)},
 	}
 }
 

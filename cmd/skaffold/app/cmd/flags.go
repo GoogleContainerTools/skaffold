@@ -135,7 +135,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.CustomLabels,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render"},
 	},
 	{
 		Name:          "toot",
@@ -163,23 +163,13 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug"},
 	},
-	// We need opts.Force and opts.ForceDev since cobra, overwrites the default value
-	// when registering the flag twice.
 	{
 		Name:          "force",
-		Usage:         "Recreate kubernetes resources if necessary for deployment (default false, warning: might cause downtime!)",
+		Usage:         "Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)",
 		Value:         &opts.Force,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"deploy"},
-	},
-	{
-		Name:          "force",
-		Usage:         "Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!)",
-		Value:         &opts.ForceDev,
-		DefValue:      true,
-		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug"},
+		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
 	},
 	{
 		Name:          "skip-tests",
@@ -219,7 +209,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.PortForward.Enabled,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "debug"},
+		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
 	},
 	{
 		Name:          "status-check",
@@ -228,6 +218,14 @@ var FlagRegistry = []Flag{
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
+	},
+	{
+		Name:          "render-only",
+		Usage:         "Print rendered Kubernetes manifests instead of deploying them",
+		Value:         &opts.RenderOnly,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "run"},
 	},
 	{
 		Name:          "config",
@@ -240,11 +238,28 @@ var FlagRegistry = []Flag{
 	},
 	{
 		Name:          "kube-context",
-		Usage:         "Deploy to this kubernetes context",
+		Usage:         "Deploy to this Kubernetes context",
 		Value:         &opts.KubeContext,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+	},
+	{
+		Name:          "kubeconfig",
+		Usage:         "Path to the kubeconfig file to use for CLI requests.",
+		Value:         &opts.KubeConfig,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+	},
+	{
+		Name:          "tag",
+		Shorthand:     "t",
+		Usage:         "The optional custom tag to use for images which overrides the current Tagger configuration",
+		Value:         &opts.CustomTag,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"build", "debug", "dev", "run"},
 	},
 }
 

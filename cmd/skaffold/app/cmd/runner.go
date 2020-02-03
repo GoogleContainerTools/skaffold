@@ -26,6 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
@@ -33,7 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // For tests
@@ -71,6 +71,8 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 		return nil, nil, errors.Wrap(err, "applying profiles")
 	}
 
+	kubectx.ConfigureKubeConfig(opts.KubeConfig, opts.KubeContext, config.Deploy.KubeContext)
+
 	if err := defaults.Set(config); err != nil {
 		return nil, nil, errors.Wrap(err, "setting default values")
 	}
@@ -84,8 +86,6 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 		return nil, nil, errors.Wrap(err, "getting run context")
 	}
 
-	applyDefaultRepoSubstitution(config, runCtx.DefaultRepo)
-
 	runner, err := runner.NewForConfig(runCtx)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "creating runner")
@@ -97,19 +97,6 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 func warnIfUpdateIsAvailable() {
 	latest, current, versionErr := update.GetLatestAndCurrentVersion()
 	if versionErr == nil && latest.GT(current) {
-		logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) at %s\n", latest, constants.LatestDownloadURL)
-	}
-}
-
-func applyDefaultRepoSubstitution(config *latest.SkaffoldConfig, defaultRepo string) {
-	if defaultRepo == "" {
-		// noop
-		return
-	}
-	for _, artifact := range config.Build.Artifacts {
-		artifact.ImageName = util.SubstituteDefaultRepoIntoImage(defaultRepo, artifact.ImageName)
-	}
-	for _, testCase := range config.Test {
-		testCase.ImageName = util.SubstituteDefaultRepoIntoImage(defaultRepo, testCase.ImageName)
+		logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) at %s", latest, constants.LatestDownloadURL)
 	}
 }

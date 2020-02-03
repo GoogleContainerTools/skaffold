@@ -17,16 +17,13 @@ limitations under the License.
 package integration
 
 import (
-	"context"
-	"fmt"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
@@ -34,11 +31,8 @@ import (
 )
 
 func TestPortForward(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	ns, _, deleteNs := SetupNamespace(t)
@@ -48,9 +42,7 @@ func TestPortForward(t *testing.T) {
 	skaffold.Run().InDir(dir).InNs(ns.Name).RunOrFail(t)
 
 	cfg, err := kubectx.CurrentConfig()
-	if err != nil {
-		t.Fatal(err)
-	}
+	failNowIfError(t, err)
 
 	kubectlCLI := kubectl.NewFromRunContext(&runcontext.RunContext{
 		KubeContext: cfg.CurrentContext,
@@ -63,75 +55,48 @@ func TestPortForward(t *testing.T) {
 	portforward.WhiteBoxPortForwardCycle(t, kubectlCLI, ns.Name)
 }
 
-// TestPortForwardDeletePod tests that port forwarding works
-// as expected. Then, the test force deletes a pod,
-// and tests that the pod eventually comes up at the same port again.
-func TestPortForwardDeletePod(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+func TestRunPortForward(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
 	rpcAddr := randomPort()
-	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	cmd := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr, "-v=info").InDir("examples/microservices").InNs(ns.Name).WithEnv(env)
-	stop := cmd.RunBackground(t)
+	stop := skaffold.Run("--port-forward", "--rpc-port", rpcAddr, "--enable-rpc").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
 	defer stop()
 
-	client, shutdown := setupRPCClient(t, rpcAddr)
+	_, entries, shutdown := apiEvents(t, rpcAddr)
 	defer shutdown()
 
-	// create a grpc connection. Increase number of reties for helm.
-	stream, err := readEventAPIStream(client, t, 20)
-	if stream == nil {
-		t.Fatalf("error retrieving event log: %v\n", err)
-	}
-
-	// read entries from the log
-	entries := make(chan *proto.LogEntry)
-	go func() {
-		for {
-			entry, _ := stream.Recv()
-			if entry != nil {
-				entries <- entry
-			}
-		}
-	}()
-
-	localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)
-	assertResponseFromPort(t, localPort, constants.LeeroyAppResponse)
-
-	// now, delete all pods in this namespace.
-	logrus.Infof("Deleting all pods in namespace %s", ns.Name)
-	kubectlCLI := getKubectlCLI(t, ns.Name)
-	killPodsCmd := kubectlCLI.Command(context.Background(),
-		"delete",
-		"pods", "--all",
-		"-n", ns.Name,
-	)
-
-	if output, err := killPodsCmd.CombinedOutput(); err != nil {
-		t.Fatalf("error deleting all pods: %v \n %s", err, string(output))
-	}
-	// port forwarding should come up again on the same port
-	assertResponseFromPort(t, localPort, constants.LeeroyAppResponse)
+	address, localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)
+	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
 }
 
-func getKubectlCLI(t *testing.T, ns string) *kubectl.CLI {
-	cfg, err := kubectx.CurrentConfig()
-	if err != nil {
-		t.Fatal(err)
+// TestDevPortForwardDeletePod tests that port forwarding works
+// as expected. Then, the test force deletes a pod,
+// and tests that the pod eventually comes up at the same port again.
+func TestDevPortForwardDeletePod(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
-	return kubectl.NewFromRunContext(&runcontext.RunContext{
-		KubeContext: cfg.CurrentContext,
-		Opts: config.SkaffoldOptions{
-			Namespace: ns,
-		},
-	})
+	ns, _, deleteNs := SetupNamespace(t)
+	defer deleteNs()
+
+	rpcAddr := randomPort()
+	stop := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
+	defer stop()
+
+	_, entries, shutdown := apiEvents(t, rpcAddr)
+	defer shutdown()
+
+	address, localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)
+	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
+
+	// now, delete all pods in this namespace.
+	Run(t, ".", "kubectl", "delete", "pods", "--all", "-n", ns.Name)
+
+	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
 }

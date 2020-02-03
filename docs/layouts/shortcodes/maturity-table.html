@@ -1,0 +1,20 @@
+<table class="maturity">
+    <thead>
+    <tr>
+        <th>area</th>
+        <th>maturity</th>
+        <th>description</th>
+    </tr>
+    </thead>
+    {{ range $.Site.Data.maturity }}
+        {{ $data := .}}
+{{/*        {{ if or (not $data.feature) (not (eq $data.maturity "GA")) }}*/}}
+        {{ if not $data.feature }}
+            <tr>
+                <td><a href="{{$data.url}}">{{$data.area}}</a></td>
+                <td>{{ template "shortcodes/maturity-label.html" $data }}</td>
+                <td>{{$data.description}}</td>
+            </tr>
+        {{end}}
+    {{ end }}
+</table>

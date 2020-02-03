@@ -24,17 +24,16 @@ import (
 // how to launch a container. See:
 // https://github.com/opencontainers/image-spec/blob/master/config.md
 type ConfigFile struct {
-	Architecture    string    `json:"architecture"`
-	Author          string    `json:"author,omitempty"`
-	Container       string    `json:"container,omitempty"`
-	Created         Time      `json:"created,omitempty"`
-	DockerVersion   string    `json:"docker_version,omitempty"`
-	History         []History `json:"history,omitempty"`
-	OS              string    `json:"os"`
-	RootFS          RootFS    `json:"rootfs"`
-	Config          Config    `json:"config"`
-	ContainerConfig Config    `json:"container_config,omitempty"`
-	OSVersion       string    `json:"osversion,omitempty"`
+	Architecture  string    `json:"architecture"`
+	Author        string    `json:"author,omitempty"`
+	Container     string    `json:"container,omitempty"`
+	Created       Time      `json:"created,omitempty"`
+	DockerVersion string    `json:"docker_version,omitempty"`
+	History       []History `json:"history,omitempty"`
+	OS            string    `json:"os"`
+	RootFS        RootFS    `json:"rootfs"`
+	Config        Config    `json:"config"`
+	OSVersion     string    `json:"osversion,omitempty"`
 }
 
 // History is one entry of a list recording how this container image was built.
@@ -95,30 +94,30 @@ type HealthConfig struct {
 // and
 // https://github.com/opencontainers/image-spec/blob/master/config.md
 type Config struct {
-	AttachStderr    bool
-	AttachStdin     bool
-	AttachStdout    bool
-	Cmd             []string
-	Healthcheck     *HealthConfig
-	Domainname      string
-	Entrypoint      []string
-	Env             []string
-	Hostname        string
-	Image           string
-	Labels          map[string]string
-	OnBuild         []string
-	OpenStdin       bool
-	StdinOnce       bool
-	Tty             bool
-	User            string
-	Volumes         map[string]struct{}
-	WorkingDir      string
-	ExposedPorts    map[string]struct{}
-	ArgsEscaped     bool
-	NetworkDisabled bool
-	MacAddress      string
-	StopSignal      string
-	Shell           []string
+	AttachStderr    bool                `json:"AttachStderr,omitempty"`
+	AttachStdin     bool                `json:"AttachStdin,omitempty"`
+	AttachStdout    bool                `json:"AttachStdout,omitempty"`
+	Cmd             []string            `json:"Cmd,omitempty"`
+	Healthcheck     *HealthConfig       `json:"Healthcheck,omitempty"`
+	Domainname      string              `json:"Domainname,omitempty"`
+	Entrypoint      []string            `json:"Entrypoint,omitempty"`
+	Env             []string            `json:"Env,omitempty"`
+	Hostname        string              `json:"Hostname,omitempty"`
+	Image           string              `json:"Image,omitempty"`
+	Labels          map[string]string   `json:"Labels,omitempty"`
+	OnBuild         []string            `json:"OnBuild,omitempty"`
+	OpenStdin       bool                `json:"OpenStdin,omitempty"`
+	StdinOnce       bool                `json:"StdinOnce,omitempty"`
+	Tty             bool                `json:"Tty,omitempty"`
+	User            string              `json:"User,omitempty"`
+	Volumes         map[string]struct{} `json:"Volumes,omitempty"`
+	WorkingDir      string              `json:"WorkingDir,omitempty"`
+	ExposedPorts    map[string]struct{} `json:"ExposedPorts,omitempty"`
+	ArgsEscaped     bool                `json:"ArgsEscaped,omitempty"`
+	NetworkDisabled bool                `json:"NetworkDisabled,omitempty"`
+	MacAddress      string              `json:"MacAddress,omitempty"`
+	StopSignal      string              `json:"StopSignal,omitempty"`
+	Shell           []string            `json:"Shell,omitempty"`
 }
 
 // ParseConfigFile parses the io.Reader's contents into a ConfigFile.

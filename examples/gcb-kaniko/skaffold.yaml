@@ -1,10 +1,10 @@
-apiVersion: skaffold/v1beta14
+apiVersion: skaffold/v2alpha3
 kind: Config
 build:
   googleCloudBuild:
     projectId: k8s-skaffold
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-example
+  - image: skaffold-example
     kaniko:
       cache: {}
 deploy:

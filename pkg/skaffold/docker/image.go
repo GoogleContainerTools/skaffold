@@ -25,18 +25,28 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/streamformatter"
-	"github.com/docker/docker/pkg/term"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
+
+type ContainerRun struct {
+	Image       string
+	User        string
+	Command     []string
+	Mounts      []mount.Mount
+	Env         []string
+	BeforeStart func(context.Context, string) error
+}
 
 // LocalDaemon talks to a local Docker API.
 type LocalDaemon interface {
@@ -55,6 +65,7 @@ type LocalDaemon interface {
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
 	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error
+	RawClient() client.CommonAPIClient
 }
 
 type localDaemon struct {
@@ -91,6 +102,10 @@ type PushResult struct {
 // BuildResult gives the information on an image that has been built.
 type BuildResult struct {
 	ID string
+}
+
+func (l *localDaemon) RawClient() client.CommonAPIClient {
+	return l.apiClient
 }
 
 // Close closes the connection with the local daemon.
@@ -205,10 +220,9 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 }
 
 // streamDockerMessages streams formatted json output from the docker daemon
-// TODO(@r2d4): Make this output much better, this is the bare minimum
 func streamDockerMessages(dst io.Writer, src io.Reader, auxCallback func(jsonmessage.JSONMessage)) error {
-	fd, _ := term.GetFdInfo(dst)
-	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, auxCallback)
+	termFd, isTerm := util.IsTerminal(dst)
+	return jsonmessage.DisplayJSONMessagesStream(src, dst, termFd, isTerm, auxCallback)
 }
 
 // Push pushes an image reference to a registry. Returns the image digest.
@@ -216,6 +230,11 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	registryAuth, err := l.encodedRegistryAuth(ctx, DefaultAuthHelper, ref)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting auth config for %s", ref)
+	}
+
+	// Quick check if the image was already pushed (ignore any error).
+	if alreadyPushed, digest, err := l.isAlreadyPushed(ctx, ref, registryAuth); alreadyPushed && err == nil {
+		return digest, nil
 	}
 
 	rc, err := l.apiClient.ImagePush(ctx, ref, types.ImagePushOptions{
@@ -254,6 +273,34 @@ func (l *localDaemon) Push(ctx context.Context, out io.Writer, ref string) (stri
 	}
 
 	return digest, nil
+}
+
+// isAlreadyPushed quickly checks if the local image has already been pushed.
+func (l *localDaemon) isAlreadyPushed(ctx context.Context, ref, registryAuth string) (bool, string, error) {
+	localImage, _, err := l.apiClient.ImageInspectWithRaw(ctx, ref)
+	if err != nil {
+		return false, "", err
+	}
+
+	if len(localImage.RepoDigests) == 0 {
+		return false, "", nil
+	}
+
+	remoteImage, err := l.apiClient.DistributionInspect(ctx, ref, registryAuth)
+	if err != nil {
+		return false, "", err
+	}
+	digest := remoteImage.Descriptor.Digest.String()
+
+	for _, repoDigest := range localImage.RepoDigests {
+		if parsed, err := ParseReference(repoDigest); err == nil {
+			if parsed.Digest == digest {
+				return true, parsed.Digest, nil
+			}
+		}
+	}
+
+	return false, "", nil
 }
 
 // Pull pulls an image reference from a registry.
@@ -301,8 +348,12 @@ func (l *localDaemon) Tag(ctx context.Context, image, ref string) error {
 // So, the solution we chose is to create a tag, just for Skaffold, from
 // the imageID, and use that in the manifests.
 func (l *localDaemon) TagWithImageID(ctx context.Context, ref string, imageID string) (string, error) {
-	uniqueTag := ref + ":" + strings.TrimPrefix(imageID, "sha256:")
+	parsed, err := ParseReference(ref)
+	if err != nil {
+		return "", err
+	}
 
+	uniqueTag := parsed.BaseName + ":" + strings.TrimPrefix(imageID, "sha256:")
 	if err := l.Tag(ctx, imageID, uniqueTag); err != nil {
 		return "", err
 	}

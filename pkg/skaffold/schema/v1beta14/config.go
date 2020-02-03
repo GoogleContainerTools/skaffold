@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
 const Version string = "skaffold/v1beta14"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
@@ -769,6 +770,8 @@ type JibArtifact struct {
 	// For example: `["--no-build-cache"]`.
 	Flags []string `yaml:"args,omitempty"`
 
-	// Type the Jib builder type (internal: see jib.PluginType)
-	Type int `yaml:"-"`
+	// Type the Jib builder type; normally determined automatically. Valid types are
+	// `maven`: for Maven.
+	// `gradle`: for Gradle.
+	Type string `yaml:"type,omitempty"`
 }

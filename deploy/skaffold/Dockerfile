@@ -35,7 +35,7 @@ RUN chmod +x kustomize
 
 # Download kompose
 FROM alpine:3.10 as download-kompose
-ENV KOMPOSE_VERSION v1.18.0
+ENV KOMPOSE_VERSION v1.19.0
 ENV KOMPOSE_URL https://github.com/kubernetes/kompose/releases/download/${KOMPOSE_VERSION}/kompose-linux-amd64
 RUN wget -O kompose "${KOMPOSE_URL}"
 RUN chmod +x kompose
@@ -49,32 +49,24 @@ RUN chmod +x container-structure-test
 
 # Download kind
 FROM alpine:3.10 as download-kind
-ENV KIND_VERSION v0.4.0
+ENV KIND_VERSION v0.7.0
 ENV KIND_URL https://github.com/kubernetes-sigs/kind/releases/download/${KIND_VERSION}/kind-linux-amd64
 RUN wget -O kind "${KIND_URL}"
 RUN chmod +x kind
 
 # Download gcloud
 FROM alpine:3.10 as download-gcloud
-ENV GCLOUD_VERSION 245.0.0
+ENV GCLOUD_VERSION 274.0.0
 ENV GCLOUD_URL https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-${GCLOUD_VERSION}-linux-x86_64.tar.gz
 RUN wget -O gcloud.tar.gz "${GCLOUD_URL}"
 RUN tar -zxf gcloud.tar.gz
 
 # Download bazel
 FROM alpine:3.10 as download-bazel
-ENV BAZEL_VERSION 0.27.0
+ENV BAZEL_VERSION 2.0.0
 ENV BAZEL_URL https://github.com/bazelbuild/bazel/releases/download/${BAZEL_VERSION}/bazel-${BAZEL_VERSION}-linux-x86_64
 RUN wget -O bazel "${BAZEL_URL}"
 RUN chmod +x bazel
-
-# Download pack
-FROM alpine:3.10 as download-pack
-ENV PACK_VERSION 0.4.1
-RUN wget https://github.com/buildpack/pack/releases/download/v${PACK_VERSION}/pack-v${PACK_VERSION}-linux.tgz
-RUN tar xvf pack-v${PACK_VERSION}-linux.tgz
-RUN rm pack-v${PACK_VERSION}-linux.tgz
-RUN chmod +x pack
 
 FROM gcr.io/gcp-runtimes/ubuntu_16_0_4 as runtime_deps
 
@@ -91,7 +83,7 @@ COPY --from=download-kompose kompose /usr/local/bin/
 COPY --from=download-container-structure-test container-structure-test /usr/local/bin/
 COPY --from=download-bazel bazel /usr/local/bin/
 COPY --from=download-gcloud google-cloud-sdk/ /google-cloud-sdk/
-COPY --from=download-pack pack /usr/local/bin/
+COPY --from=download-kind kind /usr/local/bin/
 
 # Finish installation of bazel
 RUN bazel version
@@ -106,26 +98,23 @@ RUN gcloud auth configure-docker
 
 FROM runtime_deps as builder
 RUN apt-get update && apt-get install --no-install-recommends --no-install-suggests -y \
-    ca-certificates \
-    curl \
     build-essential \
-    gcc \
     python-setuptools \
     lsb-release \
     openjdk-8-jdk \
     software-properties-common \
+    jq \
     apt-transport-https && \
     rm -rf /var/lib/apt/lists/*
-COPY --from=golang:1.12 /usr/local/go /usr/local/go
-ENV PATH /usr/local/go/bin:/go/bin:$PATH
+COPY --from=golang:1.13 /usr/local/go /usr/local/go
+ENV PATH /usr/local/go/bin:/root/go/bin:$PATH
 WORKDIR /skaffold
 COPY . .
 
-FROM builder as integration
+FROM builder as build-skaffold
 ARG VERSION
-COPY --from=download-kind kind /usr/local/bin/
-RUN make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
-CMD ["make", "integration"]
+RUN make clean && make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
 
 FROM runtime_deps as distribution
-COPY --from=integration /usr/bin/skaffold /usr/bin/skaffold
+COPY --from=build-skaffold /usr/bin/skaffold /usr/bin/skaffold
+RUN skaffold credits -d /THIRD_PARTY_NOTICES

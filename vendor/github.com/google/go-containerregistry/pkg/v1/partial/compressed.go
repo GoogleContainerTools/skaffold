@@ -150,6 +150,11 @@ func (i *compressedImageExtender) Manifest() (*v1.Manifest, error) {
 	return Manifest(i)
 }
 
+// Size implements v1.Image
+func (i *compressedImageExtender) Size() (int64, error) {
+	return Size(i)
+}
+
 // CompressedToImage fills in the missing methods from a CompressedImageCore so that it implements v1.Image
 func CompressedToImage(cic CompressedImageCore) (v1.Image, error) {
 	return &compressedImageExtender{

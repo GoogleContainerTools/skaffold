@@ -25,8 +25,11 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+	"sort"
 	"strings"
 	"testing"
+
+	homedir "github.com/mitchellh/go-homedir"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -38,7 +41,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 var testBuilds = []build.Artifact{{
@@ -79,6 +81,20 @@ var testDeployConfigTemplated = latest.HelmDeploy{
 			"missing.key": "{{.MISSING}}",
 			"image.name":  "{{.IMAGE_NAME}}",
 			"image.tag":   "{{.DIGEST}}",
+		},
+	}},
+}
+
+var testDeployConfigValuesFilesTemplated = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+		Values: map[string]string{
+			"image": "skaffold-helm",
+		},
+		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+		ValuesFiles: []string{
+			"/some/file-{{.FOO}}.yaml",
 		},
 	}},
 }
@@ -217,11 +233,23 @@ var testDeployWithoutTags = latest.HelmDeploy{
 	}},
 }
 
+var testTwoReleases = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "other",
+		ChartPath: "examples/test",
+	}, {
+		Name: "skaffold-helm",
+		Values: map[string]string{
+			"image.tag": "skaffold-helm",
+		},
+	}},
+}
+
 var testNamespace = "testNamespace"
 
 var validDeployYaml = `
 # Source: skaffold-helm/templates/deployment.yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: skaffold-helm
@@ -232,6 +260,10 @@ metadata:
     heritage: Tiller
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: skaffold-helm
+      release: skaffold-helm
   template:
     metadata:
       labels:
@@ -378,6 +410,23 @@ func TestHelmDeploy(t *testing.T) {
 			builds:     testBuilds,
 		},
 		{
+			description: "image values should be set using --set-string",
+			commands: &MockHelm{
+				getResult: fmt.Errorf("not found"),
+				installMatcher: func(cmd *exec.Cmd) bool {
+					setStringIndex := util.StrSliceIndex(cmd.Args, "--set-string")
+					if setStringIndex == -1 {
+						return false
+					}
+					expected := fmt.Sprintf("image.repository=%s,image.tag=%s", "docker.io:5000/skaffold-helm", "3605e7bc17cf46e53f4d81c4cbc24e5b4c495184")
+					return setStringIndex+1 < len(cmd.Args) && cmd.Args[setStringIndex+1] == expected
+				},
+				upgradeResult: fmt.Errorf("should not have called upgrade"),
+			},
+			runContext: makeRunContext(testDeployHelmStyleConfig, false),
+			builds:     testBuilds,
+		},
+		{
 			description: "helm image strategy with explicit registry should set the Helm registry value",
 			commands: &MockHelm{
 				getResult: fmt.Errorf("not found"),
@@ -468,6 +517,16 @@ func TestHelmDeploy(t *testing.T) {
 			builds:     testBuilds,
 		},
 		{
+			description: "deploy with valuesFiles templated",
+			commands: &MockHelm{
+				upgradeMatcher: func(cmd *exec.Cmd) bool {
+					return util.StrSliceContains(cmd.Args, "/some/file-FOOBAR.yaml")
+				},
+			},
+			runContext: makeRunContext(testDeployConfigValuesFilesTemplated, false),
+			builds:     testBuilds,
+		},
+		{
 			description: "deploy without actual tags",
 			commands:    &MockHelm{},
 			runContext:  makeRunContext(testDeployWithoutTags, false),
@@ -477,6 +536,12 @@ func TestHelmDeploy(t *testing.T) {
 				"image [docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184] is not used.",
 				"image [skaffold-helm] is used instead.",
 			},
+		},
+		{
+			description: "first release without tag, second with tag",
+			commands:    &MockHelm{},
+			runContext:  makeRunContext(testTwoReleases, false),
+			builds:      testBuilds,
 		},
 	}
 	for _, test := range tests {
@@ -527,8 +592,12 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 		m.t.Errorf("Not enough args in command %v", c)
 	}
 
-	if c.Args[1] != "--kube-context" || c.Args[2] != testKubeContext {
-		m.t.Errorf("Invalid kubernetes context %v", c)
+	argString := strings.Join(c.Args, " ")
+	if !strings.Contains(argString, "--kube-context "+testKubeContext) {
+		m.t.Errorf("Invalid Kubernetes context %v", c)
+	}
+	if !strings.Contains(argString, "--kubeconfig "+testKubeConfig) {
+		m.t.Errorf("Invalid Kubernetes config %v", c)
 	}
 
 	if c.Args[3] == "get" || c.Args[3] == "upgrade" {
@@ -541,7 +610,7 @@ func (m *MockHelm) RunCmd(c *exec.Cmd) error {
 	case "get":
 		return m.getResult
 	case "install":
-		if m.upgradeMatcher != nil && !m.installMatcher(c) {
+		if m.installMatcher != nil && !m.installMatcher(c) {
 			m.t.Errorf("install matcher failed to match commands: %+v", c.Args)
 		}
 		return m.installResult
@@ -674,6 +743,77 @@ func TestHelmDependencies(t *testing.T) {
 	}
 }
 
+func TestGetImageSetValueFromHelmStrategy(t *testing.T) {
+	tests := []struct {
+		description string
+		valueName   string
+		tag         string
+		expected    string
+		strategy    *latest.HelmConventionConfig
+		shouldErr   bool
+	}{
+		{
+			description: "Helm set values with no convention config",
+			valueName:   "image",
+			tag:         "skaffold-helm:1.0.0",
+			expected:    "image=skaffold-helm:1.0.0",
+			strategy:    nil,
+			shouldErr:   false,
+		},
+		{
+			description: "Helm set values with helm conventions",
+			valueName:   "image",
+			tag:         "skaffold-helm:1.0.0",
+			expected:    "image.repository=skaffold-helm,image.tag=1.0.0",
+			strategy:    &latest.HelmConventionConfig{},
+			shouldErr:   false,
+		},
+		{
+			description: "Helm set values with helm conventions and explicit registry value",
+			valueName:   "image",
+			tag:         "docker.io/skaffold-helm:1.0.0",
+			expected:    "image.registry=docker.io,image.repository=skaffold-helm,image.tag=1.0.0",
+			strategy: &latest.HelmConventionConfig{
+				ExplicitRegistry: true,
+			},
+			shouldErr: false,
+		},
+		{
+			description: "Invalid tag with helm conventions",
+			valueName:   "image",
+			tag:         "skaffold-helm:1.0.0,0",
+			expected:    "",
+			strategy:    &latest.HelmConventionConfig{},
+			shouldErr:   true,
+		},
+		{
+			description: "Helm set values with helm conventions and explicit registry value, but missing in tag",
+			valueName:   "image",
+			tag:         "skaffold-helm:1.0.0",
+			expected:    "",
+			strategy: &latest.HelmConventionConfig{
+				ExplicitRegistry: true,
+			},
+			shouldErr: true,
+		},
+		{
+			description: "Helm set values using digest",
+			valueName:   "image",
+			tag:         "skaffold-helm:stable@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f87876677c5cb2",
+			expected:    "image.repository=skaffold-helm,image.tag=stable@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f87876677c5cb2",
+			strategy:    &latest.HelmConventionConfig{},
+			shouldErr:   false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			values, err := getImageSetValueFromHelmStrategy(test.strategy, test.valueName, test.tag)
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expected, values)
+		})
+	}
+}
+
 func TestExpandPaths(t *testing.T) {
 	homedir.DisableCache = true // for testing only
 
@@ -727,8 +867,57 @@ func TestHelmRender(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			deployer := NewHelmDeployer(&runcontext.RunContext{})
-			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, "tmp/dir")
+			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, nil, "tmp/dir")
 			t.CheckError(test.shouldErr, actual)
+		})
+	}
+}
+
+func TestGetSetFileValues(t *testing.T) {
+	tests := []struct {
+		description string
+		files       map[string]string
+		expected    []string
+		expectedMap map[string]bool
+	}{
+		{
+			description: "multiple value",
+			files: map[string]string{
+				"multiline_text": "path/to/textfile",
+				"another_file":   "path/to/another",
+			},
+			expected: []string{
+				"--set-file",
+				"multiline_text=path/to/textfile",
+				"--set-file",
+				"another_file=path/to/another",
+			},
+			expectedMap: map[string]bool{
+				"path/to/textfile": true,
+				"path/to/another":  true,
+			},
+		},
+		{
+			description: "empty value",
+			files:       map[string]string{},
+			expected:    []string{},
+			expectedMap: map[string]bool{},
+		},
+		{
+			description: "nil",
+			files:       nil,
+			expected:    []string{},
+			expectedMap: map[string]bool{},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			inMap := map[string]bool{}
+			actual := generateGetFilesArgs(test.files, inMap)
+			sort.Strings(test.expected)
+			sort.Strings(actual)
+			t.CheckDeepEqual(test.expected, actual)
+			t.CheckDeepEqual(test.expectedMap, inMap)
 		})
 	}
 }
@@ -741,8 +930,9 @@ func makeRunContext(deploy latest.HelmDeploy, force bool) *runcontext.RunContext
 		Cfg:         pipeline,
 		KubeContext: testKubeContext,
 		Opts: config.SkaffoldOptions{
-			Namespace: testNamespace,
-			Force:     force,
+			Namespace:  testNamespace,
+			KubeConfig: testKubeConfig,
+			Force:      force,
 		},
 	}
 }

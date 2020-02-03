@@ -21,7 +21,7 @@ go run ./hack/versions/cmd/new/version.go $@
 goimports -w ./pkg/skaffold/schema
 make generate-schemas
 git --no-pager diff --minimal
-make test
+make quicktest
 
 echo
 echo "---------------------------------------"

@@ -24,9 +24,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
-
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestCmpGoStructs(t *testing.T) {
@@ -59,6 +59,31 @@ func TestCmpGoStructs(t *testing.T) {
 `,
 			b: `package a
 //a different comment
+`,
+			same:      true,
+			shouldErr: false,
+		},
+		{
+			name: "all supported types",
+			a: `package a
+type TestStructure struct {
+	a string			// Ident
+	b map[string]int 	// MapType
+	c []interface{} 	// InterfaceType
+	d []byte	 		// ArrayType
+	e (error)    		// ParenExpr
+	f *ast.Ident 		// SelectorExpr and StarExpr
+}
+`,
+			b: `package a
+type TestStructure struct {
+	a string			// Ident
+	b map[string]int 	// MapType
+	c []interface{} 	// InterfaceType
+	d []byte	 		// ArrayType
+	e (error)    		// ParenExpr
+	f *ast.Ident 		// SelectorExpr and StarExpr
+}
 `,
 			same:      true,
 			shouldErr: false,
@@ -259,11 +284,11 @@ func TestCompareSchemas(t *testing.T) {
 			a := path.Join(schemaDir, tc.a, "config.go")
 			b := path.Join(schemaDir, tc.b, "config.go")
 			diff, err := CompareGoStructs(filepath.FromSlash(a), filepath.FromSlash(b))
-			t.CheckErrorAndDeepEqual(false, err, tc.a == tc.b, diff == "")
+			t.CheckNoError(err)
+			t.CheckDeepEqual(tc.a == tc.b, diff == "")
 			if diff != "" && tc.a == tc.b {
 				t.Errorf(diff)
 			}
 		})
 	}
-
 }

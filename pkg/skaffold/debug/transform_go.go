@@ -21,10 +21,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type dlvTransformer struct{}
@@ -79,22 +79,21 @@ func (t dlvTransformer) RuntimeSupportImage() string {
 
 // Apply configures a container definition for Go with Delve.
 // Returns a simple map describing the debug configuration details.
-func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
+func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *ContainerDebugConfiguration {
 	logrus.Infof("Configuring %q for Go/Delve debugging", container.Name)
 
 	// try to find existing `dlv` command
 	spec := retrieveDlvSpec(config)
-	// todo: find existing containerPort "dlv" and use port. But what if it conflicts with command-line spec?
 
 	if spec == nil {
 		newSpec := newDlvSpec(uint16(portAlloc(defaultDlvPort)))
 		spec = &newSpec
 		switch {
 		case len(config.entrypoint) > 0:
-			container.Command = rewriteDlvCommandLine(config.entrypoint, *spec)
+			container.Command = rewriteDlvCommandLine(config.entrypoint, *spec, container.Args)
 
 		case len(config.entrypoint) == 0 && len(config.arguments) > 0:
-			container.Args = rewriteDlvCommandLine(config.arguments, *spec)
+			container.Args = rewriteDlvCommandLine(config.arguments, *spec, container.Args)
 
 		default:
 			logrus.Warnf("Skipping %q as does not appear to be Go-based", container.Name)
@@ -102,15 +101,11 @@ func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration
 		}
 	}
 
-	dlvPort := v1.ContainerPort{
-		Name:          "dlv",
-		ContainerPort: int32(spec.port),
-	}
-	container.Ports = append(container.Ports, dlvPort)
+	container.Ports = exposePort(container.Ports, "dlv", int32(spec.port))
 
-	return map[string]interface{}{
-		"runtime": "go",
-		"dlv":     spec.port,
+	return &ContainerDebugConfiguration{
+		Runtime: "go",
+		Ports:   map[string]uint32{"dlv": uint32(spec.port)},
 	}
 }
 
@@ -165,10 +160,10 @@ arguments:
 }
 
 // rewriteDlvCommandLine rewrites a go command-line to insert a `dlv`
-func rewriteDlvCommandLine(commandLine []string, spec dlvSpec) []string {
+func rewriteDlvCommandLine(commandLine []string, spec dlvSpec, args []string) []string {
 	// todo: parse off dlv commands if present?
 
-	if len(commandLine) > 1 {
+	if len(commandLine) > 1 || len(args) > 0 {
 		// insert "--" after app binary to indicate end of Delve arguments
 		commandLine = util.StrSliceInsert(commandLine, 1, []string{"--"})
 	}

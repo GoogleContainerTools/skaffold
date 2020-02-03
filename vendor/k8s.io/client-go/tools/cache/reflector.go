@@ -22,8 +22,11 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"net"
+	"net/url"
 	"reflect"
 	"sync"
+	"syscall"
 	"time"
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -32,7 +35,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/clock"
 	"k8s.io/apimachinery/pkg/util/naming"
-	utilnet "k8s.io/apimachinery/pkg/util/net"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
@@ -164,7 +166,7 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 	options := metav1.ListOptions{ResourceVersion: "0"}
 
 	if err := func() error {
-		initTrace := trace.New("Reflector ListAndWatch", trace.Field{"name", r.name})
+		initTrace := trace.New("Reflector " + r.name + " ListAndWatch")
 		defer initTrace.LogIfLong(10 * time.Second)
 		var list runtime.Object
 		var err error
@@ -266,7 +268,8 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 			// To reduce load on kube-apiserver on watch restarts, you may enable watch bookmarks.
 			// Reflector doesn't assume bookmarks are returned at all (if the server do not support
 			// watch bookmarks, it will ignore this field).
-			AllowWatchBookmarks: true,
+			// Disabled in Alpha release of watch bookmarks feature.
+			AllowWatchBookmarks: false,
 		}
 
 		w, err := r.listerWatcher.Watch(options)
@@ -283,21 +286,20 @@ func (r *Reflector) ListAndWatch(stopCh <-chan struct{}) error {
 			// It doesn't make sense to re-list all objects because most likely we will be able to restart
 			// watch where we ended.
 			// If that's the case wait and resend watch request.
-			if utilnet.IsConnectionRefused(err) {
-				time.Sleep(time.Second)
-				continue
+			if urlError, ok := err.(*url.Error); ok {
+				if opError, ok := urlError.Err.(*net.OpError); ok {
+					if errno, ok := opError.Err.(syscall.Errno); ok && errno == syscall.ECONNREFUSED {
+						time.Sleep(time.Second)
+						continue
+					}
+				}
 			}
 			return nil
 		}
 
 		if err := r.watchHandler(w, &resourceVersion, resyncerrc, stopCh); err != nil {
 			if err != errorStopRequested {
-				switch {
-				case apierrs.IsResourceExpired(err):
-					klog.V(4).Infof("%s: watch of %v ended with: %v", r.name, r.expectedType, err)
-				default:
-					klog.Warningf("%s: watch of %v ended with: %v", r.name, r.expectedType, err)
-				}
+				klog.Warningf("%s: watch of %v ended with: %v", r.name, r.expectedType, err)
 			}
 			return nil
 		}

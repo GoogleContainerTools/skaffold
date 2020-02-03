@@ -22,13 +22,16 @@ import (
 	"io"
 	"testing"
 
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	logrustest "github.com/sirupsen/logrus/hooks/test"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/pkg/errors"
 )
 
 type mockBuilder struct {
@@ -85,21 +88,25 @@ func TestTimingsBuild(t *testing.T) {
 	tests := []struct {
 		description  string
 		shouldOutput string
+		shouldLog    string
 		shouldErr    bool
 	}{
 		{
 			description:  "build success",
-			shouldOutput: "(?m)^Starting build...\nBuild complete in .+$",
+			shouldOutput: "",
+			shouldLog:    "Build complete in .+$",
 			shouldErr:    false,
 		},
 		{
 			description:  "build failure",
-			shouldOutput: "^Starting build...\n$",
+			shouldOutput: "",
 			shouldErr:    true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			hook := logrustest.NewGlobal()
+
 			b := &mockBuilder{err: test.shouldErr}
 			builder, _, _ := WithTimings(b, nil, nil, false)
 
@@ -108,6 +115,7 @@ func TestTimingsBuild(t *testing.T) {
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())
+			t.CheckMatches(test.shouldLog, lastInfoEntry(hook))
 		})
 	}
 }
@@ -116,11 +124,13 @@ func TestTimingsPrune(t *testing.T) {
 	tests := []struct {
 		description  string
 		shouldOutput string
+		shouldLog    string
 		shouldErr    bool
 	}{
 		{
 			description:  "test success",
-			shouldOutput: "(?m)^Pruning images...\nImage prune complete in .+$",
+			shouldOutput: "(?m)^Pruning images...\n",
+			shouldLog:    "Image prune complete in .+$",
 			shouldErr:    false,
 		},
 		{
@@ -131,6 +141,8 @@ func TestTimingsPrune(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			hook := logrustest.NewGlobal()
+
 			b := &mockBuilder{err: test.shouldErr}
 			builder, _, _ := WithTimings(b, nil, nil, false)
 
@@ -139,6 +151,7 @@ func TestTimingsPrune(t *testing.T) {
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())
+			t.CheckMatches(test.shouldLog, lastInfoEntry(hook))
 		})
 	}
 }
@@ -147,21 +160,25 @@ func TestTimingsTest(t *testing.T) {
 	tests := []struct {
 		description  string
 		shouldOutput string
+		shouldLog    string
 		shouldErr    bool
 	}{
 		{
 			description:  "test success",
-			shouldOutput: "(?m)^Starting test...\nTest complete in .+$",
+			shouldOutput: "",
+			shouldLog:    "Test complete in .+$",
 			shouldErr:    false,
 		},
 		{
 			description:  "test failure",
-			shouldOutput: "^Starting test...\n$",
+			shouldOutput: "",
 			shouldErr:    true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			hook := logrustest.NewGlobal()
+
 			tt := &mockTester{err: test.shouldErr}
 			_, tester, _ := WithTimings(nil, tt, nil, false)
 
@@ -170,6 +187,7 @@ func TestTimingsTest(t *testing.T) {
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())
+			t.CheckMatches(test.shouldLog, lastInfoEntry(hook))
 		})
 	}
 }
@@ -178,11 +196,13 @@ func TestTimingsDeploy(t *testing.T) {
 	tests := []struct {
 		description  string
 		shouldOutput string
+		shouldLog    string
 		shouldErr    bool
 	}{
 		{
 			description:  "prune success",
-			shouldOutput: "(?m)^Starting deploy...\nDeploy complete in .+$",
+			shouldOutput: "(?m)^Starting deploy...\n",
+			shouldLog:    "Deploy complete in .+$",
 			shouldErr:    false,
 		},
 		{
@@ -193,6 +213,8 @@ func TestTimingsDeploy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			hook := logrustest.NewGlobal()
+
 			d := &mockDeployer{err: test.shouldErr}
 			_, _, deployer := WithTimings(nil, nil, d, false)
 
@@ -201,6 +223,7 @@ func TestTimingsDeploy(t *testing.T) {
 
 			t.CheckError(test.shouldErr, res.GetError())
 			t.CheckMatches(test.shouldOutput, out.String())
+			t.CheckMatches(test.shouldLog, lastInfoEntry(hook))
 		})
 	}
 }
@@ -209,11 +232,13 @@ func TestTimingsCleanup(t *testing.T) {
 	tests := []struct {
 		description  string
 		shouldOutput string
+		shouldLog    string
 		shouldErr    bool
 	}{
 		{
 			description:  "cleanup success",
-			shouldOutput: "(?m)^Cleaning up...\nCleanup complete in .+$",
+			shouldOutput: "(?m)^Cleaning up...\n",
+			shouldLog:    "Cleanup complete in .+$",
 			shouldErr:    false,
 		},
 		{
@@ -224,6 +249,8 @@ func TestTimingsCleanup(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			hook := logrustest.NewGlobal()
+
 			d := &mockDeployer{err: test.shouldErr}
 			_, _, deployer := WithTimings(nil, nil, d, false)
 
@@ -232,6 +259,16 @@ func TestTimingsCleanup(t *testing.T) {
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckMatches(test.shouldOutput, out.String())
+			t.CheckMatches(test.shouldLog, lastInfoEntry(hook))
 		})
 	}
+}
+
+func lastInfoEntry(hook *logrustest.Hook) string {
+	for _, entry := range hook.AllEntries() {
+		if entry.Level == logrus.InfoLevel {
+			return entry.Message
+		}
+	}
+	return ""
 }

@@ -23,10 +23,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 )
 
-func (r *SkaffoldRunner) createForwarder(out io.Writer, kubectlCLI *kubectl.CLI) {
+func (r *SkaffoldRunner) createForwarder(out io.Writer) {
+	kubectlCLI := kubectl.NewFromRunContext(r.runCtx)
 	r.forwarderManager = portforward.NewForwarderManager(out,
 		kubectlCLI,
-		r.imageList,
+		r.podSelector,
 		r.runCtx.Namespaces,
 		r.defaultLabeller.RunIDKeyValueString(),
 		r.runCtx.Opts.PortForward,

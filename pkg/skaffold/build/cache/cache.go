@@ -21,15 +21,16 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	homedir "github.com/mitchellh/go-homedir"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	homedir "github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 )
 
 // ImageDetails holds the Digest and ID of an image
@@ -44,17 +45,15 @@ type ArtifactCache map[string]ImageDetails
 // cache holds any data necessary for accessing the cache
 type cache struct {
 	artifactCache      ArtifactCache
-	dependencies       DependencyLister
 	client             docker.LocalDaemon
 	insecureRegistries map[string]bool
 	cacheFile          string
 	imagesAreLocal     bool
+	hashForArtifact    func(ctx context.Context, a *latest.Artifact) (string, error)
 }
 
 // DependencyLister fetches a list of dependencies for an artifact
-type DependencyLister interface {
-	DependenciesForArtifact(ctx context.Context, artifact *latest.Artifact) ([]string, error)
-}
+type DependencyLister func(ctx context.Context, artifact *latest.Artifact) ([]string, error)
 
 // NewCache returns the current state of the cache
 func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies DependencyLister) (Cache, error) {
@@ -81,11 +80,13 @@ func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies D
 
 	return &cache{
 		artifactCache:      artifactCache,
-		dependencies:       dependencies,
 		client:             client,
 		insecureRegistries: runCtx.InsecureRegistries,
 		cacheFile:          cacheFile,
 		imagesAreLocal:     imagesAreLocal,
+		hashForArtifact: func(ctx context.Context, a *latest.Artifact) (string, error) {
+			return getHashForArtifact(ctx, dependencies, a, runCtx.DevMode)
+		},
 	}, nil
 }
 

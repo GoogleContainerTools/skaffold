@@ -33,7 +33,7 @@ import (
 
 // Builder uses the host docker daemon to build and tag the image.
 type Builder struct {
-	cfg *latest.LocalBuild
+	cfg latest.LocalBuild
 
 	localDocker        docker.LocalDaemon
 	localCluster       bool
@@ -41,6 +41,7 @@ type Builder struct {
 	prune              bool
 	pruneChildren      bool
 	skipTests          bool
+	devMode            bool
 	kubeContext        string
 	builtImages        []string
 	insecureRegistries map[string]bool
@@ -72,12 +73,13 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	}
 
 	return &Builder{
-		cfg:                runCtx.Cfg.Build.LocalBuild,
+		cfg:                *runCtx.Cfg.Build.LocalBuild,
 		kubeContext:        runCtx.KubeContext,
 		localDocker:        localDocker,
 		localCluster:       localCluster,
 		pushImages:         pushImages,
 		skipTests:          runCtx.Opts.SkipTests,
+		devMode:            runCtx.DevMode,
 		prune:              runCtx.Opts.Prune(),
 		pruneChildren:      !runCtx.Opts.NoPruneChildren,
 		insecureRegistries: runCtx.InsecureRegistries,

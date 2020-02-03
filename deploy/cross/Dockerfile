@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM karalabe/xgo-1.12
+FROM karalabe/xgo-1.13.4
 
 ARG PROJECT
 ARG FLAG_LDFLAGS
@@ -24,6 +24,7 @@ ENV EXT_GOPATH /ext-go
 ENV FLAG_LDFLAGS $FLAG_LDFLAGS
 ENV TARGETS $TARGETS
 ENV FLAG_TAGS $FLAG_TAGS
+ENV GO111MODULE off
 
 WORKDIR /ext-go/src/$PROJECT
 COPY . .

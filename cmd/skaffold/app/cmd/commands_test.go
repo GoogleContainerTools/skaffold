@@ -23,8 +23,9 @@ import (
 	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"github.com/spf13/pflag"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestNewCmdDescription(t *testing.T) {

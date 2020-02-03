@@ -17,11 +17,14 @@ limitations under the License.
 package deploy
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
+
+	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -29,11 +32,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/pkg/errors"
 )
 
 const (
 	testKubeContext = "kubecontext"
+	testKubeConfig  = "kubeconfig"
 	kubectlVersion  = `{"clientVersion":{"major":"1","minor":"12"}}`
 )
 
@@ -70,6 +73,23 @@ func TestKubectlDeploy(t *testing.T) {
 			commands:    testutil.CmdRunOut("kubectl version --client -ojson", kubectlVersion),
 		},
 		{
+			description: "deploy success (disable validation)",
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
+				Flags: latest.KubectlFlags{
+					DisableValidation: true,
+				},
+			},
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml --validate=false", deploymentWebYAML).
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --validate=false"),
+			builds: []build.Artifact{{
+				ImageName: "leeroy-web",
+				Tag:       "leeroy-web:123",
+			}},
+		},
+		{
 			description: "deploy success (forced)",
 			cfg: &latest.KubectlDeploy{
 				Manifests: []string{"deployment.yaml"},
@@ -77,7 +97,7 @@ func TestKubectlDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
-				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force"),
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
 				Tag:       "leeroy-web:123",
@@ -298,7 +318,7 @@ func TestKubectlDeployerRemoteCleanup(t *testing.T) {
 			})
 			err := k.Cleanup(context.Background(), ioutil.Discard)
 
-			t.CheckError(false, err)
+			t.CheckNoError(err)
 		})
 	}
 }
@@ -364,27 +384,26 @@ spec:
 				Namespace: testNamespace,
 			},
 		})
-		labellers := []Labeller{deployer}
 
 		// Deploy one manifest
 		err := deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v1"},
-		}, labellers).GetError()
+		}, nil).GetError()
 		t.CheckNoError(err)
 
 		// Deploy one manifest since only one image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, labellers).GetError()
+		}, nil).GetError()
 		t.CheckNoError(err)
 
 		// Deploy zero manifest since no image is updated
 		err = deployer.Deploy(context.Background(), ioutil.Discard, []build.Artifact{
 			{ImageName: "leeroy-web", Tag: "leeroy-web:v1"},
 			{ImageName: "leeroy-app", Tag: "leeroy-app:v2"},
-		}, labellers).GetError()
+		}, nil).GetError()
 		t.CheckNoError(err)
 	})
 }
@@ -461,28 +480,105 @@ func TestDependencies(t *testing.T) {
 func TestKubectlRender(t *testing.T) {
 	tests := []struct {
 		description string
-		shouldErr   bool
+		builds      []build.Artifact
+		labels      []Labeller
+		input       string
+		expected    string
 	}{
 		{
-			description: "calling render returns error",
-			shouldErr:   true,
+			description: "normal render",
+			builds: []build.Artifact{
+				{
+					ImageName: "gcr.io/k8s-skaffold/skaffold",
+					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
+				},
+			},
+			labels: []Labeller{},
+			input: `apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold
+    name: skaffold
+`,
+			expected: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold:test
+    name: skaffold
+`,
+		},
+		{
+			description: "two artifacts",
+			builds: []build.Artifact{
+				{
+					ImageName: "gcr.io/project/image1",
+					Tag:       "gcr.io/project/image1:tag1",
+				},
+				{
+					ImageName: "gcr.io/project/image2",
+					Tag:       "gcr.io/project/image2:tag2",
+				},
+			},
+			input: `apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1
+    name: image1
+  - image: gcr.io/project/image2
+    name: image2
+`,
+			expected: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1:tag1
+    name: image1
+  - image: gcr.io/project/image2:tag2
+    name: image2
+`,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().
+				Write("deployment.yaml", test.input)
+
+			t.Override(&util.DefaultExecCommand, testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), test.input))
+
 			deployer := NewKubectlDeployer(&runcontext.RunContext{
+				WorkingDir: ".",
 				Cfg: latest.Pipeline{
 					Deploy: latest.DeployConfig{
 						DeployType: latest.DeployType{
 							KubectlDeploy: &latest.KubectlDeploy{
-								Manifests: []string{},
+								Manifests: []string{tmpDir.Path("deployment.yaml")},
 							},
 						},
 					},
 				},
+				KubeContext: testKubeContext,
 			})
-			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, "tmp/dir")
-			t.CheckError(test.shouldErr, actual)
+			var b bytes.Buffer
+			err := deployer.Render(context.Background(), &b, test.builds, test.labels, "")
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, b.String())
 		})
 	}
 }

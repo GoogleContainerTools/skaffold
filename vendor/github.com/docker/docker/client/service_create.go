@@ -72,7 +72,6 @@ func (cli *Client) ServiceCreate(ctx context.Context, service swarm.ServiceSpec,
 
 	var response types.ServiceCreateResponse
 	resp, err := cli.post(ctx, "/services/create", nil, service, headers)
-	defer ensureReaderClosed(resp)
 	if err != nil {
 		return response, err
 	}
@@ -83,6 +82,7 @@ func (cli *Client) ServiceCreate(ctx context.Context, service swarm.ServiceSpec,
 		response.Warnings = append(response.Warnings, digestWarning(service.TaskTemplate.ContainerSpec.Image))
 	}
 
+	ensureReaderClosed(resp)
 	return response, err
 }
 

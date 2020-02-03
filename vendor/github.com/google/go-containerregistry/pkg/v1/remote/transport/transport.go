@@ -22,10 +22,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/name"
 )
 
-const (
-	transportName = "go-containerregistry"
-)
-
 // New returns a new RoundTripper based on the provided RoundTripper that has been
 // setup to authenticate with the remote registry "reg", in the capacity
 // laid out by the specified scopes.
@@ -47,6 +43,16 @@ func New(reg name.Registry, auth authn.Authenticator, t http.RoundTripper, scope
 	pr, err := ping(reg, t)
 	if err != nil {
 		return nil, err
+	}
+
+	// Wrap the given transport in transports that use an appropriate scheme,
+	// (based on the ping response) and set the user agent.
+	t = &useragentTransport{
+		inner: &schemeTransport{
+			scheme:   pr.scheme,
+			registry: reg,
+			inner:    t,
+		},
 	}
 
 	switch pr.challenge.Canonical() {
@@ -80,6 +86,6 @@ func New(reg name.Registry, auth authn.Authenticator, t http.RoundTripper, scope
 		}
 		return bt, nil
 	default:
-		return nil, fmt.Errorf("Unrecognized challenge: %s", pr.challenge)
+		return nil, fmt.Errorf("unrecognized challenge: %s", pr.challenge)
 	}
 }

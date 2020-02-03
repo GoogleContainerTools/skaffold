@@ -19,9 +19,10 @@ package labels
 import (
 	"testing"
 
+	"github.com/google/go-github/github"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/google/go-github/github"
 )
 
 func TestGenerateLabelsFromPR(t *testing.T) {

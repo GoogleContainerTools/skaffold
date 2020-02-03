@@ -19,9 +19,8 @@ package context
 import (
 	"sync"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -35,29 +34,43 @@ var (
 var (
 	kubeConfigOnce sync.Once
 	kubeConfig     clientcmd.ClientConfig
+
+	configureOnce  sync.Once
 	kubeContext    string
+	kubeConfigFile string
 )
 
-// resetConfig is used by tests
-func resetConfig() {
-	kubeConfigOnce = sync.Once{}
-}
-
-// UseKubeContext sets an override for the current context in the k8s config.
-func UseKubeContext(overrideKubeContext string) {
-	kubeContext = overrideKubeContext
+// ConfigureKubeConfig sets an override for the current context in the k8s config.
+// When given, the firstCliValue always takes precedence over the yamlValue.
+// Changing the kube-context of a running Skaffold process is not supported, so
+// after the first call, the kube-context will be locked.
+func ConfigureKubeConfig(cliKubeConfig, cliKubeContext, yamlKubeContext string) {
+	newKubeContext := yamlKubeContext
+	if cliKubeContext != "" {
+		newKubeContext = cliKubeContext
+	}
+	configureOnce.Do(func() {
+		kubeContext = newKubeContext
+		kubeConfigFile = cliKubeConfig
+		if kubeContext != "" {
+			logrus.Infof("Activated kube-context %q", kubeContext)
+		}
+	})
+	if kubeContext != newKubeContext {
+		logrus.Warn("Changing the kube-context is not supported after startup. Please restart Skaffold to take effect.")
+	}
 }
 
 // GetRestClientConfig returns a REST client config for API calls against the Kubernetes API.
-// If UseKubeContext was called before, the CurrentContext will be overridden.
+// If ConfigureKubeConfig was called before, the CurrentContext will be overridden.
 // The kubeconfig used will be cached for the life of the skaffold process after the first call.
 // If the CurrentContext is empty and the resulting config is empty, this method attempts to
 // create a RESTClient with an in-cluster config.
 func GetRestClientConfig() (*restclient.Config, error) {
-	return getRestClientConfig(kubeContext)
+	return getRestClientConfig(kubeContext, kubeConfigFile)
 }
 
-func getRestClientConfig(kctx string) (*restclient.Config, error) {
+func getRestClientConfig(kctx string, kcfg string) (*restclient.Config, error) {
 	logrus.Debugf("getting client config for kubeContext: `%s`", kctx)
 	rawConfig, err := getRawKubeConfig()
 	if err != nil {
@@ -65,7 +78,7 @@ func getRestClientConfig(kctx string) (*restclient.Config, error) {
 	}
 	clientConfig := clientcmd.NewNonInteractiveClientConfig(rawConfig, kctx, &clientcmd.ConfigOverrides{CurrentContext: kctx}, nil)
 	restConfig, err := clientConfig.ClientConfig()
-	if kctx == "" && clientcmd.IsEmptyConfig(err) {
+	if kctx == "" && kcfg == "" && clientcmd.IsEmptyConfig(err) {
 		logrus.Debug("no kube-context set and no kubeConfig found, attempting in-cluster config")
 		restConfig, err := restclient.InClusterConfig()
 		return restConfig, errors.Wrap(err, "error creating REST client config in-cluster")
@@ -74,7 +87,7 @@ func getRestClientConfig(kctx string) (*restclient.Config, error) {
 	return restConfig, errors.Wrapf(err, "error creating REST client config for kubeContext '%s'", kctx)
 }
 
-// getCurrentConfig retrieves the kubeconfig file. If UseKubeContext was called before, the CurrentContext will be overridden.
+// getCurrentConfig retrieves the kubeconfig file. If ConfigureKubeConfig was called before, the CurrentContext will be overridden.
 // The result will be cached after the first call.
 func getCurrentConfig() (clientcmdapi.Config, error) {
 	cfg, err := getRawKubeConfig()
@@ -90,6 +103,7 @@ func getCurrentConfig() (clientcmdapi.Config, error) {
 func getRawKubeConfig() (clientcmdapi.Config, error) {
 	kubeConfigOnce.Do(func() {
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+		loadingRules.ExplicitPath = kubeConfigFile
 		kubeConfig = clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{
 			CurrentContext: kubeContext,
 		})
