@@ -186,10 +186,7 @@ func getSyncMapFromSystem(cmd *exec.Cmd) (*SyncMap, error) {
 		return nil, errors.Wrap(err, "failed to get Jib sync map")
 	}
 
-	// To parse the output, search for "BEGIN JIB JSON", then unmarshal the next line into the pathMap struct.
-	// Syncmap is transitioning to "BEGIN JIB JSON: SYNCMAP/1" starting in jib 2.0.0
-	// perhaps this feature should only be included from 2.0.0 onwards? And we generally avoid this?
-	matches := regexp.MustCompile(`BEGIN JIB JSON(?:: SYNCMAP/1)?\r?\n({.*})`).FindSubmatch(stdout)
+	matches := regexp.MustCompile(`BEGIN JIB JSON: SYNCMAP/1\r?\n({.*})`).FindSubmatch(stdout)
 	if len(matches) == 0 {
 		return nil, errors.New("failed to get Jib Sync data")
 	}

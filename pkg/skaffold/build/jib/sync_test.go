@@ -60,8 +60,8 @@ func TestGetSyncMapFromSystem(t *testing.T) {
 		{
 			description: "old style marker",
 			stdout:      "BEGIN JIB JSON\n{}",
-			shouldErr:   false,
-			expected:    &SyncMap{},
+			shouldErr:   true,
+			expected:    nil,
 		},
 		{
 			description: "bad marker",
