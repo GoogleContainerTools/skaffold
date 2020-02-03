@@ -40,12 +40,14 @@ Kubernetes requires that containers within a podspec are uniquely named.
 For example, a pod with two containers named `microservice` and `adapter` may be:
 
   debug.cloud.google.com/config: '{
-    "microservice":{"devtools":9229,"runtime":"nodejs"},
-    "adapter":{"jdwp":5005,"runtime":"jvm"}
+    "microservice":{"artifactImage":"node-example","runtime":"nodejs","ports":{"devtools":9229}},
+    "adapter":{"artifactImage":"java-example","runtime":"jvm","ports":{"jdwp":5005}}
   }'
 
-Each configuration is itself a JSON object with a `runtime` field identifying the
-language runtime, and a set of runtime-specific fields describing connection information.
+Each configuration is itself a JSON object of type `ContainerDebugConfiguration`, with an
+`artifactImage` recording the corresponding artifact's `image` in the skaffold.yaml,
+a `runtime` field identifying the language runtime, the working directory of the remote image (if known),
+and a set of debugging ports.
 */
 package debug
 
@@ -63,6 +65,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
+
+// ContainerDebugConfiguration captures debugging information for a specific container.
+type ContainerDebugConfiguration struct {
+	// ArtifactImage is the image reference used in the skaffold.yaml
+	ArtifactImage string `json:"artifactImage,omitempty"`
+	// Runtime represents the underlying language runtime (`go`, `jvm`, `nodejs`, `python`)
+	Runtime string `json:"runtime,omitempty"`
+	// WorkingDir is the working directory in the image configuration; may be empty
+	WorkingDir string `json:"workingDir,omitempty"`
+	// Ports is the list of debugging ports, keyed by protocol type
+	Ports map[string]uint32 `json:"ports,omitempty"`
+}
 
 // portAllocator is a function that takes a desired port and returns an available port
 // Ports are normally uint16 but Kubernetes ContainerPort.containerPort is an integer
@@ -96,8 +110,13 @@ type containerTransformer interface {
 	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *ContainerDebugConfiguration
 }
 
-// debuggingSupportVolume is the name of the volume used to hold language runtime debugging support files
-const debuggingSupportFilesVolume = "debugging-support-files"
+const (
+	// debuggingSupportVolume is the name of the volume used to hold language runtime debugging support files.
+	debuggingSupportFilesVolume = "debugging-support-files"
+
+	// debugConfigAnnotation is the name of the podspec annotation that records debugging configuration information.
+	debugConfigAnnotation = "debug.cloud.google.com/config"
+)
 
 var containerTransforms []containerTransformer
 
@@ -221,7 +240,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		if metadata.Annotations == nil {
 			metadata.Annotations = make(map[string]string)
 		}
-		metadata.Annotations["debug.cloud.google.com/config"] = encodeConfigurations(configurations)
+		metadata.Annotations[debugConfigAnnotation] = encodeConfigurations(configurations)
 		return true
 	}
 	return false
