@@ -40,12 +40,12 @@ Kubernetes requires that containers within a podspec are uniquely named.
 For example, a pod with two containers named `microservice` and `adapter` may be:
 
   debug.cloud.google.com/config: '{
-    "microservice":{"artifactImage":"node-example","runtime":"nodejs","ports":{"devtools":9229}},
-    "adapter":{"artifactImage":"java-example","runtime":"jvm","ports":{"jdwp":5005}}
+    "microservice":{"artifact":"node-example","runtime":"nodejs","ports":{"devtools":9229}},
+    "adapter":{"artifact":"java-example","runtime":"jvm","ports":{"jdwp":5005}}
   }'
 
 Each configuration is itself a JSON object of type `ContainerDebugConfiguration`, with an
-`artifactImage` recording the corresponding artifact's `image` in the skaffold.yaml,
+`artifact` recording the corresponding artifact's `image` in the skaffold.yaml,
 a `runtime` field identifying the language runtime, the working directory of the remote image (if known),
 and a set of debugging ports.
 */
@@ -68,8 +68,8 @@ import (
 
 // ContainerDebugConfiguration captures debugging information for a specific container.
 type ContainerDebugConfiguration struct {
-	// ArtifactImage is the image reference used in the skaffold.yaml
-	ArtifactImage string `json:"artifactImage,omitempty"`
+	// Artifact is the corresponding artifact's image name used in the skaffold.yaml
+	Artifact string `json:"artifact,omitempty"`
 	// Runtime represents the underlying language runtime (`go`, `jvm`, `nodejs`, `python`)
 	Runtime string `json:"runtime,omitempty"`
 	// WorkingDir is the working directory in the image configuration; may be empty
@@ -86,10 +86,10 @@ type portAllocator func(int32) int32
 type configurationRetriever func(string) (imageConfiguration, error)
 
 // imageConfiguration captures information from a docker/oci image configuration.
-// It also includes a "name", usually containing the corresponding artifact `name` from `skaffold.yaml`.
+// It also includes a "artifact", usually containing the corresponding artifact's' image name from `skaffold.yaml`.
 type imageConfiguration struct {
-	// name is the corresponding artifact's name
-	name string
+	// artifact is the corresponding artifact's image name (`pkg/skaffold/build.Artifact.ImageName`)
+	artifact string
 
 	labels     map[string]string
 	env        map[string]string
@@ -197,7 +197,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		}
 		// requiredImage, if not empty, is the image ID providing the debugging support files
 		if configuration, requiredImage, err := transformContainer(container, imageConfig, portAlloc); err == nil {
-			configuration.ArtifactImage = imageConfig.name
+			configuration.Artifact = imageConfig.artifact
 			configuration.WorkingDir = imageConfig.workingDir
 			configurations[container.Name] = *configuration
 			if len(requiredImage) > 0 {

@@ -109,7 +109,7 @@ DebuggingContainerEvent is raised when a debugging container is started or termi
 | podName | [string](#string) |  | the pod name with the debugging container |
 | containerName | [string](#string) |  | the name of the container configured for debugging |
 | namespace | [string](#string) |  | the namespace of the debugging container |
-| artifactImage | [string](#string) |  | the corresponding artifact `image` |
+| artifact | [string](#string) |  | the corresponding artifact's image name |
 | runtime | [string](#string) |  | the detected language runtime |
 | workingDir | [string](#string) |  | the working directory in the container image |
 | debugPorts | [DebuggingContainerEvent.DebugPortsEntry](#proto.DebuggingContainerEvent.DebugPortsEntry) | repeated | the exposed debugging-related ports |

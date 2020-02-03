@@ -220,7 +220,7 @@
             "type": "string"
           },
           {
-            "name": "event.debuggingContainerEvent.artifactImage",
+            "name": "event.debuggingContainerEvent.artifact",
             "in": "query",
             "required": false,
             "type": "string"
@@ -382,7 +382,7 @@
         "namespace": {
           "type": "string"
         },
-        "artifactImage": {
+        "artifact": {
           "type": "string"
         },
         "runtime": {
