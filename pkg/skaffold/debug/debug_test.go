@@ -549,11 +549,11 @@ func TestArtifactImage(t *testing.T) {
 		Spec:       v1.PodSpec{Containers: []v1.Container{{Name: "name1", Image: "image1"}}}}
 
 	retriever := func(image string) (imageConfiguration, error) {
-		return imageConfiguration{name: "gcr.io/random/image"}, nil
+		return imageConfiguration{artifact: "gcr.io/random/image"}, nil
 	}
 
 	result := transformManifest(pod, retriever)
 	testutil.CheckDeepEqual(t, true, result)
 	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
-	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"artifactImage":"gcr.io/random/image"`))
+	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"artifact":"gcr.io/random/image"`))
 }

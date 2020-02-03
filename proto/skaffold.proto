@@ -146,7 +146,7 @@ message DebuggingContainerEvent {
   string containerName = 3; // the name of the container configured for debugging
   string namespace = 4; // the namespace of the debugging container
 
-  string artifactImage = 5; // the corresponding artifact `image`
+  string artifact = 5; // the corresponding artifact's image name
   string runtime = 6; // the detected language runtime
   string workingDir = 7; // the working directory in the container image
   map<string,uint32> debugPorts = 8; // the exposed debugging-related ports
