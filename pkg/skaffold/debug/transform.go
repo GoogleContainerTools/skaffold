@@ -45,7 +45,7 @@ For example, a pod with two containers named `microservice` and `adapter` may be
   }'
 
 Each configuration is itself a JSON object of type `ContainerDebugConfiguration`, with an
-`artifactName` recording the corresponding artifact's namne in the skaffold.yaml,
+`artifactImage` recording the corresponding artifact's `image` in the skaffold.yaml,
 a `runtime` field identifying the language runtime, the working directory of the remote image (if known),
 and a set of debugging ports.
 */

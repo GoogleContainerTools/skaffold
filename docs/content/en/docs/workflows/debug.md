@@ -36,13 +36,13 @@ that is being debugged by a headless Delve session on port `56268` (linebreaks f
 ```
 debug.cloud.google.com/config={
   "web":{
-    "artifactName":"gcr.io/random/image",
+    "artifactImage":"gcr.io/random/image",
     "runtime":"go",
     "ports":{"dlv":56268},
     "workingDir":"/some/path"}}
 ```
 
-`artifactName` is the corresponding artifact's name in the `skaffold.yaml`.
+`artifactImage` is the corresponding artifact's image in the `skaffold.yaml`.
 `runtime` is the language runtime detected.
 `ports` is a list of debug ports keyed by the language runtime debugging protocol.
 `workingDir` is the working directory (if not an empty string).
