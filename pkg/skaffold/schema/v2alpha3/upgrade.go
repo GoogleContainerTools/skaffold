@@ -14,16 +14,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2alpha2
+package v2alpha3
 
 import (
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha3"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v2alpha2 to v2alpha3
+// Config changes from v2alpha3 to v2alpha4
 // 1. Additions:
 // 2. Removals:
 // 3. Updates:
@@ -40,15 +40,6 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	return &newConfig, nil
 }
 
-func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
-	oldDeploy := &oldPipeline.(*Pipeline).Deploy
-	newDeploy := &newPipeline.(*next.Pipeline).Deploy
-
-	if oldKustomize := oldDeploy.KustomizeDeploy; oldKustomize != nil {
-		if path := oldKustomize.KustomizePath; path != "" {
-			newDeploy.KustomizeDeploy.KustomizePaths = []string{path}
-		}
-	}
-
+func upgradeOnePipeline(_, _ interface{}) error {
 	return nil
 }
