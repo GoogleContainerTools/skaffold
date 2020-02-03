@@ -45,7 +45,7 @@ import (
 type kustomization struct {
 	Bases                 []string             `yaml:"bases"`
 	Resources             []string             `yaml:"resources"`
-	Patches               []extendedPatch      `yaml:"patches"`
+	Patches               []patchInfo          `yaml:"patches"`
 	PatchesStrategicMerge []string             `yaml:"patchesStrategicMerge"`
 	CRDs                  []string             `yaml:"crds"`
 	PatchesJSON6902       []patchJSON6902      `yaml:"patchesJson6902"`
@@ -65,7 +65,7 @@ type secretGenerator struct {
 	Files []string `yaml:"files"`
 }
 
-type extendedPatch struct {
+type patchInfo struct {
 	Path string `yaml:"path"`
 }
 

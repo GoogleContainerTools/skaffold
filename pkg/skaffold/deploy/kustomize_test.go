@@ -212,8 +212,13 @@ func TestDependenciesForKustomization(t *testing.T) {
 			},
 		},
 		{
-			description:    "patches",
+			description:    "patches old kustomize format",
 			kustomizations: map[string]string{"kustomization.yaml": `patches: [patch1.yaml, path/patch2.yaml]`},
+			shouldErr:      true,
+		},
+		{
+			description:    "patches",
+			kustomizations: map[string]string{"kustomization.yaml": `patches: [path: patch1.yaml, path: path/patch2.yaml]`},
 			expected:       []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
 		},
 		{
@@ -222,8 +227,13 @@ func TestDependenciesForKustomization(t *testing.T) {
 			expected:       []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
 		},
 		{
-			description:    "crds",
+			description:    "crds old kustomization format",
 			kustomizations: map[string]string{"kustomization.yaml": `patches: [crd1.yaml, path/crd2.yaml]`},
+			shouldErr:      true,
+		},
+		{
+			description:    "crds",
+			kustomizations: map[string]string{"kustomization.yaml": `patches: [path: crd1.yaml, path: path/crd2.yaml]`},
 			expected:       []string{"crd1.yaml", "kustomization.yaml", "path/crd2.yaml"},
 		},
 		{
