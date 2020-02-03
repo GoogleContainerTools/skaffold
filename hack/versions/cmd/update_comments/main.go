@@ -24,17 +24,16 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
-	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/version"
+	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
 )
 
 func main() {
 	schemaDir := path.Join("pkg", "skaffold", "schema")
-	_, isReleased := version.GetLatestVersion()
+	_, isReleased := hackschema.GetLatestVersion()
 	if err := filepath.Walk(schemaDir, func(path string, info os.FileInfo, err error) error {
 		if info.Name() == "config.go" {
 			released := !strings.Contains(path, "latest") || isReleased
-			return schema.UpdateVersionComment(path, released)
+			return hackschema.UpdateVersionComment(path, released)
 		}
 		return nil
 	}); err != nil {
