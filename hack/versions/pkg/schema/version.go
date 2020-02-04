@@ -14,39 +14,47 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package version
+package schema
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
 
-	"github.com/google/go-github/github"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 )
 
 func GetLatestVersion() (string, bool) {
 	current := strings.TrimPrefix(latest.Version, "skaffold/")
 	logrus.Infof("Current Skaffold version: %s", current)
-	logrus.Infof("checking for released status of %s...", current)
+
+	config, err := ioutil.ReadFile("pkg/skaffold/schema/latest/config.go")
+	if err != nil {
+		logrus.Fatalf("failed to read latest config: %s", err)
+	}
+
+	if strings.Contains(string(config), "This config version is already released") {
+		return current, true
+	}
+
+	logrus.Infof("Checking for released status of %s...", current)
 	lastReleased := getLastReleasedConfigVersion()
-	logrus.Infof("last released version: %s", lastReleased)
+	logrus.Infof("Last released version: %s", lastReleased)
+
 	latestIsReleased := lastReleased == current
 	return current, latestIsReleased
 }
 
 func getLastReleasedConfigVersion() string {
-	client := github.NewClient(nil)
-	releases, _, err := client.Repositories.ListReleases(context.Background(), "GoogleContainerTools", "skaffold", &github.ListOptions{})
+	lastTag, err := update.DownloadLatestVersion()
 	if err != nil {
-		logrus.Fatalf("error listing Github releases: %s", err)
+		logrus.Fatalf("error getting latest version: %s", err)
 	}
-	lastTag := *releases[0].TagName
 	logrus.Infof("last release tag: %s", lastTag)
 	configURL := fmt.Sprintf("https://raw.githubusercontent.com/GoogleContainerTools/skaffold/%s/pkg/skaffold/schema/latest/config.go", lastTag)
 	resp, err := http.Get(configURL)

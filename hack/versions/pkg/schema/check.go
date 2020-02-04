@@ -27,7 +27,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/diff"
-	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/version"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 )
 
@@ -92,7 +91,7 @@ func RunSchemaCheckOnChangedFiles() error {
 		}
 
 		logrus.Infof("structural changes in latest config, checking on Github if latest is released...")
-		latestVersion, isReleased := version.GetLatestVersion()
+		latestVersion, isReleased := GetLatestVersion()
 		if !isReleased {
 			color.Green.Fprintf(os.Stdout, "%s is unreleased, it is safe to change it.\n", latestVersion)
 			continue
