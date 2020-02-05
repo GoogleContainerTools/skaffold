@@ -20,10 +20,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/docker/docker/errdefs"
 	"io"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
@@ -37,6 +39,11 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+)
+
+const (
+	retrials = 5
+	sleepTime = 1 * time.Second
 )
 
 type ContainerRun struct {
@@ -210,6 +217,7 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	if imageID == "" {
 		// Maybe this version of Docker doesn't return the digest of the image
 		// that has been built.
+		logrus.Debugf("This version of docker does not return the digest.")
 		imageID, err = l.ImageID(ctx, ref)
 		if err != nil {
 			return "", errors.Wrap(err, "getting digest")
@@ -384,7 +392,17 @@ func (l *localDaemon) ImageInspectWithRaw(ctx context.Context, image string) (ty
 }
 
 func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error) {
-	return l.apiClient.ImageRemove(ctx, image, opts)
+	for i := 0; i < retrials; i++ {
+		resp, err := l.apiClient.ImageRemove(ctx, image, opts)
+		if err == nil {
+			return resp, nil
+		}
+		if _, ok := err.(errdefs.ErrConflict); !ok {
+			return nil, err
+		}
+		time.Sleep(sleepTime)
+	}
+	return nil, fmt.Errorf("could not remove image for %d re-trails", retrials)
 }
 
 // GetBuildArgs gives the build args flags for docker build.
