@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/docker/docker/errdefs"
 	"io"
 	"sort"
 	"strings"
@@ -30,6 +29,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
+        "github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/streamformatter"
@@ -42,7 +42,7 @@ import (
 )
 
 const (
-	retrials = 5
+	retrials  = 5
 	sleepTime = 1 * time.Second
 )
 
@@ -217,7 +217,6 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 	if imageID == "" {
 		// Maybe this version of Docker doesn't return the digest of the image
 		// that has been built.
-		logrus.Debugf("This version of docker does not return the digest.")
 		imageID, err = l.ImageID(ctx, ref)
 		if err != nil {
 			return "", errors.Wrap(err, "getting digest")
