@@ -57,9 +57,12 @@ func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []build.Artifact
 func NewMockDeployer() *MockDeployer                                     { return &MockDeployer{labels: make(map[string]string)} }
 func (m *MockDeployer) WithLabel(labels map[string]string) *MockDeployer { m.labels = labels; return m }
 func (m *MockDeployer) WithDeployErr(err error) *MockDeployer            { m.deployErr = err; return m }
-func (m *MockDeployer) WithDependenciesErr(err error) *MockDeployer      { m.dependenciesErr = err; return m }
-func (m *MockDeployer) WithCleanupErr(err error) *MockDeployer           { m.cleanupErr = err; return m }
-func (m *MockDeployer) WithRenderErr(err error) *MockDeployer            { m.renderErr = err; return m }
+func (m *MockDeployer) WithDependenciesErr(err error) *MockDeployer {
+	m.dependenciesErr = err
+	return m
+}
+func (m *MockDeployer) WithCleanupErr(err error) *MockDeployer { m.cleanupErr = err; return m }
+func (m *MockDeployer) WithRenderErr(err error) *MockDeployer  { m.renderErr = err; return m }
 func (m *MockDeployer) WithDeployNamespaces(namespaces []string) *MockDeployer {
 	m.deployNamespaces = namespaces
 	return m

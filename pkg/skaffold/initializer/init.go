@@ -21,12 +21,16 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/generator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -52,23 +56,29 @@ type InitBuilder interface {
 
 // Config contains all the parameters for the initializer package
 type Config struct {
-	ComposeFile            string
-	CliArtifacts           []string
-	CliKubernetesManifests []string
-	SkipBuild              bool
-	SkipDeploy             bool
-	Force                  bool
-	Analyze                bool
-	EnableJibInit          bool // TODO: Remove this parameter
-	EnableBuildpacksInit   bool
-	BuildpacksBuilder      string
-	Opts                   config.SkaffoldOptions
+	ComposeFile              string
+	CliArtifacts             []string
+	CliKubernetesManifests   []string
+	SkipBuild                bool
+	SkipDeploy               bool
+	Force                    bool
+	Analyze                  bool
+	EnableJibInit            bool // TODO: Remove this parameter
+	EnableBuildpacksInit     bool
+	EnableManifestGeneration bool
+	BuildpacksBuilder        string
+	Opts                     config.SkaffoldOptions
 }
 
 // builderImagePair defines a builder and the image it builds
 type builderImagePair struct {
 	Builder   InitBuilder
 	ImageName string
+}
+
+type unresolvedBuilderPair struct {
+	builderImagePair
+	manifestPath string
 }
 
 // DoInit executes the `skaffold init` flow.
@@ -94,12 +104,10 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	case len(c.CliKubernetesManifests) > 0:
 		deployInitializer = &cliDeployInit{c.CliKubernetesManifests}
 	default:
-		k, err := newKubectlInitializer(a.kubectlAnalyzer.kubernetesManifests)
-		if err != nil {
-			return err
-		}
-		deployInitializer = k
+		deployInitializer = newKubectlInitializer(a.kubectlAnalyzer.kubernetesManifests)
 	}
+
+	var generatedManifests map[string][]byte
 
 	// Determine which builders/images require prompting
 	pairs, unresolvedBuilderConfigs, unresolvedImages :=
@@ -126,12 +134,41 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 			}
 			pairs = append(pairs, newPairs...)
 		} else {
-			resolved, err := resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages, c.Force)
-			if err != nil {
+			resolved, unresolved, err := resolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages, c.Force)
+			switch {
+			case err != nil:
 				return err
+			case c.SkipDeploy:
+				// we don't care about resolving builders to deploy configs
+				for _, pair := range unresolved {
+					resolved = append(resolved, pair.builderImagePair)
+				}
+			case c.EnableManifestGeneration:
+				generatedManifests = map[string][]byte{}
+				for _, pair := range unresolved {
+					manifest, err := generator.Generate(pair.ImageName)
+					if err != nil {
+						return errors.Wrap(err, "generating kubernetes manifest")
+					}
+					path := filepath.Join(pair.manifestPath, "deployment.yaml")
+					generatedManifests[path] = manifest
+					deployInitializer.AddManifestForImage(path, pair.ImageName)
+					resolved = append(resolved, pair.builderImagePair)
+				}
+			case len(unresolved) > 0:
+				var unused []string
+				for _, c := range unresolved {
+					unused = append(unused, c.builderImagePair.Builder.Path())
+				}
+				logrus.Warnf("unused builder configs in repository: %s", strings.Join(unused, " "))
+			default:
 			}
 			pairs = append(pairs, resolved...)
 		}
+	}
+
+	if err := deployInitializer.Validate(); err != nil {
+		return err
 	}
 
 	pipeline, err := yaml.Marshal(generateSkaffoldConfig(deployInitializer, pairs))
@@ -144,8 +181,14 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 	}
 
 	if !c.Force {
-		if done, err := promptWritingConfig(out, pipeline, c.Opts.ConfigurationFile); done {
+		if done, err := promptWritingConfig(out, pipeline, generatedManifests, c.Opts.ConfigurationFile); done {
 			return err
+		}
+	}
+
+	for path, manifest := range generatedManifests {
+		if err := ioutil.WriteFile(path, manifest, 0644); err != nil {
+			return errors.Wrap(err, "writing k8s manifest to file")
 		}
 	}
 

@@ -27,16 +27,17 @@ import (
 )
 
 var (
-	composeFile            string
-	cliArtifacts           []string
-	cliKubernetesManifests []string
-	skipBuild              bool
-	skipDeploy             bool
-	force                  bool
-	analyze                bool
-	enableJibInit          bool
-	enableBuildpacksInit   bool
-	buildpacksBuilder      string
+	composeFile              string
+	cliArtifacts             []string
+	cliKubernetesManifests   []string
+	skipBuild                bool
+	skipDeploy               bool
+	force                    bool
+	analyze                  bool
+	enableJibInit            bool
+	enableBuildpacksInit     bool
+	enableManifestGeneration bool
+	buildpacksBuilder        string
 )
 
 // for testing
@@ -62,22 +63,25 @@ func NewCmdInit() *cobra.Command {
 			f.MarkHidden("XXenableBuildpacksInit")
 			f.StringVar(&buildpacksBuilder, "XXdefaultBuildpacksBuilder", "heroku/buildpacks", "")
 			f.MarkHidden("XXdefaultBuildpacksBuilder")
+			f.BoolVar(&enableManifestGeneration, "XXenableManifestGeneration", false, "")
+			f.MarkHidden("XXenableManifestGeneration")
 		}).
 		NoArgs(cancelWithCtrlC(context.Background(), doInit))
 }
 
 func doInit(ctx context.Context, out io.Writer) error {
 	return initEntrypoint(ctx, out, initializer.Config{
-		ComposeFile:            composeFile,
-		CliArtifacts:           cliArtifacts,
-		CliKubernetesManifests: cliKubernetesManifests,
-		SkipBuild:              skipBuild,
-		SkipDeploy:             skipDeploy,
-		Force:                  force,
-		Analyze:                analyze,
-		EnableJibInit:          enableJibInit,
-		EnableBuildpacksInit:   enableBuildpacksInit,
-		BuildpacksBuilder:      buildpacksBuilder,
-		Opts:                   opts,
+		ComposeFile:              composeFile,
+		CliArtifacts:             cliArtifacts,
+		CliKubernetesManifests:   cliKubernetesManifests,
+		SkipBuild:                skipBuild,
+		SkipDeploy:               skipDeploy,
+		Force:                    force,
+		Analyze:                  analyze,
+		EnableJibInit:            enableJibInit,
+		EnableBuildpacksInit:     enableBuildpacksInit,
+		EnableManifestGeneration: enableManifestGeneration,
+		BuildpacksBuilder:        buildpacksBuilder,
+		Opts:                     opts,
 	})
 }

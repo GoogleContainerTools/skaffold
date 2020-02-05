@@ -39,6 +39,14 @@ func (s stubDeploymentInitializer) GetImages() []string {
 	panic("implement me")
 }
 
+func (s stubDeploymentInitializer) AddManifestForImage(string, string) {
+	panic("nope")
+}
+
+func (s stubDeploymentInitializer) Validate() error {
+	return nil
+}
+
 func TestConfigAnalyzer(t *testing.T) {
 	tests := []struct {
 		name      string

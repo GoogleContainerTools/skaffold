@@ -19,23 +19,25 @@ package initializer
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestResolveBuilderImages(t *testing.T) {
 	tests := []struct {
-		description      string
-		buildConfigs     []InitBuilder
-		images           []string
-		force            bool
-		shouldMakeChoice bool
-		shouldErr        bool
-		expectedPairs    []builderImagePair
+		description             string
+		buildConfigs            []InitBuilder
+		images                  []string
+		force                   bool
+		shouldMakeChoice        bool
+		shouldErr               bool
+		expectedPairs           []builderImagePair
+		expectedUnresolvedPairs []unresolvedBuilderPair
 	}{
 		{
 			description:      "nothing to choose from",
@@ -71,6 +73,15 @@ func TestResolveBuilderImages(t *testing.T) {
 					ImageName: "image2",
 				},
 			},
+			expectedUnresolvedPairs: []unresolvedBuilderPair{
+				{
+					builderImagePair: builderImagePair{
+						Builder:   jib.ArtifactConfig{BuilderName: "Jib Maven Plugin", File: "pom.xml", Project: "project"},
+						ImageName: "pom.xml-image",
+					},
+					manifestPath: ".",
+				},
+			},
 		},
 		{
 			description:      "successful force",
@@ -93,6 +104,23 @@ func TestResolveBuilderImages(t *testing.T) {
 			force:            true,
 			shouldErr:        true,
 		},
+		{
+			description:  "one unresolved image",
+			buildConfigs: []InitBuilder{docker.ArtifactConfig{File: "foo"}},
+			images:       []string{},
+			expectedUnresolvedPairs: []unresolvedBuilderPair{
+				{
+					builderImagePair: builderImagePair{
+						Builder:   docker.ArtifactConfig{File: "foo"},
+						ImageName: "foo-image",
+					},
+					manifestPath: ".",
+				},
+			},
+			shouldMakeChoice: false,
+			force:            false,
+			shouldErr:        false,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -104,9 +132,11 @@ func TestResolveBuilderImages(t *testing.T) {
 				return choices[0], nil
 			})
 
-			pairs, err := resolveBuilderImages(test.buildConfigs, test.images, test.force)
+			pairs, unresolvedPairs, err := resolveBuilderImages(test.buildConfigs, test.images, test.force)
 
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, pairs)
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expectedPairs, pairs)
+			t.CheckDeepEqual(test.expectedUnresolvedPairs, unresolvedPairs, cmp.AllowUnexported(unresolvedBuilderPair{}))
 		})
 	}
 }

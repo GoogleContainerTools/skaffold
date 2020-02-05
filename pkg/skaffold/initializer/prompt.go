@@ -48,13 +48,22 @@ func promptUserForBuildConfig(image string, choices []string) (string, error) {
 	return selectedBuildConfig, nil
 }
 
-func promptWritingConfig(out io.Writer, pipeline []byte, filePath string) (bool, error) {
+func promptWritingConfig(out io.Writer, pipeline []byte, generatedManifests map[string][]byte, filePath string) (bool, error) {
 	fmt.Fprintln(out, string(pipeline))
+
+	for f, m := range generatedManifests {
+		fmt.Fprintln(out, f, "-", string(m))
+	}
+
+	manifestString := ""
+	if len(generatedManifests) > 0 {
+		manifestString = ", along with the generated k8s manifests,"
+	}
 
 	reader := bufio.NewReader(os.Stdin)
 confirmLoop:
 	for {
-		fmt.Fprintf(out, "Do you want to write this configuration to %s? [y/n]: ", filePath)
+		fmt.Fprintf(out, "Do you want to write this configuration%s to %s? [y/n]: ", manifestString, filePath)
 
 		response, err := reader.ReadString('\n')
 		if err != nil {

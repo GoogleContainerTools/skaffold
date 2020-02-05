@@ -24,8 +24,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -206,10 +204,10 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 }
 
 // For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
-func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force bool) ([]builderImagePair, error) {
+func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force bool) ([]builderImagePair, []unresolvedBuilderPair, error) {
 	// If nothing to choose, don't bother prompting
-	if len(images) == 0 || len(builderConfigs) == 0 {
-		return []builderImagePair{}, nil
+	if len(builderConfigs) == 0 {
+		return []builderImagePair{}, nil, nil
 	}
 
 	// if we only have 1 image and 1 build config, don't bother prompting
@@ -217,17 +215,32 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force b
 		return []builderImagePair{{
 			Builder:   builderConfigs[0],
 			ImageName: images[0],
-		}}, nil
+		}}, nil, nil
+	}
+
+	// if there's only one builder config, no need to prompt
+	if len(builderConfigs) == 1 {
+		// no image was parsed from k8s manifests, so we create an image name
+		if len(images) == 0 {
+			return nil, []unresolvedBuilderPair{getUnresolvedBuilderPair(builderConfigs[0])}, nil
+		}
+		// we already have the image, just use it and return
+		if len(images) == 1 {
+			return []builderImagePair{{
+				Builder:   builderConfigs[0],
+				ImageName: images[0],
+			}}, nil, nil
+		}
 	}
 
 	if force {
-		return nil, errors.New("unable to automatically resolve builder/image pairs; run `skaffold init` without `--force` to manually resolve ambiguities")
+		return nil, nil, errors.New("unable to automatically resolve builder/image pairs; run `skaffold init` without `--force` to manually resolve ambiguities")
 	}
 
 	return resolveBuilderImagesInteractively(builderConfigs, images)
 }
 
-func resolveBuilderImagesInteractively(builderConfigs []InitBuilder, images []string) ([]builderImagePair, error) {
+func resolveBuilderImagesInteractively(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []unresolvedBuilderPair, error) {
 	// Build map from choice string to builder config struct
 	choices := make([]string, len(builderConfigs))
 	choiceMap := make(map[string]InitBuilder, len(builderConfigs))
@@ -239,7 +252,7 @@ func resolveBuilderImagesInteractively(builderConfigs []InitBuilder, images []st
 	sort.Strings(choices)
 
 	// For each choice, use prompt string to pair builder config with k8s image
-	pairs := []builderImagePair{}
+	resolved := []builderImagePair{}
 	for {
 		if len(images) == 0 {
 			break
@@ -248,19 +261,25 @@ func resolveBuilderImagesInteractively(builderConfigs []InitBuilder, images []st
 		image := images[0]
 		choice, err := promptUserForBuildConfigFunc(image, choices)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		if choice != NoBuilder {
-			pairs = append(pairs, builderImagePair{Builder: choiceMap[choice], ImageName: image})
+			resolved = append(resolved, builderImagePair{Builder: choiceMap[choice], ImageName: image})
 			choices = util.RemoveFromSlice(choices, choice)
 		}
 		images = util.RemoveFromSlice(images, image)
 	}
+
+	unresolved := []unresolvedBuilderPair{}
 	if len(choices) > 0 {
-		logrus.Warnf("unused builder configs found in repository: %v", choices)
+		// TODO(nkubala): should we ask user if they want to generate here?
+		for _, choice := range choices {
+			unresolved = append(unresolved, getUnresolvedBuilderPair(choiceMap[choice]))
+		}
 	}
-	return pairs, nil
+
+	return resolved, unresolved, nil
 }
 
 func stripTags(taggedImages []string) []string {
@@ -281,4 +300,25 @@ func stripTags(taggedImages []string) []string {
 		images = append(images, parsed.BaseName)
 	}
 	return images
+}
+
+func getUnresolvedBuilderPair(b InitBuilder) unresolvedBuilderPair {
+	path := b.Path()
+	var imageName string
+	// if the builder is in a nested directory, use that as the image name AND the path to write the manifest
+	// otherwise, use the builder as the image name itself, and the current directory to write the manifest
+	if filepath.Dir(path) != "." {
+		imageName = strings.ToLower(filepath.Dir(path))
+		path = imageName
+	} else {
+		imageName = fmt.Sprintf("%s-image", strings.ToLower(path))
+		path = "."
+	}
+	return unresolvedBuilderPair{
+		builderImagePair: builderImagePair{
+			Builder:   b,
+			ImageName: imageName,
+		},
+		manifestPath: path,
+	}
 }
