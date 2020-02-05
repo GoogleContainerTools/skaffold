@@ -1,4 +1,6 @@
-# Copyright 2019 The Skaffold Authors All rights reserved.
+#!/usr/bin/env bash
+
+# Copyright 2019 The Skaffold Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,12 +14,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This base image has to be updated manually after running `make build_deps`
-FROM gcr.io/k8s-skaffold/build_deps:0c78248757f1753c4c64a791160d5e2fdd35f157 as builder
-WORKDIR /skaffold
-COPY . .
+set -e -o pipefail
 
-FROM builder as release
-ARG VERSION
-RUN make clean && make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
-RUN skaffold credits -d /THIRD_PARTY_NOTICES
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+DOCKERFILE=deploy/skaffold/Dockerfile
+SHA1=$("${DIR}/skaffold-deps-sha1.sh")
+UPDATED_DOCKERFILE=$(sed -E "s/FROM (.*):.* as (.*)/FROM \1:${SHA1} as \2/" deploy/skaffold/Dockerfile)
+echo "${UPDATED_DOCKERFILE}" > "${DOCKERFILE}"
+
+if [[ ! -z $(git status --porcelain -- "${DOCKERFILE}") ]]; then
+    echo "Please commit ${DOCKERFILE}"
+    exit 1
+fi
