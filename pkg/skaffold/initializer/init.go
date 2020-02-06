@@ -63,6 +63,7 @@ type Config struct {
 	EnableBuildpacksInit   bool
 	BuildpacksBuilder      string
 	Opts                   config.SkaffoldOptions
+	EnableNewInitFormat    bool
 }
 
 // builderImagePair defines a builder and the image it builds
@@ -109,8 +110,8 @@ func DoInit(ctx context.Context, out io.Writer, c Config) error {
 
 	if c.Analyze {
 		// TODO: Remove backwards compatibility block
-		if !c.EnableJibInit && !c.EnableBuildpacksInit {
-			return printAnalyzeJSONNoJib(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
+		if !c.EnableNewInitFormat {
+			return printAnalyzeOldFormat(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
 		}
 
 		return printAnalyzeJSON(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)

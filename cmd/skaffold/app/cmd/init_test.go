@@ -51,10 +51,12 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				Analyze:                false,
 				EnableJibInit:          false,
 				EnableBuildpacksInit:   false,
+				EnableNewInitFormat:    false,
 				BuildpacksBuilder:      "heroku/buildpacks",
 				Opts:                   opts,
 			},
 		},
+
 		{
 			name: "no error + non-default values for flags mapped to config values",
 			args: []string{
@@ -70,6 +72,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				"--analyze",
 				"--XXenableJibInit",
 				"--XXenableBuildpacksInit",
+				"--XXenableNewInitFormat",
 				"--XXdefaultBuildpacksBuilder", "buildpacks/builder",
 			},
 			expectedConfig: initializer.Config{
@@ -82,7 +85,51 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				Analyze:                true,
 				EnableJibInit:          true,
 				EnableBuildpacksInit:   true,
+				EnableNewInitFormat:    true,
 				BuildpacksBuilder:      "buildpacks/builder",
+				Opts:                   opts,
+			},
+		},
+
+		{
+			name: "enableJibInit implies enableNewInitFormat",
+			args: []string{
+				"init",
+				"--XXenableJibInit",
+			},
+			expectedConfig: initializer.Config{
+				ComposeFile:            "",
+				CliArtifacts:           nil,
+				CliKubernetesManifests: nil,
+				SkipBuild:              false,
+				SkipDeploy:             false,
+				Force:                  false,
+				Analyze:                false,
+				EnableJibInit:          true,
+				EnableBuildpacksInit:   false,
+				EnableNewInitFormat:    true,
+				BuildpacksBuilder:      "heroku/buildpacks",
+				Opts:                   opts,
+			},
+		},
+		{
+			name: "enableBuildpackInit implies enableNewInitFormat",
+			args: []string{
+				"init",
+				"--XXenableBuildpacksInit",
+			},
+			expectedConfig: initializer.Config{
+				ComposeFile:            "",
+				CliArtifacts:           nil,
+				CliKubernetesManifests: nil,
+				SkipBuild:              false,
+				SkipDeploy:             false,
+				Force:                  false,
+				Analyze:                false,
+				EnableJibInit:          false,
+				EnableBuildpacksInit:   true,
+				EnableNewInitFormat:    true,
+				BuildpacksBuilder:      "heroku/buildpacks",
 				Opts:                   opts,
 			},
 		},

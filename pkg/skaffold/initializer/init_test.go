@@ -162,8 +162,8 @@ func TestDoInitAnalyze(t *testing.T) {
 			name: "analyze microservices new format",
 			dir:  "testdata/init/microservices",
 			config: Config{
-				Analyze:       true,
-				EnableJibInit: true,
+				Analyze:             true,
+				EnableNewInitFormat: true,
 			},
 			expectedOut: strip(`{
 									"builders":[
