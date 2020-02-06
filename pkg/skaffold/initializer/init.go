@@ -61,9 +61,9 @@ type Config struct {
 	Analyze                bool
 	EnableJibInit          bool // TODO: Remove this parameter
 	EnableBuildpacksInit   bool
+	EnableNewInitFormat    bool
 	BuildpacksBuilder      string
 	Opts                   config.SkaffoldOptions
-	EnableNewInitFormat    bool
 }
 
 // builderImagePair defines a builder and the image it builds
