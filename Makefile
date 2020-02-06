@@ -34,6 +34,8 @@ BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
 
+MINI_TEST_HOME=/tmp/minikube-skaffold-test
+
 ifeq "$(strip $(VERSION))" ""
  override VERSION = $(shell git describe --always --tags --dirty)
 endif
@@ -178,6 +180,36 @@ skaffold-builder:
 		--target builder \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		.
+.PHONY: clean-minikube
+clean-minikube:
+	MINIKUBE_HOME=$(MINI_TEST_HOME) minikube delete --all --purge || true
+	
+
+.PHONY: minikube-install-linux
+minikube-install-linux:
+	curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && install minikube-linux-amd64 /usr/local/bin/minikube
+
+
+# using --force because skaffold container runs as root and minikube warns you not to do so unless you force it.
+.PHONY: minikube-cluster
+minikube-cluster: minikube-install-linux
+	mkdir -p $(MINI_TEST_HOME) 
+	KUBECONFIG=/tmp/kubeconfig MINIKUBE_HOME=$(MINI_TEST_HOME) /usr/local/bin/minikube start --profile skaffoldtest --vm-driver=docker --force --alsologtostderr -v=8
+
+.PHONY: integration-in-minikube
+integration-in-minikube: skaffold-builder
+	echo '{}' > /tmp/docker-config
+
+	docker run --rm \
+		-v $(HOME)/.gradle:/root/.gradle \
+		-v $(HOME)/.cache:/root/.cache \
+		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
+		-e KUBECONFIG=/tmp/kubeconfig \
+		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		sh -c ' \
+			make integration;
+		'
+
 
 .PHONY: integration-in-kind
 integration-in-kind: skaffold-builder
