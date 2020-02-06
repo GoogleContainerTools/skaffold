@@ -35,18 +35,14 @@ type analysis struct {
 
 // newAnalysis sets up the analysis of the directory based on the initializer configuration
 func newAnalysis(c Config) *analysis {
-	var builders *builderAnalyzer
-	if !c.SkipBuild {
-		builders = &builderAnalyzer{
+	return &analysis{
+		kubectlAnalyzer: &kubectlAnalyzer{},
+		builderAnalyzer: &builderAnalyzer{
 			findBuilders:         !c.SkipBuild,
 			enableJibInit:        c.EnableJibInit,
 			enableBuildpacksInit: c.EnableBuildpacksInit,
 			buildpacksBuilder:    c.BuildpacksBuilder,
-		}
-	}
-	return &analysis{
-		kubectlAnalyzer: &kubectlAnalyzer{},
-		builderAnalyzer: builders,
+		},
 		skaffoldAnalyzer: &skaffoldConfigAnalyzer{
 			force:        c.Force,
 			analyzeMode:  c.Analyze,
