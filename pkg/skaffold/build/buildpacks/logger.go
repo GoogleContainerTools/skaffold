@@ -40,6 +40,8 @@ func NewLogger(out io.Writer) logging.Logger {
 
 	l := logrus.New()
 	l.SetOutput(out)
+
+	// By default, logrus prefixes lines with 'INFO[XXX]'.
 	l.SetFormatter(new(plainFormatter))
 
 	return &logger{
