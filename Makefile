@@ -166,15 +166,6 @@ clean:
 kind-cluster:
 	kind get clusters | grep -q kind || kind create cluster
 
-.PHONY: clean-minikube
-clean-minikube:
-	MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) minikube delete --all --purge || true
-
-.PHONY: minikube-cluster
-minikube-cluster:
-	mkdir -p $(SKAFFOLD_MINIKUBE_HOME) 
-	KUBECONFIG=/tmp/skaffold_test_kubeconfig MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) minikube start --profile skaffoldtest --vm-driver=docker
-
 .PHONY: skaffold-builder
 skaffold-builder:
 	-docker pull gcr.io/$(GCP_PROJECT)/skaffold-builder
@@ -184,11 +175,21 @@ skaffold-builder:
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
 	
+.PHONY: clean-minikube
+clean-minikube:
+	MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) minikube delete --all --purge || true
+
+.PHONY: minikube-cluster
+minikube-cluster:
+	mkdir -p $(SKAFFOLD_MINIKUBE_HOME) 
+	KUBECONFIG=/tmp/skaffold_test_kubeconfig MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) minikube start --profile skaffoldtest --vm-driver=docker
+
 
 .PHONY: integration-in-minikube
 integration-in-minikube: minikube-cluster
 # using minikube docker-env for skaffold to build aginst that ! but we want skaffold container itself be created against the machine docker not inside minikube
-d2: @eval $$(MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) minikube -p skaffoldtest docker-env); \
+d2: 
+	@eval $$(MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) minikube -p skaffoldtest docker-env); \
 	MINIKUBE_DOCKER_HOST=$${DOCKER_HOST};\
 	MINIKUBE_DOCKER_TLS_VERIFY=$${DOCKER_TLS_VERIFY};\
 	MINIKUBE_DOCKER_CERT_PATH=$${DOCKER_CERT_PATH};\
@@ -198,9 +199,11 @@ d2: @eval $$(MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) minikube -p skaffoldtest do
 	echo $${DOCKER_HOST};\
 	echo $${MINIKUBE_DOCKER_HOST};\
 	docker ps;\
-	docker run --rm  \
+	echo '{}' > /tmp/docker-config; \
+	docker run \
 	-v /tmp/skaffold_test_kubeconfig:/kubeconfig \
 	-v $(SKAFFOLD_MINIKUBE_HOME):$(SKAFFOLD_MINIKUBE_HOME) \
+	-v /tmp/docker-config:/root/.docker/config.json \
 	-e KUBECONFIG=/kubeconfig \
 	-e DOCKER_HOST=$${MINIKUBE_DOCKER_HOST} \
 	-e DOCKER_TLS_VERIFY=$${MINIKUBE_DOCKER_TLS_VERIFY} \
