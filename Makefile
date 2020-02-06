@@ -165,6 +165,10 @@ clean:
 kind-cluster:
 	kind get clusters | grep -q kind || kind create cluster
 
+.PHONY: minikube-cluster
+minikube-cluster:
+	KUBECONFIG=/tmp/skaffold_test_kubeconfig minikube start --vm-driver=docker
+
 .PHONY: skaffold-builder
 skaffold-builder:
 	-docker pull gcr.io/$(GCP_PROJECT)/skaffold-builder
@@ -173,6 +177,15 @@ skaffold-builder:
 		-f deploy/skaffold/Dockerfile \
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
+
+.PHONY: integration-in-minikube
+integration-in-minikube: minikube-cluster skaffold-builder
+	echo '{}' > /tmp/docker-config
+	docker run --rm \
+		-v /tmp/skaffold_test_kubeconfig:/kubeconfig \
+		-v /tmp/docker-config:/root/.docker/config.json \
+		-e KUBECONFIG=/kubeconfig \
+		gcr.io/$(GCP_PROJECT)/skaffold-integration
 
 .PHONY: integration-in-kind
 integration-in-kind: kind-cluster skaffold-builder
@@ -184,6 +197,7 @@ integration-in-kind: kind-cluster skaffold-builder
 		-v /tmp/docker-config:/root/.docker/config.json \
 		-e KUBECONFIG=/kind-config \
 		gcr.io/$(GCP_PROJECT)/skaffold-integration
+
 
 .PHONY: integration-in-docker
 integration-in-docker: skaffold-builder

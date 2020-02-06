@@ -1,0 +1,38 @@
+name: CI
+
+on: [pull_request]
+
+jobs:
+  integration_minikube_ubuntu_16_04:
+    runs-on: ubuntu-16.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: install minikube
+      run : |
+       curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 
+       sudo install minikube-linux-amd64 /usr/local/bin/minikube
+    - name: run integration test
+      run: |
+        make integration-in-minikube
+  integration_minikube_ubuntu_18_04:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: install minikube
+      run : |
+       curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 
+       sudo install minikube-linux-amd64 /usr/local/bin/minikube
+    - name: run integration test
+      run: |
+        make integration-in-minikube
+  integration_minikube_ubuntu_18_04:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: install minikube
+      run : |
+       curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64 
+       sudo install minikube-darwin-amd64 /usr/local/bin/minikube
+    - name: run integration test
+      run: |
+        make integration-in-minikube
