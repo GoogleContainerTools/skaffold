@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -355,10 +357,10 @@ func TestResetStateOnBuild(t *testing.T) {
 			},
 		},
 		DeployState:      &proto.DeployState{Status: NotStarted},
-		StatusCheckState: &proto.StatusCheckState{Status: NotStarted},
+		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
 		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
 	}
-	testutil.CheckDeepEqual(t, expected, handler.getState())
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
 }
 
 func TestResetStateOnDeploy(t *testing.T) {
@@ -388,8 +390,18 @@ func TestResetStateOnDeploy(t *testing.T) {
 				"image1": Complete,
 			},
 		},
-		DeployState:      &proto.DeployState{Status: NotStarted},
-		StatusCheckState: &proto.StatusCheckState{Status: NotStarted},
+		DeployState: &proto.DeployState{Status: NotStarted},
+		StatusCheckState: &proto.StatusCheckState{Status: NotStarted,
+			Resources: map[string]string{},
+		},
 	}
-	testutil.CheckDeepEqual(t, expected, handler.getState())
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
+}
+
+func TestEmptyStateCheckState(t *testing.T) {
+	actual := emptyStatusCheckState()
+	expected := &proto.StatusCheckState{Status: NotStarted,
+		Resources: map[string]string{},
+	}
+	testutil.CheckDeepEqual(t, expected, actual, cmpopts.EquateEmpty())
 }
