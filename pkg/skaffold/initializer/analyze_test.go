@@ -73,6 +73,34 @@ func TestAnalyze(t *testing.T) {
 			shouldErr: false,
 		},
 		{
+			description: "--skip-build should return no builders in analysis",
+			filesWithContents: map[string]string{
+				"config/test.yaml":       validK8sManifest,
+				"config/invalid.yaml":    emptyFile,
+				"k8pod.yml":              validK8sManifest,
+				"README":                 emptyFile,
+				"deploy/Dockerfile":      emptyFile,
+				"deploy/Dockerfile.dev":  emptyFile,
+				"deploy/dev.Dockerfile":  emptyFile,
+				"deploy/test.dockerfile": emptyFile,
+				"gradle/build.gradle":    emptyFile,
+				"maven/pom.xml":          emptyFile,
+				"Dockerfile":             emptyFile,
+			},
+			config: Config{
+				Force:                false,
+				EnableBuildpacksInit: false,
+				EnableJibInit:        false,
+				SkipBuild:            true,
+			},
+			expectedConfigs: []string{
+				"k8pod.yml",
+				"config/test.yaml",
+			},
+			expectedPaths: []string{},
+			shouldErr:     false,
+		},
+		{
 			description: "should return correct k8 configs and build files",
 			filesWithContents: map[string]string{
 				"config/test.yaml":    validK8sManifest,
