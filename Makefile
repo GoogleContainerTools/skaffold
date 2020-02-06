@@ -183,18 +183,31 @@ skaffold-builder:
 		-f deploy/skaffold/Dockerfile \
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
-
 	
+
 .PHONY: integration-in-minikube
 integration-in-minikube: minikube-cluster
-	@eval $$(MINIKUBE_HOME=/tmp/skaffold_test_minihome minikube -p skaffoldtest docker-env); echo $${DOCKER_HOST}
-	source $$(MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) minikube -p skaffoldtest docker-env) && echo ${DOCKER_HOST};echo "hello";echo ${DOCKER_HOST}
-	# docker run --rm  \
-	# 	-v /tmp/skaffold_test_kubeconfig:/kubeconfig \
-	# 	-v $(SKAFFOLD_MINIKUBE_HOME):$(SKAFFOLD_MINIKUBE_HOME) \
-	# 	-e KUBECONFIG=/kubeconfig \
-	# 	-e MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) \
-	# 	gcr.io/$(GCP_PROJECT)/skaffold-integration
+# using minikube docker-env for skaffold to build aginst that ! but we want skaffold container itself be created against the machine docker not inside minikube
+d2: @eval $$(MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) minikube -p skaffoldtest docker-env); \
+	MINIKUBE_DOCKER_HOST=$${DOCKER_HOST};\
+	MINIKUBE_DOCKER_TLS_VERIFY=$${DOCKER_TLS_VERIFY};\
+	MINIKUBE_DOCKER_CERT_PATH=$${DOCKER_CERT_PATH};\
+	DOCKER_HOST="";\
+	DOCKER_CERT_PATH="";\
+	DOCKER_TLS_VERIFY="";\
+	echo $${DOCKER_HOST};\
+	echo $${MINIKUBE_DOCKER_HOST};\
+	docker ps;\
+	docker run --rm  \
+	-v /tmp/skaffold_test_kubeconfig:/kubeconfig \
+	-v $(SKAFFOLD_MINIKUBE_HOME):$(SKAFFOLD_MINIKUBE_HOME) \
+	-e KUBECONFIG=/kubeconfig \
+	-e DOCKER_HOST=$${MINIKUBE_DOCKER_HOST} \
+	-e DOCKER_TLS_VERIFY=$${MINIKUBE_DOCKER_TLS_VERIFY} \
+	-e DOCKER_CERT_PATH=$${MINIKUBE_DOCKER_CERT_PATH} \
+	-e MINIKUBE_ACTIVE_DOCKERD=$${MINIKUBE_ACTIVE_DOCKERD} \
+	-e MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) \
+	gcr.io/$(GCP_PROJECT)/skaffold-integration
 
 .PHONY: integration-in-kind
 integration-in-kind: kind-cluster skaffold-builder
