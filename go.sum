@@ -111,8 +111,6 @@ github.com/buildpacks/imgutil v0.0.0-20200127205531-eec2000815b1 h1:1+v3XHezNuXC
 github.com/buildpacks/imgutil v0.0.0-20200127205531-eec2000815b1/go.mod h1:E3lXJcNXcRefJQAHW5rqboonet+jtOml4qImbJhYGAo=
 github.com/buildpacks/lifecycle v0.5.1-0.20191217221752-3b74c943b7b3 h1:15zYyFmNbrtx5MmyVEKVgY2/eearqEqGJXLCjmvUo58=
 github.com/buildpacks/lifecycle v0.5.1-0.20191217221752-3b74c943b7b3/go.mod h1:ZIuIs9B6tjAW4dthhltKVyEUlhRfFWWix9eqoInMGX4=
-github.com/buildpacks/pack v0.8.1-0.20200128153201-c4636375b6a7 h1:fVBzTLxaLqrERBNPQuATKEr+nZskEain+OHtzQ4kb3c=
-github.com/buildpacks/pack v0.8.1-0.20200128153201-c4636375b6a7/go.mod h1:7obZCatYJVAQOmYCinSsKw/lfJhf3lrx4n0Z88uxVj0=
 github.com/buildpacks/pack v0.8.2-0.20200131162247-1a6e03a48c94 h1:QwGqY47lEgvCDSFNSD3EnAa7zny0AFvvCNgEX/qipCc=
 github.com/buildpacks/pack v0.8.2-0.20200131162247-1a6e03a48c94/go.mod h1:hcHY0ZiDxwa6oxMPDE+gng+aJHJjUnnYfAwuonvu/Wc=
 github.com/census-instrumentation/opencensus-proto v0.2.1 h1:glEXhBS5PSLLv4IXzLA5yPRVX4bilULVyxxbrfOtDAk=

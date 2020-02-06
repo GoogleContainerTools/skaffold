@@ -63,7 +63,6 @@ require (
 	github.com/gophercloud/gophercloud v0.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway v1.12.1
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
-	github.com/heroku/color v0.0.6
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
 	github.com/imdario/mergo v0.3.8
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
@@ -71,6 +70,7 @@ require (
 	github.com/krishicks/yaml-patch v0.0.10
 	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
+	github.com/mattn/go-colorable v0.1.4
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.6.3
 	github.com/onsi/ginkgo v1.10.3 // indirect
