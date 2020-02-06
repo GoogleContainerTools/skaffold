@@ -28,6 +28,9 @@ GCP_PROJECT ?= k8s-skaffold
 GKE_CLUSTER_NAME ?= integration-tests
 GKE_ZONE ?= us-central1-a
 
+# To avoid running against user's minikube
+SKAFFOLD_MINIKUBE_HOME ?= /tmp/skaffold_test_minihome
+
 SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
@@ -148,9 +151,7 @@ release-build: cross
 .PHONY: release-build-in-docker
 release-build-in-docker:
 	docker build \
-    		-f deploy/skaffold/Dockerfile \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
-    		--target builder \
+    		SHELL := /bin/bash	--target builder \
     		.
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
@@ -165,9 +166,14 @@ clean:
 kind-cluster:
 	kind get clusters | grep -q kind || kind create cluster
 
+.PHONY: clean-minikube
+clean-minikube:
+	MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) minikube delete --all --purge || true
+
 .PHONY: minikube-cluster
 minikube-cluster:
-	KUBECONFIG=/tmp/skaffold_test_kubeconfig minikube start --vm-driver=docker
+	mkdir -p $(SKAFFOLD_MINIKUBE_HOME) 
+	KUBECONFIG=/tmp/skaffold_test_kubeconfig MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) minikube start --profile skaffoldtest --vm-driver=docker
 
 .PHONY: skaffold-builder
 skaffold-builder:
@@ -178,14 +184,17 @@ skaffold-builder:
 		--target integration \
 		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
 
+	
 .PHONY: integration-in-minikube
-integration-in-minikube: minikube-cluster skaffold-builder
-	echo '{}' > /tmp/docker-config
-	docker run --rm \
-		-v /tmp/skaffold_test_kubeconfig:/kubeconfig \
-		-v /tmp/docker-config:/root/.docker/config.json \
-		-e KUBECONFIG=/kubeconfig \
-		gcr.io/$(GCP_PROJECT)/skaffold-integration
+integration-in-minikube: minikube-cluster
+	@eval $$(MINIKUBE_HOME=/tmp/skaffold_test_minihome minikube -p skaffoldtest docker-env); echo $${DOCKER_HOST}
+	source $$(MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) minikube -p skaffoldtest docker-env) && echo ${DOCKER_HOST};echo "hello";echo ${DOCKER_HOST}
+	# docker run --rm  \
+	# 	-v /tmp/skaffold_test_kubeconfig:/kubeconfig \
+	# 	-v $(SKAFFOLD_MINIKUBE_HOME):$(SKAFFOLD_MINIKUBE_HOME) \
+	# 	-e KUBECONFIG=/kubeconfig \
+	# 	-e MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) \
+	# 	gcr.io/$(GCP_PROJECT)/skaffold-integration
 
 .PHONY: integration-in-kind
 integration-in-kind: kind-cluster skaffold-builder
