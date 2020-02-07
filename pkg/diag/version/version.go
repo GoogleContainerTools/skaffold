@@ -32,7 +32,6 @@ var version = "v0.0.0-unset"
 // gitCommitID is a private field and should be set when compiling with --ldflags="-X github.com/GoogleContainerTool/pkg/diag/version.gitCommitID=<commit-id>"
 var gitCommitID = ""
 
-
 // GetVersion returns the current diag pkg version
 func GetVersion() string {
 	return version
@@ -42,7 +41,6 @@ func GetVersion() string {
 func GetGitCommitID() string {
 	return gitCommitID
 }
-
 
 // GetSemverVersion returns the current semantic version (semver)
 func GetSemverVersion() (semver.Version, error) {

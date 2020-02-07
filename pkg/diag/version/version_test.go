@@ -17,16 +17,16 @@ limitations under the License.
 package version
 
 import (
-	"github.com/blang/semver"
 	"testing"
+
+	"github.com/blang/semver"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGetSemverVersion(t *testing.T) {
-
 	actual, err := GetSemverVersion()
 	expected, _ := semver.Make("0.0.0-unset")
 
-	testutil.CheckErrorAndDeepEqual(t,false, err, expected, actual)
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, actual)
 }
