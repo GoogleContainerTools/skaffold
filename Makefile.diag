@@ -26,6 +26,9 @@ TEST_PACKAGES := $(shell go list ./pkg/diag/...)
 export GO111MODULE = on
 export GOFLAGS = -mod=vendor
 
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
 .PHONY: test
 test: $(BUILD_DIR)
 	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s $(TEST_PACKAGES)

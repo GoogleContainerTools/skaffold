@@ -62,7 +62,7 @@ jobs:
     - os: linux-diag
       name: "Linux unit for diagnostic"
       script:
-        - make make -f Makefile.diag coverage
+        - make -f Makefile.diag coverage
       cache:
         directories:
           - $HOME/.cache/go-build
