@@ -195,22 +195,57 @@ minikube-install-linux:
 minikube-cluster: minikube-install-linux
 	mkdir -p $(MINI_TEST_HOME) 
 	KUBECONFIG=/tmp/kubeconfig MINIKUBE_HOME=$(MINI_TEST_HOME) /usr/local/bin/minikube start --profile skaffoldtest --vm-driver=docker --force --alsologtostderr -v=8
+d2:
+	@eval $$(MINIKUBE_HOME=$(MINI_TEST_HOMEE) minikube -p skaffoldtest docker-env); \
+	MINIKUBE_DOCKER_HOST=$${DOCKER_HOST};\
+	MINIKUBE_DOCKER_TLS_VERIFY=$${DOCKER_TLS_VERIFY};\
+	MINIKUBE_DOCKER_CERT_PATH=$${DOCKER_CERT_PATH};\
+	DOCKER_HOST="";\
+	DOCKER_CERT_PATH="";\
+	DOCKER_TLS_VERIFY="";\
+	echo $${DOCKER_HOST};\
+	echo $${MINIKUBE_DOCKER_HOST};\
+	docker ps;\
+	
+d3:
+	@eval $$(MINIKUBE_HOME=$(MINI_TEST_HOME) minikube -p skaffoldtest docker-env); \
+	MINIKUBE_DOCKER_HOST=$${DOCKER_HOST};\
+	MINIKUBE_DOCKER_TLS_VERIFY=$${DOCKER_TLS_VERIFY};\
+	MINIKUBE_DOCKER_CERT_PATH=$${DOCKER_CERT_PATH};\
+	DOCKER_HOST="";\
+	DOCKER_CERT_PATH="";\
+	DOCKER_TLS_VERIFY="";\
+	echo $${DOCKER_HOST};\
+	echo $${MINIKUBE_DOCKER_HOST};\
+	docker ps;\
+	
+
 
 .PHONY: integration-in-minikube
 integration-in-minikube: skaffold-builder
-	echo '{}' > /tmp/docker-config
-
-	docker run --rm \
-		-v $(HOME)/.gradle:/root/.gradle \
-		-v $(HOME)/.cache:/root/.cache \
-		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
-		-e KUBECONFIG=/tmp/kubeconfig \
-		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+	@eval $$(KUBECONFIG=/tmp/kubeconfig MINIKUBE_HOME=$(MINI_TEST_HOME) minikube -p skaffoldtest docker-env); \
+	MINIKUBE_DOCKER_HOST=$${DOCKER_HOST};\
+	MINIKUBE_DOCKER_TLS_VERIFY=$${DOCKER_TLS_VERIFY};\
+	MINIKUBE_DOCKER_CERT_PATH=$${DOCKER_CERT_PATH};\
+	DOCKER_HOST="";\
+	DOCKER_CERT_PATH="";\
+	DOCKER_TLS_VERIFY="";\
+	docker ps;\
+	echo '{}' > /tmp/docker-config; \
+	docker run \
+	-v /tmp/kubeconfig:/tmp/kubeconfig \
+	-v $(MINI_TEST_HOME):$(MINI_TEST_HOME) \
+	-v /tmp/docker-config:/root/.docker/config.json \
+	-e KUBECONFIG=/tmp/kubeconfig \
+	-e DOCKER_HOST=$${MINIKUBE_DOCKER_HOST} \
+	-e DOCKER_TLS_VERIFY=$${MINIKUBE_DOCKER_TLS_VERIFY} \
+	-e DOCKER_CERT_PATH=$${MINIKUBE_DOCKER_CERT_PATH} \
+	-e MINIKUBE_ACTIVE_DOCKERD=$${MINIKUBE_ACTIVE_DOCKERD} \
+	-e MINIKUBE_HOME=$(SKAFFOLD_MINIKUBE_HOME) \
+	gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -c ' \
-			make integration;
+			make integration \
 		'
-
-
 .PHONY: integration-in-kind
 integration-in-kind: skaffold-builder
 	echo '{}' > /tmp/docker-config
