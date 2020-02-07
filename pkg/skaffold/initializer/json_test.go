@@ -111,7 +111,7 @@ func TestPrintAnalyzeJSONNoJib(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var out bytes.Buffer
 
-			err := printAnalyzeJSONNoJib(&out, test.skipBuild, test.pairs, test.builders, test.images)
+			err := printAnalyzeOldFormat(&out, test.skipBuild, test.pairs, test.builders, test.images)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
 		})
