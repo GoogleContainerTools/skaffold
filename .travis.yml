@@ -67,7 +67,7 @@ jobs:
         - | 
           sudo apt-get update && \
           sudo apt-get install --no-install-recommends --no-install-suggests -y \
-          git python unzip build-essential python-setuptools lsb-release 
+          git python unzip build-essential python-setuptools lsb-release \
           openjdk-8-jdk software-properties-common jq apt-transport-https
         - curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && install minikube-linux-amd64 /usr/local/bin/minikube
         - wget -O bazel "https://github.com/bazelbuild/bazel/releases/download/2.0.0/bazel-2.0.0-linux-x86_64" && install bazel /usr/local/bin/
