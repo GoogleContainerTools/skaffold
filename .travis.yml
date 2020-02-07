@@ -69,10 +69,10 @@ jobs:
           sudo apt-get install --no-install-recommends --no-install-suggests -y \
           git python unzip build-essential python-setuptools lsb-release \
           openjdk-8-jdk software-properties-common jq apt-transport-https
-        - curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && install minikube-linux-amd64 /usr/local/bin/minikube
-        - wget -O bazel "https://github.com/bazelbuild/bazel/releases/download/2.0.0/bazel-2.0.0-linux-x86_64" && install bazel /usr/local/bin/
-        - wget -O kubectl "https://storage.googleapis.com/kubernetes-release/release/v1.14.10/bin/linux/amd64/kubectl" && install kubectl /usr/local/bin/
-        - wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-276.0.0-linux-x86_64.tar.gz && cp -r google-cloud-sdk/ /google-cloud-sdk/
+        - curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube
+        - wget -O bazel "https://github.com/bazelbuild/bazel/releases/download/2.0.0/bazel-2.0.0-linux-x86_64" && sudo install bazel /usr/local/bin/
+        - wget -O kubectl "https://storage.googleapis.com/kubernetes-release/release/v1.14.10/bin/linux/amd64/kubectl" && sudo install kubectl /usr/local/bin/
+        - wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-276.0.0-linux-x86_64.tar.gz && sudo cp -r google-cloud-sdk/ /google-cloud-sdk/
       script:
         - make integration-in-minikube
       cache:
