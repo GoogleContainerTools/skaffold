@@ -66,7 +66,7 @@ jobs:
       install:
         - | 
           sudo apt-get update && \
-          apt-get install --no-install-recommends --no-install-suggests -y \
+          sudo apt-get install --no-install-recommends --no-install-suggests -y \
           git python unzip build-essential python-setuptools lsb-release 
           openjdk-8-jdk software-properties-common jq apt-transport-https
         - curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && install minikube-linux-amd64 /usr/local/bin/minikube
