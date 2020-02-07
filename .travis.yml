@@ -67,8 +67,16 @@ jobs:
         - | 
           sudo apt-get update && \
           sudo apt-get install --no-install-recommends --no-install-suggests -y \
-          git python unzip build-essential python-setuptools lsb-release \
-          openjdk-8-jdk software-properties-common jq apt-transport-https
+          jq \
+          git \
+          unzip \
+          python \
+          lsb-release \
+          openjdk-8-jdk \
+          build-essential \
+          python-setuptools \
+          apt-transport-https \
+          software-properties-common \
         - curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube
         - wget -O bazel "https://github.com/bazelbuild/bazel/releases/download/2.0.0/bazel-2.0.0-linux-x86_64" && sudo install bazel /usr/local/bin/
         - wget -O kubectl "https://storage.googleapis.com/kubernetes-release/release/v1.14.10/bin/linux/amd64/kubectl" && sudo install kubectl /usr/local/bin/
