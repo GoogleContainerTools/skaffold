@@ -64,8 +64,9 @@ jobs:
       language: go
       go: "1.13.x"
       install:
-        - curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube
-        - make minikube-cluster
+        - curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && \
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube && \
+          make minikube-cluster
         - | 
           sudo apt-get update && \
           sudo apt-get install --no-install-recommends --no-install-suggests -y \
@@ -82,9 +83,8 @@ jobs:
         - wget -O bazel "https://github.com/bazelbuild/bazel/releases/download/2.0.0/bazel-2.0.0-linux-x86_64" && sudo install bazel /usr/local/bin/
         - wget -O kubectl "https://storage.googleapis.com/kubernetes-release/release/v1.14.10/bin/linux/amd64/kubectl" && sudo install kubectl /usr/local/bin/
         - wget -O gcloud.tar.gz https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-sdk-276.0.0-linux-x86_64.tar.gz && tar -zxf gcloud.tar.gz && sudo cp -r google-cloud-sdk/ /google-cloud-sdk/
-        - minikube status -p skaffoldtest --alsologtostderr -v=8
         - docker ps
-        - kubectl get pods -A
+        - KUBECONFIG=/tmp/kubeconfig kubectl get pods -A
       script:
         - make integration-in-minikube
       cache:
