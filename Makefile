@@ -191,7 +191,7 @@ minikube-cluster: clean-minikube
 	KUBECONFIG=/tmp/kubeconfig MINIKUBE_HOME=$(MINI_TEST_HOME) /usr/local/bin/minikube start --profile skaffoldtest --vm-driver=docker --force --alsologtostderr -v=8
 
 .PHONY: integration-in-minikube
-integration-in-minikube:
+integration-in-minikube: 
 	@eval $$(KUBECONFIG=/tmp/kubeconfig MINIKUBE_HOME=$(MINI_TEST_HOME) minikube -p skaffoldtest docker-env); \
 	docker ps;\
 	make integration \	
