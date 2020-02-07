@@ -35,7 +35,12 @@ else
     JQ_FILTER='select(has("Output") and (.Action=="output") and (has("Test")|not) and (.Output!="PASS\n") and (.Output!="FAIL\n") and (.Output|startswith("coverage:")|not) and (.Output|contains("[no test files]")|not)) | .Output'
 fi
 
-echo "go test $@"
+if [ "$#" -le 6 ]; then
+  echo "go test $@"
+else
+  echo "go test ./..."
+fi
+
 go test -json $@ | tee $LOG | jq --unbuffered -j "${JQ_FILTER}" | sed ''/FAIL/s//`printf "${RED}FAIL${RESET}"`/''
 RESULT=${PIPESTATUS[0]}
 
