@@ -22,7 +22,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -30,7 +30,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 	tests := []struct {
 		name           string
 		args           []string
-		expectedConfig initializer.Config
+		expectedConfig config.Config
 		initResult     error
 		shouldErr      bool
 	}{
@@ -41,7 +41,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 			},
 			initResult: errors.New("test error"),
 			shouldErr:  true,
-			expectedConfig: initializer.Config{
+			expectedConfig: config.Config{
 				ComposeFile:            "",
 				CliArtifacts:           nil,
 				CliKubernetesManifests: nil,
@@ -75,7 +75,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				"--XXenableNewInitFormat",
 				"--XXdefaultBuildpacksBuilder", "buildpacks/builder",
 			},
-			expectedConfig: initializer.Config{
+			expectedConfig: config.Config{
 				ComposeFile:            "a-compose-file",
 				CliArtifacts:           []string{"a1=b1", "a2=b2"},
 				CliKubernetesManifests: []string{"m1", "m2"},
@@ -97,7 +97,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				"init",
 				"--XXenableJibInit",
 			},
-			expectedConfig: initializer.Config{
+			expectedConfig: config.Config{
 				ComposeFile:            "",
 				CliArtifacts:           nil,
 				CliKubernetesManifests: nil,
@@ -118,7 +118,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				"init",
 				"--XXenableBuildpacksInit",
 			},
-			expectedConfig: initializer.Config{
+			expectedConfig: config.Config{
 				ComposeFile:            "",
 				CliArtifacts:           nil,
 				CliKubernetesManifests: nil,
@@ -136,8 +136,8 @@ func TestFlagsToConfigVersion(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			var capturedConfig initializer.Config
-			t.Override(&initEntrypoint, func(_ context.Context, _ io.Writer, c initializer.Config) error {
+			var capturedConfig config.Config
+			t.Override(&initEntrypoint, func(_ context.Context, _ io.Writer, c config.Config) error {
 				capturedConfig = c
 				return test.initResult
 			})

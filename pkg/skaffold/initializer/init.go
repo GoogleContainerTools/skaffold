@@ -26,7 +26,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -50,22 +50,6 @@ type InitBuilder interface {
 	Path() string
 }
 
-// Config contains all the parameters for the initializer package
-type Config struct {
-	ComposeFile            string
-	CliArtifacts           []string
-	CliKubernetesManifests []string
-	SkipBuild              bool
-	SkipDeploy             bool
-	Force                  bool
-	Analyze                bool
-	EnableJibInit          bool // TODO: Remove this parameter
-	EnableBuildpacksInit   bool
-	EnableNewInitFormat    bool
-	BuildpacksBuilder      string
-	Opts                   config.SkaffoldOptions
-}
-
 // builderImagePair defines a builder and the image it builds
 type builderImagePair struct {
 	Builder   InitBuilder
@@ -73,7 +57,7 @@ type builderImagePair struct {
 }
 
 // DoInit executes the `skaffold init` flow.
-func DoInit(ctx context.Context, out io.Writer, c Config) error {
+func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 	rootDir := "."
 
 	if c.ComposeFile != "" {
