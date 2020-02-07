@@ -401,7 +401,7 @@ func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.
 		}
 		time.Sleep(sleepTime)
 	}
-	return nil, fmt.Errorf("could not remove image for %d re-trails", retrials)
+	return nil, fmt.Errorf("could not remove image after %d retries", retrials)
 }
 
 // GetBuildArgs gives the build args flags for docker build.
