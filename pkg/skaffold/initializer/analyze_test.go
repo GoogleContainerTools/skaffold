@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	initconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -36,7 +37,7 @@ func TestAnalyze(t *testing.T) {
 		filesWithContents map[string]string
 		expectedConfigs   []string
 		expectedPaths     []string
-		config            Config
+		config            initconfig.Config
 		shouldErr         bool
 	}{
 		{
@@ -54,7 +55,7 @@ func TestAnalyze(t *testing.T) {
 				"maven/pom.xml":          emptyFile,
 				"Dockerfile":             emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        false,
@@ -87,7 +88,7 @@ func TestAnalyze(t *testing.T) {
 				"maven/pom.xml":          emptyFile,
 				"Dockerfile":             emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        false,
@@ -113,7 +114,7 @@ func TestAnalyze(t *testing.T) {
 				"Dockerfile":          emptyFile,
 				"node/package.json":   emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: true,
 				EnableJibInit:        true,
@@ -141,7 +142,7 @@ func TestAnalyze(t *testing.T) {
 				"maven/asubproject/pom.xml":      emptyFile,
 				"maven/pom.xml":                  emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
@@ -166,7 +167,7 @@ func TestAnalyze(t *testing.T) {
 				"k8pod.yml":                    validK8sManifest,
 				"pom.xml":                      emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
@@ -191,7 +192,7 @@ func TestAnalyze(t *testing.T) {
 				".hidden/Dockerfile": emptyFile,
 				"Dockerfile":         emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
@@ -217,7 +218,7 @@ deploy:
 				"deploy/Dockerfile": emptyFile,
 				"Dockerfile":        emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                true,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
@@ -245,7 +246,7 @@ kind: Config
 deploy:
   kustomize: {}`,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
@@ -269,7 +270,7 @@ kind: Config
 deploy:
   kustomize: {}`,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,

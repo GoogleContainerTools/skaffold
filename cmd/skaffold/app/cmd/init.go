@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 )
 
 var (
@@ -70,7 +71,7 @@ func NewCmdInit() *cobra.Command {
 }
 
 func doInit(ctx context.Context, out io.Writer) error {
-	return initEntrypoint(ctx, out, initializer.Config{
+	return initEntrypoint(ctx, out, config.Config{
 		ComposeFile:            composeFile,
 		CliArtifacts:           cliArtifacts,
 		CliKubernetesManifests: cliKubernetesManifests,

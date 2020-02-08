@@ -24,6 +24,7 @@ import (
 
 	"github.com/karrick/godirwalk"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -34,7 +35,7 @@ type analysis struct {
 }
 
 // newAnalysis sets up the analysis of the directory based on the initializer configuration
-func newAnalysis(c Config) *analysis {
+func newAnalysis(c config.Config) *analysis {
 	return &analysis{
 		kubectlAnalyzer: &kubectlAnalyzer{},
 		builderAnalyzer: &builderAnalyzer{
