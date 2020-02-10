@@ -27,6 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -129,7 +130,7 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 	}
 
 	if !c.Force {
-		if done, err := promptWritingConfig(out, pipeline, c.Opts.ConfigurationFile); done {
+		if done, err := prompt.WriteSkaffoldConfig(out, pipeline, c.Opts.ConfigurationFile); done {
 			return err
 		}
 	}

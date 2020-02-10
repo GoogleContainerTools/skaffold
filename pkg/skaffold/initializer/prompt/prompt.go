@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package prompt
 
 import (
 	"bufio"
@@ -29,15 +29,14 @@ import (
 
 // For testing
 var (
-	promptUserForBuildConfigFunc = promptUserForBuildConfig
+	BuildConfigFunc = buildConfig
 )
 
-func promptUserForBuildConfig(image string, choices []string) (string, error) {
+func buildConfig(image string, choices []string) (string, error) {
 	var selectedBuildConfig string
-	options := append(choices, NoBuilder)
 	prompt := &survey.Select{
 		Message:  fmt.Sprintf("Choose the builder to build image %s", image),
-		Options:  options,
+		Options:  choices,
 		PageSize: 15,
 	}
 	err := survey.AskOne(prompt, &selectedBuildConfig, nil)
@@ -48,7 +47,7 @@ func promptUserForBuildConfig(image string, choices []string) (string, error) {
 	return selectedBuildConfig, nil
 }
 
-func promptWritingConfig(out io.Writer, pipeline []byte, filePath string) (bool, error) {
+func WriteSkaffoldConfig(out io.Writer, pipeline []byte, filePath string) (bool, error) {
 	fmt.Fprintln(out, string(pipeline))
 
 	reader := bufio.NewReader(os.Stdin)

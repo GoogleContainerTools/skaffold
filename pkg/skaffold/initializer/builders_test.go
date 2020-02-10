@@ -19,6 +19,7 @@ package initializer
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
@@ -97,7 +98,7 @@ func TestResolveBuilderImages(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			// Overrides promptUserForBuildConfig to choose first option rather than using the interactive menu
-			t.Override(&promptUserForBuildConfigFunc, func(image string, choices []string) (string, error) {
+			t.Override(&prompt.BuildConfigFunc, func(image string, choices []string) (string, error) {
 				if !test.shouldMakeChoice {
 					t.FailNow()
 				}
