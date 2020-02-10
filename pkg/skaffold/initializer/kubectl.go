@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -36,7 +37,7 @@ type kubectlAnalyzer struct {
 }
 
 func (a *kubectlAnalyzer) analyzeFile(filePath string) error {
-	if kubernetes.IsKubernetesManifest(filePath) && !isSkaffoldConfig(filePath) {
+	if kubernetes.IsKubernetesManifest(filePath) && !schema.IsSkaffoldConfig(filePath) {
 		a.kubernetesManifests = append(a.kubernetesManifests, filePath)
 	}
 	return nil
