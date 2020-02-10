@@ -42,23 +42,24 @@ type builderAnalyzer struct {
 	buildpacksBuilder    string
 	foundBuilders        []InitBuilder
 
-	parentDirToStopFindBuilders string
+	parentDirToStopFindJibSettings string
 }
 
 func (a *builderAnalyzer) analyzeFile(filePath string) error {
-	if a.findBuilders && (a.parentDirToStopFindBuilders == "" || a.parentDirToStopFindBuilders == a.currentDir) {
-		builderConfigs, continueSearchingBuilders := a.detectBuilders(filePath)
+	if a.findBuilders {
+		lookForJib := a.parentDirToStopFindJibSettings == "" || a.parentDirToStopFindJibSettings == a.currentDir
+		builderConfigs, lookForJib := a.detectBuilders(filePath, lookForJib)
 		a.foundBuilders = append(a.foundBuilders, builderConfigs...)
-		if !continueSearchingBuilders {
-			a.parentDirToStopFindBuilders = a.currentDir
+		if !lookForJib {
+			a.parentDirToStopFindJibSettings = a.currentDir
 		}
 	}
 	return nil
 }
 
 func (a *builderAnalyzer) exitDir(dir string) {
-	if a.parentDirToStopFindBuilders == dir {
-		a.parentDirToStopFindBuilders = ""
+	if a.parentDirToStopFindJibSettings == dir {
+		a.parentDirToStopFindJibSettings = ""
 	}
 }
 
@@ -103,9 +104,9 @@ func findExactlyOnceMatchingBuilder(builderConfigs []InitBuilder, image string) 
 // detectBuilders checks if a path is a builder config, and if it is, returns the InitBuilders representing the
 // configs. Also returns a boolean marking search completion for subdirectories (true = subdirectories should
 // continue to be searched, false = subdirectories should not be searched for more builders)
-func (a *builderAnalyzer) detectBuilders(path string) ([]InitBuilder, bool) {
+func (a *builderAnalyzer) detectBuilders(path string, detectJib bool) ([]InitBuilder, bool) {
 	// TODO: Remove backwards compatibility if statement (not entire block)
-	if a.enableJibInit {
+	if a.enableJibInit && detectJib {
 		// Check for jib
 		if builders := jib.Validate(path); builders != nil {
 			results := make([]InitBuilder, len(builders))
