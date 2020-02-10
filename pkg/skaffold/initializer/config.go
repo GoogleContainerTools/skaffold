@@ -17,7 +17,6 @@ limitations under the License.
 package initializer
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -25,8 +24,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
@@ -36,40 +35,7 @@ var (
 	getWd = os.Getwd
 )
 
-type skaffoldConfigAnalyzer struct {
-	directoryAnalyzer
-	force        bool
-	analyzeMode  bool
-	targetConfig string
-}
-
-func (a *skaffoldConfigAnalyzer) analyzeFile(filePath string) error {
-	if !schema.IsSkaffoldConfig(filePath) || a.force || a.analyzeMode {
-		return nil
-	}
-	sameFiles, err := sameFiles(filePath, a.targetConfig)
-	if err != nil {
-		return fmt.Errorf("failed to analyze file %s: %s", filePath, err)
-	}
-	if !sameFiles {
-		return nil
-	}
-	return fmt.Errorf("pre-existing %s found (you may continue with --force)", filePath)
-}
-
-func sameFiles(a, b string) (bool, error) {
-	absA, err := filepath.Abs(a)
-	if err != nil {
-		return false, err
-	}
-	absB, err := filepath.Abs(b)
-	if err != nil {
-		return false, err
-	}
-	return absA == absB, nil
-}
-
-func generateSkaffoldConfig(k deploy.DeploymentInitializer, buildConfigPairs []builderImagePair) *latest.SkaffoldConfig {
+func generateSkaffoldConfig(k deploy.DeploymentInitializer, buildConfigPairs []build.BuilderImagePair) *latest.SkaffoldConfig {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
@@ -121,7 +87,7 @@ func canonicalizeName(name string) string {
 	return canonicalized[:253]
 }
 
-func artifacts(pairs []builderImagePair) []*latest.Artifact {
+func artifacts(pairs []build.BuilderImagePair) []*latest.Artifact {
 	var artifacts []*latest.Artifact
 
 	for _, pair := range pairs {

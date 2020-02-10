@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package build
 
 import (
 	"testing"
@@ -36,21 +36,21 @@ func TestResolveBuilderImages(t *testing.T) {
 		force            bool
 		shouldMakeChoice bool
 		shouldErr        bool
-		expectedPairs    []builderImagePair
+		expectedPairs    []BuilderImagePair
 	}{
 		{
 			description:      "nothing to choose from",
 			buildConfigs:     []InitBuilder{},
 			images:           []string{},
 			shouldMakeChoice: false,
-			expectedPairs:    []builderImagePair{},
+			expectedPairs:    []BuilderImagePair{},
 		},
 		{
 			description:      "don't prompt for single dockerfile and image",
 			buildConfigs:     []InitBuilder{docker.ArtifactConfig{File: "Dockerfile1"}},
 			images:           []string{"image1"},
 			shouldMakeChoice: false,
-			expectedPairs: []builderImagePair{
+			expectedPairs: []BuilderImagePair{
 				{
 					Builder:   docker.ArtifactConfig{File: "Dockerfile1"},
 					ImageName: "image1",
@@ -62,7 +62,7 @@ func TestResolveBuilderImages(t *testing.T) {
 			buildConfigs:     []InitBuilder{docker.ArtifactConfig{File: "Dockerfile1"}, jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"}, jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), Project: "project", File: "pom.xml"}},
 			images:           []string{"image1", "image2"},
 			shouldMakeChoice: true,
-			expectedPairs: []builderImagePair{
+			expectedPairs: []BuilderImagePair{
 				{
 					Builder:   docker.ArtifactConfig{File: "Dockerfile1"},
 					ImageName: "image1",
@@ -79,7 +79,7 @@ func TestResolveBuilderImages(t *testing.T) {
 			images:           []string{"image1"},
 			shouldMakeChoice: false,
 			force:            true,
-			expectedPairs: []builderImagePair{
+			expectedPairs: []BuilderImagePair{
 				{
 					Builder:   jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle"},
 					ImageName: "image1",
@@ -105,7 +105,7 @@ func TestResolveBuilderImages(t *testing.T) {
 				return choices[0], nil
 			})
 
-			pairs, err := resolveBuilderImages(test.buildConfigs, test.images, test.force)
+			pairs, err := ResolveBuilderImages(test.buildConfigs, test.images, test.force)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, pairs)
 		})
@@ -117,7 +117,7 @@ func TestAutoSelectBuilders(t *testing.T) {
 		description              string
 		builderConfigs           []InitBuilder
 		images                   []string
-		expectedPairs            []builderImagePair
+		expectedPairs            []BuilderImagePair
 		expectedBuildersLeft     []InitBuilder
 		expectedUnresolvedImages []string
 	}{
@@ -145,7 +145,7 @@ func TestAutoSelectBuilders(t *testing.T) {
 				jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibMaven), File: "pom.xml", Image: "image2"},
 			},
 			images: []string{"image1", "image2", "image3"},
-			expectedPairs: []builderImagePair{
+			expectedPairs: []BuilderImagePair{
 				{
 					jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), File: "build.gradle", Image: "image1"},
 					"image1",
@@ -184,7 +184,7 @@ func TestAutoSelectBuilders(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pairs, builderConfigs, unresolvedImages := matchBuildersToImages(test.builderConfigs, test.images)
+			pairs, builderConfigs, unresolvedImages := MatchBuildersToImages(test.builderConfigs, test.images)
 
 			t.CheckDeepEqual(test.expectedPairs, pairs)
 			t.CheckDeepEqual(test.expectedBuildersLeft, builderConfigs)
@@ -198,7 +198,7 @@ func TestProcessCliArtifacts(t *testing.T) {
 		description   string
 		artifacts     []string
 		shouldErr     bool
-		expectedPairs []builderImagePair
+		expectedPairs []BuilderImagePair
 	}{
 		{
 			description: "Invalid pairs",
@@ -216,7 +216,7 @@ func TestProcessCliArtifacts(t *testing.T) {
 				`/path/to/Dockerfile=image1`,
 				`/path/to/Dockerfile2=image2`,
 			},
-			expectedPairs: []builderImagePair{
+			expectedPairs: []BuilderImagePair{
 				{
 					Builder:   docker.ArtifactConfig{File: "/path/to/Dockerfile"},
 					ImageName: "image1",
@@ -235,7 +235,7 @@ func TestProcessCliArtifacts(t *testing.T) {
 				`{"builder":"Jib Maven Plugin","payload":{"path":"/path/to/pom.xml","project":"project-name","image":"testImage"},"image":"image3"}`,
 				`{"builder":"Buildpacks","payload":{"path":"/path/to/package.json"},"image":"image4"}`,
 			},
-			expectedPairs: []builderImagePair{
+			expectedPairs: []BuilderImagePair{
 				{
 					Builder:   docker.ArtifactConfig{File: "/path/to/Dockerfile"},
 					ImageName: "image1",
@@ -258,7 +258,7 @@ func TestProcessCliArtifacts(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pairs, err := processCliArtifacts(test.artifacts)
+			pairs, err := ProcessCliArtifacts(test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, pairs)
 		})
@@ -321,7 +321,7 @@ func TestStripImageTags(t *testing.T) {
 		testutil.Run(t, tc.name, func(t *testutil.T) {
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			images := stripTags(tc.taggedImages)
+			images := StripTags(tc.taggedImages)
 
 			t.CheckDeepEqual(tc.expectedImages, images)
 			t.CheckDeepEqual(tc.expectedWarnings, fakeWarner.Warnings)

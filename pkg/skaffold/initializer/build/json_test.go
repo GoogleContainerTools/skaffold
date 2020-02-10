@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package build
 
 import (
 	"bytes"
@@ -28,7 +28,7 @@ import (
 func TestPrintAnalyzeJSON(t *testing.T) {
 	tests := []struct {
 		description string
-		pairs       []builderImagePair
+		pairs       []BuilderImagePair
 		builders    []InitBuilder
 		images      []string
 		skipBuild   bool
@@ -37,7 +37,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 	}{
 		{
 			description: "builders and images with pairs",
-			pairs:       []builderImagePair{{jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), Image: "image1", File: "build.gradle", Project: "project"}, "image1"}},
+			pairs:       []BuilderImagePair{{jib.ArtifactConfig{BuilderName: jib.PluginName(jib.JibGradle), Image: "image1", File: "build.gradle", Project: "project"}, "image1"}},
 			builders:    []InitBuilder{docker.ArtifactConfig{File: "Dockerfile"}},
 			images:      []string{"image2"},
 			expected:    `{"builders":[{"name":"Jib Gradle Plugin","payload":{"image":"image1","path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":false}]}` + "\n",
@@ -68,7 +68,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var out bytes.Buffer
 
-			err := printAnalyzeJSON(&out, test.skipBuild, test.pairs, test.builders, test.images)
+			err := PrintAnalyzeJSON(&out, test.skipBuild, test.pairs, test.builders, test.images)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
 		})
@@ -78,7 +78,7 @@ func TestPrintAnalyzeJSON(t *testing.T) {
 func TestPrintAnalyzeJSONNoJib(t *testing.T) {
 	tests := []struct {
 		description string
-		pairs       []builderImagePair
+		pairs       []BuilderImagePair
 		builders    []InitBuilder
 		images      []string
 		skipBuild   bool
@@ -111,7 +111,7 @@ func TestPrintAnalyzeJSONNoJib(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var out bytes.Buffer
 
-			err := printAnalyzeOldFormat(&out, test.skipBuild, test.pairs, test.builders, test.images)
+			err := PrintAnalyzeOldFormat(&out, test.skipBuild, test.pairs, test.builders, test.images)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
 		})

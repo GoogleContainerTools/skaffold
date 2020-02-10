@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package analyze
 
 import (
 	"strings"
@@ -294,19 +294,20 @@ deploy:
 			t.Override(&docker.Validate, fakeValidateDockerfile)
 			t.Override(&jib.Validate, fakeValidateJibConfig)
 
-			a := newAnalysis(test.config)
+			a := NewAnalyzer(test.config)
 
-			err := a.analyze(".")
+			err := a.Analyze(".")
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
 				return
 			}
 
-			t.CheckDeepEqual(test.expectedConfigs, a.KubectlAnalyzer.kubernetesManifests)
-			t.CheckDeepEqual(len(test.expectedPaths), len(a.builderAnalyzer.foundBuilders))
-			for i := range a.builderAnalyzer.foundBuilders {
-				t.CheckDeepEqual(test.expectedPaths[i], a.builderAnalyzer.foundBuilders[i].Path())
+			t.CheckDeepEqual(test.expectedConfigs, a.Manifests())
+			builders := a.Builders()
+			t.CheckDeepEqual(len(test.expectedPaths), len(builders))
+			for i := range builders {
+				t.CheckDeepEqual(test.expectedPaths[i], builders[i].Path())
 			}
 		})
 	}
