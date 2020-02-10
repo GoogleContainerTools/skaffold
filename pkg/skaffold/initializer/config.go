@@ -43,7 +43,7 @@ type skaffoldConfigAnalyzer struct {
 }
 
 func (a *skaffoldConfigAnalyzer) analyzeFile(filePath string) error {
-	if !isSkaffoldConfig(filePath) || a.force || a.analyzeMode {
+	if !schema.IsSkaffoldConfig(filePath) || a.force || a.analyzeMode {
 		return nil
 	}
 	sameFiles, err := sameFiles(filePath, a.targetConfig)
@@ -139,12 +139,4 @@ func artifacts(pairs []builderImagePair) []*latest.Artifact {
 	}
 
 	return artifacts
-}
-
-// isSkaffoldConfig is for determining if a file is skaffold config file.
-func isSkaffoldConfig(file string) bool {
-	if config, err := schema.ParseConfig(file, false); err == nil && config != nil {
-		return true
-	}
-	return false
 }

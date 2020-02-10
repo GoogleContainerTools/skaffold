@@ -106,6 +106,14 @@ func (v *Versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
 	return nil, false
 }
 
+// IsSkaffoldConfig is for determining if a file is skaffold config file.
+func IsSkaffoldConfig(file string) bool {
+	if config, err := ParseConfig(file, false); err == nil && config != nil {
+		return true
+	}
+	return false
+}
+
 // ParseConfig reads a configuration file.
 func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 	buf, err := misc.ReadConfiguration(filename)
