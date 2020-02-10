@@ -29,6 +29,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
@@ -246,7 +247,7 @@ func resolveBuilderImagesInteractively(builderConfigs []InitBuilder, images []st
 		}
 
 		image := images[0]
-		choice, err := promptUserForBuildConfigFunc(image, choices)
+		choice, err := prompt.BuildConfigFunc(image, append(choices, NoBuilder))
 		if err != nil {
 			return nil, err
 		}
