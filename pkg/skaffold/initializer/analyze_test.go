@@ -139,7 +139,9 @@ func TestAnalyze(t *testing.T) {
 				"k8pod.yml":                      validK8sManifest,
 				"gradle/build.gradle":            emptyFile,
 				"gradle/subproject/build.gradle": emptyFile,
+				"gradle/subproject/Dockerfile":   emptyFile,
 				"maven/asubproject/pom.xml":      emptyFile,
+				"maven/asubproject/Dockerfile":   emptyFile,
 				"maven/pom.xml":                  emptyFile,
 			},
 			config: initconfig.Config{
@@ -153,7 +155,9 @@ func TestAnalyze(t *testing.T) {
 			},
 			expectedPaths: []string{
 				"gradle/build.gradle",
+				"gradle/subproject/Dockerfile",
 				"maven/pom.xml",
+				"maven/asubproject/Dockerfile",
 			},
 			shouldErr: false,
 		},
