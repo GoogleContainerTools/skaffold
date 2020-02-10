@@ -37,9 +37,9 @@ type kubectlAnalyzer struct {
 	kubernetesManifests []string
 }
 
-func (a *kubectlAnalyzer) analyzeFile(filePath string) error {
+func (k *kubectlAnalyzer) analyzeFile(filePath string) error {
 	if kubernetes.IsKubernetesManifest(filePath) && !schema.IsSkaffoldConfig(filePath) {
-		a.kubernetesManifests = append(a.kubernetesManifests, filePath)
+		k.kubernetesManifests = append(k.kubernetesManifests, filePath)
 	}
 	return nil
 }
