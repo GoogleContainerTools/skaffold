@@ -25,6 +25,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -68,7 +69,7 @@ func sameFiles(a, b string) (bool, error) {
 	return absA == absB, nil
 }
 
-func generateSkaffoldConfig(k deploymentInitializer, buildConfigPairs []builderImagePair) *latest.SkaffoldConfig {
+func generateSkaffoldConfig(k deploy.DeploymentInitializer, buildConfigPairs []builderImagePair) *latest.SkaffoldConfig {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
@@ -88,7 +89,7 @@ func generateSkaffoldConfig(k deploymentInitializer, buildConfigPairs []builderI
 			Build: latest.BuildConfig{
 				Artifacts: artifacts(buildConfigPairs),
 			},
-			Deploy: k.deployConfig(),
+			Deploy: k.DeployConfig(),
 		},
 	}
 }

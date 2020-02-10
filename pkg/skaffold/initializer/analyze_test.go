@@ -303,7 +303,7 @@ deploy:
 				return
 			}
 
-			t.CheckDeepEqual(test.expectedConfigs, a.kubectlAnalyzer.kubernetesManifests)
+			t.CheckDeepEqual(test.expectedConfigs, a.KubectlAnalyzer.kubernetesManifests)
 			t.CheckDeepEqual(len(test.expectedPaths), len(a.builderAnalyzer.foundBuilders))
 			for i := range a.builderAnalyzer.foundBuilders {
 				t.CheckDeepEqual(test.expectedPaths[i], a.builderAnalyzer.foundBuilders[i].Path())

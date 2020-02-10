@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package deploy
 
 import (
 	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -28,19 +27,6 @@ import (
 type kubectl struct {
 	configs []string
 	images  []string
-}
-
-// kubectlAnalyzer is a Visitor during the directory analysis that collects kubernetes manifests
-type kubectlAnalyzer struct {
-	directoryAnalyzer
-	kubernetesManifests []string
-}
-
-func (a *kubectlAnalyzer) analyzeFile(filePath string) error {
-	if kubernetes.IsKubernetesManifest(filePath) && !schema.IsSkaffoldConfig(filePath) {
-		a.kubernetesManifests = append(a.kubernetesManifests, filePath)
-	}
-	return nil
 }
 
 // newKubectlInitializer returns a kubectl skaffold generator.
@@ -64,7 +50,7 @@ func newKubectlInitializer(potentialConfigs []string) (*kubectl, error) {
 
 // deployConfig implements the Initializer interface and generates
 // skaffold kubectl deployment config.
-func (k *kubectl) deployConfig() latest.DeployConfig {
+func (k *kubectl) DeployConfig() latest.DeployConfig {
 	return latest.DeployConfig{
 		DeployType: latest.DeployType{
 			KubectlDeploy: &latest.KubectlDeploy{

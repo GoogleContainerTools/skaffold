@@ -25,11 +25,31 @@ import (
 	"github.com/karrick/godirwalk"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+// TODO(nkubala): move this along with all analyzer code into a separate analysis package
+// kubectlAnalyzer is a Visitor during the directory analysis that collects kubernetes manifests
+type kubectlAnalyzer struct {
+	directoryAnalyzer
+	kubernetesManifests []string
+}
+
+func (a *kubectlAnalyzer) analyzeFile(filePath string) error {
+	if kubernetes.IsKubernetesManifest(filePath) && !schema.IsSkaffoldConfig(filePath) {
+		a.kubernetesManifests = append(a.kubernetesManifests, filePath)
+	}
+	return nil
+}
+
+func (k *kubectlAnalyzer) Manifests() []string {
+	return k.kubernetesManifests
+}
+
 type analysis struct {
-	kubectlAnalyzer  *kubectlAnalyzer
+	KubectlAnalyzer  *kubectlAnalyzer
 	skaffoldAnalyzer *skaffoldConfigAnalyzer
 	builderAnalyzer  *builderAnalyzer
 }
@@ -37,7 +57,7 @@ type analysis struct {
 // newAnalysis sets up the analysis of the directory based on the initializer configuration
 func newAnalysis(c config.Config) *analysis {
 	return &analysis{
-		kubectlAnalyzer: &kubectlAnalyzer{},
+		KubectlAnalyzer: &kubectlAnalyzer{},
 		builderAnalyzer: &builderAnalyzer{
 			findBuilders:         !c.SkipBuild,
 			enableJibInit:        c.EnableJibInit,
@@ -106,7 +126,7 @@ func (a *analysis) analyze(dir string) error {
 
 func (a *analysis) analyzers() []analyzer {
 	return []analyzer{
-		a.kubectlAnalyzer,
+		a.KubectlAnalyzer,
 		a.skaffoldAnalyzer,
 		a.builderAnalyzer,
 	}
