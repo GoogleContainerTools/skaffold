@@ -14,13 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package build
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -30,44 +29,42 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
-type builderAnalyzer struct {
-	directoryAnalyzer
-	enableJibInit        bool
-	enableBuildpacksInit bool
-	findBuilders         bool
-	buildpacksBuilder    string
-	foundBuilders        []InitBuilder
+// NoBuilder allows users to specify they don't want to build
+// an image we parse out from a Kubernetes manifest
+const NoBuilder = "None (image not built from these sources)"
 
-	parentDirToStopFindJibSettings string
+// InitBuilder represents a builder that can be chosen by skaffold init.
+type InitBuilder interface {
+	// Name returns the name of the builder
+	Name() string
+	// Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
+	// Must be unique between artifacts.
+	Describe() string
+	// UpdateArtifact updates the Artifact to be included in the generated Build Config
+	UpdateArtifact(*latest.Artifact)
+	// ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured.
+	// This should be a cheap operation.
+	ConfiguredImage() string
+	// Path returns the path to the build file
+	Path() string
 }
 
-func (a *builderAnalyzer) analyzeFile(filePath string) error {
-	if a.findBuilders {
-		lookForJib := a.parentDirToStopFindJibSettings == "" || a.parentDirToStopFindJibSettings == a.currentDir
-		builderConfigs, lookForJib := a.detectBuilders(filePath, lookForJib)
-		a.foundBuilders = append(a.foundBuilders, builderConfigs...)
-		if !lookForJib {
-			a.parentDirToStopFindJibSettings = a.currentDir
-		}
-	}
-	return nil
+// BuilderImagePair defines a builder and the image it builds
+type BuilderImagePair struct {
+	Builder   InitBuilder
+	ImageName string
 }
 
-func (a *builderAnalyzer) exitDir(dir string) {
-	if a.parentDirToStopFindJibSettings == dir {
-		a.parentDirToStopFindJibSettings = ""
-	}
-}
-
-// matchBuildersToImages takes a list of builders and images, checks if any of the builders' configured target
+// MatchBuildersToImages takes a list of builders and images, checks if any of the builders' configured target
 // images match an image in the image list, and returns a list of the matching builder/image pairs. Also
 // separately returns the builder configs and images that didn't have any matches.
-func matchBuildersToImages(builderConfigs []InitBuilder, images []string) ([]builderImagePair, []InitBuilder, []string) {
-	var pairs []builderImagePair
+func MatchBuildersToImages(builderConfigs []InitBuilder, images []string) ([]BuilderImagePair, []InitBuilder, []string) {
+	var pairs []BuilderImagePair
 	var unresolvedImages = make(sortedSet)
 	for _, image := range images {
 		builderIdx := findExactlyOnceMatchingBuilder(builderConfigs, image)
@@ -75,7 +72,7 @@ func matchBuildersToImages(builderConfigs []InitBuilder, images []string) ([]bui
 		// exactly one builder found for the image
 		if builderIdx != -1 {
 			// save the pair
-			pairs = append(pairs, builderImagePair{ImageName: image, Builder: builderConfigs[builderIdx]})
+			pairs = append(pairs, BuilderImagePair{ImageName: image, Builder: builderConfigs[builderIdx]})
 			// remove matched builder from builderConfigs
 			builderConfigs = append(builderConfigs[:builderIdx], builderConfigs[builderIdx+1:]...)
 		} else {
@@ -101,50 +98,9 @@ func findExactlyOnceMatchingBuilder(builderConfigs []InitBuilder, image string) 
 	return matchingConfigIndex
 }
 
-// detectBuilders checks if a path is a builder config, and if it is, returns the InitBuilders representing the
-// configs. Also returns a boolean marking search completion for subdirectories (true = subdirectories should
-// continue to be searched, false = subdirectories should not be searched for more builders)
-func (a *builderAnalyzer) detectBuilders(path string, detectJib bool) ([]InitBuilder, bool) {
-	// TODO: Remove backwards compatibility if statement (not entire block)
-	if a.enableJibInit && detectJib {
-		// Check for jib
-		if builders := jib.Validate(path); builders != nil {
-			results := make([]InitBuilder, len(builders))
-			for i := range builders {
-				results[i] = builders[i]
-			}
-			return results, false
-		}
-	}
-
-	// Check for Dockerfile
-	base := filepath.Base(path)
-	if strings.Contains(strings.ToLower(base), "dockerfile") {
-		if docker.Validate(path) {
-			results := []InitBuilder{docker.ArtifactConfig{File: path}}
-			return results, true
-		}
-	}
-
-	// TODO: Remove backwards compatibility if statement (not entire block)
-	if a.enableBuildpacksInit {
-		// Check for buildpacks
-		if buildpacks.Validate(path) {
-			results := []InitBuilder{buildpacks.ArtifactConfig{
-				File:    path,
-				Builder: a.buildpacksBuilder,
-			}}
-			return results, true
-		}
-	}
-
-	// TODO: Check for more builders
-
-	return nil, true
-}
-
-func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
-	var pairs []builderImagePair
+// TODO(nkubala): make these private again once DoInit() relinquishes control of the builder/image processing
+func ProcessCliArtifacts(artifacts []string) ([]BuilderImagePair, error) {
+	var pairs []BuilderImagePair
 	for _, artifact := range artifacts {
 		// Parses JSON in the form of: {"builder":"Name of Builder","payload":{...},"image":"image.name"}.
 		// The builder field is parsed first to determine the builder type, and the payload is parsed
@@ -159,7 +115,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 			if len(parts) != 2 {
 				return nil, fmt.Errorf("malformed artifact provided: %s", artifact)
 			}
-			pairs = append(pairs, builderImagePair{
+			pairs = append(pairs, BuilderImagePair{
 				Builder:   docker.ArtifactConfig{File: parts[0]},
 				ImageName: parts[1],
 			})
@@ -175,7 +131,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
 			}
-			pair := builderImagePair{Builder: parsed.Payload, ImageName: a.Image}
+			pair := BuilderImagePair{Builder: parsed.Payload, ImageName: a.Image}
 			pairs = append(pairs, pair)
 
 		// FIXME: shouldn't use a human-readable name?
@@ -187,7 +143,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 				return nil, err
 			}
 			parsed.Payload.BuilderName = a.Name
-			pair := builderImagePair{Builder: parsed.Payload, ImageName: a.Image}
+			pair := BuilderImagePair{Builder: parsed.Payload, ImageName: a.Image}
 			pairs = append(pairs, pair)
 
 		case buildpacks.Name:
@@ -197,7 +153,7 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 			if err := json.Unmarshal([]byte(artifact), &parsed); err != nil {
 				return nil, err
 			}
-			pair := builderImagePair{Builder: parsed.Payload, ImageName: a.Image}
+			pair := BuilderImagePair{Builder: parsed.Payload, ImageName: a.Image}
 			pairs = append(pairs, pair)
 
 		default:
@@ -208,15 +164,15 @@ func processCliArtifacts(artifacts []string) ([]builderImagePair, error) {
 }
 
 // For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
-func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force bool) ([]builderImagePair, error) {
+func ResolveBuilderImages(builderConfigs []InitBuilder, images []string, force bool) ([]BuilderImagePair, error) {
 	// If nothing to choose, don't bother prompting
 	if len(images) == 0 || len(builderConfigs) == 0 {
-		return []builderImagePair{}, nil
+		return []BuilderImagePair{}, nil
 	}
 
 	// if we only have 1 image and 1 build config, don't bother prompting
 	if len(images) == 1 && len(builderConfigs) == 1 {
-		return []builderImagePair{{
+		return []BuilderImagePair{{
 			Builder:   builderConfigs[0],
 			ImageName: images[0],
 		}}, nil
@@ -229,7 +185,7 @@ func resolveBuilderImages(builderConfigs []InitBuilder, images []string, force b
 	return resolveBuilderImagesInteractively(builderConfigs, images)
 }
 
-func resolveBuilderImagesInteractively(builderConfigs []InitBuilder, images []string) ([]builderImagePair, error) {
+func resolveBuilderImagesInteractively(builderConfigs []InitBuilder, images []string) ([]BuilderImagePair, error) {
 	// Build map from choice string to builder config struct
 	choices := make([]string, len(builderConfigs))
 	choiceMap := make(map[string]InitBuilder, len(builderConfigs))
@@ -241,7 +197,7 @@ func resolveBuilderImagesInteractively(builderConfigs []InitBuilder, images []st
 	sort.Strings(choices)
 
 	// For each choice, use prompt string to pair builder config with k8s image
-	pairs := []builderImagePair{}
+	pairs := []BuilderImagePair{}
 	for {
 		if len(images) == 0 {
 			break
@@ -254,7 +210,7 @@ func resolveBuilderImagesInteractively(builderConfigs []InitBuilder, images []st
 		}
 
 		if choice != NoBuilder {
-			pairs = append(pairs, builderImagePair{Builder: choiceMap[choice], ImageName: image})
+			pairs = append(pairs, BuilderImagePair{Builder: choiceMap[choice], ImageName: image})
 			choices = util.RemoveFromSlice(choices, choice)
 		}
 		images = util.RemoveFromSlice(images, image)
@@ -265,7 +221,7 @@ func resolveBuilderImagesInteractively(builderConfigs []InitBuilder, images []st
 	return pairs, nil
 }
 
-func stripTags(taggedImages []string) []string {
+func StripTags(taggedImages []string) []string {
 	// Remove tags from image names
 	var images []string
 	for _, image := range taggedImages {

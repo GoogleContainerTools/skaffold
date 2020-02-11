@@ -14,20 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package analyze
 
-import "sort"
+import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
+)
 
-type sortedSet map[string]interface{}
-
-func (s sortedSet) add(value string) {
-	s[value] = value
+// kubectlAnalyzer is a Visitor during the directory analysis that collects kubernetes manifests
+type kubeAnalyzer struct {
+	directoryAnalyzer
+	kubernetesManifests []string
 }
 
-func (s sortedSet) values() (values []string) {
-	for val := range s {
-		values = append(values, val)
+func (k *kubeAnalyzer) analyzeFile(filePath string) error {
+	if kubernetes.IsKubernetesManifest(filePath) && !schema.IsSkaffoldConfig(filePath) {
+		k.kubernetesManifests = append(k.kubernetesManifests, filePath)
 	}
-	sort.Strings(values)
-	return values
+	return nil
 }
