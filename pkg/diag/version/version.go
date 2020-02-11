@@ -37,11 +37,6 @@ func GetVersion() string {
 	return version
 }
 
-// GetGitCommitID returns the git commit id from which it is being built
-func GetGitCommitID() string {
-	return gitCommitID
-}
-
 // GetSemverVersion returns the current semantic version (semver)
 func GetSemverVersion() (semver.Version, error) {
 	return semver.Make(strings.TrimPrefix(GetVersion(), VersionPrefix))

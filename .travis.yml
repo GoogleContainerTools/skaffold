@@ -60,14 +60,14 @@ jobs:
           - $HOME/.cache/go-build
           - $HOME/.gradle
     - os: linux
-      name: "Linux unit for diagnostic"
+      name: "diag/Linux unit"
       script:
         - make -f Makefile.diag coverage
       cache:
         directories:
           - $HOME/.cache/go-build
     - os: osx
-      name: "OSX unit for diagnostic"
+      name: "diag/OSX unit"
       before_install:
         - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5rc2/jq-osx-x86_64
         - chmod +x ${HOME}/bin/jq

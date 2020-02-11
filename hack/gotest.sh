@@ -35,10 +35,10 @@ else
     JQ_FILTER='select(has("Output") and (.Action=="output") and (has("Test")|not) and (.Output!="PASS\n") and (.Output!="FAIL\n") and (.Output|startswith("coverage:")|not) and (.Output|contains("[no test files]")|not)) | .Output'
 fi
 
-if [ "$#" -le 6 ]; then
-  echo "go test $@"
+if [[ " ${@}" =~ "pkg/skaffold" ]]; then
+  echo "go test ./pkg/skaffold/..."
 else
-  echo "go test ./..."
+  echo "go test $@"
 fi
 
 go test -json $@ | tee $LOG | jq --unbuffered -j "${JQ_FILTER}" | sed ''/FAIL/s//`printf "${RED}FAIL${RESET}"`/''
