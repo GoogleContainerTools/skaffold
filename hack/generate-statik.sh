@@ -16,6 +16,10 @@
 
 set -euo pipefail
 
+if ! [ -z "${SKAFFOLD_SKIP_LICENSES-}" ]; then
+    exit 0
+fi
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 BIN=${DIR}/bin
