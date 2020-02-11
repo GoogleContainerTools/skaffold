@@ -27,6 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -73,18 +74,9 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 		return err
 	}
 
-	var deployInitializer deploymentInitializer
-	switch {
-	case c.SkipDeploy:
-		deployInitializer = &emptyDeployInit{}
-	case len(c.CliKubernetesManifests) > 0:
-		deployInitializer = &cliDeployInit{c.CliKubernetesManifests}
-	default:
-		k, err := newKubectlInitializer(a.kubectlAnalyzer.kubernetesManifests)
-		if err != nil {
-			return err
-		}
-		deployInitializer = k
+	deployInitializer, err := deploy.NewDeployInitializer(a.KubectlAnalyzer.Manifests(), c)
+	if err != nil {
+		return err
 	}
 
 	// Determine which builders/images require prompting

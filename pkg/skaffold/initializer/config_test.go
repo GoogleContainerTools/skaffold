@@ -31,7 +31,7 @@ type stubDeploymentInitializer struct {
 	config latest.DeployConfig
 }
 
-func (s stubDeploymentInitializer) deployConfig() latest.DeployConfig {
+func (s stubDeploymentInitializer) DeployConfig() latest.DeployConfig {
 	return s.config
 }
 

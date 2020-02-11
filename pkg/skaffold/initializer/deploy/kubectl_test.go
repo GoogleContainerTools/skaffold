@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package deploy
 
 import (
 	"testing"
@@ -51,7 +51,7 @@ spec:
 			},
 		},
 	}
-	testutil.CheckDeepEqual(t, expectedConfig, k.deployConfig())
+	testutil.CheckDeepEqual(t, expectedConfig, k.DeployConfig())
 }
 
 func TestParseImagesFromKubernetesYaml(t *testing.T) {
