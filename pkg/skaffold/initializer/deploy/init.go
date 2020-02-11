@@ -21,8 +21,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// deploymentInitializer detects a deployment type and is able to extract image names from it
-type DeploymentInitializer interface {
+// Initializer detects a deployment type and is able to extract image names from it
+type Initializer interface {
 	// deployConfig generates Deploy Config for skaffold configuration.
 	DeployConfig() latest.DeployConfig
 	// GetImages fetches all the images defined in the manifest files.
@@ -57,7 +57,7 @@ func (c *emptyDeployInit) GetImages() []string {
 	return nil
 }
 
-func NewDeployInitializer(manifests []string, c config.Config) (DeploymentInitializer, error) {
+func NewInitializer(manifests []string, c config.Config) (Initializer, error) {
 	switch {
 	case c.SkipDeploy:
 		return &emptyDeployInit{}, nil

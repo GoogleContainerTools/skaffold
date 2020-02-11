@@ -25,6 +25,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
+func printAnalysis(out io.Writer, enableNewFormat bool, skipBuild bool, pairs []BuilderImagePair, unresolvedBuilderConfigs []InitBuilder, unresolvedImages []string) error {
+	if !enableNewFormat {
+		return PrintAnalyzeOldFormat(out, skipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
+	}
+
+	return PrintAnalyzeJSON(out, skipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
+}
+
 // TODO(nkubala): make these private again once DoInit() relinquishes control of the builder/image processing
 func PrintAnalyzeOldFormat(out io.Writer, skipBuild bool, pairs []BuilderImagePair, unresolvedBuilders []InitBuilder, unresolvedImages []string) error {
 	if !skipBuild && len(unresolvedBuilders) == 0 {

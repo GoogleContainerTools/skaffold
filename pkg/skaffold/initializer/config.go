@@ -35,7 +35,7 @@ var (
 	getWd = os.Getwd
 )
 
-func generateSkaffoldConfig(k deploy.DeploymentInitializer, buildConfigPairs []build.BuilderImagePair) *latest.SkaffoldConfig {
+func generateSkaffoldConfig(b build.Initializer, d deploy.Initializer) *latest.SkaffoldConfig {
 	// if we're here, the user has no skaffold yaml so we need to generate one
 	// if the user doesn't have any k8s yamls, generate one for each dockerfile
 	logrus.Info("generating skaffold config")
@@ -52,10 +52,8 @@ func generateSkaffoldConfig(k deploy.DeploymentInitializer, buildConfigPairs []b
 			Name: name,
 		},
 		Pipeline: latest.Pipeline{
-			Build: latest.BuildConfig{
-				Artifacts: artifacts(buildConfigPairs),
-			},
-			Deploy: k.DeployConfig(),
+			Build:  b.BuildConfig(),
+			Deploy: d.DeployConfig(),
 		},
 	}
 }
