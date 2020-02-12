@@ -5,5 +5,5 @@ EXPOSE 3000
 CMD ["npm", "run", "dev"]
 
 COPY package* ./
-RUN npm ci
+RUN chown -R 400:400 /app && npm ci
 COPY src .
