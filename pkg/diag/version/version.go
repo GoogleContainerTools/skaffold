@@ -29,9 +29,6 @@ const VersionPrefix = "v"
 // version is a private field and should be set when compiling with --ldflags="-X github.com/GoogleContainerTools/skaffold/pkg/diag/version.version=vX.Y.Z"
 var version = "v0.0.0-unset"
 
-// gitCommitID is a private field and should be set when compiling with --ldflags="-X github.com/GoogleContainerTool/pkg/diag/version.gitCommitID=<commit-id>"
-var gitCommitID = ""
-
 // GetVersion returns the current diag pkg version
 func GetVersion() string {
 	return version
