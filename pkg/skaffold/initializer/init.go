@@ -49,45 +49,22 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 		return err
 	}
 
-	deployInitializer, err := deploy.NewDeployInitializer(a.Manifests(), c)
+	buildInitializer := build.NewInitializer(a.Builders(), c)
+
+	deployInitializer, err := deploy.NewInitializer(a.Manifests(), c)
 	if err != nil {
 		return err
 	}
 
-	// Determine which builders/images require prompting
-	pairs, unresolvedBuilderConfigs, unresolvedImages :=
-		build.MatchBuildersToImages(
-			a.Builders(),
-			build.StripTags(deployInitializer.GetImages()))
+	if err := buildInitializer.ProcessImages(deployInitializer.GetImages()); err != nil {
+		return err
+	}
 
 	if c.Analyze {
-		// TODO: Remove backwards compatibility block
-		if !c.EnableNewInitFormat {
-			return build.PrintAnalyzeOldFormat(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
-		}
-
-		return build.PrintAnalyzeJSON(out, c.SkipBuild, pairs, unresolvedBuilderConfigs, unresolvedImages)
-	}
-	if !c.SkipBuild {
-		if len(a.Builders()) == 0 && c.CliArtifacts == nil {
-			return errors.New("one or more valid builder configuration (Dockerfile or Jib configuration) must be present to build images with skaffold; please provide at least one build config and try again or run `skaffold init --skip-build`")
-		}
-		if c.CliArtifacts != nil {
-			newPairs, err := build.ProcessCliArtifacts(c.CliArtifacts)
-			if err != nil {
-				return errors.Wrap(err, "processing cli artifacts")
-			}
-			pairs = append(pairs, newPairs...)
-		} else {
-			resolved, err := build.ResolveBuilderImages(unresolvedBuilderConfigs, unresolvedImages, c.Force)
-			if err != nil {
-				return err
-			}
-			pairs = append(pairs, resolved...)
-		}
+		return buildInitializer.PrintAnalysis(out)
 	}
 
-	pipeline, err := yaml.Marshal(generateSkaffoldConfig(deployInitializer, pairs))
+	pipeline, err := yaml.Marshal(generateSkaffoldConfig(buildInitializer, deployInitializer))
 	if err != nil {
 		return err
 	}

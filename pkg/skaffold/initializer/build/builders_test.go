@@ -43,7 +43,7 @@ func TestResolveBuilderImages(t *testing.T) {
 			buildConfigs:     []InitBuilder{},
 			images:           []string{},
 			shouldMakeChoice: false,
-			expectedPairs:    []BuilderImagePair{},
+			expectedPairs:    nil,
 		},
 		{
 			description:      "don't prompt for single dockerfile and image",
@@ -97,7 +97,7 @@ func TestResolveBuilderImages(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			// Overrides promptUserForBuildConfig to choose first option rather than using the interactive menu
+			// Overrides prompt.BuildConfigFunc to choose first option rather than using the interactive menu
 			t.Override(&prompt.BuildConfigFunc, func(image string, choices []string) (string, error) {
 				if !test.shouldMakeChoice {
 					t.FailNow()
@@ -105,9 +105,13 @@ func TestResolveBuilderImages(t *testing.T) {
 				return choices[0], nil
 			})
 
-			pairs, err := ResolveBuilderImages(test.buildConfigs, test.images, test.force)
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, pairs)
+			initializer := &defaultBuildInitializer{
+				builders:         test.buildConfigs,
+				force:            test.force,
+				unresolvedImages: test.images,
+			}
+			err := initializer.resolveBuilderImages()
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, initializer.BuilderImagePairs())
 		})
 	}
 }
@@ -184,7 +188,7 @@ func TestAutoSelectBuilders(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pairs, builderConfigs, unresolvedImages := MatchBuildersToImages(test.builderConfigs, test.images)
+			pairs, builderConfigs, unresolvedImages := matchBuildersToImages(test.builderConfigs, test.images)
 
 			t.CheckDeepEqual(test.expectedPairs, pairs)
 			t.CheckDeepEqual(test.expectedBuildersLeft, builderConfigs)
@@ -258,7 +262,7 @@ func TestProcessCliArtifacts(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pairs, err := ProcessCliArtifacts(test.artifacts)
+			pairs, err := processCliArtifacts(test.artifacts)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, pairs)
 		})
@@ -321,7 +325,7 @@ func TestStripImageTags(t *testing.T) {
 		testutil.Run(t, tc.name, func(t *testutil.T) {
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			images := StripTags(tc.taggedImages)
+			images := stripTags(tc.taggedImages)
 
 			t.CheckDeepEqual(tc.expectedImages, images)
 			t.CheckDeepEqual(tc.expectedWarnings, fakeWarner.Warnings)

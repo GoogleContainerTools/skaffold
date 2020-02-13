@@ -18,6 +18,7 @@ package initializer
 
 import (
 	"errors"
+	"io"
 	"path/filepath"
 	"testing"
 
@@ -38,6 +39,28 @@ func (s stubDeploymentInitializer) DeployConfig() latest.DeployConfig {
 
 func (s stubDeploymentInitializer) GetImages() []string {
 	panic("implement me")
+}
+
+type stubBuildInitializer struct {
+	pairs []build.BuilderImagePair
+}
+
+func (s stubBuildInitializer) ProcessImages([]string) error {
+	panic("no")
+}
+
+func (s stubBuildInitializer) BuilderImagePairs() []build.BuilderImagePair {
+	panic("nope")
+}
+
+func (s stubBuildInitializer) PrintAnalysis(io.Writer) error {
+	panic("no sir")
+}
+
+func (s stubBuildInitializer) BuildConfig() latest.BuildConfig {
+	return latest.BuildConfig{
+		Artifacts: artifacts(s.pairs),
+	}
 }
 
 func TestGenerateSkaffoldConfig(t *testing.T) {
@@ -115,8 +138,11 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 			deploymentInitializer := stubDeploymentInitializer{
 				test.deployConfig,
 			}
+			buildInitializer := stubBuildInitializer{
+				test.builderConfigPairs,
+			}
 			t.Override(&getWd, test.getWd)
-			config := generateSkaffoldConfig(deploymentInitializer, test.builderConfigPairs)
+			config := generateSkaffoldConfig(buildInitializer, deploymentInitializer)
 			t.CheckDeepEqual(config, test.expectedSkaffoldConfig)
 		})
 	}
