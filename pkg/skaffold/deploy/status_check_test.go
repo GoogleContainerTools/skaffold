@@ -500,22 +500,13 @@ func TestGetStatusCheckDeadline(t *testing.T) {
 			expected: time.Duration(20) * time.Second,
 		},
 		{
-			description: "no value specified less than all other resources",
+			description: "value specified less than all other resources",
 			value: 5,
 			deps: []Resource{
 				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
 				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
 			},
 			expected: time.Duration(5) * time.Second,
-		},
-		{
-			description: "no value specified greater than all other resources",
-			value: 50,
-			deps: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
-				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
-			},
-			expected: time.Duration(50) * time.Second,
 		},
 	}
 	for _, test := range tests {

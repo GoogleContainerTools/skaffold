@@ -261,7 +261,6 @@ func (c *resourceCounter) markProcessed(err error) resourceCounter {
 	}
 }
 
-
 func statusCheckDeadline(value int, deployments []Resource) time.Duration {
 	if value > 0 {
 		return time.Duration(value) * time.Second
