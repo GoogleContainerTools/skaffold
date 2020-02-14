@@ -487,9 +487,9 @@ func TestResourceMarkProcessed(t *testing.T) {
 func TestGetStatusCheckDeadline(t *testing.T) {
 	tests := []struct {
 		description string
-		value  int
-		deps []Resource
-		expected time.Duration
+		value       int
+		deps        []Resource
+		expected    time.Duration
 	}{
 		{
 			description: "no value specified",
@@ -501,7 +501,7 @@ func TestGetStatusCheckDeadline(t *testing.T) {
 		},
 		{
 			description: "value specified less than all other resources",
-			value: 5,
+			value:       5,
 			deps: []Resource{
 				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
 				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
