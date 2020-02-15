@@ -160,7 +160,10 @@ func GetDefaultRepo(configFile, cliValue string) (string, error) {
 	return cfg.DefaultRepo, nil
 }
 
-func GetLocalCluster(configFile string) (bool, error) {
+func GetLocalCluster(configFile string, minikubeProfile string) (bool, error) {
+	if minikubeProfile != "" {
+		return true, nil
+	}
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {
 		return false, err
