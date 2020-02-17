@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v2alpha3
 
 import (
 	v1 "k8s.io/api/core/v1"
@@ -22,8 +22,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2alpha4"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v2alpha3"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -510,12 +510,8 @@ type HelmRelease struct {
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
 
 	// Remote specifies whether the chart path is remote, or exists on the host filesystem.
-	// `remote: true` implies `skipBuildDependencies: true` and `upgradeOnChange: false`.
-	// `remote: false` implies `upgradeOnChange: true`.
+	// `remote: true` implies `skipBuildDependencies: true`.
 	Remote bool `yaml:"remote,omitempty"`
-
-	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
-	UpgradeOnChange *bool `yaml:"upgradeOnChange,omitempty"`
 
 	// Overrides are key-value pairs.
 	// If present, Skaffold will build a Helm `values` file that overrides
