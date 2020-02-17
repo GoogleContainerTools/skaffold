@@ -940,38 +940,6 @@ func TestGetSetFileValues(t *testing.T) {
 	}
 }
 
-func TestShouldUpgradeOnChange(t *testing.T) {
-	trueBool := true
-	tests := []struct {
-		description string
-		input       latest.HelmRelease
-		expected    bool
-	}{
-		{
-			description: "Default `UpgradeOnChange: false` when `Remote: true`",
-			input:       latest.HelmRelease{Remote: true, UpgradeOnChange: nil},
-			expected:    false,
-		},
-		{
-			description: "Default `UpgradeOnChange: true` when `Remote: false`",
-			input:       latest.HelmRelease{Remote: false, UpgradeOnChange: nil},
-			expected:    true,
-		},
-		{
-			description: "Uses upgradeOnChange value regardless of Remote value",
-			input:       latest.HelmRelease{Remote: true, UpgradeOnChange: &trueBool},
-			expected:    true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			deployer := NewHelmDeployer(&runcontext.RunContext{})
-
-			t.CheckDeepEqual(test.expected, deployer.shouldUpgradeOnChange(test.input))
-		})
-	}
-}
-
 func makeRunContext(deploy latest.HelmDeploy, force bool) *runcontext.RunContext {
 	pipeline := latest.Pipeline{}
 	pipeline.Deploy.DeployType.HelmDeploy = &deploy

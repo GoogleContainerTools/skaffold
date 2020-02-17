@@ -217,17 +217,34 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	if !isInstalled {
 		args = append(args, "install", "--name", releaseName)
 		args = append(args, h.Flags.Install...)
-	} else if !h.shouldUpgradeOnChange(r) {
-		logrus.Infof("Release %s already installed...\n", releaseName)
-		return []Artifact{}, nil
 	} else {
-		args = append(args, "upgrade", releaseName)
-		args = append(args, h.Flags.Upgrade...)
-		if h.forceDeploy {
-			args = append(args, "--force")
+
+		var shouldUpgrade bool
+		if r.UpgradeOnChange != nil {
+			shouldUpgrade = *r.UpgradeOnChange
+
+			if !shouldUpgrade {
+				logrus.Infof("Release %s already installed...\n", releaseName)
+			}
+		} else {
+			shouldUpgrade = !r.Remote
+
+			if !shouldUpgrade {
+				logrus.Infof("Release %s not upgraded since remote (see `upgradeOnChange`)...\n", releaseName)
+			}
 		}
-		if r.RecreatePods {
-			args = append(args, "--recreate-pods")
+
+		if shouldUpgrade {
+			args = append(args, "upgrade", releaseName)
+			args = append(args, h.Flags.Upgrade...)
+			if h.forceDeploy {
+				args = append(args, "--force")
+			}
+			if r.RecreatePods {
+				args = append(args, "--recreate-pods")
+			}
+		} else {
+			return []Artifact{}, nil
 		}
 	}
 
@@ -545,12 +562,4 @@ func expandPaths(paths []string) []string {
 	}
 
 	return paths
-}
-
-func (h *HelmDeployer) shouldUpgradeOnChange(r latest.HelmRelease) bool {
-	if r.UpgradeOnChange != nil {
-		return *r.UpgradeOnChange
-	}
-
-	return !r.Remote
 }
