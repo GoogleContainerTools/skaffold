@@ -11,6 +11,7 @@ End-to-end pipelines:
 
 * [skaffold run](#skaffold-run) - to build & deploy once
 * [skaffold dev](#skaffold-dev) - to trigger the watch loop build & deploy workflow with cleanup on exit
+* [skaffold debug](#skaffold-debug) - to run a pipeline in debug mode
 
 Pipeline building blocks for CI/CD:
 
@@ -30,7 +31,9 @@ Other Commands:
 * [skaffold version](#skaffold-version) - get Skaffold version
 * [skaffold completion](#skaffold-completion) - setup tab completion for the CLI
 * [skaffold config](#skaffold-config) - manage context specific parameters
+* [skaffold credits](#skaffold-credits) - export third party notices to given path (./skaffold-credits by default)
 * [skaffold diagnose](#skaffold-diagnose) - diagnostics of Skaffold works in your project
+* [skaffold schema](#skaffold-schema) - list and print json schemas used to validate skaffold.yaml configuration
 
 
 ## Global flags

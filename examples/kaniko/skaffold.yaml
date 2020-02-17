@@ -1,11 +1,9 @@
-apiVersion: skaffold/v1
+apiVersion: skaffold/v2alpha3
 kind: Config
 build:
   artifacts:
-    - image: gcr.io/k8s-skaffold/skaffold-example
+    - image: skaffold-example
       kaniko:
-        buildContext:
-          gcsBucket: skaffold-kaniko
         cache: {}
   cluster:
     pullSecretName: e2esecret

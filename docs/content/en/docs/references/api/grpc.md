@@ -98,6 +98,44 @@ If the build fails, an error will be attached to the event.
 
 
 
+<a name="proto.DebuggingContainerEvent"></a>
+#### DebuggingContainerEvent
+DebuggingContainerEvent is raised when a debugging container is started or terminated
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| status | [string](#string) |  | the container status oneof: Started, Terminated |
+| podName | [string](#string) |  | the pod name with the debugging container |
+| containerName | [string](#string) |  | the name of the container configured for debugging |
+| namespace | [string](#string) |  | the namespace of the debugging container |
+| artifact | [string](#string) |  | the corresponding artifact's image name |
+| runtime | [string](#string) |  | the detected language runtime |
+| workingDir | [string](#string) |  | the working directory in the container image |
+| debugPorts | [DebuggingContainerEvent.DebugPortsEntry](#proto.DebuggingContainerEvent.DebugPortsEntry) | repeated | the exposed debugging-related ports |
+
+
+
+
+
+
+
+<a name="proto.DebuggingContainerEvent.DebugPortsEntry"></a>
+#### DebuggingContainerEvent.DebugPortsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [uint32](#uint32) |  |  |
+
+
+
+
+
+
+
 <a name="proto.DeployEvent"></a>
 #### DeployEvent
 `DeployEvent` represents the status of a deployment, and is emitted by Skaffold
@@ -133,7 +171,7 @@ anytime a deployment starts or completes, successfully or not.
 <a name="proto.Event"></a>
 #### Event
 `Event` describes an event in the Skaffold process.
-It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent or FileSyncEvent.
+It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
 
 
 | Field | Type | Label | Description |
@@ -145,6 +183,7 @@ It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, Re
 | statusCheckEvent | [StatusCheckEvent](#proto.StatusCheckEvent) |  | describes if the Status check has started, is in progress, has succeeded or failed. |
 | resourceStatusCheckEvent | [ResourceStatusCheckEvent](#proto.ResourceStatusCheckEvent) |  | indicates progress for each kubernetes deployment. |
 | fileSyncEvent | [FileSyncEvent](#proto.FileSyncEvent) |  | describes the sync status. |
+| debuggingContainerEvent | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) |  | describes the appearance or disappearance of a debugging container |
 
 
 
@@ -321,6 +360,7 @@ will be sent with the new status.
 | forwardedPorts | [State.ForwardedPortsEntry](#proto.State.ForwardedPortsEntry) | repeated |  |
 | statusCheckState | [StatusCheckState](#proto.StatusCheckState) |  |  |
 | fileSyncState | [FileSyncState](#proto.FileSyncState) |  |  |
+| debuggingContainers | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) | repeated |  |
 
 
 

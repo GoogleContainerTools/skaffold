@@ -85,6 +85,20 @@ var testDeployConfigTemplated = latest.HelmDeploy{
 	}},
 }
 
+var testDeployConfigValuesFilesTemplated = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+		Values: map[string]string{
+			"image": "skaffold-helm",
+		},
+		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
+		ValuesFiles: []string{
+			"/some/file-{{.FOO}}.yaml",
+		},
+	}},
+}
+
 var testDeployRecreatePodsConfig = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
@@ -228,11 +242,23 @@ var testDeployWithoutTags = latest.HelmDeploy{
 	}},
 }
 
+var testTwoReleases = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "other",
+		ChartPath: "examples/test",
+	}, {
+		Name: "skaffold-helm",
+		Values: map[string]string{
+			"image.tag": "skaffold-helm",
+		},
+	}},
+}
+
 var testNamespace = "testNamespace"
 
 var validDeployYaml = `
 # Source: skaffold-helm/templates/deployment.yaml
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: skaffold-helm
@@ -243,6 +269,10 @@ metadata:
     heritage: Tiller
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app: skaffold-helm
+      release: skaffold-helm
   template:
     metadata:
       labels:
@@ -398,6 +428,23 @@ func TestHelmDeploy(t *testing.T) {
 			builds:     testBuilds,
 		},
 		{
+			description: "image values should be set using --set-string",
+			commands: &MockHelm{
+				getResult: fmt.Errorf("not found"),
+				installMatcher: func(cmd *exec.Cmd) bool {
+					setStringIndex := util.StrSliceIndex(cmd.Args, "--set-string")
+					if setStringIndex == -1 {
+						return false
+					}
+					expected := fmt.Sprintf("image.repository=%s,image.tag=%s", "docker.io:5000/skaffold-helm", "3605e7bc17cf46e53f4d81c4cbc24e5b4c495184")
+					return setStringIndex+1 < len(cmd.Args) && cmd.Args[setStringIndex+1] == expected
+				},
+				upgradeResult: fmt.Errorf("should not have called upgrade"),
+			},
+			runContext: makeRunContext(testDeployHelmStyleConfig, false),
+			builds:     testBuilds,
+		},
+		{
 			description: "helm image strategy with explicit registry should set the Helm registry value",
 			commands: &MockHelm{
 				getResult: fmt.Errorf("not found"),
@@ -488,6 +535,16 @@ func TestHelmDeploy(t *testing.T) {
 			builds:     testBuilds,
 		},
 		{
+			description: "deploy with valuesFiles templated",
+			commands: &MockHelm{
+				upgradeMatcher: func(cmd *exec.Cmd) bool {
+					return util.StrSliceContains(cmd.Args, "/some/file-FOOBAR.yaml")
+				},
+			},
+			runContext: makeRunContext(testDeployConfigValuesFilesTemplated, false),
+			builds:     testBuilds,
+		},
+		{
 			description: "deploy without actual tags",
 			commands:    &MockHelm{},
 			runContext:  makeRunContext(testDeployWithoutTags, false),
@@ -497,6 +554,12 @@ func TestHelmDeploy(t *testing.T) {
 				"image [docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184] is not used.",
 				"image [skaffold-helm] is used instead.",
 			},
+		},
+		{
+			description: "first release without tag, second with tag",
+			commands:    &MockHelm{},
+			runContext:  makeRunContext(testTwoReleases, false),
+			builds:      testBuilds,
 		},
 	}
 	for _, test := range tests {
@@ -822,7 +885,7 @@ func TestHelmRender(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			deployer := NewHelmDeployer(&runcontext.RunContext{})
-			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, "tmp/dir")
+			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, nil, "tmp/dir")
 			t.CheckError(test.shouldErr, actual)
 		})
 	}

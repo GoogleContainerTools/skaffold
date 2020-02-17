@@ -2,6 +2,7 @@
 title: "Architecture and Design"
 linkTitle: "Architecture and Design"
 weight: 50
+aliases: [/docs/concepts,/docs/concepts/architecture]
 ---
 
 Skaffold is designed with pluggability in mind:

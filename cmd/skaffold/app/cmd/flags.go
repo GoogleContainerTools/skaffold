@@ -135,7 +135,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.CustomLabels,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render"},
 	},
 	{
 		Name:          "toot",
@@ -209,7 +209,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.PortForward.Enabled,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "debug"},
+		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
 	},
 	{
 		Name:          "status-check",

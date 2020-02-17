@@ -16,7 +16,7 @@ Thank you @nkubala  and @tejal29  for all the hard work in exploring this avenue
 Currently there are two major pain points with the event API:
 
 * calling code is clunky, ugly, and not very portable
-* event handler is racey and generally not concurrency-friendly
+* event handler is racy and generally not concurrency-friendly
 
 The second issue here comes more from bad execution rather than bad design. Some fixes for this have already been proposed and/or merged ([#1786](https://github.com/GoogleContainerTools/skaffold/pull/1786) and [#1801](https://github.com/GoogleContainerTools/skaffold/pull/1801)), so progress has already been made, but we can probably improve on this more.
 

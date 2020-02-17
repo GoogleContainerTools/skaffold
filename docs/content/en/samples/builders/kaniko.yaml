@@ -1,8 +1,6 @@
 build:
   artifacts:
     - image: gcr.io/k8s-skaffold/example
-      kaniko:
-        buildContext:
-          gcsBucket: YOUR-BUCKET
+      kaniko: {}
   cluster:
     pullSecretName: YOUR-PULL-SECRET-NAME

@@ -29,6 +29,7 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	blackfriday "github.com/russross/blackfriday/v2"
@@ -87,55 +88,86 @@ func main() {
 	}
 }
 
+type sameErr struct {
+	same bool
+	err  error
+}
+
 func generateSchemas(root string, dryRun bool) (bool, error) {
-	same := true
+	results := [](chan sameErr){}
+	for range schema.SchemaVersions {
+		results = append(results, make(chan sameErr, 1))
+	}
 
+	var wg sync.WaitGroup
 	for i, version := range schema.SchemaVersions {
-		apiVersion := strings.TrimPrefix(version.APIVersion, "skaffold/")
+		wg.Add(1)
+		go func(i int, version schema.Version) {
+			same, err := generateSchema(root, dryRun, version)
+			results[i] <- sameErr{
+				same: same,
+				err:  err,
+			}
+			wg.Done()
+		}(i, version)
+	}
+	wg.Wait()
 
-		folder := apiVersion
-		strict := false
-		if i == len(schema.SchemaVersions)-1 {
-			folder = "latest"
-			strict = true
+	same := true
+	for i := range schema.SchemaVersions {
+		result := <-results[i]
+		if result.err != nil {
+			return false, result.err
 		}
 
-		input := filepath.Join(root, "pkg", "skaffold", "schema", folder, "config.go")
-		output := filepath.Join(root, "docs", "content", "en", "schemas", apiVersion+".json")
+		same = same && result.same
+	}
 
-		generator := schemaGenerator{
-			strict: strict,
-		}
+	return same, nil
+}
 
-		buf, err := generator.Apply(input)
+func generateSchema(root string, dryRun bool, version schema.Version) (bool, error) {
+	apiVersion := strings.TrimPrefix(version.APIVersion, "skaffold/")
+
+	folder := apiVersion
+	strict := false
+	if version.APIVersion == schema.SchemaVersions[len(schema.SchemaVersions)-1].APIVersion {
+		folder = "latest"
+		strict = true
+	}
+
+	input := filepath.Join(root, "pkg", "skaffold", "schema", folder, "config.go")
+	output := filepath.Join(root, "docs", "content", "en", "schemas", apiVersion+".json")
+
+	generator := schemaGenerator{
+		strict: strict,
+	}
+
+	buf, err := generator.Apply(input)
+	if err != nil {
+		return false, errors.Wrapf(err, "unable to generate schema for version %s", version.APIVersion)
+	}
+
+	var current []byte
+	if _, err := os.Stat(output); err == nil {
+		var err error
+		current, err = ioutil.ReadFile(output)
 		if err != nil {
-			return false, errors.Wrapf(err, "unable to generate schema for version %s", version.APIVersion)
+			return false, errors.Wrapf(err, "unable to read existing schema for version %s", version.APIVersion)
 		}
+	} else if !os.IsNotExist(err) {
+		return false, errors.Wrapf(err, "unable to check that file exists %s", output)
+	}
 
-		var current []byte
-		if _, err := os.Stat(output); err == nil {
-			var err error
-			current, err = ioutil.ReadFile(output)
-			if err != nil {
-				return false, errors.Wrapf(err, "unable to read existing schema for version %s", version.APIVersion)
-			}
-		} else if !os.IsNotExist(err) {
-			return false, errors.Wrapf(err, "unable to check that file exists %s", output)
-		}
+	current = bytes.Replace(current, []byte("\r\n"), []byte("\n"), -1)
 
-		current = bytes.Replace(current, []byte("\r\n"), []byte("\n"), -1)
-
-		if string(current) != string(buf) {
-			same = false
-		}
-
-		if !dryRun {
-			if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
-				return false, errors.Wrapf(err, "unable to write schema %s", output)
-			}
+	if !dryRun {
+		if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
+			return false, errors.Wrapf(err, "unable to write schema %s", output)
 		}
 	}
 
+	same := string(current) == string(buf)
 	return same, nil
 }
 

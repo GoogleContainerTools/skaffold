@@ -25,12 +25,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	yamlv2 "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-
-	yamlv2 "gopkg.in/yaml.v2"
 )
 
 func CreateSkaffoldProfile(out io.Writer, runCtx *runcontext.RunContext, configFile *ConfigFile) error {
@@ -127,11 +126,7 @@ func generateProfile(out io.Writer, namespace string, config *latest.SkaffoldCon
 		if artifact.DockerArtifact != nil {
 			color.Default.Fprintf(out, "Cannot use Docker to build %s on cluster. Adding config for building with Kaniko.\n", artifact.ImageName)
 			artifact.DockerArtifact = nil
-			artifact.KanikoArtifact = &latest.KanikoArtifact{
-				BuildContext: &latest.KanikoBuildContext{
-					GCSBucket: "skaffold-kaniko",
-				},
-			}
+			artifact.KanikoArtifact = &latest.KanikoArtifact{}
 			addKaniko = true
 		}
 	}

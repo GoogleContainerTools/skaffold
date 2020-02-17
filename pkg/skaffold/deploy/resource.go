@@ -39,7 +39,7 @@ type Resource interface {
 	// UpdateStatus updates the resource status
 	UpdateStatus(string, error)
 
-	// IsStatusCheckComplete returns if the resource status check is complele
+	// IsStatusCheckComplete returns if the resource status check is complete
 	IsStatusCheckComplete() bool
 
 	// Deadline returns the deadline for the resource

@@ -19,13 +19,12 @@ package debug
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -242,7 +241,7 @@ func TestTransformManifestJVM(t *testing.T) {
 			true,
 			&v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"jdwp":5005,"runtime":"jvm"}}`},
+					Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"jvm","ports":{"jdwp":5005}}}`},
 				},
 				Spec: v1.PodSpec{Containers: []v1.Container{
 					{
@@ -274,7 +273,7 @@ func TestTransformManifestJVM(t *testing.T) {
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"jdwp":5005,"runtime":"jvm"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"jvm","ports":{"jdwp":5005}}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
 							{
@@ -306,7 +305,7 @@ func TestTransformManifestJVM(t *testing.T) {
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"jdwp":5005,"runtime":"jvm"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"jvm","ports":{"jdwp":5005}}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
 							{
@@ -338,7 +337,7 @@ func TestTransformManifestJVM(t *testing.T) {
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"jdwp":5005,"runtime":"jvm"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"jvm","ports":{"jdwp":5005}}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
 							{
@@ -368,7 +367,7 @@ func TestTransformManifestJVM(t *testing.T) {
 				Spec: appsv1.DaemonSetSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"jdwp":5005,"runtime":"jvm"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"jvm","ports":{"jdwp":5005}}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
 							{
@@ -398,7 +397,7 @@ func TestTransformManifestJVM(t *testing.T) {
 				Spec: batchv1.JobSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"jdwp":5005,"runtime":"jvm"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"jvm","ports":{"jdwp":5005}}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
 							{
@@ -430,7 +429,7 @@ func TestTransformManifestJVM(t *testing.T) {
 					Replicas: int32p(1),
 					Template: &v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"jdwp":5005,"runtime":"jvm"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"jvm","ports":{"jdwp":5005}}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
 							{
@@ -472,7 +471,7 @@ func TestTransformManifestJVM(t *testing.T) {
 						}}},
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"jdwp":5005,"runtime":"jvm"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"jvm","ports":{"jdwp":5005}}}`},
 						},
 						Spec: v1.PodSpec{Containers: []v1.Container{
 							{

@@ -17,40 +17,50 @@ limitations under the License.
 package buildpacks
 
 import (
-	"context"
 	"encoding/json"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-type runImage struct {
-	Image string `json:"image"`
+type buildMetadata struct {
+	Bom []bom `json:"bom"`
 }
 
-type stack struct {
-	RunImage runImage `json:"runImage"`
+type bom struct {
+	Metadata bomMetadata `json:"metadata"`
 }
 
-type metadata struct {
-	Stack stack `json:"stack"`
+type bomMetadata struct {
+	Sync []syncRule `json:"devmode.sync"`
 }
 
-// TODO(dgageot): mirrors
-func (b *BuildpackBuilder) findRunImage(ctx context.Context, a *latest.BuildpackArtifact, builder string) (string, error) {
-	if a.RunImage != "" {
-		return a.RunImage, nil
+type syncRule struct {
+	Src  string `json:"src"`
+	Dest string `json:"dest"`
+}
+
+// $ docker inspect demo/buildpacks | jq -r '.[].Config.Labels["io.buildpacks.build.metadata"] | fromjson.bom[].metadata["devmode.sync"]'
+func SyncRules(labels map[string]string) ([]*latest.SyncRule, error) {
+	metadataJSON, present := labels["io.buildpacks.build.metadata"]
+	if !present {
+		return nil, nil
 	}
 
-	cfg, err := b.localDocker.ConfigFile(ctx, builder)
-	if err != nil {
-		return "", err
+	m := buildMetadata{}
+	if err := json.Unmarshal([]byte(metadataJSON), &m); err != nil {
+		return nil, err
 	}
 
-	var m metadata
-	label := cfg.Config.Labels["io.buildpacks.builder.metadata"]
-	if err := json.Unmarshal([]byte(label), &m); err != nil {
-		return "", err
+	var rules []*latest.SyncRule
+
+	for _, b := range m.Bom {
+		for _, sync := range b.Metadata.Sync {
+			rules = append(rules, &latest.SyncRule{
+				Src:  sync.Src,
+				Dest: sync.Dest,
+			})
+		}
 	}
 
-	return m.Stack.RunImage.Image, nil
+	return rules, nil
 }

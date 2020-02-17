@@ -32,6 +32,7 @@ import (
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -39,44 +40,66 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+// For testing
 var (
-	// WorkingDir is here for testing
 	WorkingDir = docker.RetrieveWorkingDir
+	Labels     = docker.RetrieveLabels
+	SyncMap    = syncMapForArtifact
 )
 
-func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool, destProvider DestinationProvider) (*Item, error) {
+func NewItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
 	if !e.HasChanged() || a.Sync == nil {
 		return nil, nil
 	}
 
-	if len(a.Sync.Manual) > 0 {
-		return manualSyncItem(a, e, builds, insecureRegistries)
-	}
-
-	if len(a.Sync.Infer) > 0 {
-		return inferredSyncItem(a, e, builds, destProvider)
-	}
-
-	return nil, nil
-}
-
-func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, insecureRegistries map[string]bool) (*Item, error) {
 	tag := latestTag(a.ImageName, builds)
 	if tag == "" {
 		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
 	}
 
+	switch {
+	case len(a.Sync.Manual) > 0:
+		return syncItem(a, tag, e, a.Sync.Manual, insecureRegistries)
+
+	case a.BuildpackArtifact != nil && len(a.Sync.Infer) > 0:
+		labels, err := Labels(tag, insecureRegistries)
+		if err != nil {
+			return nil, errors.Wrapf(err, "retrieving labels for %s", tag)
+		}
+
+		rules, err := buildpacks.SyncRules(labels)
+		if err != nil {
+			return nil, errors.Wrapf(err, "extracting sync rules from labels for %s", tag)
+		}
+
+		// filter out modifications based on Sync.Infer patterns
+		e, err = filterEvents(a.Workspace, e, a.Sync.Infer)
+		if err != nil {
+			return nil, err
+		}
+
+		return syncItem(a, tag, e, rules, insecureRegistries)
+
+	case len(a.Sync.Infer) > 0:
+		return inferredSyncItem(a, tag, e, insecureRegistries)
+
+	default:
+		return nil, nil
+	}
+}
+
+func syncItem(a *latest.Artifact, tag string, e filemon.Events, syncRules []*latest.SyncRule, insecureRegistries map[string]bool) (*Item, error) {
 	containerWd, err := WorkingDir(tag, insecureRegistries)
 	if err != nil {
 		return nil, errors.Wrapf(err, "retrieving working dir for %s", tag)
 	}
 
-	toCopy, err := intersect(a.Workspace, containerWd, a.Sync.Manual, append(e.Added, e.Modified...))
+	toCopy, err := intersect(a.Workspace, containerWd, syncRules, append(e.Added, e.Modified...))
 	if err != nil {
 		return nil, errors.Wrap(err, "intersecting sync map and added, modified files")
 	}
 
-	toDelete, err := intersect(a.Workspace, containerWd, a.Sync.Manual, e.Deleted)
+	toDelete, err := intersect(a.Workspace, containerWd, syncRules, e.Deleted)
 	if err != nil {
 		return nil, errors.Wrap(err, "intersecting sync map and deleted files")
 	}
@@ -89,18 +112,13 @@ func manualSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifac
 	return &Item{Image: tag, Copy: toCopy, Delete: toDelete}, nil
 }
 
-func inferredSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artifact, provider DestinationProvider) (*Item, error) {
+func inferredSyncItem(a *latest.Artifact, tag string, e filemon.Events, insecureRegistries map[string]bool) (*Item, error) {
 	// deleted files are no longer contained in the syncMap, so we need to rebuild
 	if len(e.Deleted) > 0 {
 		return nil, nil
 	}
 
-	tag := latestTag(a.ImageName, builds)
-	if tag == "" {
-		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
-	}
-
-	syncMap, err := provider()
+	syncMap, err := SyncMap(a, insecureRegistries)
 	if err != nil {
 		return nil, errors.Wrapf(err, "inferring syncmap for image %s", a.ImageName)
 	}
@@ -138,6 +156,19 @@ func inferredSyncItem(a *latest.Artifact, e filemon.Events, builds []build.Artif
 	return &Item{Image: tag, Copy: toCopy}, nil
 }
 
+func syncMapForArtifact(a *latest.Artifact, insecureRegistries map[string]bool) (map[string][]string, error) {
+	switch {
+	case a.DockerArtifact != nil:
+		return docker.SyncMap(a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, insecureRegistries)
+
+	case a.KanikoArtifact != nil:
+		return docker.SyncMap(a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, insecureRegistries)
+
+	default:
+		return nil, build.ErrSyncMapNotSupported{}
+	}
+}
+
 func latestTag(image string, builds []build.Artifact) string {
 	for _, build := range builds {
 		if build.ImageName == image {
@@ -168,6 +199,53 @@ func intersect(contextWd, containerWd string, syncRules []*latest.SyncRule, file
 		ret[f] = dsts
 	}
 	return ret, nil
+}
+
+// filterEvents only considers changes that match the given patterns
+func filterEvents(contextWd string, e filemon.Events, patterns []string) (filemon.Events, error) {
+	added, err := filter(contextWd, e.Added, patterns)
+	if err != nil {
+		return filemon.Events{}, err
+	}
+	modified, err := filter(contextWd, e.Modified, patterns)
+	if err != nil {
+		return filemon.Events{}, err
+	}
+	deleted, err := filter(contextWd, e.Deleted, patterns)
+	if err != nil {
+		return filemon.Events{}, err
+	}
+
+	return filemon.Events{
+		Added:    added,
+		Modified: modified,
+		Deleted:  deleted,
+	}, nil
+}
+
+func filter(contextWd string, paths []string, patterns []string) ([]string, error) {
+	var filtered []string
+
+	for _, path := range paths {
+		for _, pattern := range patterns {
+			relPath, err := filepath.Rel(contextWd, path)
+			if err != nil {
+				return nil, errors.Wrapf(err, "changed file %s can't be found relative to context %s", path, contextWd)
+			}
+
+			matches, err := doublestar.PathMatch(filepath.FromSlash(pattern), relPath)
+			if err != nil {
+				return nil, err
+			}
+
+			if matches {
+				filtered = append(filtered, path)
+				break
+			}
+		}
+	}
+
+	return filtered, nil
 }
 
 func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) ([]string, error) {

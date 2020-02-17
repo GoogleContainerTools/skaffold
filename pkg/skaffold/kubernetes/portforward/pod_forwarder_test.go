@@ -20,7 +20,6 @@ import (
 	"context"
 	"io/ioutil"
 	"reflect"
-	"sync"
 	"testing"
 	"time"
 
@@ -68,7 +67,6 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					automaticPodForwarding: true,
 					portName:               "portname",
 					localPort:              8080,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -114,7 +112,6 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					containerName:          "containername",
 					portName:               "portname",
 					localPort:              9000,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			availablePorts: []int{9000},
@@ -191,7 +188,6 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					portName:               "portname",
 					automaticPodForwarding: true,
 					localPort:              8080,
-					terminationLock:        &sync.Mutex{},
 				},
 				"owner-containername2-namespace2-portname2-50051": {
 					resourceVersion: 1,
@@ -209,7 +205,6 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					portName:               "portname2",
 					automaticPodForwarding: true,
 					localPort:              50051,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -276,7 +271,6 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					localPort:              8080,
-					terminationLock:        &sync.Mutex{},
 				},
 				"owner-containername2-namespace2-portname2-8080": {
 					resourceVersion: 1,
@@ -294,7 +288,6 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					localPort:              9000,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{
@@ -361,7 +354,6 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					ownerReference:         "owner",
 					automaticPodForwarding: true,
 					localPort:              8080,
-					terminationLock:        &sync.Mutex{},
 				},
 			},
 			pods: []*v1.Pod{

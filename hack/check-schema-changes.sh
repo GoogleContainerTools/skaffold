@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-# This check checks whether the PR compared to master contains any changes
+# This check checks whether the PR compared to origin/master contains any changes
 # in the config.go files under pkg/skaffold/schema. If yes, it checks if those changes
 # are structural changes or not.
 # If they are structural changes and the package is not "latest",

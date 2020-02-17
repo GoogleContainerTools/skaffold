@@ -50,6 +50,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta7"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta8"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta9"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha2"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -81,6 +83,8 @@ var SchemaVersions = Versions{
 	{v1beta16.Version, v1beta16.NewSkaffoldConfig},
 	{v1beta17.Version, v1beta17.NewSkaffoldConfig},
 	{v1.Version, v1.NewSkaffoldConfig},
+	{v2alpha1.Version, v2alpha1.NewSkaffoldConfig},
+	{v2alpha2.Version, v2alpha2.NewSkaffoldConfig},
 	{latest.Version, latest.NewSkaffoldConfig},
 }
 
@@ -100,6 +104,14 @@ func (v *Versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
 	}
 
 	return nil, false
+}
+
+// IsSkaffoldConfig is for determining if a file is skaffold config file.
+func IsSkaffoldConfig(file string) bool {
+	if config, err := ParseConfig(file, false); err == nil && config != nil {
+		return true
+	}
+	return false
 }
 
 // ParseConfig reads a configuration file.

@@ -13,7 +13,6 @@ import (
 // It returns unauthorizedError when the authentication fails.
 func (cli *Client) RegistryLogin(ctx context.Context, auth types.AuthConfig) (registry.AuthenticateOKBody, error) {
 	resp, err := cli.post(ctx, "/auth", url.Values{}, auth, nil)
-	defer ensureReaderClosed(resp)
 
 	if err != nil {
 		return registry.AuthenticateOKBody{}, err
@@ -21,5 +20,6 @@ func (cli *Client) RegistryLogin(ctx context.Context, auth types.AuthConfig) (re
 
 	var response registry.AuthenticateOKBody
 	err = json.NewDecoder(resp.body).Decode(&response)
+	ensureReaderClosed(resp)
 	return response, err
 }

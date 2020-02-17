@@ -41,6 +41,7 @@ func TestNewSyncItem(t *testing.T) {
 		description  string
 		artifact     *latest.Artifact
 		dependencies map[string][]string
+		labels       map[string]string
 		evt          filemon.Events
 		builds       []build.Artifact
 		shouldErr    bool
@@ -634,15 +635,56 @@ func TestNewSyncItem(t *testing.T) {
 				},
 			},
 		},
+
+		// Buildpacks
+		{
+			description: "infer with buildpacks",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					BuildpackArtifact: &latest.BuildpackArtifact{},
+				},
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Infer: []string{"**/*.go"},
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"file.go", "ignored.txt"},
+			},
+			labels: map[string]string{
+				"io.buildpacks.build.metadata": `{
+					"bom":[{
+						"metadata":{
+							"devmode.sync": [
+								{"src":"*.go","dest":"/some"}
+							]
+						}
+					}]
+				}`,
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string][]string{
+					"file.go": {"/some/file.go"},
+				},
+				Delete: map[string][]string{},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) {
-				return test.workingDir, nil
-			})
+			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return test.workingDir, nil })
+			t.Override(&SyncMap, func(*latest.Artifact, map[string]bool) (map[string][]string, error) { return test.dependencies, nil })
+			t.Override(&Labels, func(string, map[string]bool) (map[string]string, error) { return test.labels, nil })
 
-			provider := func() (map[string][]string, error) { return test.dependencies, nil }
-			actual, err := NewItem(test.artifact, test.evt, test.builds, nil, provider)
+			actual, err := NewItem(test.artifact, test.evt, test.builds, nil)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
@@ -850,6 +892,58 @@ func TestPerform(t *testing.T) {
 			err := Perform(context.Background(), test.image, test.files, test.cmdFn, []string{""})
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, cmdRecord.cmds)
+		})
+	}
+}
+
+func TestSyncMap(t *testing.T) {
+	tests := []struct {
+		description  string
+		artifactType latest.ArtifactType
+		files        map[string]string
+		shouldErr    bool
+		expectedMap  map[string][]string
+	}{
+		{
+			description: "docker - supported",
+			artifactType: latest.ArtifactType{
+				DockerArtifact: &latest.DockerArtifact{
+					DockerfilePath: "Dockerfile",
+				},
+			},
+			files: map[string]string{
+				"Dockerfile": "FROM alpine\nCOPY *.go /app/",
+				"main.go":    "",
+			},
+			expectedMap: map[string][]string{"main.go": {"/app/main.go"}},
+		},
+		{
+			description: "kaniko - supported",
+			artifactType: latest.ArtifactType{
+				KanikoArtifact: &latest.KanikoArtifact{
+					DockerfilePath: "Dockerfile",
+				},
+			},
+			files: map[string]string{
+				"Dockerfile": "FROM alpine\nCOPY *.go /app/",
+				"main.go":    "",
+			},
+			expectedMap: map[string][]string{"main.go": {"/app/main.go"}},
+		},
+		{
+			description:  "not supported",
+			artifactType: latest.ArtifactType{},
+			shouldErr:    true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().WriteFiles(test.files).Chdir()
+
+			syncMap, err := SyncMap(&latest.Artifact{ArtifactType: test.artifactType}, nil)
+
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expectedMap, syncMap)
 		})
 	}
 }

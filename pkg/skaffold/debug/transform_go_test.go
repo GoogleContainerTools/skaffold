@@ -20,13 +20,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -53,11 +52,11 @@ func TestExtractDlvArg(t *testing.T) {
 		{[]string{"dlv", "debug", "--listen=host:4345", "--headless", "--api-version=2", "--log"}, &dlvSpec{mode: "debug", host: "host", port: 4345, headless: true, apiVersion: 2, log: true}},
 	}
 	for _, test := range tests {
-		t.Run(strings.Join(test.in, " "), func(t *testing.T) {
+		testutil.Run(t, strings.Join(test.in, " "), func(t *testutil.T) {
 			if test.result == nil {
-				testutil.CheckDeepEqual(t, test.result, extractDlvSpec(test.in))
+				t.CheckDeepEqual(test.result, extractDlvSpec(test.in))
 			} else {
-				testutil.CheckDeepEqual(t, *test.result, *extractDlvSpec(test.in), cmp.AllowUnexported(dlvSpec{}))
+				t.CheckDeepEqual(*test.result, *extractDlvSpec(test.in), cmp.AllowUnexported(dlvSpec{}))
 			}
 		})
 	}
@@ -107,9 +106,10 @@ func TestDlvTransformer_IsApplicable(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			result := dlvTransformer{}.IsApplicable(test.source)
-			testutil.CheckDeepEqual(t, test.result, result)
+
+			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }
@@ -171,14 +171,27 @@ func TestDlvTransformerApply(t *testing.T) {
 				Ports: []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
 		},
+		{
+			description: "entrypoint with args in container spec",
+			containerSpec: v1.Container{
+				Args: []string{"arg1", "arg2"},
+			},
+			configuration: imageConfiguration{entrypoint: []string{"app"}},
+			result: v1.Container{
+				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--continue", "--accept-multiclient", "--listen=localhost:56268", "--api-version=2", "app", "--"},
+				Args:    []string{"arg1", "arg2"},
+				Ports:   []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
+			},
+		},
 	}
 	var identity portAllocator = func(port int32) int32 {
 		return port
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			dlvTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
-			testutil.CheckDeepEqual(t, test.result, test.containerSpec)
+
+			t.CheckDeepEqual(test.result, test.containerSpec)
 		})
 	}
 }
@@ -222,7 +235,7 @@ func TestTransformManifestDelve(t *testing.T) {
 			true,
 			&v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dlv":56268,"runtime":"go"}}`},
+					Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"go","ports":{"dlv":56268}}}`},
 				},
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{
@@ -265,7 +278,7 @@ func TestTransformManifestDelve(t *testing.T) {
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dlv":56268,"runtime":"go"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"go","ports":{"dlv":56268}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
@@ -308,7 +321,7 @@ func TestTransformManifestDelve(t *testing.T) {
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dlv":56268,"runtime":"go"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"go","ports":{"dlv":56268}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
@@ -351,7 +364,7 @@ func TestTransformManifestDelve(t *testing.T) {
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dlv":56268,"runtime":"go"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"go","ports":{"dlv":56268}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
@@ -392,7 +405,7 @@ func TestTransformManifestDelve(t *testing.T) {
 				Spec: appsv1.DaemonSetSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dlv":56268,"runtime":"go"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"go","ports":{"dlv":56268}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
@@ -433,7 +446,7 @@ func TestTransformManifestDelve(t *testing.T) {
 				Spec: batchv1.JobSpec{
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dlv":56268,"runtime":"go"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"go","ports":{"dlv":56268}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
@@ -476,7 +489,7 @@ func TestTransformManifestDelve(t *testing.T) {
 					Replicas: int32p(1),
 					Template: &v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dlv":56268,"runtime":"go"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"go","ports":{"dlv":56268}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
@@ -529,7 +542,7 @@ func TestTransformManifestDelve(t *testing.T) {
 						}},
 					{
 						ObjectMeta: metav1.ObjectMeta{
-							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"dlv":56268,"runtime":"go"}}`},
+							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"go","ports":{"dlv":56268}}}`},
 						},
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
@@ -553,15 +566,16 @@ func TestTransformManifestDelve(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			value := test.in.DeepCopyObject()
 
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
 			result := transformManifest(value, retriever)
-			testutil.CheckDeepEqual(t, test.transformed, result)
-			testutil.CheckDeepEqual(t, test.out, value)
+
+			t.CheckDeepEqual(test.transformed, result)
+			t.CheckDeepEqual(test.out, value)
 		})
 	}
 }

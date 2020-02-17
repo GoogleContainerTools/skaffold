@@ -21,12 +21,11 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/pipeline"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-
-	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 )
 
 func generateBuildTasks(namespace string, configFiles []*ConfigFile) ([]*tekton.Task, error) {

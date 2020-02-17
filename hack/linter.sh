@@ -17,10 +17,22 @@
 set -e -o pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+VERSION=1.23.2
 
-if ! [ -x "$(command -v golangci-lint)" ]; then
-	echo "Installing GolangCI-Lint"
-	${DIR}/install_golint.sh -b $GOPATH/bin v1.21.0
+function install_linter() {
+  echo "Installing GolangCI-Lint"
+	${DIR}/install_golint.sh -b $GOPATH/bin v$VERSION
+}
+
+if ! [ -x "$(command -v golangci-lint)" ] ; then
+  install_linter
+elif [[ $(golangci-lint --version | grep -c " $VERSION ") -eq 0 ]]
+then
+  echo "required golangci-lint: v$VERSION"
+  echo "current version: $(golangci-lint --version)"
+  echo "reinstalling..."
+  rm $(which golangci-lint)
+  install_linter
 fi
 
 VERBOSE=""
@@ -28,5 +40,5 @@ if [[ "${TRAVIS}" == "true" ]]; then
     VERBOSE="-v --print-resources-usage"
 fi
 
-golangci-lint run ${VERBOSE} -c ${DIR}/golangci.yml \
+$GOPATH/bin/golangci-lint run ${VERBOSE} -c ${DIR}/golangci.yml \
     | awk '/out of memory/ || /Timeout exceeded/ {failed = 1}; {print}; END {exit failed}'

@@ -77,7 +77,7 @@ func TestPush(t *testing.T) {
 	}
 }
 
-func TestDontPushAlreadyPushed(t *testing.T) {
+func TestDoNotPushAlreadyPushed(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&DefaultAuthHelper, testAuthHelper{})
 
@@ -86,13 +86,15 @@ func TestDontPushAlreadyPushed(t *testing.T) {
 		localDocker := NewLocalDaemon(api, nil, false, nil)
 
 		digest, err := localDocker.Push(context.Background(), ioutil.Discard, "image")
-		t.CheckErrorAndDeepEqual(false, err, "sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
+		t.CheckNoError(err)
+		t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
 
 		// Images already pushed don't need being pushed.
 		api.ErrImagePush = true
 
 		digest, err = localDocker.Push(context.Background(), ioutil.Discard, "image")
-		t.CheckErrorAndDeepEqual(false, err, "sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
+		t.CheckNoError(err)
+		t.CheckDeepEqual("sha256:bb1f952848763dd1f8fcf14231d7a4557775abf3c95e588561bc7a478c94e7e0", digest)
 	})
 }
 
@@ -418,8 +420,8 @@ func TestInsecureRegistry(t *testing.T) {
 
 			t.CheckNoError(err)
 			if !test.shouldErr {
-				t.CheckDeepEqual(false, test.insecure && !called)
-				t.CheckDeepEqual(false, !test.insecure && called)
+				t.CheckFalse(test.insecure && !called)
+				t.CheckFalse(!test.insecure && called)
 			}
 		})
 	}
@@ -500,8 +502,8 @@ func TestTagWithImageID(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			api := (&testutil.FakeAPIClient{}).Add("sha256:imageID", "sha256:imageID")
-			localDocker := NewLocalDaemon(api, nil, false, nil)
 
+			localDocker := NewLocalDaemon(api, nil, false, nil)
 			tag, err := localDocker.TagWithImageID(context.Background(), test.imageName, test.imageID)
 
 			t.CheckError(test.shouldErr, err)

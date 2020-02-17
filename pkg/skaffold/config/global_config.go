@@ -26,9 +26,17 @@ type GlobalConfig struct {
 // ContextConfig is the context-specific config information provided in
 // the global Skaffold config.
 type ContextConfig struct {
-	Kubecontext        string   `yaml:"kube-context,omitempty"`
-	DefaultRepo        string   `yaml:"default-repo,omitempty"`
-	LocalCluster       *bool    `yaml:"local-cluster,omitempty"`
-	InsecureRegistries []string `yaml:"insecure-registries,omitempty"`
-	UpdateCheck        *bool    `yaml:"update-check,omitempty"`
+	Kubecontext        string        `yaml:"kube-context,omitempty"`
+	DefaultRepo        string        `yaml:"default-repo,omitempty"`
+	LocalCluster       *bool         `yaml:"local-cluster,omitempty"`
+	InsecureRegistries []string      `yaml:"insecure-registries,omitempty"`
+	UpdateCheck        *bool         `yaml:"update-check,omitempty"`
+	Survey             *SurveyConfig `yaml:"survey,omitempty"`
+}
+
+// SurveyConfig is the survey config information
+type SurveyConfig struct {
+	DisablePrompt *bool  `yaml:"disable-prompt,omitempty"`
+	LastTaken     string `yaml:"last-taken,omitempty"`
+	LastPrompted  string `yaml:"last-prompted,omitempty"`
 }

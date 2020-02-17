@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,598 +18,206 @@ package initializer
 
 import (
 	"bytes"
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	initconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestPrintAnalyzeJSON(t *testing.T) {
+func TestDoInit(t *testing.T) {
 	tests := []struct {
-		description string
-		pairs       []builderImagePair
-		builders    []InitBuilder
-		images      []string
-		skipBuild   bool
-		shouldErr   bool
-		expected    string
+		name      string
+		dir       string
+		config    initconfig.Config
+		shouldErr bool
 	}{
+		//TODO: mocked kompose test
 		{
-			description: "builders and images with pairs",
-			pairs:       []builderImagePair{{jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), Image: "image1", FilePath: "build.gradle", Project: "project"}, "image1"}},
-			builders:    []InitBuilder{docker.Docker{File: "Dockerfile"}},
-			images:      []string{"image2"},
-			expected:    `{"builders":[{"name":"Jib Gradle Plugin","payload":{"image":"image1","path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":true},{"name":"image2","foundMatch":false}]}`,
+			name: "getting-started",
+			dir:  "testdata/init/hello",
+			config: initconfig.Config{
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
 		},
 		{
-			description: "builders and images with no pairs",
-			builders:    []InitBuilder{jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle", Project: "project"}, docker.Docker{File: "Dockerfile"}},
-			images:      []string{"image1", "image2"},
-			expected:    `{"builders":[{"name":"Jib Gradle Plugin","payload":{"path":"build.gradle","project":"project"}},{"name":"Docker","payload":{"path":"Dockerfile"}}],"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":false}]}`,
+			name: "ignore existing tags",
+			dir:  "testdata/init/ignore-tags",
+			config: initconfig.Config{
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
 		},
 		{
-			description: "no dockerfile, skip build",
-			images:      []string{"image1", "image2"},
-			skipBuild:   true,
-			expected:    `{"images":[{"name":"image1","foundMatch":false},{"name":"image2","foundMatch":false}]}`,
+			name: "microservices (backwards compatibility)",
+			dir:  "testdata/init/microservices",
+			config: initconfig.Config{
+				CliArtifacts: []string{
+					"leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app",
+					"leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web",
+				},
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
 		},
 		{
-			description: "no dockerfile",
-			images:      []string{"image1", "image2"},
-			shouldErr:   true,
+			name: "microservices",
+			dir:  "testdata/init/microservices",
+			config: initconfig.Config{
+				CliArtifacts: []string{
+					`{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
+					`{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
+				},
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
 		},
 		{
-			description: "no dockerfiles or images",
-			shouldErr:   true,
+			name: "CLI artifacts + manifest placeholders",
+			dir:  "testdata/init/allcli",
+			config: initconfig.Config{
+				CliArtifacts: []string{
+					`{"builder":"Docker","payload":{"path":"Dockerfile"},"image":"passed-in-artifact"}`,
+				},
+				CliKubernetesManifests: []string{
+					"manifest-placeholder1.yaml",
+					"manifest-placeholder2.yaml",
+				},
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+		},
+		{
+			name: "error writing config file",
+			dir:  "testdata/init/microservices",
+
+			config: initconfig.Config{
+				CliArtifacts: []string{
+					`{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
+					`{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
+				},
+				Opts: config.SkaffoldOptions{
+					// erroneous config file as . is a directory
+					ConfigurationFile: ".",
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			name: "error no manifests",
+			dir:  "testdata/init/hello-no-manifest",
+
+			config: initconfig.Config{
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+			shouldErr: true,
 		},
 	}
 	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			var out bytes.Buffer
-
-			err := printAnalyzeJSON(&out, test.skipBuild, test.pairs, test.builders, test.images)
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
-		})
-	}
-}
-
-func TestPrintAnalyzeJSONNoJib(t *testing.T) {
-	tests := []struct {
-		description string
-		pairs       []builderImagePair
-		builders    []InitBuilder
-		images      []string
-		skipBuild   bool
-		shouldErr   bool
-		expected    string
-	}{
-		{
-			description: "builders and images (backwards compatibility)",
-			builders:    []InitBuilder{docker.Docker{File: "Dockerfile1"}, docker.Docker{File: "Dockerfile2"}},
-			images:      []string{"image1", "image2"},
-			expected:    `{"dockerfiles":["Dockerfile1","Dockerfile2"],"images":["image1","image2"]}`,
-		},
-		{
-			description: "no dockerfile, skip build (backwards compatibility)",
-			images:      []string{"image1", "image2"},
-			skipBuild:   true,
-			expected:    `{"images":["image1","image2"]}`,
-		},
-		{
-			description: "no dockerfile",
-			images:      []string{"image1", "image2"},
-			shouldErr:   true,
-		},
-		{
-			description: "no dockerfiles or images",
-			shouldErr:   true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			var out bytes.Buffer
-
-			err := printAnalyzeJSONNoJib(&out, test.skipBuild, test.pairs, test.builders, test.images)
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
-		})
-	}
-}
-
-func TestWalk(t *testing.T) {
-	emptyFile := ""
-	tests := []struct {
-		description       string
-		filesWithContents map[string]string
-		expectedConfigs   []string
-		expectedPaths     []string
-		force             bool
-		enableJibInit     bool
-		shouldErr         bool
-	}{
-		{
-			description: "should return correct k8 configs and build files (backwards compatibility)",
-			filesWithContents: map[string]string{
-				"config/test.yaml":    emptyFile,
-				"k8pod.yml":           emptyFile,
-				"README":              emptyFile,
-				"deploy/Dockerfile":   emptyFile,
-				"gradle/build.gradle": emptyFile,
-				"maven/pom.xml":       emptyFile,
-				"Dockerfile":          emptyFile,
-			},
-			force: false,
-			expectedConfigs: []string{
-				"k8pod.yml",
-				"config/test.yaml",
-			},
-			expectedPaths: []string{
-				"Dockerfile",
-				"deploy/Dockerfile",
-			},
-			shouldErr: false,
-		},
-		{
-			description: "should return correct k8 configs and build files",
-			filesWithContents: map[string]string{
-				"config/test.yaml":    emptyFile,
-				"k8pod.yml":           emptyFile,
-				"README":              emptyFile,
-				"deploy/Dockerfile":   emptyFile,
-				"gradle/build.gradle": emptyFile,
-				"maven/pom.xml":       emptyFile,
-				"Dockerfile":          emptyFile,
-			},
-			force:         false,
-			enableJibInit: true,
-			expectedConfigs: []string{
-				"k8pod.yml",
-				"config/test.yaml",
-			},
-			expectedPaths: []string{
-				"Dockerfile",
-				"deploy/Dockerfile",
-				"gradle/build.gradle",
-				"maven/pom.xml",
-			},
-			shouldErr: false,
-		},
-		{
-			description: "skip validating nested jib configs",
-			filesWithContents: map[string]string{
-				"config/test.yaml":               emptyFile,
-				"k8pod.yml":                      emptyFile,
-				"gradle/build.gradle":            emptyFile,
-				"gradle/subproject/build.gradle": emptyFile,
-				"maven/asubproject/pom.xml":      emptyFile,
-				"maven/pom.xml":                  emptyFile,
-			},
-			force:         false,
-			enableJibInit: true,
-			expectedConfigs: []string{
-				"k8pod.yml",
-				"config/test.yaml",
-			},
-			expectedPaths: []string{
-				"gradle/build.gradle",
-				"maven/pom.xml",
-			},
-			shouldErr: false,
-		},
-		{
-			description: "multiple builders in same directory",
-			filesWithContents: map[string]string{
-				"build.gradle":                 emptyFile,
-				"ignored-builder/build.gradle": emptyFile,
-				"not-ignored-config/test.yaml": emptyFile,
-				"Dockerfile":                   emptyFile,
-				"k8pod.yml":                    emptyFile,
-				"pom.xml":                      emptyFile,
-			},
-			force:         false,
-			enableJibInit: true,
-			expectedConfigs: []string{
-				"k8pod.yml",
-				"not-ignored-config/test.yaml",
-			},
-			expectedPaths: []string{
-				"Dockerfile",
-				"build.gradle",
-				"pom.xml",
-			},
-			shouldErr: false,
-		},
-		{
-			description: "should skip hidden dir",
-			filesWithContents: map[string]string{
-				".hidden/test.yaml":  emptyFile,
-				"k8pod.yml":          emptyFile,
-				"README":             emptyFile,
-				".hidden/Dockerfile": emptyFile,
-				"Dockerfile":         emptyFile,
-			},
-			force:         false,
-			enableJibInit: true,
-			expectedConfigs: []string{
-				"k8pod.yml",
-			},
-			expectedPaths: []string{
-				"Dockerfile",
-			},
-			shouldErr: false,
-		},
-		{
-			description: "should not error when skaffold.config present and force = true",
-			filesWithContents: map[string]string{
-				"skaffold.yaml": `apiVersion: skaffold/v1beta6
-kind: Config
-deploy:
-  kustomize: {}`,
-				"config/test.yaml":  emptyFile,
-				"k8pod.yml":         emptyFile,
-				"README":            emptyFile,
-				"deploy/Dockerfile": emptyFile,
-				"Dockerfile":        emptyFile,
-			},
-			force:         true,
-			enableJibInit: true,
-			expectedConfigs: []string{
-				"k8pod.yml",
-				"config/test.yaml",
-			},
-			expectedPaths: []string{
-				"Dockerfile",
-				"deploy/Dockerfile",
-			},
-			shouldErr: false,
-		},
-		{
-			description: "should error when skaffold.config present and force = false",
-			filesWithContents: map[string]string{
-				"config/test.yaml":  emptyFile,
-				"k8pod.yml":         emptyFile,
-				"README":            emptyFile,
-				"deploy/Dockerfile": emptyFile,
-				"Dockerfile":        emptyFile,
-				"skaffold.yaml": `apiVersion: skaffold/v1beta6
-kind: Config
-deploy:
-  kustomize: {}`,
-			},
-			force:           false,
-			enableJibInit:   true,
-			expectedConfigs: nil,
-			expectedPaths:   nil,
-			shouldErr:       true,
-		},
-		{
-			description: "should error when skaffold.config present with jib config",
-			filesWithContents: map[string]string{
-				"config/test.yaml": emptyFile,
-				"k8pod.yml":        emptyFile,
-				"README":           emptyFile,
-				"pom.xml":          emptyFile,
-				"skaffold.yaml": `apiVersion: skaffold/v1beta6
-kind: Config
-deploy:
-  kustomize: {}`,
-			},
-			force:           false,
-			enableJibInit:   true,
-			expectedConfigs: nil,
-			expectedPaths:   nil,
-			shouldErr:       true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().WriteFiles(test.filesWithContents)
-
-			t.Override(&docker.ValidateDockerfileFunc, fakeValidateDockerfile)
-			t.Override(&jib.ValidateJibConfigFunc, fakeValidateJibConfig)
-
-			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, test.enableJibInit)
-
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			t.Chdir(test.dir)
+			// we still need as a "no-prompt" mode
+			test.config.Force = true
+			err := DoInit(context.TODO(), os.Stdout, test.config)
 			t.CheckError(test.shouldErr, err)
-			if test.shouldErr {
-				return
-			}
-
-			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), potentialConfigs)
-			t.CheckDeepEqual(len(test.expectedPaths), len(builders))
-			for i := range builders {
-				t.CheckDeepEqual(tmpDir.Path(test.expectedPaths[i]), builders[i].Path())
+			if !test.shouldErr {
+				checkGeneratedConfig(t, ".")
 			}
 		})
 	}
 }
 
-func fakeValidateDockerfile(path string) bool {
-	return strings.HasSuffix(path, "Dockerfile")
-}
-
-func fakeValidateJibConfig(path string) []jib.Jib {
-	if strings.HasSuffix(path, "build.gradle") {
-		return []jib.Jib{{BuilderName: jib.PluginName(jib.JibGradle), FilePath: path}}
-	}
-	if strings.HasSuffix(path, "pom.xml") {
-		return []jib.Jib{{BuilderName: jib.PluginName(jib.JibMaven), FilePath: path}}
-	}
-	return nil
-}
-
-func TestResolveBuilderImages(t *testing.T) {
+func TestDoInitAnalyze(t *testing.T) {
 	tests := []struct {
-		description      string
-		buildConfigs     []InitBuilder
-		images           []string
-		force            bool
-		shouldMakeChoice bool
-		shouldErr        bool
-		expectedPairs    []builderImagePair
+		name        string
+		dir         string
+		config      initconfig.Config
+		expectedOut string
 	}{
 		{
-			description:      "nothing to choose from",
-			buildConfigs:     []InitBuilder{},
-			images:           []string{},
-			shouldMakeChoice: false,
-			expectedPairs:    []builderImagePair{},
-		},
-		{
-			description:      "don't prompt for single dockerfile and image",
-			buildConfigs:     []InitBuilder{docker.Docker{File: "Dockerfile1"}},
-			images:           []string{"image1"},
-			shouldMakeChoice: false,
-			expectedPairs: []builderImagePair{
-				{
-					Builder:   docker.Docker{File: "Dockerfile1"},
-					ImageName: "image1",
-				},
+			name: "analyze microservices",
+			dir:  "testdata/init/microservices",
+			config: initconfig.Config{
+				Analyze: true,
 			},
+			expectedOut: strip(`{
+							"dockerfiles":["leeroy-app/Dockerfile","leeroy-web/Dockerfile"],
+							"images":["gcr.io/k8s-skaffold/leeroy-app","gcr.io/k8s-skaffold/leeroy-web"]
+							}`) + "\n",
 		},
 		{
-			description:      "prompt for multiple builders and images",
-			buildConfigs:     []InitBuilder{docker.Docker{File: "Dockerfile1"}, jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"}, jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), Project: "project", FilePath: "pom.xml"}},
-			images:           []string{"image1", "image2"},
-			shouldMakeChoice: true,
-			expectedPairs: []builderImagePair{
-				{
-					Builder:   docker.Docker{File: "Dockerfile1"},
-					ImageName: "image1",
-				},
-				{
-					Builder:   jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"},
-					ImageName: "image2",
-				},
+			name: "analyze microservices new format",
+			dir:  "testdata/init/microservices",
+			config: initconfig.Config{
+				Analyze:             true,
+				EnableNewInitFormat: true,
 			},
+			expectedOut: strip(`{
+									"builders":[
+										{"name":"Docker","payload":{"path":"leeroy-app/Dockerfile"}},
+										{"name":"Docker","payload":{"path":"leeroy-web/Dockerfile"}}
+									],
+									"images":[
+										{"name":"gcr.io/k8s-skaffold/leeroy-app","foundMatch":false},
+										{"name":"gcr.io/k8s-skaffold/leeroy-web","foundMatch":false}]}`) + "\n",
 		},
 		{
-			description:      "successful force",
-			buildConfigs:     []InitBuilder{jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"}},
-			images:           []string{"image1"},
-			shouldMakeChoice: false,
-			force:            true,
-			expectedPairs: []builderImagePair{
-				{
-					Builder:   jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"},
-					ImageName: "image1",
-				},
-			},
-		},
-		{
-			description:      "error with ambiguous force",
-			buildConfigs:     []InitBuilder{docker.Docker{File: "Dockerfile1"}, jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"}},
-			images:           []string{"image1", "image2"},
-			shouldMakeChoice: false,
-			force:            true,
-			shouldErr:        true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			// Overrides promptUserForBuildConfig to choose first option rather than using the interactive menu
-			t.Override(&promptUserForBuildConfigFunc, func(image string, choices []string) (string, error) {
-				if !test.shouldMakeChoice {
-					t.FailNow()
-				}
-				return choices[0], nil
-			})
+			name: "no error with no manifests in analyze mode with skip-deploy",
+			dir:  "testdata/init/hello-no-manifest",
 
-			pairs, err := resolveBuilderImages(test.buildConfigs, test.images, test.force)
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, pairs)
-		})
-	}
-}
-
-func TestAutoSelectBuilders(t *testing.T) {
-	tests := []struct {
-		description            string
-		builderConfigs         []InitBuilder
-		images                 []string
-		expectedPairs          []builderImagePair
-		expectedBuildersLeft   []InitBuilder
-		expectedFilteredImages []string
-	}{
-		{
-			description: "no automatic matches",
-			builderConfigs: []InitBuilder{
-				docker.Docker{File: "Dockerfile"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "not a k8s image"},
-			},
-			images:        []string{"image1", "image2"},
-			expectedPairs: nil,
-			expectedBuildersLeft: []InitBuilder{
-				docker.Docker{File: "Dockerfile"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "not a k8s image"},
-			},
-			expectedFilteredImages: []string{"image1", "image2"},
-		},
-		{
-			description: "automatic jib matches",
-			builderConfigs: []InitBuilder{
-				docker.Docker{File: "Dockerfile"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle", Image: "image1"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "image2"},
-			},
-			images: []string{"image1", "image2", "image3"},
-			expectedPairs: []builderImagePair{
-				{
-					jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle", Image: "image1"},
-					"image1",
-				},
-				{
-					jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "image2"},
-					"image2",
+			config: initconfig.Config{
+				Analyze:    true,
+				SkipDeploy: true,
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
 				},
 			},
-			expectedBuildersLeft:   []InitBuilder{docker.Docker{File: "Dockerfile"}},
-			expectedFilteredImages: []string{"image3"},
-		},
-		{
-			description: "multiple matches for one image",
-			builderConfigs: []InitBuilder{
-				jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle", Image: "image1"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "image1"},
-			},
-			images:        []string{"image1", "image2"},
-			expectedPairs: nil,
-			expectedBuildersLeft: []InitBuilder{
-				jib.Jib{BuilderName: jib.PluginName(jib.JibGradle), FilePath: "build.gradle", Image: "image1"},
-				jib.Jib{BuilderName: jib.PluginName(jib.JibMaven), FilePath: "pom.xml", Image: "image1"},
-			},
-			expectedFilteredImages: []string{"image1", "image2"},
-		},
-		{
-			description:            "show unique image names",
-			builderConfigs:         nil,
-			images:                 []string{"image1", "image1"},
-			expectedPairs:          nil,
-			expectedBuildersLeft:   nil,
-			expectedFilteredImages: []string{"image1"},
+
+			expectedOut: strip(`{"dockerfiles":["Dockerfile"]}`) + "\n",
 		},
 	}
 
 	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			pairs, builderConfigs, filteredImages := autoSelectBuilders(test.builderConfigs, test.images)
-
-			t.CheckDeepEqual(test.expectedPairs, pairs)
-			t.CheckDeepEqual(test.expectedBuildersLeft, builderConfigs)
-			t.CheckDeepEqual(test.expectedFilteredImages, filteredImages)
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			var out bytes.Buffer
+			t.Chdir(test.dir)
+			err := DoInit(context.TODO(), &out, test.config)
+			t.CheckErrorAndDeepEqual(false, err, test.expectedOut, out.String())
 		})
 	}
 }
 
-func TestProcessCliArtifacts(t *testing.T) {
-	tests := []struct {
-		description   string
-		artifacts     []string
-		shouldErr     bool
-		expectedPairs []builderImagePair
-	}{
-		{
-			description: "Invalid pairs",
-			artifacts:   []string{"invalid"},
-			shouldErr:   true,
-		},
-		{
-			description: "Invalid builder",
-			artifacts:   []string{`{"builder":"Not real","payload":{},"image":"image"}`},
-			shouldErr:   true,
-		},
-		{
-			description: "Valid (backwards compatibility)",
-			artifacts: []string{
-				`/path/to/Dockerfile=image1`,
-				`/path/to/Dockerfile2=image2`,
-			},
-			expectedPairs: []builderImagePair{
-				{
-					Builder:   docker.Docker{File: "/path/to/Dockerfile"},
-					ImageName: "image1",
-				},
-				{
-					Builder:   docker.Docker{File: "/path/to/Dockerfile2"},
-					ImageName: "image2",
-				},
-			},
-		},
-		{
-			description: "Valid",
-			artifacts: []string{
-				`{"builder":"Docker","payload":{"path":"/path/to/Dockerfile"},"image":"image1"}`,
-				`{"builder":"Jib Gradle Plugin","payload":{"path":"/path/to/build.gradle"},"image":"image2"}`,
-				`{"builder":"Jib Maven Plugin","payload":{"path":"/path/to/pom.xml","project":"project-name","image":"testImage"},"image":"image3"}`,
-			},
-			expectedPairs: []builderImagePair{
-				{
-					Builder:   docker.Docker{File: "/path/to/Dockerfile"},
-					ImageName: "image1",
-				},
-				{
-					Builder:   jib.Jib{BuilderName: "Jib Gradle Plugin", FilePath: "/path/to/build.gradle"},
-					ImageName: "image2",
-				},
-				{
-					Builder:   jib.Jib{BuilderName: "Jib Maven Plugin", FilePath: "/path/to/pom.xml", Project: "project-name", Image: "testImage"},
-					ImageName: "image3",
-				},
-			},
-		},
+func strip(s string) string {
+	cutString := "\n\t\r"
+	stripped := ""
+	for _, r := range s {
+		if strings.ContainsRune(cutString, r) {
+			continue
+		}
+		stripped = fmt.Sprintf("%s%c", stripped, r)
 	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			pairs, err := processCliArtifacts(test.artifacts)
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, pairs)
-		})
-	}
+	return stripped
 }
 
-func Test_canonicalizeName(t *testing.T) {
-	const length253 = "aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa-aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa-aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaaaaaaaa.aaa"
-	tests := []struct {
-		in, out string
-	}{
-		{
-			in:  "abc def",
-			out: "abc-def",
-		},
-		{
-			in:  "abc    def",
-			out: "abc-def",
-		},
-		{
-			in:  "abc...def",
-			out: "abc...def",
-		},
-		{
-			in:  "abc---def",
-			out: "abc---def",
-		},
-		{
-			in:  "aBc DeF",
-			out: "abc-def",
-		},
-		{
-			in:  length253 + "XXXXXXX",
-			out: length253,
-		},
-	}
+func checkGeneratedConfig(t *testutil.T, dir string) {
+	expectedOutput, err := schema.ParseConfig(filepath.Join(dir, "skaffold.yaml"), false)
+	t.CheckNoError(err)
 
-	for _, test := range tests {
-		t.Run(test.in, func(t *testing.T) {
-			actual := canonicalizeName(test.in)
-			if actual != test.out {
-				t.Errorf("%s: expected %s, found %s", test.in, test.out, actual)
-			}
-		})
-	}
+	output, err := schema.ParseConfig(filepath.Join(dir, "skaffold.yaml.out"), false)
+	t.CheckNoError(err)
+	t.CheckDeepEqual(expectedOutput, output)
 }

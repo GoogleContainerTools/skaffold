@@ -3,7 +3,6 @@ package registry // import "github.com/docker/docker/registry"
 import (
 	"bytes"
 	"crypto/sha256"
-
 	// this is required for some certificates
 	_ "crypto/sha512"
 	"encoding/hex"

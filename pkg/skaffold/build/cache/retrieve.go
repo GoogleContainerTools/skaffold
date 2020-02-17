@@ -103,12 +103,12 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		var uniqueTag string
 		if c.imagesAreLocal {
 			var err error
-			uniqueTag, err = c.client.TagWithImageID(ctx, tag, entry.ID)
+			uniqueTag, err = build.TagWithImageID(ctx, tag, entry.ID, c.client)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			uniqueTag = tag + "@" + entry.Digest
+			uniqueTag = build.TagWithDigest(tag, entry.Digest)
 		}
 
 		alreadyBuilt = append(alreadyBuilt, build.Artifact{
@@ -121,7 +121,7 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 
 	bRes, err := buildAndTest(ctx, out, tags, needToBuild)
 	if err != nil {
-		return nil, errors.Wrap(err, "build failed")
+		return nil, err
 	}
 
 	if err := c.addArtifacts(ctx, bRes, hashByName); err != nil {

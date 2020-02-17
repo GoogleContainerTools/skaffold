@@ -16,6 +16,7 @@ package mutate
 
 import (
 	"encoding/json"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/logs"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -54,16 +55,23 @@ type index struct {
 	base v1.ImageIndex
 	adds []IndexAddendum
 
-	computed bool
-	manifest *v1.IndexManifest
-	imageMap map[v1.Hash]v1.Image
-	indexMap map[v1.Hash]v1.ImageIndex
+	computed  bool
+	manifest  *v1.IndexManifest
+	mediaType *types.MediaType
+	imageMap  map[v1.Hash]v1.Image
+	indexMap  map[v1.Hash]v1.ImageIndex
 }
 
 var _ v1.ImageIndex = (*index)(nil)
 
-func (i *index) MediaType() (types.MediaType, error) { return i.base.MediaType() }
-func (i *index) Size() (int64, error)                { return partial.Size(i) }
+func (i *index) MediaType() (types.MediaType, error) {
+	if i.mediaType != nil {
+		return *i.mediaType, nil
+	}
+	return i.base.MediaType()
+}
+
+func (i *index) Size() (int64, error) { return partial.Size(i) }
 
 func (i *index) compute() error {
 	// Don't re-compute if already computed.
@@ -96,6 +104,12 @@ func (i *index) compute() error {
 		}
 	}
 	manifest.Manifests = manifests
+
+	// With OCI media types, this should not be set, see discussion:
+	// https://github.com/opencontainers/image-spec/pull/795
+	if i.mediaType != nil && strings.Contains(string(*i.mediaType), types.OCIVendorPrefix) {
+		manifest.MediaType = ""
+	}
 
 	i.manifest = manifest
 	i.computed = true

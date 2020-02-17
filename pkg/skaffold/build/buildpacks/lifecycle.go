@@ -18,22 +18,32 @@ package buildpacks
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"path/filepath"
-	"time"
+	"strings"
 
-	"github.com/docker/docker/api/types/mount"
+	"github.com/buildpacks/pack"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-func (b *BuildpackBuilder) build(ctx context.Context, out io.Writer, workspace string, artifact *latest.BuildpackArtifact, tag string) (string, error) {
+// For testing
+var (
+	runPackBuildFunc = runPackBuild
+)
+
+// images is a global list of builder/runner image pairs that are already pulled.
+// In a skaffold session, typically a skaffold dev loop, we want to avoid asking `pack`
+// to pull the images that are already pulled.
+var images pulledImages
+
+func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+	artifact := a.BuildpackArtifact
+	workspace := a.Workspace
+
 	// To improve caching, we always build the image with [:latest] tag
 	// This way, the lifecycle is able to "bootstrap" from the previously built image.
 	// The image will then be tagged as usual with the tag provided by the tag policy.
@@ -43,110 +53,54 @@ func (b *BuildpackBuilder) build(ctx context.Context, out io.Writer, workspace s
 	}
 	latest := parsed.BaseName + ":latest"
 
-	builderImage := artifact.Builder
-	logrus.Debugln("Builder image", builderImage)
-	if err := b.pull(ctx, out, builderImage, artifact.ForcePull); err != nil {
-		return "", err
-	}
-
-	runImage, err := b.findRunImage(ctx, artifact, builderImage)
-	if err != nil {
-		return "", err
-	}
-	logrus.Debugln("Run image", runImage)
-	if err := b.pull(ctx, out, runImage, artifact.ForcePull); err != nil {
-		return "", err
-	}
-
 	logrus.Debugln("Evaluate env variables")
 	env, err := misc.EvaluateEnv(artifact.Env)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to evaluate env variables")
 	}
 
-	logrus.Debugln("Get dependencies")
-	deps, err := GetDependencies(ctx, workspace, artifact)
-	if err != nil {
+	if b.devMode && a.Sync != nil && len(a.Sync.Infer) > 0 {
+		env = append(env, "GOOGLE_DEVMODE=1")
+	}
+
+	alreadyPulled := images.AreAlreadyPulled(artifact.Builder, artifact.RunImage)
+
+	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
+		AppPath:    workspace,
+		Builder:    artifact.Builder,
+		RunImage:   artifact.RunImage,
+		Buildpacks: artifact.Buildpacks,
+		Env:        envMap(env),
+		Image:      latest,
+		NoPull:     alreadyPulled,
+	}); err != nil {
 		return "", err
 	}
 
-	var paths []string
-	for _, dep := range deps {
-		paths = append(paths, filepath.Join(workspace, dep))
-	}
-
-	copyWorkspace := func(ctx context.Context, container string) error {
-		uid := 1000
-		gid := 1000
-		modTime := time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
-
-		return b.localDocker.CopyToContainer(ctx, container, "/workspace", workspace, paths, uid, gid, modTime)
-	}
-
-	// These volumes store the state shared between build steps.
-	// After the build, they are deleted.
-	cacheID := util.RandomID()
-	packWorkspace := volume(mount.TypeVolume, fmt.Sprintf("pack-%s.workspace", cacheID), "/workspace")
-	layers := volume(mount.TypeVolume, fmt.Sprintf("pack-%s.layers", cacheID), "/layers")
-
-	// These volumes are kept after the build and shared with all the builds.
-	// They handle the caching of layer both for build time and run time.
-	buildCache := volume(mount.TypeVolume, "pack-cache-skaffold.build", "/cache")
-	launchCache := volume(mount.TypeVolume, "pack-cache-skaffold.launch", "/launch-cache")
-
-	// Some steps need access to the Docker socket to load/save images.
-	dockerSocket := volume(mount.TypeBind, "/var/run/docker.sock", "/var/run/docker.sock")
-
-	defer func() {
-		// Don't use ctx. It might have been cancelled by Ctrl-C
-		if err := b.localDocker.VolumeRemove(context.Background(), packWorkspace.Source, true); err != nil {
-			logrus.Warnf("unable to delete the docker volume [%s]", packWorkspace.Source)
-		}
-		if err := b.localDocker.VolumeRemove(context.Background(), layers.Source, true); err != nil {
-			logrus.Warnf("unable to delete the docker volume [%s]", layers.Source)
-		}
-	}()
-
-	if err := b.localDocker.ContainerRun(ctx, out,
-		docker.ContainerRun{
-			Image:       builderImage,
-			Command:     []string{"/lifecycle/detector"},
-			BeforeStart: copyWorkspace,
-			Mounts:      []mount.Mount{packWorkspace, layers},
-			Env:         env,
-		}, docker.ContainerRun{
-			Image:   builderImage,
-			Command: []string{"sh", "-c", "/lifecycle/restorer -path /cache && /lifecycle/analyzer -daemon " + latest},
-			User:    "root",
-			Mounts:  []mount.Mount{packWorkspace, layers, buildCache, dockerSocket},
-		}, docker.ContainerRun{
-			Image:   builderImage,
-			Command: []string{"/lifecycle/builder"},
-			Mounts:  []mount.Mount{packWorkspace, layers},
-			Env:     env,
-		}, docker.ContainerRun{
-			Image:   builderImage,
-			Command: []string{"sh", "-c", "/lifecycle/exporter -daemon -image " + runImage + " -launch-cache /launch-cache " + latest + " && /lifecycle/cacher -path /cache"},
-			User:    "root",
-			Mounts:  []mount.Mount{packWorkspace, layers, launchCache, buildCache, dockerSocket},
-		},
-	); err != nil {
-		return "", err
-	}
+	images.MarkAsPulled(artifact.Builder, artifact.RunImage)
 
 	return latest, nil
 }
 
-func volume(mountType mount.Type, source, target string) mount.Mount {
-	return mount.Mount{Type: mountType, Source: source, Target: target}
+func runPackBuild(ctx context.Context, out io.Writer, localDocker docker.LocalDaemon, opts pack.BuildOptions) error {
+	packClient, err := pack.NewClient(
+		pack.WithDockerClient(localDocker.RawClient()),
+		pack.WithLogger(NewLogger(out)),
+	)
+	if err != nil {
+		return errors.Wrap(err, "unable to create pack client")
+	}
+
+	return packClient.Build(ctx, opts)
 }
 
-// pull makes sure the given image is pre-pulled.
-func (b *BuildpackBuilder) pull(ctx context.Context, out io.Writer, image string, force bool) error {
-	if force || !b.localDocker.ImageExists(ctx, image) {
-		if err := b.localDocker.Pull(ctx, out, image); err != nil {
-			return err
-		}
+func envMap(env []string) map[string]string {
+	kv := make(map[string]string)
+
+	for _, e := range env {
+		parts := strings.SplitN(e, "=", 2)
+		kv[parts[0]] = parts[1]
 	}
-	return nil
+
+	return kv
 }

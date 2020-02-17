@@ -3,6 +3,7 @@ title: "Test"
 linkTitle: "Test"
 weight: 20
 featureId: test
+aliases: [/docs/how-tos/testers]
 ---
 
 It's common practice to validate built container images before deploying them to our cluster.

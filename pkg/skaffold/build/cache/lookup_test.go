@@ -30,7 +30,7 @@ import (
 func TestLookupLocal(t *testing.T) {
 	tests := []struct {
 		description string
-		hasher      func(context.Context, DependencyLister, *latest.Artifact) (string, error)
+		hasher      func(context.Context, *latest.Artifact) (string, error)
 		cache       map[string]ImageDetails
 		api         *testutil.FakeAPIClient
 		expected    cacheDetails
@@ -103,13 +103,13 @@ func TestLookupLocal(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&hashForArtifact, test.hasher)
 			t.Override(&buildInProgress, func(string) {})
 
 			cache := &cache{
-				imagesAreLocal: true,
-				artifactCache:  test.cache,
-				client:         docker.NewLocalDaemon(test.api, nil, false, nil),
+				imagesAreLocal:  true,
+				artifactCache:   test.cache,
+				client:          docker.NewLocalDaemon(test.api, nil, false, nil),
+				hashForArtifact: test.hasher,
 			}
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
 				ImageName: "artifact",
@@ -126,7 +126,7 @@ func TestLookupLocal(t *testing.T) {
 func TestLookupRemote(t *testing.T) {
 	tests := []struct {
 		description string
-		hasher      func(context.Context, DependencyLister, *latest.Artifact) (string, error)
+		hasher      func(context.Context, *latest.Artifact) (string, error)
 		cache       map[string]ImageDetails
 		api         *testutil.FakeAPIClient
 		expected    cacheDetails
@@ -178,7 +178,6 @@ func TestLookupRemote(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&hashForArtifact, test.hasher)
 			t.Override(&docker.RemoteDigest, func(identifier string, _ map[string]bool) (string, error) {
 				switch {
 				case identifier == "tag":
@@ -192,9 +191,10 @@ func TestLookupRemote(t *testing.T) {
 			t.Override(&buildInProgress, func(string) {})
 
 			cache := &cache{
-				imagesAreLocal: false,
-				artifactCache:  test.cache,
-				client:         docker.NewLocalDaemon(test.api, nil, false, nil),
+				imagesAreLocal:  false,
+				artifactCache:   test.cache,
+				client:          docker.NewLocalDaemon(test.api, nil, false, nil),
+				hashForArtifact: test.hasher,
 			}
 			details := cache.lookupArtifacts(context.Background(), map[string]string{"artifact": "tag"}, []*latest.Artifact{{
 				ImageName: "artifact",
@@ -208,14 +208,14 @@ func TestLookupRemote(t *testing.T) {
 	}
 }
 
-func mockHasher(value string) func(context.Context, DependencyLister, *latest.Artifact) (string, error) {
-	return func(context.Context, DependencyLister, *latest.Artifact) (string, error) {
+func mockHasher(value string) func(context.Context, *latest.Artifact) (string, error) {
+	return func(context.Context, *latest.Artifact) (string, error) {
 		return value, nil
 	}
 }
 
-func failingHasher(errMessage string) func(context.Context, DependencyLister, *latest.Artifact) (string, error) {
-	return func(context.Context, DependencyLister, *latest.Artifact) (string, error) {
+func failingHasher(errMessage string) func(context.Context, *latest.Artifact) (string, error) {
+	return func(context.Context, *latest.Artifact) (string, error) {
 		return "", errors.New(errMessage)
 	}
 }

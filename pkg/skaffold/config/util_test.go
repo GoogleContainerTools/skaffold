@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"gopkg.in/yaml.v2"
 
@@ -72,7 +73,8 @@ func TestReadConfig(t *testing.T) {
 
 			cfg, err := ReadConfigFile(test.filename)
 
-			t.CheckErrorAndDeepEqual(false, err, test.expectedCfg, cfg)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedCfg, cfg)
 		})
 	}
 }
@@ -90,7 +92,8 @@ func TestResolveConfigFile(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		cfg := t.TempFile("givenConfigurationFile", nil)
 		actual, err := ResolveConfigFile(cfg)
-		t.CheckErrorAndDeepEqual(false, err, cfg, actual)
+		t.CheckNoError(err)
+		t.CheckDeepEqual(cfg, actual)
 	})
 }
 
@@ -213,7 +216,8 @@ func Test_getConfigForKubeContextWithGlobalDefaults(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			actual, err := getConfigForKubeContextWithGlobalDefaults(test.cfg, test.kubecontext)
-			t.CheckErrorAndDeepEqual(false, err, test.expectedConfig, actual)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedConfig, actual)
 		})
 	}
 }
@@ -256,6 +260,198 @@ func TestIsUpdateCheckEnabled(t *testing.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, test.readErr })
 			actual := IsUpdateCheckEnabled("dummyconfig")
 			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+func TestIsDefaultLocal(t *testing.T) {
+	tests := []struct {
+		context       string
+		expectedLocal bool
+	}{
+		{context: "kind-other", expectedLocal: true},
+		{context: "kind@kind", expectedLocal: true},
+		{context: "docker-for-desktop", expectedLocal: true},
+		{context: "minikube", expectedLocal: true},
+		{context: "docker-for-desktop", expectedLocal: true},
+		{context: "docker-desktop", expectedLocal: true},
+		{context: "anything-else", expectedLocal: false},
+		{context: "kind@blah", expectedLocal: false},
+		{context: "other-kind", expectedLocal: false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			local := isDefaultLocal(test.context)
+
+			t.CheckDeepEqual(test.expectedLocal, local)
+		})
+	}
+}
+
+func TestIsKindCluster(t *testing.T) {
+	tests := []struct {
+		context        string
+		expectedName   string
+		expectedIsKind bool
+	}{
+		{context: "kind-kind", expectedName: "kind", expectedIsKind: true},
+		{context: "kind-other", expectedName: "other", expectedIsKind: true},
+		{context: "kind@kind", expectedName: "kind", expectedIsKind: true},
+		{context: "other@kind", expectedName: "other", expectedIsKind: true},
+		{context: "docker-for-desktop", expectedName: "", expectedIsKind: false},
+		{context: "not-kind", expectedName: "", expectedIsKind: false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			isKind, name := IsKindCluster(test.context)
+
+			t.CheckDeepEqual(test.expectedIsKind, isKind)
+			t.CheckDeepEqual(test.expectedName, name)
+		})
+	}
+}
+
+func TestIsSurveyPromptDisabled(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         *ContextConfig
+		readErr     error
+		expected    bool
+	}{
+		{
+			description: "config disable-prompt is nil returns false",
+			cfg:         &ContextConfig{},
+		},
+		{
+			description: "config disable-prompt is true",
+			cfg:         &ContextConfig{Survey: &SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
+			expected:    true,
+		},
+		{
+			description: "config disable-prompt is false",
+			cfg:         &ContextConfig{Survey: &SurveyConfig{DisablePrompt: util.BoolPtr(false)}},
+		},
+		{
+			description: "config is nil",
+			cfg:         nil,
+		},
+		{
+			description: "config has err",
+			cfg:         nil,
+			readErr:     fmt.Errorf("error while reading"),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, test.readErr })
+			_, actual := isSurveyPromptDisabled("dummyconfig")
+			t.CheckDeepEqual(test.expected, actual)
+		})
+	}
+}
+
+func TestLessThan(t *testing.T) {
+	tests := []struct {
+		description string
+		date        string
+		duration    time.Duration
+		expected    bool
+	}{
+		{
+			description: "date is less than 10 days from 01/30/2019",
+			date:        "2019-01-22T13:04:05Z",
+			duration:    10 * 24 * time.Hour,
+			expected:    true,
+		},
+		{
+			description: "date is not less than 10 days from 01/30/2019",
+			date:        "2019-01-19T13:04:05Z",
+			duration:    10 * 24 * time.Hour,
+		},
+		{
+			description: "date is not right format",
+			date:        "01-19=20129",
+			expected:    false,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&current, func() time.Time {
+				t, _ := time.Parse(time.RFC3339, "2019-01-30T12:04:05Z")
+				return t
+			})
+			t.CheckDeepEqual(test.expected, lessThan(test.date, test.duration))
+		})
+	}
+}
+
+func TestShouldDisplayPrompt(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         *ContextConfig
+		expected    bool
+	}{
+		{
+			description: "should not display prompt when prompt is disabled",
+			cfg:         &ContextConfig{Survey: &SurveyConfig{DisablePrompt: util.BoolPtr(true)}},
+		},
+		{
+			description: "should not display prompt when last prompted is less than 2 weeks",
+			cfg: &ContextConfig{
+				Survey: &SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastPrompted:  "2019-01-22T00:00:00Z",
+				},
+			},
+		},
+		{
+			description: "should not display prompt when last taken in less than 3 months",
+			cfg: &ContextConfig{
+				Survey: &SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastTaken:     "2018-11-22T00:00:00Z",
+				},
+			},
+		},
+		{
+			description: "should display prompt when last prompted is before 2 weeks",
+			cfg: &ContextConfig{
+				Survey: &SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastPrompted:  "2019-01-10T00:00:00Z",
+				},
+			},
+			expected: true,
+		},
+		{
+			description: "should display prompt when last taken is before than 3 months ago",
+			cfg: &ContextConfig{
+				Survey: &SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastTaken:     "2017-11-10T00:00:00Z",
+				},
+			},
+			expected: true,
+		},
+		{
+			description: "should not display prompt when last taken is recent than 3 months ago",
+			cfg: &ContextConfig{
+				Survey: &SurveyConfig{
+					DisablePrompt: util.BoolPtr(false),
+					LastTaken:     "2019-01-10T00:00:00Z",
+					LastPrompted:  "2019-01-10T00:00:00Z",
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
+			t.Override(&current, func() time.Time {
+				t, _ := time.Parse(time.RFC3339, "2019-01-30T12:04:05Z")
+				return t
+			})
+			t.CheckDeepEqual(test.expected, ShouldDisplayPrompt("dummyconfig"))
 		})
 	}
 }

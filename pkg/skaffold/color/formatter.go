@@ -19,10 +19,9 @@ package color
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
-	"golang.org/x/crypto/ssh/terminal"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // IsTerminal will check if the specified output stream is a terminal. This can be changed
@@ -96,19 +95,13 @@ func OverwriteDefault(color Color) {
 	Default = color
 }
 
-// This implementation comes from logrus (https://github.com/sirupsen/logrus/blob/master/terminal_check_notappengine.go),
-// unfortunately logrus doesn't expose a public interface we can use to call it.
 func isTerminal(w io.Writer) bool {
 	if _, ok := w.(ColoredWriteCloser); ok {
 		return true
 	}
 
-	switch v := w.(type) {
-	case *os.File:
-		return terminal.IsTerminal(int(v.Fd()))
-	default:
-		return false
-	}
+	_, isTerm := util.IsTerminal(w)
+	return isTerm
 }
 
 func ForceColors() func() {

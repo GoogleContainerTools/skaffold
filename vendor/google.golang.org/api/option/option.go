@@ -114,7 +114,7 @@ func (w withHTTPClient) Apply(o *internal.DialSettings) {
 }
 
 // WithGRPCConn returns a ClientOption that specifies the gRPC client
-// connection to use as the basis of communications. This option many only be
+// connection to use as the basis of communications. This option may only be
 // used with services that support gRPC as their communication transport. When
 // used, the WithGRPCConn option takes precedent over all other supplied
 // options.
@@ -222,4 +222,17 @@ type withRequestReason string
 
 func (w withRequestReason) Apply(o *internal.DialSettings) {
 	o.RequestReason = string(w)
+}
+
+// WithTelemetryDisabled returns a ClientOption that disables default telemetry (OpenCensus)
+// settings on gRPC and HTTP clients.
+// An example reason would be to bind custom telemetry that overrides the defaults.
+func WithTelemetryDisabled() ClientOption {
+	return withTelemetryDisabledOption{}
+}
+
+type withTelemetryDisabledOption struct{}
+
+func (w withTelemetryDisabledOption) Apply(o *internal.DialSettings) {
+	o.TelemetryDisabled = true
 }

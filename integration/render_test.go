@@ -29,9 +29,14 @@ import (
 )
 
 func TestKubectlRender(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
 	tests := []struct {
 		description string
 		builds      []build.Artifact
+		labels      []deploy.Labeller
 		input       string
 		expectedOut string
 	}{
@@ -43,6 +48,7 @@ func TestKubectlRender(t *testing.T) {
 					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
 				},
 			},
+			labels: []deploy.Labeller{},
 			input: `apiVersion: v1
 kind: Pod
 spec:
@@ -53,6 +59,8 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
   namespace: default
 spec:
   containers:
@@ -72,6 +80,7 @@ spec:
 					Tag:       "gcr.io/project/image2:tag2",
 				},
 			},
+			labels: []deploy.Labeller{},
 			input: `apiVersion: v1
 kind: Pod
 spec:
@@ -84,6 +93,8 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
   namespace: default
 spec:
   containers:
@@ -122,6 +133,8 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
   namespace: default
 spec:
   containers:
@@ -131,6 +144,8 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
   namespace: default
 spec:
   containers:
@@ -141,9 +156,6 @@ spec:
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			if testing.Short() {
-				t.Skip("skipping integration test")
-			}
 			t.NewTempDir().
 				Write("deployment.yaml", test.input).
 				Chdir()
@@ -161,8 +173,10 @@ spec:
 				},
 			})
 			var b bytes.Buffer
-			err := deployer.Render(context.Background(), &b, test.builds, "")
-			t.CheckErrorAndDeepEqual(false, err, test.expectedOut, b.String())
+			err := deployer.Render(context.Background(), &b, test.builds, test.labels, "")
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedOut, b.String())
 		})
 	}
 }

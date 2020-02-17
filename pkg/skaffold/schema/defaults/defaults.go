@@ -19,6 +19,7 @@ package defaults
 import (
 	"fmt"
 
+	"github.com/google/uuid"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -26,6 +27,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+)
+
+const (
+	defaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
+	defaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
+	defaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
+	defaultCloudBuildKanikoImage = "gcr.io/kaniko-project/executor"
+	defaultCloudBuildPackImage   = "gcr.io/k8s-skaffold/pack"
 )
 
 // Set makes sure default values are set on a SkaffoldConfig.
@@ -38,8 +47,9 @@ func Set(c *latest.SkaffoldConfig) error {
 
 	for _, a := range c.Build.Artifacts {
 		setDefaultWorkspace(a)
+		setDefaultSync(a)
 
-		if c.Build.Cluster != nil && a.CustomArtifact == nil {
+		if c.Build.Cluster != nil && a.CustomArtifact == nil && a.BuildpackArtifact == nil {
 			defaultToKanikoArtifact(a)
 		} else {
 			defaultToDockerArtifact(a)
@@ -60,11 +70,16 @@ func Set(c *latest.SkaffoldConfig) error {
 		}
 	}
 
+	withLocalBuild(c,
+		setDefaultConcurrency,
+	)
+
 	withCloudBuildConfig(c,
 		setDefaultCloudBuildDockerImage,
 		setDefaultCloudBuildMavenImage,
 		setDefaultCloudBuildGradleImage,
 		setDefaultCloudBuildKanikoImage,
+		setDefaultCloudBuildPackImage,
 	)
 
 	if err := withClusterConfig(c,
@@ -103,7 +118,21 @@ func defaultToKubectlDeploy(c *latest.SkaffoldConfig) {
 	c.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{}
 }
 
-func withCloudBuildConfig(c *latest.SkaffoldConfig, operations ...func(kaniko *latest.GoogleCloudBuild)) {
+func withLocalBuild(c *latest.SkaffoldConfig, operations ...func(*latest.LocalBuild)) {
+	if local := c.Build.LocalBuild; local != nil {
+		for _, operation := range operations {
+			operation(local)
+		}
+	}
+}
+
+func setDefaultConcurrency(local *latest.LocalBuild) {
+	if local.Concurrency == nil {
+		local.Concurrency = &constants.DefaultLocalConcurrency
+	}
+}
+
+func withCloudBuildConfig(c *latest.SkaffoldConfig, operations ...func(*latest.GoogleCloudBuild)) {
 	if gcb := c.Build.GoogleCloudBuild; gcb != nil {
 		for _, operation := range operations {
 			operation(gcb)
@@ -112,19 +141,23 @@ func withCloudBuildConfig(c *latest.SkaffoldConfig, operations ...func(kaniko *l
 }
 
 func setDefaultCloudBuildDockerImage(gcb *latest.GoogleCloudBuild) {
-	gcb.DockerImage = valueOrDefault(gcb.DockerImage, constants.DefaultCloudBuildDockerImage)
+	gcb.DockerImage = valueOrDefault(gcb.DockerImage, defaultCloudBuildDockerImage)
 }
 
 func setDefaultCloudBuildMavenImage(gcb *latest.GoogleCloudBuild) {
-	gcb.MavenImage = valueOrDefault(gcb.MavenImage, constants.DefaultCloudBuildMavenImage)
+	gcb.MavenImage = valueOrDefault(gcb.MavenImage, defaultCloudBuildMavenImage)
 }
 
 func setDefaultCloudBuildGradleImage(gcb *latest.GoogleCloudBuild) {
-	gcb.GradleImage = valueOrDefault(gcb.GradleImage, constants.DefaultCloudBuildGradleImage)
+	gcb.GradleImage = valueOrDefault(gcb.GradleImage, defaultCloudBuildGradleImage)
 }
 
 func setDefaultCloudBuildKanikoImage(gcb *latest.GoogleCloudBuild) {
-	gcb.KanikoImage = valueOrDefault(gcb.KanikoImage, constants.DefaultCloudBuildKanikoImage)
+	gcb.KanikoImage = valueOrDefault(gcb.KanikoImage, defaultCloudBuildKanikoImage)
+}
+
+func setDefaultCloudBuildPackImage(gcb *latest.GoogleCloudBuild) {
+	gcb.PackImage = valueOrDefault(gcb.PackImage, defaultCloudBuildPackImage)
 }
 
 func setDefaultTagger(c *latest.SkaffoldConfig) {
@@ -140,8 +173,9 @@ func setDefaultKustomizePath(c *latest.SkaffoldConfig) {
 	if kustomize == nil {
 		return
 	}
-
-	kustomize.KustomizePath = valueOrDefault(kustomize.KustomizePath, constants.DefaultKustomizationPath)
+	if len(kustomize.KustomizePaths) == 0 {
+		kustomize.KustomizePaths = []string{constants.DefaultKustomizationPath}
+	}
 }
 
 func setDefaultKubectlManifests(c *latest.SkaffoldConfig) {
@@ -182,7 +216,13 @@ func setDefaultWorkspace(a *latest.Artifact) {
 	a.Workspace = valueOrDefault(a.Workspace, ".")
 }
 
-func withClusterConfig(c *latest.SkaffoldConfig, opts ...func(cluster *latest.ClusterDetails) error) error {
+func setDefaultSync(a *latest.Artifact) {
+	if a.Sync != nil && len(a.Sync.Manual) == 0 && len(a.Sync.Infer) == 0 {
+		a.Sync.Infer = []string{"**/*"}
+	}
+}
+
+func withClusterConfig(c *latest.SkaffoldConfig, opts ...func(*latest.ClusterDetails) error) error {
 	clusterDetails := c.Build.BuildType.Cluster
 	if clusterDetails == nil {
 		return nil
@@ -219,7 +259,12 @@ func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
 			return fmt.Errorf("unable to expand pullSecret %s", cluster.PullSecret)
 		}
 		cluster.PullSecret = absPath
-		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName)
+		random := ""
+		if cluster.RandomPullSecret {
+			uid, _ := uuid.NewUUID()
+			random = uid.String()
+		}
+		cluster.PullSecretName = valueOrDefault(cluster.PullSecretName, constants.DefaultKanikoSecretName+random)
 		return nil
 	}
 	return nil
@@ -230,7 +275,13 @@ func setDefaultClusterDockerConfigSecret(cluster *latest.ClusterDetails) error {
 		return nil
 	}
 
-	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName)
+	random := ""
+	if cluster.RandomDockerConfigSecret {
+		uid, _ := uuid.NewUUID()
+		random = uid.String()
+	}
+
+	cluster.DockerConfig.SecretName = valueOrDefault(cluster.DockerConfig.SecretName, constants.DefaultKanikoDockerConfigSecretName+random)
 
 	if cluster.DockerConfig.Path == "" {
 		return nil
@@ -254,17 +305,7 @@ func defaultToKanikoArtifact(artifact *latest.Artifact) {
 func setKanikoArtifactDefaults(a *latest.KanikoArtifact) {
 	a.Image = valueOrDefault(a.Image, constants.DefaultKanikoImage)
 	a.DockerfilePath = valueOrDefault(a.DockerfilePath, constants.DefaultDockerfilePath)
-
-	if a.BuildContext == nil {
-		a.BuildContext = &latest.KanikoBuildContext{
-			LocalDir: &latest.LocalDir{},
-		}
-	}
-
-	localDir := a.BuildContext.LocalDir
-	if localDir != nil {
-		localDir.InitImage = valueOrDefault(localDir.InitImage, constants.DefaultBusyboxImage)
-	}
+	a.InitImage = valueOrDefault(a.InitImage, constants.DefaultBusyboxImage)
 }
 
 func valueOrDefault(v, def string) string {
