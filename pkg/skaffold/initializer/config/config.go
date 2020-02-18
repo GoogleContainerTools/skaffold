@@ -20,17 +20,18 @@ import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 
 // Config contains all the parameters for the initializer package
 type Config struct {
-	ComposeFile            string
-	CliArtifacts           []string
-	CliKubernetesManifests []string
-	SkipBuild              bool
-	SkipDeploy             bool
-	Force                  bool
-	Analyze                bool
-	EnableJibInit          bool // TODO: Remove this parameter
-	EnableBuildpacksInit   bool
-	EnableNewInitFormat    bool
-	BuildpacksBuilder      string
-	Opts                   config.SkaffoldOptions
-	MaxFileSize            int64
+	ComposeFile              string
+	CliArtifacts             []string
+	CliKubernetesManifests   []string
+	SkipBuild                bool
+	SkipDeploy               bool
+	Force                    bool
+	Analyze                  bool
+	EnableJibInit            bool // TODO: Remove this parameter
+	EnableBuildpacksInit     bool
+	EnableNewInitFormat      bool
+	EnableManifestGeneration bool
+	BuildpacksBuilder        string
+	Opts                     config.SkaffoldOptions
+	MaxFileSize              int64
 }

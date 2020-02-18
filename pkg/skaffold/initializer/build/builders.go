@@ -55,11 +55,20 @@ type BuilderImagePair struct {
 	ImageName string
 }
 
+// GeneratedBuilderImagePair pairs a discovered builder with a
+// generated image name, and the path to the manifest that should be generated
+type GeneratedBuilderImagePair struct {
+	BuilderImagePair
+	ManifestPath string
+}
+
 type Initializer interface {
 	ProcessImages([]string) error
 	BuildConfig() latest.BuildConfig
 	BuilderImagePairs() []BuilderImagePair
 	PrintAnalysis(io.Writer) error
+	UnresolvedPairs() []GeneratedBuilderImagePair
+	Resolve()
 }
 
 type emptyBuildInitializer struct {
@@ -80,6 +89,12 @@ func (e *emptyBuildInitializer) BuilderImagePairs() []BuilderImagePair {
 func (e *emptyBuildInitializer) PrintAnalysis(io.Writer) error {
 	return nil
 }
+
+func (e *emptyBuildInitializer) UnresolvedPairs() []GeneratedBuilderImagePair {
+	return nil
+}
+
+func (e *emptyBuildInitializer) Resolve() {}
 
 func NewInitializer(builders []InitBuilder, c config.Config) Initializer {
 	switch {

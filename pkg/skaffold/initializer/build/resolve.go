@@ -17,10 +17,12 @@ limitations under the License.
 package build
 
 import (
+	"fmt"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -29,17 +31,25 @@ import (
 // For each image parsed from all k8s manifests, prompt the user for the builder that builds the referenced image
 func (d *defaultBuildInitializer) resolveBuilderImages() error {
 	// If nothing to choose, don't bother prompting
-	if len(d.unresolvedImages) == 0 || len(d.builders) == 0 {
+	if len(d.builders) == 0 {
 		return nil
 	}
 
-	// if we only have 1 image and 1 build config, don't bother prompting
-	if len(d.unresolvedImages) == 1 && len(d.builders) == 1 {
-		d.builderImagePairs = append(d.builderImagePairs, BuilderImagePair{
-			Builder:   d.builders[0],
-			ImageName: d.unresolvedImages[0],
-		})
-		return nil
+	// if there's only one builder config, no need to prompt
+	if len(d.builders) == 1 {
+		if len(d.unresolvedImages) == 0 {
+			// no image was parsed from k8s manifests, so we create an image name
+			d.generatedBuilderImagePairs = append(d.generatedBuilderImagePairs, getGeneratedBuilderPair(d.builders[0]))
+			return nil
+		}
+		// we already have the image, just use it and return
+		if len(d.unresolvedImages) == 1 {
+			d.builderImagePairs = append(d.builderImagePairs, BuilderImagePair{
+				Builder:   d.builders[0],
+				ImageName: d.unresolvedImages[0],
+			})
+			return nil
+		}
 	}
 
 	if d.force {
@@ -61,7 +71,6 @@ func (d *defaultBuildInitializer) resolveBuilderImagesInteractively() error {
 	sort.Strings(choices)
 
 	// For each choice, use prompt string to pair builder config with k8s image
-	pairs := []BuilderImagePair{}
 	for {
 		if len(d.unresolvedImages) == 0 {
 			break
@@ -74,14 +83,37 @@ func (d *defaultBuildInitializer) resolveBuilderImagesInteractively() error {
 		}
 
 		if choice != NoBuilder {
-			pairs = append(pairs, BuilderImagePair{Builder: choiceMap[choice], ImageName: image})
+			d.builderImagePairs = append(d.builderImagePairs, BuilderImagePair{Builder: choiceMap[choice], ImageName: image})
 			choices = util.RemoveFromSlice(choices, choice)
 		}
 		d.unresolvedImages = util.RemoveFromSlice(d.unresolvedImages, image)
 	}
 	if len(choices) > 0 {
-		logrus.Warnf("unused builder configs found in repository: %v", choices)
+		// TODO(nkubala): should we ask user if they want to generate here?
+		for _, choice := range choices {
+			d.generatedBuilderImagePairs = append(d.generatedBuilderImagePairs, getGeneratedBuilderPair(choiceMap[choice]))
+		}
 	}
-	d.builderImagePairs = append(d.builderImagePairs, pairs...)
 	return nil
+}
+
+func getGeneratedBuilderPair(b InitBuilder) GeneratedBuilderImagePair {
+	path := b.Path()
+	var imageName string
+	// if the builder is in a nested directory, use that as the image name AND the path to write the manifest
+	// otherwise, use the builder as the image name itself, and the current directory to write the manifest
+	if filepath.Dir(path) != "." {
+		imageName = strings.ToLower(filepath.Dir(path))
+		path = imageName
+	} else {
+		imageName = fmt.Sprintf("%s-image", strings.ToLower(path))
+		path = "."
+	}
+	return GeneratedBuilderImagePair{
+		BuilderImagePair: BuilderImagePair{
+			Builder:   b,
+			ImageName: imageName,
+		},
+		ManifestPath: path,
+	}
 }

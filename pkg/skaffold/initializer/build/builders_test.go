@@ -30,13 +30,14 @@ import (
 
 func TestResolveBuilderImages(t *testing.T) {
 	tests := []struct {
-		description      string
-		buildConfigs     []InitBuilder
-		images           []string
-		force            bool
-		shouldMakeChoice bool
-		shouldErr        bool
-		expectedPairs    []BuilderImagePair
+		description            string
+		buildConfigs           []InitBuilder
+		images                 []string
+		force                  bool
+		shouldMakeChoice       bool
+		shouldErr              bool
+		expectedPairs          []BuilderImagePair
+		expectedGeneratedPairs []GeneratedBuilderImagePair
 	}{
 		{
 			description:      "nothing to choose from",
@@ -72,6 +73,15 @@ func TestResolveBuilderImages(t *testing.T) {
 					ImageName: "image2",
 				},
 			},
+			expectedGeneratedPairs: []GeneratedBuilderImagePair{
+				{
+					BuilderImagePair: BuilderImagePair{
+						Builder:   jib.ArtifactConfig{BuilderName: "Jib Maven Plugin", File: "pom.xml", Project: "project"},
+						ImageName: "pom.xml-image",
+					},
+					ManifestPath: ".",
+				},
+			},
 		},
 		{
 			description:      "successful force",
@@ -94,6 +104,23 @@ func TestResolveBuilderImages(t *testing.T) {
 			force:            true,
 			shouldErr:        true,
 		},
+		{
+			description:  "one unresolved image",
+			buildConfigs: []InitBuilder{docker.ArtifactConfig{File: "foo"}},
+			images:       []string{},
+			expectedGeneratedPairs: []GeneratedBuilderImagePair{
+				{
+					BuilderImagePair: BuilderImagePair{
+						Builder:   docker.ArtifactConfig{File: "foo"},
+						ImageName: "foo-image",
+					},
+					ManifestPath: ".",
+				},
+			},
+			shouldMakeChoice: false,
+			force:            false,
+			shouldErr:        false,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -112,6 +139,7 @@ func TestResolveBuilderImages(t *testing.T) {
 			}
 			err := initializer.resolveBuilderImages()
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, initializer.BuilderImagePairs())
+			t.CheckDeepEqual(test.expectedGeneratedPairs, initializer.UnresolvedPairs())
 		})
 	}
 }

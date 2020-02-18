@@ -41,6 +41,14 @@ func (s stubDeploymentInitializer) GetImages() []string {
 	panic("implement me")
 }
 
+func (s stubDeploymentInitializer) Validate() error {
+	panic("no thanks")
+}
+
+func (s stubDeploymentInitializer) GenerateManifests([]build.GeneratedBuilderImagePair) (map[string][]byte, error) {
+	panic("don't call me")
+}
+
 type stubBuildInitializer struct {
 	pairs []build.BuilderImagePair
 }
@@ -61,6 +69,14 @@ func (s stubBuildInitializer) BuildConfig() latest.BuildConfig {
 	return latest.BuildConfig{
 		Artifacts: artifacts(s.pairs),
 	}
+}
+
+func (s stubBuildInitializer) UnresolvedPairs() []build.GeneratedBuilderImagePair {
+	panic("do not call me")
+}
+
+func (s stubBuildInitializer) Resolve() {
+	panic("please don't")
 }
 
 func TestGenerateSkaffoldConfig(t *testing.T) {

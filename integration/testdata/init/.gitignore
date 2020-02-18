@@ -1,1 +1,2 @@
-skaffold.yaml.out
+**/deployment.yaml
+**/skaffold.yaml.out

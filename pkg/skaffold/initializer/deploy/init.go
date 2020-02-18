@@ -17,9 +17,16 @@ limitations under the License.
 package deploy
 
 import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
+
+type Error string
+
+func (e Error) Error() string { return string(e) }
+
+const NoManifest = Error("one or more Kubernetes manifests is required to run skaffold")
 
 // Initializer detects a deployment type and is able to extract image names from it
 type Initializer interface {
@@ -27,6 +34,10 @@ type Initializer interface {
 	DeployConfig() latest.DeployConfig
 	// GetImages fetches all the images defined in the manifest files.
 	GetImages() []string
+	// GenerateManifests generates k8s manifests for each unresolved builder
+	GenerateManifests([]build.GeneratedBuilderImagePair) (map[string][]byte, error)
+	// Validate ensures preconditions are met before generating a skaffold config
+	Validate() error
 }
 
 type cliDeployInit struct {
@@ -46,6 +57,17 @@ func (c *cliDeployInit) GetImages() []string {
 	return nil
 }
 
+func (c *cliDeployInit) Validate() error {
+	if len(c.cliKubernetesManifests) == 0 {
+		return NoManifest
+	}
+	return nil
+}
+
+func (c *cliDeployInit) GenerateManifests([]build.GeneratedBuilderImagePair) (map[string][]byte, error) {
+	return nil, nil
+}
+
 type emptyDeployInit struct {
 }
 
@@ -57,12 +79,20 @@ func (c *emptyDeployInit) GetImages() []string {
 	return nil
 }
 
-func NewInitializer(manifests []string, c config.Config) (Initializer, error) {
+func (c *emptyDeployInit) Validate() error {
+	return nil
+}
+
+func (c *emptyDeployInit) GenerateManifests([]build.GeneratedBuilderImagePair) (map[string][]byte, error) {
+	return nil, nil
+}
+
+func NewInitializer(manifests []string, c config.Config) Initializer {
 	switch {
 	case c.SkipDeploy:
-		return &emptyDeployInit{}, nil
+		return &emptyDeployInit{}
 	case len(c.CliKubernetesManifests) > 0:
-		return &cliDeployInit{c.CliKubernetesManifests}, nil
+		return &cliDeployInit{c.CliKubernetesManifests}
 	default:
 		return newKubectlInitializer(manifests)
 	}

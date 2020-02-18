@@ -62,6 +62,12 @@ func (c *cliBuildInitializer) PrintAnalysis(out io.Writer) error {
 	return printAnalysis(out, c.enableNewFormat, c.skipBuild, c.builderImagePairs, c.builders, nil)
 }
 
+func (c *cliBuildInitializer) UnresolvedPairs() []GeneratedBuilderImagePair {
+	return nil
+}
+
+func (c *cliBuildInitializer) Resolve() {}
+
 func (c *cliBuildInitializer) processCliArtifacts() error {
 	pairs, err := processCliArtifacts(c.cliArtifacts)
 	if err != nil {

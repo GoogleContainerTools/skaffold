@@ -23,13 +23,14 @@ import (
 )
 
 type defaultBuildInitializer struct {
-	builders          []InitBuilder
-	builderImagePairs []BuilderImagePair
-	unresolvedImages  []string
-	skipBuild         bool
-	force             bool
-	enableNewFormat   bool
-	resolveImages     bool
+	builders                   []InitBuilder
+	builderImagePairs          []BuilderImagePair
+	generatedBuilderImagePairs []GeneratedBuilderImagePair
+	unresolvedImages           []string
+	skipBuild                  bool
+	force                      bool
+	enableNewFormat            bool
+	resolveImages              bool
 }
 
 func (d *defaultBuildInitializer) ProcessImages(images []string) error {
@@ -60,6 +61,16 @@ func (d *defaultBuildInitializer) BuilderImagePairs() []BuilderImagePair {
 
 func (d *defaultBuildInitializer) PrintAnalysis(out io.Writer) error {
 	return printAnalysis(out, d.enableNewFormat, d.skipBuild, d.builderImagePairs, d.builders, d.unresolvedImages)
+}
+
+func (d *defaultBuildInitializer) UnresolvedPairs() []GeneratedBuilderImagePair {
+	return d.generatedBuilderImagePairs
+}
+
+func (d *defaultBuildInitializer) Resolve() {
+	for _, pair := range d.generatedBuilderImagePairs {
+		d.builderImagePairs = append(d.builderImagePairs, pair.BuilderImagePair)
+	}
 }
 
 // matchBuildersToImages takes a list of builders and images, checks if any of the builders' configured target

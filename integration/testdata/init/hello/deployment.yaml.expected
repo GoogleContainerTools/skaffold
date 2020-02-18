@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: dockerfile-image
+  labels:
+    app: dockerfile-image
+spec:
+  clusterIP: None
+  selector:
+    app: dockerfile-image
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dockerfile-image
+  labels:
+    app: dockerfile-image
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dockerfile-image
+  template:
+    metadata:
+      labels:
+        app: dockerfile-image
+    spec:
+      containers:
+      - name: dockerfile-image
+        image: dockerfile-image
