@@ -511,7 +511,7 @@ func TestGetStatusCheckDeadline(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.CheckDeepEqual(test.expected, statusCheckDeadline(test.value, test.deps))
+			t.CheckDeepEqual(test.expected, statusCheckMaxDeadline(test.value, test.deps))
 		})
 	}
 }

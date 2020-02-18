@@ -38,7 +38,7 @@ import (
 )
 
 var (
-	defaultStatusCheckDeadline = time.Duration(2) * time.Minute
+	defaultStatusCheckDeadline = 2 * time.Minute
 
 	// Poll period for checking set to 100 milliseconds
 	defaultPollPeriodInMilliseconds = 100
@@ -72,7 +72,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller,
 		getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds))
 
-	deadline := statusCheckDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds, deployments)
+	deadline := statusCheckMaxDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds, deployments)
 
 	if err != nil {
 		return errors.Wrap(err, "could not fetch deployments")
@@ -261,7 +261,7 @@ func (c *resourceCounter) markProcessed(err error) resourceCounter {
 	}
 }
 
-func statusCheckDeadline(value int, deployments []Resource) time.Duration {
+func statusCheckMaxDeadline(value int, deployments []Resource) time.Duration {
 	if value > 0 {
 		return time.Duration(value) * time.Second
 	}
