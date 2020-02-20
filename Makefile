@@ -31,8 +31,8 @@ GKE_ZONE ?= us-central1-a
 SUPPORTED_PLATFORMS = linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
-SKAFFOLD_TEST_PACKAGES := $(shell go list ./... | grep -v diag)
-GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./pkg/diag/*")
+SKAFFOLD_TEST_PACKAGES = $(shell go list ./... | grep -v diag)
+GO_FILES = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./pkg/diag/*")
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
