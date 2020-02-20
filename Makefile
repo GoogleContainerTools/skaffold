@@ -67,11 +67,19 @@ GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
 GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
 GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
-$(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
-	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
-
-$(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): generate-statik $(GO_FILES) $(BUILD_DIR)
+# Build for local development.
+$(BUILD_DIR)/$(PROJECT): generate-statik $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
+
+.PHONY: install
+install: $(BUILD_DIR)/$(PROJECT)
+	cp $(BUILD_DIR)/$(PROJECT) $(GOPATH)/bin/$(PROJECT)
+
+# Build for a release.
+.PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
+
+.PHONY: cross
+cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform).sha256)
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): generate-statik $(GO_FILES) $(BUILD_DIR)
 	docker build \
@@ -97,11 +105,6 @@ $(BUILD_DIR)/VERSION: $(BUILD_DIR)
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-.PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
-
-.PHONY: cross
-cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform).sha256)
-
 .PHONY: test
 test: $(BUILD_DIR)
 	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s $(SKAFFOLD_TEST_PACKAGES)
@@ -119,10 +122,6 @@ checks: $(BUILD_DIR)
 .PHONY: quicktest
 quicktest:
 	@ ./hack/gotest.sh -short -timeout=60s $(SKAFFOLD_TEST_PACKAGES)
-
-.PHONY: install
-install: $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
 
 .PHONY: integration
 integration: generate-statik install
