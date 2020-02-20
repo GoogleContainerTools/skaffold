@@ -385,7 +385,6 @@ func TestHelmDeploy(t *testing.T) {
 				upgradeResult: fmt.Errorf("should not have called upgrade"),
 			},
 			runContext: makeRunContext(testDeployUpgradeOnChange, false),
-			builds:     testBuilds,
 		},
 		{
 			description: "deploy error remote chart without skipBuildDependencies",

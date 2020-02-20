@@ -217,34 +217,20 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	if !isInstalled {
 		args = append(args, "install", "--name", releaseName)
 		args = append(args, h.Flags.Install...)
+	} else if r.UpgradeOnChange != nil && !*r.UpgradeOnChange {
+		logrus.Infof("Release %s already installed...", releaseName)
+		return []Artifact{}, nil
+	} else if r.UpgradeOnChange == nil && r.Remote {
+		logrus.Infof("Release %s not upgraded as it is remote...", releaseName)
+		return []Artifact{}, nil
 	} else {
-
-		var shouldUpgrade bool
-		if r.UpgradeOnChange != nil {
-			shouldUpgrade = *r.UpgradeOnChange
-
-			if !shouldUpgrade {
-				logrus.Infof("Release %s already installed...\n", releaseName)
-			}
-		} else {
-			shouldUpgrade = !r.Remote
-
-			if !shouldUpgrade {
-				logrus.Infof("Release %s not upgraded since remote (see `upgradeOnChange`)...\n", releaseName)
-			}
+		args = append(args, "upgrade", releaseName)
+		args = append(args, h.Flags.Upgrade...)
+		if h.forceDeploy {
+			args = append(args, "--force")
 		}
-
-		if shouldUpgrade {
-			args = append(args, "upgrade", releaseName)
-			args = append(args, h.Flags.Upgrade...)
-			if h.forceDeploy {
-				args = append(args, "--force")
-			}
-			if r.RecreatePods {
-				args = append(args, "--recreate-pods")
-			}
-		} else {
-			return []Artifact{}, nil
+		if r.RecreatePods {
+			args = append(args, "--recreate-pods")
 		}
 	}
 

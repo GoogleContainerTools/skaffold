@@ -54,12 +54,8 @@ deploy:
     manifests:
     - k8s-*
   kustomize:
-<<<<<<< HEAD
-    path: kustomization-main
-=======
     paths:
     - kustomization-main
->>>>>>> master
 profiles:
   - name: test profile
     build:
