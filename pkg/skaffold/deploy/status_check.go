@@ -38,7 +38,7 @@ import (
 )
 
 var (
-	defaultStatusCheckDeadline = time.Duration(10) * time.Minute
+	defaultStatusCheckDeadline = 2 * time.Minute
 
 	// Poll period for checking set to 100 milliseconds
 	defaultPollPeriodInMilliseconds = 100
@@ -69,8 +69,11 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		return errors.Wrap(err, "getting Kubernetes client")
 	}
 
-	deadline := getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds)
-	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, deadline)
+	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller,
+		getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds))
+
+	deadline := statusCheckMaxDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds, deployments)
+
 	if err != nil {
 		return errors.Wrap(err, "could not fetch deployments")
 	}
@@ -110,7 +113,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	deployments := make([]Resource, 0, len(deps.Items))
 	for _, d := range deps.Items {
 		var deadline time.Duration
-		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds > int32(deadlineDuration.Seconds()) {
+		if d.Spec.ProgressDeadlineSeconds == nil {
 			deadline = deadlineDuration
 		} else {
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
@@ -256,4 +259,17 @@ func (c *resourceCounter) markProcessed(err error) resourceCounter {
 		deployments: &depCp,
 		pods:        &podCp,
 	}
+}
+
+func statusCheckMaxDeadline(value int, deployments []Resource) time.Duration {
+	if value > 0 {
+		return time.Duration(value) * time.Second
+	}
+	d := time.Duration(0)
+	for _, r := range deployments {
+		if r.Deadline() > d {
+			d = r.Deadline()
+		}
+	}
+	return d
 }

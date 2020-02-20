@@ -54,7 +54,12 @@ deploy:
     manifests:
     - k8s-*
   kustomize:
+<<<<<<< HEAD
     path: kustomization-main
+=======
+    paths:
+    - kustomization-main
+>>>>>>> master
 profiles:
   - name: test profile
     build:
@@ -74,7 +79,12 @@ profiles:
         manifests:
         - k8s-*
       kustomize:
+<<<<<<< HEAD
         path: kustomization-test
+=======
+        paths:
+        - kustomization-test
+>>>>>>> master
   - name: test local
     build:
       artifacts:
