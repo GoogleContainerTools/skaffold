@@ -62,7 +62,7 @@ func (c *cliBuildInitializer) PrintAnalysis(out io.Writer) error {
 	return printAnalysis(out, c.enableNewFormat, c.skipBuild, c.builderImagePairs, c.builders, nil)
 }
 
-func (c *cliBuildInitializer) UnresolvedPairs() []GeneratedBuilderImagePair {
+func (c *cliBuildInitializer) GeneratedPairs() []GeneratedBuilderImagePair {
 	return nil
 }
 

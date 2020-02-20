@@ -63,7 +63,7 @@ func (d *defaultBuildInitializer) PrintAnalysis(out io.Writer) error {
 	return printAnalysis(out, d.enableNewFormat, d.skipBuild, d.builderImagePairs, d.builders, d.unresolvedImages)
 }
 
-func (d *defaultBuildInitializer) UnresolvedPairs() []GeneratedBuilderImagePair {
+func (d *defaultBuildInitializer) GeneratedPairs() []GeneratedBuilderImagePair {
 	return d.generatedBuilderImagePairs
 }
 

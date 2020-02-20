@@ -71,7 +71,7 @@ func (s stubBuildInitializer) BuildConfig() latest.BuildConfig {
 	}
 }
 
-func (s stubBuildInitializer) UnresolvedPairs() []build.GeneratedBuilderImagePair {
+func (s stubBuildInitializer) GeneratedPairs() []build.GeneratedBuilderImagePair {
 	panic("do not call me")
 }
 

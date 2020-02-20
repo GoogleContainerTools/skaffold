@@ -46,7 +46,7 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 
 	a := analyze.NewAnalyzer(c)
 
-	if err := a.Analyze(rootDir); err != nil {
+	if err = a.Analyze(rootDir); err != nil {
 		return err
 	}
 
@@ -63,14 +63,14 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 
 	var generatedManifests map[string][]byte
 	if c.EnableManifestGeneration {
-		generatedManifests, err = deployInitializer.GenerateManifests(buildInitializer.UnresolvedPairs())
+		generatedManifests, err = deployInitializer.GenerateManifests(buildInitializer.GeneratedPairs())
 		if err != nil {
 			return err
 		}
 		buildInitializer.Resolve()
 	}
 
-	if err := deployInitializer.Validate(); err != nil {
+	if err = deployInitializer.Validate(); err != nil {
 		return err
 	}
 
@@ -90,12 +90,13 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 	}
 
 	for path, manifest := range generatedManifests {
-		if err := ioutil.WriteFile(path, manifest, 0644); err != nil {
+		if err = ioutil.WriteFile(path, manifest, 0644); err != nil {
 			return errors.Wrap(err, "writing k8s manifest to file")
 		}
+		fmt.Fprintf(out, "Generated manifest %s was written\n", path)
 	}
 
-	if err := ioutil.WriteFile(c.Opts.ConfigurationFile, pipeline, 0644); err != nil {
+	if err = ioutil.WriteFile(c.Opts.ConfigurationFile, pipeline, 0644); err != nil {
 		return errors.Wrap(err, "writing config to file")
 	}
 
