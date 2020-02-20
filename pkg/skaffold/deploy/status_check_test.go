@@ -69,8 +69,8 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
-				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
+				resource.NewDeployment("dep1", "test", 10*time.Second),
+				resource.NewDeployment("dep2", "test", 20*time.Second),
 			},
 		},
 		{
@@ -89,7 +89,7 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(300)*time.Second),
+				resource.NewDeployment("dep1", "test", 300*time.Second),
 			},
 		},
 		{
@@ -116,8 +116,8 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(100)*time.Second),
-				resource.NewDeployment("dep2", "test", time.Duration(200)*time.Second),
+				resource.NewDeployment("dep1", "test", 100*time.Second),
+				resource.NewDeployment("dep2", "test", 200*time.Second),
 			},
 		},
 		{
@@ -149,7 +149,7 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(100)*time.Second),
+				resource.NewDeployment("dep1", "test", 100*time.Second),
 			},
 		},
 		{
@@ -193,7 +193,7 @@ func TestGetDeployments(t *testing.T) {
 				objs[i] = dep
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
-			actual, err := getDeployments(client, "test", labeller, time.Duration(200)*time.Second)
+			actual, err := getDeployments(client, "test", labeller, 200*time.Second)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
 				cmp.AllowUnexported(resource.Base{}, resource.Deployment{}, resource.Status{}))
 		})
@@ -494,19 +494,19 @@ func TestGetStatusCheckDeadline(t *testing.T) {
 		{
 			description: "no value specified",
 			deps: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
-				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
+				resource.NewDeployment("dep1", "test", 10*time.Second),
+				resource.NewDeployment("dep2", "test", 20*time.Second),
 			},
-			expected: time.Duration(20) * time.Second,
+			expected: 20 * time.Second,
 		},
 		{
 			description: "value specified less than all other resources",
 			value:       5,
 			deps: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
-				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
+				resource.NewDeployment("dep1", "test", 10*time.Second),
+				resource.NewDeployment("dep2", "test", 20*time.Second),
 			},
-			expected: time.Duration(5) * time.Second,
+			expected: 5 * time.Second,
 		},
 	}
 	for _, test := range tests {
