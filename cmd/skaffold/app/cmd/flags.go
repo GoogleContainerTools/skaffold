@@ -263,7 +263,6 @@ var FlagRegistry = []Flag{
 	},
 	{
 		Name:          "minikube-profile",
-		Shorthand:     "m",
 		Usage:         "forces skaffold use the given minikube-profile and forces building against the docker daemon inside that minikube profile",
 		Value:         &opts.MinikubeProfile,
 		DefValue:      "",
