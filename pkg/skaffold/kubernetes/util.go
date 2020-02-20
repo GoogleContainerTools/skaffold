@@ -14,65 +14,43 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package kubernetes
 
 import (
 	"bufio"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
+type yamlObject map[interface{}]interface{}
+
+// These are the required fields for a yaml document to be a valid Kubernetes yaml
 var requiredFields = []string{"apiVersion", "kind", "metadata"}
 
-// kubectl implements deploymentInitializer for the kubectl deployer.
-type kubectl struct {
-	configs []string
-	images  []string
-}
+// These are the supported file formats for Kubernetes manifests
+var validSuffixes = []string{".yml", ".yaml", ".json"}
 
-// kubectlAnalyzer is a Visitor during the directory analysis that collects kubernetes manifests
-type kubectlAnalyzer struct {
-	directoryAnalyzer
-	kubernetesManifests []string
-}
-
-func (a *kubectlAnalyzer) analyzeFile(filePath string) error {
-	if IsKubernetesManifest(filePath) && !isSkaffoldConfig(filePath) {
-		a.kubernetesManifests = append(a.kubernetesManifests, filePath)
-	}
-	return nil
-}
-
-// newKubectlInitializer returns a kubectl skaffold generator.
-func newKubectlInitializer(potentialConfigs []string) (*kubectl, error) {
-	var k8sConfigs, images []string
-	for _, file := range potentialConfigs {
-		imgs, err := parseImagesFromKubernetesYaml(file)
-		if err == nil {
-			k8sConfigs = append(k8sConfigs, file)
-			images = append(images, imgs...)
+// HasKubernetesFileExtension is for determining if a file under a glob pattern
+// is deployable file format. It makes no attempt to check whether or not the file
+// is actually deployable or has the correct contents.
+func HasKubernetesFileExtension(n string) bool {
+	for _, s := range validSuffixes {
+		if strings.HasSuffix(n, s) {
+			return true
 		}
 	}
-	if len(k8sConfigs) == 0 {
-		return nil, errors.New("one or more valid Kubernetes manifests is required to run skaffold")
-	}
-	return &kubectl{
-		configs: k8sConfigs,
-		images:  images,
-	}, nil
+	return false
 }
 
 // IsKubernetesManifest is for determining if a file is a valid Kubernetes manifest
 func IsKubernetesManifest(file string) bool {
-	if !util.HasKubernetesFileExtension(file) {
+	if !HasKubernetesFileExtension(file) {
 		return false
 	}
 
@@ -80,29 +58,9 @@ func IsKubernetesManifest(file string) bool {
 	return err == nil
 }
 
-// deployConfig implements the Initializer interface and generates
-// skaffold kubectl deployment config.
-func (k *kubectl) deployConfig() latest.DeployConfig {
-	return latest.DeployConfig{
-		DeployType: latest.DeployType{
-			KubectlDeploy: &latest.KubectlDeploy{
-				Manifests: k.configs,
-			},
-		},
-	}
-}
-
-// GetImages implements the Initializer interface and lists all the
-// images present in the k8 manifest files.
-func (k *kubectl) GetImages() []string {
-	return k.images
-}
-
-type yamlObject map[interface{}]interface{}
-
-// parseImagesFromKubernetesYaml parses the kubernetes yamls, and if it finds at least one
+// ParseImagesFromKubernetesYaml parses the kubernetes yamls, and if it finds at least one
 // valid Kubernetes object, it will return the images referenced in them.
-func parseImagesFromKubernetesYaml(filepath string) ([]string, error) {
+func ParseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 	k8sObjects, err := parseKubernetesObjects(filepath)
 	if err != nil {
 		return nil, err

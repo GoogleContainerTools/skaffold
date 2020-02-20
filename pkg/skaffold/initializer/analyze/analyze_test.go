@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package analyze
 
 import (
 	"strings"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	initconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -36,7 +37,7 @@ func TestAnalyze(t *testing.T) {
 		filesWithContents map[string]string
 		expectedConfigs   []string
 		expectedPaths     []string
-		config            Config
+		config            initconfig.Config
 		shouldErr         bool
 	}{
 		{
@@ -54,7 +55,7 @@ func TestAnalyze(t *testing.T) {
 				"maven/pom.xml":          emptyFile,
 				"Dockerfile":             emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        false,
@@ -87,7 +88,7 @@ func TestAnalyze(t *testing.T) {
 				"maven/pom.xml":          emptyFile,
 				"Dockerfile":             emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        false,
@@ -113,7 +114,7 @@ func TestAnalyze(t *testing.T) {
 				"Dockerfile":          emptyFile,
 				"node/package.json":   emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: true,
 				EnableJibInit:        true,
@@ -138,10 +139,12 @@ func TestAnalyze(t *testing.T) {
 				"k8pod.yml":                      validK8sManifest,
 				"gradle/build.gradle":            emptyFile,
 				"gradle/subproject/build.gradle": emptyFile,
+				"gradle/subproject/Dockerfile":   emptyFile,
 				"maven/asubproject/pom.xml":      emptyFile,
+				"maven/asubproject/Dockerfile":   emptyFile,
 				"maven/pom.xml":                  emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
@@ -152,7 +155,9 @@ func TestAnalyze(t *testing.T) {
 			},
 			expectedPaths: []string{
 				"gradle/build.gradle",
+				"gradle/subproject/Dockerfile",
 				"maven/pom.xml",
+				"maven/asubproject/Dockerfile",
 			},
 			shouldErr: false,
 		},
@@ -166,7 +171,7 @@ func TestAnalyze(t *testing.T) {
 				"k8pod.yml":                    validK8sManifest,
 				"pom.xml":                      emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
@@ -191,7 +196,7 @@ func TestAnalyze(t *testing.T) {
 				".hidden/Dockerfile": emptyFile,
 				"Dockerfile":         emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
@@ -217,7 +222,7 @@ deploy:
 				"deploy/Dockerfile": emptyFile,
 				"Dockerfile":        emptyFile,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                true,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
@@ -245,7 +250,7 @@ kind: Config
 deploy:
   kustomize: {}`,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
@@ -269,7 +274,7 @@ kind: Config
 deploy:
   kustomize: {}`,
 			},
-			config: Config{
+			config: initconfig.Config{
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
@@ -289,19 +294,20 @@ deploy:
 			t.Override(&docker.Validate, fakeValidateDockerfile)
 			t.Override(&jib.Validate, fakeValidateJibConfig)
 
-			a := newAnalysis(test.config)
+			a := NewAnalyzer(test.config)
 
-			err := a.analyze(".")
+			err := a.Analyze(".")
 
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
 				return
 			}
 
-			t.CheckDeepEqual(test.expectedConfigs, a.kubectlAnalyzer.kubernetesManifests)
-			t.CheckDeepEqual(len(test.expectedPaths), len(a.builderAnalyzer.foundBuilders))
-			for i := range a.builderAnalyzer.foundBuilders {
-				t.CheckDeepEqual(test.expectedPaths[i], a.builderAnalyzer.foundBuilders[i].Path())
+			t.CheckDeepEqual(test.expectedConfigs, a.Manifests())
+			builders := a.Builders()
+			t.CheckDeepEqual(len(test.expectedPaths), len(builders))
+			for i := range builders {
+				t.CheckDeepEqual(test.expectedPaths[i], builders[i].Path())
 			}
 		})
 	}

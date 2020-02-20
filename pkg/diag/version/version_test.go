@@ -1,5 +1,5 @@
 /*
-Copyright 2020 The Skaffold Authors
+Copyright 2019 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,20 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package version
 
-import "sort"
+import (
+	"testing"
 
-type sortedSet map[string]interface{}
+	"github.com/blang/semver"
 
-func (s sortedSet) add(value string) {
-	s[value] = value
-}
+	"github.com/GoogleContainerTools/skaffold/testutil"
+)
 
-func (s sortedSet) values() (values []string) {
-	for val := range s {
-		values = append(values, val)
-	}
-	sort.Strings(values)
-	return values
+func TestGetSemverVersion(t *testing.T) {
+	actual, err := GetSemverVersion()
+	expected, _ := semver.Make("0.0.0-unset")
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, expected, actual)
 }

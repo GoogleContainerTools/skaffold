@@ -14,11 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package deploy
 
 import (
 	"testing"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -50,7 +51,7 @@ spec:
 			},
 		},
 	}
-	testutil.CheckDeepEqual(t, expectedConfig, k.deployConfig())
+	testutil.CheckDeepEqual(t, expectedConfig, k.DeployConfig())
 }
 
 func TestParseImagesFromKubernetesYaml(t *testing.T) {
@@ -117,7 +118,7 @@ spec:
 			tmpDir := t.NewTempDir().
 				Write("deployment.yaml", test.contents)
 
-			images, err := parseImagesFromKubernetesYaml(tmpDir.Path("deployment.yaml"))
+			images, err := kubernetes.ParseImagesFromKubernetesYaml(tmpDir.Path("deployment.yaml"))
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.images, images)
 		})
@@ -178,7 +179,7 @@ func TestIsKubernetesManifest(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.NewTempDir().Write(test.filename, test.content).Chdir()
 
-			supported := IsKubernetesManifest(test.filename)
+			supported := kubernetes.IsKubernetesManifest(test.filename)
 
 			t.CheckDeepEqual(test.expected, supported)
 		})

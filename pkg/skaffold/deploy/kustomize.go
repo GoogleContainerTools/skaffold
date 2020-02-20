@@ -39,13 +39,23 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
+
+type patchPath struct {
+	Path  string `yaml:"path"`
+	Patch string `yaml:"patch"`
+}
+
+type patchWrapper struct {
+	*patchPath
+}
 
 // kustomization is the content of a kustomization.yaml file.
 type kustomization struct {
 	Bases                 []string             `yaml:"bases"`
 	Resources             []string             `yaml:"resources"`
-	Patches               []string             `yaml:"patches"`
+	Patches               []patchWrapper       `yaml:"patches"`
 	PatchesStrategicMerge []string             `yaml:"patchesStrategicMerge"`
 	CRDs                  []string             `yaml:"crds"`
 	PatchesJSON6902       []patchJSON6902      `yaml:"patchesJson6902"`
@@ -205,6 +215,21 @@ func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []
 	return nil
 }
 
+// UnmarshalYAML implements JSON unmarshalling by reading an inline yaml fragment.
+func (p *patchWrapper) UnmarshalYAML(unmarshal func(interface{}) error) (err error) {
+	pp := &patchPath{}
+	if err := unmarshal(&pp); err != nil {
+		var oldPathString string
+		if err := unmarshal(&oldPathString); err != nil {
+			return err
+		}
+		warnings.Printf("list of file paths deprecated: see https://github.com/kubernetes-sigs/kustomize/blob/master/docs/plugins/builtins.md#patchtransformer")
+		pp.Path = oldPathString
+	}
+	p.patchPath = pp
+	return nil
+}
+
 func dependenciesForKustomization(dir string) ([]string, error) {
 	var deps []string
 
@@ -248,11 +273,15 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 		}
 	}
 
-	deps = append(deps, util.AbsolutePaths(dir, content.Patches)...)
 	deps = append(deps, util.AbsolutePaths(dir, content.PatchesStrategicMerge)...)
 	deps = append(deps, util.AbsolutePaths(dir, content.CRDs)...)
-	for _, patch := range content.PatchesJSON6902 {
-		deps = append(deps, filepath.Join(dir, patch.Path))
+	for _, patch := range content.Patches {
+		if patch.Path != "" {
+			deps = append(deps, filepath.Join(dir, patch.Path))
+		}
+	}
+	for _, jsonPatch := range content.PatchesJSON6902 {
+		deps = append(deps, filepath.Join(dir, jsonPatch.Path))
 	}
 	for _, generator := range content.ConfigMapGenerator {
 		deps = append(deps, util.AbsolutePaths(dir, generator.Files)...)

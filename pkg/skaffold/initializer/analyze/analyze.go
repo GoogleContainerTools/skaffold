@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package analyze
 
 import (
 	"os"
@@ -24,26 +24,53 @@ import (
 
 	"github.com/karrick/godirwalk"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-type analysis struct {
-	kubectlAnalyzer  *kubectlAnalyzer
-	skaffoldAnalyzer *skaffoldConfigAnalyzer
-	builderAnalyzer  *builderAnalyzer
+// analyzer is following the visitor pattern. It is called on every file
+// as the analysis.analyze function walks the directory structure recursively.
+// It can manage state and react to walking events assuming a breadth first search.
+type analyzer interface {
+	enterDir(dir string)
+	analyzeFile(file string) error
+	exitDir(dir string)
+}
+
+type ProjectAnalysis struct {
+	configAnalyzer  *skaffoldConfigAnalyzer
+	kubeAnalyzer    *kubeAnalyzer
+	builderAnalyzer *builderAnalyzer
+}
+
+func (a *ProjectAnalysis) Builders() []build.InitBuilder {
+	return a.builderAnalyzer.foundBuilders
+}
+
+func (a *ProjectAnalysis) Manifests() []string {
+	return a.kubeAnalyzer.kubernetesManifests
+}
+
+func (a *ProjectAnalysis) analyzers() []analyzer {
+	return []analyzer{
+		a.kubeAnalyzer,
+		a.configAnalyzer,
+		a.builderAnalyzer,
+	}
 }
 
 // newAnalysis sets up the analysis of the directory based on the initializer configuration
-func newAnalysis(c Config) *analysis {
-	return &analysis{
-		kubectlAnalyzer: &kubectlAnalyzer{},
+func NewAnalyzer(c config.Config) *ProjectAnalysis {
+	return &ProjectAnalysis{
+		kubeAnalyzer: &kubeAnalyzer{},
 		builderAnalyzer: &builderAnalyzer{
 			findBuilders:         !c.SkipBuild,
 			enableJibInit:        c.EnableJibInit,
 			enableBuildpacksInit: c.EnableBuildpacksInit,
 			buildpacksBuilder:    c.BuildpacksBuilder,
 		},
-		skaffoldAnalyzer: &skaffoldConfigAnalyzer{
+		configAnalyzer: &skaffoldConfigAnalyzer{
 			force:        c.Force,
 			analyzeMode:  c.Analyze,
 			targetConfig: c.Opts.ConfigurationFile,
@@ -54,7 +81,7 @@ func newAnalysis(c Config) *analysis {
 // analyze recursively walks a directory and notifies the analyzers of files and enterDir and exitDir events
 // at the end of the analyze function the analysis struct's analyzers should contain the state that we can
 // use to do further computation.
-func (a *analysis) analyze(dir string) error {
+func (a *ProjectAnalysis) Analyze(dir string) error {
 	for _, analyzer := range a.analyzers() {
 		analyzer.enterDir(dir)
 	}
@@ -92,7 +119,7 @@ func (a *analysis) analyze(dir string) error {
 
 	// Recurse into subdirectories
 	for _, subdir := range subdirectories {
-		if err = a.analyze(filepath.Join(dir, subdir.Name())); err != nil {
+		if err = a.Analyze(filepath.Join(dir, subdir.Name())); err != nil {
 			return err
 		}
 	}
@@ -101,40 +128,4 @@ func (a *analysis) analyze(dir string) error {
 		analyzer.exitDir(dir)
 	}
 	return nil
-}
-
-func (a *analysis) analyzers() []analyzer {
-	return []analyzer{
-		a.kubectlAnalyzer,
-		a.skaffoldAnalyzer,
-		a.builderAnalyzer,
-	}
-}
-
-// analyzer is following the visitor pattern. It is called on every file
-// as the analysis.analyze function walks the directory structure recursively.
-// It can manage state and react to walking events assuming a breadth first search.
-type analyzer interface {
-	enterDir(dir string)
-	analyzeFile(file string) error
-	exitDir(dir string)
-}
-
-// directoryAnalyzer is a base analyzer that can be included in every analyzer as a convenience
-// it saves the current directory on enterDir events. Benefits to include this into other analyzers is that
-// they can rely on the current directory var, but also they don't have to implement enterDir and exitDir.
-type directoryAnalyzer struct {
-	currentDir string
-}
-
-func (a *directoryAnalyzer) analyzeFile(_ string) error {
-	return nil
-}
-
-func (a *directoryAnalyzer) enterDir(dir string) {
-	a.currentDir = dir
-}
-
-func (a *directoryAnalyzer) exitDir(_ string) {
-	//pass
 }

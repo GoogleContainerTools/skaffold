@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 )
 
 var (
@@ -36,6 +37,7 @@ var (
 	analyze                bool
 	enableJibInit          bool
 	enableBuildpacksInit   bool
+	enableNewInitFormat    bool
 	buildpacksBuilder      string
 )
 
@@ -56,6 +58,8 @@ func NewCmdInit() *cobra.Command {
 			f.StringArrayVarP(&cliArtifacts, "artifact", "a", nil, "'='-delimited Dockerfile/image pair, or JSON string, to generate build artifact\n(example: --artifact='{\"builder\":\"Docker\",\"payload\":{\"path\":\"/web/Dockerfile.web\"},\"image\":\"gcr.io/web-project/image\"}')")
 			f.StringArrayVarP(&cliKubernetesManifests, "kubernetes-manifest", "k", nil, "a path or a glob pattern to kubernetes manifests (can be non-existent) to be added to the kubectl deployer (overrides detection of kubernetes manifests). Repeat the flag for multiple entries. E.g.: skaffold init -k pod.yaml -k k8s/*.yml")
 			f.BoolVar(&analyze, "analyze", false, "Print all discoverable Dockerfiles and images in JSON format to stdout")
+			f.BoolVar(&enableNewInitFormat, "XXenableNewInitFormat", false, "")
+			f.MarkHidden("XXenableNewInitFormat")
 			f.BoolVar(&enableJibInit, "XXenableJibInit", false, "")
 			f.MarkHidden("XXenableJibInit")
 			f.BoolVar(&enableBuildpacksInit, "XXenableBuildpacksInit", false, "")
@@ -67,7 +71,7 @@ func NewCmdInit() *cobra.Command {
 }
 
 func doInit(ctx context.Context, out io.Writer) error {
-	return initEntrypoint(ctx, out, initializer.Config{
+	return initEntrypoint(ctx, out, config.Config{
 		ComposeFile:            composeFile,
 		CliArtifacts:           cliArtifacts,
 		CliKubernetesManifests: cliKubernetesManifests,
@@ -77,6 +81,7 @@ func doInit(ctx context.Context, out io.Writer) error {
 		Analyze:                analyze,
 		EnableJibInit:          enableJibInit,
 		EnableBuildpacksInit:   enableBuildpacksInit,
+		EnableNewInitFormat:    enableNewInitFormat || enableBuildpacksInit || enableJibInit,
 		BuildpacksBuilder:      buildpacksBuilder,
 		Opts:                   opts,
 	})

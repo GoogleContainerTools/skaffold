@@ -24,10 +24,12 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/streamformatter"
@@ -37,6 +39,11 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+)
+
+const (
+	retries   = 5
+	sleepTime = 1 * time.Second
 )
 
 type ContainerRun struct {
@@ -384,7 +391,17 @@ func (l *localDaemon) ImageInspectWithRaw(ctx context.Context, image string) (ty
 }
 
 func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error) {
-	return l.apiClient.ImageRemove(ctx, image, opts)
+	for i := 0; i < retries; i++ {
+		resp, err := l.apiClient.ImageRemove(ctx, image, opts)
+		if err == nil {
+			return resp, nil
+		}
+		if _, ok := err.(errdefs.ErrConflict); !ok {
+			return nil, err
+		}
+		time.Sleep(sleepTime)
+	}
+	return nil, fmt.Errorf("could not remove image after %d retries", retries)
 }
 
 // GetBuildArgs gives the build args flags for docker build.

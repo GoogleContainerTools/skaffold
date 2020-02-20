@@ -14,14 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package initializer
+package deploy
 
-import "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+import (
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+)
 
-// deploymentInitializer detects a deployment type and is able to extract image names from it
-type deploymentInitializer interface {
+// Initializer detects a deployment type and is able to extract image names from it
+type Initializer interface {
 	// deployConfig generates Deploy Config for skaffold configuration.
-	deployConfig() latest.DeployConfig
+	DeployConfig() latest.DeployConfig
 	// GetImages fetches all the images defined in the manifest files.
 	GetImages() []string
 }
@@ -30,7 +33,7 @@ type cliDeployInit struct {
 	cliKubernetesManifests []string
 }
 
-func (c *cliDeployInit) deployConfig() latest.DeployConfig {
+func (c *cliDeployInit) DeployConfig() latest.DeployConfig {
 	return latest.DeployConfig{
 		DeployType: latest.DeployType{
 			KubectlDeploy: &latest.KubectlDeploy{
@@ -46,10 +49,21 @@ func (c *cliDeployInit) GetImages() []string {
 type emptyDeployInit struct {
 }
 
-func (c *emptyDeployInit) deployConfig() latest.DeployConfig {
+func (c *emptyDeployInit) DeployConfig() latest.DeployConfig {
 	return latest.DeployConfig{}
 }
 
 func (c *emptyDeployInit) GetImages() []string {
 	return nil
+}
+
+func NewInitializer(manifests []string, c config.Config) (Initializer, error) {
+	switch {
+	case c.SkipDeploy:
+		return &emptyDeployInit{}, nil
+	case len(c.CliKubernetesManifests) > 0:
+		return &cliDeployInit{c.CliKubernetesManifests}, nil
+	default:
+		return newKubectlInitializer(manifests)
+	}
 }
