@@ -19,5 +19,5 @@ COPY . .
 
 FROM builder as release
 ARG VERSION
-RUN make clean && make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
+RUN make clean out/skaffold VERSION=$VERSION && mv out/skaffold /usr/bin/skaffold
 RUN skaffold credits -d /THIRD_PARTY_NOTICES
