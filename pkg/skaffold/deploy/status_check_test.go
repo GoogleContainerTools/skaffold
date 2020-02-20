@@ -89,7 +89,7 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(200)*time.Second),
+				resource.NewDeployment("dep1", "test", time.Duration(300)*time.Second),
 			},
 		},
 		{
@@ -480,6 +480,38 @@ func TestResourceMarkProcessed(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.CheckDeepEqual(test.expected, test.c.markProcessed(test.err), cmp.AllowUnexported(resourceCounter{}, counter{}))
+		})
+	}
+}
+
+func TestGetStatusCheckDeadline(t *testing.T) {
+	tests := []struct {
+		description string
+		value       int
+		deps        []Resource
+		expected    time.Duration
+	}{
+		{
+			description: "no value specified",
+			deps: []Resource{
+				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
+				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
+			},
+			expected: time.Duration(20) * time.Second,
+		},
+		{
+			description: "value specified less than all other resources",
+			value:       5,
+			deps: []Resource{
+				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
+				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
+			},
+			expected: time.Duration(5) * time.Second,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.CheckDeepEqual(test.expected, statusCheckMaxDeadline(test.value, test.deps))
 		})
 	}
 }
