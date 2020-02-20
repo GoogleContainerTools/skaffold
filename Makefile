@@ -33,7 +33,6 @@ BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 SKAFFOLD_TEST_PACKAGES := $(shell go list ./... | grep -v diag)
 GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./pkg/diag/*")
-DEPS_DIGEST := $(shell ./hack/skaffold-deps-sha1.sh)
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
@@ -165,6 +164,7 @@ clean:
 
 .PHONY: build_deps
 build_deps:
+	$(eval DEPS_DIGEST := $(shell ./hack/skaffold-deps-sha1.sh))
 	docker build \
 		-f deploy/skaffold/Dockerfile.deps \
 		-t gcr.io/$(GCP_PROJECT)/build_deps:$(DEPS_DIGEST) \
