@@ -64,8 +64,10 @@ GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
 GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
 GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
+STATIK_FILES = cmd/skaffold/app/cmd/statik/statik.go
+
 # Build for local development.
-$(BUILD_DIR)/$(PROJECT): generate-statik $(GO_FILES) $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -o $@ $(BUILD_PACKAGE)
 
 .PHONY: install
@@ -78,7 +80,7 @@ install: $(BUILD_DIR)/$(PROJECT)
 .PHONY: cross
 cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform).sha256)
 
-$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): generate-statik $(GO_FILES) $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
 	docker build \
 		--build-arg PROJECT=$(REPOPATH) \
 		--build-arg TARGETS=$*/$(GOARCH) \
@@ -121,7 +123,7 @@ quicktest:
 	@ ./hack/gotest.sh -short -timeout=60s $(SKAFFOLD_TEST_PACKAGES)
 
 .PHONY: integration
-integration: generate-statik install
+integration: install
 ifeq ($(GCP_ONLY),true)
 	gcloud container clusters get-credentials \
 		$(GKE_CLUSTER_NAME) \
@@ -238,6 +240,7 @@ build-docs-preview:
 generate-schemas:
 	go run hack/schemas/main.go
 
-.PHONY: generate-statik
-generate-statik:
+# static files
+
+$(STATIK_FILES): go.mod docs/content/en/schemas/*
 	hack/generate-statik.sh
