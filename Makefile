@@ -14,8 +14,8 @@
 GOOS ?= $(shell go env GOOS)
 GOARCH = amd64
 BUILD_DIR ?= ./out
-ORG := github.com/GoogleContainerTools
-PROJECT := skaffold
+ORG = github.com/GoogleContainerTools
+PROJECT = skaffold
 REPOPATH ?= $(ORG)/$(PROJECT)
 RELEASE_BUCKET ?= $(PROJECT)
 GSC_BUILD_PATH ?= gs://$(RELEASE_BUCKET)/builds/$(COMMIT)
@@ -28,10 +28,12 @@ GCP_PROJECT ?= k8s-skaffold
 GKE_CLUSTER_NAME ?= integration-tests
 GKE_ZONE ?= us-central1-a
 
-SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
+SUPPORTED_PLATFORMS = linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 SKAFFOLD_TEST_PACKAGES := $(shell go list ./... | grep -v diag)
+GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./pkg/diag/*")
+DEPS_DIGEST := $(shell ./hack/skaffold-deps-sha1.sh)
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
@@ -45,16 +47,16 @@ endif
 export GO111MODULE = on
 export GOFLAGS = -mod=vendor
 
-GO_GCFLAGS := "all=-trimpath=${PWD}"
-GO_ASMFLAGS := "all=-trimpath=${PWD}"
+GO_GCFLAGS = "all=-trimpath=${PWD}"
+GO_ASMFLAGS = "all=-trimpath=${PWD}"
 
 LDFLAGS_linux = -static
 LDFLAGS_darwin =
 LDFLAGS_windows =
 
-GO_BUILD_TAGS_linux := "osusergo netgo static_build release"
-GO_BUILD_TAGS_darwin := "release"
-GO_BUILD_TAGS_windows := "release"
+GO_BUILD_TAGS_linux = "osusergo netgo static_build release"
+GO_BUILD_TAGS_darwin = "release"
+GO_BUILD_TAGS_windows = "release"
 
 GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
@@ -65,9 +67,6 @@ GO_LDFLAGS += -s -w
 GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
 GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
 GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
-
-GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./pkg/diag/*")
-DEPS_DIGEST := $(shell ./hack/skaffold-deps-sha1.sh)
 
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
