@@ -79,12 +79,8 @@ profiles:
         manifests:
         - k8s-*
       kustomize:
-<<<<<<< HEAD
-        path: kustomization-test
-=======
         paths:
         - kustomization-test
->>>>>>> master
   - name: test local
     build:
       artifacts:
