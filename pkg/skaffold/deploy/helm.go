@@ -214,16 +214,18 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	}
 
 	var args []string
-	if !isInstalled {
+
+	switch {
+	case !isInstalled:
 		args = append(args, "install", "--name", releaseName)
 		args = append(args, h.Flags.Install...)
-	} else if r.UpgradeOnChange != nil && !*r.UpgradeOnChange {
+	case r.UpgradeOnChange != nil && !*r.UpgradeOnChange:
 		logrus.Infof("Release %s already installed...", releaseName)
 		return []Artifact{}, nil
-	} else if r.UpgradeOnChange == nil && r.Remote {
+	case r.UpgradeOnChange == nil && r.Remote:
 		logrus.Infof("Release %s not upgraded as it is remote...", releaseName)
 		return []Artifact{}, nil
-	} else {
+	default:
 		args = append(args, "upgrade", releaseName)
 		args = append(args, h.Flags.Upgrade...)
 		if h.forceDeploy {
