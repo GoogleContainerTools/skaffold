@@ -46,9 +46,6 @@ endif
 export GO111MODULE = on
 export GOFLAGS = -mod=vendor
 
-GO_GCFLAGS = "all=-trimpath=$(CURDIR)"
-GO_ASMFLAGS = "all=-trimpath=$(CURDIR)"
-
 LDFLAGS_linux = -static
 LDFLAGS_darwin =
 LDFLAGS_windows =
@@ -69,7 +66,7 @@ GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
 # Build for local development.
 $(BUILD_DIR)/$(PROJECT): generate-statik $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -o $@ $(BUILD_PACKAGE)
 
 .PHONY: install
 install: $(BUILD_DIR)/$(PROJECT)
