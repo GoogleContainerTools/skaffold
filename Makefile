@@ -46,8 +46,8 @@ endif
 export GO111MODULE = on
 export GOFLAGS = -mod=vendor
 
-GO_GCFLAGS = "all=-trimpath=${PWD}"
-GO_ASMFLAGS = "all=-trimpath=${PWD}"
+GO_GCFLAGS = "all=-trimpath=$(CURDIR)"
+GO_ASMFLAGS = "all=-trimpath=$(CURDIR)"
 
 LDFLAGS_linux = -static
 LDFLAGS_darwin =
