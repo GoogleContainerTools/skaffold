@@ -62,6 +62,8 @@ type HelmDeployer struct {
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
 // with the needed configuration for `helm`
 func NewHelmDeployer(runCtx *runcontext.RunContext) *HelmDeployer {
+	logrus.Infof("NEW!")
+
 	return &HelmDeployer{
 		HelmDeploy:  runCtx.Cfg.Deploy.HelmDeploy,
 		kubeContext: runCtx.KubeContext,
@@ -78,6 +80,7 @@ func (h *HelmDeployer) Labels() map[string]string {
 }
 
 func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
+	logrus.Infof("DEPLOY!")
 	event.DeployInProgress()
 
 	var dRes []Artifact
@@ -176,6 +179,7 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, useSecrets bool, arg ...string) error {
+	logrus.Infof("helm: %v", arg)
 	args := append([]string{"--kube-context", h.kubeContext}, arg...)
 	args = append(args, h.Flags.Global...)
 	if h.kubeConfig != "" {
