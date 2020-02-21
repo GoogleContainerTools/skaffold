@@ -32,4 +32,5 @@ type Config struct {
 	EnableNewInitFormat    bool
 	BuildpacksBuilder      string
 	Opts                   config.SkaffoldOptions
+	MaxFileSize            int64
 }

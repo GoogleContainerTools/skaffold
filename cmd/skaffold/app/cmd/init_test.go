@@ -54,6 +54,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				EnableNewInitFormat:    false,
 				BuildpacksBuilder:      "heroku/buildpacks",
 				Opts:                   opts,
+				MaxFileSize:            maxFileSize,
 			},
 		},
 
@@ -88,6 +89,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				EnableNewInitFormat:    true,
 				BuildpacksBuilder:      "buildpacks/builder",
 				Opts:                   opts,
+				MaxFileSize:            maxFileSize,
 			},
 		},
 
@@ -110,6 +112,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				EnableNewInitFormat:    true,
 				BuildpacksBuilder:      "heroku/buildpacks",
 				Opts:                   opts,
+				MaxFileSize:            maxFileSize,
 			},
 		},
 		{
@@ -131,6 +134,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				EnableNewInitFormat:    true,
 				BuildpacksBuilder:      "heroku/buildpacks",
 				Opts:                   opts,
+				MaxFileSize:            maxFileSize,
 			},
 		},
 	}
