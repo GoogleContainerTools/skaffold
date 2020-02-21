@@ -115,7 +115,7 @@ DOCKER_API_VERSION=1.23`,
 				test.env,
 			))
 
-			env, _, err := newMinikubeAPIClient()
+			env, _, err := newMinikubeAPIClient("")
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedEnv, env)
 		})

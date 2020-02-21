@@ -261,6 +261,14 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"build", "debug", "dev", "run"},
 	},
+	{
+		Name:          "minikube-profile",
+		Usage:         "forces skaffold use the given minikube-profile and forces building against the docker daemon inside that minikube profile",
+		Value:         &opts.MinikubeProfile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"build", "debug", "dev", "run"},
+	},
 }
 
 var commandFlags []*pflag.Flag
@@ -295,6 +303,10 @@ func AddFlags(fs *pflag.FlagSet, cmdName string) {
 		}
 	}
 	fs.MarkHidden("status-check")
+	// this is a temporary solution until we figure out an automated way to detect the
+	// minikube profile see
+	// https://github.com/GoogleContainerTools/skaffold/issues/3668
+	fs.MarkHidden("minikube-profile")
 }
 
 func hasCmdAnnotation(cmdName string, annotations []string) bool {

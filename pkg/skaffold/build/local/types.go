@@ -59,7 +59,11 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
 
-	localCluster, err := getLocalCluster(runCtx.Opts.GlobalConfig)
+	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
+	// remove minikubeProfile from here and instead detect it by matching the
+	// kubecontext API Server to minikube profiles
+
+	localCluster, err := getLocalCluster(runCtx.Opts.GlobalConfig, runCtx.Opts.MinikubeProfile)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting localCluster")
 	}
