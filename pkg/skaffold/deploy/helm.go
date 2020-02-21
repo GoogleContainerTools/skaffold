@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -30,6 +31,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -53,6 +55,8 @@ type HelmDeployer struct {
 	kubeConfig  string
 	namespace   string
 	forceDeploy bool
+	// bV is the helm binary version
+	bV semver.Version
 }
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
@@ -190,15 +194,25 @@ func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, useSecrets bool,
 }
 
 func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool) ([]Artifact, error) {
+
 	releaseName, err := expandTemplate(r.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse the release name template")
 	}
+	hv, err := h.binVer(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "binary version")
+	}
 
-	isInstalled := true
+	o := installOpts{
+		releaseName: releaseName,
+		upgrade:     true,
+		helmVersion: hv,
+	}
+
 	if err := h.helm(ctx, ioutil.Discard, false, "get", releaseName); err != nil {
 		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
-		isInstalled = false
+		o.upgrade = false
 	}
 
 	// Dependency builds should be skipped when trying to install a chart
@@ -213,49 +227,10 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		}
 	}
 
-	var args []string
-	if !isInstalled {
-		args = append(args, "install", "--name", releaseName)
-		args = append(args, h.Flags.Install...)
-	} else {
-		args = append(args, "upgrade", releaseName)
-		args = append(args, h.Flags.Upgrade...)
-		if h.forceDeploy {
-			args = append(args, "--force")
-		}
-		if r.RecreatePods {
-			args = append(args, "--recreate-pods")
-		}
-	}
-
-	// There are 2 strategies:
-	// 1) Deploy chart directly from filesystem path or from repository
-	//    (like stable/kubernetes-dashboard). Version only applies to a
-	//    chart from repository.
-	// 2) Package chart into a .tgz archive with specific version and then deploy
-	//    that packaged chart. This way user can apply any version and appVersion
-	//    for the chart.
-	if r.Packaged == nil {
-		if r.Version != "" {
-			args = append(args, "--version", r.Version)
-		}
-		args = append(args, r.ChartPath)
-	} else {
-		chartPath, err := h.packageChart(ctx, r)
-		if err != nil {
-			return nil, errors.WithMessage(err, "cannot package chart")
-		}
-		args = append(args, chartPath)
-	}
-
-	var ns string
 	if h.namespace != "" {
-		ns = h.namespace
+		o.namespace = h.namespace
 	} else if r.Namespace != "" {
-		ns = r.Namespace
-	}
-	if ns != "" {
-		args = append(args, "--namespace", ns)
+		o.namespace = r.Namespace
 	}
 
 	// Overrides.Values
@@ -271,8 +246,63 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		defer func() {
 			os.Remove(constants.HelmOverridesFilename)
 		}()
+	}
 
-		args = append(args, "-f", constants.HelmOverridesFilename)
+	// There are 2 strategies:
+	// 1) Deploy chart directly from filesystem path or from repository
+	//    (like stable/kubernetes-dashboard). Version only applies to a
+	//    chart from repository.
+	// 2) Package chart into a .tgz archive with specific version and then deploy
+	//    that packaged chart. This way user can apply any version and appVersion
+	//    for the chart.
+	if r.Packaged != nil {
+		chartPath, err := h.packageChart(ctx, r)
+		if err != nil {
+			return nil, errors.WithMessage(err, "cannot package chart")
+		}
+		o.chartPath = chartPath
+	}
+
+	args, err := h.installArgs(r, builds, valuesSet, o)
+	if err != nil {
+		return nil, errors.Wrap(err, "release args")
+	}
+	err = h.helm(ctx, out, r.UseHelmSecrets, args...)
+	return h.getDeployResults(ctx, o.namespace, releaseName), err
+}
+
+type installOpts struct {
+	releaseName string
+	namespace   string
+	chartPath   string
+	upgrade     bool
+	helmVersion semver.Version
+}
+
+// installArgs calculates what arguments to pass in for deployment installation
+func (h *HelmDeployer) installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool, o installOpts) ([]string, error) {
+
+	var args []string
+	if !o.upgrade {
+		args = append(args, "install")
+		if o.helmVersion.LT(semver.MustParse("3.0.0")) {
+			args = append(args, "--name")
+		}
+		args = append(args, o.releaseName)
+		args = append(args, h.Flags.Install...)
+	} else {
+		args = append(args, "upgrade", o.releaseName)
+		args = append(args, h.Flags.Upgrade...)
+		if h.forceDeploy {
+			args = append(args, "--force")
+		}
+		if r.RecreatePods {
+			args = append(args, "--recreate-pods")
+		}
+	}
+
+	if o.namespace != "" {
+		args = append(args, "--namespace", o.namespace)
 	}
 
 	// TODO(dgageot): we should merge `Values`, `SetValues` and `SetValueTemplates`
@@ -282,6 +312,11 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	params, err := h.joinTagsToBuildResult(builds, r.Values)
 	if err != nil {
 		return nil, errors.Wrap(err, "matching build results to chart values")
+	}
+
+	// Overrides.Values
+	if len(r.Overrides.Values) != 0 {
+		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
 
 	for k, v := range params {
@@ -341,9 +376,11 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		args = append(args, "--wait")
 	}
 
-	helmErr := h.helm(ctx, out, r.UseHelmSecrets, args...)
-
-	return h.getDeployResults(ctx, ns, releaseName), helmErr
+	if r.Version != "" {
+		args = append(args, "--version", r.Version)
+	}
+	args = append(args, r.ChartPath)
+	return args, err
 }
 
 func templatedField(tmpl string, envMap map[string]string) (string, error) {
@@ -467,16 +504,33 @@ func (h *HelmDeployer) getDeployResults(ctx context.Context, namespace string, r
 }
 
 func (h *HelmDeployer) deleteRelease(ctx context.Context, out io.Writer, r latest.HelmRelease) error {
-	releaseName, err := expandTemplate(r.Name)
+	hv, err := h.binVer(ctx)
 	if err != nil {
-		return errors.Wrap(err, "cannot parse the release name template")
+		return errors.Wrap(err, "binary version")
 	}
 
-	if err := h.helm(ctx, out, false, "delete", releaseName, "--purge"); err != nil {
-		logrus.Debugf("deleting release %s: %v\n", releaseName, err)
+	args, err := h.deleteArgs(r.Name, hv)
+	if err != nil {
+		return errors.Wrap(err, "delete args")
 	}
 
+	if err := h.helm(ctx, out, false, args...); err != nil {
+		logrus.Debugf("deleting release %s: %v\n", r.Name, err)
+	}
 	return nil
+}
+
+// deleteArgs returns the arguments to be used for deleting a release
+func (h *HelmDeployer) deleteArgs(name string, hv semver.Version) ([]string, error) {
+	exp, err := expandTemplate(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "cannot parse the release name template")
+	}
+	args := []string{"delete", exp}
+	if hv.LT(semver.MustParse("3.0.0")) {
+		args = append(args, "--purge")
+	}
+	return args, nil
 }
 
 func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
@@ -497,6 +551,37 @@ func (h *HelmDeployer) joinTagsToBuildResult(builds []build.Artifact, params map
 	}
 
 	return paramToBuildResult, nil
+}
+
+// binVer returns the version of the helm binary found in PATH. May be cached.
+func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
+	if h.bV.Major != 0 {
+		return h.bV, nil
+	}
+
+	var b bytes.Buffer
+	if err := h.helm(ctx, &b, false, "version"); err != nil {
+		return semver.Version{}, errors.Wrap(err, "helm version")
+	}
+	bs := b.Bytes()
+	logrus.Warnf("helm binary version: %s", bs)
+
+	bi := struct {
+		Version string `json:"Version"`
+	}{}
+	if err := json.Unmarshal(bs, &bi); err != nil {
+		return semver.Version{}, errors.Wrap(err, "unmarshal")
+	}
+	logrus.Warnf("struct: %+v", bi)
+
+	v, err := semver.Make(bi.Version)
+	if err != nil {
+		return semver.Version{}, errors.Wrap(err, "semver make")
+	}
+
+	h.bV = v
+	logrus.Warnf("set bV to %s", v)
+	return h.bV, nil
 }
 
 func generateGetFilesArgs(m map[string]string, valuesSet map[string]bool) []string {
