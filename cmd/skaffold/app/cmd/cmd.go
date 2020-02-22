@@ -100,6 +100,8 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 			if quietFlag {
 				logrus.Debugf("Update check is disabled because of quiet mode")
+			} else if analyze {
+				logrus.Debugf("Update check is disabled because of init --analyze")
 			} else {
 				go func() {
 					if err := updateCheck(updateMsg, opts.GlobalConfig); err != nil {
