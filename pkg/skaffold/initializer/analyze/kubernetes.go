@@ -21,7 +21,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 )
 
-// kubectlAnalyzer is a Visitor during the directory analysis that collects kubernetes manifests
+// kubeAnalyzer is a Visitor during the directory analysis that collects kubernetes manifests
 type kubeAnalyzer struct {
 	directoryAnalyzer
 	kubernetesManifests []string
