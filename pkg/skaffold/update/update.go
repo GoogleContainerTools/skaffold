@@ -24,6 +24,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -65,6 +66,7 @@ func getLatestAndCurrentVersion() (semver.Version, semver.Version, error) {
 	if err != nil {
 		return none, none, err
 	}
+	logrus.Tracef("latest skaffold version: %s", versionString)
 	latest, err := version.ParseVersion(versionString)
 	if err != nil {
 		return none, none, errors.Wrap(err, "parsing latest version from GCS")
