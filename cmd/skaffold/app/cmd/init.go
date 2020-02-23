@@ -27,6 +27,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 )
 
+const maxFileSize = 1024 * 1024 * 512
+
 var (
 	composeFile            string
 	cliArtifacts           []string
@@ -84,5 +86,6 @@ func doInit(ctx context.Context, out io.Writer) error {
 		EnableNewInitFormat:    enableNewInitFormat || enableBuildpacksInit || enableJibInit,
 		BuildpacksBuilder:      buildpacksBuilder,
 		Opts:                   opts,
+		MaxFileSize:            maxFileSize,
 	})
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package analyze
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -30,6 +31,10 @@ import (
 
 func TestAnalyze(t *testing.T) {
 	emptyFile := ""
+	largeFile := ""
+	for i := 1; i < 1000; i++ {
+		largeFile = fmt.Sprintf("%s0", largeFile)
+	}
 	validK8sManifest := "apiVersion: v1\nkind: Service\nmetadata:\n  name: test\n"
 
 	tests := []struct {
@@ -210,6 +215,28 @@ func TestAnalyze(t *testing.T) {
 			shouldErr: false,
 		},
 		{
+			description: "should skip large files",
+			filesWithContents: map[string]string{
+				"k8pod.yml":               validK8sManifest,
+				"README":                  emptyFile,
+				"Dockerfile":              emptyFile,
+				"largeFileDir/Dockerfile": largeFile,
+			},
+			config: initconfig.Config{
+				Force:                false,
+				EnableBuildpacksInit: false,
+				EnableJibInit:        true,
+				MaxFileSize:          100,
+			},
+			expectedConfigs: []string{
+				"k8pod.yml",
+			},
+			expectedPaths: []string{
+				"Dockerfile",
+			},
+			shouldErr: false,
+		},
+		{
 			description: "should not error when skaffold.config present and force = true",
 			filesWithContents: map[string]string{
 				"skaffold.yaml": `apiVersion: skaffold/v1beta6
@@ -304,10 +331,14 @@ deploy:
 			}
 
 			t.CheckDeepEqual(test.expectedConfigs, a.Manifests())
-			builders := a.Builders()
-			t.CheckDeepEqual(len(test.expectedPaths), len(builders))
-			for i := range builders {
-				t.CheckDeepEqual(test.expectedPaths[i], builders[i].Path())
+
+			if len(test.expectedPaths) != len(a.Builders()) {
+				t.Fatalf("expected %d builders, got %d: %v",
+					len(test.expectedPaths),
+					len(a.Builders()), a.Builders())
+			}
+			for i := range a.Builders() {
+				t.CheckDeepEqual(test.expectedPaths[i], a.Builders()[i].Path())
 			}
 		})
 	}
