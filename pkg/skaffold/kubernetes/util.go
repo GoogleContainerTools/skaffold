@@ -100,7 +100,7 @@ func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
 			return nil, errors.Wrap(err, "reading Kubernetes YAML")
 		}
 
-		if !hasRequiredK8sManifestFields(obj, filepath) {
+		if !hasRequiredK8sManifestFields(obj) {
 			continue
 		}
 
@@ -112,10 +112,10 @@ func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
 	return k8sObjects, nil
 }
 
-func hasRequiredK8sManifestFields(doc map[interface{}]interface{}, fileName string) bool {
+func hasRequiredK8sManifestFields(doc map[interface{}]interface{}) bool {
 	for _, field := range requiredFields {
 		if _, ok := doc[field]; !ok {
-			logrus.Tracef("%s not present in %s, continuing", field, fileName)
+			logrus.Debugf("%s not present in yaml, continuing", field)
 			return false
 		}
 	}
