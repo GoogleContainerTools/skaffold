@@ -196,6 +196,14 @@ func (h *HelmDeployer) helm(ctx context.Context, out io.Writer, useSecrets bool,
 	return util.RunCmd(cmd)
 }
 
+func getArgs(v semver.Version, releaseName string) []string {
+	args := []string{"get"}
+	if v.GTE(semver.MustParse("3.0.0")) {
+		args = append(args, "all")
+	}
+	return append(args, releaseName)
+}
+
 func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool) ([]Artifact, error) {
 
 	releaseName, err := expandTemplate(r.Name)
@@ -213,7 +221,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		helmVersion: hv,
 	}
 
-	if err := h.helm(ctx, ioutil.Discard, false, "get", "all", releaseName); err != nil {
+	if err := h.helm(ctx, ioutil.Discard, false, getArgs(hv, releaseName)...); err != nil {
 		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 		o.upgrade = false
 	}
@@ -453,7 +461,13 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 
 func (h *HelmDeployer) getReleaseInfo(ctx context.Context, release string) (*bufio.Reader, error) {
 	var releaseInfo bytes.Buffer
-	if err := h.helm(ctx, &releaseInfo, false, "get", "all", release); err != nil {
+
+	hv, err := h.binVer(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "binary version")
+	}
+
+	if err := h.helm(ctx, &releaseInfo, false, getArgs(hv, release)...); err != nil {
 		return nil, fmt.Errorf("error retrieving helm deployment info: %s", releaseInfo.String())
 	}
 	return bufio.NewReader(&releaseInfo), nil
