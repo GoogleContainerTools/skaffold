@@ -20,7 +20,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -214,7 +213,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		helmVersion: hv,
 	}
 
-	if err := h.helm(ctx, ioutil.Discard, false, "get", releaseName); err != nil {
+	if err := h.helm(ctx, ioutil.Discard, false, "get", "all", releaseName); err != nil {
 		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 		o.upgrade = false
 	}
@@ -454,7 +453,7 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 
 func (h *HelmDeployer) getReleaseInfo(ctx context.Context, release string) (*bufio.Reader, error) {
 	var releaseInfo bytes.Buffer
-	if err := h.helm(ctx, &releaseInfo, false, "get", release); err != nil {
+	if err := h.helm(ctx, &releaseInfo, false, "get", "all", release); err != nil {
 		return nil, fmt.Errorf("error retrieving helm deployment info: %s", releaseInfo.String())
 	}
 	return bufio.NewReader(&releaseInfo), nil
@@ -564,21 +563,16 @@ func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
 	}
 
 	var b bytes.Buffer
-	if err := h.helm(ctx, &b, false, "version"); err != nil {
+	if err := h.helm(ctx, &b, false, "version", "--short"); err != nil {
 		return semver.Version{}, errors.Wrap(err, "helm version")
 	}
 	bs := b.Bytes()
 	logrus.Warnf("helm binary version: %s", bs)
 
-	bi := struct {
-		Version string `json:"Version"`
-	}{}
-	if err := json.Unmarshal(bs, &bi); err != nil {
-		return semver.Version{}, errors.Wrap(err, "unmarshal")
-	}
-	logrus.Warnf("struct: %+v", bi)
-
-	v, err := semver.Make(bi.Version)
+	// raw: "v3.1.0+gb29d20b"
+	rv := strings.Split(string(bs)[1:], "+")[0]
+	logrus.Infof("raw version: %s", rv)
+	v, err := semver.Make(rv)
 	if err != nil {
 		return semver.Version{}, errors.Wrap(err, "semver make")
 	}

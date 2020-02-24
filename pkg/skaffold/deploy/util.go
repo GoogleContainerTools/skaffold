@@ -35,7 +35,7 @@ func parseRuntimeObject(namespace string, b []byte) (*Artifact, error) {
 	d := scheme.Codecs.UniversalDeserializer()
 	obj, _, err := d.Decode(b, nil, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding parsed yaml: %s", err.Error())
+		return nil, fmt.Errorf("error decoding parsed yaml: %v\nbytes: %s", err, b)
 	}
 	return &Artifact{
 		Obj:       obj,
@@ -51,6 +51,12 @@ func parseReleaseInfo(namespace string, b *bufio.Reader) []Artifact {
 		if err == io.EOF {
 			break
 		}
+
+		// Skip sections that are unrelated to deployments
+		if !bytes.Contains(doc, []byte("kind:")) {
+			continue
+		}
+
 		if err != nil {
 			logrus.Infof("error parsing object from string: %s", err.Error())
 			continue
