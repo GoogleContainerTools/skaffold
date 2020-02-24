@@ -98,18 +98,18 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			logrus.Infof("Skaffold %+v", version)
 			event.LogSkaffoldMetadata(version)
 
-			if quietFlag {
+			switch {
+			case quietFlag:
 				logrus.Debugf("Update check is disabled because of quiet mode")
-			} else if analyze {
+			case analyze:
 				logrus.Debugf("Update check is disabled because of init --analyze")
-			} else {
+			default:
 				go func() {
 					if err := updateCheck(updateMsg, opts.GlobalConfig); err != nil {
 						logrus.Infof("update check failed: %s", err)
 					}
 				}()
 			}
-
 			return nil
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
