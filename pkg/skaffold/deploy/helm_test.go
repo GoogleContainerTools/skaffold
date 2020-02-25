@@ -20,6 +20,8 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"testing"
@@ -324,6 +326,7 @@ MANIFEST:
 `
 
 func TestHelmDeploy(t *testing.T) {
+	tmpDir := os.TempDir()
 	tests := []struct {
 		description      string
 		commands         util.Command
@@ -467,8 +470,8 @@ func TestHelmDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRun("helm --kube-context kubecontext get foo --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build testdata/foo --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext package testdata/foo --destination /tmp --version 0.1.2 --app-version 1.2.3 --kubeconfig kubeconfig", "Packaged to /tmp/foo-0.1.2.tgz").
-				AndRun("helm --kube-context kubecontext upgrade foo /tmp/foo-0.1.2.tgz --namespace testNamespace --set-string image=foo:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
+				AndRunWithOutput("helm --kube-context kubecontext package testdata/foo --destination "+tmpDir+" --version 0.1.2 --app-version 1.2.3 --kubeconfig kubeconfig", "Packaged to "+filepath.Join(tmpDir, "foo-0.1.2.tgz")).
+				AndRun("helm --kube-context kubecontext upgrade foo " + filepath.Join(tmpDir, "foo-0.1.2.tgz") + " --namespace testNamespace --set-string image=foo:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get foo --kubeconfig kubeconfig"),
 			shouldErr:  false,
 			runContext: makeRunContext(testDeployFooWithPackaged, false),
@@ -479,7 +482,7 @@ func TestHelmDeploy(t *testing.T) {
 			commands: testutil.
 				CmdRun("helm --kube-context kubecontext get foo --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build testdata/foo --kubeconfig kubeconfig").
-				AndRunErr("helm --kube-context kubecontext package testdata/foo --destination /tmp --version 0.1.2 --app-version 1.2.3 --kubeconfig kubeconfig", fmt.Errorf("packaging failed")),
+				AndRunErr("helm --kube-context kubecontext package testdata/foo --destination "+tmpDir+" --version 0.1.2 --app-version 1.2.3 --kubeconfig kubeconfig", fmt.Errorf("packaging failed")),
 			shouldErr:  true,
 			runContext: makeRunContext(testDeployFooWithPackaged, false),
 			builds:     testBuildsFoo,
