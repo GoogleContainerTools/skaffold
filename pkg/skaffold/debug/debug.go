@@ -67,10 +67,8 @@ func applyDebuggingTransforms(l kubectl.ManifestList, retriever configurationRet
 	for _, manifest := range l {
 		obj, _, err := decodeFromYaml(manifest, nil, nil)
 		if err != nil {
-			return nil, errors.Wrap(err, "reading Kubernetes YAML")
-		}
-
-		if transformManifest(obj, retriever) {
+			logrus.Debugf("Unable to interpret manifest for debugging: %v\n", err)
+		} else if transformManifest(obj, retriever) {
 			manifest, err = encodeAsYaml(obj)
 			if err != nil {
 				return nil, errors.Wrap(err, "marshalling yaml")
@@ -117,10 +115,12 @@ func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact, i
 	config := manifest.Config
 	logrus.Debugf("Retrieved local image configuration for %v: %v", artifact.Tag, config)
 	return imageConfiguration{
+		artifact:   artifact.ImageName,
 		env:        envAsMap(config.Env),
 		entrypoint: config.Entrypoint,
 		arguments:  config.Cmd,
 		labels:     config.Labels,
+		workingDir: config.WorkingDir,
 	}, nil
 }
 

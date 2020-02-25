@@ -19,10 +19,10 @@ package generatepipeline
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
-
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGeneratePipeline(t *testing.T) {

@@ -124,6 +124,9 @@ func newV1EndpointFromStr(address string, tlsConfig *tls.Config, userAgent strin
 	}
 
 	endpoint := newV1Endpoint(*uri, tlsConfig, userAgent, metaHeaders)
+	if err != nil {
+		return nil, err
+	}
 
 	return endpoint, nil
 }

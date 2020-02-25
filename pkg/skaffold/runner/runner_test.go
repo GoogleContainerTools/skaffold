@@ -96,9 +96,6 @@ func (t *TestBench) TestDependencies() ([]string, error)              { return n
 func (t *TestBench) Dependencies() ([]string, error)                  { return nil, nil }
 func (t *TestBench) Cleanup(ctx context.Context, out io.Writer) error { return nil }
 func (t *TestBench) Prune(ctx context.Context, out io.Writer) error   { return nil }
-func (t *TestBench) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
-	return nil, nil
-}
 
 func (t *TestBench) enterNewCycle() {
 	t.actions = append(t.actions, t.currentActions)
@@ -167,7 +164,7 @@ func (t *TestBench) Deploy(_ context.Context, _ io.Writer, artifacts []build.Art
 	return deploy.NewDeploySuccessResult(t.namespaces)
 }
 
-func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ string) error {
+func (t *TestBench) Render(_ context.Context, _ io.Writer, artifacts []build.Artifact, _ []deploy.Labeller, _ string) error {
 	return nil
 }
 
@@ -340,6 +337,31 @@ func TestNewForConfig(t *testing.T) {
 			expectedTester:   &test.FullTester{},
 			expectedDeployer: &deploy.KubectlDeployer{},
 			cacheArtifacts:   true,
+		},
+		{
+			description: "multiple deployers",
+			pipeline: latest.Pipeline{
+				Build: latest.BuildConfig{
+					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
+					},
+				},
+				Deploy: latest.DeployConfig{
+					DeployType: latest.DeployType{
+						KubectlDeploy:   &latest.KubectlDeploy{},
+						KustomizeDeploy: &latest.KustomizeDeploy{},
+						HelmDeploy:      &latest.HelmDeploy{},
+					},
+				},
+			},
+			expectedBuilder: &local.Builder{},
+			expectedTester:  &test.FullTester{},
+			expectedDeployer: deploy.DeployerMux([]deploy.Deployer{
+				&deploy.HelmDeployer{},
+				&deploy.KubectlDeployer{},
+				&deploy.KustomizeDeployer{},
+			}),
 		},
 	}
 	for _, test := range tests {

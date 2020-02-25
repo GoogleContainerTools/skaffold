@@ -29,16 +29,21 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/errdefs"
 	"github.com/docker/docker/pkg/jsonmessage"
 	"github.com/docker/docker/pkg/progress"
 	"github.com/docker/docker/pkg/streamformatter"
-	"github.com/docker/docker/pkg/term"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+)
+
+const (
+	retries   = 5
+	sleepTime = 1 * time.Second
 )
 
 type ContainerRun struct {
@@ -67,9 +72,7 @@ type LocalDaemon interface {
 	ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error)
 	ImageExists(ctx context.Context, ref string) bool
 	Prune(ctx context.Context, out io.Writer, images []string, pruneChildren bool) error
-	ContainerRun(ctx context.Context, out io.Writer, runs ...ContainerRun) error
-	CopyToContainer(ctx context.Context, container string, dest string, root string, paths []string, uid, gid int, modTime time.Time) error
-	VolumeRemove(ctx context.Context, volumeID string, force bool) error
+	RawClient() client.CommonAPIClient
 }
 
 type localDaemon struct {
@@ -106,6 +109,10 @@ type PushResult struct {
 // BuildResult gives the information on an image that has been built.
 type BuildResult struct {
 	ID string
+}
+
+func (l *localDaemon) RawClient() client.CommonAPIClient {
+	return l.apiClient
 }
 
 // Close closes the connection with the local daemon.
@@ -220,10 +227,9 @@ func (l *localDaemon) Build(ctx context.Context, out io.Writer, workspace string
 }
 
 // streamDockerMessages streams formatted json output from the docker daemon
-// TODO(@r2d4): Make this output much better, this is the bare minimum
 func streamDockerMessages(dst io.Writer, src io.Reader, auxCallback func(jsonmessage.JSONMessage)) error {
-	fd, _ := term.GetFdInfo(dst)
-	return jsonmessage.DisplayJSONMessagesStream(src, dst, fd, false, auxCallback)
+	termFd, isTerm := util.IsTerminal(dst)
+	return jsonmessage.DisplayJSONMessagesStream(src, dst, termFd, isTerm, auxCallback)
 }
 
 // Push pushes an image reference to a registry. Returns the image digest.
@@ -385,7 +391,17 @@ func (l *localDaemon) ImageInspectWithRaw(ctx context.Context, image string) (ty
 }
 
 func (l *localDaemon) ImageRemove(ctx context.Context, image string, opts types.ImageRemoveOptions) ([]types.ImageDeleteResponseItem, error) {
-	return l.apiClient.ImageRemove(ctx, image, opts)
+	for i := 0; i < retries; i++ {
+		resp, err := l.apiClient.ImageRemove(ctx, image, opts)
+		if err == nil {
+			return resp, nil
+		}
+		if _, ok := err.(errdefs.ErrConflict); !ok {
+			return nil, err
+		}
+		time.Sleep(sleepTime)
+	}
+	return nil, fmt.Errorf("could not remove image after %d retries", retries)
 }
 
 // GetBuildArgs gives the build args flags for docker build.

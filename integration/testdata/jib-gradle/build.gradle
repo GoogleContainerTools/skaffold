@@ -1,7 +1,0 @@
-plugins {
-  id 'java'
-  id 'com.google.cloud.tools.jib' version '1.7.0'
-}
-
-sourceCompatibility = 1.8
-targetCompatibility = 1.8

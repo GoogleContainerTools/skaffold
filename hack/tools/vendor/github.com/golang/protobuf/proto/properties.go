@@ -38,6 +38,7 @@ package proto
 import (
 	"fmt"
 	"log"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
@@ -193,7 +194,7 @@ func (p *Properties) Parse(s string) {
 	// "bytes,49,opt,name=foo,def=hello!"
 	fields := strings.Split(s, ",") // breaks def=, but handled below.
 	if len(fields) < 2 {
-		log.Printf("proto: tag has too few fields: %q", s)
+		fmt.Fprintf(os.Stderr, "proto: tag has too few fields: %q\n", s)
 		return
 	}
 
@@ -213,7 +214,7 @@ func (p *Properties) Parse(s string) {
 		p.WireType = WireBytes
 		// no numeric converter for non-numeric types
 	default:
-		log.Printf("proto: tag has unknown wire type: %q", s)
+		fmt.Fprintf(os.Stderr, "proto: tag has unknown wire type: %q\n", s)
 		return
 	}
 
@@ -333,6 +334,9 @@ func GetProperties(t reflect.Type) *StructProperties {
 	sprop, ok := propertiesMap[t]
 	propertiesMu.RUnlock()
 	if ok {
+		if collectStats {
+			stats.Chit++
+		}
 		return sprop
 	}
 
@@ -342,19 +346,16 @@ func GetProperties(t reflect.Type) *StructProperties {
 	return sprop
 }
 
-type (
-	oneofFuncsIface interface {
-		XXX_OneofFuncs() (func(Message, *Buffer) error, func(Message, int, int, *Buffer) (bool, error), func(Message) int, []interface{})
-	}
-	oneofWrappersIface interface {
-		XXX_OneofWrappers() []interface{}
-	}
-)
-
 // getPropertiesLocked requires that propertiesMu is held.
 func getPropertiesLocked(t reflect.Type) *StructProperties {
 	if prop, ok := propertiesMap[t]; ok {
+		if collectStats {
+			stats.Chit++
+		}
 		return prop
+	}
+	if collectStats {
+		stats.Cmiss++
 	}
 
 	prop := new(StructProperties)
@@ -390,14 +391,13 @@ func getPropertiesLocked(t reflect.Type) *StructProperties {
 	// Re-order prop.order.
 	sort.Sort(prop)
 
-	var oots []interface{}
-	switch m := reflect.Zero(reflect.PtrTo(t)).Interface().(type) {
-	case oneofFuncsIface:
-		_, _, _, oots = m.XXX_OneofFuncs()
-	case oneofWrappersIface:
-		oots = m.XXX_OneofWrappers()
+	type oneofMessage interface {
+		XXX_OneofFuncs() (func(Message, *Buffer) error, func(Message, int, int, *Buffer) (bool, error), func(Message) int, []interface{})
 	}
-	if len(oots) > 0 {
+	if om, ok := reflect.Zero(reflect.PtrTo(t)).Interface().(oneofMessage); ok {
+		var oots []interface{}
+		_, _, _, oots = om.XXX_OneofFuncs()
+
 		// Interpret oneof metadata.
 		prop.OneofTypes = make(map[string]*OneofProperties)
 		for _, oot := range oots {

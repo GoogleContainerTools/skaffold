@@ -155,7 +155,7 @@ func TestDevConfigChange(t *testing.T) {
 
 		err := doDev(context.Background(), ioutil.Discard)
 
-		// ensure that we received the context.Cancled error (and not ErrorConfigurationChanged)
+		// ensure that we received the context.Canceled error (and not ErrorConfigurationChanged)
 		// also ensure that the we run through dev cycles (since we reloaded on the first),
 		// and exit after a real error is received
 		t.CheckTrue(err == context.Canceled)

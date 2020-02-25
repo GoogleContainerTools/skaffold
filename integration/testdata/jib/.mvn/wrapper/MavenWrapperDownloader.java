@@ -82,7 +82,7 @@ public class MavenWrapperDownloader {
         if(!outputFile.getParentFile().exists()) {
             if(!outputFile.getParentFile().mkdirs()) {
                 System.out.println(
-                        "- ERROR creating output direcrory '" + outputFile.getParentFile().getAbsolutePath() + "'");
+                        "- ERROR creating output directory '" + outputFile.getParentFile().getAbsolutePath() + "'");
             }
         }
         System.out.println("- Downloading to: " + outputFile.getAbsolutePath());

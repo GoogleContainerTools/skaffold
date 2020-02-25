@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -44,7 +43,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 	defer b.localDocker.Close()
 
 	// TODO(dgageot): parallel builds
-	return build.InSequence(ctx, out, tags, artifacts, b.buildArtifact)
+	return build.InParallel(ctx, out, tags, artifacts, b.buildArtifact, *b.cfg.Concurrency)
 }
 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
@@ -65,13 +64,14 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 				b.builtImages = append(b.builtImages, imageID)
 			}
 		}
+
 		digest := digestOrImageID
-		return tag + "@" + digest, nil
+		return build.TagWithDigest(tag, digest), nil
 	}
 
 	imageID := digestOrImageID
 	b.builtImages = append(b.builtImages, imageID)
-	return b.localDocker.TagWithImageID(ctx, tag, imageID)
+	return build.TagWithImageID(ctx, tag, imageID, b.localDocker)
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
@@ -89,7 +89,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 		return custom.NewArtifactBuilder(b.localDocker, b.insecureRegistries, b.pushImages, b.retrieveExtraEnv()).Build(ctx, out, artifact, tag)
 
 	case artifact.BuildpackArtifact != nil:
-		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages).Build(ctx, out, artifact, tag)
+		return buildpacks.NewArtifactBuilder(b.localDocker, b.pushImages, b.devMode).Build(ctx, out, artifact, tag)
 
 	default:
 		return "", fmt.Errorf("undefined artifact type: %+v", artifact.ArtifactType)
@@ -102,11 +102,4 @@ func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, err
 		return "", errors.Wrap(err, "inspecting image")
 	}
 	return insp.ID, nil
-}
-
-func (b *Builder) SyncMap(ctx context.Context, a *latest.Artifact) (map[string][]string, error) {
-	if a.DockerArtifact != nil {
-		return docker.SyncMap(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
-	}
-	return nil, build.ErrSyncMapNotSupported{}
 }

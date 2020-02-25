@@ -1,6 +1,6 @@
 module github.com/GoogleContainerTools/skaffold
 
-go 1.12
+go 1.13
 
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.1+incompatible
@@ -8,8 +8,8 @@ replace (
 	github.com/Azure/go-autorest/autorest/date => github.com/Azure/go-autorest/autorest/date v0.2.1-0.20190906230412-69b4126ece6b
 	github.com/Azure/go-autorest/autorest/mocks => github.com/Azure/go-autorest/autorest/mocks v0.3.1-0.20190906230412-69b4126ece6b
 	github.com/Azure/go-autorest/tracing => github.com/Azure/go-autorest/tracing v0.5.0
-	github.com/containerd/containerd => github.com/containerd/containerd v1.3.1
-	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20190924003213-a8608b5b67c7
+	github.com/containerd/containerd => github.com/containerd/containerd v1.2.1-0.20190507210959-7c1e88399ec0
+	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20190319215453-e7b5f7dbe98c
 	golang.org/x/crypto v0.0.0-20190129210102-0709b304e793 => golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
 	k8s.io/api => k8s.io/api v0.0.0-20190620084959-7cf5895f2711
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
@@ -35,9 +35,10 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20190729225929-0e00d9168667 // indirect
 	github.com/aws/aws-sdk-go v1.25.33 // indirect
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/bmatcuk/doublestar v1.1.5
+	github.com/bmatcuk/doublestar v1.2.2
+	github.com/buildpacks/pack v0.8.2-0.20200131162247-1a6e03a48c94
 	github.com/creack/pty v1.1.9 // indirect
-	github.com/docker/cli v0.0.0-20191126203649-54d085b857e9
+	github.com/docker/cli v0.0.0-20191212191748-ebca1413117a
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
 	github.com/docker/go-connections v0.4.0
@@ -53,8 +54,8 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
 	github.com/golang/protobuf v1.3.2
-	github.com/google/go-cmp v0.3.1
-	github.com/google/go-containerregistry v0.0.0-20191115225042-f8574ec722f4
+	github.com/google/go-cmp v0.4.0
+	github.com/google/go-containerregistry v0.0.0-20191218175032-34fb8ff33bed
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/uuid v1.1.1
@@ -65,12 +66,11 @@ require (
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
 	github.com/imdario/mergo v0.3.8
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect
-	github.com/karrick/godirwalk v1.13.0
+	github.com/karrick/godirwalk v1.13.4
 	github.com/krishicks/yaml-patch v0.0.10
 	github.com/markbates/inflect v1.0.4 // indirect
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
-	github.com/mattn/go-colorable v0.1.4 // indirect
-	github.com/mattn/go-isatty v0.0.10 // indirect
+	github.com/mattn/go-colorable v0.1.4
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.6.3
 	github.com/onsi/ginkgo v1.10.3 // indirect
@@ -92,24 +92,22 @@ require (
 	go.opencensus.io v0.22.2 // indirect
 	go.uber.org/multierr v1.4.0 // indirect
 	go.uber.org/zap v1.12.0 // indirect
-	golang.org/x/crypto v0.0.0-20191112222119-e1110fd1c708
+	golang.org/x/crypto v0.0.0-20191219195013-becbf705a915
 	golang.org/x/exp v0.0.0-20191127035308-9964a5a80460 // indirect
-	golang.org/x/lint v0.0.0-20191125180803-fdd1cda4f05f // indirect
 	golang.org/x/net v0.0.0-20191126235420-ef20fe5d7933 // indirect
-	golang.org/x/oauth2 v0.0.0-20191122200657-5d9234df094c
+	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/sys v0.0.0-20191127021746-63cb32ae39b2 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
-	golang.org/x/tools v0.0.0-20191127064951-724660f1afeb // indirect
-	golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898 // indirect
-	google.golang.org/api v0.14.0
+	golang.org/x/tools v0.0.0-20191213032237-7093a17b0467 // indirect
+	google.golang.org/api v0.15.0
 	google.golang.org/appengine v1.6.5 // indirect
-	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
-	google.golang.org/grpc v1.25.1
+	google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f
+	google.golang.org/grpc v1.26.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
-	gopkg.in/yaml.v2 v2.2.5
+	gopkg.in/yaml.v2 v2.2.7
 	k8s.io/api v0.0.0-20190831074750-7364b6bdad65
 	k8s.io/apimachinery v0.0.0-20190831074630-461753078381
 	k8s.io/client-go v0.0.0-20190831074946-3fe2abece89e

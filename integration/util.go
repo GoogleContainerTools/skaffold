@@ -24,15 +24,16 @@ import (
 	"testing"
 	"time"
 
-	core_v1 "k8s.io/client-go/kubernetes/typed/core/v1"
-
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	k8s "github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 )
 
 func RunOnGCP() bool {
@@ -55,7 +56,7 @@ func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient, func()) {
 	}
 
 	ns, err := client.CoreV1().Namespaces().Create(&v1.Namespace{
-		ObjectMeta: meta_v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "skaffold",
 		},
 	})
@@ -72,7 +73,7 @@ func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient, func()) {
 	}
 
 	return ns, nsClient, func() {
-		client.CoreV1().Namespaces().Delete(ns.Name, &meta_v1.DeleteOptions{})
+		client.CoreV1().Namespaces().Delete(ns.Name, &metav1.DeleteOptions{})
 	}
 }
 
@@ -83,12 +84,37 @@ type NSKubernetesClient struct {
 	ns     string
 }
 
-func (k *NSKubernetesClient) Pods() core_v1.PodInterface {
+func (k *NSKubernetesClient) Pods() corev1.PodInterface {
 	return k.client.CoreV1().Pods(k.ns)
 }
 
-func (k *NSKubernetesClient) Secrets() core_v1.SecretInterface {
+func (k *NSKubernetesClient) Secrets() corev1.SecretInterface {
 	return k.client.CoreV1().Secrets(k.ns)
+}
+
+func (k *NSKubernetesClient) Services() corev1.ServiceInterface {
+	return k.client.CoreV1().Services(k.ns)
+}
+
+func (k *NSKubernetesClient) Deployments() typedappsv1.DeploymentInterface {
+	return k.client.AppsV1().Deployments(k.ns)
+}
+
+func (k *NSKubernetesClient) DefaultSecrets() corev1.SecretInterface {
+	return k.client.CoreV1().Secrets("default")
+}
+
+func (k *NSKubernetesClient) CreateSecretFrom(ns, name string) {
+	secret, err := k.client.CoreV1().Secrets(ns).Get(name, metav1.GetOptions{})
+	if err != nil {
+		k.t.Fatalf("failed reading default/e2esecret: %s", err)
+	}
+
+	secret.Namespace = k.ns
+	secret.ResourceVersion = ""
+	if _, err = k.Secrets().Create(secret); err != nil {
+		k.t.Fatalf("failed creating %s/e2esecret: %s", k.ns, err)
+	}
 }
 
 // WaitForPodsReady waits for a list of pods to become ready.
@@ -96,7 +122,7 @@ func (k *NSKubernetesClient) WaitForPodsReady(podNames ...string) {
 	k.WaitForPodsInPhase(v1.PodRunning, podNames...)
 }
 
-// WaitForPodsReady waits for a list of pods to become ready.
+// WaitForPodsInPhase waits for a list of pods to become ready.
 func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNames ...string) {
 	if len(podNames) == 0 {
 		return
@@ -107,8 +133,8 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelTimeout()
 
-	pods := k.client.CoreV1().Pods(k.ns)
-	w, err := pods.Watch(meta_v1.ListOptions{})
+	pods := k.Pods()
+	w, err := pods.Watch(metav1.ListOptions{})
 	if err != nil {
 		k.t.Fatalf("Unable to watch pods: %v", err)
 	}
@@ -153,7 +179,7 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 func (k *NSKubernetesClient) GetDeployment(depName string) *appsv1.Deployment {
 	k.WaitForDeploymentsToStabilize(depName)
 
-	dep, err := k.client.AppsV1().Deployments(k.ns).Get(depName, meta_v1.GetOptions{})
+	dep, err := k.Deployments().Get(depName, metav1.GetOptions{})
 	if err != nil {
 		k.t.Fatalf("Could not find deployment: %s in namespace %s", depName, k.ns)
 	}
@@ -171,7 +197,7 @@ func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancelTimeout()
 
-	w, err := k.client.AppsV1().Deployments(k.ns).Watch(meta_v1.ListOptions{})
+	w, err := k.Deployments().Watch(metav1.ListOptions{})
 	if err != nil {
 		k.t.Fatalf("Unable to watch deployments: %v", err)
 	}
@@ -221,6 +247,21 @@ func (k *NSKubernetesClient) printDiskFreeSpace() {
 	cmd := exec.Command("df", "-h")
 	out, _ := cmd.CombinedOutput()
 	fmt.Println(string(out))
+}
+
+// ExternalIP waits for the external IP aof a given service.
+func (k *NSKubernetesClient) ExternalIP(serviceName string) string {
+	svc, err := k.Services().Get(serviceName, metav1.GetOptions{})
+	if err != nil {
+		k.t.Fatalf("error getting registry service: %v", err)
+	}
+
+	ip, err := k8s.GetExternalIP(svc)
+	if err != nil {
+		k.t.Fatalf("error getting external ip: %v", err)
+	}
+
+	return ip
 }
 
 func isStable(dp *appsv1.Deployment) bool {

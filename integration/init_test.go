@@ -17,12 +17,15 @@ limitations under the License.
 package integration
 
 import (
+	"io/ioutil"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestInit(t *testing.T) {
+func TestInitCompose(t *testing.T) {
 	if testing.Short() || RunOnGCP() {
 		t.Skip("skipping kind integration test")
 	}
@@ -33,44 +36,32 @@ func TestInit(t *testing.T) {
 		args []string
 	}{
 		{
-			name: "getting-started",
-			dir:  "testdata/init/hello",
-		},
-		{
-			name: "ignore existing tags",
-			dir:  "testdata/init/ignore-tags",
-		},
-		{
-			name: "microservices (backwards compatibility)",
-			dir:  "testdata/init/microservices",
-			args: []string{
-				"-a", `leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app`,
-				"-a", `leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web`,
-			},
-		},
-		{
-			name: "microservices",
-			dir:  "testdata/init/microservices",
-			args: []string{
-				"-a", `{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
-				"-a", `{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
-			},
-		},
-		{
 			name: "compose",
 			dir:  "testdata/init/compose",
 			args: []string{"--compose-file", "docker-compose.yaml"},
 		},
 	}
 	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			ns, _, deleteNs := SetupNamespace(t)
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			ns, _, deleteNs := SetupNamespace(t.T)
 			defer deleteNs()
 
 			initArgs := append([]string{"--force"}, test.args...)
-			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t)
+			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
 
-			skaffold.Run().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t)
+			checkGeneratedConfig(t, test.dir)
+
+			// Make sure the skaffold yaml and the kubernetes manifests created by kompose are ok
+			skaffold.Run().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
 		})
 	}
+}
+
+func checkGeneratedConfig(t *testutil.T, dir string) {
+	expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml"))
+	t.CheckNoError(err)
+
+	output, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml.out"))
+	t.CheckNoError(err)
+	t.CheckDeepEqual(string(expectedOutput), string(output))
 }

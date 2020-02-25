@@ -23,7 +23,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -65,8 +64,4 @@ func (b *Builder) Labels() map[string]string {
 
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	return nil
-}
-
-func (b *Builder) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
-	return nil, build.ErrSyncMapNotSupported{}
 }

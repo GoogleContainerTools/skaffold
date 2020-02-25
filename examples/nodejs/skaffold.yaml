@@ -1,12 +1,25 @@
-apiVersion: skaffold/v1
+apiVersion: skaffold/v2alpha4
 kind: Config
+
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/node-example
+  - image: node-example
     context: backend
-    sync:
-      manual:
-      # Sync all the javascript files that are in the src folder
-      # with the container src folder
-      - src: 'src/**/*.js'
-        dest: .
+
+profiles:
+  - name: dev
+    activation:
+      - command: dev
+    build:
+      artifacts:
+      - image: node-example
+        context: backend
+        docker:
+          buildArgs:
+            ENV: development
+        sync:
+          manual:
+          # Sync all the javascript files that are in the src folder
+          # with the container src folder
+          - src: 'src/**/*.js'
+            dest: .

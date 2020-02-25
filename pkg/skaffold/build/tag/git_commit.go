@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -89,7 +90,29 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, imageName
 		return fmt.Sprintf("%s:%s-dirty", imageName, ref), nil
 	}
 
-	return fmt.Sprintf("%s:%s", imageName, ref), nil
+	return fmt.Sprintf("%s:%s", imageName, sanitizeTag(ref)), nil
+}
+
+// sanitizeTag takes a git tag and converts it to a docker tag by removing
+// all the characters that are not allowed by docker.
+func sanitizeTag(tag string) string {
+	// Replace unsupported characters with `_`
+	sanitized := regexp.MustCompile(`[^a-zA-Z0-9-._]`).ReplaceAllString(tag, `_`)
+
+	// Remove leading `-`s and `.`s
+	prefixSuffix := regexp.MustCompile(`([-.]*)(.*)`).FindStringSubmatch(sanitized)
+	sanitized = strings.Repeat("_", len(prefixSuffix[1])) + prefixSuffix[2]
+
+	// Truncate to 128 characters
+	if len(sanitized) > 128 {
+		return sanitized[0:128]
+	}
+
+	if tag != sanitized {
+		logrus.Warnf("Using %q instead of %q as an image tag", sanitized, tag)
+	}
+
+	return sanitized
 }
 
 func (c *GitCommit) makeGitTag(workingDir string) (string, error) {

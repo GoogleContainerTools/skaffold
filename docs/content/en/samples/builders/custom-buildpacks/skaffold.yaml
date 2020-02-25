@@ -1,14 +1,10 @@
-apiVersion: skaffold/v1
+apiVersion: skaffold/v2alpha1
 kind: Config
 build:
   artifacts:
-    - image: gcr.io/k8s-skaffold/image
-      custom:
-        buildCommand: build.sh
-        dependencies:
-          paths:
-            - .
-deploy:
-  kubectl:
-    manifests:
-      - ./k8s/**
+  - image: gcr.io/k8s-skaffold/skaffold-custom
+    custom:
+      buildCommand: ./build.sh
+      dependencies:
+        paths:
+        - .

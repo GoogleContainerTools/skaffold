@@ -34,57 +34,47 @@ import (
 
 // For testing
 var (
-	ValidateJibConfigFunc = ValidateJibConfig
+	Validate = validate
 )
 
-// Jib holds information about a Jib project
-type Jib struct {
+// ArtifactConfig holds information about a Jib project
+type ArtifactConfig struct {
 	BuilderName string `json:"-"`
 	Image       string `json:"image,omitempty"`
-	FilePath    string `json:"path,omitempty"`
+	File        string `json:"path,omitempty"`
 	Project     string `json:"project,omitempty"`
 }
 
 // Name returns the name of the builder
-func (j Jib) Name() string {
-	return j.BuilderName
+func (c ArtifactConfig) Name() string {
+	return c.BuilderName
 }
 
 // Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
-func (j Jib) Describe() string {
-	if j.Project != "" {
-		return fmt.Sprintf("%s (%s, %s)", j.BuilderName, j.Project, j.FilePath)
+func (c ArtifactConfig) Describe() string {
+	if c.Project != "" {
+		return fmt.Sprintf("%s (%s, %s)", c.BuilderName, c.Project, c.File)
 	}
-	return fmt.Sprintf("%s (%s)", j.BuilderName, j.FilePath)
+	return fmt.Sprintf("%s (%s)", c.BuilderName, c.File)
 }
 
 // CreateArtifact creates an Artifact to be included in the generated Build Config
-func (j Jib) CreateArtifact(manifestImage string) *latest.Artifact {
-	workspace := filepath.Dir(j.FilePath)
-
-	a := &latest.Artifact{ImageName: manifestImage}
-
-	if workspace != "." {
-		a.Workspace = workspace
+func (c ArtifactConfig) UpdateArtifact(a *latest.Artifact) {
+	a.ArtifactType = latest.ArtifactType{
+		JibArtifact: &latest.JibArtifact{
+			Project: c.Project,
+		},
 	}
-
-	jib := &latest.JibArtifact{}
-	if j.Project != "" {
-		jib.Project = j.Project
-	}
-	a.ArtifactType = latest.ArtifactType{JibArtifact: jib}
-
-	return a
 }
 
 // ConfiguredImage returns the target image configured by the builder, or empty string if no image is configured
-func (j Jib) ConfiguredImage() string {
-	return j.Image
+func (c ArtifactConfig) ConfiguredImage() string {
+	return c.Image
 }
 
 // Path returns the path to the build definition
-func (j Jib) Path() string {
-	return j.FilePath
+func (c ArtifactConfig) Path() string {
+	return c.File
 }
 
 // BuilderConfig contains information about inferred Jib configurations
@@ -93,8 +83,8 @@ type jibJSON struct {
 	Project string `json:"project"`
 }
 
-// ValidateJibConfig checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
-func ValidateJibConfig(path string) []Jib {
+// validate checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
+func validate(path string) []ArtifactConfig {
 	// Determine whether maven or gradle
 	var builderType PluginType
 	var executable, wrapper, taskName, searchString string
@@ -137,8 +127,8 @@ func ValidateJibConfig(path string) []Jib {
 		return nil
 	}
 
-	results := make([]Jib, len(matches))
-	for i, match := range matches {
+	var results []ArtifactConfig
+	for _, match := range matches {
 		// Escape windows path separators
 		line := bytes.Replace(match[1], []byte(`\`), []byte(`\\`), -1)
 		parsedJSON := jibJSON{}
@@ -147,7 +137,12 @@ func ValidateJibConfig(path string) []Jib {
 			return nil
 		}
 
-		results[i] = Jib{BuilderName: PluginName(builderType), Image: parsedJSON.Image, FilePath: path, Project: parsedJSON.Project}
+		results = append(results, ArtifactConfig{
+			BuilderName: PluginName(builderType),
+			Image:       parsedJSON.Image,
+			File:        path,
+			Project:     parsedJSON.Project,
+		})
 	}
 	return results
 }

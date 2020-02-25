@@ -19,9 +19,8 @@ package context
 import (
 	"sync"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"

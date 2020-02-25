@@ -49,8 +49,8 @@ type Labeller interface {
 }
 
 // merge merges the labels from multiple sources.
-func merge(sources ...Labeller) map[string]string {
-	merged := make(map[string]string)
+func merge(deployer Labeller, sources ...Labeller) map[string]string {
+	merged := deployer.Labels()
 
 	for _, src := range sources {
 		copyMap(merged, src.Labels())

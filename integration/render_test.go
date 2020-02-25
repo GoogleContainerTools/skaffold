@@ -36,6 +36,7 @@ func TestKubectlRender(t *testing.T) {
 	tests := []struct {
 		description string
 		builds      []build.Artifact
+		labels      []deploy.Labeller
 		input       string
 		expectedOut string
 	}{
@@ -47,6 +48,7 @@ func TestKubectlRender(t *testing.T) {
 					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
 				},
 			},
+			labels: []deploy.Labeller{},
 			input: `apiVersion: v1
 kind: Pod
 spec:
@@ -57,6 +59,8 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
   namespace: default
 spec:
   containers:
@@ -76,6 +80,7 @@ spec:
 					Tag:       "gcr.io/project/image2:tag2",
 				},
 			},
+			labels: []deploy.Labeller{},
 			input: `apiVersion: v1
 kind: Pod
 spec:
@@ -88,6 +93,8 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
   namespace: default
 spec:
   containers:
@@ -126,6 +133,8 @@ spec:
 			expectedOut: `apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
   namespace: default
 spec:
   containers:
@@ -135,6 +144,8 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
+  labels:
+    skaffold.dev/deployer: kubectl
   namespace: default
 spec:
   containers:
@@ -162,7 +173,7 @@ spec:
 				},
 			})
 			var b bytes.Buffer
-			err := deployer.Render(context.Background(), &b, test.builds, "")
+			err := deployer.Render(context.Background(), &b, test.builds, test.labels, "")
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedOut, b.String())

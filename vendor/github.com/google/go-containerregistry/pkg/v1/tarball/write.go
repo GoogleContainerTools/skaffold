@@ -91,6 +91,7 @@ func MultiRefWrite(refToImage map[name.Reference]v1.Image, w io.Writer) error {
 	imageToTags := dedupRefToImage(refToImage)
 	var m Manifest
 
+	seenLayerDigests := make(map[string]struct{})
 	for img, tags := range imageToTags {
 		// Write the config.
 		cfgName, err := img.ConfigName()
@@ -119,6 +120,21 @@ func MultiRefWrite(refToImage map[name.Reference]v1.Image, w io.Writer) error {
 			if err != nil {
 				return err
 			}
+			// Munge the file name to appease ancient technology.
+			//
+			// tar assumes anything with a colon is a remote tape drive:
+			// https://www.gnu.org/software/tar/manual/html_section/tar_45.html
+			// Drop the algorithm prefix, e.g. "sha256:"
+			hex := d.Hex
+
+			// gunzip expects certain file extensions:
+			// https://www.gnu.org/software/gzip/manual/html_node/Overview.html
+			layerFiles[i] = fmt.Sprintf("%s.tar.gz", hex)
+
+			if _, ok := seenLayerDigests[hex]; ok {
+				continue
+			}
+			seenLayerDigests[hex] = struct{}{}
 
 			// Add to LayerSources if it's a foreign layer.
 			desc, err := partial.BlobDescriptor(img, d)
@@ -132,17 +148,6 @@ func MultiRefWrite(refToImage map[name.Reference]v1.Image, w io.Writer) error {
 				}
 				layerSources[diffid] = desc
 			}
-
-			// Munge the file name to appease ancient technology.
-			//
-			// tar assumes anything with a colon is a remote tape drive:
-			// https://www.gnu.org/software/tar/manual/html_section/tar_45.html
-			// Drop the algorithm prefix, e.g. "sha256:"
-			hex := d.Hex
-
-			// gunzip expects certain file extensions:
-			// https://www.gnu.org/software/gzip/manual/html_node/Overview.html
-			layerFiles[i] = fmt.Sprintf("%s.tar.gz", hex)
 
 			r, err := l.Compressed()
 			if err != nil {

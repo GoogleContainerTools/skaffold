@@ -40,7 +40,7 @@ import (
 
 var (
 	connectionRetries = 2
-	readRetries       = 5
+	readRetries       = 20
 	numLogEntries     = 5
 	waitTime          = 1 * time.Second
 )
@@ -358,12 +358,54 @@ func randomPort() string {
 }
 
 func checkBuildAndDeployComplete(state proto.State) bool {
+	if state.BuildState == nil || state.DeployState == nil {
+		return false
+	}
+
 	for _, a := range state.BuildState.Artifacts {
 		if a != event.Complete {
 			return false
 		}
 	}
 	return state.DeployState.Status == event.Complete
+}
+
+func apiEvents(t *testing.T, rpcAddr string) (proto.SkaffoldServiceClient, chan *proto.LogEntry, func()) {
+	client, shutdown := setupRPCClient(t, rpcAddr)
+
+	stream, err := readEventAPIStream(client, t, readRetries)
+	if stream == nil {
+		t.Fatalf("error retrieving event log: %v\n", err)
+	}
+
+	// read entries from the log
+	entries := make(chan *proto.LogEntry)
+	go func() {
+		for {
+			entry, _ := stream.Recv()
+			if entry != nil {
+				entries <- entry
+			}
+		}
+	}()
+
+	return client, entries, shutdown
+}
+
+func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retries int) (proto.SkaffoldService_EventLogClient, error) {
+	t.Helper()
+	// read the event log stream from the skaffold grpc server
+	var stream proto.SkaffoldService_EventLogClient
+	var err error
+	for i := 0; i < retries; i++ {
+		stream, err = client.EventLog(context.Background())
+		if err != nil {
+			t.Logf("waiting for connection...")
+			time.Sleep(waitTime)
+			continue
+		}
+	}
+	return stream, err
 }
 
 func setupRPCClient(t *testing.T, port string) (proto.SkaffoldServiceClient, func()) {

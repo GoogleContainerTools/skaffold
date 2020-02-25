@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/go-homedir"
@@ -36,6 +37,8 @@ import (
 const (
 	defaultConfigDir  = ".skaffold"
 	defaultConfigFile = "config"
+	tenDays           = time.Hour * 24 * 10
+	threeMonths       = time.Hour * 24 * 90
 )
 
 var (
@@ -51,6 +54,7 @@ var (
 
 	ReadConfigFile             = readConfigFileCached
 	GetConfigForCurrentKubectx = getConfigForCurrentKubectx
+	current                    = time.Now
 )
 
 // readConfigFileCached reads the specified file and returns the contents
@@ -156,7 +160,10 @@ func GetDefaultRepo(configFile, cliValue string) (string, error) {
 	return cfg.DefaultRepo, nil
 }
 
-func GetLocalCluster(configFile string) (bool, error) {
+func GetLocalCluster(configFile string, minikubeProfile string) (bool, error) {
+	if minikubeProfile != "" {
+		return true, nil
+	}
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {
 		return false, err
@@ -204,7 +211,7 @@ func IsKindCluster(kubeContext string) (bool, string) {
 	case strings.HasSuffix(kubeContext, "@kind"):
 		return true, strings.TrimSuffix(kubeContext, "@kind")
 
-	// With kind version == 0.6.0, the k8s context
+	// With kind version >= 0.6.0, the k8s context
 	// is `kind-[CLUSTER NAME]`.
 	// For eg: `kind-cluster`
 	// the default name is `kind-kind`
@@ -222,4 +229,33 @@ func IsUpdateCheckEnabled(configfile string) bool {
 		return true
 	}
 	return cfg == nil || cfg.UpdateCheck == nil || *cfg.UpdateCheck
+}
+
+func ShouldDisplayPrompt(configfile string) bool {
+	cfg, disabled := isSurveyPromptDisabled(configfile)
+	return !disabled && !recentlyPromptedOrTaken(cfg)
+}
+
+func isSurveyPromptDisabled(configfile string) (*ContextConfig, bool) {
+	cfg, err := GetConfigForCurrentKubectx(configfile)
+	if err != nil {
+		return nil, false
+	}
+	return cfg, cfg != nil && cfg.Survey != nil && *cfg.Survey.DisablePrompt
+}
+
+func recentlyPromptedOrTaken(cfg *ContextConfig) bool {
+	if cfg == nil || cfg.Survey == nil {
+		return false
+	}
+	return lessThan(cfg.Survey.LastTaken, threeMonths) || lessThan(cfg.Survey.LastPrompted, tenDays)
+}
+
+func lessThan(date string, duration time.Duration) bool {
+	t, err := time.Parse(time.RFC3339, date)
+	if err != nil {
+		logrus.Debugf("could not parse data %s", date)
+		return false
+	}
+	return current().Sub(t) < duration
 }
