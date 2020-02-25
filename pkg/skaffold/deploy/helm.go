@@ -30,6 +30,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -53,6 +54,9 @@ type HelmDeployer struct {
 	kubeConfig  string
 	namespace   string
 	forceDeploy bool
+
+	// bV is the helm binary version
+	bV semver.Version
 }
 
 // NewHelmDeployer returns a new HelmDeployer for a DeployConfig filled
@@ -75,6 +79,13 @@ func (h *HelmDeployer) Labels() map[string]string {
 
 func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
 	event.DeployInProgress()
+
+	hv, err := h.binVer(ctx)
+	if err != nil {
+		logrus.Warnf("failed to parse binary version: %v", err)
+	} else {
+		logrus.Infof("deploying with helm version %v", hv)
+	}
 
 	var dRes []Artifact
 	nsMap := map[string]struct{}{}
@@ -510,6 +521,36 @@ func generateGetFilesArgs(m map[string]string, valuesSet map[string]bool) []stri
 
 func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, []Labeller, string) error {
 	return errors.New("not yet implemented")
+}
+
+// binVer returns the version of the helm binary found in PATH. May be cached.
+func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
+	if h.bV.Major != 0 && h.bV.Major != 0 {
+		return h.bV, nil
+	}
+
+	var b bytes.Buffer
+	if err := h.helm(ctx, &b, false, "version", "--short", "-c"); err != nil {
+		return semver.Version{}, errors.Wrap(err, "helm version")
+	}
+	bs := b.Bytes()
+
+	// raw for 3.1: "v3.1.0+gb29d20b"
+	// raw for 2.15: "Client: v2.15.1+gcf1de4f"
+	raw := string(bs)
+	idx := strings.Index(raw, "v")
+	if idx < 0 {
+		return semver.Version{}, fmt.Errorf("v not found in output: %q", raw)
+	}
+
+	rv := strings.Split(raw[idx+1:], "+")[0]
+	v, err := semver.Make(rv)
+	if err != nil {
+		return semver.Version{}, errors.Wrap(err, "semver make")
+	}
+
+	h.bV = v
+	return h.bV, nil
 }
 
 // expandTemplate parses and executes template s with OS environment variables.
