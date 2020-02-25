@@ -525,6 +525,7 @@ func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, []La
 
 // binVer returns the version of the helm binary found in PATH. May be cached.
 func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
+	// Return the cached version value if non-zero
 	if h.bV.Major != 0 && h.bV.Major != 0 {
 		return h.bV, nil
 	}
@@ -543,6 +544,7 @@ func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
 		return semver.Version{}, fmt.Errorf("v not found in output: %q", raw)
 	}
 
+	// Only read up to a + sign if provided: semver does not understand + notation.
 	rv := strings.Split(raw[idx+1:], "+")[0]
 	v, err := semver.Make(rv)
 	if err != nil {
