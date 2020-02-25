@@ -26,6 +26,12 @@ import (
 const (
 	Prompt = `Help improve Skaffold! Take a 10 seconds anonymous survey by running
    $skaffold survey`
+
+	Form = `Thank you for offering your feedback on skaffold. Understanding your experiences and opinions helps us make skaffold better for you and other users
+    Please take survey at https://forms.gle/BMTbGQXLWSdn7vEs6
+
+To permanently disable the survey prompt, run:
+   skaffold config set --survey --global disable-prompt true`
 )
 
 // for testing
@@ -33,10 +39,15 @@ var (
 	isStdOut = stdOut
 )
 
-func DisplaySurveyForm(out io.Writer) {
+func DisplaySurveyPrompt(out io.Writer) {
 	if isStdOut(out) {
 		color.Default.Fprintln(out, Prompt)
 	}
+}
+
+func DisplaySurveyForm(out io.Writer) error {
+	_, err := color.Default.Fprintln(out, Form)
+	return err
 }
 
 func stdOut(out io.Writer) bool {
