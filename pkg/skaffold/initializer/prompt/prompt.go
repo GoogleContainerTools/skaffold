@@ -50,8 +50,8 @@ func buildConfig(image string, choices []string) (string, error) {
 func WriteSkaffoldConfig(out io.Writer, pipeline []byte, generatedManifests map[string][]byte, filePath string) (bool, error) {
 	fmt.Fprintln(out, string(pipeline))
 
-	for f, m := range generatedManifests {
-		fmt.Fprintln(out, f, "-", string(m))
+	for path, manifest := range generatedManifests {
+		fmt.Fprintln(out, path, "-", string(manifest))
 	}
 
 	manifestString := ""

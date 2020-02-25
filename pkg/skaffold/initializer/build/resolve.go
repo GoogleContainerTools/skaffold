@@ -114,6 +114,6 @@ func getGeneratedBuilderPair(b InitBuilder) GeneratedBuilderImagePair {
 			Builder:   b,
 			ImageName: imageName,
 		},
-		ManifestPath: path,
+		ManifestPath: filepath.Join(path, "deployment.yaml"),
 	}
 }

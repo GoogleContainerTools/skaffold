@@ -17,13 +17,10 @@ limitations under the License.
 package deploy
 
 import (
-	"path/filepath"
+	"fmt"
+	"os"
 
-	"github.com/pkg/errors"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/generator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -76,23 +73,8 @@ func (k *kubectl) Validate() error {
 	return nil
 }
 
-// GenerateManifests implements the Initializer interface and
-// generates manifests for each unresolved image
-func (k *kubectl) GenerateManifests(unresolved []build.GeneratedBuilderImagePair) (map[string][]byte, error) {
-	generatedManifests := map[string][]byte{}
-	for _, pair := range unresolved {
-		manifest, err := generator.Generate(pair.ImageName)
-		if err != nil {
-			return nil, errors.Wrap(err, "generating kubernetes manifest")
-		}
-		path := filepath.Join(pair.ManifestPath, "deployment.yaml")
-		generatedManifests[path] = manifest
-		k.addManifestForImage(path, pair.ImageName)
-	}
-	return generatedManifests, nil
-}
-
-func (k *kubectl) addManifestForImage(path, image string) {
+func (k *kubectl) AddManifestForImage(path, image string) {
+	fmt.Fprintf(os.Stdout, "adding manifest path %s for image %s\n", path, image)
 	k.configs = append(k.configs, path)
 	k.images = append(k.images, image)
 }

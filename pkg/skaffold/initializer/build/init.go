@@ -19,6 +19,9 @@ package build
 import (
 	"io"
 
+	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/generator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
@@ -63,14 +66,17 @@ func (d *defaultBuildInitializer) PrintAnalysis(out io.Writer) error {
 	return printAnalysis(out, d.enableNewFormat, d.skipBuild, d.builderImagePairs, d.builders, d.unresolvedImages)
 }
 
-func (d *defaultBuildInitializer) GeneratedPairs() []GeneratedBuilderImagePair {
-	return d.generatedBuilderImagePairs
-}
-
-func (d *defaultBuildInitializer) Resolve() {
+func (d *defaultBuildInitializer) GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error) {
+	generatedManifests := map[GeneratedBuilderImagePair][]byte{}
 	for _, pair := range d.generatedBuilderImagePairs {
-		d.builderImagePairs = append(d.builderImagePairs, pair.BuilderImagePair)
+		manifest, err := generator.Generate(pair.ImageName)
+		if err != nil {
+			return nil, errors.Wrap(err, "generating kubernetes manifest")
+		}
+		generatedManifests[pair] = manifest
 	}
+	d.generatedBuilderImagePairs = nil
+	return generatedManifests, nil
 }
 
 // matchBuildersToImages takes a list of builders and images, checks if any of the builders' configured target

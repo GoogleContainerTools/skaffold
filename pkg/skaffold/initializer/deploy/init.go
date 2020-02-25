@@ -17,7 +17,6 @@ limitations under the License.
 package deploy
 
 import (
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -34,10 +33,10 @@ type Initializer interface {
 	DeployConfig() latest.DeployConfig
 	// GetImages fetches all the images defined in the manifest files.
 	GetImages() []string
-	// GenerateManifests generates k8s manifests for each unresolved builder
-	GenerateManifests([]build.GeneratedBuilderImagePair) (map[string][]byte, error)
 	// Validate ensures preconditions are met before generating a skaffold config
 	Validate() error
+	// AddManifestForImage adds a provided manifest for a given image to the initializer
+	AddManifestForImage(string, string)
 }
 
 type cliDeployInit struct {
@@ -64,28 +63,24 @@ func (c *cliDeployInit) Validate() error {
 	return nil
 }
 
-func (c *cliDeployInit) GenerateManifests([]build.GeneratedBuilderImagePair) (map[string][]byte, error) {
-	return nil, nil
-}
+func (c *cliDeployInit) AddManifestForImage(string, string) {}
 
 type emptyDeployInit struct {
 }
 
-func (c *emptyDeployInit) DeployConfig() latest.DeployConfig {
+func (e *emptyDeployInit) DeployConfig() latest.DeployConfig {
 	return latest.DeployConfig{}
 }
 
-func (c *emptyDeployInit) GetImages() []string {
+func (e *emptyDeployInit) GetImages() []string {
 	return nil
 }
 
-func (c *emptyDeployInit) Validate() error {
+func (e *emptyDeployInit) Validate() error {
 	return nil
 }
 
-func (c *emptyDeployInit) GenerateManifests([]build.GeneratedBuilderImagePair) (map[string][]byte, error) {
-	return nil, nil
-}
+func (e *emptyDeployInit) AddManifestForImage(string, string) {}
 
 func NewInitializer(manifests []string, c config.Config) Initializer {
 	switch {

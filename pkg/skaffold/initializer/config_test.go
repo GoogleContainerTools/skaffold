@@ -45,7 +45,7 @@ func (s stubDeploymentInitializer) Validate() error {
 	panic("no thanks")
 }
 
-func (s stubDeploymentInitializer) GenerateManifests([]build.GeneratedBuilderImagePair) (map[string][]byte, error) {
+func (s stubDeploymentInitializer) AddManifestForImage(string, string) {
 	panic("don't call me")
 }
 
@@ -71,12 +71,8 @@ func (s stubBuildInitializer) BuildConfig() latest.BuildConfig {
 	}
 }
 
-func (s stubBuildInitializer) GeneratedPairs() []build.GeneratedBuilderImagePair {
-	panic("do not call me")
-}
-
-func (s stubBuildInitializer) Resolve() {
-	panic("please don't")
+func (s stubBuildInitializer) GenerateManifests() (map[build.GeneratedBuilderImagePair][]byte, error) {
+	panic("no thank you")
 }
 
 func TestGenerateSkaffoldConfig(t *testing.T) {

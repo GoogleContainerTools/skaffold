@@ -19,12 +19,13 @@ package build
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -79,7 +80,7 @@ func TestResolveBuilderImages(t *testing.T) {
 						Builder:   jib.ArtifactConfig{BuilderName: "Jib Maven Plugin", File: "pom.xml", Project: "project"},
 						ImageName: "pom.xml-image",
 					},
-					ManifestPath: ".",
+					ManifestPath: "deployment.yaml",
 				},
 			},
 		},
@@ -114,7 +115,7 @@ func TestResolveBuilderImages(t *testing.T) {
 						Builder:   docker.ArtifactConfig{File: "foo"},
 						ImageName: "foo-image",
 					},
-					ManifestPath: ".",
+					ManifestPath: "deployment.yaml",
 				},
 			},
 			shouldMakeChoice: false,
@@ -139,7 +140,7 @@ func TestResolveBuilderImages(t *testing.T) {
 			}
 			err := initializer.resolveBuilderImages()
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, initializer.BuilderImagePairs())
-			t.CheckDeepEqual(test.expectedGeneratedPairs, initializer.GeneratedPairs())
+			t.CheckDeepEqual(test.expectedGeneratedPairs, initializer.generatedBuilderImagePairs, cmp.AllowUnexported())
 		})
 	}
 }

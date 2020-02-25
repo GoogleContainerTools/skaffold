@@ -61,13 +61,18 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 		return buildInitializer.PrintAnalysis(out)
 	}
 
+	// var generatedManifestPairs map[build.GeneratedBuilderImagePair][]byte
 	var generatedManifests map[string][]byte
 	if c.EnableManifestGeneration {
-		generatedManifests, err = deployInitializer.GenerateManifests(buildInitializer.GeneratedPairs())
+		generatedManifestPairs, err := buildInitializer.GenerateManifests()
 		if err != nil {
 			return err
 		}
-		buildInitializer.Resolve()
+		generatedManifests = make(map[string][]byte, len(generatedManifestPairs))
+		for pair, manifest := range generatedManifestPairs {
+			deployInitializer.AddManifestForImage(pair.ManifestPath, pair.ImageName)
+			generatedManifests[pair.ManifestPath] = manifest
+		}
 	}
 
 	if err = deployInitializer.Validate(); err != nil {
