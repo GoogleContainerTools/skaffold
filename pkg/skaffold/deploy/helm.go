@@ -203,7 +203,6 @@ func (h *HelmDeployer) exec(ctx context.Context, out io.Writer, useSecrets bool,
 	cmd.Stdout = out
 	cmd.Stderr = out
 
-	logrus.Infof("calling: %v", cmd.Args)
 	return util.RunCmd(cmd)
 }
 
@@ -214,7 +213,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		return nil, errors.Wrap(err, "cannot parse the release name template")
 	}
 
-	o := installOpts{
+	opts := installOpts{
 		releaseName: releaseName,
 		upgrade:     true,
 		flags:       h.Flags.Upgrade,
@@ -225,14 +224,14 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	if err := h.exec(ctx, ioutil.Discard, false, getArgs(releaseName)...); err != nil {
 		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 
-		o.upgrade = false
-		o.flags = h.Flags.Install
+		opts.upgrade = false
+		opts.flags = h.Flags.Install
 	}
 
 	if h.namespace != "" {
-		o.namespace = h.namespace
+		opts.namespace = h.namespace
 	} else if r.Namespace != "" {
-		o.namespace = r.Namespace
+		opts.namespace = r.Namespace
 	}
 
 	// Only build local dependencies, but allow a user to skip them.
@@ -266,10 +265,10 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 			return nil, errors.WithMessage(err, "cannot package chart")
 		}
 
-		o.chartPath = chartPath
+		opts.chartPath = chartPath
 	}
 
-	args, err := installArgs(r, builds, valuesSet, o)
+	args, err := installArgs(r, builds, valuesSet, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "release args")
 	}
@@ -284,7 +283,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		return nil, nil
 	}
 
-	artifacts := parseReleaseInfo(o.namespace, bufio.NewReader(&b))
+	artifacts := parseReleaseInfo(opts.namespace, bufio.NewReader(&b))
 	return artifacts, iErr
 }
 
@@ -334,7 +333,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		args = append(args, "--namespace", o.namespace)
 	}
 
-	params, err := assocParamsToArtifact(builds, r.Values)
+	params, err := pairParamsToArtifacts(builds, r.Values)
 	if err != nil {
 		return nil, errors.Wrap(err, "matching build results to chart values")
 	}
@@ -505,8 +504,8 @@ func imageSetFromConfig(cfg *latest.HelmConventionConfig, valueName string, tag 
 	return fmt.Sprintf("%[1]s.repository=%[2]s,%[1]s.tag=%[3]s", valueName, ref.BaseName, imageTag), nil
 }
 
-// assocParamsToArtifact associates parameters to the build artifact it creates
-func assocParamsToArtifact(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
+// pairParamsToArtifacts associates parameters to the build artifact it creates
+func pairParamsToArtifacts(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
 	imageToBuildResult := map[string]build.Artifact{}
 	for _, b := range builds {
 		imageToBuildResult[b.ImageName] = b
