@@ -77,7 +77,7 @@ func TestPush(t *testing.T) {
 	}
 }
 
-func TestDontPushAlreadyPushed(t *testing.T) {
+func TestDoNotPushAlreadyPushed(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		t.Override(&DefaultAuthHelper, testAuthHelper{})
 
@@ -502,8 +502,8 @@ func TestTagWithImageID(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			api := (&testutil.FakeAPIClient{}).Add("sha256:imageID", "sha256:imageID")
-			localDocker := NewLocalDaemon(api, nil, false, nil)
 
+			localDocker := NewLocalDaemon(api, nil, false, nil)
 			tag, err := localDocker.TagWithImageID(context.Background(), test.imageName, test.imageID)
 
 			t.CheckError(test.shouldErr, err)

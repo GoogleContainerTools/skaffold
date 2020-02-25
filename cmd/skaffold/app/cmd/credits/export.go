@@ -26,19 +26,21 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/rakyll/statik/fs"
+
+	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
 )
 
 var Path string
 
 // Export writes all the licenses and credit files to the `Path` folder.
 func Export(out io.Writer) error {
-	statikFS, err := statikFS()
+	statikFS, err := statik.FS()
 	if err != nil {
 		return errors.Wrap(err, "opening embedded filesystem")
 	}
 
-	if err := fs.Walk(statikFS, "/", func(filePath string, fileInfo os.FileInfo, err error) error {
-		newPath := path.Join(Path, filePath)
+	if err := fs.Walk(statikFS, "/skaffold-credits", func(filePath string, fileInfo os.FileInfo, err error) error {
+		newPath := path.Join(Path, "..", filePath)
 		if fileInfo.IsDir() {
 			err := os.Mkdir(newPath, 0755)
 			if err != nil && !os.IsExist(err) {

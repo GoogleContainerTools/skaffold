@@ -33,7 +33,7 @@ import (
 
 // Builder uses the host docker daemon to build and tag the image.
 type Builder struct {
-	cfg *latest.LocalBuild
+	cfg latest.LocalBuild
 
 	localDocker        docker.LocalDaemon
 	localCluster       bool
@@ -41,6 +41,7 @@ type Builder struct {
 	prune              bool
 	pruneChildren      bool
 	skipTests          bool
+	devMode            bool
 	kubeContext        string
 	builtImages        []string
 	insecureRegistries map[string]bool
@@ -58,7 +59,11 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 		return nil, errors.Wrap(err, "getting docker client")
 	}
 
-	localCluster, err := getLocalCluster(runCtx.Opts.GlobalConfig)
+	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
+	// remove minikubeProfile from here and instead detect it by matching the
+	// kubecontext API Server to minikube profiles
+
+	localCluster, err := getLocalCluster(runCtx.Opts.GlobalConfig, runCtx.Opts.MinikubeProfile)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting localCluster")
 	}
@@ -72,12 +77,13 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	}
 
 	return &Builder{
-		cfg:                runCtx.Cfg.Build.LocalBuild,
+		cfg:                *runCtx.Cfg.Build.LocalBuild,
 		kubeContext:        runCtx.KubeContext,
 		localDocker:        localDocker,
 		localCluster:       localCluster,
 		pushImages:         pushImages,
 		skipTests:          runCtx.Opts.SkipTests,
+		devMode:            runCtx.DevMode,
 		prune:              runCtx.Opts.Prune(),
 		pruneChildren:      !runCtx.Opts.NoPruneChildren,
 		insecureRegistries: runCtx.InsecureRegistries,

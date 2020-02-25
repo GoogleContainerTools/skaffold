@@ -37,6 +37,7 @@ type RunContext struct {
 	WorkingDir         string
 	Namespaces         []string
 	InsecureRegistries map[string]bool
+	DevMode            bool
 }
 
 func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContext, error) {
@@ -70,6 +71,8 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		insecureRegistries[r] = true
 	}
 
+	devMode := opts.Command == "dev"
+
 	return &RunContext{
 		Opts:               opts,
 		Cfg:                cfg,
@@ -77,6 +80,7 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		KubeContext:        kubeContext,
 		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
+		DevMode:            devMode,
 	}, nil
 }
 

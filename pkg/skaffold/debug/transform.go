@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /*
-The `debug` package transforms Kubernetes pod-bearing resources so as to configure containers
+Package debug transforms Kubernetes pod-bearing resources so as to configure containers
 for remote debugging as suited for a container's runtime technology.  This package defines
 a _container transformer_ interface. Each transformer implementation should do the following:
 
@@ -40,12 +40,14 @@ Kubernetes requires that containers within a podspec are uniquely named.
 For example, a pod with two containers named `microservice` and `adapter` may be:
 
   debug.cloud.google.com/config: '{
-    "microservice":{"devtools":9229,"runtime":"nodejs"},
-    "adapter":{"jdwp":5005,"runtime":"jvm"}
+    "microservice":{"artifact":"node-example","runtime":"nodejs","ports":{"devtools":9229}},
+    "adapter":{"artifact":"java-example","runtime":"jvm","ports":{"jdwp":5005}}
   }'
 
-Each configuration is itself a JSON object with a `runtime` field identifying the
-language runtime, and a set of runtime-specific fields describing connection information.
+Each configuration is itself a JSON object of type `ContainerDebugConfiguration`, with an
+`artifact` recording the corresponding artifact's `image` in the skaffold.yaml,
+a `runtime` field identifying the language runtime, the working directory of the remote image (if known),
+and a set of debugging ports.
 */
 package debug
 
@@ -56,7 +58,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
@@ -65,6 +66,18 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
+// ContainerDebugConfiguration captures debugging information for a specific container.
+type ContainerDebugConfiguration struct {
+	// Artifact is the corresponding artifact's image name used in the skaffold.yaml
+	Artifact string `json:"artifact,omitempty"`
+	// Runtime represents the underlying language runtime (`go`, `jvm`, `nodejs`, `python`)
+	Runtime string `json:"runtime,omitempty"`
+	// WorkingDir is the working directory in the image configuration; may be empty
+	WorkingDir string `json:"workingDir,omitempty"`
+	// Ports is the list of debugging ports, keyed by protocol type
+	Ports map[string]uint32 `json:"ports,omitempty"`
+}
+
 // portAllocator is a function that takes a desired port and returns an available port
 // Ports are normally uint16 but Kubernetes ContainerPort.containerPort is an integer
 type portAllocator func(int32) int32
@@ -72,12 +85,17 @@ type portAllocator func(int32) int32
 // configurationRetriever retrieves an container image configuration
 type configurationRetriever func(string) (imageConfiguration, error)
 
-// imageConfiguration captures information from a docker/oci image configuration
+// imageConfiguration captures information from a docker/oci image configuration.
+// It also includes a "artifact", usually containing the corresponding artifact's' image name from `skaffold.yaml`.
 type imageConfiguration struct {
+	// artifact is the corresponding artifact's image name (`pkg/skaffold/build.Artifact.ImageName`)
+	artifact string
+
 	labels     map[string]string
 	env        map[string]string
 	entrypoint []string
 	arguments  []string
+	workingDir string
 }
 
 // containerTransformer transforms a container definition
@@ -88,12 +106,17 @@ type containerTransformer interface {
 	// RuntimeSupportImage returns the associated duct-tape helper image required or empty string
 	RuntimeSupportImage() string
 
-	// Apply configures a container definition for debugging, returning a simple map describing the debug configuration details or `nil` if it could not be done
-	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{}
+	// Apply configures a container definition for debugging, returning the debug configuration details or `nil` if it could not be done
+	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *ContainerDebugConfiguration
 }
 
-// debuggingSupportVolume is the name of the volume used to hold language runtime debugging support files
-const debuggingSupportFilesVolume = "debugging-support-files"
+const (
+	// debuggingSupportVolume is the name of the volume used to hold language runtime debugging support files.
+	debuggingSupportFilesVolume = "debugging-support-files"
+
+	// debugConfigAnnotation is the name of the podspec annotation that records debugging configuration information.
+	debugConfigAnnotation = "debug.cloud.google.com/config"
+)
 
 var containerTransforms []containerTransformer
 
@@ -160,7 +183,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		return allocatePort(podSpec, desiredPort)
 	}
 	// map of containers -> debugging configuration maps; k8s ensures that a pod's containers are uniquely named
-	configurations := make(map[string]map[string]interface{})
+	configurations := make(map[string]ContainerDebugConfiguration)
 	// the container images that require debugging support files
 	var containersRequiringSupport []*v1.Container
 	// the set of image IDs required to provide debugging support files
@@ -174,7 +197,9 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		}
 		// requiredImage, if not empty, is the image ID providing the debugging support files
 		if configuration, requiredImage, err := transformContainer(container, imageConfig, portAlloc); err == nil {
-			configurations[container.Name] = configuration
+			configuration.Artifact = imageConfig.artifact
+			configuration.WorkingDir = imageConfig.workingDir
+			configurations[container.Name] = *configuration
 			if len(requiredImage) > 0 {
 				logrus.Infof("%q requires debugging support image %q", container.Name, requiredImage)
 				containersRequiringSupport = append(containersRequiringSupport, container)
@@ -215,7 +240,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		if metadata.Annotations == nil {
 			metadata.Annotations = make(map[string]string)
 		}
-		metadata.Annotations["debug.cloud.google.com/config"] = encodeConfigurations(configurations)
+		metadata.Annotations[debugConfigAnnotation] = encodeConfigurations(configurations)
 		return true
 	}
 	return false
@@ -258,7 +283,7 @@ func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
 // transformContainer rewrites the container definition to enable debugging.
 // Returns a debugging configuration description with associated language runtime support
 // container image, or an error if the rewrite was unsuccessful.
-func transformContainer(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (map[string]interface{}, string, error) {
+func transformContainer(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (*ContainerDebugConfiguration, string, error) {
 	// update image configuration values with those set in the k8s manifest
 	for _, envVar := range container.Env {
 		// FIXME handle ValueFrom?
@@ -283,7 +308,7 @@ func transformContainer(container *v1.Container, config imageConfiguration, port
 	return nil, "", errors.Errorf("unable to determine runtime for %q", container.Name)
 }
 
-func encodeConfigurations(configurations map[string]map[string]interface{}) string {
+func encodeConfigurations(configurations map[string]ContainerDebugConfiguration) string {
 	bytes, err := json.Marshal(configurations)
 	if err != nil {
 		return ""

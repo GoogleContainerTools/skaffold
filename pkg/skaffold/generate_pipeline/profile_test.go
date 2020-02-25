@@ -58,11 +58,7 @@ func TestGenerateProfile(t *testing.T) {
 							{
 								ImageName: "test-pipeline",
 								ArtifactType: latest.ArtifactType{
-									KanikoArtifact: &latest.KanikoArtifact{
-										BuildContext: &latest.KanikoBuildContext{
-											GCSBucket: "skaffold-kaniko",
-										},
-									},
+									KanikoArtifact: &latest.KanikoArtifact{},
 								},
 							},
 						},
@@ -140,11 +136,7 @@ func TestGenerateProfile(t *testing.T) {
 							{
 								ImageName: "test-pipeline",
 								ArtifactType: latest.ArtifactType{
-									KanikoArtifact: &latest.KanikoArtifact{
-										BuildContext: &latest.KanikoBuildContext{
-											GCSBucket: "skaffold-kaniko",
-										},
-									},
+									KanikoArtifact: &latest.KanikoArtifact{},
 								},
 							},
 						},

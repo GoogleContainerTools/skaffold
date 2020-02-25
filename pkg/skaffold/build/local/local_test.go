@@ -27,6 +27,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -119,7 +120,7 @@ func TestLocalRun(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "dont push on build error",
+			description: "Don't push on build error",
 			artifacts: []*latest.Artifact{{
 				ImageName: "gcr.io/test/image",
 				ArtifactType: latest.ArtifactType{
@@ -226,7 +227,8 @@ func TestLocalRun(t *testing.T) {
 			})
 
 			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
-				Push: util.BoolPtr(test.pushImages),
+				Push:        util.BoolPtr(test.pushImages),
+				Concurrency: &constants.DefaultLocalConcurrency,
 			}))
 			t.CheckNoError(err)
 
@@ -251,7 +253,7 @@ func TestNewBuilder(t *testing.T) {
 		shouldErr       bool
 		localBuild      latest.LocalBuild
 		expectedBuilder *Builder
-		localClusterFn  func(string) (bool, error)
+		localClusterFn  func(string, string) (bool, error)
 		localDockerFn   func(*runcontext.RunContext) (docker.LocalDaemon, error)
 	}{
 		{
@@ -266,13 +268,13 @@ func TestNewBuilder(t *testing.T) {
 			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
-			localClusterFn: func(string) (b bool, e error) {
+			localClusterFn: func(string, string) (b bool, e error) {
 				b = false //because this is false and localBuild.push is nil
 				return
 			},
 			shouldErr: false,
 			expectedBuilder: &Builder{
-				cfg:                &latest.LocalBuild{},
+				cfg:                latest.LocalBuild{},
 				kubeContext:        "",
 				localDocker:        dummyDaemon,
 				localCluster:       false,
@@ -288,7 +290,7 @@ func TestNewBuilder(t *testing.T) {
 			localDockerFn: func(*runcontext.RunContext) (docker.LocalDaemon, error) {
 				return dummyDaemon, nil
 			},
-			localClusterFn: func(string) (b bool, e error) {
+			localClusterFn: func(string, string) (b bool, e error) {
 				b = false
 				return
 			},
@@ -298,7 +300,7 @@ func TestNewBuilder(t *testing.T) {
 			shouldErr: false,
 			expectedBuilder: &Builder{
 				pushImages: false, //this will be false too
-				cfg: &latest.LocalBuild{ // and the config is inherited
+				cfg: latest.LocalBuild{ // and the config is inherited
 					Push: util.BoolPtr(false),
 				},
 				kubeContext:  "",

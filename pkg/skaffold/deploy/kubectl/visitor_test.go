@@ -17,205 +17,134 @@ limitations under the License.
 package kubectl
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-// dummyReplacer is a dummy which replaces "replace-key" with value "replaced"
-// if the manifest contains a key specified in ObjMatcher.
-type dummyReplacer struct {
-	m Matcher
+type mockVisitor struct {
+	visited     map[string]int
+	pivotKey    string
+	replaceWith interface{}
 }
 
-func (r *dummyReplacer) Matches(key interface{}) bool {
-	return key == "replace-key" || key == 1234
-}
-
-func (r *dummyReplacer) NewValue(old interface{}) (bool, interface{}) {
-	return true, "replaced"
-}
-
-func (r *dummyReplacer) ObjMatcher() Matcher {
-	return r.m
-}
-
-// mockMatcher matches objects with match-key present with value in matchValues.
-type mockMatcher struct {
-	matchValues []string
-}
-
-func (m mockMatcher) Matches(value interface{}) bool {
-	for _, v := range m.matchValues {
-		if v == value {
-			return true
+func (m *mockVisitor) Visit(o map[interface{}]interface{}, k interface{}, v interface{}) bool {
+	s := fmt.Sprintf("%+v", v)
+	if len(s) > 4 {
+		s = s[:4] + "..."
+	}
+	m.visited[fmt.Sprintf("%v=%s", k, s)]++
+	if fmt.Sprintf("%+v", o[k]) != fmt.Sprintf("%+v", v) {
+		panic(fmt.Sprintf("visitor.Visit() called with o[k] != v: o[%q] != %v", k, v))
+	}
+	if k == m.pivotKey {
+		if m.replaceWith != nil {
+			o[k] = m.replaceWith
 		}
+		return false
 	}
-	return false
-}
-
-func (m mockMatcher) IsMatchKey(key interface{}) bool {
-	return key == "match-key"
-}
-
-func TestVisitReplaced(t *testing.T) {
-	tests := []struct {
-		description string
-		matchValues []string
-		manifests   ManifestList
-		expected    ManifestList
-	}{
-		{
-			description: "single manifest in the list with matched key and string value",
-			manifests: ManifestList{[]byte(`
-match-key: match-value
-replace-key: not-replaced`)},
-			matchValues: []string{"match-value"},
-			expected: ManifestList{[]byte(`
-match-key: match-value
-replace-key: replaced`)},
-		},
-		{
-			description: "single manifest in the list with matched key but incorrect value",
-			manifests: ManifestList{[]byte(`
-match-key: something-else
-replace-key: not-replaced`)},
-			matchValues: []string{"match-value"},
-			expected: ManifestList{[]byte(`
-match-key: something-else
-replace-key: not-replaced`)},
-		},
-		{
-			description: "single manifest in the list with no match key but replace-key",
-			manifests: ManifestList{[]byte(`
-replace-key: not-replaced`)},
-			matchValues: []string{"match-key"},
-			expected: ManifestList{[]byte(`
-replace-key: replaced`)},
-		},
-		{
-			description: "multiple manifest in the list with matched key and string value",
-			manifests: ManifestList{[]byte(`
-match-key: match-value-1
-replace-key: not-replaced`),
-				[]byte(`
-match-key: match-value-2
-replace-key: not-replaced`)},
-			matchValues: []string{"match-value-1", "match-value-2"},
-			expected: ManifestList{[]byte(`
-match-key: match-value-1
-replace-key: replaced`),
-				[]byte(`
-match-key: match-value-2
-replace-key: replaced`)},
-		},
-		{
-			description: "multiple manifest in the list with matched key matching one obj",
-			manifests: ManifestList{[]byte(`
-match-key: not-matched
-replace-key: not-replaced`),
-				[]byte(`
-match-key: match-value
-replace-key: not-replaced`)},
-			matchValues: []string{"match-value"},
-			expected: ManifestList{[]byte(`
-match-key: not-matched
-replace-key: not-replaced`),
-				[]byte(`
-match-key: match-value
-replace-key: replaced`)},
-		},
-		{
-			description: "single manifest in the list with matched key and string value",
-			manifests: ManifestList{[]byte(`
-123: match-value
-1234: not-replaced`)},
-			matchValues: []string{"match-value"},
-			expected: ManifestList{[]byte(`
-123: match-value
-1234: replaced`)},
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual, _ := test.manifests.Visit(&dummyReplacer{mockMatcher{test.matchValues}})
-			t.CheckDeepEqual(test.expected.String(), actual.String())
-		})
-	}
+	return true
 }
 
 func TestVisit(t *testing.T) {
 	tests := []struct {
-		description string
-		manifests   ManifestList
-		expected    ManifestList
-		shouldErr   bool
+		description       string
+		pivotKey          string
+		replaceWith       interface{}
+		manifests         ManifestList
+		expectedManifests ManifestList
+		expected          []string
+		shouldErr         bool
 	}{
 		{
-			description: "correct yaml",
+			description: "correct with one level",
 			manifests:   ManifestList{[]byte(`test: foo`), []byte(`test: bar`)},
-			expected:    ManifestList{[]byte(`test: foo`), []byte(`test: bar`)},
+			expected:    []string{"test=foo", "test=bar"},
 		},
 		{
-			description: "empty list",
-			manifests:   ManifestList{},
-			expected:    nil,
+			description:       "omit empty manifest",
+			manifests:         ManifestList{[]byte(``), []byte(`test: bar`)},
+			expectedManifests: ManifestList{[]byte(`test: bar`)},
+			expected:          []string{"test=bar"},
 		},
 		{
-			description: "empty yaml in the list",
-			manifests:   ManifestList{[]byte{}, []byte(`test: bar`)},
-			expected:    ManifestList{[]byte(`test: bar`)},
+			description: "nested map",
+			manifests: ManifestList{[]byte(`nested:
+  prop: x
+test: foo`)},
+			expected: []string{"test=foo", "nested=map[...", "prop=x"},
 		},
 		{
-			description: "incorrect yaml",
+			description: "skip recursion at key",
+			pivotKey:    "nested",
+			manifests: ManifestList{[]byte(`nested:
+  prop: x
+test: foo`)},
+			expected: []string{"test=foo", "nested=map[..."},
+		},
+		{
+			description: "nested array and map",
+			manifests: ManifestList{[]byte(`items:
+- a
+- 3
+- name: item
+  value: data
+- c
+test: foo`)},
+			expected: []string{"test=foo", "items=[a 3...", "name=item", "value=data"},
+		},
+		{
+			description: "replace key",
+			pivotKey:    "test",
+			replaceWith: "repl",
+			manifests: ManifestList{[]byte(`nested:
+  name: item
+  test:
+    sub:
+      name: asdf
+test: foo`), []byte(`test: bar`)},
+			expectedManifests: ManifestList{[]byte(`
+nested:
+  name: item
+  test: repl
+test: repl`), []byte(`test: repl`)},
+			expected: []string{"nested=map[...", "name=item", "test=map[...", "test=foo", "test=bar"},
+		},
+		{
+			description: "invalid input",
 			manifests:   ManifestList{[]byte(`test:bar`)},
 			shouldErr:   true,
 		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual, err := test.manifests.Visit(&dummyReplacer{nil})
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected.String(), actual.String())
-		})
-	}
-}
-
-func TestVisitDifferentMatchKey(t *testing.T) {
-	tests := []struct {
-		description string
-		manifests   ManifestList
-		expected    ManifestList
-	}{
 		{
-			description: "replace-key is repeated and before match key.",
-			manifests: ManifestList{[]byte(`
-repeated:
-- replace-key: foo
-  match-key: match
-- replace-key: bar`)},
-			expected: ManifestList{[]byte(`
-repeated:
-- match-key: match
-  replace-key: replaced
-- replace-key: replaced`)},
-		},
-		{
-			description: "replace-key is not substituted in an array",
-			manifests: ManifestList{[]byte(`
+			description: "skip CRD fields",
+			manifests: ManifestList{[]byte(`apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: mykind.mygroup.org
 spec:
-- replace-key
-- replace-key`)},
-			expected: ManifestList{[]byte(`
-spec:
-- replace-key
-- replace-key`)},
+  group: mygroup.org
+  names:
+    kind: MyKind`)},
+			expected: []string{"apiVersion=apie...", "kind=Cust...", "metadata=map[...", "spec=map[..."},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			actual, _ := test.manifests.Visit(&dummyReplacer{mockMatcher{[]string{"match"}}})
-			t.CheckDeepEqual(test.expected.String(), actual.String())
+			visitor := &mockVisitor{map[string]int{}, test.pivotKey, test.replaceWith}
+			actual, err := test.manifests.Visit(visitor)
+			expectedVisits := map[string]int{}
+			for _, visit := range test.expected {
+				expectedVisits[visit]++
+			}
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, expectedVisits, visitor.visited)
+			if !test.shouldErr {
+				expectedManifests := test.expectedManifests
+				if expectedManifests == nil {
+					expectedManifests = test.manifests
+				}
+				t.CheckDeepEqual(expectedManifests.String(), actual.String())
+			}
 		})
 	}
 }

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/term"
-	units "github.com/docker/go-units"
+	"github.com/docker/go-units"
 	"github.com/morikuni/aec"
 )
 

@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
@@ -156,6 +157,15 @@ func (t *T) CheckErrorContains(message string, err error) {
 	}
 }
 
+// SetArgs override os.Args for the duration of a test.
+func (t *T) SetArgs(args []string) {
+	prevArgs := os.Args
+	os.Args = args
+	t.teardownActions = append(t.teardownActions, func() {
+		os.Args = prevArgs
+	})
+}
+
 // SetStdin replaces os.Stdin with a given content.
 func (t *T) SetStdin(content []byte) {
 	origStdin := os.Stdin
@@ -182,6 +192,31 @@ func (t *T) NewTempDir() *TempDir {
 	tmpDir, teardown := NewTempDir(t.T)
 	t.teardownActions = append(t.teardownActions, teardown)
 	return tmpDir
+}
+
+func (t *T) Chdir(dir string) {
+	pwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal("unable to get current directory")
+	}
+
+	if err = os.Chdir(dir); err != nil {
+		t.Fatal("unable to change current directory")
+	}
+
+	t.teardownActions = append(t.teardownActions, func() {
+		if err = os.Chdir(pwd); err != nil {
+			t.Fatal("unable to reset working direcrory")
+		}
+	})
+}
+
+func Abs(t *testing.T, path string) string {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		t.Fatalf("Failed to get absolute path for file %s: %s", path, absPath)
+	}
+	return absPath
 }
 
 func Run(t *testing.T, name string, f func(t *T)) {

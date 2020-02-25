@@ -24,9 +24,9 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
-
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestCmpGoStructs(t *testing.T) {

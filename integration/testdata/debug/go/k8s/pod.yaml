@@ -5,6 +5,6 @@ metadata:
 spec:
   containers:
   - name: web
-    image: gcr.io/k8s-skaffold/skaffold-debug-go
+    image: skaffold-debug-go
     ports:
     - containerPort: 8080

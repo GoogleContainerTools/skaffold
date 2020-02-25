@@ -24,11 +24,9 @@ import (
 	"regexp"
 	"strings"
 
-	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
-
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/version"
+	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 )
@@ -40,7 +38,7 @@ func main() {
 	prev := strings.TrimPrefix(schema.SchemaVersions[len(schema.SchemaVersions)-2].APIVersion, "skaffold/")
 	logrus.Infof("Previous Skaffold version: %s", prev)
 
-	current, latestIsReleased := version.GetLatestVersion()
+	current, latestIsReleased := hackschema.GetLatestVersion()
 
 	if !latestIsReleased {
 		logrus.Fatalf("There is no need to create a new version, %s is still not released", current)

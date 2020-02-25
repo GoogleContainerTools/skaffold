@@ -56,6 +56,7 @@ func TestSetDefaults(t *testing.T) {
 						ArtifactType: latest.ArtifactType{
 							BuildpackArtifact: &latest.BuildpackArtifact{},
 						},
+						Sync: &latest.Sync{},
 					},
 				},
 			},
@@ -81,6 +82,7 @@ func TestSetDefaults(t *testing.T) {
 	testutil.CheckDeepEqual(t, "fourth", cfg.Build.Artifacts[3].ImageName)
 	testutil.CheckDeepEqual(t, []string{"."}, cfg.Build.Artifacts[3].BuildpackArtifact.Dependencies.Paths)
 	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[3].BuildpackArtifact.Dependencies.Ignore)
+	testutil.CheckDeepEqual(t, []string{"**/*"}, cfg.Build.Artifacts[3].Sync.Infer)
 }
 
 func TestSetDefaultsOnCluster(t *testing.T) {
@@ -115,6 +117,12 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 								CustomArtifact: &latest.CustomArtifact{},
 							},
 						},
+						{
+							ImageName: "buildpacks",
+							ArtifactType: latest.ArtifactType{
+								BuildpackArtifact: &latest.BuildpackArtifact{},
+							},
+						},
 					},
 					BuildType: latest.BuildType{
 						Cluster: &latest.ClusterDetails{},
@@ -132,6 +140,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		t.CheckNotNil(cfg.Pipeline.Build.Artifacts[0].KanikoArtifact)
 		t.CheckNotNil(cfg.Pipeline.Build.Artifacts[1].KanikoArtifact)
 		t.CheckNil(cfg.Pipeline.Build.Artifacts[2].KanikoArtifact)
+		t.CheckNil(cfg.Pipeline.Build.Artifacts[3].KanikoArtifact)
 
 		// pull secret set
 		cfg = &latest.SkaffoldConfig{
@@ -148,7 +157,7 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		err = Set(cfg)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
+
 		t.CheckDeepEqual(constants.DefaultKanikoSecretMountPath, cfg.Build.Cluster.PullSecretMountPath)
 
 		// pull secret mount path set
@@ -168,7 +177,6 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 
 		err = Set(cfg)
 		t.CheckNoError(err)
-		t.CheckDeepEqual(constants.DefaultKanikoSecretName, cfg.Build.Cluster.PullSecretName)
 		t.CheckDeepEqual(path, cfg.Build.Cluster.PullSecretMountPath)
 
 		// default docker config
@@ -176,7 +184,6 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		err = Set(cfg)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual(constants.DefaultKanikoDockerConfigSecretName, cfg.Build.Cluster.DockerConfig.SecretName)
 
 		// docker config with path
 		cfg.Pipeline.Build.BuildType.Cluster.DockerConfig = &latest.DockerConfig{
@@ -185,7 +192,6 @@ func TestSetDefaultsOnCluster(t *testing.T) {
 		err = Set(cfg)
 
 		t.CheckNoError(err)
-		t.CheckDeepEqual("docker-cfg", cfg.Build.Cluster.DockerConfig.SecretName)
 		t.CheckDeepEqual("/path", cfg.Build.Cluster.DockerConfig.Path)
 
 		// docker config with secret name
@@ -244,9 +250,19 @@ func TestSetDefaultsOnCloudBuild(t *testing.T) {
 	err := Set(cfg)
 
 	testutil.CheckError(t, false, err)
-	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildDockerImage, cfg.Build.GoogleCloudBuild.DockerImage)
-	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildMavenImage, cfg.Build.GoogleCloudBuild.MavenImage)
-	testutil.CheckDeepEqual(t, constants.DefaultCloudBuildGradleImage, cfg.Build.GoogleCloudBuild.GradleImage)
+	testutil.CheckDeepEqual(t, defaultCloudBuildDockerImage, cfg.Build.GoogleCloudBuild.DockerImage)
+	testutil.CheckDeepEqual(t, defaultCloudBuildMavenImage, cfg.Build.GoogleCloudBuild.MavenImage)
+	testutil.CheckDeepEqual(t, defaultCloudBuildGradleImage, cfg.Build.GoogleCloudBuild.GradleImage)
+	testutil.CheckDeepEqual(t, defaultCloudBuildPackImage, cfg.Build.GoogleCloudBuild.PackImage)
+}
+
+func TestSetDefaultsOnLocalBuild(t *testing.T) {
+	cfg := &latest.SkaffoldConfig{}
+
+	err := Set(cfg)
+
+	testutil.CheckError(t, false, err)
+	testutil.CheckDeepEqual(t, 1, *cfg.Build.LocalBuild.Concurrency)
 }
 
 func TestSetDefaultPortForwardNamespace(t *testing.T) {

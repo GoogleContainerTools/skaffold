@@ -62,17 +62,12 @@ To use Kaniko, add build type `kaniko` to the `build` section of
 
 {{< schema root="KanikoArtifact" >}}
 
-The `buildContext` can be either:
-
-{{< schema root="KanikoBuildContext" >}}
-
 Since Kaniko builds images directly to a registry, it requires active cluster credentials.
 These credentials are configured in the `cluster` section with the following options:
 
 {{< schema root="ClusterDetails" >}}
 
-To set up the credentials for Kaniko refer to the [kaniko docs](https://github.com/GoogleContainerTools/kaniko#kubernetes-secret).
-The recommended way is to store the pull secret in Kubernetes and configure `pullSecretName`.
+To set up the credentials for Kaniko refer to the [kaniko docs](https://github.com/GoogleContainerTools/kaniko#kubernetes-secret) (**Note**: Rename the downloaded JSON key to *kaniko-secret* without appending *.json*).
 Alternatively, the path to a credentials file can be set with the `pullSecret` option:
 ```yaml
 build:

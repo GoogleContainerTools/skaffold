@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"strings"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
@@ -32,13 +33,19 @@ type image struct {
 	computed   bool
 	configFile *v1.ConfigFile
 	manifest   *v1.Manifest
+	mediaType  *types.MediaType
 	diffIDMap  map[v1.Hash]v1.Layer
 	digestMap  map[v1.Hash]v1.Layer
 }
 
 var _ v1.Image = (*image)(nil)
 
-func (i *image) MediaType() (types.MediaType, error) { return i.base.MediaType() }
+func (i *image) MediaType() (types.MediaType, error) {
+	if i.mediaType != nil {
+		return *i.mediaType, nil
+	}
+	return i.base.MediaType()
+}
 
 func (i *image) compute() error {
 	// Don't re-compute if already computed.
@@ -115,6 +122,12 @@ func (i *image) compute() error {
 	}
 	manifest.Config.Digest = d
 	manifest.Config.Size = sz
+
+	// With OCI media types, this should not be set, see discussion:
+	// https://github.com/opencontainers/image-spec/pull/795
+	if i.mediaType != nil && strings.Contains(string(*i.mediaType), types.OCIVendorPrefix) {
+		manifest.MediaType = ""
+	}
 
 	i.configFile = configFile
 	i.manifest = manifest

@@ -3,4 +3,4 @@ deploy:
 # The deploy section above is equal to
 # deploy:
 #   kustomize:
-#     path: "."
+#     paths: ["."]

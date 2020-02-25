@@ -35,6 +35,7 @@ table {
 td {
     border-bottom: 1px solid #EEE;
     padding: 1px 0 !important;
+    vertical-align: top;
 }
 
 td:first-child {

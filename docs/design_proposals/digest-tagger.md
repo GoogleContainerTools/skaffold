@@ -20,7 +20,7 @@ Here are some rules about how tagging currently works:
    to compute tags after the build. It made the process super complex with a lot of retagging.
    It also produced images that were tagged with their own digest or imageID which is superfluous
    since those can be used to reference the images directly.
- + **No matter the tagger, Skaffold always uses immutable references in Kubenetes manifests**.
+ + **No matter the tagger, Skaffold always uses immutable references in Kubernetes manifests**.
    Which reference is used depends on whether the images are pushed or not:
      + **When images are pushed**, their immutable digest is available. Skaffold then references
        images both by tag and digest. Something like `image:tag@sha256:abacabac...`.
@@ -40,7 +40,7 @@ Here are some rules about how tagging currently works:
    **So the `git` tagger seems like a wrong choice for a default tagger**.
  + `sha256` is a misleading name. It is named like that because, in the end, when Skaffold
    deploys to a remote cluster, the image's sha256 digest is used as the immutable tag.
-   **Users are confused with this name and behaviour**.
+   **Users are confused with this name and behavior**.
  + the `sha256` used to be able to use the image tags provided in the artifact definition,
    instead of `latest`. This was not documented and is not possible anymore because artifact
    definitions are now considered invalid if images names have a tag.
@@ -61,7 +61,7 @@ Here are some rules about how tagging currently works:
  + An `inputDigest` is added. It uses the digest of the artifact's inputs as the tag.
    [#2301](https://github.com/GoogleContainerTools/skaffold/pull/2301) tried to implement
    such tagger by computing the digest of the whole workspace. We should instead compute
-   the digest of the artifact's dependencies, inluding the artifact's configuration. This
+   the digest of the artifact's dependencies, including the artifact's configuration. This
    is exactly what the caching mechanism currently does.
  + `envTemplate` learns how to replace `{{.DIGEST}}` with a digest of the artifact's
     inputs as computed by the `inputDigest` tagger.

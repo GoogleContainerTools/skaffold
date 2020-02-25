@@ -58,11 +58,6 @@ const (
 
 	UpdateCheckEnvironmentVariable = "SKAFFOLD_UPDATE_CHECK"
 
-	DefaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
-	DefaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
-	DefaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
-	DefaultCloudBuildKanikoImage = "gcr.io/kaniko-project/executor"
-
 	DefaultSkaffoldDir = ".skaffold"
 	DefaultCacheFile   = "cache"
 
@@ -78,6 +73,8 @@ const (
 var (
 	Pod     latest.ResourceType = "pod"
 	Service latest.ResourceType = "service"
+
+	DefaultLocalConcurrency = 1
 )
 
 var (
@@ -96,7 +93,7 @@ var (
 	// KubeContext is the expected kubecontext to build an artifact with a custom build script on cluster
 	KubeContext = "KUBE_CONTEXT"
 
-	// Namespace is the expected namsepace to build an artifact with a custom build script on cluster.
+	// Namespace is the expected namespace to build an artifact with a custom build script on cluster.
 	Namespace = "NAMESPACE"
 
 	// PullSecretName is the secret with authentication required to pull a base image/push the final image built on cluster.

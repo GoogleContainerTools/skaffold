@@ -31,11 +31,11 @@ func TestRun(t *testing.T) {
 	tests := []struct {
 		description string
 		dir         string
-		filename    string
 		args        []string
 		deployments []string
 		pods        []string
 		env         []string
+		setup       func(t *testing.T, workdir string) (teardown func())
 	}{
 		{
 			description: "getting-started",
@@ -77,13 +77,8 @@ func TestRun(t *testing.T) {
 		},
 		{
 			description: "jib gradle",
-			dir:         "testdata/jib-gradle",
+			dir:         "examples/jib-gradle",
 			deployments: []string{"web"},
-		},
-		{
-			description: "custom builder",
-			dir:         "testdata/custom",
-			pods:        []string{"bazel"},
 		},
 		{
 			description: "profiles",
@@ -91,18 +86,33 @@ func TestRun(t *testing.T) {
 			args:        []string{"-p", "minikube-profile"},
 			pods:        []string{"hello-service"},
 		},
+		{
+			description: "multiple deployers",
+			dir:         "testdata/deploy-multiple",
+			pods:        []string{"deploy-kubectl", "deploy-kustomize"},
+		},
+		{
+			description: "custom builder",
+			dir:         "examples/custom",
+			pods:        []string{"getting-started"},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
+			if test.setup != nil {
+				teardown := test.setup(t, test.dir)
+				defer teardown()
+			}
+
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			skaffold.Run(test.args...).WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)
 
-			skaffold.Delete().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			skaffold.Delete().InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})
 	}
 }
@@ -115,11 +125,9 @@ func TestRunGCPOnly(t *testing.T) {
 	tests := []struct {
 		description string
 		dir         string
-		filename    string
 		args        []string
 		deployments []string
 		pods        []string
-		env         []string
 	}{
 		{
 			description: "Google Cloud Build",
@@ -142,17 +150,12 @@ func TestRunGCPOnly(t *testing.T) {
 			pods:        []string{"getting-started-kaniko"},
 		},
 		{
-			description: "kaniko local",
-			dir:         "examples/kaniko-local",
-			pods:        []string{"getting-started-kaniko"},
-		},
-		{
-			description: "kaniko local with target",
+			description: "kaniko with target",
 			dir:         "testdata/kaniko-target",
 			pods:        []string{"getting-started-kaniko"},
 		},
 		{
-			description: "kaniko local with sub folder",
+			description: "kaniko with sub folder",
 			dir:         "testdata/kaniko-sub-folder",
 			pods:        []string{"getting-started-kaniko"},
 		},
@@ -169,7 +172,7 @@ func TestRunGCPOnly(t *testing.T) {
 		},
 		{
 			description: "jib gradle in googlecloudbuild",
-			dir:         "testdata/jib-gradle",
+			dir:         "examples/jib-gradle",
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
 		},
@@ -179,6 +182,7 @@ func TestRunGCPOnly(t *testing.T) {
 			dir:         "examples/buildpacks",
 			deployments: []string{"web"},
 		},
+		// Don't run on kind because of this issue: https://github.com/buildpack/pack/issues/277
 		{
 			description: "buildpacks on Cloud Build",
 			dir:         "examples/buildpacks",
@@ -191,12 +195,12 @@ func TestRunGCPOnly(t *testing.T) {
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			skaffold.Run(test.args...).WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 
 			client.WaitForPodsReady(test.pods...)
 			client.WaitForDeploymentsToStabilize(test.deployments...)
 
-			skaffold.Delete().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
+			skaffold.Delete().InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 		})
 	}
 }

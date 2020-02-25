@@ -17,7 +17,7 @@ Skaffold auto-generates `build` and `deploy` config for supported builders and d
 2. [Jib]({{<relref "/docs/pipeline-stages/builders/jib">}})
 
 `skaffold init` will walk your project directory and look for any `Dockerfiles` 
-or `build.gradle/pom.xml`.
+or `build.gradle/pom.xml`. Please note, `skaffold init` skips files that are larger than 500MB.
 
 If you have multiple `Dockerfile` or `build.gradle/pom.xml` files, Skaffold will provide an option
 to pair an image with one of the file.

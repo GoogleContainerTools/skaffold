@@ -28,26 +28,28 @@ import (
 
 type gitClient interface {
 	getChangedFiles() ([]string, error)
-	getFileFromRef(path string, ref string) ([]byte, error)
-	diffWithRef(path string, ref string) ([]byte, error)
+	getFileFromBaseline(path string) ([]byte, error)
+	diffWithBaseline(path string) ([]byte, error)
 }
 
 type git struct {
-	path string
+	path    string
+	baseRef string
 }
 
-func newGit() (gitClient, error) {
+func newGit(baseRef string) (gitClient, error) {
 	gitPath, err := exec.LookPath("git")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find git on PATH")
 	}
 	return &git{
-		path: gitPath,
+		path:    gitPath,
+		baseRef: baseRef,
 	}, nil
 }
 
 func (g *git) getChangedFiles() ([]string, error) {
-	out, err := g.run("diff", "--name-only", "master", "--", "pkg/skaffold/schema")
+	out, err := g.run("diff", "--name-only", g.baseRef, "--", "pkg/skaffold/schema")
 	if err != nil {
 		return nil, err
 	}
@@ -55,16 +57,16 @@ func (g *git) getChangedFiles() ([]string, error) {
 	return strings.Split(string(out), "\n"), nil
 }
 
-func (g *git) getFileFromRef(path string, ref string) ([]byte, error) {
-	out, err := g.run("show", fmt.Sprintf("%s:%s", ref, path))
+func (g *git) getFileFromBaseline(path string) ([]byte, error) {
+	out, err := g.run("show", fmt.Sprintf("%s:%s", g.baseRef, path))
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (g *git) diffWithRef(path string, ref string) ([]byte, error) {
-	out, err := g.run("diff", ref, "--", path)
+func (g *git) diffWithBaseline(path string) ([]byte, error) {
+	out, err := g.run("diff", g.baseRef, "--", path)
 	if err != nil {
 		return nil, err
 	}

@@ -50,10 +50,10 @@ For a new config change, please mention:
 // ClusterDetails *beta* describes how to do an on-cluster build.
 type ClusterDetails struct {
     
-    // HTTP_PROXY sets the "http_proxy" environment varaible to the pod running cluster build.      
+    // HTTP_PROXY sets the "http_proxy" environment variable to the pod running cluster build.      
     HTTP_PROXY string `yaml:"httpProxy,omitempty"`
 
-    // HTTPS_PROXY sets the "https_proxy" environment varaible to the pod running cluster build. 
+    // HTTPS_PROXY sets the "https_proxy" environment variable to the pod running cluster build. 
     HTTPS_PROXY string `yaml:"httpsProxy,omitempty"`
     
     // PullSecret is the path to the secret key file.

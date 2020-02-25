@@ -39,10 +39,10 @@ If you want to deploy against a different Kubernetes cluster, e.g. Kind, GKE clu
     git clone https://github.com/GoogleContainerTools/skaffold
     ```
 
-1. Change to the `examples/getting-started` directory.
+1. Change to the `examples/getting-started` in skaffold directory.
 
     ```bash
-    cd examples/getting-started
+    cd skaffold/examples/getting-started
     ```
 
 ## `skaffold dev`: continuous build & deploy on code changes
@@ -52,42 +52,37 @@ You should see some outputs similar to the following entries:
 
 ```
 Listing files to watch...
- - gcr.io/k8s-skaffold/skaffold-example
-List generated in 2.46354ms
+ - skaffold-example
 Generating tags...
- - gcr.io/k8s-skaffold/skaffold-example -> gcr.io/k8s-skaffold/skaffold-example:v0.39.0-131-g1759410a7-dirty
-Tags generated in 65.661438ms
-Starting build...
-Found [minikube] context, using local docker daemon.
-Building [gcr.io/k8s-skaffold/skaffold-example]...
+ - skaffold-example -> skaffold-example:v1.1.0-113-g4649f2c16
+Checking cache...
+ - skaffold-example: Not found. Building
+Found [docker-desktop] context, using local docker daemon.
+Building [skaffold-example]...
 Sending build context to Docker daemon  3.072kB
 Step 1/6 : FROM golang:1.12.9-alpine3.10 as builder
  ---> e0d646523991
 Step 2/6 : COPY main.go .
  ---> Using cache
- ---> 2d4b0b8a9dda
+ ---> e4788ffa88e7
 Step 3/6 : RUN go build -o /app main.go
  ---> Using cache
- ---> 3eae8e329453
+ ---> 686396d9e9cc
 Step 4/6 : FROM alpine:3.10
- ---> 961769676411
+ ---> 965ea09ff2eb
 Step 5/6 : CMD ["./app"]
  ---> Using cache
- ---> ce76e22da3bd
+ ---> be0603b9d79e
 Step 6/6 : COPY --from=builder /app .
- ---> dec4a50e0fd1
-Successfully built dec4a50e0fd1
-Successfully tagged gcr.io/k8s-skaffold/skaffold-example:v0.39.0-131-g1759410a7-dirty
-Build complete in 232.935849ms
-Starting test...
-Test complete in 4.189µs
+ ---> Using cache
+ ---> c827aa5a4b12
+Successfully built c827aa5a4b12
+Successfully tagged skaffold-example:v1.1.0-113-g4649f2c16
 Tags used in deployment:
- - Since images are not pushed, they can't be referenced by digest
-   They are tagged and referenced by a unique ID instead
- - gcr.io/k8s-skaffold/skaffold-example -> gcr.io/k8s-skaffold/skaffold-example:dec4a50e0fd1ca2f56c6aad2a6c6e1d3806e5f6bd8aa2751e0a10db0d46faaba
+ - skaffold-example -> skaffold-example:c827aa5a4b12e707163842b803d666eda11b8ec20c7a480198960cfdcb251042
+   local images can't be referenced by digest. They are tagged and referenced by a unique ID instead
 Starting deploy...
  - pod/getting-started created
-Deploy complete in 374.060415ms
 Watching for changes...
 [getting-started] Hello world!
 [getting-started] Hello world!

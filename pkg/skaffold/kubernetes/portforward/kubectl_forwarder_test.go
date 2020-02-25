@@ -32,6 +32,8 @@ import (
 
 func TestUnavailablePort(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&waitPortNotFree, 100*time.Millisecond)
+
 		// Return that the port is false, while also
 		// adding a sync group so we know when isPortFree
 		// has been called
@@ -112,6 +114,8 @@ func TestMonitorErrorLogs(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&waitErrorLogs, 50*time.Millisecond)
+
 			ctx, cancel := context.WithCancel(context.Background())
 
 			cmd := exec.Command("sleep", "5")
@@ -132,7 +136,7 @@ func TestMonitorErrorLogs(t *testing.T) {
 			// need to sleep for one second before cancelling the context
 			// because there is a one second sleep in the switch statement
 			// of monitorLogs
-			time.Sleep(1 * time.Second)
+			time.Sleep(50 * time.Millisecond)
 
 			// cancel the context and then wait for monitorErrorLogs to return
 			cancel()

@@ -19,9 +19,7 @@ package deploy
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -34,6 +32,7 @@ import (
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -74,7 +73,7 @@ func (k *KubectlDeployer) Labels() map[string]string {
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
 	event.DeployInProgress()
-	manifests, err := k.renderManifests(ctx, out, builds)
+	manifests, err := k.renderManifests(ctx, out, builds, labellers)
 
 	if err != nil {
 		event.DeployFailed(err)
@@ -84,12 +83,6 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	if len(manifests) == 0 {
 		event.DeployComplete()
 		return NewDeploySuccessResult(nil)
-	}
-
-	manifests, err = manifests.SetLabels(merge(labellers...))
-	if err != nil {
-		event.DeployFailed(err)
-		return NewDeployErrorResult(errors.Wrap(err, "setting labels in manifests"))
 	}
 
 	namespaces, err := manifests.CollectNamespaces()
@@ -163,7 +156,7 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 
 	var filteredManifests []string
 	for _, f := range list {
-		if !util.IsSupportedKubernetesFormat(f) {
+		if !kubernetes.HasKubernetesFileExtension(f) {
 			if !util.StrSliceContains(manifests, f) {
 				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", f)
 				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
@@ -218,29 +211,16 @@ func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) (
 	return manifest.Bytes(), nil
 }
 
-func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, filepath string) error {
-	manifests, err := k.renderManifests(ctx, out, builds)
-
+func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, filepath string) error {
+	manifests, err := k.renderManifests(ctx, out, builds, labellers)
 	if err != nil {
 		return err
 	}
 
-	manifestOut := out
-	if filepath != "" {
-		f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
-		if err != nil {
-			return errors.Wrap(err, "opening file for writing manifests")
-		}
-		defer f.Close()
-		f.WriteString(manifests.String() + "\n")
-	} else {
-		fmt.Fprintln(manifestOut, manifests.String())
-	}
-
-	return nil
+	return dumpToFileOrWriter(manifests.String(), filepath, out)
 }
 
-func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact) (deploy.ManifestList, error) {
+func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) (deploy.ManifestList, error) {
 	if err := k.kubectl.CheckVersion(ctx); err != nil {
 		color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
 		color.Default.Fprintln(out, err)
@@ -281,6 +261,11 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to transform manifests")
 		}
+	}
+
+	manifests, err = manifests.SetLabels(merge(k, labellers...))
+	if err != nil {
+		return nil, errors.Wrap(err, "setting labels in manifests")
 	}
 
 	return manifests, nil

@@ -25,6 +25,7 @@ message State {
     map<int32, PortEvent> forwardedPorts = 4;
     StatusCheckState statusCheckState = 5;
     FileSyncState fileSyncState = 6;
+    repeated DebuggingContainerEvent debuggingContainers = 7;
 }
 
 // `BuildState` maps Skaffold artifacts to their current build states
@@ -63,7 +64,7 @@ message FileSyncState {
 }
 
 // `Event` describes an event in the Skaffold process.
-// It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent or FileSyncEvent.
+// It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent.
 message Event {
     oneof event_type {
         MetaEvent metaEvent = 1; // contains general information regarding Skaffold like version info
@@ -73,6 +74,7 @@ message Event {
         StatusCheckEvent statusCheckEvent = 5; // describes if the Status check has started, is in progress, has succeeded or failed.
         ResourceStatusCheckEvent resourceStatusCheckEvent = 6; // indicates progress for each kubernetes deployment.
         FileSyncEvent fileSyncEvent = 7; // describes the sync status.
+        DebuggingContainerEvent debuggingContainerEvent = 8; // describes the appearance or disappearance of a debugging container
     }
 }
 
@@ -135,6 +137,19 @@ message FileSyncEvent {
     string image = 2; // the container image to which files are sycned.
     string status = 3; // status of file sync. one of: Not Started, In progress, Succeeded, Failed.
     string err = 4; // error in case of status failed.
+}
+
+// DebuggingContainerEvent is raised when a debugging container is started or terminated
+message DebuggingContainerEvent {
+  string status = 1; // the container status oneof: Started, Terminated
+  string podName = 2; // the pod name with the debugging container
+  string containerName = 3; // the name of the container configured for debugging
+  string namespace = 4; // the namespace of the debugging container
+
+  string artifact = 5; // the corresponding artifact's image name
+  string runtime = 6; // the detected language runtime
+  string workingDir = 7; // the working directory in the container image
+  map<string,uint32> debugPorts = 8; // the exposed debugging-related ports
 }
 
 // LogEntry describes an event and a string description of the event.

@@ -21,14 +21,13 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/pkg/errors"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
+	pipeline "github.com/GoogleContainerTools/skaffold/pkg/skaffold/generate_pipeline"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-
-	"github.com/pkg/errors"
-
-	pipeline "github.com/GoogleContainerTools/skaffold/pkg/skaffold/generate_pipeline"
 )
 
 func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, config *latest.SkaffoldConfig, configPaths []string, fileOut string) error {

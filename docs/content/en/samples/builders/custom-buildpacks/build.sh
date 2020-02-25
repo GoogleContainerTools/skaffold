@@ -1,12 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
-images=$(echo $IMAGES | tr " " "\n")
 
-for image in $images
-do
-    pack build $image
-    if $PUSH_IMAGE
-    then
-        docker push $image
-    fi
-done
+if ! [ -x "$(command -v ko)" ]; then
+    GO111MODULE=on go get -mod=readonly github.com/google/ko/cmd/ko
+fi
+
+output=$(ko publish --local --preserve-import-paths --tags= . | tee)
+ref=$(echo $output | tail -n1)
+
+docker tag $ref $IMAGE
+if $PUSH_IMAGE; then
+    docker push $IMAGE
+fi

@@ -23,7 +23,7 @@ Skaffold supports the following tools for deploying applications:
 The `deploy` section in the Skaffold configuration file, `skaffold.yaml`,
 controls how Skaffold builds artifacts. To use a specific tool for deploying
 artifacts, add the value representing the tool and options for using the tool
-to the `deploy` section.
+to the `deploy` section. You may even use a combination of each available deployment approach at the same time.
 
 For a detailed discussion on Skaffold configuration, see
 [Skaffold Concepts]({{< relref "/docs/design/config.md" >}}) and
@@ -87,7 +87,7 @@ Each `release` includes the following fields:
 
 ### Helm Build Dependencies
 
-The `skipBuildDependencies` flag toggles whether depenedencies of the Helm chart are built with the `helm dep build` command. This command manipulates files inside the `charts` subfolder of the specified Helm chart.
+The `skipBuildDependencies` flag toggles whether dependencies of the Helm chart are built with the `helm dep build` command. This command manipulates files inside the `charts` subfolder of the specified Helm chart.
 
 If `skipBuildDependencies` is `false` then `skaffold dev` does **not** watch the `charts` subfolder of the Helm chart, in order to prevent a build loop - the actions of `helm dep build` always trigger another build.
 
@@ -121,6 +121,8 @@ section of `skaffold.yaml`.
 The `kustomize` type offers the following options:
 
 {{< schema root="KustomizeDeploy" >}}
+
+Each entry in `paths` should point to a folder with a kustomization file.
 
 `flags` section offers the following options:
 

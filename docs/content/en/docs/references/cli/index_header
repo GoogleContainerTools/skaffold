@@ -33,6 +33,7 @@ Other Commands:
 * [skaffold config](#skaffold-config) - manage context specific parameters
 * [skaffold credits](#skaffold-credits) - export third party notices to given path (./skaffold-credits by default)
 * [skaffold diagnose](#skaffold-diagnose) - diagnostics of Skaffold works in your project
+* [skaffold schema](#skaffold-schema) - list and print json schemas used to validate skaffold.yaml configuration
 
 
 ## Global flags

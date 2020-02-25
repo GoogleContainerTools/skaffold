@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -283,6 +285,29 @@ func TestFileSyncSucceeded(t *testing.T) {
 	wait(t, func() bool { return handler.getState().FileSyncState.Status == Succeeded })
 }
 
+func TestDebuggingContainer(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+
+	handler = &eventHandler{
+		state: emptyState(latest.BuildConfig{}),
+	}
+
+	found := func() bool {
+		for _, dc := range handler.getState().DebuggingContainers {
+			if dc.Namespace == "ns" && dc.PodName == "pod" && dc.ContainerName == "container" {
+				return true
+			}
+		}
+		return false
+	}
+	notFound := func() bool { return !found() }
+	wait(t, notFound)
+	DebuggingContainerStarted("pod", "container", "ns", "artifact", "runtime", "/", nil)
+	wait(t, found)
+	DebuggingContainerTerminated("pod", "container", "ns", "artifact", "runtime", "/", nil)
+	wait(t, notFound)
+}
+
 func wait(t *testing.T, condition func() bool) {
 	ticker := time.NewTicker(10 * time.Millisecond)
 	defer ticker.Stop()
@@ -332,10 +357,10 @@ func TestResetStateOnBuild(t *testing.T) {
 			},
 		},
 		DeployState:      &proto.DeployState{Status: NotStarted},
-		StatusCheckState: &proto.StatusCheckState{Status: NotStarted},
+		StatusCheckState: &proto.StatusCheckState{Status: NotStarted, Resources: map[string]string{}},
 		FileSyncState:    &proto.FileSyncState{Status: NotStarted},
 	}
-	testutil.CheckDeepEqual(t, expected, handler.getState())
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
 }
 
 func TestResetStateOnDeploy(t *testing.T) {
@@ -365,8 +390,18 @@ func TestResetStateOnDeploy(t *testing.T) {
 				"image1": Complete,
 			},
 		},
-		DeployState:      &proto.DeployState{Status: NotStarted},
-		StatusCheckState: &proto.StatusCheckState{Status: NotStarted},
+		DeployState: &proto.DeployState{Status: NotStarted},
+		StatusCheckState: &proto.StatusCheckState{Status: NotStarted,
+			Resources: map[string]string{},
+		},
 	}
-	testutil.CheckDeepEqual(t, expected, handler.getState())
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
+}
+
+func TestEmptyStateCheckState(t *testing.T) {
+	actual := emptyStatusCheckState()
+	expected := &proto.StatusCheckState{Status: NotStarted,
+		Resources: map[string]string{},
+	}
+	testutil.CheckDeepEqual(t, expected, actual, cmpopts.EquateEmpty())
 }

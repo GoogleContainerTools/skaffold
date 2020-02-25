@@ -18,7 +18,7 @@ To retrieve information about the Skaffold pipeline, the Skaffold API provides t
   
   * A snapshot of the [overall state]({{< relref "#state-api" >}}) of the pipeline at any given time during the run.
 
-To control the individual phases of the Skaffold, the Skaffold API provides [fine grained control]({{< relref "#controlling-build-sync-deploy" >}})
+To control the individual phases of the Skaffold, the Skaffold API provides [fine-grained control]({{< relref "#controlling-build-sync-deploy" >}})
 over the individual phases of the pipeline (build, deploy, and sync).
 
 
@@ -31,7 +31,7 @@ For reference, we generate the server's [gRPC service definitions and message pr
 
 
 ### HTTP server
-The HTTP API is exposed on port `50052` by default. The default HTTP port can be overriden with the `--rpc-http-port` flag. 
+The HTTP API is exposed on port `50052` by default. The default HTTP port can be overridden with the `--rpc-http-port` flag. 
 If the HTTP API port is taken, Skaffold will find the next available port.
 The final port can be found from Skaffold's startup logs.
 
@@ -42,7 +42,7 @@ WARN[0000] port 50052 for gRPC HTTP server already in use: using 50055 instead
 
 ### gRPC Server
 
-The gRPC API is exposed on port `50051` by default and can be overriden with the `--rpc-port` flag.
+The gRPC API is exposed on port `50051` by default and can be overridden with the `--rpc-port` flag.
 As with the HTTP API, if this port is taken, Skaffold will find the next available port.
 You can find this port from Skaffold's logs on startup.
 

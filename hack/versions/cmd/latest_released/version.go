@@ -22,7 +22,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/version"
+	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 )
 
@@ -30,7 +30,7 @@ import (
 func main() {
 	logrus.SetLevel(logrus.ErrorLevel)
 
-	current, latestIsReleased := version.GetLatestVersion()
+	current, latestIsReleased := hackschema.GetLatestVersion()
 
 	if latestIsReleased {
 		fmt.Println(current)

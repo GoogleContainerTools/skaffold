@@ -989,8 +989,8 @@
         },
         "diskSizeGb": {
           "type": "integer",
-          "description": "disk size of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v2alpha1/projects.builds#buildoptions).",
-          "x-intellij-html-description": "disk size of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v2alpha1/projects.builds#buildoptions\">Cloud Build Reference</a>."
+          "description": "disk size of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
+          "x-intellij-html-description": "disk size of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>."
         },
         "dockerImage": {
           "type": "string",
@@ -1012,8 +1012,8 @@
         },
         "machineType": {
           "type": "string",
-          "description": "type of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v2alpha1/projects.builds#buildoptions).",
-          "x-intellij-html-description": "type of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v2alpha1/projects.builds#buildoptions\">Cloud Build Reference</a>."
+          "description": "type of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
+          "x-intellij-html-description": "type of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>."
         },
         "mavenImage": {
           "type": "string",
@@ -1028,8 +1028,8 @@
         },
         "timeout": {
           "type": "string",
-          "description": "amount of time (in seconds) that this build should be allowed to run. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v2alpha1/projects.builds#resource-build).",
-          "x-intellij-html-description": "amount of time (in seconds) that this build should be allowed to run. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v2alpha1/projects.builds#resource-build\">Cloud Build Reference</a>."
+          "description": "amount of time (in seconds) that this build should be allowed to run. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build).",
+          "x-intellij-html-description": "amount of time (in seconds) that this build should be allowed to run. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build\">Cloud Build Reference</a>."
         }
       },
       "preferredOrder": [
@@ -1447,6 +1447,13 @@
           "x-intellij-html-description": "locates the Dockerfile relative to workspace.",
           "default": "Dockerfile"
         },
+        "env": {
+          "items": {},
+          "type": "array",
+          "description": "environment variables passed to the kaniko pod.",
+          "x-intellij-html-description": "environment variables passed to the kaniko pod.",
+          "default": "[]"
+        },
         "flags": {
           "items": {
             "type": "string"
@@ -1484,6 +1491,7 @@
         "dockerfile",
         "target",
         "buildArgs",
+        "env",
         "buildContext",
         "image",
         "cache",

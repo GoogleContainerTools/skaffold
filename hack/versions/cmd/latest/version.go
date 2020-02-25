@@ -21,13 +21,13 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/version"
+	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
 )
 
 // Print the latest version released.
 func main() {
 	logrus.SetLevel(logrus.ErrorLevel)
 
-	current, _ := version.GetLatestVersion()
+	current, _ := schema.GetLatestVersion()
 	fmt.Println(current)
 }
