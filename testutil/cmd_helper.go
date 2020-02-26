@@ -31,11 +31,12 @@ type FakeCmd struct {
 }
 
 type run struct {
-	command string
-	input   []byte
-	output  []byte
-	env     []string
-	err     error
+	command    string
+	input      []byte
+	output     []byte
+	env        []string
+	err        error
+	pipeOutput bool
 }
 
 func newFakeCmd() *FakeCmd {
@@ -107,6 +108,21 @@ func (c *FakeCmd) AndRunErr(command string, err error) *FakeCmd {
 	})
 }
 
+// AndRunWithOutput takes a command and an expected output.
+// It expected to match up with a call to RunCmd, and pipes
+// the provided output to RunCmd's exec.Cmd's stdout.
+func (c *FakeCmd) AndRunWithOutput(command, output string) *FakeCmd {
+	b := []byte{}
+	if output != "" {
+		b = []byte(output)
+	}
+	return c.addRun(run{
+		command:    command,
+		output:     b,
+		pipeOutput: true,
+	})
+}
+
 func (c *FakeCmd) AndRunOut(command string, output string) *FakeCmd {
 	b := []byte{}
 	if output != "" {
@@ -163,11 +179,15 @@ func (c *FakeCmd) RunCmd(cmd *exec.Cmd) error {
 	}
 
 	if r.command != command {
-		c.t.Errorf("expected: %s. Got: %s", r.command, command)
+		c.t.Errorf("\nexpected: %s\n\ngot: %s", r.command, command)
 	}
 
 	if r.output != nil {
-		c.t.Errorf("expected RunCmdOut(%s) to be called. Got RunCmd(%s)", r.command, command)
+		if !r.pipeOutput {
+			c.t.Errorf("expected RunCmdOut(%s) to be called. Got RunCmd(%s)", r.command, command)
+		} else {
+			cmd.Stdout.Write(r.output)
+		}
 	}
 
 	c.assertCmdEnv(r.env, cmd.Env)
