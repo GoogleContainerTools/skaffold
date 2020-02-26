@@ -85,26 +85,21 @@ func (i *image) compute() error {
 	manifest := m.DeepCopy()
 	manifestLayers := manifest.Layers
 	for _, add := range i.adds {
-		d := v1.Descriptor{}
-		var err error
-
-		if d.Size, err = add.Layer.Size(); err != nil {
+		desc, err := partial.Descriptor(add.Layer)
+		if err != nil {
 			return err
 		}
 
-		if d.Digest, err = add.Layer.Digest(); err != nil {
-			return err
+		// Fields in the addendum override the original descriptor.
+		if len(add.Annotations) != 0 {
+			desc.Annotations = add.Annotations
+		}
+		if len(add.URLs) != 0 {
+			desc.URLs = add.URLs
 		}
 
-		if d.MediaType, err = add.Layer.MediaType(); err != nil {
-			return err
-		}
-
-		d.Annotations = add.Annotations
-		d.URLs = add.URLs
-
-		manifestLayers = append(manifestLayers, d)
-		digestMap[d.Digest] = add.Layer
+		manifestLayers = append(manifestLayers, *desc)
+		digestMap[desc.Digest] = add.Layer
 	}
 
 	configFile.RootFS.DiffIDs = diffIDs
@@ -125,8 +120,12 @@ func (i *image) compute() error {
 
 	// With OCI media types, this should not be set, see discussion:
 	// https://github.com/opencontainers/image-spec/pull/795
-	if i.mediaType != nil && strings.Contains(string(*i.mediaType), types.OCIVendorPrefix) {
-		manifest.MediaType = ""
+	if i.mediaType != nil {
+		if strings.Contains(string(*i.mediaType), types.OCIVendorPrefix) {
+			manifest.MediaType = ""
+		} else if strings.Contains(string(*i.mediaType), types.DockerVendorPrefix) {
+			manifest.MediaType = *i.mediaType
+		}
 	}
 
 	i.configFile = configFile

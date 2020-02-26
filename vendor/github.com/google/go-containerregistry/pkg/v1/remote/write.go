@@ -50,13 +50,13 @@ func Write(ref name.Reference, img v1.Image, options ...Option) error {
 		return err
 	}
 
-	scopes := scopesForUploadingImage(ref, ls)
+	scopes := scopesForUploadingImage(ref.Context(), ls)
 	tr, err := transport.New(ref.Context().Registry, o.auth, o.transport, scopes)
 	if err != nil {
 		return err
 	}
 	w := writer{
-		ref:    ref,
+		repo:   ref.Context(),
 		client: &http.Client{Transport: tr},
 	}
 
@@ -125,20 +125,20 @@ func Write(ref name.Reference, img v1.Image, options ...Option) error {
 
 	// With all of the constituent elements uploaded, upload the manifest
 	// to commit the image.
-	return w.commitImage(img)
+	return w.commitImage(img, ref)
 }
 
 // writer writes the elements of an image to a remote image reference.
 type writer struct {
-	ref    name.Reference
+	repo   name.Repository
 	client *http.Client
 }
 
 // url returns a url.Url for the specified path in the context of this remote image reference.
 func (w *writer) url(path string) url.URL {
 	return url.URL{
-		Scheme: w.ref.Context().Registry.Scheme(),
-		Host:   w.ref.Context().RegistryStr(),
+		Scheme: w.repo.Registry.Scheme(),
+		Host:   w.repo.RegistryStr(),
 		Path:   path,
 	}
 }
@@ -164,7 +164,7 @@ func (w *writer) nextLocation(resp *http.Response) (string, error) {
 // initiation if "mount" is specified, even if no "from" sources are specified.
 // However, this is not broadly applicable to all registries, e.g. ECR.
 func (w *writer) checkExistingBlob(h v1.Hash) (bool, error) {
-	u := w.url(fmt.Sprintf("/v2/%s/blobs/%s", w.ref.Context().RepositoryStr(), h.String()))
+	u := w.url(fmt.Sprintf("/v2/%s/blobs/%s", w.repo.RepositoryStr(), h.String()))
 
 	resp, err := w.client.Head(u.String())
 	if err != nil {
@@ -182,7 +182,7 @@ func (w *writer) checkExistingBlob(h v1.Hash) (bool, error) {
 // checkExistingManifest checks if a manifest exists already in the repository
 // by making a HEAD request to the manifest API.
 func (w *writer) checkExistingManifest(h v1.Hash, mt types.MediaType) (bool, error) {
-	u := w.url(fmt.Sprintf("/v2/%s/manifests/%s", w.ref.Context().RepositoryStr(), h.String()))
+	u := w.url(fmt.Sprintf("/v2/%s/manifests/%s", w.repo.RepositoryStr(), h.String()))
 
 	req, err := http.NewRequest(http.MethodHead, u.String(), nil)
 	if err != nil {
@@ -210,7 +210,7 @@ func (w *writer) checkExistingManifest(h v1.Hash, mt types.MediaType) (bool, err
 // upload was initiated and the body of that blob should be sent to the returned
 // location.
 func (w *writer) initiateUpload(from, mount string) (location string, mounted bool, err error) {
-	u := w.url(fmt.Sprintf("/v2/%s/blobs/uploads/", w.ref.Context().RepositoryStr()))
+	u := w.url(fmt.Sprintf("/v2/%s/blobs/uploads/", w.repo.RepositoryStr()))
 	uv := url.Values{}
 	if mount != "" && from != "" {
 		// Quay will fail if we specify a "mount" without a "from".
@@ -313,7 +313,7 @@ func (w *writer) uploadOne(l v1.Layer) error {
 		mount = h.String()
 	}
 	if ml, ok := l.(*MountableLayer); ok {
-		if w.ref.Context().RegistryStr() == ml.Reference.Context().RegistryStr() {
+		if w.repo.RegistryStr() == ml.Reference.Context().RegistryStr() {
 			from = ml.Reference.Context().RepositoryStr()
 		}
 	}
@@ -407,7 +407,7 @@ func unpackTaggable(t Taggable) (*v1.Descriptor, error) {
 }
 
 // commitImage does a PUT of the image's manifest.
-func (w *writer) commitImage(t Taggable) error {
+func (w *writer) commitImage(t Taggable, ref name.Reference) error {
 	raw, err := t.RawManifest()
 	if err != nil {
 		return err
@@ -417,7 +417,7 @@ func (w *writer) commitImage(t Taggable) error {
 		return err
 	}
 
-	u := w.url(fmt.Sprintf("/v2/%s/manifests/%s", w.ref.Context().RepositoryStr(), w.ref.Identifier()))
+	u := w.url(fmt.Sprintf("/v2/%s/manifests/%s", w.repo.RepositoryStr(), ref.Identifier()))
 
 	// Make the request to PUT the serialized manifest
 	req, err := http.NewRequest(http.MethodPut, u.String(), bytes.NewBuffer(raw))
@@ -437,11 +437,11 @@ func (w *writer) commitImage(t Taggable) error {
 	}
 
 	// The image was successfully pushed!
-	logs.Progress.Printf("%v: digest: %v size: %d", w.ref, desc.Digest, len(raw))
+	logs.Progress.Printf("%v: digest: %v size: %d", ref, desc.Digest, len(raw))
 	return nil
 }
 
-func scopesForUploadingImage(ref name.Reference, layers []v1.Layer) []string {
+func scopesForUploadingImage(repo name.Repository, layers []v1.Layer) []string {
 	// use a map as set to remove duplicates scope strings
 	scopeSet := map[string]struct{}{}
 
@@ -449,7 +449,7 @@ func scopesForUploadingImage(ref name.Reference, layers []v1.Layer) []string {
 		if ml, ok := l.(*MountableLayer); ok {
 			// we will add push scope for ref.Context() after the loop.
 			// for now we ask pull scope for references of the same registry
-			if ml.Reference.Context() != ref.Context() && ml.Reference.Context().Registry == ref.Context().Registry {
+			if ml.Reference.Context() != repo && ml.Reference.Context().Registry == repo.Registry {
 				scopeSet[ml.Reference.Scope(transport.PullScope)] = struct{}{}
 			}
 		}
@@ -457,7 +457,7 @@ func scopesForUploadingImage(ref name.Reference, layers []v1.Layer) []string {
 
 	scopes := make([]string, 0)
 	// Push scope should be the first element because a few registries just look at the first scope to determine access.
-	scopes = append(scopes, ref.Scope(transport.PushScope))
+	scopes = append(scopes, repo.Scope(transport.PushScope))
 
 	for scope := range scopeSet {
 		scopes = append(scopes, scope)
@@ -485,7 +485,7 @@ func WriteIndex(ref name.Reference, ii v1.ImageIndex, options ...Option) error {
 		return err
 	}
 	w := writer{
-		ref:    ref,
+		repo:   ref.Context(),
 		client: &http.Client{Transport: tr},
 	}
 
@@ -523,22 +523,22 @@ func WriteIndex(ref name.Reference, ii v1.ImageIndex, options ...Option) error {
 
 	// With all of the constituent elements uploaded, upload the manifest
 	// to commit the image.
-	return w.commitImage(ii)
+	return w.commitImage(ii, ref)
 }
 
-// WriteLayer uploads the provided Layer to the specified name.Digest.
-func WriteLayer(ref name.Digest, layer v1.Layer, options ...Option) error {
-	o, err := makeOptions(ref.Context(), options...)
+// WriteLayer uploads the provided Layer to the specified repo.
+func WriteLayer(repo name.Repository, layer v1.Layer, options ...Option) error {
+	o, err := makeOptions(repo, options...)
 	if err != nil {
 		return err
 	}
-	scopes := scopesForUploadingImage(ref, []v1.Layer{layer})
-	tr, err := transport.New(ref.Context().Registry, o.auth, o.transport, scopes)
+	scopes := scopesForUploadingImage(repo, []v1.Layer{layer})
+	tr, err := transport.New(repo.Registry, o.auth, o.transport, scopes)
 	if err != nil {
 		return err
 	}
 	w := writer{
-		ref:    ref,
+		repo:   repo,
 		client: &http.Client{Transport: tr},
 	}
 
@@ -564,9 +564,9 @@ func Tag(tag name.Tag, t Taggable, options ...Option) error {
 		return err
 	}
 	w := writer{
-		ref:    tag,
+		repo:   tag.Context(),
 		client: &http.Client{Transport: tr},
 	}
 
-	return w.commitImage(t)
+	return w.commitImage(t, tag)
 }

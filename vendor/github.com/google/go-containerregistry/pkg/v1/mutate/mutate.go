@@ -140,8 +140,6 @@ func CreatedAt(base v1.Image, created v1.Time) (v1.Image, error) {
 //
 // If a caller doesn't read the full contents, they should Close it to free up
 // resources used during extraction.
-//
-// Adapted from https://github.com/google/containerregistry/blob/master/client/v2_2/docker_image_.py#L731
 func Extract(img v1.Image) io.ReadCloser {
 	pr, pw := io.Pipe()
 
@@ -156,6 +154,7 @@ func Extract(img v1.Image) io.ReadCloser {
 	return pr
 }
 
+// Adapted from https://github.com/google/containerregistry/blob/da03b395ccdc4e149e34fbb540483efce962dc64/client/v2_2/docker_image_.py#L816
 func extract(img v1.Image, w io.Writer) error {
 	tarWriter := tar.NewWriter(w)
 	defer tarWriter.Close()

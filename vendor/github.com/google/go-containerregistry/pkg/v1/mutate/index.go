@@ -24,31 +24,33 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 )
 
-func computeDescriptor(desc v1.Descriptor, add Appendable) (*v1.Descriptor, error) {
-	d, err := add.Digest()
-	if err != nil {
-		return nil, err
-	}
-	mt, err := add.MediaType()
-	if err != nil {
-		return nil, err
-	}
-	sz, err := add.Size()
+func computeDescriptor(ia IndexAddendum) (*v1.Descriptor, error) {
+	desc, err := partial.Descriptor(ia.Add)
 	if err != nil {
 		return nil, err
 	}
 
-	// The IndexAddendum allows overriding These values.
-	if desc.Size == 0 {
-		desc.Size = sz
+	// The IndexAddendum allows overriding Descriptor values.
+	if ia.Descriptor.Size != 0 {
+		desc.Size = ia.Descriptor.Size
 	}
-	if string(desc.MediaType) == "" {
-		desc.MediaType = mt
+	if string(ia.Descriptor.MediaType) != "" {
+		desc.MediaType = ia.Descriptor.MediaType
 	}
-	if desc.Digest == (v1.Hash{}) {
-		desc.Digest = d
+	if ia.Descriptor.Digest != (v1.Hash{}) {
+		desc.Digest = ia.Descriptor.Digest
 	}
-	return &desc, nil
+	if ia.Descriptor.Platform != nil {
+		desc.Platform = ia.Descriptor.Platform
+	}
+	if len(ia.Descriptor.URLs) != 0 {
+		desc.URLs = ia.Descriptor.URLs
+	}
+	if len(ia.Descriptor.Annotations) != 0 {
+		desc.Annotations = ia.Descriptor.Annotations
+	}
+
+	return desc, nil
 }
 
 type index struct {
@@ -89,7 +91,7 @@ func (i *index) compute() error {
 	manifest := m.DeepCopy()
 	manifests := manifest.Manifests
 	for _, add := range i.adds {
-		desc, err := computeDescriptor(add.Descriptor, add.Add)
+		desc, err := computeDescriptor(add)
 		if err != nil {
 			return err
 		}
@@ -107,8 +109,12 @@ func (i *index) compute() error {
 
 	// With OCI media types, this should not be set, see discussion:
 	// https://github.com/opencontainers/image-spec/pull/795
-	if i.mediaType != nil && strings.Contains(string(*i.mediaType), types.OCIVendorPrefix) {
-		manifest.MediaType = ""
+	if i.mediaType != nil {
+		if strings.Contains(string(*i.mediaType), types.OCIVendorPrefix) {
+			manifest.MediaType = ""
+		} else if strings.Contains(string(*i.mediaType), types.DockerVendorPrefix) {
+			manifest.MediaType = *i.mediaType
+		}
 	}
 
 	i.manifest = manifest

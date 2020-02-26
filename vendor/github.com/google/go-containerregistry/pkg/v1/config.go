@@ -23,6 +23,9 @@ import (
 // ConfigFile is the configuration file that holds the metadata describing
 // how to launch a container. See:
 // https://github.com/opencontainers/image-spec/blob/master/config.md
+//
+// docker_version and os.version are not part of the spec but included
+// for backwards compatibility.
 type ConfigFile struct {
 	Architecture  string    `json:"architecture"`
 	Author        string    `json:"author,omitempty"`
@@ -33,7 +36,7 @@ type ConfigFile struct {
 	OS            string    `json:"os"`
 	RootFS        RootFS    `json:"rootfs"`
 	Config        Config    `json:"config"`
-	OSVersion     string    `json:"osversion,omitempty"`
+	OSVersion     string    `json:"os.version,omitempty"`
 }
 
 // History is one entry of a list recording how this container image was built.
