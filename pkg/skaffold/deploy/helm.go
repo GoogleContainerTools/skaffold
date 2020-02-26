@@ -309,9 +309,14 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	}
 
 	// SetValues
-	for k, v := range r.SetValues {
-		valuesSet[v] = true
-		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
+	sortedKeys := make([]string, 0, len(r.SetValues))
+	for k := range r.SetValues {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+	for _, k := range sortedKeys {
+		valuesSet[r.SetValues[k]] = true
+		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
 	}
 
 	// SetFiles
@@ -328,10 +333,15 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 			envMap[k+suffix] = v
 		}
 	}
-	logrus.Debugf("EnvVarMap: %#v\n", envMap)
+	logrus.Debugf("EnvVarMap: %+v\n", envMap)
 
-	for k, v := range r.SetValueTemplates {
-		v, err := templatedField(v, envMap)
+	sortedKeys = make([]string, 0, len(r.SetValueTemplates))
+	for k := range r.SetValueTemplates {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+	for _, k := range sortedKeys {
+		v, err := templatedField(r.SetValueTemplates[k], envMap)
 		if err != nil {
 			return nil, err
 		}
