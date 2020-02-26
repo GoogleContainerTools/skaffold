@@ -86,7 +86,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 	if err != nil {
 		logrus.Debugf("failed to parse binary version: %v", err)
 	} else {
-		logrus.Infof("deploying with helm version %v", hv)
+		logrus.Debugf("deploying with helm version %v", hv)
 	}
 
 	var dRes []Artifact
