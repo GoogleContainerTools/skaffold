@@ -88,6 +88,11 @@ func CmdRunEnv(command string, env []string) *FakeCmd {
 	return newFakeCmd().AndRunEnv(command, env)
 }
 
+// CmdRunWithOutput programs the fake runner with a command and expected output
+func CmdRunWithOutput(command, output string) *FakeCmd {
+	return newFakeCmd().AndRunWithOutput(command, output)
+}
+
 func (c *FakeCmd) AndRun(command string) *FakeCmd {
 	return c.addRun(run{
 		command: command,

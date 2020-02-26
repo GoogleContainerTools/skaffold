@@ -30,6 +30,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -54,6 +55,9 @@ type HelmDeployer struct {
 	kubeConfig  string
 	namespace   string
 	forceDeploy bool
+
+	// bV is the helm binary version
+	bV semver.Version
 }
 
 // NewHelmDeployer returns a configured HelmDeployer
@@ -77,6 +81,13 @@ func (h *HelmDeployer) Labels() map[string]string {
 // Deploy deploys the build results to the Kubernetes cluster
 func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
 	event.DeployInProgress()
+
+	hv, err := h.binVer(ctx)
+	if err != nil {
+		logrus.Debugf("failed to parse binary version: %v", err)
+	} else {
+		logrus.Debugf("deploying with helm version %v", hv)
+	}
 
 	var dRes []Artifact
 	nsMap := map[string]struct{}{}
@@ -187,16 +198,18 @@ func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, []La
 }
 
 // exec executes the helm command, writing combined stdout/stderr to the provided writer
-func (h *HelmDeployer) exec(ctx context.Context, out io.Writer, useSecrets bool, arg ...string) error {
-	args := append([]string{"--kube-context", h.kubeContext}, arg...)
-	args = append(args, h.Flags.Global...)
+func (h *HelmDeployer) exec(ctx context.Context, out io.Writer, useSecrets bool, args ...string) error {
+	if args[0] != "version" {
+		args = append([]string{"--kube-context", h.kubeContext}, args...)
+		args = append(args, h.Flags.Global...)
 
-	if h.kubeConfig != "" {
-		args = append(args, "--kubeconfig", h.kubeConfig)
-	}
+		if h.kubeConfig != "" {
+			args = append(args, "--kubeconfig", h.kubeConfig)
+		}
 
-	if useSecrets {
-		args = append([]string{"secrets"}, args...)
+		if useSecrets {
+			args = append([]string{"secrets"}, args...)
+		}
 	}
 
 	cmd := exec.CommandContext(ctx, "helm", args...)
@@ -285,6 +298,38 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 
 	artifacts := parseReleaseInfo(opts.namespace, bufio.NewReader(&b))
 	return artifacts, iErr
+}
+
+// binVer returns the version of the helm binary found in PATH. May be cached.
+func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
+	// Return the cached version value if non-zero
+	if h.bV.Major != 0 && h.bV.Minor != 0 {
+		return h.bV, nil
+	}
+
+	var b bytes.Buffer
+	if err := h.exec(ctx, &b, false, "version", "--short", "-c"); err != nil {
+		return semver.Version{}, errors.Wrap(err, "helm version")
+	}
+	bs := b.Bytes()
+
+	// raw for 3.1: "v3.1.0+gb29d20b"
+	// raw for 2.15: "Client: v2.15.1+gcf1de4f"
+	raw := string(bs)
+	idx := strings.Index(raw, "v")
+	if idx < 0 {
+		return semver.Version{}, fmt.Errorf("v not found in output: %q", raw)
+	}
+
+	// Only read up to a + sign if provided: semver does not understand + notation.
+	rv := strings.Split(raw[idx+1:], "+")[0]
+	v, err := semver.Make(rv)
+	if err != nil {
+		return semver.Version{}, errors.Wrap(err, "semver make")
+	}
+
+	h.bV = v
+	return h.bV, nil
 }
 
 // installOpts are options to be passed to "helm install"
