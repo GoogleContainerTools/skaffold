@@ -571,7 +571,7 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "deploy with valuesFiles templated",
 			commands: testutil.
-				CmdRunWithOutput("helm version --client", version21).
+				CmdRunWithOutput("helm version --client", version20).
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 -f /some/file-FOOBAR.yaml --kubeconfig kubeconfig").
@@ -582,7 +582,7 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "deploy without actual tags",
 			commands: testutil.
-				CmdRunWithOutput("helm version --client", version21).
+				CmdRunWithOutput("helm version --client", version20).
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace --kubeconfig kubeconfig").
