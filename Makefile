@@ -245,4 +245,4 @@ generate-schemas:
 
 .PHONY: generate-statik
 generate-statik:
-	echo hack/generate-statik.sh
+	hack/generate-statik.sh
