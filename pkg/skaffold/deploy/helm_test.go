@@ -22,11 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"runtime"
-	"sort"
 	"testing"
-
-	homedir "github.com/mitchellh/go-homedir"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -598,15 +594,6 @@ func TestParseHelmRelease(t *testing.T) {
 	}
 }
 
-func TestExtractChartFilename(t *testing.T) {
-	out, err := extractChartFilename(
-		"Successfully packaged chart and saved it to: /var/folders/gm/rrs_712142x8vymmd7xq7h340000gn/T/foo-1.2.3-dirty.tgz\n",
-		"/var/folders/gm/rrs_712142x8vymmd7xq7h340000gn/T/",
-	)
-
-	testutil.CheckErrorAndDeepEqual(t, false, err, "foo-1.2.3-dirty.tgz", out)
-}
-
 func TestHelmDependencies(t *testing.T) {
 	tests := []struct {
 		description           string
@@ -678,7 +665,7 @@ func TestHelmDependencies(t *testing.T) {
 	}
 }
 
-func TestGetImageSetValueFromHelmStrategy(t *testing.T) {
+func TestImageSetFromConfig(t *testing.T) {
 	tests := []struct {
 		description string
 		valueName   string
@@ -742,49 +729,9 @@ func TestGetImageSetValueFromHelmStrategy(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			values, err := getImageSetValueFromHelmStrategy(test.strategy, test.valueName, test.tag)
+			values, err := imageSetFromConfig(test.strategy, test.valueName, test.tag)
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expected, values)
-		})
-	}
-}
-
-func TestExpandPaths(t *testing.T) {
-	homedir.DisableCache = true // for testing only
-
-	tests := []struct {
-		description  string
-		paths        []string
-		unixExpanded []string // unix expands path with forward slashes, windows with backward slashes
-		winExpanded  []string
-		env          map[string]string
-	}{
-		{
-			description:  "expand paths on unix",
-			paths:        []string{"~/path/with/tilde/values.yaml", "/some/absolute/path/values.yaml"},
-			unixExpanded: []string{"/home/path/with/tilde/values.yaml", "/some/absolute/path/values.yaml"},
-			winExpanded:  []string{`\home\path\with\tilde\values.yaml`, "/some/absolute/path/values.yaml"},
-			env:          map[string]string{"HOME": "/home"},
-		},
-		{
-			description:  "expand paths on windows",
-			paths:        []string{"~/path/with/tilde/values.yaml", `C:\Users\SomeUser\path\values.yaml`},
-			unixExpanded: []string{`C:\Users\SomeUser/path/with/tilde/values.yaml`, `C:\Users\SomeUser\path\values.yaml`},
-			winExpanded:  []string{`C:\Users\SomeUser\path\with\tilde\values.yaml`, `C:\Users\SomeUser\path\values.yaml`},
-			env:          map[string]string{"HOME": `C:\Users\SomeUser`},
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.SetEnvs(test.env)
-			expanded := expandPaths(test.paths)
-
-			if runtime.GOOS == "windows" {
-				t.CheckDeepEqual(test.winExpanded, expanded)
-			} else {
-				t.CheckDeepEqual(test.unixExpanded, expanded)
-			}
 		})
 	}
 }
@@ -804,55 +751,6 @@ func TestHelmRender(t *testing.T) {
 			deployer := NewHelmDeployer(&runcontext.RunContext{})
 			actual := deployer.Render(context.Background(), ioutil.Discard, []build.Artifact{}, nil, "tmp/dir")
 			t.CheckError(test.shouldErr, actual)
-		})
-	}
-}
-
-func TestGetSetFileValues(t *testing.T) {
-	tests := []struct {
-		description string
-		files       map[string]string
-		expected    []string
-		expectedMap map[string]bool
-	}{
-		{
-			description: "multiple value",
-			files: map[string]string{
-				"multiline_text": "path/to/textfile",
-				"another_file":   "path/to/another",
-			},
-			expected: []string{
-				"--set-file",
-				"multiline_text=path/to/textfile",
-				"--set-file",
-				"another_file=path/to/another",
-			},
-			expectedMap: map[string]bool{
-				"path/to/textfile": true,
-				"path/to/another":  true,
-			},
-		},
-		{
-			description: "empty value",
-			files:       map[string]string{},
-			expected:    []string{},
-			expectedMap: map[string]bool{},
-		},
-		{
-			description: "nil",
-			files:       nil,
-			expected:    []string{},
-			expectedMap: map[string]bool{},
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			inMap := map[string]bool{}
-			actual := generateGetFilesArgs(test.files, inMap)
-			sort.Strings(test.expected)
-			sort.Strings(actual)
-			t.CheckDeepEqual(test.expected, actual)
-			t.CheckDeepEqual(test.expectedMap, inMap)
 		})
 	}
 }
