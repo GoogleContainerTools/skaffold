@@ -526,7 +526,7 @@ func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, []La
 // binVer returns the version of the helm binary found in PATH. May be cached.
 func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
 	// Return the cached version value if non-zero
-	if h.bV.Major != 0 && h.bV.Major != 0 {
+	if h.bV.Major != 0 && h.bV.Minor != 0 {
 		return h.bV, nil
 	}
 
