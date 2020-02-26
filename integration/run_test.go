@@ -96,6 +96,11 @@ func TestRun(t *testing.T) {
 			dir:         "examples/custom",
 			pods:        []string{"getting-started"},
 		},
+		{
+			description: "buildpacks",
+			dir:         "examples/buildpacks",
+			deployments: []string{"web"},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
@@ -176,13 +181,6 @@ func TestRunGCPOnly(t *testing.T) {
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
 		},
-		// Don't run on kind because of this issue: https://github.com/buildpack/pack/issues/277
-		{
-			description: "buildpacks",
-			dir:         "examples/buildpacks",
-			deployments: []string{"web"},
-		},
-		// Don't run on kind because of this issue: https://github.com/buildpack/pack/issues/277
 		{
 			description: "buildpacks on Cloud Build",
 			dir:         "examples/buildpacks",
