@@ -593,6 +593,7 @@ func TestBinVer(t *testing.T) {
 		commands    util.Command
 		runContext  *runcontext.RunContext
 		want        semver.Version
+		shouldErr   bool
 	}{
 		{
 			description: "helm 2.15.1",
@@ -618,6 +619,12 @@ func TestBinVer(t *testing.T) {
 			runContext:  makeRunContext(testDeployConfig, false),
 			want:        semver.MustParse("3.0.0"),
 		},
+		{
+			description: "garbage",
+			commands:    testutil.CmdRunWithOutput("helm version --short -c", "WUTWUT?"),
+			runContext:  makeRunContext(testDeployConfig, false),
+			shouldErr:   true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -630,9 +637,7 @@ func TestBinVer(t *testing.T) {
 
 			deployer := NewHelmDeployer(test.runContext)
 			got, err := deployer.binVer(context.Background())
-			if err != nil {
-				t.Errorf("binVer failed: %v", err)
-			}
+			t.CheckError(test.shouldErr, err)
 			if got.NE(test.want) {
 				t.Errorf("got version %q, want %q", got, test.want)
 			}
