@@ -215,7 +215,7 @@ var FlagRegistry = []Flag{
 		Name:          "status-check",
 		Usage:         "Wait for deployed resources to stabilize",
 		Value:         &opts.StatusCheck,
-		DefValue:      false,
+		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
 	},
@@ -302,7 +302,6 @@ func AddFlags(fs *pflag.FlagSet, cmdName string) {
 			fs.AddFlag(f)
 		}
 	}
-	fs.MarkHidden("status-check")
 	// this is a temporary solution until we figure out an automated way to detect the
 	// minikube profile see
 	// https://github.com/GoogleContainerTools/skaffold/issues/3668
