@@ -56,6 +56,9 @@ type HelmDeployer struct {
 	namespace   string
 	forceDeploy bool
 
+	// packaging temporary directory, used for predictable test output
+	pkgTmpDir string
+
 	// bV is the helm binary version
 	bV semver.Version
 }
@@ -494,7 +497,17 @@ func envVarForImage(imageName string, digest string) map[string]string {
 
 // packageChart packages the chart and returns path to the chart archive file.
 func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (string, error) {
-	tmpDir := os.TempDir()
+	// Allow a test to sneak a predictable path in
+	tmpDir := h.pkgTmpDir
+	if tmpDir == "" {
+		// Guarantee a unique path to avoid toctou bugs
+		t, err := ioutil.TempDir("", "skaffold-helm")
+		if err != nil {
+			return "", errors.Wrap(err, "tempdir")
+		}
+		tmpDir = t
+	}
+
 	packageArgs := []string{"package", r.ChartPath, "--destination", tmpDir}
 
 	if r.Packaged.Version != "" {
@@ -515,8 +528,7 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 
 	buf := &bytes.Buffer{}
 
-	err := h.exec(ctx, buf, false, packageArgs...)
-	if err != nil {
+	if err := h.exec(ctx, buf, false, packageArgs...); err != nil {
 		return "", errors.Wrapf(err, "package chart into a .tgz archive: %v", packageArgs)
 	}
 

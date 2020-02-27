@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -324,7 +323,11 @@ MANIFEST:
 `
 
 func TestHelmDeploy(t *testing.T) {
-	tmpDir := os.TempDir()
+	tmpDir, err := ioutil.TempDir("", "TestHelmDeploy")
+	if err != nil {
+		t.Fatalf("tempdir: %v", err)
+	}
+
 	tests := []struct {
 		description      string
 		commands         util.Command
@@ -575,6 +578,7 @@ func TestHelmDeploy(t *testing.T) {
 			event.InitializeState(test.runContext.Cfg.Build)
 
 			deployer := NewHelmDeployer(test.runContext)
+			deployer.pkgTmpDir = tmpDir
 			result := deployer.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
 			t.CheckError(test.shouldErr, result.GetError())
