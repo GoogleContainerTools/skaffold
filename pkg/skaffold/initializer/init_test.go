@@ -26,6 +26,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	initconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -34,14 +35,14 @@ func TestDoInit(t *testing.T) {
 	tests := []struct {
 		name      string
 		dir       string
-		config    Config
+		config    initconfig.Config
 		shouldErr bool
 	}{
 		//TODO: mocked kompose test
 		{
 			name: "getting-started",
 			dir:  "testdata/init/hello",
-			config: Config{
+			config: initconfig.Config{
 				Opts: config.SkaffoldOptions{
 					ConfigurationFile: "skaffold.yaml.out",
 				},
@@ -50,7 +51,7 @@ func TestDoInit(t *testing.T) {
 		{
 			name: "ignore existing tags",
 			dir:  "testdata/init/ignore-tags",
-			config: Config{
+			config: initconfig.Config{
 				Opts: config.SkaffoldOptions{
 					ConfigurationFile: "skaffold.yaml.out",
 				},
@@ -59,7 +60,7 @@ func TestDoInit(t *testing.T) {
 		{
 			name: "microservices (backwards compatibility)",
 			dir:  "testdata/init/microservices",
-			config: Config{
+			config: initconfig.Config{
 				CliArtifacts: []string{
 					"leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app",
 					"leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web",
@@ -72,7 +73,7 @@ func TestDoInit(t *testing.T) {
 		{
 			name: "microservices",
 			dir:  "testdata/init/microservices",
-			config: Config{
+			config: initconfig.Config{
 				CliArtifacts: []string{
 					`{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
 					`{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
@@ -85,7 +86,7 @@ func TestDoInit(t *testing.T) {
 		{
 			name: "CLI artifacts + manifest placeholders",
 			dir:  "testdata/init/allcli",
-			config: Config{
+			config: initconfig.Config{
 				CliArtifacts: []string{
 					`{"builder":"Docker","payload":{"path":"Dockerfile"},"image":"passed-in-artifact"}`,
 				},
@@ -102,7 +103,7 @@ func TestDoInit(t *testing.T) {
 			name: "error writing config file",
 			dir:  "testdata/init/microservices",
 
-			config: Config{
+			config: initconfig.Config{
 				CliArtifacts: []string{
 					`{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
 					`{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
@@ -118,7 +119,7 @@ func TestDoInit(t *testing.T) {
 			name: "error no manifests",
 			dir:  "testdata/init/hello-no-manifest",
 
-			config: Config{
+			config: initconfig.Config{
 				Opts: config.SkaffoldOptions{
 					ConfigurationFile: "skaffold.yaml.out",
 				},
@@ -144,13 +145,13 @@ func TestDoInitAnalyze(t *testing.T) {
 	tests := []struct {
 		name        string
 		dir         string
-		config      Config
+		config      initconfig.Config
 		expectedOut string
 	}{
 		{
 			name: "analyze microservices",
 			dir:  "testdata/init/microservices",
-			config: Config{
+			config: initconfig.Config{
 				Analyze: true,
 			},
 			expectedOut: strip(`{
@@ -161,9 +162,9 @@ func TestDoInitAnalyze(t *testing.T) {
 		{
 			name: "analyze microservices new format",
 			dir:  "testdata/init/microservices",
-			config: Config{
-				Analyze:       true,
-				EnableJibInit: true,
+			config: initconfig.Config{
+				Analyze:             true,
+				EnableNewInitFormat: true,
 			},
 			expectedOut: strip(`{
 									"builders":[
@@ -178,7 +179,7 @@ func TestDoInitAnalyze(t *testing.T) {
 			name: "no error with no manifests in analyze mode with skip-deploy",
 			dir:  "testdata/init/hello-no-manifest",
 
-			config: Config{
+			config: initconfig.Config{
 				Analyze:    true,
 				SkipDeploy: true,
 				Opts: config.SkaffoldOptions{

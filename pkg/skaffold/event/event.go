@@ -143,11 +143,8 @@ func emptyStateWithArtifacts(builds map[string]string) proto.State {
 		DeployState: &proto.DeployState{
 			Status: NotStarted,
 		},
-		StatusCheckState: &proto.StatusCheckState{
-			Status:    NotStarted,
-			Resources: map[string]string{},
-		},
-		ForwardedPorts: make(map[int32]*proto.PortEvent),
+		StatusCheckState: emptyStatusCheckState(),
+		ForwardedPorts:   make(map[int32]*proto.PortEvent),
 		FileSyncState: &proto.FileSyncState{
 			Status: NotStarted,
 		},
@@ -507,8 +504,15 @@ func ResetStateOnBuild() {
 func ResetStateOnDeploy() {
 	newState := handler.getState()
 	newState.DeployState.Status = NotStarted
-	newState.StatusCheckState.Status = NotStarted
+	newState.StatusCheckState = emptyStatusCheckState()
 	newState.ForwardedPorts = map[int32]*proto.PortEvent{}
 	newState.DebuggingContainers = nil
 	handler.setState(newState)
+}
+
+func emptyStatusCheckState() *proto.StatusCheckState {
+	return &proto.StatusCheckState{
+		Status:    NotStarted,
+		Resources: map[string]string{},
+	}
 }

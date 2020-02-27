@@ -212,7 +212,24 @@ func TestDependenciesForKustomization(t *testing.T) {
 			},
 		},
 		{
-			description:    "patches",
+			description: "extended patches with paths",
+			kustomizations: map[string]string{"kustomization.yaml": `patches:
+- path: patch1.yaml
+  target:
+    kind: Deployment`},
+			expected: []string{"kustomization.yaml", "patch1.yaml"},
+		},
+		{
+			description: "extended patches with inline",
+			kustomizations: map[string]string{"kustomization.yaml": `patches:
+- patch: |-
+    inline: patch
+  target:
+    kind: Deployment`},
+			expected: []string{"kustomization.yaml"},
+		},
+		{
+			description:    "patches legacy",
 			kustomizations: map[string]string{"kustomization.yaml": `patches: [patch1.yaml, path/patch2.yaml]`},
 			expected:       []string{"kustomization.yaml", "patch1.yaml", "path/patch2.yaml"},
 		},

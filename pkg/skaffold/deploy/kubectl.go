@@ -32,6 +32,7 @@ import (
 	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -155,7 +156,7 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 
 	var filteredManifests []string
 	for _, f := range list {
-		if !util.HasKubernetesFileExtension(f) {
+		if !kubernetes.HasKubernetesFileExtension(f) {
 			if !util.StrSliceContains(manifests, f) {
 				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", f)
 				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")

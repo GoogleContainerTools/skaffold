@@ -332,9 +332,12 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 		}
 	}
 
+	if err := errs.Wait(); err != nil {
+		return err
+	}
+
 	if numSynced == 0 {
 		return errors.New("didn't sync any files")
 	}
-
-	return errs.Wait()
+	return nil
 }

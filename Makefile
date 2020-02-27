@@ -31,6 +31,8 @@ GKE_ZONE ?= us-central1-a
 SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
+SKAFFOLD_TEST_PACKAGES := $(shell go list ./... | grep -v diag)
+
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
 
@@ -64,7 +66,8 @@ GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
 GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
 GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
-GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./pkg/diag/*")
+DEPS_DIGEST := $(shell ./hack/skaffold-deps-sha1.sh)
 
 $(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
 	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
@@ -73,11 +76,14 @@ $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): generate-statik $(GO_FILES) $(BUILD_D
 	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
 
 $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): generate-statik $(GO_FILES) $(BUILD_DIR)
-	docker build --build-arg PROJECT=$(REPOPATH) \
+	docker build \
+		--build-arg PROJECT=$(REPOPATH) \
 		--build-arg TARGETS=$*/$(GOARCH) \
 		--build-arg FLAG_LDFLAGS=$(GO_LDFLAGS_$(*)) \
 		--build-arg FLAG_TAGS=$(GO_BUILD_TAGS_$(*)) \
-		-f deploy/cross/Dockerfile -t skaffold/cross .
+		-f deploy/cross/Dockerfile \
+		-t skaffold/cross \
+		.
 	docker run --rm --entrypoint sh skaffold/cross -c "cat /build/skaffold*" > $@
 
 %.sha256: %
@@ -100,12 +106,12 @@ cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(pla
 
 .PHONY: test
 test: $(BUILD_DIR)
-	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s ./...
+	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s $(SKAFFOLD_TEST_PACKAGES)
 	@ ./hack/checks.sh
 
 .PHONY: coverage
 coverage: $(BUILD_DIR)
-	@ ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." ./...
+	@ ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." $(SKAFFOLD_TEST_PACKAGES)
 	@- curl -s https://codecov.io/bash > $(BUILD_DIR)/upload_coverage && bash $(BUILD_DIR)/upload_coverage
 
 .PHONY: checks
@@ -114,7 +120,7 @@ checks: $(BUILD_DIR)
 
 .PHONY: quicktest
 quicktest:
-	@ ./hack/gotest.sh -short -timeout=60s ./...
+	@ ./hack/gotest.sh -short -timeout=60s $(SKAFFOLD_TEST_PACKAGES)
 
 .PHONY: install
 install: $(GO_FILES) $(BUILD_DIR)
@@ -133,11 +139,12 @@ endif
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
 	docker build \
-		-f deploy/skaffold/Dockerfile \
-		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		--build-arg VERSION=$(VERSION) \
+		-f deploy/skaffold/Dockerfile \
+		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
+		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) \
+		.
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_RELEASE_PATH)/
 	gsutil -m cp $(BUILD_DIR)/VERSION $(GSC_RELEASE_PATH)/VERSION
 	gsutil -m cp -r $(GSC_RELEASE_PATH)/* $(GSC_RELEASE_LATEST)
@@ -146,9 +153,10 @@ release: cross $(BUILD_DIR)/VERSION
 release-build: cross
 	docker build \
 		-f deploy/skaffold/Dockerfile \
-		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		--target release \
 		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
-		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
+		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) \
+		.
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_BUILD_PATH)/
 	gsutil -m cp -r $(GSC_BUILD_PATH)/* $(GSC_BUILD_LATEST)
 
@@ -156,12 +164,22 @@ release-build: cross
 clean:
 	rm -rf $(BUILD_DIR) hack/bin
 
+.PHONY: build_deps
+build_deps:
+	docker build \
+		-f deploy/skaffold/Dockerfile.deps \
+		-t gcr.io/$(GCP_PROJECT)/build_deps:$(DEPS_DIGEST) \
+		deploy/skaffold
+	docker push gcr.io/$(GCP_PROJECT)/build_deps:$(DEPS_DIGEST)
+	@./hack/check-skaffold-builder.sh
+
 .PHONY: skaffold-builder
 skaffold-builder:
 	time docker build \
 		-f deploy/skaffold/Dockerfile \
 		--target builder \
-		-t gcr.io/$(GCP_PROJECT)/skaffold-builder .
+		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		.
 
 .PHONY: integration-in-kind
 integration-in-kind: skaffold-builder
