@@ -20,7 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -330,7 +330,11 @@ var (
 )
 
 func TestHelmDeploy(t *testing.T) {
-	tmpDir := os.TempDir()
+	tmpDir, err := ioutil.TempDir("", "TestHelmDeploy")
+	if err != nil {
+		t.Fatalf("tempdir: %v", err)
+	}
+
 	tests := []struct {
 		description      string
 		commands         util.Command
@@ -528,8 +532,8 @@ func TestHelmDeploy(t *testing.T) {
 				CmdRunWithOutput("helm version --client", version21).
 				AndRun("helm --kube-context kubecontext get foo --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build testdata/foo --kubeconfig kubeconfig").
-				AndRunWithOutput("helm --kube-context kubecontext package testdata/foo --destination "+tmpDir+" --version 0.1.2 --app-version 1.2.3 --kubeconfig kubeconfig", "Packaged to /tmp/foo-0.1.2.tgz").
-				AndRun("helm --kube-context kubecontext upgrade foo " + tmpDir + "/foo-0.1.2.tgz --namespace testNamespace --set-string image=foo:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
+				AndRunWithOutput("helm --kube-context kubecontext package testdata/foo --destination "+tmpDir+" --version 0.1.2 --app-version 1.2.3 --kubeconfig kubeconfig", fmt.Sprintf("Packaged to %s", filepath.Join(tmpDir, "foo-0.1.2.tgz"))).
+				AndRun("helm --kube-context kubecontext upgrade foo " + filepath.Join(tmpDir, "foo-0.1.2.tgz") + " --namespace testNamespace --set-string image=foo:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get foo --kubeconfig kubeconfig"),
 			shouldErr:  false,
 			runContext: makeRunContext(testDeployFooWithPackaged, false),
@@ -621,6 +625,7 @@ func TestHelmDeploy(t *testing.T) {
 			event.InitializeState(test.runContext.Cfg.Build)
 
 			deployer := NewHelmDeployer(test.runContext)
+			deployer.pkgTmpDir = tmpDir
 			result := deployer.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
 
 			t.CheckError(test.shouldErr, result.GetError())
