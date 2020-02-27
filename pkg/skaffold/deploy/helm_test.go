@@ -322,9 +322,8 @@ MANIFEST:
 
 var (
 	// Output strings to emulate different versions of Helm
-	version20   = `Client: &version.Version{SemVer:"v2.15.1", GitCommit:"cf1de4f8ba70eded310918a8af3a96bfe8e7683b", GitTreeState:"clean"}\nError: cannot connect to Tiller\n`
+	version20rc = `Client: &version.Version{SemVer:"v2.0.0-rc.1", GitCommit:"92be174acf51e60a33287fb7011f4571eaa5cb98", GitTreeState:"clean"}\nError: cannot connect to Tiller\n`
 	version21   = `Client: &version.Version{SemVer:"v2.15.1", GitCommit:"cf1de4f8ba70eded310918a8af3a96bfe8e7683b", GitTreeState:"clean"}\nServer: &version.Version{SemVer:"v2.16.1", GitCommit:"bbdfe5e7803a12bbdf97e94cd847859890cf4050", GitTreeState:"clean"}\n`
-	version21rc = `Client: &version.Version{SemVer:"v2.14.0-rc.2", GitCommit:"05811b84a3f93603dd6c2fcfe57944dfa7ab7fd0", GitTreeState:"clean"}\nServer: &version.Version{SemVer:"v2.16.1", GitCommit:"bbdfe5e7803a12bbdf97e94cd847859890cf4050", GitTreeState:"clean"}\n`
 	version30b  = `version.BuildInfo{Version:"v3.0.0-beta.3", GitCommit:"5cb923eecbe80d1ad76399aee234717c11931d9a", GitTreeState:"clean", GoVersion:"go1.12.9"}`
 	version30   = `version.BuildInfo{Version:"v3.0.0", GitCommit:"e29ce2a54e96cd02ccfce88bee4f58bb6e2a28b6", GitTreeState:"clean", GoVersion:"go1.13.4"}`
 	version31   = `version.BuildInfo{Version:"v3.1.1", GitCommit:"afe70585407b420d0097d07b21c47dc511525ac8", GitTreeState:"clean", GoVersion:"go1.13.8"}`
@@ -398,7 +397,7 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "deploy success with recreatePods",
 			commands: testutil.
-				CmdRunWithOutput("helm version", version21rc).
+				CmdRunWithOutput("helm version", version20rc).
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm --recreate-pods examples/test --namespace testNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
@@ -409,7 +408,7 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "deploy success with skipBuildDependencies",
 			commands: testutil.
-				CmdRunWithOutput("helm version", version21rc).
+				CmdRunWithOutput("helm version", version21).
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig"),
@@ -431,7 +430,7 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "deploy success remote chart with skipBuildDependencies",
 			commands: testutil.
-				CmdRunWithOutput("helm version", version21).
+				CmdRunWithOutput("helm version", version20rc).
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm stable/chartmuseum --namespace testNamespace --set-string image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig"),
@@ -541,7 +540,7 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "helm 2.0 should package chart and deploy",
 			commands: testutil.
-				CmdRunWithOutput("helm version", version20).
+				CmdRunWithOutput("helm version", version20rc).
 				AndRun("helm --kube-context kubecontext get foo --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build testdata/foo --kubeconfig kubeconfig").
 				AndRunWithOutput("helm --kube-context kubecontext package testdata/foo --destination "+tmpDir+" --version 0.1.2 --app-version 1.2.3 --kubeconfig kubeconfig", fmt.Sprintf("Packaged to %s", filepath.Join(tmpDir, "foo-0.1.2.tgz"))).
@@ -613,7 +612,7 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "deploy with valuesFiles templated",
 			commands: testutil.
-				CmdRunWithOutput("helm version", version20).
+				CmdRunWithOutput("helm version", version20rc).
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 -f /some/file-FOOBAR.yaml --kubeconfig kubeconfig").
@@ -624,7 +623,7 @@ func TestHelmDeploy(t *testing.T) {
 		{
 			description: "deploy without actual tags",
 			commands: testutil.
-				CmdRunWithOutput("helm version", version20).
+				CmdRunWithOutput("helm version", version20rc).
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --namespace testNamespace --kubeconfig kubeconfig").
@@ -684,7 +683,7 @@ func TestHelmCleanup(t *testing.T) {
 		{
 			description: "cleanup success",
 			commands: testutil.
-				CmdRunWithOutput("helm version", version21).
+				CmdRunWithOutput("helm version", version20rc).
 				AndRun("helm --kube-context kubecontext delete skaffold-helm --purge --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeployConfig, false),
 			builds:     testBuilds,
