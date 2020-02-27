@@ -27,8 +27,7 @@ This feature can be very useful in Continuous Delivery pipelines to ensure that 
 healthy before proceeding with the next steps in the pipeline.
 
 {{<alert title="Note">}}
-`healthcheck` is disabled by default; it can be enabled with the `--status-check` flag.</br>
-If this flag is not set, no healthcheck will be performed.
+`healthcheck` is enabled by default; it can be disabled with the `--status-check=false` flag.
 {{</alert>}}
 
 To determine if a `Deployment` resource is up and running, Skaffold relies on `kubectl rollout status` to obtain its status.
