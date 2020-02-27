@@ -495,12 +495,12 @@ func envVarForImage(imageName string, digest string) map[string]string {
 	return customMap
 }
 
-// packageChart packages the chart and returns path to the chart archive file.
+// packageChart packages the chart and returns the path to the resulting chart archive
 func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (string, error) {
 	// Allow a test to sneak a predictable path in
 	tmpDir := h.pkgTmpDir
+
 	if tmpDir == "" {
-		// Guarantee a unique path to avoid toctou bugs
 		t, err := ioutil.TempDir("", "skaffold-helm")
 		if err != nil {
 			return "", errors.Wrap(err, "tempdir")
@@ -508,14 +508,14 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 		tmpDir = t
 	}
 
-	packageArgs := []string{"package", r.ChartPath, "--destination", tmpDir}
+	args := []string{"package", r.ChartPath, "--destination", tmpDir}
 
 	if r.Packaged.Version != "" {
 		v, err := expand(r.Packaged.Version, nil)
 		if err != nil {
 			return "", errors.Wrap(err, `packaged.version template`)
 		}
-		packageArgs = append(packageArgs, "--version", v)
+		args = append(args, "--version", v)
 	}
 
 	if r.Packaged.AppVersion != "" {
@@ -523,25 +523,23 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 		if err != nil {
 			return "", errors.Wrap(err, `packaged.appVersion template`)
 		}
-		packageArgs = append(packageArgs, "--app-version", av)
+		args = append(args, "--app-version", av)
 	}
 
 	buf := &bytes.Buffer{}
 
-	if err := h.exec(ctx, buf, false, packageArgs...); err != nil {
-		return "", errors.Wrapf(err, "package chart into a .tgz archive: %v", packageArgs)
+	if err := h.exec(ctx, buf, false, args...); err != nil {
+		return "", errors.Wrapf(err, "package chart into a .tgz archive: %v", args)
 	}
 
 	output := strings.TrimSpace(buf.String())
-
 	idx := strings.Index(output, tmpDir)
+
 	if idx == -1 {
 		return "", fmt.Errorf("unable to find %s in output: %s", tmpDir, output)
 	}
 
-	fpath := output[idx:]
-	logrus.Infof("file path: %s", fpath)
-	return fpath, nil
+	return output[idx:], nil
 }
 
 // imageSetFromConfig calculates the --set-string value from the helm config
