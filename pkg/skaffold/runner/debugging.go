@@ -23,13 +23,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
 )
 
-// isDebugMode returns true if we're running for debugging.
-func (r *SkaffoldRunner) isDebugMode() bool {
-	return r.runCtx.Opts.Command == "debug"
-}
-
 func (r *SkaffoldRunner) createContainerManager(out io.Writer) {
-	if !r.isDebugMode() {
+	if !r.runCtx.IsDebugMode() {
 		return
 	}
 	kubectlCLI := kubectl.NewFromRunContext(r.runCtx)
