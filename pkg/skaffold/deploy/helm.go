@@ -500,7 +500,7 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 	if r.Packaged.Version != "" {
 		v, err := expand(r.Packaged.Version, nil)
 		if err != nil {
-			return "", errors.Wrap(err, `concretize "packaged.version" template`)
+			return "", errors.Wrap(err, `packaged.version template`)
 		}
 		packageArgs = append(packageArgs, "--version", v)
 	}
@@ -508,7 +508,7 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 	if r.Packaged.AppVersion != "" {
 		av, err := expand(r.Packaged.AppVersion, nil)
 		if err != nil {
-			return "", errors.Wrap(err, `concretize "packaged.appVersion" template`)
+			return "", errors.Wrap(err, `packaged.appVersion template`)
 		}
 		packageArgs = append(packageArgs, "--app-version", av)
 	}
@@ -524,11 +524,12 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 
 	idx := strings.Index(output, tmpDir)
 	if idx == -1 {
-		return "", errors.New("cannot locate packaged chart archive")
+		return "", fmt.Errorf("unable to find %s in output: %s", tmpDir, output)
 	}
 
-	fpath := output[idx+len(tmpDir):]
-	return filepath.Join(tmpDir, fpath), nil
+	fpath := output[idx:]
+	logrus.Infof("file path: %s", fpath)
+	return fpath, nil
 }
 
 // imageSetFromConfig calculates the --set-string value from the helm config
