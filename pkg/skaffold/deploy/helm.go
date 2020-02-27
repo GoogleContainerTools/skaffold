@@ -49,8 +49,11 @@ import (
 )
 
 var (
-	// versionRe extracts version from "helm version --client", for instance: "2.14.0-rc.2"
-	versionRe = regexp.MustCompile(`\"v(\d[\w\.\-\.]+)`)
+	// versionRegex extracts version from "helm version --client", for instance: "2.14.0-rc.2"
+	versionRegex = regexp.MustCompile(`\"v(\d[\w\.\-\.]+)`)
+
+	// helm3Version represents the version cut-off for helm3 behavior
+	helm3Version = semver.MustParse("3.0.0-beta.0")
 )
 
 // HelmDeployer deploys workflows using the helm CLI
@@ -199,7 +202,7 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		}
 
 		args := []string{"delete", releaseName}
-		if hv.LT(semver.MustParse("3.0.0-beta.0")) {
+		if hv.LT(helm3Version) {
 			args = append(args, "--purge")
 		}
 		if err := h.exec(ctx, out, false, args...); err != nil {
@@ -331,7 +334,7 @@ func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
 		return semver.Version{}, errors.Wrapf(err, "helm version command failed: %s", b.String())
 	}
 	raw := b.String()
-	matches := versionRe.FindStringSubmatch(raw)
+	matches := versionRegex.FindStringSubmatch(raw)
 	if len(matches) == 0 {
 		return semver.Version{}, fmt.Errorf("unable to parse output: %q", raw)
 	}
@@ -372,7 +375,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		}
 	} else {
 		args = append(args, "install")
-		if o.helmVersion.LT(semver.MustParse("3.0.0-beta.0")) {
+		if o.helmVersion.LT(helm3Version) {
 			args = append(args, "--name")
 		}
 		args = append(args, o.releaseName)
@@ -486,7 +489,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 // getArgs calculates the correct arguments to "helm get"
 func getArgs(v semver.Version, releaseName string) []string {
 	args := []string{"get"}
-	if v.GTE(semver.MustParse("3.0.0-beta.0")) {
+	if v.GTE(helm3Version) {
 		args = append(args, "all")
 	}
 	return append(args, releaseName)
