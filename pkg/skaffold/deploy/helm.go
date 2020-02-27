@@ -95,6 +95,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 	if err != nil {
 		return NewDeployErrorResult(errors.Wrapf(err, "failed to determine binary version"))
 	}
+	logrus.Infof("Deploying with helm v%s ...", hv)
 
 	var dRes []Artifact
 	nsMap := map[string]struct{}{}
@@ -198,7 +199,7 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		}
 
 		args := []string{"delete", releaseName}
-		if hv.LT(semver.MustParse("3.0.0")) {
+		if hv.LT(semver.MustParse("3.0.0-beta.0")) {
 			args = append(args, "--purge")
 		}
 		if err := h.exec(ctx, out, false, args...); err != nil {
@@ -325,12 +326,11 @@ func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
 	}
 
 	var b bytes.Buffer
-	if err := h.exec(ctx, &b, false, "version", "--client"); err != nil {
-		return semver.Version{}, errors.Wrap(err, "helm version")
+	// Omits --client & --short, as some versions do not support it (v3.0.0-beta, for instance)
+	if err := h.exec(ctx, &b, false, "version"); err != nil {
+		return semver.Version{}, errors.Wrapf(err, "helm version command failed: %s", b.String())
 	}
-	bs := b.Bytes()
-
-	raw := string(bs)
+	raw := b.String()
 	matches := versionRe.FindStringSubmatch(raw)
 	if len(matches) == 0 {
 		return semver.Version{}, fmt.Errorf("unable to parse output: %q", raw)
@@ -372,7 +372,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		}
 	} else {
 		args = append(args, "install")
-		if o.helmVersion.LT(semver.MustParse("3.0.0")) {
+		if o.helmVersion.LT(semver.MustParse("3.0.0-beta.0")) {
 			args = append(args, "--name")
 		}
 		args = append(args, o.releaseName)
@@ -486,7 +486,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 // getArgs calculates the correct arguments to "helm get"
 func getArgs(v semver.Version, releaseName string) []string {
 	args := []string{"get"}
-	if v.GTE(semver.MustParse("3.0.0")) {
+	if v.GTE(semver.MustParse("3.0.0-beta.0")) {
 		args = append(args, "all")
 	}
 	return append(args, releaseName)
