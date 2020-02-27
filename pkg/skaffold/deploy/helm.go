@@ -26,6 +26,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -45,6 +46,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+)
+
+var (
+	// versionRegex extracts version from "helm version --client", for instance: "2.14.0-rc.2"
+	versionRegex = regexp.MustCompile(`\"v(\d[\w\.\-\.]+)`)
+
+	// helm3Version represents the version cut-off for helm3 behavior
+	helm3Version = semver.MustParse("3.0.0-beta.0")
 )
 
 // HelmDeployer deploys workflows using the helm CLI
@@ -87,10 +96,9 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 
 	hv, err := h.binVer(ctx)
 	if err != nil {
-		logrus.Debugf("failed to parse binary version: %v", err)
-	} else {
-		logrus.Debugf("deploying with helm version %v", hv)
+		return NewDeployErrorResult(errors.Wrapf(err, "failed to determine binary version"))
 	}
+	logrus.Infof("Deploying with helm v%s ...", hv)
 
 	var dRes []Artifact
 	nsMap := map[string]struct{}{}
@@ -98,7 +106,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 
 	// Deploy every release
 	for _, r := range h.Releases {
-		results, err := h.deployRelease(ctx, out, r, builds, valuesSet)
+		results, err := h.deployRelease(ctx, out, r, builds, valuesSet, hv)
 		if err != nil {
 			releaseName, _ := expand(r.Name, nil)
 
@@ -182,13 +190,22 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 
 // Cleanup deletes what was deployed by calling Deploy.
 func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
+	hv, err := h.binVer(ctx)
+	if err != nil {
+		return errors.Wrap(err, "binary version")
+	}
+
 	for _, r := range h.Releases {
 		releaseName, err := expand(r.Name, nil)
 		if err != nil {
 			return errors.Wrap(err, "cannot parse the release name template")
 		}
 
-		if err := h.exec(ctx, out, false, "delete", releaseName, "--purge"); err != nil {
+		args := []string{"delete", releaseName}
+		if hv.LT(helm3Version) {
+			args = append(args, "--purge")
+		}
+		if err := h.exec(ctx, out, false, args...); err != nil {
 			return errors.Wrapf(err, "deleting %s", releaseName)
 		}
 	}
@@ -223,7 +240,7 @@ func (h *HelmDeployer) exec(ctx context.Context, out io.Writer, useSecrets bool,
 }
 
 // deployRelease deploys a single release
-func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool) ([]Artifact, error) {
+func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]Artifact, error) {
 	releaseName, err := expand(r.Name, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse the release name template")
@@ -235,9 +252,10 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		flags:       h.Flags.Upgrade,
 		force:       h.forceDeploy,
 		chartPath:   r.ChartPath,
+		helmVersion: helmVersion,
 	}
 
-	if err := h.exec(ctx, ioutil.Discard, false, getArgs(releaseName)...); err != nil {
+	if err := h.exec(ctx, ioutil.Discard, false, getArgs(helmVersion, releaseName)...); err != nil {
 		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 
 		opts.upgrade = false
@@ -294,7 +312,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	var b bytes.Buffer
 
 	// Be accepting of failure
-	if err := h.exec(ctx, &b, false, getArgs(releaseName)...); err != nil {
+	if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName)...); err != nil {
 		logrus.Warnf(err.Error())
 		return nil, nil
 	}
@@ -311,24 +329,19 @@ func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
 	}
 
 	var b bytes.Buffer
-	if err := h.exec(ctx, &b, false, "version", "--short", "-c"); err != nil {
-		return semver.Version{}, errors.Wrap(err, "helm version")
+	// Omits --client & --short, as some versions do not support it (v3.0.0-beta, for instance)
+	if err := h.exec(ctx, &b, false, "version"); err != nil {
+		return semver.Version{}, errors.Wrapf(err, "helm version command failed: %s", b.String())
 	}
-	bs := b.Bytes()
-
-	// raw for 3.1: "v3.1.0+gb29d20b"
-	// raw for 2.15: "Client: v2.15.1+gcf1de4f"
-	raw := string(bs)
-	idx := strings.Index(raw, "v")
-	if idx < 0 {
-		return semver.Version{}, fmt.Errorf("v not found in output: %q", raw)
+	raw := b.String()
+	matches := versionRegex.FindStringSubmatch(raw)
+	if len(matches) == 0 {
+		return semver.Version{}, fmt.Errorf("unable to parse output: %q", raw)
 	}
 
-	// Only read up to a + sign if provided: semver does not understand + notation.
-	rv := strings.Split(raw[idx+1:], "+")[0]
-	v, err := semver.Make(rv)
+	v, err := semver.Make(matches[1])
 	if err != nil {
-		return semver.Version{}, errors.Wrap(err, "semver make")
+		return semver.Version{}, errors.Wrapf(err, "semver make: %q", matches[1])
 	}
 
 	h.bV = v
@@ -343,6 +356,7 @@ type installOpts struct {
 	chartPath   string
 	upgrade     bool
 	force       bool
+	helmVersion semver.Version
 }
 
 // installArgs calculates the correct arguments to "helm install"
@@ -360,7 +374,11 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 			args = append(args, "--recreate-pods")
 		}
 	} else {
-		args = append(args, "install", "--name", o.releaseName)
+		args = append(args, "install")
+		if o.helmVersion.LT(helm3Version) {
+			args = append(args, "--name")
+		}
+		args = append(args, o.releaseName)
 		args = append(args, o.flags...)
 	}
 
@@ -469,8 +487,12 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 }
 
 // getArgs calculates the correct arguments to "helm get"
-func getArgs(releaseName string) []string {
-	return []string{"get", releaseName}
+func getArgs(v semver.Version, releaseName string) []string {
+	args := []string{"get"}
+	if v.GTE(helm3Version) {
+		args = append(args, "all")
+	}
+	return append(args, releaseName)
 }
 
 // envVarForImage creates an environment map for an image and digest tag (fqn)
