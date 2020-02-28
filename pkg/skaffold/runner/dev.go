@@ -124,6 +124,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	r.createForwarder(out)
 	defer r.forwarderManager.Stop()
 
+	r.createContainerManager(out)
+	defer r.debugContainerManager.Stop()
+
 	// Watch artifacts
 	start := time.Now()
 	color.Default.Fprintln(out, "Listing files to watch...")
@@ -202,6 +205,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	if err := r.forwarderManager.Start(ctx); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
+	}
+	if err := r.debugContainerManager.Start(ctx); err != nil {
+		logrus.Warnln("Error starting debug container notification:", err)
 	}
 
 	// Start printing the logs after deploy is finished
