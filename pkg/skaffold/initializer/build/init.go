@@ -50,7 +50,7 @@ func (d *defaultBuildInitializer) ProcessImages(images []string) error {
 
 func (d *defaultBuildInitializer) BuildConfig() latest.BuildConfig {
 	return latest.BuildConfig{
-		Artifacts: artifacts(d.builderImagePairs),
+		Artifacts: Artifacts(d.builderImagePairs),
 	}
 }
 

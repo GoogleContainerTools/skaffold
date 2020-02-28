@@ -22,7 +22,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -59,7 +58,7 @@ func (s stubBuildInitializer) PrintAnalysis(io.Writer) error {
 
 func (s stubBuildInitializer) BuildConfig() latest.BuildConfig {
 	return latest.BuildConfig{
-		Artifacts: artifacts(s.pairs),
+		Artifacts: build.Artifacts(s.pairs),
 	}
 }
 
@@ -146,58 +145,6 @@ func TestGenerateSkaffoldConfig(t *testing.T) {
 			t.CheckDeepEqual(config, test.expectedSkaffoldConfig)
 		})
 	}
-}
-
-func TestArtifacts(t *testing.T) {
-	testutil.Run(t, "", func(t *testutil.T) {
-		artifacts := artifacts([]build.BuilderImagePair{
-			{
-				ImageName: "image1",
-				Builder: docker.ArtifactConfig{
-					File: "Dockerfile",
-				},
-			},
-			{
-				ImageName: "image2",
-				Builder: docker.ArtifactConfig{
-					File: "front/Dockerfile2",
-				},
-			},
-			{
-				ImageName: "image3",
-				Builder: buildpacks.ArtifactConfig{
-					File:    "package.json",
-					Builder: "some/builder",
-				},
-			},
-		})
-
-		expected := []*latest.Artifact{
-			{
-				ImageName:    "image1",
-				ArtifactType: latest.ArtifactType{},
-			},
-			{
-				ImageName: "image2",
-				Workspace: "front",
-				ArtifactType: latest.ArtifactType{
-					DockerArtifact: &latest.DockerArtifact{
-						DockerfilePath: "Dockerfile2",
-					},
-				},
-			},
-			{
-				ImageName: "image3",
-				ArtifactType: latest.ArtifactType{
-					BuildpackArtifact: &latest.BuildpackArtifact{
-						Builder: "some/builder",
-					},
-				},
-			},
-		}
-
-		t.CheckDeepEqual(expected, artifacts)
-	})
 }
 
 func Test_canonicalizeName(t *testing.T) {
