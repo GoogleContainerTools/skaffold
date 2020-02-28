@@ -57,10 +57,6 @@ func (s stubBuildInitializer) ProcessImages([]string) error {
 	panic("no")
 }
 
-func (s stubBuildInitializer) BuilderImagePairs() []build.BuilderImagePair {
-	panic("nope")
-}
-
 func (s stubBuildInitializer) PrintAnalysis(io.Writer) error {
 	panic("no sir")
 }

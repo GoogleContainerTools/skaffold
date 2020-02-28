@@ -58,10 +58,6 @@ func (d *defaultBuildInitializer) BuildConfig() latest.BuildConfig {
 	}
 }
 
-func (d *defaultBuildInitializer) BuilderImagePairs() []BuilderImagePair {
-	return d.builderImagePairs
-}
-
 func (d *defaultBuildInitializer) PrintAnalysis(out io.Writer) error {
 	return printAnalysis(out, d.enableNewFormat, d.skipBuild, d.builderImagePairs, d.builders, d.unresolvedImages)
 }
@@ -74,6 +70,7 @@ func (d *defaultBuildInitializer) GenerateManifests() (map[GeneratedBuilderImage
 			return nil, errors.Wrap(err, "generating kubernetes manifest")
 		}
 		generatedManifests[pair] = manifest
+		d.builderImagePairs = append(d.builderImagePairs, pair.BuilderImagePair)
 	}
 	d.generatedBuilderImagePairs = nil
 	return generatedManifests, nil

@@ -139,7 +139,7 @@ func TestResolveBuilderImages(t *testing.T) {
 				unresolvedImages: test.images,
 			}
 			err := initializer.resolveBuilderImages()
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, initializer.BuilderImagePairs())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, initializer.builderImagePairs, cmp.AllowUnexported())
 			t.CheckDeepEqual(test.expectedGeneratedPairs, initializer.generatedBuilderImagePairs, cmp.AllowUnexported())
 		})
 	}

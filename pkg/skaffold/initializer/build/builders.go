@@ -68,8 +68,6 @@ type Initializer interface {
 	ProcessImages([]string) error
 	// BuildConfig returns the processed build config to be written to the skaffold.yaml
 	BuildConfig() latest.BuildConfig
-	// BuilderImagePairs returns all of the processed builder/image pairs. for use in testing.
-	BuilderImagePairs() []BuilderImagePair
 	// PrintAnalysis writes the project analysis to the provided out stream
 	PrintAnalysis(io.Writer) error
 	// GenerateManifests generates image names and manifests for all unresolved pairs
@@ -85,10 +83,6 @@ func (e *emptyBuildInitializer) ProcessImages([]string) error {
 
 func (e *emptyBuildInitializer) BuildConfig() latest.BuildConfig {
 	return latest.BuildConfig{}
-}
-
-func (e *emptyBuildInitializer) BuilderImagePairs() []BuilderImagePair {
-	return nil
 }
 
 func (e *emptyBuildInitializer) PrintAnalysis(io.Writer) error {

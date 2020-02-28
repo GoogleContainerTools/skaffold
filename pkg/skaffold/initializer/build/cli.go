@@ -54,10 +54,6 @@ func (c *cliBuildInitializer) BuildConfig() latest.BuildConfig {
 	}
 }
 
-func (c *cliBuildInitializer) BuilderImagePairs() []BuilderImagePair {
-	return c.builderImagePairs
-}
-
 func (c *cliBuildInitializer) PrintAnalysis(out io.Writer) error {
 	return printAnalysis(out, c.enableNewFormat, c.skipBuild, c.builderImagePairs, c.builders, nil)
 }
