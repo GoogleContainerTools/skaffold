@@ -17,6 +17,8 @@ limitations under the License.
 package build
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -91,6 +93,7 @@ func artifacts(pairs []BuilderImagePair) []*latest.Artifact {
 
 		workspace := filepath.Dir(pair.Builder.Path())
 		if workspace != "." {
+			fmt.Fprintf(os.Stdout, "using non standard workspace: %s\n", workspace)
 			artifact.Workspace = workspace
 		}
 

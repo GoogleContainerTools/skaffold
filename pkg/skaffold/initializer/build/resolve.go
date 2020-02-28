@@ -19,6 +19,7 @@ package build
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -112,8 +113,20 @@ func getGeneratedBuilderPair(b InitBuilder) GeneratedBuilderImagePair {
 	return GeneratedBuilderImagePair{
 		BuilderImagePair: BuilderImagePair{
 			Builder:   b,
-			ImageName: imageName,
+			ImageName: sanitizeImageName(imageName),
 		},
 		ManifestPath: filepath.Join(path, "deployment.yaml"),
 	}
+}
+
+func sanitizeImageName(imageName string) string {
+	// Replace unsupported characters with `_`
+	sanitized := regexp.MustCompile(`[^a-zA-Z0-9-._]`).ReplaceAllString(imageName, `-`)
+
+	// Truncate to 128 characters
+	if len(sanitized) > 128 {
+		return sanitized[0:128]
+	}
+
+	return sanitized
 }
