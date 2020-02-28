@@ -212,7 +212,7 @@ func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []
 
 	manifestOut := out
 	if filepath != "" {
-		f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
+		f, err := os.OpenFile(filepath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 		if err != nil {
 			return fmt.Errorf("opening file for writing manifests: %w", err)
 		}
