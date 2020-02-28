@@ -36,9 +36,9 @@ func TestValidate(t *testing.T) {
 			expectedValid: true,
 		},
 		{
-			description:   "NodeJS (ignored)",
-			path:          filepath.Join("node_modules", "package.json"),
-			expectedValid: false,
+			description:   "NodeJS (root)",
+			path:          filepath.Join("package.json"),
+			expectedValid: true,
 		},
 		{
 			description:   "Go",
@@ -46,9 +46,9 @@ func TestValidate(t *testing.T) {
 			expectedValid: true,
 		},
 		{
-			description:   "Go (ignored)",
-			path:          filepath.Join("vendor", "go.mod"),
-			expectedValid: false,
+			description:   "Go (root)",
+			path:          filepath.Join("go.mod"),
+			expectedValid: true,
 		},
 		{
 			description:   "Unknown language",
@@ -63,6 +63,23 @@ func TestValidate(t *testing.T) {
 			isValid := Validate(tmpDir.Path(test.path))
 
 			t.CheckDeepEqual(test.expectedValid, isValid)
+		})
+	}
+}
+
+func TestValidateIgnored(t *testing.T) {
+	paths := []string{
+		filepath.Join("parent", "node_modules", "package.json"),
+		filepath.Join("node_modules", "package.json"),
+		filepath.Join("vendor", "go.mod"),
+		filepath.Join("parent", "vendor", "go.mod"),
+	}
+
+	for _, path := range paths {
+		testutil.Run(t, path, func(t *testutil.T) {
+			isValid := Validate(path)
+
+			t.CheckFalse(isValid)
 		})
 	}
 }
