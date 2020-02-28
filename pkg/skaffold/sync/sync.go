@@ -161,6 +161,9 @@ func syncMapForArtifact(a *latest.Artifact, insecureRegistries map[string]bool) 
 	case a.DockerArtifact != nil:
 		return docker.SyncMap(a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, insecureRegistries)
 
+	case a.CustomArtifact != nil && a.CustomArtifact.Dependencies != nil && a.CustomArtifact.Dependencies.Dockerfile != nil:
+		return docker.SyncMap(a.Workspace, a.CustomArtifact.Dependencies.Dockerfile.Path, a.CustomArtifact.Dependencies.Dockerfile.BuildArgs, insecureRegistries)
+
 	case a.KanikoArtifact != nil:
 		return docker.SyncMap(a.Workspace, a.KanikoArtifact.DockerfilePath, a.KanikoArtifact.BuildArgs, insecureRegistries)
 

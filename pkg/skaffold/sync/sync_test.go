@@ -931,6 +931,30 @@ func TestSyncMap(t *testing.T) {
 			expectedMap: map[string][]string{"main.go": {"/app/main.go"}},
 		},
 		{
+			description: "custom - supported",
+			artifactType: latest.ArtifactType{
+				CustomArtifact: &latest.CustomArtifact{
+					Dependencies: &latest.CustomDependencies{
+						Dockerfile: &latest.DockerfileDependency{
+							Path: "Dockerfile",
+						},
+					},
+				},
+			},
+			files: map[string]string{
+				"Dockerfile": "FROM alpine\nCOPY *.go /app/",
+				"main.go":    "",
+			},
+			expectedMap: map[string][]string{"main.go": {"/app/main.go"}},
+		},
+		{
+			description: "custom, no dockerfile - not supported",
+			artifactType: latest.ArtifactType{
+				CustomArtifact: &latest.CustomArtifact{},
+			},
+			shouldErr: true,
+		},
+		{
 			description:  "not supported",
 			artifactType: latest.ArtifactType{},
 			shouldErr:    true,
