@@ -18,7 +18,9 @@ package buildpacks
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -69,7 +71,22 @@ func (c ArtifactConfig) Path() string {
 
 // validate checks if a file is a valid Buildpack configuration.
 func validate(path string) bool {
-	name := filepath.Base(path)
+	switch filepath.Base(path) {
+	case "package.json":
+		return !hasParent(path, "node_modules")
+	case "go.mod":
+		return !hasParent(path, "vendor")
+	default:
+		return false
+	}
+}
 
-	return name == "package.json" || name == "go.mod"
+func hasParent(path, parent string) bool {
+	for _, p := range strings.Split(path, string(os.PathSeparator)) {
+		if p == parent {
+			return true
+		}
+	}
+
+	return false
 }
