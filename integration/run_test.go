@@ -239,7 +239,7 @@ func TestRunUnstableChecked(t *testing.T) {
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	output, err := skaffold.Run("--status-check=true").InDir("testdata/unstable-deployment").InNs(ns.Name).RunWithCombinedOutput(t)
+	output, err := skaffold.Run().InDir("testdata/unstable-deployment").InNs(ns.Name).RunWithCombinedOutput(t)
 	if err == nil {
 		t.Errorf("expected to see an error since the deployment is not stable: %s", output)
 	} else if !strings.Contains(string(output), "unstable-deployment failed") {
@@ -255,5 +255,5 @@ func TestRunUnstableNotChecked(t *testing.T) {
 	ns, _, deleteNs := SetupNamespace(t)
 	defer deleteNs()
 
-	skaffold.Run().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
+	skaffold.Run("--status-check=false").InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
 }
