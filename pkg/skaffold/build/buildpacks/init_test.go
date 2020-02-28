@@ -32,17 +32,27 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			description:   "NodeJS",
-			path:          "path/to/package.json",
+			path:          filepath.Join("path", "to", "package.json"),
 			expectedValid: true,
+		},
+		{
+			description:   "NodeJS (ignored)",
+			path:          filepath.Join("node_modules", "package.json"),
+			expectedValid: false,
 		},
 		{
 			description:   "Go",
-			path:          "path/to/go.mod",
+			path:          filepath.Join("path", "to", "go.mod"),
 			expectedValid: true,
 		},
 		{
+			description:   "Go (ignored)",
+			path:          filepath.Join("vendor", "go.mod"),
+			expectedValid: false,
+		},
+		{
 			description:   "Unknown language",
-			path:          "path/to/something.txt",
+			path:          filepath.Join("path", "to", "something.txt"),
 			expectedValid: false,
 		},
 	}
