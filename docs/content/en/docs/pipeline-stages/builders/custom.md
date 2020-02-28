@@ -72,7 +72,7 @@ To configure custom build script locally, in addition to adding a [`custom` fiel
 
 #### Custom Build Script on Google Cloud Build
 
-Such configuration is currently not supported.
+This configuration is currently not supported.
 
 ### Dependencies for a Custom Artifact
 
