@@ -38,12 +38,7 @@ func EvaluateEnv(env []string) ([]string, error) {
 		k := kvp[0]
 		v := kvp[1]
 
-		tmpl, err := util.ParseEnvTemplate(v)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to parse template for env variable: %s=%s", k, v)
-		}
-
-		value, err := util.ExecuteEnvTemplate(tmpl, nil)
+		value, err := util.ExpandEnvTemplate(v, nil)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get value for env variable: %s", k)
 		}

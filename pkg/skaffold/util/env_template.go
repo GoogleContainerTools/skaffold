@@ -31,6 +31,16 @@ var (
 	OSEnviron = os.Environ
 )
 
+// ExpandEnvTemplate parses and executes template s with an optional environment map
+func ExpandEnvTemplate(s string, envMap map[string]string) (string, error) {
+	tmpl, err := ParseEnvTemplate(s)
+	if err != nil {
+		return "", errors.Wrapf(err, "unable to parse template: %q", s)
+	}
+
+	return ExecuteEnvTemplate(tmpl, envMap)
+}
+
 // ParseEnvTemplate is a simple wrapper to parse an env template
 func ParseEnvTemplate(t string) (*template.Template, error) {
 	return template.New("envTemplate").Parse(t)
