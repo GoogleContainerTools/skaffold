@@ -41,6 +41,7 @@ type RunBuilder struct {
 	dir        string
 	ns         string
 	repo       string
+	profiles   []string
 	args       []string
 	env        []string
 	stdin      []byte
@@ -147,6 +148,12 @@ func (b *RunBuilder) InNs(ns string) *RunBuilder {
 // WithEnv sets environment variables.
 func (b *RunBuilder) WithEnv(env []string) *RunBuilder {
 	b.env = env
+	return b
+}
+
+// WithProfiles sets profiles.
+func (b *RunBuilder) WithProfiles(profiles []string) *RunBuilder {
+	b.profiles = profiles
 	return b
 }
 
@@ -261,6 +268,9 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	}
 	if b.repo != "" && command.Flags().Lookup("default-repo") != nil {
 		args = append(args, "--default-repo", b.repo)
+	}
+	if b.profiles != nil && len(b.profiles) > 0 && command.Flags().Lookup("profile") != nil {
+		args = append(args, "--profile", strings.Join(b.profiles, ","))
 	}
 	args = append(args, b.args...)
 
