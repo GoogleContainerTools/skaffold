@@ -5,14 +5,12 @@ weight: 40
 featureId: build.custom
 ---
 
-Custom build scripts allow skaffold users the flexibility to build artifacts with any builder they desire. 
-Users can write a custom build script which must abide by the following contract for skaffold to work as expected:
+Custom build scripts allow Skaffold users the flexibility to build artifacts with any builder they desire. 
+Users can write a custom build script which must abide by the following contract for Skaffold to work as expected:
 
-Currently, this only works with [local](#custom-build-script-locally) and 
-[cluster](#custom-build-script-in-cluster) build types. 
 ### Contract between Skaffold and Custom Build Script
 
-Skaffold will pass in the following environment variables to the custom build script:
+Skaffold will pass in the following additional environment variables to the custom build script:
 
 | Environment Variable         | Description           | Expectation  |
 | ------------- |-------------| -----|
@@ -26,18 +24,20 @@ As described above, the custom build script is expected to:
 1. Build and tag the `$IMAGE` image
 2. Push the image if `$PUSH_IMAGE=true`
 
-Once the build script has finished executing, skaffold will try to obtain the digest of the newly built image from a remote registry (if `$PUSH_IMAGE=true`) or the local daemon (if `$PUSH_IMAGE=false`).
-If skaffold fails to obtain the digest, it will error out.
+Once the build script has finished executing, Skaffold will try to obtain the digest of the newly built image from a remote registry (if `$PUSH_IMAGE=true`) or the local daemon (if `$PUSH_IMAGE=false`).
+If Skaffold fails to obtain the digest, it will error out.
 
 ### Configuration
 
-To use a custom build script, add a `custom` field to each corresponding artifact in the `build` section of the skaffold.yaml.
+To use a custom build script, add a `custom` field to each corresponding artifact in the `build` section of the `skaffold.yaml`.
 Supported schema for `custom` includes:
 
 {{< schema root="CustomArtifact" >}}
 
-`buildCommand` is *required* and points skaffold to the custom build script which will be executed to build the artifact.
-
+`buildCommand` is *required* and points Skaffold to the custom build script which will be executed to build the artifact.
+The [Go templates](https://golang.org/pkg/text/template/) syntax can be used to inject environment variables into the build
+command. For example: `buildCommand: ./build.sh --flag={{ .SOME_FLAG }}` will replace `{{ .SOME_FLAG }}` with the value of
+the `SOME_FLAG` environment variable.
 
 #### Custom Build Script Locally
 
@@ -66,11 +66,13 @@ Skaffold will pass in the following additional environment variables for cluster
 | $DOCKER_CONFIG_SECRET_NAME    | The secret containing any required docker authentication for custom builds on cluster.| None. | 
 | $TIMEOUT        | The amount of time an on cluster build is allowed to run.| None. | 
 
-
 **Configuration**
 
-To configure custom build script locally, in addition to adding a [`custom` field](#configuration) to each corresponding artifact in the `build`
-add `cluster` to you `build` config.
+To configure custom build script locally, in addition to adding a [`custom` field](#configuration) to each corresponding artifact in the `build`, add `cluster` to you `build` config.
+
+#### Custom Build Script on Google Cloud Build
+
+This configuration is currently not supported.
 
 ### Dependencies for a Custom Artifact
 

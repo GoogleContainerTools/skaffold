@@ -462,15 +462,11 @@ func EvaluateBuildArgs(args map[string]*string) (map[string]*string, error) {
 			continue
 		}
 
-		tmpl, err := util.ParseEnvTemplate(*v)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to parse template for build arg: %s=%s", k, *v)
-		}
-
-		value, err := util.ExecuteEnvTemplate(tmpl, nil)
+		value, err := util.ExpandEnvTemplate(*v, nil)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to get value for build arg: %s", k)
 		}
+
 		evaluated[k] = &value
 	}
 

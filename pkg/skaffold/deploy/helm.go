@@ -108,7 +108,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 	for _, r := range h.Releases {
 		results, err := h.deployRelease(ctx, out, r, builds, valuesSet, hv)
 		if err != nil {
-			releaseName, _ := expand(r.Name, nil)
+			releaseName, _ := util.ExpandEnvTemplate(r.Name, nil)
 
 			event.DeployFailed(err)
 			return NewDeployErrorResult(errors.Wrapf(err, "deploying %s", releaseName))
@@ -196,7 +196,7 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	}
 
 	for _, r := range h.Releases {
-		releaseName, err := expand(r.Name, nil)
+		releaseName, err := util.ExpandEnvTemplate(r.Name, nil)
 		if err != nil {
 			return errors.Wrap(err, "cannot parse the release name template")
 		}
@@ -241,7 +241,7 @@ func (h *HelmDeployer) exec(ctx context.Context, out io.Writer, useSecrets bool,
 
 // deployRelease deploys a single release
 func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]Artifact, error) {
-	releaseName, err := expand(r.Name, nil)
+	releaseName, err := util.ExpandEnvTemplate(r.Name, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot parse the release name template")
 	}
@@ -456,7 +456,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 	}
 	sort.Strings(sortedKeys)
 	for _, k := range sortedKeys {
-		v, err := expand(r.SetValueTemplates[k], envMap)
+		v, err := util.ExpandEnvTemplate(r.SetValueTemplates[k], envMap)
 		if err != nil {
 			return nil, err
 		}
@@ -471,7 +471,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 			return nil, errors.Wrapf(err, "unable to expand %s", v)
 		}
 
-		exp, err = expand(exp, envMap)
+		exp, err = util.ExpandEnvTemplate(exp, envMap)
 		if err != nil {
 			return nil, err
 		}
@@ -533,7 +533,7 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 	args := []string{"package", r.ChartPath, "--destination", tmpDir}
 
 	if r.Packaged.Version != "" {
-		v, err := expand(r.Packaged.Version, nil)
+		v, err := util.ExpandEnvTemplate(r.Packaged.Version, nil)
 		if err != nil {
 			return "", errors.Wrap(err, `packaged.version template`)
 		}
@@ -541,7 +541,7 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 	}
 
 	if r.Packaged.AppVersion != "" {
-		av, err := expand(r.Packaged.AppVersion, nil)
+		av, err := util.ExpandEnvTemplate(r.Packaged.AppVersion, nil)
 		if err != nil {
 			return "", errors.Wrap(err, `packaged.appVersion template`)
 		}
@@ -611,14 +611,4 @@ func pairParamsToArtifacts(builds []build.Artifact, params map[string]string) (m
 	}
 
 	return paramToBuildResult, nil
-}
-
-// expand parses and executes template s with an optional environment map
-func expand(s string, envMap map[string]string) (string, error) {
-	tmpl, err := util.ParseEnvTemplate(s)
-	if err != nil {
-		return "", errors.Wrap(err, "parsing template")
-	}
-
-	return util.ExecuteEnvTemplate(tmpl, envMap)
 }

@@ -53,13 +53,19 @@ func (b *Builder) runBuildScript(ctx context.Context, out io.Writer, a *latest.A
 func (b *Builder) retrieveCmd(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (*exec.Cmd, error) {
 	artifact := a.CustomArtifact
 
+	// Expand command
+	command, err := util.ExpandEnvTemplate(artifact.BuildCommand, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to parse build command %q")
+	}
+
 	var cmd *exec.Cmd
 	// We evaluate the command with a shell so that it can contain
 	// env variables.
 	if runtime.GOOS == "windows" {
-		cmd = exec.CommandContext(ctx, "cmd.exe", "/C", artifact.BuildCommand)
+		cmd = exec.CommandContext(ctx, "cmd.exe", "/C", command)
 	} else {
-		cmd = exec.CommandContext(ctx, "sh", "-c", artifact.BuildCommand)
+		cmd = exec.CommandContext(ctx, "sh", "-c", command)
 	}
 	cmd.Stdout = out
 	cmd.Stderr = out
