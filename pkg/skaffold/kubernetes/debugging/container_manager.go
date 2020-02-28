@@ -87,13 +87,7 @@ func (d *ContainerManager) Start(ctx context.Context) error {
 				if !ok {
 					continue
 				}
-				// Notify only when a container is Running or Terminated (not Waiting)
-				// "ADDED" is never interesting since no containers are Running yet
-				// "MODIFIED" may now have containers in Running or Terminated
-				// "DELETED" if the pod is deleted
-				if evt.Type != watch.Modified && evt.Type != watch.Deleted {
-					continue
-				}
+				// Unlike other event watchers, we ignore event types as checkPod() uses only container status
 				if d.podSelector.Select(pod) {
 					d.checkPod(ctx, pod)
 				}
