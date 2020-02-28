@@ -64,11 +64,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 			opts.Command = cmd.Use
 
-			// Setup colors
-			if forceColors {
-				color.ForceColors()
-			}
-			color.OverwriteDefault(color.Color(defaultColor))
+			color.SetupColors(out, defaultColor, forceColors)
 			cmd.Root().SetOutput(out)
 
 			// Setup logs
@@ -167,7 +163,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 	templates.ActsAsRootCommand(rootCmd, nil, groups...)
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
-	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.Default), "Specify the default output color in ANSI escape codes")
+	rootCmd.PersistentFlags().IntVar(&defaultColor, "color", int(color.DefaultColorCode), "Specify the default output color in ANSI escape codes")
 	rootCmd.PersistentFlags().BoolVar(&forceColors, "force-colors", false, "Always print color codes (hidden)")
 	rootCmd.PersistentFlags().MarkHidden("force-colors")
 

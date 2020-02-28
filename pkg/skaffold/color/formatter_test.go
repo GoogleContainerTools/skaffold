@@ -18,77 +18,74 @@ package color
 
 import (
 	"bytes"
-	"io"
 	"testing"
-
-	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func compareText(t *testing.T, expected, actual string, expectedN int, actualN int, err error) {
+func compareText(t *testing.T, expected, actual string) {
 	t.Helper()
-	if err != nil {
-		t.Errorf("Did not expect error when formatting text but got %s", err)
-	}
-	if actualN != expectedN {
-		t.Errorf("Expected formatter to have written %d bytes but wrote %d", expectedN, actualN)
-	}
 	if actual != expected {
-		t.Errorf("Formatting not applied to text. Expected \"%s\" but got \"%s\"", expected, actual)
+		t.Errorf("Formatting not applied to text. Expected %q but got %q", expected, actual)
 	}
 }
 
 func TestFprintln(t *testing.T) {
-	reset := ForceColors()
-	defer reset()
-
+	defer func() { SetupColors(nil, DefaultColorCode, false) }()
 	var b bytes.Buffer
-	n, err := Green.Fprintln(&b, "2", "less", "chars!")
 
-	compareText(t, "\033[32m2 less chars!\033[0m\n", b.String(), 23, n, err)
+	SetupColors(&b, 0, true)
+	Green.Fprintln(&b, "2", "less", "chars!")
+
+	compareText(t, "\033[32m2 less chars!\033[0m\n", b.String())
 }
 
 func TestFprintf(t *testing.T) {
-	reset := ForceColors()
-	defer reset()
-
-	var b bytes.Buffer
-	n, err := Green.Fprintf(&b, "It's been %d %s", 1, "week")
-
-	compareText(t, "\033[32mIt's been 1 week\033[0m", b.String(), 25, n, err)
-}
-
-type nopCloser struct{ io.Writer }
-
-func (n *nopCloser) Close() error { return nil }
-
-func TestFprintlnOnColoredWriter(t *testing.T) {
+	defer func() { SetupColors(nil, DefaultColorCode, false) }()
 	var b bytes.Buffer
 
-	coloredWriter := ColoredWriteCloser{
-		WriteCloser: &nopCloser{Writer: &b},
-	}
+	SetupColors(&b, 0, true)
+	Green.Fprintf(&b, "It's been %d %s", 1, "week")
 
-	n, err := Green.Fprintln(coloredWriter, "It's not easy being")
-
-	compareText(t, "\033[32mIt's not easy being\033[0m\n", b.String(), 29, n, err)
+	compareText(t, "\033[32mIt's been 1 week\033[0m", b.String())
 }
 
 func TestFprintlnNoTTY(t *testing.T) {
 	var b bytes.Buffer
-	n, err := Green.Fprintln(&b, "2", "less", "chars!")
-	expected := "2 less chars!\n"
-	compareText(t, expected, b.String(), 14, n, err)
+
+	SetupColors(&b, 0, false)
+	Green.Fprintln(&b, "2", "less", "chars!")
+
+	compareText(t, "2 less chars!\n", b.String())
 }
 
 func TestFprintfNoTTY(t *testing.T) {
 	var b bytes.Buffer
-	n, err := Green.Fprintf(&b, "It's been %d %s", 1, "week")
-	expected := "It's been 1 week"
-	compareText(t, expected, b.String(), 16, n, err)
+
+	SetupColors(&b, 0, false)
+	Green.Fprintf(&b, "It's been %d %s", 1, "week")
+
+	compareText(t, "It's been 1 week", b.String())
 }
 
-func TestOverwriteDefault(t *testing.T) {
-	testutil.CheckDeepEqual(t, Blue, Default)
-	OverwriteDefault(Red)
-	testutil.CheckDeepEqual(t, Red, Default)
+func TestFprintlnDefaultColor(t *testing.T) {
+	var b bytes.Buffer
+
+	SetupColors(&b, 34, true)
+	Default.Fprintln(&b, "2", "less", "chars!")
+	compareText(t, "\033[34m2 less chars!\033[0m\n", b.String())
+}
+
+func TestFprintlnChangeDefaultToNone(t *testing.T) {
+	var b bytes.Buffer
+
+	SetupColors(&b, 0, true)
+	Default.Fprintln(&b, "2", "less", "chars!")
+	compareText(t, "2 less chars!\n", b.String())
+}
+
+func TestFprintlnChangeDefaultToUnknown(t *testing.T) {
+	var b bytes.Buffer
+
+	SetupColors(&b, -1, true)
+	Default.Fprintln(&b, "2", "less", "chars!")
+	compareText(t, "2 less chars!\n", b.String())
 }
