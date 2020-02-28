@@ -21,9 +21,9 @@ import (
 	"io"
 	"strings"
 
+	colors "github.com/heroku/color"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/heroku/color"
-	hc "github.com/heroku/color"
 )
 
 // Maintain compatibility with the old color coding.
@@ -31,13 +31,13 @@ import (
 const DefaultColorCode = 34
 
 func init() {
-	color.Disable(true)
+	colors.Disable(true)
 }
 
 // SetupColors enables/disables coloured output.
 func SetupColors(out io.Writer, defaultColor int, forceColors bool) {
 	_, isTerm := util.IsTerminal(out)
-	color.Disable(!isTerm && !forceColors)
+	colors.Disable(!isTerm && !forceColors)
 
 	// Maintain compatibility with the old color coding.
 	Default = map[int]Color{
@@ -59,34 +59,34 @@ func SetupColors(out io.Writer, defaultColor int, forceColors bool) {
 
 // Color can be used to format text so it can be printed to the terminal in color.
 type Color struct {
-	color *hc.Color
+	color *colors.Color
 }
 
 var (
 	// LightRed can format text to be displayed to the terminal in light red.
-	LightRed = Color{color: hc.New(hc.FgHiRed)}
+	LightRed = Color{color: colors.New(colors.FgHiRed)}
 	// LightGreen can format text to be displayed to the terminal in light green.
-	LightGreen = Color{color: hc.New(hc.FgHiGreen)}
+	LightGreen = Color{color: colors.New(colors.FgHiGreen)}
 	// LightYellow can format text to be displayed to the terminal in light yellow.
-	LightYellow = Color{color: hc.New(hc.FgHiYellow)}
+	LightYellow = Color{color: colors.New(colors.FgHiYellow)}
 	// LightBlue can format text to be displayed to the terminal in light blue.
-	LightBlue = Color{color: hc.New(hc.FgHiBlue)}
+	LightBlue = Color{color: colors.New(colors.FgHiBlue)}
 	// LightPurple can format text to be displayed to the terminal in light purple.
-	LightPurple = Color{color: hc.New(hc.FgHiMagenta)}
+	LightPurple = Color{color: colors.New(colors.FgHiMagenta)}
 	// Red can format text to be displayed to the terminal in red.
-	Red = Color{color: hc.New(hc.FgRed)}
+	Red = Color{color: colors.New(colors.FgRed)}
 	// Green can format text to be displayed to the terminal in green.
-	Green = Color{color: hc.New(hc.FgGreen)}
+	Green = Color{color: colors.New(colors.FgGreen)}
 	// Yellow can format text to be displayed to the terminal in yellow.
-	Yellow = Color{color: hc.New(hc.FgYellow)}
+	Yellow = Color{color: colors.New(colors.FgYellow)}
 	// Blue can format text to be displayed to the terminal in blue.
-	Blue = Color{color: hc.New(hc.FgBlue)}
+	Blue = Color{color: colors.New(colors.FgBlue)}
 	// Purple can format text to be displayed to the terminal in purple.
-	Purple = Color{color: hc.New(hc.FgHiMagenta)}
+	Purple = Color{color: colors.New(colors.FgHiMagenta)}
 	// Cyan can format text to be displayed to the terminal in cyan.
-	Cyan = Color{color: hc.New(hc.FgHiCyan)}
+	Cyan = Color{color: colors.New(colors.FgHiCyan)}
 	// White can format text to be displayed to the terminal in white.
-	White = Color{color: hc.New(hc.FgWhite)}
+	White = Color{color: colors.New(colors.FgWhite)}
 	// None uses ANSI escape codes to reset all formatting.
 	None = Color{}
 
