@@ -81,7 +81,7 @@ func stripTags(taggedImages []string) []string {
 	return images
 }
 
-func artifacts(pairs []BuilderImagePair) []*latest.Artifact {
+func Artifacts(pairs []BuilderImagePair) []*latest.Artifact {
 	var artifacts []*latest.Artifact
 
 	for _, pair := range pairs {
