@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -349,36 +348,6 @@ func TestInParallelForArgs(t *testing.T) {
 			actual, _ := InParallel(context.Background(), ioutil.Discard, tags, artifacts, test.buildArtifact, 0)
 
 			t.CheckDeepEqual(test.expected, actual)
-		})
-	}
-}
-
-func TestColoredOutput(t *testing.T) {
-	tests := []struct {
-		description   string
-		isTerminal    func(w io.Writer) bool
-		exceptedColor bool
-	}{
-		{
-			description:   "setUpColorWriter returns color out writer for terminal",
-			isTerminal:    func(w io.Writer) bool { return true },
-			exceptedColor: true,
-		},
-		{
-			description:   "setUpColorWriter returns color out writer if not terminal",
-			isTerminal:    func(w io.Writer) bool { return false },
-			exceptedColor: false,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&color.IsTerminal, test.isTerminal)
-
-			_, w := io.Pipe()
-			actual := setUpColorWriter(w, ioutil.Discard)
-
-			_, isColorWriter := actual.(color.ColoredWriteCloser)
-			t.CheckDeepEqual(test.exceptedColor, isColorWriter)
 		})
 	}
 }
