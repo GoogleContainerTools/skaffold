@@ -36,3 +36,4 @@ profiles:
           # with the container src folder
           - src: 'src/**/*.py'
             dest: .
+            
