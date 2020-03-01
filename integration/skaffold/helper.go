@@ -269,7 +269,7 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	if b.repo != "" && command.Flags().Lookup("default-repo") != nil {
 		args = append(args, "--default-repo", b.repo)
 	}
-	if b.profiles != nil && len(b.profiles) > 0 && command.Flags().Lookup("profile") != nil {
+	if len(b.profiles) > 0 && command.Flags().Lookup("profile") != nil {
 		args = append(args, "--profile", strings.Join(b.profiles, ","))
 	}
 	args = append(args, b.args...)
