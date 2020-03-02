@@ -39,10 +39,7 @@ spec:
 `)
 	filename := tmpDir.Path("deployment.yaml")
 
-	k, err := newKubectlInitializer([]string{filename})
-	if err != nil {
-		t.Fatal("failed to create a pipeline")
-	}
+	k := newKubectlInitializer([]string{filename})
 
 	expectedConfig := latest.DeployConfig{
 		DeployType: latest.DeployType{

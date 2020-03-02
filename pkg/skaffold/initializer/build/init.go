@@ -19,17 +19,21 @@ package build
 import (
 	"io"
 
+	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/generator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 type defaultBuildInitializer struct {
-	builders          []InitBuilder
-	builderImagePairs []BuilderImagePair
-	unresolvedImages  []string
-	skipBuild         bool
-	force             bool
-	enableNewFormat   bool
-	resolveImages     bool
+	builders                   []InitBuilder
+	builderImagePairs          []BuilderImagePair
+	generatedBuilderImagePairs []GeneratedBuilderImagePair
+	unresolvedImages           []string
+	skipBuild                  bool
+	force                      bool
+	enableNewFormat            bool
+	resolveImages              bool
 }
 
 func (d *defaultBuildInitializer) ProcessImages(images []string) error {
@@ -54,12 +58,22 @@ func (d *defaultBuildInitializer) BuildConfig() latest.BuildConfig {
 	}
 }
 
-func (d *defaultBuildInitializer) BuilderImagePairs() []BuilderImagePair {
-	return d.builderImagePairs
-}
-
 func (d *defaultBuildInitializer) PrintAnalysis(out io.Writer) error {
 	return printAnalysis(out, d.enableNewFormat, d.skipBuild, d.builderImagePairs, d.builders, d.unresolvedImages)
+}
+
+func (d *defaultBuildInitializer) GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error) {
+	generatedManifests := map[GeneratedBuilderImagePair][]byte{}
+	for _, pair := range d.generatedBuilderImagePairs {
+		manifest, err := generator.Generate(pair.ImageName)
+		if err != nil {
+			return nil, errors.Wrap(err, "generating kubernetes manifest")
+		}
+		generatedManifests[pair] = manifest
+		d.builderImagePairs = append(d.builderImagePairs, pair.BuilderImagePair)
+	}
+	d.generatedBuilderImagePairs = nil
+	return generatedManifests, nil
 }
 
 // matchBuildersToImages takes a list of builders and images, checks if any of the builders' configured target

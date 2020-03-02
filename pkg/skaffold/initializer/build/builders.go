@@ -55,11 +55,23 @@ type BuilderImagePair struct {
 	ImageName string
 }
 
+// GeneratedBuilderImagePair pairs a discovered builder with a
+// generated image name, and the path to the manifest that should be generated
+type GeneratedBuilderImagePair struct {
+	BuilderImagePair
+	ManifestPath string
+}
+
 type Initializer interface {
+	// ProcessImages is the entrypoint call, and handles the pairing of all builders
+	// contained in the initializer with the provided images from the deploy initializer
 	ProcessImages([]string) error
+	// BuildConfig returns the processed build config to be written to the skaffold.yaml
 	BuildConfig() latest.BuildConfig
-	BuilderImagePairs() []BuilderImagePair
+	// PrintAnalysis writes the project analysis to the provided out stream
 	PrintAnalysis(io.Writer) error
+	// GenerateManifests generates image names and manifests for all unresolved pairs
+	GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error)
 }
 
 type emptyBuildInitializer struct {
@@ -73,12 +85,12 @@ func (e *emptyBuildInitializer) BuildConfig() latest.BuildConfig {
 	return latest.BuildConfig{}
 }
 
-func (e *emptyBuildInitializer) BuilderImagePairs() []BuilderImagePair {
+func (e *emptyBuildInitializer) PrintAnalysis(io.Writer) error {
 	return nil
 }
 
-func (e *emptyBuildInitializer) PrintAnalysis(io.Writer) error {
-	return nil
+func (e *emptyBuildInitializer) GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error) {
+	return nil, nil
 }
 
 func NewInitializer(builders []InitBuilder, c config.Config) Initializer {

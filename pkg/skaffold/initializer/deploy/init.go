@@ -21,12 +21,22 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
+type Error string
+
+func (e Error) Error() string { return string(e) }
+
+const NoManifest = Error("one or more Kubernetes manifests is required to run skaffold")
+
 // Initializer detects a deployment type and is able to extract image names from it
 type Initializer interface {
 	// deployConfig generates Deploy Config for skaffold configuration.
 	DeployConfig() latest.DeployConfig
 	// GetImages fetches all the images defined in the manifest files.
 	GetImages() []string
+	// Validate ensures preconditions are met before generating a skaffold config
+	Validate() error
+	// AddManifestForImage adds a provided manifest for a given image to the initializer
+	AddManifestForImage(string, string)
 }
 
 type cliDeployInit struct {
@@ -46,23 +56,38 @@ func (c *cliDeployInit) GetImages() []string {
 	return nil
 }
 
-type emptyDeployInit struct {
-}
-
-func (c *emptyDeployInit) DeployConfig() latest.DeployConfig {
-	return latest.DeployConfig{}
-}
-
-func (c *emptyDeployInit) GetImages() []string {
+func (c *cliDeployInit) Validate() error {
+	if len(c.cliKubernetesManifests) == 0 {
+		return NoManifest
+	}
 	return nil
 }
 
-func NewInitializer(manifests []string, c config.Config) (Initializer, error) {
+func (c *cliDeployInit) AddManifestForImage(string, string) {}
+
+type emptyDeployInit struct {
+}
+
+func (e *emptyDeployInit) DeployConfig() latest.DeployConfig {
+	return latest.DeployConfig{}
+}
+
+func (e *emptyDeployInit) GetImages() []string {
+	return nil
+}
+
+func (e *emptyDeployInit) Validate() error {
+	return nil
+}
+
+func (e *emptyDeployInit) AddManifestForImage(string, string) {}
+
+func NewInitializer(manifests []string, c config.Config) Initializer {
 	switch {
 	case c.SkipDeploy:
-		return &emptyDeployInit{}, nil
+		return &emptyDeployInit{}
 	case len(c.CliKubernetesManifests) > 0:
-		return &cliDeployInit{c.CliKubernetesManifests}, nil
+		return &cliDeployInit{c.CliKubernetesManifests}
 	default:
 		return newKubectlInitializer(manifests)
 	}

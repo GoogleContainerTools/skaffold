@@ -40,16 +40,20 @@ func (s stubDeploymentInitializer) GetImages() []string {
 	panic("implement me")
 }
 
+func (s stubDeploymentInitializer) Validate() error {
+	panic("no thanks")
+}
+
+func (s stubDeploymentInitializer) AddManifestForImage(string, string) {
+	panic("don't call me")
+}
+
 type stubBuildInitializer struct {
 	pairs []build.BuilderImagePair
 }
 
 func (s stubBuildInitializer) ProcessImages([]string) error {
 	panic("no")
-}
-
-func (s stubBuildInitializer) BuilderImagePairs() []build.BuilderImagePair {
-	panic("nope")
 }
 
 func (s stubBuildInitializer) PrintAnalysis(io.Writer) error {
@@ -60,6 +64,10 @@ func (s stubBuildInitializer) BuildConfig() latest.BuildConfig {
 	return latest.BuildConfig{
 		Artifacts: build.Artifacts(s.pairs),
 	}
+}
+
+func (s stubBuildInitializer) GenerateManifests() (map[build.GeneratedBuilderImagePair][]byte, error) {
+	panic("no thank you")
 }
 
 func TestGenerateSkaffoldConfig(t *testing.T) {
