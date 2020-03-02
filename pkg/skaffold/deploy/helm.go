@@ -204,6 +204,10 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		args := []string{"delete", releaseName}
 		if hv.LT(helm3Version) {
 			args = append(args, "--purge")
+		} else {
+			if r.Namespace != "" {
+				args = append(args, "--namespace", r.Namespace)
+			}
 		}
 		if err := h.exec(ctx, out, false, args...); err != nil {
 			return errors.Wrapf(err, "deleting %s", releaseName)
@@ -255,7 +259,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		helmVersion: helmVersion,
 	}
 
-	if err := h.exec(ctx, ioutil.Discard, false, getArgs(helmVersion, releaseName)...); err != nil {
+	if err := h.exec(ctx, ioutil.Discard, false, getArgs(helmVersion, releaseName, r.Namespace)...); err != nil {
 		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
 
 		opts.upgrade = false
@@ -312,7 +316,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	var b bytes.Buffer
 
 	// Be accepting of failure
-	if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName)...); err != nil {
+	if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, r.Namespace)...); err != nil {
 		logrus.Warnf(err.Error())
 		return nil, nil
 	}
@@ -487,10 +491,13 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 }
 
 // getArgs calculates the correct arguments to "helm get"
-func getArgs(v semver.Version, releaseName string) []string {
+func getArgs(v semver.Version, releaseName string, namespace string) []string {
 	args := []string{"get"}
 	if v.GTE(helm3Version) {
 		args = append(args, "all")
+		if namespace != "" {
+			args = append(args, "--namespace", namespace)
+		}
 	}
 	return append(args, releaseName)
 }
