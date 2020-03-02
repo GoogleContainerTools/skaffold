@@ -80,16 +80,17 @@ install: $(BUILD_DIR)/$(PROJECT)
 .PHONY: cross
 cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform).sha256)
 
-$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross/Dockerfile
 	docker build \
-		--build-arg PROJECT=$(REPOPATH) \
-		--build-arg TARGETS=$*/$(GOARCH) \
-		--build-arg FLAG_LDFLAGS=$(GO_LDFLAGS_$(*)) \
-		--build-arg FLAG_TAGS=$(GO_BUILD_TAGS_$(*)) \
+		--build-arg GOOS=$* \
+		--build-arg GOARCH=$(GOARCH) \
+		--build-arg GOFLAGS="$(GOFLAGS)" \
+		--build-arg TAGS=$(GO_BUILD_TAGS_$(*)) \
+		--build-arg LDFLAGS=$(GO_LDFLAGS_$(*)) \
 		-f deploy/cross/Dockerfile \
 		-t skaffold/cross \
 		.
-	docker run --rm --entrypoint sh skaffold/cross -c "cat /build/skaffold*" > $@
+	docker run --rm skaffold/cross cat /build/skaffold > $@
 
 %.sha256: %
 	shasum -a 256 $< > $@
