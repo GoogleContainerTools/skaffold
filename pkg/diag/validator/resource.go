@@ -23,23 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-type Resource interface {
-	// Namespace of the resource.
-	Namespace() string
-
-	// Kind of resource, e.g., service, pod, deployment
-	Kind() string
-	// Name of the resource, e.g., cluster name, node name, persistent volume name, etc.
-	Name() string
-
-	// Status if resource is healthy or not
-	Status() Status
-
-	// Reason if resource is not stable.
-	Reason() string
-}
-
-type resource struct {
+type Resource struct {
 	namespace string
 	kind      string
 	name      string
@@ -47,18 +31,18 @@ type resource struct {
 	status    Status
 }
 
-func (r *resource) Kind() string      { return r.kind }
-func (r *resource) Name() string      { return r.name }
-func (r *resource) Reason() string    { return r.reason }
-func (r *resource) Namespace() string { return r.namespace }
-func (r *resource) Status() Status    { return r.status }
-func (r *resource) String() string {
+func (r Resource) Kind() string      { return r.kind }
+func (r Resource) Name() string      { return r.name }
+func (r Resource) Reason() string    { return r.reason }
+func (r Resource) Namespace() string { return r.namespace }
+func (r Resource) Status() Status    { return r.status }
+func (r Resource) String() string {
 	return fmt.Sprintf("{%s:%s/%s}", r.kind, r.namespace, r.name)
 }
 
-// NewResource creates new resource of kind
+// NewResource creates new Resource of kind
 func NewResource(namespace, kind, name string, status Status, reason string) Resource {
-	return &resource{namespace: namespace, kind: kind, name: name, status: status, reason: reason}
+	return Resource{namespace: namespace, kind: kind, name: name, status: status, reason: reason}
 }
 
 // objectWithMetadata is any k8s object that has kind and object metadata.
@@ -67,7 +51,7 @@ type objectWithMetadata interface {
 	meta_v1.Object
 }
 
-// NewResourceFromObject creates new resource with fields populated from object metadata.
+// NewResourceFromObject creates new Resource with fields populated from object metadata.
 func NewResourceFromObject(object objectWithMetadata, status Status, reason string) Resource {
 	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, reason)
 }

@@ -26,6 +26,6 @@ import (
 type Status string
 
 type Validator interface {
-	// Run runs the validator and returns the list of resources with status.
-	Run(ctx context.Context, client kubernetes.Interface, ns string, opts metav1.ListOptions) ([]Resource, error)
+	// Validate runs the validator and returns the list of resources with status.
+	Validate(ctx context.Context, client kubernetes.Interface, ns string, opts metav1.ListOptions) ([]Resource, error)
 }

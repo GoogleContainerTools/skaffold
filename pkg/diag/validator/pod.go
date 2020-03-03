@@ -47,8 +47,8 @@ func NewPodValidator(k kubernetes.Interface) *PodValidator {
 	return &PodValidator{k: k}
 }
 
-// Run implements the Run method for Validator interface
-func (p *PodValidator) Run(ctx context.Context, ns string, opts meta_v1.ListOptions) ([]Resource, error) {
+// Validate implements the Validate method for Validator interface
+func (p *PodValidator) Validate(ctx context.Context, ns string, opts meta_v1.ListOptions) ([]Resource, error) {
 	pods, err := p.k.CoreV1().Pods(ns).List(opts)
 	if err != nil {
 		return nil, err

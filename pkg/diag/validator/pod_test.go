@@ -155,9 +155,9 @@ func TestRun(t *testing.T) {
 				rs[i] = p
 			}
 			f := fakekubeclientset.NewSimpleClientset(rs...)
-			actual, err := NewPodValidator(f).Run(context.Background(), "test", meta_v1.ListOptions{})
+			actual, err := NewPodValidator(f).Validate(context.Background(), "test", meta_v1.ListOptions{})
 			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(resource{}))
+			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}))
 		})
 	}
 }
