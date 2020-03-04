@@ -3,7 +3,11 @@
 [![Build Status](https://travis-ci.org/buildpacks/lifecycle.svg?branch=master)](https://travis-ci.org/buildpack/lifecycle)
 [![GoDoc](https://godoc.org/github.com/buildpacks/lifecycle?status.svg)](https://godoc.org/github.com/buildpacks/lifecycle)
 
-A reference implementation of [Buildpack API v3](https://github.com/buildpacks/spec).
+A reference implementation of the [Cloud Native Buildpacks specification](https://github.com/buildpacks/spec).
+
+This lifecycle implements the following versioned APIs
+* Buildpack API 0.2 - excluding [/bin/develop](https://github.com/buildpacks/spec/blob/master/buildpack.md#development) and [store.toml](https://github.com/buildpacks/spec/blob/master/buildpack.md#storetoml-toml)
+* Platform API 0.2
 
 ## Commands
 
@@ -11,29 +15,17 @@ A reference implementation of [Buildpack API v3](https://github.com/buildpacks/s
 
 * `detector` - chooses buildpacks (via `/bin/detect`)
 * `analyzer` - restores launch layer metadata from the previous build
-* `builder` -  executes buildpacks (via `/bin/build`)
-* `exporter` - remotely patches images with new layers (via rebase & append)
-* `launcher` - invokes choice of process
-
-### Develop
-
-* `detector` - chooses buildpacks (via `/bin/detect`)
-* `developer` - executes buildpacks (via `/bin/develop`)
-* `launcher` - invokes choice of process
-
-### Cache
-
 * `restorer` - restores cache
-* `cacher` - updates cache
+* `builder` -  executes buildpacks (via `/bin/build`)
+* `exporter` - creates image and stores cache
+
+### Run
+
+* `launcher` - invokes choice of process
 
 ### Rebase
 
 * `rebaser` - remotely patches images with new base image
-
-## Notes
-
-Cache implementations (`restorer` and `cacher`) are intended to be interchangeable and platform-specific.
-A platform may choose not to deduplicate cache layers.
 
 ## Development
 To test, build, and package binaries into an archive, simply run:

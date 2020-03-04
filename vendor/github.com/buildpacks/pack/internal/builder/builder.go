@@ -160,7 +160,7 @@ func (b *Builder) LifecycleDescriptor() LifecycleDescriptor {
 	return b.lifecycleDescriptor
 }
 
-func (b *Builder) Buildpacks() []BuildpackMetadata {
+func (b *Builder) Buildpacks() []dist.BuildpackInfo {
 	return b.metadata.Buildpacks
 }
 
@@ -189,9 +189,7 @@ func (b *Builder) Mixins() []string {
 
 func (b *Builder) AddBuildpack(bp dist.Buildpack) {
 	b.additionalBuildpacks = append(b.additionalBuildpacks, bp)
-	b.metadata.Buildpacks = append(b.metadata.Buildpacks, BuildpackMetadata{
-		BuildpackInfo: bp.Descriptor().Info,
-	})
+	b.metadata.Buildpacks = append(b.metadata.Buildpacks, bp.Descriptor().Info)
 }
 
 func (b *Builder) SetLifecycle(lifecycle Lifecycle) error {
@@ -227,8 +225,6 @@ func (b *Builder) Save(logger logging.Logger) error {
 	if err != nil {
 		return errors.Wrap(err, "processing order")
 	}
-
-	processMetadata(&b.metadata)
 
 	tmpDir, err := ioutil.TempDir("", "create-builder-scratch")
 	if err != nil {
@@ -351,7 +347,7 @@ func (b *Builder) Save(logger logging.Logger) error {
 	return b.image.Save()
 }
 
-func processOrder(buildpacks []BuildpackMetadata, order dist.Order) (dist.Order, error) {
+func processOrder(buildpacks []dist.BuildpackInfo, order dist.Order) (dist.Order, error) {
 	resolvedOrder := dist.Order{}
 
 	for gi, g := range order {
@@ -361,7 +357,7 @@ func processOrder(buildpacks []BuildpackMetadata, order dist.Order) (dist.Order,
 			var matchingBps []dist.BuildpackInfo
 			for _, bp := range buildpacks {
 				if bpRef.ID == bp.ID {
-					matchingBps = append(matchingBps, bp.BuildpackInfo)
+					matchingBps = append(matchingBps, bp)
 				}
 			}
 
@@ -397,7 +393,7 @@ func hasBuildpackWithVersion(bps []dist.BuildpackInfo, version string) bool {
 	return false
 }
 
-func validateBuildpacks(stackID string, mixins []string, lifecycleDescriptor LifecycleDescriptor, allBuildpacks []BuildpackMetadata, bpsToValidate []dist.Buildpack) error {
+func validateBuildpacks(stackID string, mixins []string, lifecycleDescriptor LifecycleDescriptor, allBuildpacks []dist.BuildpackInfo, bpsToValidate []dist.Buildpack) error {
 	bpLookup := map[string]interface{}{}
 
 	for _, bp := range allBuildpacks {

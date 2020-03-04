@@ -41,6 +41,10 @@ func (p *PackageBuilder) Save(repoName string, publish bool) (imgutil.Image, err
 		return nil, errors.New("buildpack must be set")
 	}
 
+	if err := validateBuildpacks(p.buildpack, p.dependencies); err != nil {
+		return nil, err
+	}
+
 	stacks := p.buildpack.Descriptor().Stacks
 	for _, bp := range p.dependencies {
 		bpd := bp.Descriptor()
@@ -49,13 +53,6 @@ func (p *PackageBuilder) Save(repoName string, publish bool) (imgutil.Image, err
 			stacks = bpd.Stacks
 		} else if len(bpd.Stacks) > 0 { // skip over "meta-buildpacks"
 			stacks = stack.MergeCompatible(stacks, bpd.Stacks)
-			if len(stacks) == 0 {
-				return nil, errors.Errorf(
-					"buildpack %s does not support any stacks from %s",
-					style.Symbol(p.buildpack.Descriptor().Info.FullName()),
-					style.Symbol(bpd.Info.FullName()),
-				)
-			}
 		}
 	}
 
@@ -75,7 +72,7 @@ func (p *PackageBuilder) Save(repoName string, publish bool) (imgutil.Image, err
 		return nil, err
 	}
 
-	tmpDir, err := ioutil.TempDir("", "create-package")
+	tmpDir, err := ioutil.TempDir("", "package-buildpack")
 	if err != nil {
 		return nil, err
 	}
@@ -112,4 +109,41 @@ func (p *PackageBuilder) Save(repoName string, publish bool) (imgutil.Image, err
 	}
 
 	return image, nil
+}
+
+func validateBuildpacks(mainBP dist.Buildpack, depBPs []dist.Buildpack) error {
+	depsWithRefs := map[dist.BuildpackInfo][]dist.BuildpackInfo{}
+
+	for _, bp := range depBPs {
+		depsWithRefs[bp.Descriptor().Info] = nil
+	}
+
+	for _, bp := range append([]dist.Buildpack{mainBP}, depBPs...) {
+		bpd := bp.Descriptor()
+		for _, orderEntry := range bpd.Order {
+			for _, groupEntry := range orderEntry.Group {
+				if _, ok := depsWithRefs[groupEntry.BuildpackInfo]; !ok {
+					return errors.Errorf(
+						"buildpack %s references buildpack %s which is not present",
+						style.Symbol(bpd.Info.FullName()),
+						style.Symbol(groupEntry.FullName()),
+					)
+				}
+
+				depsWithRefs[groupEntry.BuildpackInfo] = append(depsWithRefs[groupEntry.BuildpackInfo], bpd.Info)
+			}
+		}
+	}
+
+	for bp, refs := range depsWithRefs {
+		if len(refs) == 0 {
+			return errors.Errorf(
+				"buildpack %s is not used by buildpack %s",
+				style.Symbol(bp.FullName()),
+				style.Symbol(mainBP.Descriptor().Info.FullName()),
+			)
+		}
+	}
+
+	return nil
 }

@@ -1,6 +1,6 @@
 # pack - Buildpack CLI
 
-[![Travis Build Status](https://travis-ci.org/buildpacks/pack.svg?branch=master)](https://travis-ci.org/buildpacks/pack/branches)
+[![Build results](https://github.com/buildpacks/pack/workflows/build/badge.svg)](https://github.com/buildpacks/pack/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/buildpacks/pack)](https://goreportcard.com/report/github.com/buildpacks/pack)
 [![GoDoc](https://godoc.org/github.com/buildpacks/pack?status.svg)](https://godoc.org/github.com/buildpacks/pack)
 [![GitHub license](https://img.shields.io/github/license/buildpacks/pack)](https://github.com/buildpacks/pack/blob/master/LICENSE)

@@ -38,6 +38,7 @@ type Image interface {
 	SetCmd(...string) error
 	Rebase(string, Image) error
 	AddLayer(path string) error
+	AddLayerWithDiffID(path, diffID string) error
 	ReuseLayer(diffID string) error
 	// TopLayer returns the diff id for the top layer
 	TopLayer() (string, error)

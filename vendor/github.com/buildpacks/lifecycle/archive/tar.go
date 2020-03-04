@@ -105,6 +105,8 @@ func WriteTarFile(sourceDir, dest string, uid, gid int) (string, error) {
 }
 
 func WriteTarArchive(w io.Writer, srcDir string, uid, gid int) error {
+	srcDir = filepath.Clean(srcDir)
+
 	tw := tar.NewWriter(w)
 	defer tw.Close()
 

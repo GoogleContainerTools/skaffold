@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/buildpacks/imgutil"
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/volume/mounts"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
 
@@ -21,6 +23,7 @@ import (
 	"github.com/buildpacks/pack/internal/archive"
 	"github.com/buildpacks/pack/internal/build"
 	"github.com/buildpacks/pack/internal/builder"
+	"github.com/buildpacks/pack/internal/buildpack"
 	"github.com/buildpacks/pack/internal/dist"
 	"github.com/buildpacks/pack/internal/paths"
 	"github.com/buildpacks/pack/internal/stack"
@@ -55,9 +58,8 @@ type ProxyConfig struct {
 
 type ContainerConfig struct {
 	Network string
+	Volumes []string
 }
-
-const fromBuilderPrefix = "from=builder"
 
 func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 	imageRef, err := c.parseTagReference(opts.Image)
@@ -98,7 +100,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		return err
 	}
 
-	fetchedBPs, order, err := c.processBuildpacks(ctx, bldr.Order(), opts.Buildpacks)
+	fetchedBPs, order, err := c.processBuildpacks(ctx, bldr.Buildpacks(), bldr.Order(), opts.Buildpacks, opts.NoPull, opts.Publish)
 	if err != nil {
 		return err
 	}
@@ -127,6 +129,11 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		return errors.Errorf("Builder %s is incompatible with this version of pack", style.Symbol(opts.Builder))
 	}
 
+	platformVolumes, err := buildPlatformVolumes(opts.ContainerConfig.Volumes)
+	if err != nil {
+		return err
+	}
+
 	return c.lifecycle.Execute(ctx, build.LifecycleOptions{
 		AppPath:    appPath,
 		Image:      imageRef,
@@ -138,6 +145,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		HTTPSProxy: proxyConfig.HTTPSProxy,
 		NoProxy:    proxyConfig.NoProxy,
 		Network:    opts.ContainerConfig.Network,
+		Volumes:    platformVolumes,
 	})
 }
 
@@ -382,11 +390,16 @@ func (c *Client) processProxyConfig(config *ProxyConfig) ProxyConfig {
 // 	----------
 // 	- group:
 //		- A
-func (c *Client) processBuildpacks(ctx context.Context, builderOrder dist.Order, declaredBPs []string) (fetchedBPs []dist.Buildpack, order dist.Order, err error) {
+func (c *Client) processBuildpacks(ctx context.Context, builderBPs []dist.BuildpackInfo, builderOrder dist.Order, declaredBPs []string, noPull bool, publish bool) (fetchedBPs []dist.Buildpack, order dist.Order, err error) {
 	order = dist.Order{{Group: []dist.BuildpackRef{}}}
 	for _, bp := range declaredBPs {
-		switch {
-		case bp == fromBuilderPrefix:
+		locatorType, err := buildpack.GetLocatorType(bp, builderBPs)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		switch locatorType {
+		case buildpack.FromBuilderLocator:
 			switch {
 			case len(order) == 0 || len(order[0].Group) == 0:
 				order = builderOrder
@@ -403,13 +416,13 @@ func (c *Client) processBuildpacks(ctx context.Context, builderOrder dist.Order,
 
 				order = newOrder
 			}
-		case isBuildpackID(bp):
-			id, version := c.parseBuildpack(bp)
+		case buildpack.IDLocator:
+			id, version := buildpack.ParseIDLocator(bp)
 			order = appendBuildpackToOrder(order, dist.BuildpackInfo{
 				ID:      id,
 				Version: version,
 			})
-		default:
+		case buildpack.URILocator:
 			err := ensureBPSupport(bp)
 			if err != nil {
 				return fetchedBPs, order, errors.Wrapf(err, "checking support")
@@ -427,6 +440,16 @@ func (c *Client) processBuildpacks(ctx context.Context, builderOrder dist.Order,
 
 			fetchedBPs = append(fetchedBPs, fetchedBP)
 			order = appendBuildpackToOrder(order, fetchedBP.Descriptor().Info)
+		case buildpack.PackageLocator:
+			mainBP, depBPs, err := extractPackagedBuildpacks(ctx, bp, c.imageFetcher, publish, noPull)
+			if err != nil {
+				return fetchedBPs, order, errors.Wrapf(err, "creating from buildpackage %s", style.Symbol(bp))
+			}
+
+			fetchedBPs = append(append(fetchedBPs, mainBP), depBPs...)
+			order = appendBuildpackToOrder(order, mainBP.Descriptor().Info)
+		default:
+			return nil, nil, fmt.Errorf("invalid buildpack string %s", style.Symbol(bp))
 		}
 	}
 
@@ -444,19 +467,6 @@ func appendBuildpackToOrder(order dist.Order, bpInfo dist.BuildpackInfo) (newOrd
 	}
 
 	return newOrder
-}
-
-func isBuildpackID(bp string) bool {
-	if strings.HasPrefix(bp, fromBuilderPrefix+":") {
-		return true
-	}
-
-	if !paths.IsURI(bp) {
-		if _, err := os.Stat(bp); err != nil {
-			return true
-		}
-	}
-	return false
 }
 
 func ensureBPSupport(bpPath string) (err error) {
@@ -490,20 +500,6 @@ func ensureBPSupport(bpPath string) (err error) {
 	return nil
 }
 
-func (c *Client) parseBuildpack(bp string) (string, string) {
-	parts := strings.Split(strings.TrimPrefix(bp, fromBuilderPrefix+":"), "@")
-	if len(parts) == 2 {
-		if parts[1] == "latest" {
-			c.logger.Warn("@latest syntax is deprecated, will not work in future releases")
-			return parts[0], ""
-		}
-
-		return parts[0], parts[1]
-	}
-
-	return parts[0], ""
-}
-
 func (c *Client) createEphemeralBuilder(rawBuilderImage imgutil.Image, env map[string]string, order dist.Order, buildpacks []dist.Buildpack) (*builder.Builder, error) {
 	origBuilderName := rawBuilderImage.Name()
 	bldr, err := builder.New(rawBuilderImage, fmt.Sprintf("pack.local/builder/%x:latest", randString(10)))
@@ -534,4 +530,21 @@ func randString(n int) string {
 		b[i] = 'a' + byte(rand.Intn(26))
 	}
 	return string(b)
+}
+
+func buildPlatformVolumes(volumes []string) ([]string, error) {
+	platformVolumes := make([]string, len(volumes))
+	// Assume a linux container
+	parser := mounts.NewParser(mounts.OSLinux)
+	for i, v := range volumes {
+		volume, err := parser.ParseMountRaw(v, "")
+		if err != nil {
+			return nil, errors.Wrapf(err, "Platform volume %q has invalid format", v)
+		}
+
+		// Use path.Join instead of filepath.Join because we assume the container OS is linux but the host may be windows
+		dest := path.Join("/platform", volume.Destination)
+		platformVolumes[i] = fmt.Sprintf("%v:%v:ro", volume.Spec.Source, dest)
+	}
+	return platformVolumes, nil
 }

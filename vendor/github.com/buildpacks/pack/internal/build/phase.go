@@ -193,8 +193,8 @@ func (p *Phase) createAppReader() (io.ReadCloser, error) {
 			mode = 0777
 		}
 
-		return archive.ReadDirAsTar(p.appPath, appDir, p.uid, p.gid, mode), nil
+		return archive.ReadDirAsTar(p.appPath, appDir, p.uid, p.gid, mode, false), nil
 	}
 
-	return archive.ReadZipAsTar(p.appPath, appDir, p.uid, p.gid, -1), nil
+	return archive.ReadZipAsTar(p.appPath, appDir, p.uid, p.gid, -1, false), nil
 }

@@ -61,7 +61,7 @@ func (c *Client) CreateBuilder(ctx context.Context, opts CreateBuilderOptions) e
 		return errors.Wrap(err, "setting lifecycle")
 	}
 
-	for _, b := range opts.Config.Buildpacks {
+	for _, b := range opts.Config.Buildpacks.Buildpacks() {
 		err := ensureBPSupport(b.URI)
 		if err != nil {
 			return err
@@ -85,13 +85,13 @@ func (c *Client) CreateBuilder(ctx context.Context, opts CreateBuilderOptions) e
 		bldr.AddBuildpack(fetchedBp)
 	}
 
-	for _, pkg := range opts.Config.Packages {
-		bps, err := extractPackagedBuildpacks(ctx, pkg.Image, c.imageFetcher, opts.Publish, opts.NoPull)
+	for _, pkg := range opts.Config.Buildpacks.Packages() {
+		mainBP, depBPs, err := extractPackagedBuildpacks(ctx, pkg.ImageName, c.imageFetcher, opts.Publish, opts.NoPull)
 		if err != nil {
 			return err
 		}
 
-		for _, bp := range bps {
+		for _, bp := range append([]dist.Buildpack{mainBP}, depBPs...) {
 			bldr.AddBuildpack(bp)
 		}
 	}
