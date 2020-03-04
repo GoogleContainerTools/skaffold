@@ -22,6 +22,8 @@ spec:
       labels:
         app: node
     spec:
+      securityContext:
+        runAsUser: 1000
       containers:
       - name: node
         image: node-example

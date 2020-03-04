@@ -4,11 +4,35 @@ build:
   artifacts:
   - image: node-example
     context: node
-    sync:
-      infer:
-      - 'src/**/*.js'
+
   - image: python-reload
     context: python
-    sync:
-      infer:
-      - 'src/**/*.py'
+
+profiles:
+  - name: dev
+    activation:
+      - command: dev
+    build:
+      artifacts:
+      - image: node-example
+        context: node
+        docker:
+          buildArgs:
+            ENV: development
+        sync:
+          manual:
+          # Sync all the javascript files that are in the src folder
+          # with the container src folder
+          - src: 'src/**/*.js'
+            dest: .
+      - image: python-reload
+        context: python
+        docker:
+          buildArgs:
+            DEBUG: 1
+        sync:
+          manual:
+          # Sync all the javascript files that are in the src folder
+          # with the container src folder
+          - src: 'src/**/*.py'
+            dest: .
