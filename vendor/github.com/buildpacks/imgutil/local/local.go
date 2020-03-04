@@ -271,12 +271,14 @@ func (i *Image) AddLayer(path string) error {
 	if _, err := io.Copy(hasher, f); err != nil {
 		return errors.Wrapf(err, "AddLayer: calculate checksum: %s", path)
 	}
-	sha := hex.EncodeToString(hasher.Sum(make([]byte, 0, hasher.Size())))
+	diffID := "sha256:" + hex.EncodeToString(hasher.Sum(make([]byte, 0, hasher.Size())))
+	return i.AddLayerWithDiffID(path, diffID)
+}
 
-	i.inspect.RootFS.Layers = append(i.inspect.RootFS.Layers, "sha256:"+sha)
+func (i *Image) AddLayerWithDiffID(path, diffID string) error {
+	i.inspect.RootFS.Layers = append(i.inspect.RootFS.Layers, diffID)
 	i.layerPaths = append(i.layerPaths, path)
 	i.easyAddLayers = nil
-
 	return nil
 }
 

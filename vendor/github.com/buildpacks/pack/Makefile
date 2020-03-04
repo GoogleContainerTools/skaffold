@@ -42,15 +42,15 @@ lint: install-golangci-lint
 
 test: unit acceptance
 
-unit: format lint
+unit:
 	@echo "> Running unit/integration tests..."
 	$(GOCMD) test -v -count=1 -parallel=1 -timeout=0 ./...
 
-acceptance: format lint
+acceptance:
 	@echo "> Running acceptance tests..."
 	COMPILE_PACK_WITH_VERSION=$(or ${COMPILE_PACK_WITH_VERSION}, 0.0.0) $(GOCMD) test -v -count=1 -parallel=1 -timeout=0 -tags=acceptance ./acceptance
 
-acceptance-all: format lint
+acceptance-all:
 	@echo "> Running acceptance tests..."
 	ACCEPTANCE_SUITE_CONFIG=$$(cat ./acceptance/testconfig/all.json) $(GOCMD) test -v -count=1 -parallel=1 -timeout=0 -tags=acceptance ./acceptance
 

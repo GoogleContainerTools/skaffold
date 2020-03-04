@@ -59,6 +59,16 @@ func (e *Exporter) Export(
 ) error {
 	var err error
 
+	layersDir, err = filepath.Abs(layersDir)
+	if err != nil {
+		return errors.Wrapf(err, "layers dir absolute path")
+	}
+
+	appDir, err = filepath.Abs(appDir)
+	if err != nil {
+		return errors.Wrapf(err, "app dir absolute path")
+	}
+
 	meta := LayersMetadata{}
 	meta.RunImage.TopLayer, err = workingImage.TopLayer()
 	if err != nil {
@@ -74,7 +84,7 @@ func (e *Exporter) Export(
 	}
 
 	// creating app layers (slices + app dir)
-	appSlices, err := e.createAppSliceLayers(workingImage, &layer{path: appDir, identifier: "app"}, buildMD.Slices)
+	appSlices, err := e.createAppSliceLayers(appDir, buildMD.Slices)
 	if err != nil {
 		return errors.Wrap(err, "creating app layers")
 	}
@@ -282,20 +292,20 @@ func (e *Exporter) addOrReuseCacheLayer(cache Cache, layer identifiableLayer, pr
 	return sha, cache.AddLayerFile(sha, tarPath)
 }
 
-func (e *Exporter) createAppSliceLayers(image imgutil.Image, appLayer identifiableLayer, slices []Slice) ([]SliceLayer, error) {
+func (e *Exporter) createAppSliceLayers(appDir string, slices []Slice) ([]SliceLayer, error) {
 	var appSlices []SliceLayer
 
 	for index, slice := range slices {
 		var allGlobMatches []string
 		for _, path := range slice.Paths {
-			globMatches, err := filepath.Glob(e.toAbs(appLayer.Path(), path))
+			globMatches, err := filepath.Glob(e.toAbs(appDir, path))
 			if err != nil {
 				return nil, errors.Wrap(err, "bad pattern for glob path")
 			}
 			allGlobMatches = append(allGlobMatches, globMatches...)
 		}
 		sliceLayerID := fmt.Sprintf("slice-%d", index+1)
-		sliceLayer, err := e.createSliceLayer(image, sliceLayerID, allGlobMatches)
+		sliceLayer, err := e.createSliceLayer(appDir, sliceLayerID, allGlobMatches)
 		if err != nil {
 			return nil, errors.Wrap(err, "creating slice layer")
 		}
@@ -312,20 +322,20 @@ func (e *Exporter) createAppSliceLayers(image imgutil.Image, appLayer identifiab
 	// -------------
 	// |  app dir  |
 	// -------------
-	tarPath := filepath.Join(e.ArtifactsDir, escapeID(appLayer.Identifier())+".tar")
-	sha, err := archive.WriteTarFile(appLayer.Path(), tarPath, e.UID, e.GID)
+	tarPath := filepath.Join(e.ArtifactsDir, "app.tar")
+	sha, err := archive.WriteTarFile(appDir, tarPath, e.UID, e.GID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "exporting layer '%s'", appLayer.Identifier())
+		return nil, errors.Wrapf(err, "exporting layer 'app'")
 	}
 
 	return append(appSlices, SliceLayer{
-		ID:      appLayer.Identifier(),
+		ID:      "app",
 		SHA:     sha,
 		TarPath: tarPath,
 	}), nil
 }
 
-func (e *Exporter) createSliceLayer(image imgutil.Image, layerID string, files []string) (SliceLayer, error) {
+func (e *Exporter) createSliceLayer(appDir, layerID string, files []string) (SliceLayer, error) {
 	tarPath := filepath.Join(e.ArtifactsDir, escapeID(layerID)+".tar")
 	sha, fileSet, err := archive.WriteFilesToTar(tarPath, e.UID, e.GID, files...)
 	if err != nil {
@@ -343,6 +353,9 @@ func (e *Exporter) createSliceLayer(image imgutil.Image, layerID string, files [
 				e.Logger.Errorf("failed to delete file %v", err)
 			}
 		} else {
+			if file == appDir {
+				continue
+			}
 			dirs = append(dirs, file)
 		}
 	}

@@ -18,15 +18,10 @@ type BuilderInfo struct {
 	Mixins          []string
 	RunImage        string
 	RunImageMirrors []string
-	Buildpacks      []builder.BuildpackMetadata
+	Buildpacks      []dist.BuildpackInfo
 	Order           dist.Order
 	Lifecycle       builder.LifecycleDescriptor
 	CreatedBy       builder.CreatorMetadata
-}
-
-type BuildpackInfo struct {
-	ID      string
-	Version string
 }
 
 func (c *Client) InspectBuilder(name string, daemon bool) (*BuilderInfo, error) {

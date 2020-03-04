@@ -151,7 +151,7 @@ func toDistTar(tw *tar.Writer, bpd BuildpackDescriptor, blob Blob) error {
 			return errors.Wrap(err, "failed to get next tar entry")
 		}
 
-		archive.NormalizeHeader(header)
+		archive.NormalizeHeader(header, true)
 		header.Name = path.Clean(header.Name)
 		if header.Name == "." || header.Name == "/" {
 			continue

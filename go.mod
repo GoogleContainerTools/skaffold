@@ -11,6 +11,7 @@ replace (
 	github.com/containerd/containerd => github.com/containerd/containerd v1.2.1-0.20190507210959-7c1e88399ec0
 	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20190319215453-e7b5f7dbe98c
 	golang.org/x/crypto v0.0.0-20190129210102-0709b304e793 => golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
+	golang.org/x/sys => golang.org/x/sys v0.0.0-20190507160741-ecd444e8653b
 	k8s.io/api => k8s.io/api v0.0.0-20190620084959-7cf5895f2711
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
 	k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
@@ -31,7 +32,7 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20190729225929-0e00d9168667 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.2
-	github.com/buildpacks/pack v0.8.2-0.20200131162247-1a6e03a48c94
+	github.com/buildpacks/pack v0.9.0
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/docker/cli v0.0.0-20191212191748-ebca1413117a
 	github.com/docker/distribution v2.7.1+incompatible
@@ -68,8 +69,6 @@ require (
 	github.com/mattn/go-colorable v0.1.4
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/moby/buildkit v0.6.3
-	github.com/onsi/ginkgo v1.10.3 // indirect
-	github.com/onsi/gomega v1.7.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1.0.20190228220655-ac19fd6e7483
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.8.1
@@ -99,7 +98,6 @@ require (
 	google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f
 	google.golang.org/grpc v1.26.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/src-d/go-git.v4 v4.13.1
 	gopkg.in/yaml.v2 v2.2.7
 	k8s.io/api v0.17.0

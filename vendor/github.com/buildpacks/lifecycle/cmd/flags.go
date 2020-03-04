@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"strconv"
 
@@ -130,25 +129,6 @@ func FlagVersion(version *bool) {
 
 func FlagLogLevel(level *string) {
 	flag.StringVar(level, "log-level", envOrDefault(EnvLogLevel, DefaultLogLevel), "logging level")
-}
-
-var (
-	// Version is the version of the lifecycle and all produced binaries. It is injected at compile time.
-	Version = "0.0.0"
-	// SCMCommit is the commit information provided by SCM. It is injected at compile time.
-	SCMCommit = ""
-	// SCMRepository is the source repository. It is injected at compile time.
-	SCMRepository = ""
-)
-
-// buildVersion is a display format of the version and build metadata in compliance with semver.
-func buildVersion() string {
-	// noinspection GoBoolExpressions
-	if SCMCommit == "" {
-		return Version
-	}
-
-	return fmt.Sprintf("%s+%s", Version, SCMCommit)
 }
 
 func intEnv(k string) int {

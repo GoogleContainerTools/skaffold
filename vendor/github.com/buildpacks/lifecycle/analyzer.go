@@ -9,13 +9,11 @@ import (
 )
 
 type Analyzer struct {
-	AnalyzedPath string
-	AppDir       string
-	Buildpacks   []Buildpack
-	GID, UID     int
-	LayersDir    string
-	Logger       Logger
-	SkipLayers   bool
+	Buildpacks []Buildpack
+	GID, UID   int
+	LayersDir  string
+	Logger     Logger
+	SkipLayers bool
 }
 
 // Analyze restores metadata for launch and cache layers into the layers directory.
