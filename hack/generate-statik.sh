@@ -34,7 +34,7 @@ elif ! [ -x "$(command -v ${LICENSES})" ]; then
     # from a dependency.
     echo "Installing go-licenses"
     pushd $(mktemp -d)
-    go mod init tmp; GOBIN=${BIN} go get -mod='' github.com/google/go-licenses
+    go mod init tmp; GOBIN=${BIN} go get github.com/google/go-licenses
     popd
 fi
 

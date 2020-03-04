@@ -41,11 +41,6 @@ ifeq "$(strip $(VERSION))" ""
  override VERSION = $(shell git describe --always --tags --dirty)
 endif
 
-# Force using Go Modules and always read the dependencies from
-# the `vendor` folder.
-export GO111MODULE = on
-export GOFLAGS = -mod=vendor
-
 LDFLAGS_linux = -static
 LDFLAGS_darwin =
 LDFLAGS_windows =
@@ -84,7 +79,6 @@ $(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) de
 	docker build \
 		--build-arg GOOS=$* \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg GOFLAGS="$(GOFLAGS)" \
 		--build-arg TAGS=$(GO_BUILD_TAGS_$(*)) \
 		--build-arg LDFLAGS=$(GO_LDFLAGS_$(*)) \
 		-f deploy/cross/Dockerfile \
