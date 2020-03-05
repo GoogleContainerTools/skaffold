@@ -161,7 +161,7 @@ func TestDevPortForward(t *testing.T) {
 	defer deleteNs()
 
 	rpcAddr := randomPort()
-	stop := skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
+	stop := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
 	defer stop()
 
 	_, entries, shutdown := apiEvents(t, rpcAddr)
