@@ -24,6 +24,6 @@ import (
 
 func NewCmdSurvey() *cobra.Command {
 	return NewCmd("survey").
-		WithDescription("Show skaffold survey url.").
+		WithDescription("Show Skaffold survey url").
 		NoArgs(survey.DisplaySurveyForm)
 }
