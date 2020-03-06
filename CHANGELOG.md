@@ -1,3 +1,49 @@
+# v1.5.0 Release - 03/05/2020
+
+Highlights:
+* Add helm3 support to the helm deployer [#3738](https://github.com/GoogleContainerTools/skaffold/pull/3738)
+* Binaries for linux-arm #2068 [#3783](https://github.com/GoogleContainerTools/skaffold/pull/3783)
+
+New Features:
+* Autogenerate k8s manifests in skaffold init [#3703](https://github.com/GoogleContainerTools/skaffold/pull/3703)
+* Support go Templates in Custom Builder commands [#3754](https://github.com/GoogleContainerTools/skaffold/pull/3754)
+* Wire up debug events [#3645](https://github.com/GoogleContainerTools/skaffold/pull/3645)
+* Support inferred sync on Custom artifacts with a Dockerfile [#3752](https://github.com/GoogleContainerTools/skaffold/pull/3752)
+
+Fixes:
+* Fix analyze update check [#3722](https://github.com/GoogleContainerTools/skaffold/pull/3722)
+* report actual copy error when syncing files to containers [#3715](https://github.com/GoogleContainerTools/skaffold/pull/3715)
+* skip large files during skaffold init [#3717](https://github.com/GoogleContainerTools/skaffold/pull/3717)
+
+Updates & Refactors:
+* Upgrade Jib to 2.1.0 [#3728](https://github.com/GoogleContainerTools/skaffold/pull/3728)
+* Bump pack to 0.9.0 [#3776](https://github.com/GoogleContainerTools/skaffold/pull/3776)
+* Use heroku/color for our colors [#3757](https://github.com/GoogleContainerTools/skaffold/pull/3757)
+* skaffold init and buildpacks: skip dependencies [#3758](https://github.com/GoogleContainerTools/skaffold/pull/3758)
+* Faster make v2 [#3724](https://github.com/GoogleContainerTools/skaffold/pull/3724)
+* Allow Sync for non-root containers-hotreload example [#3680](https://github.com/GoogleContainerTools/skaffold/pull/3680)
+* Add profile option to RunBuilder in test helper [#3761](https://github.com/GoogleContainerTools/skaffold/pull/3761)
+* helm chart packaging: improve errors, logic & testability [#3743](https://github.com/GoogleContainerTools/skaffold/pull/3743)
+* Refactor helm deployer to prepare for helm3 support [#3729](https://github.com/GoogleContainerTools/skaffold/pull/3729)
+
+Docs Updates:
+* Link config management doc [#3723](https://github.com/GoogleContainerTools/skaffold/pull/3723)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Appu
+- Balint Pato
+- Brian de Alwis
+- Daniel Abdelsamed
+- Chanseok Oh
+- David Gageot
+- Idan Bidani
+- Nick Kubala
+- shlo
+- Tejal Desai
+- Thomas Strömberg
+
+
 # v1.4.0 Release - 02/20/2020
 
 *Note*: This release comes with a new config version `v2alpha4`. To upgrade your `skaffold.yaml`, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
