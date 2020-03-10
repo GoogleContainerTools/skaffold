@@ -17,6 +17,7 @@ limitations under the License.
 package validator
 
 import (
+	"context"
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
@@ -36,36 +37,59 @@ var (
 	waitingContainerStatus = getWaitingContainerStatus
 )
 
-type PodStatus struct {
-	phase string
-	err   *PodErr
+// PodValidator implements the Validator interface for Pods
+type PodValidator struct {
+	k kubernetes.Interface
 }
 
-type PodErr struct {
+// NewPodValidator initializes a PodValidator
+func NewPodValidator(k kubernetes.Interface) *PodValidator {
+	return &PodValidator{k: k}
+}
+
+// Validate implements the Validate method for Validator interface
+func (p *PodValidator) Validate(ctx context.Context, ns string, opts meta_v1.ListOptions) ([]Resource, error) {
+	pods, err := p.k.CoreV1().Pods(ns).List(opts)
+	if err != nil {
+		return nil, err
+	}
+	rs := []Resource{}
+	for _, po := range pods.Items {
+		ps := p.getPodStatus(&po)
+		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.reason.String()))
+	}
+	return rs, nil
+}
+
+type podStatus struct {
+	phase  string
+	reason *podReason
+}
+
+type podReason struct {
 	reason  string
 	message string
 }
 
-func (e *PodErr) Error() string {
-	return fmt.Sprintf("pod in error due to reason: %s, message: %s", e.reason, e.message)
+func (r *podReason) String() string {
+	if r == nil {
+		return ""
+	}
+	return fmt.Sprintf("pod unstable due to reason: %s, message: %s", r.reason, r.message)
 }
 
-func GetPodDetails(client kubernetes.Interface, ns string, podName string) PodStatus {
-	pod, err := client.CoreV1().Pods(ns).Get(podName, meta_v1.GetOptions{})
-	if err != nil {
-		return PodStatus{err: &PodErr{message: err.Error()}}
-	}
+func (p *PodValidator) getPodStatus(pod *v1.Pod) podStatus {
 	switch pod.Status.Phase {
 	case v1.PodSucceeded:
-		return PodStatus{phase: success}
+		return podStatus{phase: success}
 	case v1.PodRunning:
-		return PodStatus{phase: running}
+		return podStatus{phase: running}
 	default:
 		return getPendingDetails(pod)
 	}
 }
 
-func getPendingDetails(pod *v1.Pod) PodStatus {
+func getPendingDetails(pod *v1.Pod) podStatus {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
 	for _, c := range pod.Status.Conditions {
 		switch c.Status {
@@ -91,20 +115,20 @@ func getWaitingContainerStatus(cs []v1.ContainerStatus) (string, string) {
 	return success, success
 }
 
-func newPendingStatus(r string, d string) PodStatus {
-	return PodStatus{
+func newPendingStatus(r string, d string) podStatus {
+	return podStatus{
 		phase: pending,
-		err: &PodErr{
+		reason: &podReason{
 			reason:  r,
 			message: d,
 		},
 	}
 }
 
-func newUnknownStatus() PodStatus {
-	return PodStatus{
+func newUnknownStatus() podStatus {
+	return podStatus{
 		phase: unknown,
-		err: &PodErr{
+		reason: &podReason{
 			reason:  unknown,
 			message: unknown,
 		},
