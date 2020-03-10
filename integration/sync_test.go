@@ -108,12 +108,12 @@ func TestDevAutoSync(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build().WithRepo("gcr.io/appu-learn").WithProfiles(test.profiles).InDir(dir).RunOrFail(t)
+			skaffold.Build().WithProfiles(test.profiles).InDir(dir).RunOrFail(t)
 
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			stop := skaffold.Dev("--trigger", "notify").WithRepo("gcr.io/appu-learn").WithProfiles(test.profiles).InDir(dir).InNs(ns.Name).RunBackground(t)
+			stop := skaffold.Dev("--trigger", "notify").WithProfiles(test.profiles).InDir(dir).InNs(ns.Name).RunBackground(t)
 			defer stop()
 
 			client.WaitForPodsReady("test-file-sync")
