@@ -158,7 +158,7 @@ release-build: cross
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR) hack/bin
+	rm -rf $(BUILD_DIR) hack/bin $(STATIK_FILES)
 
 .PHONY: build_deps
 build_deps:
