@@ -130,7 +130,7 @@ deploy:
 		},
 		{
 			description: "invalid skaffold config version",
-			contents: `apiVersion: skaffold/v2beta1
+			contents: `apiVersion: skaffold/v1beta100
 kind: Config
 deploy:
   kustomize: {}`,
