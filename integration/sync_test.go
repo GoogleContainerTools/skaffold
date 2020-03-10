@@ -113,10 +113,14 @@ func TestDevAutoSync(t *testing.T) {
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			stop := skaffold.Dev("--trigger", "notify").WithProfiles(test.profiles).InDir(dir).InNs(ns.Name).RunBackground(t)
-			defer stop()
+			_, cancel := skaffold.Dev("--trigger", "notify").WithProfiles(test.profiles).InDir(dir).InNs(ns.Name).RunBackgroundOutput(t)
+			defer cancel()
 
 			client.WaitForPodsReady("test-file-sync")
+			// give the server a chance to warm up, this integration test on KIND has a tendency to fail if
+			// this doesn't happen, I can't recreate this in any other environment, it some very specific
+			// server startup race condition that occurs in super slow environments (ex: KIND on travis).
+			time.Sleep(time.Second * 5)
 
 			// direct file sync (this file is an existing file checked in for this testdata)
 			directFile := "direct-file"
@@ -142,7 +146,9 @@ func TestDevAutoSync(t *testing.T) {
 				if err := ioutil.WriteFile(generatedFileSrc, []byte(newContents), 0644); err != nil {
 					t.Fatalf("Failed to write new contents to file %s", generatedFileSrc)
 				}
-				defer func() { ioutil.WriteFile(generatedFileSrc, oldContents, 0644) }()
+				defer func() {
+					ioutil.WriteFile(generatedFileSrc, oldContents, 0644)
+				}()
 			}
 			err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				// distroless debug only has wget, not curl
