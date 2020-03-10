@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 )
 
 const (
@@ -42,12 +40,12 @@ var (
 
 func DisplaySurveyPrompt(out io.Writer) {
 	if isStdOut(out) {
-		fmt.Fprint(out, Prompt)
+		fmt.Fprintln(out, Prompt)
 	}
 }
 
 func DisplaySurveyForm(out io.Writer) error {
-	_, err := color.Default.Fprintln(out, Form)
+	_, err := fmt.Fprintln(out, Form)
 	return err
 }
 
