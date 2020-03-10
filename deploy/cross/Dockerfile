@@ -12,20 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM karalabe/xgo-1.13.4
+FROM dockercore/golang-cross:1.13.8 as base
 
-ARG PROJECT
-ARG FLAG_LDFLAGS
-ARG FLAG_TAGS
-ARG TARGETS
+# The base image is not yet available for go 1.14.
+# Let's just replace the Go that's installed with a newer one.
+RUN rm -Rf /usr/local/go && mkdir /usr/local/go
+RUN curl --fail --show-error --silent --location https://dl.google.com/go/go1.14.linux-amd64.tar.gz \
+    | tar xz --directory=/usr/local/go --strip-components=1
 
-ENV PACK cmd/skaffold
-ENV EXT_GOPATH /ext-go
-ENV FLAG_LDFLAGS $FLAG_LDFLAGS
-ENV TARGETS $TARGETS
-ENV FLAG_TAGS $FLAG_TAGS
-ENV GO111MODULE off
+# Cross compile Skaffold for Linux, Windows and MacOS
+ARG GOOS
+ARG GOARCH
+ARG TAGS
+ARG LDFLAGS
 
-WORKDIR /ext-go/src/$PROJECT
-COPY . .
-RUN /build.sh $PROJECT
+WORKDIR /skaffold
+COPY . ./
+RUN if [ "$GOOS" = "darwin" ]; then export CC=o64-clang CXX=o64-clang++; fi; \
+    GOOS=$GOOS GOARCH=$GOARCH CGO_ENABLED=1 \
+    go build -tags "${TAGS}" -ldflags "${LDFLAGS}" -o /build/skaffold ./cmd/skaffold
