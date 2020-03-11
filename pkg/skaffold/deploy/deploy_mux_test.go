@@ -293,18 +293,17 @@ func TestDeployerMux_Render(t *testing.T) {
 		// only check the good case here
 		test := tests[0]
 
-		tempDir, tearDown := testutil.NewTempDir(t)
-		defer tearDown()
+		tmpDir := testutil.NewTempDir(t)
 
 		deployerMux := DeployerMux([]Deployer{
 			NewMockDeployer().WithRenderResult(test.render1).WithRenderErr(test.err1),
 			NewMockDeployer().WithRenderResult(test.render2).WithRenderErr(test.err2),
 		})
 
-		err := deployerMux.Render(context.Background(), nil, nil, nil, tempDir.Path("render"))
+		err := deployerMux.Render(context.Background(), nil, nil, nil, tmpDir.Path("render"))
 		testutil.CheckError(t, false, err)
 
-		file, _ := os.Open(tempDir.Path("render"))
+		file, _ := os.Open(tmpDir.Path("render"))
 		content, _ := ioutil.ReadAll(file)
 		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedRender, string(content))
 	})

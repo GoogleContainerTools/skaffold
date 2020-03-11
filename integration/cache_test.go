@@ -34,16 +34,13 @@ func TestCacheAPITriggers(t *testing.T) {
 	// Run skaffold build first to cache artifacts.
 	skaffold.Build().InDir("examples/getting-started").RunOrFail(t)
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	stop := skaffold.Dev("--rpc-port", rpcAddr).InDir("examples/getting-started").InNs(ns.Name).RunBackground(t)
-	defer stop()
+	skaffold.Dev("--rpc-port", rpcAddr).InDir("examples/getting-started").InNs(ns.Name).RunBackground(t)
 
 	// Ensure we see a build triggered in the event log
-	_, entries, shutdown := apiEvents(t, rpcAddr)
-	defer shutdown()
+	_, entries := apiEvents(t, rpcAddr)
 
 	waitForEvent(t, entries, func(e *proto.LogEntry) bool {
 		return e.GetEvent().GetBuildEvent().GetArtifact() == "skaffold-example"

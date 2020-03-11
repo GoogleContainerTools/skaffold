@@ -35,7 +35,6 @@ import (
 
 type T struct {
 	*testing.T
-	teardownActions []func()
 }
 
 type ForTester interface {
@@ -43,7 +42,7 @@ type ForTester interface {
 }
 
 func (t *T) Override(dest, tmp interface{}) {
-	teardown, err := override(t.T, dest, tmp)
+	err := override(t.T, dest, tmp)
 	if err != nil {
 		t.Errorf("temporary override value is invalid: %v", err)
 		return
@@ -52,8 +51,6 @@ func (t *T) Override(dest, tmp interface{}) {
 	if forTester, ok := tmp.(ForTester); ok {
 		forTester.ForTest(t.T)
 	}
-
-	t.teardownActions = append(t.teardownActions, teardown)
 }
 
 func (t *T) CheckMatches(pattern, actual string) {
@@ -160,15 +157,15 @@ func (t *T) CheckErrorContains(message string, err error) {
 // SetArgs override os.Args for the duration of a test.
 func (t *T) SetArgs(args []string) {
 	prevArgs := os.Args
+	t.Cleanup(func() { os.Args = prevArgs })
+
 	os.Args = args
-	t.teardownActions = append(t.teardownActions, func() {
-		os.Args = prevArgs
-	})
 }
 
 // SetStdin replaces os.Stdin with a given content.
 func (t *T) SetStdin(content []byte) {
 	origStdin := os.Stdin
+	t.Cleanup(func() { os.Stdin = origStdin })
 
 	tmpFile := t.TempFile("stdin", content)
 	file, err := os.Open(tmpFile)
@@ -178,20 +175,14 @@ func (t *T) SetStdin(content []byte) {
 	}
 
 	os.Stdin = file
-
-	t.teardownActions = append(t.teardownActions, func() { os.Stdin = origStdin })
 }
 
 func (t *T) TempFile(prefix string, content []byte) string {
-	name, teardown := TempFile(t.T, prefix, content)
-	t.teardownActions = append(t.teardownActions, teardown)
-	return name
+	return TempFile(t.T, prefix, content)
 }
 
 func (t *T) NewTempDir() *TempDir {
-	tmpDir, teardown := NewTempDir(t.T)
-	t.teardownActions = append(t.teardownActions, teardown)
-	return tmpDir
+	return NewTempDir(t.T)
 }
 
 func (t *T) Chdir(dir string) {
@@ -200,15 +191,15 @@ func (t *T) Chdir(dir string) {
 		t.Fatal("unable to get current directory")
 	}
 
-	if err = os.Chdir(dir); err != nil {
-		t.Fatal("unable to change current directory")
-	}
-
-	t.teardownActions = append(t.teardownActions, func() {
+	t.Cleanup(func() {
 		if err = os.Chdir(pwd); err != nil {
 			t.Fatal("unable to reset working direcrory")
 		}
 	})
+
+	if err = os.Chdir(dir); err != nil {
+		t.Fatal("unable to change current directory")
+	}
 }
 
 func Abs(t *testing.T, path string) string {
@@ -225,17 +216,7 @@ func Run(t *testing.T, name string, f func(t *T)) {
 	}
 
 	t.Run(name, func(tt *testing.T) {
-		testWrapper := &T{
-			T: tt,
-		}
-
-		defer func() {
-			for _, teardownAction := range testWrapper.teardownActions {
-				teardownAction()
-			}
-		}()
-
-		f(testWrapper)
+		f(&T{T: tt})
 	})
 }
 
@@ -294,27 +275,28 @@ func checkErr(shouldErr bool, err error) error {
 
 // ServeFile serves a file with http. Returns the url to the file and a teardown
 // function that should be called to properly stop the server.
-func ServeFile(t *testing.T, content []byte) (url string, tearDown func()) {
+func ServeFile(t *testing.T, content []byte) string {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write(content)
 	}))
 
-	return ts.URL, ts.Close
+	t.Cleanup(ts.Close)
+
+	return ts.URL
 }
 
-func override(t *testing.T, dest, tmp interface{}) (f func(), err error) {
+func override(t *testing.T, dest, tmp interface{}) (err error) {
 	t.Helper()
 
 	defer func() {
 		if r := recover(); r != nil {
-			f = nil
 			switch x := r.(type) {
 			case string:
-				err = errors.New(x)
+				t.Errorf("unable to override value: %s", x)
 			case error:
-				err = x
+				t.Errorf("unable to override value: %w", x)
 			default:
-				err = errors.New("unknown panic")
+				t.Error("unable to override value")
 			}
 		}
 	}()
@@ -323,9 +305,11 @@ func override(t *testing.T, dest, tmp interface{}) (f func(), err error) {
 
 	// Save current value
 	curValue := reflect.New(dValue.Type()).Elem()
-	curValue.Set(dValue)
+	t.Cleanup(func() { dValue.Set(curValue) })
 
 	// Set to temporary value
+	curValue.Set(dValue)
+
 	var tmpV reflect.Value
 	if tmp == nil {
 		tmpV = reflect.Zero(dValue.Type())
@@ -334,14 +318,7 @@ func override(t *testing.T, dest, tmp interface{}) (f func(), err error) {
 	}
 	dValue.Set(tmpV)
 
-	return func() {
-		defer func() {
-			if r := recover(); r != nil {
-				t.Error("panic while restoring original value")
-			}
-		}()
-		dValue.Set(curValue)
-	}, nil
+	return nil
 }
 
 // SetupFakeWatcher helps set up a fake Kubernetes watcher

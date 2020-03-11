@@ -27,8 +27,7 @@ import (
 )
 
 func TestGetDependenciesDockerfile(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	tmpDir := testutil.NewTempDir(t)
 
 	// Directory structure:
 	//   foo

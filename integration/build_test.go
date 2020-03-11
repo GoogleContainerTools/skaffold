@@ -45,7 +45,7 @@ func TestBuild(t *testing.T) {
 		dir         string
 		args        []string
 		expectImage string
-		setup       func(t *testing.T, workdir string) (teardown func())
+		setup       func(t *testing.T, workdir string)
 	}{
 		{
 			description: "docker build",
@@ -91,8 +91,7 @@ func TestBuild(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			if test.setup != nil {
-				teardown := test.setup(t, test.dir)
-				defer teardown()
+				test.setup(t, test.dir)
 			}
 
 			// Run without artifact caching
@@ -162,7 +161,9 @@ func checkImageExists(t *testing.T, image string) {
 }
 
 // setupGitRepo sets up a clean repo with tag v1
-func setupGitRepo(t *testing.T, dir string) func() {
+func setupGitRepo(t *testing.T, dir string) {
+	t.Cleanup(func() { os.RemoveAll(dir + "/.git") })
+
 	gitArgs := [][]string{
 		{"init"},
 		{"config", "user.email", "john@doe.org"},
@@ -179,10 +180,6 @@ func setupGitRepo(t *testing.T, dir string) func() {
 			t.Logf(string(buf))
 			t.Fatal(err)
 		}
-	}
-
-	return func() {
-		os.RemoveAll(dir + "/.git")
 	}
 }
 

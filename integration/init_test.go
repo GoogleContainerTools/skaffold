@@ -43,8 +43,7 @@ func TestInitCompose(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			ns, _, deleteNs := SetupNamespace(t.T)
-			defer deleteNs()
+			ns, _ := SetupNamespace(t.T)
 
 			initArgs := append([]string{"--force"}, test.args...)
 			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
@@ -85,8 +84,7 @@ func TestInitManifestGeneration(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			ns, _, deleteNs := SetupNamespace(t.T)
-			defer deleteNs()
+			ns, _ := SetupNamespace(t.T)
 
 			initArgs := append([]string{"--force"}, test.args...)
 			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
