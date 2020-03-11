@@ -120,7 +120,8 @@ func TestDevAutoSync(t *testing.T) {
 			// give the server a chance to warm up, this integration test on KIND has a tendency to fail if
 			// this doesn't happen, I can't recreate this in any other environment, it some very specific
 			// server startup race condition that occurs in super slow environments (ex: KIND on travis).
-			time.Sleep(time.Second * 5)
+			// TODO: change this to watch the input, and go after the server is started
+			time.Sleep(time.Second * 15)
 
 			// direct file sync (this file is an existing file checked in for this testdata)
 			directFile := "direct-file"
