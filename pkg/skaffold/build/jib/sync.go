@@ -53,17 +53,21 @@ type JSONSyncEntry struct {
 	Dest string `json:"dest"`
 }
 
-func InitSync(ctx context.Context, workspace string, a *latest.JibArtifact) error {
+var InitSync = initSync
+
+func initSync(ctx context.Context, workspace string, a *latest.JibArtifact) error {
 	syncMap, err := getSyncMapFunc(ctx, workspace, a)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "failed to initialize sync state for %s", workspace)
 	}
 	syncLists[getProjectKey(workspace, a)] = *syncMap
 	return nil
 }
 
+var GetSyncDiff = getSyncDiff
+
 // returns toCopy, toDelete, error
-func GetSyncDiff(ctx context.Context, workspace string, a *latest.JibArtifact, e filemon.Events) (map[string][]string, map[string][]string, error) {
+func getSyncDiff(ctx context.Context, workspace string, a *latest.JibArtifact, e filemon.Events) (map[string][]string, map[string][]string, error) {
 	// no deletions allowed
 	if len(e.Deleted) != 0 {
 		// change into logging

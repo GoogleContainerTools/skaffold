@@ -298,6 +298,10 @@
       "description": "items that need to be built, along with the context in which they should be built.",
       "x-intellij-html-description": "items that need to be built, along with the context in which they should be built."
     },
+    "Auto": {
+      "description": "cannot be customized.",
+      "x-intellij-html-description": "cannot be customized."
+    },
     "BazelArtifact": {
       "required": [
         "target"
@@ -1931,6 +1935,11 @@
     },
     "Sync": {
       "properties": {
+        "auto": {
+          "$ref": "#/definitions/Auto",
+          "description": "delegates discovery of sync rules to the build system. Currently only available for jib.",
+          "x-intellij-html-description": "delegates discovery of sync rules to the build system. Currently only available for jib."
+        },
         "infer": {
           "items": {
             "type": "string"
@@ -1951,7 +1960,8 @@
       },
       "preferredOrder": [
         "manual",
-        "infer"
+        "infer",
+        "auto"
       ],
       "additionalProperties": false,
       "description": "*beta* specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files. If no files are listed, sync all the files and infer the destination.",

@@ -23,12 +23,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -37,6 +39,7 @@ import (
 )
 
 func TestNewSyncItem(t *testing.T) {
+	ctx := context.Background()
 	tests := []struct {
 		description  string
 		artifact     *latest.Artifact
@@ -677,14 +680,48 @@ func TestNewSyncItem(t *testing.T) {
 				Delete: map[string][]string{},
 			},
 		},
+
+		// Auto with Jib
+		{
+			description: "auto with jib",
+			artifact: &latest.Artifact{
+				ImageName: "test",
+				Workspace: ".",
+				Sync: &latest.Sync{
+					Auto: &latest.Auto{},
+				},
+				ArtifactType: latest.ArtifactType{
+					JibArtifact: &latest.JibArtifact{},
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"this actually doesn't matter"},
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			expected: &Item{
+				Image: "test:123",
+				Copy: map[string][]string{
+					"file.class": {"/some/file.class"},
+				},
+				Delete: nil,
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&WorkingDir, func(string, map[string]bool) (string, error) { return test.workingDir, nil })
 			t.Override(&SyncMap, func(*latest.Artifact, map[string]bool) (map[string][]string, error) { return test.dependencies, nil })
 			t.Override(&Labels, func(string, map[string]bool) (map[string]string, error) { return test.labels, nil })
+			t.Override(&jib.GetSyncDiff, func(context.Context, string, *latest.JibArtifact, filemon.Events) (map[string][]string, map[string][]string, error) {
+				return map[string][]string{"file.class": {"/some/file.class"}}, nil, nil
+			})
 
-			actual, err := NewItem(test.artifact, test.evt, test.builds, nil)
+			actual, err := NewItem(ctx, test.artifact, test.evt, test.builds, nil)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
@@ -968,6 +1005,61 @@ func TestSyncMap(t *testing.T) {
 
 			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.expectedMap, syncMap)
+		})
+	}
+}
+
+func TestInit(t *testing.T) {
+	ctx := context.Background()
+	tests := []struct {
+		description string
+		artifact    *latest.Artifact
+		shouldInit  bool
+		initErrors  bool
+	}{
+		{
+			description: "sync off",
+			artifact:    &latest.Artifact{},
+			shouldInit:  false,
+		},
+		{
+			description: "sync on, auto off",
+			artifact:    &latest.Artifact{Sync: &latest.Sync{}},
+			shouldInit:  false,
+		},
+		{
+			description: "sync on, auto on, non-jib",
+			artifact:    &latest.Artifact{Sync: &latest.Sync{Auto: &latest.Auto{}}},
+			shouldInit:  false,
+		},
+		{
+			description: "sync on, auto on, jib",
+			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: &latest.Auto{}}},
+			shouldInit:  true,
+			initErrors:  false,
+		},
+		{
+			description: "sync on, auto on, jib, init fails",
+			artifact:    &latest.Artifact{ArtifactType: latest.ArtifactType{JibArtifact: &latest.JibArtifact{}}, Sync: &latest.Sync{Auto: &latest.Auto{}}},
+			shouldInit:  true,
+			initErrors:  true,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			isCalled := false
+			t.Override(&jib.InitSync, func(ctx context.Context, workspace string, a *latest.JibArtifact) error {
+				isCalled = true
+				if test.initErrors {
+					return errors.New("intentional test failure")
+				}
+				return nil
+			})
+
+			artifacts := []*latest.Artifact{test.artifact}
+			err := Init(ctx, artifacts)
+			t.CheckDeepEqual(test.shouldInit, isCalled)
+			t.CheckError(test.initErrors, err)
 		})
 	}
 }
