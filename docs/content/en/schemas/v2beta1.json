@@ -1937,8 +1937,8 @@
       "properties": {
         "auto": {
           "$ref": "#/definitions/Auto",
-          "description": "delegates discovery of sync rules to the build system. Currently not available on any builders.",
-          "x-intellij-html-description": "delegates discovery of sync rules to the build system. Currently not available on any builders."
+          "description": "delegates discovery of sync rules to the build system. Currently only available for jib.",
+          "x-intellij-html-description": "delegates discovery of sync rules to the build system. Currently only available for jib."
         },
         "infer": {
           "items": {
