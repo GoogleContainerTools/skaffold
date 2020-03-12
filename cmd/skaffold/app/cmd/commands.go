@@ -34,6 +34,7 @@ type Builder interface {
 	WithCommonFlags() Builder
 	Hidden() Builder
 	ExactArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command
+	AtMostArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command
 	NoArgs(action func(context.Context, io.Writer) error) *cobra.Command
 }
 
@@ -85,6 +86,14 @@ func (b *builder) Hidden() Builder {
 
 func (b *builder) ExactArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command {
 	b.cmd.Args = cobra.ExactArgs(argCount)
+	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
+		return action(b.cmd.Context(), b.cmd.OutOrStdout(), args)
+	}
+	return &b.cmd
+}
+
+func (b *builder) AtMostArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command {
+	b.cmd.Args = cobra.RangeArgs(0, argCount)
 	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
 		return action(b.cmd.Context(), b.cmd.OutOrStdout(), args)
 	}

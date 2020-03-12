@@ -70,6 +70,14 @@ func TestNewCmdExactArgs(t *testing.T) {
 	testutil.CheckError(t, true, cmd.Args(cmd, []string{"valid", "extra"}))
 }
 
+func TestNewCmdAtMostArgs(t *testing.T) {
+	cmd := NewCmd("").AtMostArgs(1, nil)
+
+	testutil.CheckError(t, false, cmd.Args(cmd, []string{}))
+	testutil.CheckError(t, false, cmd.Args(cmd, []string{"valid"}))
+	testutil.CheckError(t, true, cmd.Args(cmd, []string{"valid", "extra"}))
+}
+
 func TestNewCmdError(t *testing.T) {
 	cmd := NewCmd("").NoArgs(func(ctx context.Context, out io.Writer) error {
 		return errors.New("expected error")
@@ -84,6 +92,20 @@ func TestNewCmdOutput(t *testing.T) {
 	var buf bytes.Buffer
 
 	cmd := NewCmd("").ExactArgs(1, func(ctx context.Context, out io.Writer, args []string) error {
+		fmt.Fprintf(out, "test output: %v\n", args)
+		return nil
+	})
+	cmd.SetOutput(&buf)
+
+	err := cmd.RunE(nil, []string{"arg1"})
+
+	testutil.CheckErrorAndDeepEqual(t, false, err, "test output: [arg1]\n", buf.String())
+}
+
+func TestNewCmdOutputAtMostArgs(t *testing.T) {
+	var buf bytes.Buffer
+
+	cmd := NewCmd("").AtMostArgs(2, func(ctx context.Context, out io.Writer, args []string) error {
 		fmt.Fprintf(out, "test output: %v\n", args)
 		return nil
 	})
