@@ -62,6 +62,11 @@ func Build(args ...string) *RunBuilder {
 	return withDefaults("build", args)
 }
 
+// BuildImage runs `skaffold build-image` with the given arguments.
+func BuildImage(args ...string) *RunBuilder {
+	return withDefaults("build-image", args)
+}
+
 // Deploy runs `skaffold deploy` with the given arguments.
 func Deploy(args ...string) *RunBuilder {
 	return withDefaults("deploy", args)

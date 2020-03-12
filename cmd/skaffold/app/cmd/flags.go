@@ -86,7 +86,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.CacheArtifacts,
 		DefValue:      true,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug"},
+		DefinedOn:     []string{"dev", "build", "build-image", "run", "debug"},
 	},
 	{
 		Name:          "cache-file",
@@ -94,7 +94,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.CacheFile,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug"},
+		DefinedOn:     []string{"dev", "build", "build-image", "run", "debug"},
 	},
 	{
 		Name:          "insecure-registry",
@@ -102,7 +102,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.InsecureRegistries,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "build", "run", "debug"},
+		DefinedOn:     []string{"dev", "build", "build-image", "run", "debug"},
 	},
 	{
 		Name:          "enable-rpc",
@@ -177,7 +177,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.SkipTests,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug", "build"},
+		DefinedOn:     []string{"dev", "run", "debug", "build", "build-image"},
 	},
 	{
 		Name:          "cleanup",
@@ -259,7 +259,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.CustomTag,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"build", "debug", "dev", "run"},
+		DefinedOn:     []string{"build", "build-image", "debug", "dev", "run"},
 	},
 	{
 		Name:          "minikube-profile",

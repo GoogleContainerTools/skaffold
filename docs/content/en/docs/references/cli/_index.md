@@ -73,6 +73,7 @@ End-to-end pipelines:
 
 Pipeline building blocks for CI/CD:
   build             Build the artifacts
+  build-image       Build an image from sources
   deploy            Deploy pre-built artifacts
   delete            Delete the deployed application
   render            [alpha] Perform all image builds, and output rendered Kubernetes manifests
@@ -173,6 +174,51 @@ Env vars:
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
+
+### skaffold build-image
+
+Build an image from sources
+
+```
+
+
+Examples:
+  # Build and push an image
+  skaffold skaffold build-image --name my-image --push=true
+
+Options:
+      --cache-artifacts=true: Set to false to disable default caching of artifacts
+      --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
+  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+      --insecure-registry=[]: Target registries for built images which are not secure
+      --name='': Name of the image. Defaults to the name of the current folder
+      --push=false: Push the image to a registry
+      --skip-tests=false: Whether to skip the tests after building
+  -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
+      --tagger='': Type of the tagger. Defaults to gitCommit
+      --target='': Dockerfile target to build
+      --type='': Type of the artifact. Default to docker (docker build with a Dockerfile)
+
+Usage:
+  skaffold build-image [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+Env vars:
+
+* `SKAFFOLD_CACHE_ARTIFACTS` (same as `--cache-artifacts`)
+* `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
+* `SKAFFOLD_FILENAME` (same as `--filename`)
+* `SKAFFOLD_INSECURE_REGISTRY` (same as `--insecure-registry`)
+* `SKAFFOLD_NAME` (same as `--name`)
+* `SKAFFOLD_PUSH` (same as `--push`)
+* `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
+* `SKAFFOLD_TAG` (same as `--tag`)
+* `SKAFFOLD_TAGGER` (same as `--tagger`)
+* `SKAFFOLD_TARGET` (same as `--target`)
+* `SKAFFOLD_TYPE` (same as `--type`)
 
 ### skaffold completion
 
