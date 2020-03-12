@@ -595,7 +595,7 @@ type Sync struct {
 	Infer []string `yaml:"infer,omitempty" yamltags:"oneOf=sync"`
 
 	// Auto delegates discovery of sync rules to the build system.
-	// Currently not available on any builders.
+	// Currently only available for jib.
 	Auto *Auto `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
 }
 
