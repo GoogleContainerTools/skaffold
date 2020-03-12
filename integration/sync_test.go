@@ -17,6 +17,7 @@ limitations under the License.
 package integration
 
 import (
+	"bufio"
 	"context"
 	"io/ioutil"
 	"os"
@@ -108,20 +109,30 @@ func TestDevAutoSync(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			// Run skaffold build first to fail quickly on a build failure
-			skaffold.Build().WithProfiles(test.profiles).InDir(dir).RunOrFail(t)
+			skaffold.Build().WithRepo("gcr.io/appu-learn").WithProfiles(test.profiles).InDir(dir).RunOrFail(t)
 
 			ns, client, deleteNs := SetupNamespace(t)
 			defer deleteNs()
 
-			_, cancel := skaffold.Dev("--trigger", "notify").WithProfiles(test.profiles).InDir(dir).InNs(ns.Name).RunBackgroundOutput(t)
+			output, cancel := skaffold.Dev("--trigger", "notify").WithRepo("gcr.io/appu-learn").WithProfiles(test.profiles).InDir(dir).InNs(ns.Name).RunBackgroundOutput(t)
 			defer cancel()
 
 			client.WaitForPodsReady("test-file-sync")
-			// give the server a chance to warm up, this integration test on KIND has a tendency to fail if
-			// this doesn't happen, I can't recreate this in any other environment, it some very specific
-			// server startup race condition that occurs in super slow environments (ex: KIND on travis).
-			// TODO: change this to watch the input, and go after the server is started
-			time.Sleep(time.Second * 15)
+
+			// give the server a chance to warm up, this integration test on slow environments (KIND on travis)
+			// fails because of a potential server race condition.
+			scanner := bufio.NewScanner(output)
+			scanner.Split(bufio.ScanLines)
+			for scanner.Scan() {
+				line := scanner.Text()
+				if strings.Contains(line, "Started Application") {
+					err := output.Close()
+					if err != nil {
+						t.Fatal("failed to close skaffold dev output reader during test")
+					}
+					return
+				}
+			}
 
 			// direct file sync (this file is an existing file checked in for this testdata)
 			directFile := "direct-file"
