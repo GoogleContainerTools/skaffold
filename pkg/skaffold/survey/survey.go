@@ -27,7 +27,7 @@ const (
    $skaffold survey`
 
 	Form = `Thank you for offering your feedback on Skaffold! Understanding your experiences and opinions helps us make Skaffold better for you and other users.
-    Please take survey at https://forms.gle/BMTbGQXLWSdn7vEs6
+   Our survey can be found here: https://forms.gle/BMTbGQXLWSdn7vEs6
 
 To permanently disable the survey prompt, run:
    skaffold config set --survey --global disable-prompt true`
