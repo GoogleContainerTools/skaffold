@@ -51,8 +51,8 @@ var initEntrypoint = initializer.DoInit
 func NewCmdInit() *cobra.Command {
 	return NewCmd("init").
 		WithDescription("[alpha] Generate configuration for deploying an application").
+		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
-			f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 			f.BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in Skaffold config")
 			f.BoolVar(&skipDeploy, "skip-deploy", false, "Skip generating deploy stanza in Skaffold config")
 			f.MarkHidden("skip-deploy")

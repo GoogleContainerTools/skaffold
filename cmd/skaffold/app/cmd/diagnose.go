@@ -23,7 +23,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -36,10 +35,7 @@ import (
 func NewCmdDiagnose() *cobra.Command {
 	return NewCmd("diagnose").
 		WithDescription("Run a diagnostic on Skaffold").
-		WithFlags(func(f *pflag.FlagSet) {
-			f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
-			f.StringSliceVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
-		}).
+		WithCommonFlags().
 		NoArgs(cancelWithCtrlC(context.Background(), doDiagnose))
 }
 

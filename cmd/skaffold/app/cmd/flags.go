@@ -47,7 +47,7 @@ var FlagRegistry = []Flag{
 	{
 		Name:          "filename",
 		Shorthand:     "f",
-		Usage:         "Filename or URL to the pipeline file",
+		Usage:         "Path or URL to the Skaffold config file",
 		Value:         &opts.ConfigurationFile,
 		DefValue:      "skaffold.yaml",
 		FlagAddMethod: "StringVar",
@@ -60,7 +60,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.Profiles,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"all"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose"},
 	},
 	{
 		Name:          "namespace",
@@ -69,7 +69,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.Namespace,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"all"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
 	},
 	{
 		Name:          "default-repo",
@@ -78,7 +78,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.DefaultRepo,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"all"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
 	},
 	{
 		Name:          "cache-artifacts",
