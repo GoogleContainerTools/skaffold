@@ -18,7 +18,6 @@ package kubernetes
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -43,7 +42,7 @@ func watchUntilTimeout(ctx context.Context, timeout time.Duration, w watch.Inter
 	for {
 		select {
 		case <-ctx.Done():
-			return errors.New("context closed while waiting for condition")
+			return ctx.Err()
 		case event := <-w.ResultChan():
 			done, err := condition(&event)
 			if err != nil {
