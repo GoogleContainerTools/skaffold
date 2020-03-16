@@ -69,47 +69,88 @@ func TestVisit(t *testing.T) {
 			expected:          []string{"test=bar"},
 		},
 		{
-			description: "nested map",
-			manifests: ManifestList{[]byte(`nested:
-  prop: x
-test: foo`)},
-			expected: []string{"test=foo", "nested=map[...", "prop=x"},
-		},
-		{
-			description: "skip recursion at key",
-			pivotKey:    "nested",
+			description: "skip nested map",
 			manifests: ManifestList{[]byte(`nested:
   prop: x
 test: foo`)},
 			expected: []string{"test=foo", "nested=map[..."},
 		},
 		{
-			description: "nested array and map",
-			manifests: ManifestList{[]byte(`items:
-- a
-- 3
-- name: item
-  value: data
-- c
-test: foo`)},
-			expected: []string{"test=foo", "items=[a 3...", "name=item", "value=data"},
+			description: "skip nested map in Role",
+			manifests: ManifestList{[]byte(`apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: myrole
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - list
+  - get`)},
+			expected: []string{"apiVersion=rbac...", "kind=Role", "metadata=map[...", "rules=[map..."},
+		},
+		{
+			description: "nested map in Pod",
+			manifests: ManifestList{[]byte(`kind: Pod
+metadata:
+  name: mpod
+spec:
+  restartPolicy: Always`)},
+			expected: []string{"kind=Pod", "metadata=map[...", "name=mpod", "spec=map[...", "restartPolicy=Alwa..."},
+		},
+		{
+			description: "skip recursion at key",
+			pivotKey:    "metadata",
+			manifests: ManifestList{[]byte(`kind: Pod
+metadata:
+  name: mpod
+spec:
+  restartPolicy: Always`)},
+			expected: []string{"kind=Pod", "metadata=map[...", "spec=map[...", "restartPolicy=Alwa..."},
+		},
+		{
+			description: "nested array and map in Pod",
+			manifests: ManifestList{[]byte(`kind: Pod
+metadata:
+  name: mpod
+spec:
+  containers:
+  - env:
+      name: k
+      value: v
+    name: c1
+  - name: c2
+  restartPolicy: Always`)},
+			expected: []string{"kind=Pod", "metadata=map[...", "name=mpod",
+				"spec=map[...", "containers=[map...",
+				"name=c1", "env=map[...", "name=k", "value=v",
+				"name=c2", "restartPolicy=Alwa...",
+			},
 		},
 		{
 			description: "replace key",
-			pivotKey:    "test",
+			pivotKey:    "name",
 			replaceWith: "repl",
-			manifests: ManifestList{[]byte(`nested:
-  name: item
-  test:
-    sub:
-      name: asdf
-test: foo`), []byte(`test: bar`)},
-			expectedManifests: ManifestList{[]byte(`
-nested:
-  name: item
-  test: repl
-test: repl`), []byte(`test: repl`)},
-			expected: []string{"nested=map[...", "name=item", "test=map[...", "test=foo", "test=bar"},
+			manifests: ManifestList{[]byte(`kind: Deployment
+metadata:
+  labels:
+    name: x
+  name: app
+spec:
+  replicas: 0`), []byte(`name: foo`)},
+			// This behaviour is questionable but implemented like this for simplicity.
+			// In practice this is not a problem (currently) since only the fields
+			// "metadata" and "image" are matched in known kinds without ambiguous field names.
+			expectedManifests: ManifestList{[]byte(`kind: Deployment
+metadata:
+  labels:
+    name: repl
+  name: repl
+spec:
+  replicas: 0`), []byte(`name: repl`)},
+			expected: []string{"kind=Depl...", "metadata=map[...", "name=app", "labels=map[...", "name=x", "spec=map[...", "replicas=0", "name=foo"},
 		},
 		{
 			description: "invalid input",

@@ -29,7 +29,7 @@ func TestCollectNamespaces(t *testing.T) {
 		expected    []string
 	}{
 		{
-			description: "single manifest in the list",
+			description: "single Pod manifest in the list",
 			manifests: ManifestList{[]byte(`
 apiVersion: v1
 kind: Pod
@@ -40,6 +40,24 @@ spec:
   containers:
   - image: gcr.io/k8s-skaffold/example
     name: example
+`)},
+			expected: []string{"test"},
+		}, {
+			description: "single Service manifest in the list",
+			manifests: ManifestList{[]byte(`
+apiVersion: v1
+kind: Service
+metadata:
+  name: getting-started
+  namespace: test
+spec:
+  type: ClusterIP
+  ports:
+  - port: 443
+    targetPort: 8443
+    protocol: TCP
+  selector:
+    app: getting-started
 `)},
 			expected: []string{"test"},
 		}, {

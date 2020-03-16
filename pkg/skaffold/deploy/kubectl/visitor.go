@@ -21,6 +21,17 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// recursivelyTransformableKinds whitelists kinds that can be transformed recursively.
+var recursivelyTransformableKinds = map[string]bool{
+	"Pod":         true,
+	"ReplicaSet":  true,
+	"StatefulSet": true,
+	"Deployment":  true,
+	"DaemonSet":   true,
+	"Job":         true,
+	"CronJob":     true,
+}
+
 // FieldVisitor represents the aggregation/transformation that should be performed on each traversed field.
 type FieldVisitor interface {
 	// Visit is called for each transformable key contained in the object and may apply transformations/aggregations on it.
@@ -58,7 +69,7 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 // traverseManifest traverses all transformable fields contained within the manifest.
 func traverseManifestFields(manifest map[interface{}]interface{}, visitor FieldVisitor) {
 	kind := manifest["kind"]
-	if kind != "CustomResourceDefinition" {
+	if k, ok := kind.(string); ok && recursivelyTransformableKinds[k] {
 		visitor = &recursiveVisitorDecorator{visitor}
 	}
 	visitFields(manifest, visitor)
