@@ -31,7 +31,7 @@ GKE_ZONE ?= us-central1-a
 SUPPORTED_PLATFORMS = linux-amd64 darwin-amd64 windows-amd64.exe linux-arm64
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
-SKAFFOLD_TEST_PACKAGES = $(shell go list ./... | grep -v diag)
+SKAFFOLD_TEST_PACKAGES = ./pkg/skaffold/... ./cmd/... ./hack/... ./pkg/webhook/...
 GO_FILES = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./pkg/diag/*")
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version

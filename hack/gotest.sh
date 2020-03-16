@@ -29,19 +29,15 @@ RESET='\033[0m'
 LOG=$(mktemp -t tests.json.XXXXXX)
 trap "rm -f $LOG" EXIT
 
-if [[ " ${@}" =~ "pkg/skaffold" ]]; then
-  echo "go test ./pkg/skaffold/..."
-else
-  echo "go test $@"
-fi
+echo "go test $@"
 
 # Keep execution simple for users who do not have jq installed
-if [[ ! $(command -v jq >/dev/null) ]]; then
+if ! $(command -v jq > /dev/null); then
   go test $* | sed ''/FAIL/s//`printf "${RED}FAIL${RESET}"`/''
   exit ${PIPESTATUS[0]}
 fi
 
-if [[ " ${@} " =~ "-v" ]]; then
+if [[ $@ == *"-v"* ]]; then
     JQ_FILTER='select(has("Output") and (.Action=="output")) | .Output'
 else
     JQ_FILTER='select(has("Output") and (.Action=="output") and (has("Test")|not) and (.Output!="PASS\n") and (.Output!="FAIL\n") and (.Output|startswith("coverage:")|not) and (.Output|contains("[no test files]")|not)) | .Output'
