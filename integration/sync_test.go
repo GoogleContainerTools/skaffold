@@ -63,11 +63,9 @@ func TestDevSync(t *testing.T) {
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().InDir("testdata/file-sync").WithConfig(test.config).RunOrFail(t)
 
-			ns, client, deleteNs := SetupNamespace(t)
-			defer deleteNs()
+			ns, client := SetupNamespace(t)
 
-			stop := skaffold.Dev("--trigger", test.trigger).InDir("testdata/file-sync").WithConfig(test.config).InNs(ns.Name).RunBackground(t)
-			defer stop()
+			skaffold.Dev("--trigger", test.trigger).InDir("testdata/file-sync").WithConfig(test.config).InNs(ns.Name).RunBackground(t)
 
 			client.WaitForPodsReady("test-file-sync")
 
@@ -111,11 +109,9 @@ func TestDevAutoSync(t *testing.T) {
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().WithProfiles(test.profiles).InDir(dir).RunOrFail(t)
 
-			ns, client, deleteNs := SetupNamespace(t)
-			defer deleteNs()
+			ns, client := SetupNamespace(t)
 
-			output, cancel := skaffold.Dev("--trigger", "notify").WithProfiles(test.profiles).InDir(dir).InNs(ns.Name).RunBackgroundOutput(t)
-			defer cancel()
+			output := skaffold.Dev("--trigger", "notify").WithProfiles(test.profiles).InDir(dir).InNs(ns.Name).RunBackground(t)
 
 			client.WaitForPodsReady("test-file-sync")
 
@@ -177,18 +173,14 @@ func TestDevSyncAPITrigger(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	ns, client, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, client := SetupNamespace(t)
 
 	skaffold.Build().InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunOrFail(t)
 
 	rpcAddr := randomPort()
+	skaffold.Dev("--auto-sync=false", "--rpc-port", rpcAddr).InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunBackground(t)
 
-	stop := skaffold.Dev("--auto-sync=false", "--rpc-port", rpcAddr).InDir("testdata/file-sync").WithConfig("skaffold-manual.yaml").InNs(ns.Name).RunBackground(t)
-	defer stop()
-
-	rpcClient, entries, shutdown := apiEvents(t, rpcAddr)
-	defer shutdown()
+	rpcClient, entries := apiEvents(t, rpcAddr)
 
 	// throw away first 5 entries of log (from first run of dev loop)
 	for i := 0; i < 5; i++ {

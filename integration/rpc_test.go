@@ -51,8 +51,7 @@ func TestEventsRPC(t *testing.T) {
 	}
 
 	rpcAddr := randomPort()
-	teardown := setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
-	defer teardown()
+	setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
 
 	// start a grpc client and make sure we can connect properly
 	var (
@@ -153,8 +152,7 @@ func TestEventLogHTTP(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			httpAddr := randomPort()
-			teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
-			defer teardown()
+			setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
 			time.Sleep(500 * time.Millisecond) // give skaffold time to process all events
 
 			httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s%s", httpAddr, test.endpoint))
@@ -223,8 +221,7 @@ func TestGetStateRPC(t *testing.T) {
 
 	rpcAddr := randomPort()
 	// start a skaffold dev loop on an example
-	teardown := setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
-	defer teardown()
+	setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
 
 	// start a grpc client and make sure we can connect properly
 	var (
@@ -275,8 +272,7 @@ func TestGetStateHTTP(t *testing.T) {
 	}
 
 	httpAddr := randomPort()
-	teardown := setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
-	defer teardown()
+	setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
 	time.Sleep(3 * time.Second) // give skaffold time to process all events
 
 	success := false
@@ -334,22 +330,20 @@ func retrieveHTTPState(t *testing.T, httpAddr string) proto.State {
 	return httpState
 }
 
-func setupSkaffoldWithArgs(t *testing.T, args ...string) func() {
+func setupSkaffoldWithArgs(t *testing.T, args ...string) {
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
 
 	// start a skaffold dev loop on an example
-	ns, _, deleteNs := SetupNamespace(t)
+	ns, _ := SetupNamespace(t)
 
-	stop := skaffold.Dev(args...).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+	skaffold.Dev(args...).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-	return func() {
-		stop()
-		deleteNs()
+	t.Cleanup(func() {
 		Run(t, "testdata/dev", "rm", "foo")
-	}
+	})
 }
 
 // randomPort chooses a port in range [1024, 65535]
@@ -370,8 +364,8 @@ func checkBuildAndDeployComplete(state proto.State) bool {
 	return state.DeployState.Status == event.Complete
 }
 
-func apiEvents(t *testing.T, rpcAddr string) (proto.SkaffoldServiceClient, chan *proto.LogEntry, func()) {
-	client, shutdown := setupRPCClient(t, rpcAddr)
+func apiEvents(t *testing.T, rpcAddr string) (proto.SkaffoldServiceClient, chan *proto.LogEntry) {
+	client := setupRPCClient(t, rpcAddr)
 
 	stream, err := readEventAPIStream(client, t, readRetries)
 	if stream == nil {
@@ -389,7 +383,7 @@ func apiEvents(t *testing.T, rpcAddr string) (proto.SkaffoldServiceClient, chan 
 		}
 	}()
 
-	return client, entries, shutdown
+	return client, entries
 }
 
 func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retries int) (proto.SkaffoldService_EventLogClient, error) {
@@ -408,7 +402,7 @@ func readEventAPIStream(client proto.SkaffoldServiceClient, t *testing.T, retrie
 	return stream, err
 }
 
-func setupRPCClient(t *testing.T, port string) (proto.SkaffoldServiceClient, func()) {
+func setupRPCClient(t *testing.T, port string) proto.SkaffoldServiceClient {
 	// start a grpc client
 	var (
 		conn   *grpc.ClientConn
@@ -432,7 +426,8 @@ func setupRPCClient(t *testing.T, port string) (proto.SkaffoldServiceClient, fun
 	if client == nil {
 		t.Fatalf("error establishing skaffold grpc connection")
 	}
-	return client, func() {
-		conn.Close()
-	}
+
+	t.Cleanup(func() { conn.Close() })
+
+	return client
 }

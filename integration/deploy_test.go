@@ -32,8 +32,7 @@ func TestBuildDeploy(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	ns, client, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, client := SetupNamespace(t)
 
 	outputBytes := skaffold.Build("--quiet").InDir("examples/microservices").InNs(ns.Name).RunOrFailOutput(t)
 	// Parse the Build Output
@@ -59,10 +58,9 @@ func TestBuildDeploy(t *testing.T) {
 		t.Fatalf("expected to find a tag for leeroy-app but found none %s", appTag)
 	}
 
-	dir, cleanUp := testutil.NewTempDir(t)
-	buildOutputFile := dir.Path("build.out")
-	defer cleanUp()
-	dir.Write("build.out", string(outputBytes))
+	tmpDir := testutil.NewTempDir(t)
+	buildOutputFile := tmpDir.Path("build.out")
+	tmpDir.Write("build.out", string(outputBytes))
 
 	// Run Deploy using the build output
 	// See https://github.com/GoogleContainerTools/skaffold/issues/2372 on why status-check=false
@@ -80,8 +78,7 @@ func TestDeploy(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	ns, client, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, client := SetupNamespace(t)
 
 	skaffold.Deploy("--images", "index.docker.io/library/busybox:1").InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
 
@@ -94,11 +91,9 @@ func TestDeployTail(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
-	out, cancel := skaffold.Deploy("--tail", "--images", "busybox:latest").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunBackgroundOutput(t)
-	defer cancel()
+	out := skaffold.Deploy("--tail", "--images", "busybox:latest").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunBackground(t)
 
 	// Wait for the logs to print "Hello world!"
 	lines := make(chan string)
@@ -128,8 +123,7 @@ func TestDeployWithInCorrectConfig(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
 	// We're not providing a tag for the getting-started image
 	output, err := skaffold.Deploy().InDir("examples/getting-started").InNs(ns.Name).RunWithCombinedOutput(t)

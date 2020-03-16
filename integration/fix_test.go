@@ -27,8 +27,7 @@ func TestFix(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
 	out := skaffold.Fix().InDir("testdata/fix").RunOrFailOutput(t)
 

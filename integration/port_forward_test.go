@@ -35,8 +35,7 @@ func TestPortForward(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
 	dir := "examples/microservices"
 	skaffold.Run().InDir(dir).InNs(ns.Name).RunOrFail(t)
@@ -60,15 +59,12 @@ func TestRunPortForward(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	stop := skaffold.Run("--port-forward", "--rpc-port", rpcAddr, "--enable-rpc").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
-	defer stop()
+	skaffold.Run("--port-forward", "--rpc-port", rpcAddr, "--enable-rpc").InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
 
-	_, entries, shutdown := apiEvents(t, rpcAddr)
-	defer shutdown()
+	_, entries := apiEvents(t, rpcAddr)
 
 	address, localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)
 	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)
@@ -82,15 +78,12 @@ func TestDevPortForwardDeletePod(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	stop := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
-	defer stop()
+	skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
 
-	_, entries, shutdown := apiEvents(t, rpcAddr)
-	defer shutdown()
+	_, entries := apiEvents(t, rpcAddr)
 
 	address, localPort := getLocalPortFromPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name)
 	assertResponseFromPort(t, address, localPort, constants.LeeroyAppResponse)

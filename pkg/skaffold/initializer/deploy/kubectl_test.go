@@ -25,8 +25,7 @@ import (
 )
 
 func TestGenerateKubectlPipeline(t *testing.T) {
-	tmpDir, delete := testutil.NewTempDir(t)
-	defer delete()
+	tmpDir := testutil.NewTempDir(t)
 
 	tmpDir.Write("deployment.yaml", `apiVersion: v1
 kind: Pod

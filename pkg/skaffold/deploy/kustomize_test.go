@@ -118,8 +118,7 @@ func TestKustomizeDeploy(t *testing.T) {
 }
 
 func TestKustomizeCleanup(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	tmpDir := testutil.NewTempDir(t)
 
 	tests := []struct {
 		description string
