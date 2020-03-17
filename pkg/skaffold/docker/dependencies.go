@@ -54,7 +54,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return nil, err
 	}
 
-	excludes, err := readDockerignore(workspace)
+	excludes, err := readDockerignore(workspace, absDockerfilePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "reading .dockerignore")
 	}
@@ -89,19 +89,25 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 }
 
 // readDockerignore reads patterns to ignore
-func readDockerignore(workspace string) ([]string, error) {
+func readDockerignore(workspace string, dockerfilePath string) ([]string, error) {
 	var excludes []string
-	dockerignorePath := filepath.Join(workspace, ".dockerignore")
-	if _, err := os.Stat(dockerignorePath); !os.IsNotExist(err) {
-		r, err := os.Open(dockerignorePath)
-		if err != nil {
-			return nil, err
-		}
-		defer r.Close()
+	dockerignorePaths := []string{
+		dockerfilePath + ".dockerignore",
+		filepath.Join(workspace, ".dockerignore"),
+	}
+	for _, dockerignorePath := range dockerignorePaths {
+		if _, err := os.Stat(dockerignorePath); !os.IsNotExist(err) {
+			r, err := os.Open(dockerignorePath)
+			if err != nil {
+				return nil, err
+			}
+			defer r.Close()
 
-		excludes, err = dockerignore.ReadAll(r)
-		if err != nil {
-			return nil, err
+			excludes, err = dockerignore.ReadAll(r)
+			if err != nil {
+				return nil, err
+			}
+			return excludes, nil
 		}
 	}
 	return excludes, nil
