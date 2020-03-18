@@ -96,7 +96,7 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 			container.Args = rewriteNpmCommandLine(config.arguments, *spec)
 
 		default:
-			container.Env = rewriteNodeOptions(config.env, *spec)
+			container.Env = rewriteWithNodeOptions(config.env, *spec)
 		}
 	}
 
@@ -206,7 +206,7 @@ func rewriteNpmCommandLine(commandLine []string, spec inspectSpec) []string {
 	return commandLine
 }
 
-func rewriteNodeOptions(env map[string]string, spec inspectSpec) []v1.EnvVar {
+func rewriteWithNodeOptions(env map[string]string, spec inspectSpec) []v1.EnvVar {
 	found := false
 	var vars []v1.EnvVar
 	for k, v := range env {
