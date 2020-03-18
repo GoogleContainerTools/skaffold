@@ -1,0 +1,18 @@
+version: 1
+update_configs:
+  - package_manager: "javascript"
+    package_manager: "ruby:bundler"
+    package_manager: "java:maven"
+    package_manager: "java:gradle"
+    package_manager: "go:modules"
+    package_manager: "php:composer"
+    directory: "examples/"
+    update_schedule: "daily"
+  - package_manager: "javascript"
+    package_manager: "ruby:bundler"
+    package_manager: "java:maven"
+    package_manager: "java:gradle"
+    package_manager: "go:modules"
+    package_manager: "php:composer"
+    directory: "integration/examples/"
+    update_schedule: "daily"
