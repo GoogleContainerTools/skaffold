@@ -96,8 +96,7 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 			container.Args = rewriteNpmCommandLine(config.arguments, *spec)
 
 		default:
-			logrus.Warnf("Skipping %q as does not appear to invoke node", container.Name)
-			return nil
+			container.Env = rewriteWithNodeOptions(config.env, *spec)
 		}
 	}
 
@@ -205,4 +204,20 @@ func rewriteNpmCommandLine(commandLine []string, spec inspectSpec) []string {
 		commandLine = append(commandLine, newOption)
 	}
 	return commandLine
+}
+
+func rewriteWithNodeOptions(env map[string]string, spec inspectSpec) []v1.EnvVar {
+	found := false
+	var vars []v1.EnvVar
+	for k, v := range env {
+		if k == "NODE_OPTIONS" {
+			found = true
+			v = v + " " + spec.String()
+		}
+		vars = append(vars, v1.EnvVar{Name: k, Value: v})
+	}
+	if !found {
+		vars = append(vars, v1.EnvVar{Name: "NODE_OPTIONS", Value: spec.String()})
+	}
+	return vars
 }
