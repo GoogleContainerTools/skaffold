@@ -89,10 +89,10 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 }
 
 // readDockerignore reads patterns to ignore
-func readDockerignore(workspace string, dockerfilePath string) ([]string, error) {
+func readDockerignore(workspace string, absDockerfilePath string) ([]string, error) {
 	var excludes []string
 	dockerignorePaths := []string{
-		dockerfilePath + ".dockerignore",
+		absDockerfilePath + ".dockerignore",
 		filepath.Join(workspace, ".dockerignore"),
 	}
 	for _, dockerignorePath := range dockerignorePaths {
@@ -110,7 +110,7 @@ func readDockerignore(workspace string, dockerfilePath string) ([]string, error)
 			return excludes, nil
 		}
 	}
-	return excludes, nil
+	return nil, nil
 }
 
 // WalkWorkspace walks the given host directories and records all files found.
