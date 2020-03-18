@@ -49,9 +49,9 @@ func (c ArtifactConfig) Describe() string {
 	return fmt.Sprintf("%s (%s)", c.Name(), c.File)
 }
 
-// CreateArtifact creates an Artifact to be included in the generated Build Config
-func (c ArtifactConfig) UpdateArtifact(a *latest.Artifact) {
-	a.ArtifactType = latest.ArtifactType{
+// ArtifactType returns the type of the artifact to be built.
+func (c ArtifactConfig) ArtifactType() latest.ArtifactType {
+	return latest.ArtifactType{
 		BuildpackArtifact: &latest.BuildpackArtifact{
 			Builder: c.Builder,
 		},

@@ -103,11 +103,11 @@ func TestDescribe(t *testing.T) {
 	}
 }
 
-func TestUpdateArtifact(t *testing.T) {
+func TestArtifactType(t *testing.T) {
 	var tests = []struct {
-		description      string
-		config           ArtifactConfig
-		expectedArtifact latest.Artifact
+		description  string
+		config       ArtifactConfig
+		expectedType latest.ArtifactType
 	}{
 		{
 			description: "buildpacks - NodeJS",
@@ -115,20 +115,18 @@ func TestUpdateArtifact(t *testing.T) {
 				File:    filepath.Join("path", "to", "package.json"),
 				Builder: "some/builder",
 			},
-			expectedArtifact: latest.Artifact{
-				ArtifactType: latest.ArtifactType{BuildpackArtifact: &latest.BuildpackArtifact{
+			expectedType: latest.ArtifactType{
+				BuildpackArtifact: &latest.BuildpackArtifact{
 					Builder: "some/builder",
-				}},
+				},
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := &latest.Artifact{}
+			at := test.config.ArtifactType()
 
-			test.config.UpdateArtifact(artifact)
-
-			t.CheckDeepEqual(test.expectedArtifact, *artifact)
+			t.CheckDeepEqual(test.expectedType, at)
 		})
 	}
 }
