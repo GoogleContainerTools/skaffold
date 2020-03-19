@@ -84,6 +84,7 @@ func validate(path string) bool {
 		logrus.Warnf("opening file %s: %s", path, err.Error())
 		return false
 	}
+	defer f.Close()
 
 	res, err := parser.Parse(f)
 	if err != nil || res == nil || len(res.AST.Children) == 0 {

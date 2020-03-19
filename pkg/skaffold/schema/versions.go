@@ -17,6 +17,7 @@ limitations under the License.
 package schema
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -25,6 +26,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
@@ -112,6 +114,10 @@ func (v *Versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
 
 // IsSkaffoldConfig is for determining if a file is skaffold config file.
 func IsSkaffoldConfig(file string) bool {
+	if !kubernetes.HasKubernetesFileExtension(file) {
+		return false
+	}
+
 	if config, err := ParseConfig(file, false); err == nil && config != nil {
 		return true
 	}
@@ -123,6 +129,12 @@ func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 	buf, err := misc.ReadConfiguration(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "read skaffold config")
+	}
+
+	// This is to quickly check that it's possibly a skaffold.yaml,
+	// without parsing the whole file.
+	if !bytes.Contains(buf, []byte("apiVersion")) {
+		return nil, errors.New("missing apiVersion")
 	}
 
 	apiVersion := &APIVersion{}
