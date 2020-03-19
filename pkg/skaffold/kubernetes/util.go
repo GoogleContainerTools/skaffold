@@ -126,7 +126,8 @@ func hasRequiredK8sManifestFields(doc map[interface{}]interface{}) bool {
 
 // adapted from pkg/skaffold/deploy/kubectl/recursiveReplaceImage()
 func parseImagesFromYaml(obj interface{}) []string {
-	images := []string{}
+	var images []string
+
 	switch t := obj.(type) {
 	case []interface{}:
 		for _, v := range t {
@@ -134,13 +135,21 @@ func parseImagesFromYaml(obj interface{}) []string {
 		}
 	case yamlObject:
 		for k, v := range t {
-			if k.(string) != "image" {
+			key, ok := k.(string)
+			if !ok {
+				continue
+			}
+
+			if key != "image" {
 				images = append(images, parseImagesFromYaml(v)...)
 				continue
 			}
 
-			images = append(images, v.(string))
+			if value, ok := v.(string); ok {
+				images = append(images, value)
+			}
 		}
 	}
+
 	return images
 }
