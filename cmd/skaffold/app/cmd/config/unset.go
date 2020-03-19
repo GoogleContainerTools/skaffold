@@ -17,11 +17,12 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 	"io"
 )
 
-func Unset(out io.Writer, args []string) error {
+func Unset(ctx context.Context, out io.Writer, args []string) error {
 	if err := unsetConfigValue(args[0]); err != nil {
 		return err
 	}

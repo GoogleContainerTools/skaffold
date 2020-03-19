@@ -36,7 +36,7 @@ func NewCmdDiagnose() *cobra.Command {
 	return NewCmd("diagnose").
 		WithDescription("Run a diagnostic on Skaffold").
 		WithCommonFlags().
-		NoArgs(cancelWithCtrlC(context.Background(), doDiagnose))
+		NoArgs(doDiagnose)
 }
 
 func doDiagnose(ctx context.Context, out io.Writer) error {

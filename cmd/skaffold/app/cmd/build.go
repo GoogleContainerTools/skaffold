@@ -55,7 +55,7 @@ func NewCmdBuild() *cobra.Command {
 			f.VarP(buildFormatFlag, "output", "o", "Used in conjunction with --quiet flag. "+buildFormatFlag.Usage())
 			f.StringVar(&buildOutputFlag, "file-output", "", "Filename to write build images to")
 		}).
-		NoArgs(cancelWithCtrlC(context.Background(), doBuild))
+		NoArgs(doBuild)
 }
 
 func doBuild(ctx context.Context, out io.Writer) error {

@@ -49,7 +49,7 @@ func NewCmdDeploy() *cobra.Command {
 			f.VarP(&buildOutputFile, "build-artifacts", "a", `Filepath containing build output.
 E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build.out`)
 		}).
-		NoArgs(cancelWithCtrlC(context.Background(), doDeploy))
+		NoArgs(doDeploy)
 }
 
 func doDeploy(ctx context.Context, out io.Writer) error {

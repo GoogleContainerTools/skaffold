@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -26,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
 
-func List(out io.Writer) error {
+func List(ctx context.Context, out io.Writer) error {
 	var configYaml []byte
 	if showAll {
 		cfg, err := config.ReadConfigFile(configFile)

@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"io"
 	"io/ioutil"
 
@@ -41,7 +42,7 @@ func NewCmdFix() *cobra.Command {
 		NoArgs(doFix)
 }
 
-func doFix(out io.Writer) error {
+func doFix(_ context.Context, out io.Writer) error {
 	return fix(out, opts.ConfigurationFile, overwrite)
 }
 

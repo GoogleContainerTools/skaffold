@@ -17,6 +17,7 @@ limitations under the License.
 package credits
 
 import (
+	"context"
 	"io"
 	"io/ioutil"
 	"log"
@@ -33,7 +34,7 @@ import (
 var Path string
 
 // Export writes all the licenses and credit files to the `Path` folder.
-func Export(out io.Writer) error {
+func Export(ctx context.Context, out io.Writer) error {
 	statikFS, err := statik.FS()
 	if err != nil {
 		return errors.Wrap(err, "opening embedded filesystem")
