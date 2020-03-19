@@ -82,6 +82,8 @@ func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "opening config file")
 	}
+	defer f.Close()
+
 	r := k8syaml.NewYAMLReader(bufio.NewReader(f))
 
 	var k8sObjects []yamlObject
