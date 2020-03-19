@@ -78,9 +78,8 @@ require (
 	github.com/rjeczalik/notify v0.9.2
 	github.com/russross/blackfriday/v2 v2.0.1
 	github.com/segmentio/textio v1.2.0
-	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
-	github.com/spf13/cobra v0.0.5
+	github.com/spf13/cobra v0.0.6
 	github.com/spf13/pflag v1.0.5
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
 	go.opencensus.io v0.22.2 // indirect
