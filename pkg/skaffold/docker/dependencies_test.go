@@ -236,12 +236,13 @@ func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*v1.ConfigFil
 
 func TestGetDependencies(t *testing.T) {
 	tests := []struct {
-		description string
-		dockerfile  string
-		workspace   string
-		ignore      string
-		buildArgs   map[string]*string
-		env         []string
+		description    string
+		dockerfile     string
+		workspace      string
+		ignore         string
+		ignoreFilename string
+		buildArgs      map[string]*string
+		env            []string
 
 		expected  []string
 		badReader bool
@@ -522,6 +523,14 @@ func TestGetDependencies(t *testing.T) {
 			workspace:   ".",
 			expected:    []string{"Dockerfile", "file"},
 		},
+		{
+			description:    "find specific dockerignore",
+			dockerfile:     copyDirectory,
+			workspace:      ".",
+			ignore:         "bar\ndocker/*",
+			ignoreFilename: "Dockerfile.dockerignore",
+			expected:       []string{".dot", "Dockerfile", "Dockerfile.dockerignore", "file", "server.go", "test.conf", "worker.go"},
+		},
 	}
 
 	for _, test := range tests {
@@ -538,7 +547,11 @@ func TestGetDependencies(t *testing.T) {
 			}
 
 			if test.ignore != "" {
-				tmpDir.Write(test.workspace+"/.dockerignore", test.ignore)
+				ignoreFilename := ".dockerignore"
+				if test.ignoreFilename != "" {
+					ignoreFilename = test.ignoreFilename
+				}
+				tmpDir.Write(filepath.Join(test.workspace, ignoreFilename), test.ignore)
 			}
 
 			workspace := tmpDir.Path(test.workspace)
