@@ -17,6 +17,7 @@ limitations under the License.
 package schema
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -128,6 +129,12 @@ func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 	buf, err := misc.ReadConfiguration(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "read skaffold config")
+	}
+
+	// This is to quickly check that it's possibly a skaffold.yaml,
+	// without parsing the whole file.
+	if !bytes.Contains(buf, []byte("apiVersion")) {
+		return nil, errors.New("missing apiVersion")
 	}
 
 	apiVersion := &APIVersion{}
