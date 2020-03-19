@@ -25,6 +25,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
@@ -112,6 +113,10 @@ func (v *Versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
 
 // IsSkaffoldConfig is for determining if a file is skaffold config file.
 func IsSkaffoldConfig(file string) bool {
+	if !kubernetes.HasKubernetesFileExtension(file) {
+		return false
+	}
+
 	if config, err := ParseConfig(file, false); err == nil && config != nil {
 		return true
 	}
