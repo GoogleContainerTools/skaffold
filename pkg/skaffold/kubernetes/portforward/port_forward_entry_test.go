@@ -48,6 +48,15 @@ func TestPortForwardEntryKey(t *testing.T) {
 				Port:      9000,
 			}, "", "", "", "", 0, false),
 			expected: "deployment-depName-namespace-9000",
+		}, {
+			description: "entry for deployment with capital normalization",
+			pfe: newPortForwardEntry(0, latest.PortForwardResource{
+				Type:      "Deployment",
+				Name:      "depName",
+				Namespace: "namespace",
+				Port:      9000,
+			}, "", "", "", "", 0, false),
+			expected: "deployment-depName-namespace-9000",
 		},
 	}
 

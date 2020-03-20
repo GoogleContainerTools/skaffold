@@ -32,8 +32,7 @@ import (
 )
 
 func TestGetSyncMapFromSystem(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	tmpDir := testutil.NewTempDir(t)
 
 	tmpDir.Touch("dep1", "dir/dep2")
 	dep1 := tmpDir.Path("dep1")
@@ -129,8 +128,7 @@ func TestGetSyncMapFromSystem(t *testing.T) {
 }
 
 func TestGetSyncDiff(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	tmpDir := testutil.NewTempDir(t)
 
 	ctx := context.Background()
 	workspace := "testworkspace"
@@ -251,8 +249,7 @@ func TestGetSyncDiff(t *testing.T) {
 }
 
 func TestGetSyncDiff_directChecksUpdateFileTime(testing *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(testing)
-	defer cleanup()
+	tmpDir := testutil.NewTempDir(testing)
 
 	ctx := context.Background()
 	workspace := "testworkspace"

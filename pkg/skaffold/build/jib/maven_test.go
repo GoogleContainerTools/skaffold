@@ -163,8 +163,7 @@ func TestMavenWrapperDefinition(t *testing.T) {
 }
 
 func TestGetDependenciesMaven(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	tmpDir := testutil.NewTempDir(t)
 
 	tmpDir.Touch("build", "dep1", "dep2")
 	build := tmpDir.Path("build")

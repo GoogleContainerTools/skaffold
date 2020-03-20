@@ -148,7 +148,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 					return build.DependenciesForArtifact(ctx, artifact, r.runCtx.InsecureRegistries)
 				},
 				func(e filemon.Events) {
-					s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries)
+					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx.InsecureRegistries)
 					switch {
 					case err != nil:
 						logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
@@ -189,6 +189,11 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	logrus.Infoln("List generated in", time.Since(start))
+
+	// Init Sync State
+	if err := sync.Init(ctx, artifacts); err != nil {
+		return errors.Wrap(err, "exiting dev mode because initializing sync state failed")
+	}
 
 	// First build
 	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {

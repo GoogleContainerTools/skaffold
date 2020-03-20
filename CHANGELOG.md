@@ -1,3 +1,49 @@
+# v1.6.0 Release - 03/19/2020
+
+*Note*: This release comes with a new config version `v2beta1`. To upgrade your `skaffold.yaml`, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+Highlights: 
+* Support Dockerfile.dockerignore [#3837](https://github.com/GoogleContainerTools/skaffold/pull/3837)
+* Add new Auto sync option [#3382](https://github.com/GoogleContainerTools/skaffold/pull/3382)
+* Cross compile for linux-arm [#3819](https://github.com/GoogleContainerTools/skaffold/pull/3819)
+
+Fixes: 
+
+* Fix issues in `skaffold init` [#3840](https://github.com/GoogleContainerTools/skaffold/pull/3840)
+* Fix `skaffold debug` panic with nodejs [#3827](https://github.com/GoogleContainerTools/skaffold/pull/3827)
+* Fix this integration test on minikube [#3807](https://github.com/GoogleContainerTools/skaffold/pull/3807)
+* Fix `make quicktest` [#3820](https://github.com/GoogleContainerTools/skaffold/pull/3820)
+* Fix TestWaitForPodSucceeded flake [#3818](https://github.com/GoogleContainerTools/skaffold/pull/3818)
+* Fix ko sample [#3805](https://github.com/GoogleContainerTools/skaffold/pull/3805)
+
+Updates & Refactors:
+* Add dependabot config file [#3832](https://github.com/GoogleContainerTools/skaffold/pull/3832)
+* Upgrade kompose to 1.21.0 [#3806](https://github.com/GoogleContainerTools/skaffold/pull/3806)
+* Go 1.14 [#3775](https://github.com/GoogleContainerTools/skaffold/pull/3775)
+* add flag --survey to set to set/unset disable survey prompt [#3732](https://github.com/GoogleContainerTools/skaffold/pull/3732)
+* Bump schema to v2beta1 [#3809](https://github.com/GoogleContainerTools/skaffold/pull/3809)
+* [Diagnostics] Add validator interface. Add resource interface and PodValidator [#3742](https://github.com/GoogleContainerTools/skaffold/pull/3742)
+
+Docs Updates:
+
+* Simplify code that finds the artifact's type [#3825](https://github.com/GoogleContainerTools/skaffold/pull/3825)
+* Use new t.Cleanup() to simplify tests [#3815](https://github.com/GoogleContainerTools/skaffold/pull/3815)
+* cleanup common flags + better -f description [#3786](https://github.com/GoogleContainerTools/skaffold/pull/3786)
+* unhide status check and on by default [#3792](https://github.com/GoogleContainerTools/skaffold/pull/3792)
+* Normalize capitalization for types while port forwarding [#3803](https://github.com/GoogleContainerTools/skaffold/pull/3803)
+* Also clean up statik files [#3804](https://github.com/GoogleContainerTools/skaffold/pull/3804)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Agrin
+- Appu Goundan
+- Balint Pato
+- Brian de Alwis
+- Daniel Abdelsamed
+- David Gageot
+- Nick Kubala
+- Tejal Desai
+
 # v1.5.0 Release - 03/05/2020
 
 Highlights:

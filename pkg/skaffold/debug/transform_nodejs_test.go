@@ -205,10 +205,14 @@ func TestNodeTransformer_Apply(t *testing.T) {
 			description:   "empty",
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{},
-			result:        v1.Container{},
+			// since IsApply() presumably returned true, this is the default case
+			result: v1.Container{
+				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=9229"}},
+			},
 		},
 		{
-			description:   "basic",
+			description:   "entrypoint",
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{entrypoint: []string{"node"}},
 			result: v1.Container{
@@ -244,6 +248,18 @@ func TestNodeTransformer_Apply(t *testing.T) {
 			configuration: imageConfiguration{arguments: []string{"node"}},
 			result: v1.Container{
 				Args:  []string{"node", "--inspect=9229"},
+				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+			},
+		},
+		{
+			description:   "docker-entrypoint (#3821)",
+			containerSpec: v1.Container{},
+			configuration: imageConfiguration{
+				env:        map[string]string{"NODE_VERSION": "10.12"},
+				entrypoint: []string{"docker-entrypoint.sh"},
+				arguments:  []string{"npm run script"}},
+			result: v1.Container{
+				Env:   []v1.EnvVar{{Name: "NODE_VERSION", Value: "10.12"}, {Name: "NODE_OPTIONS", Value: "--inspect=9229"}},
 				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 		},

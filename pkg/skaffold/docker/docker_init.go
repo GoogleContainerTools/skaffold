@@ -52,16 +52,17 @@ func (c ArtifactConfig) Describe() string {
 	return fmt.Sprintf("%s (%s)", c.Name(), c.File)
 }
 
-// CreateArtifact creates an Artifact to be included in the generated Build Config
-func (c ArtifactConfig) UpdateArtifact(a *latest.Artifact) {
+// ArtifactType returns the type of the artifact to be built.
+func (c ArtifactConfig) ArtifactType() latest.ArtifactType {
 	dockerfile := filepath.Base(c.File)
+	if dockerfile == constants.DefaultDockerfilePath {
+		return latest.ArtifactType{}
+	}
 
-	if dockerfile != constants.DefaultDockerfilePath {
-		a.ArtifactType = latest.ArtifactType{
-			DockerArtifact: &latest.DockerArtifact{
-				DockerfilePath: dockerfile,
-			},
-		}
+	return latest.ArtifactType{
+		DockerArtifact: &latest.DockerArtifact{
+			DockerfilePath: dockerfile,
+		},
 	}
 }
 
@@ -83,6 +84,7 @@ func validate(path string) bool {
 		logrus.Warnf("opening file %s: %s", path, err.Error())
 		return false
 	}
+	defer f.Close()
 
 	res, err := parser.Parse(f)
 	if err != nil || res == nil || len(res.AST.Children) == 0 {

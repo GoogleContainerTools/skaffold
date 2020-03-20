@@ -29,8 +29,7 @@ func TestHelmDeploy(t *testing.T) {
 		t.Skip("skipping GCP integration test")
 	}
 
-	ns, client, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, client := SetupNamespace(t)
 
 	// To fix #1823, we make use of env variable templating for release name
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}

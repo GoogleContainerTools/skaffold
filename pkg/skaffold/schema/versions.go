@@ -17,6 +17,7 @@ limitations under the License.
 package schema
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 
@@ -25,6 +26,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
@@ -53,6 +55,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha1"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha2"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha3"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha4"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -87,6 +90,7 @@ var SchemaVersions = Versions{
 	{v2alpha1.Version, v2alpha1.NewSkaffoldConfig},
 	{v2alpha2.Version, v2alpha2.NewSkaffoldConfig},
 	{v2alpha3.Version, v2alpha3.NewSkaffoldConfig},
+	{v2alpha4.Version, v2alpha4.NewSkaffoldConfig},
 	{latest.Version, latest.NewSkaffoldConfig},
 }
 
@@ -110,6 +114,10 @@ func (v *Versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
 
 // IsSkaffoldConfig is for determining if a file is skaffold config file.
 func IsSkaffoldConfig(file string) bool {
+	if !kubernetes.HasKubernetesFileExtension(file) {
+		return false
+	}
+
 	if config, err := ParseConfig(file, false); err == nil && config != nil {
 		return true
 	}
@@ -121,6 +129,12 @@ func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 	buf, err := misc.ReadConfiguration(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "read skaffold config")
+	}
+
+	// This is to quickly check that it's possibly a skaffold.yaml,
+	// without parsing the whole file.
+	if !bytes.Contains(buf, []byte("apiVersion")) {
+		return nil, errors.New("missing apiVersion")
 	}
 
 	apiVersion := &APIVersion{}

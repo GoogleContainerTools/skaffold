@@ -2,7 +2,9 @@
 set -e
 
 if ! [ -x "$(command -v ko)" ]; then
-    GO111MODULE=on go get -mod=readonly github.com/google/ko/cmd/ko
+    pushd $(mktemp -d)
+    go mod init tmp; GOFLAGS= go get github.com/google/ko/cmd/ko
+    popd
 fi
 
 output=$(ko publish --local --preserve-import-paths --tags= . | tee)

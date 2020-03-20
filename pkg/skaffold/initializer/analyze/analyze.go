@@ -88,15 +88,17 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 	for _, analyzer := range a.analyzers() {
 		analyzer.enterDir(dir)
 	}
+
 	dirents, err := godirwalk.ReadDirents(dir, nil)
 	if err != nil {
 		return err
 	}
 
-	var subdirectories []*godirwalk.Dirent
-	//this is for deterministic results - given the same directory structure
-	//init should have the same results
+	// This is for deterministic results - given the same directory structure
+	// init should have the same results.
 	sort.Sort(dirents)
+
+	var subdirectories []*godirwalk.Dirent
 
 	// Traverse files
 	for _, file := range dirents {

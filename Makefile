@@ -31,7 +31,7 @@ GKE_ZONE ?= us-central1-a
 SUPPORTED_PLATFORMS = linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
-SKAFFOLD_TEST_PACKAGES = $(shell go list ./... | grep -v diag)
+SKAFFOLD_TEST_PACKAGES = ./pkg/skaffold/... ./cmd/... ./hack/... ./pkg/webhook/...
 GO_FILES = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./pkg/diag/*")
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
@@ -40,11 +40,6 @@ COMMIT = $(shell git rev-parse HEAD)
 ifeq "$(strip $(VERSION))" ""
  override VERSION = $(shell git describe --always --tags --dirty)
 endif
-
-# Force using Go Modules and always read the dependencies from
-# the `vendor` folder.
-export GO111MODULE = on
-export GOFLAGS = -mod=vendor
 
 LDFLAGS_linux = -static
 LDFLAGS_darwin =
@@ -80,16 +75,16 @@ install: $(BUILD_DIR)/$(PROJECT)
 .PHONY: cross
 cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform).sha256)
 
-$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
+$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross/Dockerfile
 	docker build \
-		--build-arg PROJECT=$(REPOPATH) \
-		--build-arg TARGETS=$*/$(GOARCH) \
-		--build-arg FLAG_LDFLAGS=$(GO_LDFLAGS_$(*)) \
-		--build-arg FLAG_TAGS=$(GO_BUILD_TAGS_$(*)) \
+		--build-arg GOOS=$* \
+		--build-arg GOARCH=$(GOARCH) \
+		--build-arg TAGS=$(GO_BUILD_TAGS_$(*)) \
+		--build-arg LDFLAGS=$(GO_LDFLAGS_$(*)) \
 		-f deploy/cross/Dockerfile \
 		-t skaffold/cross \
 		.
-	docker run --rm --entrypoint sh skaffold/cross -c "cat /build/skaffold*" > $@
+	docker run --rm skaffold/cross cat /build/skaffold > $@
 
 %.sha256: %
 	shasum -a 256 $< > $@
@@ -158,7 +153,7 @@ release-build: cross
 
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR) hack/bin
+	rm -rf $(BUILD_DIR) hack/bin $(STATIK_FILES)
 
 .PHONY: build_deps
 build_deps:

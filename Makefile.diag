@@ -21,11 +21,6 @@ VERSION_PACKAGE = $(REPOPATH)/pkg/diag/version
 
 TEST_PACKAGES := $(shell go list ./pkg/diag/...)
 
-# Force using Go Modules and always read the dependencies from
-# the `vendor` folder.
-export GO111MODULE = on
-export GOFLAGS = -mod=vendor
-
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
