@@ -28,7 +28,7 @@ GCP_PROJECT ?= k8s-skaffold
 GKE_CLUSTER_NAME ?= integration-tests
 GKE_ZONE ?= us-central1-a
 
-SUPPORTED_PLATFORMS = linux-amd64 darwin-amd64 windows-amd64.exe linux-arm64
+SUPPORTED_PLATFORMS = linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 SKAFFOLD_TEST_PACKAGES = ./pkg/skaffold/... ./cmd/... ./hack/... ./pkg/webhook/...
@@ -70,28 +70,27 @@ install: $(BUILD_DIR)/$(PROJECT)
 	cp $(BUILD_DIR)/$(PROJECT) $(GOPATH)/bin/$(PROJECT)
 
 # Build for a release.
-%.sha256: %
-	shasum -a 256 $< > $@
-
-%.exe: %
-	cp $< $@
-
 .PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
 
 .PHONY: cross
 cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform).sha256)
 
-$(BUILD_DIR)/$(PROJECT)-%: $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross/Dockerfile
-	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" \
+$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross/Dockerfile
 	docker build \
-		--build-arg GOOS=$(GOOS) \
+		--build-arg GOOS=$* \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg TAGS=$(GO_BUILD_TAGS_$(GOOS)) \
-		--build-arg LDFLAGS=$(GO_LDFLAGS_$(GOOS)) \
+		--build-arg TAGS=$(GO_BUILD_TAGS_$(*)) \
+		--build-arg LDFLAGS=$(GO_LDFLAGS_$(*)) \
 		-f deploy/cross/Dockerfile \
 		-t skaffold/cross \
 		.
 	docker run --rm skaffold/cross cat /build/skaffold > $@
+
+%.sha256: %
+	shasum -a 256 $< > $@
+
+%.exe: %
+	cp $< $@
 
 .PHONY: $(BUILD_DIR)/VERSION
 $(BUILD_DIR)/VERSION: $(BUILD_DIR)
