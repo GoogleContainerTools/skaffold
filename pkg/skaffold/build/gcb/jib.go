@@ -17,6 +17,8 @@ limitations under the License.
 package gcb
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -56,4 +58,23 @@ func (b *Builder) jibBuildSpec(artifact *latest.Artifact, tag string) (cloudbuil
 
 func fixHome(command string, args []string) []string {
 	return []string{"-c", command + " -Duser.home=$$HOME " + strings.Join(args, " ")}
+}
+
+func jibAddWorkspaceToDependencies(workspace string, dependencies []string) ([]string, error) {
+	dependencyMap := make(map[string]bool)
+	for _, d := range dependencies {
+		dependencyMap[d] = true
+	}
+
+	err := filepath.Walk(workspace,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if _, ok := dependencyMap[path]; !ok {
+				dependencies = append(dependencies, path)
+			}
+			return nil
+		})
+	return dependencies, err
 }

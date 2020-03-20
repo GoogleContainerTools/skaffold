@@ -115,3 +115,37 @@ func TestJibGradleBuildSpec(t *testing.T) {
 		})
 	}
 }
+
+func TestJibAddWorkspaceToDependencies(t *testing.T) {
+	tests := []struct {
+		description       string
+		workspacePaths    []string
+		dependencies      []string
+		expectedWorkspace []string
+	}{
+		{
+			description:       "basic test",
+			workspacePaths:    []string{"a/b/file", "c/file", "file"},
+			dependencies:      []string{"dependencyA", "dependencyB"},
+			expectedWorkspace: []string{"", "/a", "/a/b", "/a/b/file", "/c", "/c/file", "/file"},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir()
+			for _, f := range test.workspacePaths {
+				tmpDir.Write(f, "")
+			}
+
+			for i := range test.expectedWorkspace {
+				test.expectedWorkspace[i] = tmpDir.Root() + test.expectedWorkspace[i]
+			}
+			expectedDependencies := append(test.dependencies, test.expectedWorkspace...)
+
+			actualDepedencies, err := jibAddWorkspaceToDependencies(tmpDir.Root(), test.dependencies)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(expectedDependencies, actualDepedencies)
+		})
+	}
+}
