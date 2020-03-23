@@ -72,7 +72,7 @@ func NewCmdInit() *cobra.Command {
 			f.BoolVar(&enableManifestGeneration, "XXenableManifestGeneration", false, "")
 			f.MarkHidden("XXenableManifestGeneration")
 		}).
-		NoArgs(cancelWithCtrlC(context.Background(), doInit))
+		NoArgs(doInit)
 }
 
 func doInit(ctx context.Context, out io.Writer) error {

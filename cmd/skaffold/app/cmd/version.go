@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -37,6 +38,6 @@ func NewCmdVersion() *cobra.Command {
 		NoArgs(doVersion)
 }
 
-func doVersion(out io.Writer) error {
+func doVersion(_ context.Context, out io.Writer) error {
 	return versionFlag.Template().Execute(out, version.Get())
 }

@@ -36,7 +36,7 @@ func NewCmdRun() *cobra.Command {
 		WithExample("Build, test, deploy and tail the logs", "run --tail").
 		WithExample("Run with a given profile", "run -p <profile>").
 		WithCommonFlags().
-		NoArgs(cancelWithCtrlC(context.Background(), doRun))
+		NoArgs(doRun)
 }
 
 func doRun(ctx context.Context, out io.Writer) error {

@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -40,7 +41,7 @@ type cfgStruct struct {
 	idx   []int
 }
 
-func Set(out io.Writer, args []string) error {
+func Set(ctx context.Context, out io.Writer, args []string) error {
 	if err := setConfigValue(args[0], args[1]); err != nil {
 		return err
 	}

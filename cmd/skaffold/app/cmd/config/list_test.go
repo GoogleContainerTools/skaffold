@@ -18,6 +18,7 @@ package config
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 
@@ -163,7 +164,7 @@ kubeContexts:
 
 			buf := &bytes.Buffer{}
 			// list values
-			err := List(buf)
+			err := List(context.Background(), buf)
 			t.CheckNoError(err)
 
 			if test.expectedOutput != "" && !strings.HasSuffix(buf.String(), test.expectedOutput) {

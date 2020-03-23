@@ -43,7 +43,7 @@ func NewCmdRender() *cobra.Command {
 			f.BoolVar(&showBuild, "loud", false, "Show the build logs and output")
 			f.StringVar(&renderOutputPath, "output", "", "file to write rendered manifests to")
 		}).
-		NoArgs(cancelWithCtrlC(context.Background(), doRender))
+		NoArgs(doRender)
 }
 
 func doRender(ctx context.Context, out io.Writer) error {

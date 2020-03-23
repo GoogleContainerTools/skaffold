@@ -41,7 +41,7 @@ func NewCmdGeneratePipeline() *cobra.Command {
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringSliceVar(&configFiles, "config-files", nil, "Select additional files whose artifacts to use when generating pipeline.")
 		}).
-		NoArgs(cancelWithCtrlC(context.Background(), doGeneratePipeline))
+		NoArgs(doGeneratePipeline)
 }
 
 func doGeneratePipeline(ctx context.Context, out io.Writer) error {

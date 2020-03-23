@@ -32,7 +32,7 @@ func NewCmdDebug() *cobra.Command {
 		WithDescription("[beta] Run a pipeline in debug mode").
 		WithLongDescription("Similar to `dev`, but configures the pipeline for debugging.").
 		WithCommonFlags().
-		NoArgs(cancelWithCtrlC(context.Background(), doDebug))
+		NoArgs(doDebug)
 }
 
 func doDebug(ctx context.Context, out io.Writer) error {
