@@ -19,9 +19,9 @@ package debugging
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -63,7 +63,7 @@ func (d *ContainerManager) Start(ctx context.Context) error {
 	stopWatchers, err := aggregatePodWatcher(d.namespaces, d.aggregate)
 	if err != nil {
 		stopWatchers()
-		return errors.Wrap(err, "initializing debugging container watcher")
+		return fmt.Errorf("initializing debugging container watcher: %w", err)
 	}
 
 	go func() {

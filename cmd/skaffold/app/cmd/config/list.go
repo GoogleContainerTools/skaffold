@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -39,7 +38,7 @@ func List(ctx context.Context, out io.Writer) error {
 		}
 		configYaml, err = yaml.Marshal(&cfg)
 		if err != nil {
-			return errors.Wrap(err, "marshaling config")
+			return fmt.Errorf("marshaling config: %w", err)
 		}
 	} else {
 		contextConfig, err := getConfigForKubectx()
@@ -51,7 +50,7 @@ func List(ctx context.Context, out io.Writer) error {
 		}
 		configYaml, err = yaml.Marshal(&contextConfig)
 		if err != nil {
-			return errors.Wrap(err, "marshaling config")
+			return fmt.Errorf("marshaling config: %w", err)
 		}
 	}
 

@@ -17,9 +17,8 @@ limitations under the License.
 package build
 
 import (
+	"fmt"
 	"io"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/generator"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -67,7 +66,7 @@ func (d *defaultBuildInitializer) GenerateManifests() (map[GeneratedBuilderImage
 	for _, pair := range d.generatedBuilderImagePairs {
 		manifest, err := generator.Generate(pair.ImageName)
 		if err != nil {
-			return nil, errors.Wrap(err, "generating kubernetes manifest")
+			return nil, fmt.Errorf("generating kubernetes manifest: %w", err)
 		}
 		generatedManifests[pair] = manifest
 		d.builderImagePairs = append(d.builderImagePairs, pair.BuilderImagePair)

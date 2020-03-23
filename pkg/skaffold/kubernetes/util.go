@@ -18,11 +18,12 @@ package kubernetes
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -80,7 +81,7 @@ func ParseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
-		return nil, errors.Wrap(err, "opening config file")
+		return nil, fmt.Errorf("opening config file: %w", err)
 	}
 	defer f.Close()
 
@@ -94,12 +95,12 @@ func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
 			break
 		}
 		if err != nil {
-			return nil, errors.Wrap(err, "reading config file")
+			return nil, fmt.Errorf("reading config file: %w", err)
 		}
 
 		obj := make(yamlObject)
 		if err := yaml.Unmarshal(doc, &obj); err != nil {
-			return nil, errors.Wrap(err, "reading Kubernetes YAML")
+			return nil, fmt.Errorf("reading Kubernetes YAML: %w", err)
 		}
 
 		if !hasRequiredK8sManifestFields(obj) {

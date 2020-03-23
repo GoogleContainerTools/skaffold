@@ -19,13 +19,13 @@ package util
 import (
 	"archive/tar"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -163,7 +163,7 @@ func addFileToTar(root string, src string, dst string, tw *tar.Writer, hm header
 		defer f.Close()
 
 		if _, err := io.Copy(tw, f); err != nil {
-			return errors.Wrapf(err, "writing real file %s", src)
+			return fmt.Errorf("writing real file %q: %w", src, err)
 		}
 	}
 

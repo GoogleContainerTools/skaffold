@@ -18,9 +18,10 @@ package runner
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -49,12 +50,12 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 	defer cancelTrigger()
 	trigger, err := trigger.StartTrigger(ctxTrigger, l.Trigger)
 	if err != nil {
-		return errors.Wrap(err, "unable to start trigger")
+		return fmt.Errorf("unable to start trigger: %w", err)
 	}
 
 	// exit if file monitor fails the first time
 	if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
-		return errors.Wrap(err, "failed to monitor files")
+		return fmt.Errorf("failed to monitor files: %w", err)
 	}
 
 	l.LogWatchToUser(out)
@@ -83,7 +84,7 @@ func (l *SkaffoldListener) do(ctx context.Context, out io.Writer, devLoop func(c
 	if err := devLoop(ctx, out); err != nil {
 		// propagating this error up causes a new runner to be created
 		// and a new dev loop to start
-		if errors.Cause(err) == ErrorConfigurationChanged {
+		if errors.Is(err, ErrorConfigurationChanged) {
 			return err
 		}
 		logrus.Errorf("error running dev loop: %s", err.Error())

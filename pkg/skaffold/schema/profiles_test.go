@@ -101,7 +101,7 @@ profiles:
 			Profiles: []string{"patches"},
 		})
 
-		t.CheckErrorAndDeepEqual(true, err, "applying profile patches: invalid path: /build/artifacts/0/image/", err.Error())
+		t.CheckErrorAndDeepEqual(true, err, `applying profile "patches": invalid path: /build/artifacts/0/image/`, err.Error())
 	})
 }
 

@@ -18,10 +18,10 @@ package cache
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -78,13 +78,13 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		case needsTagging:
 			color.Green.Fprintln(out, "Found. Tagging")
 			if err := result.Tag(ctx, c); err != nil {
-				return nil, errors.Wrap(err, "tagging image")
+				return nil, fmt.Errorf("tagging image: %w", err)
 			}
 
 		case needsPushing:
 			color.Green.Fprintln(out, "Found. Pushing")
 			if err := result.Push(ctx, out, c); err != nil {
-				return nil, errors.Wrap(err, "pushing image")
+				return nil, fmt.Errorf("pushing image: %w", err)
 			}
 
 		default:
@@ -159,7 +159,7 @@ func (c *cache) addArtifacts(ctx context.Context, bRes []build.Artifact, hashByN
 		if !c.imagesAreLocal {
 			ref, err := docker.ParseReference(a.Tag)
 			if err != nil {
-				return errors.Wrapf(err, "parsing reference %s", a.Tag)
+				return fmt.Errorf("parsing reference %q: %w", a.Tag, err)
 			}
 
 			entry.Digest = ref.Digest

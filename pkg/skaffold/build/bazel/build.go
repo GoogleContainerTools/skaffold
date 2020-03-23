@@ -18,14 +18,13 @@ package bazel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -62,12 +61,12 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 	cmd.Stdout = out
 	cmd.Stderr = out
 	if err := util.RunCmd(cmd); err != nil {
-		return "", errors.Wrap(err, "running command")
+		return "", fmt.Errorf("running command: %w", err)
 	}
 
 	bazelBin, err := bazelBin(ctx, workspace, a)
 	if err != nil {
-		return "", errors.Wrap(err, "getting path of bazel-bin")
+		return "", fmt.Errorf("getting path of bazel-bin: %w", err)
 	}
 
 	tarPath := filepath.Join(bazelBin, buildTarPath(a.BuildTarget))
@@ -77,18 +76,18 @@ func (b *Builder) buildTar(ctx context.Context, out io.Writer, workspace string,
 func (b *Builder) loadImage(ctx context.Context, out io.Writer, tarPath string, a *latest.BazelArtifact, tag string) (string, error) {
 	imageTar, err := os.Open(tarPath)
 	if err != nil {
-		return "", errors.Wrap(err, "opening image tarball")
+		return "", fmt.Errorf("opening image tarball: %w", err)
 	}
 	defer imageTar.Close()
 
 	bazelTag := buildImageTag(a.BuildTarget)
 	imageID, err := b.localDocker.Load(ctx, out, imageTar, bazelTag)
 	if err != nil {
-		return "", errors.Wrap(err, "loading image into docker daemon")
+		return "", fmt.Errorf("loading image into docker daemon: %w", err)
 	}
 
 	if err := b.localDocker.Tag(ctx, imageID, tag); err != nil {
-		return "", errors.Wrap(err, "tagging the image")
+		return "", fmt.Errorf("tagging the image: %w", err)
 	}
 
 	return imageID, nil

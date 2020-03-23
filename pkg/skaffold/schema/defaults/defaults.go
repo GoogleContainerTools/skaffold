@@ -21,7 +21,6 @@ import (
 
 	"github.com/google/uuid"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -246,7 +245,7 @@ func setDefaultClusterNamespace(cluster *latest.ClusterDetails) error {
 	if cluster.Namespace == "" {
 		ns, err := currentNamespace()
 		if err != nil {
-			return errors.Wrap(err, "getting current namespace")
+			return fmt.Errorf("getting current namespace: %w", err)
 		}
 		cluster.Namespace = ns
 	}

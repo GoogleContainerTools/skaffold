@@ -19,11 +19,11 @@ package kubectl
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -59,7 +59,7 @@ func (c *CLI) CheckVersion(ctx context.Context) error {
 
 	m, err := strconv.Atoi(minor)
 	if err != nil {
-		return errors.Wrap(err, "couldn't get kubectl minor version")
+		return fmt.Errorf("couldn't get kubectl minor version: %w", err)
 	}
 
 	if m < 12 {

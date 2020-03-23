@@ -18,12 +18,12 @@ package local
 
 import (
 	"context"
+	"errors"
 	"io/ioutil"
 	"testing"
 
 	"github.com/docker/docker/api/types"
 	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"

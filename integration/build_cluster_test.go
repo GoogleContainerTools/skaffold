@@ -116,8 +116,7 @@ func copyFile(t *testutil.T, src, dst string) {
 		t.Fatalf("can't read source file: %s: %s", src, err)
 	}
 
-	err = ioutil.WriteFile(dst, content, 0666)
-	if err != nil {
+	if err := ioutil.WriteFile(dst, content, 0666); err != nil {
 		t.Fatalf("failed to copy file %s to %s: %s", src, dst, err)
 	}
 }

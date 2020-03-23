@@ -18,9 +18,9 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"io"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -90,7 +90,7 @@ func doDev(ctx context.Context, out io.Writer) error {
 				return err
 			})
 			if err != nil {
-				if errors.Cause(err) != runner.ErrorConfigurationChanged {
+				if !errors.Is(err, runner.ErrorConfigurationChanged) {
 					return err
 				}
 				// Otherwise, the skaffold config has changed.

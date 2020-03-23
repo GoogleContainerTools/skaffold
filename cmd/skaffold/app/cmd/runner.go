@@ -18,10 +18,10 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -42,7 +42,7 @@ var createRunner = createNewRunner
 func withRunner(ctx context.Context, action func(runner.Runner, *latest.SkaffoldConfig) error) error {
 	runner, config, err := createRunner(opts)
 	if err != nil {
-		return errors.Wrap(err, "creating runner")
+		return fmt.Errorf("creating runner: %w", err)
 	}
 
 	err = action(runner, config)
@@ -54,7 +54,7 @@ func withRunner(ctx context.Context, action func(runner.Runner, *latest.Skaffold
 func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
 	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
 	if err != nil {
-		if os.IsNotExist(errors.Cause(err)) {
+		if os.IsNotExist(errors.Unwrap(err)) {
 			return nil, nil, fmt.Errorf("[%s] not found. You might need to run `skaffold init`", opts.ConfigurationFile)
 		}
 
@@ -62,33 +62,33 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 		// that maybe they are using an outdated version of Skaffold that's unable to read
 		// the configuration.
 		warnIfUpdateIsAvailable()
-		return nil, nil, errors.Wrap(err, "parsing skaffold config")
+		return nil, nil, fmt.Errorf("parsing skaffold config: %w", err)
 	}
 
 	config := parsed.(*latest.SkaffoldConfig)
 
 	if err = schema.ApplyProfiles(config, opts); err != nil {
-		return nil, nil, errors.Wrap(err, "applying profiles")
+		return nil, nil, fmt.Errorf("applying profiles: %w", err)
 	}
 
 	kubectx.ConfigureKubeConfig(opts.KubeConfig, opts.KubeContext, config.Deploy.KubeContext)
 
 	if err := defaults.Set(config); err != nil {
-		return nil, nil, errors.Wrap(err, "setting default values")
+		return nil, nil, fmt.Errorf("setting default values: %w", err)
 	}
 
 	if err := validation.Process(config); err != nil {
-		return nil, nil, errors.Wrap(err, "invalid skaffold config")
+		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
 	}
 
 	runCtx, err := runcontext.GetRunContext(opts, config.Pipeline)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting run context")
+		return nil, nil, fmt.Errorf("getting run context: %w", err)
 	}
 
 	runner, err := runner.NewForConfig(runCtx)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "creating runner")
+		return nil, nil, fmt.Errorf("creating runner: %w", err)
 	}
 
 	return runner, config, nil

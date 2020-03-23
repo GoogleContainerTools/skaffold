@@ -22,7 +22,6 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -69,7 +68,7 @@ func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace
 
 	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
 	if err := util.RunCmd(&cmd); err != nil {
-		return errors.Wrap(err, "gradle build failed")
+		return fmt.Errorf("gradle build failed: %w", err)
 	}
 
 	return nil
@@ -81,7 +80,7 @@ func getDependenciesGradle(ctx context.Context, workspace string, a *latest.JibA
 	cmd := getCommandGradle(ctx, workspace, a)
 	deps, err := getDependencies(workspace, cmd, a)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting jib-gradle dependencies")
+		return nil, fmt.Errorf("getting jib-gradle dependencies: %w", err)
 	}
 	logrus.Debugf("Found dependencies for jib-gradle artifact: %v", deps)
 	return deps, nil

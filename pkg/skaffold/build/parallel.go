@@ -23,8 +23,6 @@ import (
 	"io"
 	"sync"
 
-	"github.com/pkg/errors"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -132,7 +130,7 @@ func collectResults(out io.Writer, artifacts []*latest.Artifact, results *sync.M
 		}
 		switch t := v.(type) {
 		case error:
-			return nil, errors.Wrapf(t, "building [%s]", artifact.ImageName)
+			return nil, fmt.Errorf("building [%s]: %w", artifact.ImageName, t)
 		case Artifact:
 			built = append(built, t)
 		default:

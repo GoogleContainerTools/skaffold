@@ -24,8 +24,6 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/pkg/errors"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -40,11 +38,11 @@ var (
 func (b *Builder) runBuildScript(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) error {
 	cmd, err := b.retrieveCmd(ctx, out, a, tag)
 	if err != nil {
-		return errors.Wrap(err, "retrieving cmd")
+		return fmt.Errorf("retrieving cmd: %w", err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		return errors.Wrap(err, "starting cmd")
+		return fmt.Errorf("starting cmd: %w", err)
 	}
 
 	return misc.HandleGracefulTermination(ctx, cmd)
@@ -56,7 +54,7 @@ func (b *Builder) retrieveCmd(ctx context.Context, out io.Writer, a *latest.Arti
 	// Expand command
 	command, err := util.ExpandEnvTemplate(artifact.BuildCommand, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to parse build command %q")
+		return nil, fmt.Errorf("unable to parse build command %q: %w", artifact.BuildCommand, err)
 	}
 
 	var cmd *exec.Cmd
@@ -72,13 +70,13 @@ func (b *Builder) retrieveCmd(ctx context.Context, out io.Writer, a *latest.Arti
 
 	env, err := b.retrieveEnv(a, tag)
 	if err != nil {
-		return nil, errors.Wrapf(err, "retrieving env variables for %s", a.ImageName)
+		return nil, fmt.Errorf("retrieving env variables for %q: %w", a.ImageName, err)
 	}
 	cmd.Env = env
 
 	dir, err := buildContext(a.Workspace)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting context for artifact")
+		return nil, fmt.Errorf("getting context for artifact: %w", err)
 	}
 	cmd.Dir = dir
 
@@ -88,7 +86,7 @@ func (b *Builder) retrieveCmd(ctx context.Context, out io.Writer, a *latest.Arti
 func (b *Builder) retrieveEnv(a *latest.Artifact, tag string) ([]string, error) {
 	buildContext, err := buildContext(a.Workspace)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting absolute path for artifact build context")
+		return nil, fmt.Errorf("getting absolute path for artifact build context: %w", err)
 	}
 
 	envs := []string{

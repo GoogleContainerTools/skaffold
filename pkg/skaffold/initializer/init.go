@@ -22,7 +22,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
@@ -92,13 +91,13 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 
 	for path, manifest := range generatedManifests {
 		if err = ioutil.WriteFile(path, manifest, 0644); err != nil {
-			return errors.Wrap(err, "writing k8s manifest to file")
+			return fmt.Errorf("writing k8s manifest to file: %w", err)
 		}
 		fmt.Fprintf(out, "Generated manifest %s was written\n", path)
 	}
 
 	if err = ioutil.WriteFile(c.Opts.ConfigurationFile, pipeline, 0644); err != nil {
-		return errors.Wrap(err, "writing config to file")
+		return fmt.Errorf("writing config to file: %w", err)
 	}
 
 	fmt.Fprintf(out, "Configuration %s was written\n", c.Opts.ConfigurationFile)

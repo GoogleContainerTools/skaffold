@@ -18,9 +18,9 @@ package sources
 
 import (
 	"context"
+	"fmt"
 
 	cstorage "cloud.google.com/go/storage"
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -31,7 +31,7 @@ func UploadToGCS(ctx context.Context, c *cstorage.Client, a *latest.Artifact, bu
 	w := c.Bucket(bucket).Object(objectName).NewWriter(ctx)
 
 	if err := util.CreateTarGz(w, a.Workspace, dependencies); err != nil {
-		return errors.Wrap(err, "uploading sources to google storage")
+		return fmt.Errorf("uploading sources to google storage: %w", err)
 	}
 
 	return w.Close()

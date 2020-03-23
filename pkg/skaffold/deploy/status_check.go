@@ -25,7 +25,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -66,7 +65,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	client, err := pkgkubernetes.Client()
 	event.StatusCheckEventStarted()
 	if err != nil {
-		return errors.Wrap(err, "getting Kubernetes client")
+		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
 	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller,
@@ -75,7 +74,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	deadline := statusCheckMaxDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds, deployments)
 
 	if err != nil {
-		return errors.Wrap(err, "could not fetch deployments")
+		return fmt.Errorf("could not fetch deployments: %w", err)
 	}
 
 	var wg sync.WaitGroup
@@ -107,7 +106,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 		LabelSelector: l.RunIDKeyValueString(),
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "could not fetch deployments")
+		return nil, fmt.Errorf("could not fetch deployments: %w", err)
 	}
 
 	deployments := make([]Resource, 0, len(deps.Items))
@@ -133,7 +132,7 @@ func pollResourceStatus(ctx context.Context, runCtx *runcontext.RunContext, r Re
 	for {
 		select {
 		case <-timeoutContext.Done():
-			err := errors.Wrap(timeoutContext.Err(), fmt.Sprintf("could not stabilize within %v", r.Deadline()))
+			err := fmt.Errorf("could not stabilize within %v: %w", r.Deadline(), timeoutContext.Err())
 			r.UpdateStatus(err.Error(), err)
 			return
 		case <-time.After(pollDuration):

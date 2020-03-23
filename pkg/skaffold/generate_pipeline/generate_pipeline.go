@@ -19,6 +19,7 @@ package generatepipeline
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -26,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/pipeline"
@@ -45,47 +45,47 @@ func Yaml(out io.Writer, runCtx *runcontext.RunContext, configFiles []*ConfigFil
 	// Generate git resource for pipeline
 	gitResource, err := generateGitResource()
 	if err != nil {
-		return nil, errors.Wrap(err, "generating git resource for pipeline")
+		return nil, fmt.Errorf("generating git resource for pipeline: %w", err)
 	}
 
 	// Generate build task for pipeline
 	var tasks []*tekton.Task
 	buildTasks, err := generateBuildTasks(runCtx.Opts.Namespace, configFiles)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating build task")
+		return nil, fmt.Errorf("generating build task: %w", err)
 	}
 	tasks = append(tasks, buildTasks...)
 
 	// Generate deploy task for pipeline
 	deployTasks, err := generateDeployTasks(runCtx.Opts.Namespace, configFiles)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating deploy task")
+		return nil, fmt.Errorf("generating deploy task: %w", err)
 	}
 	tasks = append(tasks, deployTasks...)
 
 	// Generate pipeline from git resource and tasks
 	pipeline, err := generatePipeline(tasks)
 	if err != nil {
-		return nil, errors.Wrap(err, "generating tekton pipeline")
+		return nil, fmt.Errorf("generating tekton pipeline: %w", err)
 	}
 
 	// json.Marshal all pieces of pipeline, then convert all jsons to yamls
 	var jsons [][]byte
 	bGitResource, err := json.Marshal(gitResource)
 	if err != nil {
-		return nil, errors.Wrap(err, "marshaling git resource")
+		return nil, fmt.Errorf("marshaling git resource: %w", err)
 	}
 	jsons = append(jsons, bGitResource)
 	for _, task := range tasks {
 		bTask, err := json.Marshal(task)
 		if err != nil {
-			return nil, errors.Wrap(err, "marshaling task")
+			return nil, fmt.Errorf("marshaling task: %w", err)
 		}
 		jsons = append(jsons, bTask)
 	}
 	bPipeline, err := json.Marshal(pipeline)
 	if err != nil {
-		return nil, errors.Wrap(err, "marshaling pipeline")
+		return nil, fmt.Errorf("marshaling pipeline: %w", err)
 	}
 	jsons = append(jsons, bPipeline)
 
@@ -93,7 +93,7 @@ func Yaml(out io.Writer, runCtx *runcontext.RunContext, configFiles []*ConfigFil
 	for _, item := range jsons {
 		itemYaml, err := yaml.JSONToYAML(item)
 		if err != nil {
-			return nil, errors.Wrap(err, "converting jsons to yamls")
+			return nil, fmt.Errorf("converting jsons to yamls: %w", err)
 		}
 		output.Write(append(itemYaml, []byte("---\n")...))
 	}
@@ -107,7 +107,7 @@ func generateGitResource() (*tekton.PipelineResource, error) {
 		getGitRepo := exec.Command("git", "config", "--get", "remote.origin.url")
 		bGitRepo, err := getGitRepo.Output()
 		if err != nil {
-			return nil, errors.Wrap(err, "getting git repo from git config")
+			return nil, fmt.Errorf("getting git repo from git config: %w", err)
 		}
 		gitURL = string(bGitRepo)
 	}

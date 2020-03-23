@@ -18,11 +18,11 @@ package github
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/google/go-github/github"
-	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
@@ -61,7 +61,7 @@ func (g *Client) CommentOnPR(pr *github.PullRequestEvent, message string) error 
 	log.Printf("Creating comment on PR %d: %s", pr.PullRequest.GetNumber(), message)
 	_, _, err := g.Client.Issues.CreateComment(g.ctx, constants.GithubOwner, constants.GithubRepo, pr.PullRequest.GetNumber(), comment)
 	if err != nil {
-		return errors.Wrap(err, "creating github comment")
+		return fmt.Errorf("creating github comment: %w", err)
 	}
 	log.Printf("Successfully commented on PR %d.", pr.GetNumber())
 	return nil
@@ -71,7 +71,7 @@ func (g *Client) CommentOnPR(pr *github.PullRequestEvent, message string) error 
 func (g *Client) RemoveLabelFromPR(pr *github.PullRequestEvent, label string) error {
 	_, err := g.Client.Issues.RemoveLabelForIssue(g.ctx, constants.GithubOwner, constants.GithubRepo, pr.GetNumber(), label)
 	if err != nil {
-		return errors.Wrap(err, "deleting label")
+		return fmt.Errorf("deleting label: %w", err)
 	}
 	log.Printf("Successfully deleted label from PR %d", pr.GetNumber())
 	return nil

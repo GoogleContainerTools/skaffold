@@ -17,9 +17,9 @@ limitations under the License.
 package context
 
 import (
+	"fmt"
 	"sync"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -81,10 +81,17 @@ func getRestClientConfig(kctx string, kcfg string) (*restclient.Config, error) {
 	if kctx == "" && kcfg == "" && clientcmd.IsEmptyConfig(err) {
 		logrus.Debug("no kube-context set and no kubeConfig found, attempting in-cluster config")
 		restConfig, err := restclient.InClusterConfig()
-		return restConfig, errors.Wrap(err, "error creating REST client config in-cluster")
+		if err != nil {
+			return restConfig, fmt.Errorf("error creating REST client config in-cluster: %w", err)
+		}
+
+		return restConfig, nil
+	}
+	if err != nil {
+		return restConfig, fmt.Errorf("error creating REST client config for kubeContext %q: %w", kctx, err)
 	}
 
-	return restConfig, errors.Wrapf(err, "error creating REST client config for kubeContext '%s'", kctx)
+	return restConfig, nil
 }
 
 // getCurrentConfig retrieves the kubeconfig file. If ConfigureKubeConfig was called before, the CurrentContext will be overridden.
@@ -108,6 +115,11 @@ func getRawKubeConfig() (clientcmdapi.Config, error) {
 			CurrentContext: kubeContext,
 		})
 	})
+
 	rawConfig, err := kubeConfig.RawConfig()
-	return rawConfig, errors.Wrap(err, "loading kubeconfig")
+	if err != nil {
+		return rawConfig, fmt.Errorf("loading kubeconfig: %w", err)
+	}
+
+	return rawConfig, nil
 }

@@ -26,7 +26,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/segmentio/textio"
 	yaml "gopkg.in/yaml.v2"
 
@@ -120,13 +119,13 @@ func (k *KustomizeDeployer) Deploy(ctx context.Context, out io.Writer, builds []
 
 	namespaces, err := manifests.CollectNamespaces()
 	if err != nil {
-		event.DeployInfoEvent(errors.Wrap(err, "could not fetch deployed resource namespace."+
-			"This might cause port-forward and deploy health-check to fail."))
+		event.DeployInfoEvent(fmt.Errorf("could not fetch deployed resource namespace."+
+			"This might cause port-forward and deploy health-check to fail: %w", err))
 	}
 
 	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		event.DeployFailed(err)
-		return NewDeployErrorResult(errors.Wrap(err, "kubectl error"))
+		return NewDeployErrorResult(fmt.Errorf("kubectl error: %w", err))
 	}
 
 	event.DeployComplete()
@@ -141,7 +140,7 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading manifests")
+		return nil, fmt.Errorf("reading manifests: %w", err)
 	}
 
 	if len(manifests) == 0 {
@@ -150,18 +149,18 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 
 	manifests, err = manifests.ReplaceImages(builds)
 	if err != nil {
-		return nil, errors.Wrap(err, "replacing images in manifests")
+		return nil, fmt.Errorf("replacing images in manifests: %w", err)
 	}
 
 	manifests, err = manifests.SetLabels(merge(k, labellers...))
 	if err != nil {
-		return nil, errors.Wrap(err, "setting labels in manifests")
+		return nil, fmt.Errorf("setting labels in manifests: %w", err)
 	}
 
 	for _, transform := range manifestTransforms {
 		manifests, err = transform(manifests, builds, k.insecureRegistries)
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to transform manifests")
+			return nil, fmt.Errorf("unable to transform manifests: %w", err)
 		}
 	}
 	return manifests, nil
@@ -171,11 +170,11 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 func (k *KustomizeDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	manifests, err := k.readManifests(ctx)
 	if err != nil {
-		return errors.Wrap(err, "reading manifests")
+		return fmt.Errorf("reading manifests: %w", err)
 	}
 
 	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
-		return errors.Wrap(err, "delete")
+		return fmt.Errorf("delete: %w", err)
 	}
 
 	return nil
@@ -204,7 +203,7 @@ func (k *KustomizeDeployer) Render(ctx context.Context, out io.Writer, builds []
 	if filepath != "" {
 		f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
 		if err != nil {
-			return errors.Wrap(err, "opening file for writing manifests")
+			return fmt.Errorf("opening file for writing manifests: %w", err)
 		}
 		defer f.Close()
 		f.WriteString(manifests.String() + "\n")
@@ -322,7 +321,7 @@ func (k *KustomizeDeployer) readManifests(ctx context.Context) (deploy.ManifestL
 		cmd := exec.CommandContext(ctx, "kustomize", buildCommandArgs(k.BuildArgs, kustomizePath)...)
 		out, err := util.RunCmdOut(cmd)
 		if err != nil {
-			return nil, errors.Wrap(err, "kustomize build")
+			return nil, fmt.Errorf("kustomize build: %w", err)
 		}
 
 		if len(out) == 0 {
