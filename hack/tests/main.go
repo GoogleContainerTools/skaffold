@@ -21,7 +21,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"sort"
@@ -66,9 +65,14 @@ func goTest(testArgs []string) error {
 		// Print logs while tests are running
 		scanner := bufio.NewScanner(out)
 		for i := 0; scanner.Scan(); i++ {
+			line := scanner.Bytes()
+
 			var l LogLine
-			if err := json.Unmarshal(scanner.Bytes(), &l); err != nil {
-				log.Panicf("unable to parse line %d: %v", i, err)
+			if err := json.Unmarshal(line, &l); err != nil {
+				// Sometimes, `go test -json` outputs plain text instead of json.
+				// For example in case of a build error.
+				fmt.Println(failInRed(string(line)))
+				continue
 			}
 
 			allLogs = append(allLogs, l)
