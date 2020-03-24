@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"sort"
@@ -47,10 +48,10 @@ func goTest(testArgs []string) error {
 	verbose := isVerbose(testArgs)
 
 	cmd := exec.CommandContext(context.Background(), "go", args...)
-	out, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
+
+	pr, pw := io.Pipe()
+	cmd.Stderr = pw
+	cmd.Stdout = pw
 
 	failedTests := map[string]bool{}
 	var failedLogs []LogLine
@@ -63,7 +64,7 @@ func goTest(testArgs []string) error {
 		defer wc.Done()
 
 		// Print logs while tests are running
-		scanner := bufio.NewScanner(out)
+		scanner := bufio.NewScanner(pr)
 		for i := 0; scanner.Scan(); i++ {
 			line := scanner.Bytes()
 
@@ -116,8 +117,12 @@ func goTest(testArgs []string) error {
 		}
 	}()
 
-	err = cmd.Run()
-	wc.Wait()
+	err := cmd.Run()
+	if err != nil {
+		pr.CloseWithError(err)
+	} else {
+		pr.Close()
+	}
 	return err
 }
 
