@@ -32,6 +32,7 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20190729225929-0e00d9168667 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.2
+	github.com/buildpacks/lifecycle v0.6.1
 	github.com/buildpacks/pack v0.9.0
 	github.com/creack/pty v1.1.9 // indirect
 	github.com/docker/cli v0.0.0-20191212191748-ebca1413117a
@@ -51,7 +52,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
 	github.com/golang/protobuf v1.3.2
 	github.com/google/go-cmp v0.4.0
-	github.com/google/go-containerregistry v0.0.0-20200225041405-6950943e71a1
+	github.com/google/go-containerregistry v0.0.0-20200311163244-4b1985e5ea21
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/uuid v1.1.1
@@ -86,7 +87,6 @@ require (
 	go.uber.org/zap v1.12.0 // indirect
 	golang.org/x/crypto v0.0.0-20191219195013-becbf705a915
 	golang.org/x/exp v0.0.0-20191127035308-9964a5a80460 // indirect
-	golang.org/x/net v0.0.0-20191126235420-ef20fe5d7933 // indirect
 	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/sys v0.0.0-20191127021746-63cb32ae39b2 // indirect
@@ -97,7 +97,7 @@ require (
 	google.golang.org/grpc v1.26.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/src-d/go-git.v4 v4.13.1
-	gopkg.in/yaml.v2 v2.2.7
+	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.17.0
 	k8s.io/apimachinery v0.17.0
 	k8s.io/client-go v0.17.0

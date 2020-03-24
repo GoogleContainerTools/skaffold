@@ -146,7 +146,7 @@ func MultiRefWrite(refToImage map[name.Reference]v1.Image, w io.Writer) error {
 				if err != nil {
 					return err
 				}
-				layerSources[diffid] = desc
+				layerSources[diffid] = *desc
 			}
 
 			r, err := l.Compressed()

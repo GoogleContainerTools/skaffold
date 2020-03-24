@@ -50,10 +50,12 @@ func ListWithContext(ctx context.Context, repo name.Repository, options ...Optio
 	}
 
 	uri := &url.URL{
-		Scheme:   repo.Registry.Scheme(),
-		Host:     repo.Registry.RegistryStr(),
-		Path:     fmt.Sprintf("/v2/%s/tags/list", repo.RepositoryStr()),
-		RawQuery: "n=10000",
+		Scheme: repo.Registry.Scheme(),
+		Host:   repo.Registry.RegistryStr(),
+		Path:   fmt.Sprintf("/v2/%s/tags/list", repo.RepositoryStr()),
+		// ECR returns an error if n > 1000:
+		// https://github.com/google/go-containerregistry/issues/681
+		RawQuery: "n=1000",
 	}
 
 	client := http.Client{Transport: tr}

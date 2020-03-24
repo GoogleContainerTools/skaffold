@@ -449,7 +449,7 @@ func scopesForUploadingImage(repo name.Repository, layers []v1.Layer) []string {
 		if ml, ok := l.(*MountableLayer); ok {
 			// we will add push scope for ref.Context() after the loop.
 			// for now we ask pull scope for references of the same registry
-			if ml.Reference.Context() != repo && ml.Reference.Context().Registry == repo.Registry {
+			if ml.Reference.Context().String() != repo.String() && ml.Reference.Context().Registry.String() == repo.Registry.String() {
 				scopeSet[ml.Reference.Scope(transport.PullScope)] = struct{}{}
 			}
 		}
