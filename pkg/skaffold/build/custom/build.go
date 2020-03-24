@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -30,7 +28,7 @@ import (
 // Build builds an artifact using a custom script
 func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	if err := b.runBuildScript(ctx, out, artifact, tag); err != nil {
-		return "", errors.Wrap(err, "building custom artifact")
+		return "", fmt.Errorf("building custom artifact: %w", err)
 	}
 
 	if b.pushImages {

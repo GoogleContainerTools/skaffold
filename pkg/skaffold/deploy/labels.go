@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -107,7 +106,7 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 	modifiedObj := res.Obj.DeepCopyObject()
 	accessor, err := meta.Accessor(modifiedObj)
 	if err != nil {
-		return errors.Wrap(err, "getting metadata accessor")
+		return fmt.Errorf("getting metadata accessor: %w", err)
 	}
 	name := accessor.GetName()
 
@@ -118,7 +117,7 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 
 	namespaced, gvr, err := groupVersionResource(disco, modifiedObj.GetObjectKind().GroupVersionKind())
 	if err != nil {
-		return errors.Wrap(err, "getting group version resource from obj")
+		return fmt.Errorf("getting group version resource from obj: %w", err)
 	}
 
 	if namespaced {
@@ -131,17 +130,17 @@ func updateRuntimeObject(client dynamic.Interface, disco discovery.DiscoveryInte
 
 		ns, err := resolveNamespace(namespace)
 		if err != nil {
-			return errors.Wrap(err, "resolving namespace")
+			return fmt.Errorf("resolving namespace: %w", err)
 		}
 
 		logrus.Debugln("Patching", name, "in namespace", ns)
 		if _, err := client.Resource(gvr).Namespace(ns).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
-			return errors.Wrapf(err, "patching resource %s/%s", ns, name)
+			return fmt.Errorf("patching resource %s/%q: %w", ns, name, err)
 		}
 	} else {
 		logrus.Debugln("Patching", name)
 		if _, err := client.Resource(gvr).Patch(name, types.StrategicMergePatchType, p, metav1.PatchOptions{}); err != nil {
-			return errors.Wrapf(err, "patching resource %s", name)
+			return fmt.Errorf("patching resource %q: %w", name, err)
 		}
 	}
 
@@ -154,7 +153,7 @@ func resolveNamespace(ns string) (string, error) {
 	}
 	cfg, err := kubectx.CurrentConfig()
 	if err != nil {
-		return "", errors.Wrap(err, "getting kubeconfig")
+		return "", fmt.Errorf("getting kubeconfig: %w", err)
 	}
 
 	current, present := cfg.Contexts[cfg.CurrentContext]
@@ -167,7 +166,7 @@ func resolveNamespace(ns string) (string, error) {
 func groupVersionResource(disco discovery.DiscoveryInterface, gvk schema.GroupVersionKind) (bool, schema.GroupVersionResource, error) {
 	resources, err := disco.ServerResourcesForGroupVersion(gvk.GroupVersion().String())
 	if err != nil {
-		return false, schema.GroupVersionResource{}, errors.Wrap(err, "getting server resources for group version")
+		return false, schema.GroupVersionResource{}, fmt.Errorf("getting server resources for group version: %w", err)
 	}
 
 	for _, r := range resources.APIResources {

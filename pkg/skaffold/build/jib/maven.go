@@ -18,10 +18,10 @@ package jib
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os/exec"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -68,7 +68,7 @@ func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace 
 
 	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
 	if err := util.RunCmd(&cmd); err != nil {
-		return errors.Wrap(err, "maven build failed")
+		return fmt.Errorf("maven build failed: %w", err)
 	}
 
 	return nil
@@ -79,7 +79,7 @@ func (b *Builder) runMavenCommand(ctx context.Context, out io.Writer, workspace 
 func getDependenciesMaven(ctx context.Context, workspace string, a *latest.JibArtifact) ([]string, error) {
 	deps, err := getDependencies(workspace, getCommandMaven(ctx, workspace, a), a)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting jib-maven dependencies")
+		return nil, fmt.Errorf("getting jib-maven dependencies: %w", err)
 	}
 	logrus.Debugf("Found dependencies for jib maven artifact: %v", deps)
 	return deps, nil

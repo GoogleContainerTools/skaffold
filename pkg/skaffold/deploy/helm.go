@@ -20,6 +20,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -33,7 +34,6 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
@@ -96,7 +96,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 
 	hv, err := h.binVer(ctx)
 	if err != nil {
-		return NewDeployErrorResult(errors.Wrapf(err, "failed to determine binary version"))
+		return NewDeployErrorResult(fmt.Errorf("failed to determine binary version: %w", err))
 	}
 	logrus.Infof("Deploying with helm v%s ...", hv)
 
@@ -111,7 +111,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 			releaseName, _ := util.ExpandEnvTemplate(r.Name, nil)
 
 			event.DeployFailed(err)
-			return NewDeployErrorResult(errors.Wrapf(err, "deploying %s", releaseName))
+			return NewDeployErrorResult(fmt.Errorf("deploying %q: %w", releaseName, err))
 		}
 
 		// collect namespaces
@@ -164,7 +164,7 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 		chartDepsDir := filepath.Join(release.ChartPath, "charts")
 		err := filepath.Walk(release.ChartPath, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
-				return errors.Wrapf(err, "failure accessing path '%s'", path)
+				return fmt.Errorf("failure accessing path %q: %w", path, err)
 			}
 
 			if !info.IsDir() {
@@ -181,7 +181,7 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 		})
 
 		if err != nil {
-			return deps, errors.Wrap(err, "issue walking releases")
+			return deps, fmt.Errorf("issue walking releases: %w", err)
 		}
 	}
 	sort.Strings(deps)
@@ -192,13 +192,13 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	hv, err := h.binVer(ctx)
 	if err != nil {
-		return errors.Wrap(err, "binary version")
+		return fmt.Errorf("binary version: %w", err)
 	}
 
 	for _, r := range h.Releases {
 		releaseName, err := util.ExpandEnvTemplate(r.Name, nil)
 		if err != nil {
-			return errors.Wrap(err, "cannot parse the release name template")
+			return fmt.Errorf("cannot parse the release name template: %w", err)
 		}
 
 		args := []string{"delete", releaseName}
@@ -208,7 +208,7 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 			args = append(args, "--namespace", r.Namespace)
 		}
 		if err := h.exec(ctx, out, false, args...); err != nil {
-			return errors.Wrapf(err, "deleting %s", releaseName)
+			return fmt.Errorf("deleting %q: %w", releaseName, err)
 		}
 	}
 	return nil
@@ -245,7 +245,7 @@ func (h *HelmDeployer) exec(ctx context.Context, out io.Writer, useSecrets bool,
 func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r latest.HelmRelease, builds []build.Artifact, valuesSet map[string]bool, helmVersion semver.Version) ([]Artifact, error) {
 	releaseName, err := util.ExpandEnvTemplate(r.Name, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "cannot parse the release name template")
+		return nil, fmt.Errorf("cannot parse the release name template: %w", err)
 	}
 
 	opts := installOpts{
@@ -275,7 +275,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		logrus.Infof("Building helm dependencies...")
 
 		if err := h.exec(ctx, out, false, "dep", "build", r.ChartPath); err != nil {
-			return nil, errors.Wrap(err, "building helm dependencies")
+			return nil, fmt.Errorf("building helm dependencies: %w", err)
 		}
 	}
 
@@ -283,11 +283,11 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	if len(r.Overrides.Values) != 0 {
 		overrides, err := yaml.Marshal(r.Overrides)
 		if err != nil {
-			return nil, errors.Wrap(err, "cannot marshal overrides to create overrides values.yaml")
+			return nil, fmt.Errorf("cannot marshal overrides to create overrides values.yaml: %w", err)
 		}
 
 		if err := ioutil.WriteFile(constants.HelmOverridesFilename, overrides, 0666); err != nil {
-			return nil, errors.Wrapf(err, "cannot create file %s", constants.HelmOverridesFilename)
+			return nil, fmt.Errorf("cannot create file %q: %w", constants.HelmOverridesFilename, err)
 		}
 
 		defer func() {
@@ -298,7 +298,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	if r.Packaged != nil {
 		chartPath, err := h.packageChart(ctx, r)
 		if err != nil {
-			return nil, errors.WithMessage(err, "cannot package chart")
+			return nil, fmt.Errorf("cannot package chart: %w", err)
 		}
 
 		opts.chartPath = chartPath
@@ -306,7 +306,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 
 	args, err := installArgs(r, builds, valuesSet, opts)
 	if err != nil {
-		return nil, errors.Wrap(err, "release args")
+		return nil, fmt.Errorf("release args: %w", err)
 	}
 
 	iErr := h.exec(ctx, out, r.UseHelmSecrets, args...)
@@ -333,7 +333,7 @@ func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
 	var b bytes.Buffer
 	// Omits --client & --short, as some versions do not support it (v3.0.0-beta, for instance)
 	if err := h.exec(ctx, &b, false, "version"); err != nil {
-		return semver.Version{}, errors.Wrapf(err, "helm version command failed: %s", b.String())
+		return semver.Version{}, fmt.Errorf("helm version command failed %q: %w", b.String(), err)
 	}
 	raw := b.String()
 	matches := versionRegex.FindStringSubmatch(raw)
@@ -343,7 +343,7 @@ func (h *HelmDeployer) binVer(ctx context.Context) (semver.Version, error) {
 
 	v, err := semver.Make(matches[1])
 	if err != nil {
-		return semver.Version{}, errors.Wrapf(err, "semver make: %q", matches[1])
+		return semver.Version{}, fmt.Errorf("semver make %q: %w", matches[1], err)
 	}
 
 	h.bV = v
@@ -403,7 +403,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 
 	params, err := pairParamsToArtifacts(builds, r.Values)
 	if err != nil {
-		return nil, errors.Wrap(err, "matching build results to chart values")
+		return nil, fmt.Errorf("matching build results to chart values: %w", err)
 	}
 
 	if len(r.Overrides.Values) != 0 {
@@ -470,7 +470,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 	for _, v := range r.ValuesFiles {
 		exp, err := homedir.Expand(v)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to expand %s", v)
+			return nil, fmt.Errorf("unable to expand %q: %w", v, err)
 		}
 
 		exp, err = util.ExpandEnvTemplate(exp, envMap)
@@ -530,7 +530,7 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 	if tmpDir == "" {
 		t, err := ioutil.TempDir("", "skaffold-helm")
 		if err != nil {
-			return "", errors.Wrap(err, "tempdir")
+			return "", fmt.Errorf("tempdir: %w", err)
 		}
 		tmpDir = t
 	}
@@ -540,7 +540,7 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 	if r.Packaged.Version != "" {
 		v, err := util.ExpandEnvTemplate(r.Packaged.Version, nil)
 		if err != nil {
-			return "", errors.Wrap(err, `packaged.version template`)
+			return "", fmt.Errorf("packaged.version template: %w", err)
 		}
 		args = append(args, "--version", v)
 	}
@@ -548,7 +548,7 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 	if r.Packaged.AppVersion != "" {
 		av, err := util.ExpandEnvTemplate(r.Packaged.AppVersion, nil)
 		if err != nil {
-			return "", errors.Wrap(err, `packaged.appVersion template`)
+			return "", fmt.Errorf("packaged.appVersion template: %w", err)
 		}
 		args = append(args, "--app-version", av)
 	}
@@ -556,7 +556,7 @@ func (h *HelmDeployer) packageChart(ctx context.Context, r latest.HelmRelease) (
 	buf := &bytes.Buffer{}
 
 	if err := h.exec(ctx, buf, false, args...); err != nil {
-		return "", errors.Wrapf(err, "package chart into a .tgz archive: %v", args)
+		return "", fmt.Errorf("package chart into a .tgz archive: %v: %w", args, err)
 	}
 
 	output := strings.TrimSpace(buf.String())
@@ -577,7 +577,7 @@ func imageSetFromConfig(cfg *latest.HelmConventionConfig, valueName string, tag 
 
 	ref, err := docker.ParseReference(tag)
 	if err != nil {
-		return "", errors.Wrapf(err, "cannot parse the image reference %s", tag)
+		return "", fmt.Errorf("cannot parse the image reference %q: %w", tag, err)
 	}
 
 	var imageTag string
@@ -589,7 +589,7 @@ func imageSetFromConfig(cfg *latest.HelmConventionConfig, valueName string, tag 
 
 	if cfg.ExplicitRegistry {
 		if ref.Domain == "" {
-			return "", errors.New(fmt.Sprintf("image reference %s has no domain", tag))
+			return "", fmt.Errorf("image reference %s has no domain", tag)
 		}
 		return fmt.Sprintf("%[1]s.registry=%[2]s,%[1]s.repository=%[3]s,%[1]s.tag=%[4]s", valueName, ref.Domain, ref.Path, imageTag), nil
 	}

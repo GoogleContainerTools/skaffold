@@ -18,9 +18,8 @@ package buildpacks
 
 import (
 	"context"
+	"fmt"
 	"sort"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -30,7 +29,7 @@ import (
 func GetDependencies(ctx context.Context, workspace string, a *latest.BuildpackArtifact) ([]string, error) {
 	files, err := docker.WalkWorkspace(workspace, a.Dependencies.Ignore, a.Dependencies.Paths)
 	if err != nil {
-		return nil, errors.Wrapf(err, "walking workspace %s", workspace)
+		return nil, fmt.Errorf("walking workspace %q: %w", workspace, err)
 	}
 
 	var dependencies []string

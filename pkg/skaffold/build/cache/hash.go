@@ -27,7 +27,6 @@ import (
 	"os"
 	"sort"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
@@ -47,14 +46,14 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 	// Append the artifact's configuration
 	config, err := artifactConfigFunction(a, devMode)
 	if err != nil {
-		return "", errors.Wrapf(err, "getting artifact's configuration for %s", a.ImageName)
+		return "", fmt.Errorf("getting artifact's configuration for %q: %w", a.ImageName, err)
 	}
 	inputs = append(inputs, config)
 
 	// Append the digest of each input file
 	deps, err := depLister(ctx, a)
 	if err != nil {
-		return "", errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
+		return "", fmt.Errorf("getting dependencies for %q: %w", a.ImageName, err)
 	}
 	sort.Strings(deps)
 
@@ -66,7 +65,7 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 				continue // Ignore files that don't exist
 			}
 
-			return "", errors.Wrapf(err, "getting hash for %s", d)
+			return "", fmt.Errorf("getting hash for %q: %w", d, err)
 		}
 		inputs = append(inputs, h)
 	}
@@ -75,7 +74,7 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 	if buildArgs := retrieveBuildArgs(a); buildArgs != nil {
 		buildArgs, err := docker.EvaluateBuildArgs(buildArgs)
 		if err != nil {
-			return "", errors.Wrap(err, "evaluating build args")
+			return "", fmt.Errorf("evaluating build args: %w", err)
 		}
 		args := convertBuildArgsToStringArray(buildArgs)
 		inputs = append(inputs, args...)
@@ -85,7 +84,7 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 	if env := retrieveEnv(a); len(env) > 0 {
 		evaluatedEnv, err := misc.EvaluateEnv(env)
 		if err != nil {
-			return "", errors.Wrap(err, "evaluating build args")
+			return "", fmt.Errorf("evaluating build args: %w", err)
 		}
 		inputs = append(inputs, evaluatedEnv...)
 	}
@@ -104,7 +103,7 @@ func getHashForArtifact(ctx context.Context, depLister DependencyLister, a *late
 func artifactConfig(a *latest.Artifact, devMode bool) (string, error) {
 	buf, err := json.Marshal(a.ArtifactType)
 	if err != nil {
-		return "", errors.Wrapf(err, "marshalling the artifact's configuration for %s", a.ImageName)
+		return "", fmt.Errorf("marshalling the artifact's configuration for %q: %w", a.ImageName, err)
 	}
 
 	if devMode && a.BuildpackArtifact != nil && a.Sync != nil && len(a.Sync.Infer) > 0 {

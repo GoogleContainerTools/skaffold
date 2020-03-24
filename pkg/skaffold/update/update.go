@@ -17,13 +17,13 @@ limitations under the License.
 package update
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -69,11 +69,11 @@ func getLatestAndCurrentVersion() (semver.Version, semver.Version, error) {
 	logrus.Tracef("latest skaffold version: %s", versionString)
 	latest, err := version.ParseVersion(versionString)
 	if err != nil {
-		return none, none, errors.Wrap(err, "parsing latest version from GCS")
+		return none, none, fmt.Errorf("parsing latest version from GCS: %w", err)
 	}
 	current, err := version.ParseVersion(version.Get().Version)
 	if err != nil {
-		return none, none, errors.Wrap(err, "parsing current semver, skipping update check")
+		return none, none, fmt.Errorf("parsing current semver, skipping update check: %w", err)
 	}
 	return latest, current, nil
 }
@@ -81,15 +81,15 @@ func getLatestAndCurrentVersion() (semver.Version, semver.Version, error) {
 func DownloadLatestVersion() (string, error) {
 	resp, err := http.Get(LatestVersionURL)
 	if err != nil {
-		return "", errors.Wrap(err, "getting latest version info from GCS")
+		return "", fmt.Errorf("getting latest version info from GCS: %w", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", errors.Wrapf(err, "http %d, error: %s", resp.StatusCode, resp.Status)
+		return "", fmt.Errorf("http %d, error %q", resp.StatusCode, resp.Status)
 	}
 	versionBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return "", errors.Wrap(err, "reading version file from GCS")
+		return "", fmt.Errorf("reading version file from GCS: %w", err)
 	}
 	return strings.TrimSuffix(string(versionBytes), "\n"), nil
 }

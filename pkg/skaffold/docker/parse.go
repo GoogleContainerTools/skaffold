@@ -28,7 +28,6 @@ import (
 	"github.com/moby/buildkit/frontend/dockerfile/command"
 	"github.com/moby/buildkit/frontend/dockerfile/parser"
 	"github.com/moby/buildkit/frontend/dockerfile/shell"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -67,30 +66,29 @@ var (
 func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]fromTo, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
-		return nil, errors.Wrapf(err, "opening dockerfile: %s", absDockerfilePath)
+		return nil, fmt.Errorf("opening dockerfile %q: %w", absDockerfilePath, err)
 	}
 	defer f.Close()
 
 	res, err := parser.Parse(f)
 	if err != nil {
-		return nil, errors.Wrapf(err, "parsing dockerfile %s", absDockerfilePath)
+		return nil, fmt.Errorf("parsing dockerfile %q: %w", absDockerfilePath, err)
 	}
 
 	dockerfileLines := res.AST.Children
 
-	err = expandBuildArgs(dockerfileLines, buildArgs)
-	if err != nil {
-		return nil, errors.Wrap(err, "putting build arguments")
+	if err := expandBuildArgs(dockerfileLines, buildArgs); err != nil {
+		return nil, fmt.Errorf("putting build arguments: %w", err)
 	}
 
 	dockerfileLinesWithOnbuild, err := expandOnbuildInstructions(dockerfileLines, insecureRegistries)
 	if err != nil {
-		return nil, errors.Wrap(err, "expanding ONBUILD instructions")
+		return nil, fmt.Errorf("expanding ONBUILD instructions: %w", err)
 	}
 
 	cpCmds, err := extractCopyCommands(dockerfileLinesWithOnbuild, onlyLastImage, insecureRegistries)
 	if err != nil {
-		return nil, errors.Wrap(err, "listing copied files")
+		return nil, fmt.Errorf("listing copied files: %w", err)
 	}
 
 	return expandSrcGlobPatterns(workspace, cpCmds)
@@ -99,7 +97,7 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 func expandBuildArgs(nodes []*parser.Node, buildArgs map[string]*string) error {
 	args, err := EvaluateBuildArgs(buildArgs)
 	if err != nil {
-		return errors.Wrap(err, "unable to evaluate build args")
+		return fmt.Errorf("unable to evaluate build args: %w", err)
 	}
 
 	for i, node := range nodes {
@@ -149,7 +147,7 @@ func expandSrcGlobPatterns(workspace string, cpCmds []*copyCommand) ([]fromTo, e
 
 			files, err := filepath.Glob(path)
 			if err != nil {
-				return nil, errors.Wrap(err, "invalid glob pattern")
+				return nil, fmt.Errorf("invalid glob pattern: %w", err)
 			}
 			if files == nil {
 				continue
@@ -214,7 +212,7 @@ func extractCopyCommands(nodes []*parser.Node, onlyLastImage bool, insecureRegis
 		case command.Workdir:
 			value, err := slex.ProcessWord(node.Next.Value, envs)
 			if err != nil {
-				return nil, errors.Wrap(err, "processing word")
+				return nil, fmt.Errorf("processing word: %w", err)
 			}
 			workdir = resolveDir(workdir, value)
 		case command.Add, command.Copy:
@@ -249,7 +247,7 @@ func readCopyCommand(value *parser.Node, envs []string, workdir string) (*copyCo
 	for value := value.Next; value != nil && !strings.HasPrefix(value.Value, "#"); value = value.Next {
 		path, err := slex.ProcessWord(value.Value, envs)
 		if err != nil {
-			return nil, errors.Wrap(err, "expanding src")
+			return nil, fmt.Errorf("expanding src: %w", err)
 		}
 
 		paths = append(paths, path)
@@ -298,7 +296,7 @@ func expandOnbuildInstructions(nodes []*parser.Node, insecureRegistries map[stri
 			} else if ons, err := parseOnbuild(from.image, insecureRegistries); err == nil {
 				onbuildNodes = ons
 			} else {
-				return nil, errors.Wrap(err, "parsing ONBUILD instructions")
+				return nil, fmt.Errorf("parsing ONBUILD instructions: %w", err)
 			}
 
 			// Stage names are case insensitive
@@ -367,7 +365,7 @@ func retrieveImage(image string, insecureRegistries map[string]bool) (*v1.Config
 		InsecureRegistries: insecureRegistries,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "getting docker client")
+		return nil, fmt.Errorf("getting docker client: %w", err)
 	}
 
 	return localDaemon.ConfigFile(context.Background(), image)

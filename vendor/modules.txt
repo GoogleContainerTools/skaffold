@@ -369,7 +369,6 @@ github.com/opencontainers/runc/libcontainer/user
 github.com/opencontainers/selinux/go-selinux
 github.com/opencontainers/selinux/go-selinux/label
 # github.com/pkg/errors v0.8.1
-## explicit
 github.com/pkg/errors
 # github.com/prometheus/client_golang v1.2.1
 ## explicit

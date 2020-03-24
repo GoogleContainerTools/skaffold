@@ -19,10 +19,10 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -71,18 +71,18 @@ func doBuild(ctx context.Context, out io.Writer) error {
 			cmdOut := flags.BuildOutput{Builds: bRes}
 			var buildOutput bytes.Buffer
 			if err := buildFormatFlag.Template().Execute(&buildOutput, cmdOut); err != nil {
-				return errors.Wrap(err, "executing template")
+				return fmt.Errorf("executing template: %w", err)
 			}
 
 			if quietFlag {
 				if _, err := out.Write(buildOutput.Bytes()); err != nil {
-					return errors.Wrap(err, "writing build output")
+					return fmt.Errorf("writing build output: %w", err)
 				}
 			}
 
 			if buildOutputFlag != "" {
 				if err := ioutil.WriteFile(buildOutputFlag, buildOutput.Bytes(), 0644); err != nil {
-					return errors.Wrap(err, "writing build output to file")
+					return fmt.Errorf("writing build output to file: %w", err)
 				}
 			}
 		}

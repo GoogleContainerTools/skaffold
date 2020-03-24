@@ -18,9 +18,8 @@ package resource
 
 import (
 	"context"
+	"errors"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 )

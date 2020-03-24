@@ -18,10 +18,9 @@ package local
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os/exec"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -31,7 +30,7 @@ import (
 
 func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
 	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact); err != nil {
-		return "", errors.Wrap(err, "pulling cache-from images")
+		return "", fmt.Errorf("pulling cache-from images: %w", err)
 	}
 
 	var (
@@ -63,13 +62,13 @@ func (b *Builder) retrieveExtraEnv() []string {
 func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace string, a *latest.DockerArtifact, tag string) (string, error) {
 	dockerfilePath, err := docker.NormalizeDockerfilePath(workspace, a.DockerfilePath)
 	if err != nil {
-		return "", errors.Wrap(err, "normalizing dockerfile path")
+		return "", fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
 	args := []string{"build", workspace, "--file", dockerfilePath, "-t", tag}
 	ba, err := docker.GetBuildArgs(a)
 	if err != nil {
-		return "", errors.Wrap(err, "getting docker build args")
+		return "", fmt.Errorf("getting docker build args: %w", err)
 	}
 	args = append(args, ba...)
 
@@ -86,7 +85,7 @@ func (b *Builder) dockerCLIBuild(ctx context.Context, out io.Writer, workspace s
 	cmd.Stderr = out
 
 	if err := util.RunCmd(cmd); err != nil {
-		return "", errors.Wrap(err, "running build")
+		return "", fmt.Errorf("running build: %w", err)
 	}
 
 	return b.localDocker.ImageID(ctx, tag)
@@ -100,7 +99,7 @@ func (b *Builder) pullCacheFromImages(ctx context.Context, out io.Writer, a *lat
 	for _, image := range a.CacheFrom {
 		imageID, err := b.localDocker.ImageID(ctx, image)
 		if err != nil {
-			return errors.Wrapf(err, "getting imageID for %s", image)
+			return fmt.Errorf("getting imageID for %q: %w", image, err)
 		}
 		if imageID != "" {
 			// already pulled

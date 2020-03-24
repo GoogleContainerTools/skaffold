@@ -17,7 +17,8 @@ limitations under the License.
 package kubectl
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -27,7 +28,7 @@ func (l *ManifestList) SetLabels(labels map[string]string) (ManifestList, error)
 
 	updated, err := l.Visit(replacer)
 	if err != nil {
-		return nil, errors.Wrap(err, "setting labels")
+		return nil, fmt.Errorf("setting labels: %w", err)
 	}
 
 	logrus.Debugln("manifests with labels", updated.String())

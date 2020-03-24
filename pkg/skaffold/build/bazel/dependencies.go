@@ -18,6 +18,7 @@ package bazel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -26,7 +27,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -54,19 +54,19 @@ func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) (
 
 	topLevelFolder, err := findWorkspace(dir)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to find the WORKSPACE file")
+		return nil, fmt.Errorf("unable to find the WORKSPACE file: %w", err)
 	}
 
 	absDir, err := filepath.Abs(dir)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to find absolute path for %s", dir)
+		return nil, fmt.Errorf("unable to find absolute path for %q: %w", dir, err)
 	}
 
 	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no", "--output=label")
 	cmd.Dir = dir
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting bazel dependencies")
+		return nil, fmt.Errorf("getting bazel dependencies: %w", err)
 	}
 
 	labels := strings.Split(string(stdout), "\n")
@@ -84,14 +84,14 @@ func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) (
 
 		rel, err := filepath.Rel(absDir, filepath.Join(topLevelFolder, depToPath(l)))
 		if err != nil {
-			return nil, errors.Wrap(err, "unable to find absolute path")
+			return nil, fmt.Errorf("unable to find absolute path: %w", err)
 		}
 		deps = append(deps, rel)
 	}
 
 	rel, err := filepath.Rel(absDir, filepath.Join(topLevelFolder, "WORKSPACE"))
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to find absolute path")
+		return nil, fmt.Errorf("unable to find absolute path: %w", err)
 	}
 	deps = append(deps, rel)
 
@@ -107,7 +107,7 @@ func depToPath(dep string) string {
 func findWorkspace(workingDir string) (string, error) {
 	dir, err := filepath.Abs(workingDir)
 	if err != nil {
-		return "", errors.Wrap(err, "invalid working dir")
+		return "", fmt.Errorf("invalid working dir: %w", err)
 	}
 
 	for {

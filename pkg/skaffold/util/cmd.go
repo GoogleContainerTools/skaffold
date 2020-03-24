@@ -17,10 +17,10 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os/exec"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -59,7 +59,7 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	}
 
 	if err := cmd.Start(); err != nil {
-		return nil, errors.Wrapf(err, "starting command %v", cmd)
+		return nil, fmt.Errorf("starting command %v: %w", cmd, err)
 	}
 
 	stdout, err := ioutil.ReadAll(stdoutPipe)
@@ -72,9 +72,8 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 		return nil, err
 	}
 
-	err = cmd.Wait()
-	if err != nil {
-		return stdout, errors.Wrapf(err, "Running %s\n - stdout: %s\n - stderr: %s", cmd.Args, stdout, stderr)
+	if err := cmd.Wait(); err != nil {
+		return stdout, fmt.Errorf("running %s\n - stdout: %s\n - stderr: %q: %w", cmd.Args, stdout, stderr, err)
 	}
 
 	if len(stderr) > 0 {

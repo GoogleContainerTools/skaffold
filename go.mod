@@ -71,7 +71,6 @@ require (
 	github.com/moby/buildkit v0.6.3
 	github.com/opencontainers/go-digest v1.0.0-rc1.0.20190228220655-ac19fd6e7483
 	github.com/opencontainers/image-spec v1.0.1
-	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.2.1 // indirect
 	github.com/prometheus/procfs v0.0.6 // indirect
 	github.com/rakyll/statik v0.1.6

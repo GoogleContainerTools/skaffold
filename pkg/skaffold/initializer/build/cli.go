@@ -22,8 +22,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -43,7 +41,7 @@ func (c *cliBuildInitializer) ProcessImages(images []string) error {
 		return ErrorNoBuilder
 	}
 	if err := c.processCliArtifacts(); err != nil {
-		return errors.Wrap(err, "processing cli artifacts")
+		return fmt.Errorf("processing cli artifacts: %w", err)
 	}
 	return nil
 }

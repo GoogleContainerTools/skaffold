@@ -18,9 +18,9 @@ package cluster
 
 import (
 	"context"
+	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -36,7 +36,7 @@ const initContainer = "kaniko-init-container"
 func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifact *latest.KanikoArtifact, tag string) (string, error) {
 	client, err := kubernetes.Client()
 	if err != nil {
-		return "", errors.Wrap(err, "getting Kubernetes client")
+		return "", fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 	pods := client.CoreV1().Pods(b.Namespace)
 
@@ -47,7 +47,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 
 	pod, err := pods.Create(podSpec)
 	if err != nil {
-		return "", errors.Wrap(err, "creating kaniko pod")
+		return "", fmt.Errorf("creating kaniko pod: %w", err)
 	}
 	defer func() {
 		if err := pods.Delete(pod.Name, &metav1.DeleteOptions{
@@ -58,7 +58,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 	}()
 
 	if err := b.copyKanikoBuildContext(ctx, workspace, artifact, pods, pod.Name); err != nil {
-		return "", errors.Wrap(err, "copying sources")
+		return "", fmt.Errorf("copying sources: %w", err)
 	}
 
 	// Wait for the pods to succeed while streaming the logs
@@ -66,7 +66,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 
 	if err := kubernetes.WaitForPodSucceeded(ctx, pods, pod.Name, b.timeout); err != nil {
 		waitForLogs()
-		return "", errors.Wrap(err, "waiting for pod to complete")
+		return "", fmt.Errorf("waiting for pod to complete: %w", err)
 	}
 
 	waitForLogs()
@@ -79,7 +79,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 // Then, via kubectl exec, create the /tmp/complete file via kubectl exec to complete the init container
 func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, artifact *latest.KanikoArtifact, pods corev1.PodInterface, podName string) error {
 	if err := kubernetes.WaitForPodInitialized(ctx, pods, podName); err != nil {
-		return errors.Wrap(err, "waiting for pod to initialize")
+		return fmt.Errorf("waiting for pod to initialize: %w", err)
 	}
 
 	buildCtx, buildCtxWriter := io.Pipe()
@@ -89,14 +89,14 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 			DockerfilePath: artifact.DockerfilePath,
 		}, b.insecureRegistries)
 		if err != nil {
-			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
+			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return
 		}
 		buildCtxWriter.Close()
 	}()
 
 	if err := b.kubectlcli.Run(ctx, buildCtx, nil, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", constants.DefaultKanikoEmptyDirMountPath); err != nil {
-		return errors.Wrap(err, "uploading build context")
+		return fmt.Errorf("uploading build context: %w", err)
 	}
 
 	// Generate a file to successfully terminate the init container

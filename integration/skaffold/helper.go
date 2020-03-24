@@ -19,6 +19,7 @@ package skaffold
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -26,7 +27,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -203,7 +203,7 @@ func (b *RunBuilder) Run(t *testing.T) error {
 
 	start := time.Now()
 	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "skaffold %s", b.command)
+		return fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
 
 	logrus.Infoln("Ran in", time.Since(start))
@@ -221,7 +221,7 @@ func (b *RunBuilder) RunWithCombinedOutput(t *testing.T) ([]byte, error) {
 	start := time.Now()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return out, errors.Wrapf(err, "skaffold %s", b.command)
+		return out, fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
 
 	logrus.Infoln("Ran in", time.Since(start))

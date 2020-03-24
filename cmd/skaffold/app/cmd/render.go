@@ -18,10 +18,10 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
@@ -56,11 +56,11 @@ func doRender(ctx context.Context, out io.Writer) error {
 		bRes, err := r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
 
 		if err != nil {
-			return errors.Wrap(err, "executing build")
+			return fmt.Errorf("executing build: %w", err)
 		}
 
 		if err := r.Render(ctx, out, bRes, renderOutputPath); err != nil {
-			return errors.Wrap(err, "rendering manifests")
+			return fmt.Errorf("rendering manifests: %w", err)
 		}
 		return nil
 	})

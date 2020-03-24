@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,7 +32,6 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/karrick/godirwalk"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -111,7 +112,7 @@ func GetDependencies(ctx context.Context, workspace string, artifact *latest.Jib
 	case JibGradle:
 		return getDependenciesGradle(ctx, workspace, artifact)
 	default:
-		return nil, errors.Errorf("Unable to determine Jib builder type for %s", workspace)
+		return nil, fmt.Errorf("unable to determine Jib builder type for %s", workspace)
 	}
 }
 
@@ -134,7 +135,7 @@ func DeterminePluginType(workspace string, artifact *latest.JibArtifact) (Plugin
 	if util.IsFile(filepath.Join(workspace, "pom.xml")) || util.IsDir(filepath.Join(workspace, ".mvn")) {
 		return JibMaven, nil
 	}
-	return "", errors.Errorf("Unable to determine Jib plugin type for %s", workspace)
+	return "", fmt.Errorf("unable to determine Jib plugin type for %s", workspace)
 }
 
 // getDependencies returns a list of files to watch for changes to rebuild
@@ -153,7 +154,7 @@ func getDependencies(workspace string, cmd exec.Cmd, a *latest.JibArtifact) ([]s
 
 		// Refresh dependency list if empty
 		if err := refreshDependencyList(&files, cmd); err != nil {
-			return nil, errors.Wrap(err, "initial Jib dependency refresh failed")
+			return nil, fmt.Errorf("initial Jib dependency refresh failed: %w", err)
 		}
 	} else if err := walkFiles(workspace, files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
 		// Walk build files to check for changes
@@ -162,7 +163,7 @@ func getDependencies(workspace string, cmd exec.Cmd, a *latest.JibArtifact) ([]s
 		}
 		return nil
 	}); err != nil {
-		return nil, errors.Wrap(err, "failed to walk Jib build files for changes")
+		return nil, fmt.Errorf("failed to walk Jib build files for changes: %w", err)
 	}
 
 	// Walk updated files to build dependency list
@@ -170,14 +171,14 @@ func getDependencies(workspace string, cmd exec.Cmd, a *latest.JibArtifact) ([]s
 		dependencyList = append(dependencyList, path)
 		return nil
 	}); err != nil {
-		return nil, errors.Wrap(err, "failed to walk Jib input files to build dependency list")
+		return nil, fmt.Errorf("failed to walk Jib input files to build dependency list: %w", err)
 	}
 	if err := walkFiles(workspace, files.BuildDefinitions, files.Results, func(path string, info os.FileInfo) error {
 		dependencyList = append(dependencyList, path)
 		files.BuildFileTimes[path] = info.ModTime()
 		return nil
 	}); err != nil {
-		return nil, errors.Wrap(err, "failed to walk Jib build files to build dependency list")
+		return nil, fmt.Errorf("failed to walk Jib build files to build dependency list: %w", err)
 	}
 
 	// Store updated files list information
@@ -191,7 +192,7 @@ func getDependencies(workspace string, cmd exec.Cmd, a *latest.JibArtifact) ([]s
 func refreshDependencyList(files *filesLists, cmd exec.Cmd) error {
 	stdout, err := util.RunCmdOut(&cmd)
 	if err != nil {
-		return errors.Wrap(err, "failed to get Jib dependencies")
+		return fmt.Errorf("failed to get Jib dependencies: %w", err)
 	}
 
 	// Search for Jib's output JSON. Jib's Maven/Gradle output takes the following form:
@@ -217,7 +218,7 @@ func walkFiles(workspace string, watchedFiles []string, ignoredFiles []string, c
 	// both an absolute path and as a canonicalized workspace.
 	workspaceRoots, err := calculateRoots(workspace)
 	if err != nil {
-		return errors.Wrapf(err, "unable to resolve workspace %s", workspace)
+		return fmt.Errorf("unable to resolve workspace %q: %w", workspace, err)
 	}
 
 	for _, dep := range watchedFiles {
@@ -232,7 +233,7 @@ func walkFiles(workspace string, watchedFiles []string, ignoredFiles []string, c
 				logrus.Debugf("could not stat dependency: %s", err)
 				continue // Ignore files that don't exist
 			}
-			return errors.Wrapf(err, "unable to stat file %s", dep)
+			return fmt.Errorf("unable to stat file %q: %w", dep, err)
 		}
 
 		// Process file
@@ -266,7 +267,7 @@ func walkFiles(workspace string, watchedFiles []string, ignoredFiles []string, c
 				return nil
 			},
 		}); err != nil {
-			return errors.Wrap(err, "filepath walk")
+			return fmt.Errorf("filepath walk: %w", err)
 		}
 	}
 	return nil
@@ -286,11 +287,11 @@ func isIgnored(path string, ignoredFiles []string) bool {
 func calculateRoots(path string) ([]string, error) {
 	path, err := filepath.Abs(path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to resolve %s", path)
+		return nil, fmt.Errorf("unable to resolve %q: %w", path, err)
 	}
 	canonical, err := filepath.EvalSymlinks(path)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to canonicalize workspace %s", path)
+		return nil, fmt.Errorf("unable to canonicalize workspace %q: %w", path, err)
 	}
 	if path == canonical {
 		return []string{path}, nil

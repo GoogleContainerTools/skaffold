@@ -18,6 +18,7 @@ package jib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -25,8 +26,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"

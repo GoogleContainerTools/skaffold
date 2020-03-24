@@ -18,13 +18,13 @@ package tag
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -83,7 +83,7 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, imageName
 
 	changes, err := runGit(workingDir, "status", ".", "--porcelain")
 	if err != nil {
-		return "", errors.Wrap(err, "getting git status")
+		return "", fmt.Errorf("getting git status: %w", err)
 	}
 
 	if len(changes) > 0 {

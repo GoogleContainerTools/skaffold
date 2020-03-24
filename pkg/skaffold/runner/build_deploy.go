@@ -22,7 +22,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -49,12 +48,12 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 
 		bRes, err := r.builder.Build(ctx, out, tags, artifacts)
 		if err != nil {
-			return nil, errors.Wrap(err, "build failed")
+			return nil, fmt.Errorf("build failed: %w", err)
 		}
 
 		if !r.runCtx.Opts.SkipTests {
 			if err = r.tester.Test(ctx, out, bRes); err != nil {
-				return nil, errors.Wrap(err, "test failed")
+				return nil, fmt.Errorf("test failed: %w", err)
 			}
 		}
 
@@ -110,7 +109,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	// Start printing the logs after deploy is finished
 	if r.runCtx.Opts.Tail {
 		if err := r.logger.Start(ctx); err != nil {
-			return errors.Wrap(err, "starting logger")
+			return fmt.Errorf("starting logger: %w", err)
 		}
 	}
 
@@ -131,7 +130,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 	defaultRepo, err := config.GetDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting default repo")
+		return nil, fmt.Errorf("getting default repo: %w", err)
 	}
 
 	tagErrs := make([]chan tagErr, len(artifacts))
@@ -158,12 +157,12 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 		case t := <-tagErrs[i]:
 			if t.err != nil {
-				return nil, errors.Wrapf(t.err, "generating tag for %s", imageName)
+				return nil, fmt.Errorf("generating tag for %q: %w", imageName, t.err)
 			}
 
 			tag, err := docker.SubstituteDefaultRepoIntoImage(defaultRepo, t.tag)
 			if err != nil {
-				return nil, errors.Wrapf(t.err, "applying default repo to %s", t.tag)
+				return nil, fmt.Errorf("applying default repo to %q: %w", t.tag, t.err)
 			}
 			fmt.Fprintln(out, tag)
 

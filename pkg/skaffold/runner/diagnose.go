@@ -23,8 +23,6 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -40,7 +38,7 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) e
 		if artifact.DockerArtifact != nil {
 			size, err := sizeOfDockerContext(ctx, artifact, r.runCtx.InsecureRegistries)
 			if err != nil {
-				return errors.Wrap(err, "computing the size of the Docker context")
+				return fmt.Errorf("computing the size of the Docker context: %w", err)
 			}
 
 			fmt.Fprintf(out, " - Size of the context: %vbytes\n", size)
@@ -48,11 +46,11 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) e
 
 		timeDeps1, deps, err := timeToListDependencies(ctx, artifact, r.runCtx.InsecureRegistries)
 		if err != nil {
-			return errors.Wrap(err, "listing artifact dependencies")
+			return fmt.Errorf("listing artifact dependencies: %w", err)
 		}
 		timeDeps2, _, err := timeToListDependencies(ctx, artifact, r.runCtx.InsecureRegistries)
 		if err != nil {
-			return errors.Wrap(err, "listing artifact dependencies")
+			return fmt.Errorf("listing artifact dependencies: %w", err)
 		}
 
 		fmt.Fprintln(out, " - Dependencies:", len(deps), "files")
@@ -61,13 +59,13 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) e
 		timeSyncMap1, err := timeToConstructSyncMap(artifact, r.runCtx.InsecureRegistries)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
-				return errors.Wrap(err, "construct artifact dependencies")
+				return fmt.Errorf("construct artifact dependencies: %w", err)
 			}
 		}
 		timeSyncMap2, err := timeToConstructSyncMap(artifact, r.runCtx.InsecureRegistries)
 		if err != nil {
 			if _, isNotSupported := err.(build.ErrSyncMapNotSupported); !isNotSupported {
-				return errors.Wrap(err, "construct artifact dependencies")
+				return fmt.Errorf("construct artifact dependencies: %w", err)
 			}
 		} else {
 			fmt.Fprintf(out, " - Time to construct sync-map: %v (2nd time: %v)\n", timeSyncMap1, timeSyncMap2)
@@ -75,11 +73,11 @@ func (r *SkaffoldRunner) DiagnoseArtifacts(ctx context.Context, out io.Writer) e
 
 		timeMTimes1, err := timeToComputeMTimes(deps)
 		if err != nil {
-			return errors.Wrap(err, "computing modTimes")
+			return fmt.Errorf("computing modTimes: %w", err)
 		}
 		timeMTimes2, err := timeToComputeMTimes(deps)
 		if err != nil {
-			return errors.Wrap(err, "computing modTimes")
+			return fmt.Errorf("computing modTimes: %w", err)
 		}
 
 		fmt.Fprintf(out, " - Time to compute mTimes on dependencies: %v (2nd time: %v)\n", timeMTimes1, timeMTimes2)
@@ -123,7 +121,7 @@ func timeToComputeMTimes(deps []string) (time.Duration, error) {
 	start := time.Now()
 
 	if _, err := filemon.Stat(func() ([]string, error) { return deps, nil }); err != nil {
-		return 0, errors.Wrap(err, "computing modTimes")
+		return 0, fmt.Errorf("computing modTimes: %w", err)
 	}
 
 	return time.Since(start), nil
@@ -134,7 +132,7 @@ func sizeOfDockerContext(ctx context.Context, a *latest.Artifact, insecureRegist
 	go func() {
 		err := docker.CreateDockerTarContext(ctx, buildCtxWriter, a.Workspace, a.DockerArtifact, insecureRegistries)
 		if err != nil {
-			buildCtxWriter.CloseWithError(errors.Wrap(err, "creating docker context"))
+			buildCtxWriter.CloseWithError(fmt.Errorf("creating docker context: %w", err))
 			return
 		}
 		buildCtxWriter.Close()

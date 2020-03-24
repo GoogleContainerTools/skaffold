@@ -21,8 +21,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/custom"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
@@ -34,14 +32,14 @@ import (
 func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 	teardownPullSecret, err := b.setupPullSecret(out)
 	if err != nil {
-		return nil, errors.Wrap(err, "setting up pull secret")
+		return nil, fmt.Errorf("setting up pull secret: %w", err)
 	}
 	defer teardownPullSecret()
 
 	if b.DockerConfig != nil {
 		teardownDockerConfigSecret, err := b.setupDockerConfigSecret(out)
 		if err != nil {
-			return nil, errors.Wrap(err, "setting up docker config secret")
+			return nil, fmt.Errorf("setting up docker config secret: %w", err)
 		}
 		defer teardownDockerConfigSecret()
 	}

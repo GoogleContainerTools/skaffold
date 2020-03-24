@@ -18,10 +18,9 @@ package runner
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	pipeline "github.com/GoogleContainerTools/skaffold/pkg/skaffold/generate_pipeline"
@@ -42,7 +41,7 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 	}
 	configFiles, err := setupConfigFiles(configPaths)
 	if err != nil {
-		return errors.Wrap(err, "setting up ConfigFiles")
+		return fmt.Errorf("setting up ConfigFiles: %w", err)
 	}
 	configFiles = append(baseConfig, configFiles...)
 
@@ -50,14 +49,14 @@ func (r *SkaffoldRunner) GeneratePipeline(ctx context.Context, out io.Writer, co
 	color.Default.Fprintln(out, "Running profile setup...")
 	for _, configFile := range configFiles {
 		if err := pipeline.CreateSkaffoldProfile(out, r.runCtx, configFile); err != nil {
-			return errors.Wrap(err, "setting up profile")
+			return fmt.Errorf("setting up profile: %w", err)
 		}
 	}
 
 	color.Default.Fprintln(out, "Generating Pipeline...")
 	pipelineYaml, err := pipeline.Yaml(out, r.runCtx, configFiles)
 	if err != nil {
-		return errors.Wrap(err, "generating pipeline yaml contents")
+		return fmt.Errorf("generating pipeline yaml contents: %w", err)
 	}
 
 	// write all yaml pieces to output
@@ -74,12 +73,12 @@ func setupConfigFiles(configPaths []string) ([]*pipeline.ConfigFile, error) {
 	for _, path := range configPaths {
 		parsed, err := schema.ParseConfig(path, true)
 		if err != nil {
-			return nil, errors.Wrapf(err, "parsing config %s", path)
+			return nil, fmt.Errorf("parsing config %q: %w", path, err)
 		}
 		config := parsed.(*latest.SkaffoldConfig)
 
 		if err := defaults.Set(config); err != nil {
-			return nil, errors.Wrap(err, "setting default values for extra configs")
+			return nil, fmt.Errorf("setting default values for extra configs: %w", err)
 		}
 
 		configFile := &pipeline.ConfigFile{

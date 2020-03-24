@@ -18,9 +18,9 @@ package portforward
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -59,7 +59,7 @@ func (p *WatchingPodForwarder) Start(ctx context.Context) error {
 	stopWatchers, err := aggregatePodWatcher(p.namespaces, aggregate)
 	if err != nil {
 		stopWatchers()
-		return errors.Wrap(err, "initializing pod watcher")
+		return fmt.Errorf("initializing pod watcher: %w", err)
 	}
 
 	go func() {
@@ -118,7 +118,7 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 
 			entry, err := p.podForwardingEntry(pod.ResourceVersion, c.Name, port.Name, ownerReference, resource)
 			if err != nil {
-				return errors.Wrap(err, "getting pod forwarding entry")
+				return fmt.Errorf("getting pod forwarding entry: %w", err)
 			}
 			if entry.resource.Port != entry.localPort {
 				color.Yellow.Fprintf(p.output, "Forwarding container %s/%s to local port %d.\n", pod.Name, c.Name, entry.localPort)
@@ -138,7 +138,7 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName, portName, ownerReference string, resource latest.PortForwardResource) (*portForwardEntry, error) {
 	rv, err := strconv.Atoi(resourceVersion)
 	if err != nil {
-		return nil, errors.Wrap(err, "converting resource version to integer")
+		return nil, fmt.Errorf("converting resource version to integer: %w", err)
 	}
 	entry := newPortForwardEntry(rv, resource, resource.Name, containerName, portName, ownerReference, 0, true)
 

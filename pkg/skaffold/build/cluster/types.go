@@ -18,10 +18,9 @@ package cluster
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -43,7 +42,7 @@ type Builder struct {
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	timeout, err := time.ParseDuration(runCtx.Cfg.Build.Cluster.Timeout)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing timeout")
+		return nil, fmt.Errorf("parsing timeout: %w", err)
 	}
 
 	return &Builder{

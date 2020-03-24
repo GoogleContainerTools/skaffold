@@ -18,9 +18,8 @@ package test
 
 import (
 	"context"
+	"fmt"
 	"io"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -53,7 +52,7 @@ func (t FullTester) TestDependencies() ([]string, error) {
 	for _, test := range t.testCases {
 		files, err := util.ExpandPathsGlob(t.workingDir, test.StructureTests)
 		if err != nil {
-			return nil, errors.Wrap(err, "expanding test file paths")
+			return nil, fmt.Errorf("expanding test file paths: %w", err)
 		}
 
 		deps = append(deps, files...)
@@ -67,7 +66,7 @@ func (t FullTester) TestDependencies() ([]string, error) {
 func (t FullTester) Test(ctx context.Context, out io.Writer, bRes []build.Artifact) error {
 	for _, test := range t.testCases {
 		if err := t.runStructureTests(ctx, out, bRes, test); err != nil {
-			return errors.Wrap(err, "running structure tests")
+			return fmt.Errorf("running structure tests: %w", err)
 		}
 	}
 
@@ -81,7 +80,7 @@ func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes [
 
 	files, err := util.ExpandPathsGlob(t.workingDir, testCase.StructureTests)
 	if err != nil {
-		return errors.Wrap(err, "expanding test file paths")
+		return fmt.Errorf("expanding test file paths: %w", err)
 	}
 
 	fqn := resolveArtifactImageTag(testCase.ImageName, bRes)

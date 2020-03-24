@@ -19,13 +19,14 @@ package jib
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
@@ -58,7 +59,7 @@ var InitSync = initSync
 func initSync(ctx context.Context, workspace string, a *latest.JibArtifact) error {
 	syncMap, err := getSyncMapFunc(ctx, workspace, a)
 	if err != nil {
-		return errors.Wrapf(err, "failed to initialize sync state for %s", workspace)
+		return fmt.Errorf("failed to initialize sync state for %q: %w", workspace, err)
 	}
 	syncLists[getProjectKey(workspace, a)] = *syncMap
 	return nil
@@ -80,7 +81,7 @@ func getSyncDiff(ctx context.Context, workspace string, a *latest.JibArtifact, e
 	for _, f := range e.Modified {
 		f, err := toAbs(f)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "failed to calculate absolute path")
+			return nil, nil, fmt.Errorf("failed to calculate absolute path: %w", err)
 		}
 		for _, bf := range buildFiles {
 			if f == bf {
@@ -98,7 +99,7 @@ func getSyncDiff(ctx context.Context, workspace string, a *latest.JibArtifact, e
 		for _, f := range e.Modified {
 			f, err := toAbs(f)
 			if err != nil {
-				return nil, nil, errors.Wrap(err, "failed to calculate absolute path")
+				return nil, nil, fmt.Errorf("failed to calculate absolute path: %w", err)
 			}
 			if val, ok := currSyncMap[f]; ok {
 				if !val.IsDirect {
@@ -110,7 +111,7 @@ func getSyncDiff(ctx context.Context, workspace string, a *latest.JibArtifact, e
 				// our state for these files manually here.
 				infog, err := os.Stat(f)
 				if err != nil {
-					return nil, nil, errors.Wrap(err, "could not obtain file mod time")
+					return nil, nil, fmt.Errorf("could not obtain file mod time: %w", err)
 				}
 				val.FileTime = infog.ModTime()
 				currSyncMap[f] = val
@@ -157,12 +158,12 @@ func getSyncMap(ctx context.Context, workspace string, artifact *latest.JibArtif
 	// cmd will hold context that identifies the project
 	cmd, err := getSyncMapCommand(ctx, workspace, artifact)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get sync command")
+		return nil, fmt.Errorf("failed to get sync command: %w", err)
 	}
 
 	sm, err := getSyncMapFromSystem(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to obtain sync map from jib builder")
+		return nil, fmt.Errorf("failed to obtain sync map from jib builder: %w", err)
 	}
 	return sm, nil
 }
@@ -179,7 +180,7 @@ func getSyncMapCommand(ctx context.Context, workspace string, artifact *latest.J
 	case JibGradle:
 		return getSyncMapCommandGradle(ctx, workspace, artifact), nil
 	default:
-		return nil, errors.Errorf("unable to handle Jib builder type %s for %s", t, workspace)
+		return nil, fmt.Errorf("unable to handle Jib builder type %s for %s", t, workspace)
 	}
 }
 
@@ -187,7 +188,7 @@ func getSyncMapFromSystem(cmd *exec.Cmd) (*SyncMap, error) {
 	jsm := JSONSyncMap{}
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get Jib sync map")
+		return nil, fmt.Errorf("failed to get Jib sync map: %w", err)
 	}
 
 	matches := regexp.MustCompile(`BEGIN JIB JSON: SYNCMAP/1\r?\n({.*})`).FindSubmatch(stdout)
@@ -196,15 +197,15 @@ func getSyncMapFromSystem(cmd *exec.Cmd) (*SyncMap, error) {
 	}
 
 	if err := json.Unmarshal(matches[1], &jsm); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal jib sync JSON")
+		return nil, fmt.Errorf("failed to unmarshal jib sync JSON: %w", err)
 	}
 
 	sm := make(SyncMap)
 	if err := sm.addEntries(jsm.Direct, true); err != nil {
-		return nil, errors.Wrap(err, "failed to add jib json direct entries to sync state")
+		return nil, fmt.Errorf("failed to add jib json direct entries to sync state: %w", err)
 	}
 	if err := sm.addEntries(jsm.Generated, false); err != nil {
-		return nil, errors.Wrap(err, "failed to add jib json generated entries to sync state")
+		return nil, fmt.Errorf("failed to add jib json generated entries to sync state: %w", err)
 	}
 	return &sm, nil
 }
@@ -213,7 +214,7 @@ func (sm SyncMap) addEntries(entries []JSONSyncEntry, direct bool) error {
 	for _, entry := range entries {
 		info, err := os.Stat(entry.Src)
 		if err != nil {
-			return errors.Wrapf(err, "could not obtain file mod time for %s", entry.Src)
+			return fmt.Errorf("could not obtain file mod time for %q: %w", entry.Src, err)
 		}
 		sm[entry.Src] = SyncEntry{
 			Dest:     []string{entry.Dest},
@@ -228,7 +229,7 @@ func toAbs(f string) (string, error) {
 	if !filepath.IsAbs(f) {
 		af, err := filepath.Abs(f)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to calculate absolute path")
+			return "", fmt.Errorf("failed to calculate absolute path: %w", err)
 		}
 		return af, nil
 	}
