@@ -52,7 +52,7 @@ func AddRemoteTag(src, target string, insecureRegistries map[string]bool) error 
 		}
 	}
 
-	return remote.Write(targetRef, img, remote.WithAuth(authenticators.For(targetRef)))
+	return remote.Write(targetRef, img, remote.WithAuthFromKeychain(masterKeychain))
 }
 
 func getRemoteDigest(identifier string, insecureRegistries map[string]bool) (string, error) {
@@ -91,7 +91,7 @@ func Push(tarPath, tag string, insecureRegistries map[string]bool) (string, erro
 		return "", fmt.Errorf("reading image %q: %w", tarPath, err)
 	}
 
-	if err := remote.Write(t, i, remote.WithAuth(authenticators.For(t))); err != nil {
+	if err := remote.Write(t, i, remote.WithAuthFromKeychain(masterKeychain)); err != nil {
 		return "", fmt.Errorf("writing image %q: %w", t, err)
 	}
 
@@ -128,5 +128,5 @@ func IsInsecure(reg string, insecureRegistries map[string]bool) bool {
 }
 
 func getRemoteImage(ref name.Reference) (v1.Image, error) {
-	return remote.Image(ref, remote.WithAuth(authenticators.For(ref)))
+	return remote.Image(ref, remote.WithAuthFromKeychain(masterKeychain))
 }
