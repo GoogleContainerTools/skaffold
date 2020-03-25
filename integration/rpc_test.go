@@ -255,7 +255,7 @@ func TestGetStateRPC(t *testing.T) {
 	var grpcState *proto.State
 	for i := 0; i < readRetries; i++ {
 		grpcState = retrieveRPCState(ctx, t, client)
-		if checkBuildAndDeployComplete(*grpcState) {
+		if grpcState != nil && checkBuildAndDeployComplete(*grpcState) {
 			success = true
 			break
 		}
