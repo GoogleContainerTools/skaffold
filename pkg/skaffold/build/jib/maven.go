@@ -87,19 +87,19 @@ func getDependenciesMaven(ctx context.Context, workspace string, a *latest.JibAr
 
 func getCommandMaven(ctx context.Context, workspace string, a *latest.JibArtifact) exec.Cmd {
 	args := mavenArgsFunc(a, MinimumJibMavenVersion)
-	args = append(args, "jib:_skaffold-files-v2", "--quiet")
+	args = append(args, "jib:_skaffold-files-v2", "--quiet", "--batch-mode")
 
 	return MavenCommand.CreateCommand(ctx, workspace, args)
 }
 
 func getSyncMapCommandMaven(ctx context.Context, workspace string, a *latest.JibArtifact) *exec.Cmd {
-	cmd := MavenCommand.CreateCommand(ctx, workspace, mavenBuildArgsFunc("_skaffold-sync-map", a, true, MinimumJibMavenVersionForSync))
+	cmd := MavenCommand.CreateCommand(ctx, workspace, mavenBuildArgsFunc("_skaffold-sync-map", a, true, false, MinimumJibMavenVersionForSync))
 	return &cmd
 }
 
 // GenerateMavenBuildArgs generates the arguments to Maven for building the project as an image.
 func GenerateMavenBuildArgs(goal string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
-	args := mavenBuildArgsFunc(goal, a, skipTests, MinimumJibMavenVersion)
+	args := mavenBuildArgsFunc(goal, a, skipTests, true, MinimumJibMavenVersion)
 	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
@@ -110,10 +110,15 @@ func GenerateMavenBuildArgs(goal string, imageName string, a *latest.JibArtifact
 }
 
 // Do not use directly, use mavenBuildArgsFunc
-func mavenBuildArgs(goal string, a *latest.JibArtifact, skipTests bool, minimumVersion string) []string {
-	// disable jib's rich progress footer on builds; we could use --batch-mode
-	// but it also disables colour which can be helpful
-	args := []string{"-Djib.console=plain"}
+func mavenBuildArgs(goal string, a *latest.JibArtifact, skipTests, showColors bool, minimumVersion string) []string {
+	// Disable jib's rich progress footer on builds. Show colors on normal builds for clearer information,
+	// but use --batch-mode for internal goals to avoid formatting issues
+	var args []string
+	if showColors {
+		args = []string{"-Djib.console=plain"}
+	} else {
+		args = []string{"--batch-mode"}
+	}
 	args = append(args, mavenArgsFunc(a, minimumVersion)...)
 
 	if skipTests {

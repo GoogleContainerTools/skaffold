@@ -49,7 +49,7 @@ func TestValidate(t *testing.T) {
 			description:    "jib string found but not configured",
 			path:           "path/to/build.gradle",
 			fileContents:   "com.google.cloud.tools.jib",
-			command:        "gradle _jibSkaffoldInit -q",
+			command:        "gradle _jibSkaffoldInit -q --console=plain",
 			stdout:         "error",
 			expectedConfig: nil,
 		},
@@ -57,7 +57,7 @@ func TestValidate(t *testing.T) {
 			description:  "jib gradle single project",
 			path:         "path/to/build.gradle",
 			fileContents: "com.google.cloud.tools.jib",
-			command:      "gradle _jibSkaffoldInit -q",
+			command:      "gradle _jibSkaffoldInit -q --console=plain",
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project"}
 `,
@@ -69,7 +69,7 @@ func TestValidate(t *testing.T) {
 			description:  "jib gradle-kotlin single project",
 			path:         "path/to/build.gradle.kts",
 			fileContents: "com.google.cloud.tools.jib",
-			command:      "gradle _jibSkaffoldInit -q",
+			command:      "gradle _jibSkaffoldInit -q --console=plain",
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project"}
 `,
@@ -81,7 +81,7 @@ func TestValidate(t *testing.T) {
 			description:  "jib gradle multi-project",
 			path:         "path/to/build.gradle",
 			fileContents: "com.google.cloud.tools.jib",
-			command:      "gradle _jibSkaffoldInit -q",
+			command:      "gradle _jibSkaffoldInit -q --console=plain",
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project1"}
 
@@ -97,7 +97,7 @@ BEGIN JIB JSON
 			description:  "jib maven single module",
 			path:         "path/to/pom.xml",
 			fileContents: "<artifactId>jib-maven-plugin</artifactId>",
-			command:      "mvn jib:_skaffold-init -q",
+			command:      "mvn jib:_skaffold-init -q --batch-mode",
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project"}`,
 			expectedConfig: []ArtifactConfig{
@@ -108,7 +108,7 @@ BEGIN JIB JSON
 			description:  "jib maven multi-module",
 			path:         "path/to/pom.xml",
 			fileContents: "<artifactId>jib-maven-plugin</artifactId>",
-			command:      "mvn jib:_skaffold-init -q",
+			command:      "mvn jib:_skaffold-init -q --batch-mode",
 			stdout: `BEGIN JIB JSON
 {"image":"image","project":"project1"}
 

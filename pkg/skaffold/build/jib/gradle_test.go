@@ -245,7 +245,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibArtifact:      latest.JibArtifact{},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":_jibSkaffoldFilesV2", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":_jibSkaffoldFilesV2", "-q", "--console=plain"})
 			},
 		},
 		{
@@ -253,7 +253,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibArtifact:      latest.JibArtifact{Project: "project"},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:_jibSkaffoldFilesV2", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:_jibSkaffoldFilesV2", "-q", "--console=plain"})
 			},
 		},
 		{
@@ -261,7 +261,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibArtifact:      latest.JibArtifact{},
 			filesInWorkspace: []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":_jibSkaffoldFilesV2", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":_jibSkaffoldFilesV2", "-q", "--console=plain"})
 			},
 		},
 		{
@@ -269,7 +269,7 @@ func TestGetCommandGradle(t *testing.T) {
 			jibArtifact:      latest.JibArtifact{Project: "project"},
 			filesInWorkspace: []string{"gradlew", "gradlew.cmd"},
 			expectedCmd: func(workspace string) exec.Cmd {
-				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:_jibSkaffoldFilesV2", "-q"})
+				return GradleCommand.CreateCommand(ctx, workspace, []string{"_skaffoldFailIfJibOutOfDate", "-Djib.requiredVersion=" + MinimumJibGradleVersion, ":project:_jibSkaffoldFilesV2", "-q", "--console=plain"})
 			},
 		},
 	}
@@ -375,49 +375,63 @@ func TestGradleBuildArgs(t *testing.T) {
 		description string
 		jibArtifact latest.JibArtifact
 		skipTests   bool
+		showColors  bool
 		expected    []string
 	}{
 		{
 			description: "single module",
 			jibArtifact: latest.JibArtifact{},
 			skipTests:   false,
+			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask"},
 		},
 		{
 			description: "single module skip tests",
 			jibArtifact: latest.JibArtifact{},
 			skipTests:   true,
+			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask", "-x", "test"},
+		},
+		{
+			description: "single module plain console",
+			jibArtifact: latest.JibArtifact{},
+			skipTests:   true,
+			showColors:  false,
+			expected:    []string{"--console=plain", "fake-gradleArgs-for-testTask", "-x", "test"},
 		},
 		{
 			description: "single module with extra flags",
 			jibArtifact: latest.JibArtifact{Flags: []string{"--flag1", "--flag2"}},
 			skipTests:   false,
+			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-testTask", "--flag1", "--flag2"},
 		},
 		{
 			description: "multi module",
 			jibArtifact: latest.JibArtifact{Project: "module"},
 			skipTests:   false,
+			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask"},
 		},
 		{
 			description: "single module skip tests",
 			jibArtifact: latest.JibArtifact{Project: "module"},
 			skipTests:   true,
+			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask", "-x", "test"},
 		},
 		{
 			description: "multi module with extra flags",
 			jibArtifact: latest.JibArtifact{Project: "module", Flags: []string{"--flag1", "--flag2"}},
 			skipTests:   false,
+			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-gradleArgs-for-module-for-testTask", "--flag1", "--flag2"},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&gradleArgsFunc, getGradleArgsFuncFake(t, "test-version"))
-			args := gradleBuildArgs("testTask", &test.jibArtifact, test.skipTests, "test-version")
+			args := gradleBuildArgs("testTask", &test.jibArtifact, test.skipTests, test.showColors, "test-version")
 			t.CheckDeepEqual(test.expected, args)
 		})
 	}
@@ -434,8 +448,8 @@ func getGradleArgsFuncFake(t *testutil.T, expectedMinimumVersion string) func(*l
 }
 
 // check that parameters are actually passed though
-func getGradleBuildArgsFuncFake(t *testutil.T, expectedMinimumVersion string) func(string, *latest.JibArtifact, bool, string) []string {
-	return func(task string, a *latest.JibArtifact, skipTests bool, minimumVersion string) []string {
+func getGradleBuildArgsFuncFake(t *testutil.T, expectedMinimumVersion string) func(string, *latest.JibArtifact, bool, bool, string) []string {
+	return func(task string, a *latest.JibArtifact, skipTests, showColors bool, minimumVersion string) []string {
 		t.CheckDeepEqual(expectedMinimumVersion, minimumVersion)
 
 		testString := ""
