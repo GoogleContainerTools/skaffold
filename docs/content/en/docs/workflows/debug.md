@@ -14,9 +14,9 @@ local machine.  IDEs can use Skaffold's events to automatically configure debug 
 ## How It Works
 
 `skaffold debug` examines the built artifacts to determine the underlying language runtime technology.
-All Kubernetes manifests that references these artifacts are transformed on-the-fly to enable the
-language runtime's debugging functionality.  These transforms may add or alter environment variables
-and entrypoints, or more.
+Kubernetes manifests that reference these artifacts are transformed on-the-fly to enable the
+language runtime's debugging functionality.  These transforms add or alter environment variables
+and entrypoints, and more.
 
 Some language runtimes require additional support files to enable debugging.
 For these languages, a special set of [runtime-specific images](https://github.com/GoogleContainerTools/container-debug-support)
