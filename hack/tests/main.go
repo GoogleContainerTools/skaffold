@@ -123,6 +123,7 @@ func goTest(testArgs []string) error {
 	} else {
 		pr.Close()
 	}
+	wc.Wait()
 	return err
 }
 
