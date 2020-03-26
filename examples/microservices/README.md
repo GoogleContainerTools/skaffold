@@ -17,13 +17,13 @@ It's highly suggested that you only run this example on a local, private cluster
 From this directory, run
 
 ```bash
-skaffold dev
+skaffold dev --port-forward
 ```
 
 Now, in a different terminal, hit the `leeroy-web` endpoint
 
 ```bash
-$ curl $(minikube service leeroy-web --url)
+$ curl -s http://localhost:9000/
 leeroooooy app!
 ```
 
@@ -47,7 +47,7 @@ Once you see the log message
 Your service will be ready to hit again with
 
 ```bash
-$ curl $(minikube service leeroy-web --url)
+$ curl -s http://localhost:9000/
 leeroooooy app!!!
 ```
 

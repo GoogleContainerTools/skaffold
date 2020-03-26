@@ -18,6 +18,7 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
@@ -26,7 +27,6 @@ import (
 	"github.com/docker/docker/builder/dockerignore"
 	"github.com/docker/docker/pkg/fileutils"
 	"github.com/karrick/godirwalk"
-	"github.com/pkg/errors"
 )
 
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.
@@ -46,7 +46,7 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
-		return nil, errors.Wrap(err, "normalizing dockerfile path")
+		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
 	fts, err := readCopyCmdsFromDockerfile(false, absDockerfilePath, workspace, buildArgs, insecureRegistries)
@@ -56,7 +56,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 
 	excludes, err := readDockerignore(workspace, absDockerfilePath)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading .dockerignore")
+		return nil, fmt.Errorf("reading .dockerignore: %w", err)
 	}
 
 	deps := make([]string, 0, len(fts))
@@ -66,7 +66,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 
 	files, err := WalkWorkspace(workspace, excludes, deps)
 	if err != nil {
-		return nil, errors.Wrap(err, "walking workspace")
+		return nil, fmt.Errorf("walking workspace: %w", err)
 	}
 
 	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
@@ -118,7 +118,7 @@ func readDockerignore(workspace string, absDockerfilePath string) ([]string, err
 func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, error) {
 	pExclude, err := fileutils.NewPatternMatcher(excludes)
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid exclude patterns")
+		return nil, fmt.Errorf("invalid exclude patterns: %w", err)
 	}
 
 	// Walk the workspace
@@ -129,7 +129,7 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 
 		fi, err := os.Stat(absDep)
 		if err != nil {
-			return nil, errors.Wrapf(err, "stating file %s", absDep)
+			return nil, fmt.Errorf("stating file %q: %w", absDep, err)
 		}
 
 		switch mode := fi.Mode(); {
@@ -181,7 +181,7 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 					return nil
 				},
 			}); err != nil {
-				return nil, errors.Wrapf(err, "walking folder %s", absDep)
+				return nil, fmt.Errorf("walking folder %q: %w", absDep, err)
 			}
 		case mode.IsRegular():
 			ignored, err := pExclude.Matches(dep)

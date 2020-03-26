@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -24,7 +25,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -40,7 +40,7 @@ type cfgStruct struct {
 	idx   []int
 }
 
-func Set(out io.Writer, args []string) error {
+func Set(ctx context.Context, out io.Writer, args []string) error {
 	if err := setConfigValue(args[0], args[1]); err != nil {
 		return err
 	}
@@ -165,15 +165,14 @@ func writeConfig(cfg *config.ContextConfig) error {
 func writeFullConfig(cfg *config.GlobalConfig) error {
 	contents, err := yaml.Marshal(cfg)
 	if err != nil {
-		return errors.Wrap(err, "marshaling config")
+		return fmt.Errorf("marshaling config: %w", err)
 	}
 	configFileOrDefault, err := config.ResolveConfigFile(configFile)
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(configFileOrDefault, contents, 0644)
-	if err != nil {
-		return errors.Wrap(err, "writing config file")
+	if err := ioutil.WriteFile(configFileOrDefault, contents, 0644); err != nil {
+		return fmt.Errorf("writing config file: %w", err)
 	}
 	return nil
 }

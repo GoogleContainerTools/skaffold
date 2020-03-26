@@ -18,10 +18,9 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"io/ioutil"
 	"testing"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"

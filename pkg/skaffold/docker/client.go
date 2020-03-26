@@ -19,6 +19,7 @@ package docker
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -31,7 +32,6 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -156,7 +156,7 @@ func detectWsl() (bool, error) {
 	if _, err := os.Stat("/proc/version"); err == nil {
 		b, err := ioutil.ReadFile("/proc/version")
 		if err != nil {
-			return false, errors.Wrap(err, "read /proc/version")
+			return false, fmt.Errorf("read /proc/version: %w", err)
 		}
 
 		if bytes.Contains(b, []byte("Microsoft")) {
@@ -183,7 +183,7 @@ func getMiniKubeFilename() (string, error) {
 func getMinikubeDockerEnv(minikubeProfile string) (map[string]string, error) {
 	miniKubeFilename, err := getMiniKubeFilename()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting minikube filename")
+		return nil, fmt.Errorf("getting minikube filename: %w", err)
 	}
 
 	args := []string{"docker-env", "--shell", "none"}
@@ -194,7 +194,7 @@ func getMinikubeDockerEnv(minikubeProfile string) (map[string]string, error) {
 	cmd := exec.Command(miniKubeFilename, args...)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting minikube env")
+		return nil, fmt.Errorf("getting minikube env: %w", err)
 	}
 
 	env := map[string]string{}

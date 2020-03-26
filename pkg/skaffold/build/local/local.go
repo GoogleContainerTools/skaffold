@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -49,7 +48,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	digestOrImageID, err := b.runBuildForArtifact(ctx, out, artifact, tag)
 	if err != nil {
-		return "", errors.Wrap(err, "build artifact")
+		return "", fmt.Errorf("build artifact: %w", err)
 	}
 
 	if b.pushImages {
@@ -99,7 +98,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, error) {
 	insp, _, err := b.localDocker.ImageInspectWithRaw(ctx, tag)
 	if err != nil {
-		return "", errors.Wrap(err, "inspecting image")
+		return "", fmt.Errorf("inspecting image: %w", err)
 	}
 	return insp.ID, nil
 }

@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 
@@ -36,7 +35,7 @@ func NewCmdDiagnose() *cobra.Command {
 	return NewCmd("diagnose").
 		WithDescription("Run a diagnostic on Skaffold").
 		WithCommonFlags().
-		NoArgs(cancelWithCtrlC(context.Background(), doDiagnose))
+		NoArgs(doDiagnose)
 }
 
 func doDiagnose(ctx context.Context, out io.Writer) error {
@@ -46,13 +45,13 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 		fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
 
 		if err := r.DiagnoseArtifacts(ctx, out); err != nil {
-			return errors.Wrap(err, "running diagnostic on artifacts")
+			return fmt.Errorf("running diagnostic on artifacts: %w", err)
 		}
 
 		color.Blue.Fprintln(out, "\nConfiguration")
 		buf, err := yaml.Marshal(config)
 		if err != nil {
-			return errors.Wrap(err, "marshalling configuration")
+			return fmt.Errorf("marshalling configuration: %w", err)
 		}
 		out.Write(buf)
 

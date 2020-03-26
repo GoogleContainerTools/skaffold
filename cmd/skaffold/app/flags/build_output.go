@@ -22,8 +22,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/pkg/errors"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 )
 
@@ -68,7 +66,7 @@ func (t *BuildOutputFileFlag) Set(value string) error {
 
 	buildOutput, err := ParseBuildOutput(buf)
 	if err != nil {
-		return errors.Wrap(err, "setting template flag")
+		return fmt.Errorf("setting template flag: %w", err)
 	}
 
 	t.filename = value

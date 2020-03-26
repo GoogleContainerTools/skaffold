@@ -17,13 +17,13 @@ limitations under the License.
 package schema
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/hack/versions/pkg/diff"
@@ -56,11 +56,11 @@ func RunSchemaCheckOnChangedFiles() error {
 	for _, configFile := range changedConfigFiles {
 		content, err := ioutil.ReadFile(configFile)
 		if err != nil {
-			return errors.Wrapf(err, "reading %s", configFile)
+			return fmt.Errorf("reading %q: %w", configFile, err)
 		}
 		changedFile := path.Join(root, "changed.go")
 		if err = ioutil.WriteFile(changedFile, content, 0666); err != nil {
-			return errors.Wrapf(err, "writing changed version of %s", configFile)
+			return fmt.Errorf("writing changed version of %q: %w", configFile, err)
 		}
 
 		content, err = git.getFileFromBaseline(configFile)
@@ -73,12 +73,12 @@ func RunSchemaCheckOnChangedFiles() error {
 		}
 		baseFile := path.Join(root, "base.go")
 		if err = ioutil.WriteFile(baseFile, content, 0666); err != nil {
-			return errors.Wrapf(err, "writing %s version of %s", baseRef, configFile)
+			return fmt.Errorf("writing %s version of %q: %w", baseRef, configFile, err)
 		}
 
 		diff, err := diff.CompareGoStructs(baseFile, changedFile)
 		if err != nil {
-			return errors.Wrapf(err, "failed to compare go files %s vs %s", baseFile, changedFile)
+			return fmt.Errorf("failed to compare go files %s vs %q: %w", baseFile, changedFile, err)
 		}
 
 		isLatest := strings.Contains(configFile, "latest")

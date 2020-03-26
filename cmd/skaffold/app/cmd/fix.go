@@ -17,10 +17,11 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	yaml "gopkg.in/yaml.v2"
@@ -41,7 +42,7 @@ func NewCmdFix() *cobra.Command {
 		NoArgs(doFix)
 }
 
-func doFix(out io.Writer) error {
+func doFix(_ context.Context, out io.Writer) error {
 	return fix(out, opts.ConfigurationFile, overwrite)
 }
 
@@ -62,17 +63,17 @@ func fix(out io.Writer, configFile string, overwrite bool) error {
 	}
 
 	if err := validation.Process(cfg.(*latest.SkaffoldConfig)); err != nil {
-		return errors.Wrap(err, "validating upgraded config")
+		return fmt.Errorf("validating upgraded config: %w", err)
 	}
 
 	newCfg, err := yaml.Marshal(cfg)
 	if err != nil {
-		return errors.Wrap(err, "marshaling new config")
+		return fmt.Errorf("marshaling new config: %w", err)
 	}
 
 	if overwrite {
 		if err := ioutil.WriteFile(configFile, newCfg, 0644); err != nil {
-			return errors.Wrap(err, "writing config file")
+			return fmt.Errorf("writing config file: %w", err)
 		}
 		color.Default.Fprintf(out, "New config at version %s generated and written to %s\n", cfg.GetVersion(), opts.ConfigurationFile)
 	} else {

@@ -171,8 +171,7 @@ func (h *TempDir) Chdir() *TempDir {
 		}
 	})
 
-	err = os.Chdir(h.Root())
-	if err != nil {
+	if err := os.Chdir(h.Root()); err != nil {
 		h.t.Fatal("unable to change current directory")
 	}
 

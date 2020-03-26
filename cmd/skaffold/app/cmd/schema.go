@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"io"
 
 	"github.com/spf13/cobra"
@@ -46,7 +47,7 @@ func NewCmdSchemaGet() *cobra.Command {
 	return NewCmd("get").
 		WithDescription("Print a given skaffold.yaml's json schema").
 		WithExample("Print the schema in version `skaffold/v1`", "schema get skaffold/v1").
-		ExactArgs(1, func(out io.Writer, args []string) error {
+		ExactArgs(1, func(_ context.Context, out io.Writer, args []string) error {
 			version := args[0]
 			return schema.Print(out, version)
 		})

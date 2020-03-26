@@ -18,9 +18,8 @@ package buildpacks
 
 import (
 	"context"
+	"fmt"
 	"io"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -34,7 +33,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 	}
 
 	if err := b.localDocker.Tag(ctx, built, tag); err != nil {
-		return "", errors.Wrapf(err, "tagging %s->%s", built, tag)
+		return "", fmt.Errorf("tagging %s->%q: %w", built, tag, err)
 	}
 
 	if b.pushImages {

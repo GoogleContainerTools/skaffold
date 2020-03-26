@@ -17,12 +17,18 @@ limitations under the License.
 package app
 
 import (
+	"context"
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd"
 )
 
 func Run(out, stderr io.Writer) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	catchCtrlC(cancel)
+
 	c := cmd.NewSkaffoldCommand(out, stderr)
-	return c.Execute()
+	return c.ExecuteContext(ctx)
 }

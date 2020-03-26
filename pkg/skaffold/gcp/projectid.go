@@ -21,7 +21,6 @@ import (
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/pkg/errors"
 )
 
 // ExtractProjectID extracts the GCP projectID from a docker image name
@@ -29,7 +28,7 @@ import (
 func ExtractProjectID(imageName string) (string, error) {
 	ref, err := name.ParseReference(imageName, name.WeakValidation)
 	if err != nil {
-		return "", errors.Wrapf(err, "parsing image name [%s]", imageName)
+		return "", fmt.Errorf("parsing image name %q: %w", imageName, err)
 	}
 
 	registry := ref.Context().Registry.Name()

@@ -18,8 +18,8 @@ package portforward
 
 import (
 	"context"
+	"fmt"
 
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -58,7 +58,7 @@ func NewResourceForwarder(em EntryManager, namespaces []string, label string, us
 func (p *ResourceForwarder) Start(ctx context.Context) error {
 	serviceResources, err := retrieveServices(p.label, p.namespaces)
 	if err != nil {
-		return errors.Wrap(err, "retrieving services for automatic port forwarding")
+		return fmt.Errorf("retrieving services for automatic port forwarding: %w", err)
 	}
 	p.portForwardResources(ctx, append(p.userDefinedResources, serviceResources...))
 	return nil
@@ -103,7 +103,7 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 func retrieveServiceResources(label string, namespaces []string) ([]*latest.PortForwardResource, error) {
 	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting Kubernetes client")
+		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
 	var resources []*latest.PortForwardResource
@@ -112,7 +112,7 @@ func retrieveServiceResources(label string, namespaces []string) ([]*latest.Port
 			LabelSelector: label,
 		})
 		if err != nil {
-			return nil, errors.Wrapf(err, "selecting services by label %s", label)
+			return nil, fmt.Errorf("selecting services by label %q: %w", label, err)
 		}
 		for _, s := range services.Items {
 			for _, p := range s.Spec.Ports {

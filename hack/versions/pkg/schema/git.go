@@ -21,8 +21,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -40,7 +38,7 @@ type git struct {
 func newGit(baseRef string) (gitClient, error) {
 	gitPath, err := exec.LookPath("git")
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to find git on PATH")
+		return nil, fmt.Errorf("failed to find git on PATH: %w", err)
 	}
 	return &git{
 		path:    gitPath,

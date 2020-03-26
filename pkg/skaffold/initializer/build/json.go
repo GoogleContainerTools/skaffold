@@ -18,9 +18,8 @@ package build
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )

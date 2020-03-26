@@ -18,11 +18,10 @@ package resource
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -77,7 +76,7 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 	details := string(b)
 	err = parseKubectlRolloutError(err)
 	if err == errKubectlKilled {
-		err = errors.Wrap(err, fmt.Sprintf("received Ctrl-C or deployments could not stabilize within %v", d.deadline))
+		err = fmt.Errorf("received Ctrl-C or deployments could not stabilize within %v: %w", d.deadline, err)
 	}
 	d.UpdateStatus(details, err)
 }

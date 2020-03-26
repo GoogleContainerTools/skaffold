@@ -17,12 +17,11 @@ limitations under the License.
 package testutil
 
 import (
+	"errors"
 	"io/ioutil"
 	"os/exec"
 	"strings"
 	"testing"
-
-	"github.com/pkg/errors"
 )
 
 type FakeCmd struct {

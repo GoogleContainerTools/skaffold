@@ -17,10 +17,9 @@ limitations under the License.
 package util
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
-
-	"github.com/pkg/errors"
 )
 
 type pipelineUpgrader struct {
@@ -63,7 +62,11 @@ func (u *pipelineUpgrader) mainPipeline() error {
 	newPipeline := u.newConfig.FieldByName(fieldMainPipeline).Addr().Interface()
 
 	err := u.upgrade(oldPipeline, newPipeline)
-	return errors.Wrapf(err, "upgrading main pipeline")
+	if err != nil {
+		return fmt.Errorf("upgrading main pipeline: %w", err)
+	}
+
+	return nil
 }
 
 func (u *pipelineUpgrader) profiles() error {
@@ -84,7 +87,7 @@ func (u *pipelineUpgrader) profiles() error {
 		newPipeline := profilesNew.Index(i).FieldByName(fieldProfilePipeline).Addr().Interface()
 
 		if err := u.upgrade(oldPipeline, newPipeline); err != nil {
-			return errors.Wrapf(err, "upgrading pipeline of profile %d", i+1)
+			return fmt.Errorf("upgrading pipeline of profile %d: %w", i+1, err)
 		}
 	}
 

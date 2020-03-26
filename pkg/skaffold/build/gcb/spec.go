@@ -17,9 +17,9 @@ limitations under the License.
 package gcb
 
 import (
+	"errors"
 	"fmt"
 
-	"github.com/pkg/errors"
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"

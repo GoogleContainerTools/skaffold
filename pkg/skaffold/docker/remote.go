@@ -17,11 +17,12 @@ limitations under the License.
 package docker
 
 import (
+	"fmt"
+
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,12 +37,12 @@ func AddRemoteTag(src, target string, insecureRegistries map[string]bool) error 
 	logrus.Debugf("attempting to add tag %s to src %s", target, src)
 	img, err := remoteImage(src, insecureRegistries)
 	if err != nil {
-		return errors.Wrap(err, "getting image")
+		return fmt.Errorf("getting image: %w", err)
 	}
 
 	targetRef, err := name.ParseReference(target, name.WeakValidation)
 	if err != nil {
-		return errors.Wrap(err, "getting target reference")
+		return fmt.Errorf("getting target reference: %w", err)
 	}
 
 	if IsInsecure(targetRef.Context().Registry.Name(), insecureRegistries) {
@@ -51,18 +52,18 @@ func AddRemoteTag(src, target string, insecureRegistries map[string]bool) error 
 		}
 	}
 
-	return remote.Write(targetRef, img, remote.WithAuth(authenticators.For(targetRef)))
+	return remote.Write(targetRef, img, remote.WithAuthFromKeychain(masterKeychain))
 }
 
 func getRemoteDigest(identifier string, insecureRegistries map[string]bool) (string, error) {
 	img, err := remoteImage(identifier, insecureRegistries)
 	if err != nil {
-		return "", errors.Wrap(err, "getting image")
+		return "", fmt.Errorf("getting image: %w", err)
 	}
 
 	h, err := img.Digest()
 	if err != nil {
-		return "", errors.Wrap(err, "getting digest")
+		return "", fmt.Errorf("getting digest: %w", err)
 	}
 
 	return h.String(), nil
@@ -72,7 +73,7 @@ func getRemoteDigest(identifier string, insecureRegistries map[string]bool) (str
 func RetrieveRemoteConfig(identifier string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {
 	img, err := remoteImage(identifier, insecureRegistries)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting image")
+		return nil, fmt.Errorf("getting image: %w", err)
 	}
 
 	return img.ConfigFile()
@@ -82,16 +83,16 @@ func RetrieveRemoteConfig(identifier string, insecureRegistries map[string]bool)
 func Push(tarPath, tag string, insecureRegistries map[string]bool) (string, error) {
 	t, err := name.NewTag(tag, name.WeakValidation)
 	if err != nil {
-		return "", errors.Wrapf(err, "parsing tag %q", tag)
+		return "", fmt.Errorf("parsing tag %q: %w", tag, err)
 	}
 
 	i, err := tarball.ImageFromPath(tarPath, nil)
 	if err != nil {
-		return "", errors.Wrapf(err, "reading image %q", tarPath)
+		return "", fmt.Errorf("reading image %q: %w", tarPath, err)
 	}
 
-	if err := remote.Write(t, i, remote.WithAuth(authenticators.For(t))); err != nil {
-		return "", errors.Wrapf(err, "writing image %q", t)
+	if err := remote.Write(t, i, remote.WithAuthFromKeychain(masterKeychain)); err != nil {
+		return "", fmt.Errorf("writing image %q: %w", t, err)
 	}
 
 	return getRemoteDigest(tag, insecureRegistries)
@@ -100,7 +101,7 @@ func Push(tarPath, tag string, insecureRegistries map[string]bool) (string, erro
 func remoteImage(identifier string, insecureRegistries map[string]bool) (v1.Image, error) {
 	ref, err := name.ParseReference(identifier)
 	if err != nil {
-		return nil, errors.Wrapf(err, "parsing reference [%s]", identifier)
+		return nil, fmt.Errorf("parsing reference [%s]: %w", identifier, err)
 	}
 
 	if IsInsecure(ref.Context().Registry.Name(), insecureRegistries) {
@@ -116,7 +117,7 @@ func remoteImage(identifier string, insecureRegistries map[string]bool) (v1.Imag
 func getInsecureRegistry(identifier string) (name.Reference, error) {
 	ref, err := name.ParseReference(identifier, name.Insecure)
 	if err != nil {
-		return nil, errors.Wrapf(err, "parsing reference [%s]", identifier)
+		return nil, fmt.Errorf("parsing reference %q: %w", identifier, err)
 	}
 	return ref, nil
 }
@@ -127,5 +128,5 @@ func IsInsecure(reg string, insecureRegistries map[string]bool) bool {
 }
 
 func getRemoteImage(ref name.Reference) (v1.Image, error) {
-	return remote.Image(ref, remote.WithAuth(authenticators.For(ref)))
+	return remote.Image(ref, remote.WithAuthFromKeychain(masterKeychain))
 }

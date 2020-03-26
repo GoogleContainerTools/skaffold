@@ -23,7 +23,6 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -92,7 +91,7 @@ func dumpToFileOrWriter(renderedManifests string, filepath string, manifestOut i
 
 	f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
-		return errors.Wrap(err, "opening file for writing manifests")
+		return fmt.Errorf("opening file for writing manifests: %w", err)
 	}
 	defer f.Close()
 	_, err = f.WriteString(renderedManifests + "\n")

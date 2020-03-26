@@ -18,11 +18,11 @@ package structure
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -43,7 +43,7 @@ func (tr *Runner) Test(ctx context.Context, out io.Writer, image string) error {
 	cmd.Env = tr.env()
 
 	if err := util.RunCmd(cmd); err != nil {
-		return errors.Wrap(err, "running container-structure-test")
+		return fmt.Errorf("running container-structure-test: %w", err)
 	}
 
 	return nil

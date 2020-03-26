@@ -23,7 +23,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -85,7 +84,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			// Start API Server
 			shutdown, err := server.Initialize(opts)
 			if err != nil {
-				return errors.Wrap(err, "initializing api server")
+				return fmt.Errorf("initializing api server: %w", err)
 			}
 			shutdownAPIServer = shutdown
 
@@ -191,7 +190,7 @@ func updateCheck(ch chan string, configfile string) error {
 	}
 	latest, current, err := update.GetLatestAndCurrentVersion()
 	if err != nil {
-		return errors.Wrap(err, "get latest and current Skaffold version")
+		return fmt.Errorf("get latest and current Skaffold version: %w", err)
 	}
 	if latest.GT(current) {
 		ch <- fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
@@ -233,7 +232,7 @@ func setUpLogs(stdErr io.Writer, level string) error {
 	logrus.SetOutput(stdErr)
 	lvl, err := logrus.ParseLevel(level)
 	if err != nil {
-		return errors.Wrap(err, "parsing log level")
+		return fmt.Errorf("parsing log level: %w", err)
 	}
 	logrus.SetLevel(lvl)
 	return nil

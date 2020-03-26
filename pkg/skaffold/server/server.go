@@ -18,13 +18,13 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"sync"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
@@ -77,7 +77,7 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 	}
 	grpcCallback, err := newGRPCServer(rpcPort)
 	if err != nil {
-		return grpcCallback, errors.Wrap(err, "starting gRPC server")
+		return grpcCallback, fmt.Errorf("starting gRPC server: %w", err)
 	}
 	m := &sync.Map{}
 	m.Store(rpcPort, true)
@@ -102,7 +102,7 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 		return errors.New(errStr)
 	}
 	if err != nil {
-		return callback, errors.Wrap(err, "starting HTTP server")
+		return callback, fmt.Errorf("starting HTTP server: %w", err)
 	}
 
 	return callback, nil
@@ -111,7 +111,7 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 func newGRPCServer(port int) (func() error, error) {
 	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
 	if err != nil {
-		return func() error { return nil }, errors.Wrap(err, "creating listener")
+		return func() error { return nil }, fmt.Errorf("creating listener: %w", err)
 	}
 	logrus.Infof("starting gRPC server on port %d", port)
 
@@ -144,7 +144,7 @@ func newHTTPServer(port, proxyPort int) (func() error, error) {
 
 	l, err := net.Listen("tcp", fmt.Sprintf("%s:%d", util.Loopback, port))
 	if err != nil {
-		return func() error { return nil }, errors.Wrap(err, "creating listener")
+		return func() error { return nil }, fmt.Errorf("creating listener: %w", err)
 	}
 	logrus.Infof("starting gRPC HTTP server on port %d", port)
 

@@ -19,10 +19,10 @@ package runner
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"testing"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	logrustest "github.com/sirupsen/logrus/hooks/test"
 
