@@ -90,7 +90,6 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 
 	// Upload entire workspace for Jib projects to fix multi-module bug
 	// https://github.com/GoogleContainerTools/skaffold/issues/3477
-	// TODO: Filter out gitignore matches (or just target/?)
 	// TODO: Avoid duplication (every Jib artifact will upload the entire workspace)
 	if artifact.JibArtifact != nil {
 		deps, err := jibAddWorkspaceToDependencies(artifact.Workspace, dependencies)

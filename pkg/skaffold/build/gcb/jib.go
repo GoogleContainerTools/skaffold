@@ -71,6 +71,9 @@ func jibAddWorkspaceToDependencies(workspace string, dependencies []string) ([]s
 			if err != nil {
 				return err
 			}
+			if info.IsDir() && (info.Name() == "target" || info.Name() == "build") {
+				return filepath.SkipDir
+			}
 			if _, ok := dependencyMap[path]; !ok {
 				dependencies = append(dependencies, path)
 			}
