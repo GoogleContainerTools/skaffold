@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,64 +17,65 @@ limitations under the License.
 package deploy
 
 import (
-	"fmt"
-	"os"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-// kubectl implements deploymentInitializer for the kubectl deployer.
-type kubectl struct {
-	configs []string // the k8s manifest files present in the project
-	images  []string // the images parsed from the k8s manifest files
+// kustomize implements deploymentInitializer for the kustomize deployer.
+type kustomize struct {
+	kustomizations []string
+	images         []string
 }
 
-// newKubectlInitializer returns a kubectl skaffold generator.
-func newKubectlInitializer(potentialConfigs []string) *kubectl {
-	var k8sConfigs, images []string
+// newKustomizeInitializer returns a kustomize config generator.
+func newKustomizeInitializer(kustomizations []string, potentialConfigs []string) *kustomize {
+	var images []string
 	for _, file := range potentialConfigs {
 		imgs, err := kubernetes.ParseImagesFromKubernetesYaml(file)
 		if err == nil {
-			k8sConfigs = append(k8sConfigs, file)
 			images = append(images, imgs...)
 		}
 	}
-	return &kubectl{
-		configs: k8sConfigs,
-		images:  images,
+	return &kustomize{
+		images:         images,
+		kustomizations: kustomizations,
 	}
 }
 
 // deployConfig implements the Initializer interface and generates
-// skaffold kubectl deployment config.
-func (k *kubectl) DeployConfig() latest.DeployConfig {
+// a kustomize deployment config.
+func (k *kustomize) DeployConfig() latest.DeployConfig {
+	var kustomizeConfig *latest.KustomizeDeploy
+	// if we only have the default path, leave the config empty - it's cleaner
+	if len(k.kustomizations) == 1 && k.kustomizations[0] == deploy.DefaultKustomizePath {
+		kustomizeConfig = &latest.KustomizeDeploy{}
+	} else {
+		kustomizeConfig = &latest.KustomizeDeploy{
+			KustomizePaths: k.kustomizations,
+		}
+	}
 	return latest.DeployConfig{
 		DeployType: latest.DeployType{
-			KubectlDeploy: &latest.KubectlDeploy{
-				Manifests: k.configs,
-			},
+			KustomizeDeploy: kustomizeConfig,
 		},
 	}
 }
 
 // GetImages implements the Initializer interface and lists all the
 // images present in the k8s manifest files.
-func (k *kubectl) GetImages() []string {
+func (k *kustomize) GetImages() []string {
 	return k.images
 }
 
 // Validate implements the Initializer interface and ensures
 // we have at least one manifest before generating a config
-func (k *kubectl) Validate() error {
+func (k *kustomize) Validate() error {
 	if len(k.images) == 0 {
 		return NoManifest
 	}
 	return nil
 }
 
-func (k *kubectl) AddManifestForImage(path, image string) {
-	fmt.Fprintf(os.Stdout, "adding manifest path %s for image %s\n", path, image)
-	k.configs = append(k.configs, path)
-	k.images = append(k.images, image)
-}
+// we don't generate k8s manifests for a kustomize deploy
+func (k *kustomize) AddManifestForImage(string, string) {}

@@ -139,6 +139,16 @@ func TestDoInit(t *testing.T) {
 			},
 			shouldErr: true,
 		},
+		{
+			name: "kustomize",
+			dir:  "testdata/init/getting-started-kustomize",
+
+			config: initconfig.Config{
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
