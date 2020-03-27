@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -28,6 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -49,7 +49,7 @@ func TestParseExamples(t *testing.T) {
 // Samples are skaffold.yaml fragments that are used
 // in the documentation.
 func TestParseSamples(t *testing.T) {
-	paths, err := findSamples(samplesRoot)
+	paths, err := walk.From(samplesRoot).WhenIsFile().CollectPaths()
 	if err != nil {
 		t.Fatalf("unable to list samples in %q", samplesRoot)
 	}
@@ -86,7 +86,7 @@ func checkSkaffoldConfig(t *testutil.T, yaml []byte) {
 }
 
 func parseConfigFiles(t *testing.T, root string) {
-	paths, err := findExamples(root)
+	paths, err := walk.From(root).WhenHasName("skaffold.yaml").CollectPaths()
 	if err != nil {
 		t.Fatalf("unable to list skaffold configuration files in %q", root)
 	}
@@ -105,32 +105,6 @@ func parseConfigFiles(t *testing.T, root string) {
 			checkSkaffoldConfig(t, buf)
 		})
 	}
-}
-
-func findSamples(root string) ([]string, error) {
-	var files []string
-
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() {
-			files = append(files, path)
-		}
-		return err
-	})
-
-	return files, err
-}
-
-func findExamples(root string) ([]string, error) {
-	var files []string
-
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() && info.Name() == "skaffold.yaml" {
-			files = append(files, path)
-		}
-		return err
-	})
-
-	return files, err
 }
 
 func addHeader(buf []byte) []byte {

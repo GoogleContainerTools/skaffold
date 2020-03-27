@@ -23,13 +23,13 @@ import (
 	"io"
 	"strings"
 
-	"github.com/karrick/godirwalk"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
 var (
@@ -83,16 +83,16 @@ func doFindConfigs(_ context.Context, out io.Writer) error {
 func findConfigs(directory string) (map[string]string, error) {
 	pathToVersion := make(map[string]string)
 
-	err := godirwalk.Walk(directory, &godirwalk.Options{
-		Callback: func(path string, info *godirwalk.Dirent) error {
-			// Find files ending in ".yaml" and parseable to skaffold config in the specified root directory recursively.
-			if !info.IsDir() && (strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")) {
-				if cfg, err := schema.ParseConfig(path, false); err == nil {
-					pathToVersion[path] = cfg.GetVersion()
-				}
-			}
-			return nil
-		},
+	// Find files ending in ".yaml" and parseable to skaffold config in the specified root directory recursively.
+	isYaml := func(path string, info walk.Dirent) (bool, error) {
+		return !info.IsDir() && (strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")), nil
+	}
+
+	err := walk.From(directory).When(isYaml).Do(func(path string, _ walk.Dirent) error {
+		if cfg, err := schema.ParseConfig(path, false); err == nil {
+			pathToVersion[path] = cfg.GetVersion()
+		}
+		return nil
 	})
 
 	return pathToVersion, err
