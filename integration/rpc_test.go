@@ -255,7 +255,7 @@ func TestGetStateRPC(t *testing.T) {
 	var grpcState *proto.State
 	for i := 0; i < readRetries; i++ {
 		grpcState = retrieveRPCState(ctx, t, client)
-		if checkBuildAndDeployComplete(*grpcState) {
+		if grpcState != nil && checkBuildAndDeployComplete(*grpcState) {
 			success = true
 			break
 		}
@@ -291,23 +291,22 @@ func TestGetStateHTTP(t *testing.T) {
 }
 
 func retrieveRPCState(ctx context.Context, t *testing.T, client proto.SkaffoldServiceClient) *proto.State {
-	var grpcState *proto.State
-	var err error
 	attempts := 0
 	for {
-		grpcState, err = client.GetState(ctx, &empty.Empty{})
-		if err == nil {
-			break
-		}
-		if attempts < connectionRetries {
-			attempts++
+		grpcState, err := client.GetState(ctx, &empty.Empty{})
+		if err != nil {
+			if attempts >= connectionRetries {
+				t.Fatalf("error retrieving state: %v\n", err)
+			}
+
 			t.Logf("waiting for connection...")
+			attempts++
 			time.Sleep(waitTime)
 			continue
 		}
-		t.Fatalf("error retrieving state: %v\n", err)
+
+		return grpcState
 	}
-	return grpcState
 }
 
 func retrieveHTTPState(t *testing.T, httpAddr string) proto.State {
@@ -361,6 +360,7 @@ func checkBuildAndDeployComplete(state proto.State) bool {
 			return false
 		}
 	}
+
 	return state.DeployState.Status == event.Complete
 }
 
