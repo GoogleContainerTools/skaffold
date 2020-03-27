@@ -66,7 +66,7 @@ func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace 
 
 	if err := kubernetes.WaitForPodSucceeded(ctx, pods, pod.Name, b.timeout); err != nil {
 		waitForLogs()
-		return "", fmt.Errorf("waiting for pod to complete: %w", err)
+		return "", err
 	}
 
 	waitForLogs()
