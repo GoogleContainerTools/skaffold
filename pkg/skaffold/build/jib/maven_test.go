@@ -240,7 +240,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibArtifact:      latest.JibArtifact{},
 			filesInWorkspace: []string{},
 			expectedCmd: func(workspace string) exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"fake-mavenArgs", "jib:_skaffold-files-v2", "--quiet"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"fake-mavenArgs", "jib:_skaffold-files-v2", "--quiet", "--batch-mode"})
 			},
 		},
 		{
@@ -248,7 +248,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibArtifact:      latest.JibArtifact{},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"fake-mavenArgs", "jib:_skaffold-files-v2", "--quiet"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"fake-mavenArgs", "jib:_skaffold-files-v2", "--quiet", "--batch-mode"})
 			},
 		},
 		{
@@ -256,7 +256,7 @@ func TestGetCommandMaven(t *testing.T) {
 			jibArtifact:      latest.JibArtifact{Project: "module"},
 			filesInWorkspace: []string{"mvnw", "mvnw.bat"},
 			expectedCmd: func(workspace string) exec.Cmd {
-				return MavenCommand.CreateCommand(ctx, workspace, []string{"fake-mavenArgs-for-module", "jib:_skaffold-files-v2", "--quiet"})
+				return MavenCommand.CreateCommand(ctx, workspace, []string{"fake-mavenArgs-for-module", "jib:_skaffold-files-v2", "--quiet", "--batch-mode"})
 			},
 		},
 	}
@@ -340,37 +340,49 @@ func TestMavenBuildArgs(t *testing.T) {
 		description string
 		jibArtifact latest.JibArtifact
 		skipTests   bool
+		showColors  bool
 		expected    []string
 	}{
 		{
 			description: "single module",
 			jibArtifact: latest.JibArtifact{},
 			skipTests:   false,
+			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-mavenArgs", "prepare-package", "jib:test-goal"},
 		},
 		{
 			description: "single module skip tests",
 			jibArtifact: latest.JibArtifact{},
 			skipTests:   true,
+			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-mavenArgs", "-DskipTests=true", "prepare-package", "jib:test-goal"},
+		},
+		{
+			description: "single module plain console",
+			jibArtifact: latest.JibArtifact{},
+			skipTests:   true,
+			showColors:  false,
+			expected:    []string{"--batch-mode", "fake-mavenArgs", "-DskipTests=true", "prepare-package", "jib:test-goal"},
 		},
 		{
 			description: "multi module",
 			jibArtifact: latest.JibArtifact{Project: "module"},
 			skipTests:   false,
+			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-mavenArgs-for-module", "package", "jib:test-goal", "-Djib.containerize=module"},
 		},
 		{
 			description: "single module skip tests",
 			jibArtifact: latest.JibArtifact{Project: "module"},
 			skipTests:   true,
+			showColors:  true,
 			expected:    []string{"-Djib.console=plain", "fake-mavenArgs-for-module", "-DskipTests=true", "package", "jib:test-goal", "-Djib.containerize=module"},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&mavenArgsFunc, getMavenArgsFuncFake(t, "test-version"))
-			args := mavenBuildArgs("test-goal", &test.jibArtifact, test.skipTests, "test-version")
+			args := mavenBuildArgs("test-goal", &test.jibArtifact, test.skipTests, test.showColors, "test-version")
 			t.CheckDeepEqual(test.expected, args)
 		})
 	}
@@ -424,8 +436,8 @@ func getMavenArgsFuncFake(t *testutil.T, expectedMinimumVersion string) func(*la
 	}
 }
 
-func getMavenBuildArgsFuncFake(t *testutil.T, expectedMinimumVersion string) func(string, *latest.JibArtifact, bool, string) []string {
-	return func(goal string, a *latest.JibArtifact, skipTests bool, minimumVersion string) []string {
+func getMavenBuildArgsFuncFake(t *testutil.T, expectedMinimumVersion string) func(string, *latest.JibArtifact, bool, bool, string) []string {
+	return func(goal string, a *latest.JibArtifact, skipTests, showColors bool, minimumVersion string) []string {
 		t.CheckDeepEqual(expectedMinimumVersion, minimumVersion)
 		testString := ""
 		if skipTests {
