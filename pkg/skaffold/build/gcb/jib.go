@@ -71,8 +71,18 @@ func jibAddWorkspaceToDependencies(workspace string, dependencies []string) ([]s
 			if err != nil {
 				return err
 			}
-			if info.IsDir() && (info.Name() == "target" || info.Name() == "build") {
-				return filepath.SkipDir
+			if info.IsDir() {
+				if info.Name() == "target" {
+					pomPath := filepath.Join(filepath.Dir(path), "pom.xml")
+					if _, pomErr := os.Stat(pomPath); pomErr == nil {
+						return filepath.SkipDir
+					}
+				} else if info.Name() == "build" {
+					gradlePath := filepath.Join(filepath.Dir(path), "build.gradle")
+					if _, gradleErr := os.Stat(gradlePath); gradleErr == nil {
+						return filepath.SkipDir
+					}
+				}
 			}
 			if _, ok := dependencyMap[path]; !ok {
 				dependencies = append(dependencies, path)

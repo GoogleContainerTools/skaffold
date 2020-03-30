@@ -94,7 +94,7 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	if artifact.JibArtifact != nil {
 		deps, err := jibAddWorkspaceToDependencies(artifact.Workspace, dependencies)
 		if err != nil {
-			return "", fmt.Errorf("walking workspace for Jib projects: %s", err)
+			return "", fmt.Errorf("walking workspace for Jib projects: %w", err)
 		}
 		dependencies = deps
 	}
