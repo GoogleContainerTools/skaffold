@@ -88,14 +88,22 @@ func TestGetDependenciesPaths(t *testing.T) {
 			description: "watch everything",
 			paths:       []string{"."},
 			expected:    []string{"bar", filepath.FromSlash("baz/file"), "foo"},
-		}, {
+		},
+		{
 			description: "watch nothing",
-		}, {
+		},
+		{
 			description: "ignore some paths",
 			paths:       []string{"."},
 			ignore:      []string{"b*"},
 			expected:    []string{"foo"},
-		}, {
+		},
+		{
+			description: "glob",
+			paths:       []string{"**"},
+			expected:    []string{"bar", filepath.FromSlash("baz/file"), "foo"},
+		},
+		{
 			description: "error",
 			paths:       []string{"unknown"},
 			shouldErr:   true,

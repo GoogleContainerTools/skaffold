@@ -7,4 +7,5 @@ build:
       buildCommand: ./build.sh
       dependencies:
         paths:
-        - .
+        - "go.mod"
+        - "**.go"
