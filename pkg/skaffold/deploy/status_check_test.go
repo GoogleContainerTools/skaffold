@@ -398,14 +398,14 @@ func TestPrintStatus(t *testing.T) {
 					nil,
 				),
 			},
-			expectedOut: " - test:deployment/r2 pending\n",
+			expectedOut: " - test:deployment/r2: pending\n",
 		},
 		{
 			description: "multiple resources 1 not complete and retry-able error",
 			rs: []Resource{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					"deployment successfully rolled out",
+					"eployment successfully rolled out",
 					nil,
 				),
 				withStatus(
@@ -414,7 +414,7 @@ func TestPrintStatus(t *testing.T) {
 					resource.ErrKubectlConnection,
 				),
 			},
-			expectedOut: " - test:deployment/r2 kubectl connection error\n",
+			expectedOut: " - test:deployment/r2: kubectl connection error\n",
 		},
 	}
 

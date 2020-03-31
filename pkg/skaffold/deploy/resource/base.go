@@ -53,5 +53,5 @@ func (b *Base) ReportSinceLastUpdated() string {
 		return ""
 	}
 	b.status.reported = true
-	return fmt.Sprintf("%s %s", b, b.status)
+	return fmt.Sprintf("%s: %s", b, b.status)
 }
