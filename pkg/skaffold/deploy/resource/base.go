@@ -29,6 +29,10 @@ type Base struct {
 }
 
 func (b *Base) String() string {
+	if b.namespace == "default" {
+		return fmt.Sprintf("%s/%s", b.rType, b.name)
+	}
+
 	return fmt.Sprintf("%s:%s/%s", b.namespace, b.rType, b.name)
 }
 
