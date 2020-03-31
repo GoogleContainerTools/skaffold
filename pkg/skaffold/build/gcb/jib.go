@@ -26,6 +26,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 func (b *Builder) jibBuildSpec(artifact *latest.Artifact, tag string) (cloudbuild.Build, error) {
@@ -73,13 +74,11 @@ func jibAddWorkspaceToDependencies(workspace string, dependencies []string) ([]s
 			}
 			if info.IsDir() {
 				if info.Name() == "target" {
-					pomPath := filepath.Join(filepath.Dir(path), "pom.xml")
-					if _, pomErr := os.Stat(pomPath); pomErr == nil {
+					if util.IsFile(filepath.Join(filepath.Dir(path), "pom.xml")) {
 						return filepath.SkipDir
 					}
 				} else if info.Name() == "build" {
-					gradlePath := filepath.Join(filepath.Dir(path), "build.gradle")
-					if _, gradleErr := os.Stat(gradlePath); gradleErr == nil {
+					if util.IsFile(filepath.Join(filepath.Dir(path), "build.gradle")) {
 						return filepath.SkipDir
 					}
 				}
