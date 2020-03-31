@@ -30,7 +30,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -182,7 +181,7 @@ func printStatusCheckSummary(out io.Writer, r Resource, rc resourceCounter) {
 		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(rc.deployments.pending, rc.deployments.total))
 	}
 
-	color.Default.Fprintln(out, status)
+	fmt.Fprintln(out, status)
 }
 
 // Print resource statuses until all status check are completed or context is cancelled.
@@ -212,7 +211,7 @@ func printStatus(resources []Resource, out io.Writer) bool {
 		allResourcesCheckComplete = false
 		if str := r.ReportSinceLastUpdated(); str != "" {
 			event.ResourceStatusCheckEventUpdated(r.String(), str)
-			color.Default.Fprintln(out, tabHeader, trimNewLine(str))
+			fmt.Fprintln(out, tabHeader, trimNewLine(str))
 		}
 	}
 	return allResourcesCheckComplete
