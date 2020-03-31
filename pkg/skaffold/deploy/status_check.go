@@ -18,6 +18,7 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -162,8 +163,14 @@ func getDeadline(d int) time.Duration {
 }
 
 func printStatusCheckSummary(out io.Writer, r Resource, rc resourceCounter) {
+	err := r.Status().Error()
+	if errors.Is(err, context.Canceled) {
+		// Don't print the status summary if the user ctrl-Cd
+		return
+	}
+
 	status := fmt.Sprintf("%s %s", tabHeader, r)
-	if err := r.Status().Error(); err != nil {
+	if err != nil {
 		event.ResourceStatusCheckEventFailed(r.String(), err)
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
@@ -174,6 +181,7 @@ func printStatusCheckSummary(out io.Writer, r Resource, rc resourceCounter) {
 		event.ResourceStatusCheckEventSucceeded(r.String())
 		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(rc.deployments.pending, rc.deployments.total))
 	}
+
 	color.Default.Fprintln(out, status)
 }
 
