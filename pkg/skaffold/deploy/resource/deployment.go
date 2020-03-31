@@ -74,6 +74,10 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 	kubeCtl := kubectl.NewFromRunContext(runCtx)
 
 	b, err := kubeCtl.RunOut(ctx, "rollout", "status", "deployment", d.name, "--namespace", d.namespace, "--watch=false")
+	if ctx.Err() != nil {
+		return
+	}
+
 	details := d.cleanupStatus(string(b))
 
 	err = parseKubectlRolloutError(err)
