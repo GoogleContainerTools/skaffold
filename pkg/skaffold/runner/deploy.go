@@ -61,14 +61,18 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 
 func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
-	if r.runCtx.Opts.StatusCheck {
-		start := time.Now()
-		color.Default.Fprintln(out, "Waiting for deployments to stabilize")
-		err := statusCheck(ctx, r.defaultLabeller, r.runCtx, out)
-		if err != nil {
-			return err
-		}
-		color.Default.Fprintln(out, "Deployments stabilized in", time.Since(start))
+	if !r.runCtx.Opts.StatusCheck {
+		return nil
 	}
+
+	start := time.Now()
+	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
+
+	err := statusCheck(ctx, r.defaultLabeller, r.runCtx, out)
+	if err != nil {
+		return err
+	}
+
+	color.Default.Fprintln(out, "Deployments stabilized in", time.Since(start))
 	return nil
 }
