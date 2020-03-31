@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -66,7 +65,7 @@ func ParseVersion(version string) (semver.Version, error) {
 	version = strings.TrimSpace(version)
 	v, err := semver.Parse(strings.TrimLeft(version, "v"))
 	if err != nil {
-		return semver.Version{}, errors.Wrap(err, "parsing semver")
+		return semver.Version{}, fmt.Errorf("parsing semver: %w", err)
 	}
 	return v, nil
 }

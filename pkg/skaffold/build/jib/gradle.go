@@ -22,7 +22,6 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -69,7 +68,7 @@ func (b *Builder) runGradleCommand(ctx context.Context, out io.Writer, workspace
 
 	logrus.Infof("Building %s: %s, %v", workspace, cmd.Path, cmd.Args)
 	if err := util.RunCmd(&cmd); err != nil {
-		return errors.Wrap(err, "gradle build failed")
+		return fmt.Errorf("gradle build failed: %w", err)
 	}
 
 	return nil
@@ -81,25 +80,25 @@ func getDependenciesGradle(ctx context.Context, workspace string, a *latest.JibA
 	cmd := getCommandGradle(ctx, workspace, a)
 	deps, err := getDependencies(workspace, cmd, a)
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting jib-gradle dependencies")
+		return nil, fmt.Errorf("getting jib-gradle dependencies: %w", err)
 	}
 	logrus.Debugf("Found dependencies for jib-gradle artifact: %v", deps)
 	return deps, nil
 }
 
 func getCommandGradle(ctx context.Context, workspace string, a *latest.JibArtifact) exec.Cmd {
-	args := append(gradleArgsFunc(a, "_jibSkaffoldFilesV2", MinimumJibGradleVersion), "-q")
+	args := append(gradleArgsFunc(a, "_jibSkaffoldFilesV2", MinimumJibGradleVersion), "-q", "--console=plain")
 	return GradleCommand.CreateCommand(ctx, workspace, args)
 }
 
 func getSyncMapCommandGradle(ctx context.Context, workspace string, a *latest.JibArtifact) *exec.Cmd {
-	cmd := GradleCommand.CreateCommand(ctx, workspace, gradleBuildArgsFunc("_jibSkaffoldSyncMap", a, true, MinimumJibMavenVersionForSync))
+	cmd := GradleCommand.CreateCommand(ctx, workspace, gradleBuildArgsFunc("_jibSkaffoldSyncMap", a, true, false, MinimumJibMavenVersionForSync))
 	return &cmd
 }
 
 // GenerateGradleBuildArgs generates the arguments to Gradle for building the project as an image.
 func GenerateGradleBuildArgs(task string, imageName string, a *latest.JibArtifact, skipTests bool, insecureRegistries map[string]bool) []string {
-	args := gradleBuildArgsFunc(task, a, skipTests, MinimumJibGradleVersion)
+	args := gradleBuildArgsFunc(task, a, skipTests, true, MinimumJibGradleVersion)
 	if insecure, err := isOnInsecureRegistry(imageName, insecureRegistries); err == nil && insecure {
 		// jib doesn't support marking specific registries as insecure
 		args = append(args, "-Djib.allowInsecureRegistries=true")
@@ -110,10 +109,15 @@ func GenerateGradleBuildArgs(task string, imageName string, a *latest.JibArtifac
 }
 
 // Do not use directly, use gradleBuildArgsFunc
-func gradleBuildArgs(task string, a *latest.JibArtifact, skipTests bool, minimumVersion string) []string {
-	// disable jib's rich progress footer; we could use `--console=plain`
-	// but it also disables colour which can be helpful
-	args := []string{"-Djib.console=plain"}
+func gradleBuildArgs(task string, a *latest.JibArtifact, skipTests, showColors bool, minimumVersion string) []string {
+	// Disable jib's rich progress footer on builds. Show colors on normal builds for clearer information,
+	// but use --console=plain for internal goals to avoid formatting issues
+	var args []string
+	if showColors {
+		args = []string{"-Djib.console=plain"}
+	} else {
+		args = []string{"--console=plain"}
+	}
 	args = append(args, gradleArgsFunc(a, task, minimumVersion)...)
 
 	if skipTests {

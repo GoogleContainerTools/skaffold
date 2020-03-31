@@ -14,25 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package app
 
 import (
 	"context"
-	"io"
 	"os"
 	"os/signal"
 	"syscall"
 )
-
-func cancelWithCtrlC(ctx context.Context, action func(context.Context, io.Writer) error) func(io.Writer) error {
-	return func(out io.Writer) error {
-		ctx, cancel := context.WithCancel(ctx)
-		defer cancel()
-
-		catchCtrlC(cancel)
-		return action(ctx, out)
-	}
-}
 
 func catchCtrlC(cancel context.CancelFunc) {
 	signals := make(chan os.Signal, 1)

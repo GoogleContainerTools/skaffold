@@ -17,13 +17,12 @@ limitations under the License.
 package build
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"

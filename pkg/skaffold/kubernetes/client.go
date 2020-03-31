@@ -17,12 +17,11 @@ limitations under the License.
 package kubernetes
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-
-	// Initialize all known client auth plugins
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // Initialize all known client auth plugins
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
@@ -36,7 +35,7 @@ var (
 func getClientset() (kubernetes.Interface, error) {
 	config, err := context.GetRestClientConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting client config for Kubernetes client")
+		return nil, fmt.Errorf("getting client config for Kubernetes client: %w", err)
 	}
 	return kubernetes.NewForConfig(config)
 }
@@ -44,7 +43,7 @@ func getClientset() (kubernetes.Interface, error) {
 func getDynamicClient() (dynamic.Interface, error) {
 	config, err := context.GetRestClientConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting client config for dynamic client")
+		return nil, fmt.Errorf("getting client config for dynamic client: %w", err)
 	}
 	return dynamic.NewForConfig(config)
 }

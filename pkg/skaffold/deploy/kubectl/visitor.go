@@ -17,7 +17,8 @@ limitations under the License.
 package kubectl
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"gopkg.in/yaml.v2"
 )
 
@@ -35,7 +36,7 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 	for _, manifest := range *l {
 		m := make(map[interface{}]interface{})
 		if err := yaml.Unmarshal(manifest, &m); err != nil {
-			return nil, errors.Wrap(err, "reading Kubernetes YAML")
+			return nil, fmt.Errorf("reading Kubernetes YAML: %w", err)
 		}
 
 		if len(m) == 0 {
@@ -46,7 +47,7 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 
 		updatedManifest, err := yaml.Marshal(m)
 		if err != nil {
-			return nil, errors.Wrap(err, "marshalling yaml")
+			return nil, fmt.Errorf("marshalling yaml: %w", err)
 		}
 
 		updated = append(updated, updatedManifest)

@@ -60,8 +60,7 @@ func TestReadConfigurationNotFound(t *testing.T) {
 }
 
 func TestReadConfigurationRemote(t *testing.T) {
-	remoteFile, teardown := testutil.ServeFile(t, []byte("remote file"))
-	defer teardown()
+	remoteFile := testutil.ServeFile(t, []byte("remote file"))
 
 	content, err := ReadConfiguration(remoteFile)
 

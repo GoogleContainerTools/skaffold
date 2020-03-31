@@ -17,9 +17,8 @@ limitations under the License.
 package resource
 
 import (
+	"errors"
 	"testing"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )

@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -45,12 +44,12 @@ import (
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	tagger, err := getTagger(runCtx)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing tag config")
+		return nil, fmt.Errorf("parsing tag config: %w", err)
 	}
 
 	builder, err := getBuilder(runCtx)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing build config")
+		return nil, fmt.Errorf("parsing build config: %w", err)
 	}
 
 	imagesAreLocal := false
@@ -64,7 +63,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, depLister)
 	if err != nil {
-		return nil, errors.Wrap(err, "initializing cache")
+		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
 
 	tester := getTester(runCtx)
@@ -72,7 +71,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	deployer, err := getDeployer(runCtx)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing deploy config")
+		return nil, fmt.Errorf("parsing deploy config: %w", err)
 	}
 
 	defaultLabeller := deploy.NewLabeller("")
@@ -87,7 +86,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	trigger, err := trigger.NewTrigger(runCtx)
 	if err != nil {
-		return nil, errors.Wrap(err, "creating watch trigger")
+		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
 	event.InitializeState(runCtx.Cfg.Build)
@@ -123,7 +122,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	if err := r.setupTriggerCallbacks(intentChan); err != nil {
-		return nil, errors.Wrapf(err, "setting up trigger callbacks")
+		return nil, fmt.Errorf("setting up trigger callbacks: %w", err)
 	}
 
 	return r, nil

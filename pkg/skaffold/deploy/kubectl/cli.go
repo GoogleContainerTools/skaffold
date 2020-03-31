@@ -18,9 +18,9 @@ package kubectl
 
 import (
 	"context"
+	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
@@ -40,7 +40,7 @@ type CLI struct {
 func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests ManifestList) error {
 	args := c.args(c.Flags.Delete, "--ignore-not-found=true", "-f", "-")
 	if err := c.Run(ctx, manifests.Reader(), out, "delete", args...); err != nil {
-		return errors.Wrap(err, "kubectl delete")
+		return fmt.Errorf("kubectl delete: %w", err)
 	}
 
 	return nil
@@ -67,7 +67,7 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 	}
 
 	if err := c.Run(ctx, updated.Reader(), out, "apply", c.args(c.Flags.Apply, args...)...); err != nil {
-		return errors.Wrap(err, "kubectl apply")
+		return fmt.Errorf("kubectl apply: %w", err)
 	}
 
 	return nil
@@ -87,7 +87,7 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (ManifestLi
 
 	buf, err := c.RunOut(ctx, "create", args...)
 	if err != nil {
-		return nil, errors.Wrap(err, "kubectl create")
+		return nil, fmt.Errorf("kubectl create: %w", err)
 	}
 
 	var manifestList ManifestList

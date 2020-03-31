@@ -18,9 +18,8 @@ package generator
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
-
-	"github.com/pkg/errors"
 )
 
 type Container struct {
@@ -34,12 +33,13 @@ func Generate(name string) ([]byte, error) {
 
 	t, err := template.New("deployment").Parse(yamlTemplate)
 	if err != nil {
-		return nil, errors.Wrapf(err, "error parsing pod template")
+		return nil, fmt.Errorf("error parsing pod template: %w", err)
 	}
+
 	var buf bytes.Buffer
-	err = t.Execute(&buf, c)
-	if err != nil {
-		return nil, errors.Wrapf(err, "error executing template")
+	if err = t.Execute(&buf, c); err != nil {
+		return nil, fmt.Errorf("error executing template: %w", err)
 	}
+
 	return buf.Bytes(), nil
 }

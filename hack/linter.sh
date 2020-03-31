@@ -17,7 +17,7 @@
 set -e -o pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-VERSION=1.23.7
+VERSION=1.24.0
 
 function install_linter() {
   echo "Installing GolangCI-Lint"
@@ -37,6 +37,9 @@ fi
 
 VERBOSE=""
 if [[ "${TRAVIS}" == "true" ]]; then
+    # Use less memory on Travis
+    # See https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
+    export GOGC=10
     VERBOSE="-v --print-resources-usage"
 fi
 

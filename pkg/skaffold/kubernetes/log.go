@@ -25,7 +25,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
@@ -77,7 +76,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 	stopWatchers, err := AggregatePodWatcher(a.namespaces, aggregate)
 	if err != nil {
 		stopWatchers()
-		return errors.Wrap(err, "initializing aggregate pod watcher")
+		return fmt.Errorf("initializing aggregate pod watcher: %w", err)
 	}
 
 	go func() {
@@ -197,7 +196,7 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Col
 				return nil
 			}
 			if err != nil {
-				return errors.Wrap(err, "reading bytes from log stream")
+				return fmt.Errorf("reading bytes from log stream: %w", err)
 			}
 
 			a.printLogLine(headerColor, prefix, line)

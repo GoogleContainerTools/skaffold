@@ -27,7 +27,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestFor(t *testing.T) {
+func TestResolve(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("test doesn't work on windows")
 	}
@@ -35,14 +35,14 @@ func TestFor(t *testing.T) {
 	tests := []struct {
 		description     string
 		dockerConfig    string
-		img             string
+		registry        string
 		gcloudOutput    string
 		gcloudInPath    bool
 		expectAnonymous bool
 	}{
 		{
 			description:     "gcloud is configured and working",
-			img:             "gcr.io/img",
+			registry:        "gcr.io",
 			dockerConfig:    `{"credHelpers":{"gcr.io": "gcloud"}}`,
 			gcloudInPath:    true,
 			gcloudOutput:    "#!/bin/sh\necho '{\"credential\":{\"access_token\":\"TOKEN\",\"token_expiry\":\"2999-01-01T08:48:55Z\"}}'",
@@ -50,14 +50,14 @@ func TestFor(t *testing.T) {
 		},
 		{
 			description:     "gcloud is configured but not found (anonymous)",
-			img:             "gcr.io/img",
+			registry:        "gcr.io",
 			dockerConfig:    `{"credHelpers":{"gcr.io": "gcloud"}}`,
 			gcloudInPath:    false,
 			expectAnonymous: true,
 		},
 		{
 			description:     "gcloud is configured but not working (anonymous)",
-			img:             "gcr.io/img",
+			registry:        "gcr.io",
 			dockerConfig:    `{"credHelpers":{"gcr.io": "gcloud"}}`,
 			gcloudInPath:    true,
 			gcloudOutput:    `exit 1`,
@@ -65,7 +65,7 @@ func TestFor(t *testing.T) {
 		},
 		{
 			description:     "gcloud is not configured but working",
-			img:             "gcr.io/img",
+			registry:        "gcr.io",
 			dockerConfig:    `{}`,
 			gcloudInPath:    true,
 			gcloudOutput:    "#!/bin/sh\necho '{\"credential\":{\"access_token\":\"TOKEN\",\"token_expiry\":\"2999-01-01T08:48:55Z\"}}'",
@@ -73,7 +73,7 @@ func TestFor(t *testing.T) {
 		},
 		{
 			description:     "gcloud is not configured and not working (anonymous)",
-			img:             "eu.gcr.io/img",
+			registry:        "eu.gcr.io",
 			dockerConfig:    `{}`,
 			gcloudInPath:    true,
 			gcloudOutput:    `exit 1`,
@@ -81,7 +81,7 @@ func TestFor(t *testing.T) {
 		},
 		{
 			description:     "anonymous",
-			img:             "docker/img",
+			registry:        "docker",
 			dockerConfig:    `{}`,
 			expectAnonymous: true,
 		},
@@ -103,12 +103,13 @@ func TestFor(t *testing.T) {
 				"PATH":          path,
 			})
 
-			ref, err := name.ParseReference(test.img, name.WeakValidation)
+			registry, err := name.NewRegistry(test.registry)
 			t.CheckNoError(err)
 
-			auths := Authenticators{configDir: tmpDir.Root()}
-			authenticator := auths.For(ref)
+			kc := &Keychain{configDir: tmpDir.Root()}
+			authenticator, err := kc.Resolve(registry)
 			t.CheckNotNil(authenticator)
+			t.CheckNoError(err)
 
 			authConfig, err := authenticator.Authorization()
 			if test.expectAnonymous {

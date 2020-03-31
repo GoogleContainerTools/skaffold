@@ -30,48 +30,41 @@ import (
 
 // TempFile creates a temporary file with a given content. Returns the file name
 // and a teardown function that should be called to properly delete the file.
-func TempFile(t *testing.T, prefix string, content []byte) (name string, tearDown func()) {
+func TempFile(t *testing.T, prefix string, content []byte) string {
 	file, err := ioutil.TempFile("", prefix)
 	if err != nil {
 		t.Error(err)
 	}
 
+	t.Cleanup(func() { syscall.Unlink(file.Name()) })
+
 	if err = ioutil.WriteFile(file.Name(), content, 0644); err != nil {
 		t.Error(err)
 	}
 
-	return file.Name(), func() {
-		syscall.Unlink(file.Name())
-	}
+	return file.Name()
 }
 
 // TempDir offers actions on a temp directory.
 type TempDir struct {
-	t               *testing.T
-	root            string
-	resetCurrentDir func()
+	t    *testing.T
+	root string
 }
 
 // NewTempDir creates a temporary directory and a teardown function
 // that should be called to properly delete the directory content.
-func NewTempDir(t *testing.T) (tmp *TempDir, tearDown func()) {
+func NewTempDir(t *testing.T) *TempDir {
 	root, err := ioutil.TempDir("", "skaffold")
 	if err != nil {
 		t.Error(err)
 	}
 
-	tmpDir := &TempDir{
-		t:               t,
-		root:            root,
-		resetCurrentDir: func() {},
+	t.Cleanup(func() { os.RemoveAll(root) })
+
+	return &TempDir{
+		t:    t,
+		root: root,
 	}
-
-	return tmpDir, tmpDir.tearDown
-}
-
-func (h *TempDir) tearDown() {
-	h.resetCurrentDir()
-	os.RemoveAll(h.Root())
 }
 
 // Root returns the temp directory.
@@ -172,15 +165,14 @@ func (h *TempDir) Chdir() *TempDir {
 		h.t.Fatal("unable to get current directory")
 	}
 
-	err = os.Chdir(h.Root())
-	if err != nil {
-		h.t.Fatal("unable to change current directory")
-	}
-
-	h.resetCurrentDir = func() {
+	h.t.Cleanup(func() {
 		if err := os.Chdir(pwd); err != nil {
 			h.t.Fatal("unable to reset current directory")
 		}
+	})
+
+	if err := os.Chdir(h.Root()); err != nil {
+		h.t.Fatal("unable to change current directory")
 	}
 
 	return h

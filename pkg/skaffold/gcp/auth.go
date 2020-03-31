@@ -19,11 +19,11 @@ package gcp
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os/exec"
 	"sync"
 
 	"github.com/docker/cli/cli/config/configfile"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/google"
 
@@ -64,7 +64,7 @@ func activeUserCredentials() (*google.Credentials, error) {
 		cmd := exec.Command("gcloud", "auth", "print-access-token", "--format=json")
 		body, err := util.RunCmdOut(cmd)
 		if err != nil {
-			credsErr = errors.Wrap(err, "retrieving gcloud access token")
+			credsErr = fmt.Errorf("retrieving gcloud access token: %w", err)
 			return
 		}
 		jsonCreds := make(map[string]interface{})

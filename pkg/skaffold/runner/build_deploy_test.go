@@ -18,10 +18,10 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"io/ioutil"
 	"testing"
 
-	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"

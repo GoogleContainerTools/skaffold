@@ -18,13 +18,13 @@ package generatepipeline
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
 	yamlv2 "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -50,7 +50,7 @@ confirmLoop:
 		color.Default.Fprintf(out, "No profile \"oncluster\" found. Create one? [y/n]: ")
 		response, err := reader.ReadString('\n')
 		if err != nil {
-			return errors.Wrap(err, "reading user confirmation")
+			return fmt.Errorf("reading user confirmation: %w", err)
 		}
 
 		response = strings.ToLower(strings.TrimSpace(response))
@@ -65,17 +65,17 @@ confirmLoop:
 	color.Default.Fprintln(out, "Creating skaffold profile \"oncluster\"...")
 	profile, err := generateProfile(out, runCtx.Opts.Namespace, configFile.Config)
 	if err != nil {
-		return errors.Wrap(err, "generating profile \"oncluster\"")
+		return fmt.Errorf("generating profile \"oncluster\": %w", err)
 	}
 
 	bProfile, err := yamlv2.Marshal([]*latest.Profile{profile})
 	if err != nil {
-		return errors.Wrap(err, "marshaling new profile")
+		return fmt.Errorf("marshaling new profile: %w", err)
 	}
 
 	fileContents, err := ioutil.ReadFile(configFile.Path)
 	if err != nil {
-		return errors.Wrap(err, "reading file contents")
+		return fmt.Errorf("reading file contents: %w", err)
 	}
 	fileStrings := strings.Split(strings.TrimSpace(string(fileContents)), "\n")
 
@@ -99,7 +99,7 @@ confirmLoop:
 	fileContents = []byte((strings.Join(fileStrings, "\n")))
 
 	if err := ioutil.WriteFile(configFile.Path, fileContents, 0644); err != nil {
-		return errors.Wrap(err, "writing profile to skaffold config")
+		return fmt.Errorf("writing profile to skaffold config: %w", err)
 	}
 
 	configFile.Profile = profile
@@ -108,7 +108,7 @@ confirmLoop:
 
 func generateProfile(out io.Writer, namespace string, config *latest.SkaffoldConfig) (*latest.Profile, error) {
 	if len(config.Build.Artifacts) == 0 {
-		return nil, errors.New("No Artifacts to add to profile")
+		return nil, errors.New("no Artifacts to add to profile")
 	}
 
 	profile := &latest.Profile{

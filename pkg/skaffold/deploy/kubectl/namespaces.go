@@ -17,10 +17,9 @@ limitations under the License.
 package kubectl
 
 import (
+	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // CollectNamespaces returns all the namespaces in the manifests.
@@ -28,7 +27,7 @@ func (l *ManifestList) CollectNamespaces() ([]string, error) {
 	replacer := newNamespaceCollector()
 
 	if _, err := l.Visit(replacer); err != nil {
-		return nil, errors.Wrap(err, "collecting namespaces")
+		return nil, fmt.Errorf("collecting namespaces: %w", err)
 	}
 
 	namespaces := make([]string, 0, len(replacer.namespaces))

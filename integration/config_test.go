@@ -65,8 +65,7 @@ func TestSetDefaultRepoForContext(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	file, delete := testutil.TempFile(t, "config", nil)
-	defer delete()
+	file := testutil.TempFile(t, "config", nil)
 
 	skaffold.Config("set", "default-repo", "REPO1", "-c", file, "-k", "test-context").RunOrFail(t)
 	out := skaffold.Config("list", "-c", file, "-k", "test-context").RunOrFailOutput(t)
@@ -79,8 +78,7 @@ func TestSetGlobalDefaultRepo(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	file, delete := testutil.TempFile(t, "config", nil)
-	defer delete()
+	file := testutil.TempFile(t, "config", nil)
 
 	skaffold.Config("set", "default-repo", "REPO2", "-c", file, "--global").RunOrFail(t)
 	out := skaffold.Config("list", "-c", file, "--all").RunOrFailOutput(t)

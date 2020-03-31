@@ -58,9 +58,9 @@ func (c ArtifactConfig) Describe() string {
 	return fmt.Sprintf("%s (%s)", c.BuilderName, c.File)
 }
 
-// CreateArtifact creates an Artifact to be included in the generated Build Config
-func (c ArtifactConfig) UpdateArtifact(a *latest.Artifact) {
-	a.ArtifactType = latest.ArtifactType{
+// ArtifactType returns the type of the artifact to be built.
+func (c ArtifactConfig) ArtifactType() latest.ArtifactType {
+	return latest.ArtifactType{
 		JibArtifact: &latest.JibArtifact{
 			Project: c.Project,
 		},
@@ -87,7 +87,7 @@ type jibJSON struct {
 func validate(path string) []ArtifactConfig {
 	// Determine whether maven or gradle
 	var builderType PluginType
-	var executable, wrapper, taskName, searchString string
+	var executable, wrapper, taskName, searchString, consoleFlag string
 	switch {
 	case strings.HasSuffix(path, "pom.xml"):
 		builderType = JibMaven
@@ -95,12 +95,14 @@ func validate(path string) []ArtifactConfig {
 		wrapper = "mvnw"
 		searchString = "<artifactId>jib-maven-plugin</artifactId>"
 		taskName = "jib:_skaffold-init"
+		consoleFlag = "--batch-mode"
 	case strings.HasSuffix(path, "build.gradle"), strings.HasSuffix(path, "build.gradle.kts"):
 		builderType = JibGradle
 		executable = "gradle"
 		wrapper = "gradlew"
 		searchString = "com.google.cloud.tools.jib"
 		taskName = "_jibSkaffoldInit"
+		consoleFlag = "--console=plain"
 	default:
 		return nil
 	}
@@ -114,7 +116,7 @@ func validate(path string) []ArtifactConfig {
 	if wrapperExecutable, err := util.AbsFile(filepath.Dir(path), wrapper); err == nil {
 		executable = wrapperExecutable
 	}
-	cmd := exec.Command(executable, taskName, "-q")
+	cmd := exec.Command(executable, taskName, "-q", consoleFlag)
 	cmd.Dir = filepath.Dir(path)
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {

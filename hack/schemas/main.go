@@ -31,7 +31,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/pkg/errors"
 	blackfriday "github.com/russross/blackfriday/v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
@@ -145,7 +144,7 @@ func generateSchema(root string, dryRun bool, version schema.Version) (bool, err
 
 	buf, err := generator.Apply(input)
 	if err != nil {
-		return false, errors.Wrapf(err, "unable to generate schema for version %s", version.APIVersion)
+		return false, fmt.Errorf("unable to generate schema for version %q: %w", version.APIVersion, err)
 	}
 
 	var current []byte
@@ -153,17 +152,17 @@ func generateSchema(root string, dryRun bool, version schema.Version) (bool, err
 		var err error
 		current, err = ioutil.ReadFile(output)
 		if err != nil {
-			return false, errors.Wrapf(err, "unable to read existing schema for version %s", version.APIVersion)
+			return false, fmt.Errorf("unable to read existing schema for version %q: %w", version.APIVersion, err)
 		}
 	} else if !os.IsNotExist(err) {
-		return false, errors.Wrapf(err, "unable to check that file exists %s", output)
+		return false, fmt.Errorf("unable to check that file exists %q: %w", output, err)
 	}
 
 	current = bytes.Replace(current, []byte("\r\n"), []byte("\n"), -1)
 
 	if !dryRun {
 		if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
-			return false, errors.Wrapf(err, "unable to write schema %s", output)
+			return false, fmt.Errorf("unable to write schema %q: %w", output, err)
 		}
 	}
 

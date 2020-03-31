@@ -24,7 +24,6 @@ import (
 	"net/http"
 
 	"github.com/google/go-github/github"
-	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/webhook/constants"
@@ -88,26 +87,26 @@ func handlePullRequestEvent(event *github.PullRequestEvent) error {
 
 	// If a PR was relabeled, we need to first cleanup preexisting deployments
 	if err := kubernetes.CleanupDeployment(event); err != nil {
-		return errors.Wrap(err, "cleaning up deployment")
+		return fmt.Errorf("cleaning up deployment: %w", err)
 	}
 
 	// Create service for the PR and get the associated external IP
 	log.Printf("Label %s found on PR %d, creating service", constants.DocsLabel, prNumber)
 	svc, err := kubernetes.CreateService(event)
 	if err != nil {
-		return errors.Wrap(err, "creating service")
+		return fmt.Errorf("creating service: %w", err)
 	}
 
 	ip, err := kubernetes.GetExternalIP(svc)
 	if err != nil {
-		return errors.Wrap(err, "getting external IP")
+		return fmt.Errorf("getting external IP: %w", err)
 	}
 
 	// Create a deployment which maps to the service
 	log.Printf("Creating deployment for pull request %d", prNumber)
 	deployment, err := kubernetes.CreateDeployment(event, svc, ip)
 	if err != nil {
-		return errors.Wrapf(err, "creating deployment for PR %d", prNumber)
+		return fmt.Errorf("creating deployment for PR %d: %w", prNumber, err)
 	}
 	response := succeeded
 	if err := kubernetes.WaitForDeploymentToStabilize(deployment, ip); err != nil {
@@ -117,11 +116,11 @@ func handlePullRequestEvent(event *github.PullRequestEvent) error {
 
 	msg, err := response(deployment, event, ip)
 	if err != nil {
-		return errors.Wrapf(err, "getting github message")
+		return fmt.Errorf("getting github message: %w", err)
 	}
 
 	if err := commentOnGithub(event, msg); err != nil {
-		return errors.Wrap(err, "commenting on github")
+		return fmt.Errorf("commenting on github: %w", err)
 	}
 
 	return nil
@@ -135,7 +134,7 @@ func succeeded(d *appsv1.Deployment, event *github.PullRequestEvent, ip string) 
 func failed(d *appsv1.Deployment, event *github.PullRequestEvent, ip string) (string, error) {
 	name, err := gcs.UploadDeploymentLogsToBucket(d, event.GetNumber())
 	if err != nil {
-		return "", errors.Wrapf(err, "uploading logs to bucket")
+		return "", fmt.Errorf("uploading logs to bucket: %w", err)
 	}
 	url := fmt.Sprintf("https://storage.googleapis.com/%s/%s", constants.LogsGCSBucket, name)
 	return fmt.Sprintf("Error creating deployment %s, please visit %s to view logs.", d.Name, url), nil
@@ -144,10 +143,10 @@ func failed(d *appsv1.Deployment, event *github.PullRequestEvent, ip string) (st
 func commentOnGithub(event *github.PullRequestEvent, msg string) error {
 	githubClient := pkggithub.NewClient()
 	if err := githubClient.CommentOnPR(event, msg); err != nil {
-		return errors.Wrapf(err, "commenting on PR %d", event.GetNumber())
+		return fmt.Errorf("commenting on PR %d: %w", event.GetNumber(), err)
 	}
 	if err := githubClient.RemoveLabelFromPR(event, constants.DocsLabel); err != nil {
-		return errors.Wrapf(err, "removing %s label from PR %d", constants.DocsLabel, event.GetNumber())
+		return fmt.Errorf("removing %s label from PR %d: %w", constants.DocsLabel, event.GetNumber(), err)
 	}
 	return nil
 }

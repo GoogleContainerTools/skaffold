@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -25,7 +26,6 @@ import (
 
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
@@ -77,7 +77,7 @@ func ResolveConfigFile(configFile string) (string, error) {
 	if configFile == "" {
 		home, err := homedir.Dir()
 		if err != nil {
-			return "", errors.Wrap(err, "retrieving home directory")
+			return "", fmt.Errorf("retrieving home directory: %w", err)
 		}
 		configFile = filepath.Join(home, defaultConfigDir, defaultConfigFile)
 	}
@@ -89,11 +89,11 @@ func ResolveConfigFile(configFile string) (string, error) {
 func ReadConfigFileNoCache(configFile string) (*GlobalConfig, error) {
 	contents, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading global config")
+		return nil, fmt.Errorf("reading global config: %w", err)
 	}
 	config := GlobalConfig{}
 	if err := yaml.Unmarshal(contents, &config); err != nil {
-		return nil, errors.Wrap(err, "unmarshalling global skaffold config")
+		return nil, fmt.Errorf("unmarshalling global skaffold config: %w", err)
 	}
 	return &config, nil
 }
@@ -141,7 +141,7 @@ func getConfigForKubeContextWithGlobalDefaults(cfg *GlobalConfig, kubeContext st
 		// if values are unset for the current context, retrieve
 		// the global config and use its values as a fallback.
 		if err := mergo.Merge(&mergedConfig, cfg.Global, mergo.WithAppendSlice); err != nil {
-			return nil, errors.Wrapf(err, "merging context-specific and global config")
+			return nil, fmt.Errorf("merging context-specific and global config: %w", err)
 		}
 	}
 	return &mergedConfig, nil

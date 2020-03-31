@@ -22,7 +22,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
@@ -35,25 +34,22 @@ import (
 
 // DoInit executes the `skaffold init` flow.
 func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
-	var err error
-	rootDir := "."
-
 	if c.ComposeFile != "" {
-		if err = runKompose(ctx, c.ComposeFile); err != nil {
+		if err := runKompose(ctx, c.ComposeFile); err != nil {
 			return err
 		}
 	}
 
 	a := analyze.NewAnalyzer(c)
-
-	if err = a.Analyze(rootDir); err != nil {
+	if err := a.Analyze("."); err != nil {
 		return err
 	}
 
-	buildInitializer := build.NewInitializer(a.Builders(), c)
 	deployInitializer := deploy.NewInitializer(a.Manifests(), c)
+	images := deployInitializer.GetImages()
 
-	if err = buildInitializer.ProcessImages(deployInitializer.GetImages()); err != nil {
+	buildInitializer := build.NewInitializer(a.Builders(), c)
+	if err := buildInitializer.ProcessImages(images); err != nil {
 		return err
 	}
 
@@ -61,7 +57,6 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 		return buildInitializer.PrintAnalysis(out)
 	}
 
-	// var generatedManifestPairs map[build.GeneratedBuilderImagePair][]byte
 	var generatedManifests map[string][]byte
 	if c.EnableManifestGeneration {
 		generatedManifestPairs, err := buildInitializer.GenerateManifests()
@@ -75,7 +70,7 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 		}
 	}
 
-	if err = deployInitializer.Validate(); err != nil {
+	if err := deployInitializer.Validate(); err != nil {
 		return err
 	}
 
@@ -96,13 +91,13 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 
 	for path, manifest := range generatedManifests {
 		if err = ioutil.WriteFile(path, manifest, 0644); err != nil {
-			return errors.Wrap(err, "writing k8s manifest to file")
+			return fmt.Errorf("writing k8s manifest to file: %w", err)
 		}
 		fmt.Fprintf(out, "Generated manifest %s was written\n", path)
 	}
 
 	if err = ioutil.WriteFile(c.Opts.ConfigurationFile, pipeline, 0644); err != nil {
-		return errors.Wrap(err, "writing config to file")
+		return fmt.Errorf("writing config to file: %w", err)
 	}
 
 	fmt.Fprintf(out, "Configuration %s was written\n", c.Opts.ConfigurationFile)

@@ -23,7 +23,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
 	"gopkg.in/AlecAivazis/survey.v1"
 )
 
@@ -66,7 +65,7 @@ confirmLoop:
 
 		response, err := reader.ReadString('\n')
 		if err != nil {
-			return true, errors.Wrap(err, "reading user confirmation")
+			return true, fmt.Errorf("reading user confirmation: %w", err)
 		}
 
 		response = strings.ToLower(strings.TrimSpace(response))

@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -32,8 +33,8 @@ type Builder interface {
 	WithFlags(adder func(*pflag.FlagSet)) Builder
 	WithCommonFlags() Builder
 	Hidden() Builder
-	ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command
-	NoArgs(action func(io.Writer) error) *cobra.Command
+	ExactArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command
+	NoArgs(action func(context.Context, io.Writer) error) *cobra.Command
 }
 
 type builder struct {
@@ -82,18 +83,18 @@ func (b *builder) Hidden() Builder {
 	return b
 }
 
-func (b *builder) ExactArgs(argCount int, action func(io.Writer, []string) error) *cobra.Command {
+func (b *builder) ExactArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command {
 	b.cmd.Args = cobra.ExactArgs(argCount)
 	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
-		return action(b.cmd.OutOrStdout(), args)
+		return action(b.cmd.Context(), b.cmd.OutOrStdout(), args)
 	}
 	return &b.cmd
 }
 
-func (b *builder) NoArgs(action func(io.Writer) error) *cobra.Command {
+func (b *builder) NoArgs(action func(context.Context, io.Writer) error) *cobra.Command {
 	b.cmd.Args = cobra.NoArgs
 	b.cmd.RunE = func(*cobra.Command, []string) error {
-		return action(b.cmd.OutOrStdout())
+		return action(b.cmd.Context(), b.cmd.OutOrStdout())
 	}
 	return &b.cmd
 }

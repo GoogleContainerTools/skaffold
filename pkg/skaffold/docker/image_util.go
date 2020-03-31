@@ -18,10 +18,10 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -45,7 +45,7 @@ func RetrieveConfigFile(tagged string, insecureRegistries map[string]bool) (*v1.
 		cf, err = RetrieveRemoteConfig(tagged, insecureRegistries)
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, "retrieving image config")
+		return nil, fmt.Errorf("retrieving image config: %w", err)
 	}
 
 	return cf, err

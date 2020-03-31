@@ -18,11 +18,11 @@ package util
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"strings"
 	"text/template"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,7 +35,7 @@ var (
 func ExpandEnvTemplate(s string, envMap map[string]string) (string, error) {
 	tmpl, err := ParseEnvTemplate(s)
 	if err != nil {
-		return "", errors.Wrapf(err, "unable to parse template: %q", s)
+		return "", fmt.Errorf("unable to parse template: %q: %w", s, err)
 	}
 
 	return ExecuteEnvTemplate(tmpl, envMap)
@@ -61,7 +61,7 @@ func ExecuteEnvTemplate(envTemplate *template.Template, customMap map[string]str
 	var buf bytes.Buffer
 	logrus.Debugf("Executing template %v with environment %v", envTemplate, envMap)
 	if err := envTemplate.Execute(&buf, envMap); err != nil {
-		return "", errors.Wrap(err, "executing template")
+		return "", fmt.Errorf("executing template: %w", err)
 	}
 	return buf.String(), nil
 }

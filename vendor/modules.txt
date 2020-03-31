@@ -369,7 +369,6 @@ github.com/opencontainers/runc/libcontainer/user
 github.com/opencontainers/selinux/go-selinux
 github.com/opencontainers/selinux/go-selinux/label
 # github.com/pkg/errors v0.8.1
-## explicit
 github.com/pkg/errors
 # github.com/prometheus/client_golang v1.2.1
 ## explicit
@@ -404,13 +403,12 @@ github.com/segmentio/textio
 # github.com/sergi/go-diff v1.0.0
 github.com/sergi/go-diff/diffmatchpatch
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
-## explicit
 github.com/shurcooL/sanitized_anchor_name
 # github.com/sirupsen/logrus v1.4.2
 ## explicit
 github.com/sirupsen/logrus
 github.com/sirupsen/logrus/hooks/test
-# github.com/spf13/cobra v0.0.5
+# github.com/spf13/cobra v0.0.6
 ## explicit
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5

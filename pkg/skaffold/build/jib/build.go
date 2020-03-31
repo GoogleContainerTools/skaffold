@@ -18,9 +18,8 @@ package jib
 
 import (
 	"context"
+	"fmt"
 	"io"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -46,6 +45,6 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, artifact *latest.Art
 		return b.buildJibGradleToDocker(ctx, out, artifact.Workspace, artifact.JibArtifact, tag)
 
 	default:
-		return "", errors.Errorf("Unable to determine Jib builder type for %s", artifact.Workspace)
+		return "", fmt.Errorf("unable to determine Jib builder type for %s", artifact.Workspace)
 	}
 }

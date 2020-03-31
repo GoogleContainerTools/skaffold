@@ -19,11 +19,10 @@ package deploy
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -118,8 +117,7 @@ func TestKustomizeDeploy(t *testing.T) {
 }
 
 func TestKustomizeCleanup(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	tmpDir := testutil.NewTempDir(t)
 
 	tests := []struct {
 		description string

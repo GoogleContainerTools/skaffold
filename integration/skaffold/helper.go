@@ -19,6 +19,7 @@ package skaffold
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -26,7 +27,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -158,20 +158,13 @@ func (b *RunBuilder) WithProfiles(profiles []string) *RunBuilder {
 }
 
 // RunBackground runs the skaffold command in the background.
-// Returns a teardown function that stops skaffold.
-func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
-	_, cancel := b.RunBackgroundOutput(t)
-	return cancel
-}
-
-// RunBackgroundOutput runs the skaffold command in the background.
-// Returns a teardown function that stops skaffold.
-func (b *RunBuilder) RunBackgroundOutput(t *testing.T) (io.ReadCloser, context.CancelFunc) {
+func (b *RunBuilder) RunBackground(t *testing.T) io.ReadCloser {
 	t.Helper()
 
 	pr, pw := io.Pipe()
 
 	ctx, cancel := context.WithCancel(context.Background())
+
 	cmd := b.cmd(ctx)
 	cmd.Stdout = pw
 	logrus.Infoln(cmd.Args)
@@ -186,11 +179,13 @@ func (b *RunBuilder) RunBackgroundOutput(t *testing.T) (io.ReadCloser, context.C
 		logrus.Infoln("Ran in", time.Since(start))
 	}()
 
-	return pr, func() {
+	t.Cleanup(func() {
 		cancel()
 		cmd.Wait()
 		pr.Close()
-	}
+	})
+
+	return pr
 }
 
 // RunOrFail runs the skaffold command and fails the test
@@ -208,7 +203,7 @@ func (b *RunBuilder) Run(t *testing.T) error {
 
 	start := time.Now()
 	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "skaffold %s", b.command)
+		return fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
 
 	logrus.Infoln("Ran in", time.Since(start))
@@ -226,7 +221,7 @@ func (b *RunBuilder) RunWithCombinedOutput(t *testing.T) ([]byte, error) {
 	start := time.Now()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return out, errors.Wrapf(err, "skaffold %s", b.command)
+		return out, fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
 
 	logrus.Infoln("Ran in", time.Since(start))

@@ -56,7 +56,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -305,7 +304,7 @@ func transformContainer(container *v1.Container, config imageConfiguration, port
 			return transform.Apply(container, config, portAlloc), transform.RuntimeSupportImage(), nil
 		}
 	}
-	return nil, "", errors.Errorf("unable to determine runtime for %q", container.Name)
+	return nil, "", fmt.Errorf("unable to determine runtime for %q", container.Name)
 }
 
 func encodeConfigurations(configurations map[string]ContainerDebugConfiguration) string {

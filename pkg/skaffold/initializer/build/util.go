@@ -88,7 +88,8 @@ func Artifacts(pairs []BuilderImagePair) []*latest.Artifact {
 
 	for _, pair := range pairs {
 		artifact := &latest.Artifact{
-			ImageName: pair.ImageName,
+			ImageName:    pair.ImageName,
+			ArtifactType: pair.Builder.ArtifactType(),
 		}
 
 		workspace := filepath.Dir(pair.Builder.Path())
@@ -96,8 +97,6 @@ func Artifacts(pairs []BuilderImagePair) []*latest.Artifact {
 			fmt.Fprintf(os.Stdout, "using non standard workspace: %s\n", workspace)
 			artifact.Workspace = workspace
 		}
-
-		pair.Builder.UpdateArtifact(artifact)
 
 		artifacts = append(artifacts, artifact)
 	}

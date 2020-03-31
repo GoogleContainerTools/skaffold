@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"io/ioutil"
 	"testing"
 
@@ -36,6 +37,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 		value            string
 		kubecontext      string
 		global           bool
+		survey           bool
 		shouldErr        bool
 	}{
 		{
@@ -160,6 +162,71 @@ func TestSetAndUnsetConfig(t *testing.T) {
 				ContextConfigs: []*config.ContextConfig{},
 			},
 		},
+		{
+			description: "set global survey disable prompt",
+			key:         "disable-prompt",
+			value:       "true",
+			global:      true,
+			survey:      true,
+			expectedSetCfg: &config.GlobalConfig{
+				Global: &config.ContextConfig{
+					Survey: &config.SurveyConfig{
+						DisablePrompt: util.BoolPtr(true),
+					},
+				},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+			expectedUnsetCfg: &config.GlobalConfig{
+				Global:         &config.ContextConfig{Survey: &config.SurveyConfig{}},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+		},
+		{
+			description: "set global survey disable prompt false",
+			key:         "disable-prompt",
+			value:       "false",
+			global:      true,
+			survey:      true,
+			expectedSetCfg: &config.GlobalConfig{
+				Global: &config.ContextConfig{
+					Survey: &config.SurveyConfig{
+						DisablePrompt: util.BoolPtr(false),
+					},
+				},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+			expectedUnsetCfg: &config.GlobalConfig{
+				Global: &config.ContextConfig{
+					Survey: &config.SurveyConfig{},
+				},
+				ContextConfigs: []*config.ContextConfig{},
+			},
+		},
+		{
+			description: "set survey disable prompt",
+			key:         "disable-prompt",
+			value:       "false",
+			kubecontext: "this_is_a_context",
+			survey:      true,
+			expectedSetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
+					{
+						Kubecontext: "this_is_a_context",
+						Survey: &config.SurveyConfig{
+							DisablePrompt: util.BoolPtr(false),
+						},
+					},
+				},
+			},
+			expectedUnsetCfg: &config.GlobalConfig{
+				ContextConfigs: []*config.ContextConfig{
+					{
+						Kubecontext: "this_is_a_context",
+						Survey:      &config.SurveyConfig{},
+					},
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -169,6 +236,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			t.Override(&config.ReadConfigFile, config.ReadConfigFileNoCache)
 			t.Override(&configFile, cfg)
 			t.Override(&global, test.global)
+			t.Override(&survey, test.survey)
 			if test.kubecontext != "" {
 				t.Override(&kubecontext, test.kubecontext)
 			} else {
@@ -176,7 +244,7 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			}
 
 			// set specified value
-			err := Set(ioutil.Discard, []string{test.key, test.value})
+			err := Set(context.Background(), ioutil.Discard, []string{test.key, test.value})
 			actualConfig, cfgErr := config.ReadConfigFile(cfg)
 			t.CheckNoError(cfgErr)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedSetCfg, actualConfig)
@@ -187,12 +255,42 @@ func TestSetAndUnsetConfig(t *testing.T) {
 			}
 
 			// unset the value
-			err = Unset(ioutil.Discard, []string{test.key})
+			err = Unset(context.Background(), ioutil.Discard, []string{test.key})
 			newConfig, cfgErr := config.ReadConfigFile(cfg)
 			t.CheckNoError(cfgErr)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedUnsetCfg, newConfig)
+		})
+	}
+}
+
+func TestGetConfigStructWithIndex(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         *config.ContextConfig
+		expectedIdx []int
+		survey      bool
+		shouldErr   bool
+	}{
+		{
+			description: "survey flag set",
+			cfg:         &config.ContextConfig{},
+			survey:      true,
+			expectedIdx: []int{5},
+		},
+		{
+			description: "no survey flag set",
+			cfg:         &config.ContextConfig{},
+			expectedIdx: []int{},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&survey, test.survey)
+			actual, err := getConfigStructWithIndex(test.cfg)
+			t.CheckError(test.shouldErr, err)
+			t.CheckDeepEqual(test.expectedIdx, actual.idx)
 		})
 	}
 }

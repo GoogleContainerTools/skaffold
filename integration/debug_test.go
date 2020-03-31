@@ -55,11 +55,9 @@ func TestDebug(t *testing.T) {
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
 
-			ns, client, deleteNs := SetupNamespace(t)
-			defer deleteNs()
+			ns, client := SetupNamespace(t)
 
-			stop := skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
-			defer stop()
+			skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 
 			client.WaitForPodsReady(test.pods...)
 			for _, depName := range test.deployments {
@@ -82,16 +80,14 @@ func TestDebugEventsRPC_StatusCheck(t *testing.T) {
 		t.Skip("skipping test that is not gcp only")
 	}
 
-	rpcAddr := randomPort()
-
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/jib").RunOrFail(t)
 
-	ns, client, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, client := SetupNamespace(t)
 
-	stop := skaffold.Debug("--enable-rpc", "--rpc-port", rpcAddr).InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
-	defer stop()
+	rpcAddr := randomPort()
+	skaffold.Debug("--enable-rpc", "--rpc-port", rpcAddr).InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
+
 	waitForDebugEvent(t, client, rpcAddr)
 }
 
@@ -103,24 +99,21 @@ func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
 		t.Skip("skipping test that is not gcp only")
 	}
 
-	rpcAddr := randomPort()
-
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/jib").RunOrFail(t)
 
-	ns, client, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, client := SetupNamespace(t)
 
-	stop := skaffold.Debug("--enable-rpc", "--rpc-port", rpcAddr, "--status-check=false").InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
-	defer stop()
+	rpcAddr := randomPort()
+	skaffold.Debug("--enable-rpc", "--rpc-port", rpcAddr, "--status-check=false").InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
+
 	waitForDebugEvent(t, client, rpcAddr)
 }
 
 func waitForDebugEvent(t *testing.T, client *NSKubernetesClient, rpcAddr string) {
 	client.WaitForPodsReady()
 
-	_, entries, shutdown := apiEvents(t, rpcAddr)
-	defer shutdown()
+	_, entries := apiEvents(t, rpcAddr)
 
 	timeout := time.After(1 * time.Minute)
 	for {

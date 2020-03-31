@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -50,7 +51,7 @@ func NewCmdFindConfigs() *cobra.Command {
 		NoArgs(doFindConfigs)
 }
 
-func doFindConfigs(out io.Writer) error {
+func doFindConfigs(_ context.Context, out io.Writer) error {
 	pathToVersion, err := findConfigs(directory)
 	if err != nil {
 		return err

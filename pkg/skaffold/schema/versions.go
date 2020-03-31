@@ -17,14 +17,16 @@ limitations under the License.
 package schema
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/apiversion"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	v1 "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1"
@@ -112,6 +114,10 @@ func (v *Versions) Find(apiVersion string) (func() util.VersionedConfig, bool) {
 
 // IsSkaffoldConfig is for determining if a file is skaffold config file.
 func IsSkaffoldConfig(file string) bool {
+	if !kubernetes.HasKubernetesFileExtension(file) {
+		return false
+	}
+
 	if config, err := ParseConfig(file, false); err == nil && config != nil {
 		return true
 	}
@@ -122,23 +128,29 @@ func IsSkaffoldConfig(file string) bool {
 func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 	buf, err := misc.ReadConfiguration(filename)
 	if err != nil {
-		return nil, errors.Wrap(err, "read skaffold config")
+		return nil, fmt.Errorf("read skaffold config: %w", err)
+	}
+
+	// This is to quickly check that it's possibly a skaffold.yaml,
+	// without parsing the whole file.
+	if !bytes.Contains(buf, []byte("apiVersion")) {
+		return nil, errors.New("missing apiVersion")
 	}
 
 	apiVersion := &APIVersion{}
 	if err := yaml.Unmarshal(buf, apiVersion); err != nil {
-		return nil, errors.Wrap(err, "parsing api version")
+		return nil, fmt.Errorf("parsing api version: %w", err)
 	}
 
 	factory, present := SchemaVersions.Find(apiVersion.Version)
 	if !present {
-		return nil, errors.Errorf("unknown api version: '%s'", apiVersion.Version)
+		return nil, fmt.Errorf("unknown api version: '%s'", apiVersion.Version)
 	}
 
 	// Remove all top-level keys starting with `.` so they can be used as YAML anchors
 	parsed := make(map[string]interface{})
 	if err := yaml.UnmarshalStrict(buf, parsed); err != nil {
-		return nil, errors.Wrap(err, "unable to parse YAML")
+		return nil, fmt.Errorf("unable to parse YAML: %w", err)
 	}
 	for field := range parsed {
 		if strings.HasPrefix(field, ".") {
@@ -147,12 +159,12 @@ func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 	}
 	buf, err = yaml.Marshal(parsed)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to re-marshal YAML without dotted keys")
+		return nil, fmt.Errorf("unable to re-marshal YAML without dotted keys: %w", err)
 	}
 
 	cfg := factory()
 	if err := yaml.UnmarshalStrict(buf, cfg); err != nil {
-		return nil, errors.Wrap(err, "unable to parse config")
+		return nil, fmt.Errorf("unable to parse config: %w", err)
 	}
 
 	if upgrade && cfg.GetVersion() != latest.Version {
@@ -172,7 +184,7 @@ func upgradeToLatest(vc util.VersionedConfig) (util.VersionedConfig, error) {
 	// first, check to make sure config version isn't too new
 	version, err := apiversion.Parse(vc.GetVersion())
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing api version")
+		return nil, fmt.Errorf("parsing api version: %w", err)
 	}
 
 	semver := apiversion.MustParse(latest.Version)
@@ -188,7 +200,7 @@ func upgradeToLatest(vc util.VersionedConfig) (util.VersionedConfig, error) {
 	for vc.GetVersion() != latest.Version {
 		vc, err = vc.Upgrade()
 		if err != nil {
-			return nil, errors.Wrapf(err, "transforming skaffold config")
+			return nil, fmt.Errorf("transforming skaffold config: %w", err)
 		}
 	}
 

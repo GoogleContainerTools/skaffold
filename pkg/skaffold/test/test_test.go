@@ -38,8 +38,7 @@ func TestNoTestDependencies(t *testing.T) {
 }
 
 func TestTestDependencies(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	tmpDir := testutil.NewTempDir(t)
 
 	tmpDir.Touch("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")
 
