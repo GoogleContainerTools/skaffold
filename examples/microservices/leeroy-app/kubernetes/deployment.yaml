@@ -30,6 +30,6 @@ spec:
     spec:
       containers:
       - name: leeroy-app
-        image: leeroy-app
+        image: leeroy-app1
         ports:
         - containerPort: 50051
