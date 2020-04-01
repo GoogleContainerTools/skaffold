@@ -19,21 +19,22 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/diag"
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"io"
+	"k8s.io/client-go/kubernetes"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/sirupsen/logrus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/sirupsen/logrus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -47,7 +48,9 @@ var (
 )
 
 const (
+	tab = " "
 	tabHeader = " -"
+	kubernetesMaxDeadline = 600
 )
 
 type resourceCounter struct {
@@ -67,6 +70,9 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}
+	d := diag.New(runCtx.Namespaces).
+		WithLabels([]string{defaultLabeller.RunIDKeyValueString()}).
+		WithValidators([]validator.Validator{validator.NewPodValidator(client)})
 
 	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller,
 		getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds))
@@ -93,7 +99,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Retrieve pending resource states
 	go func() {
-		printResourceStatus(ctx, out, deployments, deadline)
+		printResourceStatus(ctx, out, deployments, deadline, d)
 	}()
 
 	// Wait for all deployment status to be fetched
@@ -112,7 +118,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	deployments := make([]Resource, 0, len(deps.Items))
 	for _, d := range deps.Items {
 		var deadline time.Duration
-		if d.Spec.ProgressDeadlineSeconds == nil {
+		if d.Spec.ProgressDeadlineSeconds == nil ||  *d.Spec.ProgressDeadlineSeconds == kubernetesMaxDeadline {
 			deadline = deadlineDuration
 		} else {
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
@@ -178,7 +184,7 @@ func printStatusCheckSummary(out io.Writer, r Resource, rc resourceCounter) {
 }
 
 // Print resource statuses until all status check are completed or context is cancelled.
-func printResourceStatus(ctx context.Context, out io.Writer, resources []Resource, deadline time.Duration) {
+func printResourceStatus(ctx context.Context, out io.Writer, resources []Resource, deadline time.Duration, d *diag.Diagnose) {
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 	for {
@@ -187,7 +193,7 @@ func printResourceStatus(ctx context.Context, out io.Writer, resources []Resourc
 		case <-timeoutContext.Done():
 			return
 		case <-time.After(reportStatusTime):
-			allResourcesCheckComplete = printStatus(resources, out)
+			allResourcesCheckComplete = printStatus(resources, out, d)
 		}
 		if allResourcesCheckComplete {
 			return
@@ -195,8 +201,12 @@ func printResourceStatus(ctx context.Context, out io.Writer, resources []Resourc
 	}
 }
 
-func printStatus(resources []Resource, out io.Writer) bool {
+func printStatus(resources []Resource, out io.Writer, d *diag.Diagnose) bool {
 	allResourcesCheckComplete := true
+	pods, err := d.Run()
+	if err != nil{
+		color.Default.Fprintln(out, tabHeader, trimNewLine(err.Error()))
+	}
 	for _, r := range resources {
 		if r.IsStatusCheckComplete() {
 			continue
@@ -205,6 +215,12 @@ func printStatus(resources []Resource, out io.Writer) bool {
 		if str := r.ReportSinceLastUpdated(); str != "" {
 			event.ResourceStatusCheckEventUpdated(r.String(), str)
 			color.Default.Fprintln(out, tabHeader, trimNewLine(str))
+		}
+		// Print pending pod statuses for this resource if any.
+		for _, p := range (pods) {
+			if strings.HasPrefix(p.Name(), r.Name()) {
+				color.Default.Fprintln(out, tab, tabHeader, trimNewLine(p.Reason()))
+			}
 		}
 	}
 	return allResourcesCheckComplete

@@ -20,12 +20,11 @@ import (
 	"context"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 type Status string
 
 type Validator interface {
 	// Validate runs the validator and returns the list of resources with status.
-	Validate(ctx context.Context, client kubernetes.Interface, ns string, opts metav1.ListOptions) ([]Resource, error)
+	Validate(ctx context.Context, ns string, opts metav1.ListOptions) ([]Resource, error)
 }

@@ -62,20 +62,17 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts meta_v1.Lis
 }
 
 type podStatus struct {
+	name string
 	phase  string
-	reason *podReason
-}
-
-type podReason struct {
 	reason  string
 	message string
 }
 
-func (r *podReason) String() string {
-	if r == nil {
-		return ""
+func (p *podStatus) String() string {
+	if p.phase == success || p.phase == running {
+		return fmt.Sprintf("pod %s is in succussful.", p.name)
 	}
-	return fmt.Sprintf("pod unstable due to reason: %s, message: %s", r.reason, r.message)
+	return fmt.Sprintf("pod %s unstable due to reason: %s, message: %s", r.reason, r.message)
 }
 
 func (p *PodValidator) getPodStatus(pod *v1.Pod) podStatus {
@@ -99,7 +96,7 @@ func getPendingDetails(pod *v1.Pod) podStatus {
 			// TODO(dgageot): Add EphemeralContainerStatuses
 			cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
 			reason, detail := waitingContainerStatus(cs)
-			return newPendingStatus(reason, detail)
+			return newPendingStatus(pod.Name, reason, detail)
 		}
 	}
 	return newUnknownStatus()
@@ -115,10 +112,11 @@ func getWaitingContainerStatus(cs []v1.ContainerStatus) (string, string) {
 	return success, success
 }
 
-func newPendingStatus(r string, d string) podStatus {
+func newPendingStatus(n string, r string, d string) podStatus {
 	return podStatus{
 		phase: pending,
 		reason: &podReason{
+			name: n,
 			reason:  r,
 			message: d,
 		},

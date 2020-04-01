@@ -16,12 +16,18 @@ limitations under the License.
 
 package diag
 
-import "github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
+import (
+	"context"
+	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
-type Diagnose {
-  labels []string
-  namespaces []string
-  validators []Validators
+
+type Diagnose struct {
+	labels []string
+    namespaces []string
+    validators []validator.Validator
 }
 
 func New(namespaces []string) *Diagnose{
@@ -40,7 +46,30 @@ func (d *Diagnose) WithValidators(v []validator.Validator) *Diagnose {
 	return d
 }
 
-func (d *Diagnose)Run ([]validator.Resource, error) {
-
-
+func (d *Diagnose)Run() ([]validator.Resource, error) {
+	res := []validator.Resource{}
+	errs := []error{}
+	listOptions := metav1.ListOptions{}
+	for _, l := range d.labels {
+		listOptions = metav1.ListOptions{
+			LabelSelector: l,
+		}
+	}
+	for _, v := range d.validators {
+		for _, ns := range (d.namespaces) {
+		    r, err := v.Validate(context.Background(), ns, listOptions)
+		    res = append(res, r...)
+		    if err != nil {
+			   errs = append(errs, err)
+		    }
+		}
+	}
+	if len(errs) == 0{
+		return res, nil
+	}
+	errBuilder := ""
+	for _, err := range errs {
+		errBuilder = errBuilder + err.Error() +  "\n"
+	}
+	return res, fmt.Errorf("following errors occurred %s", errBuilder)
 }
