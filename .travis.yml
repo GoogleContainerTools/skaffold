@@ -16,12 +16,12 @@ jobs:
     - os: linux
       name: "checks"
       env:
-        - STATICCHECK_CACHE=$HOME/linting
+        - GOLANGCI_LINT_CACHE=$HOME/linting
       script:
         - make checks
       cache:
         directories:
-          - $STATICCHECK_CACHE
+          - $GOLANGCI_LINT_CACHE
           - $HOME/.cache/go-build
     - os: linux
       name: "Linux unit"
