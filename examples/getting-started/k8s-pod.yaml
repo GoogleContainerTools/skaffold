@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: getting-started-1
+  name: getting-started
 spec:
   containers:
   - name: getting-started
-    image: gcr.io/tejal-test/test1162:latest
+    image: skaffold-example
