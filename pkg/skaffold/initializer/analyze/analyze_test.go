@@ -123,6 +123,7 @@ func TestAnalyze(t *testing.T) {
 				Force:                false,
 				EnableBuildpacksInit: true,
 				EnableJibInit:        true,
+				EnableJibGradleInit:  true,
 			},
 			expectedConfigs: []string{
 				"k8pod.yml",
@@ -153,6 +154,7 @@ func TestAnalyze(t *testing.T) {
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
+				EnableJibGradleInit:  true,
 			},
 			expectedConfigs: []string{
 				"k8pod.yml",
@@ -180,6 +182,7 @@ func TestAnalyze(t *testing.T) {
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
+				EnableJibGradleInit:  true,
 			},
 			expectedConfigs: []string{
 				"k8pod.yml",
@@ -188,6 +191,24 @@ func TestAnalyze(t *testing.T) {
 			expectedPaths: []string{
 				"Dockerfile",
 				"build.gradle",
+				"pom.xml",
+			},
+			shouldErr: false,
+		},
+		{
+			description: "should skip jib gradle",
+			filesWithContents: map[string]string{
+				"build.gradle": emptyFile,
+				"pom.xml":      emptyFile,
+			},
+			config: initconfig.Config{
+				Force:                false,
+				EnableBuildpacksInit: false,
+				EnableJibInit:        true,
+				EnableJibGradleInit:  false,
+			},
+			expectedConfigs: nil,
+			expectedPaths: []string{
 				"pom.xml",
 			},
 			shouldErr: false,
@@ -348,8 +369,8 @@ func fakeValidateDockerfile(path string) bool {
 	return strings.Contains(strings.ToLower(path), "dockerfile")
 }
 
-func fakeValidateJibConfig(path string) []jib.ArtifactConfig {
-	if strings.HasSuffix(path, "build.gradle") {
+func fakeValidateJibConfig(path string, enableGradle bool) []jib.ArtifactConfig {
+	if strings.HasSuffix(path, "build.gradle") && enableGradle {
 		return []jib.ArtifactConfig{{BuilderName: jib.PluginName(jib.JibGradle), File: path}}
 	}
 	if strings.HasSuffix(path, "pom.xml") {

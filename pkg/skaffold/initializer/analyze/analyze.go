@@ -69,6 +69,7 @@ func NewAnalyzer(c config.Config) *ProjectAnalysis {
 		builderAnalyzer: &builderAnalyzer{
 			findBuilders:         !c.SkipBuild,
 			enableJibInit:        c.EnableJibInit,
+			enableJibGradleInit:  c.EnableJibGradleInit,
 			enableBuildpacksInit: c.EnableBuildpacksInit,
 			buildpacksBuilder:    c.BuildpacksBuilder,
 		},
