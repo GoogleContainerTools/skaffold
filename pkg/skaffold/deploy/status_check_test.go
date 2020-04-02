@@ -121,6 +121,24 @@ func TestGetDeployments(t *testing.T) {
 			},
 		},
 		{
+			description: "multiple deployments with progress deadline set to max",
+			deps: []*appsv1.Deployment{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "dep1",
+						Namespace: "test",
+						Labels: map[string]string{
+							RunIDLabel: labeller.runID,
+						},
+					},
+					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(600)},
+				},
+			},
+			expected: []Resource{
+				resource.NewDeployment("dep1", "test", 200*time.Second),
+			},
+		},
+		{
 			description: "no deployments",
 			expected:    []Resource{},
 		},
