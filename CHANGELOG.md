@@ -1,4 +1,4 @@
-# v1.7.0 Release - 03/19/2020
+# v1.7.0 Release - 04/02/2020
 
 Highlights: 
 * Support globs in custom/buildpacks builder deps [#3878](https://github.com/GoogleContainerTools/skaffold/pull/3878)
