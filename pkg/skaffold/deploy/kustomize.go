@@ -68,10 +68,14 @@ type patchJSON6902 struct {
 
 type configMapGenerator struct {
 	Files []string `yaml:"files"`
+	Env   string   `yaml:"env"`
+	Envs  []string `yaml:"envs"`
 }
 
 type secretGenerator struct {
 	Files []string `yaml:"files"`
+	Env   string   `yaml:"env"`
+	Envs  []string `yaml:"envs"`
 }
 
 // KustomizeDeployer deploys workflows using kustomize CLI.
@@ -284,9 +288,19 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 	}
 	for _, generator := range content.ConfigMapGenerator {
 		deps = append(deps, util.AbsolutePaths(dir, generator.Files)...)
+		envs := generator.Envs
+		if generator.Env != "" {
+			envs = append(envs, generator.Env)
+		}
+		deps = append(deps, util.AbsolutePaths(dir, envs)...)
 	}
 	for _, generator := range content.SecretGenerator {
 		deps = append(deps, util.AbsolutePaths(dir, generator.Files)...)
+		envs := generator.Envs
+		if generator.Env != "" {
+			envs = append(envs, generator.Env)
+		}
+		deps = append(deps, util.AbsolutePaths(dir, envs)...)
 	}
 
 	return deps, nil
