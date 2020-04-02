@@ -34,7 +34,7 @@ import (
 )
 
 func TestDeploy(t *testing.T) {
-	expectedOutput := "Waiting for deployments to stabilize"
+	expectedOutput := "Waiting for deployments to stabilize..."
 	tests := []struct {
 		description string
 		testBench   *TestBench

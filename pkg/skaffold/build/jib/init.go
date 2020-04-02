@@ -84,7 +84,7 @@ type jibJSON struct {
 }
 
 // validate checks if a file is a valid Jib configuration. Returns the list of Config objects corresponding to each Jib project built by the file, or nil if Jib is not configured.
-func validate(path string) []ArtifactConfig {
+func validate(path string, enableGradleAnalysis bool) []ArtifactConfig {
 	// Determine whether maven or gradle
 	var builderType PluginType
 	var executable, wrapper, taskName, searchString, consoleFlag string
@@ -96,7 +96,7 @@ func validate(path string) []ArtifactConfig {
 		searchString = "<artifactId>jib-maven-plugin</artifactId>"
 		taskName = "jib:_skaffold-init"
 		consoleFlag = "--batch-mode"
-	case strings.HasSuffix(path, "build.gradle"), strings.HasSuffix(path, "build.gradle.kts"):
+	case enableGradleAnalysis && (strings.HasSuffix(path, "build.gradle") || strings.HasSuffix(path, "build.gradle.kts")):
 		builderType = JibGradle
 		executable = "gradle"
 		wrapper = "gradlew"
