@@ -23,53 +23,61 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-
-type Diagnose struct {
-	labels []string
-    namespaces []string
-    validators []validator.Validator
+type Diagnose interface {
+	Run() ([]validator.Resource, error)
+	WithLabel(label string) Diagnose
+	WithValidators(v []validator.Validator) Diagnose
 }
 
-func New(namespaces []string) *Diagnose{
-	return &Diagnose{
-		namespaces: namespaces,
+type diag struct {
+	listOptions metav1.ListOptions
+	namespaces  []string
+	validators  []validator.Validator
+}
+
+func New(namespaces []string) Diagnose {
+	var ns []string
+	for _, n := range namespaces {
+		if n != "" {
+			ns = append(ns, n)
+		}
+	}
+	return &diag{
+		namespaces: ns,
 	}
 }
 
-func (d *Diagnose) WithLabels(labels []string) *Diagnose {
-	d.labels = labels
+func (d *diag) WithLabel(label string) Diagnose {
+	d.listOptions = metav1.ListOptions{
+		LabelSelector: label,
+	}
 	return d
 }
 
-func (d *Diagnose) WithValidators(v []validator.Validator) *Diagnose {
+func (d *diag) WithValidators(v []validator.Validator) Diagnose {
 	d.validators = v
 	return d
 }
 
-func (d *Diagnose)Run() ([]validator.Resource, error) {
+func (d *diag) Run() ([]validator.Resource, error) {
 	res := []validator.Resource{}
 	errs := []error{}
 	listOptions := metav1.ListOptions{}
-	for _, l := range d.labels {
-		listOptions = metav1.ListOptions{
-			LabelSelector: l,
-		}
-	}
 	for _, v := range d.validators {
-		for _, ns := range (d.namespaces) {
-		    r, err := v.Validate(context.Background(), ns, listOptions)
-		    res = append(res, r...)
-		    if err != nil {
-			   errs = append(errs, err)
-		    }
+		for _, ns := range d.namespaces {
+			r, err := v.Validate(context.Background(), ns, listOptions)
+			res = append(res, r...)
+			if err != nil {
+				errs = append(errs, err)
+			}
 		}
 	}
-	if len(errs) == 0{
+	if len(errs) == 0 {
 		return res, nil
 	}
 	errBuilder := ""
 	for _, err := range errs {
-		errBuilder = errBuilder + err.Error() +  "\n"
+		errBuilder = errBuilder + err.Error() + "\n"
 	}
 	return res, fmt.Errorf("following errors occurred %s", errBuilder)
 }

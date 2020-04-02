@@ -56,31 +56,43 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts meta_v1.Lis
 	rs := []Resource{}
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
-		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.String()))
+		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.String(), ps.isStable()))
 	}
 	return rs, nil
 }
 
 type podStatus struct {
-	name string
-	phase  string
+	name    string
+	phase   string
 	reason  string
 	message string
 }
 
+func (p *podStatus) isStable() bool {
+	return p.phase == success || p.phase == running
+}
+
 func (p *podStatus) String() string {
-	if p.phase == success || p.phase == running {
-		return fmt.Sprintf("pod %s is in succussful.", p.name)
+	if p.isStable() {
+		return ""
 	}
-	return fmt.Sprintf("pod %s unstable due to reason: %s, message: %s",p.name, p.reason, p.message)
+	if p.reason == "" {
+		p.reason = unknown
+	}
+	s := fmt.Sprintf("pod %s is in phase %s due to reason %s", p.name, p.phase, p.reason)
+	if p.message != "" {
+		s += " due to " + p.message
+	}
+	s += "."
+	return s
 }
 
 func (p *PodValidator) getPodStatus(pod *v1.Pod) podStatus {
 	switch pod.Status.Phase {
 	case v1.PodSucceeded:
-		return podStatus{phase: success}
+		return podStatus{name: pod.Name, phase: success}
 	case v1.PodRunning:
-		return podStatus{phase: running}
+		return podStatus{name: pod.Name, phase: running}
 	default:
 		return getPendingDetails(pod)
 	}
@@ -96,6 +108,9 @@ func getPendingDetails(pod *v1.Pod) podStatus {
 			// TODO(dgageot): Add EphemeralContainerStatuses
 			cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
 			reason, detail := waitingContainerStatus(cs)
+			if reason == success {
+				return podStatus{name: pod.Name, phase: string(pod.Status.Phase)}
+			}
 			return newPendingStatus(pod.Name, reason, detail)
 		}
 	}
@@ -114,8 +129,8 @@ func getWaitingContainerStatus(cs []v1.ContainerStatus) (string, string) {
 
 func newPendingStatus(n string, r string, d string) podStatus {
 	return podStatus{
-		name: n,
-		phase: pending,
+		name:    n,
+		phase:   pending,
 		reason:  r,
 		message: d,
 	}
@@ -123,8 +138,8 @@ func newPendingStatus(n string, r string, d string) podStatus {
 
 func newUnknownStatus(n string) podStatus {
 	return podStatus{
-		name: n,
-		phase: unknown,
+		name:    n,
+		phase:   unknown,
 		reason:  unknown,
 		message: unknown,
 	}

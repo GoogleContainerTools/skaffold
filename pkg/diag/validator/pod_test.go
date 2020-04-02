@@ -69,7 +69,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				"pod unstable due to reason: ErrImgPull, message: could not pull the container image")},
+				"pod foo is in phase Pending due to reason ErrImgPull due to could not pull the container image.", false)},
 		},
 		{
 			description: "pod is Waiting conditions with reason but no message",
@@ -93,7 +93,8 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Pending", "pod unstable due to reason: Unschedulable, message: ")},
+			expected: []Resource{NewResource("test", "", "foo", "Pending",
+				"pod foo is in phase Pending due to reason Unschedulable.", false)},
 		},
 		{
 			description: "pod is in Terminated State",
@@ -107,7 +108,7 @@ func TestRun(t *testing.T) {
 					Conditions: []v1.PodCondition{{Status: v1.ConditionTrue}},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Succeeded", "")},
+			expected: []Resource{NewResource("test", "", "foo", "Succeeded", "", true)},
 		},
 		{
 			description: "pod is in Stable State",
@@ -127,7 +128,7 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Running", "")},
+			expected: []Resource{NewResource("test", "", "foo", "Running", "", true)},
 		},
 		{
 			description: "pod condition unknown",
@@ -144,7 +145,8 @@ func TestRun(t *testing.T) {
 					}},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Pending", "pod unstable due to reason: Unknown, message: could not determine")},
+			expected: []Resource{NewResource("test", "", "foo", "Pending",
+				"pod foo is in phase Pending due to reason Unknown due to could not determine.", false)},
 		},
 	}
 

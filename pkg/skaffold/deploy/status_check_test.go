@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/diag"
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"testing"
 	"time"
 
@@ -421,7 +423,7 @@ func TestPrintStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			actual := printStatus(test.rs, out)
+			actual := printStatus(test.rs, out, &mockDiag{})
 			t.CheckDeepEqual(test.expectedOut, out.String())
 			t.CheckDeepEqual(test.expected, actual)
 		})
@@ -532,4 +534,20 @@ func TestGetStatusCheckDeadline(t *testing.T) {
 			t.CheckDeepEqual(test.expected, statusCheckMaxDeadline(test.value, test.deps))
 		})
 	}
+}
+
+type mockDiag struct {
+	pods []validator.Resource
+	err  error
+}
+
+func (m *mockDiag) Run() ([]validator.Resource, error) {
+	return m.pods, m.err
+}
+func (m *mockDiag) WithLabel(label string) diag.Diagnose {
+	return m
+}
+
+func (m *mockDiag) WithValidators(v []validator.Validator) diag.Diagnose {
+	return m
 }

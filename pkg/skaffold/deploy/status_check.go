@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"io"
 	"strings"
 	"sync"
@@ -72,7 +71,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 	d := diag.New(runCtx.Namespaces).
-		WithLabels([]string{defaultLabeller.RunIDKeyValueString()}).
+		WithLabel(defaultLabeller.RunIDKeyValueString()).
 		WithValidators([]validator.Validator{validator.NewPodValidator(client)})
 
 	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller,
@@ -119,7 +118,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	deployments := make([]Resource, 0, len(deps.Items))
 	for _, d := range deps.Items {
 		var deadline time.Duration
-		if d.Spec.ProgressDeadlineSeconds == nil  {
+		if d.Spec.ProgressDeadlineSeconds == nil {
 			deadline = deadlineDuration
 		} else {
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
@@ -192,7 +191,7 @@ func printStatusCheckSummary(out io.Writer, r Resource, rc resourceCounter) {
 }
 
 // Print resource statuses until all status check are completed or context is cancelled.
-func printResourceStatus(ctx context.Context, out io.Writer, resources []Resource, deadline time.Duration, d *diag.Diagnose) {
+func printResourceStatus(ctx context.Context, out io.Writer, resources []Resource, deadline time.Duration, d diag.Diagnose) {
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 	for {
@@ -209,10 +208,10 @@ func printResourceStatus(ctx context.Context, out io.Writer, resources []Resourc
 	}
 }
 
-func printStatus(resources []Resource, out io.Writer, d *diag.Diagnose) bool {
+func printStatus(resources []Resource, out io.Writer, d diag.Diagnose) bool {
 	allResourcesCheckComplete := true
 	pods, err := d.Run()
-	if err != nil{
+	if err != nil {
 		fmt.Fprintln(out, tabHeader, trimNewLine(err.Error()))
 	}
 	for _, r := range resources {
@@ -220,13 +219,15 @@ func printStatus(resources []Resource, out io.Writer, d *diag.Diagnose) bool {
 			continue
 		}
 		allResourcesCheckComplete = false
-		if str := r.ReportSinceLastUpdated(); str != "" {
-			event.ResourceStatusCheckEventUpdated(r.String(), str)
-			fmt.Fprintln(out, tabHeader, trimNewLine(str))
+		status := r.ReportSinceLastUpdated()
+		if status == "" {
+			continue
 		}
+		event.ResourceStatusCheckEventUpdated(r.String(), status)
+		fmt.Fprintln(out, tabHeader, trimNewLine(status))
 		// Print pending pod statuses for this resource if any.
-		for _, p := range (pods) {
-			if strings.HasPrefix(p.Name(), r.Name()) {
+		for _, p := range pods {
+			if strings.HasPrefix(p.Name(), r.Name()) && !p.IsStable() {
 				fmt.Fprintln(out, tab, tabHeader, trimNewLine(p.Reason()))
 			}
 		}
