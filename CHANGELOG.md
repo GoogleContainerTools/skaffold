@@ -1,3 +1,52 @@
+# v1.7.0 Release - 03/19/2020
+
+Highlights: 
+* Support globs in custom/buildpacks builder deps [#3878](https://github.com/GoogleContainerTools/skaffold/pull/3878)
+
+Note: 
+* we had to revert the ARM support as it broke our release process, we will soon submit a fixed version 
+
+Fixes: 
+* Fix GCB build failure for multi-module Jib projects [#3852](https://github.com/GoogleContainerTools/skaffold/pull/3852)
+* Fix possible nil dereference [#3869](https://github.com/GoogleContainerTools/skaffold/pull/3869)
+* Fix console output for internal Jib tasks/goals [#3880](https://github.com/GoogleContainerTools/skaffold/pull/3880)
+* Fix go test helper [#3859](https://github.com/GoogleContainerTools/skaffold/pull/3859)
+
+Updates & Refactors:
+* Better status check [#3892](https://github.com/GoogleContainerTools/skaffold/pull/3892)
+* disable jib gradle in skaffold init by default [#3906](https://github.com/GoogleContainerTools/skaffold/pull/3906)
+* Use new name for the linter’s cache [#3894](https://github.com/GoogleContainerTools/skaffold/pull/3894)
+* Use less memory for linting [#3888](https://github.com/GoogleContainerTools/skaffold/pull/3888)
+* Simplify Kaniko error message [#3870](https://github.com/GoogleContainerTools/skaffold/pull/3870)
+* Wait for the logs to be printed [#3877](https://github.com/GoogleContainerTools/skaffold/pull/3877)
+* Master Keychain [#3865](https://github.com/GoogleContainerTools/skaffold/pull/3865)
+* Replace errors.Wrap with %w [#3860](https://github.com/GoogleContainerTools/skaffold/pull/3860)
+* Show compilation errors [#3866](https://github.com/GoogleContainerTools/skaffold/pull/3866)
+* Cobra context [#3842](https://github.com/GoogleContainerTools/skaffold/pull/3842)
+* Format `go test` output with Go rather than bash and jq [#3853](https://github.com/GoogleContainerTools/skaffold/pull/3853)
+
+Design proposals: 
+* Update debug-events design proposal status [#3874](https://github.com/GoogleContainerTools/skaffold/pull/3874)
+
+
+Docs updates: 
+* Rework debug docs [#3875](https://github.com/GoogleContainerTools/skaffold/pull/3875)
+* Fix of documentation issue #3266 microservices example is broken [#3867](https://github.com/GoogleContainerTools/skaffold/pull/3867)
+* [docs] [release] fix firebase-tools version [#3857](https://github.com/GoogleContainerTools/skaffold/pull/3857)
+* [examples] upgrade nodejs example dependencies [#3858](https://github.com/GoogleContainerTools/skaffold/pull/3858)
+* Fix doc link to local cluster info [#3856](https://github.com/GoogleContainerTools/skaffold/pull/3856)
+* upgrade hugo + small fixes [#3854](https://github.com/GoogleContainerTools/skaffold/pull/3854)
+
+Huge thanks goes out to all of our contributors for this release:
+
+- Balint Pato
+- Brian de Alwis
+- David Gageot
+- Dmitry Stoyanov
+- Nick Kubala
+- Tad Cordle
+- tejal29
+
 # v1.6.0 Release - 03/19/2020
 
 *Note*: This release comes with a new config version `v2beta1`. To upgrade your `skaffold.yaml`, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
