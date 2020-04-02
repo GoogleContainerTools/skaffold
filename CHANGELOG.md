@@ -1,6 +1,7 @@
 # v1.7.0 Release - 04/02/2020
 
 Highlights: 
+* kustomize dependencies include environment files (#3720) [#3721](https://github.com/GoogleContainerTools/skaffold/pull/3721)
 * Support globs in custom/buildpacks builder deps [#3878](https://github.com/GoogleContainerTools/skaffold/pull/3878)
 
 Note: 
@@ -44,6 +45,7 @@ Huge thanks goes out to all of our contributors for this release:
 - David Gageot
 - Dmitry Stoyanov
 - Nick Kubala
+- Nick Novitski
 - Tad Cordle
 - tejal29
 
