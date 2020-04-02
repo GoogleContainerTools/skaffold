@@ -314,7 +314,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	var b bytes.Buffer
 
 	// Be accepting of failure
-	if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, r.Namespace)...); err != nil {
+	if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, opts.namespace)...); err != nil {
 		logrus.Warnf(err.Error())
 		return nil, nil
 	}
