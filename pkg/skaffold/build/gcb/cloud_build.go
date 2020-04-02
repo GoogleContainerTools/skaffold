@@ -87,6 +87,18 @@ func (b *Builder) buildArtifactWithCloudBuild(ctx context.Context, out io.Writer
 	}
 
 	color.Default.Fprintf(out, "Pushing code to gs://%s/%s\n", cbBucket, buildObject)
+
+	// Upload entire workspace for Jib projects to fix multi-module bug
+	// https://github.com/GoogleContainerTools/skaffold/issues/3477
+	// TODO: Avoid duplication (every Jib artifact will upload the entire workspace)
+	if artifact.JibArtifact != nil {
+		deps, err := jibAddWorkspaceToDependencies(artifact.Workspace, dependencies)
+		if err != nil {
+			return "", fmt.Errorf("walking workspace for Jib projects: %w", err)
+		}
+		dependencies = deps
+	}
+
 	if err := sources.UploadToGCS(ctx, c, artifact, cbBucket, buildObject, dependencies); err != nil {
 		return "", fmt.Errorf("uploading source tarball: %w", err)
 	}
