@@ -38,6 +38,7 @@ var (
 	force                    bool
 	analyze                  bool
 	enableJibInit            bool
+	enableJibGradleInit      bool
 	enableBuildpacksInit     bool
 	enableNewInitFormat      bool
 	enableManifestGeneration bool
@@ -65,6 +66,8 @@ func NewCmdInit() *cobra.Command {
 			f.MarkHidden("XXenableNewInitFormat")
 			f.BoolVar(&enableJibInit, "XXenableJibInit", false, "")
 			f.MarkHidden("XXenableJibInit")
+			f.BoolVar(&enableJibGradleInit, "XXenableJibGradleInit", false, "")
+			f.MarkHidden("XXenableJibGradleInit")
 			f.BoolVar(&enableBuildpacksInit, "XXenableBuildpacksInit", false, "")
 			f.MarkHidden("XXenableBuildpacksInit")
 			f.StringVar(&buildpacksBuilder, "XXdefaultBuildpacksBuilder", "heroku/buildpacks", "")
@@ -85,6 +88,7 @@ func doInit(ctx context.Context, out io.Writer) error {
 		Force:                    force,
 		Analyze:                  analyze,
 		EnableJibInit:            enableJibInit,
+		EnableJibGradleInit:      enableJibGradleInit,
 		EnableBuildpacksInit:     enableBuildpacksInit,
 		EnableNewInitFormat:      enableNewInitFormat || enableBuildpacksInit || enableJibInit,
 		EnableManifestGeneration: enableManifestGeneration,

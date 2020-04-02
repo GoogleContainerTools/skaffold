@@ -72,13 +72,28 @@ func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 
 func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunContext) {
 	kubeCtl := kubectl.NewFromRunContext(runCtx)
+
 	b, err := kubeCtl.RunOut(ctx, "rollout", "status", "deployment", d.name, "--namespace", d.namespace, "--watch=false")
-	details := string(b)
+	if ctx.Err() != nil {
+		return
+	}
+
+	details := d.cleanupStatus(string(b))
+
 	err = parseKubectlRolloutError(err)
 	if err == errKubectlKilled {
 		err = fmt.Errorf("received Ctrl-C or deployments could not stabilize within %v: %w", d.deadline, err)
 	}
+
 	d.UpdateStatus(details, err)
+}
+
+func (d *Deployment) cleanupStatus(msg string) string {
+	clean := strings.ReplaceAll(msg, `deployment "`+d.Name()+`" `, "")
+	if len(clean) > 0 {
+		clean = strings.ToLower(clean[0:1]) + clean[1:]
+	}
+	return clean
 }
 
 func parseKubectlRolloutError(err error) error {

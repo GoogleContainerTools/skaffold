@@ -292,30 +292,48 @@ func TestGetDeployStatus(t *testing.T) {
 func TestPrintSummaryStatus(t *testing.T) {
 	tests := []struct {
 		description string
+		namespace   string
+		deployment  string
 		pending     int32
 		err         error
 		expected    string
 	}{
 		{
 			description: "no deployment left and current is in success",
+			namespace:   "test",
+			deployment:  "dep",
 			pending:     0,
 			err:         nil,
 			expected:    " - test:deployment/dep is ready.\n",
 		},
 		{
+			description: "default namespace",
+			namespace:   "default",
+			deployment:  "dep",
+			pending:     0,
+			err:         nil,
+			expected:    " - deployment/dep is ready.\n",
+		},
+		{
 			description: "no deployment left and current is in error",
+			namespace:   "test",
+			deployment:  "dep",
 			pending:     0,
 			err:         errors.New("context deadline expired"),
 			expected:    " - test:deployment/dep failed. Error: context deadline expired.\n",
 		},
 		{
 			description: "more than 1 deployment left and current is in success",
+			namespace:   "test",
+			deployment:  "dep",
 			pending:     4,
 			err:         nil,
 			expected:    " - test:deployment/dep is ready. [4/10 deployment(s) still pending]\n",
 		},
 		{
 			description: "more than 1 deployment left and current is in error",
+			namespace:   "test",
+			deployment:  "dep",
 			pending:     8,
 			err:         errors.New("context deadline expired"),
 			expected:    " - test:deployment/dep failed. [8/10 deployment(s) still pending] Error: context deadline expired.\n",
@@ -329,7 +347,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			rc.deployments.pending = test.pending
 			printStatusCheckSummary(
 				out,
-				withStatus(resource.NewDeployment("dep", "test", 0), "", test.err),
+				withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), "", test.err),
 				*rc,
 			)
 			t.CheckDeepEqual(test.expected, out.String())
@@ -380,14 +398,14 @@ func TestPrintStatus(t *testing.T) {
 					nil,
 				),
 			},
-			expectedOut: " - test:deployment/r2 pending\n",
+			expectedOut: " - test:deployment/r2: pending\n",
 		},
 		{
 			description: "multiple resources 1 not complete and retry-able error",
 			rs: []Resource{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					"deployment successfully rolled out",
+					"eployment successfully rolled out",
 					nil,
 				),
 				withStatus(
@@ -396,7 +414,7 @@ func TestPrintStatus(t *testing.T) {
 					resource.ErrKubectlConnection,
 				),
 			},
-			expectedOut: " - test:deployment/r2 kubectl connection error\n",
+			expectedOut: " - test:deployment/r2: kubectl connection error\n",
 		},
 	}
 

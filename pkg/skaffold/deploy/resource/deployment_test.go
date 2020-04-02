@@ -39,9 +39,9 @@ func TestDeploymentCheckStatus(t *testing.T) {
 			description: "rollout status success",
 			commands: testutil.CmdRunOut(
 				rolloutCmd,
-				"deployment dep successfully rolled out",
+				"deployment \"dep\" successfully rolled out",
 			),
-			expectedDetails: "deployment dep successfully rolled out",
+			expectedDetails: "successfully rolled out",
 			complete:        true,
 		},
 		{
@@ -50,7 +50,7 @@ func TestDeploymentCheckStatus(t *testing.T) {
 				rolloutCmd,
 				"Waiting for replicas to be available",
 			),
-			expectedDetails: "Waiting for replicas to be available",
+			expectedDetails: "waiting for replicas to be available",
 		},
 		{
 			description: "no output",
