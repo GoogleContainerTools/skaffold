@@ -56,7 +56,7 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts meta_v1.Lis
 	rs := []Resource{}
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
-		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.reason.String()))
+		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.String()))
 	}
 	return rs, nil
 }
@@ -72,7 +72,7 @@ func (p *podStatus) String() string {
 	if p.phase == success || p.phase == running {
 		return fmt.Sprintf("pod %s is in succussful.", p.name)
 	}
-	return fmt.Sprintf("pod %s unstable due to reason: %s, message: %s", r.reason, r.message)
+	return fmt.Sprintf("pod %s unstable due to reason: %s, message: %s",p.name, p.reason, p.message)
 }
 
 func (p *PodValidator) getPodStatus(pod *v1.Pod) podStatus {
@@ -91,7 +91,7 @@ func getPendingDetails(pod *v1.Pod) podStatus {
 	for _, c := range pod.Status.Conditions {
 		switch c.Status {
 		case v1.ConditionUnknown:
-			return newPendingStatus(unknown, c.Message)
+			return newPendingStatus(pod.Name, unknown, c.Message)
 		default:
 			// TODO(dgageot): Add EphemeralContainerStatuses
 			cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
@@ -99,7 +99,7 @@ func getPendingDetails(pod *v1.Pod) podStatus {
 			return newPendingStatus(pod.Name, reason, detail)
 		}
 	}
-	return newUnknownStatus()
+	return newUnknownStatus(pod.Name)
 }
 
 func getWaitingContainerStatus(cs []v1.ContainerStatus) (string, string) {
@@ -114,21 +114,18 @@ func getWaitingContainerStatus(cs []v1.ContainerStatus) (string, string) {
 
 func newPendingStatus(n string, r string, d string) podStatus {
 	return podStatus{
+		name: n,
 		phase: pending,
-		reason: &podReason{
-			name: n,
-			reason:  r,
-			message: d,
-		},
+		reason:  r,
+		message: d,
 	}
 }
 
-func newUnknownStatus() podStatus {
+func newUnknownStatus(n string) podStatus {
 	return podStatus{
+		name: n,
 		phase: unknown,
-		reason: &podReason{
-			reason:  unknown,
-			message: unknown,
-		},
+		reason:  unknown,
+		message: unknown,
 	}
 }

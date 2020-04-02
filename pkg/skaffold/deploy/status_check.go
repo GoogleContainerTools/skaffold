@@ -203,10 +203,6 @@ func printResourceStatus(ctx context.Context, out io.Writer, resources []Resourc
 
 func printStatus(resources []Resource, out io.Writer, d *diag.Diagnose) bool {
 	allResourcesCheckComplete := true
-	pods, err := d.Run()
-	if err != nil{
-		color.Default.Fprintln(out, tabHeader, trimNewLine(err.Error()))
-	}
 	for _, r := range resources {
 		if r.IsStatusCheckComplete() {
 			continue
