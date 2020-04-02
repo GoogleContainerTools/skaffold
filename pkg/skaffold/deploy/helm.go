@@ -257,17 +257,17 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		helmVersion: helmVersion,
 	}
 
-	if err := h.exec(ctx, ioutil.Discard, false, getArgs(helmVersion, releaseName, r.Namespace)...); err != nil {
-		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
-
-		opts.upgrade = false
-		opts.flags = h.Flags.Install
-	}
-
 	if h.namespace != "" {
 		opts.namespace = h.namespace
 	} else if r.Namespace != "" {
 		opts.namespace = r.Namespace
+	}
+
+	if err := h.exec(ctx, ioutil.Discard, false, getArgs(helmVersion, releaseName, opts.namespace)...); err != nil {
+		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
+
+		opts.upgrade = false
+		opts.flags = h.Flags.Install
 	}
 
 	// Only build local dependencies, but allow a user to skip them.
