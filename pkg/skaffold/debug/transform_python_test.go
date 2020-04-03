@@ -66,7 +66,7 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 		{
 			description: "PYTHON_VERSION",
 			source:      imageConfiguration{env: map[string]string{"PYTHON_VERSION": "2.7"}},
-			result:      true,
+			result:      false, 
 		},
 		{
 			description: "entrypoint python",
