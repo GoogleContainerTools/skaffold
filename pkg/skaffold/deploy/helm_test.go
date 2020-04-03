@@ -770,8 +770,16 @@ func TestHelmCleanup(t *testing.T) {
 			description: "helm3 namespace cleanup success",
 			commands: testutil.
 				CmdRunWithOutput("helm version", version31).
-				AndRun("helm --kube-context kubecontext delete skaffold-helm --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext delete skaffold-helm --namespace testNamespace --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeployNamespacedConfig, false),
+			builds:     testBuilds,
+		},
+		{
+			description: "helm3 namespaced context cleanup success",
+			commands: testutil.
+				CmdRunWithOutput("helm version", version31).
+				AndRun("helm --kube-context kubecontext delete skaffold-helm --namespace testNamespace --kubeconfig kubeconfig"),
+			runContext: makeNamespacedRunContext(testDeployConfig, false),
 			builds:     testBuilds,
 		},
 	}

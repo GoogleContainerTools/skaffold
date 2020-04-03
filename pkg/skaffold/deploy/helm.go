@@ -206,6 +206,8 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 			args = append(args, "--purge")
 		} else if r.Namespace != "" {
 			args = append(args, "--namespace", r.Namespace)
+		} else if h.namespace != "" {
+			args = append(args, "--namespace", h.namespace)
 		}
 		if err := h.exec(ctx, out, false, args...); err != nil {
 			return fmt.Errorf("deleting %q: %w", releaseName, err)
