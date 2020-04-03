@@ -49,8 +49,9 @@ var (
 )
 
 const (
-	tabHeader              = " -"
-	tab                    = "  "
+	kubernetesMaxDeadline = 600
+	tabHeader             = " -"
+	tab                   = "  "
 )
 
 type resourceCounter struct {
@@ -126,7 +127,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	deployments := make([]Resource, 0, len(deps.Items))
 	for _, d := range deps.Items {
 		var deadline time.Duration
-		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds == 600 {
+		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds == kubernetesMaxDeadline {
 			deadline = deadlineDuration
 		} else {
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
