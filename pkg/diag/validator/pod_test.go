@@ -69,7 +69,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				"pod foo is in phase Pending due to reason ErrImgPull due to could not pull the container image.", false)},
+				"pod is in phase Pending due to reason ErrImgPull due to could not pull the container image.", false)},
 		},
 		{
 			description: "pod is Waiting conditions with reason but no message",
@@ -94,7 +94,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				"pod foo is in phase Pending due to reason Unschedulable.", false)},
+				"pod is in phase Pending due to reason Unschedulable.", false)},
 		},
 		{
 			description: "pod is in Terminated State",
@@ -146,7 +146,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				"pod foo is in phase Pending due to reason Unknown due to could not determine.", false)},
+				"pod is in phase Pending due to reason Unknown due to could not determine.", false)},
 		},
 	}
 

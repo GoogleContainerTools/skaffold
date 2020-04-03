@@ -93,7 +93,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		pollPodStatus(ctx, d, podsMap, deadline, out)
+		pollPodStatus(ctx, d, podsMap, deadline)
 	}()
 
 	for _, d := range deployments {
@@ -309,7 +309,7 @@ func statusCheckMaxDeadline(value int, deployments []Resource) time.Duration {
 	return d
 }
 
-func pollPodStatus(ctx context.Context, d diag.Diagnose, podMap map[string]*resource.Pod, deadline time.Duration, out io.Writer ) error {
+func pollPodStatus(ctx context.Context, d diag.Diagnose, podMap map[string]*resource.Pod, deadline time.Duration) error {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollDuration)

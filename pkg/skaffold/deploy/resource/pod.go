@@ -49,12 +49,13 @@ func (p *Pod) CheckStatus(ctx context.Context, runCtx *runcontext.RunContext) {
 }
 
 func (p *Pod) UpdateStatus(details string, err error) {
+	if details == "" {
+		details = "pod stable"
+		p.done = true
+	}
 	updated := newStatus(details, err)
 	if !p.status.Equal(updated) {
 		p.status = updated
-		if details == "" {
-			p.done = true
-		}
 	}
 }
 
