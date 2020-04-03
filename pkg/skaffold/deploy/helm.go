@@ -201,13 +201,18 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 			return fmt.Errorf("cannot parse the release name template: %w", err)
 		}
 
+		var namespace string
+		if r.Namespace != "" {
+			namespace = r.Namespace
+		} else if h.namespace != "" {
+			namespace = h.namespace
+		}
+
 		args := []string{"delete", releaseName}
 		if hv.LT(helm3Version) {
 			args = append(args, "--purge")
-		} else if r.Namespace != "" {
-			args = append(args, "--namespace", r.Namespace)
-		} else if h.namespace != "" {
-			args = append(args, "--namespace", h.namespace)
+		} else if namespace != "" {
+			args = append(args, "--namespace", namespace)
 		}
 		if err := h.exec(ctx, out, false, args...); err != nil {
 			return fmt.Errorf("deleting %q: %w", releaseName, err)
