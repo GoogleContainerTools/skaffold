@@ -79,7 +79,7 @@ func (p *podStatus) String() string {
 	if p.reason == "" {
 		p.reason = unknown
 	}
-	s := fmt.Sprintf("pod %s is in phase %s due to reason %s", p.name, p.phase, p.reason)
+	s := fmt.Sprintf("pod is in phase %s due to reason %s", p.phase, p.reason)
 	if p.message != "" {
 		s += " due to " + p.message
 	}

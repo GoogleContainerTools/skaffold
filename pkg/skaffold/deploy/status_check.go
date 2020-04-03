@@ -49,8 +49,8 @@ var (
 )
 
 const (
-	tabHeader = " -"
-	tab       = "  "
+	tabHeader              = " -"
+	tab                    = "  "
 )
 
 type resourceCounter struct {
@@ -87,6 +87,14 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	rc := newResourceCounter(len(deployments))
 
+	// fetch all pods.
+	podsMap := map[string]*resource.Pod{}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		pollPodStatus(ctx, d, podsMap, deadline, out)
+	}()
+
 	for _, d := range deployments {
 		wg.Add(1)
 		go func(r Resource) {
@@ -99,7 +107,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Retrieve pending resource states
 	go func() {
-		printResourceStatus(ctx, out, deployments, deadline, d)
+		printResourceStatus(ctx, out, deployments, deadline, podsMap)
 	}()
 
 	// Wait for all deployment status to be fetched
@@ -118,7 +126,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 	deployments := make([]Resource, 0, len(deps.Items))
 	for _, d := range deps.Items {
 		var deadline time.Duration
-		if d.Spec.ProgressDeadlineSeconds == nil {
+		if d.Spec.ProgressDeadlineSeconds == nil || *d.Spec.ProgressDeadlineSeconds == 600 {
 			deadline = deadlineDuration
 		} else {
 			deadline = time.Duration(*d.Spec.ProgressDeadlineSeconds) * time.Second
@@ -191,7 +199,7 @@ func printStatusCheckSummary(out io.Writer, r Resource, rc resourceCounter) {
 }
 
 // Print resource statuses until all status check are completed or context is cancelled.
-func printResourceStatus(ctx context.Context, out io.Writer, resources []Resource, deadline time.Duration, d diag.Diagnose) {
+func printResourceStatus(ctx context.Context, out io.Writer, resources []Resource, deadline time.Duration, podMap map[string]*resource.Pod) {
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 	for {
@@ -200,7 +208,7 @@ func printResourceStatus(ctx context.Context, out io.Writer, resources []Resourc
 		case <-timeoutContext.Done():
 			return
 		case <-time.After(reportStatusTime):
-			allResourcesCheckComplete = printStatus(resources, out, d)
+			allResourcesCheckComplete = printStatus(resources, out, podMap)
 		}
 		if allResourcesCheckComplete {
 			return
@@ -208,27 +216,29 @@ func printResourceStatus(ctx context.Context, out io.Writer, resources []Resourc
 	}
 }
 
-func printStatus(resources []Resource, out io.Writer, d diag.Diagnose) bool {
+func printStatus(resources []Resource, out io.Writer, podMap map[string]*resource.Pod) bool {
 	allResourcesCheckComplete := true
-	pods, err := d.Run()
-	if err != nil {
-		fmt.Fprintln(out, tabHeader, trimNewLine(err.Error()))
-	}
 	for _, r := range resources {
 		if r.IsStatusCheckComplete() {
 			continue
 		}
 		allResourcesCheckComplete = false
-		status := r.ReportSinceLastUpdated()
-		if status == "" {
-			continue
+		headerWritten := false
+		if status := r.ReportSinceLastUpdated(); status != "" {
+			fmt.Fprintln(out, tabHeader, trimNewLine(status))
+			headerWritten = true
+			event.ResourceStatusCheckEventUpdated(r.String(), status)
 		}
-		event.ResourceStatusCheckEventUpdated(r.String(), status)
-		fmt.Fprintln(out, tabHeader, trimNewLine(status))
 		// Print pending pod statuses for this resource if any.
-		for _, p := range pods {
-			if strings.HasPrefix(p.Name(), r.Name()) && !p.IsStable() {
-				fmt.Fprintln(out, tab, tabHeader, trimNewLine(p.Reason()))
+		for _, p := range podMap {
+			if strings.HasPrefix(p.Name(), r.Name()) {
+				if str := p.ReportSinceLastUpdated(); str != "" {
+					if !headerWritten {
+						fmt.Fprintln(out, tabHeader, trimNewLine(fmt.Sprintf("%s: %s", r, r.Status())))
+						headerWritten = true
+					}
+					fmt.Fprintln(out, tab, tabHeader, str)
+				}
 			}
 		}
 	}
@@ -296,4 +306,24 @@ func statusCheckMaxDeadline(value int, deployments []Resource) time.Duration {
 		}
 	}
 	return d
+}
+
+func pollPodStatus(ctx context.Context, d diag.Diagnose, podMap map[string]*resource.Pod, deadline time.Duration, out io.Writer ) error {
+	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
+	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
+	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollDuration)
+	defer cancel()
+	for {
+		select {
+		case <-timeoutContext.Done():
+			return nil
+		case <-time.After(pollDuration):
+			if pods, err := d.Run(); err == nil {
+				if allDone := resource.BuildOrUpdatePods(pods, podMap); allDone {
+					return nil
+				}
+			}
+		}
+	}
+
 }

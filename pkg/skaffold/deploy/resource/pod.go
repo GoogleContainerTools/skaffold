@@ -19,6 +19,7 @@ package resource
 import (
 	"context"
 	"errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -47,6 +48,30 @@ func (p *Pod) CheckStatus(ctx context.Context, runCtx *runcontext.RunContext) {
 	}
 }
 
+func (p *Pod) UpdateStatus(details string, err error) {
+	updated := newStatus(details, err)
+	if !p.status.Equal(updated) {
+		p.status = updated
+		if details == "" {
+			p.done = true
+		}
+	}
+}
+
 func (p *Pod) Deadline() time.Duration {
 	return podDeadline
+}
+
+func BuildOrUpdatePods(pods []validator.Resource, podMap map[string]*Pod) bool {
+	allDone := true
+	for _, p := range pods {
+		pod, ok := podMap[p.Name()]
+		if !ok {
+			pod = NewPod(p.Name(), p.Namespace())
+		}
+		allDone = allDone && p.IsStable()
+		pod.UpdateStatus(p.Reason(), nil)
+		podMap[p.Name()] = pod
+	}
+	return allDone
 }
