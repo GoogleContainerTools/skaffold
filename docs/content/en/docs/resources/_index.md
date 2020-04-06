@@ -6,7 +6,7 @@ weight: 130
 
 ## 2020 Roadmap
 
-Coming soon!  
+This now lives [on Github](https://github.com/GoogleContainerTools/skaffold/blob/master/ROADMAP.md).
 
 ## 2019 Roadmap
 
@@ -44,7 +44,7 @@ See [Release Notes](https://github.com/GoogleContainerTools/skaffold/blob/master
 
 ## Community
 
-You can join the Skaffold community and discuss the product at:
+You can join the Skaffold community and discuss the project at:
 
 * [Skaffold Mailing List](https://groups.google.com/forum#!forum/skaffold-users)
 * [Skaffold Topic on Kubernetes Slack](https://kubernetes.slack.com/messages/CABQMSZA6/)
