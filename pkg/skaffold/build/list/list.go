@@ -62,8 +62,8 @@ func Files(workspace string, patterns, excludes []string) ([]string, error) {
 // notExcluded creates a walk.Predicate that matches file system entries
 // only if they don't match a list of exclusion patterns.
 func notExcluded(workspace string, excludes []string) walk.Predicate {
-	return func(absPath string, info walk.Dirent) (bool, error) {
-		relPath, err := filepath.Rel(workspace, absPath)
+	return func(path string, info walk.Dirent) (bool, error) {
+		relPath, err := filepath.Rel(workspace, path)
 		if err != nil {
 			return false, err
 		}

@@ -26,7 +26,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
-// NewDockerIgnorePredicate creates a walk.Predicate that checks if firectory entries
+// NewDockerIgnorePredicate creates a walk.Predicate that checks if directory entries
 // should be ignored.
 func NewDockerIgnorePredicate(workspace string, excludes []string) (walk.Predicate, error) {
 	matcher, err := fileutils.NewPatternMatcher(excludes)
@@ -34,8 +34,8 @@ func NewDockerIgnorePredicate(workspace string, excludes []string) (walk.Predica
 		return nil, fmt.Errorf("invalid exclude patterns: %w", err)
 	}
 
-	return func(absPath string, info walk.Dirent) (bool, error) {
-		relPath, err := filepath.Rel(workspace, absPath)
+	return func(path string, info walk.Dirent) (bool, error) {
+		relPath, err := filepath.Rel(workspace, path)
 		if err != nil {
 			return false, err
 		}

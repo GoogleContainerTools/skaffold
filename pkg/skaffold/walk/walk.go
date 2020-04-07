@@ -29,14 +29,14 @@ type Dirent interface {
 }
 
 // Predicate represents a predicate on file system entries.
-// Given a file's absolute path and information, it returns `true`
+// Given a file's path and information, it returns `true`
 // when the predicate is matched. It can also return a `filepath.SkipDir`
 // error to skip a directory and its children altogether.
-type Predicate func(absPath string, info Dirent) (bool, error)
+type Predicate func(path string, info Dirent) (bool, error)
 
-// Action is a function that takes a file's absolute path and information,
+// Action is a function that takes a file's path and information,
 // and optionally returns an error.
-type Action func(absPath string, info Dirent) error
+type Action func(path string, info Dirent) error
 
 type Builder interface {
 	// Options
