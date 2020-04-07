@@ -193,11 +193,18 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 			return fmt.Errorf("cannot parse the release name template: %w", err)
 		}
 
+		var namespace string
+		if r.Namespace != "" {
+			namespace = r.Namespace
+		} else if h.namespace != "" {
+			namespace = h.namespace
+		}
+
 		args := []string{"delete", releaseName}
 		if hv.LT(helm3Version) {
 			args = append(args, "--purge")
-		} else if r.Namespace != "" {
-			args = append(args, "--namespace", r.Namespace)
+		} else if namespace != "" {
+			args = append(args, "--namespace", namespace)
 		}
 		if err := h.exec(ctx, out, false, args...); err != nil {
 			return fmt.Errorf("deleting %q: %w", releaseName, err)
@@ -249,17 +256,17 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		helmVersion: helmVersion,
 	}
 
-	if err := h.exec(ctx, ioutil.Discard, false, getArgs(helmVersion, releaseName, r.Namespace)...); err != nil {
-		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
-
-		opts.upgrade = false
-		opts.flags = h.Flags.Install
-	}
-
 	if h.namespace != "" {
 		opts.namespace = h.namespace
 	} else if r.Namespace != "" {
 		opts.namespace = r.Namespace
+	}
+
+	if err := h.exec(ctx, ioutil.Discard, false, getArgs(helmVersion, releaseName, opts.namespace)...); err != nil {
+		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
+
+		opts.upgrade = false
+		opts.flags = h.Flags.Install
 	}
 
 	// Only build local dependencies, but allow a user to skip them.
@@ -306,7 +313,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	var b bytes.Buffer
 
 	// Be accepting of failure
-	if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, r.Namespace)...); err != nil {
+	if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, opts.namespace)...); err != nil {
 		logrus.Warnf(err.Error())
 		return nil, nil
 	}
