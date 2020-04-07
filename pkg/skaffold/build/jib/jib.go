@@ -249,16 +249,16 @@ func walkFiles(workspace string, watchedFiles []string, ignoredFiles []string, c
 			continue
 		}
 
-		// Process directory
-		if err = walk.From(dep).Unsorted().Do(func(path string, info walk.Dirent) error {
+		notIgnored := func(path string, info walk.Dirent) (bool, error) {
 			if isIgnored(path, ignoredFiles) {
-				return filepath.SkipDir
+				return false, filepath.SkipDir
 			}
 
-			if info.IsDir() {
-				return nil
-			}
+			return true, nil
+		}
 
+		// Process directory
+		if err = walk.From(dep).Unsorted().When(notIgnored).WhenIsFile().Do(func(path string, info walk.Dirent) error {
 			stat, err := os.Stat(path)
 			if err != nil {
 				return nil // Ignore
