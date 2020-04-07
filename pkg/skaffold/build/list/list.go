@@ -21,13 +21,14 @@ import (
 	"path/filepath"
 	"sort"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
 // Files list files in a workspace, given a list of patterns and exclusions.
-// A pattern that doesn't correspond to any file is an error.
 func Files(workspace string, patterns, excludes []string) ([]string, error) {
-	var paths []string
+	notExcluded := notExcluded(workspace, excludes)
+
+	var dependencies []string
 
 	for _, pattern := range patterns {
 		expanded, err := filepath.Glob(filepath.Join(workspace, pattern))
@@ -39,26 +40,47 @@ func Files(workspace string, patterns, excludes []string) ([]string, error) {
 			return nil, fmt.Errorf("pattern %q did not match any file", pattern)
 		}
 
-		for _, e := range expanded {
-			rel, err := filepath.Rel(workspace, e)
-			if err != nil {
-				return nil, err
+		for _, absFrom := range expanded {
+			if err := walk.From(absFrom).Unsorted().When(notExcluded).WhenIsFile().Do(func(path string, info walk.Dirent) error {
+				relPath, err := filepath.Rel(workspace, path)
+				if err != nil {
+					return err
+				}
+
+				dependencies = append(dependencies, relPath)
+				return nil
+			}); err != nil {
+				return nil, fmt.Errorf("walking %q: %w", absFrom, err)
 			}
-
-			paths = append(paths, rel)
 		}
-	}
-
-	files, err := docker.WalkWorkspace(workspace, excludes, paths)
-	if err != nil {
-		return nil, fmt.Errorf("walking workspace %q: %w", workspace, err)
-	}
-
-	var dependencies []string
-	for file := range files {
-		dependencies = append(dependencies, file)
 	}
 
 	sort.Strings(dependencies)
 	return dependencies, nil
+}
+
+// notExcluded creates a walk.Predicate that matches file system entries
+// only if they don't match a list of exclusion patterns.
+func notExcluded(workspace string, excludes []string) walk.Predicate {
+	return func(path string, info walk.Dirent) (bool, error) {
+		relPath, err := filepath.Rel(workspace, path)
+		if err != nil {
+			return false, err
+		}
+
+		for _, exclude := range excludes {
+			matches, err := filepath.Match(exclude, relPath)
+			if err != nil {
+				return false, err
+			}
+			if matches {
+				if info.IsDir() {
+					return false, filepath.SkipDir
+				}
+				return false, nil
+			}
+		}
+
+		return true, nil
+	}
 }

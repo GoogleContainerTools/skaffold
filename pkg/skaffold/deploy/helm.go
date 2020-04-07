@@ -45,6 +45,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
@@ -162,25 +163,16 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 		}
 
 		chartDepsDir := filepath.Join(release.ChartPath, "charts")
-		err := filepath.Walk(release.ChartPath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return fmt.Errorf("failure accessing path %q: %w", path, err)
-			}
 
-			if !info.IsDir() {
-				if !strings.HasPrefix(path, chartDepsDir) || r.SkipBuildDependencies {
-					// We can always add a dependency if it is not contained in our chartDepsDir.
-					// However, if the file is in  our chartDepsDir, we can only include the file
-					// if we are not running the helm dep build phase, as that modifies files inside
-					// the chartDepsDir and results in an infinite build loop.
-					deps = append(deps, path)
-				}
-			}
+		// We can always add a dependency if it is not contained in our chartDepsDir.
+		// However, if the file is in our chartDepsDir, we can only include the file
+		// if we are not running the helm dep build phase, as that modifies files inside
+		// the chartDepsDir and results in an infinite build loop.
+		isDep := func(path string, info walk.Dirent) (bool, error) {
+			return !info.IsDir() && (!strings.HasPrefix(path, chartDepsDir) || r.SkipBuildDependencies), nil
+		}
 
-			return nil
-		})
-
-		if err != nil {
+		if err := walk.From(release.ChartPath).When(isDep).AppendPaths(&deps); err != nil {
 			return deps, fmt.Errorf("issue walking releases: %w", err)
 		}
 	}

@@ -27,11 +27,12 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
 const (
@@ -119,22 +120,11 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 		}
 
 		for _, f := range files {
-			var filesInDirectory []string
-
-			if err := filepath.Walk(f, func(path string, info os.FileInfo, err error) error {
-				if !info.IsDir() {
-					filesInDirectory = append(filesInDirectory, path)
-				}
-
+			if err := walk.From(f).WhenIsFile().Do(func(path string, _ walk.Dirent) error {
+				set.Add(path)
 				return nil
 			}); err != nil {
 				return nil, fmt.Errorf("filepath walk: %w", err)
-			}
-
-			// Make sure files inside a directory are listed in a consistent order
-			sort.Strings(filesInDirectory)
-			for _, file := range filesInDirectory {
-				set.Add(file)
 			}
 		}
 	}

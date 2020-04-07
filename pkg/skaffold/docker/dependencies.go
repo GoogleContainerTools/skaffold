@@ -25,8 +25,8 @@ import (
 	"strings"
 
 	"github.com/docker/docker/builder/dockerignore"
-	"github.com/docker/docker/pkg/fileutils"
-	"github.com/karrick/godirwalk"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.
@@ -116,83 +116,42 @@ func readDockerignore(workspace string, absDockerfilePath string) ([]string, err
 // WalkWorkspace walks the given host directories and records all files found.
 // Note: if you change this function, you might also want to modify `walkWorkspaceWithDestinations`.
 func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, error) {
-	pExclude, err := fileutils.NewPatternMatcher(excludes)
+	dockerIgnored, err := NewDockerIgnorePredicate(workspace, excludes)
 	if err != nil {
-		return nil, fmt.Errorf("invalid exclude patterns: %w", err)
+		return nil, err
 	}
 
 	// Walk the workspace
 	files := make(map[string]bool)
 	for _, dep := range deps {
-		dep = filepath.Clean(dep)
-		absDep := filepath.Join(workspace, dep)
+		absFrom := filepath.Join(workspace, dep)
 
-		fi, err := os.Stat(absDep)
-		if err != nil {
-			return nil, fmt.Errorf("stating file %q: %w", absDep, err)
+		keepFile := func(path string, info walk.Dirent) (bool, error) {
+			// Always keep root folders.
+			if info.IsDir() && path == absFrom {
+				return true, nil
+			}
+
+			ignored, err := dockerIgnored(path, info)
+			if err != nil {
+				return false, err
+			}
+
+			return !ignored, nil
 		}
 
-		switch mode := fi.Mode(); {
-		case mode.IsDir():
-			if err := godirwalk.Walk(absDep, &godirwalk.Options{
-				Unsorted: true,
-				Callback: func(fpath string, info *godirwalk.Dirent) error {
-					if fpath == absDep {
-						return nil
-					}
-
-					relPath, err := filepath.Rel(workspace, fpath)
-					if err != nil {
-						return err
-					}
-
-					ignored, err := pExclude.Matches(relPath)
-					if err != nil {
-						return err
-					}
-
-					if info.IsDir() {
-						if !ignored {
-							return nil
-						}
-						// exclusion handling closely follows vendor/github.com/docker/docker/pkg/archive/archive.go
-						// No exceptions (!...) in patterns so just skip dir
-						if !pExclude.Exclusions() {
-							return filepath.SkipDir
-						}
-
-						dirSlash := relPath + string(filepath.Separator)
-
-						for _, pat := range pExclude.Patterns() {
-							if !pat.Exclusion() {
-								continue
-							}
-							if strings.HasPrefix(pat.String()+string(filepath.Separator), dirSlash) {
-								// found a match - so can't skip this dir
-								return nil
-							}
-						}
-
-						return filepath.SkipDir
-					} else if !ignored {
-						files[relPath] = true
-					}
-
-					return nil
-				},
-			}); err != nil {
-				return nil, fmt.Errorf("walking folder %q: %w", absDep, err)
-			}
-		case mode.IsRegular():
-			ignored, err := pExclude.Matches(dep)
+		if err := walk.From(absFrom).Unsorted().When(keepFile).WhenIsFile().Do(func(path string, info walk.Dirent) error {
+			relPath, err := filepath.Rel(workspace, path)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
-			if !ignored {
-				files[dep] = true
-			}
+			files[relPath] = true
+			return nil
+		}); err != nil {
+			return nil, fmt.Errorf("walking %q: %w", absFrom, err)
 		}
 	}
+
 	return files, nil
 }

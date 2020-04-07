@@ -31,12 +31,12 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/karrick/godirwalk"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
 const (
@@ -249,23 +249,27 @@ func walkFiles(workspace string, watchedFiles []string, ignoredFiles []string, c
 			continue
 		}
 
+		notIgnored := func(path string, info walk.Dirent) (bool, error) {
+			if isIgnored(path, ignoredFiles) {
+				return false, filepath.SkipDir
+			}
+
+			return true, nil
+		}
+
 		// Process directory
-		if err = godirwalk.Walk(dep, &godirwalk.Options{
-			Unsorted: true,
-			Callback: func(path string, _ *godirwalk.Dirent) error {
-				if isIgnored(path, ignoredFiles) {
-					return filepath.SkipDir
-				}
-				if info, err := os.Stat(path); err == nil && !info.IsDir() {
-					// try to relativize the path: an error indicates that the file cannot
-					// be made relative to the roots, and so we just use the full path
-					if relative, err := relativize(path, workspaceRoots...); err == nil {
-						path = relative
-					}
-					return callback(path, info)
-				}
-				return nil
-			},
+		if err = walk.From(dep).Unsorted().When(notIgnored).WhenIsFile().Do(func(path string, info walk.Dirent) error {
+			stat, err := os.Stat(path)
+			if err != nil {
+				return nil // Ignore
+			}
+
+			// try to relativize the path: an error indicates that the file cannot
+			// be made relative to the roots, and so we just use the full path
+			if relative, err := relativize(path, workspaceRoots...); err == nil {
+				path = relative
+			}
+			return callback(path, stat)
 		}); err != nil {
 			return fmt.Errorf("filepath walk: %w", err)
 		}
