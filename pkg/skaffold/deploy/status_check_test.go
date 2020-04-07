@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"testing"
 	"time"
 
@@ -298,6 +300,7 @@ func TestGetDeployStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			event.InitializeState(latest.BuildConfig{})
 			err := getSkaffoldDeployStatus(test.counter)
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
