@@ -62,10 +62,9 @@ func (d *diag) WithValidators(v []validator.Validator) Diagnose {
 func (d *diag) Run() ([]validator.Resource, error) {
 	res := []validator.Resource{}
 	errs := []error{}
-	listOptions := metav1.ListOptions{}
 	for _, v := range d.validators {
 		for _, ns := range d.namespaces {
-			r, err := v.Validate(context.Background(), ns, listOptions)
+			r, err := v.Validate(context.Background(), ns, d.listOptions)
 			res = append(res, r...)
 			if err != nil {
 				errs = append(errs, err)

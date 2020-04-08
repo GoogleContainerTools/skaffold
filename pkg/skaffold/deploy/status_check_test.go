@@ -363,7 +363,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			out := new(bytes.Buffer)
 			rc := newResourceCounter(10)
 			rc.deployments.pending = test.pending
-			printStatusCheckSummary(
+			printStatusCheckResult(
 				out,
 				withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), "", test.err),
 				*rc,
@@ -439,7 +439,7 @@ func TestPrintStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			actual := printStatus(test.rs, out, map[string]*resource.Pod{})
+			actual := printStatus(test.rs, out, map[string]*resource.Pod{}, nil)
 			t.CheckDeepEqual(test.expectedOut, out.String())
 			t.CheckDeepEqual(test.expected, actual)
 		})

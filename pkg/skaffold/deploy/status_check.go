@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -65,13 +66,32 @@ type counter struct {
 	failed  int32
 }
 
+type PodStatuses struct {
+	pods map[string]*resource.Pod
+}
+
+func (p *PodStatuses) BuildOrUpdatePods(podResources []validator.Resource) bool {
+	allDone := true
+	p.pods = make(map[string]*resource.Pod)
+	for _, pr := range podResources {
+		pod, ok := p.pods[pr.Name()]
+		if !ok {
+			pod = resource.NewPod(pr.Name(), pr.Namespace())
+		}
+		allDone = allDone && pr.Error() == nil
+		pod.UpdateStatus(string(pr.Status()), pr.Error())
+		p.pods[pr.Name()] = pod
+	}
+	return allDone
+}
+
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	client, err := pkgkubernetes.Client()
 	event.StatusCheckEventStarted()
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}
-	d := diag.New(runCtx.Namespaces).
+	diagnostics := diag.New(runCtx.Namespaces).
 		WithLabel(defaultLabeller.RunIDKeyValueString()).
 		WithValidators([]validator.Validator{validator.NewPodValidator(client)})
 
@@ -89,26 +109,28 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 	rc := newResourceCounter(len(deployments))
 
 	// fetch all pods.
-	podsMap := map[string]*resource.Pod{}
+	//TODO this map needs to be synchronized - we are writing it concurrently from pollPodStatus while reading it in
+	// printResourceStatus
+	podsMap := &PodStatuses{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		pollPodStatus(ctx, d, podsMap, deadline)
+		pollPodStatus(ctx, diagnostics, podsMap, deadline)
 	}()
 
 	for _, d := range deployments {
 		wg.Add(1)
 		go func(r Resource) {
 			defer wg.Done()
+			// keep updating the resource status until it fails/succeeds/times out
 			pollResourceStatus(ctx, runCtx, r)
-			rcCopy := rc.markProcessed(r.Status().Error())
-			printStatusCheckSummary(out, r, rcCopy)
+			rc.markProcessed(r.Status().Error())
 		}(d)
 	}
 
 	// Retrieve pending resource states
 	go func() {
-		printResourceStatus(ctx, out, deployments, deadline, podsMap)
+		printResourceStatus(ctx, out, deployments, deadline, podsMap, rc)
 	}()
 
 	// Wait for all deployment status to be fetched
@@ -142,7 +164,7 @@ func pollResourceStatus(ctx context.Context, runCtx *runcontext.RunContext, r Re
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, r.Deadline()+pollDuration)
-	logrus.Debugf("checking status %s", r)
+	logrus.Debugf("starting  pollResourceStatus %s", r)
 	defer cancel()
 	for {
 		select {
@@ -176,7 +198,9 @@ func getDeadline(d int) time.Duration {
 	return defaultStatusCheckDeadline
 }
 
-func printStatusCheckSummary(out io.Writer, r Resource, rc resourceCounter) {
+// printStatusCheckResult provides the final, e.g.:
+// - deplyoment/leeroy-web is ready. [1/2 deployment(s) still pending]
+func printStatusCheckResult(out *strings.Builder, r Resource, rc resourceCounter) {
 	err := r.Status().Error()
 	if errors.Is(err, context.Canceled) {
 		// Don't print the status summary if the user ctrl-Cd
@@ -186,21 +210,21 @@ func printStatusCheckSummary(out io.Writer, r Resource, rc resourceCounter) {
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if err != nil {
 		event.ResourceStatusCheckEventFailed(r.String(), err)
-		status = fmt.Sprintf("%s failed.%s Error: %s.",
+		status = fmt.Sprintf("%s failed.%s Error: %s.\n",
 			status,
 			trimNewLine(getPendingMessage(rc.deployments.pending, rc.deployments.total)),
 			trimNewLine(err.Error()),
 		)
 	} else {
 		event.ResourceStatusCheckEventSucceeded(r.String())
-		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(rc.deployments.pending, rc.deployments.total))
+		status = fmt.Sprintf("%s is ready.\n", status)
 	}
 
-	fmt.Fprintln(out, status)
+	out.WriteString(status)
 }
 
 // Print resource statuses until all status check are completed or context is cancelled.
-func printResourceStatus(ctx context.Context, out io.Writer, resources []Resource, deadline time.Duration, podMap map[string]*resource.Pod) {
+func printResourceStatus(ctx context.Context, out io.Writer, resources []Resource, deadline time.Duration, podMap *PodStatuses, rc *resourceCounter) {
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline)
 	defer cancel()
 	for {
@@ -209,7 +233,7 @@ func printResourceStatus(ctx context.Context, out io.Writer, resources []Resourc
 		case <-timeoutContext.Done():
 			return
 		case <-time.After(reportStatusTime):
-			allResourcesCheckComplete = printStatus(resources, out, podMap)
+			allResourcesCheckComplete = printStatus(resources, out, podMap, rc)
 		}
 		if allResourcesCheckComplete {
 			return
@@ -217,33 +241,50 @@ func printResourceStatus(ctx context.Context, out io.Writer, resources []Resourc
 	}
 }
 
-func printStatus(resources []Resource, out io.Writer, podMap map[string]*resource.Pod) bool {
+func printStatus(resources []Resource, out io.Writer, pods *PodStatuses, rc *resourceCounter) bool {
 	allResourcesCheckComplete := true
+	var result strings.Builder
+	result.WriteString(fmt.Sprintf("Summary: %s\n", getPendingMessage(rc.deployments.pending, rc.deployments.total)))
 	for _, r := range resources {
 		if r.IsStatusCheckComplete() {
+			printStatusCheckResult(&result, r, *rc)
 			continue
 		}
 		allResourcesCheckComplete = false
 		headerWritten := false
 		if status := r.ReportSinceLastUpdated(); status != "" {
-			fmt.Fprintln(out, tabHeader, trimNewLine(status))
+			result.WriteString(fmt.Sprintf("%s %s\n", tabHeader, trimNewLine(status)))
 			headerWritten = true
 			event.ResourceStatusCheckEventUpdated(r.String(), status)
 		}
 		// Print pending pod statuses for this resource if any.
-		for _, p := range podMap {
-			if strings.HasPrefix(p.Name(), r.Name()) {
-				if str := p.ReportSinceLastUpdated(); str != "" {
-					if !headerWritten {
-						fmt.Fprintln(out, tabHeader, trimNewLine(fmt.Sprintf("%s: %s", r, r.Status())))
-						headerWritten = true
-					}
-					fmt.Fprintln(out, tab, tabHeader, str)
+		//TODO this should return a string
+		pods.printPodStatus(r, headerWritten, &result)
+	}
+	fmt.Fprint(out, result.String())
+	return allResourcesCheckComplete
+}
+
+func (p *PodStatuses) printPodStatus(r Resource, headerWritten bool, result *strings.Builder) {
+	podMap := p.pods
+	keys := make([]string, 0, len(podMap))
+	for k := range podMap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		p := podMap[k]
+		if strings.HasPrefix(p.Name(), r.Name()) {
+			if str := p.ReportSinceLastUpdated(); str != "" {
+				if !headerWritten {
+					result.WriteString(fmt.Sprintf("%s %s\n", tabHeader, trimNewLine(fmt.Sprintf("%s: %s\n", r, r.Status()))))
+					headerWritten = true
 				}
+				result.WriteString(fmt.Sprintf("%s %s %s\n", tab, tabHeader, str))
 			}
 		}
 	}
-	return allResourcesCheckComplete
 }
 
 func getPendingMessage(pending int32, total int) string {
@@ -296,6 +337,10 @@ func (c *resourceCounter) markProcessed(err error) resourceCounter {
 	}
 }
 
+func (c *resourceCounter) isDone() bool {
+	return c.deployments.pending == 0 && c.pods.pending == 0
+}
+
 func statusCheckMaxDeadline(value int, deployments []Resource) time.Duration {
 	if value > 0 {
 		return time.Duration(value) * time.Second
@@ -309,7 +354,7 @@ func statusCheckMaxDeadline(value int, deployments []Resource) time.Duration {
 	return d
 }
 
-func pollPodStatus(ctx context.Context, d diag.Diagnose, podMap map[string]*resource.Pod, deadline time.Duration) error {
+func pollPodStatus(ctx context.Context, d diag.Diagnose, podMap *PodStatuses, deadline time.Duration) error {
 	pollDuration := time.Duration(defaultPollPeriodInMilliseconds) * time.Millisecond
 	// Add poll duration to account for one last attempt after progressDeadlineSeconds.
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline+pollDuration)
@@ -320,7 +365,7 @@ func pollPodStatus(ctx context.Context, d diag.Diagnose, podMap map[string]*reso
 			return nil
 		case <-time.After(pollDuration):
 			if pods, err := d.Run(); err == nil {
-				if allDone := resource.BuildOrUpdatePods(pods, podMap); allDone {
+				if allDone := podMap.BuildOrUpdatePods(pods); allDone {
 					return nil
 				}
 			}

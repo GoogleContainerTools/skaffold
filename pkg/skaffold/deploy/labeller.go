@@ -44,9 +44,9 @@ type DefaultLabeller struct {
 }
 
 func NewLabeller(verStr string) *DefaultLabeller {
-	runIDOnce.Do(func() {
-		runID = uuid.New().String()
-	})
+	//runIDOnce.Do(func() {
+	runID = uuid.New().String()
+	//})
 	if verStr == empty {
 		verStr = version.Get().Version
 	}

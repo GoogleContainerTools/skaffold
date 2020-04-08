@@ -19,6 +19,7 @@ package runner
 import (
 	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/gosuri/uilive"
 	"io"
 	"time"
@@ -50,6 +51,11 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 			return fmt.Errorf("loading images into kind nodes: %w", err)
 		}
 	}
+
+	// runCtx.Opts is last to let users override/remove any label
+	// deployer labels are added during deployment
+	r.defaultLabeller = deploy.NewLabeller("")
+	r.labellers = append(r.labellers, r.defaultLabeller)
 
 	deployResult := r.deployer.Deploy(ctx, out, artifacts, r.labellers)
 	r.hasDeployed = true
