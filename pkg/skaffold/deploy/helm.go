@@ -45,6 +45,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
@@ -162,25 +163,16 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 		}
 
 		chartDepsDir := filepath.Join(release.ChartPath, "charts")
-		err := filepath.Walk(release.ChartPath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return fmt.Errorf("failure accessing path %q: %w", path, err)
-			}
 
-			if !info.IsDir() {
-				if !strings.HasPrefix(path, chartDepsDir) || r.SkipBuildDependencies {
-					// We can always add a dependency if it is not contained in our chartDepsDir.
-					// However, if the file is in  our chartDepsDir, we can only include the file
-					// if we are not running the helm dep build phase, as that modifies files inside
-					// the chartDepsDir and results in an infinite build loop.
-					deps = append(deps, path)
-				}
-			}
+		// We can always add a dependency if it is not contained in our chartDepsDir.
+		// However, if the file is in our chartDepsDir, we can only include the file
+		// if we are not running the helm dep build phase, as that modifies files inside
+		// the chartDepsDir and results in an infinite build loop.
+		isDep := func(path string, info walk.Dirent) (bool, error) {
+			return !info.IsDir() && (!strings.HasPrefix(path, chartDepsDir) || r.SkipBuildDependencies), nil
+		}
 
-			return nil
-		})
-
-		if err != nil {
+		if err := walk.From(release.ChartPath).When(isDep).AppendPaths(&deps); err != nil {
 			return deps, fmt.Errorf("issue walking releases: %w", err)
 		}
 	}
@@ -201,11 +193,18 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 			return fmt.Errorf("cannot parse the release name template: %w", err)
 		}
 
+		var namespace string
+		if r.Namespace != "" {
+			namespace = r.Namespace
+		} else if h.namespace != "" {
+			namespace = h.namespace
+		}
+
 		args := []string{"delete", releaseName}
 		if hv.LT(helm3Version) {
 			args = append(args, "--purge")
-		} else if r.Namespace != "" {
-			args = append(args, "--namespace", r.Namespace)
+		} else if namespace != "" {
+			args = append(args, "--namespace", namespace)
 		}
 		if err := h.exec(ctx, out, false, args...); err != nil {
 			return fmt.Errorf("deleting %q: %w", releaseName, err)
@@ -257,17 +256,17 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		helmVersion: helmVersion,
 	}
 
-	if err := h.exec(ctx, ioutil.Discard, false, getArgs(helmVersion, releaseName, r.Namespace)...); err != nil {
-		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
-
-		opts.upgrade = false
-		opts.flags = h.Flags.Install
-	}
-
 	if h.namespace != "" {
 		opts.namespace = h.namespace
 	} else if r.Namespace != "" {
 		opts.namespace = r.Namespace
+	}
+
+	if err := h.exec(ctx, ioutil.Discard, false, getArgs(helmVersion, releaseName, opts.namespace)...); err != nil {
+		color.Yellow.Fprintf(out, "Helm release %s not installed. Installing...\n", releaseName)
+
+		opts.upgrade = false
+		opts.flags = h.Flags.Install
 	}
 
 	// Only build local dependencies, but allow a user to skip them.
@@ -314,7 +313,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 	var b bytes.Buffer
 
 	// Be accepting of failure
-	if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, r.Namespace)...); err != nil {
+	if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, opts.namespace)...); err != nil {
 		logrus.Warnf(err.Error())
 		return nil, nil
 	}

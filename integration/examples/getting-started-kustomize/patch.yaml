@@ -1,0 +1,10 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skaffold-kustomize
+spec:
+  template:
+    spec:
+      containers:
+      - name: skaffold-kustomize
+        image: hello-world

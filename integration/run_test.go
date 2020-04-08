@@ -100,6 +100,11 @@ func TestRun(t *testing.T) {
 			dir:         "examples/buildpacks",
 			deployments: []string{"web"},
 		},
+		{
+			description: "kustomize",
+			dir:         "examples/getting-started-kustomize",
+			deployments: []string{"skaffold-kustomize"},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {

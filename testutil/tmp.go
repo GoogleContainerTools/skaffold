@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/karrick/godirwalk"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
 // TempFile creates a temporary file with a given content. Returns the file name
@@ -122,17 +122,7 @@ func (h *TempDir) Rename(oldName, newName string) *TempDir {
 
 // List lists all the files in the temp directory.
 func (h *TempDir) List() ([]string, error) {
-	var files []string
-
-	err := godirwalk.Walk(h.root, &godirwalk.Options{
-		Unsorted: true,
-		Callback: func(path string, _ *godirwalk.Dirent) error {
-			files = append(files, path)
-			return nil
-		},
-	})
-
-	return files, err
+	return walk.From(h.root).Unsorted().CollectPaths()
 }
 
 // Path returns the path to a file in the temp directory.
