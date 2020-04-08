@@ -49,9 +49,5 @@ func (b *Base) IsStatusCheckComplete() bool {
 }
 
 func (b *Base) ReportSinceLastUpdated() string {
-	if b.status.reported {
-		return ""
-	}
-	b.status.reported = true
 	return fmt.Sprintf("%s: %s", b, b.status)
 }

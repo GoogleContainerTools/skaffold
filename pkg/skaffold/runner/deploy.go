@@ -19,6 +19,7 @@ package runner
 import (
 	"context"
 	"fmt"
+	"github.com/gosuri/uilive"
 	"io"
 	"time"
 
@@ -68,7 +69,13 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 	start := time.Now()
 	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
 
-	err := statusCheck(ctx, r.defaultLabeller, r.runCtx, out)
+	writer := uilive.New()
+	writer.Out = out
+	// start listening for updates and render
+	writer.Start()
+	defer writer.Stop()
+
+	err := statusCheck(ctx, r.defaultLabeller, r.runCtx, writer)
 	if err != nil {
 		return err
 	}

@@ -57,6 +57,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/googleapis/gnostic v0.3.1 // indirect
 	github.com/gophercloud/gophercloud v0.6.0 // indirect
+	github.com/gosuri/uilive v0.0.4
 	github.com/grpc-ecosystem/grpc-gateway v1.12.1
 	github.com/heroku/color v0.0.6
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect

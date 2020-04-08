@@ -285,6 +285,9 @@ github.com/gophercloud/gophercloud/openstack/utils
 github.com/gophercloud/gophercloud/pagination
 # github.com/gorilla/mux v1.7.3
 github.com/gorilla/mux
+# github.com/gosuri/uilive v0.0.4
+## explicit
+github.com/gosuri/uilive
 # github.com/grpc-ecosystem/grpc-gateway v1.12.1
 ## explicit
 github.com/grpc-ecosystem/grpc-gateway/internal
