@@ -7,6 +7,7 @@ build:
     - image: leeroy-app
       context: ./leeroy-app/
 deploy:
+  statusCheckDeadlineSeconds: 10
   kubectl:
     manifests:
       - ./leeroy-web/kubernetes/*

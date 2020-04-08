@@ -135,7 +135,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Wait for all deployment status to be fetched
 	wg.Wait()
-	printStatus(deployments, out, podsMap, rc, time.Duration(0))
+	//printStatus(deployments, out, podsMap, rc, time.Duration(0))
 	return getSkaffoldDeployStatus(rc.deployments)
 }
 
@@ -250,6 +250,7 @@ func printStatus(resources []Resource, out io.Writer, pods *PodStatuses, rc *res
 	for _, r := range resources {
 		if r.IsStatusCheckComplete() {
 			printStatusCheckResult(&details, r, *rc)
+			pods.printPodStatus(r, true, &details)
 			continue
 		}
 		allResourcesCheckComplete = false
@@ -264,7 +265,7 @@ func printStatus(resources []Resource, out io.Writer, pods *PodStatuses, rc *res
 		pods.printPodStatus(r, headerWritten, &details)
 	}
 	var result strings.Builder
-	if !allResourcesCheckComplete {
+	if !allResourcesCheckComplete && secondsLeft.Seconds() > 0 {
 		result.WriteString(fmt.Sprintf("Timeout in %s%s\n", secondsLeft.String(), getPendingMessage(rc.deployments.pending, rc.deployments.total)))
 	}
 	result.WriteString(details.String())

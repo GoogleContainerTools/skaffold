@@ -80,12 +80,11 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 	// start listening for updates and render
 	writer.Start()
 
-
-	err := statusCheck(ctx, r.defaultLabeller, r.runCtx, writer)
-	if err != nil {
+	if err := statusCheck(ctx, r.defaultLabeller, r.runCtx, writer); err != nil {
+		writer.Stop()
+		color.Red.Fprintln(out, "Deployments failed to stabilize.")
 		return err
 	}
-
 	writer.Stop()
 	color.Default.Fprintln(out, "Deployments stabilized in", time.Since(start))
 	return nil
