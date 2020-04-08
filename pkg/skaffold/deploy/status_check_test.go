@@ -439,7 +439,7 @@ func TestPrintStatus(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			out := new(bytes.Buffer)
-			actual := printStatus(test.rs, out, map[string]*resource.Pod{}, nil)
+			actual := printStatus(test.rs, out, map[string]*resource.Pod{}, nil, 0)
 			t.CheckDeepEqual(test.expectedOut, out.String())
 			t.CheckDeepEqual(test.expected, actual)
 		})

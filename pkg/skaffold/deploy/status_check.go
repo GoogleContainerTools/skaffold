@@ -135,6 +135,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Wait for all deployment status to be fetched
 	wg.Wait()
+	printStatus(deployments, out, podsMap, rc, time.Duration(0))
 	return getSkaffoldDeployStatus(rc.deployments)
 }
 
@@ -226,6 +227,7 @@ func printStatusCheckResult(out *strings.Builder, r Resource, rc resourceCounter
 // Print resource statuses until all status check are completed or context is cancelled.
 func printResourceStatus(ctx context.Context, out io.Writer, resources []Resource, deadline time.Duration, podMap *PodStatuses, rc *resourceCounter) {
 	timeoutContext, cancel := context.WithTimeout(ctx, deadline)
+	start := time.Now().Unix()
 	defer cancel()
 	for {
 		var allResourcesCheckComplete bool
@@ -233,7 +235,8 @@ func printResourceStatus(ctx context.Context, out io.Writer, resources []Resourc
 		case <-timeoutContext.Done():
 			return
 		case <-time.After(reportStatusTime):
-			allResourcesCheckComplete = printStatus(resources, out, podMap, rc)
+			secondsLeft := time.Duration(int64(deadline.Seconds())-time.Now().Unix()+start) * time.Second
+			allResourcesCheckComplete = printStatus(resources, out, podMap, rc, secondsLeft)
 		}
 		if allResourcesCheckComplete {
 			return
@@ -241,26 +244,30 @@ func printResourceStatus(ctx context.Context, out io.Writer, resources []Resourc
 	}
 }
 
-func printStatus(resources []Resource, out io.Writer, pods *PodStatuses, rc *resourceCounter) bool {
+func printStatus(resources []Resource, out io.Writer, pods *PodStatuses, rc *resourceCounter, secondsLeft time.Duration) bool {
 	allResourcesCheckComplete := true
-	var result strings.Builder
-	result.WriteString(fmt.Sprintf("Summary: %s\n", getPendingMessage(rc.deployments.pending, rc.deployments.total)))
+	var details strings.Builder
 	for _, r := range resources {
 		if r.IsStatusCheckComplete() {
-			printStatusCheckResult(&result, r, *rc)
+			printStatusCheckResult(&details, r, *rc)
 			continue
 		}
 		allResourcesCheckComplete = false
 		headerWritten := false
 		if status := r.ReportSinceLastUpdated(); status != "" {
-			result.WriteString(fmt.Sprintf("%s %s\n", tabHeader, trimNewLine(status)))
+			details.WriteString(fmt.Sprintf("%s %s\n", tabHeader, trimNewLine(status)))
 			headerWritten = true
 			event.ResourceStatusCheckEventUpdated(r.String(), status)
 		}
 		// Print pending pod statuses for this resource if any.
 		//TODO this should return a string
-		pods.printPodStatus(r, headerWritten, &result)
+		pods.printPodStatus(r, headerWritten, &details)
 	}
+	var result strings.Builder
+	if !allResourcesCheckComplete {
+		result.WriteString(fmt.Sprintf("Timeout in %s%s\n", secondsLeft.String(), getPendingMessage(rc.deployments.pending, rc.deployments.total)))
+	}
+	result.WriteString(details.String())
 	fmt.Fprint(out, result.String())
 	return allResourcesCheckComplete
 }

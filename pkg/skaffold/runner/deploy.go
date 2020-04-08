@@ -79,13 +79,14 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 	writer.Out = out
 	// start listening for updates and render
 	writer.Start()
-	defer writer.Stop()
+
 
 	err := statusCheck(ctx, r.defaultLabeller, r.runCtx, writer)
 	if err != nil {
 		return err
 	}
 
+	writer.Stop()
 	color.Default.Fprintln(out, "Deployments stabilized in", time.Since(start))
 	return nil
 }
