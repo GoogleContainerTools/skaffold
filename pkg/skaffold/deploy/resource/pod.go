@@ -49,7 +49,7 @@ func (p *Pod) CheckStatus(ctx context.Context, runCtx *runcontext.RunContext) {
 }
 
 func (p *Pod) UpdateStatus(details string, err error) {
-	if details == "" {
+	if err == nil {
 		details = "pod stable"
 		p.done = true
 	}
@@ -70,8 +70,8 @@ func BuildOrUpdatePods(pods []validator.Resource, podMap map[string]*Pod) bool {
 		if !ok {
 			pod = NewPod(p.Name(), p.Namespace())
 		}
-		allDone = allDone && p.IsStable()
-		pod.UpdateStatus(p.Reason(), nil)
+		allDone = allDone && p.Error() == nil
+		pod.UpdateStatus(string(p.Status()), p.Error())
 		podMap[p.Name()] = pod
 	}
 	return allDone
