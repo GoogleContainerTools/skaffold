@@ -20,7 +20,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -53,10 +52,13 @@ import (
 
 var (
 	// versionRegex extracts version from "helm version --client", for instance: "2.14.0-rc.2"
-	versionRegex = regexp.MustCompile(`\"v(\d[\w\.\-\.]+)`)
+	versionRegex = regexp.MustCompile(`v(\d[\w.\-]+)`)
 
 	// helm3Version represents the version cut-off for helm3 behavior
 	helm3Version = semver.MustParse("3.0.0-beta.0")
+
+	// error to throw when helm version can't be determined
+	versionErrorString = "failed to determine binary version: %w"
 )
 
 // HelmDeployer deploys workflows using the helm CLI
@@ -99,7 +101,7 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 
 	hv, err := h.binVer(ctx)
 	if err != nil {
-		return NewDeployErrorResult(fmt.Errorf("failed to determine binary version: %w", err))
+		return NewDeployErrorResult(fmt.Errorf(versionErrorString, err))
 	}
 	logrus.Infof("Deploying with helm v%s ...", hv)
 
@@ -129,10 +131,10 @@ func (h *HelmDeployer) Deploy(ctx context.Context, out io.Writer, builds []build
 
 	// Let's make sure that every image tag is set with `--set`.
 	// Otherwise, templates have no way to use the images that were built.
-	for _, build := range builds {
-		if !valuesSet[build.Tag] {
-			warnings.Printf("image [%s] is not used.", build.Tag)
-			warnings.Printf("image [%s] is used instead.", build.ImageName)
+	for _, b := range builds {
+		if !valuesSet[b.Tag] {
+			warnings.Printf("image [%s] is not used.", b.Tag)
+			warnings.Printf("image [%s] is used instead.", b.ImageName)
 			warnings.Printf("See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml")
 		}
 	}
@@ -215,7 +217,7 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 	hv, err := h.binVer(ctx)
 	if err != nil {
-		return fmt.Errorf("binary version: %w", err)
+		return fmt.Errorf(versionErrorString, err)
 	}
 
 	for _, r := range h.Releases {
@@ -245,8 +247,74 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 }
 
 // Render generates the Kubernetes manifests and writes them out
-func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, []Labeller, string) error {
-	return errors.New("not yet implemented")
+func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, filepath string) error {
+	hv, err := h.binVer(ctx)
+	if err != nil {
+		return fmt.Errorf(versionErrorString, err)
+	}
+
+	renderedManifests := new(bytes.Buffer)
+
+	for _, r := range h.Releases {
+		args := []string{"template", r.ChartPath}
+
+		if hv.GTE(helm3Version) {
+			// Helm 3 requires the name to be before the chart path
+			args = append(args[:1], append([]string{r.Name}, args[1:]...)...)
+		} else {
+			args = append(args, "--name", r.Name)
+		}
+
+		for _, vf := range r.ValuesFiles {
+			args = append(args, "--values", vf)
+		}
+
+		params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
+		if err != nil {
+			return fmt.Errorf("matching build results to chart values: %w", err)
+		}
+
+		for k, v := range params {
+			var value string
+
+			cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
+
+			value, err = imageSetFromConfig(cfg, k, v.Tag)
+			if err != nil {
+				return err
+			}
+
+			args = append(args, "--set-string", value)
+		}
+
+		for key, value := range r.ArtifactOverrides {
+			args = append(args, "--set", fmt.Sprintf("%s=%s", key, value))
+		}
+
+		sortedKeys := make([]string, 0, len(r.SetValueTemplates))
+		for k := range r.SetValueTemplates {
+			sortedKeys = append(sortedKeys, k)
+		}
+		sort.Strings(sortedKeys)
+
+		for _, key := range sortedKeys {
+			v, err := util.ExpandEnvTemplate(r.SetValueTemplates[key], nil)
+			if err != nil {
+				return err
+			}
+			args = append(args, "--set", fmt.Sprintf("%s=%s", key, v))
+		}
+
+		if r.Namespace != "" {
+			args = append(args, "--namespace", r.Namespace)
+		}
+
+		if err := h.exec(ctx, renderedManifests, false, args...); err != nil {
+			return err
+		}
+	}
+
+	return outputRenderedManifests(renderedManifests.String(), filepath, out)
 }
 
 // exec executes the helm command, writing combined stdout/stderr to the provided writer
