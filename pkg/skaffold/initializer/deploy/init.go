@@ -25,7 +25,7 @@ type Error string
 
 func (e Error) Error() string { return string(e) }
 
-const NoManifest = Error("one or more Kubernetes manifests is required to run skaffold")
+const NoManifest = Error("one or more Kubernetes manifests are required to run skaffold")
 
 // Initializer detects a deployment type and is able to extract image names from it
 type Initializer interface {
