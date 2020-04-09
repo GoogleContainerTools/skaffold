@@ -135,7 +135,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Wait for all deployment status to be fetched
 	wg.Wait()
-	//printStatus(deployments, out, podsMap, rc, time.Duration(0))
+	printStatus(deployments, out, podsMap, rc, time.Duration(0))
 	return getSkaffoldDeployStatus(rc.deployments)
 }
 
