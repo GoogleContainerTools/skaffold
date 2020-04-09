@@ -89,12 +89,23 @@ type configurationRetriever func(string) (imageConfiguration, error)
 type imageConfiguration struct {
 	// artifact is the corresponding artifact's image name (`pkg/skaffold/build.Artifact.ImageName`)
 	artifact string
+	// runtimes is the list of language runtimes used in this image
+	runtimes []string
 
 	labels     map[string]string
 	env        map[string]string
 	entrypoint []string
 	arguments  []string
 	workingDir string
+}
+
+func (ic imageConfiguration) hasRuntime(runtime string) bool {
+	for _, rt := range ic.runtimes {
+		if rt == runtime {
+			return true
+		}
+	}
+	return false
 }
 
 // containerTransformer transforms a container definition

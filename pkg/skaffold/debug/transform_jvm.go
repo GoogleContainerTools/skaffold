@@ -37,6 +37,9 @@ const (
 )
 
 func (t jdwpTransformer) IsApplicable(config imageConfiguration) bool {
+	if config.hasRuntime("jvm") {
+		return true
+	}
 	if _, found := config.env["JAVA_TOOL_OPTIONS"]; found {
 		return true
 	}

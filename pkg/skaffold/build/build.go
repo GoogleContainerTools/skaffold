@@ -28,6 +28,8 @@ import (
 type Artifact struct {
 	ImageName string `json:"imageName"`
 	Tag       string `json:"tag"`
+	// Config is the  corresponding artifact object from `skaffold.yaml`.
+	Config latest.Artifact `json:"-"`
 }
 
 // Builder is an interface to the Build API of Skaffold.

@@ -579,6 +579,15 @@ type Artifact struct {
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
+
+	// Runtimes lists the language runtimes used in the image. Valid runtimes are
+	// `go`: implemented using Go.
+	// `jvm`: implemented using a JVM language.
+	// `nodejs`: implemented using NodeJS.
+	// `python`: implemented using Python.
+	// `musl`: implemented using the musl libc.
+	// `glibc`: implemented using the GNU C Library.
+	Runtimes []string `yaml:"runtimes,omitempty"`
 }
 
 // Sync *beta* specifies what files to sync into the container.

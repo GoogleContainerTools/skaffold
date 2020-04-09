@@ -116,6 +116,7 @@ func retrieveImageConfiguration(ctx context.Context, artifact *build.Artifact, i
 	logrus.Debugf("Retrieved local image configuration for %v: %v", artifact.Tag, config)
 	return imageConfiguration{
 		artifact:   artifact.ImageName,
+		runtimes:   artifact.Config.Runtimes,
 		env:        envAsMap(config.Env),
 		entrypoint: config.Entrypoint,
 		arguments:  config.Cmd,

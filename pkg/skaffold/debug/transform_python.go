@@ -52,6 +52,9 @@ func isLaunchingPython(args []string) bool {
 }
 
 func (t pythonTransformer) IsApplicable(config imageConfiguration) bool {
+	if config.hasRuntime("python") {
+		return true
+	}
 	// We can only put Python in debug mode by modifying the python command line,
 	// so looking for Python-related environment variables is insufficient.
 	if len(config.entrypoint) > 0 {

@@ -59,6 +59,9 @@ func isLaunchingDlv(args []string) bool {
 }
 
 func (t dlvTransformer) IsApplicable(config imageConfiguration) bool {
+	if config.hasRuntime("go") {
+		return true
+	}
 	for _, name := range []string{"GODEBUG", "GOGC", "GOMAXPROCS", "GOTRACEBACK"} {
 		if _, found := config.env[name]; found {
 			return true

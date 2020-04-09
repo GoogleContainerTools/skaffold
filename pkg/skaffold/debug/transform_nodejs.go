@@ -56,6 +56,9 @@ func isLaunchingNpm(args []string) bool {
 }
 
 func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
+	if config.hasRuntime("nodejs") {
+		return true
+	}
 	if _, found := config.env["NODE_VERSION"]; found {
 		return true
 	}
