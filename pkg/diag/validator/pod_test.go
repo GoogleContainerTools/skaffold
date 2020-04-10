@@ -36,95 +36,95 @@ func TestRun(t *testing.T) {
 		pods        []*v1.Pod
 		expected    []Resource
 	}{
-		//{
-		//	description: "pod don't exist in test namespace",
-		//	pods: []*v1.Pod{{
-		//		ObjectMeta: meta_v1.ObjectMeta{
-		//			Name:      "foo",
-		//			Namespace: "foo-ns",
-		//		}},
-		//	},
-		//	expected: []Resource{},
-		//},
-		//{
-		//	description: "pod is Waiting conditions with error",
-		//	pods: []*v1.Pod{{
-		//		ObjectMeta: meta_v1.ObjectMeta{
-		//			Name:      "foo",
-		//			Namespace: "test",
-		//		},
-		//		Status: v1.PodStatus{
-		//			Phase:      v1.PodPending,
-		//			Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
-		//			ContainerStatuses: []v1.ContainerStatus{
-		//				{
-		//					Name: "foo-container",
-		//					State: v1.ContainerState{
-		//						Waiting: &v1.ContainerStateWaiting{
-		//							Reason:  "ErrImagePull",
-		//							Message: "rpc error: code = Unknown desc = Error response from daemon: pull access denied for leeroy-web1, repository does not exist or may require 'docker login': denied: requested access to the resource is denied",
-		//						},
-		//					},
-		//				},
-		//			},
-		//		},
-		//	}},
-		//	expected: []Resource{NewResource("test", "", "foo", "Pending",
-		//		fmt.Errorf("container foo-container in error pull access denied for leeroy-web1, repository does not exist or may require 'docker login': denied: requested access to the resource is denied"))},
-		//},
-		//{
-		//	description: "pod is in Terminated State",
-		//	pods: []*v1.Pod{{
-		//		ObjectMeta: meta_v1.ObjectMeta{
-		//			Name:      "foo",
-		//			Namespace: "test",
-		//		},
-		//		Status: v1.PodStatus{
-		//			Phase:      v1.PodSucceeded,
-		//			Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
-		//		},
-		//	}},
-		//	expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil)},
-		//},
-		//{
-		//	description: "pod is in Stable State",
-		//	pods: []*v1.Pod{{
-		//		ObjectMeta: meta_v1.ObjectMeta{
-		//			Name:      "foo",
-		//			Namespace: "test",
-		//		},
-		//		Status: v1.PodStatus{
-		//			Phase:      v1.PodRunning,
-		//			Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
-		//			ContainerStatuses: []v1.ContainerStatus{
-		//				{
-		//					Name:  "foo-container",
-		//					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
-		//				},
-		//			},
-		//		},
-		//	}},
-		//	expected: []Resource{NewResource("test", "", "foo", "Running",nil)},
-		//},
-		//{
-		//	description: "pod condition unknown",
-		//	pods: []*v1.Pod{{
-		//		ObjectMeta: meta_v1.ObjectMeta{
-		//			Name:      "foo",
-		//			Namespace: "test",
-		//		},
-		//		Status: v1.PodStatus{
-		//			Phase: v1.PodPending,
-		//			Conditions: []v1.PodCondition{{
-		//				Type: v1.PodScheduled,
-		//				Status:  v1.ConditionUnknown,
-		//				Message: "could not determine",
-		//			}},
-		//		},
-		//	}},
-		//	expected: []Resource{NewResource("test", "", "foo", "Pending",
-		//		fmt.Errorf("could not determine"))},
-		//},
+		{
+			description: "pod don't exist in test namespace",
+			pods: []*v1.Pod{{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "foo-ns",
+				}},
+			},
+			expected: []Resource{},
+		},
+		{
+			description: "pod is Waiting conditions with error",
+			pods: []*v1.Pod{{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				Status: v1.PodStatus{
+					Phase:      v1.PodPending,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name: "foo-container",
+							State: v1.ContainerState{
+								Waiting: &v1.ContainerStateWaiting{
+									Reason:  "ErrImagePull",
+									Message: "rpc error: code = Unknown desc = Error response from daemon: pull access denied for leeroy-web1, repository does not exist or may require 'docker login': denied: requested access to the resource is denied",
+								},
+							},
+						},
+					},
+				},
+			}},
+			expected: []Resource{NewResource("test", "", "foo", "Pending",
+				fmt.Errorf("container foo-container in error pull access denied for leeroy-web1, repository does not exist or may require 'docker login': denied: requested access to the resource is denied"))},
+		},
+		{
+			description: "pod is in Terminated State",
+			pods: []*v1.Pod{{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				Status: v1.PodStatus{
+					Phase:      v1.PodSucceeded,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
+				},
+			}},
+			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil)},
+		},
+		{
+			description: "pod is in Stable State",
+			pods: []*v1.Pod{{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				Status: v1.PodStatus{
+					Phase:      v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
+						},
+					},
+				},
+			}},
+			expected: []Resource{NewResource("test", "", "foo", "Running",nil)},
+		},
+		{
+			description: "pod condition unknown",
+			pods: []*v1.Pod{{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				Status: v1.PodStatus{
+					Phase: v1.PodPending,
+					Conditions: []v1.PodCondition{{
+						Type: v1.PodScheduled,
+						Status:  v1.ConditionUnknown,
+						Message: "could not determine",
+					}},
+				},
+			}},
+			expected: []Resource{NewResource("test", "", "foo", "Pending",
+				fmt.Errorf("could not determine"))},
+		},
 		{
 			description: "pod could not be scheduled",
 			pods: []*v1.Pod{{
@@ -133,19 +133,17 @@ func TestRun(t *testing.T) {
 					Namespace: "test",
 				},
 				Status: v1.PodStatus{
-					Phase: v1.PodReasonUnschedulable,
+					Phase: v1.PodPending,
 					Conditions: []v1.PodCondition{{
 						Type: v1.PodScheduled,
 						Status:  v1.ConditionFalse,
+						Reason: v1.PodReasonUnschedulable,
 						Message: "0/2 nodes are available: 1 node(s) had taint {node.kubernetes.io/disk-pressure: }, that the pod didn't tolerate, 1 node(s) had taint {node.kubernetes.io/unreachable: }, that the pod didn't tolerate",
 					}},
 				},
-				Spec: v1.PodSpec{
-					Tolerations:
-				}
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("UnSchedulable:"))},
+				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"))},
 		},
 	}
 

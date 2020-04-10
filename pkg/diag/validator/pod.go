@@ -31,6 +31,7 @@ const (
 	running = "Running"
 	actionableMessage = `could not determine pod status. Try kubectl describe -n %s po/%s`
 	errorPrefix = `(?P<Prefix>)(?P<DaemonLog>Error response from daemon\:)(?P<Error>.*)`
+	taintsExp = `\{(?P<taint>.*?):.*?}`
 	crashLoopBackOff = "CrashLoopBackOff"
 	runContainerError = "RunContainerError"
 	imagePullErr = "ErrImagePull"
@@ -40,6 +41,7 @@ const (
 
 var (
 	re = regexp.MustCompile(errorPrefix)
+	taintsRe = regexp.MustCompile(taintsExp)
 )
 
 // PodValidator implements the Validator interface for Pods
@@ -83,7 +85,7 @@ func getContainerStatus(pod *v1.Pod) error {
 		switch c.Type {
 		case v1.PodScheduled:
 			if c.Status == v1.ConditionFalse {
-				return getTolerationsDetails(pod)
+				return getTolerationsDetails(c.Reason, c.Message)
 			} else if c.Status == v1.ConditionTrue {
 				// TODO(dgageot): Add EphemeralContainerStatuses
 				cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
@@ -108,18 +110,23 @@ func getWaitingContainerStatus(cs []v1.ContainerStatus) error {
 	return nil
 }
 
-func getTolerationsDetails(pod *v1.Pod) error {
-	if len(pod.Spec.Tolerations) == 0 {
-		return fmt.Errorf("%s: %s", pod.Status.Reason, pod.Status.Message)
+func getTolerationsDetails(reason string, message string) error {
+	matches := taintsRe.FindAllStringSubmatch(message, -1)
+	if len(matches) == 0 {
+		return fmt.Errorf("%s: %s", reason, message)
 	}
-	messages := make([]string, len(pod.Spec.Tolerations))
-	for i, t := range pod.Spec.Tolerations {
-		if t.Effect
-		switch t.Key {
+	messages := make([]string, len(matches))
+	// TODO: Add actionable item to fix these errors.
+	for i, m := range matches {
+		if len(m) < 2 {
+			continue
+		}
+		t := m[1]
+		switch t {
 		case v1.TaintNodeMemoryPressure:
-			messages[i] = "1 node has Memory Pressure"
+			messages[i] = "1 node has memory pressure"
 		case v1.TaintNodeDiskPressure:
-			messages[i] = "1 node has Disk Pressure"
+			messages[i] = "1 node has disk pressure"
 		case v1.TaintNodeNotReady:
 			messages[i] = "1 node is not ready"
 		case v1.TaintNodeUnreachable:
@@ -132,7 +139,7 @@ func getTolerationsDetails(pod *v1.Pod) error {
 			messages[i] = "1 node has PID pressure"
 		}
 	}
-	return fmt.Errorf("%s: 0/%d nodes available: %s", pod.Status.Reason, len(messages), strings.Join(messages, "\n    -"))
+	return fmt.Errorf("%s: 0/%d nodes available: %s", reason, len(messages), strings.Join(messages, ", "))
 }
 
 type podStatus struct {
