@@ -24,24 +24,22 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"regexp"
 	"strings"
-	"sync"
 )
 
 const (
 	success = "Succeeded"
 	running = "Running"
 	actionableMessage = `could not determine pod status. Try kubectl describe -n %s po/%s`
-	errorPrefix = `(?P<Prefix>.*)(?P<DaemonLog>Error response from daemon\:)(?P<Error>.*)`
+	errorPrefix = `(?P<Prefix>)(?P<DaemonLog>Error response from daemon\:)(?P<Error>.*)`
 	crashLoopBackOff = "CrashLoopBackOff"
 	runContainerError = "RunContainerError"
+	imagePullErr = "ErrImagePull"
+	errImagePullBackOff = "ErrImagePullBackOff"
 	containerCreating = "ContainerCreating"
 )
 
-// for testing
 var (
-	waitingContainerStatus = getWaitingContainerStatus
 	re = regexp.MustCompile(errorPrefix)
-    once sync.Once
 )
 
 // PodValidator implements the Validator interface for Pods
@@ -85,11 +83,11 @@ func getContainerStatus(pod *v1.Pod) error {
 		switch c.Type {
 		case v1.PodScheduled:
 			if c.Status == v1.ConditionFalse {
-				return fmt.Errorf(c.Message)
+				return getTolerationsDetails(pod)
 			} else if c.Status == v1.ConditionTrue {
 				// TODO(dgageot): Add EphemeralContainerStatuses
 				cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
-				return waitingContainerStatus(cs)
+				return getWaitingContainerStatus(cs)
 			} else if c.Status == v1.ConditionUnknown {
 				return fmt.Errorf(c.Message)
 			}
@@ -98,14 +96,43 @@ func getContainerStatus(pod *v1.Pod) error {
 	return nil
 }
 
+
 func getWaitingContainerStatus(cs []v1.ContainerStatus) error {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
 	for _, c := range cs {
 		if c.State.Waiting != nil {
-			return extractErrorMessageFromContainerStatus(c.Name, c.State.Waiting.Reason, c.State.Waiting.Message)
+			return extractErrorMessageFromContainerStatus(c)
 		}
 	}
+	// No waiting containers, pod should be in good health.
 	return nil
+}
+
+func getTolerationsDetails(pod *v1.Pod) error {
+	if len(pod.Spec.Tolerations) == 0 {
+		return fmt.Errorf("%s: %s", pod.Status.Reason, pod.Status.Message)
+	}
+	messages := make([]string, len(pod.Spec.Tolerations))
+	for i, t := range pod.Spec.Tolerations {
+		if t.Effect
+		switch t.Key {
+		case v1.TaintNodeMemoryPressure:
+			messages[i] = "1 node has Memory Pressure"
+		case v1.TaintNodeDiskPressure:
+			messages[i] = "1 node has Disk Pressure"
+		case v1.TaintNodeNotReady:
+			messages[i] = "1 node is not ready"
+		case v1.TaintNodeUnreachable:
+			messages[i] = "1 node is unreachable"
+		case v1.TaintNodeUnschedulable:
+			messages[i] = "1 node is unschedulable"
+		case v1.TaintNodeNetworkUnavailable:
+			messages[i] = "1 node's network not available"
+		case v1.TaintNodePIDPressure:
+			messages[i] = "1 node has PID pressure"
+		}
+	}
+	return fmt.Errorf("%s: 0/%d nodes available: %s", pod.Status.Reason, len(messages), strings.Join(messages, "\n    -"))
 }
 
 type podStatus struct {
@@ -136,20 +163,22 @@ func (p *podStatus) String() string {
 	return fmt.Sprintf(actionableMessage, p.namespace, p.name)
 }
 
-func extractErrorMessageFromContainerStatus(name string, reason string, message string) error {
+func extractErrorMessageFromContainerStatus(c v1.ContainerStatus) error {
 	// Extract meaning full error out of container statuses.
-	switch reason {
+	switch c.State.Waiting.Reason {
 	case containerCreating:
-		return fmt.Errorf("creating container %s", name)
+		return fmt.Errorf("creating container %s", c.Name)
 	case crashLoopBackOff:
-		return fmt.Errorf("restarting failed container %s", name)
+		return fmt.Errorf("restarting failed container %s", c.Name)
+	case imagePullErr, errImagePullBackOff:
+		return fmt.Errorf("container %s is waiting to start: image %s can't be pulled", c.Name, c.Image)
 	case runContainerError:
-		match := re.FindStringSubmatch(message)
+		match := re.FindStringSubmatch(c.State.Waiting.Message)
 		if len(match) != 0 {
-			return fmt.Errorf("container %s in error %s", name, trimSpace(match[3]))
+			return fmt.Errorf("container %s in error: %s", c.Name, trimSpace(match[3]))
 		}
 	}
-	return fmt.Errorf("container %s in error %s", name, trimSpace(message))
+	return fmt.Errorf("container %s in error: %s", c.Name, trimSpace(c.State.Waiting.Message))
 }
 
 
