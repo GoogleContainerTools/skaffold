@@ -72,10 +72,11 @@ type SkaffoldRunner struct {
 	// podSelector is used to determine relevant pods for logging and portForwarding
 	podSelector *kubernetes.ImageList
 
-	imagesAreLocal bool
-	hasBuilt       bool
-	hasDeployed    bool
-	intents        *intents
+	imagesAreLocal     bool
+	hasBuilt           bool
+	hasDeployed        bool
+	intents            *intents
+	statucCheckContext context.Context
 }
 
 // for testing

@@ -43,15 +43,16 @@ var (
 	fileSyncSucceeded  = event.FileSyncSucceeded
 )
 
-func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
+func (r *SkaffoldRunner) doDev(ctx context.Context, sCtx context.Context, out io.Writer, isFirst bool) error {
+	r.statucCheckContext = sCtx
 	if r.changeSet.needsReload {
 		return ErrorConfigurationChanged
 	}
 
 	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
 	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
-	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
-	needsDeploy := deployIntent && r.changeSet.needsRedeploy
+	needsBuild := isFirst || (buildIntent && len(r.changeSet.needsRebuild) > 0)
+	needsDeploy := isFirst || (deployIntent && r.changeSet.needsRedeploy)
 	if !needsSync && !needsBuild && !needsDeploy {
 		return nil
 	}
@@ -88,10 +89,8 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			r.changeSet.resetBuild()
 			r.intents.resetBuild()
 		}()
-
 		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
-			logrus.Warnln("Skipping deploy due to error:", err)
-			return nil
+			return errorOrNil(isFirst, err)
 		}
 	}
 
@@ -104,11 +103,16 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 
 		r.forwarderManager.Stop()
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
-			logrus.Warnln("Skipping deploy due to error:", err)
-			return nil
+
+			return errorOrNil(isFirst, err)
 		}
 		if err := r.forwarderManager.Start(ctx); err != nil {
 			logrus.Warnln("Port forwarding failed:", err)
+		}
+		if isFirst {
+			if err := r.debugContainerManager.Start(ctx); err != nil {
+				logrus.Warnln("Error starting debug container notification:", err)
+			}
 		}
 	}
 
@@ -137,6 +141,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		if !r.runCtx.Opts.IsTargetImage(artifact) {
 			continue
 		}
+		r.changeSet.AddRebuild(artifact)
 
 		color.Default.Fprintf(out, " - %s\n", artifact.ImageName)
 
@@ -196,32 +201,41 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		return fmt.Errorf("exiting dev mode because initializing sync state failed: %w", err)
 	}
 
-	// First build
-	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {
-		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
-	}
-
-	// Logs should be retrieved up to just before the deploy
-	r.logger.SetSince(time.Now())
-
-	// First deploy
-	if err := r.Deploy(ctx, out, r.builds); err != nil {
-		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
-	}
-
-	if err := r.forwarderManager.Start(ctx); err != nil {
-		logrus.Warnln("Error starting port forwarding:", err)
-	}
-	if err := r.debugContainerManager.Start(ctx); err != nil {
-		logrus.Warnln("Error starting debug container notification:", err)
-	}
-
-	// Start printing the logs after deploy is finished
-	if r.runCtx.Opts.TailDev {
-		if err := r.logger.Start(ctx); err != nil {
-			return fmt.Errorf("starting logger: %w", err)
-		}
-	}
+	//// First build
+	//if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {
+	//	return fmt.Errorf("exiting dev mode because first build failed: %w", err)
+	//}
+	//
+	//// Logs should be retrieved up to just before the deploy
+	//r.logger.SetSince(time.Now())
+	//
+	//// First deploy
+	//if err := r.Deploy(ctx, out, r.builds); err != nil {
+	//	return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
+	//}
+	//
+	//if err := r.forwarderManager.Start(ctx); err != nil {
+	//	logrus.Warnln("Error starting port forwarding:", err)
+	//}
+	//if err := r.debugContainerManager.Start(ctx); err != nil {
+	//	logrus.Warnln("Error starting debug container notification:", err)
+	//}
+	//
+	//// Start printing the logs after deploy is finished
+	//if r.runCtx.Opts.TailDev {
+	//	if err := r.logger.Start(ctx); err != nil {
+	//		return fmt.Errorf("starting logger: %w", err)
+	//	}
+	//}
 
 	return r.listener.WatchForChanges(ctx, out, r.doDev)
+}
+
+
+func errorOrNil(isFirst bool, err error) error {
+	if isFirst {
+		return err
+	}
+	logrus.Warnln("Skipping deploy due to error:", err)
+	return nil
 }

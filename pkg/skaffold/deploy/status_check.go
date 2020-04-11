@@ -86,8 +86,8 @@ func (p *PodStatuses) BuildOrUpdatePods(podResources []validator.Resource) bool 
 }
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
-	client, err := pkgkubernetes.Client()
 	event.StatusCheckEventStarted()
+	client, err := pkgkubernetes.Client()
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}

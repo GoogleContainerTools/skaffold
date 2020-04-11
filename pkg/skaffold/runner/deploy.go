@@ -72,6 +72,7 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 		return nil
 	}
 
+	sCtx := r.getStatusCheckContext(ctx)
 	start := time.Now()
 	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
 
@@ -80,7 +81,7 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 	// start listening for updates and render
 	writer.Start()
 
-	if err := statusCheck(ctx, r.defaultLabeller, r.runCtx, writer); err != nil {
+	if err := statusCheck(sCtx, r.defaultLabeller, r.runCtx, writer); err != nil {
 		writer.Stop()
 		color.Red.Fprintln(out, "Deployments failed to stabilize.")
 		return err
@@ -88,4 +89,11 @@ func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) 
 	writer.Stop()
 	color.Default.Fprintln(out, "Deployments stabilized in", time.Since(start))
 	return nil
+}
+
+func (r *SkaffoldRunner) getStatusCheckContext(ctx context.Context) context.Context {
+	if r.statucCheckContext == nil {
+		return ctx
+	}
+	return r.statucCheckContext
 }
