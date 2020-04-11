@@ -3,6 +3,7 @@ kind: Config
 build:
   artifacts:
   - image: skaffold-example
+    runtimes: [go, musl]
 test:
   - image: skaffold-example
     structureTests:

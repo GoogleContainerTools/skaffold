@@ -3,6 +3,7 @@ kind: Config
 build:
   artifacts:
   - image: pipeline-example
+    runtimes: [go, musl]
 deploy:
   kubectl:
     manifests:

@@ -3,5 +3,6 @@ kind: Config
 build:
   artifacts:
   - image: skaffold-bazel
+    runtimes: [go]
     bazel:
       target: //:skaffold_example.tar

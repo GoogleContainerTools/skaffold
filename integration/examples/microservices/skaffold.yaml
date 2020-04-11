@@ -3,8 +3,10 @@ kind: Config
 build:
   artifacts:
     - image: leeroy-web
+      runtimes: [go, musl]
       context: ./leeroy-web/
     - image: leeroy-app
+      runtimes: [go, musl]
       context: ./leeroy-app/
 deploy:
   kubectl:

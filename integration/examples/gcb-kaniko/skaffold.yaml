@@ -5,6 +5,7 @@ build:
     projectId: k8s-skaffold
   artifacts:
   - image: skaffold-example
+    runtimes: [go, musl]
     kaniko:
       cache: {}
 deploy:

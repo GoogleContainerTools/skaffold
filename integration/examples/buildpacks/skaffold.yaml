@@ -3,6 +3,7 @@ kind: Config
 build:
   artifacts:
   - image: skaffold-buildpacks
+    runtimes: [go, glibc]
     buildpack:
       builder: "heroku/buildpacks"
       env:

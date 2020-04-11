@@ -3,6 +3,7 @@ kind: Config
 build:
   artifacts:
   - image: skaffold-example
+    runtimes: [go, musl]
   tagPolicy:
     envTemplate:
       template: "{{.IMAGE_NAME}}:{{.FOO}}"

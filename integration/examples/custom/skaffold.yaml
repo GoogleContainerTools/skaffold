@@ -3,6 +3,7 @@ kind: Config
 build:
   artifacts:
   - image: skaffold-custom
+    runtimes: [go]
     custom:
       buildCommand: ./build.sh
       dependencies:
