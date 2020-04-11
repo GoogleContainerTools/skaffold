@@ -102,11 +102,11 @@ type containerTransformer interface {
 	// IsApplicable determines if this container is suitable to be transformed.
 	IsApplicable(config imageConfiguration) bool
 
-	// RuntimeSupportImage returns the associated duct-tape helper image required or empty string
-	RuntimeSupportImage() string
-
-	// Apply configures a container definition for debugging, returning the debug configuration details or `nil` if it could not be done
-	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *ContainerDebugConfiguration
+	// Apply configures a container definition for debugging, returning the debug configuration details
+	// and required initContainer (an empty string if not required), or return a non-nil error if
+	// the container could not be transformed.  The initContainer image is intended to install any
+	// required debug support tools.
+	Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error)
 }
 
 const (
@@ -195,10 +195,11 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 			continue
 		}
 		// requiredImage, if not empty, is the image ID providing the debugging support files
+		// `err != nil` means that the container did not or could not be transformed
 		if configuration, requiredImage, err := transformContainer(container, imageConfig, portAlloc); err == nil {
 			configuration.Artifact = imageConfig.artifact
 			configuration.WorkingDir = imageConfig.workingDir
-			configurations[container.Name] = *configuration
+			configurations[container.Name] = configuration
 			if len(requiredImage) > 0 {
 				logrus.Infof("%q requires debugging support image %q", container.Name, requiredImage)
 				containersRequiringSupport = append(containersRequiringSupport, container)
@@ -206,7 +207,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 			}
 			// todo: add this artifact to the watch list?
 		} else {
-			logrus.Infof("Image %q not configured for debugging: %v", container.Name, err)
+			logrus.Warnf("Image %q not configured for debugging: %v", container.Name, err)
 		}
 	}
 
@@ -282,7 +283,7 @@ func isPortAvailable(podSpec *v1.PodSpec, port int32) bool {
 // transformContainer rewrites the container definition to enable debugging.
 // Returns a debugging configuration description with associated language runtime support
 // container image, or an error if the rewrite was unsuccessful.
-func transformContainer(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (*ContainerDebugConfiguration, string, error) {
+func transformContainer(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
 	// update image configuration values with those set in the k8s manifest
 	for _, envVar := range container.Env {
 		// FIXME handle ValueFrom?
@@ -301,10 +302,10 @@ func transformContainer(container *v1.Container, config imageConfiguration, port
 
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
-			return transform.Apply(container, config, portAlloc), transform.RuntimeSupportImage(), nil
+			return transform.Apply(container, config, portAlloc)
 		}
 	}
-	return nil, "", fmt.Errorf("unable to determine runtime for %q", container.Name)
+	return ContainerDebugConfiguration{}, "", fmt.Errorf("unable to determine runtime for %q", container.Name)
 }
 
 func encodeConfigurations(configurations map[string]ContainerDebugConfiguration) string {
