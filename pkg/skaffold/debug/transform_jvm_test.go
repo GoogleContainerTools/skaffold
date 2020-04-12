@@ -497,7 +497,7 @@ func TestTransformManifestJVM(t *testing.T) {
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
-			result := transformManifest(value, retriever)
+			result := transformManifest(value, retriever, "HELPERS")
 
 			t.CheckDeepEqual(test.transformed, result)
 			t.CheckDeepEqual(test.out, value)

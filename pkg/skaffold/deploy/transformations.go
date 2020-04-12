@@ -21,7 +21,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 )
 
-type ManifestTransform func(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool) (kubectl.ManifestList, error)
+type Registries struct {
+	InsecureRegistries   map[string]bool
+	DebugHelpersRegistry string
+}
+
+type ManifestTransform func(l kubectl.ManifestList, builds []build.Artifact, registries Registries) (kubectl.ManifestList, error)
 
 // Transforms are applied to manifests
 var manifestTransforms []ManifestTransform
