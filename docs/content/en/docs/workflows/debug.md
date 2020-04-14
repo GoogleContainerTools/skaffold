@@ -38,11 +38,16 @@ We are looking for ways to identify this information and to pass it back if foun
 
 Go-based applications are configured to run under [Delve](https://github.com/go-delve/delve) in its headless-server mode.
 
-  - Go application should self-identify by setting one of the [standard Go runtime
-    environment variables](https://godoc.org/runtime) such as `GODEBUG`, `GOGC`, `GOMAXPROCS`,
-    or `GOTRACEBACK`. `GOTRACEBACK=all` is a generally useful configuration.
+  - Go applications must identify themselves as being Go-based by setting one of the [standard Go runtime
+    environment variables](https://godoc.org/runtime) in the container, such as `GODEBUG`, `GOGC`, `GOMAXPROCS`,
+    or `GOTRACEBACK`. `GOTRACEBACK=single` is the default setting for Go, and `GOTRACEBACK=all` is a 
+    generally useful configuration.
   - Go applications should be built without optimizations, so your build should be capable of building with
     `-gcflags='all=-N -l'`. Skaffold [_Profiles_]({{< relref "/docs/environment/profiles.md" >}}) are a useful option.
+  - Alpine/MUSL-based apps are not supported at the moment, and attempts to debug such apps will result in cryptic errors like 
+    `standard_init_linux.go:211: exec user process caused "no such file or directory"`.
+    The [Distroless project](https://github.com/GoogleContainerTools/distroless)'s `gcr.io/distroless/base`
+    is a minimal Debian/glibc-based image that works well as a base image.
 
 Note for users of [VS Code's debug adapter for Go](https://github.com/Microsoft/vscode-go):
 the source location must be set to the remote source location _during compilation_.  For example, the
