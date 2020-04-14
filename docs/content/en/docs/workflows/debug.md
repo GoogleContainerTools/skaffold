@@ -44,7 +44,7 @@ Go-based applications are configured to run under [Delve](https://github.com/go-
     generally useful configuration.
   - Go applications should be built without optimizations, so your build should be capable of building with
     `-gcflags='all=-N -l'`. Skaffold [_Profiles_]({{< relref "/docs/environment/profiles.md" >}}) are a useful option.
-  - Alpine/MUSL-based apps are not supported at the moment, and usually results in cryptic errors like 
+  - Alpine/MUSL-based apps are not supported at the moment, and attempts to debug such apps will result in cryptic errors like 
     `standard_init_linux.go:211: exec user process caused "no such file or directory"`.
     The [Distroless project](https://github.com/GoogleContainerTools/distroless)'s `gcr.io/distroless/base`
     is a minimal Debian/glibc-based image that works well as a base image.
