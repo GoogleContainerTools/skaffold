@@ -1,8 +1,6 @@
 package lifecycle
 
 import (
-	"os"
-
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
@@ -13,8 +11,6 @@ type Restorer struct {
 	LayersDir  string
 	Buildpacks []Buildpack
 	Logger     Logger
-	UID        int
-	GID        int
 }
 
 // Restore attempts to restore layer data for cache=true layers, removing the layer when unsuccessful.
@@ -40,7 +36,7 @@ func (r *Restorer) Restore(cache Cache) error {
 		}
 
 		cachedLayers := meta.MetadataForBuildpack(buildpack.ID).Layers
-		for _, bpLayer := range buildpackDir.findLayers(cached) {
+		for _, bpLayer := range buildpackDir.findLayers(forCached) {
 			name := bpLayer.name()
 			cachedLayer, exists := cachedLayers[name]
 			if !exists {
@@ -70,15 +66,6 @@ func (r *Restorer) Restore(cache Cache) error {
 	}
 	if err := g.Wait(); err != nil {
 		return errors.Wrap(err, "restoring data")
-	}
-
-	// if restorer is running as root it needs to fix the ownership of the layers dir
-	if current := os.Getuid(); current == -1 {
-		return errors.New("cannot determine UID")
-	} else if current == 0 {
-		if err := recursiveChown(r.LayersDir, r.UID, r.GID); err != nil {
-			return errors.Wrapf(err, "chowning layers dir to '%d/%d'", r.UID, r.GID)
-		}
 	}
 	return nil
 }

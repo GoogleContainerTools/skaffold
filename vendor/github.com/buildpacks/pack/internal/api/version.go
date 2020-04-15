@@ -93,7 +93,11 @@ func (v *Version) SupportsVersion(o *Version) bool {
 }
 
 func (v *Version) Equal(o *Version) bool {
-	return v.Compare(o) == 0
+	if o != nil {
+		return v.Compare(o) == 0
+	}
+
+	return o == nil && v == nil
 }
 
 func (v *Version) Compare(o *Version) int {

@@ -1,4 +1,4 @@
-package lifecycle
+package launch
 
 import (
 	"fmt"
@@ -17,8 +17,9 @@ type Launcher struct {
 	AppDir             string
 	Processes          []Process
 	Buildpacks         []Buildpack
-	Env                BuildEnv
+	Env                Env
 	Exec               func(argv0 string, argv []string, envv []string) error
+	Setenv             func(string, string) error
 }
 
 func (l *Launcher) Launch(self string, cmd []string) error {
@@ -33,6 +34,9 @@ func (l *Launcher) Launch(self string, cmd []string) error {
 		return errors.Wrap(err, "change to app directory")
 	}
 	if process.Direct {
+		if err := l.Setenv("PATH", l.Env.Get("PATH")); err != nil {
+			return errors.Wrap(err, "set path")
+		}
 		binary, err := exec.LookPath(process.Command)
 		if err != nil {
 			return errors.Wrap(err, "path lookup")
@@ -113,7 +117,7 @@ func (l *Launcher) profileD() (string, error) {
 		return "", err
 	}
 	for _, bp := range l.Buildpacks {
-		scripts, err := filepath.Glob(filepath.Join(layersDir, bp.dir(), "*", "profile.d", "*"))
+		scripts, err := filepath.Glob(filepath.Join(layersDir, EscapeID(bp.ID), "*", "profile.d", "*"))
 		if err != nil {
 			return "", err
 		}
@@ -184,7 +188,7 @@ func eachDir(dir string, fn func(path string) error) error {
 
 func (l *Launcher) eachBuildpack(dir string, fn func(path string) error) error {
 	for _, bp := range l.Buildpacks {
-		if err := fn(filepath.Join(l.LayersDir, bp.dir())); err != nil {
+		if err := fn(filepath.Join(l.LayersDir, EscapeID(bp.ID))); err != nil {
 			return err
 		}
 	}

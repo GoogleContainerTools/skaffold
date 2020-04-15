@@ -1,23 +1,47 @@
-GOCMD?=go
-GOENV=CGO_ENABLED=0
-GOFLAGS?=-mod=vendor
-PACK_VERSION?=dev-$(shell date +%Y-%m-%d-%H:%M:%S)
-PACK_BIN?=pack
-PACKAGE_BASE=github.com/buildpacks/pack
-PACKAGES:=$(shell $(GOCMD) list ./... | grep -v /testdata/)
-SRC:=$(shell find . -type f -name '*.go' -not -path "*/vendor/*")
+ACCEPTANCE_TIMEOUT?=$(TEST_TIMEOUT)
 ARCHIVE_NAME=pack-$(PACK_VERSION)
+GOCMD?=go
+GOFLAGS?=-mod=vendor
+PACKAGE_BASE=github.com/buildpacks/pack
+PACK_BIN?=pack
+PACK_GITSHA1=$(shell git rev-parse --short=7 HEAD)
+PACK_VERSION?=0.0.0
+SRC=$(shell find . -type f -name '*.go' -not -path "*/vendor/*")
+TEST_TIMEOUT?=900s
+UNIT_TIMEOUT?=$(TEST_TIMEOUT)
+
+clean_build := $(strip ${PACK_BUILD})
+clean_sha := $(strip ${PACK_GITSHA1})
+
+# append build number and git sha to version, if not-empty
+ifneq ($(and $(clean_build),$(clean_sha)),)
+PACK_VERSION:=${PACK_VERSION}+git-${clean_sha}.build-${clean_build}
+else ifneq ($(clean_build),)
+PACK_VERSION:=${PACK_VERSION}+build-${clean_build}
+else ifneq ($(clean_sha),)
+PACK_VERSION:=${PACK_VERSION}+git-${clean_sha}
+endif
 
 export GOFLAGS:=$(GOFLAGS)
+export CGO_ENABLED=0
 
 all: clean verify test build
 
-build:
-	@echo "> Building..."
-	mkdir -p ./out
-	$(GOENV) $(GOCMD) build -ldflags "-X 'github.com/buildpacks/pack/cmd.Version=${PACK_VERSION}'" -o ./out/$(PACK_BIN) -a ./cmd/pack
+mod-tidy:
+	$(GOCMD) mod tidy
+	cd tools; $(GOCMD) mod tidy
+	
+mod-vendor:
+	$(GOCMD) mod vendor
+	cd tools; $(GOCMD) mod vendor
+	
+tidy: mod-tidy mod-vendor format
 
-package:
+build: out
+	@echo "> Building..."
+	$(GOCMD) build -ldflags "-s -w -X 'github.com/buildpacks/pack/cmd.Version=${PACK_VERSION}'" -o ./out/$(PACK_BIN) -a ./cmd/pack
+
+package: out
 	tar czf ./out/$(ARCHIVE_NAME).tgz -C out/ pack
 
 install-mockgen:
@@ -44,15 +68,15 @@ test: unit acceptance
 
 unit:
 	@echo "> Running unit/integration tests..."
-	$(GOCMD) test -v -count=1 -parallel=1 -timeout=0 ./...
+	$(GOCMD) test -v -count=1 -parallel=1 -timeout=$(UNIT_TIMEOUT) ./...
 
 acceptance:
 	@echo "> Running acceptance tests..."
-	COMPILE_PACK_WITH_VERSION=$(or ${COMPILE_PACK_WITH_VERSION}, 0.0.0) $(GOCMD) test -v -count=1 -parallel=1 -timeout=0 -tags=acceptance ./acceptance
+	$(GOCMD) test -v -count=1 -parallel=1 -timeout=$(ACCEPTANCE_TIMEOUT) -tags=acceptance ./acceptance
 
 acceptance-all:
 	@echo "> Running acceptance tests..."
-	ACCEPTANCE_SUITE_CONFIG=$$(cat ./acceptance/testconfig/all.json) $(GOCMD) test -v -count=1 -parallel=1 -timeout=0 -tags=acceptance ./acceptance
+	ACCEPTANCE_SUITE_CONFIG=$$(cat ./acceptance/testconfig/all.json) $(GOCMD) test -v -count=1 -parallel=1 -timeout=$(ACCEPTANCE_TIMEOUT) -tags=acceptance ./acceptance
 
 clean:
 	@echo "> Cleaning workspace..."
@@ -66,10 +90,26 @@ generate: install-mockgen
 
 verify-format: install-goimports
 	@echo "> Verifying format..."
-	@test -z "$(shell goimports -l -local ${PACKAGE_BASE} ${SRC})";\
-	_err=$$?;\
-	[ $$_err -ne 0 ] && echo "ERROR: Format verification failed!\n" &&\
-	goimports -d -local ${PACKAGE_BASE} ${SRC} && exit $$_err;\
+	@test -z "$(shell goimports -l -local ${PACKAGE_BASE} ${SRC})"; _err=$$?;\
+	[ $$_err -ne 0 ] &&\
+	echo "ERROR: Format verification failed!\n" &&\
+	goimports -d -local ${PACKAGE_BASE} ${SRC} &&\
+	exit $$_err;\
 	exit 0;
+
+prepare-for-pr: tidy verify test
+	@git diff-index --quiet HEAD --; _err=$$?;\
+	[ $$_err -ne 0 ] &&\
+	echo "-----------------" &&\
+	echo "NOTICE: There are some files that have not been committed." &&\
+	echo "-----------------\n" &&\
+	git status &&\
+	echo "\n-----------------" &&\
+	echo "NOTICE: There are some files that have not been committed." &&\
+	echo "-----------------\n"  &&\
+	exit 0;
+
+out:
+	mkdir out
 
 .PHONY: clean build format imports lint test unit acceptance verify verify-format

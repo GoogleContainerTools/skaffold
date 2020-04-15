@@ -43,14 +43,14 @@ github.com/BurntSushi/toml
 # github.com/MakeNowJust/heredoc v1.0.0
 ## explicit
 github.com/MakeNowJust/heredoc
-# github.com/Masterminds/semver v1.4.2
+# github.com/Masterminds/semver v1.5.0
 github.com/Masterminds/semver
 # github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
 # github.com/Netflix/go-expect v0.0.0-20190729225929-0e00d9168667
 ## explicit
-# github.com/apex/log v1.1.2-0.20190827100214-baa5455d1012
+# github.com/apex/log v1.1.2
 github.com/apex/log
 # github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
@@ -60,17 +60,18 @@ github.com/blang/semver
 # github.com/bmatcuk/doublestar v1.2.2
 ## explicit
 github.com/bmatcuk/doublestar
-# github.com/buildpacks/imgutil v0.0.0-20200203165119-4b0611f06e49
+# github.com/buildpacks/imgutil v0.0.0-20200313170640-a02052f47d62
 github.com/buildpacks/imgutil
 github.com/buildpacks/imgutil/local
 github.com/buildpacks/imgutil/remote
-# github.com/buildpacks/lifecycle v0.6.1
+# github.com/buildpacks/lifecycle v0.7.1
 github.com/buildpacks/lifecycle
 github.com/buildpacks/lifecycle/api
 github.com/buildpacks/lifecycle/archive
 github.com/buildpacks/lifecycle/auth
 github.com/buildpacks/lifecycle/cmd
-# github.com/buildpacks/pack v0.9.0
+github.com/buildpacks/lifecycle/launch
+# github.com/buildpacks/pack v0.10.0
 ## explicit
 github.com/buildpacks/pack
 github.com/buildpacks/pack/builder
@@ -103,7 +104,7 @@ github.com/containerd/continuity/pathdriver
 github.com/davecgh/go-spew/spew
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 github.com/dgrijalva/jwt-go
-# github.com/docker/cli v0.0.0-20191212191748-ebca1413117a
+# github.com/docker/cli v0.0.0-20200312141509-ef2f64abbd37
 ## explicit
 github.com/docker/cli/cli/config
 github.com/docker/cli/cli/config/configfile
@@ -211,7 +212,7 @@ github.com/golang/glog
 # github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9
 ## explicit
 github.com/golang/groupcache/lru
-# github.com/golang/protobuf v1.3.2
+# github.com/golang/protobuf v1.3.5
 ## explicit
 github.com/golang/protobuf/descriptor
 github.com/golang/protobuf/jsonpb
@@ -237,7 +238,7 @@ github.com/google/go-cmp/cmp/internal/diff
 github.com/google/go-cmp/cmp/internal/flags
 github.com/google/go-cmp/cmp/internal/function
 github.com/google/go-cmp/cmp/internal/value
-# github.com/google/go-containerregistry v0.0.0-20200225041405-6950943e71a1
+# github.com/google/go-containerregistry v0.0.0-20200313165449-955bf358a3d8
 ## explicit
 github.com/google/go-containerregistry/pkg/authn
 github.com/google/go-containerregistry/pkg/internal/retry
@@ -247,6 +248,7 @@ github.com/google/go-containerregistry/pkg/name
 github.com/google/go-containerregistry/pkg/v1
 github.com/google/go-containerregistry/pkg/v1/empty
 github.com/google/go-containerregistry/pkg/v1/google
+github.com/google/go-containerregistry/pkg/v1/layout
 github.com/google/go-containerregistry/pkg/v1/mutate
 github.com/google/go-containerregistry/pkg/v1/partial
 github.com/google/go-containerregistry/pkg/v1/random
@@ -285,6 +287,8 @@ github.com/gophercloud/gophercloud/openstack/utils
 github.com/gophercloud/gophercloud/pagination
 # github.com/gorilla/mux v1.7.3
 github.com/gorilla/mux
+# github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7
+## explicit
 # github.com/grpc-ecosystem/grpc-gateway v1.12.1
 ## explicit
 github.com/grpc-ecosystem/grpc-gateway/internal
@@ -329,10 +333,10 @@ github.com/krishicks/yaml-patch
 # github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a
 ## explicit
 github.com/mattbaird/jsonpatch
-# github.com/mattn/go-colorable v0.1.4
+# github.com/mattn/go-colorable v0.1.6
 ## explicit
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.10
+# github.com/mattn/go-isatty v0.0.12
 github.com/mattn/go-isatty
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
@@ -365,10 +369,11 @@ github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runc v1.0.0-rc8
 github.com/opencontainers/runc/libcontainer/user
-# github.com/opencontainers/selinux v1.3.0
+# github.com/opencontainers/selinux v1.4.0
 github.com/opencontainers/selinux/go-selinux
 github.com/opencontainers/selinux/go-selinux/label
-# github.com/pkg/errors v0.8.1
+github.com/opencontainers/selinux/pkg/pwalk
+# github.com/pkg/errors v0.9.1
 github.com/pkg/errors
 # github.com/prometheus/client_golang v1.2.1
 ## explicit
@@ -452,8 +457,9 @@ go.opencensus.io/trace/tracestate
 ## explicit
 # go.uber.org/zap v1.12.0
 ## explicit
-# golang.org/x/crypto v0.0.0-20191219195013-becbf705a915
+# golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
 ## explicit
+golang.org/x/crypto/blowfish
 golang.org/x/crypto/cast5
 golang.org/x/crypto/chacha20
 golang.org/x/crypto/curve25519
@@ -469,6 +475,7 @@ golang.org/x/crypto/openpgp/s2k
 golang.org/x/crypto/poly1305
 golang.org/x/crypto/ssh
 golang.org/x/crypto/ssh/agent
+golang.org/x/crypto/ssh/internal/bcrypt_pbkdf
 golang.org/x/crypto/ssh/knownhosts
 golang.org/x/crypto/ssh/terminal
 # golang.org/x/exp v0.0.0-20191127035308-9964a5a80460
@@ -481,8 +488,7 @@ golang.org/x/lint/golint
 # golang.org/x/mod v0.1.1-0.20191105210325-c90efee705ee
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20191126235420-ef20fe5d7933
-## explicit
+# golang.org/x/net v0.0.0-20200301022130-244492dfa37a
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/http/httpguts
@@ -503,9 +509,7 @@ golang.org/x/oauth2/jwt
 # golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 ## explicit
 golang.org/x/sync/errgroup
-golang.org/x/sync/singleflight
-# golang.org/x/sys v0.0.0-20191127021746-63cb32ae39b2 => golang.org/x/sys v0.0.0-20190507160741-ecd444e8653b
-## explicit
+# golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527 => golang.org/x/sys v0.0.0-20190507160741-ecd444e8653b
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
 golang.org/x/sys/windows
@@ -562,7 +566,7 @@ google.golang.org/appengine/internal/modules
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20191216205247-b31c10ee225f
+# google.golang.org/genproto v0.0.0-20200313141609-30c55424f95d
 ## explicit
 google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/api/httpbody
@@ -571,7 +575,7 @@ google.golang.org/genproto/googleapis/rpc/code
 google.golang.org/genproto/googleapis/rpc/status
 google.golang.org/genproto/googleapis/type/expr
 google.golang.org/genproto/protobuf/field_mask
-# google.golang.org/grpc v1.26.0
+# google.golang.org/grpc v1.28.0
 ## explicit
 google.golang.org/grpc
 google.golang.org/grpc/attributes
@@ -594,8 +598,10 @@ google.golang.org/grpc/internal/binarylog
 google.golang.org/grpc/internal/buffer
 google.golang.org/grpc/internal/channelz
 google.golang.org/grpc/internal/envconfig
+google.golang.org/grpc/internal/grpclog
 google.golang.org/grpc/internal/grpcrand
 google.golang.org/grpc/internal/grpcsync
+google.golang.org/grpc/internal/grpcutil
 google.golang.org/grpc/internal/resolver/dns
 google.golang.org/grpc/internal/resolver/passthrough
 google.golang.org/grpc/internal/syscall
@@ -615,6 +621,7 @@ gopkg.in/AlecAivazis/survey.v1
 gopkg.in/AlecAivazis/survey.v1/core
 gopkg.in/AlecAivazis/survey.v1/terminal
 # gopkg.in/inf.v0 v0.9.1
+## explicit
 gopkg.in/inf.v0
 # gopkg.in/src-d/go-billy.v4 v4.3.2
 gopkg.in/src-d/go-billy.v4
@@ -667,7 +674,7 @@ gopkg.in/src-d/go-git.v4/utils/merkletrie/internal/frame
 gopkg.in/src-d/go-git.v4/utils/merkletrie/noder
 # gopkg.in/warnings.v0 v0.1.2
 gopkg.in/warnings.v0
-# gopkg.in/yaml.v2 v2.2.7
+# gopkg.in/yaml.v2 v2.2.8
 ## explicit
 gopkg.in/yaml.v2
 # honnef.co/go/tools v0.0.1-2019.2.3
@@ -696,7 +703,7 @@ honnef.co/go/tools/staticcheck/vrp
 honnef.co/go/tools/stylecheck
 honnef.co/go/tools/unused
 honnef.co/go/tools/version
-# k8s.io/api v0.17.0 => k8s.io/api v0.0.0-20190620084959-7cf5895f2711
+# k8s.io/api v0.17.4 => k8s.io/api v0.0.0-20190620084959-7cf5895f2711
 ## explicit
 k8s.io/api/admissionregistration/v1beta1
 k8s.io/api/apps/v1
@@ -734,7 +741,7 @@ k8s.io/api/settings/v1alpha1
 k8s.io/api/storage/v1
 k8s.io/api/storage/v1alpha1
 k8s.io/api/storage/v1beta1
-# k8s.io/apimachinery v0.17.0 => k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
+# k8s.io/apimachinery v0.17.4 => k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
 ## explicit
 k8s.io/apimachinery/pkg/api/equality
 k8s.io/apimachinery/pkg/api/errors
@@ -786,7 +793,7 @@ k8s.io/apimachinery/pkg/watch
 k8s.io/apimachinery/third_party/forked/golang/json
 k8s.io/apimachinery/third_party/forked/golang/netutil
 k8s.io/apimachinery/third_party/forked/golang/reflect
-# k8s.io/client-go v0.17.0 => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
+# k8s.io/client-go v0.17.4 => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
 ## explicit
 k8s.io/client-go/discovery
 k8s.io/client-go/discovery/fake

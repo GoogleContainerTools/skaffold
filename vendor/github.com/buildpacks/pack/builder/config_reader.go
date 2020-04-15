@@ -9,6 +9,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/pkg/errors"
 
+	"github.com/buildpacks/pack/internal/config"
 	"github.com/buildpacks/pack/internal/dist"
 	"github.com/buildpacks/pack/internal/paths"
 	"github.com/buildpacks/pack/internal/style"
@@ -83,7 +84,7 @@ func ReadConfig(path string) (config Config, warnings []string, err error) {
 		return Config{}, nil, errors.Wrap(err, "reset config file pointer")
 	}
 
-	config, err = parseConfig(file, builderDir)
+	config, err = parseConfig(file, builderDir, path)
 	if err != nil {
 		return Config{}, nil, errors.Wrapf(err, "parse contents of '%s'", path)
 	}
@@ -114,10 +115,21 @@ func getWarningsForObsoleteFields(reader io.Reader) ([]string, error) {
 }
 
 // parseConfig reads a builder configuration from reader and resolves relative buildpack paths using `relativeToDir`
-func parseConfig(reader io.Reader, relativeToDir string) (Config, error) {
-	var builderConfig Config
-	if _, err := toml.DecodeReader(reader, &builderConfig); err != nil {
+func parseConfig(reader io.Reader, relativeToDir, path string) (Config, error) {
+	builderConfig := Config{}
+	tomlMetadata, err := toml.DecodeReader(reader, &builderConfig)
+	if err != nil {
 		return Config{}, errors.Wrap(err, "decoding toml contents")
+	}
+
+	undecodedKeys := tomlMetadata.Undecoded()
+	if len(undecodedKeys) > 0 {
+		unknownElementsMsg := config.FormatUndecodedKeys(undecodedKeys)
+
+		return Config{}, errors.Errorf("%s in %s",
+			unknownElementsMsg,
+			style.Symbol(path),
+		)
 	}
 
 	for i, bp := range builderConfig.Buildpacks.Buildpacks() {

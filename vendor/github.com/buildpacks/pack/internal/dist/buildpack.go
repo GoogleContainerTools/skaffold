@@ -17,6 +17,7 @@ const AssumedBuildpackAPIVersion = "0.1"
 const BuildpacksDir = "/cnb/buildpacks"
 
 type Blob interface {
+	// Open returns a io.ReadCloser for the contents of the Blob in tar format.
 	Open() (io.ReadCloser, error)
 }
 
@@ -39,8 +40,9 @@ type Buildpack interface {
 }
 
 type BuildpackInfo struct {
-	ID      string `toml:"id" json:"id"`
-	Version string `toml:"version" json:"version,omitempty"`
+	ID       string `toml:"id" json:"id,omitempty"`
+	Version  string `toml:"version" json:"version,omitempty"`
+	Homepage string `toml:"homepage,omitempty" json:"homepage,omitempty"`
 }
 
 func (b BuildpackInfo) FullName() string {
@@ -50,13 +52,30 @@ func (b BuildpackInfo) FullName() string {
 	return b.ID
 }
 
+// Satisfy stringer
+func (b BuildpackInfo) String() string { return b.FullName() }
+
+// Match compares two buildpacks by ID and Version
+func (b BuildpackInfo) Match(o BuildpackInfo) bool {
+	return b.ID == o.ID && b.Version == o.Version
+}
+
 type Stack struct {
 	ID     string   `json:"id"`
 	Mixins []string `json:"mixins,omitempty"`
 }
 
-// BuildpackFromRootBlob constructs a buildpack from a blob. It is assumed that the buildpack contents reside at the root of the
-// blob. The constructed buildpack contents will be structured as per the distribution spec (currently
+// BuildpackFromBlob constructs a buildpack from a blob. It is assumed that the buildpack
+// contents are structured as per the distribution spec (currently '/cnbs/buildpacks/{ID}/{version}/*').
+func BuildpackFromBlob(bpd BuildpackDescriptor, blob Blob) Buildpack {
+	return &buildpack{
+		Blob:       blob,
+		descriptor: bpd,
+	}
+}
+
+// BuildpackFromRootBlob constructs a buildpack from a blob. It is assumed that the buildpack contents reside at the
+// root of the blob. The constructed buildpack contents will be structured as per the distribution spec (currently
 // a tar with contents under '/cnbs/buildpacks/{ID}/{version}/*').
 func BuildpackFromRootBlob(blob Blob) (Buildpack, error) {
 	bpd := BuildpackDescriptor{}
@@ -82,27 +101,16 @@ func BuildpackFromRootBlob(blob Blob) (Buildpack, error) {
 		return nil, errors.Wrap(err, "invalid buildpack.toml")
 	}
 
-	db := &distBlob{
-		openFn: func() io.ReadCloser {
-			return archive.GenerateTar(func(tw *tar.Writer) error {
-				return toDistTar(tw, bpd, blob)
-			})
+	return &buildpack{
+		descriptor: bpd,
+		Blob: &distBlob{
+			openFn: func() io.ReadCloser {
+				return archive.GenerateTar(func(tw *tar.Writer) error {
+					return toDistTar(tw, bpd, blob)
+				})
+			},
 		},
-	}
-
-	return &buildpack{
-		descriptor: bpd,
-		Blob:       db,
 	}, nil
-}
-
-// BuildpackFromTarBlob constructs a buildpack from a ReadCloser to a tar. It is assumed that the buildpack
-// contents are structured as per the distribution spec (currently '/cnbs/buildpacks/{ID}/{version}/*').
-func BuildpackFromTarBlob(bpd BuildpackDescriptor, blob Blob) Buildpack {
-	return &buildpack{
-		Blob:       blob,
-		descriptor: bpd,
-	}
 }
 
 type distBlob struct {

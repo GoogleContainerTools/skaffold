@@ -21,15 +21,15 @@ func init() {
 	NormalizedDateTime = time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
 }
 
-func ReadDirAsTar(srcDir, basePath string, uid, gid int, mode int64, normalizeModTime bool) io.ReadCloser {
+func ReadDirAsTar(srcDir, basePath string, uid, gid int, mode int64, normalizeModTime bool, fileFilter func(string) bool) io.ReadCloser {
 	return GenerateTar(func(tw *tar.Writer) error {
-		return WriteDirToTar(tw, srcDir, basePath, uid, gid, mode, normalizeModTime)
+		return WriteDirToTar(tw, srcDir, basePath, uid, gid, mode, normalizeModTime, fileFilter)
 	})
 }
 
-func ReadZipAsTar(srcPath, basePath string, uid, gid int, mode int64, normalizeModTime bool) io.ReadCloser {
+func ReadZipAsTar(srcPath, basePath string, uid, gid int, mode int64, normalizeModTime bool, fileFilter func(string) bool) io.ReadCloser {
 	return GenerateTar(func(tw *tar.Writer) error {
-		return WriteZipToTar(tw, srcPath, basePath, uid, gid, mode, normalizeModTime)
+		return WriteZipToTar(tw, srcPath, basePath, uid, gid, mode, normalizeModTime, fileFilter)
 	})
 }
 
@@ -122,6 +122,10 @@ func AddFileToTar(tw *tar.Writer, path string, txt string) error {
 
 var ErrEntryNotExist = errors.New("not exist")
 
+func IsEntryNotExist(err error) bool {
+	return err == ErrEntryNotExist || errors.Cause(err) == ErrEntryNotExist
+}
+
 func ReadTarEntry(rc io.Reader, entryPath string) (*tar.Header, []byte, error) {
 	tr := tar.NewReader(rc)
 	for {
@@ -146,8 +150,13 @@ func ReadTarEntry(rc io.Reader, entryPath string) (*tar.Header, []byte, error) {
 	return nil, nil, errors.Wrapf(ErrEntryNotExist, "could not find entry path '%s'", entryPath)
 }
 
-func WriteDirToTar(tw *tar.Writer, srcDir, basePath string, uid, gid int, mode int64, normalizeModTime bool) error {
+// WriteDirToTar writes the contents of a directory to a tar writer. `basePath` is the "location" in the tar the
+// contents will be places.
+func WriteDirToTar(tw *tar.Writer, srcDir, basePath string, uid, gid int, mode int64, normalizeModTime bool, fileFilter func(string) bool) error {
 	return filepath.Walk(srcDir, func(file string, fi os.FileInfo, err error) error {
+		if fileFilter != nil && !fileFilter(file) {
+			return nil
+		}
 		if err != nil {
 			return err
 		}
@@ -204,7 +213,7 @@ func WriteDirToTar(tw *tar.Writer, srcDir, basePath string, uid, gid int, mode i
 	})
 }
 
-func WriteZipToTar(tw *tar.Writer, srcZip, basePath string, uid, gid int, mode int64, normalizeModTime bool) error {
+func WriteZipToTar(tw *tar.Writer, srcZip, basePath string, uid, gid int, mode int64, normalizeModTime bool, fileFilter func(string) bool) error {
 	zipReader, err := zip.OpenReader(srcZip)
 	if err != nil {
 		return err
@@ -212,6 +221,9 @@ func WriteZipToTar(tw *tar.Writer, srcZip, basePath string, uid, gid int, mode i
 	defer zipReader.Close()
 
 	for _, f := range zipReader.File {
+		if fileFilter != nil && !fileFilter(f.Name) {
+			continue
+		}
 		var header *tar.Header
 		if f.Mode()&os.ModeSymlink != 0 {
 			target, err := func() (string, error) {

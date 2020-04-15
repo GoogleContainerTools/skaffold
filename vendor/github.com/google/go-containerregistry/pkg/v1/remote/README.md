@@ -34,16 +34,12 @@ func main() {
 }
 ```
 
-## Caveats
+## Structure
 
-### schema 1
+<p align="center">
+  <img src="/images/remote.dot.svg" />
+</p>
 
-This package does not support schema 1 images, see [`#377`](https://github.com/google/go-containerregistry/issues/377),
-however, it's possible to do _something_ useful with them via [`remote.Get`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/remote#Get),
-which doesn't try to interpret what is returned by the registry.
-
-[`crane.Copy`](https://godoc.org/github.com/google/go-containerregistry/pkg/crane#Copy) takes advantage of this to implement support for copying schema 1 images,
-see [here](https://github.com/google/go-containerregistry/blob/master/pkg/internal/legacy/copy.go).
 
 ## Background
 
@@ -108,3 +104,14 @@ so the ordering is less important.
 
 In other cases, e.g. when using a [`stream.Layer`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/stream#Layer),
 we can't compute anything until we have already uploaded the layer, so we need to be careful about ordering.
+
+## Caveats
+
+### schema 1
+
+This package does not support schema 1 images, see [`#377`](https://github.com/google/go-containerregistry/issues/377),
+however, it's possible to do _something_ useful with them via [`remote.Get`](https://godoc.org/github.com/google/go-containerregistry/pkg/v1/remote#Get),
+which doesn't try to interpret what is returned by the registry.
+
+[`crane.Copy`](https://godoc.org/github.com/google/go-containerregistry/pkg/crane#Copy) takes advantage of this to implement support for copying schema 1 images,
+see [here](https://github.com/google/go-containerregistry/blob/master/pkg/internal/legacy/copy.go).
