@@ -60,6 +60,7 @@ If the build fails, an error will be attached to the event.
 | artifact | [string](#string) |  | artifact name |
 | status | [string](#string) |  | artifact build status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | error when build status is Failed. |
+| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
 
 
 
@@ -146,6 +147,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | error when status is Failed |
+| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
 
 
 
@@ -202,6 +204,7 @@ FileSyncEvent describes the sync status.
 | image | [string](#string) |  | the container image to which files are sycned. |
 | status | [string](#string) |  | status of file sync. one of: Not Started, In progress, Succeeded, Failed. |
 | err | [string](#string) |  | error in case of status failed. |
+| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
 
 
 
@@ -409,6 +412,7 @@ will be sent with the new status.
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 | err | [string](#string) |  |  |
+| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
 
 
 
@@ -462,6 +466,17 @@ will be sent with the new status.
 
 
  <!-- end messages -->
+
+
+<a name="proto.ErrorCode"></a>
+
+### ErrorCode
+Enum for error codes
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| COULD_NOT_DETERMINE | 0 |  |
+
 
  <!-- end enums -->
 
