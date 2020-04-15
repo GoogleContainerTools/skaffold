@@ -12,11 +12,11 @@ replace (
 	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20190319215453-e7b5f7dbe98c
 	golang.org/x/crypto v0.0.0-20190129210102-0709b304e793 => golang.org/x/crypto v0.0.0-20180904163835-0709b304e793
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20190507160741-ecd444e8653b
-	k8s.io/api => k8s.io/api v0.0.0-20190620084959-7cf5895f2711
-	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20190612205821-1799e75a0719
-	k8s.io/client-go => k8s.io/client-go v0.0.0-20190620085101-78d2af792bab
-	k8s.io/kubectl => k8s.io/kubectl v0.0.0-20190831163037-3b58a944563f
-	k8s.io/kubernetes => k8s.io/kubernetes v1.12.10
+	k8s.io/api => k8s.io/api v0.17.0
+	k8s.io/apimachinery => k8s.io/apimachinery v0.17.0
+	k8s.io/client-go => k8s.io/client-go v0.17.0
+	k8s.io/kubernetes => k8s.io/kubernetes v1.14.0
+	k8s.io/kubectl => k8s.io/kubectl v0.17.0
 )
 
 require (
