@@ -19,8 +19,10 @@ package diag
 import (
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 )
 
 type Diagnose interface {

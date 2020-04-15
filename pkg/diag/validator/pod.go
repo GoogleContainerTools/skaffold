@@ -19,11 +19,12 @@ package validator
 import (
 	"context"
 	"fmt"
+	"regexp"
+	"strings"
+
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"regexp"
-	"strings"
 )
 
 const (
@@ -81,15 +82,15 @@ func (p *PodValidator) getPodStatus(pod *v1.Pod) *podStatus {
 func getContainerStatus(pod *v1.Pod) error {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
 	for _, c := range pod.Status.Conditions {
-		switch c.Type {
-		case v1.PodScheduled:
-			if c.Status == v1.ConditionFalse {
+		if c.Type == v1.PodScheduled {
+			switch c.Status {
+			case v1.ConditionFalse:
 				return getTolerationsDetails(c.Reason, c.Message)
-			} else if c.Status == v1.ConditionTrue {
+			case v1.ConditionTrue:
 				// TODO(dgageot): Add EphemeralContainerStatuses
 				cs := append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...)
 				return getWaitingContainerStatus(cs)
-			} else if c.Status == v1.ConditionUnknown {
+			case v1.ConditionUnknown:
 				return fmt.Errorf(c.Message)
 			}
 		}
