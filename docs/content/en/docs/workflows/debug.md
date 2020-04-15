@@ -49,9 +49,12 @@ Go-based applications are configured to run under [Delve](https://github.com/go-
     The [Distroless project](https://github.com/GoogleContainerTools/distroless)'s `gcr.io/distroless/base`
     is a minimal Debian/glibc-based image that works well as a base image.
 
-Note for users of [VS Code's debug adapter for Go](https://github.com/Microsoft/vscode-go):
-the source location must be set to the remote source location _during compilation_.  For example, the
-`golang` images, which are [often used in multi-stage builds](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/getting-started/Dockerfile),
+Note for users of [VS Code's debug adapter for Go](https://github.com/Microsoft/vscode-go): the debug adapter
+may require configuring both the _local_ and _remote_ source path prefixes via the `cwd` and `remotePath` properties.
+The `cwd` property should point to the top-level container of your source files and should generally match
+the artifact's `context` directory in the `skaffold.yaml`.  The `remotePath` path property should be set to the
+remote source location _during compilation_.  For example, the `golang` images, which are
+[often used in multi-stage builds](https://github.com/GoogleContainerTools/skaffold/tree/master/examples/getting-started/Dockerfile),
 copy the source code to `/go`.  The following
 [remote launch configuration](https://github.com/Microsoft/vscode-go/wiki/Debugging-Go-code-using-VS-Code#remote-debugging)
 works in this case:
@@ -63,8 +66,8 @@ works in this case:
   "mode": "remote",
   "host": "localhost",
   "port": 56268,
-  "remotePath": "/go/",
-  "program": "/Users/login/go/src/github.com/GoogleContainerTools/skaffold/integration/testdata/debug/go/",
+  "cwd": "${workspaceFolder}",
+  "remotePath": "/go/"
 }
 ```
 
