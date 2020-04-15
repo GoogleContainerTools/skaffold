@@ -61,6 +61,16 @@
             "type": "string"
           },
           {
+            "name": "event.buildEvent.errCode",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "COULD_NOT_DETERMINE"
+            ],
+            "default": "COULD_NOT_DETERMINE"
+          },
+          {
             "name": "event.deployEvent.status",
             "in": "query",
             "required": false,
@@ -71,6 +81,16 @@
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "event.deployEvent.errCode",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "COULD_NOT_DETERMINE"
+            ],
+            "default": "COULD_NOT_DETERMINE"
           },
           {
             "name": "event.portEvent.localPort",
@@ -147,6 +167,16 @@
             "type": "string"
           },
           {
+            "name": "event.statusCheckEvent.errCode",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "COULD_NOT_DETERMINE"
+            ],
+            "default": "COULD_NOT_DETERMINE"
+          },
+          {
             "name": "event.resourceStatusCheckEvent.resource",
             "in": "query",
             "required": false,
@@ -194,6 +224,16 @@
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.errCode",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "COULD_NOT_DETERMINE"
+            ],
+            "default": "COULD_NOT_DETERMINE"
           },
           {
             "name": "event.debuggingContainerEvent.status",
@@ -350,6 +390,9 @@
         },
         "err": {
           "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/protoErrorCode"
         }
       },
       "description": "`BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."
@@ -409,6 +452,9 @@
         },
         "err": {
           "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/protoErrorCode"
         }
       },
       "description": "`DeployEvent` represents the status of a deployment, and is emitted by Skaffold\nanytime a deployment starts or completes, successfully or not."
@@ -421,6 +467,14 @@
         }
       },
       "description": "`DeployState` describes the status of the current deploy"
+    },
+    "protoErrorCode": {
+      "type": "string",
+      "enum": [
+        "COULD_NOT_DETERMINE"
+      ],
+      "default": "COULD_NOT_DETERMINE",
+      "description": "Enum for error codes"
     },
     "protoEvent": {
       "type": "object",
@@ -467,6 +521,9 @@
         },
         "err": {
           "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/protoErrorCode"
         }
       },
       "description": "FileSyncEvent describes the sync status."
@@ -618,6 +675,9 @@
         },
         "err": {
           "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/protoErrorCode"
         }
       },
       "description": "`StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed."
