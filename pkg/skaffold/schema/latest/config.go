@@ -298,6 +298,15 @@ type ClusterDetails struct {
 	// DockerConfig describes how to mount the local Docker configuration into a pod.
 	DockerConfig *DockerConfig `yaml:"dockerConfig,omitempty"`
 
+	// ServiceAccountName describes the Kubernetes service account to use for the pod.
+	// Defaults to 'default'.
+	ServiceAccountName string `yaml:"serviceAccount,omitempty"`
+
+	// RunAsUser defines the UID to request for running the container.
+	// If omitted, no SeurityContext will be specified for the pod and will therefore be inherited
+	// from the service account.
+	RunAsUser *int64 `yaml:"runAsUser,omitempty"`
+
 	// Resources define the resource requirements for the kaniko pod.
 	Resources *ResourceRequirements `yaml:"resources,omitempty"`
 

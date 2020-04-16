@@ -631,6 +631,16 @@
           "description": "define the resource requirements for the kaniko pod.",
           "x-intellij-html-description": "define the resource requirements for the kaniko pod."
         },
+        "runAsUser": {
+          "type": "integer",
+          "description": "defines the UID to request for running the container. If omitted, no SeurityContext will be specified for the pod and will therefore be inherited from the service account.",
+          "x-intellij-html-description": "defines the UID to request for running the container. If omitted, no SeurityContext will be specified for the pod and will therefore be inherited from the service account."
+        },
+        "serviceAccount": {
+          "type": "string",
+          "description": "describes the Kubernetes service account to use for the pod. Defaults to 'default'.",
+          "x-intellij-html-description": "describes the Kubernetes service account to use for the pod. Defaults to 'default'."
+        },
         "timeout": {
           "type": "string",
           "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
@@ -653,6 +663,8 @@
         "namespace",
         "timeout",
         "dockerConfig",
+        "serviceAccount",
+        "runAsUser",
         "resources",
         "concurrency",
         "volumes",
