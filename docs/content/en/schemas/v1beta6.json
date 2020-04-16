@@ -1006,7 +1006,6 @@
           ]
         },
         "value": {
-          "type": "object",
           "description": "value to apply. Can be any portion of yaml.",
           "x-intellij-html-description": "value to apply. Can be any portion of yaml."
         }

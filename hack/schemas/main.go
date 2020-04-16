@@ -214,8 +214,6 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 		if ident, ok := tt.X.(*ast.Ident); ok {
 			typeName := ident.Name
 			setTypeOrRef(def, typeName)
-		} else if _, ok := tt.X.(*ast.SelectorExpr); ok {
-			def.Type = "object"
 		}
 
 	case *ast.ArrayType:
