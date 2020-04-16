@@ -56,7 +56,7 @@ type Builder struct {
 	metadata             Metadata
 	mixins               []string
 	env                  map[string]string
-	UID, GID             int
+	uid, gid             int
 	StackID              string
 	replaceOrder         bool
 	order                dist.Order
@@ -136,8 +136,8 @@ func constructBuilder(img imgutil.Image, newName string, metadata Metadata) (*Bu
 		metadata:      metadata,
 		mixins:        mixins,
 		order:         order,
-		UID:           uid,
-		GID:           gid,
+		uid:           uid,
+		gid:           gid,
 		StackID:       stackID,
 		lifecycleDescriptor: LifecycleDescriptor{
 			Info: LifecycleInfo{
@@ -151,6 +151,8 @@ func constructBuilder(img imgutil.Image, newName string, metadata Metadata) (*Bu
 		env: map[string]string{},
 	}, nil
 }
+
+// Getters
 
 func (b *Builder) Description() string {
 	return b.metadata.Description
@@ -183,9 +185,20 @@ func (b *Builder) Image() imgutil.Image {
 func (b *Builder) Stack() StackMetadata {
 	return b.metadata.Stack
 }
+
 func (b *Builder) Mixins() []string {
 	return b.mixins
 }
+
+func (b *Builder) UID() int {
+	return b.uid
+}
+
+func (b *Builder) GID() int {
+	return b.gid
+}
+
+// Setters
 
 func (b *Builder) AddBuildpack(bp dist.Buildpack) {
 	b.additionalBuildpacks = append(b.additionalBuildpacks, bp)
@@ -346,6 +359,8 @@ func (b *Builder) Save(logger logging.Logger) error {
 
 	return b.image.Save()
 }
+
+// Helpers
 
 func processOrder(buildpacks []dist.BuildpackInfo, order dist.Order) (dist.Order, error) {
 	resolvedOrder := dist.Order{}
@@ -508,8 +523,8 @@ func (b *Builder) packOwnedDir(path string, time time.Time) *tar.Header {
 		Name:     path,
 		Mode:     0755,
 		ModTime:  time,
-		Uid:      b.UID,
-		Gid:      b.GID,
+		Uid:      b.uid,
+		Gid:      b.gid,
 	}
 }
 

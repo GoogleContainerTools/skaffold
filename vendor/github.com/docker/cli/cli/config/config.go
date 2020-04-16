@@ -112,7 +112,7 @@ func Load(configDir string) (*configfile.ConfigFile, error) {
 	}
 	confFile := filepath.Join(homedir, oldConfigfile)
 	if _, err := os.Stat(confFile); err != nil {
-		return configFile, nil //missing file is not an error
+		return configFile, nil // missing file is not an error
 	}
 	file, err := os.Open(confFile)
 	if err != nil {

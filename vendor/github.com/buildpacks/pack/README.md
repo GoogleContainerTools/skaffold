@@ -7,27 +7,34 @@
 [![Slack](https://slack.buildpacks.io/badge.svg)](https://slack.buildpacks.io/)
 
 `pack` makes it easy for...
-- **App Developers** to use buildpacks to convert code into runnable images.
-- **Buildpack Authors** to develop and package buildpacks for distribution.
-- **Operators** to package buildpacks for distribution and maintain applications.
-
-`pack` is a CLI implementation of the [Platform Interface Specification][platform-spec] for [Cloud Native Buildpacks][buildpacks.io].
+- [**App Developers**][app-dev] to use buildpacks to convert code into runnable images.
+- [**Buildpack Authors**][bp-author] to develop and package buildpacks for distribution.
+- [**Operators**][operator] to package buildpacks for distribution and maintain applications.
 
 ## Usage
 
-- [Installing][install-pack]
-- [Getting Started][getting-started]
+<img src="resources/pack-build.gif" width="600px" />
+
+## Getting Started
+
+Get started by running through our tutorial: [An App’s Brief Journey from Source to Image][getting-started]  
 
 ## Contributing
 
-For information on how to contribute to this project including its development
-process see [CONTRIBUTING.md](CONTRIBUTING.md).
+- [CONTRIBUTING](CONTRIBUTING.md) - Information on how to contribute, including the pull request process.
+- [DEVELOPMENT](DEVELOPMENT.md) - Further detail to help you during the development process.  
 
-## Resources
-- [Buildpack Specification](https://github.com/buildpacks/spec/blob/master/buildpack.md)
-- [Platform Specification][platform-spec]
 
+## Specifications
+`pack` is a CLI implementation of the [Platform Interface Specification][platform-spec] for [Cloud Native Buildpacks][buildpacks.io]. 
+
+To learn more about the details, check out the [specs repository][specs].
+
+[app-dev]: https://buildpacks.io/docs/app-developer-guide/
+[bp-author]: https://buildpacks.io/docs/buildpack-author-guide/
+[operator]: https://buildpacks.io/docs/operator-guide/
 [buildpacks.io]: https://buildpacks.io/
 [install-pack]: https://buildpacks.io/docs/install-pack/
 [getting-started]: https://buildpacks.io/docs/app-journey
+[specs]: https://github.com/buildpacks/spec/
 [platform-spec]: https://github.com/buildpacks/spec/blob/master/platform.md

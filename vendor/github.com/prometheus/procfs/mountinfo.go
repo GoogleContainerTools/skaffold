@@ -15,13 +15,19 @@ package procfs
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
+	"io"
+	"os"
 	"strconv"
 	"strings"
-
-	"github.com/prometheus/procfs/internal/util"
 )
+
+var validOptionalFields = map[string]bool{
+	"shared":         true,
+	"master":         true,
+	"propagate_from": true,
+	"unbindable":     true,
+}
 
 // A MountInfo is a type that describes the details, options
 // for each mount, parsed from /proc/self/mountinfo.
@@ -52,10 +58,18 @@ type MountInfo struct {
 	SuperOptions map[string]string
 }
 
+// Returns part of the mountinfo line, if it exists, else an empty string.
+func getStringSliceElement(parts []string, idx int, defaultValue string) string {
+	if idx >= len(parts) {
+		return defaultValue
+	}
+	return parts[idx]
+}
+
 // Reads each line of the mountinfo file, and returns a list of formatted MountInfo structs.
-func parseMountInfo(info []byte) ([]*MountInfo, error) {
+func parseMountInfo(r io.Reader) ([]*MountInfo, error) {
 	mounts := []*MountInfo{}
-	scanner := bufio.NewScanner(bytes.NewReader(info))
+	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {
 		mountString := scanner.Text()
 		parsedMounts, err := parseMountInfoString(mountString)
@@ -75,73 +89,55 @@ func parseMountInfo(info []byte) ([]*MountInfo, error) {
 func parseMountInfoString(mountString string) (*MountInfo, error) {
 	var err error
 
-	mountInfo := strings.Split(mountString, " ")
-	mountInfoLength := len(mountInfo)
-	if mountInfoLength < 11 {
-		return nil, fmt.Errorf("couldn't find enough fields in mount string: %s", mountString)
+	// OptionalFields can be zero, hence these checks to ensure we do not populate the wrong values in the wrong spots
+	separatorIndex := strings.Index(mountString, "-")
+	if separatorIndex == -1 {
+		return nil, fmt.Errorf("no separator found in mountinfo string: %s", mountString)
 	}
-
-	if mountInfo[mountInfoLength-4] != "-" {
-		return nil, fmt.Errorf("couldn't find separator in expected field: %s", mountInfo[mountInfoLength-4])
+	beforeFields := strings.Fields(mountString[:separatorIndex])
+	afterFields := strings.Fields(mountString[separatorIndex+1:])
+	if (len(beforeFields) + len(afterFields)) < 7 {
+		return nil, fmt.Errorf("too few fields")
 	}
 
 	mount := &MountInfo{
-		MajorMinorVer:  mountInfo[2],
-		Root:           mountInfo[3],
-		MountPoint:     mountInfo[4],
-		Options:        mountOptionsParser(mountInfo[5]),
+		MajorMinorVer:  getStringSliceElement(beforeFields, 2, ""),
+		Root:           getStringSliceElement(beforeFields, 3, ""),
+		MountPoint:     getStringSliceElement(beforeFields, 4, ""),
+		Options:        mountOptionsParser(getStringSliceElement(beforeFields, 5, "")),
 		OptionalFields: nil,
-		FSType:         mountInfo[mountInfoLength-3],
-		Source:         mountInfo[mountInfoLength-2],
-		SuperOptions:   mountOptionsParser(mountInfo[mountInfoLength-1]),
+		FSType:         getStringSliceElement(afterFields, 0, ""),
+		Source:         getStringSliceElement(afterFields, 1, ""),
+		SuperOptions:   mountOptionsParser(getStringSliceElement(afterFields, 2, "")),
 	}
 
-	mount.MountId, err = strconv.Atoi(mountInfo[0])
+	mount.MountId, err = strconv.Atoi(getStringSliceElement(beforeFields, 0, ""))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse mount ID")
 	}
-	mount.ParentId, err = strconv.Atoi(mountInfo[1])
+	mount.ParentId, err = strconv.Atoi(getStringSliceElement(beforeFields, 1, ""))
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse parent ID")
 	}
 	// Has optional fields, which is a space separated list of values.
 	// Example: shared:2 master:7
-	if mountInfo[6] != "" {
-		mount.OptionalFields, err = mountOptionsParseOptionalFields(mountInfo[6 : mountInfoLength-4])
-		if err != nil {
-			return nil, err
+	if len(beforeFields) > 6 {
+		mount.OptionalFields = make(map[string]string)
+		optionalFields := beforeFields[6:]
+		for _, field := range optionalFields {
+			optionSplit := strings.Split(field, ":")
+			target, value := optionSplit[0], ""
+			if len(optionSplit) == 2 {
+				value = optionSplit[1]
+			}
+			// Checks if the 'keys' in the optional fields in the mountinfo line are acceptable.
+			// Allowed 'keys' are shared, master, propagate_from, unbindable.
+			if _, ok := validOptionalFields[target]; ok {
+				mount.OptionalFields[target] = value
+			}
 		}
 	}
 	return mount, nil
-}
-
-// mountOptionsIsValidField checks a string against a valid list of optional fields keys.
-func mountOptionsIsValidField(s string) bool {
-	switch s {
-	case
-		"shared",
-		"master",
-		"propagate_from",
-		"unbindable":
-		return true
-	}
-	return false
-}
-
-// mountOptionsParseOptionalFields parses a list of optional fields strings into a double map of strings.
-func mountOptionsParseOptionalFields(o []string) (map[string]string, error) {
-	optionalFields := make(map[string]string)
-	for _, field := range o {
-		optionSplit := strings.SplitN(field, ":", 2)
-		value := ""
-		if len(optionSplit) == 2 {
-			value = optionSplit[1]
-		}
-		if mountOptionsIsValidField(optionSplit[0]) {
-			optionalFields[optionSplit[0]] = value
-		}
-	}
-	return optionalFields, nil
 }
 
 // Parses the mount options, superblock options.
@@ -163,18 +159,20 @@ func mountOptionsParser(mountOptions string) map[string]string {
 
 // Retrieves mountinfo information from `/proc/self/mountinfo`.
 func GetMounts() ([]*MountInfo, error) {
-	data, err := util.ReadFileNoStat("/proc/self/mountinfo")
+	f, err := os.Open("/proc/self/mountinfo")
 	if err != nil {
 		return nil, err
 	}
-	return parseMountInfo(data)
+	defer f.Close()
+	return parseMountInfo(f)
 }
 
 // Retrieves mountinfo information from a processes' `/proc/<pid>/mountinfo`.
 func GetProcMounts(pid int) ([]*MountInfo, error) {
-	data, err := util.ReadFileNoStat(fmt.Sprintf("/proc/%d/mountinfo", pid))
+	f, err := os.Open(fmt.Sprintf("/proc/%d/mountinfo", pid))
 	if err != nil {
 		return nil, err
 	}
-	return parseMountInfo(data)
+	defer f.Close()
+	return parseMountInfo(f)
 }

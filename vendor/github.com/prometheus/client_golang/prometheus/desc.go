@@ -19,7 +19,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cespare/xxhash/v2"
 	"github.com/golang/protobuf/proto"
 	"github.com/prometheus/common/model"
 
@@ -127,24 +126,24 @@ func NewDesc(fqName, help string, variableLabels []string, constLabels Labels) *
 		return d
 	}
 
-	xxh := xxhash.New()
+	vh := hashNew()
 	for _, val := range labelValues {
-		xxh.WriteString(val)
-		xxh.Write(separatorByteSlice)
+		vh = hashAdd(vh, val)
+		vh = hashAddByte(vh, separatorByte)
 	}
-	d.id = xxh.Sum64()
+	d.id = vh
 	// Sort labelNames so that order doesn't matter for the hash.
 	sort.Strings(labelNames)
 	// Now hash together (in this order) the help string and the sorted
 	// label names.
-	xxh.Reset()
-	xxh.WriteString(help)
-	xxh.Write(separatorByteSlice)
+	lh := hashNew()
+	lh = hashAdd(lh, help)
+	lh = hashAddByte(lh, separatorByte)
 	for _, labelName := range labelNames {
-		xxh.WriteString(labelName)
-		xxh.Write(separatorByteSlice)
+		lh = hashAdd(lh, labelName)
+		lh = hashAddByte(lh, separatorByte)
 	}
-	d.dimHash = xxh.Sum64()
+	d.dimHash = lh
 
 	d.constLabelPairs = make([]*dto.LabelPair, 0, len(constLabels))
 	for n, v := range constLabels {

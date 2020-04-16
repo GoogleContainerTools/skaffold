@@ -63,10 +63,6 @@ func DecodeLabel(image imgutil.Image, label string, v interface{}) error {
 	return nil
 }
 
-func escapeID(id string) string {
-	return strings.Replace(id, "/", "_", -1)
-}
-
 func isEmptyDir(name string) (bool, error) {
 	entries, err := ioutil.ReadDir(name)
 	if err != nil {

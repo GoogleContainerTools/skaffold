@@ -1,13 +1,13 @@
 # Lifecycle
 
-[![Build Status](https://travis-ci.org/buildpacks/lifecycle.svg?branch=master)](https://travis-ci.org/buildpack/lifecycle)
+![Build Status](https://github.com/buildpacks/lifecycle/workflows/build/badge.svg)
 [![GoDoc](https://godoc.org/github.com/buildpacks/lifecycle?status.svg)](https://godoc.org/github.com/buildpacks/lifecycle)
 
 A reference implementation of the [Cloud Native Buildpacks specification](https://github.com/buildpacks/spec).
 
 This lifecycle implements the following versioned APIs
-* Buildpack API 0.2 - excluding [/bin/develop](https://github.com/buildpacks/spec/blob/master/buildpack.md#development) and [store.toml](https://github.com/buildpacks/spec/blob/master/buildpack.md#storetoml-toml)
-* Platform API 0.2
+* Buildpack API 0.2
+* Platform API 0.3
 
 ## Commands
 
@@ -54,7 +54,7 @@ $ make test
 
 ### Build
 
-Builds binaries to `out/lifecycle/`.
+Builds binaries to `out/linux/lifecycle/`.
 
 ```bash
 $ make build
@@ -65,7 +65,7 @@ $ make build
 ### Package
 
 Creates an archive at `out/lifecycle-<LIFECYCLE_VERSION>+linux.x86-64.tgz`, using the contents of the
-`out/lifecycle/` directory, for the given (or default) `LIFECYCLE_VERSION`.
+`out/linux/lifecycle/` directory, for the given (or default) `LIFECYCLE_VERSION`.
 
 ```bash
 $ make package

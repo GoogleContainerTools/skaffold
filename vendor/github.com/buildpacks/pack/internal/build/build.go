@@ -21,8 +21,15 @@ var (
 	SupportedPlatformAPIVersions = []string{"0.2", "0.3"}
 )
 
+type Builder interface {
+	Name() string
+	UID() int
+	GID() int
+	LifecycleDescriptor() builder.LifecycleDescriptor
+}
+
 type Lifecycle struct {
-	builder            *builder.Builder
+	builder            Builder
 	logger             logging.Logger
 	docker             client.CommonAPIClient
 	appPath            string
@@ -35,6 +42,8 @@ type Lifecycle struct {
 	LayersVolume       string
 	AppVolume          string
 	Volumes            []string
+	DefaultProcessType string
+	fileFilter         func(string) bool
 }
 
 type Cache interface {
@@ -47,21 +56,25 @@ func init() {
 }
 
 func NewLifecycle(docker client.CommonAPIClient, logger logging.Logger) *Lifecycle {
-	return &Lifecycle{logger: logger, docker: docker}
+	l := &Lifecycle{logger: logger, docker: docker}
+
+	return l
 }
 
 type LifecycleOptions struct {
-	AppPath    string
-	Image      name.Reference
-	Builder    *builder.Builder
-	RunImage   string
-	ClearCache bool
-	Publish    bool
-	HTTPProxy  string
-	HTTPSProxy string
-	NoProxy    string
-	Network    string
-	Volumes    []string
+	AppPath            string
+	Image              name.Reference
+	Builder            Builder
+	RunImage           string
+	ClearCache         bool
+	Publish            bool
+	HTTPProxy          string
+	HTTPSProxy         string
+	NoProxy            string
+	Network            string
+	Volumes            []string
+	DefaultProcessType string
+	FileFilter         func(string) bool
 }
 
 func (l *Lifecycle) Execute(ctx context.Context, opts LifecycleOptions) error {
@@ -79,31 +92,33 @@ func (l *Lifecycle) Execute(ctx context.Context, opts LifecycleOptions) error {
 		l.logger.Debugf("Build cache %s cleared", style.Symbol(buildCache.Name()))
 	}
 
+	phaseFactory := NewDefaultPhaseFactory(l)
+
 	l.logger.Info(style.Step("DETECTING"))
-	if err := l.Detect(ctx, opts.Network); err != nil {
+	if err := l.Detect(ctx, opts.Network, opts.Volumes, phaseFactory); err != nil {
 		return err
 	}
 
 	l.logger.Info(style.Step("ANALYZING"))
-	if err := l.Analyze(ctx, opts.Image.Name(), buildCache.Name(), opts.Publish, opts.ClearCache); err != nil {
+	if err := l.Analyze(ctx, opts.Image.Name(), buildCache.Name(), opts.Publish, opts.ClearCache, phaseFactory); err != nil {
 		return err
 	}
 
 	l.logger.Info(style.Step("RESTORING"))
 	if opts.ClearCache {
 		l.logger.Info("Skipping 'restore' due to clearing cache")
-	} else if err := l.Restore(ctx, buildCache.Name()); err != nil {
+	} else if err := l.Restore(ctx, buildCache.Name(), phaseFactory); err != nil {
 		return err
 	}
 
 	l.logger.Info(style.Step("BUILDING"))
 
-	if err := l.Build(ctx, opts.Network, opts.Volumes); err != nil {
+	if err := l.Build(ctx, opts.Network, opts.Volumes, phaseFactory); err != nil {
 		return err
 	}
 
 	l.logger.Info(style.Step("EXPORTING"))
-	if err := l.Export(ctx, opts.Image.Name(), opts.RunImage, opts.Publish, launchCache.Name(), buildCache.Name()); err != nil {
+	if err := l.Export(ctx, opts.Image.Name(), opts.RunImage, opts.Publish, launchCache.Name(), buildCache.Name(), phaseFactory); err != nil {
 		return err
 	}
 
@@ -121,6 +136,8 @@ func (l *Lifecycle) Setup(opts LifecycleOptions) {
 	l.noProxy = opts.NoProxy
 	l.version = opts.Builder.LifecycleDescriptor().Info.Version.String()
 	l.platformAPIVersion = opts.Builder.LifecycleDescriptor().API.PlatformVersion.String()
+	l.DefaultProcessType = opts.DefaultProcessType
+	l.fileFilter = opts.FileFilter
 }
 
 func (l *Lifecycle) Cleanup() error {

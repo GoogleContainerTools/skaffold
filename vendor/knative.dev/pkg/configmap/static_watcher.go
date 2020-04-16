@@ -22,13 +22,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-// NewFixedWatcher returns a StaticWatcher that exposes a collection of ConfigMaps.
-//
-// Deprecated: Use NewStaticWatcher
-func NewFixedWatcher(cms ...*corev1.ConfigMap) *StaticWatcher {
-	return NewStaticWatcher(cms...)
-}
-
 // NewStaticWatcher returns an StaticWatcher that exposes a collection of ConfigMaps.
 func NewStaticWatcher(cms ...*corev1.ConfigMap) *StaticWatcher {
 	cmm := make(map[string]*corev1.ConfigMap)
@@ -48,10 +41,12 @@ type StaticWatcher struct {
 var _ Watcher = (*StaticWatcher)(nil)
 
 // Watch implements Watcher
-func (di *StaticWatcher) Watch(name string, o Observer) {
+func (di *StaticWatcher) Watch(name string, o ...Observer) {
 	cm, ok := di.cfgs[name]
 	if ok {
-		o(cm)
+		for _, observer := range o {
+			observer(cm)
+		}
 	} else {
 		panic(fmt.Sprintf("Tried to watch unknown config with name %q", name))
 	}

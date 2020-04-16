@@ -4,16 +4,17 @@ package godirwalk
 
 import (
 	"fmt"
-	"io"
 	"os"
 )
 
 // Scanner is an iterator to enumerate the contents of a directory.
 type Scanner struct {
 	osDirname string
+	childName string
 	dh        *os.File // dh is handle to open directory
 	de        *Dirent
 	err       error // err is the error associated with scanning directory
+	childMode os.FileMode
 }
 
 // NewScanner returns a new directory Scanner that lazily enumerates the
@@ -54,8 +55,25 @@ func NewScanner(osDirname string) (*Scanner, error) {
 	return scanner, nil
 }
 
+// NewScannerWithScratchBuffer returns a new directory Scanner that lazily
+// enumerates the contents of a single directory. On platforms other than
+// Windows it uses the provided scratch buffer to read from the file system. On
+// Windows the scratch buffer parameter is ignored.
+func NewScannerWithScratchBuffer(osDirname string, scratchBuffer []byte) (*Scanner, error) {
+	return NewScanner(osDirname)
+}
+
 // Dirent returns the current directory entry while scanning a directory.
-func (s *Scanner) Dirent() (*Dirent, error) { return s.de, nil }
+func (s *Scanner) Dirent() (*Dirent, error) {
+	if s.de == nil {
+		s.de = &Dirent{
+			name:     s.childName,
+			path:     s.osDirname,
+			modeType: s.childMode,
+		}
+	}
+	return s.de, nil
+}
 
 // done is called when directory scanner unable to continue, with either the
 // triggering error, or nil when there are simply no more entries to read from
@@ -64,54 +82,52 @@ func (s *Scanner) done(err error) {
 	if s.dh == nil {
 		return
 	}
-	cerr := s.dh.Close()
-	s.dh = nil
 
-	if err == nil {
+	if cerr := s.dh.Close(); err == nil {
 		s.err = cerr
-	} else {
-		s.err = err
 	}
 
-	s.osDirname = ""
-	s.de = nil
+	s.childName, s.osDirname = "", ""
+	s.de, s.dh = nil, nil
 }
 
-// Err returns the error associated with scanning a directory.
+// Err returns any error associated with scanning a directory. It is normal to
+// call Err after Scan returns false, even though they both ensure Scanner
+// resources are released. Do not call until done scanning a directory.
 func (s *Scanner) Err() error {
-	s.done(s.err)
-	if s.err == io.EOF {
-		return nil
-	}
+	s.done(nil)
 	return s.err
 }
 
-// Name returns the name of the current directory entry while scanning a
+// Name returns the base name of the current directory entry while scanning a
 // directory.
-func (s *Scanner) Name() string { return s.de.name }
+func (s *Scanner) Name() string { return s.childName }
 
 // Scan potentially reads and then decodes the next directory entry from the
 // file system.
+//
+// When it returns false, this releases resources used by the Scanner then
+// returns any error associated with closing the file system directory resource.
 func (s *Scanner) Scan() bool {
-	if s.err != nil {
+	if s.dh == nil {
 		return false
 	}
 
+	s.de = nil
+
 	fileinfos, err := s.dh.Readdir(1)
 	if err != nil {
-		s.err = err
+		s.done(err)
 		return false
 	}
 
 	if l := len(fileinfos); l != 1 {
-		s.err = fmt.Errorf("expected a single entry rather than %d", l)
+		s.done(fmt.Errorf("expected a single entry rather than %d", l))
 		return false
 	}
 
 	fi := fileinfos[0]
-	s.de = &Dirent{
-		name:     fi.Name(),
-		modeType: fi.Mode() & os.ModeType,
-	}
+	s.childMode = fi.Mode() & os.ModeType
+	s.childName = fi.Name()
 	return true
 }

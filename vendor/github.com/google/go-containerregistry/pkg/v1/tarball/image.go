@@ -162,6 +162,10 @@ func (i *image) loadTarDescriptorAndConfig() error {
 		return err
 	}
 
+	if i.manifest == nil {
+		return errors.New("no valid manifest.json in tarball")
+	}
+
 	i.imgDescriptor, err = i.manifest.findDescriptor(i.tag)
 	if err != nil {
 		return err

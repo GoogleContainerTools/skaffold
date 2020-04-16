@@ -183,6 +183,7 @@ func (netDev NetDev) Total() NetDevLine {
 		names = append(names, ifc.Name)
 		total.RxBytes += ifc.RxBytes
 		total.RxPackets += ifc.RxPackets
+		total.RxPackets += ifc.RxPackets
 		total.RxErrors += ifc.RxErrors
 		total.RxDropped += ifc.RxDropped
 		total.RxFIFO += ifc.RxFIFO
