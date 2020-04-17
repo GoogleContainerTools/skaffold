@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
@@ -354,7 +355,7 @@ func TestStripImageTags(t *testing.T) {
 		testutil.Run(t, tc.name, func(t *testutil.T) {
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			images := stripTags(tc.taggedImages)
+			images := tag.StripTags(tc.taggedImages)
 
 			t.CheckDeepEqual(tc.expectedImages, images)
 			t.CheckDeepEqual(tc.expectedWarnings, fakeWarner.Warnings)
