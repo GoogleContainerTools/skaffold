@@ -144,10 +144,10 @@ func initializeEvents() {
 	event.InitializeState(latest.Pipeline{
 		Deploy: latest.DeployConfig{},
 		Build: latest.BuildConfig{
-		BuildType: latest.BuildType{
-			LocalBuild: &latest.LocalBuild{},
+			BuildType: latest.BuildType{
+				LocalBuild: &latest.LocalBuild{},
+			},
 		},
-	   },
 	},
-	"temp")
+		"temp")
 }

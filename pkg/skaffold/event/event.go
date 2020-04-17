@@ -365,14 +365,14 @@ func (ev *eventHandler) handleFileSyncEvent(e *proto.FileSyncEvent) {
 	})
 }
 
-func LogSkaffoldMetadata(info *version.Info) {
+func LogMetaEvent(info *version.Info) {
 	metadata := handler.state.Metadata
 	handler.logEvent(proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
 		Event: &proto.Event{
 			EventType: &proto.Event_MetaEvent{
 				MetaEvent: &proto.MetaEvent{
-					Entry: fmt.Sprintf("Starting Skaffold: %+v", info),
+					Entry:    fmt.Sprintf("Starting Skaffold: %+v", info),
 					Metadata: metadata,
 				},
 			},

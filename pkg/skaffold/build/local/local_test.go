@@ -238,9 +238,9 @@ func TestLocalRun(t *testing.T) {
 			event.InitializeState(latest.Pipeline{
 				Deploy: latest.DeployConfig{},
 				Build: latest.BuildConfig{
-				BuildType: latest.BuildType{
-					LocalBuild: &latest.LocalBuild{},
-				},
+					BuildType: latest.BuildType{
+						LocalBuild: &latest.LocalBuild{},
+					},
 				}}, "")
 
 			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{

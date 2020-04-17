@@ -101,7 +101,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	event.InitializeState(runCtx.Cfg, runCtx.KubeContext)
-	event.LogSkaffoldMetadata(version.Get())
+	event.LogMetaEvent(version.Get())
 
 	monitor := filemon.NewMonitor()
 

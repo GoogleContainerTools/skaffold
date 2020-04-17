@@ -109,7 +109,7 @@ func TestBuildInProgress(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{Build:latest.BuildConfig{
+		state: emptyState(latest.Pipeline{Build: latest.BuildConfig{
 			Artifacts: []*latest.Artifact{{
 				ImageName: "img",
 			}},
@@ -141,7 +141,7 @@ func TestBuildComplete(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.Pipeline{Build:latest.BuildConfig{
+		state: emptyState(latest.Pipeline{Build: latest.BuildConfig{
 			Artifacts: []*latest.Artifact{{
 				ImageName: "img",
 			}},
