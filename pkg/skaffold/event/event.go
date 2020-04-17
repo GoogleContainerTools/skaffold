@@ -128,12 +128,14 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(build latest.BuildConfig) proto.State {
+func emptyState(c latest.Pipeline, kc string) proto.State {
 	builds := map[string]string{}
-	for _, a := range build.Artifacts {
+	for _, a := range c.Build.Artifacts {
 		builds[a.ImageName] = NotStarted
 	}
-	return emptyStateWithArtifacts(builds)
+	s := emptyStateWithArtifacts(builds)
+	s.Metadata = initializeMetadata(c, kc)
+	return s
 }
 
 func emptyStateWithArtifacts(builds map[string]string) proto.State {
@@ -153,8 +155,8 @@ func emptyStateWithArtifacts(builds map[string]string) proto.State {
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-func InitializeState(build latest.BuildConfig) {
-	handler.setState(emptyState(build))
+func InitializeState(c latest.Pipeline, kc string) {
+	handler.setState(emptyState(c, kc))
 }
 
 // DeployInProgress notifies that a deployment has been started.
@@ -364,12 +366,14 @@ func (ev *eventHandler) handleFileSyncEvent(e *proto.FileSyncEvent) {
 }
 
 func LogSkaffoldMetadata(info *version.Info) {
+	metadata := handler.state.Metadata
 	handler.logEvent(proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
 		Event: &proto.Event{
 			EventType: &proto.Event_MetaEvent{
 				MetaEvent: &proto.MetaEvent{
 					Entry: fmt.Sprintf("Starting Skaffold: %+v", info),
+					Metadata: metadata,
 				},
 			},
 		},

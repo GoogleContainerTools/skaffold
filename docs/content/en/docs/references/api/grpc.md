@@ -68,6 +68,56 @@ If the build fails, an error will be attached to the event.
 
 
 
+<a name="proto.BuildMetadata"></a>
+#### BuildMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| numberOfArtifacts | [int32](#int32) |  |  |
+| builders | [BuildMetadata.Builders](#proto.BuildMetadata.Builders) | repeated |  |
+| type | [BuildType](#proto.BuildType) |  |  |
+| additional | [BuildMetadata.AdditionalEntry](#proto.BuildMetadata.AdditionalEntry) | repeated | Additional key value pairs to describe the deploy pipeline |
+
+
+
+
+
+
+
+<a name="proto.BuildMetadata.AdditionalEntry"></a>
+#### BuildMetadata.AdditionalEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+
+<a name="proto.BuildMetadata.Builders"></a>
+#### BuildMetadata.Builders
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [BuilderType](#proto.BuilderType) |  |  |
+| count | [int32](#int32) |  |  |
+
+
+
+
+
+
+
 <a name="proto.BuildState"></a>
 #### BuildState
 `BuildState` maps Skaffold artifacts to their current build states
@@ -148,6 +198,38 @@ anytime a deployment starts or completes, successfully or not.
 | status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | error when status is Failed |
 | errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
+
+
+
+
+
+
+
+<a name="proto.DeployMetadata"></a>
+#### DeployMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| deployers | [DeployMetadata.Deployers](#proto.DeployMetadata.Deployers) | repeated |  |
+| cluster | [ClusterType](#proto.ClusterType) |  |  |
+
+
+
+
+
+
+
+<a name="proto.DeployMetadata.Deployers"></a>
+#### DeployMetadata.Deployers
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [DeployerType](#proto.DeployerType) |  |  |
+| count | [int32](#int32) |  |  |
 
 
 
@@ -269,6 +351,40 @@ LogEntry describes an event and a string description of the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | entry | [string](#string) |  | entry, for example: `"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"` |
+| metadata | [Metadata](#proto.Metadata) |  | Metadata describing skaffold pipeline |
+
+
+
+
+
+
+
+<a name="proto.Metadata"></a>
+#### Metadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| build | [BuildMetadata](#proto.BuildMetadata) |  |  |
+| deploy | [DeployMetadata](#proto.DeployMetadata) |  |  |
+| additional | [Metadata.AdditionalEntry](#proto.Metadata.AdditionalEntry) | repeated | Additional key value pairs to describe the build pipeline |
+
+
+
+
+
+
+
+<a name="proto.Metadata.AdditionalEntry"></a>
+#### Metadata.AdditionalEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 
@@ -364,6 +480,7 @@ will be sent with the new status.
 | statusCheckState | [StatusCheckState](#proto.StatusCheckState) |  |  |
 | fileSyncState | [FileSyncState](#proto.FileSyncState) |  |  |
 | debuggingContainers | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) | repeated |  |
+| metadata | [Metadata](#proto.Metadata) |  |  |
 
 
 
@@ -466,6 +583,61 @@ will be sent with the new status.
 
 
  <!-- end messages -->
+
+
+<a name="proto.BuildType"></a>
+
+### BuildType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LOCAL | 0 |  |
+| CLUSTER | 1 |  |
+| GCB | 2 |  |
+
+
+
+<a name="proto.BuilderType"></a>
+
+### BuilderType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| DOCKER | 0 |  |
+| JIB | 1 |  |
+| BAZEL | 2 |  |
+| BUILDPACKS | 3 |  |
+| CUSTOM | 4 |  |
+| KANIKO | 5 |  |
+
+
+
+<a name="proto.ClusterType"></a>
+
+### ClusterType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| GKE | 0 |  |
+| MINIKUBE | 1 |  |
+| OTHER | 2 |  |
+
+
+
+<a name="proto.DeployerType"></a>
+
+### DeployerType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| KUBECTL | 0 |  |
+| HELM | 1 |  |
+| KUSTOMIZE | 2 |  |
+
 
 
 <a name="proto.ErrorCode"></a>

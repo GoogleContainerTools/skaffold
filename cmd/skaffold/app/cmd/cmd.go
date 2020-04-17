@@ -31,7 +31,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -91,7 +90,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			// Print version
 			version := version.Get()
 			logrus.Infof("Skaffold %+v", version)
-			event.LogSkaffoldMetadata(version)
 
 			switch {
 			case quietFlag:

@@ -26,6 +26,35 @@ message State {
     StatusCheckState statusCheckState = 5;
     FileSyncState fileSyncState = 6;
     repeated DebuggingContainerEvent debuggingContainers = 7;
+    Metadata metadata = 8;
+}
+
+message Metadata {
+    BuildMetadata build = 1;
+    DeployMetadata deploy = 2;
+    // Additional key value pairs to describe the build pipeline
+    map<string, string> additional = 99;
+}
+
+message BuildMetadata {
+  message Builders {
+      BuilderType type = 1;
+      int32 count = 2;
+  }
+  int32 numberOfArtifacts = 1;
+  repeated Builders builders= 2;
+  BuildType type = 3;
+  // Additional key value pairs to describe the deploy pipeline
+  map<string, string> additional = 99;
+}
+
+message DeployMetadata {
+    message Deployers {
+        DeployerType type = 1;
+        int32 count = 2;
+    }
+    repeated Deployers deployers = 1;
+    ClusterType cluster = 2;
 }
 
 // `BuildState` maps Skaffold artifacts to their current build states
@@ -82,6 +111,8 @@ message Event {
 message MetaEvent {
     // entry, for example: `"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"`
     string entry = 1;
+    // Metadata describing skaffold pipeline
+    Metadata metadata = 2;
 }
 
 // `BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
@@ -231,4 +262,31 @@ enum ErrorCode {
 //    COULD_NOT_GET_DOCKER_CLIENT = 7;
 //    COULD_NOT_GET_LOCAL_CLUSTER = 8;
 //    BUILDER_CLEANUP = 9;
+}
+
+enum BuilderType {
+    DOCKER = 0;
+    JIB = 1;
+    BAZEL = 2;
+    BUILDPACKS = 3;
+    CUSTOM = 4;
+    KANIKO = 5;
+}
+
+enum BuildType {
+    LOCAL = 0;
+    CLUSTER = 1;
+    GCB = 2;
+}
+
+enum DeployerType {
+    KUBECTL = 0;
+    HELM = 1;
+    KUSTOMIZE = 2;
+}
+
+enum ClusterType {
+    GKE = 0;
+    MINIKUBE = 1;
+    OTHER = 2;
 }

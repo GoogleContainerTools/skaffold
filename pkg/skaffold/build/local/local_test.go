@@ -235,11 +235,13 @@ func TestLocalRun(t *testing.T) {
 				return docker.NewLocalDaemon(test.api, nil, false, nil), nil
 			})
 
-			event.InitializeState(latest.BuildConfig{
+			event.InitializeState(latest.Pipeline{
+				Deploy: latest.DeployConfig{},
+				Build: latest.BuildConfig{
 				BuildType: latest.BuildType{
 					LocalBuild: &latest.LocalBuild{},
 				},
-			})
+				}}, "")
 
 			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
 				Push:        util.BoolPtr(test.pushImages),

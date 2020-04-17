@@ -38,6 +38,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -99,7 +100,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
-	event.InitializeState(runCtx.Cfg.Build)
+	event.InitializeState(runCtx.Cfg, runCtx.KubeContext)
+	event.LogSkaffoldMetadata(version.Get())
 
 	monitor := filemon.NewMonitor()
 
