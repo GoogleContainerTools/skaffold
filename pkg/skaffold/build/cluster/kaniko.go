@@ -23,6 +23,7 @@ import (
 	"io"
 
 	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
@@ -31,11 +32,18 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	kubernetesclient "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/client"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 const initContainer = "kaniko-init-container"
 
 func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifact *latest.KanikoArtifact, tag string) (string, error) {
+	env, err := evaluateEnv(artifact.Env)
+	if err != nil {
+		return "", fmt.Errorf("unable to evaluate env variables: %w", err)
+	}
+	artifact.Env = env
+
 	client, err := kubernetesclient.Client()
 	if err != nil {
 		return "", fmt.Errorf("getting Kubernetes client: %w", err)
@@ -110,4 +118,19 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 	}
 
 	return nil
+}
+
+func evaluateEnv(env []v1.EnvVar) ([]v1.EnvVar, error) {
+	var evaluated []v1.EnvVar
+
+	for _, envVar := range env {
+		val, err := util.ExpandEnvTemplate(envVar.Value, nil)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get value for env variable %q: %w", envVar.Name, err)
+		}
+
+		evaluated = append(evaluated, v1.EnvVar{Name: envVar.Name, Value: val})
+	}
+
+	return evaluated, nil
 }
