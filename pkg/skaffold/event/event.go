@@ -133,12 +133,11 @@ func emptyState(c latest.Pipeline, kc string) proto.State {
 	for _, a := range c.Build.Artifacts {
 		builds[a.ImageName] = NotStarted
 	}
-	s := emptyStateWithArtifacts(builds)
-	s.Metadata = initializeMetadata(c, kc)
-	return s
+	metadata := initializeMetadata(c, kc)
+	return emptyStateWithArtifacts(builds, metadata)
 }
 
-func emptyStateWithArtifacts(builds map[string]string) proto.State {
+func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata) proto.State {
 	return proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: builds,
@@ -151,6 +150,7 @@ func emptyStateWithArtifacts(builds map[string]string) proto.State {
 		FileSyncState: &proto.FileSyncState{
 			Status: NotStarted,
 		},
+		Metadata: metadata,
 	}
 }
 
@@ -506,7 +506,7 @@ func ResetStateOnBuild() {
 	for k := range handler.getState().BuildState.Artifacts {
 		builds[k] = NotStarted
 	}
-	newState := emptyStateWithArtifacts(builds)
+	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata)
 	handler.setState(newState)
 }
 

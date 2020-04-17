@@ -17,7 +17,6 @@ limitations under the License.
 package event
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -71,7 +70,6 @@ func getBuilders(b latest.BuildConfig) []*proto.BuildMetadata_Builders {
 		builders[i] = &proto.BuildMetadata_Builders{Type: k, Count: int32(v)}
 		i++
 	}
-	fmt.Println("    ", builders)
 	return builders
 }
 
