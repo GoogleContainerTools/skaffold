@@ -448,9 +448,16 @@ func GetBuildArgs(a *latest.DockerArtifact) ([]string, error) {
 }
 
 // EvaluateBuildArgs evaluates templated build args.
-func EvaluateBuildArgs(args map[string]*string) (map[string]*string, error) {
+// An additional envMap can optionally be specified.
+// If multiple additional envMaps are specified, all but the first one will be ignored
+func EvaluateBuildArgs(args map[string]*string, envMap ...map[string]string) (map[string]*string, error) {
 	if args == nil {
 		return nil, nil
+	}
+
+	var env map[string]string
+	if len(envMap) > 0 {
+		env = envMap[0]
 	}
 
 	evaluated := map[string]*string{}
@@ -460,7 +467,7 @@ func EvaluateBuildArgs(args map[string]*string) (map[string]*string, error) {
 			continue
 		}
 
-		value, err := util.ExpandEnvTemplate(*v, nil)
+		value, err := util.ExpandEnvTemplate(*v, env)
 		if err != nil {
 			return nil, fmt.Errorf("unable to get value for build arg %q: %w", k, err)
 		}

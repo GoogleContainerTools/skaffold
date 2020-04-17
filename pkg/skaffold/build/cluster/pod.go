@@ -226,7 +226,7 @@ func kanikoArgs(artifact *latest.KanikoArtifact, tag string, insecureRegistries 
 		args = append(args, artifact.AdditionalFlags...)
 	}
 
-	buildArgs, err := docker.EvaluateBuildArgs(artifact.BuildArgs)
+	buildArgs, err := docker.EvaluateBuildArgs(artifact.BuildArgs, envMapFromVars(artifact.Env))
 	if err != nil {
 		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
 	}

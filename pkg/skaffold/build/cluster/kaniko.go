@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -37,7 +38,11 @@ import (
 const initContainer = "kaniko-init-container"
 
 func (b *Builder) buildWithKaniko(ctx context.Context, out io.Writer, workspace string, artifact *latest.KanikoArtifact, tag string) (string, error) {
-	env, err := evaluateEnv(artifact.Env)
+	generatedEnvs, err := generateEnvFromImage(tag)
+	if err != nil {
+		return "", fmt.Errorf("error processing generated env variables from image uri: %w", err)
+	}
+	env, err := evaluateEnv(artifact.Env, generatedEnvs...)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate env variables: %w", err)
 	}
@@ -119,9 +124,15 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 	return nil
 }
 
-func evaluateEnv(env []v1.EnvVar) ([]v1.EnvVar, error) {
-	var evaluated []v1.EnvVar
+func evaluateEnv(env []v1.EnvVar, additional ...v1.EnvVar) ([]v1.EnvVar, error) {
+	// Prepare additional envs
+	addEnv := make(map[string]string)
+	for _, addEnvVar := range additional {
+		addEnv[addEnvVar.Name] = addEnvVar.Value
+	}
 
+	// Evaluate provided env variables
+	var evaluated []v1.EnvVar
 	for _, envVar := range env {
 		val, err := util.ExpandEnvTemplate(envVar.Value, nil)
 		if err != nil {
@@ -129,7 +140,57 @@ func evaluateEnv(env []v1.EnvVar) ([]v1.EnvVar, error) {
 		}
 
 		evaluated = append(evaluated, v1.EnvVar{Name: envVar.Name, Value: val})
+
+		// Provided env variables have higher priority than additional (generated) ones
+		delete(addEnv, envVar.Name)
+	}
+
+	// Append additional (generated) env variables
+	for name, value := range addEnv {
+		if value != "" {
+			evaluated = append(evaluated, v1.EnvVar{Name: name, Value: value})
+		}
 	}
 
 	return evaluated, nil
+}
+
+func envMapFromVars(env []v1.EnvVar) map[string]string {
+	envMap := make(map[string]string)
+	for _, envVar := range env {
+		envMap[envVar.Name] = envVar.Value
+	}
+	return envMap
+}
+
+func generateEnvFromImage(imageStr string) ([]v1.EnvVar, error) {
+	repoStr, nameStr, tagStr, err := parseImageParts(imageStr)
+	if err != nil {
+		return nil, err
+	}
+	var generatedEnvs []v1.EnvVar
+	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_REPO", Value: repoStr})
+	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_NAME", Value: nameStr})
+	generatedEnvs = append(generatedEnvs, v1.EnvVar{Name: "IMAGE_TAG", Value: tagStr})
+	return generatedEnvs, nil
+}
+
+func parseImageParts(imageStr string) (repo, name, tag string, err error) {
+	parts := strings.Split(imageStr, ":")
+	if len(parts) != 2 {
+		err = fmt.Errorf("invalid image uri string: %q", imageStr)
+		return
+	}
+	tag = parts[1]
+	imageParts := strings.Split(parts[0], "/")
+	switch len(imageParts) {
+	case 0:
+		name = parts[1]
+	case 1:
+		name = imageParts[0]
+	default:
+		repo = strings.Join(imageParts[:len(imageParts)-1], "/")
+		name = imageParts[len(imageParts)-1]
+	}
+	return
 }
