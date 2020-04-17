@@ -1067,6 +1067,8 @@ type KanikoArtifact struct {
 	SkipTLSVerifyRegistry []string `yaml:"skipTLSVerifyRegistry,omitempty"`
 
 	// Env are environment variables passed to the kaniko pod.
+	// It also accepts environment variables via the go template syntax.
+	// For example: `{{name: "key1", value: "value1"}, {name: "key2", value: "value2"}, {name: "key3", value: "'{{.ENV_VARIABLE}}'"}"}`.
 	Env []v1.EnvVar `yaml:"env,omitempty"`
 
 	// Cache configures Kaniko caching. If a cache is specified, Kaniko will
@@ -1082,7 +1084,8 @@ type KanikoArtifact struct {
 	Label map[string]*string `yaml:"label,omitempty"`
 
 	// BuildArgs are arguments passed to the docker build.
-	// It also accepts environment variables via the go template syntax.
+	// It also accepts environment variables and generated values via the go template syntax.
+	// Exposed generated values: IMAGE_REPO, IMAGE_NAME, IMAGE_TAG.
 	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 
