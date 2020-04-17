@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"sync"
 
+	//"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"

@@ -38,15 +38,16 @@ func initializeMetadata(c latest.Pipeline, kc string) *proto.Metadata {
 		m.Build.Type = proto.BuildType_GCB
 	case c.Build.Cluster != nil:
 		m.Build.Type = proto.BuildType_CLUSTER
+	default:
+		m.Build.Type = proto.BuildType_UNKNOWN_BUILD_TYPE
 	}
 
 	m.Build.Builders = getBuilders(c.Build)
-	m.Deploy.Deployers = getDeployers(c.Deploy)
-	m.Deploy.Cluster = getClusterType(kc)
+	m.Deploy = getDeploy(c.Deploy, kc)
 	return m
 }
 
-func getBuilders(b latest.BuildConfig) []*proto.BuildMetadata_Builders {
+func getBuilders(b latest.BuildConfig) []*proto.BuildMetadata_Builder {
 	m := map[proto.BuilderType]int{}
 	for _, a := range b.Artifacts {
 		switch {
@@ -62,41 +63,43 @@ func getBuilders(b latest.BuildConfig) []*proto.BuildMetadata_Builders {
 			updateOrAddKey(m, proto.BuilderType_JIB)
 		case a.KanikoArtifact != nil:
 			updateOrAddKey(m, proto.BuilderType_KANIKO)
+		default:
+			updateOrAddKey(m, proto.BuilderType_UNKNOWN_BUILDER_TYPE)
 		}
 	}
-	builders := make([]*proto.BuildMetadata_Builders, len(m))
+	builders := make([]*proto.BuildMetadata_Builder, len(m))
 	i := 0
 	for k, v := range m {
-		builders[i] = &proto.BuildMetadata_Builders{Type: k, Count: int32(v)}
+		builders[i] = &proto.BuildMetadata_Builder{Type: k, Count: int32(v)}
 		i++
 	}
 	return builders
 }
 
-func getDeployers(d latest.DeployConfig) []*proto.DeployMetadata_Deployers {
-	m := map[proto.DeployerType]int{}
+func getDeploy(d latest.DeployConfig, c string) *proto.DeployMetadata {
+	deployers := []*proto.DeployMetadata_Deployer{}
 	if d.HelmDeploy != nil {
-		m[proto.DeployerType_HELM] = len(d.HelmDeploy.Releases)
+		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_HELM, Count: int32(len(d.HelmDeploy.Releases))})
 	}
 	if d.KubectlDeploy != nil {
-		m[proto.DeployerType_KUBECTL] = 1
+		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUBECTL, Count: 1})
 	}
 	if d.KustomizeDeploy != nil {
-		m[proto.DeployerType_KUSTOMIZE] = 1
+		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_KUSTOMIZE, Count: 1})
 	}
-
-	deployers := make([]*proto.DeployMetadata_Deployers, len(m))
-	i := 0
-	for k, v := range m {
-		deployers[i] = &proto.DeployMetadata_Deployers{Type: k, Count: int32(v)}
-		i++
+	if len(deployers) == 0 {
+		return &proto.DeployMetadata{}
 	}
-	return deployers
+	return &proto.DeployMetadata{
+		Deployers: deployers,
+		Cluster:   getClusterType(c),
+	}
 }
 
 func updateOrAddKey(m map[proto.BuilderType]int, k proto.BuilderType) {
 	if _, ok := m[k]; ok {
 		m[k]++
+		return
 	}
 	m[k] = 1
 }

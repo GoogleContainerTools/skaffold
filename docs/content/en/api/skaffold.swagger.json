@@ -55,11 +55,12 @@
             "required": false,
             "type": "string",
             "enum": [
-              "LOCAL",
+              "UNKNOWN_BUILD_TYPE",
               "CLUSTER",
-              "GCB"
+              "GCB",
+              "LOCAL"
             ],
-            "default": "LOCAL"
+            "default": "UNKNOWN_BUILD_TYPE"
           },
           {
             "name": "event.metaEvent.metadata.deploy.cluster",
@@ -67,11 +68,12 @@
             "required": false,
             "type": "string",
             "enum": [
-              "GKE",
+              "UNKNOWN_CLUSTER_TYPE",
               "MINIKUBE",
-              "OTHER"
+              "OTHER",
+              "GKE"
             ],
-            "default": "GKE"
+            "default": "UNKNOWN_CLUSTER_TYPE"
           },
           {
             "name": "event.buildEvent.artifact",
@@ -410,7 +412,7 @@
     }
   },
   "definitions": {
-    "BuildMetadataBuilders": {
+    "BuildMetadataBuilder": {
       "type": "object",
       "properties": {
         "type": {
@@ -422,7 +424,7 @@
         }
       }
     },
-    "DeployMetadataDeployers": {
+    "DeployMetadataDeployer": {
       "type": "object",
       "properties": {
         "type": {
@@ -462,7 +464,7 @@
         "builders": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/BuildMetadataBuilders"
+            "$ref": "#/definitions/BuildMetadataBuilder"
           }
         },
         "type": {
@@ -493,32 +495,35 @@
     "protoBuildType": {
       "type": "string",
       "enum": [
-        "LOCAL",
+        "UNKNOWN_BUILD_TYPE",
         "CLUSTER",
-        "GCB"
+        "GCB",
+        "LOCAL"
       ],
-      "default": "LOCAL"
+      "default": "UNKNOWN_BUILD_TYPE"
     },
     "protoBuilderType": {
       "type": "string",
       "enum": [
-        "DOCKER",
+        "UNKNOWN_BUILDER_TYPE",
         "JIB",
         "BAZEL",
         "BUILDPACKS",
         "CUSTOM",
-        "KANIKO"
+        "KANIKO",
+        "DOCKER"
       ],
-      "default": "DOCKER"
+      "default": "UNKNOWN_BUILDER_TYPE"
     },
     "protoClusterType": {
       "type": "string",
       "enum": [
-        "GKE",
+        "UNKNOWN_CLUSTER_TYPE",
         "MINIKUBE",
-        "OTHER"
+        "OTHER",
+        "GKE"
       ],
-      "default": "GKE"
+      "default": "UNKNOWN_CLUSTER_TYPE"
     },
     "protoDebuggingContainerEvent": {
       "type": "object",
@@ -575,7 +580,7 @@
         "deployers": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/DeployMetadataDeployers"
+            "$ref": "#/definitions/DeployMetadataDeployer"
           }
         },
         "cluster": {
@@ -595,11 +600,12 @@
     "protoDeployerType": {
       "type": "string",
       "enum": [
-        "KUBECTL",
+        "UNKNOWN_DEPLOYER_TYPE",
         "HELM",
-        "KUSTOMIZE"
+        "KUSTOMIZE",
+        "KUBECTL"
       ],
-      "default": "KUBECTL"
+      "default": "UNKNOWN_DEPLOYER_TYPE"
     },
     "protoErrorCode": {
       "type": "string",

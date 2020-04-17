@@ -76,7 +76,7 @@ If the build fails, an error will be attached to the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | numberOfArtifacts | [int32](#int32) |  |  |
-| builders | [BuildMetadata.Builders](#proto.BuildMetadata.Builders) | repeated |  |
+| builders | [BuildMetadata.Builder](#proto.BuildMetadata.Builder) | repeated |  |
 | type | [BuildType](#proto.BuildType) |  |  |
 | additional | [BuildMetadata.AdditionalEntry](#proto.BuildMetadata.AdditionalEntry) | repeated | Additional key value pairs to describe the deploy pipeline |
 
@@ -102,8 +102,8 @@ If the build fails, an error will be attached to the event.
 
 
 
-<a name="proto.BuildMetadata.Builders"></a>
-#### BuildMetadata.Builders
+<a name="proto.BuildMetadata.Builder"></a>
+#### BuildMetadata.Builder
 
 
 
@@ -212,7 +212,7 @@ anytime a deployment starts or completes, successfully or not.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| deployers | [DeployMetadata.Deployers](#proto.DeployMetadata.Deployers) | repeated |  |
+| deployers | [DeployMetadata.Deployer](#proto.DeployMetadata.Deployer) | repeated |  |
 | cluster | [ClusterType](#proto.ClusterType) |  |  |
 
 
@@ -221,8 +221,8 @@ anytime a deployment starts or completes, successfully or not.
 
 
 
-<a name="proto.DeployMetadata.Deployers"></a>
-#### DeployMetadata.Deployers
+<a name="proto.DeployMetadata.Deployer"></a>
+#### DeployMetadata.Deployer
 
 
 
@@ -592,9 +592,10 @@ will be sent with the new status.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| LOCAL | 0 |  |
+| UNKNOWN_BUILD_TYPE | 0 |  |
 | CLUSTER | 1 |  |
 | GCB | 2 |  |
+| LOCAL | 3 |  |
 
 
 
@@ -605,12 +606,13 @@ will be sent with the new status.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| DOCKER | 0 |  |
+| UNKNOWN_BUILDER_TYPE | 0 |  |
 | JIB | 1 |  |
 | BAZEL | 2 |  |
 | BUILDPACKS | 3 |  |
 | CUSTOM | 4 |  |
 | KANIKO | 5 |  |
+| DOCKER | 6 |  |
 
 
 
@@ -621,9 +623,10 @@ will be sent with the new status.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| GKE | 0 |  |
+| UNKNOWN_CLUSTER_TYPE | 0 |  |
 | MINIKUBE | 1 |  |
 | OTHER | 2 |  |
+| GKE | 3 |  |
 
 
 
@@ -634,9 +637,10 @@ will be sent with the new status.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| KUBECTL | 0 |  |
+| UNKNOWN_DEPLOYER_TYPE | 0 |  |
 | HELM | 1 |  |
 | KUSTOMIZE | 2 |  |
+| KUBECTL | 3 |  |
 
 
 

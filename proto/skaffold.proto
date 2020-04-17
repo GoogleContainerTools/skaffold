@@ -37,23 +37,23 @@ message Metadata {
 }
 
 message BuildMetadata {
-  message Builders {
+  message Builder {
       BuilderType type = 1;
       int32 count = 2;
   }
   int32 numberOfArtifacts = 1;
-  repeated Builders builders= 2;
+  repeated Builder builders= 2;
   BuildType type = 3;
   // Additional key value pairs to describe the deploy pipeline
   map<string, string> additional = 99;
 }
 
 message DeployMetadata {
-    message Deployers {
+    message Deployer {
         DeployerType type = 1;
         int32 count = 2;
     }
-    repeated Deployers deployers = 1;
+    repeated Deployer deployers = 1;
     ClusterType cluster = 2;
 }
 
@@ -265,28 +265,32 @@ enum ErrorCode {
 }
 
 enum BuilderType {
-    DOCKER = 0;
+    UNKNOWN_BUILDER_TYPE = 0;
     JIB = 1;
     BAZEL = 2;
     BUILDPACKS = 3;
     CUSTOM = 4;
     KANIKO = 5;
+    DOCKER = 6;
 }
 
 enum BuildType {
-    LOCAL = 0;
+    UNKNOWN_BUILD_TYPE =0 ;
     CLUSTER = 1;
     GCB = 2;
+    LOCAL = 3;
 }
 
 enum DeployerType {
-    KUBECTL = 0;
+    UNKNOWN_DEPLOYER_TYPE =0 ;
     HELM = 1;
     KUSTOMIZE = 2;
+    KUBECTL = 3;
 }
 
 enum ClusterType {
-    GKE = 0;
+    UNKNOWN_CLUSTER_TYPE =0;
     MINIKUBE = 1;
     OTHER = 2;
+    GKE = 3;
 }
