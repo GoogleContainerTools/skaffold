@@ -54,8 +54,14 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/pflag v1.0.5
 	github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
-	golang.org/x/crypto v0.0.0-20200311171314-f7b00557c8c4
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	github.com/xeipuuv/gojsonschema v1.2.0
+	go.opencensus.io v0.22.2 // indirect
+	go.uber.org/multierr v1.4.0 // indirect
+	go.uber.org/zap v1.12.0 // indirect
+	golang.org/x/crypto v0.0.0-20191219195013-becbf705a915
+	golang.org/x/exp v0.0.0-20191127035308-9964a5a80460 // indirect
+	golang.org/x/net v0.0.0-20191126235420-ef20fe5d7933 // indirect
+	golang.org/x/oauth2 v0.0.0-20191202225959-858c2ad4c8b6
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
 	google.golang.org/api v0.21.0
