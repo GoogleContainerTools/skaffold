@@ -19,15 +19,25 @@ package deploy
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+)
+
+const (
+	renderedManifestsStagingDir  = "render_temp_"
+	renderedManifestsStagingFile = "rendered_manifest.yaml"
 )
 
 func parseRuntimeObject(namespace string, b []byte) (*Artifact, error) {
@@ -83,12 +93,36 @@ func getObjectNamespaceIfDefined(doc []byte, ns string) (string, error) {
 	return ns, nil
 }
 
-func dumpToFileOrWriter(renderedManifests string, filepath string, manifestOut io.Writer) error {
-	if filepath == "" {
+// Outputs rendered manifests to a file, a writer or a GCS bucket.
+func outputRenderedManifests(renderedManifests string, output string, manifestOut io.Writer) error {
+	if output == "" {
 		_, err := fmt.Fprintln(manifestOut, renderedManifests)
 		return err
 	}
+	if strings.HasPrefix(output, "gs://") {
+		tempDir, err := ioutil.TempDir("", renderedManifestsStagingDir)
+		if err != nil {
+			return fmt.Errorf("failed to create tmp directory: %v", err)
+		}
+		defer os.RemoveAll(tempDir)
+		tempFile := filepath.Join(tempDir, renderedManifestsStagingFile)
+		err = dumpToFile(renderedManifests, tempFile)
+		if err != nil {
+			return err
+		}
+		gcs := util.Gsutil{}
+		err = gcs.Copy(context.Background(), tempFile, output, false)
+		if err != nil {
+			return fmt.Errorf("failed to copy rendered manifests to GCS: %v", err)
+		}
+		return nil
+	} else {
+		return dumpToFile(renderedManifests, output)
+	}
 
+}
+
+func dumpToFile(renderedManifests string, filepath string) error {
 	f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, 0666)
 	if err != nil {
 		return fmt.Errorf("opening file for writing manifests: %w", err)
