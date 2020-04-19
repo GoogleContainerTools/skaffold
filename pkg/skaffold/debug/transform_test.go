@@ -18,6 +18,7 @@ package debug
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -182,6 +183,26 @@ func TestSetEnvVar(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			result := setEnvVar(test.in, "name", "new-text")
 			t.CheckDeepEqual(test.expected, result)
+		})
+	}
+}
+
+func TestShJoin(t *testing.T) {
+	tests := []struct {
+		in     []string
+		result string
+	}{
+		{[]string{}, ""},
+		{[]string{"a"}, "a"},
+		{[]string{"a b"}, `"a b"`},
+		{[]string{`a"b`}, `"a\"b"`},
+		{[]string{`a"b`}, `"a\"b"`},
+		{[]string{"a", `a"b`, "b c"}, `a "a\"b" "b c"`},
+	}
+	for _, test := range tests {
+		testutil.Run(t, strings.Join(test.in, " "), func(t *testutil.T) {
+			result := shJoin(test.in)
+			t.CheckDeepEqual(test.result, result)
 		})
 	}
 }

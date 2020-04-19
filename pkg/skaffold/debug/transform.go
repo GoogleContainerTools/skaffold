@@ -383,3 +383,21 @@ func setEnvVar(entries []v1.EnvVar, varName, value string) []v1.EnvVar {
 	}
 	return append(entries, entry)
 }
+
+// shJoin joins the arguments into a quoted form suitable to pass to `sh -c`.
+// Necessary as github.com/kballard/go-shellquote's `Join` quotes `$`.
+func shJoin(args []string) string {
+	result := ""
+	for i, arg := range args {
+		if i > 0 {
+			result = result + " "
+		}
+		if strings.ContainsAny(arg, " \t\v\"") {
+			arg := strings.ReplaceAll(arg, `"`, `\"`)
+			result = result + `"` + arg + `"`
+		} else {
+			result = result + arg
+		}
+	}
+	return result
+}
