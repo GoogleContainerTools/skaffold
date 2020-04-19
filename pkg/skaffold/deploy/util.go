@@ -116,10 +116,8 @@ func outputRenderedManifests(renderedManifests string, output string, manifestOu
 			return fmt.Errorf("failed to copy rendered manifests to GCS: %v", err)
 		}
 		return nil
-	} else {
-		return dumpToFile(renderedManifests, output)
 	}
-
+	return dumpToFile(renderedManifests, output)
 }
 
 func dumpToFile(renderedManifests string, filepath string) error {
