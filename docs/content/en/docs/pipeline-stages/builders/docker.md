@@ -95,11 +95,15 @@ Docker image `gcr.io/k8s-skaffold/example` with Kaniko:
 {{% readfile file="samples/builders/kaniko.yaml" %}}
 
 ## Dockerfile remotely with Google Cloud Build
+
 Skaffold can build the Dockerfile image remotely with [Google Cloud Build]({{<relref "/docs/pipeline-stages/builders#remotely-on-google-cloud-build">}}).
 
 **Configuration**
 
-To configure, add `googleCloudBuild` to  `build` section to `skaffold.yaml`
+To configure, add `googleCloudBuild` to `build` section to `skaffold.yaml`.
+The following options can optionally be configured:
+
+{{< schema root="GoogleCloudBuild" >}}
 
 **Example**
 
