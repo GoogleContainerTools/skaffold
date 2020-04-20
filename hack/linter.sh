@@ -39,7 +39,7 @@ VERBOSE=""
 if [[ "${TRAVIS}" == "true" ]]; then
     # Use less memory on Travis
     # See https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
-    export GOGC=10
+    export GOGC=5
     VERBOSE="-v --print-resources-usage"
 fi
 

@@ -14,7 +14,8 @@ go_import_path: gopkg.in/AlecAivazis/survey.v1
 before_install:
   - go get github.com/alecaivazis/run
 
-install: []
+install:
+  - run install-deps
 
 script:
   - run tests

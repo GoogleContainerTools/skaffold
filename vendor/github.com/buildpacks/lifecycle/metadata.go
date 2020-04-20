@@ -1,10 +1,10 @@
 package lifecycle
 
 import (
-	"path"
-
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/pkg/errors"
+
+	"github.com/buildpacks/lifecycle/launch"
 )
 
 const (
@@ -14,7 +14,7 @@ const (
 )
 
 type BuildMetadata struct {
-	Processes  []Process        `toml:"processes" json:"processes"`
+	Processes  []launch.Process `toml:"processes" json:"processes"`
 	Buildpacks []Buildpack      `toml:"buildpacks" json:"buildpacks"`
 	BOM        []BOMEntry       `toml:"bom" json:"bom"`
 	Launcher   LauncherMetadata `toml:"-" json:"launcher"`
@@ -35,8 +35,13 @@ type GitMetadata struct {
 	Commit     string `json:"commit"`
 }
 
-func MetadataFilePath(layersDir string) string {
-	return path.Join(layersDir, "config", "metadata.toml")
+func (md BuildMetadata) hasProcess(processType string) bool {
+	for _, p := range md.Processes {
+		if p.Type == processType {
+			return true
+		}
+	}
+	return false
 }
 
 type CacheMetadata struct {
@@ -44,9 +49,9 @@ type CacheMetadata struct {
 }
 
 func (cm *CacheMetadata) MetadataForBuildpack(id string) BuildpackLayersMetadata {
-	for _, bpMd := range cm.Buildpacks {
-		if bpMd.ID == id {
-			return bpMd
+	for _, bpMD := range cm.Buildpacks {
+		if bpMD.ID == id {
+			return bpMD
 		}
 	}
 	return BuildpackLayersMetadata{}
@@ -92,6 +97,7 @@ type BuildpackLayersMetadata struct {
 	ID      string                            `json:"key" toml:"key"`
 	Version string                            `json:"version" toml:"version"`
 	Layers  map[string]BuildpackLayerMetadata `json:"layers" toml:"layers"`
+	Store   *BuildpackStore                   `json:"store,omitempty" toml:"store"`
 }
 
 type BuildpackLayerMetadata struct {
@@ -104,6 +110,10 @@ type BuildpackLayerMetadataFile struct {
 	Build  bool        `json:"build" toml:"build"`
 	Launch bool        `json:"launch" toml:"launch"`
 	Cache  bool        `json:"cache" toml:"cache"`
+}
+
+type BuildpackStore struct {
+	Data map[string]interface{} `json:"metadata" toml:"metadata"`
 }
 
 type RunImageMetadata struct {
@@ -134,9 +144,9 @@ func (sm *StackMetadata) BestRunImageMirror(registry string) (string, error) {
 }
 
 func (m *LayersMetadata) MetadataForBuildpack(id string) BuildpackLayersMetadata {
-	for _, bpMd := range m.Buildpacks {
-		if bpMd.ID == id {
-			return bpMd
+	for _, bpMD := range m.Buildpacks {
+		if bpMD.ID == id {
+			return bpMD
 		}
 	}
 	return BuildpackLayersMetadata{}

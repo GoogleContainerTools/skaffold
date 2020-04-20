@@ -24,6 +24,7 @@ import (
 	"github.com/buildpacks/pack/internal/build"
 	"github.com/buildpacks/pack/internal/builder"
 	"github.com/buildpacks/pack/internal/buildpack"
+	"github.com/buildpacks/pack/internal/buildpackage"
 	"github.com/buildpacks/pack/internal/dist"
 	"github.com/buildpacks/pack/internal/paths"
 	"github.com/buildpacks/pack/internal/stack"
@@ -36,18 +37,20 @@ type Lifecycle interface {
 }
 
 type BuildOptions struct {
-	Image             string              // required
-	Builder           string              // required
-	AppPath           string              // defaults to current working directory
-	RunImage          string              // defaults to the best mirror from the builder metadata or AdditionalMirrors
-	AdditionalMirrors map[string][]string // only considered if RunImage is not provided
-	Env               map[string]string
-	Publish           bool
-	NoPull            bool
-	ClearCache        bool
-	Buildpacks        []string
-	ProxyConfig       *ProxyConfig // defaults to  environment proxy vars
-	ContainerConfig   ContainerConfig
+	Image              string              // required
+	Builder            string              // required
+	AppPath            string              // defaults to current working directory
+	RunImage           string              // defaults to the best mirror from the builder metadata or AdditionalMirrors
+	AdditionalMirrors  map[string][]string // only considered if RunImage is not provided
+	Env                map[string]string
+	Publish            bool
+	NoPull             bool
+	ClearCache         bool
+	Buildpacks         []string
+	ProxyConfig        *ProxyConfig // defaults to  environment proxy vars
+	ContainerConfig    ContainerConfig
+	DefaultProcessType string
+	FileFilter         func(string) bool
 }
 
 type ProxyConfig struct {
@@ -135,17 +138,19 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 	}
 
 	return c.lifecycle.Execute(ctx, build.LifecycleOptions{
-		AppPath:    appPath,
-		Image:      imageRef,
-		Builder:    ephemeralBuilder,
-		RunImage:   runImageName,
-		ClearCache: opts.ClearCache,
-		Publish:    opts.Publish,
-		HTTPProxy:  proxyConfig.HTTPProxy,
-		HTTPSProxy: proxyConfig.HTTPSProxy,
-		NoProxy:    proxyConfig.NoProxy,
-		Network:    opts.ContainerConfig.Network,
-		Volumes:    platformVolumes,
+		AppPath:            appPath,
+		Image:              imageRef,
+		Builder:            ephemeralBuilder,
+		RunImage:           runImageName,
+		ClearCache:         opts.ClearCache,
+		Publish:            opts.Publish,
+		HTTPProxy:          proxyConfig.HTTPProxy,
+		HTTPSProxy:         proxyConfig.HTTPSProxy,
+		NoProxy:            proxyConfig.NoProxy,
+		Network:            opts.ContainerConfig.Network,
+		Volumes:            platformVolumes,
+		DefaultProcessType: opts.DefaultProcessType,
+		FileFilter:         opts.FileFilter,
 	})
 }
 
@@ -433,17 +438,32 @@ func (c *Client) processBuildpacks(ctx context.Context, builderBPs []dist.Buildp
 				return fetchedBPs, order, errors.Wrapf(err, "downloading buildpack from %s", style.Symbol(bp))
 			}
 
-			fetchedBP, err := dist.BuildpackFromRootBlob(blob)
+			var mainBP dist.Buildpack
+			var dependencyBPs []dist.Buildpack
+
+			isOCILayout, err := buildpackage.IsOCILayoutBlob(blob)
 			if err != nil {
-				return fetchedBPs, order, errors.Wrapf(err, "creating buildpack from %s", style.Symbol(bp))
+				return fetchedBPs, order, errors.Wrapf(err, "checking format")
 			}
 
-			fetchedBPs = append(fetchedBPs, fetchedBP)
-			order = appendBuildpackToOrder(order, fetchedBP.Descriptor().Info)
+			if isOCILayout {
+				mainBP, dependencyBPs, err = buildpackage.BuildpacksFromOCILayoutBlob(blob)
+				if err != nil {
+					return fetchedBPs, order, errors.Wrapf(err, "extracting buildpacks from %s", style.Symbol(bp))
+				}
+			} else {
+				mainBP, err = dist.BuildpackFromRootBlob(blob)
+				if err != nil {
+					return fetchedBPs, order, errors.Wrapf(err, "creating buildpack from %s", style.Symbol(bp))
+				}
+			}
+
+			fetchedBPs = append(append(fetchedBPs, mainBP), dependencyBPs...)
+			order = appendBuildpackToOrder(order, mainBP.Descriptor().Info)
 		case buildpack.PackageLocator:
 			mainBP, depBPs, err := extractPackagedBuildpacks(ctx, bp, c.imageFetcher, publish, noPull)
 			if err != nil {
-				return fetchedBPs, order, errors.Wrapf(err, "creating from buildpackage %s", style.Symbol(bp))
+				return fetchedBPs, order, err
 			}
 
 			fetchedBPs = append(append(fetchedBPs, mainBP), depBPs...)

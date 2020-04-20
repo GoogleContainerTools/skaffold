@@ -201,22 +201,22 @@ func BlobSize(i WithManifest, h v1.Hash) (int64, error) {
 }
 
 // BlobDescriptor is a helper for implementing v1.Image
-func BlobDescriptor(i WithManifest, h v1.Hash) (v1.Descriptor, error) {
+func BlobDescriptor(i WithManifest, h v1.Hash) (*v1.Descriptor, error) {
 	m, err := i.Manifest()
 	if err != nil {
-		return v1.Descriptor{}, err
+		return nil, err
 	}
 
 	if m.Config.Digest == h {
-		return m.Config, nil
+		return &m.Config, nil
 	}
 
 	for _, l := range m.Layers {
 		if l.Digest == h {
-			return l, nil
+			return &l, nil
 		}
 	}
-	return v1.Descriptor{}, fmt.Errorf("blob %v not found", h)
+	return nil, fmt.Errorf("blob %v not found", h)
 }
 
 // WithManifestAndConfigFile defines the subset of v1.Image used by these helper methods

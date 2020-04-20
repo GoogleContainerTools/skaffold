@@ -103,7 +103,10 @@ func NewClient(opts ...ClientOption) (*Client, error) {
 
 	if client.docker == nil {
 		var err error
-		client.docker, err = dockerClient.NewClientWithOpts(dockerClient.FromEnv, dockerClient.WithVersion("1.38"))
+		client.docker, err = dockerClient.NewClientWithOpts(
+			dockerClient.FromEnv,
+			dockerClient.WithVersion("1.38"),
+		)
 		if err != nil {
 			return nil, err
 		}

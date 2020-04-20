@@ -15,14 +15,13 @@ package procfs
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/prometheus/procfs/internal/fs"
-	"github.com/prometheus/procfs/internal/util"
 )
 
 // CPUStat shows how much time the cpu spend in various stages.
@@ -165,15 +164,16 @@ func (fs FS) NewStat() (Stat, error) {
 // Stat returns information about current cpu/process statistics.
 // See https://www.kernel.org/doc/Documentation/filesystems/proc.txt
 func (fs FS) Stat() (Stat, error) {
-	fileName := fs.proc.Path("stat")
-	data, err := util.ReadFileNoStat(fileName)
+
+	f, err := os.Open(fs.proc.Path("stat"))
 	if err != nil {
 		return Stat{}, err
 	}
+	defer f.Close()
 
 	stat := Stat{}
 
-	scanner := bufio.NewScanner(bytes.NewReader(data))
+	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := scanner.Text()
 		parts := strings.Fields(scanner.Text())
@@ -237,7 +237,7 @@ func (fs FS) Stat() (Stat, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return Stat{}, fmt.Errorf("couldn't parse %s: %s", fileName, err)
+		return Stat{}, fmt.Errorf("couldn't parse %s: %s", f.Name(), err)
 	}
 
 	return stat, nil

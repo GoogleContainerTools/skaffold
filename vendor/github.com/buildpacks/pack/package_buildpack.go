@@ -11,8 +11,14 @@ import (
 	"github.com/buildpacks/pack/internal/style"
 )
 
+const (
+	FormatImage = "image"
+	FormatFile  = "file"
+)
+
 type PackageBuildpackOptions struct {
 	Name    string
+	Format  string
 	Config  pubbldpkg.Config
 	Publish bool
 	NoPull  bool
@@ -20,6 +26,10 @@ type PackageBuildpackOptions struct {
 
 func (c *Client) PackageBuildpack(ctx context.Context, opts PackageBuildpackOptions) error {
 	packageBuilder := buildpackage.NewBuilder(c.imageFactory)
+
+	if opts.Format == "" {
+		opts.Format = FormatImage
+	}
 
 	bpURI := opts.Config.Buildpack.URI
 	if bpURI == "" {
@@ -63,10 +73,13 @@ func (c *Client) PackageBuildpack(ctx context.Context, opts PackageBuildpackOpti
 		}
 	}
 
-	_, err = packageBuilder.Save(opts.Name, opts.Publish)
-	if err != nil {
+	switch opts.Format {
+	case FormatFile:
+		return packageBuilder.SaveAsFile(opts.Name)
+	case FormatImage:
+		_, err = packageBuilder.SaveAsImage(opts.Name, opts.Publish)
 		return errors.Wrapf(err, "saving image")
+	default:
+		return errors.Errorf("unknown format: %s", style.Symbol(opts.Format))
 	}
-
-	return err
 }

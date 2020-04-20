@@ -5,6 +5,7 @@ import (
 
 	"github.com/Masterminds/semver"
 	"github.com/buildpacks/lifecycle"
+	"github.com/buildpacks/lifecycle/launch"
 	"github.com/pkg/errors"
 
 	"github.com/buildpacks/pack/internal/dist"
@@ -21,8 +22,8 @@ type ImageInfo struct {
 }
 
 type ProcessDetails struct {
-	DefaultProcess *lifecycle.Process
-	OtherProcesses []lifecycle.Process
+	DefaultProcess *launch.Process
+	OtherProcesses []launch.Process
 }
 
 // Deserialize just the subset of fields we need to avoid breaking changes

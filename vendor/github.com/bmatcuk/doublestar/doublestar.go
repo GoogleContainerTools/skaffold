@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"unicode/utf8"
 )
@@ -249,8 +250,12 @@ func doMatching(pattern string, nameComponents []string) (matched bool, err erro
 	if patternLen == 0 && nameLen == 0 {
 		return true, nil
 	}
-	if patternLen == 0 || nameLen == 0 {
-		return false, nil
+	if patternLen == 0 {
+		if nameLen == 1 && nameComponents[0] == "" {
+			return true, nil
+		} else if nameLen == 0 {
+			return false, nil
+		}
 	}
 
 	slashIdx := indexRuneWithEscaping(pattern, '/')
@@ -401,6 +406,8 @@ func doGlob(basedir, pattern string, matches []string) (m []string, e error) {
 	defer dir.Close()
 
 	files, _ := dir.Readdir(-1)
+	sort.Slice(files, func(i, j int) bool { return files[i].Name() < files[j].Name() })
+
 	slashIdx := indexRuneWithEscaping(pattern, '/')
 	lastComponent := slashIdx == -1
 	if lastComponent {
