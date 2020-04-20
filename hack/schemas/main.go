@@ -178,6 +178,7 @@ func yamlFieldName(field *ast.Field) string {
 	return strings.Split(yamlTag, ",")[0]
 }
 
+//nolint:golint,goconst
 func setTypeOrRef(def *Definition, typeName string) {
 	switch typeName {
 	// Special case for ResourceType that is an alias of string.
