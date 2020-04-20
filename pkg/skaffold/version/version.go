@@ -41,8 +41,9 @@ type Info struct {
 	Platform      string
 }
 
-// Get returns the version and buildtime information about the binary
-func Get() *Info {
+// Get returns the version and buildtime information about the binary.
+// Can be overridden for tests.
+var Get = func() *Info {
 	// These variables typically come from -ldflags settings to `go build`
 	return &Info{
 		Version:       version,

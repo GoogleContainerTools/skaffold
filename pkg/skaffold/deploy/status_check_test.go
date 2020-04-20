@@ -30,6 +30,7 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	utilpointer "k8s.io/utils/pointer"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -38,7 +39,7 @@ import (
 )
 
 func TestGetDeployments(t *testing.T) {
-	labeller := NewLabeller("")
+	labeller := NewLabeller(config.SkaffoldOptions{})
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment

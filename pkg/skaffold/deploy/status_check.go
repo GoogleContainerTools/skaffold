@@ -104,7 +104,7 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]Resource, error) {
 	deps, err := client.AppsV1().Deployments(ns).List(metav1.ListOptions{
-		LabelSelector: l.RunIDKeyValueString(),
+		LabelSelector: l.RunIDSelector(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not fetch deployments: %w", err)
