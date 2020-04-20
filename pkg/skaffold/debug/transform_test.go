@@ -206,3 +206,29 @@ func TestShJoin(t *testing.T) {
 		})
 	}
 }
+
+func TestIsEntrypointLauncher(t *testing.T) {
+	// make full copy of entrypointLaunchers
+	oldEntrypointLaunchers := append(entrypointLaunchers[:0:0], entrypointLaunchers...)
+	entrypointLaunchers = append(entrypointLaunchers, "foo")
+	t.Cleanup(func() {
+		entrypointLaunchers = oldEntrypointLaunchers
+	})
+
+	tests := []struct {
+		description string
+		entrypoint  []string
+		expected    bool
+	}{
+		{"nil", nil, false},
+		{"expected case", []string{"foo"}, true},
+		{"unexpected arg", []string{"foo", "bar"}, false},
+		{"unexpected entrypoint", []string{"bar"}, false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result := isEntrypointLauncher(test.entrypoint)
+			t.CheckDeepEqual(test.expected, result)
+		})
+	}
+}

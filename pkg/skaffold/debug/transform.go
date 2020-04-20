@@ -117,7 +117,12 @@ const (
 	DebugConfigAnnotation = "debug.cloud.google.com/config"
 )
 
+// containerTransforms are the set of configured transformers
 var containerTransforms []containerTransformer
+
+// entrypointLaunchers are a list of known entrypoints that effectively launch
+// the command arguments (e.g., equivalent to `ENTRYPOINT ["/bin/sh","-c"]).
+var entrypointLaunchers []string
 
 // transformManifest attempts to configure a manifest for debugging.
 // Returns true if changed, false otherwise.
@@ -300,6 +305,18 @@ func transformContainer(container *v1.Container, config imageConfiguration, port
 		config.arguments = container.Args
 	}
 
+	// Buildpack-generated images require special handling
+	if _, found := config.labels["io.buildpacks.stack.id"]; found && len(config.entrypoint) > 0 && config.entrypoint[0] == "/cnb/lifecycle/launcher" {
+		next := func(container *v1.Container, config imageConfiguration) (ContainerDebugConfiguration, string, error) {
+			return performContainerTransform(container, config, portAlloc)
+		}
+		return updateForCNBImage(container, config, next)
+	}
+
+	return performContainerTransform(container, config, portAlloc)
+}
+
+func performContainerTransform(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
 			return transform.Apply(container, config, portAlloc)
@@ -400,4 +417,18 @@ func shJoin(args []string) string {
 		}
 	}
 	return result
+}
+
+// isEntrypointLauncher checks if the given entrypoint is a known entrypoint launcher,
+// meaning an entrypoint that trwats the image's command portion as a command-line.
+func isEntrypointLauncher(entrypoint []string) bool {
+	if len(entrypoint) != 1 {
+		return false
+	}
+	for _, knownEntrypoints := range entrypointLaunchers {
+		if knownEntrypoints == entrypoint[0] {
+			return true
+		}
+	}
+	return false
 }

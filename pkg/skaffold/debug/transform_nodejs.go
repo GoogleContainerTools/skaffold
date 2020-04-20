@@ -30,6 +30,9 @@ type nodeTransformer struct{}
 
 func init() {
 	containerTransforms = append(containerTransforms, nodeTransformer{})
+
+	// the `node` image's "docker-entrypoint.sh" launches the command
+	entrypointLaunchers = append(entrypointLaunchers, "docker-entrypoint.sh")
 }
 
 const (
@@ -59,7 +62,7 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 	if _, found := config.env["NODE_VERSION"]; found {
 		return true
 	}
-	if len(config.entrypoint) > 0 {
+	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return isLaunchingNode(config.entrypoint) || isLaunchingNpm(config.entrypoint)
 	} else if len(config.arguments) > 0 {
 		return isLaunchingNode(config.arguments) || isLaunchingNpm(config.arguments)
