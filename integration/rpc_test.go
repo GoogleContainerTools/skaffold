@@ -28,7 +28,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb" //nolint:golint,staticcheck
 	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 
