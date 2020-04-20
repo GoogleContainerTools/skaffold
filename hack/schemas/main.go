@@ -180,8 +180,10 @@ func yamlFieldName(field *ast.Field) string {
 
 func setTypeOrRef(def *Definition, typeName string) {
 	switch typeName {
-	case "string":
-		def.Type = typeName
+	// Special case for ResourceType that is an alias of string.
+	// Fixes #3623
+	case "string", "ResourceType":
+		def.Type = "string"
 	case "bool":
 		def.Type = "boolean"
 	case "int", "int64", "int32":
