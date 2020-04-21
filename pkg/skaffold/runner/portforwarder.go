@@ -29,7 +29,7 @@ func (r *SkaffoldRunner) createForwarder(out io.Writer) {
 		kubectlCLI,
 		r.podSelector,
 		r.runCtx.Namespaces,
-		r.defaultLabeller.RunIDKeyValueString(),
+		r.defaultLabeller.RunIDSelector(),
 		r.runCtx.Opts.PortForward,
 		r.portForwardResources)
 }
