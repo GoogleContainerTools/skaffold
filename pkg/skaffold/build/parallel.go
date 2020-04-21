@@ -130,7 +130,7 @@ func collectResults(out io.Writer, artifacts []*latest.Artifact, results *sync.M
 		}
 		switch t := v.(type) {
 		case error:
-			return nil, fmt.Errorf("building [%s]: %w", artifact.ImageName, t)
+			return nil, fmt.Errorf("couldn't build %q: %w", artifact.ImageName, t)
 		case Artifact:
 			built = append(built, t)
 		default:
