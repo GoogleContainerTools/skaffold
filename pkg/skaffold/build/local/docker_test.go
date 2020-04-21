@@ -69,7 +69,7 @@ func TestDockerCLIBuild(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.NewTempDir().Chdir()
+			t.NewTempDir().Touch("Dockerfile").Chdir()
 			dockerfilePath, _ := filepath.Abs("Dockerfile")
 			t.Override(&docker.DefaultAuthHelper, testAuthHelper{})
 			t.Override(&util.DefaultExecCommand, testutil.CmdRunEnv(

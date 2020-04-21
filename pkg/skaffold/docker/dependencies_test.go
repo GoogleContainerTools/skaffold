@@ -245,7 +245,6 @@ func TestGetDependencies(t *testing.T) {
 		env            []string
 
 		expected  []string
-		badReader bool
 		shouldErr bool
 	}{
 		{
@@ -279,9 +278,8 @@ func TestGetDependencies(t *testing.T) {
 			expected:    []string{"Dockerfile", "server.go", "worker.go"},
 		},
 		{
-			description: "bad read",
-			badReader:   true,
-			shouldErr:   true,
+			description: "not found",
+			expected:    []string{"Dockerfile"},
 		},
 		{
 			// https://github.com/GoogleContainerTools/skaffold/issues/158
@@ -541,8 +539,7 @@ func TestGetDependencies(t *testing.T) {
 
 			tmpDir := t.NewTempDir().
 				Touch("docker/nginx.conf", "docker/bar", "server.go", "test.conf", "worker.go", "bar", "file", ".dot")
-
-			if !test.badReader {
+			if test.dockerfile != "" {
 				tmpDir.Write(test.workspace+"/Dockerfile", test.dockerfile)
 			}
 

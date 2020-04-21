@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -29,14 +30,20 @@ import (
 )
 
 func (b *Builder) buildDocker(ctx context.Context, out io.Writer, a *latest.Artifact, tag string) (string, error) {
+	// Fail fast if the Dockerfile can't be found.
+	dockerfile, err := docker.NormalizeDockerfilePath(a.Workspace, a.DockerArtifact.DockerfilePath)
+	if err != nil {
+		return "", fmt.Errorf("normalizing dockerfile path: %w", err)
+	}
+	if _, err := os.Stat(dockerfile); os.IsNotExist(err) {
+		return "", fmt.Errorf("dockerfile %q not found", dockerfile)
+	}
+
 	if err := b.pullCacheFromImages(ctx, out, a.ArtifactType.DockerArtifact); err != nil {
 		return "", fmt.Errorf("pulling cache-from images: %w", err)
 	}
 
-	var (
-		imageID string
-		err     error
-	)
+	var imageID string
 
 	if b.cfg.UseDockerCLI || b.cfg.UseBuildkit {
 		imageID, err = b.dockerCLIBuild(ctx, out, a.Workspace, a.ArtifactType.DockerArtifact, tag)
