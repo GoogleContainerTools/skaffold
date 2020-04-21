@@ -27,8 +27,7 @@ Run these commands to download and place the binary in your /usr/local/bin folde
 
 ```bash
 curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
-chmod +x skaffold
-sudo mv skaffold /usr/local/bin
+sudo install skaffold /usr/local/bin/
 ```
 
 ### Latest bleeding edge binary
@@ -41,8 +40,7 @@ Run these commands to download and place the binary in your /usr/local/bin folde
 
 ```bash
 curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-linux-amd64
-chmod +x skaffold
-sudo mv skaffold /usr/local/bin
+sudo install skaffold /usr/local/bin/
 ```
 
 {{% /tab %}}
@@ -64,8 +62,7 @@ Run these commands to download and place the binary in your /usr/local/bin folde
 
 ```bash
 curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-darwin-amd64
-chmod +x skaffold
-sudo mv skaffold /usr/local/bin
+sudo install skaffold /usr/local/bin/
 ```
 
 ### Bleeding edge binary
@@ -78,8 +75,7 @@ Run these commands to download and place the binary in your /usr/local/bin folde
 
 ```bash
 curl -Lo skaffold https://storage.googleapis.com/skaffold/builds/latest/skaffold-darwin-amd64
-chmod +x skaffold
-sudo mv skaffold /usr/local/bin
+sudo install skaffold /usr/local/bin/
 ```
 {{% /tab %}}
 
@@ -88,7 +84,7 @@ sudo mv skaffold /usr/local/bin
 ### Chocolatey
 
 ```bash
-choco install skaffold
+choco install -y skaffold
 ```
 
 ### Stable binary
