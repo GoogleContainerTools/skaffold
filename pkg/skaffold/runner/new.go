@@ -52,22 +52,32 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("parsing build config: %w", err)
 	}
 
+	tester := getTester(runCtx)
+	syncer := getSyncer(runCtx)
+
 	imagesAreLocal := false
 	if localBuilder, ok := builder.(*local.Builder); ok {
 		imagesAreLocal = !localBuilder.PushImages()
 	}
 
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
-		return build.DependenciesForArtifact(ctx, artifact, runCtx.InsecureRegistries)
+		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx.InsecureRegistries)
+		if err != nil {
+			return nil, err
+		}
+
+		testDependencies, err := tester.TestDependencies()
+		if err != nil {
+			return nil, err
+		}
+
+		return append(buildDependencies, testDependencies...), nil
 	}
 
 	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, depLister)
 	if err != nil {
 		return nil, fmt.Errorf("initializing cache: %w", err)
 	}
-
-	tester := getTester(runCtx)
-	syncer := getSyncer(runCtx)
 
 	deployer, err := getDeployer(runCtx)
 	if err != nil {
