@@ -22,8 +22,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -48,7 +46,7 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	if isKind, kindCluster := config.IsKindCluster(r.runCtx.KubeContext); isKind {
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
 		if err := r.loadImagesInKindNodes(ctx, out, kindCluster, artifacts); err != nil {
-			return errors.Wrapf(err, "loading images into kind nodes")
+			return fmt.Errorf("loading images into kind nodes: %w", err)
 		}
 	}
 
@@ -63,14 +61,18 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 
 func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {
 	// Check if we need to perform deploy status
-	if r.runCtx.Opts.StatusCheck {
-		start := time.Now()
-		color.Default.Fprintln(out, "Waiting for deployments to stabilize")
-		err := statusCheck(ctx, r.defaultLabeller, r.runCtx, out)
-		if err != nil {
-			return err
-		}
-		color.Default.Fprintln(out, "Deployments stabilized in", time.Since(start))
+	if !r.runCtx.Opts.StatusCheck {
+		return nil
 	}
+
+	start := time.Now()
+	color.Default.Fprintln(out, "Waiting for deployments to stabilize...")
+
+	err := statusCheck(ctx, r.defaultLabeller, r.runCtx, out)
+	if err != nil {
+		return err
+	}
+
+	color.Default.Fprintln(out, "Deployments stabilized in", time.Since(start))
 	return nil
 }

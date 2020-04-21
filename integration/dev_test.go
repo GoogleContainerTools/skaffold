@@ -61,11 +61,9 @@ func TestDev(t *testing.T) {
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build().InDir("testdata/dev").RunOrFail(t)
 
-			ns, client, deleteNs := SetupNamespace(t)
-			defer deleteNs()
+			ns, client := SetupNamespace(t)
 
-			stop := skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
-			defer stop()
+			skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
 			dep := client.GetDeployment("test-dev")
 
@@ -93,15 +91,12 @@ func TestDevAPITriggers(t *testing.T) {
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
 
-	ns, client, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, client := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	stop := skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
-	defer stop()
+	skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-	rpcClient, entries, shutdown := apiEvents(t, rpcAddr)
-	defer shutdown()
+	rpcClient, entries := apiEvents(t, rpcAddr)
 
 	// throw away first 5 entries of log (from first run of dev loop)
 	for i := 0; i < 5; i++ {
@@ -157,15 +152,12 @@ func TestDevPortForward(t *testing.T) {
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
-	stop := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
-	defer stop()
+	skaffold.Dev("--status-check=false", "--port-forward", "--rpc-port", rpcAddr).InDir("examples/microservices").InNs(ns.Name).RunBackground(t)
 
-	_, entries, shutdown := apiEvents(t, rpcAddr)
-	defer shutdown()
+	_, entries := apiEvents(t, rpcAddr)
 
 	waitForPortForwardEvent(t, entries, "leeroy-app", "service", ns.Name, "leeroooooy app!!\n")
 
@@ -188,16 +180,13 @@ func TestDevPortForwardGKELoadBalancer(t *testing.T) {
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/gke_loadbalancer").RunOrFail(t)
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
 	rpcAddr := randomPort()
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	stop := skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("testdata/gke_loadbalancer").InNs(ns.Name).WithEnv(env).RunBackground(t)
-	defer stop()
+	skaffold.Dev("--port-forward", "--rpc-port", rpcAddr).InDir("testdata/gke_loadbalancer").InNs(ns.Name).WithEnv(env).RunBackground(t)
 
-	_, entries, shutdown := apiEvents(t, rpcAddr)
-	defer shutdown()
+	_, entries := apiEvents(t, rpcAddr)
 
 	waitForPortForwardEvent(t, entries, "gke-loadbalancer", "service", ns.Name, "hello!!\n")
 }
@@ -287,8 +276,7 @@ func TestDev_WithKubecontextOverride(t *testing.T) {
 	}
 
 	testutil.Run(t, "skaffold run with kubecontext override", func(t *testutil.T) {
-		ns, client, deleteNs := SetupNamespace(t.T)
-		defer deleteNs()
+		ns, client := SetupNamespace(t.T)
 
 		modifiedKubeconfig, kubecontext, err := createModifiedKubeconfig(ns.Name)
 		failNowIfError(t, err)

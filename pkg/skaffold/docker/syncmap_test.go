@@ -80,11 +80,12 @@ COPY server.go ${foo}
 
 func TestSyncMap(t *testing.T) {
 	tests := []struct {
-		description string
-		dockerfile  string
-		workspace   string
-		ignore      string
-		buildArgs   map[string]*string
+		description    string
+		dockerfile     string
+		workspace      string
+		ignore         string
+		ignoreFilename string
+		buildArgs      map[string]*string
 
 		expected  map[string][]string
 		badReader bool
@@ -376,6 +377,14 @@ func TestSyncMap(t *testing.T) {
 			workspace:   ".",
 			expected:    map[string][]string{"file": {"/etc/file"}},
 		},
+		{
+			description:    "find specific dockerignore",
+			dockerfile:     copyDirectory,
+			ignore:         "bar\ndocker/*",
+			ignoreFilename: "Dockerfile.dockerignore",
+			workspace:      ".",
+			expected:       map[string][]string{"Dockerfile.dockerignore": {"/etc/Dockerfile.dockerignore"}, ".dot": {"/etc/.dot"}, "Dockerfile": {"/etc/Dockerfile"}, "file": {"/etc/file"}, "server.go": {"/etc/server.go"}, "test.conf": {"/etc/test.conf"}, "worker.go": {"/etc/worker.go"}},
+		},
 	}
 
 	for _, test := range tests {
@@ -389,8 +398,13 @@ func TestSyncMap(t *testing.T) {
 			if !test.badReader {
 				tmpDir.Write(test.workspace+"/Dockerfile", test.dockerfile)
 			}
+
 			if test.ignore != "" {
-				tmpDir.Write(test.workspace+"/.dockerignore", test.ignore)
+				ignoreFilename := ".dockerignore"
+				if test.ignoreFilename != "" {
+					ignoreFilename = test.ignoreFilename
+				}
+				tmpDir.Write(filepath.Join(test.workspace, ignoreFilename), test.ignore)
 			}
 
 			workspace := tmpDir.Path(test.workspace)

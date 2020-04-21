@@ -35,16 +35,20 @@ const ErrorNoBuilder = Error("one or more valid builder configuration (Dockerfil
 
 // InitBuilder represents a builder that can be chosen by skaffold init.
 type InitBuilder interface {
-	// Name returns the name of the builder
+	// Name returns the name of the builder.
 	Name() string
+
 	// Describe returns the initBuilder's string representation, used when prompting the user to choose a builder.
 	// Must be unique between artifacts.
 	Describe() string
-	// UpdateArtifact updates the Artifact to be included in the generated Build Config
-	UpdateArtifact(*latest.Artifact)
+
+	// ArtifactType returns the type of the artifact to be built.
+	ArtifactType() latest.ArtifactType
+
 	// ConfiguredImage returns the target image configured by the builder, or an empty string if no image is configured.
 	// This should be a cheap operation.
 	ConfiguredImage() string
+
 	// Path returns the path to the build file
 	Path() string
 }
@@ -55,11 +59,23 @@ type BuilderImagePair struct {
 	ImageName string
 }
 
+// GeneratedBuilderImagePair pairs a discovered builder with a
+// generated image name, and the path to the manifest that should be generated
+type GeneratedBuilderImagePair struct {
+	BuilderImagePair
+	ManifestPath string
+}
+
 type Initializer interface {
+	// ProcessImages is the entrypoint call, and handles the pairing of all builders
+	// contained in the initializer with the provided images from the deploy initializer
 	ProcessImages([]string) error
+	// BuildConfig returns the processed build config to be written to the skaffold.yaml
 	BuildConfig() latest.BuildConfig
-	BuilderImagePairs() []BuilderImagePair
+	// PrintAnalysis writes the project analysis to the provided out stream
 	PrintAnalysis(io.Writer) error
+	// GenerateManifests generates image names and manifests for all unresolved pairs
+	GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error)
 }
 
 type emptyBuildInitializer struct {
@@ -73,12 +89,12 @@ func (e *emptyBuildInitializer) BuildConfig() latest.BuildConfig {
 	return latest.BuildConfig{}
 }
 
-func (e *emptyBuildInitializer) BuilderImagePairs() []BuilderImagePair {
+func (e *emptyBuildInitializer) PrintAnalysis(io.Writer) error {
 	return nil
 }
 
-func (e *emptyBuildInitializer) PrintAnalysis(io.Writer) error {
-	return nil
+func (e *emptyBuildInitializer) GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error) {
+	return nil, nil
 }
 
 func NewInitializer(builders []InitBuilder, c config.Config) Initializer {

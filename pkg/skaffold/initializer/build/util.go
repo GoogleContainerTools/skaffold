@@ -17,15 +17,16 @@ limitations under the License.
 package build
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 func matchBuildersToImages(builders []InitBuilder, images []string) ([]BuilderImagePair, []InitBuilder, []string) {
-	images = stripTags(images)
+	images = tag.StripTags(images)
 
 	var pairs []BuilderImagePair
 	var unresolvedImages = make(sortedSet)
@@ -61,40 +62,20 @@ func findExactlyOneMatchingBuilder(builderConfigs []InitBuilder, image string) i
 	return matchingConfigIndex
 }
 
-func stripTags(taggedImages []string) []string {
-	// Remove tags from image names
-	var images []string
-	for _, image := range taggedImages {
-		parsed, err := docker.ParseReference(image)
-		if err != nil {
-			// It's possible that it's a templatized name that can't be parsed as is.
-			warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
-			continue
-		}
-		if parsed.Digest != "" {
-			warnings.Printf("Ignoring image referenced by digest: [%s]", image)
-			continue
-		}
-
-		images = append(images, parsed.BaseName)
-	}
-	return images
-}
-
-func artifacts(pairs []BuilderImagePair) []*latest.Artifact {
+func Artifacts(pairs []BuilderImagePair) []*latest.Artifact {
 	var artifacts []*latest.Artifact
 
 	for _, pair := range pairs {
 		artifact := &latest.Artifact{
-			ImageName: pair.ImageName,
+			ImageName:    pair.ImageName,
+			ArtifactType: pair.Builder.ArtifactType(),
 		}
 
 		workspace := filepath.Dir(pair.Builder.Path())
 		if workspace != "." {
+			fmt.Fprintf(os.Stdout, "using non standard workspace: %s\n", workspace)
 			artifact.Workspace = workspace
 		}
-
-		pair.Builder.UpdateArtifact(artifact)
 
 		artifacts = append(artifacts, artifact)
 	}

@@ -18,11 +18,12 @@ package kubernetes
 
 import (
 	"bufio"
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -80,8 +81,10 @@ func ParseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
 	f, err := os.Open(filepath)
 	if err != nil {
-		return nil, errors.Wrap(err, "opening config file")
+		return nil, fmt.Errorf("opening config file: %w", err)
 	}
+	defer f.Close()
+
 	r := k8syaml.NewYAMLReader(bufio.NewReader(f))
 
 	var k8sObjects []yamlObject
@@ -92,12 +95,12 @@ func parseKubernetesObjects(filepath string) ([]yamlObject, error) {
 			break
 		}
 		if err != nil {
-			return nil, errors.Wrap(err, "reading config file")
+			return nil, fmt.Errorf("reading config file: %w", err)
 		}
 
 		obj := make(yamlObject)
 		if err := yaml.Unmarshal(doc, &obj); err != nil {
-			return nil, errors.Wrap(err, "reading Kubernetes YAML")
+			return nil, fmt.Errorf("reading Kubernetes YAML: %w", err)
 		}
 
 		if !hasRequiredK8sManifestFields(obj) {
@@ -124,7 +127,8 @@ func hasRequiredK8sManifestFields(doc map[interface{}]interface{}) bool {
 
 // adapted from pkg/skaffold/deploy/kubectl/recursiveReplaceImage()
 func parseImagesFromYaml(obj interface{}) []string {
-	images := []string{}
+	var images []string
+
 	switch t := obj.(type) {
 	case []interface{}:
 		for _, v := range t {
@@ -132,13 +136,21 @@ func parseImagesFromYaml(obj interface{}) []string {
 		}
 	case yamlObject:
 		for k, v := range t {
-			if k.(string) != "image" {
+			key, ok := k.(string)
+			if !ok {
+				continue
+			}
+
+			if key != "image" {
 				images = append(images, parseImagesFromYaml(v)...)
 				continue
 			}
 
-			images = append(images, v.(string))
+			if value, ok := v.(string); ok {
+				images = append(images, value)
+			}
 		}
 	}
+
 	return images
 }

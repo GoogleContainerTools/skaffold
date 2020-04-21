@@ -5,9 +5,13 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/pkg/errors"
+
+	"github.com/buildpacks/lifecycle/launch"
 )
 
 type bpLayersDir struct {
@@ -15,10 +19,11 @@ type bpLayersDir struct {
 	layers    []bpLayer
 	name      string
 	buildpack Buildpack
+	store     *BuildpackStore
 }
 
 func readBuildpackLayersDir(layersDir string, buildpack Buildpack) (bpLayersDir, error) {
-	path := filepath.Join(layersDir, buildpack.dir())
+	path := filepath.Join(layersDir, launch.EscapeID(buildpack.ID))
 	bpDir := bpLayersDir{
 		name:      buildpack.ID,
 		path:      path,
@@ -43,26 +48,38 @@ func readBuildpackLayersDir(layersDir string, buildpack Buildpack) (bpLayersDir,
 	if err != nil {
 		return bpLayersDir{}, err
 	}
-	for _, toml := range tomls {
-		name := strings.TrimSuffix(filepath.Base(toml), ".toml")
+	for _, tf := range tomls {
+		name := strings.TrimSuffix(filepath.Base(tf), ".toml")
+		if name == "store" {
+			var bpStore BuildpackStore
+			_, err := toml.DecodeFile(tf, &bpStore)
+			if err != nil {
+				return bpLayersDir{}, errors.Wrapf(err, "failed decoding store.toml for buildpack %q", buildpack.ID)
+			}
+			bpDir.store = &bpStore
+			continue
+		}
 		if _, ok := names[name]; !ok {
 			bpDir.layers = append(bpDir.layers, *bpDir.newBPLayer(name))
 		}
 	}
+	sort.Slice(bpDir.layers, func(i, j int) bool {
+		return bpDir.layers[i].identifier < bpDir.layers[j].identifier
+	})
 	return bpDir, nil
 }
 
-func launch(l bpLayer) bool {
+func forLaunch(l bpLayer) bool {
 	md, err := l.read()
 	return err == nil && md.Launch
 }
 
-func malformed(l bpLayer) bool {
+func forMalformed(l bpLayer) bool {
 	_, err := l.read()
 	return err != nil
 }
 
-func cached(l bpLayer) bool {
+func forCached(l bpLayer) bool {
 	md, err := l.read()
 	return err == nil && md.Cache
 }
@@ -173,27 +190,4 @@ func (l *layer) Path() string {
 type identifiableLayer interface {
 	Identifier() string
 	Path() string
-}
-
-func recursiveChown(path string, uid, gid int) error {
-	fis, err := ioutil.ReadDir(path)
-	if err != nil {
-		return err
-	}
-	if err := os.Chown(path, uid, gid); err != nil {
-		return err
-	}
-	for _, fi := range fis {
-		filePath := filepath.Join(path, fi.Name())
-		if fi.IsDir() {
-			if err := recursiveChown(filePath, uid, gid); err != nil {
-				return err
-			}
-		} else {
-			if err := os.Lchown(filePath, uid, gid); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }

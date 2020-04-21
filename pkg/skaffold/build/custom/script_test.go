@@ -83,6 +83,7 @@ func TestRetrieveCmd(t *testing.T) {
 		description       string
 		artifact          *latest.Artifact
 		tag               string
+		env               []string
 		expected          *exec.Cmd
 		expectedOnWindows *exec.Cmd
 	}{
@@ -99,7 +100,8 @@ func TestRetrieveCmd(t *testing.T) {
 			tag:               "image:tag",
 			expected:          expectedCmd("workspace", "sh", []string{"-c", "./build.sh"}, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace"}),
 			expectedOnWindows: expectedCmd("workspace", "cmd.exe", []string{"/C", "./build.sh"}, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=workspace"}),
-		}, {
+		},
+		{
 			description: "buildcommand with multiple args",
 			artifact: &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
@@ -112,10 +114,24 @@ func TestRetrieveCmd(t *testing.T) {
 			expected:          expectedCmd("", "sh", []string{"-c", "./build.sh --flag=$IMAGES --anotherflag"}, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT="}),
 			expectedOnWindows: expectedCmd("", "cmd.exe", []string{"/C", "./build.sh --flag=$IMAGES --anotherflag"}, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT="}),
 		},
+		{
+			description: "buildcommand with go template",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					CustomArtifact: &latest.CustomArtifact{
+						BuildCommand: "./build.sh --flag={{ .FLAG }}",
+					},
+				},
+			},
+			tag:               "image:tag",
+			env:               []string{"FLAG=some-flag"},
+			expected:          expectedCmd("", "sh", []string{"-c", "./build.sh --flag=some-flag"}, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=", "FLAG=some-flag"}),
+			expectedOnWindows: expectedCmd("", "cmd.exe", []string{"/C", "./build.sh --flag=some-flag"}, []string{"IMAGE=image:tag", "IMAGES=image:tag", "PUSH_IMAGE=false", "BUILD_CONTEXT=", "FLAG=some-flag"}),
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.OSEnviron, func() []string { return nil })
+			t.Override(&util.OSEnviron, func() []string { return test.env })
 			t.Override(&buildContext, func(string) (string, error) { return test.artifact.Workspace, nil })
 
 			builder := NewArtifactBuilder(nil, nil, false, nil)

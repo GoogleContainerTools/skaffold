@@ -131,8 +131,7 @@ func TestExpand(t *testing.T) {
 }
 
 func TestAbsFile(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
+	tmpDir := testutil.NewTempDir(t)
 	tmpDir.Touch("file")
 
 	expectedFile, err := filepath.Abs(filepath.Join(tmpDir.Root(), "file"))
@@ -300,9 +299,7 @@ func TestStrSliceInsert(t *testing.T) {
 }
 
 func TestIsFileIsDir(t *testing.T) {
-	tmpDir, cleanup := testutil.NewTempDir(t)
-	defer cleanup()
-	tmpDir.Touch("file")
+	tmpDir := testutil.NewTempDir(t).Touch("file")
 
 	testutil.CheckDeepEqual(t, false, IsFile(tmpDir.Root()))
 	testutil.CheckDeepEqual(t, true, IsDir(tmpDir.Root()))

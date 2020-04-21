@@ -17,26 +17,25 @@ limitations under the License.
 package main
 
 import (
-	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 
 	hackschema "github.com/GoogleContainerTools/skaffold/hack/versions/pkg/schema"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
 func main() {
-	schemaDir := path.Join("pkg", "skaffold", "schema")
 	_, isReleased := hackschema.GetLatestVersion()
-	if err := filepath.Walk(schemaDir, func(path string, info os.FileInfo, err error) error {
-		if info.Name() == "config.go" {
-			released := !strings.Contains(path, "latest") || isReleased
-			return hackschema.UpdateVersionComment(path, released)
-		}
-		return nil
-	}); err != nil {
+
+	updateVersionComment := func(path string, _ walk.Dirent) error {
+		released := !strings.Contains(path, "latest") || isReleased
+		return hackschema.UpdateVersionComment(path, released)
+	}
+
+	schemaDir := path.Join("pkg", "skaffold", "schema")
+	if err := walk.From(schemaDir).WhenHasName("config.go").Do(updateVersionComment); err != nil {
 		logrus.Fatalf("%s", err)
 	}
 }

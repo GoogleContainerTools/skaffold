@@ -18,11 +18,11 @@ package buildpacks
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strings"
 
 	"github.com/buildpacks/pack"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
@@ -49,14 +49,14 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	// The image will then be tagged as usual with the tag provided by the tag policy.
 	parsed, err := docker.ParseReference(tag)
 	if err != nil {
-		return "", errors.Wrapf(err, "parsing tag %s", tag)
+		return "", fmt.Errorf("parsing tag %q: %w", tag, err)
 	}
 	latest := parsed.BaseName + ":latest"
 
 	logrus.Debugln("Evaluate env variables")
 	env, err := misc.EvaluateEnv(artifact.Env)
 	if err != nil {
-		return "", errors.Wrap(err, "unable to evaluate env variables")
+		return "", fmt.Errorf("unable to evaluate env variables: %w", err)
 	}
 
 	if b.devMode && a.Sync != nil && len(a.Sync.Infer) > 0 {
@@ -88,7 +88,7 @@ func runPackBuild(ctx context.Context, out io.Writer, localDocker docker.LocalDa
 		pack.WithLogger(NewLogger(out)),
 	)
 	if err != nil {
-		return errors.Wrap(err, "unable to create pack client")
+		return fmt.Errorf("unable to create pack client: %w", err)
 	}
 
 	return packClient.Build(ctx, opts)

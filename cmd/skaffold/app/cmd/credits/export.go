@@ -17,6 +17,8 @@ limitations under the License.
 package credits
 
 import (
+	"context"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -24,7 +26,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/pkg/errors"
 	"github.com/rakyll/statik/fs"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
@@ -33,10 +34,10 @@ import (
 var Path string
 
 // Export writes all the licenses and credit files to the `Path` folder.
-func Export(out io.Writer) error {
+func Export(ctx context.Context, out io.Writer) error {
 	statikFS, err := statik.FS()
 	if err != nil {
-		return errors.Wrap(err, "opening embedded filesystem")
+		return fmt.Errorf("opening embedded filesystem: %w", err)
 	}
 
 	if err := fs.Walk(statikFS, "/skaffold-credits", func(filePath string, fileInfo os.FileInfo, err error) error {
@@ -44,22 +45,21 @@ func Export(out io.Writer) error {
 		if fileInfo.IsDir() {
 			err := os.Mkdir(newPath, 0755)
 			if err != nil && !os.IsExist(err) {
-				return errors.Wrapf(err, "creating directory %s", newPath)
+				return fmt.Errorf("creating directory %q: %w", newPath, err)
 			}
 		} else {
 			file, err := statikFS.Open(filePath)
 			if err != nil {
-				return errors.Wrapf(err, "opening %s in embedded filesystem", filePath)
+				return fmt.Errorf("opening %q in embedded filesystem: %w", filePath, err)
 			}
 
 			buf, err := ioutil.ReadAll(file)
 			if err != nil {
-				return errors.Wrapf(err, "reading %s in embedded filesystem", filePath)
+				return fmt.Errorf("reading %q in embedded filesystem: %w", filePath, err)
 			}
 
-			err = ioutil.WriteFile(newPath, buf, 0664)
-			if err != nil {
-				return errors.Wrapf(err, "writing %s to %s", filePath, newPath)
+			if err := ioutil.WriteFile(newPath, buf, 0664); err != nil {
+				return fmt.Errorf("writing %q to %q: %w", filePath, newPath, err)
 			}
 		}
 		return nil

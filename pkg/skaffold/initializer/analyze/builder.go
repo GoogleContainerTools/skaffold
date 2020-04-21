@@ -29,6 +29,7 @@ import (
 type builderAnalyzer struct {
 	directoryAnalyzer
 	enableJibInit        bool
+	enableJibGradleInit  bool
 	enableBuildpacksInit bool
 	findBuilders         bool
 	buildpacksBuilder    string
@@ -62,7 +63,7 @@ func (a *builderAnalyzer) detectBuilders(path string, detectJib bool) ([]build.I
 	// TODO: Remove backwards compatibility if statement (not entire block)
 	if a.enableJibInit && detectJib {
 		// Check for jib
-		if builders := jib.Validate(path); builders != nil {
+		if builders := jib.Validate(path, a.enableJibGradleInit); builders != nil {
 			results := make([]build.InitBuilder, len(builders))
 			for i := range builders {
 				results[i] = builders[i]

@@ -25,22 +25,23 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 )
 
+var acceptableIndexMediaTypes = []types.MediaType{
+	types.DockerManifestList,
+	types.OCIImageIndex,
+}
+
 // remoteIndex accesses an index from a remote registry
 type remoteIndex struct {
 	fetcher
 	manifestLock sync.Mutex // Protects manifest
 	manifest     []byte
 	mediaType    types.MediaType
+	descriptor   *v1.Descriptor
 }
 
 // Index provides access to a remote index reference.
 func Index(ref name.Reference, options ...Option) (v1.ImageIndex, error) {
-	acceptable := []types.MediaType{
-		types.DockerManifestList,
-		types.OCIImageIndex,
-	}
-
-	desc, err := get(ref, acceptable, options...)
+	desc, err := get(ref, acceptableIndexMediaTypes, options...)
 	if err != nil {
 		return nil, err
 	}
@@ -73,15 +74,14 @@ func (r *remoteIndex) RawManifest() ([]byte, error) {
 	// NOTE(jonjohnsonjr): We should never get here because the public entrypoints
 	// do type-checking via remote.Descriptor. I've left this here for tests that
 	// directly instantiate a remoteIndex.
-	acceptable := []types.MediaType{
-		types.DockerManifestList,
-		types.OCIImageIndex,
-	}
-	manifest, desc, err := r.fetchManifest(r.Ref, acceptable)
+	manifest, desc, err := r.fetchManifest(r.Ref, acceptableIndexMediaTypes)
 	if err != nil {
 		return nil, err
 	}
 
+	if r.descriptor == nil {
+		r.descriptor = desc
+	}
 	r.mediaType = desc.MediaType
 	r.manifest = manifest
 	return r.manifest, nil
@@ -103,6 +103,15 @@ func (r *remoteIndex) Image(h v1.Hash) (v1.Image, error) {
 
 	// Descriptor.Image will handle coercing nested indexes into an Image.
 	return desc.Image()
+}
+
+// Descriptor retains the original descriptor from an index manifest.
+// See partial.Descriptor.
+func (r *remoteIndex) Descriptor() (*v1.Descriptor, error) {
+	// kind of a hack, but RawManifest does appropriate locking/memoization
+	// and makes sure r.descriptor is populated.
+	_, err := r.RawManifest()
+	return r.descriptor, err
 }
 
 func (r *remoteIndex) ImageIndex(h v1.Hash) (v1.ImageIndex, error) {
@@ -165,7 +174,7 @@ func (r *remoteIndex) childByHash(h v1.Hash) (*Descriptor, error) {
 // Convert one of this index's child's v1.Descriptor into a remote.Descriptor, with the given platform option.
 func (r *remoteIndex) childDescriptor(child v1.Descriptor, platform v1.Platform) (*Descriptor, error) {
 	ref := r.Ref.Context().Digest(child.Digest.String())
-	manifest, desc, err := r.fetchManifest(ref, []types.MediaType{child.MediaType})
+	manifest, _, err := r.fetchManifest(ref, []types.MediaType{child.MediaType})
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +184,7 @@ func (r *remoteIndex) childDescriptor(child v1.Descriptor, platform v1.Platform)
 			Client: r.Client,
 		},
 		Manifest:   manifest,
-		Descriptor: *desc,
+		Descriptor: child,
 		platform:   platform,
 	}, nil
 }

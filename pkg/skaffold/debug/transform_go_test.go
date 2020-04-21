@@ -114,22 +114,21 @@ func TestDlvTransformer_IsApplicable(t *testing.T) {
 	}
 }
 
-func TestDlvTransformer_RuntimeSupportImage(t *testing.T) {
-	testutil.CheckDeepEqual(t, "go", dlvTransformer{}.RuntimeSupportImage())
-}
-
 func TestDlvTransformerApply(t *testing.T) {
 	tests := []struct {
 		description   string
 		containerSpec v1.Container
 		configuration imageConfiguration
+		shouldErr     bool
 		result        v1.Container
+		debugConfig   ContainerDebugConfiguration
+		image         string
 	}{
 		{
 			description:   "empty",
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{},
-			result:        v1.Container{},
+			shouldErr:     true,
 		},
 		{
 			description:   "basic",
@@ -139,6 +138,8 @@ func TestDlvTransformerApply(t *testing.T) {
 				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--continue", "--accept-multiclient", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 				Ports:   []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
+			image:       "go",
 		},
 		{
 			description: "existing port",
@@ -150,6 +151,8 @@ func TestDlvTransformerApply(t *testing.T) {
 				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--continue", "--accept-multiclient", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "dlv", ContainerPort: 56268}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
+			image:       "go",
 		},
 		{
 			description: "existing dlv port",
@@ -161,6 +164,8 @@ func TestDlvTransformerApply(t *testing.T) {
 				Command: []string{"/dbg/go/bin/dlv", "exec", "--headless", "--continue", "--accept-multiclient", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 				Ports:   []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
+			image:       "go",
 		},
 		{
 			description:   "command not entrypoint",
@@ -170,6 +175,8 @@ func TestDlvTransformerApply(t *testing.T) {
 				Args:  []string{"/dbg/go/bin/dlv", "exec", "--headless", "--continue", "--accept-multiclient", "--listen=localhost:56268", "--api-version=2", "app", "--", "arg"},
 				Ports: []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
+			image:       "go",
 		},
 		{
 			description: "entrypoint with args in container spec",
@@ -182,6 +189,8 @@ func TestDlvTransformerApply(t *testing.T) {
 				Args:    []string{"arg1", "arg2"},
 				Ports:   []v1.ContainerPort{{Name: "dlv", ContainerPort: 56268}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "go", Ports: map[string]uint32{"dlv": 56268}},
+			image:       "go",
 		},
 	}
 	var identity portAllocator = func(port int32) int32 {
@@ -189,9 +198,12 @@ func TestDlvTransformerApply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			dlvTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
+			config, image, err := dlvTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
 
+			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.result, test.containerSpec)
+			t.CheckDeepEqual(test.debugConfig, config)
+			t.CheckDeepEqual(test.image, image)
 		})
 	}
 }

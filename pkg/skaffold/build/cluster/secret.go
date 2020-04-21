@@ -17,10 +17,10 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,7 +39,7 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 
 	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting Kubernetes client")
+		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
 	secrets := client.CoreV1().Secrets(b.Namespace)
@@ -48,7 +48,7 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 		logrus.Debug("No pull secret specified. Checking for one in the cluster.")
 
 		if _, err := secrets.Get(b.PullSecretName, metav1.GetOptions{}); err != nil {
-			return nil, errors.Wrap(err, "checking for existing kaniko secret")
+			return nil, fmt.Errorf("checking for existing kaniko secret: %w", err)
 		}
 
 		return func() {}, nil
@@ -56,7 +56,7 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 
 	secretData, err := ioutil.ReadFile(b.PullSecret)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading pull secret")
+		return nil, fmt.Errorf("reading pull secret: %w", err)
 	}
 
 	secret := &v1.Secret{
@@ -70,7 +70,7 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 	}
 
 	if _, err := secrets.Create(secret); err != nil {
-		return nil, errors.Wrapf(err, "creating pull secret: %s", err)
+		return nil, fmt.Errorf("creating pull secret %q: %w", b.PullSecretName, err)
 	}
 
 	return func() {
@@ -89,7 +89,7 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 
 	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting Kubernetes client")
+		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
 	secrets := client.CoreV1().Secrets(b.Namespace)
@@ -98,7 +98,7 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 		logrus.Debug("No docker config specified. Checking for one in the cluster.")
 
 		if _, err := secrets.Get(b.DockerConfig.SecretName, metav1.GetOptions{}); err != nil {
-			return nil, errors.Wrap(err, "checking for existing kaniko secret")
+			return nil, fmt.Errorf("checking for existing kaniko secret: %w", err)
 		}
 
 		return func() {}, nil
@@ -106,7 +106,7 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 
 	secretData, err := ioutil.ReadFile(b.DockerConfig.Path)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading docker config")
+		return nil, fmt.Errorf("reading docker config: %w", err)
 	}
 
 	secret := &v1.Secret{
@@ -120,7 +120,7 @@ func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 	}
 
 	if _, err := secrets.Create(secret); err != nil {
-		return nil, errors.Wrapf(err, "creating docker config secret: %s", err)
+		return nil, fmt.Errorf("creating docker config secret %q: %w", b.DockerConfig.SecretName, err)
 	}
 
 	return func() {

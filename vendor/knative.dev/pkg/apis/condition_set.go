@@ -35,6 +35,13 @@ type ConditionsAccessor interface {
 	SetConditions(Conditions)
 }
 
+// ConditionAccessor is used to access a condition through it's type
+type ConditionAccessor interface {
+	// GetCondition finds and returns the Condition that matches the ConditionType
+	// It should return nil if the condition type is not present
+	GetCondition(t ConditionType) *Condition
+}
+
 // ConditionSet is an abstract collection of the possible ConditionType values
 // that a particular resource might expose.  It also holds the "happy condition"
 // for that resource, which we define to be one of Ready or Succeeded depending
@@ -48,13 +55,14 @@ type ConditionSet struct {
 // ConditionManager allows a resource to operate on its Conditions using higher
 // order operations.
 type ConditionManager interface {
+	ConditionAccessor
+
 	// IsHappy looks at the happy condition and returns true if that condition is
 	// set to true.
 	IsHappy() bool
 
-	// GetCondition finds and returns the Condition that matches the ConditionType
-	// previously set on Conditions.
-	GetCondition(t ConditionType) *Condition
+	// GetTopLevelCondition finds and returns the top level Condition (happy Condition).
+	GetTopLevelCondition() *Condition
 
 	// SetCondition sets or updates the Condition on Conditions for Condition.Type.
 	// If there is an update, Conditions are stored back sorted.
@@ -66,6 +74,10 @@ type ConditionManager interface {
 	// MarkTrue sets the status of t to true, and then marks the happy condition to
 	// true if all dependents are true.
 	MarkTrue(t ConditionType)
+
+	// MarkTrueWithReason sets the status of t to true with the reason, and then marks the happy
+	// condition to true if all dependents are true.
+	MarkTrueWithReason(t ConditionType, reason, messageFormat string, messageA ...interface{})
 
 	// MarkUnknown sets the status of t to Unknown and also sets the happy condition
 	// to Unknown if no other dependent condition is in an error state.
@@ -139,13 +151,15 @@ func (r ConditionSet) Manage(status ConditionsAccessor) ConditionManager {
 	}
 }
 
-// IsHappy looks at the happy condition and returns true if that condition is
+// IsHappy looks at the top level Condition (happy Condition) and returns true if that condition is
 // set to true.
 func (r conditionsImpl) IsHappy() bool {
-	if c := r.GetCondition(r.happy); c == nil || !c.IsTrue() {
-		return false
-	}
-	return true
+	return r.GetTopLevelCondition().IsTrue()
+}
+
+// GetTopLevelCondition finds and returns the top level Condition (happy Condition).
+func (r conditionsImpl) GetTopLevelCondition() *Condition {
+	return r.GetCondition(r.happy)
 }
 
 // GetCondition finds and returns the Condition that matches the ConditionType
@@ -237,28 +251,97 @@ func (r conditionsImpl) ClearCondition(t ConditionType) error {
 // MarkTrue sets the status of t to true, and then marks the happy condition to
 // true if all other dependents are also true.
 func (r conditionsImpl) MarkTrue(t ConditionType) {
-	// set the specified condition
+	// Set the specified condition.
 	r.SetCondition(Condition{
 		Type:     t,
 		Status:   corev1.ConditionTrue,
 		Severity: r.severity(t),
 	})
+	r.recomputeHappiness(t)
+}
 
-	// check the dependents.
-	for _, cond := range r.dependents {
-		c := r.GetCondition(cond)
-		// Failed or Unknown conditions trump true conditions
-		if !c.IsTrue() {
-			return
+// MarkTrueWithReason sets the status of t to true with the reason, and then marks the happy condition to
+// true if all other dependents are also true.
+func (r conditionsImpl) MarkTrueWithReason(t ConditionType, reason, messageFormat string, messageA ...interface{}) {
+	// set the specified condition
+	r.SetCondition(Condition{
+		Type:     t,
+		Status:   corev1.ConditionTrue,
+		Reason:   reason,
+		Message:  fmt.Sprintf(messageFormat, messageA...),
+		Severity: r.severity(t),
+	})
+	r.recomputeHappiness(t)
+}
+
+// recomputeHappiness marks the happy condition to true if all other dependents are also true.
+func (r conditionsImpl) recomputeHappiness(t ConditionType) {
+	if c := r.findUnhappyDependent(); c != nil {
+		// Propagate unhappy dependent to happy condition.
+		r.SetCondition(Condition{
+			Type:     r.happy,
+			Status:   c.Status,
+			Reason:   c.Reason,
+			Message:  c.Message,
+			Severity: r.severity(r.happy),
+		})
+	} else if t != r.happy {
+		// Set the happy condition to true.
+		r.SetCondition(Condition{
+			Type:     r.happy,
+			Status:   corev1.ConditionTrue,
+			Severity: r.severity(r.happy),
+		})
+	}
+}
+
+func (r conditionsImpl) findUnhappyDependent() *Condition {
+	// This only works if there are dependents.
+	if len(r.dependents) == 0 {
+		return nil
+	}
+
+	// Do not modify the accessors condition order.
+	conditions := r.accessor.GetConditions().DeepCopy()
+
+	// Filter based on terminal status.
+	n := 0
+	for _, c := range conditions {
+		if c.Severity == ConditionSeverityError && c.Type != r.happy {
+			conditions[n] = c
+			n++
+		}
+	}
+	conditions = conditions[:n]
+
+	// Sort set conditions by time.
+	sort.Slice(conditions, func(i, j int) bool {
+		return conditions[i].LastTransitionTime.Inner.Time.After(conditions[j].LastTransitionTime.Inner.Time)
+	})
+
+	// First check the conditions with Status == False.
+	for _, c := range conditions {
+		// False conditions trump Unknown.
+		if c.IsFalse() {
+			return &c
+		}
+	}
+	// Second check for conditions with Status == Unknown.
+	for _, c := range conditions {
+		if c.IsUnknown() {
+			return &c
 		}
 	}
 
-	// set the happy condition
-	r.SetCondition(Condition{
-		Type:     r.happy,
-		Status:   corev1.ConditionTrue,
-		Severity: r.severity(r.happy),
-	})
+	// If something was not initialized.
+	if len(r.dependents) > len(conditions) {
+		return &Condition{
+			Status: corev1.ConditionUnknown,
+		}
+	}
+
+	// All dependents are fine.
+	return nil
 }
 
 // MarkUnknown sets the status of t to Unknown and also sets the happy condition

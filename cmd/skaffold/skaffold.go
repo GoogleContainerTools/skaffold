@@ -18,9 +18,10 @@ package main
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app"
@@ -28,8 +29,8 @@ import (
 
 func main() {
 	if err := app.Run(os.Stdout, os.Stderr); err != nil {
-		if errors.Cause(err) == context.Canceled {
-			logrus.Debugln(errors.Wrap(err, "ignore error since context is cancelled"))
+		if errors.Is(err, context.Canceled) {
+			logrus.Debugln(fmt.Errorf("ignore error since context is cancelled: %w", err))
 		} else {
 			logrus.Fatal(err)
 		}

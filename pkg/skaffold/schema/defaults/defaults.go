@@ -21,7 +21,6 @@ import (
 
 	"github.com/google/uuid"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -217,8 +216,15 @@ func setDefaultWorkspace(a *latest.Artifact) {
 }
 
 func setDefaultSync(a *latest.Artifact) {
-	if a.Sync != nil && len(a.Sync.Manual) == 0 && len(a.Sync.Infer) == 0 {
-		a.Sync.Infer = []string{"**/*"}
+	if a.Sync != nil {
+		if len(a.Sync.Manual) == 0 && len(a.Sync.Infer) == 0 && a.Sync.Auto == nil {
+			switch {
+			case a.JibArtifact != nil:
+				a.Sync.Auto = &latest.Auto{}
+			default:
+				a.Sync.Infer = []string{"**/*"}
+			}
+		}
 	}
 }
 
@@ -239,7 +245,7 @@ func setDefaultClusterNamespace(cluster *latest.ClusterDetails) error {
 	if cluster.Namespace == "" {
 		ns, err := currentNamespace()
 		if err != nil {
-			return errors.Wrap(err, "getting current namespace")
+			return fmt.Errorf("getting current namespace: %w", err)
 		}
 		cluster.Namespace = ns
 	}

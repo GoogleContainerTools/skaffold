@@ -25,8 +25,7 @@ import (
 )
 
 func TestGenerateKubectlPipeline(t *testing.T) {
-	tmpDir, delete := testutil.NewTempDir(t)
-	defer delete()
+	tmpDir := testutil.NewTempDir(t)
 
 	tmpDir.Write("deployment.yaml", `apiVersion: v1
 kind: Pod
@@ -39,10 +38,7 @@ spec:
 `)
 	filename := tmpDir.Path("deployment.yaml")
 
-	k, err := newKubectlInitializer([]string{filename})
-	if err != nil {
-		t.Fatal("failed to create a pipeline")
-	}
+	k := newKubectlInitializer([]string{filename})
 
 	expectedConfig := latest.DeployConfig{
 		DeployType: latest.DeployType{

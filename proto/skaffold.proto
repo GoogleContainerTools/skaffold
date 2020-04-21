@@ -90,6 +90,7 @@ message BuildEvent {
     string artifact = 1; // artifact name
     string status = 2; // artifact build status oneof: InProgress, Completed, Failed
     string err = 3; // error when build status is Failed.
+    ErrorCode errCode = 4; // error code representing the error
 }
 
 // `DeployEvent` represents the status of a deployment, and is emitted by Skaffold
@@ -97,6 +98,7 @@ message BuildEvent {
 message DeployEvent {
     string status = 1; // deployment status oneof: InProgress, Completed, Failed
     string err = 2; // error when status is Failed
+    ErrorCode errCode = 3; // error code representing the error
 }
 
 // `StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed.
@@ -104,6 +106,7 @@ message StatusCheckEvent {
     string status = 1;
     string message = 2;
     string err = 3;
+    ErrorCode errCode = 4; // error code representing the error
 }
 
 // A Resource StatusCheck Event, indicates progress for each kubernetes deployment.
@@ -137,6 +140,7 @@ message FileSyncEvent {
     string image = 2; // the container image to which files are sycned.
     string status = 3; // status of file sync. one of: Not Started, In progress, Succeeded, Failed.
     string err = 4; // error in case of status failed.
+    ErrorCode errCode = 5; // error code representing the error
 }
 
 // DebuggingContainerEvent is raised when a debugging container is started or terminated
@@ -211,4 +215,20 @@ service SkaffoldService {
         };
     }
 
+}
+
+// Enum for error codes
+enum ErrorCode {
+    COULD_NOT_DETERMINE = 0;
+
+//    Some other sample Error Codes
+//    SYNTAX_ERROR = 1;
+//    MISSING_DOCKERFILE = 2;
+//    UNDEFINED_ARTIFACT_TYPE = 3;
+//    DOCKER_BUILD_FAILED = 4;
+//    COULD_NOT_GET_IMAGE_ID_FROM_IMAGE = 5;
+//    COULD_NOT_INSPECT_DOCKER_IMAGE_INSPECT = 6;
+//    COULD_NOT_GET_DOCKER_CLIENT = 7;
+//    COULD_NOT_GET_LOCAL_CLUSTER = 8;
+//    BUILDER_CLEANUP = 9;
 }

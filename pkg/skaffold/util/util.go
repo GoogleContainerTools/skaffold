@@ -27,12 +27,12 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
 const (
@@ -113,29 +113,18 @@ func ExpandPathsGlob(workingDir string, paths []string) ([]string, error) {
 
 		files, err := filepath.Glob(path)
 		if err != nil {
-			return nil, errors.Wrap(err, "glob")
+			return nil, fmt.Errorf("glob: %w", err)
 		}
 		if len(files) == 0 {
 			logrus.Warnf("%s did not match any file", p)
 		}
 
 		for _, f := range files {
-			var filesInDirectory []string
-
-			if err := filepath.Walk(f, func(path string, info os.FileInfo, err error) error {
-				if !info.IsDir() {
-					filesInDirectory = append(filesInDirectory, path)
-				}
-
+			if err := walk.From(f).WhenIsFile().Do(func(path string, _ walk.Dirent) error {
+				set.Add(path)
 				return nil
 			}); err != nil {
-				return nil, errors.Wrap(err, "filepath walk")
-			}
-
-			// Make sure files inside a directory are listed in a consistent order
-			sort.Strings(filesInDirectory)
-			for _, file := range filesInDirectory {
-				set.Add(file)
+				return nil, fmt.Errorf("filepath walk: %w", err)
 			}
 		}
 	}
@@ -176,10 +165,10 @@ func VerifyOrCreateFile(path string) error {
 	if err != nil && os.IsNotExist(err) {
 		dir := filepath.Dir(path)
 		if err = os.MkdirAll(dir, 0744); err != nil {
-			return errors.Wrap(err, "creating parent directory")
+			return fmt.Errorf("creating parent directory: %w", err)
 		}
 		if _, err = os.Create(path); err != nil {
-			return errors.Wrap(err, "creating file")
+			return fmt.Errorf("creating file: %w", err)
 		}
 		return nil
 	}
@@ -227,7 +216,7 @@ func AbsFile(workspace string, filename string) (string, error) {
 		return "", err
 	}
 	if info.IsDir() {
-		return "", errors.Errorf("%s is a directory", file)
+		return "", fmt.Errorf("%s is a directory", file)
 	}
 	return filepath.Abs(file)
 }

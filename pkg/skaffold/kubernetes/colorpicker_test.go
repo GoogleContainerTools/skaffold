@@ -77,7 +77,7 @@ func TestColorPicker(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			color := picker.Pick(test.pod)
 
-			t.CheckDeepEqual(test.expectedColor, color)
+			t.CheckTrue(test.expectedColor == color)
 		})
 	}
 }

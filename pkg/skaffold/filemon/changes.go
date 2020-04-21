@@ -23,7 +23,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,7 +34,7 @@ func Stat(deps func() ([]string, error)) (FileMap, error) {
 	state := FileMap{}
 	paths, err := deps()
 	if err != nil {
-		return state, errors.Wrap(err, "listing files")
+		return state, fmt.Errorf("listing files: %w", err)
 	}
 	for _, path := range paths {
 		stat, err := os.Stat(path)
@@ -44,7 +43,7 @@ func Stat(deps func() ([]string, error)) (FileMap, error) {
 				logrus.Debugf("could not stat dependency: %s", err)
 				continue // Ignore files that don't exist
 			}
-			return nil, errors.Wrapf(err, "unable to stat file %s", path)
+			return nil, fmt.Errorf("unable to stat file %q: %w", path, err)
 		}
 		state[path] = stat.ModTime()
 	}

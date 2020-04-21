@@ -100,6 +100,19 @@ func TestDoInit(t *testing.T) {
 			},
 		},
 		{
+			name: "CLI artifacts but no manifests",
+			dir:  "testdata/init/allcli",
+			config: initconfig.Config{
+				CliArtifacts: []string{
+					`{"builder":"Docker","payload":{"path":"Dockerfile"},"image":"passed-in-artifact"}`,
+				},
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+			shouldErr: true,
+		},
+		{
 			name: "error writing config file",
 			dir:  "testdata/init/microservices",
 

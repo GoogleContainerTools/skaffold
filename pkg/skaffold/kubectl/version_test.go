@@ -18,9 +18,8 @@ package kubectl
 
 import (
 	"context"
+	"errors"
 	"testing"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"

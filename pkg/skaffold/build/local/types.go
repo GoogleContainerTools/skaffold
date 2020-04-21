@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -56,7 +55,7 @@ var getLocalCluster = config.GetLocalCluster
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	localDocker, err := docker.NewAPIClient(runCtx)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting docker client")
+		return nil, fmt.Errorf("getting docker client: %w", err)
 	}
 
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
@@ -65,7 +64,7 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 
 	localCluster, err := getLocalCluster(runCtx.Opts.GlobalConfig, runCtx.Opts.MinikubeProfile)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting localCluster")
+		return nil, fmt.Errorf("getting localCluster: %w", err)
 	}
 
 	var pushImages bool
@@ -83,7 +82,7 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 		localCluster:       localCluster,
 		pushImages:         pushImages,
 		skipTests:          runCtx.Opts.SkipTests,
-		devMode:            runCtx.DevMode,
+		devMode:            runCtx.IsDevMode(),
 		prune:              runCtx.Opts.Prune(),
 		pruneChildren:      !runCtx.Opts.NoPruneChildren,
 		insecureRegistries: runCtx.InsecureRegistries,

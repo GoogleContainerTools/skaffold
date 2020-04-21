@@ -32,17 +32,27 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			description:   "NodeJS",
-			path:          "path/to/package.json",
+			path:          filepath.Join("path", "to", "package.json"),
+			expectedValid: true,
+		},
+		{
+			description:   "NodeJS (root)",
+			path:          filepath.Join("package.json"),
 			expectedValid: true,
 		},
 		{
 			description:   "Go",
-			path:          "path/to/go.mod",
+			path:          filepath.Join("path", "to", "go.mod"),
+			expectedValid: true,
+		},
+		{
+			description:   "Go (root)",
+			path:          filepath.Join("go.mod"),
 			expectedValid: true,
 		},
 		{
 			description:   "Unknown language",
-			path:          "path/to/something.txt",
+			path:          filepath.Join("path", "to", "something.txt"),
 			expectedValid: false,
 		},
 	}
@@ -53,6 +63,23 @@ func TestValidate(t *testing.T) {
 			isValid := Validate(tmpDir.Path(test.path))
 
 			t.CheckDeepEqual(test.expectedValid, isValid)
+		})
+	}
+}
+
+func TestValidateIgnored(t *testing.T) {
+	paths := []string{
+		filepath.Join("parent", "node_modules", "package.json"),
+		filepath.Join("node_modules", "package.json"),
+		filepath.Join("vendor", "go.mod"),
+		filepath.Join("parent", "vendor", "go.mod"),
+	}
+
+	for _, path := range paths {
+		testutil.Run(t, path, func(t *testutil.T) {
+			isValid := Validate(path)
+
+			t.CheckFalse(isValid)
 		})
 	}
 }
@@ -76,11 +103,11 @@ func TestDescribe(t *testing.T) {
 	}
 }
 
-func TestUpdateArtifact(t *testing.T) {
+func TestArtifactType(t *testing.T) {
 	var tests = []struct {
-		description      string
-		config           ArtifactConfig
-		expectedArtifact latest.Artifact
+		description  string
+		config       ArtifactConfig
+		expectedType latest.ArtifactType
 	}{
 		{
 			description: "buildpacks - NodeJS",
@@ -88,20 +115,18 @@ func TestUpdateArtifact(t *testing.T) {
 				File:    filepath.Join("path", "to", "package.json"),
 				Builder: "some/builder",
 			},
-			expectedArtifact: latest.Artifact{
-				ArtifactType: latest.ArtifactType{BuildpackArtifact: &latest.BuildpackArtifact{
+			expectedType: latest.ArtifactType{
+				BuildpackArtifact: &latest.BuildpackArtifact{
 					Builder: "some/builder",
-				}},
+				},
 			},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			artifact := &latest.Artifact{}
+			at := test.config.ArtifactType()
 
-			test.config.UpdateArtifact(artifact)
-
-			t.CheckDeepEqual(test.expectedArtifact, *artifact)
+			t.CheckDeepEqual(test.expectedType, at)
 		})
 	}
 }

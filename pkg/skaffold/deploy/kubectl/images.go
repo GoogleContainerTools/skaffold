@@ -17,7 +17,8 @@ limitations under the License.
 package kubectl
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -64,7 +65,7 @@ func (l *ManifestList) ReplaceImages(builds []build.Artifact) (ManifestList, err
 
 	updated, err := l.Visit(replacer)
 	if err != nil {
-		return nil, errors.Wrap(err, "replacing images")
+		return nil, fmt.Errorf("replacing images: %w", err)
 	}
 
 	replacer.Check()

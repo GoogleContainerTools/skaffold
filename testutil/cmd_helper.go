@@ -17,12 +17,11 @@ limitations under the License.
 package testutil
 
 import (
+	"errors"
 	"io/ioutil"
 	"os/exec"
 	"strings"
 	"testing"
-
-	"github.com/pkg/errors"
 )
 
 type FakeCmd struct {
@@ -31,11 +30,12 @@ type FakeCmd struct {
 }
 
 type run struct {
-	command string
-	input   []byte
-	output  []byte
-	env     []string
-	err     error
+	command    string
+	input      []byte
+	output     []byte
+	env        []string
+	err        error
+	pipeOutput bool
 }
 
 func newFakeCmd() *FakeCmd {
@@ -87,6 +87,11 @@ func CmdRunEnv(command string, env []string) *FakeCmd {
 	return newFakeCmd().AndRunEnv(command, env)
 }
 
+// CmdRunWithOutput programs the fake runner with a command and expected output
+func CmdRunWithOutput(command, output string) *FakeCmd {
+	return newFakeCmd().AndRunWithOutput(command, output)
+}
+
 func (c *FakeCmd) AndRun(command string) *FakeCmd {
 	return c.addRun(run{
 		command: command,
@@ -104,6 +109,21 @@ func (c *FakeCmd) AndRunErr(command string, err error) *FakeCmd {
 	return c.addRun(run{
 		command: command,
 		err:     err,
+	})
+}
+
+// AndRunWithOutput takes a command and an expected output.
+// It expected to match up with a call to RunCmd, and pipes
+// the provided output to RunCmd's exec.Cmd's stdout.
+func (c *FakeCmd) AndRunWithOutput(command, output string) *FakeCmd {
+	b := []byte{}
+	if output != "" {
+		b = []byte(output)
+	}
+	return c.addRun(run{
+		command:    command,
+		output:     b,
+		pipeOutput: true,
 	})
 }
 
@@ -163,11 +183,15 @@ func (c *FakeCmd) RunCmd(cmd *exec.Cmd) error {
 	}
 
 	if r.command != command {
-		c.t.Errorf("expected: %s. Got: %s", r.command, command)
+		c.t.Errorf("\nexpected: %s\n\ngot: %s", r.command, command)
 	}
 
 	if r.output != nil {
-		c.t.Errorf("expected RunCmdOut(%s) to be called. Got RunCmd(%s)", r.command, command)
+		if !r.pipeOutput {
+			c.t.Errorf("expected RunCmdOut(%s) to be called. Got RunCmd(%s)", r.command, command)
+		} else {
+			cmd.Stdout.Write(r.output)
+		}
 	}
 
 	c.assertCmdEnv(r.env, cmd.Env)

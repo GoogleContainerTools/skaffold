@@ -17,6 +17,7 @@ limitations under the License.
 package schema
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -24,7 +25,7 @@ import (
 )
 
 // List prints to `out` all supported schema versions.
-func List(out io.Writer) error {
+func List(_ context.Context, out io.Writer) error {
 	for _, version := range schema.SchemaVersions {
 		fmt.Fprintln(out, version.APIVersion)
 	}

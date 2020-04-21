@@ -122,7 +122,7 @@ func LayerFromOpener(opener Opener, opts ...LayerOption) (v1.Layer, error) {
 }
 
 // LayerFromReader returns a v1.Layer given a io.Reader.
-func LayerFromReader(reader io.Reader) (v1.Layer, error) {
+func LayerFromReader(reader io.Reader, opts ...LayerOption) (v1.Layer, error) {
 	// Buffering due to Opener requiring multiple calls.
 	a, err := ioutil.ReadAll(reader)
 	if err != nil {
@@ -130,7 +130,7 @@ func LayerFromReader(reader io.Reader) (v1.Layer, error) {
 	}
 	return LayerFromOpener(func() (io.ReadCloser, error) {
 		return ioutil.NopCloser(bytes.NewReader(a)), nil
-	})
+	}, opts...)
 }
 
 func computeDigest(opener Opener, compressed bool, compression int) (v1.Hash, int64, error) {

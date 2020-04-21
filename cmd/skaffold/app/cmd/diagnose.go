@@ -21,9 +21,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -36,11 +34,8 @@ import (
 func NewCmdDiagnose() *cobra.Command {
 	return NewCmd("diagnose").
 		WithDescription("Run a diagnostic on Skaffold").
-		WithFlags(func(f *pflag.FlagSet) {
-			f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
-			f.StringSliceVarP(&opts.Profiles, "profile", "p", nil, "Activate profiles by name")
-		}).
-		NoArgs(cancelWithCtrlC(context.Background(), doDiagnose))
+		WithCommonFlags().
+		NoArgs(doDiagnose)
 }
 
 func doDiagnose(ctx context.Context, out io.Writer) error {
@@ -50,13 +45,13 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 		fmt.Fprintln(out, "Number of artifacts:", len(config.Build.Artifacts))
 
 		if err := r.DiagnoseArtifacts(ctx, out); err != nil {
-			return errors.Wrap(err, "running diagnostic on artifacts")
+			return fmt.Errorf("running diagnostic on artifacts: %w", err)
 		}
 
 		color.Blue.Fprintln(out, "\nConfiguration")
 		buf, err := yaml.Marshal(config)
 		if err != nil {
-			return errors.Wrap(err, "marshalling configuration")
+			return fmt.Errorf("marshalling configuration: %w", err)
 		}
 		out.Write(buf)
 

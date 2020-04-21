@@ -35,7 +35,6 @@ func TestRun(t *testing.T) {
 		deployments []string
 		pods        []string
 		env         []string
-		setup       func(t *testing.T, workdir string) (teardown func())
 	}{
 		{
 			description: "getting-started",
@@ -96,16 +95,20 @@ func TestRun(t *testing.T) {
 			dir:         "examples/custom",
 			pods:        []string{"getting-started"},
 		},
+		{
+			description: "buildpacks",
+			dir:         "examples/buildpacks",
+			deployments: []string{"web"},
+		},
+		{
+			description: "kustomize",
+			dir:         "examples/getting-started-kustomize",
+			deployments: []string{"skaffold-kustomize"},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if test.setup != nil {
-				teardown := test.setup(t, test.dir)
-				defer teardown()
-			}
-
-			ns, client, deleteNs := SetupNamespace(t)
-			defer deleteNs()
+			ns, client := SetupNamespace(t)
 
 			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 
@@ -176,13 +179,6 @@ func TestRunGCPOnly(t *testing.T) {
 			args:        []string{"-p", "gcb"},
 			deployments: []string{"web"},
 		},
-		// Don't run on kind because of this issue: https://github.com/buildpack/pack/issues/277
-		{
-			description: "buildpacks",
-			dir:         "examples/buildpacks",
-			deployments: []string{"web"},
-		},
-		// Don't run on kind because of this issue: https://github.com/buildpack/pack/issues/277
 		{
 			description: "buildpacks on Cloud Build",
 			dir:         "examples/buildpacks",
@@ -192,8 +188,7 @@ func TestRunGCPOnly(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			ns, client, deleteNs := SetupNamespace(t)
-			defer deleteNs()
+			ns, client := SetupNamespace(t)
 
 			skaffold.Run(test.args...).InDir(test.dir).InNs(ns.Name).RunOrFail(t)
 
@@ -210,8 +205,7 @@ func TestRunIdempotent(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
 	// The first `skaffold run` creates resources (deployment.apps/leeroy-web, service/leeroy-app, deployment.apps/leeroy-app)
 	out := skaffold.Run("-l", "skaffold.dev/run-id=notunique").InDir("examples/microservices").InNs(ns.Name).RunOrFailOutput(t)
@@ -238,10 +232,9 @@ func TestRunUnstableChecked(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
-	output, err := skaffold.Run("--status-check=true").InDir("testdata/unstable-deployment").InNs(ns.Name).RunWithCombinedOutput(t)
+	output, err := skaffold.Run().InDir("testdata/unstable-deployment").InNs(ns.Name).RunWithCombinedOutput(t)
 	if err == nil {
 		t.Errorf("expected to see an error since the deployment is not stable: %s", output)
 	} else if !strings.Contains(string(output), "unstable-deployment failed") {
@@ -254,8 +247,7 @@ func TestRunUnstableNotChecked(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	ns, _, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, _ := SetupNamespace(t)
 
-	skaffold.Run().InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
+	skaffold.Run("--status-check=false").InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
 }

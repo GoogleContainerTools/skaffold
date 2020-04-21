@@ -18,26 +18,12 @@ package buildpacks
 
 import (
 	"context"
-	"sort"
 
-	"github.com/pkg/errors"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/list"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // GetDependencies returns dependencies listed for a buildpack artifact
 func GetDependencies(ctx context.Context, workspace string, a *latest.BuildpackArtifact) ([]string, error) {
-	files, err := docker.WalkWorkspace(workspace, a.Dependencies.Ignore, a.Dependencies.Paths)
-	if err != nil {
-		return nil, errors.Wrapf(err, "walking workspace %s", workspace)
-	}
-
-	var dependencies []string
-	for file := range files {
-		dependencies = append(dependencies, file)
-	}
-
-	sort.Strings(dependencies)
-	return dependencies, nil
+	return list.Files(workspace, a.Dependencies.Paths, a.Dependencies.Ignore)
 }

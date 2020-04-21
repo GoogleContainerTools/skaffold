@@ -325,6 +325,12 @@ func (i *Image) AddLayer(path string) error {
 	return nil
 }
 
+func (i *Image) AddLayerWithDiffID(path, diffID string) error {
+	// this is equivalent to AddLayer in the remote case
+	// it exists to provide optimize performance for local images
+	return i.AddLayer(path)
+}
+
 func (i *Image) ReuseLayer(sha string) error {
 	layer, err := findLayerWithSha(i.prevLayers, sha)
 	if err != nil {

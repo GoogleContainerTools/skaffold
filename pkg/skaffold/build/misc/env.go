@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -38,14 +36,9 @@ func EvaluateEnv(env []string) ([]string, error) {
 		k := kvp[0]
 		v := kvp[1]
 
-		tmpl, err := util.ParseEnvTemplate(v)
+		value, err := util.ExpandEnvTemplate(v, nil)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to parse template for env variable: %s=%s", k, v)
-		}
-
-		value, err := util.ExecuteEnvTemplate(tmpl, nil)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to get value for env variable: %s", k)
+			return nil, fmt.Errorf("unable to get value for env variable %q: %w", k, err)
 		}
 
 		evaluated = append(evaluated, k+"="+value)

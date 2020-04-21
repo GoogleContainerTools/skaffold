@@ -17,10 +17,10 @@ limitations under the License.
 package util
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 

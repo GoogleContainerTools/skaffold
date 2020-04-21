@@ -30,7 +30,5 @@ IF "%DIRTY" == "" SET TREE=clean ELSE SET TREE=dirty
 FOR /F "tokens=*" %%a in ('git rev-parse HEAD') do SET COMMIT=%%a
 for /f %%a in ('powershell -Command "Get-Date -format yyyy_MM_dd__HH_mm_ss"') do set BUILD_DATE=%%a
 set FLAG_LDFLAGS=" -X github.com/GoogleContainerTools/skaffold/pkg/skaffold/version.version=%VERSION% -X github.com/GoogleContainerTools/skaffold/pkg/skaffold/version.buildDate='%BUILD_DATE%' -X github.com/GoogleContainerTools/skaffold/pkg/skaffold/version.gitCommit=%COMMIT% -X github.com/GoogleContainerTools/skaffold/pkg/skaffold/version.gitTreeState=%TREE%  -extldflags \"\""
-set GO111MODULE=on
-set GOFLAGS=-mod=vendor
 
 go build -ldflags %FLAG_LDFLAGS% -o out/skaffold.exe github.com/GoogleContainerTools/skaffold/cmd/skaffold

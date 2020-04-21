@@ -23,8 +23,6 @@ import (
 	"reflect"
 	"strings"
 	"text/template"
-
-	"github.com/pkg/errors"
 )
 
 type TemplateFlag struct {
@@ -50,7 +48,7 @@ func (t *TemplateFlag) Usage() string {
 func (t *TemplateFlag) Set(value string) error {
 	tmpl, err := parseTemplate(value)
 	if err != nil {
-		return errors.Wrap(err, "setting template flag")
+		return fmt.Errorf("setting template flag: %w", err)
 	}
 	t.rawTemplate = value
 	t.template = tmpl

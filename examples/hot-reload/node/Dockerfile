@@ -1,9 +1,14 @@
-FROM node:10.15.3-alpine
+FROM node:12.16.0-alpine3.10
 
-WORKDIR /app
+USER node
+RUN mkdir /home/node/app
+WORKDIR /home/node/app
+
 EXPOSE 3000
-CMD ["npm", "run", "dev"]
+ARG ENV=production
+ENV NODE_ENV $ENV
+CMD npm run $NODE_ENV
 
-COPY package* ./
+COPY --chown=node:node package* ./
 RUN npm ci
-COPY src .
+COPY --chown=node:node . .

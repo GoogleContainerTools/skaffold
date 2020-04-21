@@ -17,8 +17,8 @@ type sortedScanner struct {
 	de *Dirent
 }
 
-func newSortedScanner(osPathname string) (*sortedScanner, error) {
-	deChildren, err := ReadDirents(osPathname, nil)
+func newSortedScanner(osPathname string, scratchBuffer []byte) (*sortedScanner, error) {
+	deChildren, err := ReadDirents(osPathname, scratchBuffer)
 	if err != nil {
 		return nil, err
 	}

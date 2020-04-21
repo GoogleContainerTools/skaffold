@@ -17,11 +17,11 @@ limitations under the License.
 package schema
 
 import (
+	"fmt"
 	"io"
 	"path"
 	"strings"
 
-	"github.com/pkg/errors"
 	"github.com/rakyll/statik/fs"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/statik"
@@ -37,7 +37,7 @@ func Print(out io.Writer, version string) error {
 	path := path.Join("/schemas", strings.TrimPrefix(version, "skaffold/")+".json")
 	content, err := fs.ReadFile(statikFS, path)
 	if err != nil {
-		return errors.Wrapf(err, "schema %q not found", version)
+		return fmt.Errorf("schema %q not found: %w", version, err)
 	}
 
 	_, err = out.Write(content)

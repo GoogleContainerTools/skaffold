@@ -1,4 +1,5 @@
 # github.com/corneliusweig/release-notes v0.0.0-20191014214505-0be5c7c66752
+## explicit
 github.com/corneliusweig/release-notes
 # github.com/golang/protobuf v1.2.0
 github.com/golang/protobuf/proto
@@ -11,6 +12,7 @@ github.com/inconshreveable/mousetrap
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
 # github.com/rakyll/statik v0.1.6
+## explicit
 github.com/rakyll/statik
 # github.com/sirupsen/logrus v1.4.2
 github.com/sirupsen/logrus

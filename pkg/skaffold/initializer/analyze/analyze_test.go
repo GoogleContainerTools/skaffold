@@ -17,6 +17,7 @@ limitations under the License.
 package analyze
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -30,6 +31,10 @@ import (
 
 func TestAnalyze(t *testing.T) {
 	emptyFile := ""
+	largeFile := ""
+	for i := 1; i < 1000; i++ {
+		largeFile = fmt.Sprintf("%s0", largeFile)
+	}
 	validK8sManifest := "apiVersion: v1\nkind: Service\nmetadata:\n  name: test\n"
 
 	tests := []struct {
@@ -118,6 +123,7 @@ func TestAnalyze(t *testing.T) {
 				Force:                false,
 				EnableBuildpacksInit: true,
 				EnableJibInit:        true,
+				EnableJibGradleInit:  true,
 			},
 			expectedConfigs: []string{
 				"k8pod.yml",
@@ -148,6 +154,7 @@ func TestAnalyze(t *testing.T) {
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
+				EnableJibGradleInit:  true,
 			},
 			expectedConfigs: []string{
 				"k8pod.yml",
@@ -175,6 +182,7 @@ func TestAnalyze(t *testing.T) {
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
+				EnableJibGradleInit:  true,
 			},
 			expectedConfigs: []string{
 				"k8pod.yml",
@@ -183,6 +191,24 @@ func TestAnalyze(t *testing.T) {
 			expectedPaths: []string{
 				"Dockerfile",
 				"build.gradle",
+				"pom.xml",
+			},
+			shouldErr: false,
+		},
+		{
+			description: "should skip jib gradle",
+			filesWithContents: map[string]string{
+				"build.gradle": emptyFile,
+				"pom.xml":      emptyFile,
+			},
+			config: initconfig.Config{
+				Force:                false,
+				EnableBuildpacksInit: false,
+				EnableJibInit:        true,
+				EnableJibGradleInit:  false,
+			},
+			expectedConfigs: nil,
+			expectedPaths: []string{
 				"pom.xml",
 			},
 			shouldErr: false,
@@ -200,6 +226,28 @@ func TestAnalyze(t *testing.T) {
 				Force:                false,
 				EnableBuildpacksInit: false,
 				EnableJibInit:        true,
+			},
+			expectedConfigs: []string{
+				"k8pod.yml",
+			},
+			expectedPaths: []string{
+				"Dockerfile",
+			},
+			shouldErr: false,
+		},
+		{
+			description: "should skip large files",
+			filesWithContents: map[string]string{
+				"k8pod.yml":               validK8sManifest,
+				"README":                  emptyFile,
+				"Dockerfile":              emptyFile,
+				"largeFileDir/Dockerfile": largeFile,
+			},
+			config: initconfig.Config{
+				Force:                false,
+				EnableBuildpacksInit: false,
+				EnableJibInit:        true,
+				MaxFileSize:          100,
 			},
 			expectedConfigs: []string{
 				"k8pod.yml",
@@ -304,10 +352,14 @@ deploy:
 			}
 
 			t.CheckDeepEqual(test.expectedConfigs, a.Manifests())
-			builders := a.Builders()
-			t.CheckDeepEqual(len(test.expectedPaths), len(builders))
-			for i := range builders {
-				t.CheckDeepEqual(test.expectedPaths[i], builders[i].Path())
+
+			if len(test.expectedPaths) != len(a.Builders()) {
+				t.Fatalf("expected %d builders, got %d: %v",
+					len(test.expectedPaths),
+					len(a.Builders()), a.Builders())
+			}
+			for i := range a.Builders() {
+				t.CheckDeepEqual(test.expectedPaths[i], a.Builders()[i].Path())
 			}
 		})
 	}
@@ -317,8 +369,8 @@ func fakeValidateDockerfile(path string) bool {
 	return strings.Contains(strings.ToLower(path), "dockerfile")
 }
 
-func fakeValidateJibConfig(path string) []jib.ArtifactConfig {
-	if strings.HasSuffix(path, "build.gradle") {
+func fakeValidateJibConfig(path string, enableGradle bool) []jib.ArtifactConfig {
+	if strings.HasSuffix(path, "build.gradle") && enableGradle {
 		return []jib.ArtifactConfig{{BuilderName: jib.PluginName(jib.JibGradle), File: path}}
 	}
 	if strings.HasSuffix(path, "pom.xml") {

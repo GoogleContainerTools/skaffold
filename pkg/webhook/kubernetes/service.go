@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/google/go-github/github"
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -36,7 +35,7 @@ import (
 func CreateService(pr *github.PullRequestEvent) (*v1.Service, error) {
 	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting Kubernetes client")
+		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
 	l := labels.GenerateLabelsFromPR(pr.GetNumber())
@@ -85,7 +84,7 @@ func serviceName(prNumber int) string {
 func getService(svc *v1.Service) (*v1.Service, error) {
 	client, err := kubernetes.Client()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting Kubernetes client")
+		return nil, fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
 	return client.CoreV1().Services(svc.Namespace).Get(svc.Name, metav1.GetOptions{})

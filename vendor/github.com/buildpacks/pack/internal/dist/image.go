@@ -9,7 +9,6 @@ import (
 )
 
 type Labeled interface {
-	Name() string
 	Label(name string) (value string, err error)
 }
 

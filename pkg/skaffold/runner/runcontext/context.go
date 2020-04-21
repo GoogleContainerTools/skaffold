@@ -17,10 +17,10 @@ limitations under the License.
 package runcontext
 
 import (
+	"fmt"
 	"os"
 	"sort"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -37,13 +37,12 @@ type RunContext struct {
 	WorkingDir         string
 	Namespaces         []string
 	InsecureRegistries map[string]bool
-	DevMode            bool
 }
 
 func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContext, error) {
 	kubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting current cluster context")
+		return nil, fmt.Errorf("getting current cluster context: %w", err)
 	}
 	kubeContext := kubeConfig.CurrentContext
 	logrus.Infof("Using kubectl context: %s", kubeContext)
@@ -51,12 +50,12 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 	// TODO(dgageot): this should be the folder containing skaffold.yaml. Should also be moved elsewhere.
 	cwd, err := os.Getwd()
 	if err != nil {
-		return nil, errors.Wrap(err, "finding current directory")
+		return nil, fmt.Errorf("finding current directory: %w", err)
 	}
 
 	namespaces, err := runnerutil.GetAllPodNamespaces(opts.Namespace, cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting namespace list")
+		return nil, fmt.Errorf("getting namespace list: %w", err)
 	}
 
 	// combine all provided lists of insecure registries into a map
@@ -71,8 +70,6 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		insecureRegistries[r] = true
 	}
 
-	devMode := opts.Command == "dev"
-
 	return &RunContext{
 		Opts:               opts,
 		Cfg:                cfg,
@@ -80,8 +77,15 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 		KubeContext:        kubeContext,
 		Namespaces:         namespaces,
 		InsecureRegistries: insecureRegistries,
-		DevMode:            devMode,
 	}, nil
+}
+
+func (r *RunContext) IsDevMode() bool {
+	return r.Opts.Command == "dev"
+}
+
+func (r *RunContext) IsDebugMode() bool {
+	return r.Opts.Command == "debug"
 }
 
 func (r *RunContext) UpdateNamespaces(ns []string) {

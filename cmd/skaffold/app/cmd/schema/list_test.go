@@ -18,6 +18,7 @@ package schema
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"testing"
 
@@ -29,7 +30,7 @@ func TestList(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		var out bytes.Buffer
 
-		err := List(&out)
+		err := List(context.Background(), &out)
 
 		versions := out.String()
 		t.CheckNoError(err)

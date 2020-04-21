@@ -18,8 +18,10 @@ package integration
 
 import (
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 func TestDebug(t *testing.T) {
@@ -53,11 +55,9 @@ func TestDebug(t *testing.T) {
 			// Run skaffold build first to fail quickly on a build failure
 			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
 
-			ns, client, deleteNs := SetupNamespace(t)
-			defer deleteNs()
+			ns, client := SetupNamespace(t)
 
-			stop := skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
-			defer stop()
+			skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 
 			client.WaitForPodsReady(test.pods...)
 			for _, depName := range test.deployments {
@@ -69,5 +69,64 @@ func TestDebug(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestDebugEventsRPC_StatusCheck(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if RunOnGCP() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("testdata/jib").RunOrFail(t)
+
+	ns, client := SetupNamespace(t)
+
+	rpcAddr := randomPort()
+	skaffold.Debug("--enable-rpc", "--rpc-port", rpcAddr).InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
+
+	waitForDebugEvent(t, client, rpcAddr)
+}
+
+func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if RunOnGCP() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("testdata/jib").RunOrFail(t)
+
+	ns, client := SetupNamespace(t)
+
+	rpcAddr := randomPort()
+	skaffold.Debug("--enable-rpc", "--rpc-port", rpcAddr, "--status-check=false").InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
+
+	waitForDebugEvent(t, client, rpcAddr)
+}
+
+func waitForDebugEvent(t *testing.T, client *NSKubernetesClient, rpcAddr string) {
+	client.WaitForPodsReady()
+
+	_, entries := apiEvents(t, rpcAddr)
+
+	timeout := time.After(1 * time.Minute)
+	for {
+		select {
+		case <-timeout:
+			t.Fatalf("timed out waiting for port debugging event")
+		case entry := <-entries:
+			switch entry.Event.GetEventType().(type) {
+			case *proto.Event_DebuggingContainerEvent:
+				// success!
+				return
+			default:
+			}
+		}
 	}
 }

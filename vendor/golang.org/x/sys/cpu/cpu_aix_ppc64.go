@@ -6,6 +6,8 @@
 
 package cpu
 
+import "golang.org/x/sys/unix"
+
 const cacheLineSize = 128
 
 const (
@@ -16,7 +18,7 @@ const (
 )
 
 func init() {
-	impl := getsystemcfg(_SC_IMPL)
+	impl := unix.Getsystemcfg(_SC_IMPL)
 	if impl&_IMPL_POWER8 != 0 {
 		PPC64.IsPOWER8 = true
 	}
@@ -25,10 +27,4 @@ func init() {
 	}
 
 	Initialized = true
-}
-
-func getsystemcfg(label int) (n uint64) {
-	r0, _ := callgetsystemcfg(label)
-	n = uint64(r0)
-	return
 }

@@ -66,7 +66,7 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 		{
 			description: "PYTHON_VERSION",
 			source:      imageConfiguration{env: map[string]string{"PYTHON_VERSION": "2.7"}},
-			result:      true,
+			result:      false,
 		},
 		{
 			description: "entrypoint python",
@@ -129,22 +129,22 @@ func TestPythonTransformer_IsApplicable(t *testing.T) {
 	}
 }
 
-func TestPythonTransformer_RuntimeSupportImage(t *testing.T) {
-	testutil.CheckDeepEqual(t, "python", pythonTransformer{}.RuntimeSupportImage())
-}
-
 func TestPythonTransformer_Apply(t *testing.T) {
 	tests := []struct {
 		description   string
 		containerSpec v1.Container
 		configuration imageConfiguration
+		shouldErr     bool
 		result        v1.Container
+		debugConfig   ContainerDebugConfiguration
+		image         string
 	}{
 		{
 			description:   "empty",
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{},
 			result:        v1.Container{},
+			shouldErr:     true,
 		},
 		{
 			description:   "basic",
@@ -155,6 +155,8 @@ func TestPythonTransformer_Apply(t *testing.T) {
 				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 				Env:     []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			image:       "python",
 		},
 		{
 			description: "existing port",
@@ -167,6 +169,8 @@ func TestPythonTransformer_Apply(t *testing.T) {
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "dap", ContainerPort: 5678}},
 				Env:     []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			image:       "python",
 		},
 		{
 			description: "existing port and env",
@@ -179,6 +183,8 @@ func TestPythonTransformer_Apply(t *testing.T) {
 				Ports:   []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 				Env:     []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python:/foo"}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			image:       "python",
 		},
 		{
 			description:   "command not entrypoint",
@@ -189,6 +195,8 @@ func TestPythonTransformer_Apply(t *testing.T) {
 				Ports: []v1.ContainerPort{{Name: "dap", ContainerPort: 5678}},
 				Env:   []v1.EnvVar{{Name: "PYTHONUSERBASE", Value: "/dbg/python"}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "python", Ports: map[string]uint32{"dap": 5678}},
+			image:       "python",
 		},
 	}
 	var identity portAllocator = func(port int32) int32 {
@@ -196,9 +204,12 @@ func TestPythonTransformer_Apply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			pythonTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
+			config, image, err := pythonTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
 
+			t.CheckError(test.shouldErr, err)
 			t.CheckDeepEqual(test.result, test.containerSpec)
+			t.CheckDeepEqual(test.debugConfig, config)
+			t.CheckDeepEqual(test.image, image)
 		})
 	}
 }

@@ -31,7 +31,7 @@ Right now, events are handled directly through the main loop for each builder an
 ```golang
  if err != nil { 
  	event.BuildFailed(artifact.ImageName, err) 
- 	return nil, errors.Wrapf(err, "building [%s]", artifact.ImageName) 
+ 	return nil, fmt.Errorf("building [%s]: %w", artifact.ImageName, err)
  } 
   
  event.BuildComplete(artifact.ImageName) 
@@ -43,7 +43,7 @@ and
  manifests, err := k.readManifests(ctx) 
  if err != nil { 
  	event.DeployFailed(err) 
- 	return errors.Wrap(err, "reading manifests") 
+ 	return fmt.Errorf("reading manifests: %w", err) 
  } 
   
  if len(manifests) == 0 { 

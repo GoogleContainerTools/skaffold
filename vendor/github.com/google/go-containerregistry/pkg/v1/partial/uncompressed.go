@@ -81,30 +81,6 @@ func (ule *uncompressedLayerExtender) calcSizeHash() {
 	})
 }
 
-// Descriptor returns the layer manifest descriptor for this uncompressed layer.
-// The embedded UncompressedLayer is checked to see if it has a Descriptor
-// function which is returned if it exists. The underlying descriptor provides
-// foreign layer data like URLs. Otherwise, a new descriptor is
-// generated.
-func (ule *uncompressedLayerExtender) Descriptor() (*v1.Descriptor, error) {
-	if withDesc, ok := ule.UncompressedLayer.(withDescriptor); ok {
-		return withDesc.Descriptor()
-	}
-	ule.calcSizeHash()
-	if ule.hashSizeError != nil {
-		return nil, ule.hashSizeError
-	}
-	mt, err := ule.MediaType()
-	if err != nil {
-		return nil, err
-	}
-	return &v1.Descriptor{
-		MediaType: mt,
-		Size:      ule.size,
-		Digest:    ule.hash,
-	}, nil
-}
-
 // UncompressedToLayer fills in the missing methods from an UncompressedLayer so that it implements v1.Layer
 func UncompressedToLayer(ul UncompressedLayer) (v1.Layer, error) {
 	return &uncompressedLayerExtender{UncompressedLayer: ul}, nil
@@ -113,7 +89,7 @@ func UncompressedToLayer(ul UncompressedLayer) (v1.Layer, error) {
 // UncompressedImageCore represents the bare minimum interface a natively
 // uncompressed image must implement for us to produce a v1.Image
 type UncompressedImageCore interface {
-	imageCore
+	ImageCore
 
 	// LayerByDiffID is a variation on the v1.Image method, which returns
 	// an UncompressedLayer instead.
@@ -179,29 +155,12 @@ func (i *uncompressedImageExtender) Manifest() (*v1.Manifest, error) {
 
 	m.Layers = make([]v1.Descriptor, len(ls))
 	for i, l := range ls {
-		// Check if the layer implementation provides the descriptor directly.
-		if withDesc, ok := l.(withDescriptor); ok {
-			desc, err := withDesc.Descriptor()
-			if err != nil {
-				return nil, err
-			}
-			m.Layers[i] = *desc
-			continue
-		}
-		sz, err := l.Size()
-		if err != nil {
-			return nil, err
-		}
-		h, err := l.Digest()
+		desc, err := Descriptor(l)
 		if err != nil {
 			return nil, err
 		}
 
-		m.Layers[i] = v1.Descriptor{
-			MediaType: types.DockerLayer,
-			Size:      sz,
-			Digest:    h,
-		}
+		m.Layers[i] = *desc
 	}
 
 	i.manifest = m

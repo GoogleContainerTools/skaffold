@@ -17,7 +17,8 @@ limitations under the License.
 package deploy
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+	"os"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -25,12 +26,12 @@ import (
 
 // kubectl implements deploymentInitializer for the kubectl deployer.
 type kubectl struct {
-	configs []string
-	images  []string
+	configs []string // the k8s manifest files present in the project
+	images  []string // the images parsed from the k8s manifest files
 }
 
 // newKubectlInitializer returns a kubectl skaffold generator.
-func newKubectlInitializer(potentialConfigs []string) (*kubectl, error) {
+func newKubectlInitializer(potentialConfigs []string) *kubectl {
 	var k8sConfigs, images []string
 	for _, file := range potentialConfigs {
 		imgs, err := kubernetes.ParseImagesFromKubernetesYaml(file)
@@ -39,13 +40,10 @@ func newKubectlInitializer(potentialConfigs []string) (*kubectl, error) {
 			images = append(images, imgs...)
 		}
 	}
-	if len(k8sConfigs) == 0 {
-		return nil, errors.New("one or more valid Kubernetes manifests is required to run skaffold")
-	}
 	return &kubectl{
 		configs: k8sConfigs,
 		images:  images,
-	}, nil
+	}
 }
 
 // deployConfig implements the Initializer interface and generates
@@ -64,4 +62,19 @@ func (k *kubectl) DeployConfig() latest.DeployConfig {
 // images present in the k8 manifest files.
 func (k *kubectl) GetImages() []string {
 	return k.images
+}
+
+// Validate implements the Initializer interface and ensures
+// we have at least one manifest before generating a config
+func (k *kubectl) Validate() error {
+	if len(k.images) == 0 {
+		return NoManifest
+	}
+	return nil
+}
+
+func (k *kubectl) AddManifestForImage(path, image string) {
+	fmt.Fprintf(os.Stdout, "adding manifest path %s for image %s\n", path, image)
+	k.configs = append(k.configs, path)
+	k.images = append(k.images, image)
 }

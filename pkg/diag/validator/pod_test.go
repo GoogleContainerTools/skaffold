@@ -17,132 +17,86 @@ limitations under the License.
 package validator
 
 import (
+	"context"
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestGetPodDetails(t *testing.T) {
+func TestRun(t *testing.T) {
 	tests := []struct {
 		description string
-		pod         v1.Pod
-		name        string
-		expected    PodStatus
-		shouldErr   bool
+		pods        []*v1.Pod
+		expected    []Resource
 	}{
 		{
-			description: "pod does not exist",
-			pod: v1.Pod{
+			description: "pod don't exist in test namespace",
+			pods: []*v1.Pod{{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Name:      "foo",
-					Namespace: "test",
-				},
+					Namespace: "foo-ns",
+				}},
 			},
-			name: "not-there",
-			expected: PodStatus{
-				err: &PodErr{
-					message: "pods \"not-there\" not found",
-				},
-			},
-			shouldErr: true,
+			expected: []Resource{},
 		},
 		{
-			description: "pod is Waiting conditions with reason and message",
-			name:        "foo",
-			pod: v1.Pod{
+			description: "pod is Waiting conditions with error",
+			pods: []*v1.Pod{{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
 				Status: v1.PodStatus{
 					Phase:      v1.PodPending,
-					Conditions: []v1.PodCondition{{Status: v1.ConditionFalse}},
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
 					ContainerStatuses: []v1.ContainerStatus{
 						{
-							Name: "foo-container",
+							Name:  "foo-container",
+							Image: "foo-image",
 							State: v1.ContainerState{
 								Waiting: &v1.ContainerStateWaiting{
-									Reason:  "ErrImgPull",
-									Message: "could not pull the container image",
+									Reason:  "ErrImagePull",
+									Message: "rpc error: code = Unknown desc = Error response from daemon: pull access denied for leeroy-web1, repository does not exist or may require 'docker login': denied: requested access to the resource is denied",
 								},
 							},
 						},
 					},
 				},
-			},
-			shouldErr: true,
-			expected: PodStatus{
-				phase: pending,
-				err: &PodErr{
-					reason:  "ErrImgPull",
-					message: "could not pull the container image",
-				},
-			},
-		},
-		{
-			description: "pod is Waiting conditions with reason but no message",
-			name:        "foo",
-			pod: v1.Pod{
-				ObjectMeta: meta_v1.ObjectMeta{
-					Name:      "foo",
-					Namespace: "test",
-				},
-				Status: v1.PodStatus{
-					Phase:      v1.PodReasonUnschedulable,
-					Conditions: []v1.PodCondition{{Status: v1.ConditionFalse}},
-					ContainerStatuses: []v1.ContainerStatus{
-						{
-							Name: "foo-container",
-							State: v1.ContainerState{
-								Waiting: &v1.ContainerStateWaiting{
-									Reason: "Unschedulable",
-								},
-							},
-						},
-					},
-				},
-			},
-			shouldErr: true,
-			expected: PodStatus{
-				phase: pending,
-				err: &PodErr{
-					reason: "Unschedulable",
-				},
-			},
+			}},
+			expected: []Resource{NewResource("test", "", "foo", "Pending",
+				fmt.Errorf("container foo-container is waiting to start: image foo-image can't be pulled"))},
 		},
 		{
 			description: "pod is in Terminated State",
-			name:        "foo",
-			pod: v1.Pod{
+			pods: []*v1.Pod{{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
 				Status: v1.PodStatus{
 					Phase:      v1.PodSucceeded,
-					Conditions: []v1.PodCondition{{Status: v1.ConditionTrue}},
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
 				},
-			},
-			expected: PodStatus{
-				phase: "Succeeded",
-			},
+			}},
+			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil)},
 		},
 		{
 			description: "pod is in Stable State",
-			name:        "foo",
-			pod: v1.Pod{
+			pods: []*v1.Pod{{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
 				Status: v1.PodStatus{
 					Phase:      v1.PodRunning,
-					Conditions: []v1.PodCondition{{Status: v1.ConditionTrue}},
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
 					ContainerStatuses: []v1.ContainerStatus{
 						{
 							Name:  "foo-container",
@@ -150,15 +104,12 @@ func TestGetPodDetails(t *testing.T) {
 						},
 					},
 				},
-			},
-			expected: PodStatus{
-				phase: running,
-			},
+			}},
+			expected: []Resource{NewResource("test", "", "foo", "Running", nil)},
 		},
 		{
 			description: "pod condition unknown",
-			name:        "foo",
-			pod: v1.Pod{
+			pods: []*v1.Pod{{
 				ObjectMeta: meta_v1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
@@ -166,156 +117,54 @@ func TestGetPodDetails(t *testing.T) {
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 					Conditions: []v1.PodCondition{{
+						Type:    v1.PodScheduled,
 						Status:  v1.ConditionUnknown,
 						Message: "could not determine",
 					}},
 				},
-			},
-			expected: PodStatus{
-				phase: pending,
-				err: &PodErr{
-					reason:  "Unknown",
-					message: "could not determine",
-				},
-			},
-		},
-	}
-
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			client := fakekubeclientset.NewSimpleClientset(&test.pod)
-			actual := GetPodDetails(client, "test", test.name)
-			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(PodStatus{}, PodErr{}))
-		})
-	}
-}
-
-func TestGetWaitingContainerStatus(t *testing.T) {
-	tests := []struct {
-		description    string
-		status         []v1.ContainerStatus
-		expectedReason string
-		expectedDetail string
-	}{
-		{
-			description:    "no containers at all ",
-			status:         []v1.ContainerStatus{},
-			expectedReason: "Succeeded",
-			expectedDetail: "Succeeded",
+			}},
+			expected: []Resource{NewResource("test", "", "foo", "Pending",
+				fmt.Errorf("could not determine"))},
 		},
 		{
-			description: "none of the container status is waiting",
-			status: []v1.ContainerStatus{
-				{
-					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
+			description: "pod could not be scheduled",
+			pods: []*v1.Pod{{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
 				},
-				{
-					State: v1.ContainerState{Terminated: &v1.ContainerStateTerminated{}},
-				},
-			},
-			expectedReason: "Succeeded",
-			expectedDetail: "Succeeded",
-		},
-		{
-			description: "one container state waiting",
-			status: []v1.ContainerStatus{
-				{
-					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
-				},
-				{
-					State: v1.ContainerState{
-						Waiting: &v1.ContainerStateWaiting{
-							Reason:  "ErrImagePull",
-							Message: "Cannot pull image gcr.io/test",
-						},
-					},
-				},
-			},
-			expectedReason: "ErrImagePull",
-			expectedDetail: "Cannot pull image gcr.io/test",
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			reason, detail := getWaitingContainerStatus(test.status)
-			t.CheckDeepEqual(test.expectedReason, reason)
-			t.CheckDeepEqual(test.expectedDetail, detail)
-		})
-	}
-}
-
-type mockCS struct {
-	len int
-}
-
-func (m *mockCS) mockWaitingContainerStatus(cs []v1.ContainerStatus) (string, string) {
-	m.len = len(cs)
-	return "", ""
-}
-
-func TestGetPendingDetails(t *testing.T) {
-	tests := []struct {
-		description string
-		init        []v1.ContainerStatus
-		cs          []v1.ContainerStatus
-		expected    int
-	}{
-		{
-			description: "pod with init containers containers",
-			init: []v1.ContainerStatus{
-				{
-					Name:  "foo-init",
-					State: v1.ContainerState{Terminated: &v1.ContainerStateTerminated{ExitCode: 0}},
-				},
-			},
-			cs: []v1.ContainerStatus{
-				{
-					Name:  "foo-container",
-					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
-				},
-			},
-			expected: 2,
-		},
-		{
-			description: "pod with only init containers",
-			init: []v1.ContainerStatus{
-				{
-					Name:  "foo-init",
-					State: v1.ContainerState{Terminated: &v1.ContainerStateTerminated{ExitCode: 0}},
-				},
-			},
-			cs: []v1.ContainerStatus{
-				{
-					Name:  "foo-container",
-					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
-				},
-			},
-			expected: 2,
-		},
-		{
-			description: "pod with only containers",
-			cs: []v1.ContainerStatus{
-				{
-					Name:  "foo-container",
-					State: v1.ContainerState{Running: &v1.ContainerStateRunning{}},
-				},
-			},
-			expected: 1,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			m := mockCS{}
-			t.Override(&waitingContainerStatus, m.mockWaitingContainerStatus)
-			pod := &v1.Pod{
 				Status: v1.PodStatus{
-					Conditions:            []v1.PodCondition{{Status: v1.ConditionFalse}},
-					InitContainerStatuses: test.init,
-					ContainerStatuses:     test.cs,
+					Phase: v1.PodPending,
+					Conditions: []v1.PodCondition{{
+						Type:    v1.PodScheduled,
+						Status:  v1.ConditionFalse,
+						Reason:  v1.PodReasonUnschedulable,
+						Message: "0/2 nodes are available: 1 node(s) had taint {node.kubernetes.io/disk-pressure: }, that the pod didn't tolerate, 1 node(s) had taint {node.kubernetes.io/unreachable: }, that the pod didn't tolerate",
+					}},
 				},
+			}},
+			expected: []Resource{NewResource("test", "", "foo", "Pending",
+				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"))},
+		},
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			rs := make([]runtime.Object, len(test.pods))
+			for i, p := range test.pods {
+				rs[i] = p
 			}
-			getPendingDetails(pod)
-			t.CheckDeepEqual(test.expected, m.len)
+			f := fakekubeclientset.NewSimpleClientset(rs...)
+			actual, err := NewPodValidator(f).Validate(context.Background(), "test", meta_v1.ListOptions{})
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
+				if x == nil && y == nil {
+					return true
+				} else if x != nil && y != nil {
+					return x.Error() == y.Error()
+				}
+				return false
+			}))
 		})
 	}
 }

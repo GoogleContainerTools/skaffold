@@ -27,8 +27,7 @@ This feature can be very useful in Continuous Delivery pipelines to ensure that 
 healthy before proceeding with the next steps in the pipeline.
 
 {{<alert title="Note">}}
-`healthcheck` is disabled by default; it can be enabled with the `--status-check` flag.</br>
-If this flag is not set, no healthcheck will be performed.
+`healthcheck` is enabled by default; it can be disabled with the `--status-check=false` flag.
 {{</alert>}}
 
 To determine if a `Deployment` resource is up and running, Skaffold relies on `kubectl rollout status` to obtain its status.
@@ -151,7 +150,7 @@ Starting deploy...
 ## `skaffold render` 
 {{< maturity "render" >}}
 
-Skaffold also has another built-in command, `skaffold render`, that will perform builds on all artifacts in your project, template the newly built image tags into your Kubernetes deployment configuration files (based on your configured deployer), and instead of sending these through the deployment process, print out the final deployment artifacts. This allows your to snapshot your project's builds, but also integrate those builds into your deployment configs to snapshot your deployment as well. This can be very useful when integrating with GitOps based workflows: these templated deployment configurations can be committed to a Git repository as a way to deploy using GitOps.
+Skaffold also has another built-in command, `skaffold render`, that will perform builds on all artifacts in your project, template the newly built image tags into your Kubernetes deployment configuration files (based on your configured deployer), and instead of sending these through the deployment process, print out the final deployment artifacts. This allows you to snapshot your project's builds, but also integrate those builds into your deployment configs to snapshot your deployment as well. This can be very useful when integrating with GitOps based workflows: these templated deployment configurations can be committed to a Git repository as a way to deploy using GitOps.
 
 Example of running `skaffold render` to render Kubernetes manifests, then sending them directly to `kubectl`:
 

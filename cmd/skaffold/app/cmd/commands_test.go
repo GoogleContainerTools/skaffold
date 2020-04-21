@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -70,7 +71,7 @@ func TestNewCmdExactArgs(t *testing.T) {
 }
 
 func TestNewCmdError(t *testing.T) {
-	cmd := NewCmd("").NoArgs(func(out io.Writer) error {
+	cmd := NewCmd("").NoArgs(func(ctx context.Context, out io.Writer) error {
 		return errors.New("expected error")
 	})
 
@@ -82,7 +83,7 @@ func TestNewCmdError(t *testing.T) {
 func TestNewCmdOutput(t *testing.T) {
 	var buf bytes.Buffer
 
-	cmd := NewCmd("").ExactArgs(1, func(out io.Writer, args []string) error {
+	cmd := NewCmd("").ExactArgs(1, func(ctx context.Context, out io.Writer, args []string) error {
 		fmt.Fprintf(out, "test output: %v\n", args)
 		return nil
 	})

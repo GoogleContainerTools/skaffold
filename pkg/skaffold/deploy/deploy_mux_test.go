@@ -29,6 +29,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+func NewMockDeployer() *MockDeployer { return &MockDeployer{labels: make(map[string]string)} }
+
 type MockDeployer struct {
 	labels           map[string]string
 	deployNamespaces []string
@@ -40,34 +42,65 @@ type MockDeployer struct {
 	renderErr        error
 }
 
-func (m *MockDeployer) Labels() map[string]string                { return m.labels }
-func (m *MockDeployer) Dependencies() ([]string, error)          { return m.dependencies, m.dependenciesErr }
-func (m *MockDeployer) Cleanup(context.Context, io.Writer) error { return m.cleanupErr }
+func (m *MockDeployer) Labels() map[string]string {
+	return m.labels
+}
+
+func (m *MockDeployer) Dependencies() ([]string, error) {
+	return m.dependencies, m.dependenciesErr
+}
+
+func (m *MockDeployer) Cleanup(context.Context, io.Writer) error {
+	return m.cleanupErr
+}
+
+func (m *MockDeployer) WithLabel(labels map[string]string) *MockDeployer {
+	m.labels = labels
+	return m
+}
+
+func (m *MockDeployer) WithDeployErr(err error) *MockDeployer {
+	m.deployErr = err
+	return m
+}
+
+func (m *MockDeployer) WithDependenciesErr(err error) *MockDeployer {
+	m.dependenciesErr = err
+	return m
+}
+
+func (m *MockDeployer) WithCleanupErr(err error) *MockDeployer {
+	m.cleanupErr = err
+	return m
+}
+
+func (m *MockDeployer) WithRenderErr(err error) *MockDeployer {
+	m.renderErr = err
+	return m
+}
+
 func (m *MockDeployer) Deploy(context.Context, io.Writer, []build.Artifact, []Labeller) *Result {
 	return &Result{
 		namespaces: m.deployNamespaces,
 		err:        m.deployErr,
 	}
 }
+
 func (m *MockDeployer) Render(_ context.Context, w io.Writer, _ []build.Artifact, _ []Labeller, _ string) error {
 	w.Write([]byte(m.renderResult))
 	return m.renderErr
 }
 
-func NewMockDeployer() *MockDeployer                                     { return &MockDeployer{labels: make(map[string]string)} }
-func (m *MockDeployer) WithLabel(labels map[string]string) *MockDeployer { m.labels = labels; return m }
-func (m *MockDeployer) WithDeployErr(err error) *MockDeployer            { m.deployErr = err; return m }
-func (m *MockDeployer) WithDependenciesErr(err error) *MockDeployer      { m.dependenciesErr = err; return m }
-func (m *MockDeployer) WithCleanupErr(err error) *MockDeployer           { m.cleanupErr = err; return m }
-func (m *MockDeployer) WithRenderErr(err error) *MockDeployer            { m.renderErr = err; return m }
 func (m *MockDeployer) WithDeployNamespaces(namespaces []string) *MockDeployer {
 	m.deployNamespaces = namespaces
 	return m
 }
+
 func (m *MockDeployer) WithDependencies(dependencies []string) *MockDeployer {
 	m.dependencies = dependencies
 	return m
 }
+
 func (m *MockDeployer) WithRenderResult(renderResult string) *MockDeployer {
 	m.renderResult = renderResult
 	return m
@@ -260,18 +293,17 @@ func TestDeployerMux_Render(t *testing.T) {
 		// only check the good case here
 		test := tests[0]
 
-		tempDir, tearDown := testutil.NewTempDir(t)
-		defer tearDown()
+		tmpDir := testutil.NewTempDir(t)
 
 		deployerMux := DeployerMux([]Deployer{
 			NewMockDeployer().WithRenderResult(test.render1).WithRenderErr(test.err1),
 			NewMockDeployer().WithRenderResult(test.render2).WithRenderErr(test.err2),
 		})
 
-		err := deployerMux.Render(context.Background(), nil, nil, nil, tempDir.Path("render"))
+		err := deployerMux.Render(context.Background(), nil, nil, nil, tmpDir.Path("render"))
 		testutil.CheckError(t, false, err)
 
-		file, _ := os.Open(tempDir.Path("render"))
+		file, _ := os.Open(tmpDir.Path("render"))
 		content, _ := ioutil.ReadAll(file)
 		testutil.CheckErrorAndDeepEqual(t, test.shouldErr, err, test.expectedRender, string(content))
 	})

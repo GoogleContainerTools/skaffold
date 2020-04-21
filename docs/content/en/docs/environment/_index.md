@@ -9,6 +9,6 @@ weight: 90
 |----------|---|
 | [Image Registry Handling]({{< relref "image-registries.md" >}}) | Controlling where your images are pushed |
 | [kube-context]({{< relref "kube-context.md" >}}) | Managing the active Kubernetes context for your cluster |
-| [Local Cluster]({{< relref "kube-context.md" >}}) | Offline development with Skaffold and Minikube |
+| [Local Cluster]({{< relref "local-cluster.md" >}}) | Offline development with Skaffold and Minikube |
 | [Env Var Templating]({{< relref "templating.md" >}}) | Templating your skaffold.yaml using environment variables |
 | [Profiles]({{< relref "profiles.md" >}}) | cluster-specific skaffold.yaml configuration using profiles |

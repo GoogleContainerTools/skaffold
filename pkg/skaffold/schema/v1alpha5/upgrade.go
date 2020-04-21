@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha5
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta1"
@@ -34,12 +34,12 @@ import (
 // 3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	if c.Build.AzureContainerBuild != nil {
-		return nil, errors.Errorf("can't upgrade to %s, build.acr is not supported anymore, please remove it manually", next.Version)
+		return nil, fmt.Errorf("can't upgrade to %s, build.acr is not supported anymore, please remove it manually", next.Version)
 	}
 
 	for _, profile := range c.Profiles {
 		if profile.Build.AzureContainerBuild != nil {
-			return nil, errors.Errorf("can't upgrade to %s, profiles.build.acr is not supported anymore, please remove it from the %s profile manually", next.Version, profile.Name)
+			return nil, fmt.Errorf("can't upgrade to %s, profiles.build.acr is not supported anymore, please remove it from the %s profile manually", next.Version, profile.Name)
 		}
 	}
 

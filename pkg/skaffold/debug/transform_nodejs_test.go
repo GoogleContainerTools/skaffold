@@ -60,10 +60,6 @@ func TestExtractInspectArg(t *testing.T) {
 	}
 }
 
-func TestNodeTransformer_RuntimeSupportImage(t *testing.T) {
-	testutil.CheckDeepEqual(t, "", nodeTransformer{}.RuntimeSupportImage())
-}
-
 func TestNodeTransformer_IsApplicable(t *testing.T) {
 	tests := []struct {
 		description string
@@ -195,26 +191,34 @@ func TestRewriteNpmCommandLine(t *testing.T) {
 }
 
 func TestNodeTransformer_Apply(t *testing.T) {
+	// no shouldErr as Apply always succeeds
 	tests := []struct {
 		description   string
 		containerSpec v1.Container
 		configuration imageConfiguration
 		result        v1.Container
+		debugConfig   ContainerDebugConfiguration
+		image         string
 	}{
 		{
 			description:   "empty",
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{},
-			result:        v1.Container{},
+			result: v1.Container{
+				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=9229"}},
+				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
 		{
-			description:   "basic",
+			description:   "entrypoint",
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{entrypoint: []string{"node"}},
 			result: v1.Container{
 				Command: []string{"node", "--inspect=9229"},
 				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
 		{
 			description: "existing port",
@@ -226,6 +230,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				Command: []string{"node", "--inspect=9229"},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "devtools", ContainerPort: 9229}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
 		{
 			description: "existing devtools port",
@@ -237,6 +242,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				Command: []string{"node", "--inspect=9229"},
 				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
 		{
 			description:   "command not entrypoint",
@@ -246,6 +252,20 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				Args:  []string{"node", "--inspect=9229"},
 				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+		},
+		{
+			description:   "docker-entrypoint (#3821)",
+			containerSpec: v1.Container{},
+			configuration: imageConfiguration{
+				env:        map[string]string{"NODE_VERSION": "10.12"},
+				entrypoint: []string{"docker-entrypoint.sh"},
+				arguments:  []string{"npm run script"}},
+			result: v1.Container{
+				Env:   []v1.EnvVar{{Name: "NODE_VERSION", Value: "10.12"}, {Name: "NODE_OPTIONS", Value: "--inspect=9229"}},
+				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
 		},
 	}
 	var identity portAllocator = func(port int32) int32 {
@@ -253,9 +273,13 @@ func TestNodeTransformer_Apply(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			nodeTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
+			config, image, err := nodeTransformer{}.Apply(&test.containerSpec, test.configuration, identity)
 
+			// Apply never fails since there's always the option to set NODE_OPTIONS
+			t.CheckNil(err)
 			t.CheckDeepEqual(test.result, test.containerSpec)
+			t.CheckDeepEqual(test.debugConfig, config)
+			t.CheckDeepEqual(test.image, image) // always empty as we don't have a nodejs image
 		})
 	}
 }

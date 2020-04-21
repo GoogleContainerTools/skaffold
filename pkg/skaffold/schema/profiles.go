@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	yamlpatch "github.com/krishicks/yaml-patch"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 
@@ -42,7 +41,7 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 
 	profiles, contextSpecificProfiles, err := activatedProfiles(c.Profiles, opts)
 	if err != nil {
-		return errors.Wrap(err, "finding auto-activated profiles")
+		return fmt.Errorf("finding auto-activated profiles: %w", err)
 	}
 
 	for _, name := range profiles {
@@ -52,7 +51,7 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 		}
 
 		if err := applyProfile(c, profile); err != nil {
-			return errors.Wrapf(err, "applying profile %s", name)
+			return fmt.Errorf("applying profile %q: %w", name, err)
 		}
 	}
 
@@ -67,7 +66,7 @@ func checkKubeContextConsistency(contextSpecificProfiles []string, cliContext, e
 
 	kubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
-		return errors.Wrap(err, "getting current cluster context")
+		return fmt.Errorf("getting current cluster context: %w", err)
 	}
 	currentContext := kubeConfig.CurrentContext
 
@@ -158,7 +157,7 @@ func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
 
 	currentKubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
-		return false, errors.Wrap(err, "getting current cluster context")
+		return false, fmt.Errorf("getting current cluster context: %w", err)
 	}
 
 	return satisfies(kubeContext, currentKubeConfig.CurrentContext), nil

@@ -79,15 +79,17 @@ func Image(opener Opener, tag *name.Tag) (v1.Image, error) {
 	}
 
 	// Peek at the first layer and see if it's compressed.
-	compressed, err := img.areLayersCompressed()
-	if err != nil {
-		return nil, err
-	}
-	if compressed {
-		c := compressedImage{
-			image: img,
+	if len(img.imgDescriptor.Layers) > 0 {
+		compressed, err := img.areLayersCompressed()
+		if err != nil {
+			return nil, err
 		}
-		return partial.CompressedToImage(&c)
+		if compressed {
+			c := compressedImage{
+				image: img,
+			}
+			return partial.CompressedToImage(&c)
+		}
 	}
 
 	uc := uncompressedImage{
@@ -158,6 +160,10 @@ func (i *image) loadTarDescriptorAndConfig() error {
 
 	if err := json.NewDecoder(m).Decode(&i.manifest); err != nil {
 		return err
+	}
+
+	if i.manifest == nil {
+		return errors.New("no valid manifest.json in tarball")
 	}
 
 	i.imgDescriptor, err = i.manifest.findDescriptor(i.tag)

@@ -19,24 +19,27 @@ package build
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestResolveBuilderImages(t *testing.T) {
 	tests := []struct {
-		description      string
-		buildConfigs     []InitBuilder
-		images           []string
-		force            bool
-		shouldMakeChoice bool
-		shouldErr        bool
-		expectedPairs    []BuilderImagePair
+		description            string
+		buildConfigs           []InitBuilder
+		images                 []string
+		force                  bool
+		shouldMakeChoice       bool
+		shouldErr              bool
+		expectedPairs          []BuilderImagePair
+		expectedGeneratedPairs []GeneratedBuilderImagePair
 	}{
 		{
 			description:      "nothing to choose from",
@@ -72,6 +75,15 @@ func TestResolveBuilderImages(t *testing.T) {
 					ImageName: "image2",
 				},
 			},
+			expectedGeneratedPairs: []GeneratedBuilderImagePair{
+				{
+					BuilderImagePair: BuilderImagePair{
+						Builder:   jib.ArtifactConfig{BuilderName: "Jib Maven Plugin", File: "pom.xml", Project: "project"},
+						ImageName: "pom.xml-image",
+					},
+					ManifestPath: "deployment.yaml",
+				},
+			},
 		},
 		{
 			description:      "successful force",
@@ -94,6 +106,23 @@ func TestResolveBuilderImages(t *testing.T) {
 			force:            true,
 			shouldErr:        true,
 		},
+		{
+			description:  "one unresolved image",
+			buildConfigs: []InitBuilder{docker.ArtifactConfig{File: "foo"}},
+			images:       []string{},
+			expectedGeneratedPairs: []GeneratedBuilderImagePair{
+				{
+					BuilderImagePair: BuilderImagePair{
+						Builder:   docker.ArtifactConfig{File: "foo"},
+						ImageName: "foo-image",
+					},
+					ManifestPath: "deployment.yaml",
+				},
+			},
+			shouldMakeChoice: false,
+			force:            false,
+			shouldErr:        false,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -111,7 +140,8 @@ func TestResolveBuilderImages(t *testing.T) {
 				unresolvedImages: test.images,
 			}
 			err := initializer.resolveBuilderImages()
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, initializer.BuilderImagePairs())
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedPairs, initializer.builderImagePairs, cmp.AllowUnexported())
+			t.CheckDeepEqual(test.expectedGeneratedPairs, initializer.generatedBuilderImagePairs, cmp.AllowUnexported())
 		})
 	}
 }
@@ -325,7 +355,7 @@ func TestStripImageTags(t *testing.T) {
 		testutil.Run(t, tc.name, func(t *testutil.T) {
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			images := stripTags(tc.taggedImages)
+			images := tag.StripTags(tc.taggedImages)
 
 			t.CheckDeepEqual(tc.expectedImages, images)
 			t.CheckDeepEqual(tc.expectedWarnings, fakeWarner.Warnings)

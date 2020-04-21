@@ -19,6 +19,7 @@ package skaffold
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -26,7 +27,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -41,6 +41,7 @@ type RunBuilder struct {
 	dir        string
 	ns         string
 	repo       string
+	profiles   []string
 	args       []string
 	env        []string
 	stdin      []byte
@@ -150,21 +151,20 @@ func (b *RunBuilder) WithEnv(env []string) *RunBuilder {
 	return b
 }
 
-// RunBackground runs the skaffold command in the background.
-// Returns a teardown function that stops skaffold.
-func (b *RunBuilder) RunBackground(t *testing.T) context.CancelFunc {
-	_, cancel := b.RunBackgroundOutput(t)
-	return cancel
+// WithProfiles sets profiles.
+func (b *RunBuilder) WithProfiles(profiles []string) *RunBuilder {
+	b.profiles = profiles
+	return b
 }
 
-// RunBackgroundOutput runs the skaffold command in the background.
-// Returns a teardown function that stops skaffold.
-func (b *RunBuilder) RunBackgroundOutput(t *testing.T) (io.ReadCloser, context.CancelFunc) {
+// RunBackground runs the skaffold command in the background.
+func (b *RunBuilder) RunBackground(t *testing.T) io.ReadCloser {
 	t.Helper()
 
 	pr, pw := io.Pipe()
 
 	ctx, cancel := context.WithCancel(context.Background())
+
 	cmd := b.cmd(ctx)
 	cmd.Stdout = pw
 	logrus.Infoln(cmd.Args)
@@ -179,11 +179,13 @@ func (b *RunBuilder) RunBackgroundOutput(t *testing.T) (io.ReadCloser, context.C
 		logrus.Infoln("Ran in", time.Since(start))
 	}()
 
-	return pr, func() {
+	t.Cleanup(func() {
 		cancel()
 		cmd.Wait()
 		pr.Close()
-	}
+	})
+
+	return pr
 }
 
 // RunOrFail runs the skaffold command and fails the test
@@ -201,7 +203,7 @@ func (b *RunBuilder) Run(t *testing.T) error {
 
 	start := time.Now()
 	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "skaffold %s", b.command)
+		return fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
 
 	logrus.Infoln("Ran in", time.Since(start))
@@ -219,7 +221,7 @@ func (b *RunBuilder) RunWithCombinedOutput(t *testing.T) ([]byte, error) {
 	start := time.Now()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return out, errors.Wrapf(err, "skaffold %s", b.command)
+		return out, fmt.Errorf("skaffold %q: %w", b.command, err)
 	}
 
 	logrus.Infoln("Ran in", time.Since(start))
@@ -261,6 +263,9 @@ func (b *RunBuilder) cmd(ctx context.Context) *exec.Cmd {
 	}
 	if b.repo != "" && command.Flags().Lookup("default-repo") != nil {
 		args = append(args, "--default-repo", b.repo)
+	}
+	if len(b.profiles) > 0 && command.Flags().Lookup("profile") != nil {
+		args = append(args, "--profile", strings.Join(b.profiles, ","))
 	}
 	args = append(args, b.args...)
 

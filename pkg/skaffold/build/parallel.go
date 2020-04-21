@@ -23,8 +23,6 @@ import (
 	"io"
 	"sync"
 
-	"github.com/pkg/errors"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
@@ -70,13 +68,12 @@ func InParallel(ctx context.Context, out io.Writer, tags tag.ImageTags, artifact
 	for i := range artifacts {
 		outputs[i] = make(chan string, buffSize)
 		r, w := io.Pipe()
-		cw := setUpColorWriter(w, out)
 
 		// Run build and write output/logs to piped writer and store build result in
 		// sync.Map
 		go func(i int) {
 			sem <- true
-			runBuild(ctx, cw, tags, artifacts[i], results, buildArtifact)
+			runBuild(ctx, w, tags, artifacts[i], results, buildArtifact)
 			<-sem
 
 			wg.Done()
@@ -113,13 +110,6 @@ func readOutputAndWriteToChannel(r io.Reader, lines chan string) {
 	close(lines)
 }
 
-func setUpColorWriter(w io.WriteCloser, out io.Writer) io.WriteCloser {
-	if color.IsTerminal(out) {
-		return color.ColoredWriteCloser{WriteCloser: w}
-	}
-	return w
-}
-
 func getBuildResult(ctx context.Context, cw io.Writer, tags tag.ImageTags, artifact *latest.Artifact, build artifactBuilder) (string, error) {
 	color.Default.Fprintf(cw, "Building [%s]...\n", artifact.ImageName)
 	tag, present := tags[artifact.ImageName]
@@ -140,7 +130,7 @@ func collectResults(out io.Writer, artifacts []*latest.Artifact, results *sync.M
 		}
 		switch t := v.(type) {
 		case error:
-			return nil, errors.Wrapf(t, "building [%s]", artifact.ImageName)
+			return nil, fmt.Errorf("couldn't build %q: %w", artifact.ImageName, t)
 		case Artifact:
 			built = append(built, t)
 		default:

@@ -22,8 +22,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -43,23 +41,23 @@ func (c *cliBuildInitializer) ProcessImages(images []string) error {
 		return ErrorNoBuilder
 	}
 	if err := c.processCliArtifacts(); err != nil {
-		return errors.Wrap(err, "processing cli artifacts")
+		return fmt.Errorf("processing cli artifacts: %w", err)
 	}
 	return nil
 }
 
 func (c *cliBuildInitializer) BuildConfig() latest.BuildConfig {
 	return latest.BuildConfig{
-		Artifacts: artifacts(c.builderImagePairs),
+		Artifacts: Artifacts(c.builderImagePairs),
 	}
-}
-
-func (c *cliBuildInitializer) BuilderImagePairs() []BuilderImagePair {
-	return c.builderImagePairs
 }
 
 func (c *cliBuildInitializer) PrintAnalysis(out io.Writer) error {
 	return printAnalysis(out, c.enableNewFormat, c.skipBuild, c.builderImagePairs, c.builders, nil)
+}
+
+func (c *cliBuildInitializer) GenerateManifests() (map[GeneratedBuilderImagePair][]byte, error) {
+	return nil, nil
 }
 
 func (c *cliBuildInitializer) processCliArtifacts() error {

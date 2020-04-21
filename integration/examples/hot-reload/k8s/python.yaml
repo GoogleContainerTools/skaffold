@@ -22,6 +22,8 @@ spec:
       labels:
         app: python
     spec:
+      securityContext:
+        runAsUser: 1000
       containers:
       - name: python
         image: python-reload

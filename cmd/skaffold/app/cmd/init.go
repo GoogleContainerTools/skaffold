@@ -27,18 +27,22 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 )
 
+const maxFileSize = 1024 * 1024 * 512
+
 var (
-	composeFile            string
-	cliArtifacts           []string
-	cliKubernetesManifests []string
-	skipBuild              bool
-	skipDeploy             bool
-	force                  bool
-	analyze                bool
-	enableJibInit          bool
-	enableBuildpacksInit   bool
-	enableNewInitFormat    bool
-	buildpacksBuilder      string
+	composeFile              string
+	cliArtifacts             []string
+	cliKubernetesManifests   []string
+	skipBuild                bool
+	skipDeploy               bool
+	force                    bool
+	analyze                  bool
+	enableJibInit            bool
+	enableJibGradleInit      bool
+	enableBuildpacksInit     bool
+	enableNewInitFormat      bool
+	enableManifestGeneration bool
+	buildpacksBuilder        string
 )
 
 // for testing
@@ -48,8 +52,8 @@ var initEntrypoint = initializer.DoInit
 func NewCmdInit() *cobra.Command {
 	return NewCmd("init").
 		WithDescription("[alpha] Generate configuration for deploying an application").
+		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
-			f.StringVarP(&opts.ConfigurationFile, "filename", "f", "skaffold.yaml", "Filename or URL to the pipeline file")
 			f.BoolVar(&skipBuild, "skip-build", false, "Skip generating build artifacts in Skaffold config")
 			f.BoolVar(&skipDeploy, "skip-deploy", false, "Skip generating deploy stanza in Skaffold config")
 			f.MarkHidden("skip-deploy")
@@ -62,27 +66,34 @@ func NewCmdInit() *cobra.Command {
 			f.MarkHidden("XXenableNewInitFormat")
 			f.BoolVar(&enableJibInit, "XXenableJibInit", false, "")
 			f.MarkHidden("XXenableJibInit")
+			f.BoolVar(&enableJibGradleInit, "XXenableJibGradleInit", false, "")
+			f.MarkHidden("XXenableJibGradleInit")
 			f.BoolVar(&enableBuildpacksInit, "XXenableBuildpacksInit", false, "")
 			f.MarkHidden("XXenableBuildpacksInit")
 			f.StringVar(&buildpacksBuilder, "XXdefaultBuildpacksBuilder", "heroku/buildpacks", "")
 			f.MarkHidden("XXdefaultBuildpacksBuilder")
+			f.BoolVar(&enableManifestGeneration, "XXenableManifestGeneration", false, "")
+			f.MarkHidden("XXenableManifestGeneration")
 		}).
-		NoArgs(cancelWithCtrlC(context.Background(), doInit))
+		NoArgs(doInit)
 }
 
 func doInit(ctx context.Context, out io.Writer) error {
 	return initEntrypoint(ctx, out, config.Config{
-		ComposeFile:            composeFile,
-		CliArtifacts:           cliArtifacts,
-		CliKubernetesManifests: cliKubernetesManifests,
-		SkipBuild:              skipBuild,
-		SkipDeploy:             skipDeploy,
-		Force:                  force,
-		Analyze:                analyze,
-		EnableJibInit:          enableJibInit,
-		EnableBuildpacksInit:   enableBuildpacksInit,
-		EnableNewInitFormat:    enableNewInitFormat || enableBuildpacksInit || enableJibInit,
-		BuildpacksBuilder:      buildpacksBuilder,
-		Opts:                   opts,
+		ComposeFile:              composeFile,
+		CliArtifacts:             cliArtifacts,
+		CliKubernetesManifests:   cliKubernetesManifests,
+		SkipBuild:                skipBuild,
+		SkipDeploy:               skipDeploy,
+		Force:                    force,
+		Analyze:                  analyze,
+		EnableJibInit:            enableJibInit,
+		EnableJibGradleInit:      enableJibGradleInit,
+		EnableBuildpacksInit:     enableBuildpacksInit,
+		EnableNewInitFormat:      enableNewInitFormat || enableBuildpacksInit || enableJibInit,
+		EnableManifestGeneration: enableManifestGeneration,
+		BuildpacksBuilder:        buildpacksBuilder,
+		Opts:                     opts,
+		MaxFileSize:              maxFileSize,
 	})
 }

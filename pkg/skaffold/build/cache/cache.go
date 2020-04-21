@@ -18,11 +18,11 @@ package cache
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
 
@@ -75,7 +75,7 @@ func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies D
 
 	client, err := docker.NewAPIClient(runCtx)
 	if imagesAreLocal && err != nil {
-		return nil, errors.Wrap(err, "getting local Docker client")
+		return nil, fmt.Errorf("getting local Docker client: %w", err)
 	}
 
 	return &cache{
@@ -85,7 +85,7 @@ func NewCache(runCtx *runcontext.RunContext, imagesAreLocal bool, dependencies D
 		cacheFile:          cacheFile,
 		imagesAreLocal:     imagesAreLocal,
 		hashForArtifact: func(ctx context.Context, a *latest.Artifact) (string, error) {
-			return getHashForArtifact(ctx, dependencies, a, runCtx.DevMode)
+			return getHashForArtifact(ctx, dependencies, a, runCtx.IsDevMode())
 		},
 	}, nil
 }
@@ -97,7 +97,7 @@ func resolveCacheFile(cacheFile string) (string, error) {
 	}
 	home, err := homedir.Dir()
 	if err != nil {
-		return "", errors.Wrap(err, "retrieving home directory")
+		return "", fmt.Errorf("retrieving home directory: %w", err)
 	}
 	defaultFile := filepath.Join(home, constants.DefaultSkaffoldDir, constants.DefaultCacheFile)
 	return defaultFile, util.VerifyOrCreateFile(defaultFile)

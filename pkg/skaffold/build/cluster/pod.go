@@ -21,7 +21,6 @@ import (
 	"sort"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -36,7 +35,7 @@ import (
 func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v1.Pod, error) {
 	args, err := kanikoArgs(artifact, tag, b.insecureRegistries)
 	if err != nil {
-		return nil, errors.Wrap(err, "building args list")
+		return nil, fmt.Errorf("building args list: %w", err)
 	}
 
 	vm := v1.VolumeMount{
@@ -229,7 +228,7 @@ func kanikoArgs(artifact *latest.KanikoArtifact, tag string, insecureRegistries 
 
 	buildArgs, err := docker.EvaluateBuildArgs(artifact.BuildArgs)
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to evaluate build args")
+		return nil, fmt.Errorf("unable to evaluate build args: %w", err)
 	}
 
 	if buildArgs != nil {

@@ -17,10 +17,10 @@ limitations under the License.
 package tag
 
 import (
+	"errors"
+	"fmt"
 	"strings"
 	"text/template"
-
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
@@ -35,7 +35,7 @@ type envTemplateTagger struct {
 func NewEnvTemplateTagger(t string) (Tagger, error) {
 	tmpl, err := util.ParseEnvTemplate(t)
 	if err != nil {
-		return nil, errors.Wrap(err, "parsing template")
+		return nil, fmt.Errorf("parsing template: %w", err)
 	}
 
 	return &envTemplateTagger{

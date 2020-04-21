@@ -25,13 +25,16 @@ LICENSES=${BIN}/go-licenses
 TMP_DIR=$(mktemp -d)
 trap "rm -rf $TMP_DIR" EXIT
 
-if ! [ -x "$(command -v ${LICENSES})" ]; then
+if [ -x "$(command -v go-licenses)" ]; then
+    # use go-licenses binary if it's installed on user's path
+    LICENSES=go-licenses
+elif ! [ -x "$(command -v ${LICENSES})" ]; then
     # See https://github.com/golang/go/issues/30515
     # Also can't be easily installed from a vendor folder because it relies on non-go files
     # from a dependency.
     echo "Installing go-licenses"
     pushd $(mktemp -d)
-    go mod init tmp; GOBIN=${BIN} go get -mod='' github.com/google/go-licenses
+    go mod init tmp; GOBIN=${BIN} go get github.com/google/go-licenses
     popd
 fi
 

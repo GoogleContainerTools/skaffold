@@ -19,24 +19,27 @@ package deploy
 import (
 	"bytes"
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/pkg/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	utilpointer "k8s.io/utils/pointer"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGetDeployments(t *testing.T) {
-	labeller := NewLabeller("")
+	labeller := NewLabeller(config.SkaffoldOptions{})
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment
@@ -69,8 +72,8 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
-				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
+				resource.NewDeployment("dep1", "test", 10*time.Second),
+				resource.NewDeployment("dep2", "test", 20*time.Second),
 			},
 		},
 		{
@@ -89,7 +92,7 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(300)*time.Second),
+				resource.NewDeployment("dep1", "test", 300*time.Second),
 			},
 		},
 		{
@@ -116,8 +119,26 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(100)*time.Second),
-				resource.NewDeployment("dep2", "test", time.Duration(200)*time.Second),
+				resource.NewDeployment("dep1", "test", 100*time.Second),
+				resource.NewDeployment("dep2", "test", 200*time.Second),
+			},
+		},
+		{
+			description: "multiple deployments with progress deadline set to max",
+			deps: []*appsv1.Deployment{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "dep1",
+						Namespace: "test",
+						Labels: map[string]string{
+							RunIDLabel: labeller.runID,
+						},
+					},
+					Spec: appsv1.DeploymentSpec{ProgressDeadlineSeconds: utilpointer.Int32Ptr(600)},
+				},
+			},
+			expected: []Resource{
+				resource.NewDeployment("dep1", "test", 200*time.Second),
 			},
 		},
 		{
@@ -149,7 +170,7 @@ func TestGetDeployments(t *testing.T) {
 				},
 			},
 			expected: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(100)*time.Second),
+				resource.NewDeployment("dep1", "test", 100*time.Second),
 			},
 		},
 		{
@@ -193,7 +214,7 @@ func TestGetDeployments(t *testing.T) {
 				objs[i] = dep
 			}
 			client := fakekubeclientset.NewSimpleClientset(objs...)
-			actual, err := getDeployments(client, "test", labeller, time.Duration(200)*time.Second)
+			actual, err := getDeployments(client, "test", labeller, 200*time.Second)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
 				cmp.AllowUnexported(resource.Base{}, resource.Deployment{}, resource.Status{}))
 		})
@@ -207,7 +228,7 @@ type mockResource struct {
 }
 
 func (m *mockResource) UpdateStatus(s string, err error) {
-	err = errors.Cause(err)
+	err = errors.Unwrap(err)
 	if err == context.DeadlineExceeded {
 		m.inErr = true
 	}
@@ -280,6 +301,7 @@ func TestGetDeployStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			event.InitializeState(latest.BuildConfig{})
 			err := getSkaffoldDeployStatus(test.counter)
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
@@ -292,30 +314,48 @@ func TestGetDeployStatus(t *testing.T) {
 func TestPrintSummaryStatus(t *testing.T) {
 	tests := []struct {
 		description string
+		namespace   string
+		deployment  string
 		pending     int32
 		err         error
 		expected    string
 	}{
 		{
 			description: "no deployment left and current is in success",
+			namespace:   "test",
+			deployment:  "dep",
 			pending:     0,
 			err:         nil,
 			expected:    " - test:deployment/dep is ready.\n",
 		},
 		{
+			description: "default namespace",
+			namespace:   "default",
+			deployment:  "dep",
+			pending:     0,
+			err:         nil,
+			expected:    " - deployment/dep is ready.\n",
+		},
+		{
 			description: "no deployment left and current is in error",
+			namespace:   "test",
+			deployment:  "dep",
 			pending:     0,
 			err:         errors.New("context deadline expired"),
 			expected:    " - test:deployment/dep failed. Error: context deadline expired.\n",
 		},
 		{
 			description: "more than 1 deployment left and current is in success",
+			namespace:   "test",
+			deployment:  "dep",
 			pending:     4,
 			err:         nil,
 			expected:    " - test:deployment/dep is ready. [4/10 deployment(s) still pending]\n",
 		},
 		{
 			description: "more than 1 deployment left and current is in error",
+			namespace:   "test",
+			deployment:  "dep",
 			pending:     8,
 			err:         errors.New("context deadline expired"),
 			expected:    " - test:deployment/dep failed. [8/10 deployment(s) still pending] Error: context deadline expired.\n",
@@ -329,7 +369,7 @@ func TestPrintSummaryStatus(t *testing.T) {
 			rc.deployments.pending = test.pending
 			printStatusCheckSummary(
 				out,
-				withStatus(resource.NewDeployment("dep", "test", 0), "", test.err),
+				withStatus(resource.NewDeployment(test.deployment, test.namespace, 0), "", test.err),
 				*rc,
 			)
 			t.CheckDeepEqual(test.expected, out.String())
@@ -380,14 +420,14 @@ func TestPrintStatus(t *testing.T) {
 					nil,
 				),
 			},
-			expectedOut: " - test:deployment/r2 pending\n",
+			expectedOut: " - test:deployment/r2: pending\n",
 		},
 		{
 			description: "multiple resources 1 not complete and retry-able error",
 			rs: []Resource{
 				withStatus(
 					resource.NewDeployment("r1", "test", 1),
-					"deployment successfully rolled out",
+					"eployment successfully rolled out",
 					nil,
 				),
 				withStatus(
@@ -396,7 +436,7 @@ func TestPrintStatus(t *testing.T) {
 					resource.ErrKubectlConnection,
 				),
 			},
-			expectedOut: " - test:deployment/r2 kubectl connection error\n",
+			expectedOut: " - test:deployment/r2: kubectl connection error\n",
 		},
 	}
 
@@ -494,19 +534,19 @@ func TestGetStatusCheckDeadline(t *testing.T) {
 		{
 			description: "no value specified",
 			deps: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
-				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
+				resource.NewDeployment("dep1", "test", 10*time.Second),
+				resource.NewDeployment("dep2", "test", 20*time.Second),
 			},
-			expected: time.Duration(20) * time.Second,
+			expected: 20 * time.Second,
 		},
 		{
 			description: "value specified less than all other resources",
 			value:       5,
 			deps: []Resource{
-				resource.NewDeployment("dep1", "test", time.Duration(10)*time.Second),
-				resource.NewDeployment("dep2", "test", time.Duration(20)*time.Second),
+				resource.NewDeployment("dep1", "test", 10*time.Second),
+				resource.NewDeployment("dep2", "test", 20*time.Second),
 			},
-			expected: time.Duration(5) * time.Second,
+			expected: 5 * time.Second,
 		},
 	}
 	for _, test := range tests {

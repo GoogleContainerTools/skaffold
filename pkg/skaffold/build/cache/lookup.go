@@ -54,7 +54,7 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 func (c *cache) lookup(ctx context.Context, a *latest.Artifact, tag string) cacheDetails {
 	hash, err := c.hashForArtifact(ctx, a)
 	if err != nil {
-		return failed{err: fmt.Errorf("getting hash for artifact %s: %v", a.ImageName, err)}
+		return failed{err: fmt.Errorf("getting hash for artifact %q: %s", a.ImageName, err)}
 	}
 
 	entry, cacheHit := c.artifactCache[hash]

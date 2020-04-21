@@ -67,14 +67,9 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 	return false
 }
 
-func (t nodeTransformer) RuntimeSupportImage() string {
-	// no additional support required
-	return ""
-}
-
 // Apply configures a container definition for NodeJS Chrome V8 Inspector.
 // Returns a simple map describing the debug configuration details.
-func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *ContainerDebugConfiguration {
+func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for node.js debugging", container.Name)
 
 	// try to find existing `--inspect` command
@@ -96,17 +91,16 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 			container.Args = rewriteNpmCommandLine(config.arguments, *spec)
 
 		default:
-			logrus.Warnf("Skipping %q as does not appear to invoke node", container.Name)
-			return nil
+			container.Env = rewriteWithNodeOptions(config.env, *spec)
 		}
 	}
 
 	container.Ports = exposePort(container.Ports, "devtools", spec.port)
 
-	return &ContainerDebugConfiguration{
+	return ContainerDebugConfiguration{
 		Runtime: "nodejs",
 		Ports:   map[string]uint32{"devtools": uint32(spec.port)},
-	}
+	}, "", nil
 }
 
 func retrieveNodeInspectSpec(config imageConfiguration) *inspectSpec {
@@ -205,4 +199,20 @@ func rewriteNpmCommandLine(commandLine []string, spec inspectSpec) []string {
 		commandLine = append(commandLine, newOption)
 	}
 	return commandLine
+}
+
+func rewriteWithNodeOptions(env map[string]string, spec inspectSpec) []v1.EnvVar {
+	found := false
+	var vars []v1.EnvVar
+	for k, v := range env {
+		if k == "NODE_OPTIONS" {
+			found = true
+			v = v + " " + spec.String()
+		}
+		vars = append(vars, v1.EnvVar{Name: k, Value: v})
+	}
+	if !found {
+		vars = append(vars, v1.EnvVar{Name: "NODE_OPTIONS", Value: spec.String()})
+	}
+	return vars
 }

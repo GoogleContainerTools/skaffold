@@ -17,10 +17,10 @@ limitations under the License.
 package generatepipeline
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 

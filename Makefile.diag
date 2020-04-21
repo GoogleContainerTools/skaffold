@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 GOOS ?= $(shell go env GOOS)
-GOARCH = amd64
+GOARCH ?= amd64
 BUILD_DIR ?= ./out
 ORG := github.com/GoogleContainerTools
 PROJECT := diag
@@ -20,11 +20,6 @@ REPOPATH ?= $(ORG)/skaffold
 VERSION_PACKAGE = $(REPOPATH)/pkg/diag/version
 
 TEST_PACKAGES := $(shell go list ./pkg/diag/...)
-
-# Force using Go Modules and always read the dependencies from
-# the `vendor` folder.
-export GO111MODULE = on
-export GOFLAGS = -mod=vendor
 
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)

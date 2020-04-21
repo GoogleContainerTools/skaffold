@@ -1214,7 +1214,6 @@
           ]
         },
         "value": {
-          "type": "object",
           "description": "value to apply. Can be any portion of yaml.",
           "x-intellij-html-description": "value to apply. Can be any portion of yaml."
         }
@@ -1581,7 +1580,7 @@
           "x-intellij-html-description": "name of the Kubernetes resource to port forward."
         },
         "resourceType": {
-          "$ref": "#/definitions/ResourceType",
+          "type": "string",
           "description": "Kubernetes type that should be port forwarded. Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.",
           "x-intellij-html-description": "Kubernetes type that should be port forwarded. Acceptable resource types include: <code>Service</code>, <code>Pod</code> and Controller resource type that has a pod spec: <code>ReplicaSet</code>, <code>ReplicationController</code>, <code>Deployment</code>, <code>StatefulSet</code>, <code>DaemonSet</code>, <code>Job</code>, <code>CronJob</code>."
         }

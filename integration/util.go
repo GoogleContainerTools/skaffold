@@ -49,7 +49,7 @@ func Run(t *testing.T, dir, command string, args ...string) {
 }
 
 // SetupNamespace creates a Kubernetes namespace to run a test.
-func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient, func()) {
+func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient) {
 	client, err := pkgkubernetes.Client()
 	if err != nil {
 		t.Fatalf("Test setup error: getting Kubernetes client: %s", err)
@@ -72,9 +72,11 @@ func SetupNamespace(t *testing.T) (*v1.Namespace, *NSKubernetesClient, func()) {
 		ns:     ns.Name,
 	}
 
-	return ns, nsClient, func() {
+	t.Cleanup(func() {
 		client.CoreV1().Namespaces().Delete(ns.Name, &metav1.DeleteOptions{})
-	}
+	})
+
+	return ns, nsClient
 }
 
 // NSKubernetesClient wraps a Kubernetes Client for a given namespace.

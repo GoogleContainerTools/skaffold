@@ -37,20 +37,11 @@ type Validatable interface {
 // Convertible indicates that a particular type supports conversions to/from
 // "higher" versions of the same type.
 type Convertible interface {
-	// ConvertUp up-converts the receiver into `to`.
-	ConvertUp(ctx context.Context, to Convertible) error
+	// ConvertTo converts the receiver into `to`.
+	ConvertTo(ctx context.Context, to Convertible) error
 
-	// ConvertDown down-converts from `from` into the receiver.
-	ConvertDown(ctx context.Context, from Convertible) error
-}
-
-// Immutable indicates that a particular type has fields that should
-// not change after creation.
-// DEPRECATED: Use WithinUpdate / GetBaseline from within Validatable instead.
-type Immutable interface {
-	// CheckImmutableFields checks that the current instance's immutable
-	// fields haven't changed from the provided original.
-	CheckImmutableFields(ctx context.Context, original Immutable) *FieldError
+	// ConvertFrom converts `from` into the receiver.
+	ConvertFrom(ctx context.Context, from Convertible) error
 }
 
 // Listable indicates that a particular type can be returned via the returned

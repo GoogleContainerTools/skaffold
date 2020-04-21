@@ -22,8 +22,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2alpha4"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v2beta2"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -598,6 +598,10 @@ type Sync struct {
 	// The container destination is inferred by the builder.
 	// Currently only available for docker artifacts.
 	Infer []string `yaml:"infer,omitempty" yamltags:"oneOf=sync"`
+
+	// Auto delegates discovery of sync rules to the build system.
+	// Currently only available for jib.
+	Auto *Auto `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
 }
 
 // SyncRule specifies which local files to sync to remote folders.
@@ -616,6 +620,9 @@ type SyncRule struct {
 	// For example: `"css/"`
 	Strip string `yaml:"strip,omitempty"`
 }
+
+// Auto cannot be customized.
+type Auto struct{}
 
 // Profile is used to override any `build`, `test` or `deploy` configuration.
 type Profile struct {

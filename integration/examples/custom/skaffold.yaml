@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2alpha4
+apiVersion: skaffold/v2beta2
 kind: Config
 build:
   artifacts:
@@ -7,4 +7,5 @@ build:
       buildCommand: ./build.sh
       dependencies:
         paths:
-        - .
+        - "go.mod"
+        - "**.go"

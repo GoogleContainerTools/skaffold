@@ -18,10 +18,11 @@ package runner
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -124,6 +125,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	r.createForwarder(out)
 	defer r.forwarderManager.Stop()
 
+	r.createContainerManager(out)
+	defer r.debugContainerManager.Stop()
+
 	// Watch artifacts
 	start := time.Now()
 	color.Default.Fprintln(out, "Listing files to watch...")
@@ -145,7 +149,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 					return build.DependenciesForArtifact(ctx, artifact, r.runCtx.InsecureRegistries)
 				},
 				func(e filemon.Events) {
-					s, err := sync.NewItem(artifact, e, r.builds, r.runCtx.InsecureRegistries)
+					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx.InsecureRegistries)
 					switch {
 					case err != nil:
 						logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
@@ -156,7 +160,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 					}
 				},
 			); err != nil {
-				return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
+				return fmt.Errorf("watching files for artifact %q: %w", artifact.ImageName, err)
 			}
 		}
 	}
@@ -166,7 +170,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		r.tester.TestDependencies,
 		func(filemon.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
-		return errors.Wrap(err, "watching test files")
+		return fmt.Errorf("watching test files: %w", err)
 	}
 
 	// Watch deployment configuration
@@ -174,7 +178,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		r.deployer.Dependencies,
 		func(filemon.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
-		return errors.Wrap(err, "watching files for deployer")
+		return fmt.Errorf("watching files for deployer: %w", err)
 	}
 
 	// Watch Skaffold configuration
@@ -182,14 +186,19 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		func() ([]string, error) { return []string{r.runCtx.Opts.ConfigurationFile}, nil },
 		func(filemon.Events) { r.changeSet.needsReload = true },
 	); err != nil {
-		return errors.Wrapf(err, "watching skaffold configuration %s", r.runCtx.Opts.ConfigurationFile)
+		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.Opts.ConfigurationFile, err)
 	}
 
 	logrus.Infoln("List generated in", time.Since(start))
 
+	// Init Sync State
+	if err := sync.Init(ctx, artifacts); err != nil {
+		return fmt.Errorf("exiting dev mode because initializing sync state failed: %w", err)
+	}
+
 	// First build
 	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {
-		return errors.Wrap(err, "exiting dev mode because first build failed")
+		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
 	}
 
 	// Logs should be retrieved up to just before the deploy
@@ -197,17 +206,20 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// First deploy
 	if err := r.Deploy(ctx, out, r.builds); err != nil {
-		return errors.Wrap(err, "exiting dev mode because first deploy failed")
+		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
 
 	if err := r.forwarderManager.Start(ctx); err != nil {
 		logrus.Warnln("Error starting port forwarding:", err)
 	}
+	if err := r.debugContainerManager.Start(ctx); err != nil {
+		logrus.Warnln("Error starting debug container notification:", err)
+	}
 
 	// Start printing the logs after deploy is finished
 	if r.runCtx.Opts.TailDev {
 		if err := r.logger.Start(ctx); err != nil {
-			return errors.Wrap(err, "starting logger")
+			return fmt.Errorf("starting logger: %w", err)
 		}
 	}
 

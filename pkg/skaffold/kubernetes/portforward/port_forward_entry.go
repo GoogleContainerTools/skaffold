@@ -19,6 +19,7 @@ package portforward
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -59,10 +60,10 @@ func (p *portForwardEntry) key() string {
 	if p.automaticPodForwarding {
 		return fmt.Sprintf("%s-%s-%s-%s-%d", p.ownerReference, p.containerName, p.resource.Namespace, p.portName, p.resource.Port)
 	}
-	return fmt.Sprintf("%s-%s-%s-%d", p.resource.Type, p.resource.Name, p.resource.Namespace, p.resource.Port)
+	return fmt.Sprintf("%s-%s-%s-%d", strings.ToLower(string(p.resource.Type)), p.resource.Name, p.resource.Namespace, p.resource.Port)
 }
 
 // String is a utility function that returns the port forward entry as a user-readable string
 func (p *portForwardEntry) String() string {
-	return fmt.Sprintf("%s-%s-%s-%d", p.resource.Type, p.resource.Name, p.resource.Namespace, p.resource.Port)
+	return fmt.Sprintf("%s-%s-%s-%d", strings.ToLower(string(p.resource.Type)), p.resource.Name, p.resource.Namespace, p.resource.Port)
 }

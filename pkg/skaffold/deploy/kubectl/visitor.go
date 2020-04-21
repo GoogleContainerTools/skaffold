@@ -17,9 +17,21 @@ limitations under the License.
 package kubectl
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"gopkg.in/yaml.v2"
 )
+
+// recursivelyTransformableKinds whitelists kinds that can be transformed recursively.
+var recursivelyTransformableKinds = map[string]bool{
+	"Pod":         true,
+	"ReplicaSet":  true,
+	"StatefulSet": true,
+	"Deployment":  true,
+	"DaemonSet":   true,
+	"Job":         true,
+	"CronJob":     true,
+}
 
 // FieldVisitor represents the aggregation/transformation that should be performed on each traversed field.
 type FieldVisitor interface {
@@ -35,7 +47,7 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 	for _, manifest := range *l {
 		m := make(map[interface{}]interface{})
 		if err := yaml.Unmarshal(manifest, &m); err != nil {
-			return nil, errors.Wrap(err, "reading Kubernetes YAML")
+			return nil, fmt.Errorf("reading Kubernetes YAML: %w", err)
 		}
 
 		if len(m) == 0 {
@@ -46,7 +58,7 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 
 		updatedManifest, err := yaml.Marshal(m)
 		if err != nil {
-			return nil, errors.Wrap(err, "marshalling yaml")
+			return nil, fmt.Errorf("marshalling yaml: %w", err)
 		}
 
 		updated = append(updated, updatedManifest)
@@ -58,7 +70,7 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 // traverseManifest traverses all transformable fields contained within the manifest.
 func traverseManifestFields(manifest map[interface{}]interface{}, visitor FieldVisitor) {
 	kind := manifest["kind"]
-	if kind != "CustomResourceDefinition" {
+	if k, ok := kind.(string); ok && recursivelyTransformableKinds[k] {
 		visitor = &recursiveVisitorDecorator{visitor}
 	}
 	visitFields(manifest, visitor)

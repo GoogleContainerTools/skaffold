@@ -13,11 +13,11 @@
 # limitations under the License.
 
 # This base image has to be updated manually after running `make build_deps`
-FROM gcr.io/k8s-skaffold/build_deps:0c78248757f1753c4c64a791160d5e2fdd35f157 as builder
+FROM gcr.io/k8s-skaffold/build_deps:28bbb2cbb0f23cc7a8af602c0513b3bcd74aa911 as builder
 WORKDIR /skaffold
 COPY . .
 
 FROM builder as release
 ARG VERSION
-RUN make clean && make out/skaffold-linux-amd64 VERSION=$VERSION && mv out/skaffold-linux-amd64 /usr/bin/skaffold
+RUN make clean out/skaffold VERSION=$VERSION && mv out/skaffold /usr/bin/skaffold
 RUN skaffold credits -d /THIRD_PARTY_NOTICES

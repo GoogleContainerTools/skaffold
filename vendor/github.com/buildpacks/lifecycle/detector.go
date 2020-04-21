@@ -21,25 +21,6 @@ const (
 
 var ErrFail = errors.New("no buildpacks participating")
 
-type Buildpack struct {
-	ID       string `toml:"id" json:"id"`
-	Version  string `toml:"version" json:"version"`
-	Optional bool   `toml:"optional,omitempty" json:"optional,omitempty"`
-}
-
-func (bp Buildpack) dir() string {
-	return escapeID(bp.ID)
-}
-
-func (bp Buildpack) String() string {
-	return bp.ID + "@" + bp.Version
-}
-
-func (bp Buildpack) noOpt() Buildpack {
-	bp.Optional = false
-	return bp
-}
-
 type BuildPlan struct {
 	Entries []BuildPlanEntry `toml:"entries"`
 }
@@ -76,20 +57,6 @@ type DetectConfig struct {
 	BuildpacksDir string
 	Logger        Logger
 	runs          *sync.Map
-}
-
-func (bp Buildpack) lookup(buildpacksDir string) (*buildpackTOML, error) {
-	bpTOML := buildpackTOML{}
-	bpPath, err := filepath.Abs(filepath.Join(buildpacksDir, bp.dir(), bp.Version))
-	if err != nil {
-		return nil, err
-	}
-	tomlPath := filepath.Join(bpPath, "buildpack.toml")
-	if _, err := toml.DecodeFile(tomlPath, &bpTOML); err != nil {
-		return nil, err
-	}
-	bpTOML.Path = bpPath
-	return &bpTOML, nil
 }
 
 func (c *DetectConfig) process(done []Buildpack) ([]Buildpack, []BuildPlanEntry, error) {
@@ -235,12 +202,18 @@ func (bp *buildpackTOML) Detect(c *DetectConfig) detectRun {
 		return detectRun{Code: -1, Err: err}
 	}
 	defer os.RemoveAll(planDir)
+
 	planPath := filepath.Join(planDir, "plan.toml")
 	if err := ioutil.WriteFile(planPath, nil, 0777); err != nil {
 		return detectRun{Code: -1, Err: err}
 	}
+
 	out := &bytes.Buffer{}
-	cmd := exec.Command(filepath.Join(bp.Path, "bin", "detect"), platformDir, planPath)
+	cmd := exec.Command(
+		filepath.Join(bp.Path, "bin", "detect"),
+		platformDir,
+		planPath,
+	)
 	cmd.Dir = appDir
 	cmd.Stdout = out
 	cmd.Stderr = out

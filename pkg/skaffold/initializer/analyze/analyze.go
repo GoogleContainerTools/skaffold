@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/karrick/godirwalk"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
@@ -42,6 +43,7 @@ type ProjectAnalysis struct {
 	configAnalyzer  *skaffoldConfigAnalyzer
 	kubeAnalyzer    *kubeAnalyzer
 	builderAnalyzer *builderAnalyzer
+	maxFileSize     int64
 }
 
 func (a *ProjectAnalysis) Builders() []build.InitBuilder {
@@ -60,13 +62,14 @@ func (a *ProjectAnalysis) analyzers() []analyzer {
 	}
 }
 
-// newAnalysis sets up the analysis of the directory based on the initializer configuration
+// NewAnalyzer sets up the analysis of the directory based on the initializer configuration
 func NewAnalyzer(c config.Config) *ProjectAnalysis {
 	return &ProjectAnalysis{
 		kubeAnalyzer: &kubeAnalyzer{},
 		builderAnalyzer: &builderAnalyzer{
 			findBuilders:         !c.SkipBuild,
 			enableJibInit:        c.EnableJibInit,
+			enableJibGradleInit:  c.EnableJibGradleInit,
 			enableBuildpacksInit: c.EnableBuildpacksInit,
 			buildpacksBuilder:    c.BuildpacksBuilder,
 		},
@@ -75,25 +78,28 @@ func NewAnalyzer(c config.Config) *ProjectAnalysis {
 			analyzeMode:  c.Analyze,
 			targetConfig: c.Opts.ConfigurationFile,
 		},
+		maxFileSize: c.MaxFileSize,
 	}
 }
 
-// analyze recursively walks a directory and notifies the analyzers of files and enterDir and exitDir events
+// Analyze recursively walks a directory and notifies the analyzers of files and enterDir and exitDir events
 // at the end of the analyze function the analysis struct's analyzers should contain the state that we can
 // use to do further computation.
 func (a *ProjectAnalysis) Analyze(dir string) error {
 	for _, analyzer := range a.analyzers() {
 		analyzer.enterDir(dir)
 	}
+
 	dirents, err := godirwalk.ReadDirents(dir, nil)
 	if err != nil {
 		return err
 	}
 
-	var subdirectories []*godirwalk.Dirent
-	//this is for deterministic results - given the same directory structure
-	//init should have the same results
+	// This is for deterministic results - given the same directory structure
+	// init should have the same results.
 	sort.Sort(dirents)
+
+	var subdirectories []*godirwalk.Dirent
 
 	// Traverse files
 	for _, file := range dirents {
@@ -108,6 +114,16 @@ func (a *ProjectAnalysis) Analyze(dir string) error {
 		}
 
 		filePath := filepath.Join(dir, file.Name())
+		stat, err := os.Stat(filePath)
+		if err != nil {
+			// this is highly unexpected but in case there could be a racey situation where
+			// the file gets removed right between ReadDirents and Stat
+			continue
+		}
+		if a.maxFileSize > 0 && stat.Size() > a.maxFileSize {
+			logrus.Debugf("skipping %s as it is larger (%d) than max allowed size %d", filePath, stat.Size(), a.maxFileSize)
+			continue
+		}
 		for _, analyzer := range a.analyzers() {
 			// to make skaffold.yaml more portable across OS-es we should generate always / based filePaths
 			filePath = strings.ReplaceAll(filePath, string(os.PathSeparator), "/")

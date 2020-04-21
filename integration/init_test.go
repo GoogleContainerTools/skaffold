@@ -43,13 +43,53 @@ func TestInitCompose(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
-			ns, _, deleteNs := SetupNamespace(t.T)
-			defer deleteNs()
+			ns, _ := SetupNamespace(t.T)
 
 			initArgs := append([]string{"--force"}, test.args...)
 			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
 
 			checkGeneratedConfig(t, test.dir)
+
+			// Make sure the skaffold yaml and the kubernetes manifests created by kompose are ok
+			skaffold.Run().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
+		})
+	}
+}
+
+func TestInitManifestGeneration(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
+	tests := []struct {
+		name                  string
+		dir                   string
+		args                  []string
+		expectedManifestPaths []string
+	}{
+		{
+			name:                  "hello",
+			dir:                   "testdata/init/hello",
+			args:                  []string{"--XXenableManifestGeneration"},
+			expectedManifestPaths: []string{"deployment.yaml"},
+		},
+		// TODO(nkubala): add this back when the --force flag is fixed
+		// {
+		// 	name:                  "microservices",
+		// 	dir:                   "testdata/init/microservices",
+		// 	args:                  []string{"--XXenableManifestGeneration"},
+		// 	expectedManifestPaths: []string{"leeroy-web/deployment.yaml", "leeroy-app/deployment.yaml"},
+		// },
+	}
+
+	for _, test := range tests {
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			ns, _ := SetupNamespace(t.T)
+
+			initArgs := append([]string{"--force"}, test.args...)
+			skaffold.Init(initArgs...).InDir(test.dir).WithConfig("skaffold.yaml.out").RunOrFail(t.T)
+
+			checkGeneratedManifests(t, test.dir, test.expectedManifestPaths)
 
 			// Make sure the skaffold yaml and the kubernetes manifests created by kompose are ok
 			skaffold.Run().InDir(test.dir).WithConfig("skaffold.yaml.out").InNs(ns.Name).RunOrFail(t.T)
@@ -64,4 +104,15 @@ func checkGeneratedConfig(t *testutil.T, dir string) {
 	output, err := ioutil.ReadFile(filepath.Join(dir, "skaffold.yaml.out"))
 	t.CheckNoError(err)
 	t.CheckDeepEqual(string(expectedOutput), string(output))
+}
+
+func checkGeneratedManifests(t *testutil.T, dir string, manifestPaths []string) {
+	for _, path := range manifestPaths {
+		expectedOutput, err := ioutil.ReadFile(filepath.Join(dir, path+".expected"))
+		t.CheckNoError(err)
+
+		output, err := ioutil.ReadFile(filepath.Join(dir, path))
+		t.CheckNoError(err)
+		t.CheckDeepEqual(string(expectedOutput), string(output))
+	}
 }

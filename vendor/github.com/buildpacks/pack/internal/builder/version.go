@@ -18,6 +18,14 @@ func (v *Version) String() string {
 	return v.Version.String()
 }
 
+func (v *Version) Equal(other *Version) bool {
+	if other != nil {
+		return v.Version.Equal(&other.Version)
+	}
+
+	return false
+}
+
 // MarshalText makes Version satisfy the encoding.TextMarshaler interface.
 func (v *Version) MarshalText() ([]byte, error) {
 	return []byte(v.Version.Original()), nil

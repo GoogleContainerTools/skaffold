@@ -1,102 +1,82 @@
 We're glad you are interested in contributing to this project. We hope that this
 document helps you get started.
 
-If something is missing, incorrect, or made irrelevant please feel free to make
-a PR to keep it up-to-date.
+## Policies
 
-## Prerequisites
+This repository adheres to the following project policies:
 
-- [Go](https://golang.org/dl/)
-    - including [Git](https://git-scm.com/)
-- [Docker](https://www.docker.com/)
+- [Code of Conduct][code-of-conduct] - How we should act with each other.
+- [Contributing][contributing] - General contributing standards.
+- [Security][security] - Reporting security concerns.
+- [Support][support] - Getting support.
 
-## Development
+## Contributing to this repository
 
-### Building
+### Development
 
-To build pack:
-```
-make build
-```
+Aside from the policies above, you may find [DEVELOPMENT.md](DEVELOPMENT.md) to provide specific helpful detail
+to assist you while developing in this repository.
 
-This will output the binary to the directory `out/`.
+#### Preparing for a Pull Request
 
-Options:
+After making all the changes but before creating a [Pull Request][pull-request-process], you should run
+`make prepare-for-pr`. This command runs a set of other tasks that resolve or report any simple issues that would
+otherwise arise during the pull request review process.
 
-| ENV_VAR      | Description                                                            | Default |
-|--------------|------------------------------------------------------------------------|---------|
-| GOCMD        | Change the `go` executable. For example, [richgo][rgo] for testing.    | go      |
-| PACK_BIN     | Change the name or location of the binary relative to `out/`.          | pack    |
-| PACK_VERSION | Tell `pack` what version to consider itself                            | `dev`   |
+### User Acceptance on a Pull Request
 
-[rgo]: https://github.com/kyoh86/richgo
+Running user acceptance on a pull request is just as critical as reviewing the code changes. It allows you, a contributor and user, direct insight into how a feature works and allows for you to provide feedback into what could be improved.
 
-_NOTE: This project uses [go modules](https://github.com/golang/go/wiki/Modules) for dependency management._
+#### Downloading PR binaries
 
-### Testing
+1. On GitHub's Pull Request view, click on the **Checks** tab.
+2. On the top-right, click **Artifacts**.
+3. Click on the zip file for the platform you are running.
 
-To run unit and integration tests:
+#### Setup
 
-```bash
-make unit
-```
-
-To run acceptance tests:
-```bash
-make acceptance
-```
-
-Alternately, to run all tests:
-```bash
-make test
-```
-
-### Formatting
-
-To format the code:
-
-```bash
-make format
-```
-
-### Verification
-
-To verify formatting and vet:
-```bash
-make verify
-```
-
-## Pull Requests
-
-1. **[Fork]((https://help.github.com/en/articles/fork-a-repo)) the repo**
-2. **Code, Test, Commit...**
-
-    _Don't forget utilize the convenient make functions above._
-
-3. **Preparing a Branch**
-
-    We prefer to have PRs that are encompassed in a single commit. This might
-    require that you execute some of these commands:
-
-    If you are no up-to-date with master:
-    ```bash
-    # rebase from master (applies your changes on top of master)
-    git pull -r origin master
+1. Unzip binary:
+    ```shell
+    unzip pack-{{PLATFORM}}.zip
+    ```
+2. Enable execution of binary _(macOS/Linux only)_:
+    ```shell
+    chmod +x ./pack
     ```
 
-    If you made more than one commit:
-    ```bash
-    # squash multiple commits, if applicable
-    # set the top most commit to `pick` and all subsequent to `squash`
-    git rebase -i origin/master
-    ```
+    > For macOS, you might need to allow your terminal to be able to execute applications from unverified developers. See [Apple Support](https://support.apple.com/en-us/HT202491).
+    > 
+    > A quick solution is to add exception to the downloaded pack binary: `sudo spctl --add -v ./pack`
+3. You should now be able to execute pack via:
+    - macOS: `./pack`
+    - Linux: `./pack`
+    - Windows: `pack.exe`
 
-    Another requirement is that you sign your work. See [DCO](https://probot.github.io/apps/dco/) for more details.
-    ```bash
-    git commit --amend --signoff
-    ```
 
-4. **Submit a Pull Request**
+#### Writing Feedback
 
-    Submitting the pull request is done in [GitHub](https://github.com/buildpacks/pack/compare/) by selecting
-    your branch as the `compare` branch.
+When providing feedback please provide a succinct title, a summary of the observation, what you expected, and some output or screenshots.
+
+Here's a simple template you can use:
+
+```text
+
+#### <!-- title -->
+
+<!-- a summary of what you observed -->
+
+###### Expected
+
+<!-- describe what you expected -->
+
+###### Output
+
+<!-- output / logs / screenshots -->
+```
+
+
+[code-of-conduct]: https://github.com/buildpacks/.github/blob/master/CODE_OF_CONDUCT.md
+[contributing]: https://github.com/buildpacks/.github/blob/master/CONTRIBUTING.md
+[security]: https://github.com/buildpacks/.github/blob/master/SECURITY.md
+[support]: https://github.com/buildpacks/.github/blob/master/SUPPORT.md
+[pull-request-process]: https://github.com/buildpacks/.github/blob/master/CONTRIBUTIONS.md#pull-request-process

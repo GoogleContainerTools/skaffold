@@ -73,13 +73,9 @@ func (t dlvTransformer) IsApplicable(config imageConfiguration) bool {
 	return false
 }
 
-func (t dlvTransformer) RuntimeSupportImage() string {
-	return "go"
-}
-
 // Apply configures a container definition for Go with Delve.
-// Returns a simple map describing the debug configuration details.
-func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) *ContainerDebugConfiguration {
+// Returns the debug configuration details, with the "go" support image
+func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for Go/Delve debugging", container.Name)
 
 	// try to find existing `dlv` command
@@ -96,17 +92,16 @@ func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration
 			container.Args = rewriteDlvCommandLine(config.arguments, *spec, container.Args)
 
 		default:
-			logrus.Warnf("Skipping %q as does not appear to be Go-based", container.Name)
-			return nil
+			return ContainerDebugConfiguration{}, "", fmt.Errorf("container %q has no command-line", container.Name)
 		}
 	}
 
 	container.Ports = exposePort(container.Ports, "dlv", int32(spec.port))
 
-	return &ContainerDebugConfiguration{
+	return ContainerDebugConfiguration{
 		Runtime: "go",
 		Ports:   map[string]uint32{"dlv": uint32(spec.port)},
-	}
+	}, "go", nil
 }
 
 func retrieveDlvSpec(config imageConfiguration) *dlvSpec {

@@ -38,8 +38,7 @@ func TestBuildKanikoInsecureRegistry(t *testing.T) {
 		t.Skip("skipping GCP integration test")
 	}
 
-	ns, client, deleteNs := SetupNamespace(t)
-	defer deleteNs()
+	ns, client := SetupNamespace(t)
 
 	dir := "testdata/kaniko-insecure-registry"
 	skaffold.Run("-p", "deploy-insecure-registry").InDir(dir).InNs(ns.Name).RunOrFailOutput(t)
@@ -67,8 +66,7 @@ func TestBuildInCluster(t *testing.T) {
 	}
 
 	testutil.Run(t, "", func(t *testutil.T) {
-		ns, client, deleteNs := SetupNamespace(t.T)
-		defer deleteNs()
+		ns, client := SetupNamespace(t.T)
 
 		// this workaround is to ensure there is no overlap between testcases on kokoro
 		// see https://github.com/GoogleContainerTools/skaffold/issues/2781#issuecomment-527770537
@@ -118,8 +116,7 @@ func copyFile(t *testutil.T, src, dst string) {
 		t.Fatalf("can't read source file: %s: %s", src, err)
 	}
 
-	err = ioutil.WriteFile(dst, content, 0666)
-	if err != nil {
+	if err := ioutil.WriteFile(dst, content, 0666); err != nil {
 		t.Fatalf("failed to copy file %s to %s: %s", src, dst, err)
 	}
 }

@@ -22,7 +22,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
@@ -35,8 +34,6 @@ import (
 
 // DoInit executes the `skaffold init` flow.
 func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
-	rootDir := "."
-
 	if c.ComposeFile != "" {
 		if err := runKompose(ctx, c.ComposeFile); err != nil {
 			return err
@@ -44,24 +41,37 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 	}
 
 	a := analyze.NewAnalyzer(c)
-
-	if err := a.Analyze(rootDir); err != nil {
+	if err := a.Analyze("."); err != nil {
 		return err
 	}
+
+	deployInitializer := deploy.NewInitializer(a.Manifests(), c)
+	images := deployInitializer.GetImages()
 
 	buildInitializer := build.NewInitializer(a.Builders(), c)
-
-	deployInitializer, err := deploy.NewInitializer(a.Manifests(), c)
-	if err != nil {
-		return err
-	}
-
-	if err := buildInitializer.ProcessImages(deployInitializer.GetImages()); err != nil {
+	if err := buildInitializer.ProcessImages(images); err != nil {
 		return err
 	}
 
 	if c.Analyze {
 		return buildInitializer.PrintAnalysis(out)
+	}
+
+	var generatedManifests map[string][]byte
+	if c.EnableManifestGeneration {
+		generatedManifestPairs, err := buildInitializer.GenerateManifests()
+		if err != nil {
+			return err
+		}
+		generatedManifests = make(map[string][]byte, len(generatedManifestPairs))
+		for pair, manifest := range generatedManifestPairs {
+			deployInitializer.AddManifestForImage(pair.ManifestPath, pair.ImageName)
+			generatedManifests[pair.ManifestPath] = manifest
+		}
+	}
+
+	if err := deployInitializer.Validate(); err != nil {
+		return err
 	}
 
 	pipeline, err := yaml.Marshal(generateSkaffoldConfig(buildInitializer, deployInitializer))
@@ -74,13 +84,20 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 	}
 
 	if !c.Force {
-		if done, err := prompt.WriteSkaffoldConfig(out, pipeline, c.Opts.ConfigurationFile); done {
+		if done, err := prompt.WriteSkaffoldConfig(out, pipeline, generatedManifests, c.Opts.ConfigurationFile); done {
 			return err
 		}
 	}
 
-	if err := ioutil.WriteFile(c.Opts.ConfigurationFile, pipeline, 0644); err != nil {
-		return errors.Wrap(err, "writing config to file")
+	for path, manifest := range generatedManifests {
+		if err = ioutil.WriteFile(path, manifest, 0644); err != nil {
+			return fmt.Errorf("writing k8s manifest to file: %w", err)
+		}
+		fmt.Fprintf(out, "Generated manifest %s was written\n", path)
+	}
+
+	if err = ioutil.WriteFile(c.Opts.ConfigurationFile, pipeline, 0644); err != nil {
+		return fmt.Errorf("writing config to file: %w", err)
 	}
 
 	fmt.Fprintf(out, "Configuration %s was written\n", c.Opts.ConfigurationFile)
