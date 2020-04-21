@@ -31,7 +31,9 @@ import (
 	utilpointer "k8s.io/utils/pointer"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -298,6 +300,7 @@ func TestGetDeployStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			event.InitializeState(latest.BuildConfig{})
 			err := getSkaffoldDeployStatus(test.counter)
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {
