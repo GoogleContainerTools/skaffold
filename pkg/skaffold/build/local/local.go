@@ -48,7 +48,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	digestOrImageID, err := b.runBuildForArtifact(ctx, out, artifact, tag)
 	if err != nil {
-		return "", fmt.Errorf("build artifact: %w", err)
+		return "", err
 	}
 
 	if b.pushImages {
@@ -98,7 +98,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, error) {
 	insp, _, err := b.localDocker.ImageInspectWithRaw(ctx, tag)
 	if err != nil {
-		return "", fmt.Errorf("inspecting image: %w", err)
+		return "", err
 	}
 	return insp.ID, nil
 }

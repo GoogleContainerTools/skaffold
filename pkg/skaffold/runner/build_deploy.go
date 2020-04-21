@@ -48,12 +48,12 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 
 		bRes, err := r.builder.Build(ctx, out, tags, artifacts)
 		if err != nil {
-			return nil, fmt.Errorf("build failed: %w", err)
+			return nil, err
 		}
 
 		if !r.runCtx.Opts.SkipTests {
 			if err = r.tester.Test(ctx, out, bRes); err != nil {
-				return nil, fmt.Errorf("test failed: %w", err)
+				return nil, err
 			}
 		}
 

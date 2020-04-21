@@ -83,7 +83,7 @@ func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace
 
 	dockerfileLinesWithOnbuild, err := expandOnbuildInstructions(dockerfileLines, insecureRegistries)
 	if err != nil {
-		return nil, fmt.Errorf("expanding ONBUILD instructions: %w", err)
+		return nil, err
 	}
 
 	cpCmds, err := extractCopyCommands(dockerfileLinesWithOnbuild, onlyLastImage, insecureRegistries)
@@ -317,7 +317,7 @@ func parseOnbuild(image string, insecureRegistries map[string]bool) ([]*parser.N
 	// Image names are case SENSITIVE
 	img, err := RetrieveImage(image, insecureRegistries)
 	if err != nil {
-		return nil, fmt.Errorf("processing base image (%s) for ONBUILD triggers: %s", image, err)
+		return nil, fmt.Errorf("retrieving image %q: %w", image, err)
 	}
 
 	if len(img.Config.OnBuild) == 0 {

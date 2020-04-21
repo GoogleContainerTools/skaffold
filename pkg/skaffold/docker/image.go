@@ -144,7 +144,7 @@ func (l *localDaemon) ConfigFile(ctx context.Context, image string) (*v1.ConfigF
 	} else {
 		cfg, err = RetrieveRemoteConfig(image, l.insecureRegistries)
 		if err != nil {
-			return nil, fmt.Errorf("getting remote config: %w", err)
+			return nil, err
 		}
 	}
 
@@ -373,7 +373,7 @@ func (l *localDaemon) ImageID(ctx context.Context, ref string) (string, error) {
 		if client.IsErrNotFound(err) {
 			return "", nil
 		}
-		return "", fmt.Errorf("inspecting image: %w", err)
+		return "", err
 	}
 
 	return image.ID, nil

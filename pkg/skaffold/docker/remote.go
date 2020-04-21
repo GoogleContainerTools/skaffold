@@ -73,7 +73,7 @@ func getRemoteDigest(identifier string, insecureRegistries map[string]bool) (str
 func RetrieveRemoteConfig(identifier string, insecureRegistries map[string]bool) (*v1.ConfigFile, error) {
 	img, err := remoteImage(identifier, insecureRegistries)
 	if err != nil {
-		return nil, fmt.Errorf("getting image: %w", err)
+		return nil, err
 	}
 
 	return img.ConfigFile()
