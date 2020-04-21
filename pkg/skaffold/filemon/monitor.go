@@ -16,8 +16,6 @@ limitations under the License.
 
 package filemon
 
-import "fmt"
-
 // Monitor monitors files changes for multiples components.
 type Monitor interface {
 	Register(deps func() ([]string, error), onChange func(Events)) error
@@ -48,7 +46,7 @@ type component struct {
 func (w *watchList) Register(deps func() ([]string, error), onChange func(Events)) error {
 	state, err := Stat(deps)
 	if err != nil {
-		return fmt.Errorf("listing files: %w", err)
+		return err
 	}
 
 	w.components = append(w.components, &component{
@@ -69,7 +67,7 @@ func (w *watchList) Run(debounce bool) error {
 	for i, component := range w.components {
 		state, err := Stat(component.deps)
 		if err != nil {
-			return fmt.Errorf("listing files: %w", err)
+			return err
 		}
 		e := events(component.state, state)
 

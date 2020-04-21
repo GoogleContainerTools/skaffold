@@ -66,7 +66,7 @@ var (
 func readCopyCmdsFromDockerfile(onlyLastImage bool, absDockerfilePath, workspace string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]fromTo, error) {
 	f, err := os.Open(absDockerfilePath)
 	if err != nil {
-		return nil, fmt.Errorf("opening dockerfile %q: %w", absDockerfilePath, err)
+		return nil, err
 	}
 	defer f.Close()
 
