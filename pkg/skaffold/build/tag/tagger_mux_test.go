@@ -24,7 +24,7 @@ import (
 )
 
 func TestCreateComponents(t *testing.T) {
-	gitExample, _ := NewGitCommit("", "", false)
+	gitExample, _ := NewGitCommit("", "", "", false)
 	envExample, _ := NewEnvTemplateTagger("test")
 
 	tests := []struct {

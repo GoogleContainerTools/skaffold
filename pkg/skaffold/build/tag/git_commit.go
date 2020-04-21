@@ -36,7 +36,7 @@ type GitCommit struct {
 	ignoreChanges bool
 }
 
-var variants = map[string]func(string) (string, error){
+var variants = map[string]func(string, string) (string, error){
 	"":                gitTags,
 	"tags":            gitTags,
 	"commitsha":       gitCommitsha,
@@ -46,7 +46,7 @@ var variants = map[string]func(string) (string, error){
 }
 
 // NewGitCommit creates a new git commit tagger. It fails if the tagger variant is invalid.
-func NewGitCommit(prefix, variant string, ignoreChanges bool) (*GitCommit, error) {
+func NewGitCommit(prefix, variant, excludedTags string, ignoreChanges bool) (*GitCommit, error) {
 	runGitFn, found := variants[strings.ToLower(variant)]
 	if !found {
 		return nil, fmt.Errorf("%q is not a valid git tagger variant", variant)
@@ -54,8 +54,10 @@ func NewGitCommit(prefix, variant string, ignoreChanges bool) (*GitCommit, error
 
 	return &GitCommit{
 		prefix:        prefix,
-		runGitFn:      runGitFn,
 		ignoreChanges: ignoreChanges,
+		runGitFn: func(t string) (string, error) {
+			return runGitFn(t, excludedTags)
+		},
 	}, nil
 }
 
@@ -104,19 +106,24 @@ func sanitizeTag(tag string) string {
 	return sanitized
 }
 
-func gitTags(workingDir string) (string, error) {
-	return runGit(workingDir, "describe", "--tags", "--always")
+func gitTags(workingDir string, excludedTags string) (string, error) {
+	args := []string{workingDir, "describe", "--tags", "--always"}
+	// If excluded tags are provided makes sure to pass that to the `git tags` command
+	if excludedTags != "" {
+		args = append(args, "--exclude", excludedTags)
+	}
+	return runGit(workingDir, args...)
 }
 
-func gitCommitsha(workingDir string) (string, error) {
+func gitCommitsha(workingDir, _ string) (string, error) {
 	return runGit(workingDir, "rev-list", "-1", "HEAD")
 }
 
-func gitAbbrevcommitsha(workingDir string) (string, error) {
+func gitAbbrevcommitsha(workingDir, _ string) (string, error) {
 	return runGit(workingDir, "rev-list", "-1", "HEAD", "--abbrev-commit")
 }
 
-func gitTreesha(workingDir string) (string, error) {
+func gitTreesha(workingDir, _ string) (string, error) {
 	gitPath, err := getGitPathToWorkdir(workingDir)
 	if err != nil {
 		return "", err
@@ -125,7 +132,7 @@ func gitTreesha(workingDir string) (string, error) {
 	return runGit(workingDir, "rev-parse", "HEAD:"+gitPath+"/")
 }
 
-func gitAbbrevtreesha(workingDir string) (string, error) {
+func gitAbbrevtreesha(workingDir, _ string) (string, error) {
 	gitPath, err := getGitPathToWorkdir(workingDir)
 	if err != nil {
 		return "", err

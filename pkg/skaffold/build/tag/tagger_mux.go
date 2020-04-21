@@ -67,7 +67,7 @@ func getTagger(runCtx *runcontext.RunContext, t *latest.TagPolicy) (Tagger, erro
 		return &ChecksumTagger{}, nil
 
 	case t.GitTagger != nil:
-		return NewGitCommit(t.GitTagger.Prefix, t.GitTagger.Variant, t.GitTagger.IgnoreChanges)
+		return NewGitCommit(t.GitTagger.Prefix, t.GitTagger.Variant, t.GitTagger.ExcludedTags, t.GitTagger.IgnoreChanges)
 
 	case t.DateTimeTagger != nil:
 		return NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil
@@ -105,7 +105,7 @@ func CreateComponents(t *latest.CustomTemplateTagger) (map[string]Tagger, error)
 			components[name] = &ChecksumTagger{}
 
 		case c.GitTagger != nil:
-			components[name], _ = NewGitCommit(c.GitTagger.Prefix, c.GitTagger.Variant, c.GitTagger.IgnoreChanges)
+			components[name], _ = NewGitCommit(c.GitTagger.Prefix, c.GitTagger.Variant, c.GitTagger.ExcludedTags, c.GitTagger.IgnoreChanges)
 
 		case c.DateTimeTagger != nil:
 			components[name] = NewDateTimeTagger(c.DateTimeTagger.Format, c.DateTimeTagger.TimeZone)

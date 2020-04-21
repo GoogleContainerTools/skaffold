@@ -152,6 +152,9 @@ type GitTagger struct {
 	// Prefix adds a fixed prefix to the tag.
 	Prefix string `yaml:"prefix,omitempty"`
 
+	// ExcludedTags if set will be passed to the --exclude flag for the `tags`.
+	ExcludedTags string `yaml:"excludedTags,omitempty"`
+
 	// IgnoreChanges specifies whether to omit the `-dirty` postfix if there are uncommitted changes.
 	IgnoreChanges bool `yaml:"ignoreChanges,omitempty"`
 }
