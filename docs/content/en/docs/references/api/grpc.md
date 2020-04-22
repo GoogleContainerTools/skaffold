@@ -625,8 +625,8 @@ will be sent with the new status.
 | ---- | ------ | ----------- |
 | UNKNOWN_CLUSTER_TYPE | 0 |  |
 | MINIKUBE | 1 |  |
-| OTHER | 2 |  |
-| GKE | 3 |  |
+| GKE | 2 |  |
+| OTHER | 3 |  |
 
 
 

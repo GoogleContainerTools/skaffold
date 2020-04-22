@@ -70,8 +70,8 @@
             "enum": [
               "UNKNOWN_CLUSTER_TYPE",
               "MINIKUBE",
-              "OTHER",
-              "GKE"
+              "GKE",
+              "OTHER"
             ],
             "default": "UNKNOWN_CLUSTER_TYPE"
           },
@@ -520,8 +520,8 @@
       "enum": [
         "UNKNOWN_CLUSTER_TYPE",
         "MINIKUBE",
-        "OTHER",
-        "GKE"
+        "GKE",
+        "OTHER"
       ],
       "default": "UNKNOWN_CLUSTER_TYPE"
     },

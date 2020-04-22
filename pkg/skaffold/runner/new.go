@@ -38,7 +38,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/test"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/trigger"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
@@ -101,7 +100,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	}
 
 	event.InitializeState(runCtx.Cfg, runCtx.KubeContext)
-	event.LogMetaEvent(version.Get())
+	event.LogMetaEvent()
 
 	monitor := filemon.NewMonitor()
 

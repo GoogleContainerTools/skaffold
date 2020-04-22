@@ -23,27 +23,27 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
-func initializeMetadata(c latest.Pipeline, kc string) *proto.Metadata {
+func initializeMetadata(p latest.Pipeline, kubeContext string) *proto.Metadata {
 	m := &proto.Metadata{
 		Build: &proto.BuildMetadata{
-			NumberOfArtifacts: int32(len(c.Build.Artifacts)),
+			NumberOfArtifacts: int32(len(p.Build.Artifacts)),
 		},
 		Deploy: &proto.DeployMetadata{},
 	}
 
 	switch {
-	case c.Build.LocalBuild != nil:
+	case p.Build.LocalBuild != nil:
 		m.Build.Type = proto.BuildType_LOCAL
-	case c.Build.GoogleCloudBuild != nil:
+	case p.Build.GoogleCloudBuild != nil:
 		m.Build.Type = proto.BuildType_GCB
-	case c.Build.Cluster != nil:
+	case p.Build.Cluster != nil:
 		m.Build.Type = proto.BuildType_CLUSTER
 	default:
 		m.Build.Type = proto.BuildType_UNKNOWN_BUILD_TYPE
 	}
 
-	m.Build.Builders = getBuilders(c.Build)
-	m.Deploy = getDeploy(c.Deploy, kc)
+	m.Build.Builders = getBuilders(p.Build)
+	m.Deploy = getDeploy(p.Deploy, kubeContext)
 	return m
 }
 

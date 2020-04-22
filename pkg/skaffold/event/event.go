@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"sync"
 
-	//"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/ptypes"
 
 	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
@@ -129,12 +128,12 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(c latest.Pipeline, kc string) proto.State {
+func emptyState(p latest.Pipeline, kubeContext string) proto.State {
 	builds := map[string]string{}
-	for _, a := range c.Build.Artifacts {
+	for _, a := range p.Build.Artifacts {
 		builds[a.ImageName] = NotStarted
 	}
-	metadata := initializeMetadata(c, kc)
+	metadata := initializeMetadata(p, kubeContext)
 	return emptyStateWithArtifacts(builds, metadata)
 }
 
@@ -366,14 +365,14 @@ func (ev *eventHandler) handleFileSyncEvent(e *proto.FileSyncEvent) {
 	})
 }
 
-func LogMetaEvent(info *version.Info) {
+func LogMetaEvent() {
 	metadata := handler.state.Metadata
 	handler.logEvent(proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
 		Event: &proto.Event{
 			EventType: &proto.Event_MetaEvent{
 				MetaEvent: &proto.MetaEvent{
-					Entry:    fmt.Sprintf("Starting Skaffold: %+v", info),
+					Entry:    fmt.Sprintf("Starting Skaffold: %+v", version.Get()),
 					Metadata: metadata,
 				},
 			},

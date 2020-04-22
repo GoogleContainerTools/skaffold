@@ -275,22 +275,22 @@ enum BuilderType {
 }
 
 enum BuildType {
-    UNKNOWN_BUILD_TYPE =0 ;
+    UNKNOWN_BUILD_TYPE = 0;
     CLUSTER = 1;
     GCB = 2;
     LOCAL = 3;
 }
 
 enum DeployerType {
-    UNKNOWN_DEPLOYER_TYPE =0 ;
+    UNKNOWN_DEPLOYER_TYPE = 0;
     HELM = 1;
     KUSTOMIZE = 2;
     KUBECTL = 3;
 }
 
 enum ClusterType {
-    UNKNOWN_CLUSTER_TYPE =0;
+    UNKNOWN_CLUSTER_TYPE = 0;
     MINIKUBE = 1;
-    OTHER = 2;
-    GKE = 3;
+    GKE = 2;
+    OTHER = 3;
 }
