@@ -24,13 +24,15 @@ import (
 	"strings"
 	"testing"
 
-	v1 "k8s.io/api/core/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	corev1 "k8s.io/api/core/v1"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -810,7 +812,7 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files syncMap) *exec.Cmd {
+func fakeCmd(ctx context.Context, p corev1.Pod, c corev1.Container, files syncMap) *exec.Cmd {
 	var args []string
 
 	for src, dsts := range files {
@@ -822,18 +824,18 @@ func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files syncMap) *exec
 	return exec.CommandContext(ctx, "copy", args...)
 }
 
-var pod = &v1.Pod{
+var pod = &corev1.Pod{
 	ObjectMeta: meta_v1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "skaffold-dirty",
 		},
 	},
-	Status: v1.PodStatus{
-		Phase: v1.PodRunning,
+	Status: corev1.PodStatus{
+		Phase: corev1.PodRunning,
 	},
-	Spec: v1.PodSpec{
-		Containers: []v1.Container{
+	Spec: corev1.PodSpec{
+		Containers: []corev1.Container{
 			{
 				Name:  "container_name",
 				Image: "gcr.io/k8s-skaffold:123",
@@ -842,18 +844,18 @@ var pod = &v1.Pod{
 	},
 }
 
-var nonRunningPod = &v1.Pod{
+var nonRunningPod = &corev1.Pod{
 	ObjectMeta: meta_v1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "skaffold-dirty",
 		},
 	},
-	Status: v1.PodStatus{
-		Phase: v1.PodPending,
+	Status: corev1.PodStatus{
+		Phase: corev1.PodPending,
 	},
-	Spec: v1.PodSpec{
-		Containers: []v1.Container{
+	Spec: corev1.PodSpec{
+		Containers: []corev1.Container{
 			{
 				Name:  "container_name",
 				Image: "gcr.io/k8s-skaffold:123",
@@ -867,8 +869,8 @@ func TestPerform(t *testing.T) {
 		description string
 		image       string
 		files       syncMap
-		pod         *v1.Pod
-		cmdFn       func(context.Context, v1.Pod, v1.Container, syncMap) *exec.Cmd
+		pod         *corev1.Pod
+		cmdFn       func(context.Context, corev1.Pod, corev1.Container, syncMap) *exec.Cmd
 		cmdErr      error
 		clientErr   error
 		expected    []string
@@ -999,6 +1001,8 @@ func TestSyncMap(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			imageFetcher := fakeImageFetcher{}
+			t.Override(&docker.RetrieveImage, imageFetcher.fetch)
 			t.NewTempDir().WriteFiles(test.files).Chdir()
 
 			syncMap, err := SyncMap(&latest.Artifact{ArtifactType: test.artifactType}, nil)
@@ -1007,6 +1011,12 @@ func TestSyncMap(t *testing.T) {
 			t.CheckDeepEqual(test.expectedMap, syncMap)
 		})
 	}
+}
+
+type fakeImageFetcher struct{}
+
+func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*v1.ConfigFile, error) {
+	return &v1.ConfigFile{}, nil
 }
 
 func TestInit(t *testing.T) {
