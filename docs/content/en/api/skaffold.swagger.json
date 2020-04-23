@@ -43,6 +43,39 @@
             "type": "string"
           },
           {
+            "name": "event.metaEvent.metadata.build.numberOfArtifacts",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.metaEvent.metadata.build.type",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "UNKNOWN_BUILD_TYPE",
+              "CLUSTER",
+              "GCB",
+              "LOCAL"
+            ],
+            "default": "UNKNOWN_BUILD_TYPE"
+          },
+          {
+            "name": "event.metaEvent.metadata.deploy.cluster",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "UNKNOWN_CLUSTER_TYPE",
+              "MINIKUBE",
+              "GKE",
+              "OTHER"
+            ],
+            "default": "UNKNOWN_CLUSTER_TYPE"
+          },
+          {
             "name": "event.buildEvent.artifact",
             "in": "query",
             "required": false,
@@ -379,6 +412,30 @@
     }
   },
   "definitions": {
+    "BuildMetadataBuilder": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/protoBuilderType"
+        },
+        "count": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "DeployMetadataDeployer": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/protoDeployerType"
+        },
+        "count": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "protoBuildEvent": {
       "type": "object",
       "properties": {
@@ -397,6 +454,31 @@
       },
       "description": "`BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."
     },
+    "protoBuildMetadata": {
+      "type": "object",
+      "properties": {
+        "numberOfArtifacts": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "builders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BuildMetadataBuilder"
+          }
+        },
+        "type": {
+          "$ref": "#/definitions/protoBuildType"
+        },
+        "additional": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Additional key value pairs to describe the deploy pipeline"
+        }
+      }
+    },
     "protoBuildState": {
       "type": "object",
       "properties": {
@@ -409,6 +491,39 @@
         }
       },
       "description": "`BuildState` maps Skaffold artifacts to their current build states"
+    },
+    "protoBuildType": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_BUILD_TYPE",
+        "CLUSTER",
+        "GCB",
+        "LOCAL"
+      ],
+      "default": "UNKNOWN_BUILD_TYPE"
+    },
+    "protoBuilderType": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_BUILDER_TYPE",
+        "JIB",
+        "BAZEL",
+        "BUILDPACKS",
+        "CUSTOM",
+        "KANIKO",
+        "DOCKER"
+      ],
+      "default": "UNKNOWN_BUILDER_TYPE"
+    },
+    "protoClusterType": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_CLUSTER_TYPE",
+        "MINIKUBE",
+        "GKE",
+        "OTHER"
+      ],
+      "default": "UNKNOWN_CLUSTER_TYPE"
     },
     "protoDebuggingContainerEvent": {
       "type": "object",
@@ -459,6 +574,20 @@
       },
       "description": "`DeployEvent` represents the status of a deployment, and is emitted by Skaffold\nanytime a deployment starts or completes, successfully or not."
     },
+    "protoDeployMetadata": {
+      "type": "object",
+      "properties": {
+        "deployers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DeployMetadataDeployer"
+          }
+        },
+        "cluster": {
+          "$ref": "#/definitions/protoClusterType"
+        }
+      }
+    },
     "protoDeployState": {
       "type": "object",
       "properties": {
@@ -467,6 +596,16 @@
         }
       },
       "description": "`DeployState` describes the status of the current deploy"
+    },
+    "protoDeployerType": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_DEPLOYER_TYPE",
+        "HELM",
+        "KUSTOMIZE",
+        "KUBECTL"
+      ],
+      "default": "UNKNOWN_DEPLOYER_TYPE"
     },
     "protoErrorCode": {
       "type": "string",
@@ -577,9 +716,31 @@
         "entry": {
           "type": "string",
           "description": "entry, for example: `\"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}\"`"
+        },
+        "metadata": {
+          "$ref": "#/definitions/protoMetadata",
+          "description": "Metadata describing skaffold pipeline"
         }
       },
       "description": "`MetaEvent` provides general information regarding Skaffold"
+    },
+    "protoMetadata": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "$ref": "#/definitions/protoBuildMetadata"
+        },
+        "deploy": {
+          "$ref": "#/definitions/protoDeployMetadata"
+        },
+        "additional": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Additional key value pairs to describe the build pipeline"
+        }
+      }
     },
     "protoPortEvent": {
       "type": "object",
@@ -660,6 +821,9 @@
           "items": {
             "$ref": "#/definitions/protoDebuggingContainerEvent"
           }
+        },
+        "metadata": {
+          "$ref": "#/definitions/protoMetadata"
         }
       },
       "description": "`State` represents the current state of the Skaffold components"

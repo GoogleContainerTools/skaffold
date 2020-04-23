@@ -128,15 +128,16 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(build latest.BuildConfig) proto.State {
+func emptyState(p latest.Pipeline, kubeContext string) proto.State {
 	builds := map[string]string{}
-	for _, a := range build.Artifacts {
+	for _, a := range p.Build.Artifacts {
 		builds[a.ImageName] = NotStarted
 	}
-	return emptyStateWithArtifacts(builds)
+	metadata := initializeMetadata(p, kubeContext)
+	return emptyStateWithArtifacts(builds, metadata)
 }
 
-func emptyStateWithArtifacts(builds map[string]string) proto.State {
+func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata) proto.State {
 	return proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: builds,
@@ -149,12 +150,13 @@ func emptyStateWithArtifacts(builds map[string]string) proto.State {
 		FileSyncState: &proto.FileSyncState{
 			Status: NotStarted,
 		},
+		Metadata: metadata,
 	}
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-func InitializeState(build latest.BuildConfig) {
-	handler.setState(emptyState(build))
+func InitializeState(c latest.Pipeline, kc string) {
+	handler.setState(emptyState(c, kc))
 }
 
 // DeployInProgress notifies that a deployment has been started.
@@ -363,13 +365,15 @@ func (ev *eventHandler) handleFileSyncEvent(e *proto.FileSyncEvent) {
 	})
 }
 
-func LogSkaffoldMetadata(info *version.Info) {
+func LogMetaEvent() {
+	metadata := handler.state.Metadata
 	handler.logEvent(proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
 		Event: &proto.Event{
 			EventType: &proto.Event_MetaEvent{
 				MetaEvent: &proto.MetaEvent{
-					Entry: fmt.Sprintf("Starting Skaffold: %+v", info),
+					Entry:    fmt.Sprintf("Starting Skaffold: %+v", version.Get()),
+					Metadata: metadata,
 				},
 			},
 		},
@@ -502,7 +506,7 @@ func ResetStateOnBuild() {
 	for k := range handler.getState().BuildState.Artifacts {
 		builds[k] = NotStarted
 	}
-	newState := emptyStateWithArtifacts(builds)
+	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata)
 	handler.setState(newState)
 }
 

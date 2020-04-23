@@ -122,7 +122,7 @@ func TestStart(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState(latest.BuildConfig{})
+			event.InitializeState(latest.Pipeline{}, "")
 			fakeForwarder := newTestForwarder()
 			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", nil)
 			rf.EntryForwarder = fakeForwarder
@@ -232,7 +232,7 @@ func TestUserDefinedResources(t *testing.T) {
 	}
 
 	testutil.Run(t, "one service and one user defined pod", func(t *testutil.T) {
-		event.InitializeState(latest.BuildConfig{})
+		event.InitializeState(latest.Pipeline{}, "")
 		fakeForwarder := newTestForwarder()
 		rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", []*latest.PortForwardResource{pod})
 		rf.EntryForwarder = fakeForwarder
