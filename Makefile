@@ -238,4 +238,4 @@ generate-schemas:
 # static files
 
 $(STATIK_FILES): go.mod docs/content/en/schemas/*
-	hack/generate-statik.sh
+	echo hack/generate-statik.sh

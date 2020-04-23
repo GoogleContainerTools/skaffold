@@ -103,7 +103,10 @@ func getWaitingContainerStatus(cs []v1.ContainerStatus) error {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
 	for _, c := range cs {
 		if c.State.Waiting != nil {
-			return extractErrorMessageFromContainerStatus(c)
+			return extractErrorMessageFromWaitingContainerStatus(c)
+		}
+		if c.State.Terminated != nil {
+			return extractErrorMessageFromTerminatedContainerStatus(c)
 		}
 	}
 	// No waiting containers, pod should be in good health.
@@ -170,7 +173,7 @@ func (p *podStatus) String() string {
 	return fmt.Sprintf(actionableMessage, p.namespace, p.name)
 }
 
-func extractErrorMessageFromContainerStatus(c v1.ContainerStatus) error {
+func extractErrorMessageFromWaitingContainerStatus(c v1.ContainerStatus) error {
 	// Extract meaning full error out of container statuses.
 	switch c.State.Waiting.Reason {
 	case containerCreating:
@@ -187,6 +190,13 @@ func extractErrorMessageFromContainerStatus(c v1.ContainerStatus) error {
 	}
 	return fmt.Errorf("container %s in error: %s", c.Name, trimSpace(c.State.Waiting.Message))
 }
+
+func extractErrorMessageFromTerminatedContainerStatus(c v1.ContainerStatus) error {
+	// Extract meaning full error out of container statuses.
+	fmt.Println(c.State.Terminated)
+	return fmt.Errorf("container %s terminated with exit code %d", c.Name, c.State.Terminated.ExitCode)
+}
+
 
 
 func newPodStatus(n string, ns string, p string) *podStatus {
