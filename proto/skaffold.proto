@@ -116,6 +116,7 @@ message ResourceStatusCheckEvent {
     string status = 2;
     string message = 3;
     string err = 4;
+    ErrorCode errCode = 5;
 }
 
 // PortEvent Event describes each port forwarding event.
@@ -210,5 +211,15 @@ service SkaffoldService {
             body: "*"
         };
     }
+
+}
+
+enum ErrorCode {
+    NO_ERR = 0;
+    UNKNOWN = 1;
+    STATUS_CHECK_IMAGE_PULL_ERR = 100;
+    STATUS_CHECK_CONTAINER_TERMINATED = 101;
+    STATUS_CHECK_RUN_CONTAINER_ERR = 102;
+    STATUS_CHECK_DISK_PRESSURE_ERR = 103;
 
 }

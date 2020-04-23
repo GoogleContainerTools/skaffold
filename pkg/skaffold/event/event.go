@@ -205,11 +205,12 @@ func ResourceStatusCheckEventSucceeded(r string) {
 	})
 }
 
-func ResourceStatusCheckEventFailed(r string, err error) {
+func ResourceStatusCheckEventFailed(r string, errCode proto.ErrorCode, err error) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource: r,
 		Status:   Failed,
 		Err:      err.Error(),
+		ErrCode: errCode,
 	})
 }
 

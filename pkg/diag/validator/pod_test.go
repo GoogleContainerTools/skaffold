@@ -59,6 +59,7 @@ func TestRun(t *testing.T) {
 					ContainerStatuses: []v1.ContainerStatus{
 						{
 							Name: "foo-container",
+							Image: "foo-image",
 							State: v1.ContainerState{
 								Waiting: &v1.ContainerStateWaiting{
 									Reason:  "ErrImagePull",
@@ -70,7 +71,8 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("container foo-container in error pull access denied for leeroy-web1, repository does not exist or may require 'docker login': denied: requested access to the resource is denied"))},
+				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
+				ImagePullErr)},
 		},
 		{
 			description: "pod is in Terminated State",
@@ -84,7 +86,7 @@ func TestRun(t *testing.T) {
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil)},
+			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil, NoError)},
 		},
 		{
 			description: "pod is in Stable State",
@@ -104,7 +106,7 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Running",nil)},
+			expected: []Resource{NewResource("test", "", "foo", "Running",nil, NoError)},
 		},
 		{
 			description: "pod condition unknown",
@@ -123,7 +125,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("could not determine"))},
+				fmt.Errorf("could not determine"), Unknown)},
 		},
 		{
 			description: "pod could not be scheduled",
@@ -143,7 +145,28 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"))},
+				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"), NodeDiskPressure)},
+		},
+		{
+			description: "pod is running but container terminated",
+			pods: []*v1.Pod{{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				Status: v1.PodStatus{
+					Phase: v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status:  v1.ConditionTrue}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							State: v1.ContainerState{Terminated: &v1.ContainerStateTerminated{ExitCode: 1}},
+						},
+					},
+				},
+			}},
+			expected: []Resource{NewResource("test", "", "foo", "Running",
+				fmt.Errorf("container foo-container terminated with exit code 1"), ContainerTerminated)},
 		},
 	}
 

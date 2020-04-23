@@ -210,7 +210,7 @@ func printStatusCheckResult(out *strings.Builder, r Resource, rc resourceCounter
 
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if err != nil {
-		event.ResourceStatusCheckEventFailed(r.String(), err)
+		event.ResourceStatusCheckEventFailed(r.String(), r.Status().ErrorCode(), err)
 		status = fmt.Sprintf("%s failed.%s Error: %s.\n",
 			status,
 			trimNewLine(getPendingMessage(rc.deployments.pending, rc.deployments.total)),

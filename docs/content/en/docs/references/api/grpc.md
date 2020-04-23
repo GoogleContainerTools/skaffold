@@ -326,6 +326,7 @@ will be sent with the new status.
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 | err | [string](#string) |  |  |
+| errCode | [ErrorCode](#proto.ErrorCode) |  |  |
 
 
 
@@ -462,6 +463,20 @@ will be sent with the new status.
 
 
  <!-- end messages -->
+
+
+<a name="proto.ErrorCode"></a>
+
+### ErrorCode
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_CHECK_IMAGE_PULL_ERR | 0 |  |
+| STATUS_CHECK_CONTAINER_TERMINATED | 1 |  |
+| STATUS_CHECK_RUN_CONTAINER_ERR | 2 |  |
+| STATUS_CHECK_DISK_PRESSURE_ERR | 3 |  |
+
 
  <!-- end enums -->
 

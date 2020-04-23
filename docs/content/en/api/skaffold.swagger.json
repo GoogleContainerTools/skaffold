@@ -171,6 +171,19 @@
             "type": "string"
           },
           {
+            "name": "event.resourceStatusCheckEvent.errCode",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "STATUS_CHECK_IMAGE_PULL_ERR",
+              "STATUS_CHECK_CONTAINER_TERMINATED",
+              "STATUS_CHECK_RUN_CONTAINER_ERR",
+              "STATUS_CHECK_DISK_PRESSURE_ERR"
+            ],
+            "default": "STATUS_CHECK_IMAGE_PULL_ERR"
+          },
+          {
             "name": "event.fileSyncEvent.fileCount",
             "in": "query",
             "required": false,
@@ -422,6 +435,16 @@
       },
       "description": "`DeployState` describes the status of the current deploy"
     },
+    "protoErrorCode": {
+      "type": "string",
+      "enum": [
+        "STATUS_CHECK_IMAGE_PULL_ERR",
+        "STATUS_CHECK_CONTAINER_TERMINATED",
+        "STATUS_CHECK_RUN_CONTAINER_ERR",
+        "STATUS_CHECK_DISK_PRESSURE_ERR"
+      ],
+      "default": "STATUS_CHECK_IMAGE_PULL_ERR"
+    },
     "protoEvent": {
       "type": "object",
       "properties": {
@@ -573,6 +596,9 @@
         },
         "err": {
           "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/protoErrorCode"
         }
       },
       "description": "A Resource StatusCheck Event, indicates progress for each kubernetes deployment.\nFor every resource, there will be exactly one event with `status` *Succeeded* or *Failed* event.\nThere can be multiple events with `status` *Pending*.\nSkaffold polls for resource status every 0.5 second. If the resource status changes, an event with `status` “Pending”, “Complete” and “Failed”\nwill be sent with the new status."

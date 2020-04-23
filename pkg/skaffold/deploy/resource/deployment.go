@@ -49,7 +49,11 @@ func (d *Deployment) Deadline() time.Duration {
 }
 
 func (d *Deployment) UpdateStatus(details string, err error) {
-	updated := newStatus(details, err)
+
+	if err != nil {
+		errCode = 1
+	}
+	updated := newStatus(details, errCode, err)
 	if !d.status.Equal(updated) {
 		d.status = updated
 		if strings.Contains(details, rollOutSuccess) || isErrAndNotRetryAble(err) {
@@ -64,7 +68,7 @@ func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 			name:      name,
 			namespace: ns,
 			rType:     deploymentType,
-			status:    newStatus("", nil),
+			status:    newStatus("", 0,nil),
 		},
 		deadline: deadline,
 	}

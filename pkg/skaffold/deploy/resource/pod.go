@@ -19,6 +19,7 @@ package resource
 import (
 	"context"
 	"errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -40,20 +41,22 @@ func NewPod(name string, ns string) *Pod {
 }
 
 func (p *Pod) CheckStatus(ctx context.Context, runCtx *runcontext.RunContext) {
-	updated := newStatus("nyi", errors.New("not yet implemented"))
+	updated := newStatus("nyi", 1, errors.New("not yet implemented"))
 	if !p.status.Equal(updated) {
 		p.status = updated
 		p.done = true
 	}
 }
 
-func (p *Pod) UpdateStatus(details string, err error) {
+func (p *Pod) UpdateStatus(details string, errCode int, err error) {
 	if err == nil {
 		details = "pod stable"
 		p.done = true
 	}
-	updated := newStatus(details, err)
-	if !p.status.Equal(updated) {
+	updated := newStatus(details, errCode, err)
+	// only update if current status is not container restarting and
+	// not same as previous error
+	if errCode != validator.ContainerRestarting && errCode != p.status.errCode{
 		p.status = updated
 	}
 }

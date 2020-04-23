@@ -12,7 +12,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	log.Print("leeroy app server ready")
-        panic("something")
 	http.HandleFunc("/", handler)
 	http.ListenAndServe(":50051", nil)
 }
