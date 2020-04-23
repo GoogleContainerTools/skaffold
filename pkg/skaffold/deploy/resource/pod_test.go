@@ -18,6 +18,8 @@ package resource
 
 import (
 	"context"
+	"fmt"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"testing"
 	"time"
 
@@ -43,6 +45,32 @@ func TestPod_CheckStatus(t *testing.T) {
 			p.CheckStatus(context.Background(), &runcontext.RunContext{})
 			t.CheckDeepEqual(test.complete, p.IsStatusCheckComplete())
 			t.CheckErrorContains(test.expectedErr, p.Status().Error())
+		})
+	}
+}
+
+func TestPod_UpdateStatus(t *testing.T) {
+	tests := []struct {
+		description string
+		status      Status
+		newCode     proto.ErrorCode
+		err         error
+		expected   Status
+	}{
+		{
+			description: "not implemented",
+			status: newStatus("none", proto.ErrorCode_STATUS_CHECK_IMAGE_PULL_ERR, fmt.Errorf("could not pull")),
+			newCode: proto.ErrorCode_STATUS_CHECK_CONTAINER_RESTARTING,
+			err: fmt.Errorf("container is restarting"),
+			expected: newStatus("none", proto.ErrorCode_STATUS_CHECK_IMAGE_PULL_ERR, fmt.Errorf("could not pull")),
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			p := NewPod("dep", "test")
+			p.status = test.status
+			p.UpdateStatus("some details", test.newCode, test.err)
+			t.CheckDeepEqual(test.expected, p.Status())
 		})
 	}
 }

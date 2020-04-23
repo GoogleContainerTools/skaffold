@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"io"
 	"sort"
 	"strings"
@@ -79,7 +80,7 @@ func (p *PodStatuses) BuildOrUpdatePods(podResources []validator.Resource) bool 
 			pod = resource.NewPod(pr.Name(), pr.Namespace())
 		}
 		allDone = allDone && pr.Error() == nil
-		pod.UpdateStatus(string(pr.Status()), pr.Error())
+		pod.UpdateStatus(string(pr.Status()), pr.ErrCode, pr.Error())
 		p.pods[pr.Name()] = pod
 	}
 	return allDone
@@ -284,12 +285,22 @@ func (p *PodStatuses) printPodStatus(r Resource, headerWritten bool, result *str
 	for _, k := range keys {
 		p := podMap[k]
 		if strings.HasPrefix(p.Name(), r.Name()) {
+			// Add events
+			if p.Status().Error() == nil {
+				event.ResourceStatusCheckEventSucceeded(p.String())
+			} else {
+				event.ResourceStatusCheckEventFailed(p.String(), p.Status().ErrorCode(), p.Status().Error())
+			}
 			if str := p.ReportSinceLastUpdated(); str != "" {
 				if !headerWritten {
 					result.WriteString(fmt.Sprintf("%s %s\n", tabHeader, trimNewLine(fmt.Sprintf("%s: %s\n", r, r.Status()))))
 					headerWritten = true
 				}
-				result.WriteString(fmt.Sprintf("%s %s %s\n", tab, tabHeader, str))
+				if p.Status().ErrorCode() == proto.ErrorCode_STATUS_CHECK_CONTAINER_TERMINATED {
+					result.WriteString(fmt.Sprintf("%s %s %s and also Pod Logs for container???\n", tab, tabHeader, str))
+				} else {
+					result.WriteString(fmt.Sprintf("%s %s %s\n", tab, tabHeader, str))
+				}
 			}
 		}
 	}

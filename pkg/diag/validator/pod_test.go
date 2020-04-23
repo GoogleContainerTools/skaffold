@@ -19,6 +19,7 @@ package validator
 import (
 	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -58,7 +59,7 @@ func TestRun(t *testing.T) {
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
 					ContainerStatuses: []v1.ContainerStatus{
 						{
-							Name: "foo-container",
+							Name:  "foo-container",
 							Image: "foo-image",
 							State: v1.ContainerState{
 								Waiting: &v1.ContainerStateWaiting{
@@ -72,7 +73,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				ImagePullErr)},
+				proto.ErrorCode_STATUS_CHECK_IMAGE_PULL_ERR)},
 		},
 		{
 			description: "pod is in Terminated State",
@@ -86,7 +87,8 @@ func TestRun(t *testing.T) {
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil, NoError)},
+			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil,
+				proto.ErrorCode_STATUS_CHECK_NO_ERROR)},
 		},
 		{
 			description: "pod is in Stable State",
@@ -106,7 +108,8 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Running",nil, NoError)},
+			expected: []Resource{NewResource("test", "", "foo", "Running", nil,
+				proto.ErrorCode_STATUS_CHECK_NO_ERROR)},
 		},
 		{
 			description: "pod condition unknown",
@@ -118,14 +121,14 @@ func TestRun(t *testing.T) {
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 					Conditions: []v1.PodCondition{{
-						Type: v1.PodScheduled,
+						Type:    v1.PodScheduled,
 						Status:  v1.ConditionUnknown,
 						Message: "could not determine",
 					}},
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("could not determine"), Unknown)},
+				fmt.Errorf("could not determine"), proto.ErrorCode_STATUS_CHECK_UNKNOWN)},
 		},
 		{
 			description: "pod could not be scheduled",
@@ -137,15 +140,16 @@ func TestRun(t *testing.T) {
 				Status: v1.PodStatus{
 					Phase: v1.PodPending,
 					Conditions: []v1.PodCondition{{
-						Type: v1.PodScheduled,
+						Type:    v1.PodScheduled,
 						Status:  v1.ConditionFalse,
-						Reason: v1.PodReasonUnschedulable,
+						Reason:  v1.PodReasonUnschedulable,
 						Message: "0/2 nodes are available: 1 node(s) had taint {node.kubernetes.io/disk-pressure: }, that the pod didn't tolerate, 1 node(s) had taint {node.kubernetes.io/unreachable: }, that the pod didn't tolerate",
 					}},
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"), NodeDiskPressure)},
+				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"),
+				proto.ErrorCode_STATUS_CHECK_NODE_DISK_PRESSURE)},
 		},
 		{
 			description: "pod is running but container terminated",
@@ -155,8 +159,8 @@ func TestRun(t *testing.T) {
 					Namespace: "test",
 				},
 				Status: v1.PodStatus{
-					Phase: v1.PodRunning,
-					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status:  v1.ConditionTrue}},
+					Phase:      v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
 					ContainerStatuses: []v1.ContainerStatus{
 						{
 							Name:  "foo-container",
@@ -166,7 +170,8 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Running",
-				fmt.Errorf("container foo-container terminated with exit code 1"), ContainerTerminated)},
+				fmt.Errorf("container foo-container terminated with exit code 1"),
+				proto.ErrorCode_STATUS_CHECK_CONTAINER_TERMINATED)},
 		},
 	}
 
@@ -182,7 +187,7 @@ func TestRun(t *testing.T) {
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
 				if x == nil && y == nil {
 					return true
-				} else if x != nil && y != nil{
+				} else if x != nil && y != nil {
 					return x.Error() == y.Error()
 				}
 				return false

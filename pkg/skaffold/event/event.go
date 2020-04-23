@@ -210,7 +210,7 @@ func ResourceStatusCheckEventFailed(r string, errCode proto.ErrorCode, err error
 		Resource: r,
 		Status:   Failed,
 		Err:      err.Error(),
-		ErrCode: errCode,
+		ErrorCode: errCode,
 	})
 }
 

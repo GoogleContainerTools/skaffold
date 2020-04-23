@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"strings"
 	"time"
 
@@ -49,9 +50,9 @@ func (d *Deployment) Deadline() time.Duration {
 }
 
 func (d *Deployment) UpdateStatus(details string, err error) {
-
+	errCode := proto.ErrorCode_STATUS_CHECK_NO_ERROR
 	if err != nil {
-		errCode = 1
+		errCode = proto.ErrorCode_STATUS_CHECK_UNKNOWN
 	}
 	updated := newStatus(details, errCode, err)
 	if !d.status.Equal(updated) {
@@ -68,7 +69,7 @@ func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 			name:      name,
 			namespace: ns,
 			rType:     deploymentType,
-			status:    newStatus("", 0,nil),
+			status:    newStatus("", proto.ErrorCode_STATUS_CHECK_NO_ERROR,nil),
 		},
 		deadline: deadline,
 	}

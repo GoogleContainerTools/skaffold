@@ -61,6 +61,33 @@
             "type": "string"
           },
           {
+            "name": "event.buildEvent.errCode",
+            "description": " - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "COULD_NOT_DETERMINE",
+              "STATUS_CHECK_NO_ERROR",
+              "STATUS_CHECK_UNKNOWN",
+              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUS_CHECK_IMAGE_PULL_ERR",
+              "STATUS_CHECK_CONTAINER_CREATING",
+              "STATUS_CHECK_RUN_CONTAINER_ERR",
+              "STATUS_CHECK_CONTAINER_TERMINATED",
+              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUS_CHECK_CONTAINER_RESTARTING",
+              "STATUS_CHECK_NODE_MEMORY_PRESSURE",
+              "STATUS_CHECK_NODE_DISK_PRESSURE",
+              "STATUS_CHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUS_CHECK_NODE_PID_PRESSURE",
+              "STATUS_CHECK_NODE_UNSCHEDULABLE",
+              "STATUS_CHECK_NODE_UNREACHABLE",
+              "STATUS_CHECK_NODE_NOT_READY"
+            ],
+            "default": "COULD_NOT_DETERMINE"
+          },
+          {
             "name": "event.deployEvent.status",
             "in": "query",
             "required": false,
@@ -71,6 +98,33 @@
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "event.deployEvent.errCode",
+            "description": " - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "COULD_NOT_DETERMINE",
+              "STATUS_CHECK_NO_ERROR",
+              "STATUS_CHECK_UNKNOWN",
+              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUS_CHECK_IMAGE_PULL_ERR",
+              "STATUS_CHECK_CONTAINER_CREATING",
+              "STATUS_CHECK_RUN_CONTAINER_ERR",
+              "STATUS_CHECK_CONTAINER_TERMINATED",
+              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUS_CHECK_CONTAINER_RESTARTING",
+              "STATUS_CHECK_NODE_MEMORY_PRESSURE",
+              "STATUS_CHECK_NODE_DISK_PRESSURE",
+              "STATUS_CHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUS_CHECK_NODE_PID_PRESSURE",
+              "STATUS_CHECK_NODE_UNSCHEDULABLE",
+              "STATUS_CHECK_NODE_UNREACHABLE",
+              "STATUS_CHECK_NODE_NOT_READY"
+            ],
+            "default": "COULD_NOT_DETERMINE"
           },
           {
             "name": "event.portEvent.localPort",
@@ -147,6 +201,33 @@
             "type": "string"
           },
           {
+            "name": "event.statusCheckEvent.errCode",
+            "description": " - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "COULD_NOT_DETERMINE",
+              "STATUS_CHECK_NO_ERROR",
+              "STATUS_CHECK_UNKNOWN",
+              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUS_CHECK_IMAGE_PULL_ERR",
+              "STATUS_CHECK_CONTAINER_CREATING",
+              "STATUS_CHECK_RUN_CONTAINER_ERR",
+              "STATUS_CHECK_CONTAINER_TERMINATED",
+              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUS_CHECK_CONTAINER_RESTARTING",
+              "STATUS_CHECK_NODE_MEMORY_PRESSURE",
+              "STATUS_CHECK_NODE_DISK_PRESSURE",
+              "STATUS_CHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUS_CHECK_NODE_PID_PRESSURE",
+              "STATUS_CHECK_NODE_UNSCHEDULABLE",
+              "STATUS_CHECK_NODE_UNREACHABLE",
+              "STATUS_CHECK_NODE_NOT_READY"
+            ],
+            "default": "COULD_NOT_DETERMINE"
+          },
+          {
             "name": "event.resourceStatusCheckEvent.resource",
             "in": "query",
             "required": false,
@@ -171,17 +252,31 @@
             "type": "string"
           },
           {
-            "name": "event.resourceStatusCheckEvent.errCode",
+            "name": "event.resourceStatusCheckEvent.errorCode",
+            "description": " - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
+              "COULD_NOT_DETERMINE",
+              "STATUS_CHECK_NO_ERROR",
+              "STATUS_CHECK_UNKNOWN",
+              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUS_CHECK_IMAGE_PULL_ERR",
-              "STATUS_CHECK_CONTAINER_TERMINATED",
+              "STATUS_CHECK_CONTAINER_CREATING",
               "STATUS_CHECK_RUN_CONTAINER_ERR",
-              "STATUS_CHECK_DISK_PRESSURE_ERR"
+              "STATUS_CHECK_CONTAINER_TERMINATED",
+              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUS_CHECK_CONTAINER_RESTARTING",
+              "STATUS_CHECK_NODE_MEMORY_PRESSURE",
+              "STATUS_CHECK_NODE_DISK_PRESSURE",
+              "STATUS_CHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUS_CHECK_NODE_PID_PRESSURE",
+              "STATUS_CHECK_NODE_UNSCHEDULABLE",
+              "STATUS_CHECK_NODE_UNREACHABLE",
+              "STATUS_CHECK_NODE_NOT_READY"
             ],
-            "default": "STATUS_CHECK_IMAGE_PULL_ERR"
+            "default": "COULD_NOT_DETERMINE"
           },
           {
             "name": "event.fileSyncEvent.fileCount",
@@ -207,6 +302,33 @@
             "in": "query",
             "required": false,
             "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.errCode",
+            "description": " - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "COULD_NOT_DETERMINE",
+              "STATUS_CHECK_NO_ERROR",
+              "STATUS_CHECK_UNKNOWN",
+              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUS_CHECK_IMAGE_PULL_ERR",
+              "STATUS_CHECK_CONTAINER_CREATING",
+              "STATUS_CHECK_RUN_CONTAINER_ERR",
+              "STATUS_CHECK_CONTAINER_TERMINATED",
+              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUS_CHECK_CONTAINER_RESTARTING",
+              "STATUS_CHECK_NODE_MEMORY_PRESSURE",
+              "STATUS_CHECK_NODE_DISK_PRESSURE",
+              "STATUS_CHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUS_CHECK_NODE_PID_PRESSURE",
+              "STATUS_CHECK_NODE_UNSCHEDULABLE",
+              "STATUS_CHECK_NODE_UNREACHABLE",
+              "STATUS_CHECK_NODE_NOT_READY"
+            ],
+            "default": "COULD_NOT_DETERMINE"
           },
           {
             "name": "event.debuggingContainerEvent.status",
@@ -363,6 +485,9 @@
         },
         "err": {
           "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/protoErrorCode"
         }
       },
       "description": "`BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."
@@ -422,6 +547,9 @@
         },
         "err": {
           "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/protoErrorCode"
         }
       },
       "description": "`DeployEvent` represents the status of a deployment, and is emitted by Skaffold\nanytime a deployment starts or completes, successfully or not."
@@ -438,12 +566,27 @@
     "protoErrorCode": {
       "type": "string",
       "enum": [
+        "COULD_NOT_DETERMINE",
+        "STATUS_CHECK_NO_ERROR",
+        "STATUS_CHECK_UNKNOWN",
+        "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
         "STATUS_CHECK_IMAGE_PULL_ERR",
-        "STATUS_CHECK_CONTAINER_TERMINATED",
+        "STATUS_CHECK_CONTAINER_CREATING",
         "STATUS_CHECK_RUN_CONTAINER_ERR",
-        "STATUS_CHECK_DISK_PRESSURE_ERR"
+        "STATUS_CHECK_CONTAINER_TERMINATED",
+        "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
+        "STATUS_CHECK_CONTAINER_RESTARTING",
+        "STATUS_CHECK_NODE_MEMORY_PRESSURE",
+        "STATUS_CHECK_NODE_DISK_PRESSURE",
+        "STATUS_CHECK_NODE_NETWORK_UNAVAILABLE",
+        "STATUS_CHECK_NODE_PID_PRESSURE",
+        "STATUS_CHECK_NODE_UNSCHEDULABLE",
+        "STATUS_CHECK_NODE_UNREACHABLE",
+        "STATUS_CHECK_NODE_NOT_READY"
       ],
-      "default": "STATUS_CHECK_IMAGE_PULL_ERR"
+      "default": "COULD_NOT_DETERMINE",
+      "description": "- STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
+      "description": "Enum for error codes"
     },
     "protoEvent": {
       "type": "object",
@@ -490,6 +633,9 @@
         },
         "err": {
           "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/protoErrorCode"
         }
       },
       "description": "FileSyncEvent describes the sync status."
@@ -597,7 +743,7 @@
         "err": {
           "type": "string"
         },
-        "errCode": {
+        "errorCode": {
           "$ref": "#/definitions/protoErrorCode"
         }
       },
@@ -644,6 +790,9 @@
         },
         "err": {
           "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/protoErrorCode"
         }
       },
       "description": "`StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed."
