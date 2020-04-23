@@ -248,6 +248,7 @@ service SkaffoldService {
 
 }
 
+// Enum indicating builders used
 enum BuilderType {
     // Could not determune builder type
     UNKNOWN_BUILDER_TYPE = 0;
@@ -265,6 +266,7 @@ enum BuilderType {
     DOCKER = 6;
 }
 
+// Enum indicating build type i.e. local, cluster vs GCB
 enum BuildType {
     // Could not determine Build Type
     UNKNOWN_BUILD_TYPE = 0;
@@ -276,6 +278,7 @@ enum BuildType {
     LOCAL = 3;
 }
 
+// Enum indicating deploy tools used
 enum DeployerType {
     // Could not determine Deployer Type
     UNKNOWN_DEPLOYER_TYPE = 0;
@@ -287,6 +290,7 @@ enum DeployerType {
     KUBECTL = 3;
 }
 
+// Enum indicating cluster type the application is deployed to
 enum ClusterType {
     // Could not determine Cluster Type
     UNKNOWN_CLUSTER_TYPE = 0;

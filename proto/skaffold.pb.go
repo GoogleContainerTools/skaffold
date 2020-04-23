@@ -27,6 +27,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
+// Enum indicating builders used
 type BuilderType int32
 
 const (
@@ -74,6 +75,7 @@ func (BuilderType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_4f2d38e344f9dbf5, []int{0}
 }
 
+// Enum indicating build type i.e. local, cluster vs GCB
 type BuildType int32
 
 const (
@@ -109,6 +111,7 @@ func (BuildType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_4f2d38e344f9dbf5, []int{1}
 }
 
+// Enum indicating deploy tools used
 type DeployerType int32
 
 const (
@@ -144,6 +147,7 @@ func (DeployerType) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_4f2d38e344f9dbf5, []int{2}
 }
 
+// Enum indicating cluster type the application is deployed to
 type ClusterType int32
 
 const (

@@ -588,7 +588,7 @@ will be sent with the new status.
 <a name="proto.BuildType"></a>
 
 ### BuildType
-
+Enum indicating build type i.e. local, cluster vs GCB
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -602,7 +602,7 @@ will be sent with the new status.
 <a name="proto.BuilderType"></a>
 
 ### BuilderType
-
+Enum indicating builders used
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -619,7 +619,7 @@ will be sent with the new status.
 <a name="proto.ClusterType"></a>
 
 ### ClusterType
-
+Enum indicating cluster type the application is deployed to
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -633,7 +633,7 @@ will be sent with the new status.
 <a name="proto.DeployerType"></a>
 
 ### DeployerType
-
+Enum indicating deploy tools used
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |

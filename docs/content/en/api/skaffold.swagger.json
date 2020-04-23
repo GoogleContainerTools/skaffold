@@ -571,7 +571,8 @@
         "LOCAL"
       ],
       "default": "UNKNOWN_BUILD_TYPE",
-      "description": "- UNKNOWN_BUILD_TYPE: Could not determine Build Type\n - CLUSTER: Cluster Build\n - GCB: GCB Build\n - LOCAL: Local Build"
+      "description": "- UNKNOWN_BUILD_TYPE: Could not determine Build Type\n - CLUSTER: Cluster Build\n - GCB: GCB Build\n - LOCAL: Local Build",
+      "description": "Enum indicating build type i.e. local, cluster vs GCB"
     },
     "protoBuilderType": {
       "type": "string",
@@ -585,7 +586,8 @@
         "DOCKER"
       ],
       "default": "UNKNOWN_BUILDER_TYPE",
-      "description": "- UNKNOWN_BUILDER_TYPE: Could not determune builder type\n - JIB: JIB Builder\n - BAZEL: Bazel Builder\n - BUILDPACKS: Buildpacks Builder\n - CUSTOM: Custom Builder\n - KANIKO: Kaniko Builder\n - DOCKER: Docker Builder"
+      "description": "- UNKNOWN_BUILDER_TYPE: Could not determune builder type\n - JIB: JIB Builder\n - BAZEL: Bazel Builder\n - BUILDPACKS: Buildpacks Builder\n - CUSTOM: Custom Builder\n - KANIKO: Kaniko Builder\n - DOCKER: Docker Builder",
+      "description": "Enum indicating builders used"
     },
     "protoClusterType": {
       "type": "string",
@@ -596,7 +598,8 @@
         "OTHER"
       ],
       "default": "UNKNOWN_CLUSTER_TYPE",
-      "description": "- UNKNOWN_CLUSTER_TYPE: Could not determine Cluster Type\n - MINIKUBE: Minikube Cluster\n - GKE: GKE cluster\n - OTHER: All Cluster except Minikube and GKE"
+      "description": "- UNKNOWN_CLUSTER_TYPE: Could not determine Cluster Type\n - MINIKUBE: Minikube Cluster\n - GKE: GKE cluster\n - OTHER: All Cluster except Minikube and GKE",
+      "description": "Enum indicating cluster type the application is deployed to"
     },
     "protoDebuggingContainerEvent": {
       "type": "object",
@@ -679,7 +682,8 @@
         "KUBECTL"
       ],
       "default": "UNKNOWN_DEPLOYER_TYPE",
-      "description": "- UNKNOWN_DEPLOYER_TYPE: Could not determine Deployer Type\n - HELM: Helm Deployer\n - KUSTOMIZE: Kustomize Deployer\n - KUBECTL: Kubectl Deployer"
+      "description": "- UNKNOWN_DEPLOYER_TYPE: Could not determine Deployer Type\n - HELM: Helm Deployer\n - KUSTOMIZE: Kustomize Deployer\n - KUBECTL: Kubectl Deployer",
+      "description": "Enum indicating deploy tools used"
     },
     "protoErrorCode": {
       "type": "string",
