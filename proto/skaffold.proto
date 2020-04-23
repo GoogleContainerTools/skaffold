@@ -249,33 +249,52 @@ service SkaffoldService {
 }
 
 enum BuilderType {
+    // Could not determune builder type
     UNKNOWN_BUILDER_TYPE = 0;
+    // JIB Builder
     JIB = 1;
+    // Bazel Builder
     BAZEL = 2;
+    // Buildpacks Builder
     BUILDPACKS = 3;
+    // Custom Builder
     CUSTOM = 4;
+    // Kaniko Builder
     KANIKO = 5;
+    // Docker Builder
     DOCKER = 6;
 }
 
 enum BuildType {
+    // Could not determine Build Type
     UNKNOWN_BUILD_TYPE = 0;
+    // Cluster Build
     CLUSTER = 1;
+    // GCB Build
     GCB = 2;
+    // Local Build
     LOCAL = 3;
 }
 
 enum DeployerType {
+    // Could not determine Deployer Type
     UNKNOWN_DEPLOYER_TYPE = 0;
+    // Helm Deployer
     HELM = 1;
+    // Kustomize Deployer
     KUSTOMIZE = 2;
+    // Kubectl Deployer
     KUBECTL = 3;
 }
 
 enum ClusterType {
+    // Could not determine Cluster Type
     UNKNOWN_CLUSTER_TYPE = 0;
+    // Minikube Cluster
     MINIKUBE = 1;
+    // GKE cluster
     GKE = 2;
+    // All Cluster except Minikube and GKE
     OTHER = 3;
 }
 
@@ -283,13 +302,15 @@ enum ClusterType {
 enum ErrorCode {
     // Could not determine error
     COULD_NOT_DETERMINE = 0;
-    
+
     // No Error codes
+
     // Status Check Success
     STATUS_CHECK_NO_ERROR = 200;
 
 
     // Container errors
+
     // Container image pull error
     STATUS_CHECK_IMAGE_PULL_ERR = 300;
     // Container creating error
@@ -302,6 +323,7 @@ enum ErrorCode {
     STATUS_CHECK_CONTAINER_RESTARTING = 356;
 
     // K8 infra errors
+
     // Node memory pressure error
     STATUS_CHECK_NODE_MEMORY_PRESSURE = 400;
     // Node disk pressure error
@@ -318,6 +340,7 @@ enum ErrorCode {
     STATUS_CHECK_NODE_NOT_READY= 406;
 
     // Unknown Error Codes
+
     // Status Check error unknown
     STATUS_CHECK_UNKNOWN = 501;
     // Container is unschedulable due to unknown reasons

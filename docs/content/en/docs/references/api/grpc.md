@@ -592,10 +592,10 @@ will be sent with the new status.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| UNKNOWN_BUILD_TYPE | 0 |  |
-| CLUSTER | 1 |  |
-| GCB | 2 |  |
-| LOCAL | 3 |  |
+| UNKNOWN_BUILD_TYPE | 0 | Could not determine Build Type |
+| CLUSTER | 1 | Cluster Build |
+| GCB | 2 | GCB Build |
+| LOCAL | 3 | Local Build |
 
 
 
@@ -606,13 +606,13 @@ will be sent with the new status.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| UNKNOWN_BUILDER_TYPE | 0 |  |
-| JIB | 1 |  |
-| BAZEL | 2 |  |
-| BUILDPACKS | 3 |  |
-| CUSTOM | 4 |  |
-| KANIKO | 5 |  |
-| DOCKER | 6 |  |
+| UNKNOWN_BUILDER_TYPE | 0 | Could not determune builder type |
+| JIB | 1 | JIB Builder |
+| BAZEL | 2 | Bazel Builder |
+| BUILDPACKS | 3 | Buildpacks Builder |
+| CUSTOM | 4 | Custom Builder |
+| KANIKO | 5 | Kaniko Builder |
+| DOCKER | 6 | Docker Builder |
 
 
 
@@ -623,10 +623,10 @@ will be sent with the new status.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| UNKNOWN_CLUSTER_TYPE | 0 |  |
-| MINIKUBE | 1 |  |
-| GKE | 2 |  |
-| OTHER | 3 |  |
+| UNKNOWN_CLUSTER_TYPE | 0 | Could not determine Cluster Type |
+| MINIKUBE | 1 | Minikube Cluster |
+| GKE | 2 | GKE cluster |
+| OTHER | 3 | All Cluster except Minikube and GKE |
 
 
 
@@ -637,10 +637,10 @@ will be sent with the new status.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| UNKNOWN_DEPLOYER_TYPE | 0 |  |
-| HELM | 1 |  |
-| KUSTOMIZE | 2 |  |
-| KUBECTL | 3 |  |
+| UNKNOWN_DEPLOYER_TYPE | 0 | Could not determine Deployer Type |
+| HELM | 1 | Helm Deployer |
+| KUSTOMIZE | 2 | Kustomize Deployer |
+| KUBECTL | 3 | Kubectl Deployer |
 
 
 
@@ -652,20 +652,20 @@ Enum for error codes
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | COULD_NOT_DETERMINE | 0 | Could not determine error |
-| STATUS_CHECK_NO_ERROR | 200 | No Error codes Status Check Success |
-| STATUS_CHECK_IMAGE_PULL_ERR | 300 | Container errors Container image pull error |
+| STATUS_CHECK_NO_ERROR | 200 | Status Check Success |
+| STATUS_CHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUS_CHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUS_CHECK_RUN_CONTAINER_ERR | 302 | Container run error |
 | STATUS_CHECK_CONTAINER_TERMINATED | 303 | Container is already terminated |
 | STATUS_CHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
-| STATUS_CHECK_NODE_MEMORY_PRESSURE | 400 | K8 infra errors Node memory pressure error |
+| STATUS_CHECK_NODE_MEMORY_PRESSURE | 400 | Node memory pressure error |
 | STATUS_CHECK_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
 | STATUS_CHECK_NODE_NETWORK_UNAVAILABLE | 402 | Node network unavailable error |
 | STATUS_CHECK_NODE_PID_PRESSURE | 403 | Node PID pressure error |
 | STATUS_CHECK_NODE_UNSCHEDULABLE | 404 | Node unschedulable error |
 | STATUS_CHECK_NODE_UNREACHABLE | 405 | Node unreachable error |
 | STATUS_CHECK_NODE_NOT_READY | 406 | Node not ready error |
-| STATUS_CHECK_UNKNOWN | 501 | Unknown Error Codes Status Check error unknown |
+| STATUS_CHECK_UNKNOWN | 501 | Status Check error unknown |
 | STATUS_CHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |
 | STATUS_CHECK_CONTAINER_WAITING_UNKNOWN | 503 | Container is waiting due to unknown reason |
 

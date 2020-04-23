@@ -30,13 +30,20 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 type BuilderType int32
 
 const (
+	// Could not determune builder type
 	BuilderType_UNKNOWN_BUILDER_TYPE BuilderType = 0
-	BuilderType_JIB                  BuilderType = 1
-	BuilderType_BAZEL                BuilderType = 2
-	BuilderType_BUILDPACKS           BuilderType = 3
-	BuilderType_CUSTOM               BuilderType = 4
-	BuilderType_KANIKO               BuilderType = 5
-	BuilderType_DOCKER               BuilderType = 6
+	// JIB Builder
+	BuilderType_JIB BuilderType = 1
+	// Bazel Builder
+	BuilderType_BAZEL BuilderType = 2
+	// Buildpacks Builder
+	BuilderType_BUILDPACKS BuilderType = 3
+	// Custom Builder
+	BuilderType_CUSTOM BuilderType = 4
+	// Kaniko Builder
+	BuilderType_KANIKO BuilderType = 5
+	// Docker Builder
+	BuilderType_DOCKER BuilderType = 6
 )
 
 var BuilderType_name = map[int32]string{
@@ -70,10 +77,14 @@ func (BuilderType) EnumDescriptor() ([]byte, []int) {
 type BuildType int32
 
 const (
+	// Could not determine Build Type
 	BuildType_UNKNOWN_BUILD_TYPE BuildType = 0
-	BuildType_CLUSTER            BuildType = 1
-	BuildType_GCB                BuildType = 2
-	BuildType_LOCAL              BuildType = 3
+	// Cluster Build
+	BuildType_CLUSTER BuildType = 1
+	// GCB Build
+	BuildType_GCB BuildType = 2
+	// Local Build
+	BuildType_LOCAL BuildType = 3
 )
 
 var BuildType_name = map[int32]string{
@@ -101,10 +112,14 @@ func (BuildType) EnumDescriptor() ([]byte, []int) {
 type DeployerType int32
 
 const (
+	// Could not determine Deployer Type
 	DeployerType_UNKNOWN_DEPLOYER_TYPE DeployerType = 0
-	DeployerType_HELM                  DeployerType = 1
-	DeployerType_KUSTOMIZE             DeployerType = 2
-	DeployerType_KUBECTL               DeployerType = 3
+	// Helm Deployer
+	DeployerType_HELM DeployerType = 1
+	// Kustomize Deployer
+	DeployerType_KUSTOMIZE DeployerType = 2
+	// Kubectl Deployer
+	DeployerType_KUBECTL DeployerType = 3
 )
 
 var DeployerType_name = map[int32]string{
@@ -132,10 +147,14 @@ func (DeployerType) EnumDescriptor() ([]byte, []int) {
 type ClusterType int32
 
 const (
+	// Could not determine Cluster Type
 	ClusterType_UNKNOWN_CLUSTER_TYPE ClusterType = 0
-	ClusterType_MINIKUBE             ClusterType = 1
-	ClusterType_GKE                  ClusterType = 2
-	ClusterType_OTHER                ClusterType = 3
+	// Minikube Cluster
+	ClusterType_MINIKUBE ClusterType = 1
+	// GKE cluster
+	ClusterType_GKE ClusterType = 2
+	// All Cluster except Minikube and GKE
+	ClusterType_OTHER ClusterType = 3
 )
 
 var ClusterType_name = map[int32]string{
@@ -166,10 +185,8 @@ type ErrorCode int32
 const (
 	// Could not determine error
 	ErrorCode_COULD_NOT_DETERMINE ErrorCode = 0
-	// No Error codes
 	// Status Check Success
 	ErrorCode_STATUS_CHECK_NO_ERROR ErrorCode = 200
-	// Container errors
 	// Container image pull error
 	ErrorCode_STATUS_CHECK_IMAGE_PULL_ERR ErrorCode = 300
 	// Container creating error
@@ -180,7 +197,6 @@ const (
 	ErrorCode_STATUS_CHECK_CONTAINER_TERMINATED ErrorCode = 303
 	// Container restarting error
 	ErrorCode_STATUS_CHECK_CONTAINER_RESTARTING ErrorCode = 356
-	// K8 infra errors
 	// Node memory pressure error
 	ErrorCode_STATUS_CHECK_NODE_MEMORY_PRESSURE ErrorCode = 400
 	// Node disk pressure error
@@ -195,7 +211,6 @@ const (
 	ErrorCode_STATUS_CHECK_NODE_UNREACHABLE ErrorCode = 405
 	// Node not ready error
 	ErrorCode_STATUS_CHECK_NODE_NOT_READY ErrorCode = 406
-	// Unknown Error Codes
 	// Status Check error unknown
 	ErrorCode_STATUS_CHECK_UNKNOWN ErrorCode = 501
 	// Container is unschedulable due to unknown reasons
