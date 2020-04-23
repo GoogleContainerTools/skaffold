@@ -117,7 +117,6 @@ func outputRenderedManifests(renderedManifests string, output string, manifestOu
 	default:
 		return dumpToFile(renderedManifests, output)
 	}
-
 }
 
 func dumpToFile(renderedManifests string, filepath string) error {
