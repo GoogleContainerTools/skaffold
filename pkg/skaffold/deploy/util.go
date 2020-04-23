@@ -102,7 +102,7 @@ func outputRenderedManifests(renderedManifests string, output string, manifestOu
 	case strings.HasPrefix(output, "gs://"):
 		tempDir, err := ioutil.TempDir("", renderedManifestsStagingDir)
 		if err != nil {
-			return fmt.Errorf("failed to create tmp directory: %v", err)
+			return fmt.Errorf("failed to create tmp directory: %w", err)
 		}
 		defer os.RemoveAll(tempDir)
 		tempFile := filepath.Join(tempDir, renderedManifestsStagingFile)
