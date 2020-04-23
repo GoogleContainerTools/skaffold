@@ -18,10 +18,11 @@ package validator
 
 import (
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/proto"
 
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 type Resource struct {
