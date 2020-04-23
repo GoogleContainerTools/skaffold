@@ -9,6 +9,8 @@ import (
 	"sort"
 
 	"github.com/BurntSushi/toml"
+
+	"github.com/buildpacks/lifecycle/launch"
 )
 
 type Builder struct {
@@ -29,20 +31,13 @@ type BuildEnv interface {
 	List() []string
 }
 
-type Process struct {
-	Type    string   `toml:"type" json:"type"`
-	Command string   `toml:"command" json:"command"`
-	Args    []string `toml:"args" json:"args"`
-	Direct  bool     `toml:"direct" json:"direct"`
-}
-
 type Slice struct {
 	Paths []string `tom:"paths"`
 }
 
 type LaunchTOML struct {
-	Processes []Process `toml:"processes"`
-	Slices    []Slice   `toml:"slices"`
+	Processes []launch.Process `toml:"processes"`
+	Slices    []Slice          `toml:"slices"`
 }
 
 type BOMEntry struct {
@@ -83,7 +78,7 @@ func (b *Builder) Build() (*BuildMetadata, error) {
 		if err != nil {
 			return nil, err
 		}
-		bpDirName := bp.dir()
+		bpDirName := launch.EscapeID(bp.ID)
 		bpLayersDir := filepath.Join(layersDir, bpDirName)
 		bpPlanDir := filepath.Join(planDir, bpDirName)
 		if err := os.MkdirAll(bpLayersDir, 0777); err != nil {
@@ -97,10 +92,17 @@ func (b *Builder) Build() (*BuildMetadata, error) {
 		if err := WriteTOML(bpPlanPath, plan.find(bp)); err != nil {
 			return nil, err
 		}
-		cmd := exec.Command(filepath.Join(bpInfo.Path, "bin", "build"), bpLayersDir, platformDir, bpPlanPath)
+
+		cmd := exec.Command(
+			filepath.Join(bpInfo.Path, "bin", "build"),
+			bpLayersDir,
+			platformDir,
+			bpPlanPath,
+		)
 		cmd.Dir = appDir
 		cmd.Stdout = b.Out.Writer()
 		cmd.Stderr = b.Err.Writer()
+
 		if bpInfo.Buildpack.ClearEnv {
 			cmd.Env = b.Env.List()
 		} else {
@@ -109,6 +111,7 @@ func (b *Builder) Build() (*BuildMetadata, error) {
 				return nil, err
 			}
 		}
+
 		if err := cmd.Run(); err != nil {
 			return nil, err
 		}
@@ -202,6 +205,24 @@ func setupEnv(env BuildEnv, layersDir string) error {
 	})
 }
 
+func eachDir(dir string, fn func(path string) error) error {
+	files, err := ioutil.ReadDir(dir)
+	if os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	for _, f := range files {
+		if !f.IsDir() {
+			continue
+		}
+		if err := fn(filepath.Join(dir, f.Name())); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func isBuild(path string) bool {
 	var layerTOML struct {
 		Build bool `toml:"build"`
@@ -210,21 +231,21 @@ func isBuild(path string) bool {
 	return err == nil && layerTOML.Build
 }
 
-type processMap map[string]Process
+type processMap map[string]launch.Process
 
-func (m processMap) add(l []Process) {
+func (m processMap) add(l []launch.Process) {
 	for _, proc := range l {
 		m[proc.Type] = proc
 	}
 }
 
-func (m processMap) list() []Process {
+func (m processMap) list() []launch.Process {
 	var keys []string
 	for key := range m {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
-	procs := []Process{}
+	procs := []launch.Process{}
 	for _, key := range keys {
 		procs = append(procs, m[key])
 	}

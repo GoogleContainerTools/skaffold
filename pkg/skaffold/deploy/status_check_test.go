@@ -30,13 +30,16 @@ import (
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 	utilpointer "k8s.io/utils/pointer"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/resource"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestGetDeployments(t *testing.T) {
-	labeller := NewLabeller("")
+	labeller := NewLabeller(config.SkaffoldOptions{})
 	tests := []struct {
 		description string
 		deps        []*appsv1.Deployment
@@ -298,6 +301,7 @@ func TestGetDeployStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			event.InitializeState(latest.BuildConfig{})
 			err := getSkaffoldDeployStatus(test.counter)
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {

@@ -5,9 +5,11 @@ package godirwalk
 // descendant of the specified directory. If the specified directory is a
 // symbolic link, it will be resolved.
 //
-// The second parameter was an optional scratch buffer, but is no longer used
-// because ReadDirents invokes Scanner to enumerate the contents of the
-// directory.
+// If an optional scratch buffer is provided that is at least one page of
+// memory, it will be used when reading directory entries from the file
+// system. If you plan on calling this function in a loop, you will have
+// significantly better performance if you allocate a scratch buffer and use it
+// each time you call this function.
 //
 //    children, err := godirwalk.ReadDirents(osDirname, nil)
 //    if err != nil {
@@ -17,30 +19,19 @@ package godirwalk
 //    for _, child := range children {
 //        fmt.Printf("%s %s\n", child.ModeType, child.Name)
 //    }
-func ReadDirents(osDirname string, _ []byte) (Dirents, error) {
-	var entries Dirents
-	scanner, err := NewScanner(osDirname)
-	if err != nil {
-		return nil, err
-	}
-	for scanner.Scan() {
-		if dirent, err := scanner.Dirent(); err == nil {
-			entries = append(entries, dirent)
-		}
-	}
-	if err = scanner.Err(); err != nil {
-		return nil, err
-	}
-	return entries, nil
+func ReadDirents(osDirname string, scratchBuffer []byte) (Dirents, error) {
+	return readDirents(osDirname, scratchBuffer)
 }
 
 // ReadDirnames returns a slice of strings, representing the immediate
 // descendants of the specified directory. If the specified directory is a
 // symbolic link, it will be resolved.
 //
-// The second parameter was an optional scratch buffer, but is no longer used
-// because ReadDirents invokes Scanner to enumerate the contents of the
-// directory.
+// If an optional scratch buffer is provided that is at least one page of
+// memory, it will be used when reading directory entries from the file
+// system. If you plan on calling this function in a loop, you will have
+// significantly better performance if you allocate a scratch buffer and use it
+// each time you call this function.
 //
 // Note that this function, depending on operating system, may or may not invoke
 // the ReadDirents function, in order to prepare the list of immediate
@@ -57,17 +48,6 @@ func ReadDirents(osDirname string, _ []byte) (Dirents, error) {
 //    for _, child := range children {
 //        fmt.Printf("%s\n", child)
 //    }
-func ReadDirnames(osDirname string, _ []byte) ([]string, error) {
-	var entries []string
-	scanner, err := NewScanner(osDirname)
-	if err != nil {
-		return nil, err
-	}
-	for scanner.Scan() {
-		entries = append(entries, scanner.Name())
-	}
-	if err = scanner.Err(); err != nil {
-		return nil, err
-	}
-	return entries, nil
+func ReadDirnames(osDirname string, scratchBuffer []byte) ([]string, error) {
+	return readDirnames(osDirname, scratchBuffer)
 }

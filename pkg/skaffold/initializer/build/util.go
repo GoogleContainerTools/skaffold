@@ -21,13 +21,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
 func matchBuildersToImages(builders []InitBuilder, images []string) ([]BuilderImagePair, []InitBuilder, []string) {
-	images = stripTags(images)
+	images = tag.StripTags(images)
 
 	var pairs []BuilderImagePair
 	var unresolvedImages = make(sortedSet)
@@ -61,26 +60,6 @@ func findExactlyOneMatchingBuilder(builderConfigs []InitBuilder, image string) i
 		matchingConfigIndex = i
 	}
 	return matchingConfigIndex
-}
-
-func stripTags(taggedImages []string) []string {
-	// Remove tags from image names
-	var images []string
-	for _, image := range taggedImages {
-		parsed, err := docker.ParseReference(image)
-		if err != nil {
-			// It's possible that it's a templatized name that can't be parsed as is.
-			warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
-			continue
-		}
-		if parsed.Digest != "" {
-			warnings.Printf("Ignoring image referenced by digest: [%s]", image)
-			continue
-		}
-
-		images = append(images, parsed.BaseName)
-	}
-	return images
 }
 
 func Artifacts(pairs []BuilderImagePair) []*latest.Artifact {

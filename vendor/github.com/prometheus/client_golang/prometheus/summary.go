@@ -208,7 +208,7 @@ func newSummary(desc *Desc, opts SummaryOpts, labelValues ...string) Summary {
 		s := &noObjectivesSummary{
 			desc:       desc,
 			labelPairs: makeLabelPairs(desc, labelValues),
-			counts:     [2]*summaryCounts{{}, {}},
+			counts:     [2]*summaryCounts{&summaryCounts{}, &summaryCounts{}},
 		}
 		s.init(s) // Init self-collection.
 		return s

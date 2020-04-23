@@ -48,12 +48,12 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 
 		bRes, err := r.builder.Build(ctx, out, tags, artifacts)
 		if err != nil {
-			return nil, fmt.Errorf("build failed: %w", err)
+			return nil, err
 		}
 
 		if !r.runCtx.Opts.SkipTests {
 			if err = r.tester.Test(ctx, out, bRes); err != nil {
-				return nil, fmt.Errorf("test failed: %w", err)
+				return nil, err
 			}
 		}
 
@@ -128,7 +128,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
 
-	defaultRepo, err := config.GetDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo)
+	defaultRepo, err := config.GetDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo.Value())
 	if err != nil {
 		return nil, fmt.Errorf("getting default repo: %w", err)
 	}

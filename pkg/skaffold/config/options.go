@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -58,7 +57,7 @@ type SkaffoldOptions struct {
 	KubeContext        string
 	KubeConfig         string
 	WatchPollInterval  int
-	DefaultRepo        string
+	DefaultRepo        StringOrUndefined
 	CustomLabels       []string
 	TargetImages       []string
 	Profiles           []string
@@ -71,35 +70,6 @@ type SkaffoldOptions struct {
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles
 	MinikubeProfile string
-}
-
-// Labels returns a map of labels to be applied to all deployed
-// k8s objects during the duration of the run
-func (opts *SkaffoldOptions) Labels() map[string]string {
-	labels := map[string]string{}
-
-	if opts.Cleanup {
-		labels["skaffold.dev/cleanup"] = "true"
-	}
-	if opts.Tail || opts.TailDev {
-		labels["skaffold.dev/tail"] = "true"
-	}
-	if opts.Namespace != "" {
-		labels["skaffold.dev/namespace"] = opts.Namespace
-	}
-	for i, profile := range opts.Profiles {
-		key := fmt.Sprintf("skaffold.dev/profile.%d", i)
-		labels[key] = profile
-	}
-	for _, cl := range opts.CustomLabels {
-		l := strings.SplitN(cl, "=", 2)
-		if len(l) == 1 {
-			labels[l[0]] = ""
-			continue
-		}
-		labels[l[0]] = l[1]
-	}
-	return labels
 }
 
 // Prune returns true iff the user did NOT specify the --no-prune flag,

@@ -1,4 +1,9 @@
 
+v1.1.2 / 2020-01-29
+===================
+
+  * refactor apexlogs handler to use github.com/apex/logs client
+
 v1.1.1 / 2019-06-24
 ===================
 

@@ -19,6 +19,7 @@ package testutil
 import (
 	"context"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -49,10 +50,18 @@ type FakeAPIClient struct {
 	ErrImagePush    bool
 	ErrImagePull    bool
 	ErrStream       bool
+	ErrVersion      bool
 
 	nextImageID int
 	Pushed      map[string]string
 	Built       []types.ImageBuildOptions
+}
+
+func (f *FakeAPIClient) ServerVersion(ctx context.Context) (types.Version, error) {
+	if f.ErrVersion {
+		return types.Version{}, errors.New("docker not found")
+	}
+	return types.Version{}, nil
 }
 
 func (f *FakeAPIClient) Add(tag, imageID string) *FakeAPIClient {

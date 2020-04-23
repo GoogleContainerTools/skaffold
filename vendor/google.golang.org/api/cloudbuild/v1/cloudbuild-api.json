@@ -22,6 +22,7 @@
   },
   "id": "cloudbuild:v1",
   "kind": "discovery#restDescription",
+  "mtlsRootUrl": "https://cloudbuild.mtls.googleapis.com/",
   "name": "cloudbuild",
   "ownerDomain": "google.com",
   "ownerName": "Google",
@@ -118,7 +119,7 @@
             "name": {
               "description": "The name of the operation resource to be cancelled.",
               "location": "path",
-              "pattern": "^operations/.+$",
+              "pattern": "^operations/.*$",
               "required": true,
               "type": "string"
             }
@@ -146,7 +147,7 @@
             "name": {
               "description": "The name of the operation resource.",
               "location": "path",
-              "pattern": "^operations/.+$",
+              "pattern": "^operations/.*$",
               "required": true,
               "type": "string"
             }
@@ -573,7 +574,7 @@
       }
     }
   },
-  "revision": "20191207",
+  "revision": "20200308",
   "rootUrl": "https://cloudbuild.googleapis.com/",
   "schemas": {
     "ArtifactObjects": {
@@ -717,7 +718,8 @@
             "FAILURE",
             "INTERNAL_ERROR",
             "TIMEOUT",
-            "CANCELLED"
+            "CANCELLED",
+            "EXPIRED"
           ],
           "enumDescriptions": [
             "Status of the build is unknown.",
@@ -727,7 +729,8 @@
             "Build or step failed to complete successfully.",
             "Build or step failed due to an internal cause.",
             "Build or step took longer than was allowed.",
-            "Build or step was canceled by a user."
+            "Build or step was canceled by a user.",
+            "Build was enqueued for longer than the value of `queue_ttl`."
           ],
           "type": "string"
         },
@@ -957,7 +960,8 @@
             "FAILURE",
             "INTERNAL_ERROR",
             "TIMEOUT",
-            "CANCELLED"
+            "CANCELLED",
+            "EXPIRED"
           ],
           "enumDescriptions": [
             "Status of the build is unknown.",
@@ -967,7 +971,8 @@
             "Build or step failed to complete successfully.",
             "Build or step failed due to an internal cause.",
             "Build or step took longer than was allowed.",
-            "Build or step was canceled by a user."
+            "Build or step was canceled by a user.",
+            "Build was enqueued for longer than the value of `queue_ttl`."
           ],
           "type": "string"
         },
@@ -1031,7 +1036,7 @@
           "type": "string"
         },
         "ignoredFiles": {
-          "description": "ignored_files and included_files are file glob matches using\nhttp://godoc/pkg/path/filepath#Match extended with support for \"**\".\n\nIf ignored_files and changed files are both empty, then they are\nnot used to determine whether or not to trigger a build.\n\nIf ignored_files is not empty, then we ignore any files that match\nany of the ignored_file globs. If the change has no files that are\noutside of the ignored_files globs, then we do not trigger a build.",
+          "description": "ignored_files and included_files are file glob matches using\nhttps://golang.org/pkg/path/filepath/#Match extended with support for \"**\".\n\nIf ignored_files and changed files are both empty, then they are\nnot used to determine whether or not to trigger a build.\n\nIf ignored_files is not empty, then we ignore any files that match\nany of the ignored_file globs. If the change has no files that are\noutside of the ignored_files globs, then we do not trigger a build.",
           "items": {
             "type": "string"
           },
@@ -1282,6 +1287,10 @@
             "Enforce that repository owners or collaborators must comment on Pull\nRequests before builds are triggered."
           ],
           "type": "string"
+        },
+        "invertRegex": {
+          "description": "If true, branches that do NOT match the git_ref will trigger a build.",
+          "type": "boolean"
         }
       },
       "type": "object"
@@ -1293,6 +1302,10 @@
         "branch": {
           "description": "Regexes matching branches to build.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
           "type": "string"
+        },
+        "invertRegex": {
+          "description": "When true, only trigger a build if the revision regex does NOT match the\ngit_ref regex.",
+          "type": "boolean"
         },
         "tag": {
           "description": "Regexes matching tags to build.\n\nThe syntax of the regular expressions accepted is the syntax accepted by\nRE2 and described at https://github.com/google/re2/wiki/Syntax",
@@ -1316,6 +1329,10 @@
         "dir": {
           "description": "Directory, relative to the source root, in which to run the build.\n\nThis must be a relative path. If a step's `dir` is specified and is an\nabsolute path, this value is ignored for that step's execution.",
           "type": "string"
+        },
+        "invertRegex": {
+          "description": "Only trigger a build if the revision regex does NOT match the revision\nregex.",
+          "type": "boolean"
         },
         "projectId": {
           "description": "ID of the project that owns the Cloud Source Repository. If omitted, the\nproject ID requesting the build is assumed.",

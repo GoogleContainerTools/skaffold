@@ -46,6 +46,12 @@ A|he${XXX:-$PWD}xx         |     he/homexx
 A|he${XXX:-${PWD:-yyy}}xx  |     he/homexx
 A|he${XXX:-${YYY:-yyy}}xx  |     heyyyxx
 A|he${XXX:YYY}             |     error
+A|he${XXX?}                |     error
+A|he${XXX:?}               |     error
+A|he${PWD?}                |     he/home
+A|he${PWD:?}               |     he/home
+A|he${NULL?}               |     he
+A|he${NULL:?}              |     error
 A|he${XXX:+${PWD}}xx       |     hexx
 A|he${PWD:+${XXX}}xx       |     hexx
 A|he${PWD:+${SHELL}}xx     |     hebashxx

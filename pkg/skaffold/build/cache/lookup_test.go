@@ -43,7 +43,7 @@ func TestLookupLocal(t *testing.T) {
 		{
 			description: "hash failure",
 			hasher:      failingHasher("BUG"),
-			expected:    failed{err: errors.New("getting hash for artifact artifact: BUG")},
+			expected:    failed{err: errors.New("getting hash for artifact \"artifact\": BUG")},
 		},
 		{
 			description: "miss no imageID",
@@ -71,7 +71,7 @@ func TestLookupLocal(t *testing.T) {
 			api: &testutil.FakeAPIClient{
 				ErrImageInspect: true,
 			},
-			expected: failed{err: errors.New("getting imageID for tag: inspecting image: ")},
+			expected: failed{err: errors.New("getting imageID for tag: ")},
 		},
 		{
 			description: "hit",
@@ -139,7 +139,7 @@ func TestLookupRemote(t *testing.T) {
 		{
 			description: "hash failure",
 			hasher:      failingHasher("BUG"),
-			expected:    failed{err: errors.New("getting hash for artifact artifact: BUG")},
+			expected:    failed{err: errors.New("getting hash for artifact \"artifact\": BUG")},
 		},
 		{
 			description: "hit",

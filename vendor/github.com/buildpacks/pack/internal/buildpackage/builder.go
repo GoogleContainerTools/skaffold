@@ -1,12 +1,20 @@
 package buildpackage
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"io/ioutil"
 	"os"
 
 	"github.com/buildpacks/imgutil"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/empty"
+	"github.com/google/go-containerregistry/pkg/v1/layout"
+	"github.com/google/go-containerregistry/pkg/v1/mutate"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
 
+	"github.com/buildpacks/pack/internal/archive"
 	"github.com/buildpacks/pack/internal/dist"
 	"github.com/buildpacks/pack/internal/stack"
 	"github.com/buildpacks/pack/internal/style"
@@ -14,6 +22,41 @@ import (
 
 type ImageFactory interface {
 	NewImage(repoName string, local bool) (imgutil.Image, error)
+}
+
+type WorkableImage interface {
+	SetLabel(string, string) error
+	AddLayerWithDiffID(path, diffID string) error
+}
+
+type layoutImage struct {
+	v1.Image
+}
+
+func (i *layoutImage) SetLabel(key string, val string) error {
+	configFile, err := i.ConfigFile()
+	if err != nil {
+		return err
+	}
+	config := *configFile.Config.DeepCopy()
+	if config.Labels == nil {
+		config.Labels = map[string]string{}
+	}
+	config.Labels[key] = val
+	i.Image, err = mutate.Config(i.Image, config)
+	return err
+}
+
+func (i *layoutImage) AddLayerWithDiffID(path, _ string) error {
+	layer, err := tarball.LayerFromFile(path, tarball.WithCompressionLevel(gzip.DefaultCompression))
+	if err != nil {
+		return err
+	}
+	i.Image, err = mutate.AppendLayers(i.Image, layer)
+	if err != nil {
+		return errors.Wrap(err, "add layer")
+	}
+	return nil
 }
 
 type PackageBuilder struct {
@@ -28,25 +71,70 @@ func NewBuilder(imageFactory ImageFactory) *PackageBuilder {
 	}
 }
 
-func (p *PackageBuilder) SetBuildpack(buildpack dist.Buildpack) {
-	p.buildpack = buildpack
+func (b *PackageBuilder) SetBuildpack(buildpack dist.Buildpack) {
+	b.buildpack = buildpack
 }
 
-func (p *PackageBuilder) AddDependency(buildpack dist.Buildpack) {
-	p.dependencies = append(p.dependencies, buildpack)
+func (b *PackageBuilder) AddDependency(buildpack dist.Buildpack) {
+	b.dependencies = append(b.dependencies, buildpack)
 }
 
-func (p *PackageBuilder) Save(repoName string, publish bool) (imgutil.Image, error) {
-	if p.buildpack == nil {
-		return nil, errors.New("buildpack must be set")
+func (b *PackageBuilder) finalizeImage(tmpDir string, image WorkableImage) error {
+	if err := dist.SetLabel(image, MetadataLabel, &Metadata{
+		BuildpackInfo: b.buildpack.Descriptor().Info,
+		Stacks:        b.resolvedStacks(),
+	}); err != nil {
+		return err
 	}
 
-	if err := validateBuildpacks(p.buildpack, p.dependencies); err != nil {
-		return nil, err
+	bpLayers := dist.BuildpackLayers{}
+	for _, bp := range append(b.dependencies, b.buildpack) {
+		bpLayerTar, err := dist.BuildpackToLayerTar(tmpDir, bp)
+		if err != nil {
+			return err
+		}
+
+		diffID, err := dist.LayerDiffID(bpLayerTar)
+		if err != nil {
+			return errors.Wrapf(err,
+				"getting content hashes for buildpack %s",
+				style.Symbol(bp.Descriptor().Info.FullName()),
+			)
+		}
+
+		if err := image.AddLayerWithDiffID(bpLayerTar, diffID.String()); err != nil {
+			return errors.Wrapf(err, "adding layer tar for buildpack %s", style.Symbol(bp.Descriptor().Info.FullName()))
+		}
+
+		dist.AddBuildpackToLayersMD(bpLayers, bp.Descriptor(), diffID.String())
 	}
 
-	stacks := p.buildpack.Descriptor().Stacks
-	for _, bp := range p.dependencies {
+	if err := dist.SetLabel(image, dist.BuildpackLayersLabel, bpLayers); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *PackageBuilder) validate() error {
+	if b.buildpack == nil {
+		return errors.New("buildpack must be set")
+	}
+
+	if err := validateBuildpacks(b.buildpack, b.dependencies); err != nil {
+		return err
+	}
+
+	if len(b.resolvedStacks()) == 0 {
+		return errors.Errorf("no compatible stacks among provided buildpacks")
+	}
+
+	return nil
+}
+
+func (b *PackageBuilder) resolvedStacks() []dist.Stack {
+	stacks := b.buildpack.Descriptor().Stacks
+	for _, bp := range b.dependencies {
 		bpd := bp.Descriptor()
 
 		if len(stacks) == 0 {
@@ -56,20 +144,62 @@ func (p *PackageBuilder) Save(repoName string, publish bool) (imgutil.Image, err
 		}
 	}
 
-	if len(stacks) == 0 {
-		return nil, errors.Errorf("no compatible stacks among provided buildpacks")
+	return stacks
+}
+
+func (b *PackageBuilder) SaveAsFile(path string) error {
+	if err := b.validate(); err != nil {
+		return err
 	}
 
-	image, err := p.imageFactory.NewImage(repoName, !publish)
+	layoutImage := &layoutImage{
+		Image: empty.Image,
+	}
+
+	tmpDir, err := ioutil.TempDir("", "package-buildpack")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	if err := b.finalizeImage(tmpDir, layoutImage); err != nil {
+		return err
+	}
+
+	layoutDir, err := ioutil.TempDir(tmpDir, "oci-layout")
+	if err != nil {
+		return errors.Wrap(err, "creating oci-layout temp dir")
+	}
+
+	p, err := layout.Write(layoutDir, empty.Index)
+	if err != nil {
+		return errors.Wrap(err, "writing index")
+	}
+
+	if err := p.AppendImage(layoutImage); err != nil {
+		return errors.Wrap(err, "writing layout")
+	}
+
+	outputFile, err := os.Create(path)
+	if err != nil {
+		return errors.Wrap(err, "creating output file")
+	}
+	defer outputFile.Close()
+
+	tw := tar.NewWriter(outputFile)
+	defer tw.Close()
+
+	return archive.WriteDirToTar(tw, layoutDir, "/", 0, 0, 0755, true, nil)
+}
+
+func (b *PackageBuilder) SaveAsImage(repoName string, publish bool) (imgutil.Image, error) {
+	if err := b.validate(); err != nil {
+		return nil, err
+	}
+
+	image, err := b.imageFactory.NewImage(repoName, !publish)
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating image")
-	}
-
-	if err := dist.SetLabel(image, MetadataLabel, &Metadata{
-		BuildpackInfo: p.buildpack.Descriptor().Info,
-		Stacks:        stacks,
-	}); err != nil {
-		return nil, err
 	}
 
 	tmpDir, err := ioutil.TempDir("", "package-buildpack")
@@ -78,29 +208,7 @@ func (p *PackageBuilder) Save(repoName string, publish bool) (imgutil.Image, err
 	}
 	defer os.RemoveAll(tmpDir)
 
-	bpLayers := dist.BuildpackLayers{}
-	for _, bp := range append(p.dependencies, p.buildpack) {
-		bpLayerTar, err := dist.BuildpackToLayerTar(tmpDir, bp)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := image.AddLayer(bpLayerTar); err != nil {
-			return nil, errors.Wrapf(err, "adding layer tar for buildpack %s", style.Symbol(bp.Descriptor().Info.FullName()))
-		}
-
-		diffID, err := dist.LayerDiffID(bpLayerTar)
-		if err != nil {
-			return nil, errors.Wrapf(err,
-				"getting content hashes for buildpack %s",
-				style.Symbol(bp.Descriptor().Info.FullName()),
-			)
-		}
-
-		dist.AddBuildpackToLayersMD(bpLayers, bp.Descriptor(), diffID.String())
-	}
-
-	if err := dist.SetLabel(image, dist.BuildpackLayersLabel, bpLayers); err != nil {
+	if err := b.finalizeImage(tmpDir, image); err != nil {
 		return nil, err
 	}
 
@@ -112,17 +220,17 @@ func (p *PackageBuilder) Save(repoName string, publish bool) (imgutil.Image, err
 }
 
 func validateBuildpacks(mainBP dist.Buildpack, depBPs []dist.Buildpack) error {
-	depsWithRefs := map[dist.BuildpackInfo][]dist.BuildpackInfo{}
+	depsWithRefs := map[string][]dist.BuildpackInfo{}
 
 	for _, bp := range depBPs {
-		depsWithRefs[bp.Descriptor().Info] = nil
+		depsWithRefs[bp.Descriptor().Info.FullName()] = nil
 	}
 
-	for _, bp := range append([]dist.Buildpack{mainBP}, depBPs...) {
+	for _, bp := range append([]dist.Buildpack{mainBP}, depBPs...) { // List of everything
 		bpd := bp.Descriptor()
 		for _, orderEntry := range bpd.Order {
 			for _, groupEntry := range orderEntry.Group {
-				if _, ok := depsWithRefs[groupEntry.BuildpackInfo]; !ok {
+				if _, ok := depsWithRefs[groupEntry.BuildpackInfo.FullName()]; !ok {
 					return errors.Errorf(
 						"buildpack %s references buildpack %s which is not present",
 						style.Symbol(bpd.Info.FullName()),
@@ -130,7 +238,7 @@ func validateBuildpacks(mainBP dist.Buildpack, depBPs []dist.Buildpack) error {
 					)
 				}
 
-				depsWithRefs[groupEntry.BuildpackInfo] = append(depsWithRefs[groupEntry.BuildpackInfo], bpd.Info)
+				depsWithRefs[groupEntry.BuildpackInfo.FullName()] = append(depsWithRefs[groupEntry.BuildpackInfo.FullName()], bpd.Info)
 			}
 		}
 	}
@@ -139,7 +247,7 @@ func validateBuildpacks(mainBP dist.Buildpack, depBPs []dist.Buildpack) error {
 		if len(refs) == 0 {
 			return errors.Errorf(
 				"buildpack %s is not used by buildpack %s",
-				style.Symbol(bp.FullName()),
+				style.Symbol(bp),
 				style.Symbol(mainBP.Descriptor().Info.FullName()),
 			)
 		}

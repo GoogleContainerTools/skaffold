@@ -14,16 +14,22 @@
 package procfs
 
 import (
+	"io/ioutil"
+	"os"
 	"strings"
-
-	"github.com/prometheus/procfs/internal/util"
 )
 
 // Environ reads process environments from /proc/<pid>/environ
 func (p Proc) Environ() ([]string, error) {
 	environments := make([]string, 0)
 
-	data, err := util.ReadFileNoStat(p.path("environ"))
+	f, err := os.Open(p.path("environ"))
+	if err != nil {
+		return environments, err
+	}
+	defer f.Close()
+
+	data, err := ioutil.ReadAll(f)
 	if err != nil {
 		return environments, err
 	}

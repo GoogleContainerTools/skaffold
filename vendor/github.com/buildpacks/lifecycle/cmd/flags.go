@@ -2,133 +2,166 @@ package cmd
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strconv"
-
-	"github.com/docker/docker/client"
-	"github.com/pkg/errors"
 )
 
 const (
-	DefaultLayersDir     = "/layers"
-	DefaultAppDir        = "/workspace"
-	DefaultBuildpacksDir = "/cnb/buildpacks"
-	DefaultPlatformDir   = "/platform"
-	DefaultOrderPath     = "/cnb/order.toml"
-	DefaultGroupPath     = "./group.toml"
-	DefaultStackPath     = "/cnb/stack.toml"
-	DefaultAnalyzedPath  = "./analyzed.toml"
-	DefaultPlanPath      = "./plan.toml"
-	DefaultProcessType   = "web"
-	DefaultLauncherPath  = "/cnb/lifecycle/launcher"
-	DefaultLogLevel      = "info"
+	DefaultLayersDir           = "/layers"
+	DefaultAppDir              = "/workspace"
+	DefaultBuildpacksDir       = "/cnb/buildpacks"
+	DefaultPlatformDir         = "/platform"
+	DefaultOrderPath           = "/cnb/order.toml"
+	DefaultGroupPath           = "./group.toml"
+	DefaultStackPath           = "/cnb/stack.toml"
+	DefaultAnalyzedPath        = "./analyzed.toml"
+	DefaultPlanPath            = "./plan.toml"
+	DefaultProcessType         = "web"
+	DefaultLauncherPath        = "/cnb/lifecycle/launcher"
+	DefaultLogLevel            = "info"
+	DefaultProjectMetadataPath = "./project-metadata.toml"
 
-	EnvLayersDir         = "CNB_LAYERS_DIR"
-	EnvAppDir            = "CNB_APP_DIR"
-	EnvBuildpacksDir     = "CNB_BUILDPACKS_DIR"
-	EnvPlatformDir       = "CNB_PLATFORM_DIR"
-	EnvAnalyzedPath      = "CNB_ANALYZED_PATH"
-	EnvOrderPath         = "CNB_ORDER_PATH"
-	EnvGroupPath         = "CNB_GROUP_PATH"
-	EnvStackPath         = "CNB_STACK_PATH"
-	EnvPlanPath          = "CNB_PLAN_PATH"
-	EnvUseDaemon         = "CNB_USE_DAEMON"       // defaults to false
-	EnvUseHelpers        = "CNB_USE_CRED_HELPERS" // defaults to false
-	EnvRunImage          = "CNB_RUN_IMAGE"
-	EnvCacheImage        = "CNB_CACHE_IMAGE"
-	EnvCacheDir          = "CNB_CACHE_DIR"
-	EnvLaunchCacheDir    = "CNB_LAUNCH_CACHE_DIR"
-	EnvUID               = "CNB_USER_ID"
-	EnvGID               = "CNB_GROUP_ID"
-	EnvRegistryAuth      = "CNB_REGISTRY_AUTH"
-	EnvSkipLayers        = "CNB_ANALYZE_SKIP_LAYERS" // defaults to false
-	EnvProcessType       = "CNB_PROCESS_TYPE"
-	EnvProcessTypeLegacy = "PACK_PROCESS_TYPE" // deprecated
-	EnvLogLevel          = "CNB_LOG_LEVEL"
+	EnvLayersDir           = "CNB_LAYERS_DIR"
+	EnvAppDir              = "CNB_APP_DIR"
+	EnvBuildpacksDir       = "CNB_BUILDPACKS_DIR"
+	EnvPlatformDir         = "CNB_PLATFORM_DIR"
+	EnvAnalyzedPath        = "CNB_ANALYZED_PATH"
+	EnvOrderPath           = "CNB_ORDER_PATH"
+	EnvGroupPath           = "CNB_GROUP_PATH"
+	EnvStackPath           = "CNB_STACK_PATH"
+	EnvPlanPath            = "CNB_PLAN_PATH"
+	EnvUseDaemon           = "CNB_USE_DAEMON" // defaults to false
+	EnvRunImage            = "CNB_RUN_IMAGE"
+	EnvPreviousImage       = "CNB_PREVIOUS_IMAGE"
+	EnvCacheImage          = "CNB_CACHE_IMAGE"
+	EnvCacheDir            = "CNB_CACHE_DIR"
+	EnvLaunchCacheDir      = "CNB_LAUNCH_CACHE_DIR"
+	EnvUID                 = "CNB_USER_ID"
+	EnvGID                 = "CNB_GROUP_ID"
+	EnvRegistryAuth        = "CNB_REGISTRY_AUTH"
+	EnvSkipLayers          = "CNB_ANALYZE_SKIP_LAYERS" // defaults to false
+	EnvSkipRestore         = "CNB_SKIP_RESTORE"        // defaults to false
+	EnvProcessType         = "CNB_PROCESS_TYPE"
+	EnvLogLevel            = "CNB_LOG_LEVEL"
+	EnvProjectMetadataPath = "CNB_PROJECT_METADATA_PATH"
 )
 
+var flagSet = flag.NewFlagSet("lifecycle", flag.ExitOnError)
+
 func FlagAnalyzedPath(dir *string) {
-	flag.StringVar(dir, "analyzed", envOrDefault(EnvAnalyzedPath, DefaultAnalyzedPath), "path to analyzed.toml")
+	flagSet.StringVar(dir, "analyzed", envOrDefault(EnvAnalyzedPath, DefaultAnalyzedPath), "path to analyzed.toml")
 }
 
 func FlagAppDir(dir *string) {
-	flag.StringVar(dir, "app", envOrDefault(EnvAppDir, DefaultAppDir), "path to app directory")
+	flagSet.StringVar(dir, "app", envOrDefault(EnvAppDir, DefaultAppDir), "path to app directory")
 }
 
 func FlagBuildpacksDir(dir *string) {
-	flag.StringVar(dir, "buildpacks", envOrDefault(EnvBuildpacksDir, DefaultBuildpacksDir), "path to buildpacks directory")
+	flagSet.StringVar(dir, "buildpacks", envOrDefault(EnvBuildpacksDir, DefaultBuildpacksDir), "path to buildpacks directory")
 }
 
 func FlagCacheDir(dir *string) {
-	flag.StringVar(dir, "cache-dir", os.Getenv(EnvCacheDir), "path to cache directory")
+	flagSet.StringVar(dir, "cache-dir", os.Getenv(EnvCacheDir), "path to cache directory")
 }
 
 func FlagCacheImage(image *string) {
-	flag.StringVar(image, "cache-image", os.Getenv(EnvCacheImage), "cache image tag name")
+	flagSet.StringVar(image, "cache-image", os.Getenv(EnvCacheImage), "cache image tag name")
 }
 
 func FlagGID(gid *int) {
-	flag.IntVar(gid, "gid", intEnv(EnvGID), "GID of user's group in the stack's build and run images")
+	flagSet.IntVar(gid, "gid", intEnv(EnvGID), "GID of user's group in the stack's build and run images")
 }
 
 func FlagGroupPath(path *string) {
-	flag.StringVar(path, "group", envOrDefault(EnvGroupPath, DefaultGroupPath), "path to group.toml")
+	flagSet.StringVar(path, "group", envOrDefault(EnvGroupPath, DefaultGroupPath), "path to group.toml")
 }
 
 func FlagLaunchCacheDir(dir *string) {
-	flag.StringVar(dir, "launch-cache", os.Getenv(EnvLaunchCacheDir), "path to launch cache directory")
+	flagSet.StringVar(dir, "launch-cache", os.Getenv(EnvLaunchCacheDir), "path to launch cache directory")
 }
 
 func FlagLauncherPath(path *string) {
-	flag.StringVar(path, "launcher", DefaultLauncherPath, "path to launcher binary")
+	flagSet.StringVar(path, "launcher", DefaultLauncherPath, "path to launcher binary")
 }
 
 func FlagLayersDir(dir *string) {
-	flag.StringVar(dir, "layers", envOrDefault(EnvLayersDir, DefaultLayersDir), "path to layers directory")
+	flagSet.StringVar(dir, "layers", envOrDefault(EnvLayersDir, DefaultLayersDir), "path to layers directory")
 }
 
 func FlagOrderPath(path *string) {
-	flag.StringVar(path, "order", envOrDefault(EnvOrderPath, DefaultOrderPath), "path to order.toml")
+	flagSet.StringVar(path, "order", envOrDefault(EnvOrderPath, DefaultOrderPath), "path to order.toml")
 }
 
 func FlagPlanPath(path *string) {
-	flag.StringVar(path, "plan", envOrDefault(EnvPlanPath, DefaultPlanPath), "path to plan.toml")
+	flagSet.StringVar(path, "plan", envOrDefault(EnvPlanPath, DefaultPlanPath), "path to plan.toml")
 }
 
 func FlagPlatformDir(dir *string) {
-	flag.StringVar(dir, "platform", envOrDefault(EnvPlatformDir, DefaultPlatformDir), "path to platform directory")
+	flagSet.StringVar(dir, "platform", envOrDefault(EnvPlatformDir, DefaultPlatformDir), "path to platform directory")
+}
+
+func DeprecatedFlagRunImage(image *string) {
+	flagSet.StringVar(image, "image", os.Getenv(EnvRunImage), "reference to run image")
 }
 
 func FlagRunImage(image *string) {
-	flag.StringVar(image, "image", os.Getenv(EnvRunImage), "reference to run image")
+	flagSet.StringVar(image, "run-image", os.Getenv(EnvRunImage), "reference to run image")
+}
+
+func FlagPreviousImage(image *string) {
+	flagSet.StringVar(image, "previous-image", os.Getenv(EnvPreviousImage), "reference to previous image")
+}
+
+func FlagTags(tags *StringSlice) {
+	flagSet.Var(tags, "tag", "additional tags")
 }
 
 func FlagStackPath(path *string) {
-	flag.StringVar(path, "stack", envOrDefault(EnvStackPath, DefaultStackPath), "path to stack.toml")
+	flagSet.StringVar(path, "stack", envOrDefault(EnvStackPath, DefaultStackPath), "path to stack.toml")
 }
 
 func FlagUID(uid *int) {
-	flag.IntVar(uid, "uid", intEnv(EnvUID), "UID of user in the stack's build and run images")
-}
-
-func FlagUseCredHelpers(use *bool) {
-	flag.BoolVar(use, "helpers", boolEnv(EnvUseHelpers), "use credential helpers")
+	flagSet.IntVar(uid, "uid", intEnv(EnvUID), "UID of user in the stack's build and run images")
 }
 
 func FlagUseDaemon(use *bool) {
-	flag.BoolVar(use, "daemon", boolEnv(EnvUseDaemon), "export to docker daemon")
+	flagSet.BoolVar(use, "daemon", boolEnv(EnvUseDaemon), "export to docker daemon")
 }
 
 func FlagSkipLayers(skip *bool) {
-	flag.BoolVar(skip, "skip-layers", boolEnv(EnvSkipLayers), "do not provide layer metadata to buildpacks")
+	flagSet.BoolVar(skip, "skip-layers", boolEnv(EnvSkipLayers), "do not provide layer metadata to buildpacks")
+}
+
+func FlagSkipRestore(skip *bool) {
+	flag.BoolVar(skip, "skip-restore", boolEnv(EnvSkipRestore), "do not restore layers or layer metadata")
 }
 
 func FlagVersion(version *bool) {
-	flag.BoolVar(version, "version", false, "show version")
+	flagSet.BoolVar(version, "version", false, "show version")
 }
 
 func FlagLogLevel(level *string) {
-	flag.StringVar(level, "log-level", envOrDefault(EnvLogLevel, DefaultLogLevel), "logging level")
+	flagSet.StringVar(level, "log-level", envOrDefault(EnvLogLevel, DefaultLogLevel), "logging level")
+}
+
+func FlagProjectMetadataPath(projectMetadataPath *string) {
+	flagSet.StringVar(projectMetadataPath, "project-metadata", envOrDefault(EnvProjectMetadataPath, DefaultProjectMetadataPath), "path to project-metadata.toml")
+}
+
+func FlagProcessType(processType *string) {
+	flagSet.StringVar(processType, "process-type", os.Getenv(EnvProcessType), "default process type")
+}
+
+type StringSlice []string
+
+func (s *StringSlice) String() string {
+	return fmt.Sprintf("%+v", *s)
+}
+
+func (s *StringSlice) Set(value string) error {
+	*s = append(*s, value)
+	return nil
 }
 
 func intEnv(k string) int {
@@ -154,12 +187,4 @@ func envOrDefault(key string, defaultVal string) string {
 		return envVal
 	}
 	return defaultVal
-}
-
-func DockerClient() (*client.Client, error) {
-	docker, err := client.NewClientWithOpts(client.FromEnv, client.WithVersion("1.38"))
-	if err != nil {
-		return nil, errors.Wrap(err, "new docker client")
-	}
-	return docker, nil
 }

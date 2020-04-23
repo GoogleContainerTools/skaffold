@@ -210,6 +210,21 @@ func TestLocalRun(t *testing.T) {
 			tags:      tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
 			shouldErr: true,
 		},
+		{
+			description: "fail fast docker not found",
+			artifacts: []*latest.Artifact{{
+				ImageName: "gcr.io/test/image",
+				ArtifactType: latest.ArtifactType{
+					DockerArtifact: &latest.DockerArtifact{},
+				}},
+			},
+			tags: tag.ImageTags(map[string]string{"gcr.io/test/image": "gcr.io/test/image:tag"}),
+			api: &testutil.FakeAPIClient{
+				ErrVersion: true,
+			},
+			pushImages: false,
+			shouldErr:  true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

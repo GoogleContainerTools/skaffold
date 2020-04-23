@@ -147,10 +147,10 @@ func getConfigForKubeContextWithGlobalDefaults(cfg *GlobalConfig, kubeContext st
 	return &mergedConfig, nil
 }
 
-func GetDefaultRepo(configFile, cliValue string) (string, error) {
+func GetDefaultRepo(configFile string, cliValue *string) (string, error) {
 	// CLI flag takes precedence.
-	if cliValue != "" {
-		return cliValue, nil
+	if cliValue != nil {
+		return *cliValue, nil
 	}
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {

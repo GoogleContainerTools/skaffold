@@ -49,6 +49,14 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
 	}
 
+	// If the Dockerfile doesn't exist, we can't compute the dependencies.
+	// But since we know the Dockerfile is a dependency, let's return a list
+	// with only that file. It makes errors down the line more actionable
+	// than returning an error now.
+	if _, err := os.Stat(absDockerfilePath); os.IsNotExist(err) {
+		return []string{dockerfilePath}, nil
+	}
+
 	fts, err := readCopyCmdsFromDockerfile(false, absDockerfilePath, workspace, buildArgs, insecureRegistries)
 	if err != nil {
 		return nil, err

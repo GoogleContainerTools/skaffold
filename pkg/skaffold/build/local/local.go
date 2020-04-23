@@ -48,7 +48,7 @@ func (b *Builder) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, 
 func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
 	digestOrImageID, err := b.runBuildForArtifact(ctx, out, artifact, tag)
 	if err != nil {
-		return "", fmt.Errorf("build artifact: %w", err)
+		return "", err
 	}
 
 	if b.pushImages {
@@ -74,6 +74,16 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	if !b.pushImages {
+		// All of the builders will rely on a local Docker:
+		// + Either to build the image,
+		// + Or to docker load it.
+		// Let's fail fast if Docker is not available
+		if _, err := b.localDocker.ServerVersion(ctx); err != nil {
+			return "", err
+		}
+	}
+
 	switch {
 	case artifact.DockerArtifact != nil:
 		return b.buildDocker(ctx, out, artifact, tag)
@@ -98,7 +108,7 @@ func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifa
 func (b *Builder) getImageIDForTag(ctx context.Context, tag string) (string, error) {
 	insp, _, err := b.localDocker.ImageInspectWithRaw(ctx, tag)
 	if err != nil {
-		return "", fmt.Errorf("inspecting image: %w", err)
+		return "", err
 	}
 	return insp.ID, nil
 }

@@ -16,9 +16,9 @@ const tmpl = `
 
 package {{.Package}}
 
-var {{.FileNamesVar}} = []string{ {{range $name, $bytes := .Files}}"{{$name}}",{{end}} }
+var fileNames = []string{ {{range $name, $bytes := .Files}}"{{$name}}",{{end}} }
 
-var {{.FilesVar}} = map[string][]byte{
+var files = map[string][]byte{
 {{range $name, $bytes := .Files}}
 	"{{$name}}": []byte{ {{range $bytes}}{{.}},{{end}} },
 {{end}}
@@ -26,17 +26,13 @@ var {{.FilesVar}} = map[string][]byte{
 `
 
 type tmplData struct {
-	Package      string
-	Files        map[string][]byte
-	FileNamesVar string
-	FilesVar     string
+	Package string
+	Files   map[string][]byte
 }
 
 func main() {
 	out := flag.String("out", "files.go", "output go `file`")
 	pkg := flag.String("pkg", "main", "`package` name of the go file")
-	filesVar := flag.String("files-var", "files", "name of the generated files slice")
-	fileNamesVar := flag.String("file-names-var", "fileNames", "name of the generated file names slice")
 	verbose := flag.Bool("verbose", false, "")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Embedfiles embeds files in the paths into a map in a go file.\n\n")
@@ -100,7 +96,7 @@ func main() {
 	}
 
 	buf := bytes.Buffer{}
-	err = t.Execute(&buf, &tmplData{Package: *pkg, Files: files, FilesVar: *filesVar, FileNamesVar: *fileNamesVar})
+	err = t.Execute(&buf, tmplData{Package: *pkg, Files: files})
 	if err != nil {
 		printErr("generating code", err)
 		return

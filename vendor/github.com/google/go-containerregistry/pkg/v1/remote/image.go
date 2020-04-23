@@ -29,6 +29,11 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/v1util"
 )
 
+var acceptableImageMediaTypes = []types.MediaType{
+	types.DockerManifestSchema2,
+	types.OCIManifestSchema1,
+}
+
 // remoteImage accesses an image from a remote registry
 type remoteImage struct {
 	fetcher
@@ -37,6 +42,7 @@ type remoteImage struct {
 	configLock   sync.Mutex // Protects config
 	config       []byte
 	mediaType    types.MediaType
+	descriptor   *v1.Descriptor
 }
 
 var _ partial.CompressedImageCore = (*remoteImage)(nil)
@@ -68,15 +74,14 @@ func (r *remoteImage) RawManifest() ([]byte, error) {
 	// NOTE(jonjohnsonjr): We should never get here because the public entrypoints
 	// do type-checking via remote.Descriptor. I've left this here for tests that
 	// directly instantiate a remoteImage.
-	acceptable := []types.MediaType{
-		types.DockerManifestSchema2,
-		types.OCIManifestSchema1,
-	}
-	manifest, desc, err := r.fetchManifest(r.Ref, acceptable)
+	manifest, desc, err := r.fetchManifest(r.Ref, acceptableImageMediaTypes)
 	if err != nil {
 		return nil, err
 	}
 
+	if r.descriptor == nil {
+		r.descriptor = desc
+	}
 	r.mediaType = desc.MediaType
 	r.manifest = manifest
 	return r.manifest, nil
@@ -105,6 +110,15 @@ func (r *remoteImage) RawConfigFile() ([]byte, error) {
 		return nil, err
 	}
 	return r.config, nil
+}
+
+// Descriptor retains the original descriptor from an index manifest.
+// See partial.Descriptor.
+func (r *remoteImage) Descriptor() (*v1.Descriptor, error) {
+	// kind of a hack, but RawManifest does appropriate locking/memoization
+	// and makes sure r.descriptor is populated.
+	_, err := r.RawManifest()
+	return r.descriptor, err
 }
 
 // remoteImageLayer implements partial.CompressedLayer
@@ -190,6 +204,12 @@ func (rl *remoteImageLayer) ConfigFile() (*v1.ConfigFile, error) {
 // available in our ConfigFile.
 func (rl *remoteImageLayer) DiffID() (v1.Hash, error) {
 	return partial.BlobToDiffID(rl, rl.digest)
+}
+
+// Descriptor retains the original descriptor from an image manifest.
+// See partial.Descriptor.
+func (rl *remoteImageLayer) Descriptor() (*v1.Descriptor, error) {
+	return partial.BlobDescriptor(rl, rl.digest)
 }
 
 // LayerByDigest implements partial.CompressedLayer

@@ -2,15 +2,16 @@ package lifecycle
 
 import (
 	"fmt"
-	"os"
+	"path/filepath"
 
 	"github.com/buildpacks/imgutil"
 	"github.com/pkg/errors"
+
+	"github.com/buildpacks/lifecycle/launch"
 )
 
 type Analyzer struct {
 	Buildpacks []Buildpack
-	GID, UID   int
 	LayersDir  string
 	Logger     Logger
 	SkipLayers bool
@@ -18,10 +19,10 @@ type Analyzer struct {
 
 // Analyze restores metadata for launch and cache layers into the layers directory.
 // If a usable cache is not provided, Analyze will not restore any cache=true layer metadata.
-func (a *Analyzer) Analyze(image imgutil.Image, cache Cache) (*AnalyzedMetadata, error) {
+func (a *Analyzer) Analyze(image imgutil.Image, cache Cache) (AnalyzedMetadata, error) {
 	imageID, err := a.getImageIdentifier(image)
 	if err != nil {
-		return nil, errors.Wrap(err, "retrieving image identifier")
+		return AnalyzedMetadata{}, errors.Wrap(err, "retrieving image identifier")
 	}
 
 	var appMeta LayersMetadata
@@ -30,21 +31,34 @@ func (a *Analyzer) Analyze(image imgutil.Image, cache Cache) (*AnalyzedMetadata,
 		appMeta = LayersMetadata{}
 	}
 
-	if a.SkipLayers {
-		a.Logger.Infof("Skipping buildpack layer analysis")
-		return &AnalyzedMetadata{
-			Image:    imageID,
-			Metadata: appMeta,
-		}, nil
+	for _, bp := range a.Buildpacks {
+		if store := appMeta.MetadataForBuildpack(bp.ID).Store; store != nil {
+			if err := WriteTOML(filepath.Join(a.LayersDir, launch.EscapeID(bp.ID), "store.toml"), store); err != nil {
+				return AnalyzedMetadata{}, err
+			}
+		}
 	}
 
+	if a.SkipLayers {
+		a.Logger.Infof("Skipping buildpack layer analysis")
+	} else if err := a.analyzeLayers(appMeta, cache); err != nil {
+		return AnalyzedMetadata{}, err
+	}
+
+	return AnalyzedMetadata{
+		Image:    imageID,
+		Metadata: appMeta,
+	}, nil
+}
+
+func (a *Analyzer) analyzeLayers(appMeta LayersMetadata, cache Cache) error {
 	// Create empty cache metadata in case a usable cache is not provided.
 	var cacheMeta CacheMetadata
 	if cache != nil {
 		var err error
 		cacheMeta, err = cache.RetrieveMetadata()
 		if err != nil {
-			return nil, errors.Wrap(err, "retrieving cache metadata")
+			return errors.Wrap(err, "retrieving cache metadata")
 		}
 	} else {
 		a.Logger.Debug("Usable cache not provided, using empty cache metadata.")
@@ -53,7 +67,7 @@ func (a *Analyzer) Analyze(image imgutil.Image, cache Cache) (*AnalyzedMetadata,
 	for _, buildpack := range a.Buildpacks {
 		buildpackDir, err := readBuildpackLayersDir(a.LayersDir, buildpack)
 		if err != nil {
-			return nil, errors.Wrap(err, "reading buildpack layer directory")
+			return errors.Wrap(err, "reading buildpack layer directory")
 		}
 
 		// Restore metadata for launch=true layers.
@@ -71,7 +85,7 @@ func (a *Analyzer) Analyze(image imgutil.Image, cache Cache) (*AnalyzedMetadata,
 			}
 			a.Logger.Infof("Restoring metadata for %q from app image", identifier)
 			if err := a.writeLayerMetadata(buildpackDir, name, layer); err != nil {
-				return nil, err
+				return err
 			}
 		}
 
@@ -91,27 +105,16 @@ func (a *Analyzer) Analyze(image imgutil.Image, cache Cache) (*AnalyzedMetadata,
 			}
 			a.Logger.Infof("Restoring metadata for %q from cache", identifier)
 			if err := a.writeLayerMetadata(buildpackDir, name, layer); err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
-
-	// if analyzer is running as root it needs to fix the ownership of the layers dir
-	if current := os.Getuid(); current == 0 {
-		if err := recursiveChown(a.LayersDir, a.UID, a.GID); err != nil {
-			return nil, errors.Wrapf(err, "chowning layers dir to '%d/%d'", a.UID, a.GID)
-		}
-	}
-
-	return &AnalyzedMetadata{
-		Image:    imageID,
-		Metadata: appMeta,
-	}, nil
+	return nil
 }
 
 func (a *Analyzer) getImageIdentifier(image imgutil.Image) (*ImageIdentifier, error) {
 	if !image.Found() {
-		a.Logger.Warnf("Image %q not found", image.Name())
+		a.Logger.Infof("Previous image with name %q not found", image.Name())
 		return nil, nil
 	}
 	identifier, err := image.Identifier()
