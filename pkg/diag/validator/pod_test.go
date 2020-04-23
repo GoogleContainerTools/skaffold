@@ -19,6 +19,7 @@ package validator
 import (
 	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -72,7 +73,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				ImagePullErr)},
+				proto.ErrorCode_STATUS_CHECK_IMAGE_PULL_ERR)},
 		},
 		{
 			description: "pod is in Terminated State",
@@ -86,7 +87,8 @@ func TestRun(t *testing.T) {
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil, NoError)},
+			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil,
+				proto.ErrorCode_STATUS_CHECK_NO_ERROR)},
 		},
 		{
 			description: "pod is in Stable State",
@@ -106,7 +108,8 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Running", nil, NoError)},
+			expected: []Resource{NewResource("test", "", "foo", "Running", nil,
+				proto.ErrorCode_STATUS_CHECK_NO_ERROR)},
 		},
 		{
 			description: "pod condition unknown",
@@ -125,7 +128,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("could not determine"), Unknown)},
+				fmt.Errorf("could not determine"), proto.ErrorCode_STATUS_CHECK_UNKNOWN)},
 		},
 		{
 			description: "pod could not be scheduled",
@@ -145,7 +148,8 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"), NodeDiskPressure)},
+				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"),
+				proto.ErrorCode_STATUS_CHECK_NODE_DISK_PRESSURE)},
 		},
 		{
 			description: "pod is running but container terminated",
@@ -166,7 +170,8 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Running",
-				fmt.Errorf("container foo-container terminated with exit code 1"), ContainerTerminated)},
+				fmt.Errorf("container foo-container terminated with exit code 1"),
+				proto.ErrorCode_STATUS_CHECK_CONTAINER_TERMINATED)},
 		},
 	}
 

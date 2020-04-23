@@ -18,6 +18,7 @@ package validator
 
 import (
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/proto"
 
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,7 +30,7 @@ type Resource struct {
 	name      string
 	status    Status
 	err       error
-	ErrCode   ErrorCode
+	ErrCode   proto.ErrorCode
 }
 
 func (r Resource) Kind() string      { return r.kind }
@@ -42,7 +43,7 @@ func (r Resource) String() string {
 }
 
 // NewResource creates new Resource of kind
-func NewResource(namespace, kind, name string, status Status, err error, errCode ErrorCode) Resource {
+func NewResource(namespace, kind, name string, status Status, err error, errCode proto.ErrorCode) Resource {
 	return Resource{namespace: namespace, kind: kind, name: name, status: status, err: err, ErrCode: errCode}
 }
 
@@ -53,6 +54,6 @@ type objectWithMetadata interface {
 }
 
 // NewResourceFromObject creates new Resource with fields populated from object metadata.
-func NewResourceFromObject(object objectWithMetadata, status Status, err error, errCode ErrorCode) Resource {
+func NewResourceFromObject(object objectWithMetadata, status Status, err error, errCode proto.ErrorCode) Resource {
 	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, err, errCode)
 }

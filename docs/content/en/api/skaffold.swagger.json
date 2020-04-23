@@ -95,11 +95,28 @@
           },
           {
             "name": "event.buildEvent.errCode",
+            "description": " - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "COULD_NOT_DETERMINE"
+              "COULD_NOT_DETERMINE",
+              "STATUS_CHECK_NO_ERROR",
+              "STATUS_CHECK_UNKNOWN",
+              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUS_CHECK_IMAGE_PULL_ERR",
+              "STATUS_CHECK_CONTAINER_CREATING",
+              "STATUS_CHECK_RUN_CONTAINER_ERR",
+              "STATUS_CHECK_CONTAINER_TERMINATED",
+              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUS_CHECK_CONTAINER_RESTARTING",
+              "STATUS_CHECK_NODE_MEMORY_PRESSURE",
+              "STATUS_CHECK_NODE_DISK_PRESSURE",
+              "STATUS_CHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUS_CHECK_NODE_PID_PRESSURE",
+              "STATUS_CHECK_NODE_UNSCHEDULABLE",
+              "STATUS_CHECK_NODE_UNREACHABLE",
+              "STATUS_CHECK_NODE_NOT_READY"
             ],
             "default": "COULD_NOT_DETERMINE"
           },
@@ -117,11 +134,28 @@
           },
           {
             "name": "event.deployEvent.errCode",
+            "description": " - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "COULD_NOT_DETERMINE"
+              "COULD_NOT_DETERMINE",
+              "STATUS_CHECK_NO_ERROR",
+              "STATUS_CHECK_UNKNOWN",
+              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUS_CHECK_IMAGE_PULL_ERR",
+              "STATUS_CHECK_CONTAINER_CREATING",
+              "STATUS_CHECK_RUN_CONTAINER_ERR",
+              "STATUS_CHECK_CONTAINER_TERMINATED",
+              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUS_CHECK_CONTAINER_RESTARTING",
+              "STATUS_CHECK_NODE_MEMORY_PRESSURE",
+              "STATUS_CHECK_NODE_DISK_PRESSURE",
+              "STATUS_CHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUS_CHECK_NODE_PID_PRESSURE",
+              "STATUS_CHECK_NODE_UNSCHEDULABLE",
+              "STATUS_CHECK_NODE_UNREACHABLE",
+              "STATUS_CHECK_NODE_NOT_READY"
             ],
             "default": "COULD_NOT_DETERMINE"
           },
@@ -201,11 +235,28 @@
           },
           {
             "name": "event.statusCheckEvent.errCode",
+            "description": " - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "COULD_NOT_DETERMINE"
+              "COULD_NOT_DETERMINE",
+              "STATUS_CHECK_NO_ERROR",
+              "STATUS_CHECK_UNKNOWN",
+              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUS_CHECK_IMAGE_PULL_ERR",
+              "STATUS_CHECK_CONTAINER_CREATING",
+              "STATUS_CHECK_RUN_CONTAINER_ERR",
+              "STATUS_CHECK_CONTAINER_TERMINATED",
+              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUS_CHECK_CONTAINER_RESTARTING",
+              "STATUS_CHECK_NODE_MEMORY_PRESSURE",
+              "STATUS_CHECK_NODE_DISK_PRESSURE",
+              "STATUS_CHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUS_CHECK_NODE_PID_PRESSURE",
+              "STATUS_CHECK_NODE_UNSCHEDULABLE",
+              "STATUS_CHECK_NODE_UNREACHABLE",
+              "STATUS_CHECK_NODE_NOT_READY"
             ],
             "default": "COULD_NOT_DETERMINE"
           },
@@ -260,11 +311,28 @@
           },
           {
             "name": "event.fileSyncEvent.errCode",
+            "description": " - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
-              "COULD_NOT_DETERMINE"
+              "COULD_NOT_DETERMINE",
+              "STATUS_CHECK_NO_ERROR",
+              "STATUS_CHECK_UNKNOWN",
+              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUS_CHECK_IMAGE_PULL_ERR",
+              "STATUS_CHECK_CONTAINER_CREATING",
+              "STATUS_CHECK_RUN_CONTAINER_ERR",
+              "STATUS_CHECK_CONTAINER_TERMINATED",
+              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
+              "STATUS_CHECK_CONTAINER_RESTARTING",
+              "STATUS_CHECK_NODE_MEMORY_PRESSURE",
+              "STATUS_CHECK_NODE_DISK_PRESSURE",
+              "STATUS_CHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUS_CHECK_NODE_PID_PRESSURE",
+              "STATUS_CHECK_NODE_UNSCHEDULABLE",
+              "STATUS_CHECK_NODE_UNREACHABLE",
+              "STATUS_CHECK_NODE_NOT_READY"
             ],
             "default": "COULD_NOT_DETERMINE"
           },
@@ -610,9 +678,26 @@
     "protoErrorCode": {
       "type": "string",
       "enum": [
-        "COULD_NOT_DETERMINE"
+        "COULD_NOT_DETERMINE",
+        "STATUS_CHECK_NO_ERROR",
+        "STATUS_CHECK_UNKNOWN",
+        "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+        "STATUS_CHECK_IMAGE_PULL_ERR",
+        "STATUS_CHECK_CONTAINER_CREATING",
+        "STATUS_CHECK_RUN_CONTAINER_ERR",
+        "STATUS_CHECK_CONTAINER_TERMINATED",
+        "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
+        "STATUS_CHECK_CONTAINER_RESTARTING",
+        "STATUS_CHECK_NODE_MEMORY_PRESSURE",
+        "STATUS_CHECK_NODE_DISK_PRESSURE",
+        "STATUS_CHECK_NODE_NETWORK_UNAVAILABLE",
+        "STATUS_CHECK_NODE_PID_PRESSURE",
+        "STATUS_CHECK_NODE_UNSCHEDULABLE",
+        "STATUS_CHECK_NODE_UNREACHABLE",
+        "STATUS_CHECK_NODE_NOT_READY"
       ],
       "default": "COULD_NOT_DETERMINE",
+      "description": "- STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
       "description": "Enum for error codes"
     },
     "protoEvent": {
