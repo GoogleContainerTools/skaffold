@@ -41,22 +41,22 @@ func TestCopy(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
+			description: "copy single file",
 			src:         file,
 			dst:         gcsFile,
-			description: "copy single file",
 			commands:    testutil.CmdRunOut(fmt.Sprintf("gsutil cp %s %s", file, gcsFile), "logs"),
 		},
 		{
+			description: "copy recursively",
 			src:         folder,
 			dst:         gcsFolder,
-			recursive:   true,
-			description: "copy recursively",
 			commands:    testutil.CmdRunOut(fmt.Sprintf("gsutil cp -r %s %s", folder, gcsFolder), "logs"),
+			recursive:   true,
 		},
 		{
+			description: "copy failed",
 			src:         file,
 			dst:         gcsFile,
-			description: "copy failed",
 			commands:    testutil.CmdRunOutErr(fmt.Sprintf("gsutil cp %s %s", file, gcsFile), "logs", fmt.Errorf("file not found")),
 			shouldErr:   true,
 		},

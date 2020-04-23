@@ -95,11 +95,11 @@ func getObjectNamespaceIfDefined(doc []byte, ns string) (string, error) {
 
 // Outputs rendered manifests to a file, a writer or a GCS bucket.
 func outputRenderedManifests(renderedManifests string, output string, manifestOut io.Writer) error {
-	if output == "" {
+	switch {
+	case output == "":
 		_, err := fmt.Fprintln(manifestOut, renderedManifests)
 		return err
-	}
-	if strings.HasPrefix(output, "gs://") {
+	case strings.HasPrefix(output, "gs://"):
 		tempDir, err := ioutil.TempDir("", renderedManifestsStagingDir)
 		if err != nil {
 			return fmt.Errorf("failed to create tmp directory: %v", err)
@@ -114,8 +114,10 @@ func outputRenderedManifests(renderedManifests string, output string, manifestOu
 			return fmt.Errorf("failed to copy rendered manifests to GCS: %w", err)
 		}
 		return nil
+	default:
+		return dumpToFile(renderedManifests, output)
 	}
-	return dumpToFile(renderedManifests, output)
+
 }
 
 func dumpToFile(renderedManifests string, filepath string) error {
