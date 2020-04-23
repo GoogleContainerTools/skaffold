@@ -22,6 +22,9 @@ import (
 	"io"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
+	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -154,7 +157,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 
 			// we ignore Skaffold options
 			test.expectedConfig.Opts = capturedConfig.Opts
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedConfig, capturedConfig)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedConfig, capturedConfig, cmp.AllowUnexported(cfg.StringOrUndefined{}))
 		})
 	}
 }
