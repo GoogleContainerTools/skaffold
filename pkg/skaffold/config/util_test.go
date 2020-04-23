@@ -455,3 +455,47 @@ func TestShouldDisplayPrompt(t *testing.T) {
 		})
 	}
 }
+
+func TestGetDefaultRepo(t *testing.T) {
+	tests := []struct {
+		description  string
+		cfg          *ContextConfig
+		cliValue     *string
+		expectedRepo string
+		shouldErr    bool
+	}{
+		{
+			description:  "empty",
+			cfg:          &ContextConfig{},
+			cliValue:     nil,
+			expectedRepo: "",
+		},
+		{
+			description:  "from cli",
+			cfg:          &ContextConfig{},
+			cliValue:     util.StringPtr("default/repo"),
+			expectedRepo: "default/repo",
+		},
+		{
+			description:  "from global config",
+			cfg:          &ContextConfig{DefaultRepo: "global/repo"},
+			cliValue:     nil,
+			expectedRepo: "global/repo",
+		},
+		{
+			description:  "cancel global config with cli",
+			cfg:          &ContextConfig{DefaultRepo: "global/repo"},
+			cliValue:     util.StringPtr(""),
+			expectedRepo: "",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
+
+			defaultRepo, err := GetDefaultRepo("config", test.cliValue)
+
+			t.CheckErrorAndDeepEqual(false, err, test.expectedRepo, defaultRepo)
+		})
+	}
+}
