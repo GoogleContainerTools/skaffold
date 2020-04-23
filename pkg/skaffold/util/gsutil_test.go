@@ -33,10 +33,9 @@ const (
 
 func TestCopy(t *testing.T) {
 	tests := []struct {
-		src string
-		dst string
-
 		description string
+		src         string
+		dst         string
 		commands    Command
 		recursive   bool
 		shouldErr   bool

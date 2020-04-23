@@ -106,14 +106,12 @@ func outputRenderedManifests(renderedManifests string, output string, manifestOu
 		}
 		defer os.RemoveAll(tempDir)
 		tempFile := filepath.Join(tempDir, renderedManifestsStagingFile)
-		err = dumpToFile(renderedManifests, tempFile)
-		if err != nil {
+		if err := dumpToFile(renderedManifests, tempFile); err != nil {
 			return err
 		}
 		gcs := util.Gsutil{}
-		err = gcs.Copy(context.Background(), tempFile, output, false)
-		if err != nil {
-			return fmt.Errorf("failed to copy rendered manifests to GCS: %v", err)
+		if err := gcs.Copy(context.Background(), tempFile, output, false); err != nil {
+			return fmt.Errorf("failed to copy rendered manifests to GCS: %w", err)
 		}
 		return nil
 	}
