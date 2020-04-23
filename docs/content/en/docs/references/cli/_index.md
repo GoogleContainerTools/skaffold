@@ -589,9 +589,17 @@ Update old configuration to newest schema version
 ```
 
 
+Examples:
+  # Update "skaffold.yaml" in the current folder to the latest version
+  skaffold fix
+
+  # Update "skaffold.yaml" in the current folder to version "skaffold/v1"
+  skaffold fix --version skaffold/v1
+
 Options:
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --overwrite=false: Overwrite original config with fixed config
+      --version='skaffold/v2beta2': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -604,6 +612,7 @@ Env vars:
 
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_OVERWRITE` (same as `--overwrite`)
+* `SKAFFOLD_VERSION` (same as `--version`)
 
 ### skaffold init
 
