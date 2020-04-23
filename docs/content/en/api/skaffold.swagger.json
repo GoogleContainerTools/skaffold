@@ -95,20 +95,17 @@
           },
           {
             "name": "event.buildEvent.errCode",
-            "description": " - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
+            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: No Error codes\nStatus Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\nContainer image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors\nNode memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - STATUS_CHECK_UNKNOWN: Unknown Error Codes\nStatus Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
               "COULD_NOT_DETERMINE",
               "STATUS_CHECK_NO_ERROR",
-              "STATUS_CHECK_UNKNOWN",
-              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUS_CHECK_IMAGE_PULL_ERR",
               "STATUS_CHECK_CONTAINER_CREATING",
               "STATUS_CHECK_RUN_CONTAINER_ERR",
               "STATUS_CHECK_CONTAINER_TERMINATED",
-              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
               "STATUS_CHECK_CONTAINER_RESTARTING",
               "STATUS_CHECK_NODE_MEMORY_PRESSURE",
               "STATUS_CHECK_NODE_DISK_PRESSURE",
@@ -116,7 +113,10 @@
               "STATUS_CHECK_NODE_PID_PRESSURE",
               "STATUS_CHECK_NODE_UNSCHEDULABLE",
               "STATUS_CHECK_NODE_UNREACHABLE",
-              "STATUS_CHECK_NODE_NOT_READY"
+              "STATUS_CHECK_NODE_NOT_READY",
+              "STATUS_CHECK_UNKNOWN",
+              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN"
             ],
             "default": "COULD_NOT_DETERMINE"
           },
@@ -134,20 +134,17 @@
           },
           {
             "name": "event.deployEvent.errCode",
-            "description": " - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
+            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: No Error codes\nStatus Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\nContainer image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors\nNode memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - STATUS_CHECK_UNKNOWN: Unknown Error Codes\nStatus Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
               "COULD_NOT_DETERMINE",
               "STATUS_CHECK_NO_ERROR",
-              "STATUS_CHECK_UNKNOWN",
-              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUS_CHECK_IMAGE_PULL_ERR",
               "STATUS_CHECK_CONTAINER_CREATING",
               "STATUS_CHECK_RUN_CONTAINER_ERR",
               "STATUS_CHECK_CONTAINER_TERMINATED",
-              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
               "STATUS_CHECK_CONTAINER_RESTARTING",
               "STATUS_CHECK_NODE_MEMORY_PRESSURE",
               "STATUS_CHECK_NODE_DISK_PRESSURE",
@@ -155,7 +152,10 @@
               "STATUS_CHECK_NODE_PID_PRESSURE",
               "STATUS_CHECK_NODE_UNSCHEDULABLE",
               "STATUS_CHECK_NODE_UNREACHABLE",
-              "STATUS_CHECK_NODE_NOT_READY"
+              "STATUS_CHECK_NODE_NOT_READY",
+              "STATUS_CHECK_UNKNOWN",
+              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN"
             ],
             "default": "COULD_NOT_DETERMINE"
           },
@@ -235,20 +235,17 @@
           },
           {
             "name": "event.statusCheckEvent.errCode",
-            "description": " - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
+            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: No Error codes\nStatus Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\nContainer image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors\nNode memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - STATUS_CHECK_UNKNOWN: Unknown Error Codes\nStatus Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
               "COULD_NOT_DETERMINE",
               "STATUS_CHECK_NO_ERROR",
-              "STATUS_CHECK_UNKNOWN",
-              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUS_CHECK_IMAGE_PULL_ERR",
               "STATUS_CHECK_CONTAINER_CREATING",
               "STATUS_CHECK_RUN_CONTAINER_ERR",
               "STATUS_CHECK_CONTAINER_TERMINATED",
-              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
               "STATUS_CHECK_CONTAINER_RESTARTING",
               "STATUS_CHECK_NODE_MEMORY_PRESSURE",
               "STATUS_CHECK_NODE_DISK_PRESSURE",
@@ -256,7 +253,10 @@
               "STATUS_CHECK_NODE_PID_PRESSURE",
               "STATUS_CHECK_NODE_UNSCHEDULABLE",
               "STATUS_CHECK_NODE_UNREACHABLE",
-              "STATUS_CHECK_NODE_NOT_READY"
+              "STATUS_CHECK_NODE_NOT_READY",
+              "STATUS_CHECK_UNKNOWN",
+              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN"
             ],
             "default": "COULD_NOT_DETERMINE"
           },
@@ -311,20 +311,17 @@
           },
           {
             "name": "event.fileSyncEvent.errCode",
-            "description": " - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
+            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: No Error codes\nStatus Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\nContainer image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors\nNode memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - STATUS_CHECK_UNKNOWN: Unknown Error Codes\nStatus Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
               "COULD_NOT_DETERMINE",
               "STATUS_CHECK_NO_ERROR",
-              "STATUS_CHECK_UNKNOWN",
-              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
               "STATUS_CHECK_IMAGE_PULL_ERR",
               "STATUS_CHECK_CONTAINER_CREATING",
               "STATUS_CHECK_RUN_CONTAINER_ERR",
               "STATUS_CHECK_CONTAINER_TERMINATED",
-              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
               "STATUS_CHECK_CONTAINER_RESTARTING",
               "STATUS_CHECK_NODE_MEMORY_PRESSURE",
               "STATUS_CHECK_NODE_DISK_PRESSURE",
@@ -332,7 +329,10 @@
               "STATUS_CHECK_NODE_PID_PRESSURE",
               "STATUS_CHECK_NODE_UNSCHEDULABLE",
               "STATUS_CHECK_NODE_UNREACHABLE",
-              "STATUS_CHECK_NODE_NOT_READY"
+              "STATUS_CHECK_NODE_NOT_READY",
+              "STATUS_CHECK_UNKNOWN",
+              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN"
             ],
             "default": "COULD_NOT_DETERMINE"
           },
@@ -680,13 +680,10 @@
       "enum": [
         "COULD_NOT_DETERMINE",
         "STATUS_CHECK_NO_ERROR",
-        "STATUS_CHECK_UNKNOWN",
-        "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
         "STATUS_CHECK_IMAGE_PULL_ERR",
         "STATUS_CHECK_CONTAINER_CREATING",
         "STATUS_CHECK_RUN_CONTAINER_ERR",
         "STATUS_CHECK_CONTAINER_TERMINATED",
-        "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
         "STATUS_CHECK_CONTAINER_RESTARTING",
         "STATUS_CHECK_NODE_MEMORY_PRESSURE",
         "STATUS_CHECK_NODE_DISK_PRESSURE",
@@ -694,10 +691,13 @@
         "STATUS_CHECK_NODE_PID_PRESSURE",
         "STATUS_CHECK_NODE_UNSCHEDULABLE",
         "STATUS_CHECK_NODE_UNREACHABLE",
-        "STATUS_CHECK_NODE_NOT_READY"
+        "STATUS_CHECK_NODE_NOT_READY",
+        "STATUS_CHECK_UNKNOWN",
+        "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
+        "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN"
       ],
       "default": "COULD_NOT_DETERMINE",
-      "description": "- STATUS_CHECK_IMAGE_PULL_ERR: Container errors\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors",
+      "description": "- COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: No Error codes\nStatus Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container errors\nContainer image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: K8 infra errors\nNode memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - STATUS_CHECK_UNKNOWN: Unknown Error Codes\nStatus Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason",
       "description": "Enum for error codes"
     },
     "protoEvent": {
