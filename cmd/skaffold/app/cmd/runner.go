@@ -25,7 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -97,6 +96,6 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 func warnIfUpdateIsAvailable() {
 	latest, current, versionErr := update.GetLatestAndCurrentVersion()
 	if versionErr == nil && latest.GT(current) {
-		logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) at %s", latest, constants.LatestDownloadURL)
+		logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) from:\n  %s\n", latest, releaseURL(latest))
 	}
 }
