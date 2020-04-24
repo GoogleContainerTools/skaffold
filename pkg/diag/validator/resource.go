@@ -21,6 +21,8 @@ import (
 
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 type Resource struct {
@@ -29,6 +31,7 @@ type Resource struct {
 	name      string
 	status    Status
 	err       error
+	ErrCode   proto.ErrorCode
 }
 
 func (r Resource) Kind() string      { return r.kind }
@@ -41,8 +44,8 @@ func (r Resource) String() string {
 }
 
 // NewResource creates new Resource of kind
-func NewResource(namespace, kind, name string, status Status, err error) Resource {
-	return Resource{namespace: namespace, kind: kind, name: name, status: status, err: err}
+func NewResource(namespace, kind, name string, status Status, err error, errCode proto.ErrorCode) Resource {
+	return Resource{namespace: namespace, kind: kind, name: name, status: status, err: err, ErrCode: errCode}
 }
 
 // objectWithMetadata is any k8s object that has kind and object metadata.
@@ -52,6 +55,6 @@ type objectWithMetadata interface {
 }
 
 // NewResourceFromObject creates new Resource with fields populated from object metadata.
-func NewResourceFromObject(object objectWithMetadata, status Status, err error) Resource {
-	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, err)
+func NewResourceFromObject(object objectWithMetadata, status Status, err error, errCode proto.ErrorCode) Resource {
+	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, err, errCode)
 }

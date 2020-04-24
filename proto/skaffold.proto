@@ -248,49 +248,107 @@ service SkaffoldService {
 
 }
 
-// Enum for error codes
-enum ErrorCode {
-    COULD_NOT_DETERMINE = 0;
-
-//    Some other sample Error Codes
-//    SYNTAX_ERROR = 1;
-//    MISSING_DOCKERFILE = 2;
-//    UNDEFINED_ARTIFACT_TYPE = 3;
-//    DOCKER_BUILD_FAILED = 4;
-//    COULD_NOT_GET_IMAGE_ID_FROM_IMAGE = 5;
-//    COULD_NOT_INSPECT_DOCKER_IMAGE_INSPECT = 6;
-//    COULD_NOT_GET_DOCKER_CLIENT = 7;
-//    COULD_NOT_GET_LOCAL_CLUSTER = 8;
-//    BUILDER_CLEANUP = 9;
-}
-
+// Enum indicating builders used
 enum BuilderType {
+    // Could not determune builder type
     UNKNOWN_BUILDER_TYPE = 0;
+    // JIB Builder
     JIB = 1;
+    // Bazel Builder
     BAZEL = 2;
+    // Buildpacks Builder
     BUILDPACKS = 3;
+    // Custom Builder
     CUSTOM = 4;
+    // Kaniko Builder
     KANIKO = 5;
+    // Docker Builder
     DOCKER = 6;
 }
 
+// Enum indicating build type i.e. local, cluster vs GCB
 enum BuildType {
+    // Could not determine Build Type
     UNKNOWN_BUILD_TYPE = 0;
+    // Cluster Build
     CLUSTER = 1;
+    // GCB Build
     GCB = 2;
+    // Local Build
     LOCAL = 3;
 }
 
+// Enum indicating deploy tools used
 enum DeployerType {
+    // Could not determine Deployer Type
     UNKNOWN_DEPLOYER_TYPE = 0;
+    // Helm Deployer
     HELM = 1;
+    // Kustomize Deployer
     KUSTOMIZE = 2;
+    // Kubectl Deployer
     KUBECTL = 3;
 }
 
+// Enum indicating cluster type the application is deployed to
 enum ClusterType {
+    // Could not determine Cluster Type
     UNKNOWN_CLUSTER_TYPE = 0;
+    // Minikube Cluster
     MINIKUBE = 1;
+    // GKE cluster
     GKE = 2;
+    // All Cluster except Minikube and GKE
     OTHER = 3;
+}
+
+// Enum for error codes
+enum ErrorCode {
+    // Could not determine error
+    COULD_NOT_DETERMINE = 0;
+
+    // No Error codes
+
+    // Status Check Success
+    STATUS_CHECK_NO_ERROR = 200;
+
+
+    // Container errors
+
+    // Container image pull error
+    STATUS_CHECK_IMAGE_PULL_ERR = 300;
+    // Container creating error
+    STATUS_CHECK_CONTAINER_CREATING = 301;
+    // Container run error
+    STATUS_CHECK_RUN_CONTAINER_ERR = 302;
+    // Container is already terminated
+    STATUS_CHECK_CONTAINER_TERMINATED = 303;
+    // Container restarting error
+    STATUS_CHECK_CONTAINER_RESTARTING = 356;
+
+    // K8 infra errors
+
+    // Node memory pressure error
+    STATUS_CHECK_NODE_MEMORY_PRESSURE = 400;
+    // Node disk pressure error
+    STATUS_CHECK_NODE_DISK_PRESSURE = 401;
+    // Node network unavailable error
+    STATUS_CHECK_NODE_NETWORK_UNAVAILABLE = 402;
+    // Node PID pressure error
+    STATUS_CHECK_NODE_PID_PRESSURE = 403;
+    // Node unschedulable error
+    STATUS_CHECK_NODE_UNSCHEDULABLE= 404;
+    // Node unreachable error
+    STATUS_CHECK_NODE_UNREACHABLE = 405;
+    // Node not ready error
+    STATUS_CHECK_NODE_NOT_READY= 406;
+
+    // Unknown Error Codes
+
+    // Status Check error unknown
+    STATUS_CHECK_UNKNOWN = 501;
+    // Container is unschedulable due to unknown reasons
+    STATUS_CHECK_UNKNOWN_UNSCHEDULABLE = 502;
+    // Container is waiting due to unknown reason
+    STATUS_CHECK_CONTAINER_WAITING_UNKNOWN = 503;
 }
