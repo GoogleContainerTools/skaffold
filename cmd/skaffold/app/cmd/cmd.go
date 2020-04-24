@@ -23,6 +23,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -191,9 +192,13 @@ func updateCheck(ch chan string, configfile string) error {
 		return fmt.Errorf("get latest and current Skaffold version: %w", err)
 	}
 	if latest.GT(current) {
-		ch <- fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
+		ch <- fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it from:\n  %s\n", latest, releaseURL(latest))
 	}
 	return nil
+}
+
+func releaseURL(v semver.Version) string {
+	return fmt.Sprintf("https://github.com/GoogleContainerTools/skaffold/releases/tag/v" + v.String())
 }
 
 // Each flag can also be set with an env variable whose name starts with `SKAFFOLD_`.
