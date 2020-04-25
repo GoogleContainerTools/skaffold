@@ -87,10 +87,10 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 		case len(config.entrypoint) > 0 && isLaunchingNpm(config.entrypoint):
 			container.Command = rewriteNpmCommandLine(config.entrypoint, *spec)
 
-		case len(config.entrypoint) == 0 && len(config.arguments) > 0 && isLaunchingNode(config.arguments):
+		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && len(config.arguments) > 0 && isLaunchingNode(config.arguments):
 			container.Args = rewriteNodeCommandLine(config.arguments, *spec)
 
-		case len(config.entrypoint) == 0 && len(config.arguments) > 0 && isLaunchingNpm(config.arguments):
+		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && len(config.arguments) > 0 && isLaunchingNpm(config.arguments):
 			container.Args = rewriteNpmCommandLine(config.arguments, *spec)
 
 		default:

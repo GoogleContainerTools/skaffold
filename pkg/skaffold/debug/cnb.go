@@ -31,52 +31,134 @@ func init() {
 	entrypointLaunchers = append(entrypointLaunchers, "/cnb/lifecycle/launcher")
 }
 
-// updateForCNBImage transforms an imageConfiguration for a Cloud Native Buildpacks-created image
-// for the configured process prior to handing off to another transformer.
+// updateForCNBImage normalizes an imageConfiguration from a Cloud Native Buildpacks-created image
+// prior to handing off to another transformer.  This transformer is usually the `debug` container
+// transform process.  CNB images have their entrypoint set to the CNB launcher, and the image command
+// describe the launch parameters.  After the transformer, updateForCNBImage rewrites the changed
+// image command back to the form expected by the CNB launcher.
+//
+// The CNB launcher supports three types of launches:
+//
+//   1. _predefined processes_ are named sets of command+arguments.  There are two types:
+//      - direct: these are passed uninterpreted to os.exec; the command is resolved in PATH
+//      - script: the command is treated as a shell script and passed to `sh -c`, the remaing
+//        arguments are added to the shell, and so available as positional arguments.
+//        For example: `sh -c 'echo $0 $1 $2 $3' arg0 arg1 arg2 arg3` => `arg0 arg1 arg2 arg3`.
+//        (https://github.com/buildpacks/lifecycle/issues/218#issuecomment-567091462).
+//   2. _direct execs_ where the container's arg[0] == `--` are treated like direct processes
+//   3. _shell scripts_ where the container's arg[0] is the script and treated are like indirect processes.
+//
+// A key point is that the script-style launches allow support references to environment variables.
+// So we find the command line to be executed, whether that is a script or a direct, and turn it into
+// a normal command-line.  But we also return a rewriter to transform the the command-line back to
+// the original form.
 func updateForCNBImage(container *v1.Container, ic imageConfiguration, transformer func(container *v1.Container, ic imageConfiguration) (ContainerDebugConfiguration, string, error)) (ContainerDebugConfiguration, string, error) {
-	processType := "web"
-	if value, found := ic.env["CNB_PROCESS_TYPE"]; found && len(value) > 0 {
-		processType = value
-	}
+	logrus.SetLevel(logrus.DebugLevel)
+	// The build metadata isn't absolutely required as the image args could be
+	// a command line (e.g., `python xxx`) but it likely indicates the
+	// image was built with an older lifecycle.
 	m := cnb.BuildMetadata{}
 	// buildpacks/lifecycle 0.6.0 now embeds processes into special image label
 	if metadataJSON, found := ic.labels["io.buildpacks.build.metadata"]; !found {
-		return ContainerDebugConfiguration{}, "", fmt.Errorf("buildpacks build metadata not present; image built with older lifecycle?")
+		return ContainerDebugConfiguration{}, "", fmt.Errorf("image is missing buildpacks metadata; perhaps built with older lifecycle?")
 	} else {
 		json.Unmarshal([]byte(metadataJSON), &m)
 	}
 	if len(m.Processes) == 0 {
-		return ContainerDebugConfiguration{}, "", fmt.Errorf("buildpacks build metadata is missing processes metadata")
+		return ContainerDebugConfiguration{}, "", fmt.Errorf("buildpacks metadata has no processes")
+	}
+
+	// the buildpacks launcher is retained as the entrypoint
+	ic, rewriter := adjustCommandLine(m, ic)
+	c, img, err := transformer(container, ic)
+	if err == nil && rewriter != nil {
+		container.Args = rewriter(container.Args)
+	}
+	return c, img, err
+}
+
+// adjustCommandLine resolves the launch process and then rewrites the command-line to be
+// in a form suitable for the normal `skaffold debug` transformations.  It returns an
+// amended configuration with a function to re-transform the command-line to the form
+// expected by the launcher.
+func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfiguration, func([]string) []string) {
+
+	// direct exec
+	if len(ic.arguments) > 0 && ic.arguments[0] == "--" {
+		// strip and restore the "--"
+		ic.arguments = ic.arguments[1:]
+		logrus.Debugf("CNB %q: direct launch => %v", ic.artifact, ic.arguments)
+		return ic, func(transformed []string) []string {
+			return append([]string{"--"}, transformed...)
+		}
+	}
+
+	//
+	processType := "web" // default buildpacks process type
+	// the launcher accepts the first argument as a process type
+	if len(ic.arguments) == 1 {
+		logrus.Debugf("CNB %q: looking for process type from args: %q", ic.artifact, ic.arguments[0])
+		processType = ic.arguments[0]
+	} else if value, _ := ic.env["CNB_PROCESS_TYPE"]; len(value) > 0 {
+		logrus.Debugf("CNB %q: looking for process type from $CNB_PROCESS_TYPE: %q", ic.artifact, value)
+		processType = value
+	} else {
+		logrus.Debugf("CNB %q: looking for default process type: %s", ic.artifact, processType)
 	}
 
 	for _, p := range m.Processes {
-		// the launcher accepts the first argument as a process type
-		if p.Type == processType || (len(ic.arguments) == 1 && p.Type == ic.arguments[0]) {
-			logrus.Debugf("Setting command for %q to %q process: %q + %q\n", ic.artifact, processType, p.Command, p.Args)
-			// retain the buildpacks launcher as the entrypoint
+		if p.Type == processType {
+			var rewriter func(transformed []string) []string
 			if p.Direct {
+				// p.Command should be the command and p.Args are the arguments
 				ic.arguments = append([]string{p.Command}, p.Args...)
+				logrus.Debugf("CNB %q: direct process %q => %v", ic.artifact, processType, ic.arguments)
+				rewriter = func(transformed []string) []string {
+					return append([]string{"--"}, transformed...)
+				}
 			} else {
-				// p.Command is a shell script executed via `sh -c "..."`, and p.Args are added as arguments to the script
-				// https://github.com/buildpacks/lifecycle/issues/218#issuecomment-567091462
+				// Script type: split p.Command, pass it through the transformer, and then reassemble in the rewriter.
 				if args, err := shell.Split(p.Command); err == nil {
 					ic.arguments = args
 				} else {
 					ic.arguments = []string{p.Command}
 				}
-			}
-			c, img, err := transformer(container, ic)
-			if err == nil {
-				if p.Direct {
-					container.Args = append([]string{"--"}, container.Args...)
-				} else {
-					// Args[0] is a shell script for sh -c
-					// Args[1:]] are arguments to that shell script
-					container.Args = append([]string{shJoin(container.Args)}, p.Args...)
+				logrus.Debugf("CNB %q: script process %q => %v", ic.artifact, processType, ic.arguments)
+				rewriter = func(transformed []string) []string {
+					// reassemble back into a script with arguments
+					return append([]string{shJoin(transformed)}, p.Args...)
 				}
 			}
-			return c, img, err
+			return ic, rewriter
 		}
 	}
-	return ContainerDebugConfiguration{}, "", fmt.Errorf("could not find buildpack process of type %q", processType)
+
+	if len(ic.arguments) == 0 {
+		// indicates an image mis-configuration as we should have resolved the the
+		// CNB_PROCESS_TYPE (if specified) or `web`.
+		logrus.Warnf("no CNB launch found for %s/%s", ic.artifact, processType)
+		return ic, nil
+	}
+
+	// ic.arguments[0] is a shell script:  split it, pass it through the transformer, and then reassemble in the rewriter.
+	var rewriter func(transformed []string) []string
+	if args, err := shell.Split(ic.arguments[0]); err == nil {
+		remnants := ic.arguments[1:]
+		ic.arguments = args
+		logrus.Debugf("CNB %q: launch script => %v", ic.artifact, args)
+		rewriter = func(transformed []string) []string {
+			// reassemble back into a script with arguments
+			return append([]string{shJoin(transformed)}, remnants...)
+		}
+	}
+	return ic, rewriter
+}
+
+func hasBuildpack(m cnb.BuildMetadata, id string) bool {
+	for _, bp := range m.Buildpacks {
+		if bp.ID == id {
+			return true
+		}
+	}
+	return false
 }

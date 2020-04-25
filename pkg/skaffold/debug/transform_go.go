@@ -61,10 +61,27 @@ func isLaunchingDlv(args []string) bool {
 func (t dlvTransformer) IsApplicable(config imageConfiguration) bool {
 	for _, name := range []string{"GODEBUG", "GOGC", "GOMAXPROCS", "GOTRACEBACK"} {
 		if _, found := config.env[name]; found {
+			logrus.Infof("Artifact %q has Go runtime: has env %q", config.artifact, name)
 			return true
 		}
 	}
-	if len(config.entrypoint) > 0 {
+
+	// FIXME: as there is currently no way to identify a buildpacks-produced image as holding a Go binary,
+	// nor to cause certain environment variables to be defined in the resulting image, look at the image's
+	// CNB metadata to see if any well-known Go-related buildpacks had been involved.
+	knownGoBuildpackIds := []string{
+		"google.go.runtime", "google.go.build", "google.go.gopath", "google.go.gomod", // GCP Buildpacks
+		"paketo-buildpacks/go-compiler", "paketo-buildpacks/go-mod", // Cloud Foundry
+		"heroku/go", // Heroku
+	}
+	cnbBuildMetadata := config.labels["io.buildpacks.build.metadata"]
+	for _, id := range knownGoBuildpackIds {
+		if strings.Contains(cnbBuildMetadata, id) {
+			logrus.Infof("Artifact %q has Go buildpacks %q", config.artifact, id)
+			return true
+		}
+	}
+	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return isLaunchingDlv(config.entrypoint)
 	}
 	if len(config.arguments) > 0 {
@@ -85,10 +102,10 @@ func (t dlvTransformer) Apply(container *v1.Container, config imageConfiguration
 		newSpec := newDlvSpec(uint16(portAlloc(defaultDlvPort)))
 		spec = &newSpec
 		switch {
-		case len(config.entrypoint) > 0:
+		case len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint):
 			container.Command = rewriteDlvCommandLine(config.entrypoint, *spec, container.Args)
 
-		case len(config.entrypoint) == 0 && len(config.arguments) > 0:
+		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && len(config.arguments) > 0:
 			container.Args = rewriteDlvCommandLine(config.arguments, *spec, container.Args)
 
 		default:
@@ -157,7 +174,6 @@ arguments:
 // rewriteDlvCommandLine rewrites a go command-line to insert a `dlv`
 func rewriteDlvCommandLine(commandLine []string, spec dlvSpec, args []string) []string {
 	// todo: parse off dlv commands if present?
-
 	if len(commandLine) > 1 || len(args) > 0 {
 		// insert "--" after app binary to indicate end of Delve arguments
 		commandLine = util.StrSliceInsert(commandLine, 1, []string{"--"})

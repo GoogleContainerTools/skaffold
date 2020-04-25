@@ -21,19 +21,29 @@ import (
 	"testing"
 
 	cnb "github.com/buildpacks/lifecycle"
+	"github.com/buildpacks/lifecycle/launch"
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestUpdateForCNBImage(t *testing.T) {
-	md := cnb.BuildMetadata{Processes: []cnb.Process{
+	// metadata with default process type
+	md := cnb.BuildMetadata{Processes: []launch.Process{
 		{Type: "web", Command: "webProcess", Args: []string{"webArg1", "webArg2"}},
 		{Type: "diag", Command: "diagProcess"},
-		{Type: "dirct", Command: "command", Args: []string{"cmdArg1"}, Direct: true},
+		{Type: "direct", Command: "command", Args: []string{"cmdArg1"}, Direct: true},
 	}}
 	md_marshalled, _ := json.Marshal(&md)
 	md_json := string(md_marshalled)
+	// metadata with no default process type
+	mdnd := cnb.BuildMetadata{Processes: []launch.Process{
+		{Type: "diag", Command: "diagProcess"},
+		{Type: "direct", Command: "command", Args: []string{"cmdArg1"}, Direct: true},
+	}}
+	mdnd_marshalled, _ := json.Marshal(&mdnd)
+	mdnd_json := string(mdnd_marshalled)
+
 	tests := []struct {
 		description string
 		input       imageConfiguration
@@ -46,7 +56,24 @@ func TestUpdateForCNBImage(t *testing.T) {
 			shouldErr:   true,
 		},
 		{
+			description: "error when build.metadata missing processes",
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": "{}"}},
+			shouldErr:   true,
+		},
+		{
+			description: "direct command-lines are rewritten as direct command-lines",
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, arguments: []string{"--", "web", "arg1", "arg2"}, labels: map[string]string{"io.buildpacks.build.metadata": md_json}},
+			shouldErr:   false,
+			expected:    v1.Container{Args: []string{"--", "web", "arg1", "arg2"}},
+		},
+		{
 			description: "defaults to web process when no process type",
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": md_json}},
+			shouldErr:   false,
+			expected:    v1.Container{Args: []string{"webProcess", "webArg1", "webArg2"}},
+		},
+		{
+			description: "resolves to default 'web' process",
 			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": md_json}},
 			shouldErr:   false,
 			expected:    v1.Container{Args: []string{"webProcess", "webArg1", "webArg2"}},
@@ -64,21 +91,33 @@ func TestUpdateForCNBImage(t *testing.T) {
 			expected:    v1.Container{Args: []string{"diagProcess"}},
 		},
 		{
-			description: "CNB_PROCESS_TYPE=dirct",
-			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, env: map[string]string{"CNB_PROCESS_TYPE": "dirct"}, labels: map[string]string{"io.buildpacks.build.metadata": md_json}},
+			description: "CNB_PROCESS_TYPE=direct",
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, env: map[string]string{"CNB_PROCESS_TYPE": "direct"}, labels: map[string]string{"io.buildpacks.build.metadata": md_json}},
 			shouldErr:   false,
 			expected:    v1.Container{Args: []string{"--", "command", "cmdArg1"}},
+		},
+		{
+			description: "script command-line",
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, arguments: []string{"python main.py"}, labels: map[string]string{"io.buildpacks.build.metadata": md_json}},
+			shouldErr:   false,
+			expected:    v1.Container{Args: []string{"python main.py"}},
+		},
+		{
+			description: "no process and no args",
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": mdnd_json}},
+			shouldErr:   false,
+			expected:    v1.Container{},
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			dummy := func(c *v1.Container, ic imageConfiguration) (ContainerDebugConfiguration, string, error) {
+			dummyTransform := func(c *v1.Container, ic imageConfiguration) (ContainerDebugConfiguration, string, error) {
 				c.Args = ic.arguments
 				return ContainerDebugConfiguration{}, "", nil
 			}
 
 			copy := v1.Container{}
-			_, _, err := updateForCNBImage(&copy, test.input, dummy)
+			_, _, err := updateForCNBImage(&copy, test.input, dummyTransform)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, copy)
 		})
 	}
