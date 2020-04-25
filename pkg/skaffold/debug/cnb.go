@@ -53,7 +53,6 @@ func init() {
 // a normal command-line.  But we also return a rewriter to transform the the command-line back to
 // the original form.
 func updateForCNBImage(container *v1.Container, ic imageConfiguration, transformer func(container *v1.Container, ic imageConfiguration) (ContainerDebugConfiguration, string, error)) (ContainerDebugConfiguration, string, error) {
-	logrus.SetLevel(logrus.DebugLevel)
 	// The build metadata isn't absolutely required as the image args could be
 	// a command line (e.g., `python xxx`) but it likely indicates the
 	// image was built with an older lifecycle.
@@ -87,7 +86,6 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 	if len(ic.arguments) > 0 && ic.arguments[0] == "--" {
 		// strip and restore the "--"
 		ic.arguments = ic.arguments[1:]
-		logrus.Debugf("CNB %q: direct launch => %v", ic.artifact, ic.arguments)
 		return ic, func(transformed []string) []string {
 			return append([]string{"--"}, transformed...)
 		}
@@ -97,13 +95,9 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 	processType := "web" // default buildpacks process type
 	// the launcher accepts the first argument as a process type
 	if len(ic.arguments) == 1 {
-		logrus.Debugf("CNB %q: looking for process type from args: %q", ic.artifact, ic.arguments[0])
 		processType = ic.arguments[0]
 	} else if value, _ := ic.env["CNB_PROCESS_TYPE"]; len(value) > 0 {
-		logrus.Debugf("CNB %q: looking for process type from $CNB_PROCESS_TYPE: %q", ic.artifact, value)
 		processType = value
-	} else {
-		logrus.Debugf("CNB %q: looking for default process type: %s", ic.artifact, processType)
 	}
 
 	for _, p := range m.Processes {
@@ -112,7 +106,6 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 			if p.Direct {
 				// p.Command should be the command and p.Args are the arguments
 				ic.arguments = append([]string{p.Command}, p.Args...)
-				logrus.Debugf("CNB %q: direct process %q => %v", ic.artifact, processType, ic.arguments)
 				rewriter = func(transformed []string) []string {
 					return append([]string{"--"}, transformed...)
 				}
@@ -123,7 +116,6 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 				} else {
 					ic.arguments = []string{p.Command}
 				}
-				logrus.Debugf("CNB %q: script process %q => %v", ic.artifact, processType, ic.arguments)
 				rewriter = func(transformed []string) []string {
 					// reassemble back into a script with arguments
 					return append([]string{shJoin(transformed)}, p.Args...)
@@ -145,7 +137,6 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 	if args, err := shell.Split(ic.arguments[0]); err == nil {
 		remnants := ic.arguments[1:]
 		ic.arguments = args
-		logrus.Debugf("CNB %q: launch script => %v", ic.artifact, args)
 		rewriter = func(transformed []string) []string {
 			// reassemble back into a script with arguments
 			return append([]string{shJoin(transformed)}, remnants...)
