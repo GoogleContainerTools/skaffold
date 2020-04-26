@@ -178,6 +178,11 @@ func transformManifest(obj runtime.Object, retrieveImageConfiguration configurat
 // transformPodSpec attempts to configure a podspec for debugging.
 // Returns true if changed, false otherwise.
 func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieveImageConfiguration configurationRetriever) bool {
+	// skip annotated podspecs — allows users to customize their own image
+	if _, found := metadata.Annotations[DebugConfigAnnotation]; found {
+		return false
+	}
+
 	portAlloc := func(desiredPort int32) int32 {
 		return allocatePort(podSpec, desiredPort)
 	}

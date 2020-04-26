@@ -553,3 +553,24 @@ func TestArtifactImage(t *testing.T) {
 	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
 	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"artifact":"gcr.io/random/image"`))
 }
+
+// TestTransformPodSpecSkips verifies that transformPodSpec skips podspecs that have a
+// `debug.cloud.google.com/config` annotation. 
+func TestTransformPodSpecSkips(t *testing.T) {
+	defer func(c []containerTransformer) { containerTransforms = c }(containerTransforms)
+	containerTransforms = append(containerTransforms, testTransformer{})
+
+	pod := v1.Pod{
+		TypeMeta:   metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.Version, Kind: "Pod"},
+		ObjectMeta: metav1.ObjectMeta{Name: "podname", Annotations: map[string]string{"debug.cloud.google.com/config":"{}"}},
+		Spec:       v1.PodSpec{Containers: []v1.Container{{Name: "name1", Image: "image1"}}}}
+
+	retriever := func(image string) (imageConfiguration, error) {
+		return imageConfiguration{workingDir: "/a/dir"}, nil
+	}
+
+	copy := pod
+	result := transformManifest(&pod, retriever)
+	testutil.CheckDeepEqual(t, false, result)
+	testutil.CheckDeepEqual(t, copy, pod)	// should be unchanged
+}
