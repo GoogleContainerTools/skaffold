@@ -79,7 +79,7 @@ Pipeline building blocks for CI/CD:
 
 Getting started with a new project:
   init              [alpha] Generate configuration for deploying an application
-  fix               Update old configuration to newer schema version
+  fix               Update old configuration to a newer schema version
 
 Other Commands:
   completion        Output shell completion for the given shell (bash or zsh)
@@ -584,7 +584,7 @@ Env vars:
 
 ### skaffold fix
 
-Update old configuration to newer schema version
+Update old configuration to a newer schema version
 
 ```
 

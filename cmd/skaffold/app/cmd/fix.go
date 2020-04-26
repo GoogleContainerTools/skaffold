@@ -36,7 +36,7 @@ var toVersion string
 
 func NewCmdFix() *cobra.Command {
 	return NewCmd("fix").
-		WithDescription("Update old configuration to newer schema version").
+		WithDescription("Update old configuration to a newer schema version").
 		WithExample("Update \"skaffold.yaml\" in the current folder to the latest version", "fix").
 		WithExample("Update \"skaffold.yaml\" in the current folder to version \"skaffold/v1\"", "fix --version skaffold/v1").
 		WithCommonFlags().
