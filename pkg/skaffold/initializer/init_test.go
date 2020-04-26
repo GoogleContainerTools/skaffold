@@ -227,10 +227,10 @@ func strip(s string) string {
 }
 
 func checkGeneratedConfig(t *testutil.T, dir string) {
-	expectedOutput, err := schema.ParseConfig(filepath.Join(dir, "skaffold.yaml"), false)
+	expectedOutput, err := schema.ParseConfig(filepath.Join(dir, "skaffold.yaml"))
 	t.CheckNoError(err)
 
-	output, err := schema.ParseConfig(filepath.Join(dir, "skaffold.yaml.out"), false)
+	output, err := schema.ParseConfig(filepath.Join(dir, "skaffold.yaml.out"))
 	t.CheckNoError(err)
 	t.CheckDeepEqual(expectedOutput, output)
 }

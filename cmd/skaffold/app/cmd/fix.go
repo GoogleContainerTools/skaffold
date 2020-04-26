@@ -32,22 +32,27 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 )
 
+var toVersion string
+
 func NewCmdFix() *cobra.Command {
 	return NewCmd("fix").
-		WithDescription("Update old configuration to newest schema version").
+		WithDescription("Update old configuration to a newer schema version").
+		WithExample("Update \"skaffold.yaml\" in the current folder to the latest version", "fix").
+		WithExample("Update \"skaffold.yaml\" in the current folder to version \"skaffold/v1\"", "fix --version skaffold/v1").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.BoolVar(&overwrite, "overwrite", false, "Overwrite original config with fixed config")
+			f.StringVar(&toVersion, "version", latest.Version, "Target schema version to upgrade to")
 		}).
 		NoArgs(doFix)
 }
 
 func doFix(_ context.Context, out io.Writer) error {
-	return fix(out, opts.ConfigurationFile, overwrite)
+	return fix(out, opts.ConfigurationFile, toVersion, overwrite)
 }
 
-func fix(out io.Writer, configFile string, overwrite bool) error {
-	cfg, err := schema.ParseConfig(configFile, false)
+func fix(out io.Writer, configFile string, toVersion string, overwrite bool) error {
+	cfg, err := schema.ParseConfig(configFile)
 	if err != nil {
 		return err
 	}
@@ -57,7 +62,7 @@ func fix(out io.Writer, configFile string, overwrite bool) error {
 		return nil
 	}
 
-	cfg, err = schema.ParseConfig(configFile, true)
+	cfg, err = schema.ParseConfigAndUpgrade(configFile, toVersion)
 	if err != nil {
 		return err
 	}
