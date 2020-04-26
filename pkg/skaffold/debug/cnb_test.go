@@ -34,15 +34,15 @@ func TestUpdateForCNBImage(t *testing.T) {
 		{Type: "diag", Command: "diagProcess"},
 		{Type: "direct", Command: "command", Args: []string{"cmdArg1"}, Direct: true},
 	}}
-	md_marshalled, _ := json.Marshal(&md)
-	md_json := string(md_marshalled)
+	mdMarshalled, _ := json.Marshal(&md)
+	mdJSON := string(mdMarshalled)
 	// metadata with no default process type
 	mdnd := cnb.BuildMetadata{Processes: []launch.Process{
 		{Type: "diag", Command: "diagProcess"},
 		{Type: "direct", Command: "command", Args: []string{"cmdArg1"}, Direct: true},
 	}}
-	mdnd_marshalled, _ := json.Marshal(&mdnd)
-	mdnd_json := string(mdnd_marshalled)
+	mdndMarshalled, _ := json.Marshal(&mdnd)
+	mdndJSON := string(mdndMarshalled)
 
 	tests := []struct {
 		description string
@@ -62,49 +62,49 @@ func TestUpdateForCNBImage(t *testing.T) {
 		},
 		{
 			description: "direct command-lines are rewritten as direct command-lines",
-			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, arguments: []string{"--", "web", "arg1", "arg2"}, labels: map[string]string{"io.buildpacks.build.metadata": md_json}},
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, arguments: []string{"--", "web", "arg1", "arg2"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    v1.Container{Args: []string{"--", "web", "arg1", "arg2"}},
 		},
 		{
 			description: "defaults to web process when no process type",
-			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": md_json}},
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    v1.Container{Args: []string{"webProcess", "webArg1", "webArg2"}},
 		},
 		{
 			description: "resolves to default 'web' process",
-			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": md_json}},
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    v1.Container{Args: []string{"webProcess", "webArg1", "webArg2"}},
 		},
 		{
 			description: "CNB_PROCESS_TYPE=web",
-			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, env: map[string]string{"CNB_PROCESS_TYPE": "web"}, labels: map[string]string{"io.buildpacks.build.metadata": md_json}},
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, env: map[string]string{"CNB_PROCESS_TYPE": "web"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    v1.Container{Args: []string{"webProcess", "webArg1", "webArg2"}},
 		},
 		{
 			description: "CNB_PROCESS_TYPE=diag",
-			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, env: map[string]string{"CNB_PROCESS_TYPE": "diag"}, labels: map[string]string{"io.buildpacks.build.metadata": md_json}},
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, env: map[string]string{"CNB_PROCESS_TYPE": "diag"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    v1.Container{Args: []string{"diagProcess"}},
 		},
 		{
 			description: "CNB_PROCESS_TYPE=direct",
-			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, env: map[string]string{"CNB_PROCESS_TYPE": "direct"}, labels: map[string]string{"io.buildpacks.build.metadata": md_json}},
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, env: map[string]string{"CNB_PROCESS_TYPE": "direct"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    v1.Container{Args: []string{"--", "command", "cmdArg1"}},
 		},
 		{
 			description: "script command-line",
-			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, arguments: []string{"python main.py"}, labels: map[string]string{"io.buildpacks.build.metadata": md_json}},
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, arguments: []string{"python main.py"}, labels: map[string]string{"io.buildpacks.build.metadata": mdJSON}},
 			shouldErr:   false,
 			expected:    v1.Container{Args: []string{"python main.py"}},
 		},
 		{
 			description: "no process and no args",
-			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": mdnd_json}},
+			input:       imageConfiguration{entrypoint: []string{"/cnb/lifecycle/launcher"}, labels: map[string]string{"io.buildpacks.build.metadata": mdndJSON}},
 			shouldErr:   false,
 			expected:    v1.Container{},
 		},

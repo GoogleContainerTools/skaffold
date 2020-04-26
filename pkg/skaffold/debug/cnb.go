@@ -41,7 +41,7 @@ func init() {
 //
 //   1. _predefined processes_ are named sets of command+arguments.  There are two types:
 //      - direct: these are passed uninterpreted to os.exec; the command is resolved in PATH
-//      - script: the command is treated as a shell script and passed to `sh -c`, the remaing
+//      - script: the command is treated as a shell script and passed to `sh -c`, the remaining
 //        arguments are added to the shell, and so available as positional arguments.
 //        For example: `sh -c 'echo $0 $1 $2 $3' arg0 arg1 arg2 arg3` => `arg0 arg1 arg2 arg3`.
 //        (https://github.com/buildpacks/lifecycle/issues/218#issuecomment-567091462).
@@ -58,11 +58,11 @@ func updateForCNBImage(container *v1.Container, ic imageConfiguration, transform
 	// image was built with an older lifecycle.
 	m := cnb.BuildMetadata{}
 	// buildpacks/lifecycle 0.6.0 now embeds processes into special image label
-	if metadataJSON, found := ic.labels["io.buildpacks.build.metadata"]; !found {
+	metadataJSON, found := ic.labels["io.buildpacks.build.metadata"]
+	if !found {
 		return ContainerDebugConfiguration{}, "", fmt.Errorf("image is missing buildpacks metadata; perhaps built with older lifecycle?")
-	} else {
-		json.Unmarshal([]byte(metadataJSON), &m)
 	}
+	json.Unmarshal([]byte(metadataJSON), &m)
 	if len(m.Processes) == 0 {
 		return ContainerDebugConfiguration{}, "", fmt.Errorf("buildpacks metadata has no processes")
 	}
@@ -81,7 +81,6 @@ func updateForCNBImage(container *v1.Container, ic imageConfiguration, transform
 // amended configuration with a function to re-transform the command-line to the form
 // expected by the launcher.
 func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfiguration, func([]string) []string) {
-
 	// direct exec
 	if len(ic.arguments) > 0 && ic.arguments[0] == "--" {
 		// strip and restore the "--"
@@ -91,12 +90,11 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 		}
 	}
 
-	//
 	processType := "web" // default buildpacks process type
 	// the launcher accepts the first argument as a process type
 	if len(ic.arguments) == 1 {
 		processType = ic.arguments[0]
-	} else if value, _ := ic.env["CNB_PROCESS_TYPE"]; len(value) > 0 {
+	} else if value := ic.env["CNB_PROCESS_TYPE"]; len(value) > 0 {
 		processType = value
 	}
 
@@ -104,7 +102,7 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 		if p.Type == processType {
 			var rewriter func(transformed []string) []string
 			if p.Direct {
-				// p.Command should be the command and p.Args are the arguments
+				// p.Command is the command and p.Args are the arguments
 				ic.arguments = append([]string{p.Command}, p.Args...)
 				rewriter = func(transformed []string) []string {
 					return append([]string{"--"}, transformed...)
@@ -143,13 +141,4 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 		}
 	}
 	return ic, rewriter
-}
-
-func hasBuildpack(m cnb.BuildMetadata, id string) bool {
-	for _, bp := range m.Buildpacks {
-		if bp.ID == id {
-			return true
-		}
-	}
-	return false
 }

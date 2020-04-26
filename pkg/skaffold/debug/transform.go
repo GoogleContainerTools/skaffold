@@ -120,9 +120,23 @@ const (
 // containerTransforms are the set of configured transformers
 var containerTransforms []containerTransformer
 
-// entrypointLaunchers are a list of known entrypoints that effectively launch
-// the command arguments (e.g., equivalent to `ENTRYPOINT ["/bin/sh","-c"]).
+// entrypointLaunchers is a list of known entrypoints that effectively just launches the container image's CMD
+// as a command-line.  These entrypoints are ignored.
 var entrypointLaunchers []string
+
+// isEntrypointLauncher checks if the given entrypoint is a known entrypoint launcher,
+// meaning an entrypoint that treats the image's CMD as a command-line.
+func isEntrypointLauncher(entrypoint []string) bool {
+	if len(entrypoint) != 1 {
+		return false
+	}
+	for _, knownEntrypoints := range entrypointLaunchers {
+		if knownEntrypoints == entrypoint[0] {
+			return true
+		}
+	}
+	return false
+}
 
 // transformManifest attempts to configure a manifest for debugging.
 // Returns true if changed, false otherwise.
@@ -407,28 +421,14 @@ func shJoin(args []string) string {
 	result := ""
 	for i, arg := range args {
 		if i > 0 {
-			result = result + " "
+			result += " "
 		}
-		if strings.ContainsAny(arg, " \t\v\"") {
+		if strings.ContainsAny(arg, " \t\r\n\"") {
 			arg := strings.ReplaceAll(arg, `"`, `\"`)
-			result = result + `"` + arg + `"`
+			result += `"` + arg + `"`
 		} else {
-			result = result + arg
+			result += arg
 		}
 	}
 	return result
-}
-
-// isEntrypointLauncher checks if the given entrypoint is a known entrypoint launcher,
-// meaning an entrypoint that trwats the image's command portion as a command-line.
-func isEntrypointLauncher(entrypoint []string) bool {
-	if len(entrypoint) != 1 {
-		return false
-	}
-	for _, knownEntrypoints := range entrypointLaunchers {
-		if knownEntrypoints == entrypoint[0] {
-			return true
-		}
-	}
-	return false
 }
