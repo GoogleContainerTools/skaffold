@@ -1,0 +1,6 @@
+dependencies:
+- name: auto-deploy-app
+  version: 0.6.1
+  # repository: https://charts.gitlab.io/
+  repository: https://gitlab.com/lazyorangejs/infra/auto-deploy-app/-/raw/feat-adopt-to-use-with-skaffold/
+  condition: auto-deploy-app.enabled

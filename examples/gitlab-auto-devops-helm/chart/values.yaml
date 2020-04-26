@@ -1,0 +1,19 @@
+# Default values for chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+image: &image
+  repository: docker.io/kennethreitz/httpbin
+  tag: latest
+
+auto-deploy-app:
+  enabled: true
+  postgresql:
+    enabled: false
+  image:
+    <<: *image
+  service:
+    externalPort: 3000
+    internalPort: 3000
+
+

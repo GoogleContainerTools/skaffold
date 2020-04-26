@@ -1,0 +1,6 @@
+dependencies:
+- name: auto-deploy-app
+  repository: https://gitlab.com/lazyorangejs/infra/auto-deploy-app/-/raw/feat-adopt-to-use-with-skaffold/
+  version: 0.6.1
+digest: sha256:b1685f940268f121f35e633d24055502de8323603e523bc7e50c8ea4cf054786
+generated: "2020-04-26T13:18:53.750158+03:00"
