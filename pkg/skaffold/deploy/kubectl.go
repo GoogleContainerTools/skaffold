@@ -217,7 +217,7 @@ func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []bu
 		return err
 	}
 
-	return dumpToFileOrWriter(manifests.String(), filepath, out)
+	return outputRenderedManifests(manifests.String(), filepath, out)
 }
 
 func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) (deploy.ManifestList, error) {
