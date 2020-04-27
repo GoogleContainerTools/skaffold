@@ -206,13 +206,6 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 }
 
 func TestUserDefinedResources(t *testing.T) {
-	svc := &latest.PortForwardResource{
-		Type:      constants.Service,
-		Name:      "svc1",
-		Namespace: "default",
-		Port:      8080,
-	}
-
 	pod := &latest.PortForwardResource{
 		Type:      constants.Pod,
 		Name:      "pod",
@@ -221,10 +214,6 @@ func TestUserDefinedResources(t *testing.T) {
 	}
 
 	expected := map[string]*portForwardEntry{
-		"service-svc1-default-8080": {
-			resource:  *svc,
-			localPort: 8080,
-		},
 		"pod-pod-default-9000": {
 			resource:  *pod,
 			localPort: 9000,
@@ -235,6 +224,42 @@ func TestUserDefinedResources(t *testing.T) {
 		event.InitializeState(latest.Pipeline{}, "")
 		fakeForwarder := newTestForwarder()
 		rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", []*latest.PortForwardResource{pod})
+		rf.EntryForwarder = fakeForwarder
+
+		t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, []int{8080, 9000}))
+
+		if err := rf.Start(context.Background()); err != nil {
+			t.Fatalf("error starting resource forwarder: %v", err)
+		}
+		// poll up to 10 seconds for the resources to be forwarded
+		err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
+			return len(expected) == fakeForwarder.forwardedResources.Length(), nil
+		})
+		if err != nil {
+			t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", expected, fakeForwarder.forwardedResources.resources)
+		}
+	})
+}
+
+func TestAutomaticPortForwarding(t *testing.T) {
+	svc := &latest.PortForwardResource{
+		Type:      constants.Service,
+		Name:      "svc1",
+		Namespace: "default",
+		Port:      8080,
+	}
+
+	expected := map[string]*portForwardEntry{
+		"service-svc1-default-8080": {
+			resource:  *svc,
+			localPort: 8080,
+		},
+	}
+
+	testutil.Run(t, "one service and one user defined pod", func(t *testutil.T) {
+		event.InitializeState(latest.Pipeline{}, "")
+		fakeForwarder := newTestForwarder()
+		rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", nil)
 		rf.EntryForwarder = fakeForwarder
 
 		t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, []int{8080, 9000}))

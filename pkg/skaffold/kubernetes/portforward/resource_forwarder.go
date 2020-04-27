@@ -56,11 +56,16 @@ func NewResourceForwarder(em EntryManager, namespaces []string, label string, us
 // Start gets a list of services deployed by skaffold as []latest.PortForwardResource and
 // forwards them.
 func (p *ResourceForwarder) Start(ctx context.Context) error {
+	if len(p.userDefinedResources) > 0 {
+		p.portForwardResources(ctx, p.userDefinedResources)
+		return nil
+	}
+
 	serviceResources, err := retrieveServices(p.label, p.namespaces)
 	if err != nil {
 		return fmt.Errorf("retrieving services for automatic port forwarding: %w", err)
 	}
-	p.portForwardResources(ctx, append(p.userDefinedResources, serviceResources...))
+	p.portForwardResources(ctx, serviceResources)
 	return nil
 }
 

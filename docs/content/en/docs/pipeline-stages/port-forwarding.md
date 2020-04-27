@@ -12,11 +12,11 @@ to your local machine when running in either `dev` or `debug` mode.
 **Port forwarding is disabled by default; it can be enabled with the `--port-forward` flag.**
 **If this flag is not set, no port forwarding will occur!**
 
-When port forwarding is enabled, Skaffold will:
+When port forwarding is enabled:
 
-1. Set up automatic port forwarding as described in the following section
-2. Port forward any user defined resources in the Skaffold config
-
+1. Skaffold will port forward any user defined resources in the Skaffold config
+2. When there's no user defined resources in the Skaffold config,
+   set up automatic port forwarding as described in the following section
 
 ### Automatic Port Forwarding
 
@@ -27,10 +27,11 @@ Skaffold will perform automatic port forwarding for resources that it manages:
 
 ### User Defined Port Forwarding
 
-Users can also define additional resources to port forward in the skaffold config, to enable port forwarding for 
+Users can define resources to port forward in the skaffold config, to enable port forwarding for:
 
 * additional resource types supported by `kubectl port-forward` e.g.`Deployment`or `ReplicaSet`.
 * additional pods running containers which run images not built by Skaffold.
+* a subset or a superset of the ports that would otherwise be forwarded by automatic port forwarding.
 
 For example:
 
