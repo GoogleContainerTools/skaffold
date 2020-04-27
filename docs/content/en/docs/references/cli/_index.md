@@ -599,7 +599,7 @@ Examples:
 Options:
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --overwrite=false: Overwrite original config with fixed config
-      --version='skaffold/v2beta2': Target schema version to upgrade to
+      --version='skaffold/v2beta3': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
