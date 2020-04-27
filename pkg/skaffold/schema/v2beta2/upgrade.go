@@ -27,7 +27,6 @@ import (
 // 1. Additions:
 // 2. Removals:
 // 3. Updates:
-//    - kustomize deployer supports multiple paths
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 
