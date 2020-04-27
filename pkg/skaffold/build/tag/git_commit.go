@@ -77,8 +77,7 @@ func (c *GitCommit) Labels() map[string]string {
 func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, imageName string) (string, error) {
 	ref, err := c.makeGitTag(workingDir)
 	if err != nil {
-		logrus.Warnln("Unable to find git commit:", err)
-		return fmt.Sprintf("%s:dirty", imageName), nil
+		return "", fmt.Errorf("unable to find git commit: %w", err)
 	}
 
 	changes, err := runGit(workingDir, "status", ".", "--porcelain")
