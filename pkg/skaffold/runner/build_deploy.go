@@ -161,12 +161,12 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 
 			if err != nil {
 				logrus.Debugln(err)
-				logrus.Debugln("Using a fallback tagger")
+				logrus.Debugln("Using a fall-back tagger")
 
 				fallbackTagger := &tag.ChecksumTagger{}
 				t.tag, err = fallbackTagger.GenerateFullyQualifiedImageName(artifact.Workspace, imageName)
 				if err != nil {
-					return nil, fmt.Errorf("generating tag for %q: %w", imageName, err)
+					return nil, fmt.Errorf("generating checksum as fall-back tag for %q: %w", imageName, err)
 				}
 
 				showWarning = true
