@@ -17,6 +17,7 @@ limitations under the License.
 package survey
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -44,7 +45,7 @@ func DisplaySurveyPrompt(out io.Writer) {
 	}
 }
 
-func DisplaySurveyForm(out io.Writer) error {
+func DisplaySurveyForm(_ context.Context, out io.Writer) error {
 	_, err := fmt.Fprintln(out, Form)
 	return err
 }
