@@ -25,6 +25,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 )
 
 func main() {
@@ -32,7 +33,7 @@ func main() {
 		if errors.Is(err, context.Canceled) {
 			logrus.Debugln(fmt.Errorf("ignore error since context is cancelled: %w", err))
 		} else {
-			logrus.Fatal(err)
+			color.Red.Fprintln(os.Stderr, err)
 		}
 	}
 }

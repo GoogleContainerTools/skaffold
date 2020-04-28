@@ -17,6 +17,9 @@ limitations under the License.
 package errors
 
 import (
+	"fmt"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -27,8 +30,24 @@ const (
 	FileSync    = phase("FileSync")
 )
 
+var (
+	// ErrNoSuggestionFound error not found
+	ErrNoSuggestionFound = fmt.Errorf("no suggestions found")
+)
+
 type phase string
 
-func ErrorCodeFromError(_ error, _ phase) proto.ErrorCode {
+func ErrorCodeFromError(err error, p phase) proto.ErrorCode {
 	return proto.ErrorCode_COULD_NOT_DETERMINE
+}
+
+func ShowAIError(err error, opts config.SkaffoldOptions) error {
+	for _, v := range knownBuildProblems {
+		if v.regexp.MatchString(err.Error()) {
+			if s := v.suggestion(opts); s != "" {
+				return fmt.Errorf("%s. %s", v.problem, s)
+			}
+		}
+	}
+	return ErrNoSuggestionFound
 }

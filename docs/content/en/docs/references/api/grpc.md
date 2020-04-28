@@ -653,6 +653,9 @@ Enum for error codes
 | ---- | ------ | ----------- |
 | COULD_NOT_DETERMINE | 0 | Could not determine error |
 | STATUS_CHECK_NO_ERROR | 200 | Status Check Success |
+| BUILD_NO_ERROR | 201 |  |
+| BUILD_PUSH_ACCESS_DENIED | 101 | Build Errors |
+| BUILD_PROJECT_NOT_FOUND | 102 |  |
 | STATUS_CHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUS_CHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUS_CHECK_RUN_CONTAINER_ERR | 302 | Container run error |
@@ -668,6 +671,9 @@ Enum for error codes
 | STATUS_CHECK_UNKNOWN | 501 | Status Check error unknown |
 | STATUS_CHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |
 | STATUS_CHECK_CONTAINER_WAITING_UNKNOWN | 503 | Container is waiting due to unknown reason |
+| DEPLOY_FAILED_UNKNOWN | 504 | Deploy failed due to unknown reason |
+| SYNC_FAILED_UNKNOWN | 505 | SYNC failed due to known reason |
+| BUILD_FAILED_UNKNOWN | 506 | Build failed due to unknown reason |
 
 
  <!-- end enums -->

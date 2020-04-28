@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"io"
 
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -94,7 +96,12 @@ func (b *builder) ExactArgs(argCount int, action func(context.Context, io.Writer
 func (b *builder) NoArgs(action func(context.Context, io.Writer) error) *cobra.Command {
 	b.cmd.Args = cobra.NoArgs
 	b.cmd.RunE = func(*cobra.Command, []string) error {
-		return action(b.cmd.Context(), b.cmd.OutOrStdout())
+		out := b.cmd.OutOrStdout()
+		err := action(b.cmd.Context(), out)
+		if aErr := sErrors.ShowAIError(err, opts); aErr != sErrors.ErrNoSuggestionFound {
+			return aErr
+		}
+		return err
 	}
 	return &b.cmd
 }
