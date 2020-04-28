@@ -24,6 +24,7 @@ import (
 
 	"k8s.io/client-go/tools/clientcmd/api"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -88,4 +89,24 @@ func TestBuildTestDeploy(t *testing.T) {
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedActions, test.testBench.Actions())
 		})
 	}
+}
+
+func TestBuildAndTestDryRun(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		testBench := &TestBench{}
+		runner := createRunner(t, testBench, nil)
+		runner.runCtx.Opts.DryRun = true
+
+		bRes, err := runner.BuildAndTest(context.Background(), ioutil.Discard, []*latest.Artifact{
+			{ImageName: "img1"},
+			{ImageName: "img2"},
+		})
+
+		t.CheckNoError(err)
+		t.CheckDeepEqual([]build.Artifact{
+			{ImageName: "img1", Tag: "img1:latest"},
+			{ImageName: "img2", Tag: "img2:latest"}}, bRes)
+		// Nothing was built, tested or deployed
+		t.CheckDeepEqual([]Actions{{}}, testBench.Actions())
+	})
 }
