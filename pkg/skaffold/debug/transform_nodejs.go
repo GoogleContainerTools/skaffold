@@ -59,8 +59,13 @@ func isLaunchingNpm(args []string) bool {
 }
 
 func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
-	if _, found := config.env["NODE_VERSION"]; found {
-		return true
+	// NODE_VERSION defined in Official Docker `node` image
+	// NODEJS_VERSION defined in RedHat's node base image
+	// NODE_ENV is a common var found to toggle debug and production
+	for _, v := range []string{"NODE_VERSION", "NODEJS_VERSION", "NODE_ENV"} {
+		if _, found := config.env[v]; found {
+			return true
+		}
 	}
 	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return isLaunchingNode(config.entrypoint) || isLaunchingNpm(config.entrypoint)

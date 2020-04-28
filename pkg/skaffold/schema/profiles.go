@@ -84,26 +84,28 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]s
 	var activated []string
 	var contextSpecificProfiles []string
 
-	// Auto-activated profiles
-	for _, profile := range profiles {
-		for _, cond := range profile.Activation {
-			command := isCommand(cond.Command, opts)
+	if opts.ProfileAutoActivation {
+		// Auto-activated profiles
+		for _, profile := range profiles {
+			for _, cond := range profile.Activation {
+				command := isCommand(cond.Command, opts)
 
-			env, err := isEnv(cond.Env)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			kubeContext, err := isKubeContext(cond.KubeContext, opts)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			if command && env && kubeContext {
-				if cond.KubeContext != "" {
-					contextSpecificProfiles = append(contextSpecificProfiles, profile.Name)
+				env, err := isEnv(cond.Env)
+				if err != nil {
+					return nil, nil, err
 				}
-				activated = append(activated, profile.Name)
+
+				kubeContext, err := isKubeContext(cond.KubeContext, opts)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				if command && env && kubeContext {
+					if cond.KubeContext != "" {
+						contextSpecificProfiles = append(contextSpecificProfiles, profile.Name)
+					}
+					activated = append(activated, profile.Name)
+				}
 			}
 		}
 	}

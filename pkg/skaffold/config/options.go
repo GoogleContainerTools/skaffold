@@ -32,39 +32,41 @@ type PortForwardOptions struct {
 // SkaffoldOptions are options that are set by command line arguments not included
 // in the config file itself
 type SkaffoldOptions struct {
-	ConfigurationFile  string
-	GlobalConfig       string
-	Cleanup            bool
-	Notification       bool
-	Tail               bool
-	TailDev            bool
-	SkipTests          bool
-	CacheArtifacts     bool
-	EnableRPC          bool
-	Force              bool
-	NoPrune            bool
-	NoPruneChildren    bool
-	StatusCheck        bool
-	AutoBuild          bool
-	AutoSync           bool
-	AutoDeploy         bool
-	RenderOnly         bool
-	PortForward        PortForwardOptions
-	CustomTag          string
-	Namespace          string
-	CacheFile          string
-	Trigger            string
-	KubeContext        string
-	KubeConfig         string
-	WatchPollInterval  int
-	DefaultRepo        StringOrUndefined
-	CustomLabels       []string
-	TargetImages       []string
-	Profiles           []string
-	InsecureRegistries []string
-	Command            string
-	RPCPort            int
-	RPCHTTPPort        int
+	ConfigurationFile     string
+	GlobalConfig          string
+	Cleanup               bool
+	Notification          bool
+	Tail                  bool
+	TailDev               bool
+	SkipTests             bool
+	CacheArtifacts        bool
+	EnableRPC             bool
+	Force                 bool
+	NoPrune               bool
+	NoPruneChildren       bool
+	StatusCheck           bool
+	AutoBuild             bool
+	AutoSync              bool
+	AutoDeploy            bool
+	RenderOnly            bool
+	ProfileAutoActivation bool
+	DryRun                bool
+	PortForward           PortForwardOptions
+	CustomTag             string
+	Namespace             string
+	CacheFile             string
+	Trigger               string
+	KubeContext           string
+	KubeConfig            string
+	WatchPollInterval     int
+	DefaultRepo           StringOrUndefined
+	CustomLabels          []string
+	TargetImages          []string
+	Profiles              []string
+	InsecureRegistries    []string
+	Command               string
+	RPCPort               int
+	RPCHTTPPort           int
 
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the

@@ -72,6 +72,16 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 			result:      true,
 		},
 		{
+			description: "NODEJS_VERSION",
+			source:      imageConfiguration{env: map[string]string{"NODEJS_VERSION": "12"}},
+			result:      true,
+		},
+		{
+			description: "NODE_ENV",
+			source:      imageConfiguration{env: map[string]string{"NODE_ENV": "production"}},
+			result:      true,
+		},
+		{
 			description: "entrypoint node",
 			source:      imageConfiguration{entrypoint: []string{"node", "init.js"}},
 			result:      true,
