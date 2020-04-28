@@ -101,11 +101,12 @@ DOCKER_API_VERSION=1.23`,
 			shouldErr: true,
 		},
 		{
-			description: "bad env output, should fallback to host docker",
+			description: "bad env output",
 			env: `DOCKER_TLS_VERIFY=1
 DOCKER_HOST=http://127.0.0.1:8080=toomanyvalues
 DOCKER_CERT_PATH=testdata
 DOCKER_API_VERSION=1.23`,
+			shouldErr: true,
 		},
 	}
 	for _, test := range tests {

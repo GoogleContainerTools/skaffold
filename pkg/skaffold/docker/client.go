@@ -92,8 +92,7 @@ func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
 func newMinikubeAPIClient(minikubeProfile string) ([]string, client.CommonAPIClient, error) {
 	env, err := getMinikubeDockerEnv(minikubeProfile)
 	if err != nil {
-		logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
-		return newEnvAPIClient()
+		return nil, nil, err
 	}
 
 	var httpclient *http.Client
