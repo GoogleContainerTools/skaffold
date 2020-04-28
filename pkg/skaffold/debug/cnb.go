@@ -108,17 +108,16 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 				return ic, func(transformed []string) []string {
 					return append([]string{"--"}, transformed...)
 				}
+			}
+			// Script type: split p.Command, pass it through the transformer, and then reassemble in the rewriter.
+			if args, err := shell.Split(p.Command); err == nil {
+				ic.arguments = args
 			} else {
-				// Script type: split p.Command, pass it through the transformer, and then reassemble in the rewriter.
-				if args, err := shell.Split(p.Command); err == nil {
-					ic.arguments = args
-				} else {
-					ic.arguments = []string{p.Command}
-				}
-				return ic, func(transformed []string) []string {
-					// reassemble back into a script with arguments
-					return append([]string{shJoin(transformed)}, p.Args...)
-				}
+				ic.arguments = []string{p.Command}
+			}
+			return ic, func(transformed []string) []string {
+				// reassemble back into a script with arguments
+				return append([]string{shJoin(transformed)}, p.Args...)
 			}
 		}
 	}
