@@ -1,4 +1,4 @@
-<!-- Thanks you for your contribution! -->
+<!-- Thank you for your contribution! -->
 
 <!-- Include if applicable: -->
 **Fixes**: _Tracking issues that this PR will close_
