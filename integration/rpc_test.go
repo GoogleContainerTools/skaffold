@@ -124,6 +124,7 @@ func TestEventsRPC(t *testing.T) {
 			deployEntries++
 			t.Logf("deploy event %d: %v", deployEntries, entry.Event)
 		default:
+			t.Logf("unknown event: %v", entry.Event)
 		}
 	}
 	// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries
