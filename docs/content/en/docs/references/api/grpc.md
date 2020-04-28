@@ -68,6 +68,56 @@ If the build fails, an error will be attached to the event.
 
 
 
+<a name="proto.BuildMetadata"></a>
+#### BuildMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| numberOfArtifacts | [int32](#int32) |  |  |
+| builders | [BuildMetadata.Builder](#proto.BuildMetadata.Builder) | repeated |  |
+| type | [BuildType](#proto.BuildType) |  |  |
+| additional | [BuildMetadata.AdditionalEntry](#proto.BuildMetadata.AdditionalEntry) | repeated | Additional key value pairs to describe the deploy pipeline |
+
+
+
+
+
+
+
+<a name="proto.BuildMetadata.AdditionalEntry"></a>
+#### BuildMetadata.AdditionalEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+
+<a name="proto.BuildMetadata.Builder"></a>
+#### BuildMetadata.Builder
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [BuilderType](#proto.BuilderType) |  |  |
+| count | [int32](#int32) |  |  |
+
+
+
+
+
+
+
 <a name="proto.BuildState"></a>
 #### BuildState
 `BuildState` maps Skaffold artifacts to their current build states
@@ -148,6 +198,38 @@ anytime a deployment starts or completes, successfully or not.
 | status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | error when status is Failed |
 | errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
+
+
+
+
+
+
+
+<a name="proto.DeployMetadata"></a>
+#### DeployMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| deployers | [DeployMetadata.Deployer](#proto.DeployMetadata.Deployer) | repeated |  |
+| cluster | [ClusterType](#proto.ClusterType) |  |  |
+
+
+
+
+
+
+
+<a name="proto.DeployMetadata.Deployer"></a>
+#### DeployMetadata.Deployer
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [DeployerType](#proto.DeployerType) |  |  |
+| count | [int32](#int32) |  |  |
 
 
 
@@ -269,6 +351,40 @@ LogEntry describes an event and a string description of the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | entry | [string](#string) |  | entry, for example: `"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"` |
+| metadata | [Metadata](#proto.Metadata) |  | Metadata describing skaffold pipeline |
+
+
+
+
+
+
+
+<a name="proto.Metadata"></a>
+#### Metadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| build | [BuildMetadata](#proto.BuildMetadata) |  |  |
+| deploy | [DeployMetadata](#proto.DeployMetadata) |  |  |
+| additional | [Metadata.AdditionalEntry](#proto.Metadata.AdditionalEntry) | repeated | Additional key value pairs to describe the build pipeline |
+
+
+
+
+
+
+
+<a name="proto.Metadata.AdditionalEntry"></a>
+#### Metadata.AdditionalEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 
@@ -364,6 +480,7 @@ will be sent with the new status.
 | statusCheckState | [StatusCheckState](#proto.StatusCheckState) |  |  |
 | fileSyncState | [FileSyncState](#proto.FileSyncState) |  |  |
 | debuggingContainers | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) | repeated |  |
+| metadata | [Metadata](#proto.Metadata) |  |  |
 
 
 
@@ -468,6 +585,65 @@ will be sent with the new status.
  <!-- end messages -->
 
 
+<a name="proto.BuildType"></a>
+
+### BuildType
+Enum indicating build type i.e. local, cluster vs GCB
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| UNKNOWN_BUILD_TYPE | 0 | Could not determine Build Type |
+| CLUSTER | 1 | Cluster Build |
+| GCB | 2 | GCB Build |
+| LOCAL | 3 | Local Build |
+
+
+
+<a name="proto.BuilderType"></a>
+
+### BuilderType
+Enum indicating builders used
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| UNKNOWN_BUILDER_TYPE | 0 | Could not determune builder type |
+| JIB | 1 | JIB Builder |
+| BAZEL | 2 | Bazel Builder |
+| BUILDPACKS | 3 | Buildpacks Builder |
+| CUSTOM | 4 | Custom Builder |
+| KANIKO | 5 | Kaniko Builder |
+| DOCKER | 6 | Docker Builder |
+
+
+
+<a name="proto.ClusterType"></a>
+
+### ClusterType
+Enum indicating cluster type the application is deployed to
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| UNKNOWN_CLUSTER_TYPE | 0 | Could not determine Cluster Type |
+| MINIKUBE | 1 | Minikube Cluster |
+| GKE | 2 | GKE cluster |
+| OTHER | 3 | All Cluster except Minikube and GKE |
+
+
+
+<a name="proto.DeployerType"></a>
+
+### DeployerType
+Enum indicating deploy tools used
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| UNKNOWN_DEPLOYER_TYPE | 0 | Could not determine Deployer Type |
+| HELM | 1 | Helm Deployer |
+| KUSTOMIZE | 2 | Kustomize Deployer |
+| KUBECTL | 3 | Kubectl Deployer |
+
+
+
 <a name="proto.ErrorCode"></a>
 
 ### ErrorCode
@@ -475,7 +651,23 @@ Enum for error codes
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| COULD_NOT_DETERMINE | 0 |  |
+| COULD_NOT_DETERMINE | 0 | Could not determine error |
+| STATUS_CHECK_NO_ERROR | 200 | Status Check Success |
+| STATUS_CHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
+| STATUS_CHECK_CONTAINER_CREATING | 301 | Container creating error |
+| STATUS_CHECK_RUN_CONTAINER_ERR | 302 | Container run error |
+| STATUS_CHECK_CONTAINER_TERMINATED | 303 | Container is already terminated |
+| STATUS_CHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
+| STATUS_CHECK_NODE_MEMORY_PRESSURE | 400 | Node memory pressure error |
+| STATUS_CHECK_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
+| STATUS_CHECK_NODE_NETWORK_UNAVAILABLE | 402 | Node network unavailable error |
+| STATUS_CHECK_NODE_PID_PRESSURE | 403 | Node PID pressure error |
+| STATUS_CHECK_NODE_UNSCHEDULABLE | 404 | Node unschedulable error |
+| STATUS_CHECK_NODE_UNREACHABLE | 405 | Node unreachable error |
+| STATUS_CHECK_NODE_NOT_READY | 406 | Node not ready error |
+| STATUS_CHECK_UNKNOWN | 501 | Status Check error unknown |
+| STATUS_CHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |
+| STATUS_CHECK_CONTAINER_WAITING_UNKNOWN | 503 | Container is waiting due to unknown reason |
 
 
  <!-- end enums -->

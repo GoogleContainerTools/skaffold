@@ -128,7 +128,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
 
-	defaultRepo, err := config.GetDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo)
+	defaultRepo, err := config.GetDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo.Value())
 	if err != nil {
 		return nil, fmt.Errorf("getting default repo: %w", err)
 	}
@@ -146,6 +146,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 	}
 
 	imageTags := make(tag.ImageTags, len(artifacts))
+	showWarning := false
 
 	for i, artifact := range artifacts {
 		imageName := artifact.ImageName
@@ -156,18 +157,33 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 			return nil, context.Canceled
 
 		case t := <-tagErrs[i]:
-			if t.err != nil {
-				return nil, fmt.Errorf("generating tag for %q: %w", imageName, t.err)
+			err := t.err
+
+			if err != nil {
+				logrus.Debugln(err)
+				logrus.Debugln("Using a fall-back tagger")
+
+				fallbackTagger := &tag.ChecksumTagger{}
+				t.tag, err = fallbackTagger.GenerateFullyQualifiedImageName(artifact.Workspace, imageName)
+				if err != nil {
+					return nil, fmt.Errorf("generating checksum as fall-back tag for %q: %w", imageName, err)
+				}
+
+				showWarning = true
 			}
 
 			tag, err := docker.SubstituteDefaultRepoIntoImage(defaultRepo, t.tag)
 			if err != nil {
 				return nil, fmt.Errorf("applying default repo to %q: %w", t.tag, t.err)
 			}
-			fmt.Fprintln(out, tag)
 
+			fmt.Fprintln(out, tag)
 			imageTags[imageName] = tag
 		}
+	}
+
+	if showWarning {
+		color.Yellow.Fprintln(out, "Some taggers failed. Rerun with -vdebug for errors.")
 	}
 
 	logrus.Infoln("Tags generated in", time.Since(start))

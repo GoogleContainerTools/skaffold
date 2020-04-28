@@ -99,7 +99,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
-	event.InitializeState(runCtx.Cfg.Build)
+	event.InitializeState(runCtx.Cfg, runCtx.KubeContext)
+	event.LogMetaEvent()
 
 	monitor := filemon.NewMonitor()
 

@@ -18,7 +18,6 @@ package integration
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -323,7 +322,7 @@ func retrieveHTTPState(t *testing.T, httpAddr string) proto.State {
 	if err != nil {
 		t.Errorf("error reading body from http response: %s", err.Error())
 	}
-	if err := json.Unmarshal(b, &httpState); err != nil {
+	if err := jsonpb.UnmarshalString(string(b), &httpState); err != nil {
 		t.Errorf("error converting http response to proto: %s", err.Error())
 	}
 	return httpState

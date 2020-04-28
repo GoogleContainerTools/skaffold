@@ -79,7 +79,7 @@ Pipeline building blocks for CI/CD:
 
 Getting started with a new project:
   init              [alpha] Generate configuration for deploying an application
-  fix               Update old configuration to newest schema version
+  fix               Update old configuration to a newer schema version
 
 Other Commands:
   completion        Output shell completion for the given shell (bash or zsh)
@@ -596,14 +596,22 @@ Env vars:
 
 ### skaffold fix
 
-Update old configuration to newest schema version
+Update old configuration to a newer schema version
 
 ```
 
 
+Examples:
+  # Update "skaffold.yaml" in the current folder to the latest version
+  skaffold fix
+
+  # Update "skaffold.yaml" in the current folder to version "skaffold/v1"
+  skaffold fix --version skaffold/v1
+
 Options:
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --overwrite=false: Overwrite original config with fixed config
+      --version='skaffold/v2beta3': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -616,6 +624,7 @@ Env vars:
 
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_OVERWRITE` (same as `--overwrite`)
+* `SKAFFOLD_VERSION` (same as `--version`)
 
 ### skaffold init
 

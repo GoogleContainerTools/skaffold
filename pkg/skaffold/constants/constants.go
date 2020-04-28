@@ -17,9 +17,6 @@ limitations under the License.
 package constants
 
 import (
-	"fmt"
-	"runtime"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -107,8 +104,6 @@ var (
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
-
-var LatestDownloadURL = fmt.Sprintf("https://storage.googleapis.com/skaffold/releases/latest/skaffold-%s-%s", runtime.GOOS, runtime.GOARCH)
 
 var Labels = struct {
 	TagPolicy        string

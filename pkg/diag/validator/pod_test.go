@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -71,7 +72,8 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("container foo-container is waiting to start: image foo-image can't be pulled"))},
+				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
+				proto.ErrorCode_STATUS_CHECK_IMAGE_PULL_ERR)},
 		},
 		{
 			description: "pod is in Terminated State",
@@ -85,7 +87,8 @@ func TestRun(t *testing.T) {
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil)},
+			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil,
+				proto.ErrorCode_STATUS_CHECK_NO_ERROR)},
 		},
 		{
 			description: "pod is in Stable State",
@@ -105,7 +108,8 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Running", nil)},
+			expected: []Resource{NewResource("test", "", "foo", "Running", nil,
+				proto.ErrorCode_STATUS_CHECK_NO_ERROR)},
 		},
 		{
 			description: "pod condition unknown",
@@ -124,7 +128,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("could not determine"))},
+				fmt.Errorf("could not determine"), proto.ErrorCode_STATUS_CHECK_UNKNOWN)},
 		},
 		{
 			description: "pod could not be scheduled",
@@ -144,7 +148,30 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"))},
+				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"),
+				proto.ErrorCode_STATUS_CHECK_NODE_DISK_PRESSURE)},
+		},
+		{
+			description: "pod is running but container terminated",
+			pods: []*v1.Pod{{
+				ObjectMeta: meta_v1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				Status: v1.PodStatus{
+					Phase:      v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							State: v1.ContainerState{Terminated: &v1.ContainerStateTerminated{ExitCode: 1}},
+						},
+					},
+				},
+			}},
+			expected: []Resource{NewResource("test", "", "foo", "Running",
+				fmt.Errorf("container foo-container terminated with exit code 1"),
+				proto.ErrorCode_STATUS_CHECK_CONTAINER_TERMINATED)},
 		},
 	}
 

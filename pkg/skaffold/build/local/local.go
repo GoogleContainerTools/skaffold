@@ -74,6 +74,16 @@ func (b *Builder) buildArtifact(ctx context.Context, out io.Writer, artifact *la
 }
 
 func (b *Builder) runBuildForArtifact(ctx context.Context, out io.Writer, artifact *latest.Artifact, tag string) (string, error) {
+	if !b.pushImages {
+		// All of the builders will rely on a local Docker:
+		// + Either to build the image,
+		// + Or to docker load it.
+		// Let's fail fast if Docker is not available
+		if _, err := b.localDocker.ServerVersion(ctx); err != nil {
+			return "", err
+		}
+	}
+
 	switch {
 	case artifact.DockerArtifact != nil:
 		return b.buildDocker(ctx, out, artifact, tag)

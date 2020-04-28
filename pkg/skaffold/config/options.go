@@ -58,7 +58,7 @@ type SkaffoldOptions struct {
 	KubeContext           string
 	KubeConfig            string
 	WatchPollInterval     int
-	DefaultRepo           string
+	DefaultRepo           StringOrUndefined
 	CustomLabels          []string
 	TargetImages          []string
 	Profiles              []string

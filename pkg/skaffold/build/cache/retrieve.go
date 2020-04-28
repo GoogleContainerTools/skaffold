@@ -64,10 +64,8 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		result := results[i]
 		switch result := result.(type) {
 		case failed:
-			logrus.Warnf("error checking cache, caching may not work as expected: %v", result.err)
-			color.Yellow.Fprintln(out, "Error checking cache. Rebuilding.")
-			needToBuild = append(needToBuild, artifact)
-			continue
+			color.Red.Fprintln(out, "Error checking cache.")
+			return nil, result.err
 
 		case needsBuilding:
 			color.Yellow.Fprintln(out, "Not found. Building")

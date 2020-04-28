@@ -62,7 +62,7 @@ profiles:
 		tmpDir := t.NewTempDir().
 			Write("skaffold.yaml", addVersion(config))
 
-		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"), false)
+		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"))
 		t.CheckNoError(err)
 
 		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
@@ -93,7 +93,7 @@ profiles:
 		tmp := t.NewTempDir().
 			Write("skaffold.yaml", addVersion(config))
 
-		parsed, err := ParseConfig(tmp.Path("skaffold.yaml"), false)
+		parsed, err := ParseConfig(tmp.Path("skaffold.yaml"))
 		t.CheckNoError(err)
 
 		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
@@ -772,7 +772,7 @@ profiles:
 		tmpDir := t.NewTempDir().
 			Write("skaffold.yaml", addVersion(config))
 
-		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"), false)
+		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"))
 		t.RequireNoError(err)
 
 		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
