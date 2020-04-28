@@ -63,7 +63,7 @@ func updateForCNBImage(container *v1.Container, ic imageConfiguration, transform
 	}
 	m := cnb.BuildMetadata{}
 	if err := json.Unmarshal([]byte(metadataJSON), &m); err != nil {
-		return ContainerDebugConfiguration{}, "", fmt.Errorf("unable to parse image buildpacks metadata")		
+		return ContainerDebugConfiguration{}, "", fmt.Errorf("unable to parse image buildpacks metadata")
 	}
 	if len(m.Processes) == 0 {
 		return ContainerDebugConfiguration{}, "", fmt.Errorf("buildpacks metadata has no processes")
