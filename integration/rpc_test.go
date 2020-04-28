@@ -116,10 +116,13 @@ func TestEventsRPC(t *testing.T) {
 		switch entry.Event.GetEventType().(type) {
 		case *proto.Event_MetaEvent:
 			metaEntries++
+			t.Logf("meta event %d: %v", metaEntries, entry.Event)
 		case *proto.Event_BuildEvent:
 			buildEntries++
+			t.Logf("build event %d: %v", buildEntries, entry.Event)
 		case *proto.Event_DeployEvent:
 			deployEntries++
+			t.Logf("deploy event %d: %v", deployEntries, entry.Event)
 		default:
 		}
 	}
