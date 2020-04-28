@@ -104,7 +104,16 @@ message Event {
         ResourceStatusCheckEvent resourceStatusCheckEvent = 6; // indicates progress for each kubernetes deployment.
         FileSyncEvent fileSyncEvent = 7; // describes the sync status.
         DebuggingContainerEvent debuggingContainerEvent = 8; // describes the appearance or disappearance of a debugging container
+        DevLoopEvent devLoopEvent = 9; // describes a start and end of a dev loop.
     }
+}
+
+// `DevLoopEvent` marks the start and end of a dev loop.
+message DevLoopEvent {
+    int32 iteration = 1; // dev loop iteration
+    string status = 2; // dev loop status oneof: In Progress, Completed, Failed
+    string err = 3; // error when current dev loop has failed.
+    ErrorCode errCode = 4; // error code representing the error
 }
 
 // `MetaEvent` provides general information regarding Skaffold
@@ -344,11 +353,32 @@ enum ErrorCode {
     STATUS_CHECK_NODE_NOT_READY= 406;
 
     // Unknown Error Codes
+    ErrorCode_UNKNOWN = 501;
 
     // Status Check error unknown
-    STATUS_CHECK_UNKNOWN = 501;
+    STATUS_CHECK_UNKNOWN = 502;
     // Container is unschedulable due to unknown reasons
-    STATUS_CHECK_UNKNOWN_UNSCHEDULABLE = 502;
+    STATUS_CHECK_UNKNOWN_UNSCHEDULABLE = 503;
     // Container is waiting due to unknown reason
-    STATUS_CHECK_CONTAINER_WAITING_UNKNOWN = 503;
+    STATUS_CHECK_CONTAINER_WAITING_UNKNOWN = 504;
+
+
+
+    // FILE_SYNC Failures
+
+    // File Sync Initialize failure
+    FILE_SYNC_INIT_ERROR = 601;
+
+
+    // Dev Monitor Errors
+
+    // Failed to configure watcher for build dependencies in dev loop
+    DEV_REGISTER_BUILD_DEPS = 701;
+    // Failed to configure watcher for test dependencies in dev loop
+    DEV_REGISTER_TEST_DEPS = 702;
+    // Failed to configure watcher for deploy dependencies in dev loop
+    DEV_REGISTER_DEPLOY_DEPS = 703;
+    // Failed to configure watcher for Skaffold configuration file.
+    DEV_REGISTER_CONFIG_DEP = 704;
+
 }

@@ -248,6 +248,27 @@ func BuildComplete(imageName string) {
 	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Complete})
 }
 
+// DevLoopInProgress notifies that a dev loop has been started.
+func DevLoopInProgress(i int) {
+	handler.handleDevLoopEvent(&proto.DevLoopEvent{Iteration: int32(i), Status: InProgress})
+}
+
+// DevLoopFailed notifies that a dev loop has failed with an error code
+func DevLoopFailedWithErrorCode(i int, err error, errCode proto.ErrorCode) {
+	handler.handleDevLoopEvent(&proto.DevLoopEvent{Iteration: int32(i), Status: Failed, Err: err.Error(), ErrCode: errCode})
+}
+
+// DevLoopFailed notifies that a dev loop has failed in a given phase
+func DevLoopFailedInPhase(i int, err error, phase sErrors.Phase) {
+	errCode := sErrors.ErrorCodeFromError(err, phase)
+	DevLoopFailedWithErrorCode(i, err, errCode)
+}
+
+// DevLoopComplete notifies that a dev loop has completed.
+func DevLoopComplete(i int) {
+	handler.handleDevLoopEvent(&proto.DevLoopEvent{Iteration: int32(i), Status: Succeeded})
+}
+
 // FileSyncInProgress notifies that a file sync has been started.
 func FileSyncInProgress(fileCount int, image string) {
 	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: InProgress})
@@ -353,6 +374,14 @@ func (ev *eventHandler) handleBuildEvent(e *proto.BuildEvent) {
 	go ev.handle(&proto.Event{
 		EventType: &proto.Event_BuildEvent{
 			BuildEvent: e,
+		},
+	})
+}
+
+func (ev *eventHandler) handleDevLoopEvent(e *proto.DevLoopEvent) {
+	go ev.handle(&proto.Event{
+		EventType: &proto.Event_DevLoopEvent{
+			DevLoopEvent: e,
 		},
 	})
 }
@@ -492,6 +521,16 @@ func (ev *eventHandler) handle(event *proto.Event) {
 			logEntry.Entry = fmt.Sprintf("Debuggable container started pod/%s:%s (%s)", de.PodName, de.ContainerName, de.Namespace)
 		case Terminated:
 			logEntry.Entry = fmt.Sprintf("Debuggable container terminated pod/%s:%s (%s)", de.PodName, de.ContainerName, de.Namespace)
+		}
+	case *proto.Event_DevLoopEvent:
+		de := e.DevLoopEvent
+		switch de.Status {
+		case InProgress:
+			logEntry.Entry = fmt.Sprintf("Dev Iteration %d in progress", de.Iteration)
+		case Succeeded:
+			logEntry.Entry = fmt.Sprintf("Dev Iteration %d successful", de.Iteration)
+		default:
+			logEntry.Entry = fmt.Sprintf("Dev Iteration %d failed with error code %v", de.Iteration, de.ErrCode)
 		}
 	default:
 		return

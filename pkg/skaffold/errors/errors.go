@@ -21,14 +21,15 @@ import (
 )
 
 const (
-	Build       = phase("Build")
-	Deploy      = phase("Deploy")
-	StatusCheck = phase("StatusCheck")
-	FileSync    = phase("FileSync")
+	Build       = Phase("Build")
+	Deploy      = Phase("Deploy")
+	StatusCheck = Phase("StatusCheck")
+	FileSync    = Phase("FileSync")
+	Dev         = Phase("Dev")
 )
 
-type phase string
+type Phase string
 
-func ErrorCodeFromError(_ error, _ phase) proto.ErrorCode {
-	return proto.ErrorCode_COULD_NOT_DETERMINE
+func ErrorCodeFromError(_ error, _ Phase) proto.ErrorCode {
+	return proto.ErrorCode_ErrorCode_UNKNOWN
 }

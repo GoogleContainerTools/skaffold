@@ -252,6 +252,24 @@ anytime a deployment starts or completes, successfully or not.
 
 
 
+<a name="proto.DevLoopEvent"></a>
+#### DevLoopEvent
+`DevLoopEvent` marks the start and end of a dev loop.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| iteration | [int32](#int32) |  | dev loop iteration |
+| status | [string](#string) |  | dev loop status oneof: In Progress, Completed, Failed |
+| err | [string](#string) |  | error when current dev loop has failed. |
+| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
+
+
+
+
+
+
+
 <a name="proto.Event"></a>
 #### Event
 `Event` describes an event in the Skaffold process.
@@ -268,6 +286,7 @@ It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, Re
 | resourceStatusCheckEvent | [ResourceStatusCheckEvent](#proto.ResourceStatusCheckEvent) |  | indicates progress for each kubernetes deployment. |
 | fileSyncEvent | [FileSyncEvent](#proto.FileSyncEvent) |  | describes the sync status. |
 | debuggingContainerEvent | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) |  | describes the appearance or disappearance of a debugging container |
+| devLoopEvent | [DevLoopEvent](#proto.DevLoopEvent) |  | describes a start and end of a dev loop. |
 
 
 
@@ -665,9 +684,15 @@ Enum for error codes
 | STATUS_CHECK_NODE_UNSCHEDULABLE | 404 | Node unschedulable error |
 | STATUS_CHECK_NODE_UNREACHABLE | 405 | Node unreachable error |
 | STATUS_CHECK_NODE_NOT_READY | 406 | Node not ready error |
-| STATUS_CHECK_UNKNOWN | 501 | Status Check error unknown |
-| STATUS_CHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |
-| STATUS_CHECK_CONTAINER_WAITING_UNKNOWN | 503 | Container is waiting due to unknown reason |
+| ErrorCode_UNKNOWN | 501 | Unknown Error Codes |
+| STATUS_CHECK_UNKNOWN | 502 | Status Check error unknown |
+| STATUS_CHECK_UNKNOWN_UNSCHEDULABLE | 503 | Container is unschedulable due to unknown reasons |
+| STATUS_CHECK_CONTAINER_WAITING_UNKNOWN | 504 | Container is waiting due to unknown reason |
+| FILE_SYNC_INIT_ERROR | 601 | File Sync Initialize failure |
+| DEV_REGISTER_BUILD_DEPS | 701 | Failed to configure watcher for build dependencies in dev loop |
+| DEV_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
+| DEV_REGISTER_DEPLOY_DEPS | 703 | Failed to configure watcher for deploy dependencies in dev loop |
+| DEV_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
 
 
  <!-- end enums -->
