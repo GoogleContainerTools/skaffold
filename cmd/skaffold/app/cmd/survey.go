@@ -28,11 +28,10 @@ import (
 func NewCmdSurvey() *cobra.Command {
 	return NewCmd("survey").
 		WithDescription("Show Skaffold survey url").
-		WithCommonFlags().
 		NoArgs(showSurvey)
 }
 
 func showSurvey(context context.Context, out io.Writer) error {
 	s := survey.New(opts.GlobalConfig)
-	return s.DisplaySurveyForm(context, out)
+	return s.OpenSurveyForm(context, out)
 }

@@ -22,23 +22,29 @@ import (
 	"io"
 	"os"
 
+	"github.com/pkg/browser"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
 
 const (
 	Prompt = `Help improve Skaffold! Take a 10-second anonymous survey by running
-   $skaffold survey`
+   skaffold survey`
 
-	Form = `Thank you for offering your feedback on Skaffold! Understanding your experiences and opinions helps us make Skaffold better for you and other users.
-   Our survey can be found here: https://forms.gle/BMTbGQXLWSdn7vEs6
-
-To permanently disable the survey prompt, run:
-   skaffold config set --survey --global disable-prompt true`
+	URL = "https://forms.gle/BMTbGQXLWSdn7vEs6"
 )
 
-// for testing
 var (
+	Form = fmt.Sprintf(`Thank you for offering your feedback on Skaffold! Understanding your experiences and opinions helps us make Skaffold better for you and other users.
+   Our survey can be found here: %s
+
+To permanently disable the survey prompt, run:
+   skaffold config set --survey --global disable-prompt true`, URL)
+
+	// for testing
 	isStdOut = stdOut
+	open     = browser.OpenURL
 )
 
 type Runner struct {
@@ -57,9 +63,13 @@ func DisplaySurveyPrompt(out io.Writer) {
 	}
 }
 
-func (s *Runner) DisplaySurveyForm(_ context.Context, out io.Writer) error {
+func (s *Runner) OpenSurveyForm(_ context.Context, out io.Writer) error {
 	_, err := fmt.Fprintln(out, Form)
 	if err != nil {
+		return err
+	}
+	if err := open(URL); err != nil {
+		logrus.Debugf("could not open url %s", URL)
 		return err
 	}
 	// Currently we will only update the global survey taken
