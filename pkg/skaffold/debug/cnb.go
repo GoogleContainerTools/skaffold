@@ -56,13 +56,15 @@ func updateForCNBImage(container *v1.Container, ic imageConfiguration, transform
 	// The build metadata isn't absolutely required as the image args could be
 	// a command line (e.g., `python xxx`) but it likely indicates the
 	// image was built with an older lifecycle.
-	m := cnb.BuildMetadata{}
 	// buildpacks/lifecycle 0.6.0 now embeds processes into special image label
 	metadataJSON, found := ic.labels["io.buildpacks.build.metadata"]
 	if !found {
 		return ContainerDebugConfiguration{}, "", fmt.Errorf("image is missing buildpacks metadata; perhaps built with older lifecycle?")
 	}
-	json.Unmarshal([]byte(metadataJSON), &m)
+	m := cnb.BuildMetadata{}
+	if err := json.Unmarshal([]byte(metadataJSON), &m); err != nil {
+		return ContainerDebugConfiguration{}, "", fmt.Errorf("unable to parse image buildpacks metadata")		
+	}
 	if len(m.Processes) == 0 {
 		return ContainerDebugConfiguration{}, "", fmt.Errorf("buildpacks metadata has no processes")
 	}
@@ -100,11 +102,10 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 
 	for _, p := range m.Processes {
 		if p.Type == processType {
-			var rewriter func(transformed []string) []string
 			if p.Direct {
 				// p.Command is the command and p.Args are the arguments
 				ic.arguments = append([]string{p.Command}, p.Args...)
-				rewriter = func(transformed []string) []string {
+				return ic, func(transformed []string) []string {
 					return append([]string{"--"}, transformed...)
 				}
 			} else {
@@ -114,12 +115,11 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 				} else {
 					ic.arguments = []string{p.Command}
 				}
-				rewriter = func(transformed []string) []string {
+				return ic, func(transformed []string) []string {
 					// reassemble back into a script with arguments
 					return append([]string{shJoin(transformed)}, p.Args...)
 				}
 			}
-			return ic, rewriter
 		}
 	}
 
@@ -131,6 +131,7 @@ func adjustCommandLine(m cnb.BuildMetadata, ic imageConfiguration) (imageConfigu
 	}
 
 	// ic.arguments[0] is a shell script:  split it, pass it through the transformer, and then reassemble in the rewriter.
+	// If it can't be split, then we fall through and return it untouched, to be handled by the normal debug process.
 	var rewriter func(transformed []string) []string
 	if args, err := shell.Split(ic.arguments[0]); err == nil {
 		remnants := ic.arguments[1:]

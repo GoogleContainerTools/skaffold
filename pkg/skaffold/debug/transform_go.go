@@ -70,7 +70,7 @@ func (t dlvTransformer) IsApplicable(config imageConfiguration) bool {
 	// nor to cause certain environment variables to be defined in the resulting image, look at the image's
 	// CNB metadata to see if any well-known Go-related buildpacks had been involved.
 	knownGoBuildpackIds := []string{
-		"google.go.runtime", "google.go.build", "google.go.gopath", "google.go.gomod", // GCP Buildpacks
+		"google.go.build", // GCP Buildpacks
 		"paketo-buildpacks/go-compiler", "paketo-buildpacks/go-mod", // Cloud Foundry
 		"heroku/go", // Heroku
 	}
