@@ -55,6 +55,9 @@ var (
 	ReadConfigFile             = readConfigFileCached
 	GetConfigForCurrentKubectx = getConfigForCurrentKubectx
 	current                    = time.Now
+
+	// update survey lastTaken
+	updateLastTaken = "skaffold config set --survey --global last-taken %s"
 )
 
 // readConfigFileCached reads the specified file and returns the contents
@@ -258,4 +261,47 @@ func lessThan(date string, duration time.Duration) bool {
 		return false
 	}
 	return current().Sub(t) < duration
+}
+
+func UpdateGlobalSurveyTaken(configFile string) error {
+	// Today's date
+	today := current().Format(time.RFC3339)
+	ai := fmt.Sprintf(updateLastTaken, today)
+	aiErr := fmt.Errorf("could not update the `last-taken` field in survey config. Please run `%s`", ai)
+
+	configFile, err := ResolveConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	fullConfig, err := ReadConfigFile(configFile)
+	if err != nil {
+		return aiErr
+	}
+	if fullConfig.Global == nil {
+		fullConfig.Global = &ContextConfig{}
+	}
+	if fullConfig.Global.Survey == nil {
+		fullConfig.Global.Survey = &SurveyConfig{}
+	}
+	fullConfig.Global.Survey.LastTaken = today
+	err = WriteFullConfig(configFile, fullConfig)
+	if err != nil {
+		return aiErr
+	}
+	return err
+}
+
+func WriteFullConfig(configFile string, cfg *GlobalConfig) error {
+	contents, err := yaml.Marshal(cfg)
+	if err != nil {
+		return fmt.Errorf("marshaling config: %w", err)
+	}
+	configFileOrDefault, err := ResolveConfigFile(configFile)
+	if err != nil {
+		return err
+	}
+	if err := ioutil.WriteFile(configFileOrDefault, contents, 0644); err != nil {
+		return fmt.Errorf("writing config file: %w", err)
+	}
+	return nil
 }

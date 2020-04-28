@@ -17,6 +17,9 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
+	"io"
+
 	"github.com/spf13/cobra"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/survey"
@@ -25,5 +28,11 @@ import (
 func NewCmdSurvey() *cobra.Command {
 	return NewCmd("survey").
 		WithDescription("Show Skaffold survey url").
-		NoArgs(survey.DisplaySurveyForm)
+		WithCommonFlags().
+		NoArgs(showSurvey)
+}
+
+func showSurvey(context context.Context, out io.Writer) error {
+	s := survey.New(opts.GlobalConfig)
+	return s.DisplaySurveyForm(context, out)
 }

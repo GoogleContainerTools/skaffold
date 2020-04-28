@@ -499,3 +499,63 @@ func TestGetDefaultRepo(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateGlobalSurveyTaken(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         string
+		expectedCfg *GlobalConfig
+	}{
+		{
+			description: "update global context when context is empty",
+			expectedCfg: &GlobalConfig{
+				Global:         &ContextConfig{Survey: &SurveyConfig{}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "update global context when survey config is not nil",
+			cfg: `
+global:
+  survey:
+    last-prompted: "some date"
+kubeContexts: []`,
+			expectedCfg: &GlobalConfig{
+				Global:         &ContextConfig{Survey: &SurveyConfig{LastPrompted: "some date"}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "update global context when survey config last taken is in past",
+			cfg: `
+global:
+  survey:
+    last-taken: "some date in past"
+kubeContexts: []`,
+			expectedCfg: &GlobalConfig{
+				Global:         &ContextConfig{Survey: &SurveyConfig{}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfg := t.TempFile("config", []byte(test.cfg))
+			testTime := time.Now()
+			t.Override(&ReadConfigFile, ReadConfigFileNoCache)
+			t.Override(&current, func() time.Time {
+				return testTime
+			})
+
+			// update the time
+			err := UpdateGlobalSurveyTaken(cfg)
+			t.CheckNoError(err)
+
+			actualConfig, cfgErr := ReadConfigFile(cfg)
+			t.CheckNoError(cfgErr)
+			// update time in expected cfg.
+			test.expectedCfg.Global.Survey.LastTaken = testTime.Format(time.RFC3339)
+			t.CheckDeepEqual(test.expectedCfg, actualConfig)
+		})
+	}
+}

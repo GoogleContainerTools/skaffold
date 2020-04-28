@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
 
 const (
@@ -39,15 +41,30 @@ var (
 	isStdOut = stdOut
 )
 
+type Runner struct {
+	configFile string
+}
+
+func New(configFile string) *Runner {
+	return &Runner{
+		configFile: configFile,
+	}
+}
+
 func DisplaySurveyPrompt(out io.Writer) {
 	if isStdOut(out) {
 		fmt.Fprintln(out, Prompt)
 	}
 }
 
-func DisplaySurveyForm(_ context.Context, out io.Writer) error {
+func (s *Runner) DisplaySurveyForm(_ context.Context, out io.Writer) error {
 	_, err := fmt.Fprintln(out, Form)
-	return err
+	if err != nil {
+		return err
+	}
+	// Currently we will only update the global survey taken
+	// When prompting for the survey, we need to use the same field.
+	return config.UpdateGlobalSurveyTaken(s.configFile)
 }
 
 func stdOut(out io.Writer) bool {
