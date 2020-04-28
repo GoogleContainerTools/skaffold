@@ -30,12 +30,12 @@ For a detailed discussion on Skaffold configuration, see
 
  + Image tags are computed before the images are built.
  + No matter the tagger, Skaffold always uses immutable references in Kubernetes manifests.
-   Which reference is used depends on whether the images are pushed or not:
+   Which reference is used depends on whether the images are pushed to a registry or loaded directly into the cluster (such as via the Docker daemon):
      + **When images are pushed**, their immutable digest is available. Skaffold then references
        images both by tag and digest. Something like `image:tag@sha256:abacabac...`.
        Using both the tag and the digest seems superfluous but it guarantees immutability
        and helps users quickly see which version of the image is used.
-     + **When images are not pushed**, digests are not available. We have the tags and the
+     + **When images are loaded directly into the cluster**, such as loading into the cluster's Docker daemon, digests are not available. We have the tags and the
        imageIDs. Since imageIDs can't be used in Kubernetes manifests, Skaffold creates
        an additional immutable, local only, tag with the same name as the imageID and uses that in manifests.
        Something like `image:abecfabecfabecf...`.
