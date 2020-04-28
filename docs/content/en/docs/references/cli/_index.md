@@ -832,6 +832,9 @@ Show Skaffold survey url
 ```
 
 
+Options:
+  -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
+
 Usage:
   skaffold survey [options]
 
@@ -839,6 +842,9 @@ Use "skaffold options" for a list of global command-line options (applies to all
 
 
 ```
+Env vars:
+
+* `SKAFFOLD_FILENAME` (same as `--filename`)
 
 ### skaffold version
 
