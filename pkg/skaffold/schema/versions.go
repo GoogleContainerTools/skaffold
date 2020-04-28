@@ -57,6 +57,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha3"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2alpha4"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta1"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta2"
 	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -93,6 +94,7 @@ var SchemaVersions = Versions{
 	{v2alpha3.Version, v2alpha3.NewSkaffoldConfig},
 	{v2alpha4.Version, v2alpha4.NewSkaffoldConfig},
 	{v2beta1.Version, v2beta1.NewSkaffoldConfig},
+	{v2beta2.Version, v2beta2.NewSkaffoldConfig},
 	{latest.Version, latest.NewSkaffoldConfig},
 }
 
@@ -120,14 +122,14 @@ func IsSkaffoldConfig(file string) bool {
 		return false
 	}
 
-	if config, err := ParseConfig(file, false); err == nil && config != nil {
+	if config, err := ParseConfig(file); err == nil && config != nil {
 		return true
 	}
 	return false
 }
 
 // ParseConfig reads a configuration file.
-func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
+func ParseConfig(filename string) (util.VersionedConfig, error) {
 	buf, err := misc.ReadConfiguration(filename)
 	if err != nil {
 		return nil, fmt.Errorf("read skaffold config: %w", err)
@@ -146,7 +148,7 @@ func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 
 	factory, present := SchemaVersions.Find(apiVersion.Version)
 	if !present {
-		return nil, fmt.Errorf("unknown api version: '%s'", apiVersion.Version)
+		return nil, fmt.Errorf("unknown api version: %q", apiVersion.Version)
 	}
 
 	// Remove all top-level keys starting with `.` so they can be used as YAML anchors
@@ -169,42 +171,46 @@ func ParseConfig(filename string, upgrade bool) (util.VersionedConfig, error) {
 		return nil, fmt.Errorf("unable to parse config: %w", err)
 	}
 
-	if upgrade && cfg.GetVersion() != latest.Version {
-		cfg, err = upgradeToLatest(cfg)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return cfg, nil
 }
 
-// upgradeToLatest upgrades a configuration to the latest version.
-func upgradeToLatest(vc util.VersionedConfig) (util.VersionedConfig, error) {
-	var err error
-
-	// first, check to make sure config version isn't too new
-	version, err := apiversion.Parse(vc.GetVersion())
+// ParseConfigAndUpgrade reads a configuration file and upgrades it to a given version.
+func ParseConfigAndUpgrade(filename, toVersion string) (util.VersionedConfig, error) {
+	cfg, err := ParseConfig(filename)
 	if err != nil {
-		return nil, fmt.Errorf("parsing api version: %w", err)
+		return nil, err
 	}
 
-	semver := apiversion.MustParse(latest.Version)
-	if version.EQ(semver) {
-		return vc, nil
-	}
-	if version.GT(semver) {
-		return nil, fmt.Errorf("config version %s is too new for this version: upgrade Skaffold", vc.GetVersion())
+	// Check that the target version exists
+	if _, present := SchemaVersions.Find(toVersion); !present {
+		return nil, fmt.Errorf("unknown api version: %q", toVersion)
 	}
 
-	logrus.Debugf("config version (%s) out of date: upgrading to latest (%s)", vc.GetVersion(), latest.Version)
+	// Check that the config's version is not newer than the target version
+	currentVersion, err := apiversion.Parse(cfg.GetVersion())
+	if err != nil {
+		return nil, err
+	}
+	targetVersion, err := apiversion.Parse(toVersion)
+	if err != nil {
+		return nil, err
+	}
 
-	for vc.GetVersion() != latest.Version {
-		vc, err = vc.Upgrade()
+	if currentVersion.EQ(targetVersion) {
+		return cfg, nil
+	}
+	if currentVersion.GT(targetVersion) {
+		return nil, fmt.Errorf("config version %q is more recent than target version %q: upgrade Skaffold", cfg.GetVersion(), toVersion)
+	}
+
+	logrus.Debugf("config version %q out of date: upgrading to latest %q", cfg.GetVersion(), toVersion)
+
+	for cfg.GetVersion() != toVersion {
+		cfg, err = cfg.Upgrade()
 		if err != nil {
 			return nil, fmt.Errorf("transforming skaffold config: %w", err)
 		}
 	}
 
-	return vc, nil
+	return cfg, nil
 }

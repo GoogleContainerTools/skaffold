@@ -113,7 +113,7 @@ kind: Config
 			cfgFile := t.TempFile("config", []byte(test.inputYaml))
 
 			var b bytes.Buffer
-			err := fix(&b, cfgFile, false)
+			err := fix(&b, cfgFile, latest.Version, false)
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.output, b.String())
 		})
@@ -158,7 +158,7 @@ deploy:
 		cfgFile := t.TempFile("config", []byte(inputYaml))
 
 		var b bytes.Buffer
-		err := fix(&b, cfgFile, true)
+		err := fix(&b, cfgFile, latest.Version, true)
 
 		output, _ := ioutil.ReadFile(cfgFile)
 

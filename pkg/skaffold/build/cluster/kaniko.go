@@ -17,6 +17,7 @@ limitations under the License.
 package cluster
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -95,10 +96,17 @@ func (b *Builder) copyKanikoBuildContext(ctx context.Context, workspace string, 
 		buildCtxWriter.Close()
 	}()
 
-	if err := b.kubectlcli.Run(ctx, buildCtx, nil, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", constants.DefaultKanikoEmptyDirMountPath); err != nil {
-		return fmt.Errorf("uploading build context: %w", err)
+	// Send context by piping into `tar`.
+	// In case of an error, print the command's output. (The `err` itself is useless: exit status 1).
+	var out bytes.Buffer
+	if err := b.kubectlcli.Run(ctx, buildCtx, &out, "exec", "-i", podName, "-c", initContainer, "-n", b.Namespace, "--", "tar", "-xf", "-", "-C", constants.DefaultKanikoEmptyDirMountPath); err != nil {
+		return fmt.Errorf("uploading build context: %s", out.String())
 	}
 
-	// Generate a file to successfully terminate the init container
-	return b.kubectlcli.Run(ctx, nil, nil, "exec", podName, "-c", initContainer, "-n", b.Namespace, "--", "touch", "/tmp/complete")
+	// Generate a file to successfully terminate the init container.
+	if out, err := b.kubectlcli.RunOut(ctx, "exec", podName, "-c", initContainer, "-n", b.Namespace, "--", "touch", "/tmp/complete"); err != nil {
+		return fmt.Errorf("finishing upload of the build context: %s", out)
+	}
+
+	return nil
 }

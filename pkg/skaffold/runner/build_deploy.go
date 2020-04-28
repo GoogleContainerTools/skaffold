@@ -39,6 +39,20 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return nil, err
 	}
 
+	// In dry-run mode, we don't build anything, just return the tag for each artifact.
+	if r.runCtx.Opts.DryRun {
+		var bRes []build.Artifact
+
+		for _, artifact := range artifacts {
+			bRes = append(bRes, build.Artifact{
+				ImageName: artifact.ImageName,
+				Tag:       tags[artifact.ImageName],
+			})
+		}
+
+		return bRes, nil
+	}
+
 	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 		if len(artifacts) == 0 {
 			return nil, nil
@@ -146,6 +160,7 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 	}
 
 	imageTags := make(tag.ImageTags, len(artifacts))
+	showWarning := false
 
 	for i, artifact := range artifacts {
 		imageName := artifact.ImageName
@@ -156,18 +171,33 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 			return nil, context.Canceled
 
 		case t := <-tagErrs[i]:
-			if t.err != nil {
-				return nil, fmt.Errorf("generating tag for %q: %w", imageName, t.err)
+			err := t.err
+
+			if err != nil {
+				logrus.Debugln(err)
+				logrus.Debugln("Using a fall-back tagger")
+
+				fallbackTagger := &tag.ChecksumTagger{}
+				t.tag, err = fallbackTagger.GenerateFullyQualifiedImageName(artifact.Workspace, imageName)
+				if err != nil {
+					return nil, fmt.Errorf("generating checksum as fall-back tag for %q: %w", imageName, err)
+				}
+
+				showWarning = true
 			}
 
 			tag, err := docker.SubstituteDefaultRepoIntoImage(defaultRepo, t.tag)
 			if err != nil {
 				return nil, fmt.Errorf("applying default repo to %q: %w", t.tag, t.err)
 			}
-			fmt.Fprintln(out, tag)
 
+			fmt.Fprintln(out, tag)
 			imageTags[imageName] = tag
 		}
+	}
+
+	if showWarning {
+		color.Yellow.Fprintln(out, "Some taggers failed. Rerun with -vdebug for errors.")
 	}
 
 	logrus.Infoln("Tags generated in", time.Since(start))

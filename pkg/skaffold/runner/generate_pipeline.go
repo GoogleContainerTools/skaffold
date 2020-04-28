@@ -71,7 +71,7 @@ func setupConfigFiles(configPaths []string) ([]*pipeline.ConfigFile, error) {
 	// Read all given config files to read contents into SkaffoldConfig
 	var configFiles []*pipeline.ConfigFile
 	for _, path := range configPaths {
-		parsed, err := schema.ParseConfig(path, true)
+		parsed, err := schema.ParseConfigAndUpgrade(path, latest.Version)
 		if err != nil {
 			return nil, fmt.Errorf("parsing config %q: %w", path, err)
 		}
