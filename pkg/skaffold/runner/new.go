@@ -44,12 +44,12 @@ import (
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	tagger, err := getTagger(runCtx)
 	if err != nil {
-		return nil, fmt.Errorf("parsing tag config: %w", err)
+		return nil, fmt.Errorf("creating tagger: %w", err)
 	}
 
 	builder, err := getBuilder(runCtx)
 	if err != nil {
-		return nil, fmt.Errorf("parsing build config: %w", err)
+		return nil, fmt.Errorf("creating builder: %w", err)
 	}
 
 	imagesAreLocal := false
@@ -81,7 +81,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	deployer, err := getDeployer(runCtx)
 	if err != nil {
-		return nil, fmt.Errorf("parsing deploy config: %w", err)
+		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
 
 	defaultLabeller := deploy.NewLabeller(runCtx.Opts)
