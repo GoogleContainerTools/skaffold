@@ -50,6 +50,7 @@ type SkaffoldOptions struct {
 	AutoDeploy            bool
 	RenderOnly            bool
 	ProfileAutoActivation bool
+	DryRun                bool
 	PortForward           PortForwardOptions
 	CustomTag             string
 	Namespace             string
@@ -66,6 +67,7 @@ type SkaffoldOptions struct {
 	Command               string
 	RPCPort               int
 	RPCHTTPPort           int
+
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles

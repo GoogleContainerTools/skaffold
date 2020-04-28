@@ -39,6 +39,20 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return nil, err
 	}
 
+	// In dry-run mode, we don't build anything, just return the tag for each artifact.
+	if r.runCtx.Opts.DryRun {
+		var bRes []build.Artifact
+
+		for _, artifact := range artifacts {
+			bRes = append(bRes, build.Artifact{
+				ImageName: artifact.ImageName,
+				Tag:       tags[artifact.ImageName],
+			})
+		}
+
+		return bRes, nil
+	}
+
 	bRes, err := r.cache.Build(ctx, out, tags, artifacts, func(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact) ([]build.Artifact, error) {
 		if len(artifacts) == 0 {
 			return nil, nil
