@@ -56,7 +56,7 @@ var (
 	GetConfigForCurrentKubectx = getConfigForCurrentKubectx
 	current                    = time.Now
 
-	// update survey lastTaken
+	// update global config with the time the survey was last taken
 	updateLastTaken = "skaffold config set --survey --global last-taken %s"
 )
 
@@ -267,7 +267,7 @@ func UpdateGlobalSurveyTaken(configFile string) error {
 	// Today's date
 	today := current().Format(time.RFC3339)
 	ai := fmt.Sprintf(updateLastTaken, today)
-	aiErr := fmt.Errorf("could not update the `last-taken` field in survey config. Please run `%s`", ai)
+	aiErr := fmt.Errorf("could not automatically update the survey timestamp - please run `%s`", ai)
 
 	configFile, err := ResolveConfigFile(configFile)
 	if err != nil {
