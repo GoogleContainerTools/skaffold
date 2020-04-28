@@ -287,7 +287,7 @@ func TestDev_WithKubecontextOverride(t *testing.T) {
 		env := []string{fmt.Sprintf("KUBECONFIG=%s", kubeconfig)}
 
 		// n.b. for the sake of this test the namespace must not be given explicitly
-		skaffold.Run("--kube-context", kubecontext, "--profile-auto-activation=true").InDir("examples/getting-started").WithEnv(env).RunOrFail(t.T)
+		skaffold.Run("--kube-context", kubecontext).InDir("examples/getting-started").WithEnv(env).RunOrFail(t.T)
 
 		client.WaitForPodsReady("getting-started")
 	})
