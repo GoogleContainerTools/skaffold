@@ -25,7 +25,7 @@ import (
 
 var re = regexp.MustCompile(`^skaffold/v(\d)(?:(alpha|beta)([1-9]?[0-9]))?$`)
 
-// Parse parses a string into a Version.
+// Parse parses a string into a semver.Version.
 func Parse(v string) (semver.Version, error) {
 	res := re.FindStringSubmatch(v)
 	if res == nil {
@@ -35,13 +35,4 @@ func Parse(v string) (semver.Version, error) {
 		return semver.Parse(fmt.Sprintf("%s.0.0", res[1]))
 	}
 	return semver.Parse(fmt.Sprintf("%s.0.0-%s.%s", res[1], res[2], res[3]))
-}
-
-// MustParse is like Parse but panics if the version cannot be parsed.
-func MustParse(s string) semver.Version {
-	v, err := Parse(s)
-	if err != nil {
-		panic(`semver: Parse(` + s + `): ` + err.Error())
-	}
-	return v
 }
