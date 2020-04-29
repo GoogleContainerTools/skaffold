@@ -191,7 +191,7 @@ func TestEventLogHTTP(t *testing.T) {
 					entryStr = strings.Replace(entryStr, "{\"result\":", "", 1)
 					entryStr = entryStr[:len(entryStr)-1]
 					if err := jsonpb.UnmarshalString(entryStr, &entry); err != nil {
-						t.Errorf("error converting http response to proto: %s", err.Error())
+						t.Errorf("error converting http response %s to proto: %s", entryStr, err.Error())
 					}
 					numEntries++
 					logEntries = append(logEntries, entry)
