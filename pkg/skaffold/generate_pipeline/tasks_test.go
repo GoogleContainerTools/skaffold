@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -76,7 +76,7 @@ func TestGenerateBuildTasks(t *testing.T) {
 					Spec: tekton.TaskSpec{
 						Inputs:  &tekton.Inputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
 						Outputs: &tekton.Outputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
-						Steps: []corev1.Container{
+						Steps: []v1.Container{
 							{
 								Name:       "run-build",
 								Image:      "gcr.io/k8s-skaffold/skaffold:",
@@ -93,7 +93,7 @@ func TestGenerateBuildTasks(t *testing.T) {
 					Spec: tekton.TaskSpec{
 						Inputs:  &tekton.Inputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
 						Outputs: &tekton.Outputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
-						Steps: []corev1.Container{
+						Steps: []v1.Container{
 							{
 								Name:       "run-build",
 								Image:      "gcr.io/k8s-skaffold/skaffold:",
@@ -133,7 +133,7 @@ func TestGenerateBuildTasks(t *testing.T) {
 					Spec: tekton.TaskSpec{
 						Inputs:  &tekton.Inputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
 						Outputs: &tekton.Outputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
-						Steps: []corev1.Container{
+						Steps: []v1.Container{
 							{
 								Name:    "run-build",
 								Image:   "gcr.io/k8s-skaffold/skaffold:",
@@ -251,7 +251,7 @@ func TestGenerateDeployTasks(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{Name: "skaffold-deploy-0"},
 					Spec: tekton.TaskSpec{
 						Inputs: &tekton.Inputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
-						Steps: []corev1.Container{
+						Steps: []v1.Container{
 							{
 								Name:       "run-deploy",
 								Image:      "gcr.io/k8s-skaffold/skaffold:",
@@ -267,7 +267,7 @@ func TestGenerateDeployTasks(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{Name: "skaffold-deploy-1"},
 					Spec: tekton.TaskSpec{
 						Inputs: &tekton.Inputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
-						Steps: []corev1.Container{
+						Steps: []v1.Container{
 							{
 								Name:       "run-deploy",
 								Image:      "gcr.io/k8s-skaffold/skaffold:",
@@ -304,7 +304,7 @@ func TestGenerateDeployTasks(t *testing.T) {
 					ObjectMeta: metav1.ObjectMeta{Name: "skaffold-deploy-0"},
 					Spec: tekton.TaskSpec{
 						Inputs: &tekton.Inputs{Resources: []tekton.TaskResource{{Name: "source", Type: "git"}}},
-						Steps: []corev1.Container{
+						Steps: []v1.Container{
 							{
 								Name:    "run-deploy",
 								Image:   "gcr.io/k8s-skaffold/skaffold:",
