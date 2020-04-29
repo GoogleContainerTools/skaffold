@@ -22,6 +22,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
@@ -41,7 +43,9 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	}
 
 	if r.imagesAreLocal && len(artifacts) > 0 {
-		color.Green.Fprintln(out, "   local images can't be referenced by digest. They are tagged and referenced by a unique ID instead")
+		logrus.Debugln(`Local images can't be referenced by digest.
+They are tagged and referenced by a unique, local only, tag instead.
+See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 	}
 
 	// Check that the cluster is reachable.

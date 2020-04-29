@@ -1,7 +1,7 @@
-<!-- Thanks you for your contribution! -->
+<!-- Thank you for your contribution! -->
 
 <!-- Include if applicable: -->
-**Fixes**: _Tracking issues that this PR will close_
+Fixes: #nnn <!-- tracking issues that this PR will close -->
 **Related**: _Relevant tracking issues, for context_
 **Merge before/after**: _Dependent or prerequisite PRs_
 

@@ -41,7 +41,7 @@ var createRunner = createNewRunner
 func withRunner(ctx context.Context, action func(runner.Runner, *latest.SkaffoldConfig) error) error {
 	runner, config, err := createRunner(opts)
 	if err != nil {
-		return fmt.Errorf("creating runner: %w", err)
+		return err
 	}
 
 	err = action(runner, config)

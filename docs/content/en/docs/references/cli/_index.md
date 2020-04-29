@@ -87,6 +87,7 @@ Other Commands:
   credits           Export third party notices to given path (./skaffold-credits by default)
   diagnose          Run a diagnostic on Skaffold
   schema            List and print json schemas used to validate skaffold.yaml configuration
+  survey            Show Skaffold survey url
   version           Print the version information
 
 Use "skaffold <command> --help" for more information about a given command.
@@ -839,6 +840,21 @@ Examples:
 
 Usage:
   skaffold schema list [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+
+### skaffold survey
+
+Show Skaffold survey url
+
+```
+
+
+Usage:
+  skaffold survey [options]
 
 Use "skaffold options" for a list of global command-line options (applies to all commands).
 

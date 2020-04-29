@@ -226,6 +226,22 @@ type GoogleCloudBuild struct {
 	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build).
 	Timeout string `yaml:"timeout,omitempty"`
 
+	// Logging specifies the logging mode.
+	// Valid modes are:
+	// `LOGGING_UNSPECIFIED`: The service determines the logging mode.
+	// `LEGACY`: Stackdriver logging and Cloud Storage logging are enabled (default).
+	// `GCS_ONLY`: Only Cloud Storage logging is enabled.
+	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#loggingmode).
+	Logging string `yaml:"logging,omitempty"`
+
+	// LogStreamingOption specifies the behavior when writing build logs to Google Cloud Storage.
+	// Valid options are:
+	// `STREAM_DEFAULT`: Service may automatically determine build log streaming behavior.
+	// `STREAM_ON`:  Build logs should be streamed to Google Cloud Storage.
+	// `STREAM_OFF`: Build logs should not be streamed to Google Cloud Storage; they will be written when the build is completed.
+	// See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#logstreamingoption).
+	LogStreamingOption string `yaml:"logStreamingOption,omitempty"`
+
 	// DockerImage is the image that runs a Docker build.
 	// See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).
 	// Defaults to `gcr.io/cloud-builders/docker`.
