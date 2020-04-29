@@ -349,17 +349,20 @@ func TestGitCommitSubDirectory(t *testing.T) {
 		tagger, err := NewGitCommit("Tags")
 		t.CheckNoError(err)
 		tag, err := tagger.GenerateFullyQualifiedImageName(workspace, "test")
-		t.CheckErrorAndDeepEqual(false, err, "test:a7b32a6", tag)
+		t.CheckNoError(err)
+		t.CheckDeepEqual("test:a7b32a6", tag)
 
 		tagger, err = NewGitCommit("CommitSha")
 		t.CheckNoError(err)
 		tag, err = tagger.GenerateFullyQualifiedImageName(workspace, "test")
-		t.CheckErrorAndDeepEqual(false, err, "test:a7b32a69335a6daa51bd89cc1bf30bd31df228ba", tag)
+		t.CheckNoError(err)
+		t.CheckDeepEqual("test:a7b32a69335a6daa51bd89cc1bf30bd31df228ba", tag)
 
 		tagger, err = NewGitCommit("AbbrevCommitSha")
 		t.CheckNoError(err)
 		tag, err = tagger.GenerateFullyQualifiedImageName(workspace, "test")
-		t.CheckErrorAndDeepEqual(false, err, "test:a7b32a6", tag)
+		t.CheckNoError(err)
+		t.CheckDeepEqual("test:a7b32a6", tag)
 
 		tagger, err = NewGitCommit("TreeSha")
 		t.CheckNoError(err)
