@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -582,7 +583,7 @@ func TestTransformManifestPython(t *testing.T) {
 			retriever := func(image string) (imageConfiguration, error) {
 				return imageConfiguration{}, nil
 			}
-			result := transformManifest(value, retriever)
+			result := transformManifest(value, retriever, latest.DebugConfig{DuctTapeRepo: "gcr.io/gcp-dev-tools/duct-tape"})
 
 			t.CheckDeepEqual(test.transformed, result)
 			t.CheckDeepEqual(test.out, value)

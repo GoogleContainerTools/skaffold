@@ -747,6 +747,21 @@
       "description": "*beta* tags images with the build timestamp.",
       "x-intellij-html-description": "<em>beta</em> tags images with the build timestamp."
     },
+    "DebugConfig": {
+      "properties": {
+        "ductTapeRepo": {
+          "type": "string",
+          "description": "overrides the image repository for the debugging duct-tape init images. Defaults to gcr.io/gcp-dev-tools/duct-tape .",
+          "x-intellij-html-description": "overrides the image repository for the debugging duct-tape init images. Defaults to gcr.io/gcp-dev-tools/duct-tape ."
+        }
+      },
+      "preferredOrder": [
+        "ductTapeRepo"
+      ],
+      "additionalProperties": false,
+      "description": "contains global configuration for `skaffold debug`.",
+      "x-intellij-html-description": "contains global configuration for <code>skaffold debug</code>."
+    },
     "DeployConfig": {
       "properties": {
         "helm": {
@@ -1747,6 +1762,11 @@
           "description": "describes how images are built.",
           "x-intellij-html-description": "describes how images are built."
         },
+        "debug": {
+          "$ref": "#/definitions/DebugConfig",
+          "description": "describes how images are deployed.",
+          "x-intellij-html-description": "describes how images are deployed."
+        },
         "deploy": {
           "$ref": "#/definitions/DeployConfig",
           "description": "describes how images are deployed.",
@@ -1791,6 +1811,7 @@
         "test",
         "deploy",
         "portForward",
+        "debug",
         "patches",
         "activation"
       ],
@@ -1889,6 +1910,11 @@
           "description": "describes how images are built.",
           "x-intellij-html-description": "describes how images are built."
         },
+        "debug": {
+          "$ref": "#/definitions/DebugConfig",
+          "description": "describes how images are deployed.",
+          "x-intellij-html-description": "describes how images are deployed."
+        },
         "deploy": {
           "$ref": "#/definitions/DeployConfig",
           "description": "describes how images are deployed.",
@@ -1938,6 +1964,7 @@
         "test",
         "deploy",
         "portForward",
+        "debug",
         "profiles"
       ],
       "additionalProperties": false,

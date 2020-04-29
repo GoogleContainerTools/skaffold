@@ -25,6 +25,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -509,7 +510,7 @@ spec:
 				return imageConfiguration{}, nil
 			}
 
-			result, err := applyDebuggingTransforms(kubectl.ManifestList{[]byte(test.in)}, retriever)
+			result, err := applyDebuggingTransforms(kubectl.ManifestList{[]byte(test.in)}, retriever, latest.DebugConfig{DuctTapeRepo: "gcr.io/gcp-dev-tools/duct-tape"})
 
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.out, result.String())
 		})
@@ -529,7 +530,7 @@ func TestWorkingDir(t *testing.T) {
 		return imageConfiguration{workingDir: "/a/dir"}, nil
 	}
 
-	result := transformManifest(pod, retriever)
+	result := transformManifest(pod, retriever, latest.DebugConfig{DuctTapeRepo: "gcr.io/gcp-dev-tools/duct-tape"})
 	testutil.CheckDeepEqual(t, true, result)
 	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
 	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"workingDir":"/a/dir"`))
@@ -548,7 +549,7 @@ func TestArtifactImage(t *testing.T) {
 		return imageConfiguration{artifact: "gcr.io/random/image"}, nil
 	}
 
-	result := transformManifest(pod, retriever)
+	result := transformManifest(pod, retriever, latest.DebugConfig{DuctTapeRepo: "gcr.io/gcp-dev-tools/duct-tape"})
 	testutil.CheckDeepEqual(t, true, result)
 	debugConfig := pod.ObjectMeta.Annotations["debug.cloud.google.com/config"]
 	testutil.CheckDeepEqual(t, true, strings.Contains(debugConfig, `"artifact":"gcr.io/random/image"`))

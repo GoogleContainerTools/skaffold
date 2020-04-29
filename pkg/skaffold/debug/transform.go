@@ -56,6 +56,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
@@ -121,15 +122,15 @@ var containerTransforms []containerTransformer
 
 // transformManifest attempts to configure a manifest for debugging.
 // Returns true if changed, false otherwise.
-func transformManifest(obj runtime.Object, retrieveImageConfiguration configurationRetriever) bool {
+func transformManifest(obj runtime.Object, retrieveImageConfiguration configurationRetriever, debugConfig latest.DebugConfig) bool {
 	one := int32(1)
 	switch o := obj.(type) {
 	case *v1.Pod:
-		return transformPodSpec(&o.ObjectMeta, &o.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.ObjectMeta, &o.Spec, retrieveImageConfiguration, debugConfig)
 	case *v1.PodList:
 		changed := false
 		for i := range o.Items {
-			if transformPodSpec(&o.Items[i].ObjectMeta, &o.Items[i].Spec, retrieveImageConfiguration) {
+			if transformPodSpec(&o.Items[i].ObjectMeta, &o.Items[i].Spec, retrieveImageConfiguration, debugConfig) {
 				changed = true
 			}
 		}
@@ -138,26 +139,26 @@ func transformManifest(obj runtime.Object, retrieveImageConfiguration configurat
 		if o.Spec.Replicas != nil {
 			o.Spec.Replicas = &one
 		}
-		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration, debugConfig)
 	case *appsv1.Deployment:
 		if o.Spec.Replicas != nil {
 			o.Spec.Replicas = &one
 		}
-		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration, debugConfig)
 	case *appsv1.DaemonSet:
-		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration, debugConfig)
 	case *appsv1.ReplicaSet:
 		if o.Spec.Replicas != nil {
 			o.Spec.Replicas = &one
 		}
-		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration, debugConfig)
 	case *appsv1.StatefulSet:
 		if o.Spec.Replicas != nil {
 			o.Spec.Replicas = &one
 		}
-		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration, debugConfig)
 	case *batchv1.Job:
-		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration)
+		return transformPodSpec(&o.Spec.Template.ObjectMeta, &o.Spec.Template.Spec, retrieveImageConfiguration, debugConfig)
 
 	default:
 		group, version, _, description := describe(obj)
@@ -177,7 +178,7 @@ func transformManifest(obj runtime.Object, retrieveImageConfiguration configurat
 
 // transformPodSpec attempts to configure a podspec for debugging.
 // Returns true if changed, false otherwise.
-func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieveImageConfiguration configurationRetriever) bool {
+func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieveImageConfiguration configurationRetriever, debugConfig latest.DebugConfig) bool {
 	portAlloc := func(desiredPort int32) int32 {
 		return allocatePort(podSpec, desiredPort)
 	}
@@ -225,7 +226,7 @@ func transformPodSpec(metadata *metav1.ObjectMeta, podSpec *v1.PodSpec, retrieve
 		for imageID := range requiredSupportImages {
 			supportFilesInitContainer := v1.Container{
 				Name:         fmt.Sprintf("install-%s-support", imageID),
-				Image:        fmt.Sprintf("gcr.io/gcp-dev-tools/duct-tape/%s", imageID),
+				Image:        fmt.Sprintf("%s/%s", debugConfig.DuctTapeRepo, imageID),
 				VolumeMounts: []v1.VolumeMount{supportVolumeMount},
 			}
 			podSpec.InitContainers = append(podSpec.InitContainers, supportFilesInitContainer)

@@ -34,6 +34,7 @@ const (
 	defaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
 	defaultCloudBuildKanikoImage = "gcr.io/kaniko-project/executor"
 	defaultCloudBuildPackImage   = "gcr.io/k8s-skaffold/pack"
+	defaultDuctTapeRepo          = "gcr.io/gcp-dev-tools/duct-tape"
 )
 
 // Set makes sure default values are set on a SkaffoldConfig.
@@ -43,6 +44,7 @@ func Set(c *latest.SkaffoldConfig) error {
 	setDefaultTagger(c)
 	setDefaultKustomizePath(c)
 	setDefaultKubectlManifests(c)
+	setDefaultDebugConfig(c)
 
 	for _, a := range c.Build.Artifacts {
 		setDefaultWorkspace(a)
@@ -157,6 +159,10 @@ func setDefaultCloudBuildKanikoImage(gcb *latest.GoogleCloudBuild) {
 
 func setDefaultCloudBuildPackImage(gcb *latest.GoogleCloudBuild) {
 	gcb.PackImage = valueOrDefault(gcb.PackImage, defaultCloudBuildPackImage)
+}
+
+func setDefaultDebugConfig(c *latest.SkaffoldConfig) {
+	c.Debug.DuctTapeRepo = valueOrDefault(c.Debug.DuctTapeRepo, defaultDuctTapeRepo)
 }
 
 func setDefaultTagger(c *latest.SkaffoldConfig) {

@@ -84,6 +84,7 @@ type KustomizeDeployer struct {
 
 	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
+	debugConfig        latest.DebugConfig
 	BuildArgs          []string
 }
 
@@ -96,6 +97,7 @@ func NewKustomizeDeployer(runCtx *runcontext.RunContext) *KustomizeDeployer {
 			ForceDeploy: runCtx.Opts.Force,
 		},
 		insecureRegistries: runCtx.InsecureRegistries,
+		debugConfig:        runCtx.Cfg.Debug,
 		BuildArgs:          runCtx.Cfg.Deploy.KustomizeDeploy.BuildArgs,
 	}
 }
@@ -162,7 +164,7 @@ func (k *KustomizeDeployer) renderManifests(ctx context.Context, out io.Writer, 
 	}
 
 	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds, k.insecureRegistries)
+		manifests, err = transform(manifests, builds, k.insecureRegistries, k.debugConfig)
 		if err != nil {
 			return nil, fmt.Errorf("unable to transform manifests: %w", err)
 		}

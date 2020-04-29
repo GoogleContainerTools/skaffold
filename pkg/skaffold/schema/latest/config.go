@@ -67,6 +67,9 @@ type Pipeline struct {
 
 	// PortForward describes user defined resources to port-forward.
 	PortForward []*PortForwardResource `yaml:"portForward,omitempty"`
+
+	// Debug describes how images are deployed.
+	Debug DebugConfig `yaml:"debug,omitempty"`
 }
 
 func (c *SkaffoldConfig) GetVersion() string {
@@ -96,6 +99,13 @@ type PortForwardResource struct {
 
 	// LocalPort is the local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.
 	LocalPort int `yaml:"localPort,omitempty"`
+}
+
+// DebugConfig contains global configuration for `skaffold debug`.
+type DebugConfig struct {
+	// DuctTapeRepo overrides the image repository for the debugging duct-tape init images.
+	// Defaults to gcr.io/gcp-dev-tools/duct-tape .
+	DuctTapeRepo string `yaml:"ductTapeRepo,omitempty"`
 }
 
 // BuildConfig contains all the configuration for the build steps.

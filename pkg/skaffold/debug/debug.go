@@ -32,6 +32,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 var (
@@ -49,7 +50,7 @@ var (
 )
 
 // ApplyDebuggingTransforms applies language-platform-specific transforms to a list of manifests.
-func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool) (kubectl.ManifestList, error) {
+func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool, debugConfig latest.DebugConfig) (kubectl.ManifestList, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -59,16 +60,16 @@ func ApplyDebuggingTransforms(l kubectl.ManifestList, builds []build.Artifact, i
 		}
 		return imageConfiguration{}, fmt.Errorf("no build artifact for %q", image)
 	}
-	return applyDebuggingTransforms(l, retriever)
+	return applyDebuggingTransforms(l, retriever, debugConfig)
 }
 
-func applyDebuggingTransforms(l kubectl.ManifestList, retriever configurationRetriever) (kubectl.ManifestList, error) {
+func applyDebuggingTransforms(l kubectl.ManifestList, retriever configurationRetriever, debugConfig latest.DebugConfig) (kubectl.ManifestList, error) {
 	var updated kubectl.ManifestList
 	for _, manifest := range l {
 		obj, _, err := decodeFromYaml(manifest, nil, nil)
 		if err != nil {
 			logrus.Debugf("Unable to interpret manifest for debugging: %v\n", err)
-		} else if transformManifest(obj, retriever) {
+		} else if transformManifest(obj, retriever, debugConfig) {
 			manifest, err = encodeAsYaml(obj)
 			if err != nil {
 				return nil, fmt.Errorf("marshalling yaml: %w", err)

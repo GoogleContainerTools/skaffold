@@ -19,9 +19,10 @@ package deploy
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-type ManifestTransform func(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool) (kubectl.ManifestList, error)
+type ManifestTransform func(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool, debugConfig latest.DebugConfig) (kubectl.ManifestList, error)
 
 // Transforms are applied to manifests
 var manifestTransforms []ManifestTransform

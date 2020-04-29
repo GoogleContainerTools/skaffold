@@ -93,6 +93,8 @@ func TestSetDefaults(t *testing.T) {
 
 	testutil.CheckDeepEqual(t, "fifth", cfg.Build.Artifacts[4].ImageName)
 	testutil.CheckDeepEqual(t, &latest.Auto{}, cfg.Build.Artifacts[4].Sync.Auto)
+
+	testutil.CheckDeepEqual(t, latest.DebugConfig{DuctTapeRepo: "gcr.io/gcp-dev-tools/duct-tape"}, cfg.Debug)
 }
 
 func TestSetDefaultsOnCluster(t *testing.T) {

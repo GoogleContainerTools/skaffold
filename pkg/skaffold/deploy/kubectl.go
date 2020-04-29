@@ -46,6 +46,7 @@ type KubectlDeployer struct {
 	workingDir         string
 	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
+	debugConfig        latest.DebugConfig
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
@@ -60,6 +61,7 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 			ForceDeploy: runCtx.Opts.Force,
 		},
 		insecureRegistries: runCtx.InsecureRegistries,
+		debugConfig:        runCtx.Cfg.Debug,
 	}
 }
 
@@ -257,7 +259,7 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 	}
 
 	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds, k.insecureRegistries)
+		manifests, err = transform(manifests, builds, k.insecureRegistries, k.debugConfig)
 		if err != nil {
 			return nil, fmt.Errorf("unable to transform manifests: %w", err)
 		}
