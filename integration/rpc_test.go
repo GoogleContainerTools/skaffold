@@ -116,11 +116,15 @@ func TestEventsRPC(t *testing.T) {
 		switch entry.Event.GetEventType().(type) {
 		case *proto.Event_MetaEvent:
 			metaEntries++
+			t.Logf("meta event %d: %v", metaEntries, entry.Event)
 		case *proto.Event_BuildEvent:
 			buildEntries++
+			t.Logf("build event %d: %v", buildEntries, entry.Event)
 		case *proto.Event_DeployEvent:
 			deployEntries++
+			t.Logf("deploy event %d: %v", deployEntries, entry.Event)
 		default:
+			t.Logf("unknown event: %v", entry.Event)
 		}
 	}
 	// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries

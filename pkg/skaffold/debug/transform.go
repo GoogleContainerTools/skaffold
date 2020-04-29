@@ -117,7 +117,26 @@ const (
 	DebugConfigAnnotation = "debug.cloud.google.com/config"
 )
 
+// containerTransforms are the set of configured transformers
 var containerTransforms []containerTransformer
+
+// entrypointLaunchers is a list of known entrypoints that effectively just launches the container image's CMD
+// as a command-line.  These entrypoints are ignored.
+var entrypointLaunchers []string
+
+// isEntrypointLauncher checks if the given entrypoint is a known entrypoint launcher,
+// meaning an entrypoint that treats the image's CMD as a command-line.
+func isEntrypointLauncher(entrypoint []string) bool {
+	if len(entrypoint) != 1 {
+		return false
+	}
+	for _, knownEntrypoints := range entrypointLaunchers {
+		if knownEntrypoints == entrypoint[0] {
+			return true
+		}
+	}
+	return false
+}
 
 // transformManifest attempts to configure a manifest for debugging.
 // Returns true if changed, false otherwise.
@@ -300,6 +319,18 @@ func transformContainer(container *v1.Container, config imageConfiguration, port
 		config.arguments = container.Args
 	}
 
+	// Buildpack-generated images require special handling
+	if _, found := config.labels["io.buildpacks.stack.id"]; found && len(config.entrypoint) > 0 && config.entrypoint[0] == "/cnb/lifecycle/launcher" {
+		next := func(container *v1.Container, config imageConfiguration) (ContainerDebugConfiguration, string, error) {
+			return performContainerTransform(container, config, portAlloc)
+		}
+		return updateForCNBImage(container, config, next)
+	}
+
+	return performContainerTransform(container, config, portAlloc)
+}
+
+func performContainerTransform(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
 	for _, transform := range containerTransforms {
 		if transform.IsApplicable(config) {
 			return transform.Apply(container, config, portAlloc)
@@ -382,4 +413,22 @@ func setEnvVar(entries []v1.EnvVar, varName, value string) []v1.EnvVar {
 		Value: value,
 	}
 	return append(entries, entry)
+}
+
+// shJoin joins the arguments into a quoted form suitable to pass to `sh -c`.
+// Necessary as github.com/kballard/go-shellquote's `Join` quotes `$`.
+func shJoin(args []string) string {
+	result := ""
+	for i, arg := range args {
+		if i > 0 {
+			result += " "
+		}
+		if strings.ContainsAny(arg, " \t\r\n\"") {
+			arg := strings.ReplaceAll(arg, `"`, `\"`)
+			result += `"` + arg + `"`
+		} else {
+			result += arg
+		}
+	}
+	return result
 }

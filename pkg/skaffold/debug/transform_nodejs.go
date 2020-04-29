@@ -30,6 +30,9 @@ type nodeTransformer struct{}
 
 func init() {
 	containerTransforms = append(containerTransforms, nodeTransformer{})
+
+	// the `node` image's "docker-entrypoint.sh" launches the command
+	entrypointLaunchers = append(entrypointLaunchers, "docker-entrypoint.sh")
 }
 
 const (
@@ -64,7 +67,7 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 			return true
 		}
 	}
-	if len(config.entrypoint) > 0 {
+	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return isLaunchingNode(config.entrypoint) || isLaunchingNpm(config.entrypoint)
 	} else if len(config.arguments) > 0 {
 		return isLaunchingNode(config.arguments) || isLaunchingNpm(config.arguments)
@@ -89,10 +92,10 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 		case len(config.entrypoint) > 0 && isLaunchingNpm(config.entrypoint):
 			container.Command = rewriteNpmCommandLine(config.entrypoint, *spec)
 
-		case len(config.entrypoint) == 0 && len(config.arguments) > 0 && isLaunchingNode(config.arguments):
+		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && len(config.arguments) > 0 && isLaunchingNode(config.arguments):
 			container.Args = rewriteNodeCommandLine(config.arguments, *spec)
 
-		case len(config.entrypoint) == 0 && len(config.arguments) > 0 && isLaunchingNpm(config.arguments):
+		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && len(config.arguments) > 0 && isLaunchingNpm(config.arguments):
 			container.Args = rewriteNpmCommandLine(config.arguments, *spec)
 
 		default:

@@ -152,6 +152,11 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 			result:      false,
 		},
 		{
+			description: "`node` docker-entrypoint.sh",
+			source:      imageConfiguration{entrypoint: []string{"docker-entrypoint.sh"}, arguments: []string{"npm", "run", "dev"}},
+			result:      true,
+		},
+		{
 			description: "nothing",
 			source:      imageConfiguration{},
 			result:      false,
