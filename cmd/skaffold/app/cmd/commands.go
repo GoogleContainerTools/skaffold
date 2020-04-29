@@ -21,10 +21,10 @@ import (
 	"fmt"
 	"io"
 
-	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
 )
 
 // Builder is used to build cobra commands.
@@ -98,6 +98,9 @@ func (b *builder) NoArgs(action func(context.Context, io.Writer) error) *cobra.C
 	b.cmd.RunE = func(*cobra.Command, []string) error {
 		out := b.cmd.OutOrStdout()
 		err := action(b.cmd.Context(), out)
+		if err == nil {
+			return err
+		}
 		if aErr := sErrors.ShowAIError(err, opts); aErr != sErrors.ErrNoSuggestionFound {
 			return aErr
 		}
