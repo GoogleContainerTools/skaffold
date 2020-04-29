@@ -18,7 +18,6 @@ package diff
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -243,12 +242,13 @@ type TestStructure struct {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			dir := t.NewTempDir()
-			aFile := dir.Path("a.go")
-			bFile := dir.Path("b.go")
-			t.CheckNoError(ioutil.WriteFile(aFile, []byte(test.a), 0666))
-			t.CheckNoError(ioutil.WriteFile(bFile, []byte(test.b), 0666))
-			diff, err := CompareGoStructs(aFile, bFile)
+			t.NewTempDir().
+				Write("a.go", test.a).
+				Write("b.go", test.b).
+				Chdir()
+
+			diff, err := CompareGoStructs("a.go", "b.go")
+
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.same, diff == "")
 			if test.same != (diff == "") {
 				t.Errorf(diff)
