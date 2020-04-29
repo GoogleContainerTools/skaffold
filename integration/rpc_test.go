@@ -151,7 +151,7 @@ func TestEventLogHTTP(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			httpAddr := randomPort()
-			setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr)
+			setupSkaffoldWithArgs(t, "--rpc-http-port", httpAddr, "--status-check=false")
 			time.Sleep(500 * time.Millisecond) // give skaffold time to process all events
 
 			httpResponse, err := http.Get(fmt.Sprintf("http://localhost:%s%s", httpAddr, test.endpoint))
