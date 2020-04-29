@@ -30,6 +30,6 @@ const (
 
 type Phase string
 
-func ErrorCodeFromError(_ error, _ Phase) proto.ErrorCode {
+func ErrorCodeFromError(_ Phase, _ error) proto.ErrorCode {
 	return proto.ErrorCode_ErrorCode_UNKNOWN
 }

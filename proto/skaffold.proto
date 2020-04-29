@@ -112,10 +112,17 @@ message Event {
 message DevLoopEvent {
     int32 iteration = 1; // dev loop iteration
     string status = 2; // dev loop status oneof: In Progress, Completed, Failed
-    string err = 3; // error when current dev loop has failed.
-    ErrorCode errCode = 4; // error code representing the error
+    ActionableErr err = 3; // actionable error message
+
 }
 
+// `ErrDef` defines an error occurred along with an optional suggestions
+message ActionableErr {
+    ErrorCode errCode = 1; // error code representing the error
+    string message = 2; // message describing the error.
+    repeated string suggestions = 3; // a list of suggestions for the error.
+
+}
 // `MetaEvent` provides general information regarding Skaffold
 message MetaEvent {
     // entry, for example: `"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"`

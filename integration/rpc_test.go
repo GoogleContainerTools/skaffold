@@ -40,7 +40,7 @@ import (
 var (
 	connectionRetries = 2
 	readRetries       = 20
-	numLogEntries     = 5
+	numLogEntries     = 7
 	waitTime          = 1 * time.Second
 )
 

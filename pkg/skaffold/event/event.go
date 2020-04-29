@@ -166,7 +166,7 @@ func DeployInProgress() {
 
 // DeployFailed notifies that non-fatal errors were encountered during a deployment.
 func DeployFailed(err error) {
-	errCode := sErrors.ErrorCodeFromError(err, sErrors.Deploy)
+	errCode := sErrors.ErrorCodeFromError(sErrors.Deploy, err)
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error(), ErrCode: errCode})
 }
 
@@ -182,7 +182,7 @@ func StatusCheckEventSucceeded() {
 }
 
 func StatusCheckEventFailed(err error) {
-	errCode := sErrors.ErrorCodeFromError(err, sErrors.StatusCheck)
+	errCode := sErrors.ErrorCodeFromError(sErrors.StatusCheck, err)
 	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
 		Status:  Failed,
 		Err:     err.Error(),
@@ -239,7 +239,7 @@ func BuildInProgress(imageName string) {
 
 // BuildFailed notifies that a build has failed.
 func BuildFailed(imageName string, err error) {
-	errCode := sErrors.ErrorCodeFromError(err, sErrors.Build)
+	errCode := sErrors.ErrorCodeFromError(sErrors.Build, err)
 	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Failed, Err: err.Error(), ErrCode: errCode})
 }
 
@@ -254,14 +254,20 @@ func DevLoopInProgress(i int) {
 }
 
 // DevLoopFailed notifies that a dev loop has failed with an error code
-func DevLoopFailedWithErrorCode(i int, err error, errCode proto.ErrorCode) {
-	handler.handleDevLoopEvent(&proto.DevLoopEvent{Iteration: int32(i), Status: Failed, Err: err.Error(), ErrCode: errCode})
+func DevLoopFailedWithErrorCode(i int, errCode proto.ErrorCode, err error) {
+	handler.handleDevLoopEvent(&proto.DevLoopEvent{
+		Iteration: int32(i),
+		Status:    Failed,
+		Err: &proto.ActionableErr{
+			ErrCode: errCode,
+			Message: err.Error(),
+		}})
 }
 
 // DevLoopFailed notifies that a dev loop has failed in a given phase
-func DevLoopFailedInPhase(i int, err error, phase sErrors.Phase) {
-	errCode := sErrors.ErrorCodeFromError(err, phase)
-	DevLoopFailedWithErrorCode(i, err, errCode)
+func DevLoopFailedInPhase(iteration int, phase sErrors.Phase, err error) {
+	errCode := sErrors.ErrorCodeFromError(phase, err)
+	DevLoopFailedWithErrorCode(iteration, errCode, err)
 }
 
 // DevLoopComplete notifies that a dev loop has completed.
@@ -276,7 +282,7 @@ func FileSyncInProgress(fileCount int, image string) {
 
 // FileSyncFailed notifies that a file sync has failed.
 func FileSyncFailed(fileCount int, image string, err error) {
-	errCode := sErrors.ErrorCodeFromError(err, sErrors.FileSync)
+	errCode := sErrors.ErrorCodeFromError(sErrors.FileSync, err)
 	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed, Err: err.Error(), ErrCode: errCode})
 }
 
@@ -530,7 +536,7 @@ func (ev *eventHandler) handle(event *proto.Event) {
 		case Succeeded:
 			logEntry.Entry = fmt.Sprintf("Dev Iteration %d successful", de.Iteration)
 		default:
-			logEntry.Entry = fmt.Sprintf("Dev Iteration %d failed with error code %v", de.Iteration, de.ErrCode)
+			logEntry.Entry = fmt.Sprintf("Dev Iteration %d failed with error code %v", de.Iteration, de.Err.ErrCode)
 		}
 	default:
 		return

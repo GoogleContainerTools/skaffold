@@ -79,7 +79,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 			if err := r.syncer.Sync(ctx, s); err != nil {
 				logrus.Warnln("Skipping deploy due to sync error:", err)
 				fileSyncFailed(fileCount, s.Image, err)
-				event.DevLoopFailedInPhase(iteration, err, sErrors.FileSync)
+				event.DevLoopFailedInPhase(iteration, sErrors.FileSync, err)
 				return nil
 			}
 
@@ -96,7 +96,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 
 		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
-			event.DevLoopFailedInPhase(iteration, err, sErrors.Build)
+			event.DevLoopFailedInPhase(iteration, sErrors.Build, err)
 			return nil
 		}
 	}
@@ -111,7 +111,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 		r.forwarderManager.Stop()
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
 			logrus.Warnln("Skipping deploy due to error:", err)
-			event.DevLoopFailedInPhase(iteration, err, sErrors.Deploy)
+			event.DevLoopFailedInPhase(iteration, sErrors.Deploy, err)
 			return nil
 		}
 		if err := r.forwarderManager.Start(ctx); err != nil {
@@ -168,7 +168,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 					}
 				},
 			); err != nil {
-				event.DevLoopFailedWithErrorCode(0, err, proto.ErrorCode_DEV_REGISTER_BUILD_DEPS)
+				event.DevLoopFailedWithErrorCode(0, proto.ErrorCode_DEV_REGISTER_BUILD_DEPS, err)
 				return fmt.Errorf("watching files for artifact %q: %w", artifact.ImageName, err)
 			}
 		}
@@ -179,7 +179,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		r.tester.TestDependencies,
 		func(filemon.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
-		event.DevLoopFailedWithErrorCode(0, err, proto.ErrorCode_DEV_REGISTER_TEST_DEPS)
+		event.DevLoopFailedWithErrorCode(0, proto.ErrorCode_DEV_REGISTER_TEST_DEPS, err)
 		return fmt.Errorf("watching test files: %w", err)
 	}
 
@@ -188,7 +188,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		r.deployer.Dependencies,
 		func(filemon.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
-		event.DevLoopFailedWithErrorCode(0, err, proto.ErrorCode_DEV_REGISTER_DEPLOY_DEPS)
+		event.DevLoopFailedWithErrorCode(0, proto.ErrorCode_DEV_REGISTER_DEPLOY_DEPS, err)
 		return fmt.Errorf("watching files for deployer: %w", err)
 	}
 
@@ -197,7 +197,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		func() ([]string, error) { return []string{r.runCtx.Opts.ConfigurationFile}, nil },
 		func(filemon.Events) { r.changeSet.needsReload = true },
 	); err != nil {
-		event.DevLoopFailedWithErrorCode(0, err, proto.ErrorCode_DEV_REGISTER_CONFIG_DEP)
+		event.DevLoopFailedWithErrorCode(0, proto.ErrorCode_DEV_REGISTER_CONFIG_DEP, err)
 		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.Opts.ConfigurationFile, err)
 	}
 
@@ -205,13 +205,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// Init Sync State
 	if err := sync.Init(ctx, artifacts); err != nil {
-		event.DevLoopFailedWithErrorCode(0, err, proto.ErrorCode_FILE_SYNC_INIT_ERROR)
+		event.DevLoopFailedWithErrorCode(0, proto.ErrorCode_FILE_SYNC_INIT_ERROR, err)
 		return fmt.Errorf("exiting dev mode because initializing sync state failed: %w", err)
 	}
 
 	// First build
 	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {
-		event.DevLoopFailedInPhase(0, err, sErrors.Build)
+		event.DevLoopFailedInPhase(0, sErrors.Build, err)
 		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
 	}
 
@@ -220,7 +220,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 
 	// First deploy
 	if err := r.Deploy(ctx, out, r.builds); err != nil {
-		event.DevLoopFailedInPhase(0, err, sErrors.Deploy)
+		event.DevLoopFailedInPhase(0, sErrors.Deploy, err)
 		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
 

@@ -49,6 +49,23 @@ Describes all the methods for the Skaffold API
 
 
 
+<a name="proto.ActionableErr"></a>
+#### ActionableErr
+`ErrDef` defines an error occurred along with an optional suggestions
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
+| message | [string](#string) |  | message describing the error. |
+| suggestions | [string](#string) | repeated | a list of suggestions for the error. |
+
+
+
+
+
+
+
 <a name="proto.BuildEvent"></a>
 #### BuildEvent
 `BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.
@@ -261,8 +278,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | iteration | [int32](#int32) |  | dev loop iteration |
 | status | [string](#string) |  | dev loop status oneof: In Progress, Completed, Failed |
-| err | [string](#string) |  | error when current dev loop has failed. |
-| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
+| err | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
 
 
 
