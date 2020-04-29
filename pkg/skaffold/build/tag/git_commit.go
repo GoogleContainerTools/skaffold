@@ -18,7 +18,6 @@ package tag
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -31,42 +30,31 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
-const (
-	tags = iota
-	commitSha
-	abbrevCommitSha
-	treeSha
-	abbrevTreeSha
-)
-
 // GitCommit tags an image by the git commit it was built at.
 type GitCommit struct {
-	prefix  string
-	variant int
+	prefix   string
+	runGitFn func(string) (string, error)
+}
+
+var variants = map[string]func(string) (string, error){
+	"":                gitTags,
+	"tags":            gitTags,
+	"commitsha":       gitCommitsha,
+	"abbrevcommitsha": gitAbbrevcommitsha,
+	"treesha":         gitTreesha,
+	"abbrevtreesha":   gitAbbrevtreesha,
 }
 
 // NewGitCommit creates a new git commit tagger. It fails if the tagger variant is invalid.
-func NewGitCommit(prefix, taggerVariant string) (*GitCommit, error) {
-	var variant int
-	switch strings.ToLower(taggerVariant) {
-	case "", "tags":
-		// default to "tags" when unset
-		variant = tags
-	case "commitsha":
-		variant = commitSha
-	case "abbrevcommitsha":
-		variant = abbrevCommitSha
-	case "treesha":
-		variant = treeSha
-	case "abbrevtreesha":
-		variant = abbrevTreeSha
-	default:
-		return nil, fmt.Errorf("%s is not a valid git tagger variant", taggerVariant)
+func NewGitCommit(prefix, variant string) (*GitCommit, error) {
+	runGitFn, found := variants[strings.ToLower(variant)]
+	if !found {
+		return nil, fmt.Errorf("%q is not a valid git tagger variant", variant)
 	}
 
 	return &GitCommit{
-		prefix:  prefix,
-		variant: variant,
+		prefix:   prefix,
+		runGitFn: runGitFn,
 	}, nil
 }
 
@@ -79,7 +67,7 @@ func (c *GitCommit) Labels() map[string]string {
 
 // GenerateFullyQualifiedImageName tags an image with the supplied image name and the git commit.
 func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, imageName string) (string, error) {
-	ref, err := c.makeGitTag(workingDir)
+	ref, err := c.runGitFn(workingDir)
 	if err != nil {
 		return "", fmt.Errorf("unable to find git commit: %w", err)
 	}
@@ -118,32 +106,34 @@ func sanitizeTag(tag string) string {
 	return sanitized
 }
 
-func (c *GitCommit) makeGitTag(workingDir string) (string, error) {
-	args := make([]string, 0, 4)
-	switch c.variant {
-	case tags:
-		args = append(args, "describe", "--tags", "--always")
-	case commitSha, abbrevCommitSha:
-		args = append(args, "rev-list", "-1", "HEAD")
-		if c.variant == abbrevCommitSha {
-			args = append(args, "--abbrev-commit")
-		}
-	case treeSha, abbrevTreeSha:
-		gitPath, err := getGitPathToWorkdir(workingDir)
-		if err != nil {
-			return "", err
-		}
-		args = append(args, "rev-parse")
-		if c.variant == abbrevTreeSha {
-			args = append(args, "--short")
-		}
-		// revision must come after the --short flag
-		args = append(args, "HEAD:"+gitPath+"/")
-	default:
-		return "", errors.New("invalid git tag variant: defaulting to 'dirty'")
+func gitTags(workingDir string) (string, error) {
+	return runGit(workingDir, "describe", "--tags", "--always")
+}
+
+func gitCommitsha(workingDir string) (string, error) {
+	return runGit(workingDir, "rev-list", "-1", "HEAD")
+}
+
+func gitAbbrevcommitsha(workingDir string) (string, error) {
+	return runGit(workingDir, "rev-list", "-1", "HEAD", "--abbrev-commit")
+}
+
+func gitTreesha(workingDir string) (string, error) {
+	gitPath, err := getGitPathToWorkdir(workingDir)
+	if err != nil {
+		return "", err
 	}
 
-	return runGit(workingDir, args...)
+	return runGit(workingDir, "rev-parse", "HEAD:"+gitPath+"/")
+}
+
+func gitAbbrevtreesha(workingDir string) (string, error) {
+	gitPath, err := getGitPathToWorkdir(workingDir)
+	if err != nil {
+		return "", err
+	}
+
+	return runGit(workingDir, "rev-parse", "--short", "HEAD:"+gitPath+"/")
 }
 
 func getGitPathToWorkdir(workingDir string) (string, error) {

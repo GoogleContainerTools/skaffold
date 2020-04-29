@@ -393,6 +393,14 @@ func TestPrefix(t *testing.T) {
 	})
 }
 
+func TestInvalidVariant(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		_, err := NewGitCommit("", "Invalid")
+
+		t.CheckErrorContains("\"Invalid\" is not a valid git tagger variant", err)
+	})
+}
+
 func TestSanitizeTag(t *testing.T) {
 	testutil.Run(t, "valid tags", func(t *testutil.T) {
 		t.CheckDeepEqual("abcdefghijklmnopqrstuvwxyz", sanitizeTag("abcdefghijklmnopqrstuvwxyz"))
