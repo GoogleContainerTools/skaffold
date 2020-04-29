@@ -54,14 +54,11 @@ func (b *Builder) kanikoBuildSpec(artifact *latest.KanikoArtifact, tag string) (
 		kanikoArgs = append(kanikoArgs, "--target", artifact.Target)
 	}
 
-	steps := []*cloudbuild.BuildStep{
-		{
+	return cloudbuild.Build{
+		Steps: []*cloudbuild.BuildStep{{
 			Name: b.KanikoImage,
 			Args: kanikoArgs,
-		},
-	}
-	return cloudbuild.Build{
-		Steps: steps,
+		}},
 	}, nil
 }
 
