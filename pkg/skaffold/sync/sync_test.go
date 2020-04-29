@@ -26,7 +26,7 @@ import (
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	corev1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -825,7 +825,7 @@ func fakeCmd(ctx context.Context, p corev1.Pod, c corev1.Container, files syncMa
 }
 
 var pod = &corev1.Pod{
-	ObjectMeta: meta_v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "skaffold-dirty",
@@ -845,7 +845,7 @@ var pod = &corev1.Pod{
 }
 
 var nonRunningPod = &corev1.Pod{
-	ObjectMeta: meta_v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "skaffold-dirty",
