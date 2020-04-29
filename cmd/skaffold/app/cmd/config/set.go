@@ -20,12 +20,9 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"reflect"
 	"strconv"
 	"strings"
-
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
@@ -159,22 +156,7 @@ func writeConfig(cfg *config.ContextConfig) error {
 			fullConfig.ContextConfigs = append(fullConfig.ContextConfigs, cfg)
 		}
 	}
-	return writeFullConfig(fullConfig)
-}
-
-func writeFullConfig(cfg *config.GlobalConfig) error {
-	contents, err := yaml.Marshal(cfg)
-	if err != nil {
-		return fmt.Errorf("marshaling config: %w", err)
-	}
-	configFileOrDefault, err := config.ResolveConfigFile(configFile)
-	if err != nil {
-		return err
-	}
-	if err := ioutil.WriteFile(configFileOrDefault, contents, 0644); err != nil {
-		return fmt.Errorf("writing config file: %w", err)
-	}
-	return nil
+	return config.WriteFullConfig(configFile, fullConfig)
 }
 
 func logSetConfigForUser(out io.Writer, key string, value string) {
