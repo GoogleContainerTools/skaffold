@@ -978,6 +978,16 @@
           "x-intellij-html-description": "image that runs a Kaniko build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
           "default": "gcr.io/kaniko-project/executor"
         },
+        "logStreamingOption": {
+          "type": "string",
+          "description": "specifies the behavior when writing build logs to Google Cloud Storage. Valid options are: `STREAM_DEFAULT`: Service may automatically determine build log streaming behavior. `STREAM_ON`:  Build logs should be streamed to Google Cloud Storage. `STREAM_OFF`: Build logs should not be streamed to Google Cloud Storage; they will be written when the build is completed. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#logstreamingoption).",
+          "x-intellij-html-description": "specifies the behavior when writing build logs to Google Cloud Storage. Valid options are: <code>STREAM_DEFAULT</code>: Service may automatically determine build log streaming behavior. <code>STREAM_ON</code>:  Build logs should be streamed to Google Cloud Storage. <code>STREAM_OFF</code>: Build logs should not be streamed to Google Cloud Storage; they will be written when the build is completed. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#logstreamingoption\">Cloud Build Reference</a>."
+        },
+        "logging": {
+          "type": "string",
+          "description": "specifies the logging mode. Valid modes are: `LOGGING_UNSPECIFIED`: The service determines the logging mode. `LEGACY`: Stackdriver logging and Cloud Storage logging are enabled (default). `GCS_ONLY`: Only Cloud Storage logging is enabled. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#loggingmode).",
+          "x-intellij-html-description": "specifies the logging mode. Valid modes are: <code>LOGGING_UNSPECIFIED</code>: The service determines the logging mode. <code>LEGACY</code>: Stackdriver logging and Cloud Storage logging are enabled (default). <code>GCS_ONLY</code>: Only Cloud Storage logging is enabled. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#loggingmode\">Cloud Build Reference</a>."
+        },
         "machineType": {
           "type": "string",
           "description": "type of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
@@ -1011,6 +1021,8 @@
         "diskSizeGb",
         "machineType",
         "timeout",
+        "logging",
+        "logStreamingOption",
         "dockerImage",
         "kanikoImage",
         "mavenImage",
