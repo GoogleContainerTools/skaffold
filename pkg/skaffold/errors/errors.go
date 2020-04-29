@@ -45,7 +45,7 @@ func ShowAIError(err error, opts config.SkaffoldOptions) error {
 	for _, v := range knownBuildProblems {
 		if v.regexp.MatchString(err.Error()) {
 			if s := v.suggestion(opts); s != "" {
-				return fmt.Errorf("%s. %s", v.problem, s)
+				return fmt.Errorf("%s. %s", v.description, s)
 			}
 		}
 	}

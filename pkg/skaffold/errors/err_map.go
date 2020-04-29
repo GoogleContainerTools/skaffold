@@ -28,22 +28,22 @@ func re(s string) *regexp.Regexp {
 	return regexp.MustCompile(s)
 }
 
-type match struct {
-	regexp     *regexp.Regexp
-	problem    string
-	suggestion func(opts config.SkaffoldOptions) string
+type problem struct {
+	regexp      *regexp.Regexp
+	description string
+	suggestion  func(opts config.SkaffoldOptions) string
 }
 
 // Build Problems are Errors in build phase
-var knownBuildProblems = map[proto.ErrorCode]match{
+var knownBuildProblems = map[proto.ErrorCode]problem{
 	proto.ErrorCode_BUILD_PUSH_ACCESS_DENIED: {
-		regexp:     re(".* pushing image: denied: .*"),
-		problem:    "Build Failed. No push access to specified image repository",
-		suggestion: suggestBuildPushAccessDeniedAction,
+		regexp:      re(".* pushing image: denied: .*"),
+		description: "Build Failed. No push access to specified image repository",
+		suggestion:  suggestBuildPushAccessDeniedAction,
 	},
 	proto.ErrorCode_BUILD_PROJECT_NOT_FOUND: {
-		regexp:     re("build failed: pushing image: unknown: Project"),
-		problem:    "Build Failed",
-		suggestion: func(_ config.SkaffoldOptions) string { return "Check your GCR project." },
+		regexp:      re("build failed: pushing image: unknown: Project"),
+		description: "Build Failed",
+		suggestion:  func(_ config.SkaffoldOptions) string { return "Check your GCR project." },
 	},
 }
