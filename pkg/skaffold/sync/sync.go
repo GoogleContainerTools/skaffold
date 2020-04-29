@@ -29,7 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
@@ -338,7 +338,7 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 
 	numSynced := 0
 	for _, ns := range namespaces {
-		pods, err := client.CoreV1().Pods(ns).List(meta_v1.ListOptions{})
+		pods, err := client.CoreV1().Pods(ns).List(metav1.ListOptions{})
 		if err != nil {
 			return fmt.Errorf("getting pods for namespace %q: %w", ns, err)
 		}

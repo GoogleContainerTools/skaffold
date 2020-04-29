@@ -19,7 +19,7 @@ package validator
 import (
 	"fmt"
 
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/GoogleContainerTools/skaffold/proto"
@@ -51,7 +51,7 @@ func NewResource(namespace, kind, name string, status Status, err error, errCode
 // objectWithMetadata is any k8s object that has kind and object metadata.
 type objectWithMetadata interface {
 	runtime.Object
-	meta_v1.Object
+	metav1.Object
 }
 
 // NewResourceFromObject creates new Resource with fields populated from object metadata.
