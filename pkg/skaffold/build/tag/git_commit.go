@@ -41,11 +41,12 @@ const (
 
 // GitCommit tags an image by the git commit it was built at.
 type GitCommit struct {
+	prefix  string
 	variant int
 }
 
 // NewGitCommit creates a new git commit tagger. It fails if the tagger variant is invalid.
-func NewGitCommit(taggerVariant string) (*GitCommit, error) {
+func NewGitCommit(prefix, taggerVariant string) (*GitCommit, error) {
 	var variant int
 	switch strings.ToLower(taggerVariant) {
 	case "", "tags":
@@ -63,7 +64,10 @@ func NewGitCommit(taggerVariant string) (*GitCommit, error) {
 		return nil, fmt.Errorf("%s is not a valid git tagger variant", taggerVariant)
 	}
 
-	return &GitCommit{variant: variant}, nil
+	return &GitCommit{
+		prefix:  prefix,
+		variant: variant,
+	}, nil
 }
 
 // Labels are labels specific to the git tagger.
@@ -86,10 +90,10 @@ func (c *GitCommit) GenerateFullyQualifiedImageName(workingDir string, imageName
 	}
 
 	if len(changes) > 0 {
-		return fmt.Sprintf("%s:%s-dirty", imageName, ref), nil
+		return fmt.Sprintf("%s:%s%s-dirty", imageName, c.prefix, ref), nil
 	}
 
-	return fmt.Sprintf("%s:%s", imageName, sanitizeTag(ref)), nil
+	return fmt.Sprintf("%s:%s%s", imageName, c.prefix, sanitizeTag(ref)), nil
 }
 
 // sanitizeTag takes a git tag and converts it to a docker tag by removing
