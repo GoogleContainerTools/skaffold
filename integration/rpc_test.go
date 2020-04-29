@@ -50,7 +50,7 @@ func TestEventsRPC(t *testing.T) {
 	}
 
 	rpcAddr := randomPort()
-	setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr)
+	setupSkaffoldWithArgs(t, "--rpc-port", rpcAddr, "--status-check=false")
 
 	// start a grpc client and make sure we can connect properly
 	var (
