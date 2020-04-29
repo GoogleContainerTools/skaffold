@@ -34,6 +34,7 @@ func main() {
 			logrus.Debugln(fmt.Errorf("ignore error since context is cancelled: %w", err))
 		} else {
 			color.Red.Fprintln(os.Stderr, err)
+			os.Exit(1)
 		}
 	}
 }
