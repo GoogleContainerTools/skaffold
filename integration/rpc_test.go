@@ -111,7 +111,7 @@ func TestEventsRPC(t *testing.T) {
 			break
 		}
 	}
-	metaEntries, buildEntries, deployEntries := 0, 0, 0
+	metaEntries, buildEntries, deployEntries, devLoopEntries := 0, 0, 0, 0
 	for _, entry := range logEntries {
 		switch entry.Event.GetEventType().(type) {
 		case *proto.Event_MetaEvent:
@@ -123,14 +123,18 @@ func TestEventsRPC(t *testing.T) {
 		case *proto.Event_DeployEvent:
 			deployEntries++
 			t.Logf("deploy event %d: %v", deployEntries, entry.Event)
+		case *proto.Event_DevLoopEvent:
+			devLoopEntries++
+			t.Logf("devloop event event %d: %v", devLoopEntries, entry.Event)
 		default:
 			t.Logf("unknown event: %v", entry.Event)
 		}
 	}
-	// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries
+	// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries and 2 devLoopEntries
 	testutil.CheckDeepEqual(t, 1, metaEntries)
 	testutil.CheckDeepEqual(t, 2, deployEntries)
 	testutil.CheckDeepEqual(t, 2, buildEntries)
+	testutil.CheckDeepEqual(t, 2, devLoopEntries)
 }
 
 func TestEventLogHTTP(t *testing.T) {
@@ -197,22 +201,30 @@ func TestEventLogHTTP(t *testing.T) {
 				}
 			}
 
-			metaEntries, buildEntries, deployEntries := 0, 0, 0
+			metaEntries, buildEntries, deployEntries, devLoopEntries := 0, 0, 0, 0
 			for _, entry := range logEntries {
 				switch entry.Event.GetEventType().(type) {
 				case *proto.Event_MetaEvent:
 					metaEntries++
+					t.Logf("meta event %d: %v", metaEntries, entry.Event)
 				case *proto.Event_BuildEvent:
 					buildEntries++
+					t.Logf("build event %d: %v", buildEntries, entry.Event)
 				case *proto.Event_DeployEvent:
 					deployEntries++
+					t.Logf("deploy event %d: %v", deployEntries, entry.Event)
+				case *proto.Event_DevLoopEvent:
+					devLoopEntries++
+					t.Logf("devloop event event %d: %v", devLoopEntries, entry.Event)
 				default:
+					t.Logf("unknown event: %v", entry.Event)
 				}
 			}
-			// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries
+			// make sure we have exactly 1 meta entry, 2 deploy entries, 2 build entries and 2 devLoopEntries
 			testutil.CheckDeepEqual(t, 1, metaEntries)
 			testutil.CheckDeepEqual(t, 2, deployEntries)
 			testutil.CheckDeepEqual(t, 2, buildEntries)
+			testutil.CheckDeepEqual(t, 2, devLoopEntries)
 		})
 	}
 }
@@ -341,8 +353,7 @@ func setupSkaffoldWithArgs(t *testing.T, args ...string) {
 	// start a skaffold dev loop on an example
 	ns, _ := SetupNamespace(t)
 
-	// Disable caching to ensure we get a "build in progress" event each time.
-	skaffold.Dev(append([]string{"--cache-artifacts=false"}, args...)...).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+	skaffold.Dev(args...).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
 	t.Cleanup(func() {
 		Run(t, "testdata/dev", "rm", "foo")
