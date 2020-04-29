@@ -26,7 +26,7 @@ import (
 	"strings"
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -93,11 +93,11 @@ func TestBuildInCluster(t *testing.T) {
 
 		skaffold.Run("-p", "create-build-step").InNs(ns.Name).RunOrFail(t.T)
 
-		client.WaitForPodsInPhase(corev1.PodSucceeded, "skaffold-in-cluster")
+		client.WaitForPodsInPhase(v1.PodSucceeded, "skaffold-in-cluster")
 	})
 }
 
-func replaceNamespace(t *testutil.T, fileName string, ns *corev1.Namespace) {
+func replaceNamespace(t *testutil.T, fileName string, ns *v1.Namespace) {
 	origSkaffoldYaml, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		t.Fatalf("failed reading %s: %s", fileName, err)
