@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 const (
@@ -147,7 +148,7 @@ func writeConfig(cfg *config.ContextConfig) error {
 	} else {
 		found := false
 		for i, contextCfg := range fullConfig.ContextConfigs {
-			if contextCfg.Kubecontext == kubecontext {
+			if util.RegexEqual(contextCfg.Kubecontext, kubecontext) {
 				fullConfig.ContextConfigs[i] = cfg
 				found = true
 			}
