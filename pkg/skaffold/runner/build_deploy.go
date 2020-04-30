@@ -137,15 +137,25 @@ type tagErr struct {
 	err error
 }
 
+// ApplyDefaultRepo spplies the default repo to a given image tag.
+func (r *SkaffoldRunner) ApplyDefaultRepo(tag string) (string, error) {
+	defaultRepo, err := config.GetDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo.Value())
+	if err != nil {
+		return "", fmt.Errorf("getting default repo: %w", err)
+	}
+
+	newTag, err := docker.SubstituteDefaultRepoIntoImage(defaultRepo, tag)
+	if err != nil {
+		return "", fmt.Errorf("applying default repo to %q: %w", tag, err)
+	}
+
+	return newTag, nil
+}
+
 // imageTags generates tags for a list of artifacts
 func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) (tag.ImageTags, error) {
 	start := time.Now()
 	color.Default.Fprintln(out, "Generating tags...")
-
-	defaultRepo, err := config.GetDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo.Value())
-	if err != nil {
-		return nil, fmt.Errorf("getting default repo: %w", err)
-	}
 
 	tagErrs := make([]chan tagErr, len(artifacts))
 
@@ -171,24 +181,22 @@ func (r *SkaffoldRunner) imageTags(ctx context.Context, out io.Writer, artifacts
 			return nil, context.Canceled
 
 		case t := <-tagErrs[i]:
-			err := t.err
-
-			if err != nil {
-				logrus.Debugln(err)
+			if t.err != nil {
+				logrus.Debugln(t.err)
 				logrus.Debugln("Using a fall-back tagger")
 
-				fallbackTagger := &tag.ChecksumTagger{}
-				t.tag, err = fallbackTagger.GenerateFullyQualifiedImageName(artifact.Workspace, imageName)
+				fallbackTag, err := (&tag.ChecksumTagger{}).GenerateFullyQualifiedImageName(artifact.Workspace, imageName)
 				if err != nil {
 					return nil, fmt.Errorf("generating checksum as fall-back tag for %q: %w", imageName, err)
 				}
 
+				t.tag = fallbackTag
 				showWarning = true
 			}
 
-			tag, err := docker.SubstituteDefaultRepoIntoImage(defaultRepo, t.tag)
+			tag, err := r.ApplyDefaultRepo(t.tag)
 			if err != nil {
-				return nil, fmt.Errorf("applying default repo to %q: %w", t.tag, t.err)
+				return nil, err
 			}
 
 			fmt.Fprintln(out, tag)
