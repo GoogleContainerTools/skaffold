@@ -80,6 +80,14 @@ func (opts *SkaffoldOptions) Prune() bool {
 	return !opts.NoPrune && !opts.CacheArtifacts
 }
 
+func (opts *SkaffoldOptions) IsDevMode() bool {
+	return opts.Command == "dev"
+}
+
+func (opts *SkaffoldOptions) IsDebugMode() bool {
+	return opts.Command == "debug"
+}
+
 func (opts *SkaffoldOptions) IsTargetImage(artifact *latest.Artifact) bool {
 	if len(opts.TargetImages) == 0 {
 		return true
