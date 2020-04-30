@@ -23,13 +23,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestCmpGoStructs(t *testing.T) {
-	logrus.SetLevel(logrus.DebugLevel)
 	tests := []struct {
 		description string
 		a           string
@@ -274,7 +271,7 @@ func TestCompareSchemas(t *testing.T) {
 			b:           "v1beta13",
 		},
 	}
-	logrus.SetLevel(logrus.DebugLevel)
+
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			wd, err := os.Getwd()

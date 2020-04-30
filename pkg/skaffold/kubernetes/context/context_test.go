@@ -183,7 +183,6 @@ func TestGetRestClientConfig(t *testing.T) {
 	})
 
 	testutil.Run(t, "REST client in-cluster", func(t *testutil.T) {
-		logrus.SetLevel(logrus.DebugLevel)
 		t.SetEnvs(map[string]string{"KUBECONFIG": "non-valid"})
 		resetConfig()
 
