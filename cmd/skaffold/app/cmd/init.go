@@ -70,7 +70,7 @@ func NewCmdInit() *cobra.Command {
 			f.MarkHidden("XXenableJibGradleInit")
 			f.BoolVar(&enableBuildpacksInit, "XXenableBuildpacksInit", false, "")
 			f.MarkHidden("XXenableBuildpacksInit")
-			f.StringVar(&buildpacksBuilder, "XXdefaultBuildpacksBuilder", "heroku/buildpacks", "")
+			f.StringVar(&buildpacksBuilder, "XXdefaultBuildpacksBuilder", "gcr.io/buildpacks/builder", "")
 			f.MarkHidden("XXdefaultBuildpacksBuilder")
 			f.BoolVar(&enableManifestGeneration, "XXenableManifestGeneration", false, "")
 			f.MarkHidden("XXenableManifestGeneration")

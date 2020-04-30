@@ -4,4 +4,4 @@ build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-buildpacks
     buildpack:
-      builder: "heroku/buildpacks"
+      builder: "gcr.io/buildpacks/builder"
