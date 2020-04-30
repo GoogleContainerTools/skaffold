@@ -18,7 +18,6 @@ package schema
 
 import (
 	"fmt"
-	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -105,10 +104,10 @@ func TestUpdateComments(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			dir := t.NewTempDir()
-			aFile := dir.Path("a.go")
-			t.CheckNoError(ioutil.WriteFile(aFile, []byte(test.orig), 0666))
-			modified, err := updateVersionComment(aFile, test.released)
+			tmpDir := t.NewTempDir().Write("a.go", test.orig)
+
+			modified, err := updateVersionComment(tmpDir.Path("a.go"), test.released)
+
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, string(modified))
 		})
