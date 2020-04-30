@@ -58,6 +58,7 @@ github.com/buildpacks/imgutil
 github.com/buildpacks/imgutil/local
 github.com/buildpacks/imgutil/remote
 # github.com/buildpacks/lifecycle v0.7.1
+## explicit
 github.com/buildpacks/lifecycle
 github.com/buildpacks/lifecycle/api
 github.com/buildpacks/lifecycle/archive
@@ -338,6 +339,7 @@ github.com/jstemmer/go-junit-report/parser
 ## explicit
 github.com/karrick/godirwalk
 # github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
+## explicit
 github.com/kballard/go-shellquote
 # github.com/kevinburke/ssh_config v0.0.0-20190725054713-01f96b0aa0cd
 github.com/kevinburke/ssh_config
