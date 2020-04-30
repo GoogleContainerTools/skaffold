@@ -67,10 +67,11 @@ func ParseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 		return nil, err
 	}
 
-	images := []string{}
+	var images []string
 	for _, k8sObject := range k8sObjects {
 		images = append(images, parseImagesFromYaml(k8sObject)...)
 	}
+
 	return images, nil
 }
 

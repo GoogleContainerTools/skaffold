@@ -77,7 +77,8 @@ func getBuilders(b latest.BuildConfig) []*proto.BuildMetadata_Builder {
 }
 
 func getDeploy(d latest.DeployConfig, c string) *proto.DeployMetadata {
-	deployers := []*proto.DeployMetadata_Deployer{}
+	var deployers []*proto.DeployMetadata_Deployer
+
 	if d.HelmDeploy != nil {
 		deployers = append(deployers, &proto.DeployMetadata_Deployer{Type: proto.DeployerType_HELM, Count: int32(len(d.HelmDeploy.Releases))})
 	}
@@ -90,6 +91,7 @@ func getDeploy(d latest.DeployConfig, c string) *proto.DeployMetadata {
 	if len(deployers) == 0 {
 		return &proto.DeployMetadata{}
 	}
+
 	return &proto.DeployMetadata{
 		Deployers: deployers,
 		Cluster:   getClusterType(c),

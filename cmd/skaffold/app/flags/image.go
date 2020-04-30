@@ -68,10 +68,12 @@ func (i *Images) Type() string {
 
 // Artifacts returns an artifact representation for the corresponding image
 func (i *Images) Artifacts() []build.Artifact {
-	artifacts := []build.Artifact{}
+	var artifacts []build.Artifact
+
 	for _, image := range i.images {
 		artifacts = append(artifacts, *image.artifact)
 	}
+
 	return artifacts
 }
 

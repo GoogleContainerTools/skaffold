@@ -45,7 +45,7 @@ func TestRun(t *testing.T) {
 					Namespace: "foo-ns",
 				}},
 			},
-			expected: []Resource{},
+			expected: nil,
 		},
 		{
 			description: "pod is Waiting conditions with error",

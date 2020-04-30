@@ -63,11 +63,13 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts meta_v1.Lis
 	if err != nil {
 		return nil, err
 	}
-	rs := []Resource{}
+
+	var rs []Resource
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
 		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.errCode))
 	}
+
 	return rs, nil
 }
 

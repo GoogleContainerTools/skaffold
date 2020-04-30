@@ -60,7 +60,7 @@ func TestHelperProcess(*testing.T) {
 	cmd, args := args[0], args[1:]
 	switch cmd {
 	case "skaffold":
-		iargs := []interface{}{}
+		var iargs []interface{}
 		for _, s := range args {
 			iargs = append(iargs, s)
 		}

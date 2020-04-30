@@ -93,7 +93,7 @@ type sameErr struct {
 }
 
 func generateSchemas(root string, dryRun bool) (bool, error) {
-	results := [](chan sameErr){}
+	var results [](chan sameErr)
 	for range schema.SchemaVersions {
 		results = append(results, make(chan sameErr, 1))
 	}
