@@ -381,9 +381,14 @@ func TestNewForConfig(t *testing.T) {
 			if cfg != nil {
 				b, _t, d := WithTimings(test.expectedBuilder, test.expectedTester, test.expectedDeployer, test.cacheArtifacts)
 
-				t.CheckErrorAndTypeEquality(test.shouldErr, err, b, cfg.builder)
-				t.CheckErrorAndTypeEquality(test.shouldErr, err, _t, cfg.tester)
-				t.CheckErrorAndTypeEquality(test.shouldErr, err, d, cfg.deployer)
+				if test.shouldErr {
+					t.CheckError(true, err)
+				} else {
+					t.CheckNoError(err)
+					t.CheckTypeEquality(b, cfg.builder)
+					t.CheckTypeEquality(_t, cfg.tester)
+					t.CheckTypeEquality(d, cfg.deployer)
+				}
 			}
 		})
 	}
