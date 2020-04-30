@@ -69,7 +69,9 @@ spec:
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			for _, image := range test.images {
 				manifest, err := Generate(image)
-				t.CheckErrorAndDeepEqual(false, err, test.expectedManifest, string(manifest))
+
+				t.CheckNoError(err)
+				t.CheckDeepEqual(test.expectedManifest, string(manifest))
 			}
 		})
 	}

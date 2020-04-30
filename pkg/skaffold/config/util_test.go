@@ -495,7 +495,8 @@ func TestGetDefaultRepo(t *testing.T) {
 
 			defaultRepo, err := GetDefaultRepo("config", test.cliValue)
 
-			t.CheckErrorAndDeepEqual(false, err, test.expectedRepo, defaultRepo)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedRepo, defaultRepo)
 		})
 	}
 }
