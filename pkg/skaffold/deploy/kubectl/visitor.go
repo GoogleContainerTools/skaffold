@@ -19,7 +19,7 @@ package kubectl
 import (
 	"fmt"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // recursivelyTransformableKinds whitelists kinds that can be transformed recursively.
