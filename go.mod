@@ -23,6 +23,7 @@ require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.1 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.4
+	github.com/buildpacks/lifecycle v0.7.1
 	github.com/buildpacks/pack v0.10.0
 	github.com/docker/cli v0.0.0-20200312141509-ef2f64abbd37
 	github.com/docker/distribution v2.7.1+incompatible
@@ -40,6 +41,7 @@ require (
 	github.com/heroku/color v0.0.6
 	github.com/imdario/mergo v0.3.9
 	github.com/karrick/godirwalk v1.15.6
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/krishicks/yaml-patch v0.0.10
 	github.com/mattn/go-colorable v0.1.6
 	github.com/mitchellh/go-homedir v1.1.0
