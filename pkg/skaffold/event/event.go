@@ -249,8 +249,12 @@ func BuildComplete(imageName string) {
 }
 
 // DevLoopInProgress notifies that a dev loop has been started.
-func DevLoopInProgress(i int) {
-	handler.handleDevLoopEvent(&proto.DevLoopEvent{Iteration: int32(i), Status: InProgress})
+func DevLoopInProgress(i int, depType proto.ChangeType) {
+	handler.handleDevLoopEvent(&proto.DevLoopEvent{
+		Iteration:  int32(i),
+		ChangeType: depType,
+		Status:     InProgress,
+	})
 }
 
 // DevLoopFailed notifies that a dev loop has failed with an error code
@@ -415,6 +419,18 @@ func LogMetaEvent() {
 	})
 }
 
+// EndSessionEvent notifies that that skaffold session has ended and describes it
+func EndSessionEvent(errorCode proto.ErrorCode) {
+	go handler.handle(&proto.Event{
+		EventType: &proto.Event_EndEvent{
+			EndEvent: &proto.EndEvent{
+				ErrCode: errorCode,
+				Loops:   handler.state.Loops,
+			},
+		},
+	})
+}
+
 func (ev *eventHandler) handle(event *proto.Event) {
 	logEntry := &proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
@@ -530,14 +546,24 @@ func (ev *eventHandler) handle(event *proto.Event) {
 		}
 	case *proto.Event_DevLoopEvent:
 		de := e.DevLoopEvent
+		ev.stateLock.Lock()
 		switch de.Status {
 		case InProgress:
+			ev.state.Loops = append(ev.state.Loops, &proto.DevLoop{
+				Iteration:  de.Iteration,
+				ChangeType: de.ChangeType,
+			})
 			logEntry.Entry = fmt.Sprintf("Dev Iteration %d in progress", de.Iteration)
 		case Succeeded:
+			ev.state.Loops[int(de.Iteration)].ErrCode = proto.ErrorCode_SUCCESS
 			logEntry.Entry = fmt.Sprintf("Dev Iteration %d successful", de.Iteration)
 		default:
+			ev.state.Loops[int(de.Iteration)].ErrCode = de.Err.ErrCode
 			logEntry.Entry = fmt.Sprintf("Dev Iteration %d failed with error code %v", de.Iteration, de.Err.ErrCode)
 		}
+		ev.stateLock.Unlock()
+	case *proto.Event_EndEvent:
+		logEntry.Entry = fmt.Sprintf("Skaffold end event with %d dev loops", len(e.EndEvent.Loops))
 	default:
 		return
 	}
@@ -552,6 +578,7 @@ func ResetStateOnBuild() {
 		builds[k] = NotStarted
 	}
 	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata)
+	newState.Loops = handler.getState().Loops
 	handler.setState(newState)
 }
 

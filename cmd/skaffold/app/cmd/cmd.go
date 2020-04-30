@@ -47,7 +47,7 @@ var (
 
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	updateMsg := make(chan string)
-	var shutdownAPIServer func() error
+	var 	shutdownAPIServer func() error
 
 	rootCmd := &cobra.Command{
 		Use: "skaffold",

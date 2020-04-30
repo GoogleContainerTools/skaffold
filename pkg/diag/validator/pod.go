@@ -100,7 +100,7 @@ func getContainerStatus(pod *v1.Pod) (proto.ErrorCode, error) {
 			}
 		}
 	}
-	return proto.ErrorCode_STATUS_CHECK_NO_ERROR, nil
+	return proto.ErrorCode_SUCCESS, nil
 }
 
 func getWaitingContainerStatus(cs []v1.ContainerStatus) (proto.ErrorCode, error) {
@@ -114,7 +114,7 @@ func getWaitingContainerStatus(cs []v1.ContainerStatus) (proto.ErrorCode, error)
 		}
 	}
 	// No waiting or terminated containers, pod should be in good health.
-	return proto.ErrorCode_STATUS_CHECK_NO_ERROR, nil
+	return proto.ErrorCode_SUCCESS, nil
 }
 
 func getTolerationsDetails(reason string, message string) (proto.ErrorCode, error) {
@@ -219,7 +219,7 @@ func newPodStatus(n string, ns string, p string) *podStatus {
 		name:      n,
 		namespace: ns,
 		phase:     p,
-		errCode:   proto.ErrorCode_STATUS_CHECK_NO_ERROR,
+		errCode:   proto.ErrorCode_SUCCESS,
 	}
 }
 
