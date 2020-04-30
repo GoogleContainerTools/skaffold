@@ -4,9 +4,8 @@ build:
   artifacts:
   - image: skaffold-buildpacks
     buildpack:
-      builder: "heroku/buildpacks"
+      builder: "gcr.io/buildpacks/builder"
       env:
-      - GOVERSION=1.13.1
       - GOPROXY={{.GOPROXY}}
 profiles:
 - name: gcb
