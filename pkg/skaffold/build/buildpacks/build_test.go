@@ -78,7 +78,7 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			description: "dev mode",
-			artifact:    withSync(&latest.Sync{Infer: []string{"**/*"}}, buildpacksArtifact("another/builder", "another/run")),
+			artifact:    withSync(&latest.Sync{Auto: &latest.Auto{}}, buildpacksArtifact("another/builder", "another/run")),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
 			devMode:     true,

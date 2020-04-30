@@ -219,7 +219,7 @@ func setDefaultSync(a *latest.Artifact) {
 	if a.Sync != nil {
 		if len(a.Sync.Manual) == 0 && len(a.Sync.Infer) == 0 && a.Sync.Auto == nil {
 			switch {
-			case a.JibArtifact != nil:
+			case a.JibArtifact != nil || a.BuildpackArtifact != nil:
 				a.Sync.Auto = &latest.Auto{}
 			default:
 				a.Sync.Infer = []string{"**/*"}

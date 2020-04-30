@@ -106,7 +106,7 @@ func artifactConfig(a *latest.Artifact, devMode bool) (string, error) {
 		return "", fmt.Errorf("marshalling the artifact's configuration for %q: %w", a.ImageName, err)
 	}
 
-	if devMode && a.BuildpackArtifact != nil && a.Sync != nil && len(a.Sync.Infer) > 0 {
+	if devMode && a.BuildpackArtifact != nil && a.Sync != nil && a.Sync.Auto != nil {
 		return string(buf) + ".DEV", nil
 	}
 
