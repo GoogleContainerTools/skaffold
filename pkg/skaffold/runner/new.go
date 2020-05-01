@@ -261,7 +261,7 @@ func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {
 		return &tag.ChecksumTagger{}, nil
 
 	case t.GitTagger != nil:
-		return tag.NewGitCommit(t.GitTagger.Variant)
+		return tag.NewGitCommit(t.GitTagger.Prefix, t.GitTagger.Variant)
 
 	case t.DateTimeTagger != nil:
 		return tag.NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil

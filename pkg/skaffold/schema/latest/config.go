@@ -135,13 +135,16 @@ type ShaTagger struct{}
 
 // GitTagger *beta* tags images with the git tag or commit of the artifact's workspace.
 type GitTagger struct {
-	// Variant determines the behavior of the git tagger. Valid variants are
+	// Variant determines the behavior of the git tagger. Valid variants are:
 	// `Tags` (default): use git tags or fall back to abbreviated commit hash.
 	// `CommitSha`: use the full git commit sha.
 	// `AbbrevCommitSha`: use the abbreviated git commit sha.
 	// `TreeSha`: use the full tree hash of the artifact workingdir.
 	// `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.
 	Variant string `yaml:"variant,omitempty"`
+
+	// Prefix adds a fixed prefix to the tag.
+	Prefix string `yaml:"prefix,omitempty"`
 }
 
 // EnvTemplateTagger *beta* tags images with a configurable template string.
