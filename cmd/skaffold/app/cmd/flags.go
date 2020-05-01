@@ -56,7 +56,7 @@ var FlagRegistry = []Flag{
 	{
 		Name:          "profile",
 		Shorthand:     "p",
-		Usage:         "Activate profiles by name",
+		Usage:         "Activate profiles by name (prefixed with `-` to disable a profile)",
 		Value:         &opts.Profiles,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",

@@ -730,6 +730,19 @@ func TestActivatedProfiles(t *testing.T) {
 			},
 			expected: []string{"activated", "also-activated"},
 		},
+		{
+			description: "Disabled on the command line",
+			opts: cfg.SkaffoldOptions{
+				ProfileAutoActivation: true,
+				Command:               "dev",
+				Profiles:              []string{"-dev-profile"},
+			},
+			profiles: []latest.Profile{
+				{Name: "dev-profile", Activation: []latest.Activation{{Command: "dev"}}},
+				{Name: "run-or-dev-profile", Activation: []latest.Activation{{Command: "(run)|(dev)"}}},
+			},
+			expected: []string{"run-or-dev-profile"},
+		},
 	}
 
 	for _, test := range tests {
