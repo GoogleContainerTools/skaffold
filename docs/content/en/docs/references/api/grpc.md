@@ -247,7 +247,6 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | type | [DeployerType](#proto.DeployerType) |  |  |
 | count | [int32](#int32) |  |  |
-| changeType | [ChangeType](#proto.ChangeType) |  |  |
 
 
 
@@ -270,23 +269,6 @@ anytime a deployment starts or completes, successfully or not.
 
 
 
-<a name="proto.DevLoop"></a>
-#### DevLoop
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| iteration | [int32](#int32) |  | dev loop iteration |
-| changeType | [ChangeType](#proto.ChangeType) |  | Change type which triggered this loop |
-| errCode | [ErrorCode](#proto.ErrorCode) |  | actionable error message |
-
-
-
-
-
-
-
 <a name="proto.DevLoopEvent"></a>
 #### DevLoopEvent
 `DevLoopEvent` marks the start and end of a dev loop.
@@ -295,26 +277,8 @@ anytime a deployment starts or completes, successfully or not.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | iteration | [int32](#int32) |  | dev loop iteration |
-| changeType | [ChangeType](#proto.ChangeType) |  |  |
 | status | [string](#string) |  | dev loop status oneof: In Progress, Completed, Failed |
 | err | [ActionableErr](#proto.ActionableErr) |  | actionable error message |
-
-
-
-
-
-
-
-<a name="proto.EndEvent"></a>
-#### EndEvent
-`EndEvent` is the last event indicating skaffold session ended.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| errCode | [ErrorCode](#proto.ErrorCode) |  |  |
-| errMsg | [string](#string) |  |  |
-| loops | [DevLoop](#proto.DevLoop) | repeated |  |
 
 
 
@@ -339,7 +303,6 @@ It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, Re
 | fileSyncEvent | [FileSyncEvent](#proto.FileSyncEvent) |  | describes the sync status. |
 | debuggingContainerEvent | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) |  | describes the appearance or disappearance of a debugging container |
 | devLoopEvent | [DevLoopEvent](#proto.DevLoopEvent) |  | describes a start and end of a dev loop. |
-| endEvent | [EndEvent](#proto.EndEvent) |  |  |
 
 
 
@@ -553,7 +516,6 @@ will be sent with the new status.
 | fileSyncState | [FileSyncState](#proto.FileSyncState) |  |  |
 | debuggingContainers | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) | repeated |  |
 | metadata | [Metadata](#proto.Metadata) |  |  |
-| loops | [DevLoop](#proto.DevLoop) | repeated |  |
 
 
 
@@ -689,22 +651,6 @@ Enum indicating builders used
 
 
 
-<a name="proto.ChangeType"></a>
-
-### ChangeType
-Enum for indicating which dependency change triggered the dev loop
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| INITIAL_LOOP | 0 | First iteration |
-| BUILD | 1 | Indicates build dependency change |
-| TEST | 2 | Indicates test dependency change |
-| DEPLOY | 3 | Indicates deploy dependency change |
-| CONFIG | 4 | Indicates skaffold config change |
-| SYNC | 5 | Indicates sync dependency change |
-
-
-
 <a name="proto.ClusterType"></a>
 
 ### ClusterType
@@ -741,7 +687,7 @@ Enum for error codes
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | COULD_NOT_DETERMINE | 0 | Could not determine error |
-| SUCCESS | 200 | Status Check Success |
+| STATUS_CHECK_NO_ERROR | 200 | Status Check Success |
 | STATUS_CHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUS_CHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUS_CHECK_RUN_CONTAINER_ERR | 302 | Container run error |

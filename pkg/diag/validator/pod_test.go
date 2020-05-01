@@ -88,7 +88,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil,
-				proto.ErrorCode_SUCCESS)},
+				proto.ErrorCode_STATUS_CHECK_NO_ERROR)},
 		},
 		{
 			description: "pod is in Stable State",
@@ -109,7 +109,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Running", nil,
-				proto.ErrorCode_SUCCESS)},
+				proto.ErrorCode_STATUS_CHECK_NO_ERROR)},
 		},
 		{
 			description: "pod condition unknown",

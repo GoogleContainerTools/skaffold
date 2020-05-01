@@ -97,13 +97,13 @@
           },
           {
             "name": "event.buildEvent.errCode",
-            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - SUCCESS: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
               "COULD_NOT_DETERMINE",
-              "SUCCESS",
+              "STATUS_CHECK_NO_ERROR",
               "STATUS_CHECK_IMAGE_PULL_ERR",
               "STATUS_CHECK_CONTAINER_CREATING",
               "STATUS_CHECK_RUN_CONTAINER_ERR",
@@ -142,13 +142,13 @@
           },
           {
             "name": "event.deployEvent.errCode",
-            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - SUCCESS: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
               "COULD_NOT_DETERMINE",
-              "SUCCESS",
+              "STATUS_CHECK_NO_ERROR",
               "STATUS_CHECK_IMAGE_PULL_ERR",
               "STATUS_CHECK_CONTAINER_CREATING",
               "STATUS_CHECK_RUN_CONTAINER_ERR",
@@ -249,13 +249,13 @@
           },
           {
             "name": "event.statusCheckEvent.errCode",
-            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - SUCCESS: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
               "COULD_NOT_DETERMINE",
-              "SUCCESS",
+              "STATUS_CHECK_NO_ERROR",
               "STATUS_CHECK_IMAGE_PULL_ERR",
               "STATUS_CHECK_CONTAINER_CREATING",
               "STATUS_CHECK_RUN_CONTAINER_ERR",
@@ -331,13 +331,13 @@
           },
           {
             "name": "event.fileSyncEvent.errCode",
-            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - SUCCESS: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
               "COULD_NOT_DETERMINE",
-              "SUCCESS",
+              "STATUS_CHECK_NO_ERROR",
               "STATUS_CHECK_IMAGE_PULL_ERR",
               "STATUS_CHECK_CONTAINER_CREATING",
               "STATUS_CHECK_RUN_CONTAINER_ERR",
@@ -412,22 +412,6 @@
             "format": "int32"
           },
           {
-            "name": "event.devLoopEvent.changeType",
-            "description": " - INITIAL_LOOP: First iteration\n - BUILD: Indicates build dependency change\n - TEST: Indicates test dependency change\n - DEPLOY: Indicates deploy dependency change\n - CONFIG: Indicates skaffold config change\n - SYNC: Indicates sync dependency change",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "INITIAL_LOOP",
-              "BUILD",
-              "TEST",
-              "DEPLOY",
-              "CONFIG",
-              "SYNC"
-            ],
-            "default": "INITIAL_LOOP"
-          },
-          {
             "name": "event.devLoopEvent.status",
             "in": "query",
             "required": false,
@@ -435,13 +419,13 @@
           },
           {
             "name": "event.devLoopEvent.err.errCode",
-            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - SUCCESS: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
             "in": "query",
             "required": false,
             "type": "string",
             "enum": [
               "COULD_NOT_DETERMINE",
-              "SUCCESS",
+              "STATUS_CHECK_NO_ERROR",
               "STATUS_CHECK_IMAGE_PULL_ERR",
               "STATUS_CHECK_CONTAINER_CREATING",
               "STATUS_CHECK_RUN_CONTAINER_ERR",
@@ -481,45 +465,6 @@
               "type": "string"
             },
             "collectionFormat": "multi"
-          },
-          {
-            "name": "event.endEvent.errCode",
-            "description": " - COULD_NOT_DETERMINE: Could not determine error\n - SUCCESS: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
-            "in": "query",
-            "required": false,
-            "type": "string",
-            "enum": [
-              "COULD_NOT_DETERMINE",
-              "SUCCESS",
-              "STATUS_CHECK_IMAGE_PULL_ERR",
-              "STATUS_CHECK_CONTAINER_CREATING",
-              "STATUS_CHECK_RUN_CONTAINER_ERR",
-              "STATUS_CHECK_CONTAINER_TERMINATED",
-              "STATUS_CHECK_CONTAINER_RESTARTING",
-              "STATUS_CHECK_NODE_MEMORY_PRESSURE",
-              "STATUS_CHECK_NODE_DISK_PRESSURE",
-              "STATUS_CHECK_NODE_NETWORK_UNAVAILABLE",
-              "STATUS_CHECK_NODE_PID_PRESSURE",
-              "STATUS_CHECK_NODE_UNSCHEDULABLE",
-              "STATUS_CHECK_NODE_UNREACHABLE",
-              "STATUS_CHECK_NODE_NOT_READY",
-              "ErrorCode_UNKNOWN",
-              "STATUS_CHECK_UNKNOWN",
-              "STATUS_CHECK_UNKNOWN_UNSCHEDULABLE",
-              "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN",
-              "FILE_SYNC_INIT_ERROR",
-              "DEV_REGISTER_BUILD_DEPS",
-              "DEV_REGISTER_TEST_DEPS",
-              "DEV_REGISTER_DEPLOY_DEPS",
-              "DEV_REGISTER_CONFIG_DEP"
-            ],
-            "default": "COULD_NOT_DETERMINE"
-          },
-          {
-            "name": "event.endEvent.errMsg",
-            "in": "query",
-            "required": false,
-            "type": "string"
           },
           {
             "name": "entry",
@@ -644,9 +589,6 @@
         "count": {
           "type": "integer",
           "format": "int32"
-        },
-        "changeType": {
-          "$ref": "#/definitions/protoChangeType"
         }
       }
     },
@@ -749,20 +691,6 @@
       "default": "UNKNOWN_BUILDER_TYPE",
       "description": "Enum indicating builders used\n- UNKNOWN_BUILDER_TYPE: Could not determine builder type\n - JIB: JIB Builder\n - BAZEL: Bazel Builder\n - BUILDPACKS: Buildpacks Builder\n - CUSTOM: Custom Builder\n - KANIKO: Kaniko Builder\n - DOCKER: Docker Builder"
     },
-    "protoChangeType": {
-      "type": "string",
-      "enum": [
-        "INITIAL_LOOP",
-        "BUILD",
-        "TEST",
-        "DEPLOY",
-        "CONFIG",
-        "SYNC"
-      ],
-      "default": "INITIAL_LOOP",
-      "description": "- INITIAL_LOOP: First iteration\n - BUILD: Indicates build dependency change\n - TEST: Indicates test dependency change\n - DEPLOY: Indicates deploy dependency change\n - CONFIG: Indicates skaffold config change\n - SYNC: Indicates sync dependency change",
-      "description": "Enum for indicating which dependency change triggered the dev loop"
-    },
     "protoClusterType": {
       "type": "string",
       "enum": [
@@ -857,30 +785,12 @@
       "default": "UNKNOWN_DEPLOYER_TYPE",
       "description": "Enum indicating deploy tools used\n- UNKNOWN_DEPLOYER_TYPE: Could not determine Deployer Type\n - HELM: Helm Deployer\n - KUSTOMIZE: Kustomize Deployer\n - KUBECTL: Kubectl Deployer"
     },
-    "protoDevLoop": {
-      "type": "object",
-      "properties": {
-        "iteration": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "changeType": {
-          "$ref": "#/definitions/protoChangeType"
-        },
-        "errCode": {
-          "$ref": "#/definitions/protoErrorCode"
-        }
-      }
-    },
     "protoDevLoopEvent": {
       "type": "object",
       "properties": {
         "iteration": {
           "type": "integer",
           "format": "int32"
-        },
-        "changeType": {
-          "$ref": "#/definitions/protoChangeType"
         },
         "status": {
           "type": "string"
@@ -891,29 +801,11 @@
       },
       "description": "`DevLoopEvent` marks the start and end of a dev loop."
     },
-    "protoEndEvent": {
-      "type": "object",
-      "properties": {
-        "errCode": {
-          "$ref": "#/definitions/protoErrorCode"
-        },
-        "errMsg": {
-          "type": "string"
-        },
-        "loops": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/protoDevLoop"
-          }
-        }
-      },
-      "description": "`EndEvent` is the last event indicating skaffold session ended."
-    },
     "protoErrorCode": {
       "type": "string",
       "enum": [
         "COULD_NOT_DETERMINE",
-        "SUCCESS",
+        "STATUS_CHECK_NO_ERROR",
         "STATUS_CHECK_IMAGE_PULL_ERR",
         "STATUS_CHECK_CONTAINER_CREATING",
         "STATUS_CHECK_RUN_CONTAINER_ERR",
@@ -939,12 +831,16 @@
       "default": "COULD_NOT_DETERMINE",
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
       "description": "Enum for error codes\n- COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason"
 =======
       "description": "- COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
 =======
       "description": "- COULD_NOT_DETERMINE: Could not determine error\n - SUCCESS: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
 >>>>>>> ca8075742... add skaffold end session event
+=======
+      "description": "- COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - ErrorCode_UNKNOWN: Unknown Error Codes\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - FILE_SYNC_INIT_ERROR: File Sync Initialize failure\n - DEV_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEV_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEV_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEV_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+>>>>>>> fcd6a6594... Revert "add skaffold end session event"
       "description": "Enum for error codes"
 >>>>>>> 118d52ef4... Add  to indicate start and end of skaffold dev iterations
     },
@@ -977,9 +873,6 @@
         },
         "devLoopEvent": {
           "$ref": "#/definitions/protoDevLoopEvent"
-        },
-        "endEvent": {
-          "$ref": "#/definitions/protoEndEvent"
         }
       },
       "description": "`Event` describes an event in the Skaffold process.\nIt is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent."
@@ -1163,12 +1056,6 @@
         },
         "metadata": {
           "$ref": "#/definitions/protoMetadata"
-        },
-        "loops": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/protoDevLoop"
-          }
         }
       },
       "description": "`State` represents the current state of the Skaffold components"

@@ -23,8 +23,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 )
 
 // Builder is used to build cobra commands.
@@ -96,11 +94,7 @@ func (b *builder) ExactArgs(argCount int, action func(context.Context, io.Writer
 func (b *builder) NoArgs(action func(context.Context, io.Writer) error) *cobra.Command {
 	b.cmd.Args = cobra.NoArgs
 	b.cmd.RunE = func(*cobra.Command, []string) error {
-		err := action(b.cmd.Context(), b.cmd.OutOrStdout())
-		// The actual error code will be passed in
-		// https://github.com/GoogleContainerTools/skaffold/pull/4045
-		event.EndSessionEvent(1)
-		return err
+		return action(b.cmd.Context(), b.cmd.OutOrStdout())
 	}
 	return &b.cmd
 }

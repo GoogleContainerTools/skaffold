@@ -27,13 +27,6 @@ message State {
     FileSyncState fileSyncState = 6;
     repeated DebuggingContainerEvent debuggingContainers = 7;
     Metadata metadata = 8;
-    repeated DevLoop loops = 9;
-}
-
-message DevLoop {
-    int32 iteration = 1; // dev loop iteration
-    ChangeType changeType = 2; // Change type which triggered this loop
-    ErrorCode errCode = 3; // actionable error message
 }
 
 message Metadata {
@@ -59,7 +52,6 @@ message DeployMetadata {
     message Deployer {
         DeployerType type = 1;
         int32 count = 2;
-        ChangeType changeType = 3;
     }
     repeated Deployer deployers = 1;
     ClusterType cluster = 2;
@@ -113,22 +105,14 @@ message Event {
         FileSyncEvent fileSyncEvent = 7; // describes the sync status.
         DebuggingContainerEvent debuggingContainerEvent = 8; // describes the appearance or disappearance of a debugging container
         DevLoopEvent devLoopEvent = 9; // describes a start and end of a dev loop.
-        EndEvent endEvent = 10;
     }
 }
 
-// `EndEvent` is the last event indicating skaffold session ended.
-message EndEvent {
-    ErrorCode errCode = 1;
-    string errMsg = 2;
-    repeated DevLoop loops = 3;
-}
 // `DevLoopEvent` marks the start and end of a dev loop.
 message DevLoopEvent {
     int32 iteration = 1; // dev loop iteration
-    ChangeType changeType = 2;
-    string status = 3; // dev loop status oneof: In Progress, Completed, Failed
-    ActionableErr err = 4; // actionable error message
+    string status = 2; // dev loop status oneof: In Progress, Completed, Failed
+    ActionableErr err = 3; // actionable error message
 
 }
 
@@ -322,22 +306,6 @@ enum DeployerType {
     KUBECTL = 3;
 }
 
-// Enum for indicating which dependency change triggered the dev loop
-enum ChangeType {
-    // First iteration
-    INITIAL_LOOP = 0;
-    // Indicates build dependency change
-    BUILD = 1;
-    // Indicates test dependency change
-    TEST = 2;
-    // Indicates deploy dependency change
-    DEPLOY = 3;
-    // Indicates skaffold config change
-    CONFIG = 4;
-    // Indicates sync dependency change
-    SYNC = 5;
-}
-
 // Enum indicating cluster type the application is deployed to
 enum ClusterType {
     // Could not determine Cluster Type
@@ -358,7 +326,7 @@ enum ErrorCode {
     // No Error codes
 
     // Status Check Success
-    SUCCESS = 200;
+    STATUS_CHECK_NO_ERROR = 200;
 
 
     // Container errors
