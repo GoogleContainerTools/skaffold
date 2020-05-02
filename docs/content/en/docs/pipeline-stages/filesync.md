@@ -35,7 +35,7 @@ And a `skaffold.yaml` with the following sync configuration:
 - The first rule synchronizes the file `.filebaserc` to `/etc/.filebaserc` in the container.
 - The second rule synchronizes all `html` files in the `static-html` folder into the `<WORKDIR>/static` folder in the container.
   Note that this pattern does not match files in sub-folders below `static-html` (e.g. `static-html/a.html` but not `static-html/sub/a.html`).
-- The third rule synchronizes any `png`. For example if `assest/img.png` ↷ `assets/img.png` or `static-html/imgs/demo.png` ↷ `static/imgs/demo.png`.
+- The third rule synchronizes any `png`. For example if `assets/img.png` ↷ `assets/img.png` or `static-html/imgs/demo.png` ↷ `static/imgs/demo.png`.
 - The last rule enables synchronization for all `md` files below the `content/en`.
   For example, `content/en/sub/index.md` ↷ `content/sub/index.md` but _not_ `content/en_GB/index.md`.
   
