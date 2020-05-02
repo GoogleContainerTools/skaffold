@@ -79,12 +79,18 @@ Note that the use of `JAVA_TOOL_OPTIONS` causes extra debugging output from the 
 
 #### NodeJS
 
-NodeJS applications are configured to use the Chrome DevTools inspector.  
-NodeJS applications must be launched using `node` or `nodemon`, or `npm`.
-Note that `npm` scripts should not then invoke `nodemon` as the DevTools inspector
-configuration will be picked up by `nodemon` rather than the actual application.
+NodeJS applications are configured to use the Chrome DevTools inspector via the `--inspect` argument.
 
 Note that the client must first obtain [the inspector UUID](https://github.com/nodejs/node/issues/9185#issuecomment-254872466).
+
+{{< alert title="Note" >}}
+Many applications use NodeJS-based tools as part of their launch, like <tt>npm</tt>, rather than
+invoke <tt>node</tt> directly.  These intermediate <tt>node</tt> instances may interpret the
+<tt>--inspect</tt> arguments.  Skaffold introduces a <tt>node</tt> wrapper that
+only invokes the real <tt>node</tt> with <tt>--inspect</tt> if running an application script,
+and skips scripts located in <tt>node_modules</tt>.  For more details see the
+<a href="https://github.com/GoogleContainerTools/container-debug-support/pull/34">associated PR</a>.
+{{< /alert}}
   
 #### Python
 

@@ -17,6 +17,7 @@ limitations under the License.
 package debug
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 
@@ -80,9 +81,18 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for node.js debugging", container.Name)
 
+	if config.env == nil {
+		config.env = make(map[string]string)
+	}
+	// Add our debug-helper path to resolve to our node wrapper
+	if v, found := config.env["PATH"]; found {
+		config.env["PATH"] = "/dbg/nodejs/bin:" + v
+	} else {
+		config.env["PATH"] = "/dbg/nodejs/bin"
+	}
+
 	// try to find existing `--inspect` command
 	spec := retrieveNodeInspectSpec(config)
-
 	if spec == nil {
 		spec = &inspectSpec{port: portAlloc(defaultDevtoolsPort)}
 		switch {
@@ -99,16 +109,26 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 			container.Args = rewriteNpmCommandLine(config.arguments, *spec)
 
 		default:
-			container.Env = rewriteWithNodeOptions(config.env, *spec)
+			if v, found := config.env["NODE_OPTIONS"]; found {
+				config.env["NODE_OPTIONS"] = v + " " + spec.String()
+			} else {
+				config.env["NODE_OPTIONS"] = spec.String()
+			}
 		}
 	}
 
 	container.Ports = exposePort(container.Ports, "devtools", spec.port)
+	for k, v := range config.env {
+		container.Env = append(container.Env, v1.EnvVar{Name: k, Value: v})
+	}
+	sort.Slice(container.Env, func(i, j int) bool {
+		return container.Env[i].Name < container.Env[j].Name
+	})
 
 	return ContainerDebugConfiguration{
 		Runtime: "nodejs",
 		Ports:   map[string]uint32{"devtools": uint32(spec.port)},
-	}, "", nil
+	}, "nodejs", nil
 }
 
 func retrieveNodeInspectSpec(config imageConfiguration) *inspectSpec {
@@ -207,20 +227,4 @@ func rewriteNpmCommandLine(commandLine []string, spec inspectSpec) []string {
 		commandLine = append(commandLine, newOption)
 	}
 	return commandLine
-}
-
-func rewriteWithNodeOptions(env map[string]string, spec inspectSpec) []v1.EnvVar {
-	found := false
-	var vars []v1.EnvVar
-	for k, v := range env {
-		if k == "NODE_OPTIONS" {
-			found = true
-			v = v + " " + spec.String()
-		}
-		vars = append(vars, v1.EnvVar{Name: k, Value: v})
-	}
-	if !found {
-		vars = append(vars, v1.EnvVar{Name: "NODE_OPTIONS", Value: spec.String()})
-	}
-	return vars
 }
