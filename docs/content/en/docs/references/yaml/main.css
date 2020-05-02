@@ -74,3 +74,16 @@ em {
     border-radius: 3px;
     padding: 0 .2em;
 }
+
+a.anchor{
+    position: relative;
+    display: inline;
+    visibility: hidden;
+    top: -70px;
+}
+
+@media (max-width: 768px) {
+    a.anchor {
+        top: -10px;
+    }
+}
