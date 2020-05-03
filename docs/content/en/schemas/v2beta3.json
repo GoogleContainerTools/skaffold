@@ -883,8 +883,8 @@
             "type": "string"
           },
           "type": "object",
-          "description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
-          "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "description": "key/value pairs used to resolve values of `ARG` instructions in a Dockerfile. Values can be constants or environment variables via the go template syntax.",
+          "x-intellij-html-description": "key/value pairs used to resolve values of <code>ARG</code> instructions in a Dockerfile. Values can be constants or environment variables via the go template syntax.",
           "default": "{}",
           "examples": [
             "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"'{{.ENV_VARIABLE}}'\"}"
