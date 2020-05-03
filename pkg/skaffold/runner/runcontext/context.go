@@ -80,14 +80,6 @@ func GetRunContext(opts config.SkaffoldOptions, cfg latest.Pipeline) (*RunContex
 	}, nil
 }
 
-func (r *RunContext) IsDevMode() bool {
-	return r.Opts.Command == "dev"
-}
-
-func (r *RunContext) IsDebugMode() bool {
-	return r.Opts.Command == "debug"
-}
-
 func (r *RunContext) UpdateNamespaces(ns []string) {
 	if len(ns) == 0 {
 		return

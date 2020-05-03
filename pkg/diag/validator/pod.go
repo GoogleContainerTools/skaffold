@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/GoogleContainerTools/skaffold/proto"
@@ -58,16 +58,18 @@ func NewPodValidator(k kubernetes.Interface) *PodValidator {
 }
 
 // Validate implements the Validate method for Validator interface
-func (p *PodValidator) Validate(ctx context.Context, ns string, opts meta_v1.ListOptions) ([]Resource, error) {
+func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.ListOptions) ([]Resource, error) {
 	pods, err := p.k.CoreV1().Pods(ns).List(opts)
 	if err != nil {
 		return nil, err
 	}
-	rs := []Resource{}
+
+	var rs []Resource
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
 		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.errCode))
 	}
+
 	return rs, nil
 }
 

@@ -82,7 +82,7 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 		localCluster:       localCluster,
 		pushImages:         pushImages,
 		skipTests:          runCtx.Opts.SkipTests,
-		devMode:            runCtx.IsDevMode(),
+		devMode:            runCtx.Opts.IsDevMode(),
 		prune:              runCtx.Opts.Prune(),
 		pruneChildren:      !runCtx.Opts.NoPruneChildren,
 		insecureRegistries: runCtx.InsecureRegistries,

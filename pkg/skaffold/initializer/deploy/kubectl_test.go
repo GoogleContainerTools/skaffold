@@ -92,7 +92,7 @@ subjects:
 - name: default
   kind: ServiceAccount
   namespace: default`,
-			images:    []string{},
+			images:    nil,
 			shouldErr: false,
 		},
 		{

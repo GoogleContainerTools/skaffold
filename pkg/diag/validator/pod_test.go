@@ -23,7 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
@@ -40,17 +40,17 @@ func TestRun(t *testing.T) {
 		{
 			description: "pod don't exist in test namespace",
 			pods: []*v1.Pod{{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "foo-ns",
 				}},
 			},
-			expected: []Resource{},
+			expected: nil,
 		},
 		{
 			description: "pod is Waiting conditions with error",
 			pods: []*v1.Pod{{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
@@ -78,7 +78,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "pod is in Terminated State",
 			pods: []*v1.Pod{{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
@@ -93,7 +93,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "pod is in Stable State",
 			pods: []*v1.Pod{{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
@@ -114,7 +114,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "pod condition unknown",
 			pods: []*v1.Pod{{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
@@ -133,7 +133,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "pod could not be scheduled",
 			pods: []*v1.Pod{{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
@@ -154,7 +154,7 @@ func TestRun(t *testing.T) {
 		{
 			description: "pod is running but container terminated",
 			pods: []*v1.Pod{{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
@@ -182,7 +182,7 @@ func TestRun(t *testing.T) {
 				rs[i] = p
 			}
 			f := fakekubeclientset.NewSimpleClientset(rs...)
-			actual, err := NewPodValidator(f).Validate(context.Background(), "test", meta_v1.ListOptions{})
+			actual, err := NewPodValidator(f).Validate(context.Background(), "test", metav1.ListOptions{})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
 				if x == nil && y == nil {

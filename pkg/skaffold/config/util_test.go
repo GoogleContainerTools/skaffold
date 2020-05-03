@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -495,7 +495,8 @@ func TestGetDefaultRepo(t *testing.T) {
 
 			defaultRepo, err := GetDefaultRepo("config", test.cliValue)
 
-			t.CheckErrorAndDeepEqual(false, err, test.expectedRepo, defaultRepo)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedRepo, defaultRepo)
 		})
 	}
 }

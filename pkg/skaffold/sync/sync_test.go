@@ -24,9 +24,9 @@ import (
 	"strings"
 	"testing"
 
-	v1 "github.com/google/go-containerregistry/pkg/v1"
-	corev1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	registryv1 "github.com/google/go-containerregistry/pkg/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
@@ -812,7 +812,7 @@ func (t *TestCmdRecorder) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	return nil, t.RunCmd(cmd)
 }
 
-func fakeCmd(ctx context.Context, p corev1.Pod, c corev1.Container, files syncMap) *exec.Cmd {
+func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files syncMap) *exec.Cmd {
 	var args []string
 
 	for src, dsts := range files {
@@ -824,18 +824,18 @@ func fakeCmd(ctx context.Context, p corev1.Pod, c corev1.Container, files syncMa
 	return exec.CommandContext(ctx, "copy", args...)
 }
 
-var pod = &corev1.Pod{
-	ObjectMeta: meta_v1.ObjectMeta{
+var pod = &v1.Pod{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "skaffold-dirty",
 		},
 	},
-	Status: corev1.PodStatus{
-		Phase: corev1.PodRunning,
+	Status: v1.PodStatus{
+		Phase: v1.PodRunning,
 	},
-	Spec: corev1.PodSpec{
-		Containers: []corev1.Container{
+	Spec: v1.PodSpec{
+		Containers: []v1.Container{
 			{
 				Name:  "container_name",
 				Image: "gcr.io/k8s-skaffold:123",
@@ -844,18 +844,18 @@ var pod = &corev1.Pod{
 	},
 }
 
-var nonRunningPod = &corev1.Pod{
-	ObjectMeta: meta_v1.ObjectMeta{
+var nonRunningPod = &v1.Pod{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "skaffold-dirty",
 		},
 	},
-	Status: corev1.PodStatus{
-		Phase: corev1.PodPending,
+	Status: v1.PodStatus{
+		Phase: v1.PodPending,
 	},
-	Spec: corev1.PodSpec{
-		Containers: []corev1.Container{
+	Spec: v1.PodSpec{
+		Containers: []v1.Container{
 			{
 				Name:  "container_name",
 				Image: "gcr.io/k8s-skaffold:123",
@@ -869,8 +869,8 @@ func TestPerform(t *testing.T) {
 		description string
 		image       string
 		files       syncMap
-		pod         *corev1.Pod
-		cmdFn       func(context.Context, corev1.Pod, corev1.Container, syncMap) *exec.Cmd
+		pod         *v1.Pod
+		cmdFn       func(context.Context, v1.Pod, v1.Container, syncMap) *exec.Cmd
 		cmdErr      error
 		clientErr   error
 		expected    []string
@@ -1015,8 +1015,8 @@ func TestSyncMap(t *testing.T) {
 
 type fakeImageFetcher struct{}
 
-func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*v1.ConfigFile, error) {
-	return &v1.ConfigFile{}, nil
+func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*registryv1.ConfigFile, error) {
+	return &registryv1.ConfigFile{}, nil
 }
 
 func TestInit(t *testing.T) {

@@ -300,20 +300,20 @@ func TestProcessCliArtifacts(t *testing.T) {
 }
 
 func TestStripImageTags(t *testing.T) {
-	tcs := []struct {
-		name             string
+	tests := []struct {
+		description      string
 		taggedImages     []string
 		expectedImages   []string
 		expectedWarnings []string
 	}{
 		{
-			name:             "empty",
+			description:      "empty",
 			taggedImages:     nil,
 			expectedImages:   nil,
 			expectedWarnings: nil,
 		},
 		{
-			name: "tags are removed",
+			description: "tags are removed",
 			taggedImages: []string{
 				"gcr.io/testproject/testimage:latest",
 				"testdockerhublib/bla:v1.0",
@@ -327,7 +327,7 @@ func TestStripImageTags(t *testing.T) {
 			expectedWarnings: nil,
 		},
 		{
-			name: "invalid image names are skipped with warning",
+			description: "invalid image names are skipped with warning",
 			taggedImages: []string{
 				"gcr.io/testproject/testimage:latest",
 				"{{ REPOSITORY }}/{{IMAGE}}",
@@ -340,7 +340,7 @@ func TestStripImageTags(t *testing.T) {
 			},
 		},
 		{
-			name: "images with digest are ignored",
+			description: "images with digest are ignored",
 			taggedImages: []string{
 				"gcr.io/testregistry/testimage@sha256:16a019b0fa168b31fbecb3f909f55a5342e39f346cae919b7ff0b22f40029876",
 			},
@@ -351,14 +351,15 @@ func TestStripImageTags(t *testing.T) {
 		},
 	}
 
-	for _, tc := range tcs {
-		testutil.Run(t, tc.name, func(t *testutil.T) {
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			fakeWarner := &warnings.Collect{}
 			t.Override(&warnings.Printf, fakeWarner.Warnf)
-			images := tag.StripTags(tc.taggedImages)
 
-			t.CheckDeepEqual(tc.expectedImages, images)
-			t.CheckDeepEqual(tc.expectedWarnings, fakeWarner.Warnings)
+			images := tag.StripTags(test.taggedImages)
+
+			t.CheckDeepEqual(test.expectedImages, images)
+			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
 		})
 	}
 }
