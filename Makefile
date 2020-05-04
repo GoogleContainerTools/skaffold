@@ -185,7 +185,7 @@ integration-in-kind: skaffold-builder
 		-e KUBECONFIG=/tmp/kind-config \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -c ' \
-			kind get clusters | grep -q kind || TERM=dumb kind create cluster --image=kindest/node:v1.13.12@sha256:ad1dd06aca2b85601f882ba1df4fdc03d5a57b304652d0e81476580310ba6289; \
+			kind get clusters | grep -q kind || TERM=dumb kind create cluster --image=kindest/node:v1.13.12@sha256:214476f1514e47fe3f6f54d0f9e24cfb1e4cda449529791286c7161b7f9c08e7; \
 			kind get kubeconfig --internal > /tmp/kind-config; \
 			make integration \
 		'
