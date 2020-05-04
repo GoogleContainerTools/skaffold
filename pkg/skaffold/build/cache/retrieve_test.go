@@ -90,9 +90,6 @@ func (t stubAuth) GetAllAuthConfigs() (map[string]types.AuthConfig, error) { ret
 
 func TestCacheBuildLocal(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&buildComplete, func(string) {})
-		t.Override(&buildInProgress, func(string) {})
-
 		tmpDir := t.NewTempDir().
 			Write("dep1", "content1").
 			Write("dep2", "content2").
@@ -176,9 +173,6 @@ func TestCacheBuildLocal(t *testing.T) {
 
 func TestCacheBuildRemote(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
-		t.Override(&buildComplete, func(string) {})
-		t.Override(&buildInProgress, func(string) {})
-
 		tmpDir := t.NewTempDir().
 			Write("dep1", "content1").
 			Write("dep2", "content2").

@@ -31,13 +31,14 @@ func TestCacheAPITriggers(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	// Run skaffold build first to cache artifacts.
+	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("examples/getting-started").RunOrFail(t)
 
 	ns, _ := SetupNamespace(t)
-
 	rpcAddr := randomPort()
-	skaffold.Dev("--rpc-port", rpcAddr).InDir("examples/getting-started").InNs(ns.Name).RunBackground(t)
+
+	// Disable caching to ensure we get a "build in progress" event each time.
+	skaffold.Dev("--cache-artifacts=false", "--rpc-port", rpcAddr).InDir("examples/getting-started").InNs(ns.Name).RunBackground(t)
 
 	// Ensure we see a build triggered in the event log
 	_, entries := apiEvents(t, rpcAddr)
