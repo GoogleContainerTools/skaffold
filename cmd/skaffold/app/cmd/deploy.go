@@ -59,6 +59,15 @@ func doDeploy(ctx context.Context, out io.Writer) error {
 			return err
 		}
 
+		for i := range deployed {
+			tag, err := r.ApplyDefaultRepo(deployed[i].Tag)
+			if err != nil {
+				return err
+			}
+
+			deployed[i].Tag = tag
+		}
+
 		return r.DeployAndLog(ctx, out, deployed)
 	})
 }
