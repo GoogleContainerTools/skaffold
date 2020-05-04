@@ -33,5 +33,6 @@ func (r *SkaffoldRunner) createContainerManager(out io.Writer) {
 		out,
 		kubectlCLI,
 		r.podSelector,
+		r.defaultLabeller.RunIDSelector(),
 		r.runCtx.Namespaces)
 }

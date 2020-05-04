@@ -24,7 +24,7 @@ import (
 )
 
 // AggregatePodWatcher returns a watcher for multiple namespaces.
-func AggregatePodWatcher(namespaces []string, aggregate chan<- watch.Event) (func(), error) {
+func AggregatePodWatcher(labelSelector string, namespaces []string, aggregate chan<- watch.Event) (func(), error) {
 	watchers := make([]watch.Interface, 0, len(namespaces))
 	stopWatchers := func() {
 		for _, w := range watchers {
@@ -42,6 +42,7 @@ func AggregatePodWatcher(namespaces []string, aggregate chan<- watch.Event) (fun
 	for _, ns := range namespaces {
 		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(metav1.ListOptions{
 			TimeoutSeconds: &forever,
+			LabelSelector:  labelSelector,
 		})
 		if err != nil {
 			stopWatchers()
