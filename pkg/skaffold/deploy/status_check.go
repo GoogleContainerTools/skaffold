@@ -62,21 +62,32 @@ type counter struct {
 	failed  int32
 }
 
-func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
-	client, err := pkgkubernetes.Client()
+type StatusCheck struct {
+	err error
+}
+
+func Execute(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) {
 	event.StatusCheckEventStarted()
+	if err := statusCheck(ctx, defaultLabeller, runCtx, out); err != nil {
+		event.StatusCheckEventFailed(err)
+		return
+	}
+	event.StatusCheckEventSucceeded()
+}
+
+func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
+
+	client, err := pkgkubernetes.Client()
 	if err != nil {
 		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
 	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller,
 		getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds))
-
-	deadline := statusCheckMaxDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds, deployments)
-
 	if err != nil {
 		return fmt.Errorf("could not fetch deployments: %w", err)
 	}
+	deadline := statusCheckMaxDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds, deployments)
 
 	var wg sync.WaitGroup
 
@@ -99,7 +110,8 @@ func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Wait for all deployment status to be fetched
 	wg.Wait()
-	return getSkaffoldDeployStatus(rc.deployments)
+	err = getSkaffoldDeployStatus(rc.deployments)
+	return err
 }
 
 func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]Resource, error) {
@@ -147,11 +159,10 @@ func pollResourceStatus(ctx context.Context, runCtx *runcontext.RunContext, r Re
 
 func getSkaffoldDeployStatus(c *counter) error {
 	if c.failed == 0 {
-		event.StatusCheckEventSucceeded()
 		return nil
 	}
 	err := fmt.Errorf("%d/%d deployment(s) failed", c.failed, c.total)
-	event.StatusCheckEventFailed(err)
+
 	return err
 }
 
