@@ -122,7 +122,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-// DevInit watches for changes and runs the skaffold build and deploy
+// Dev watches for changes and runs the skaffold build and deploy
 // config until interrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	event.DevLoopInProgress(r.devIteration)
