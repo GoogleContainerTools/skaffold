@@ -13,7 +13,7 @@
 # limitations under the License.
 
 FROM golang:1.13.4-alpine3.10 AS generate-files
-RUN apk add --no-cache protobuf=3.6.1-r1 unzip
+RUN apk add --no-cache protobuf=3.6.1-r1 unzip jq moreutils
 
 WORKDIR /protoc
 ENV PROTOC_VERSION=3.11.0
@@ -46,7 +46,7 @@ RUN protoc \
   *.proto
 
 # this is a hack - seemingly grpc-gateway-swagger-gen is sometimes generating titles when they should be descriptions
-RUN sed -i 's/"title"/"description"/g' *.swagger.json
+RUN jq 'walk(if type == "object" and has("title") then .description = ([.title, .description] | map(values) | join ("\n")) | del(.title) else .  end)' skaffold.swagger.json | sponge skaffold.swagger.json
 
 # Compare the proto files with the existing proto files
 FROM generate-files AS compare

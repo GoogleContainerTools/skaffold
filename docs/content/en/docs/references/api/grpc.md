@@ -606,7 +606,7 @@ Enum indicating builders used
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| UNKNOWN_BUILDER_TYPE | 0 | Could not determune builder type |
+| UNKNOWN_BUILDER_TYPE | 0 | Could not determine builder type |
 | JIB | 1 | JIB Builder |
 | BAZEL | 2 | Bazel Builder |
 | BUILDPACKS | 3 | Buildpacks Builder |

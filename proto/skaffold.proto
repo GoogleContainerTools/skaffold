@@ -250,7 +250,7 @@ service SkaffoldService {
 
 // Enum indicating builders used
 enum BuilderType {
-    // Could not determune builder type
+    // Could not determine builder type
     UNKNOWN_BUILDER_TYPE = 0;
     // JIB Builder
     JIB = 1;

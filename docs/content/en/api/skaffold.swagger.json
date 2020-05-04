@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "description": "skaffold.proto",
-    "version": "version not set"
+    "version": "version not set",
+    "description": "skaffold.proto"
   },
   "schemes": [
     "http",
@@ -557,7 +557,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "A map of `artifact name -\u003e build-state`.\nArtifact name is defined in the `skaffold.yaml`.\nThe `build-state` can be: \u003cbr\u003e\n- `\"Not started\"`: not yet started \u003cbr\u003e\n- `\"In progress\"`: build started \u003cbr\u003e\n- `\"Complete\"`: build succeeded \u003cbr\u003e\n- `\"Failed\"`: build failed"
+          "description": "A map of `artifact name -> build-state`.\nArtifact name is defined in the `skaffold.yaml`.\nThe `build-state` can be: <br>\n- `\"Not started\"`: not yet started <br>\n- `\"In progress\"`: build started <br>\n- `\"Complete\"`: build succeeded <br>\n- `\"Failed\"`: build failed"
         }
       },
       "description": "`BuildState` maps Skaffold artifacts to their current build states"
@@ -571,8 +571,7 @@
         "LOCAL"
       ],
       "default": "UNKNOWN_BUILD_TYPE",
-      "description": "- UNKNOWN_BUILD_TYPE: Could not determine Build Type\n - CLUSTER: Cluster Build\n - GCB: GCB Build\n - LOCAL: Local Build",
-      "description": "Enum indicating build type i.e. local, cluster vs GCB"
+      "description": "Enum indicating build type i.e. local, cluster vs GCB\n- UNKNOWN_BUILD_TYPE: Could not determine Build Type\n - CLUSTER: Cluster Build\n - GCB: GCB Build\n - LOCAL: Local Build"
     },
     "protoBuilderType": {
       "type": "string",
@@ -586,8 +585,7 @@
         "DOCKER"
       ],
       "default": "UNKNOWN_BUILDER_TYPE",
-      "description": "- UNKNOWN_BUILDER_TYPE: Could not determune builder type\n - JIB: JIB Builder\n - BAZEL: Bazel Builder\n - BUILDPACKS: Buildpacks Builder\n - CUSTOM: Custom Builder\n - KANIKO: Kaniko Builder\n - DOCKER: Docker Builder",
-      "description": "Enum indicating builders used"
+      "description": "Enum indicating builders used\n- UNKNOWN_BUILDER_TYPE: Could not determine builder type\n - JIB: JIB Builder\n - BAZEL: Bazel Builder\n - BUILDPACKS: Buildpacks Builder\n - CUSTOM: Custom Builder\n - KANIKO: Kaniko Builder\n - DOCKER: Docker Builder"
     },
     "protoClusterType": {
       "type": "string",
@@ -598,8 +596,7 @@
         "OTHER"
       ],
       "default": "UNKNOWN_CLUSTER_TYPE",
-      "description": "- UNKNOWN_CLUSTER_TYPE: Could not determine Cluster Type\n - MINIKUBE: Minikube Cluster\n - GKE: GKE cluster\n - OTHER: All Cluster except Minikube and GKE",
-      "description": "Enum indicating cluster type the application is deployed to"
+      "description": "Enum indicating cluster type the application is deployed to\n- UNKNOWN_CLUSTER_TYPE: Could not determine Cluster Type\n - MINIKUBE: Minikube Cluster\n - GKE: GKE cluster\n - OTHER: All Cluster except Minikube and GKE"
     },
     "protoDebuggingContainerEvent": {
       "type": "object",
@@ -682,8 +679,7 @@
         "KUBECTL"
       ],
       "default": "UNKNOWN_DEPLOYER_TYPE",
-      "description": "- UNKNOWN_DEPLOYER_TYPE: Could not determine Deployer Type\n - HELM: Helm Deployer\n - KUSTOMIZE: Kustomize Deployer\n - KUBECTL: Kubectl Deployer",
-      "description": "Enum indicating deploy tools used"
+      "description": "Enum indicating deploy tools used\n- UNKNOWN_DEPLOYER_TYPE: Could not determine Deployer Type\n - HELM: Helm Deployer\n - KUSTOMIZE: Kustomize Deployer\n - KUBECTL: Kubectl Deployer"
     },
     "protoErrorCode": {
       "type": "string",
@@ -707,8 +703,7 @@
         "STATUS_CHECK_CONTAINER_WAITING_UNKNOWN"
       ],
       "default": "COULD_NOT_DETERMINE",
-      "description": "- COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason",
-      "description": "Enum for error codes"
+      "description": "Enum for error codes\n- COULD_NOT_DETERMINE: Could not determine error\n - STATUS_CHECK_NO_ERROR: Status Check Success\n - STATUS_CHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUS_CHECK_CONTAINER_CREATING: Container creating error\n - STATUS_CHECK_RUN_CONTAINER_ERR: Container run error\n - STATUS_CHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUS_CHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUS_CHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUS_CHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUS_CHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUS_CHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUS_CHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUS_CHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUS_CHECK_NODE_NOT_READY: Node not ready error\n - STATUS_CHECK_UNKNOWN: Status Check error unknown\n - STATUS_CHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUS_CHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason"
     },
     "protoEvent": {
       "type": "object",
@@ -952,7 +947,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "A map of `resource name -\u003e status-check-state`. Where `resource-name` is the kubernetes resource name.\nThe `status-check-state` can be \u003cbr\u003e\n- `\"Not started\"`: indicates that `status-check` has just started. \u003cbr\u003e\n- `\"In progress\"`: InProgress is sent after every resource check is complete. \u003cbr\u003e\n- `\"Succeeded\"`:\n- `\"Failed\"`:"
+          "description": "A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name.\nThe `status-check-state` can be <br>\n- `\"Not started\"`: indicates that `status-check` has just started. <br>\n- `\"In progress\"`: InProgress is sent after every resource check is complete. <br>\n- `\"Succeeded\"`:\n- `\"Failed\"`:"
         }
       },
       "description": "`StatusCheckState` describes the state of status check of current deployed resources."
