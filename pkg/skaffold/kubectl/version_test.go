@@ -45,6 +45,16 @@ func TestCheckVersion(t *testing.T) {
 			expectedVersion: "1.12+",
 		},
 		{
+			description:     "1.13 is valid",
+			commands:        testutil.CmdRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"13"}}`),
+			expectedVersion: "1.13",
+		},
+		{
+			description:     "2.11 is valid",
+			commands:        testutil.CmdRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"2","minor":"11"}}`),
+			expectedVersion: "2.11",
+		},
+		{
 			description:     "1.11 is too old",
 			commands:        testutil.CmdRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"11"}}`),
 			shouldErr:       true,
@@ -56,6 +66,18 @@ func TestCheckVersion(t *testing.T) {
 			shouldErr:       true,
 			warnings:        []string{"unable to parse client version: invalid character 'o' in literal null (expecting 'u')"},
 			expectedVersion: "unknown",
+		},
+		{
+			description:     "invalid minor",
+			commands:        testutil.CmdRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"1","minor":"X"}}`),
+			shouldErr:       true,
+			expectedVersion: "1.X",
+		},
+		{
+			description:     "invalid major",
+			commands:        testutil.CmdRunOut("kubectl version --client -ojson", `{"clientVersion":{"major":"X","minor":"1"}}`),
+			shouldErr:       true,
+			expectedVersion: "X.1",
 		},
 		{
 			description:     "cli not found",
