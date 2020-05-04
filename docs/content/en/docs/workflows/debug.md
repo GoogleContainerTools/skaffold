@@ -90,7 +90,7 @@ invoke <tt>node</tt> directly.  These intermediate <tt>node</tt> instances may i
 only invokes the real <tt>node</tt> with <tt>--inspect</tt> if running an application script,
 and skips scripts located in <tt>node_modules</tt>.  For more details see the
 <a href="https://github.com/GoogleContainerTools/container-debug-support/pull/34">associated PR</a>.
-{{< /alert}}
+{{< /alert >}}
   
 #### Python
 
