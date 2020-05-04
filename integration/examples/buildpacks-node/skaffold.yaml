@@ -5,3 +5,5 @@ build:
   - image: skaffold-buildpacks-node
     buildpack:
       builder: "gcr.io/buildpacks/builder"
+    sync:
+      auto: {}

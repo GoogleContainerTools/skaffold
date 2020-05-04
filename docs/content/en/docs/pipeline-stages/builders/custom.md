@@ -114,6 +114,11 @@ custom:
         file: foo
 ```
 
+{{< alert title="Warning" >}}
+`buildArgs` are not passed to the custom build script. They are only used to resolve
+values of `ARG` instructions in the the given Dockerfile when listing the dependencies.
+{{< /alert >}}
+
 #### Dependencies from a command
 
 Sometimes you might have a builder that can provide the dependencies for a given artifact.

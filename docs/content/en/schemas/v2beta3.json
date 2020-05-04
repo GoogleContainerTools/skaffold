@@ -883,8 +883,8 @@
             "type": "string"
           },
           "type": "object",
-          "description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
-          "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "description": "key/value pairs used to resolve values of `ARG` instructions in a Dockerfile. Values can be constants or environment variables via the go template syntax.",
+          "x-intellij-html-description": "key/value pairs used to resolve values of <code>ARG</code> instructions in a Dockerfile. Values can be constants or environment variables via the go template syntax.",
           "default": "{}",
           "examples": [
             "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"'{{.ENV_VARIABLE}}'\"}"
@@ -1947,16 +1947,16 @@
       "properties": {
         "auto": {
           "$ref": "#/definitions/Auto",
-          "description": "delegates discovery of sync rules to the build system. Currently only available for jib.",
-          "x-intellij-html-description": "delegates discovery of sync rules to the build system. Currently only available for jib."
+          "description": "delegates discovery of sync rules to the build system. Only available for jib and buildpacks.",
+          "x-intellij-html-description": "delegates discovery of sync rules to the build system. Only available for jib and buildpacks."
         },
         "infer": {
           "items": {
             "type": "string"
           },
           "type": "array",
-          "description": "file patterns which may be synced into the container. The container destination is inferred by the builder. Currently only available for docker artifacts.",
-          "x-intellij-html-description": "file patterns which may be synced into the container. The container destination is inferred by the builder. Currently only available for docker artifacts.",
+          "description": "file patterns which may be synced into the container The container destination is inferred by the builder based on the instructions of a Dockerfile. Available for docker and kaniko artifacts and custom artifacts that declare dependencies on a dockerfile.",
+          "x-intellij-html-description": "file patterns which may be synced into the container The container destination is inferred by the builder based on the instructions of a Dockerfile. Available for docker and kaniko artifacts and custom artifacts that declare dependencies on a dockerfile.",
           "default": "[]"
         },
         "manual": {

@@ -643,14 +643,14 @@ func TestNewSyncItem(t *testing.T) {
 
 		// Buildpacks
 		{
-			description: "infer with buildpacks",
+			description: "auto with buildpacks",
 			artifact: &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					BuildpackArtifact: &latest.BuildpackArtifact{},
 				},
 				ImageName: "test",
 				Sync: &latest.Sync{
-					Infer: []string{"**/*.go"},
+					Auto: &latest.Auto{},
 				},
 				Workspace: ".",
 			},
@@ -661,7 +661,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 			},
 			evt: filemon.Events{
-				Added: []string{"file.go", "ignored.txt"},
+				Added: []string{"file.go"},
 			},
 			labels: map[string]string{
 				"io.buildpacks.build.metadata": `{
@@ -681,6 +681,40 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Delete: map[string][]string{},
 			},
+		},
+		{
+			description: "unknown change with buildpacks",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					BuildpackArtifact: &latest.BuildpackArtifact{},
+				},
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Auto: &latest.Auto{},
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"unknown"},
+			},
+			labels: map[string]string{
+				"io.buildpacks.build.metadata": `{
+					"bom":[{
+						"metadata":{
+							"devmode.sync": [
+								{"src":"*.go","dest":"/some"}
+							]
+						}
+					}]
+				}`,
+			},
+			expected: nil,
 		},
 
 		// Auto with Jib

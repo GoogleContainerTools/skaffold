@@ -155,7 +155,7 @@ release-build: cross
 clean:
 	rm -rf $(BUILD_DIR) hack/bin $(STATIK_FILES)
 
-.PHONY: build-deps
+.PHONY: build_deps
 build_deps:
 	$(eval DEPS_DIGEST := $(shell ./hack/skaffold-deps-sha1.sh))
 	docker build \

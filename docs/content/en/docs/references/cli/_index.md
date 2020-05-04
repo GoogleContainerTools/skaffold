@@ -580,11 +580,19 @@ Run a diagnostic on Skaffold
 ```
 
 
+Examples:
+  # Search for configuration issues and print the effective configuration
+  skaffold diagnose
+
+  # Print the effective skaffold.yaml configuration for given profile
+  skaffold diagnose --yaml-only --profile PROFILE
+
 Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --yaml-only=false: Only prints the effective skaffold.yaml configuration
 
 Usage:
   skaffold diagnose [options]
@@ -599,6 +607,7 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_YAML_ONLY` (same as `--yaml-only`)
 
 ### skaffold fix
 
