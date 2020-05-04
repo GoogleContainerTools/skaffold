@@ -608,13 +608,15 @@ type Sync struct {
 	// Manual lists manual sync rules indicating the source and destination.
 	Manual []*SyncRule `yaml:"manual,omitempty" yamltags:"oneOf=sync"`
 
-	// Infer lists file patterns which may be synced into the container.
-	// The container destination is inferred by the builder.
-	// Currently only available for docker artifacts.
+	// Infer lists file patterns which may be synced into the container
+	// The container destination is inferred by the builder
+	// based on the instructions of a Dockerfile.
+	// Available for docker and kaniko artifacts and custom
+	// artifacts that declare dependencies on a dockerfile.
 	Infer []string `yaml:"infer,omitempty" yamltags:"oneOf=sync"`
 
 	// Auto delegates discovery of sync rules to the build system.
-	// Currently only available for jib.
+	// Only available for jib and buildpacks.
 	Auto *Auto `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
 }
 
