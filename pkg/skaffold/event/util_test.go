@@ -51,7 +51,7 @@ func TestEmptyState(t *testing.T) {
 				Build: &proto.BuildMetadata{
 					NumberOfArtifacts: 1,
 					Type:              proto.BuildType_LOCAL,
-					Builders:          []*proto.BuildMetadata_Builder{{Type: proto.BuilderType_DOCKER, Count: 1}},
+					Builders:          []*proto.BuildMetadata_ImageBuilder{{Type: proto.BuilderType_DOCKER, Count: 1}},
 				},
 				Deploy: &proto.DeployMetadata{
 					Cluster: proto.ClusterType_MINIKUBE,
@@ -83,7 +83,7 @@ func TestEmptyState(t *testing.T) {
 				Build: &proto.BuildMetadata{
 					NumberOfArtifacts: 3,
 					Type:              proto.BuildType_CLUSTER,
-					Builders: []*proto.BuildMetadata_Builder{
+					Builders: []*proto.BuildMetadata_ImageBuilder{
 						{Type: proto.BuilderType_JIB, Count: 1},
 						{Type: proto.BuilderType_DOCKER, Count: 2},
 					},
@@ -108,7 +108,7 @@ func TestEmptyState(t *testing.T) {
 				Build: &proto.BuildMetadata{
 					NumberOfArtifacts: 1,
 					Type:              proto.BuildType_GCB,
-					Builders:          []*proto.BuildMetadata_Builder{{Type: proto.BuilderType_KANIKO, Count: 1}},
+					Builders:          []*proto.BuildMetadata_ImageBuilder{{Type: proto.BuilderType_KANIKO, Count: 1}},
 				},
 				Deploy: &proto.DeployMetadata{},
 			},
@@ -125,7 +125,7 @@ func TestEmptyState(t *testing.T) {
 			cluster: "some-private",
 			expected: &proto.Metadata{
 				Build: &proto.BuildMetadata{
-					Builders: []*proto.BuildMetadata_Builder{},
+					Builders: []*proto.BuildMetadata_ImageBuilder{},
 				},
 				Deploy: &proto.DeployMetadata{
 					Cluster:   proto.ClusterType_OTHER,
