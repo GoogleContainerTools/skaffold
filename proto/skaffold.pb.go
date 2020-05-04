@@ -31,7 +31,7 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 type BuilderType int32
 
 const (
-	// Could not determune builder type
+	// Could not determine builder type
 	BuilderType_UNKNOWN_BUILDER_TYPE BuilderType = 0
 	// JIB Builder
 	BuilderType_JIB BuilderType = 1
