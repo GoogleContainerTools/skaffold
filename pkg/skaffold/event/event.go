@@ -166,8 +166,8 @@ func DeployInProgress() {
 
 // DeployFailed notifies that non-fatal errors were encountered during a deployment.
 func DeployFailed(err error) {
-	errCode := sErrors.ErrorCodeFromError(sErrors.Deploy, err)
-	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error(), ErrCode: errCode})
+	statusCode := sErrors.ErrorCodeFromError(sErrors.Deploy, err)
+	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error(), StatusCode: statusCode})
 }
 
 // DeployEvent notifies that a deployment of non fatal interesting errors during deploy.
@@ -182,11 +182,11 @@ func StatusCheckEventSucceeded() {
 }
 
 func StatusCheckEventFailed(err error) {
-	errCode := sErrors.ErrorCodeFromError(sErrors.StatusCheck, err)
+	statusCode := sErrors.ErrorCodeFromError(sErrors.StatusCheck, err)
 	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
-		Status:  Failed,
-		Err:     err.Error(),
-		ErrCode: errCode,
+		Status:     Failed,
+		Err:        err.Error(),
+		StatusCode: statusCode,
 	})
 }
 
@@ -239,8 +239,8 @@ func BuildInProgress(imageName string) {
 
 // BuildFailed notifies that a build has failed.
 func BuildFailed(imageName string, err error) {
-	errCode := sErrors.ErrorCodeFromError(sErrors.Build, err)
-	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Failed, Err: err.Error(), ErrCode: errCode})
+	statusCode := sErrors.ErrorCodeFromError(sErrors.Build, err)
+	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Failed, Err: err.Error(), StatusCode: statusCode})
 }
 
 // BuildComplete notifies that a build has completed.
@@ -254,11 +254,11 @@ func DevLoopInProgress(i int) {
 }
 
 // DevLoopFailed notifies that a dev loop has failed with an error code
-func DevLoopFailedWithErrorCode(i int, errCode proto.ErrorCode, err error) {
+func DevLoopFailedWithErrorCode(i int, errCode proto.StatusCode, err error) {
 	handler.handleDevLoopEvent(&proto.DevLoopEvent{
 		Iteration: int32(i),
 		Status:    Failed,
-		Err: &proto.ActionableErr{
+		Err: &proto.ErrDef{
 			ErrCode: errCode,
 			Message: err.Error(),
 		}})
@@ -266,8 +266,8 @@ func DevLoopFailedWithErrorCode(i int, errCode proto.ErrorCode, err error) {
 
 // DevLoopFailed notifies that a dev loop has failed in a given phase
 func DevLoopFailedInPhase(iteration int, phase sErrors.Phase, err error) {
-	errCode := sErrors.ErrorCodeFromError(phase, err)
-	DevLoopFailedWithErrorCode(iteration, errCode, err)
+	statusCode := sErrors.ErrorCodeFromError(phase, err)
+	DevLoopFailedWithErrorCode(iteration, statusCode, err)
 }
 
 // DevLoopComplete notifies that a dev loop has completed.
@@ -282,8 +282,8 @@ func FileSyncInProgress(fileCount int, image string) {
 
 // FileSyncFailed notifies that a file sync has failed.
 func FileSyncFailed(fileCount int, image string, err error) {
-	errCode := sErrors.ErrorCodeFromError(sErrors.FileSync, err)
-	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed, Err: err.Error(), ErrCode: errCode})
+	statusCode := sErrors.ErrorCodeFromError(sErrors.FileSync, err)
+	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed, Err: err.Error(), StatusCode: statusCode})
 }
 
 // FileSyncSucceeded notifies that a file sync has succeeded.
@@ -532,11 +532,11 @@ func (ev *eventHandler) handle(event *proto.Event) {
 		de := e.DevLoopEvent
 		switch de.Status {
 		case InProgress:
-			logEntry.Entry = fmt.Sprintf("Dev Iteration %d in progress", de.Iteration)
+			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d in progress", de.Iteration)
 		case Succeeded:
-			logEntry.Entry = fmt.Sprintf("Dev Iteration %d successful", de.Iteration)
-		default:
-			logEntry.Entry = fmt.Sprintf("Dev Iteration %d failed with error code %v", de.Iteration, de.Err.ErrCode)
+			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d successful", de.Iteration)
+		case Failed:
+			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d failed with error code %v", de.Iteration, de.Err.ErrCode)
 		}
 	default:
 		return

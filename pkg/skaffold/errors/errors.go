@@ -20,16 +20,32 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
+// These are phases in a DevLoop
 const (
 	Build       = Phase("Build")
 	Deploy      = Phase("Deploy")
 	StatusCheck = Phase("StatusCheck")
 	FileSync    = Phase("FileSync")
-	Dev         = Phase("Dev")
+	DevInit     = Phase("DevInit")
+	Cleanup     = Phase("Cleanup")
 )
 
 type Phase string
 
-func ErrorCodeFromError(_ Phase, _ error) proto.ErrorCode {
-	return proto.ErrorCode_ErrorCode_UNKNOWN
+func ErrorCodeFromError(phase Phase, _ error) proto.StatusCode {
+	switch phase {
+	case Build:
+		return proto.StatusCode_BUILD_UNKNOWN
+	case Deploy:
+		return proto.StatusCode_DEPLOY_UNKNOWN
+	case StatusCheck:
+		return proto.StatusCode_STATUSCHECK_UNKNOWN
+	case FileSync:
+		return proto.StatusCode_SYNC_UNKNOWN
+	case DevInit:
+		return proto.StatusCode_DEVINIT_UNKNOWN
+	case Cleanup:
+		return proto.StatusCode_CLEANUP_UNKNOWN
+	}
+	return proto.StatusCode_UNKNOWN_ERROR
 }
