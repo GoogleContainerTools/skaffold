@@ -23,13 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-)
-
-var (
-	// For testing
-	buildInProgress = event.BuildInProgress
 )
 
 func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifacts []*latest.Artifact) []cacheDetails {
@@ -41,7 +35,6 @@ func (c *cache) lookupArtifacts(ctx context.Context, tags tag.ImageTags, artifac
 
 		i := i
 		go func() {
-			buildInProgress(artifacts[i].ImageName)
 			details[i] = c.lookup(ctx, artifacts[i], tags[artifacts[i].ImageName])
 			wg.Done()
 		}()
