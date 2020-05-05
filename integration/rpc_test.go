@@ -353,7 +353,7 @@ func setupSkaffoldWithArgs(t *testing.T, args ...string) {
 	// start a skaffold dev loop on an example
 	ns, _ := SetupNamespace(t)
 
-	skaffold.Dev(args...).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+	skaffold.Dev(append([]string{"--cache-artifacts=false"}, args...)...).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
 	t.Cleanup(func() {
 		Run(t, "testdata/dev", "rm", "foo")
