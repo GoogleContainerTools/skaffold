@@ -9,7 +9,7 @@ spec:
     ports:
     - containerPort: 5000
     # connect to the debug-adapter port
-    startupProbe:
+    readinessProbe:
       tcpSocket:
         port: 5678
       initialDelaySeconds: 2

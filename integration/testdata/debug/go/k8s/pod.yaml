@@ -9,7 +9,7 @@ spec:
     ports:
     - containerPort: 8080
     # connect to the dlv APIv2 port
-    startupProbe:
+    readinessProbe:
       tcpSocket:
         port: 56268
       initialDelaySeconds: 2

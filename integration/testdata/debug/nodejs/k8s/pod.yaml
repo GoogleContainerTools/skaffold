@@ -9,7 +9,7 @@ spec:
     ports:
     - containerPort: 3000
     # connect to the devtools debugger endpoint
-    startupProbe:
+    readinessProbe:
       httpGet:
         path: /json
         port: 9229
