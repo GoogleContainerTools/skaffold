@@ -95,8 +95,8 @@ func labelDeployResults(labels map[string]string, results []Artifact) {
 func addLabels(labels map[string]string, accessor metav1.Object) {
 	kv := make(map[string]string)
 
-	copyMap(kv, accessor.GetLabels())
 	copyMap(kv, labels)
+	copyMap(kv, accessor.GetLabels())
 
 	accessor.SetLabels(kv)
 }
