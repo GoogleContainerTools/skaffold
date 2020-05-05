@@ -29,14 +29,11 @@ import (
 // 3. Updates:
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
-
 	pkgutil.CloneThroughJSON(c, &newConfig)
-	if err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline); err != nil {
-		return nil, err
-	}
 	newConfig.APIVersion = next.Version
 
-	return &newConfig, nil
+	err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline)
+	return &newConfig, err
 }
 
 func upgradeOnePipeline(_, _ interface{}) error {

@@ -30,15 +30,11 @@ import (
 // 3. No updates
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
-
 	pkgutil.CloneThroughJSON(c, &newConfig)
 	newConfig.APIVersion = next.Version
 
-	if err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline); err != nil {
-		return nil, err
-	}
-
-	return &newConfig, nil
+	err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline)
+	return &newConfig, err
 }
 
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
