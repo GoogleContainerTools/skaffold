@@ -45,7 +45,7 @@ func (r Resource) String() string {
 
 // NewResource creates new Resource of kind
 func NewResource(namespace, kind, name string, status Status, err error, statusCode proto.StatusCode) Resource {
-	return Resource{namespace: namespace, kind: kind, name: name, status: status, err: err, StatusCode: statusCode}
+	return Resource{namespace: namespace, kind: kind, name: name, status: status, err: err, StatusCode: statu2457sCode}
 }
 
 // objectWithMetadata is any k8s object that has kind and object metadata.
