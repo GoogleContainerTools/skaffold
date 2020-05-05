@@ -47,7 +47,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kustomize build .", ""),
 		},
 		{
@@ -56,7 +56,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				KustomizePaths: []string{"."},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kustomize build .", deploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
 			builds: []build.Artifact{{
@@ -71,7 +71,7 @@ func TestKustomizeDeploy(t *testing.T) {
 				KustomizePaths: []string{"a", "b"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kustomize build a", deploymentWebYAML).
 				AndRunOut("kustomize build b", deploymentAppYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
@@ -630,7 +630,7 @@ spec:
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			var kustomizationPaths []string
 			fakeCmd := testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion)
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112)
 			for _, kustomizationCall := range test.kustomizations {
 				fakeCmd.AndRunOut("kustomize build "+kustomizationCall.folder, kustomizationCall.buildResult)
 				kustomizationPaths = append(kustomizationPaths, kustomizationCall.folder)
