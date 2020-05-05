@@ -20,6 +20,7 @@ import (
 	"context"
 	"io"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -72,6 +73,8 @@ func (p *ForwarderManager) Start(ctx context.Context) error {
 			return err
 		}
 	}
+
+	color.Yellow.Fprintln(p.output, "Press ctrl c to exit")
 	return nil
 }
 
