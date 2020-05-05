@@ -16,11 +16,10 @@ spec:
         image: skaffold-debug-jib
         ports:
         - containerPort: 8080
-        # connect to the JDWP port: this causes an handshake failure message
-        # to be reported by the JVM which is ok
+        # connect to the JDWP port
         readinessProbe:
-          tcpSocket:
-            port: 5005
+          exec:
+            command: ["sh", "/check-jdwp.sh", "5005"]
           initialDelaySeconds: 2
           periodSeconds: 10
         # connect to the app port
