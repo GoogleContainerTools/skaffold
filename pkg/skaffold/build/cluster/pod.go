@@ -92,6 +92,19 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 		addSecretVolume(pod, constants.DefaultKanikoDockerConfigSecretName, constants.DefaultKanikoDockerConfigPath, b.ClusterDetails.DockerConfig.SecretName)
 	}
 
+	// Add Service Account
+	if b.ClusterDetails.ServiceAccountName != "" {
+		pod.Spec.ServiceAccountName = b.ClusterDetails.ServiceAccountName
+	}
+
+	// Add SecurityContext for runAsUser
+	if b.ClusterDetails.RunAsUser != nil {
+		if pod.Spec.SecurityContext == nil {
+			pod.Spec.SecurityContext = &v1.PodSecurityContext{}
+		}
+		pod.Spec.SecurityContext.RunAsUser = b.ClusterDetails.RunAsUser
+	}
+
 	// Add used-defines Volumes
 	pod.Spec.Volumes = append(pod.Spec.Volumes, b.Volumes...)
 

@@ -141,7 +141,7 @@ Options:
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -n, --namespace='': Run deployments in the specified namespace
   -o, --output={{json .}}: Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
   -q, --quiet=false: Suppress the build output and print image built on success. See --output to format output.
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
@@ -348,7 +348,7 @@ Options:
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
       --port-forward=false: Port-forward exposed container ports within pods
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -407,7 +407,7 @@ Options:
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -n, --namespace='': Run deployments in the specified namespace
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
 
 Usage:
@@ -459,7 +459,7 @@ E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace='': Run deployments in the specified namespace
       --port-forward=false: Port-forward exposed container ports within pods
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -520,7 +520,7 @@ Options:
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
       --port-forward=false: Port-forward exposed container ports within pods
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --render-only=false: Print rendered Kubernetes manifests instead of deploying them
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
@@ -580,11 +580,19 @@ Run a diagnostic on Skaffold
 ```
 
 
+Examples:
+  # Search for configuration issues and print the effective configuration
+  skaffold diagnose
+
+  # Print the effective skaffold.yaml configuration for given profile
+  skaffold diagnose --yaml-only --profile PROFILE
+
 Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
+      --yaml-only=false: Only prints the effective skaffold.yaml configuration
 
 Usage:
   skaffold diagnose [options]
@@ -599,6 +607,7 @@ Env vars:
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_YAML_ONLY` (same as `--yaml-only`)
 
 ### skaffold fix
 
@@ -693,7 +702,7 @@ Options:
       --loud=false: Show the build logs and output
   -n, --namespace='': Run deployments in the specified namespace
       --output='': file to write rendered manifests to
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
 
 Usage:
@@ -745,7 +754,7 @@ Options:
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
       --port-forward=false: Port-forward exposed container ports within pods
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --render-only=false: Print rendered Kubernetes manifests instead of deploying them
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP

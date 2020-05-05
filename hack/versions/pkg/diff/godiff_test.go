@@ -18,42 +18,38 @@ package diff
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"testing"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestCmpGoStructs(t *testing.T) {
-	logrus.SetLevel(logrus.DebugLevel)
-	tcs := []struct {
-		name      string
-		a         string
-		b         string
-		same      bool
-		shouldErr bool
+	tests := []struct {
+		description string
+		a           string
+		b           string
+		same        bool
+		shouldErr   bool
 	}{
 		{
-			name:      "same strings",
-			a:         `package a`,
-			b:         `package a`,
-			same:      true,
-			shouldErr: false,
+			description: "same strings",
+			a:           `package a`,
+			b:           `package a`,
+			same:        true,
+			shouldErr:   false,
 		},
 		{
-			name:      "invalid go file",
-			a:         `package a`,
-			b:         `invalid`,
-			same:      true,
-			shouldErr: true,
+			description: "invalid go file",
+			a:           `package a`,
+			b:           `invalid`,
+			same:        true,
+			shouldErr:   true,
 		},
 		{
-			name: "comment changes: same",
+			description: "comment changes: same",
 			a: `package a
 //a comment
 `,
@@ -64,7 +60,7 @@ func TestCmpGoStructs(t *testing.T) {
 			shouldErr: false,
 		},
 		{
-			name: "all supported types",
+			description: "all supported types",
 			a: `package a
 type TestStructure struct {
 	a string			// Ident
@@ -89,7 +85,7 @@ type TestStructure struct {
 			shouldErr: false,
 		},
 		{
-			name: "renamed struct: not same",
+			description: "renamed struct: not same",
 			a: `package a
 //a comment
 type TestStructure struct {} 
@@ -102,7 +98,7 @@ type TestStructureRenamed struct {}
 			shouldErr: false,
 		},
 		{
-			name: "added struct: not same",
+			description: "added struct: not same",
 			a: `package a
 //a comment
 type TestStructure struct {} 
@@ -116,7 +112,7 @@ type NewStructure struct {}
 			shouldErr: false,
 		},
 		{
-			name: "removed struct: not same",
+			description: "removed struct: not same",
 			a: `package a
 type TestStructure struct {} 
 `,
@@ -126,7 +122,7 @@ type TestStructure struct {}
 			shouldErr: false,
 		},
 		{
-			name: "added field: not same",
+			description: "added field: not same",
 			a: `package a
 type TestStructure struct {}
 `,
@@ -139,7 +135,7 @@ type TestStructure struct {
 			shouldErr: false,
 		},
 		{
-			name: "renamed field: not same",
+			description: "renamed field: not same",
 			a: `package a
 type TestStructure struct {
 	oldField string
@@ -154,7 +150,7 @@ type TestStructure struct {
 			shouldErr: false,
 		},
 		{
-			name: "type change of field: not same",
+			description: "type change of field: not same",
 			a: `package a
 type TestStructure struct {
 	oldField string
@@ -169,7 +165,7 @@ type TestStructure struct {
 			shouldErr: false,
 		},
 		{
-			name: "type change of field pointer: not same",
+			description: "type change of field pointer: not same",
 			a: `package a
 type TestStructure struct {
 	oldField string
@@ -184,7 +180,7 @@ type TestStructure struct {
 			shouldErr: false,
 		},
 		{
-			name: "reordered fields: same",
+			description: "reordered fields: same",
 			a: `package a
 type TestStructure struct {
 	fieldA string
@@ -201,7 +197,7 @@ type TestStructure struct {
 			shouldErr: false,
 		},
 		{
-			name: "reordered structs: same",
+			description: "reordered structs: same",
 			a: `package a
 type TestStructure struct {
 	fieldA string
@@ -223,7 +219,7 @@ type TestStructure struct {
 			shouldErr: false,
 		},
 		{
-			name: "change in yaml tag: not same",
+			description: "change in yaml tag: not same",
 			a: fmt.Sprintf(`package a
 type TestStructure struct {
 	fieldB string %s
@@ -241,16 +237,17 @@ type TestStructure struct {
 		},
 	}
 
-	for _, tc := range tcs {
-		testutil.Run(t, tc.name, func(t *testutil.T) {
-			dir := t.NewTempDir()
-			aFile := dir.Path("a.go")
-			bFile := dir.Path("b.go")
-			t.CheckNoError(ioutil.WriteFile(aFile, []byte(tc.a), 0666))
-			t.CheckNoError(ioutil.WriteFile(bFile, []byte(tc.b), 0666))
-			diff, err := CompareGoStructs(aFile, bFile)
-			t.CheckErrorAndDeepEqual(tc.shouldErr, err, tc.same, diff == "")
-			if tc.same != (diff == "") {
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.NewTempDir().
+				Write("a.go", test.a).
+				Write("b.go", test.b).
+				Chdir()
+
+			diff, err := CompareGoStructs("a.go", "b.go")
+
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.same, diff == "")
+			if test.same != (diff == "") {
 				t.Errorf(diff)
 			}
 		})
@@ -258,35 +255,35 @@ type TestStructure struct {
 }
 
 func TestCompareSchemas(t *testing.T) {
-	tcs := []struct {
-		name string
-		a    string
-		b    string
+	tests := []struct {
+		description string
+		a           string
+		b           string
 	}{
 		{
-			name: "should be same",
-			a:    "v1beta13",
-			b:    "v1beta13",
+			description: "should be same",
+			a:           "v1beta13",
+			b:           "v1beta13",
 		},
 		{
-			name: "should be different",
-			a:    "v1beta12",
-			b:    "v1beta13",
+			description: "should be different",
+			a:           "v1beta12",
+			b:           "v1beta13",
 		},
 	}
-	logrus.SetLevel(logrus.DebugLevel)
-	for _, tc := range tcs {
-		testutil.Run(t, tc.name, func(t *testutil.T) {
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
 			wd, err := os.Getwd()
 			t.CheckNoError(err)
 			slashWd := filepath.ToSlash(wd)
 			schemaDir := path.Join(slashWd, "..", "..", "..", "..", "pkg", "skaffold", "schema")
-			a := path.Join(schemaDir, tc.a, "config.go")
-			b := path.Join(schemaDir, tc.b, "config.go")
+			a := path.Join(schemaDir, test.a, "config.go")
+			b := path.Join(schemaDir, test.b, "config.go")
 			diff, err := CompareGoStructs(filepath.FromSlash(a), filepath.FromSlash(b))
 			t.CheckNoError(err)
-			t.CheckDeepEqual(tc.a == tc.b, diff == "")
-			if diff != "" && tc.a == tc.b {
+			t.CheckDeepEqual(test.a == test.b, diff == "")
+			if diff != "" && test.a == test.b {
 				t.Errorf(diff)
 			}
 		})

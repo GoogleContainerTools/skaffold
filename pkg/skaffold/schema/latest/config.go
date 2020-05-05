@@ -135,13 +135,16 @@ type ShaTagger struct{}
 
 // GitTagger *beta* tags images with the git tag or commit of the artifact's workspace.
 type GitTagger struct {
-	// Variant determines the behavior of the git tagger. Valid variants are
+	// Variant determines the behavior of the git tagger. Valid variants are:
 	// `Tags` (default): use git tags or fall back to abbreviated commit hash.
 	// `CommitSha`: use the full git commit sha.
 	// `AbbrevCommitSha`: use the abbreviated git commit sha.
 	// `TreeSha`: use the full tree hash of the artifact workingdir.
 	// `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.
 	Variant string `yaml:"variant,omitempty"`
+
+	// Prefix adds a fixed prefix to the tag.
+	Prefix string `yaml:"prefix,omitempty"`
 }
 
 // EnvTemplateTagger *beta* tags images with a configurable template string.
@@ -313,6 +316,15 @@ type ClusterDetails struct {
 
 	// DockerConfig describes how to mount the local Docker configuration into a pod.
 	DockerConfig *DockerConfig `yaml:"dockerConfig,omitempty"`
+
+	// ServiceAccountName describes the Kubernetes service account to use for the pod.
+	// Defaults to 'default'.
+	ServiceAccountName string `yaml:"serviceAccount,omitempty"`
+
+	// RunAsUser defines the UID to request for running the container.
+	// If omitted, no SeurityContext will be specified for the pod and will therefore be inherited
+	// from the service account.
+	RunAsUser *int64 `yaml:"runAsUser,omitempty"`
 
 	// Resources define the resource requirements for the kaniko pod.
 	Resources *ResourceRequirements `yaml:"resources,omitempty"`
@@ -605,13 +617,15 @@ type Sync struct {
 	// Manual lists manual sync rules indicating the source and destination.
 	Manual []*SyncRule `yaml:"manual,omitempty" yamltags:"oneOf=sync"`
 
-	// Infer lists file patterns which may be synced into the container.
-	// The container destination is inferred by the builder.
-	// Currently only available for docker artifacts.
+	// Infer lists file patterns which may be synced into the container
+	// The container destination is inferred by the builder
+	// based on the instructions of a Dockerfile.
+	// Available for docker and kaniko artifacts and custom
+	// artifacts that declare dependencies on a dockerfile.
 	Infer []string `yaml:"infer,omitempty" yamltags:"oneOf=sync"`
 
 	// Auto delegates discovery of sync rules to the build system.
-	// Currently only available for jib.
+	// Only available for jib and buildpacks.
 	Auto *Auto `yaml:"auto,omitempty" yamltags:"oneOf=sync"`
 }
 
@@ -762,10 +776,13 @@ type CustomArtifact struct {
 type CustomDependencies struct {
 	// Dockerfile should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies.
 	Dockerfile *DockerfileDependency `yaml:"dockerfile,omitempty" yamltags:"oneOf=dependency"`
+
 	// Command represents a custom command that skaffold executes to obtain dependencies. The output of this command *must* be a valid JSON array.
 	Command string `yaml:"command,omitempty" yamltags:"oneOf=dependency"`
+
 	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`
+
 	// Ignore specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization.
 	// Will only work in conjunction with `paths`.
 	Ignore []string `yaml:"ignore,omitempty"`
@@ -776,8 +793,8 @@ type DockerfileDependency struct {
 	// Path locates the Dockerfile relative to workspace.
 	Path string `yaml:"path,omitempty"`
 
-	// BuildArgs are arguments passed to the docker build.
-	// It also accepts environment variables via the go template syntax.
+	// BuildArgs are key/value pairs used to resolve values of `ARG` instructions in a Dockerfile.
+	// Values can be constants or environment variables via the go template syntax.
 	// For example: `{"key1": "value1", "key2": "value2", "key3": "'{{.ENV_VARIABLE}}'"}`.
 	BuildArgs map[string]*string `yaml:"buildArgs,omitempty"`
 }

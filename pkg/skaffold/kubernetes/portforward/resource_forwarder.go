@@ -66,12 +66,11 @@ func (p *ResourceForwarder) Start(ctx context.Context) error {
 
 // Port forward each resource individually in a goroutine
 func (p *ResourceForwarder) portForwardResources(ctx context.Context, resources []*latest.PortForwardResource) {
-	for _, r := range resources {
-		r := r
-		go func() {
+	go func() {
+		for _, r := range resources {
 			p.portForwardResource(ctx, *r)
-		}()
-	}
+		}
+	}()
 }
 
 func (p *ResourceForwarder) portForwardResource(ctx context.Context, resource latest.PortForwardResource) {

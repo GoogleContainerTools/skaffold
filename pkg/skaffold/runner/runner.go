@@ -38,6 +38,7 @@ import (
 type Runner interface {
 	DiagnoseArtifacts(context.Context, io.Writer) error
 	Dev(context.Context, io.Writer, []*latest.Artifact) error
+	ApplyDefaultRepo(tag string) (string, error)
 	BuildAndTest(context.Context, io.Writer, []*latest.Artifact) ([]build.Artifact, error)
 	DeployAndLog(context.Context, io.Writer, []build.Artifact) error
 	GeneratePipeline(context.Context, io.Writer, *latest.SkaffoldConfig, []string, string) error
@@ -76,6 +77,7 @@ type SkaffoldRunner struct {
 	hasBuilt       bool
 	hasDeployed    bool
 	intents        *intents
+	devIteration   int
 }
 
 // for testing

@@ -631,6 +631,16 @@
           "description": "define the resource requirements for the kaniko pod.",
           "x-intellij-html-description": "define the resource requirements for the kaniko pod."
         },
+        "runAsUser": {
+          "type": "integer",
+          "description": "defines the UID to request for running the container. If omitted, no SeurityContext will be specified for the pod and will therefore be inherited from the service account.",
+          "x-intellij-html-description": "defines the UID to request for running the container. If omitted, no SeurityContext will be specified for the pod and will therefore be inherited from the service account."
+        },
+        "serviceAccount": {
+          "type": "string",
+          "description": "describes the Kubernetes service account to use for the pod. Defaults to 'default'.",
+          "x-intellij-html-description": "describes the Kubernetes service account to use for the pod. Defaults to 'default'."
+        },
         "timeout": {
           "type": "string",
           "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
@@ -653,6 +663,8 @@
         "namespace",
         "timeout",
         "dockerConfig",
+        "serviceAccount",
+        "runAsUser",
         "resources",
         "concurrency",
         "volumes",
@@ -883,8 +895,8 @@
             "type": "string"
           },
           "type": "object",
-          "description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
-          "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "description": "key/value pairs used to resolve values of `ARG` instructions in a Dockerfile. Values can be constants or environment variables via the go template syntax.",
+          "x-intellij-html-description": "key/value pairs used to resolve values of <code>ARG</code> instructions in a Dockerfile. Values can be constants or environment variables via the go template syntax.",
           "default": "{}",
           "examples": [
             "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"'{{.ENV_VARIABLE}}'\"}"
@@ -927,21 +939,20 @@
     },
     "GitTagger": {
       "properties": {
+        "prefix": {
+          "type": "string",
+          "description": "adds a fixed prefix to the tag.",
+          "x-intellij-html-description": "adds a fixed prefix to the tag."
+        },
         "variant": {
           "type": "string",
-          "description": "determines the behavior of the git tagger. Valid variants are `Tags` (default): use git tags or fall back to abbreviated commit hash. `CommitSha`: use the full git commit sha. `AbbrevCommitSha`: use the abbreviated git commit sha. `TreeSha`: use the full tree hash of the artifact workingdir. `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.",
-          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are <code>Tags</code> (default): use git tags or fall back to abbreviated commit hash. <code>CommitSha</code>: use the full git commit sha. <code>AbbrevCommitSha</code>: use the abbreviated git commit sha. <code>TreeSha</code>: use the full tree hash of the artifact workingdir. <code>AbbrevTreeSha</code>: use the abbreviated tree hash of the artifact workingdir.",
-          "enum": [
-            "Tags",
-            "CommitSha",
-            "AbbrevCommitSha",
-            "TreeSha",
-            "AbbrevTreeSha"
-          ]
+          "description": "determines the behavior of the git tagger. Valid variants are: `Tags` (default): use git tags or fall back to abbreviated commit hash. `CommitSha`: use the full git commit sha. `AbbrevCommitSha`: use the abbreviated git commit sha. `TreeSha`: use the full tree hash of the artifact workingdir. `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.",
+          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are: <code>Tags</code> (default): use git tags or fall back to abbreviated commit hash. <code>CommitSha</code>: use the full git commit sha. <code>AbbrevCommitSha</code>: use the abbreviated git commit sha. <code>TreeSha</code>: use the full tree hash of the artifact workingdir. <code>AbbrevTreeSha</code>: use the abbreviated tree hash of the artifact workingdir."
         }
       },
       "preferredOrder": [
-        "variant"
+        "variant",
+        "prefix"
       ],
       "additionalProperties": false,
       "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",
@@ -1948,16 +1959,16 @@
       "properties": {
         "auto": {
           "$ref": "#/definitions/Auto",
-          "description": "delegates discovery of sync rules to the build system. Currently only available for jib.",
-          "x-intellij-html-description": "delegates discovery of sync rules to the build system. Currently only available for jib."
+          "description": "delegates discovery of sync rules to the build system. Only available for jib and buildpacks.",
+          "x-intellij-html-description": "delegates discovery of sync rules to the build system. Only available for jib and buildpacks."
         },
         "infer": {
           "items": {
             "type": "string"
           },
           "type": "array",
-          "description": "file patterns which may be synced into the container. The container destination is inferred by the builder. Currently only available for docker artifacts.",
-          "x-intellij-html-description": "file patterns which may be synced into the container. The container destination is inferred by the builder. Currently only available for docker artifacts.",
+          "description": "file patterns which may be synced into the container The container destination is inferred by the builder based on the instructions of a Dockerfile. Available for docker and kaniko artifacts and custom artifacts that declare dependencies on a dockerfile.",
+          "x-intellij-html-description": "file patterns which may be synced into the container The container destination is inferred by the builder based on the instructions of a Dockerfile. Available for docker and kaniko artifacts and custom artifacts that declare dependencies on a dockerfile.",
           "default": "[]"
         },
         "manual": {

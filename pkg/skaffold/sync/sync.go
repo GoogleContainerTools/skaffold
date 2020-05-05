@@ -29,7 +29,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/buildpacks"
@@ -62,30 +62,11 @@ func NewItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds [
 	case len(a.Sync.Manual) > 0:
 		return syncItem(a, tag, e, a.Sync.Manual, insecureRegistries)
 
-	case a.BuildpackArtifact != nil && len(a.Sync.Infer) > 0:
-		labels, err := Labels(tag, insecureRegistries)
-		if err != nil {
-			return nil, fmt.Errorf("retrieving labels for %q: %w", tag, err)
-		}
-
-		rules, err := buildpacks.SyncRules(labels)
-		if err != nil {
-			return nil, fmt.Errorf("extracting sync rules from labels for %q: %w", tag, err)
-		}
-
-		// filter out modifications based on Sync.Infer patterns
-		e, err = filterEvents(a.Workspace, e, a.Sync.Infer)
-		if err != nil {
-			return nil, err
-		}
-
-		return syncItem(a, tag, e, rules, insecureRegistries)
+	case a.Sync.Auto != nil:
+		return autoSyncItem(ctx, a, tag, e, insecureRegistries)
 
 	case len(a.Sync.Infer) > 0:
 		return inferredSyncItem(a, tag, e, insecureRegistries)
-
-	case a.Sync.Auto != nil:
-		return autoSyncItem(ctx, a, e, builds)
 
 	default:
 		return nil, nil
@@ -176,13 +157,21 @@ func syncMapForArtifact(a *latest.Artifact, insecureRegistries map[string]bool) 
 	}
 }
 
-func autoSyncItem(ctx context.Context, a *latest.Artifact, e filemon.Events, builds []build.Artifact) (*Item, error) {
-	tag := latestTag(a.ImageName, builds)
-	if tag == "" {
-		return nil, fmt.Errorf("could not find latest tag for image %s in builds: %v", a.ImageName, builds)
-	}
-
+func autoSyncItem(ctx context.Context, a *latest.Artifact, tag string, e filemon.Events, insecureRegistries map[string]bool) (*Item, error) {
 	switch {
+	case a.BuildpackArtifact != nil:
+		labels, err := Labels(tag, insecureRegistries)
+		if err != nil {
+			return nil, fmt.Errorf("retrieving labels for %q: %w", tag, err)
+		}
+
+		rules, err := buildpacks.SyncRules(labels)
+		if err != nil {
+			return nil, fmt.Errorf("extracting sync rules from labels for %q: %w", tag, err)
+		}
+
+		return syncItem(a, tag, e, rules, insecureRegistries)
+
 	case a.JibArtifact != nil:
 		toCopy, toDelete, err := jib.GetSyncDiff(ctx, a.Workspace, a.JibArtifact, e)
 		if err != nil {
@@ -230,53 +219,6 @@ func intersect(contextWd, containerWd string, syncRules []*latest.SyncRule, file
 		ret[f] = dsts
 	}
 	return ret, nil
-}
-
-// filterEvents only considers changes that match the given patterns
-func filterEvents(contextWd string, e filemon.Events, patterns []string) (filemon.Events, error) {
-	added, err := filter(contextWd, e.Added, patterns)
-	if err != nil {
-		return filemon.Events{}, err
-	}
-	modified, err := filter(contextWd, e.Modified, patterns)
-	if err != nil {
-		return filemon.Events{}, err
-	}
-	deleted, err := filter(contextWd, e.Deleted, patterns)
-	if err != nil {
-		return filemon.Events{}, err
-	}
-
-	return filemon.Events{
-		Added:    added,
-		Modified: modified,
-		Deleted:  deleted,
-	}, nil
-}
-
-func filter(contextWd string, paths []string, patterns []string) ([]string, error) {
-	var filtered []string
-
-	for _, path := range paths {
-		for _, pattern := range patterns {
-			relPath, err := filepath.Rel(contextWd, path)
-			if err != nil {
-				return nil, fmt.Errorf("changed file %s can't be found relative to context %q: %w", path, contextWd, err)
-			}
-
-			matches, err := doublestar.PathMatch(filepath.FromSlash(pattern), relPath)
-			if err != nil {
-				return nil, err
-			}
-
-			if matches {
-				filtered = append(filtered, path)
-				break
-			}
-		}
-	}
-
-	return filtered, nil
 }
 
 func matchSyncRules(syncRules []*latest.SyncRule, relPath, containerWd string) ([]string, error) {
@@ -338,7 +280,7 @@ func Perform(ctx context.Context, image string, files syncMap, cmdFn func(contex
 
 	numSynced := 0
 	for _, ns := range namespaces {
-		pods, err := client.CoreV1().Pods(ns).List(meta_v1.ListOptions{})
+		pods, err := client.CoreV1().Pods(ns).List(metav1.ListOptions{})
 		if err != nil {
 			return fmt.Errorf("getting pods for namespace %q: %w", ns, err)
 		}

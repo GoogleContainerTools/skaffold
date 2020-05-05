@@ -23,7 +23,7 @@ import (
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/GoogleContainerTools/skaffold/proto"
@@ -58,16 +58,18 @@ func NewPodValidator(k kubernetes.Interface) *PodValidator {
 }
 
 // Validate implements the Validate method for Validator interface
-func (p *PodValidator) Validate(ctx context.Context, ns string, opts meta_v1.ListOptions) ([]Resource, error) {
+func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.ListOptions) ([]Resource, error) {
 	pods, err := p.k.CoreV1().Pods(ns).List(opts)
 	if err != nil {
 		return nil, err
 	}
-	rs := []Resource{}
+
+	var rs []Resource
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
-		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.errCode))
+		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.statusCode))
 	}
+
 	return rs, nil
 }
 
@@ -81,7 +83,7 @@ func (p *PodValidator) getPodStatus(pod *v1.Pod) *podStatus {
 	}
 }
 
-func getContainerStatus(pod *v1.Pod) (proto.ErrorCode, error) {
+func getContainerStatus(pod *v1.Pod) (proto.StatusCode, error) {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-conditions
 	for _, c := range pod.Status.Conditions {
 		if c.Type == v1.PodScheduled {
@@ -94,30 +96,30 @@ func getContainerStatus(pod *v1.Pod) (proto.ErrorCode, error) {
 				// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
 				return getWaitingContainerStatus(cs)
 			case v1.ConditionUnknown:
-				return proto.ErrorCode_STATUS_CHECK_UNKNOWN, fmt.Errorf(c.Message)
+				return proto.StatusCode_STATUSCHECK_UNKNOWN, fmt.Errorf(c.Message)
 			}
 		}
 	}
-	return proto.ErrorCode_STATUS_CHECK_NO_ERROR, nil
+	return proto.StatusCode_STATUSCHECK_SUCCESS, nil
 }
 
-func getWaitingContainerStatus(cs []v1.ContainerStatus) (proto.ErrorCode, error) {
+func getWaitingContainerStatus(cs []v1.ContainerStatus) (proto.StatusCode, error) {
 	// See https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#container-states
 	for _, c := range cs {
 		switch {
 		case c.State.Waiting != nil:
 			return extractErrorMessageFromWaitingContainerStatus(c)
 		case c.State.Terminated != nil:
-			return proto.ErrorCode_STATUS_CHECK_CONTAINER_TERMINATED, fmt.Errorf("container %s terminated with exit code %d", c.Name, c.State.Terminated.ExitCode)
+			return proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED, fmt.Errorf("container %s terminated with exit code %d", c.Name, c.State.Terminated.ExitCode)
 		}
 	}
 	// No waiting or terminated containers, pod should be in good health.
-	return proto.ErrorCode_STATUS_CHECK_NO_ERROR, nil
+	return proto.StatusCode_STATUSCHECK_SUCCESS, nil
 }
 
-func getTolerationsDetails(reason string, message string) (proto.ErrorCode, error) {
+func getTolerationsDetails(reason string, message string) (proto.StatusCode, error) {
 	matches := taintsRe.FindAllStringSubmatch(message, -1)
-	errCode := proto.ErrorCode_STATUS_CHECK_UNKNOWN_UNSCHEDULABLE
+	errCode := proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE
 	if len(matches) == 0 {
 		return errCode, fmt.Errorf("%s: %s", reason, message)
 	}
@@ -131,32 +133,32 @@ func getTolerationsDetails(reason string, message string) (proto.ErrorCode, erro
 		switch t {
 		case v1.TaintNodeMemoryPressure:
 			messages[i] = "1 node has memory pressure"
-			errCode = proto.ErrorCode_STATUS_CHECK_NODE_MEMORY_PRESSURE
+			errCode = proto.StatusCode_STATUSCHECK_NODE_MEMORY_PRESSURE
 		case v1.TaintNodeDiskPressure:
 			messages[i] = "1 node has disk pressure"
-			errCode = proto.ErrorCode_STATUS_CHECK_NODE_DISK_PRESSURE
+			errCode = proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE
 		case v1.TaintNodePIDPressure:
 			messages[i] = "1 node has PID pressure"
-			errCode = proto.ErrorCode_STATUS_CHECK_NODE_PID_PRESSURE
+			errCode = proto.StatusCode_STATUSCHECK_NODE_PID_PRESSURE
 		case v1.TaintNodeNotReady:
 			messages[i] = "1 node is not ready"
-			if errCode == proto.ErrorCode_STATUS_CHECK_UNKNOWN_UNSCHEDULABLE {
-				errCode = proto.ErrorCode_STATUS_CHECK_NODE_NOT_READY
+			if errCode == proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE {
+				errCode = proto.StatusCode_STATUSCHECK_NODE_NOT_READY
 			}
 		case v1.TaintNodeUnreachable:
 			messages[i] = "1 node is unreachable"
-			if errCode == proto.ErrorCode_STATUS_CHECK_UNKNOWN_UNSCHEDULABLE {
-				errCode = proto.ErrorCode_STATUS_CHECK_NODE_UNREACHABLE
+			if errCode == proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE {
+				errCode = proto.StatusCode_STATUSCHECK_NODE_UNREACHABLE
 			}
 		case v1.TaintNodeUnschedulable:
 			messages[i] = "1 node is unschedulable"
-			if errCode == proto.ErrorCode_STATUS_CHECK_UNKNOWN_UNSCHEDULABLE {
-				errCode = proto.ErrorCode_STATUS_CHECK_NODE_UNSCHEDULABLE
+			if errCode == proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE {
+				errCode = proto.StatusCode_STATUSCHECK_NODE_UNSCHEDULABLE
 			}
 		case v1.TaintNodeNetworkUnavailable:
 			messages[i] = "1 node's network not available"
-			if errCode == proto.ErrorCode_STATUS_CHECK_UNKNOWN_UNSCHEDULABLE {
-				errCode = proto.ErrorCode_STATUS_CHECK_NODE_NETWORK_UNAVAILABLE
+			if errCode == proto.StatusCode_STATUSCHECK_UNKNOWN_UNSCHEDULABLE {
+				errCode = proto.StatusCode_STATUSCHECK_NODE_NETWORK_UNAVAILABLE
 			}
 		}
 	}
@@ -164,20 +166,20 @@ func getTolerationsDetails(reason string, message string) (proto.ErrorCode, erro
 }
 
 type podStatus struct {
-	name      string
-	namespace string
-	phase     string
-	err       error
-	errCode   proto.ErrorCode
+	name       string
+	namespace  string
+	phase      string
+	err        error
+	statusCode proto.StatusCode
 }
 
 func (p *podStatus) isStable() bool {
 	return p.phase == success || (p.phase == running && p.err == nil)
 }
 
-func (p *podStatus) withErr(errCode proto.ErrorCode, err error) *podStatus {
+func (p *podStatus) withErr(errCode proto.StatusCode, err error) *podStatus {
 	p.err = err
-	p.errCode = errCode
+	p.statusCode = errCode
 	return p
 }
 
@@ -193,31 +195,31 @@ func (p *podStatus) String() string {
 	return fmt.Sprintf(actionableMessage, p.namespace, p.name)
 }
 
-func extractErrorMessageFromWaitingContainerStatus(c v1.ContainerStatus) (proto.ErrorCode, error) {
+func extractErrorMessageFromWaitingContainerStatus(c v1.ContainerStatus) (proto.StatusCode, error) {
 	// Extract meaning full error out of container statuses.
 	switch c.State.Waiting.Reason {
 	case containerCreating:
-		return proto.ErrorCode_STATUS_CHECK_CONTAINER_CREATING, fmt.Errorf("creating container %s", c.Name)
+		return proto.StatusCode_STATUSCHECK_CONTAINER_CREATING, fmt.Errorf("creating container %s", c.Name)
 	case crashLoopBackOff:
 		// TODO, in case of container restarting, return the original failure reason due to which container failed.
-		return proto.ErrorCode_STATUS_CHECK_CONTAINER_RESTARTING, fmt.Errorf("restarting failed container %s", c.Name)
+		return proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING, fmt.Errorf("restarting failed container %s", c.Name)
 	case imagePullErr, errImagePullBackOff:
-		return proto.ErrorCode_STATUS_CHECK_IMAGE_PULL_ERR, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
+		return proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
 	case runContainerError:
 		match := runContainerRe.FindStringSubmatch(c.State.Waiting.Message)
 		if len(match) != 0 {
-			return proto.ErrorCode_STATUS_CHECK_RUN_CONTAINER_ERR, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(match[3]))
+			return proto.StatusCode_STATUSCHECK_RUN_CONTAINER_ERR, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(match[3]))
 		}
 	}
-	return proto.ErrorCode_STATUS_CHECK_CONTAINER_WAITING_UNKNOWN, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(c.State.Waiting.Message))
+	return proto.StatusCode_STATUSCHECK_CONTAINER_WAITING_UNKNOWN, fmt.Errorf("container %s in error: %s", c.Name, trimSpace(c.State.Waiting.Message))
 }
 
 func newPodStatus(n string, ns string, p string) *podStatus {
 	return &podStatus{
-		name:      n,
-		namespace: ns,
-		phase:     p,
-		errCode:   proto.ErrorCode_STATUS_CHECK_NO_ERROR,
+		name:       n,
+		namespace:  ns,
+		phase:      p,
+		statusCode: proto.StatusCode_STATUSCHECK_SUCCESS,
 	}
 }
 

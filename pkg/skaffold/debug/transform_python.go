@@ -47,20 +47,19 @@ type ptvsdSpec struct {
 
 // isLaunchingPython determines if the arguments seems to be invoking python
 func isLaunchingPython(args []string) bool {
-	return args[0] == "python" || strings.HasSuffix(args[0], "/python") ||
-		args[0] == "python2" || strings.HasSuffix(args[0], "/python2") ||
-		args[0] == "python3" || strings.HasSuffix(args[0], "/python3")
+	return len(args) > 0 &&
+		(args[0] == "python" || strings.HasSuffix(args[0], "/python") ||
+			args[0] == "python2" || strings.HasSuffix(args[0], "/python2") ||
+			args[0] == "python3" || strings.HasSuffix(args[0], "/python3"))
 }
 
 func (t pythonTransformer) IsApplicable(config imageConfiguration) bool {
 	// We can only put Python in debug mode by modifying the python command line,
 	// so looking for Python-related environment variables is insufficient.
-	if len(config.entrypoint) > 0 {
+	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return isLaunchingPython(config.entrypoint)
-	} else if len(config.arguments) > 0 {
-		return isLaunchingPython(config.arguments)
 	}
-	return false
+	return isLaunchingPython(config.arguments)
 }
 
 // Apply configures a container definition for Python with pydev/ptvsd

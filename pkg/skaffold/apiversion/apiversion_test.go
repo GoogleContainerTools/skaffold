@@ -24,16 +24,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestMustParse(t *testing.T) {
-	MustParse("skaffold/v1alpha4")
-}
-
-func TestMustParse_panic(t *testing.T) {
-	defer testutil.EnsureTestPanicked(t)
-
-	MustParse("invalid version")
-}
-
 func TestParseVersion(t *testing.T) {
 	tests := []struct {
 		description string

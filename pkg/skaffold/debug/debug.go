@@ -25,7 +25,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/runtime"
-	serializer "k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
@@ -37,7 +37,7 @@ import (
 var (
 	decodeFromYaml = scheme.Codecs.UniversalDeserializer().Decode
 	encodeAsYaml   = func(o runtime.Object) ([]byte, error) {
-		s := serializer.NewYAMLSerializer(serializer.DefaultMetaFactory, scheme.Scheme, scheme.Scheme)
+		s := json.NewYAMLSerializer(json.DefaultMetaFactory, scheme.Scheme, scheme.Scheme)
 		var b bytes.Buffer
 		w := bufio.NewWriter(&b)
 		if err := s.Encode(o, w); err != nil {

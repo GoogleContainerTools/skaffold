@@ -18,7 +18,6 @@ package schema
 
 import (
 	"fmt"
-	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -59,58 +58,58 @@ var configWithReleasedComment = fmt.Sprintf(configFileTemplate, releasedComment+
 var configWithUnreleasedComment = fmt.Sprintf(configFileTemplate, unreleasedComment+"\n")
 
 func TestUpdateComments(t *testing.T) {
-	tcs := []struct {
-		name     string
-		orig     string
-		expected string
-		released bool
+	tests := []struct {
+		description string
+		orig        string
+		expected    string
+		released    bool
 	}{
 		{
-			name:     "unreleased comment added on file",
-			released: true,
-			orig:     configWithNoComment,
-			expected: configWithReleasedComment,
+			description: "unreleased comment added on file",
+			released:    true,
+			orig:        configWithNoComment,
+			expected:    configWithReleasedComment,
 		},
 		{
-			name:     "released comment added on file",
-			released: false,
-			orig:     configWithNoComment,
-			expected: configWithUnreleasedComment,
+			description: "released comment added on file",
+			released:    false,
+			orig:        configWithNoComment,
+			expected:    configWithUnreleasedComment,
 		},
 		{
-			name:     "released -> released",
-			released: true,
-			orig:     configWithReleasedComment,
-			expected: configWithReleasedComment,
+			description: "released -> released",
+			released:    true,
+			orig:        configWithReleasedComment,
+			expected:    configWithReleasedComment,
 		},
 		{
-			name:     "unreleased -> unreleased",
-			released: false,
-			orig:     configWithUnreleasedComment,
-			expected: configWithUnreleasedComment,
+			description: "unreleased -> unreleased",
+			released:    false,
+			orig:        configWithUnreleasedComment,
+			expected:    configWithUnreleasedComment,
 		},
 		{
-			name:     "released -> unreleased",
-			released: false,
-			orig:     configWithReleasedComment,
-			expected: configWithUnreleasedComment,
+			description: "released -> unreleased",
+			released:    false,
+			orig:        configWithReleasedComment,
+			expected:    configWithUnreleasedComment,
 		},
 		{
-			name:     "unreleased -> released",
-			released: true,
-			orig:     configWithUnreleasedComment,
-			expected: configWithReleasedComment,
+			description: "unreleased -> released",
+			released:    true,
+			orig:        configWithUnreleasedComment,
+			expected:    configWithReleasedComment,
 		},
 	}
 
-	for _, tc := range tcs {
-		testutil.Run(t, tc.name, func(t *testutil.T) {
-			dir := t.NewTempDir()
-			aFile := dir.Path("a.go")
-			t.CheckNoError(ioutil.WriteFile(aFile, []byte(tc.orig), 0666))
-			modified, err := updateVersionComment(aFile, tc.released)
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			tmpDir := t.NewTempDir().Write("a.go", test.orig)
+
+			modified, err := updateVersionComment(tmpDir.Path("a.go"), test.released)
+
 			t.CheckNoError(err)
-			t.CheckDeepEqual(tc.expected, string(modified))
+			t.CheckDeepEqual(test.expected, string(modified))
 		})
 	}
 }

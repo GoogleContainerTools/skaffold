@@ -23,11 +23,14 @@ import (
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
+// These are phases in a DevLoop
 const (
-	Build       = phase("Build")
-	Deploy      = phase("Deploy")
-	StatusCheck = phase("StatusCheck")
-	FileSync    = phase("FileSync")
+	Build       = Phase("Build")
+	Deploy      = Phase("Deploy")
+	StatusCheck = Phase("StatusCheck")
+	FileSync    = Phase("FileSync")
+	DevInit     = Phase("DevInit")
+	Cleanup     = Phase("Cleanup")
 )
 
 var (
@@ -35,10 +38,24 @@ var (
 	ErrNoSuggestionFound = fmt.Errorf("no suggestions found")
 )
 
-type phase string
+type Phase string
 
-func ErrorCodeFromError(err error, p phase) proto.ErrorCode {
-	return proto.ErrorCode_COULD_NOT_DETERMINE
+func ErrorCodeFromError(phase Phase, _ error) proto.StatusCode {
+	switch phase {
+	case Build:
+		return proto.StatusCode_BUILD_UNKNOWN
+	case Deploy:
+		return proto.StatusCode_DEPLOY_UNKNOWN
+	case StatusCheck:
+		return proto.StatusCode_STATUSCHECK_UNKNOWN
+	case FileSync:
+		return proto.StatusCode_SYNC_UNKNOWN
+	case DevInit:
+		return proto.StatusCode_DEVINIT_UNKNOWN
+	case Cleanup:
+		return proto.StatusCode_CLEANUP_UNKNOWN
+	}
+	return proto.StatusCode_UNKNOWN_ERROR
 }
 
 func ShowAIError(err error, opts config.SkaffoldOptions) error {

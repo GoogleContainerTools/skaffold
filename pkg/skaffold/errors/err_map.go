@@ -35,13 +35,13 @@ type problem struct {
 }
 
 // Build Problems are Errors in build phase
-var knownBuildProblems = map[proto.ErrorCode]problem{
-	proto.ErrorCode_BUILD_PUSH_ACCESS_DENIED: {
+var knownBuildProblems = map[proto.StatusCode]problem{
+	proto.StatusCode_BUILD_PUSH_ACCESS_DENIED: {
 		regexp:      re(".* pushing image: denied: .*"),
 		description: "Build Failed. No push access to specified image repository",
 		suggestion:  suggestBuildPushAccessDeniedAction,
 	},
-	proto.ErrorCode_BUILD_PROJECT_NOT_FOUND: {
+	proto.StatusCode_BUILD_PROJECT_NOT_FOUND: {
 		regexp:      re("build failed: pushing image: unknown: Project"),
 		description: "Build Failed",
 		suggestion:  func(_ config.SkaffoldOptions) string { return "Check your GCR project." },

@@ -40,7 +40,7 @@ import (
 var (
 	connectionRetries = 2
 	readRetries       = 20
-	numLogEntries     = 5
+	numLogEntries     = 7
 	waitTime          = 1 * time.Second
 )
 
@@ -111,22 +111,30 @@ func TestEventsRPC(t *testing.T) {
 			break
 		}
 	}
-	metaEntries, buildEntries, deployEntries := 0, 0, 0
+	metaEntries, buildEntries, deployEntries, devLoopEntries := 0, 0, 0, 0
 	for _, entry := range logEntries {
 		switch entry.Event.GetEventType().(type) {
 		case *proto.Event_MetaEvent:
 			metaEntries++
+			t.Logf("meta event %d: %v", metaEntries, entry.Event)
 		case *proto.Event_BuildEvent:
 			buildEntries++
+			t.Logf("build event %d: %v", buildEntries, entry.Event)
 		case *proto.Event_DeployEvent:
 			deployEntries++
+			t.Logf("deploy event %d: %v", deployEntries, entry.Event)
+		case *proto.Event_DevLoopEvent:
+			devLoopEntries++
+			t.Logf("devloop event event %d: %v", devLoopEntries, entry.Event)
 		default:
+			t.Logf("unknown event: %v", entry.Event)
 		}
 	}
-	// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries
+	// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries and 2 devLoopEntries
 	testutil.CheckDeepEqual(t, 1, metaEntries)
 	testutil.CheckDeepEqual(t, 2, deployEntries)
 	testutil.CheckDeepEqual(t, 2, buildEntries)
+	testutil.CheckDeepEqual(t, 2, devLoopEntries)
 }
 
 func TestEventLogHTTP(t *testing.T) {
@@ -183,7 +191,7 @@ func TestEventLogHTTP(t *testing.T) {
 					entryStr = strings.Replace(entryStr, "{\"result\":", "", 1)
 					entryStr = entryStr[:len(entryStr)-1]
 					if err := jsonpb.UnmarshalString(entryStr, &entry); err != nil {
-						t.Errorf("error converting http response to proto: %s", err.Error())
+						t.Errorf("error converting http response %s to proto: %s", entryStr, err.Error())
 					}
 					numEntries++
 					logEntries = append(logEntries, entry)
@@ -193,22 +201,30 @@ func TestEventLogHTTP(t *testing.T) {
 				}
 			}
 
-			metaEntries, buildEntries, deployEntries := 0, 0, 0
+			metaEntries, buildEntries, deployEntries, devLoopEntries := 0, 0, 0, 0
 			for _, entry := range logEntries {
 				switch entry.Event.GetEventType().(type) {
 				case *proto.Event_MetaEvent:
 					metaEntries++
+					t.Logf("meta event %d: %v", metaEntries, entry.Event)
 				case *proto.Event_BuildEvent:
 					buildEntries++
+					t.Logf("build event %d: %v", buildEntries, entry.Event)
 				case *proto.Event_DeployEvent:
 					deployEntries++
+					t.Logf("deploy event %d: %v", deployEntries, entry.Event)
+				case *proto.Event_DevLoopEvent:
+					devLoopEntries++
+					t.Logf("devloop event event %d: %v", devLoopEntries, entry.Event)
 				default:
+					t.Logf("unknown event: %v", entry.Event)
 				}
 			}
-			// make sure we have exactly 1 meta entry, 2 deploy entries and 2 build entries
+			// make sure we have exactly 1 meta entry, 2 deploy entries, 2 build entries and 2 devLoopEntries
 			testutil.CheckDeepEqual(t, 1, metaEntries)
 			testutil.CheckDeepEqual(t, 2, deployEntries)
 			testutil.CheckDeepEqual(t, 2, buildEntries)
+			testutil.CheckDeepEqual(t, 2, devLoopEntries)
 		})
 	}
 }
@@ -337,7 +353,7 @@ func setupSkaffoldWithArgs(t *testing.T, args ...string) {
 	// start a skaffold dev loop on an example
 	ns, _ := SetupNamespace(t)
 
-	skaffold.Dev(args...).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+	skaffold.Dev(append([]string{"--cache-artifacts=false"}, args...)...).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
 	t.Cleanup(func() {
 		Run(t, "testdata/dev", "rm", "foo")

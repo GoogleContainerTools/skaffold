@@ -53,7 +53,8 @@ func parseRuntimeObject(namespace string, b []byte) (*Artifact, error) {
 }
 
 func parseReleaseInfo(namespace string, b *bufio.Reader) []Artifact {
-	results := []Artifact{}
+	var results []Artifact
+
 	r := k8syaml.NewYAMLReader(b)
 	for {
 		doc, err := r.Read()
@@ -76,6 +77,7 @@ func parseReleaseInfo(namespace string, b *bufio.Reader) []Artifact {
 			results = append(results, *obj)
 		}
 	}
+
 	return results
 }
 

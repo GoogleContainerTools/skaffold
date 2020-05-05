@@ -110,9 +110,27 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]s
 		}
 	}
 
-	activated = append(activated, opts.Profiles...)
+	for _, profile := range opts.Profiles {
+		if strings.HasPrefix(profile, "-") {
+			activated = removeValue(activated, strings.TrimPrefix(profile, "-"))
+		} else {
+			activated = append(activated, profile)
+		}
+	}
 
 	return activated, contextSpecificProfiles, nil
+}
+
+func removeValue(values []string, value string) []string {
+	var updated []string
+
+	for _, v := range values {
+		if v != value {
+			updated = append(updated, v)
+		}
+	}
+
+	return updated
 }
 
 func isEnv(env string) (bool, error) {

@@ -80,7 +80,8 @@ func TestDeploy(t *testing.T) {
 
 	ns, client := SetupNamespace(t)
 
-	skaffold.Deploy("--images", "index.docker.io/library/busybox:1").InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	skaffold.Deploy("--images", "index.docker.io/library/busybox:1", "--default-repo=").InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
 
 	dep := client.GetDeployment("kustomize-test")
 	testutil.CheckDeepEqual(t, "index.docker.io/library/busybox:1", dep.Spec.Template.Spec.Containers[0].Image)
@@ -93,7 +94,8 @@ func TestDeployTail(t *testing.T) {
 
 	ns, _ := SetupNamespace(t)
 
-	out := skaffold.Deploy("--tail", "--images", "busybox:latest").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunBackground(t)
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	out := skaffold.Deploy("--tail", "--images", "busybox:latest", "--default-repo=").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunBackground(t)
 
 	// Wait for the logs to print "Hello world!"
 	lines := make(chan string)

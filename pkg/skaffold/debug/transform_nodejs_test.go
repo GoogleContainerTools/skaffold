@@ -152,6 +152,11 @@ func TestNodeTransformer_IsApplicable(t *testing.T) {
 			result:      false,
 		},
 		{
+			description: "`node` docker-entrypoint.sh",
+			source:      imageConfiguration{entrypoint: []string{"docker-entrypoint.sh"}, arguments: []string{"npm", "run", "dev"}},
+			result:      true,
+		},
+		{
 			description: "nothing",
 			source:      imageConfiguration{},
 			result:      false,
@@ -208,14 +213,13 @@ func TestNodeTransformer_Apply(t *testing.T) {
 		configuration imageConfiguration
 		result        v1.Container
 		debugConfig   ContainerDebugConfiguration
-		image         string
 	}{
 		{
 			description:   "empty",
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{},
 			result: v1.Container{
-				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=9229"}},
+				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=9229"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
@@ -226,6 +230,18 @@ func TestNodeTransformer_Apply(t *testing.T) {
 			configuration: imageConfiguration{entrypoint: []string{"node"}},
 			result: v1.Container{
 				Command: []string{"node", "--inspect=9229"},
+				Env:     []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
+				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+			},
+			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
+		},
+		{
+			description:   "entrypoint with PATH",
+			containerSpec: v1.Container{},
+			configuration: imageConfiguration{entrypoint: []string{"node"}, env: map[string]string{"PATH": "/usr/bin"}},
+			result: v1.Container{
+				Command: []string{"node", "--inspect=9229"},
+				Env:     []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin:/usr/bin"}},
 				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
@@ -238,6 +254,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 			configuration: imageConfiguration{entrypoint: []string{"node"}},
 			result: v1.Container{
 				Command: []string{"node", "--inspect=9229"},
+				Env:     []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "devtools", ContainerPort: 9229}},
 			},
 			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
@@ -250,6 +267,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 			configuration: imageConfiguration{entrypoint: []string{"node"}},
 			result: v1.Container{
 				Command: []string{"node", "--inspect=9229"},
+				Env:     []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
@@ -260,6 +278,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 			configuration: imageConfiguration{arguments: []string{"node"}},
 			result: v1.Container{
 				Args:  []string{"node", "--inspect=9229"},
+				Env:   []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
@@ -272,7 +291,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				entrypoint: []string{"docker-entrypoint.sh"},
 				arguments:  []string{"npm run script"}},
 			result: v1.Container{
-				Env:   []v1.EnvVar{{Name: "NODE_VERSION", Value: "10.12"}, {Name: "NODE_OPTIONS", Value: "--inspect=9229"}},
+				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=9229"}, {Name: "NODE_VERSION", Value: "10.12"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
@@ -289,7 +308,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 			t.CheckNil(err)
 			t.CheckDeepEqual(test.result, test.containerSpec)
 			t.CheckDeepEqual(test.debugConfig, config)
-			t.CheckDeepEqual(test.image, image) // always empty as we don't have a nodejs image
+			t.CheckDeepEqual("nodejs", image)
 		})
 	}
 }
@@ -305,42 +324,47 @@ func TestTransformManifestNodeJS(t *testing.T) {
 		{
 			"Pod with no transformable container",
 			&v1.Pod{
-				Spec: v1.PodSpec{Containers: []v1.Container{
-					{
-						Name:    "test",
-						Command: []string{"echo", "Hello World"},
-					},
-				}}},
+				Spec: v1.PodSpec{Containers: []v1.Container{{
+					Name:    "test",
+					Command: []string{"echo", "Hello World"},
+				}}}},
 			false,
 			&v1.Pod{
-				Spec: v1.PodSpec{Containers: []v1.Container{
-					{
-						Name:    "test",
-						Command: []string{"echo", "Hello World"},
-					},
-				}}},
+				Spec: v1.PodSpec{Containers: []v1.Container{{
+					Name:    "test",
+					Command: []string{"echo", "Hello World"},
+				}}}},
 		},
 		{
 			"Pod with NodeJS container",
 			&v1.Pod{
-				Spec: v1.PodSpec{Containers: []v1.Container{
-					{
-						Name:    "test",
-						Command: []string{"node", "foo.js"},
-					},
-				}}},
+				Spec: v1.PodSpec{Containers: []v1.Container{{
+					Name:    "test",
+					Command: []string{"node", "foo.js"},
+				}}}},
 			true,
 			&v1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"nodejs","ports":{"devtools":9229}}}`},
 				},
-				Spec: v1.PodSpec{Containers: []v1.Container{
-					{
-						Name:    "test",
-						Command: []string{"node", "--inspect=9229", "foo.js"},
-						Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
-					},
-				}}},
+				Spec: v1.PodSpec{
+					Containers: []v1.Container{{
+						Name:         "test",
+						Command:      []string{"node", "--inspect=9229", "foo.js"},
+						Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
+						Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+					}},
+					InitContainers: []v1.Container{{
+						Name:         "install-nodejs-support",
+						Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+					}},
+					Volumes: []v1.Volume{{
+						Name:         "debugging-support-files",
+						VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
+					}},
+				}},
 		},
 		{
 			"Deployment with NodeJS container",
@@ -348,12 +372,10 @@ func TestTransformManifestNodeJS(t *testing.T) {
 				Spec: appsv1.DeploymentSpec{
 					Replicas: int32p(2),
 					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
-								Name:    "test",
-								Command: []string{"node", "foo.js"},
-							},
-						}}}}},
+						Spec: v1.PodSpec{Containers: []v1.Container{{
+							Name:    "test",
+							Command: []string{"node", "foo.js"},
+						}}}}}},
 			true,
 			&appsv1.Deployment{
 				//ObjectMeta: metav1.ObjectMeta{
@@ -365,13 +387,24 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"nodejs","ports":{"devtools":9229}}}`},
 						},
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
-								Name:    "test",
-								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
-							},
-						}}}}},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{{
+								Name:         "test",
+								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							InitContainers: []v1.Container{{
+								Name:         "install-nodejs-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							Volumes: []v1.Volume{{
+								Name:         "debugging-support-files",
+								VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
+							}},
+						}}}},
 		},
 		{
 			"ReplicaSet with NodeJS container",
@@ -379,30 +412,36 @@ func TestTransformManifestNodeJS(t *testing.T) {
 				Spec: appsv1.ReplicaSetSpec{
 					Replicas: int32p(2),
 					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
-								Name:    "test",
-								Command: []string{"node", "foo.js"},
-							},
-						}}}}},
+						Spec: v1.PodSpec{Containers: []v1.Container{{
+							Name:    "test",
+							Command: []string{"node", "foo.js"},
+						}}}}}},
 			true,
 			&appsv1.ReplicaSet{
-				//ObjectMeta: metav1.ObjectMeta{
-				//	Labels: map[string]string{"debug.cloud.google.com/enabled": `yes`},
-				//},
 				Spec: appsv1.ReplicaSetSpec{
 					Replicas: int32p(1),
 					Template: v1.PodTemplateSpec{
 						ObjectMeta: metav1.ObjectMeta{
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"nodejs","ports":{"devtools":9229}}}`},
 						},
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
-								Name:    "test",
-								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
-							},
-						}}}}},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{{
+								Name:         "test",
+								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							InitContainers: []v1.Container{{
+								Name:         "install-nodejs-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							Volumes: []v1.Volume{{
+								Name:         "debugging-support-files",
+								VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
+							}},
+						}}}},
 		},
 		{
 			"StatefulSet with NodeJS container",
@@ -410,12 +449,10 @@ func TestTransformManifestNodeJS(t *testing.T) {
 				Spec: appsv1.StatefulSetSpec{
 					Replicas: int32p(2),
 					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
-								Name:    "test",
-								Command: []string{"node", "foo.js"},
-							},
-						}}}}},
+						Spec: v1.PodSpec{Containers: []v1.Container{{
+							Name:    "test",
+							Command: []string{"node", "foo.js"},
+						}}}}}},
 			true,
 			&appsv1.StatefulSet{
 				//ObjectMeta: metav1.ObjectMeta{
@@ -427,25 +464,34 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"nodejs","ports":{"devtools":9229}}}`},
 						},
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
-								Name:    "test",
-								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
-							},
-						}}}}},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{{
+								Name:         "test",
+								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							InitContainers: []v1.Container{{
+								Name:         "install-nodejs-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							Volumes: []v1.Volume{{
+								Name:         "debugging-support-files",
+								VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
+							}},
+						}}}},
 		},
 		{
 			"DaemonSet with NodeJS container",
 			&appsv1.DaemonSet{
 				Spec: appsv1.DaemonSetSpec{
 					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
-								Name:    "test",
-								Command: []string{"node", "foo.js"},
-							},
-						}}}}},
+						Spec: v1.PodSpec{Containers: []v1.Container{{
+							Name:    "test",
+							Command: []string{"node", "foo.js"},
+						}}}}}},
 			true,
 			&appsv1.DaemonSet{
 				//ObjectMeta: metav1.ObjectMeta{
@@ -456,25 +502,35 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"nodejs","ports":{"devtools":9229}}}`},
 						},
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
-								Name:    "test",
-								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
-							},
-						}}}}},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{{
+								Name:         "test",
+								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							InitContainers: []v1.Container{{
+								Name:         "install-nodejs-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							Volumes: []v1.Volume{{
+								Name:         "debugging-support-files",
+								VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
+							}},
+						}}}},
 		},
 		{
 			"Job with NodeJS container",
 			&batchv1.Job{
 				Spec: batchv1.JobSpec{
 					Template: v1.PodTemplateSpec{
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{{
 								Name:    "test",
 								Command: []string{"node", "foo.js"},
-							},
-						}}}}},
+							}}}}}},
 			true,
 			&batchv1.Job{
 				//ObjectMeta: metav1.ObjectMeta{
@@ -485,13 +541,24 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"nodejs","ports":{"devtools":9229}}}`},
 						},
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
-								Name:    "test",
-								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
-							},
-						}}}}},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{{
+								Name:         "test",
+								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							InitContainers: []v1.Container{{
+								Name:         "install-nodejs-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							Volumes: []v1.Volume{{
+								Name:         "debugging-support-files",
+								VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
+							}},
+						}}}},
 		},
 		{
 			"ReplicationController with NodeJS container",
@@ -516,55 +583,74 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						ObjectMeta: metav1.ObjectMeta{
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"nodejs","ports":{"devtools":9229}}}`},
 						},
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
-								Name:    "test",
-								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
-							},
-						}}}}},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{{
+								Name:         "test",
+								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							InitContainers: []v1.Container{{
+								Name:         "install-nodejs-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							Volumes: []v1.Volume{{
+								Name:         "debugging-support-files",
+								VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
+							}},
+						}}}},
 		},
 		{
 			"PodList with Java and non-Java container",
 			&v1.PodList{
 				Items: []v1.Pod{
 					{
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
-								Name:    "echo",
-								Command: []string{"echo", "Hello World"},
-							},
+						Spec: v1.PodSpec{Containers: []v1.Container{{
+							Name:    "echo",
+							Command: []string{"echo", "Hello World"},
 						}}},
+					},
 					{
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
-								Name:    "test",
-								Command: []string{"node", "foo.js"},
-							},
+						Spec: v1.PodSpec{Containers: []v1.Container{{
+							Name:    "test",
+							Command: []string{"node", "foo.js"},
 						}}},
+					},
 				}},
 			true,
 			&v1.PodList{
 				Items: []v1.Pod{
 					{
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{{
 								Name:    "echo",
 								Command: []string{"echo", "Hello World"},
-							},
-						}}},
+							}}},
+					},
 					{
 						ObjectMeta: metav1.ObjectMeta{
 							Annotations: map[string]string{"debug.cloud.google.com/config": `{"test":{"runtime":"nodejs","ports":{"devtools":9229}}}`},
 						},
-						Spec: v1.PodSpec{Containers: []v1.Container{
-							{
-								Name:    "test",
-								Command: []string{"node", "--inspect=9229", "foo.js"},
-								Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
-							},
-						}}},
-				}},
+						Spec: v1.PodSpec{
+							Containers: []v1.Container{{
+								Name:         "test",
+								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
+								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							InitContainers: []v1.Container{{
+								Name:         "install-nodejs-support",
+								Image:        "gcr.io/gcp-dev-tools/duct-tape/nodejs",
+								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
+							}},
+							Volumes: []v1.Volume{{
+								Name:         "debugging-support-files",
+								VolumeSource: v1.VolumeSource{EmptyDir: &v1.EmptyDirVolumeSource{}},
+							}}},
+					}}},
 		},
 	}
 	for _, test := range tests {

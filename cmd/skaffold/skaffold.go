@@ -19,7 +19,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
@@ -31,7 +30,7 @@ import (
 func main() {
 	if err := app.Run(os.Stdout, os.Stderr); err != nil {
 		if errors.Is(err, context.Canceled) {
-			logrus.Debugln(fmt.Errorf("ignore error since context is cancelled: %w", err))
+			logrus.Debugln("ignore error since context is cancelled:", err)
 		} else {
 			color.Red.Fprintln(os.Stderr, err)
 			os.Exit(1)

@@ -166,8 +166,8 @@ func DeployInProgress() {
 
 // DeployFailed notifies that non-fatal errors were encountered during a deployment.
 func DeployFailed(err error) {
-	errCode := sErrors.ErrorCodeFromError(err, sErrors.Deploy)
-	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error(), ErrCode: errCode})
+	statusCode := sErrors.ErrorCodeFromError(sErrors.Deploy, err)
+	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error(), StatusCode: statusCode})
 }
 
 // DeployEvent notifies that a deployment of non fatal interesting errors during deploy.
@@ -182,11 +182,11 @@ func StatusCheckEventSucceeded() {
 }
 
 func StatusCheckEventFailed(err error) {
-	errCode := sErrors.ErrorCodeFromError(err, sErrors.StatusCheck)
+	statusCode := sErrors.ErrorCodeFromError(sErrors.StatusCheck, err)
 	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
-		Status:  Failed,
-		Err:     err.Error(),
-		ErrCode: errCode,
+		Status:     Failed,
+		Err:        err.Error(),
+		StatusCode: statusCode,
 	})
 }
 
@@ -239,13 +239,40 @@ func BuildInProgress(imageName string) {
 
 // BuildFailed notifies that a build has failed.
 func BuildFailed(imageName string, err error) {
-	errCode := sErrors.ErrorCodeFromError(err, sErrors.Build)
-	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Failed, Err: err.Error(), ErrCode: errCode})
+	statusCode := sErrors.ErrorCodeFromError(sErrors.Build, err)
+	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Failed, Err: err.Error(), StatusCode: statusCode})
 }
 
 // BuildComplete notifies that a build has completed.
 func BuildComplete(imageName string) {
 	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Complete})
+}
+
+// DevLoopInProgress notifies that a dev loop has been started.
+func DevLoopInProgress(i int) {
+	handler.handleDevLoopEvent(&proto.DevLoopEvent{Iteration: int32(i), Status: InProgress})
+}
+
+// DevLoopFailed notifies that a dev loop has failed with an error code
+func DevLoopFailedWithErrorCode(i int, errCode proto.StatusCode, err error) {
+	handler.handleDevLoopEvent(&proto.DevLoopEvent{
+		Iteration: int32(i),
+		Status:    Failed,
+		Err: &proto.ErrDef{
+			ErrCode: errCode,
+			Message: err.Error(),
+		}})
+}
+
+// DevLoopFailed notifies that a dev loop has failed in a given phase
+func DevLoopFailedInPhase(iteration int, phase sErrors.Phase, err error) {
+	statusCode := sErrors.ErrorCodeFromError(phase, err)
+	DevLoopFailedWithErrorCode(iteration, statusCode, err)
+}
+
+// DevLoopComplete notifies that a dev loop has completed.
+func DevLoopComplete(i int) {
+	handler.handleDevLoopEvent(&proto.DevLoopEvent{Iteration: int32(i), Status: Succeeded})
 }
 
 // FileSyncInProgress notifies that a file sync has been started.
@@ -255,8 +282,8 @@ func FileSyncInProgress(fileCount int, image string) {
 
 // FileSyncFailed notifies that a file sync has failed.
 func FileSyncFailed(fileCount int, image string, err error) {
-	errCode := sErrors.ErrorCodeFromError(err, sErrors.FileSync)
-	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed, Err: err.Error(), ErrCode: errCode})
+	statusCode := sErrors.ErrorCodeFromError(sErrors.FileSync, err)
+	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed, Err: err.Error(), StatusCode: statusCode})
 }
 
 // FileSyncSucceeded notifies that a file sync has succeeded.
@@ -353,6 +380,14 @@ func (ev *eventHandler) handleBuildEvent(e *proto.BuildEvent) {
 	go ev.handle(&proto.Event{
 		EventType: &proto.Event_BuildEvent{
 			BuildEvent: e,
+		},
+	})
+}
+
+func (ev *eventHandler) handleDevLoopEvent(e *proto.DevLoopEvent) {
+	go ev.handle(&proto.Event{
+		EventType: &proto.Event_DevLoopEvent{
+			DevLoopEvent: e,
 		},
 	})
 }
@@ -492,6 +527,16 @@ func (ev *eventHandler) handle(event *proto.Event) {
 			logEntry.Entry = fmt.Sprintf("Debuggable container started pod/%s:%s (%s)", de.PodName, de.ContainerName, de.Namespace)
 		case Terminated:
 			logEntry.Entry = fmt.Sprintf("Debuggable container terminated pod/%s:%s (%s)", de.PodName, de.ContainerName, de.Namespace)
+		}
+	case *proto.Event_DevLoopEvent:
+		de := e.DevLoopEvent
+		switch de.Status {
+		case InProgress:
+			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d in progress", de.Iteration)
+		case Succeeded:
+			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d successful", de.Iteration)
+		case Failed:
+			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d failed with error code %v", de.Iteration, de.Err.ErrCode)
 		}
 	default:
 		return

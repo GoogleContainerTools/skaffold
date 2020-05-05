@@ -18,6 +18,7 @@ package debug
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -181,6 +182,52 @@ func TestSetEnvVar(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			result := setEnvVar(test.in, "name", "new-text")
+			t.CheckDeepEqual(test.expected, result)
+		})
+	}
+}
+
+func TestShJoin(t *testing.T) {
+	tests := []struct {
+		in     []string
+		result string
+	}{
+		{[]string{}, ""},
+		{[]string{"a"}, "a"},
+		{[]string{"a b"}, `"a b"`},
+		{[]string{`a"b`}, `"a\"b"`},
+		{[]string{`a"b`}, `"a\"b"`},
+		{[]string{"a", `a"b`, "b c"}, `a "a\"b" "b c"`},
+	}
+	for _, test := range tests {
+		testutil.Run(t, strings.Join(test.in, " "), func(t *testutil.T) {
+			result := shJoin(test.in)
+			t.CheckDeepEqual(test.result, result)
+		})
+	}
+}
+
+func TestIsEntrypointLauncher(t *testing.T) {
+	// make full copy of entrypointLaunchers
+	oldEntrypointLaunchers := append(entrypointLaunchers[:0:0], entrypointLaunchers...)
+	entrypointLaunchers = append(entrypointLaunchers, "foo")
+	t.Cleanup(func() {
+		entrypointLaunchers = oldEntrypointLaunchers
+	})
+
+	tests := []struct {
+		description string
+		entrypoint  []string
+		expected    bool
+	}{
+		{"nil", nil, false},
+		{"expected case", []string{"foo"}, true},
+		{"unexpected arg", []string{"foo", "bar"}, false},
+		{"unexpected entrypoint", []string{"bar"}, false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result := isEntrypointLauncher(test.entrypoint)
 			t.CheckDeepEqual(test.expected, result)
 		})
 	}

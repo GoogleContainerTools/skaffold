@@ -20,13 +20,9 @@ import (
 	"reflect"
 )
 
-func (t *T) CheckErrorAndTypeEquality(shouldErr bool, err error, expected, actual interface{}) {
+func (t *T) CheckTypeEquality(expected, actual interface{}) {
 	t.Helper()
 
-	if err := checkErr(shouldErr, err); err != nil {
-		t.Error(err)
-		return
-	}
 	expectedType := reflect.TypeOf(expected)
 	actualType := reflect.TypeOf(actual)
 

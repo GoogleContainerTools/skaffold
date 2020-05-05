@@ -19,12 +19,12 @@ package kubernetes
 import (
 	"fmt"
 
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
 // AggregatePodWatcher returns a watcher for multiple namespaces.
-func AggregatePodWatcher(namespaces []string, aggregate chan<- watch.Event) (func(), error) {
+func AggregatePodWatcher(labelSelector string, namespaces []string, aggregate chan<- watch.Event) (func(), error) {
 	watchers := make([]watch.Interface, 0, len(namespaces))
 	stopWatchers := func() {
 		for _, w := range watchers {
@@ -40,8 +40,9 @@ func AggregatePodWatcher(namespaces []string, aggregate chan<- watch.Event) (fun
 	var forever int64 = 3600 * 24 * 365 * 100
 
 	for _, ns := range namespaces {
-		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(meta_v1.ListOptions{
+		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(metav1.ListOptions{
 			TimeoutSeconds: &forever,
+			LabelSelector:  labelSelector,
 		})
 		if err != nil {
 			stopWatchers()
