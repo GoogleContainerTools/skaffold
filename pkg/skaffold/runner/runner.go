@@ -81,7 +81,7 @@ type SkaffoldRunner struct {
 
 // for testing
 var (
-	statusCheck = deploy.statusCheck
+	statusCheck = deploy.StatusCheck
 )
 
 // HasDeployed returns true if this runner has deployed something.

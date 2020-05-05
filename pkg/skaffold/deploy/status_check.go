@@ -62,17 +62,14 @@ type counter struct {
 	failed  int32
 }
 
-type StatusCheck struct {
-	err error
-}
-
-func Execute(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) {
+func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	event.StatusCheckEventStarted()
 	if err := statusCheck(ctx, defaultLabeller, runCtx, out); err != nil {
 		event.StatusCheckEventFailed(err)
-		return
+		return err
 	}
 	event.StatusCheckEventSucceeded()
+	return nil
 }
 
 func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
