@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -63,7 +63,6 @@ kind: Pod
 metadata:
   labels:
     key0: value0
-    key1: ignored
   name: getting-started
 spec:
   containers:
@@ -87,6 +86,7 @@ spec:
 `)}
 
 	resultManifest, err := manifests.SetLabels(map[string]string{
+		"key0": "should-be-ignored",
 		"key1": "value1",
 		"key2": "value2",
 	})
