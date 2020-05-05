@@ -17,7 +17,6 @@ limitations under the License.
 package event
 
 import (
-	"encoding/json"
 	"sort"
 	"testing"
 
@@ -85,8 +84,8 @@ func TestEmptyState(t *testing.T) {
 					NumberOfArtifacts: 3,
 					Type:              proto.BuildType_CLUSTER,
 					Builders: []*proto.BuildMetadata_Builder{
-						{Type: proto.BuilderType_DOCKER, Count: 2},
 						{Type: proto.BuilderType_JIB, Count: 1},
+						{Type: proto.BuilderType_DOCKER, Count: 2},
 					},
 				},
 				Deploy: &proto.DeployMetadata{
@@ -125,7 +124,9 @@ func TestEmptyState(t *testing.T) {
 			},
 			cluster: "some-private",
 			expected: &proto.Metadata{
-				Build: &proto.BuildMetadata{},
+				Build: &proto.BuildMetadata{
+					Builders: []*proto.BuildMetadata_Builder{},
+				},
 				Deploy: &proto.DeployMetadata{
 					Cluster:   proto.ClusterType_OTHER,
 					Deployers: []*proto.DeployMetadata_Deployer{{Type: proto.DeployerType_KUSTOMIZE, Count: 1}},
@@ -138,32 +139,12 @@ func TestEmptyState(t *testing.T) {
 			handler = &eventHandler{
 				state: emptyState(test.cfg, test.cluster),
 			}
-			// sort arrays and compare
-			actual := sorted(handler.state.Metadata)
-			t.CheckDeepEqual(actual, test.expected)
+			metadata := handler.state.Metadata
+			builders := metadata.Build.Builders
+
+			// sort and compare
+			sort.Slice(builders, func(i, j int) bool { return builders[i].Type < builders[j].Type })
+			t.CheckDeepEqual(metadata, test.expected)
 		})
 	}
-}
-
-func sorted(s *proto.Metadata) *proto.Metadata {
-	var r proto.Metadata
-	buf, _ := json.Marshal(s)
-	json.Unmarshal(buf, &r)
-
-	if l := len(s.Build.Builders); l == 1 {
-		return &r
-	}
-	// Sort builders
-	keys := make([]string, len(s.Build.Builders))
-	m := map[string]*proto.BuildMetadata_Builder{}
-	for i, b := range s.Build.Builders {
-		keys[i] = b.Type.String()
-		m[b.Type.String()] = b
-	}
-	sort.Strings(keys)
-	for i, k := range keys {
-		r.Build.Builders[i] = m[k]
-	}
-
-	return &r
 }
