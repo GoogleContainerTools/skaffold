@@ -106,8 +106,7 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 
 	// Wait for all deployment status to be fetched
 	wg.Wait()
-	err = getSkaffoldDeployStatus(rc.deployments)
-	return err
+	return getSkaffoldDeployStatus(rc.deployments)
 }
 
 func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, deadlineDuration time.Duration) ([]Resource, error) {
