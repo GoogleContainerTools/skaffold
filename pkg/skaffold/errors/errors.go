@@ -17,6 +17,9 @@ limitations under the License.
 package errors
 
 import (
+	"fmt"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
@@ -28,6 +31,11 @@ const (
 	FileSync    = Phase("FileSync")
 	DevInit     = Phase("DevInit")
 	Cleanup     = Phase("Cleanup")
+)
+
+var (
+	// ErrNoSuggestionFound error not found
+	ErrNoSuggestionFound = fmt.Errorf("no suggestions found")
 )
 
 type Phase string
@@ -48,4 +56,15 @@ func ErrorCodeFromError(phase Phase, _ error) proto.StatusCode {
 		return proto.StatusCode_CLEANUP_UNKNOWN
 	}
 	return proto.StatusCode_UNKNOWN_ERROR
+}
+
+func ShowAIError(err error, opts config.SkaffoldOptions) error {
+	for _, v := range knownBuildProblems {
+		if v.regexp.MatchString(err.Error()) {
+			if s := v.suggestion(opts); s != "" {
+				return fmt.Errorf("%s. %s", v.description, s)
+			}
+		}
+	}
+	return ErrNoSuggestionFound
 }

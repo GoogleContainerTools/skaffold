@@ -689,6 +689,9 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | ---- | ------ | ----------- |
 | UNKNOWN_ERROR | 0 | Could not determine error and phase |
 | STATUSCHECK_SUCCESS | 200 | Status Check Success |
+| BUILD_SUCCESS | 201 | Build Success |
+| BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
+| BUILD_PROJECT_NOT_FOUND | 102 | Build error due to GCP project not found. |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
