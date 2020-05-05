@@ -1,0 +1,4 @@
+resources:
+  - deployment.yaml
+patches:
+  - patch.yaml
