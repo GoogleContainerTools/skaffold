@@ -73,7 +73,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
 				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
-				proto.ErrorCode_STATUS_CHECK_IMAGE_PULL_ERR)},
+				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
 		},
 		{
 			description: "pod is in Terminated State",
@@ -88,7 +88,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil,
-				proto.ErrorCode_STATUS_CHECK_NO_ERROR)},
+				proto.StatusCode_STATUSCHECK_SUCCESS)},
 		},
 		{
 			description: "pod is in Stable State",
@@ -109,7 +109,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Running", nil,
-				proto.ErrorCode_STATUS_CHECK_NO_ERROR)},
+				proto.StatusCode_STATUSCHECK_SUCCESS)},
 		},
 		{
 			description: "pod condition unknown",
@@ -128,7 +128,7 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("could not determine"), proto.ErrorCode_STATUS_CHECK_UNKNOWN)},
+				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN)},
 		},
 		{
 			description: "pod could not be scheduled",
@@ -149,7 +149,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
 				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"),
-				proto.ErrorCode_STATUS_CHECK_NODE_DISK_PRESSURE)},
+				proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE)},
 		},
 		{
 			description: "pod is running but container terminated",
@@ -171,7 +171,7 @@ func TestRun(t *testing.T) {
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Running",
 				fmt.Errorf("container foo-container terminated with exit code 1"),
-				proto.ErrorCode_STATUS_CHECK_CONTAINER_TERMINATED)},
+				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED)},
 		},
 	}
 

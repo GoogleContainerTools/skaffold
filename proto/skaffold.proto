@@ -104,7 +104,22 @@ message Event {
         ResourceStatusCheckEvent resourceStatusCheckEvent = 6; // indicates progress for each kubernetes deployment.
         FileSyncEvent fileSyncEvent = 7; // describes the sync status.
         DebuggingContainerEvent debuggingContainerEvent = 8; // describes the appearance or disappearance of a debugging container
+        DevLoopEvent devLoopEvent = 9; // describes a start and end of a dev loop.
     }
+}
+
+// `DevLoopEvent` marks the start and end of a dev loop.
+message DevLoopEvent {
+    int32 iteration = 1; // dev loop iteration. 0 represents initialization loop.
+    string status = 2; // dev loop status oneof: In Progress, Completed, Failed
+    ErrDef err = 3; // actionable error message
+
+}
+
+// `ErrDef` defines an error occurred along with an optional suggestions
+message ErrDef {
+    StatusCode errCode = 1; // error code representing the error
+    string message = 2; // message describing the error.
 }
 
 // `MetaEvent` provides general information regarding Skaffold
@@ -121,7 +136,7 @@ message BuildEvent {
     string artifact = 1; // artifact name
     string status = 2; // artifact build status oneof: InProgress, Completed, Failed
     string err = 3; // error when build status is Failed.
-    ErrorCode errCode = 4; // error code representing the error
+    StatusCode statusCode = 4; // status code representing success or failure
 }
 
 // `DeployEvent` represents the status of a deployment, and is emitted by Skaffold
@@ -129,7 +144,7 @@ message BuildEvent {
 message DeployEvent {
     string status = 1; // deployment status oneof: InProgress, Completed, Failed
     string err = 2; // error when status is Failed
-    ErrorCode errCode = 3; // error code representing the error
+    StatusCode statusCode = 3; // status code representing success or failure
 }
 
 // `StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed.
@@ -137,7 +152,7 @@ message StatusCheckEvent {
     string status = 1;
     string message = 2;
     string err = 3;
-    ErrorCode errCode = 4; // error code representing the error
+    StatusCode statusCode = 4; // status code representing success or failure
 }
 
 // A Resource StatusCheck Event, indicates progress for each kubernetes deployment.
@@ -171,7 +186,7 @@ message FileSyncEvent {
     string image = 2; // the container image to which files are sycned.
     string status = 3; // status of file sync. one of: Not Started, In progress, Succeeded, Failed.
     string err = 4; // error in case of status failed.
-    ErrorCode errCode = 5; // error code representing the error
+    StatusCode statusCode = 5; // status code representing success or failure
 }
 
 // DebuggingContainerEvent is raised when a debugging container is started or terminated
@@ -302,53 +317,87 @@ enum ClusterType {
     OTHER = 3;
 }
 
-// Enum for error codes
-enum ErrorCode {
-    // Could not determine error
-    COULD_NOT_DETERMINE = 0;
+// Enum for Status codes
+// These error codes are prepended by Phase Name e.g.
+// BUILD, DEPLOY, STATUSCHECK, DEVINIT
+enum StatusCode {
+    // Could not determine error and phase
+    UNKNOWN_ERROR = 0;
 
     // No Error codes
 
     // Status Check Success
-    STATUS_CHECK_NO_ERROR = 200;
+    STATUSCHECK_SUCCESS = 200;
 
 
     // Container errors
 
     // Container image pull error
-    STATUS_CHECK_IMAGE_PULL_ERR = 300;
+    STATUSCHECK_IMAGE_PULL_ERR = 300;
     // Container creating error
-    STATUS_CHECK_CONTAINER_CREATING = 301;
+    STATUSCHECK_CONTAINER_CREATING = 301;
     // Container run error
-    STATUS_CHECK_RUN_CONTAINER_ERR = 302;
+    STATUSCHECK_RUN_CONTAINER_ERR = 302;
     // Container is already terminated
-    STATUS_CHECK_CONTAINER_TERMINATED = 303;
+    STATUSCHECK_CONTAINER_TERMINATED = 303;
     // Container restarting error
-    STATUS_CHECK_CONTAINER_RESTARTING = 356;
+    STATUSCHECK_CONTAINER_RESTARTING = 356;
 
     // K8 infra errors
 
     // Node memory pressure error
-    STATUS_CHECK_NODE_MEMORY_PRESSURE = 400;
+    STATUSCHECK_NODE_MEMORY_PRESSURE = 400;
     // Node disk pressure error
-    STATUS_CHECK_NODE_DISK_PRESSURE = 401;
+    STATUSCHECK_NODE_DISK_PRESSURE = 401;
     // Node network unavailable error
-    STATUS_CHECK_NODE_NETWORK_UNAVAILABLE = 402;
+    STATUSCHECK_NODE_NETWORK_UNAVAILABLE = 402;
     // Node PID pressure error
-    STATUS_CHECK_NODE_PID_PRESSURE = 403;
+    STATUSCHECK_NODE_PID_PRESSURE = 403;
     // Node unschedulable error
-    STATUS_CHECK_NODE_UNSCHEDULABLE= 404;
+    STATUSCHECK_NODE_UNSCHEDULABLE= 404;
     // Node unreachable error
-    STATUS_CHECK_NODE_UNREACHABLE = 405;
+    STATUSCHECK_NODE_UNREACHABLE = 405;
     // Node not ready error
-    STATUS_CHECK_NODE_NOT_READY= 406;
+    STATUSCHECK_NODE_NOT_READY= 406;
 
     // Unknown Error Codes
 
     // Status Check error unknown
-    STATUS_CHECK_UNKNOWN = 501;
+    STATUSCHECK_UNKNOWN = 501;
     // Container is unschedulable due to unknown reasons
-    STATUS_CHECK_UNKNOWN_UNSCHEDULABLE = 502;
+    STATUSCHECK_UNKNOWN_UNSCHEDULABLE = 502;
     // Container is waiting due to unknown reason
-    STATUS_CHECK_CONTAINER_WAITING_UNKNOWN = 503;
+    STATUSCHECK_CONTAINER_WAITING_UNKNOWN = 503;
+    // Deploy failed due to unknown reason
+    DEPLOY_UNKNOWN = 504;
+    // SYNC failed due to known reason
+    SYNC_UNKNOWN = 505;
+    // Build failed due to unknown reason
+    BUILD_UNKNOWN= 506;
+    // Dev Init failed due to unknown reason
+    DEVINIT_UNKNOWN = 507;
+    // Cleanup failed due to unknown reason
+    CLEANUP_UNKNOWN = 508;
+
+
+
+
+
+    // FILE_SYNC Failures
+
+    // File Sync Initialize failure
+    SYNC_INIT_ERROR = 601;
+
+
+    // DevInit Errors
+
+    // Failed to configure watcher for build dependencies in dev loop
+    DEVINIT_REGISTER_BUILD_DEPS = 701;
+    // Failed to configure watcher for test dependencies in dev loop
+    DEVINIT_REGISTER_TEST_DEPS = 702;
+    // Failed to configure watcher for deploy dependencies in dev loop
+    DEVINIT_REGISTER_DEPLOY_DEPS = 703;
+    // Failed to configure watcher for Skaffold configuration file.
+    DEVINIT_REGISTER_CONFIG_DEP = 704;
+
 }

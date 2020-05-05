@@ -77,6 +77,7 @@ type SkaffoldRunner struct {
 	hasBuilt       bool
 	hasDeployed    bool
 	intents        *intents
+	devIteration   int
 }
 
 // for testing

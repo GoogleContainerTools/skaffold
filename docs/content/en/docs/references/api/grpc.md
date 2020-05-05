@@ -60,7 +60,7 @@ If the build fails, an error will be attached to the event.
 | artifact | [string](#string) |  | artifact name |
 | status | [string](#string) |  | artifact build status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | error when build status is Failed. |
-| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
+| statusCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
@@ -197,7 +197,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | error when status is Failed |
-| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
+| statusCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
@@ -252,6 +252,39 @@ anytime a deployment starts or completes, successfully or not.
 
 
 
+<a name="proto.DevLoopEvent"></a>
+#### DevLoopEvent
+`DevLoopEvent` marks the start and end of a dev loop.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| iteration | [int32](#int32) |  | dev loop iteration. 0 represents initialization loop. |
+| status | [string](#string) |  | dev loop status oneof: In Progress, Completed, Failed |
+| err | [ErrDef](#proto.ErrDef) |  | actionable error message |
+
+
+
+
+
+
+
+<a name="proto.ErrDef"></a>
+#### ErrDef
+`ErrDef` defines an error occurred along with an optional suggestions
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| errCode | [StatusCode](#proto.StatusCode) |  | error code representing the error |
+| message | [string](#string) |  | message describing the error. |
+
+
+
+
+
+
+
 <a name="proto.Event"></a>
 #### Event
 `Event` describes an event in the Skaffold process.
@@ -268,6 +301,7 @@ It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, Re
 | resourceStatusCheckEvent | [ResourceStatusCheckEvent](#proto.ResourceStatusCheckEvent) |  | indicates progress for each kubernetes deployment. |
 | fileSyncEvent | [FileSyncEvent](#proto.FileSyncEvent) |  | describes the sync status. |
 | debuggingContainerEvent | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) |  | describes the appearance or disappearance of a debugging container |
+| devLoopEvent | [DevLoopEvent](#proto.DevLoopEvent) |  | describes a start and end of a dev loop. |
 
 
 
@@ -286,7 +320,7 @@ FileSyncEvent describes the sync status.
 | image | [string](#string) |  | the container image to which files are sycned. |
 | status | [string](#string) |  | status of file sync. one of: Not Started, In progress, Succeeded, Failed. |
 | err | [string](#string) |  | error in case of status failed. |
-| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
+| statusCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
@@ -529,7 +563,7 @@ will be sent with the new status.
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 | err | [string](#string) |  |  |
-| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
+| statusCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
@@ -644,30 +678,42 @@ Enum indicating deploy tools used
 
 
 
-<a name="proto.ErrorCode"></a>
+<a name="proto.StatusCode"></a>
 
-### ErrorCode
-Enum for error codes
+### StatusCode
+Enum for Status codes
+These error codes are prepended by Phase Name e.g.
+BUILD, DEPLOY, STATUSCHECK, DEVINIT
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| COULD_NOT_DETERMINE | 0 | Could not determine error |
-| STATUS_CHECK_NO_ERROR | 200 | Status Check Success |
-| STATUS_CHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
-| STATUS_CHECK_CONTAINER_CREATING | 301 | Container creating error |
-| STATUS_CHECK_RUN_CONTAINER_ERR | 302 | Container run error |
-| STATUS_CHECK_CONTAINER_TERMINATED | 303 | Container is already terminated |
-| STATUS_CHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
-| STATUS_CHECK_NODE_MEMORY_PRESSURE | 400 | Node memory pressure error |
-| STATUS_CHECK_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
-| STATUS_CHECK_NODE_NETWORK_UNAVAILABLE | 402 | Node network unavailable error |
-| STATUS_CHECK_NODE_PID_PRESSURE | 403 | Node PID pressure error |
-| STATUS_CHECK_NODE_UNSCHEDULABLE | 404 | Node unschedulable error |
-| STATUS_CHECK_NODE_UNREACHABLE | 405 | Node unreachable error |
-| STATUS_CHECK_NODE_NOT_READY | 406 | Node not ready error |
-| STATUS_CHECK_UNKNOWN | 501 | Status Check error unknown |
-| STATUS_CHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |
-| STATUS_CHECK_CONTAINER_WAITING_UNKNOWN | 503 | Container is waiting due to unknown reason |
+| UNKNOWN_ERROR | 0 | Could not determine error and phase |
+| STATUSCHECK_SUCCESS | 200 | Status Check Success |
+| STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
+| STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
+| STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
+| STATUSCHECK_CONTAINER_TERMINATED | 303 | Container is already terminated |
+| STATUSCHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
+| STATUSCHECK_NODE_MEMORY_PRESSURE | 400 | Node memory pressure error |
+| STATUSCHECK_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
+| STATUSCHECK_NODE_NETWORK_UNAVAILABLE | 402 | Node network unavailable error |
+| STATUSCHECK_NODE_PID_PRESSURE | 403 | Node PID pressure error |
+| STATUSCHECK_NODE_UNSCHEDULABLE | 404 | Node unschedulable error |
+| STATUSCHECK_NODE_UNREACHABLE | 405 | Node unreachable error |
+| STATUSCHECK_NODE_NOT_READY | 406 | Node not ready error |
+| STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
+| STATUSCHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |
+| STATUSCHECK_CONTAINER_WAITING_UNKNOWN | 503 | Container is waiting due to unknown reason |
+| DEPLOY_UNKNOWN | 504 | Deploy failed due to unknown reason |
+| SYNC_UNKNOWN | 505 | SYNC failed due to known reason |
+| BUILD_UNKNOWN | 506 | Build failed due to unknown reason |
+| DEVINIT_UNKNOWN | 507 | Dev Init failed due to unknown reason |
+| CLEANUP_UNKNOWN | 508 | Cleanup failed due to unknown reason |
+| SYNC_INIT_ERROR | 601 | File Sync Initialize failure |
+| DEVINIT_REGISTER_BUILD_DEPS | 701 | Failed to configure watcher for build dependencies in dev loop |
+| DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
+| DEVINIT_REGISTER_DEPLOY_DEPS | 703 | Failed to configure watcher for deploy dependencies in dev loop |
+| DEVINIT_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
 
 
  <!-- end enums -->
