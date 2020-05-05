@@ -60,7 +60,7 @@ If the build fails, an error will be attached to the event.
 | artifact | [string](#string) |  | artifact name |
 | status | [string](#string) |  | artifact build status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | error when build status is Failed. |
-| statusCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
@@ -197,7 +197,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | error when status is Failed |
-| statusCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
@@ -320,7 +320,7 @@ FileSyncEvent describes the sync status.
 | image | [string](#string) |  | the container image to which files are sycned. |
 | status | [string](#string) |  | status of file sync. one of: Not Started, In progress, Succeeded, Failed. |
 | err | [string](#string) |  | error in case of status failed. |
-| statusCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
@@ -563,7 +563,7 @@ will be sent with the new status.
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 | err | [string](#string) |  |  |
-| statusCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
