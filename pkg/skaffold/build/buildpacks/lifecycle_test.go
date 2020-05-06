@@ -26,18 +26,19 @@ func TestRewriteLifecycleStatusCode(t *testing.T) {
 		errText  string
 		expected string
 	}{
+		{"blah blah", "blah blah"},
 		{"failed with status code: 0", "lifecycle failed with status code 0"},
 		{"failed with status code: 1", "lifecycle failed with status code 1"},
 		{"failed with status code: 2", "lifecycle failed with status code 2"},
-		{"failed with status code: 3", "lifecycle reported invalid arguments"},          //CodeInvalidArgs
+		{"failed with status code: 3", "lifecycle reported invalid arguments"}, //CodeInvalidArgs
 		{"failed with status code: 4", "lifecycle failed with status code 4"},
 		{"failed with status code: 5", "lifecycle failed with status code 5"},
 		{"failed with status code: 6", "buildpacks could not determine application type"}, //CodeFailedDetect
-		{"failed with status code: 7", "buildpacks failed to build"},                               //CodeFailedBuild
+		{"failed with status code: 7", "buildpacks failed to build"},                      //CodeFailedBuild
 		{"failed with status code: 8", "lifecycle failed with status code 8"},
 		{"failed with status code: 9", "lifecycle failed with status code 9"},
-		{"failed with status code: 10", "buildpacks failed to save image"},                         //CodeFailedSave
-		{"failed with status code: 11", "incompatible lifecycle version"},               //CodeIncompatible
+		{"failed with status code: 10", "buildpacks failed to save image"}, //CodeFailedSave
+		{"failed with status code: 11", "incompatible lifecycle version"},  //CodeIncompatible
 	}
 	for _, test := range tests {
 		result := rewriteLifecycleStatusCode(errors.New(test.errText))
@@ -59,11 +60,11 @@ func TestMapLifecycleStatusCode(t *testing.T) {
 		{4, "lifecycle failed with status code 4"},
 		{5, "lifecycle failed with status code 5"},
 		{6, "buildpacks could not determine application type"}, // CodeFailedDetect
-		{7, "buildpacks failed to build"},                               // CodeFailedBuild
+		{7, "buildpacks failed to build"},                      // CodeFailedBuild
 		{8, "lifecycle failed with status code 8"},
 		{9, "lifecycle failed with status code 9"},
-		{10, "buildpacks failed to save image"},           //CodeFailedSave
-		{11, "incompatible lifecycle version"}, // CodeIncompatible
+		{10, "buildpacks failed to save image"}, //CodeFailedSave
+		{11, "incompatible lifecycle version"},  // CodeIncompatible
 		{12, "lifecycle failed with status code 12"},
 	}
 	for _, test := range tests {
