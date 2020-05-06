@@ -18,10 +18,13 @@ package buildpacks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
+	lifecycle "github.com/buildpacks/lifecycle/cmd"
 	"github.com/buildpacks/pack"
 	"github.com/sirupsen/logrus"
 
@@ -91,7 +94,41 @@ func runPackBuild(ctx context.Context, out io.Writer, localDocker docker.LocalDa
 		return fmt.Errorf("unable to create pack client: %w", err)
 	}
 
-	return packClient.Build(ctx, opts)
+	err = packClient.Build(ctx, opts)
+	// pack turns exit codes from the lifecycle into `failed with status code: N`
+	if err != nil {
+		err = rewriteLifecycleStatusCode(err)
+	}
+	return err
+}
+
+func rewriteLifecycleStatusCode(lce error) error {
+	prefix := "failed with status code: "
+	lceText := lce.Error()
+	if strings.HasPrefix(lceText, prefix) {
+		sc := lceText[len(prefix):]
+		if code, err := strconv.Atoi(sc); err == nil {
+			return errors.New(mapLifecycleStatusCode(code))
+		}
+	}
+	return lce
+}
+
+func mapLifecycleStatusCode(code int) string {
+	switch code {
+	case lifecycle.CodeInvalidArgs:
+		return "lifecycle reported invalid arguments"
+	case lifecycle.CodeFailedDetect:
+		return "buildpacks could not determine application type"
+	case lifecycle.CodeFailedBuild:
+		return "buildpacks failed to build"
+	case lifecycle.CodeFailedSave:
+		return "buildpacks failed to save image"
+	case lifecycle.CodeIncompatible:
+		return "incompatible lifecycle version"
+	default:
+		return fmt.Sprintf("lifecycle failed with status code %d", code)
+	}
 }
 
 func envMap(env []string) map[string]string {
