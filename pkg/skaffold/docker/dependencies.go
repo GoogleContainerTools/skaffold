@@ -61,8 +61,13 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 	if err != nil {
 		return nil, err
 	}
-
 	excludes, err := readDockerignore(workspace, absDockerfilePath)
+	syncDespiteDockerignore := ctx.Value("syncDespiteDockerignore")
+	if syncDespiteDockerignore != nil {
+		if syncDespiteDockerignore, ok := syncDespiteDockerignore.([]string); ok {
+			excludes = stringSlicesDiff(excludes, syncDespiteDockerignore)
+		}
+	}
 	if err != nil {
 		return nil, fmt.Errorf("reading .dockerignore: %w", err)
 	}
@@ -162,4 +167,20 @@ func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, 
 	}
 
 	return files, nil
+}
+
+// stringSlicesDiff returns slice of strings from `a` that are not in `b`
+// it's algorithmic complexity is O(n)
+func stringSlicesDiff(a, b []string) []string {
+	bm := make(map[string]struct{}, len(b))
+	for _, val := range b {
+		bm[val] = struct{}{}
+	}
+	var result []string
+	for _, val := range a {
+		if _, found := bm[val]; !found {
+			result = append(result, val)
+		}
+	}
+	return result
 }

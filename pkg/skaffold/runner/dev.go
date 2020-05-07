@@ -154,9 +154,18 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		default:
 			if err := r.monitor.Register(
 				func() ([]string, error) {
-					return build.DependenciesForArtifact(ctx, artifact, r.runCtx.InsecureRegistries)
+					childCtx := ctx
+					if artifact.Sync != nil && artifact.Sync.Manual != nil {
+						var syncDespiteDockerignore []string
+						for _, manualRule := range artifact.Sync.Manual {
+							syncDespiteDockerignore = append(syncDespiteDockerignore, manualRule.Src)
+						}
+						childCtx = context.WithValue(ctx, "syncDespiteDockerignore", syncDespiteDockerignore)
+					}
+					return build.DependenciesForArtifact(childCtx, artifact, r.runCtx.InsecureRegistries)
 				},
 				func(e filemon.Events) {
+					logrus.Debug("Hi from anon func for Filemon, line 161")
 					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx.InsecureRegistries)
 					switch {
 					case err != nil:
