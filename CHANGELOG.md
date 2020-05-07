@@ -1,3 +1,23 @@
+# v1.9.1 Hotfix Release - 05/07/2020
+
+This is a hotfix release to address an issue with tailing logs while deploying with Helm, and to avoid an issue with authentication while building with Kaniko in GCB.
+
+* Revert "Only listen to pods for the current RunID" [#4122](https://github.com/GoogleContainerTools/skaffold/pull/4122)
+* Pin to kaniko v0.20.0 [#4128](https://github.com/GoogleContainerTools/skaffold/pull/4128)
+
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.9.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.9.1/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.9.1/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.9.1`
+
+
 # v1.9.0 Release - 05/05/2020
 
 Note: This release comes with a new config version `v2beta3`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
