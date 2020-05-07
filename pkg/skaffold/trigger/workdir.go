@@ -25,8 +25,9 @@ import (
 // working directory. That happens for example if one does:
 // `cd /home/me/MY-PROJECT` before running Skaffold,
 // instead of `cd /home/me/my-project`.
-// In such situation, the file watcher will fail to detect changes.
+// In such a situation, the file watcher will fail to detect changes.
 // To solve that, we force `os.Getwd()` not to use $PWD.
+// See: https://github.com/rjeczalik/notify/issues/96
 func RealWorkDir() (string, error) {
 	if runtime.GOOS == "darwin" {
 		if pwd, present := os.LookupEnv("PWD"); present {

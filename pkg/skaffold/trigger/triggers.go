@@ -163,6 +163,7 @@ func (t *fsNotifyTrigger) LogWatchToUser(out io.Writer) {
 func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	c := make(chan notify.EventInfo, 100)
 
+	// Workaround https://github.com/rjeczalik/notify/issues/96
 	wd, err := RealWorkDir()
 	if err != nil {
 		return nil, err
