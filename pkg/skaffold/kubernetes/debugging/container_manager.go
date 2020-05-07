@@ -41,27 +41,18 @@ var (
 )
 
 type ContainerManager struct {
-	output        io.Writer
-	cli           *kubectl.CLI
-	podSelector   kubernetes.PodSelector
-	labelSelector string
-	namespaces    []string
-	active        map[string]string // set of containers that have been notified
-	aggregate     chan watch.Event
+	output      io.Writer
+	cli         *kubectl.CLI
+	podSelector kubernetes.PodSelector
+	namespaces  []string
+	active      map[string]string // set of containers that have been notified
+	aggregate   chan watch.Event
 }
 
-func NewContainerManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, labelSelector string, namespaces []string) *ContainerManager {
+func NewContainerManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string) *ContainerManager {
 	// Create the channel here as Stop() may be called before Start() when a build fails, thus
 	// avoiding the possibility of closing a nil channel. Channels are cheap.
-	return &ContainerManager{
-		output:        out,
-		cli:           cli,
-		podSelector:   podSelector,
-		labelSelector: labelSelector,
-		namespaces:    namespaces,
-		active:        map[string]string{},
-		aggregate:     make(chan watch.Event),
-	}
+	return &ContainerManager{output: out, cli: cli, podSelector: podSelector, namespaces: namespaces, active: map[string]string{}, aggregate: make(chan watch.Event)}
 }
 
 func (d *ContainerManager) Start(ctx context.Context) error {
@@ -69,7 +60,7 @@ func (d *ContainerManager) Start(ctx context.Context) error {
 		// debug mode probably not enabled
 		return nil
 	}
-	stopWatchers, err := aggregatePodWatcher(d.labelSelector, d.namespaces, d.aggregate)
+	stopWatchers, err := aggregatePodWatcher(d.namespaces, d.aggregate)
 	if err != nil {
 		stopWatchers()
 		return fmt.Errorf("initializing debugging container watcher: %w", err)
