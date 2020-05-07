@@ -165,7 +165,6 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 					return build.DependenciesForArtifact(childCtx, artifact, r.runCtx.InsecureRegistries)
 				},
 				func(e filemon.Events) {
-					logrus.Debug("Hi from anon func for Filemon, line 161")
 					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx.InsecureRegistries)
 					switch {
 					case err != nil:
