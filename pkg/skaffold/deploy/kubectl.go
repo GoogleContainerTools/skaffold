@@ -73,8 +73,8 @@ func (k *KubectlDeployer) Labels() map[string]string {
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
 	event.DeployInProgress()
-	manifests, err := k.renderManifests(ctx, out, builds, labellers)
 
+	manifests, err := k.renderManifests(ctx, out, builds, labellers)
 	if err != nil {
 		event.DeployFailed(err)
 		return NewDeployErrorResult(err)
@@ -88,7 +88,7 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 	namespaces, err := manifests.CollectNamespaces()
 	if err != nil {
 		event.DeployInfoEvent(fmt.Errorf("could not fetch deployed resource namespace. "+
-			"This might cause port-forward and deploy health-check to fail :%w", err))
+			"This might cause port-forward and deploy health-check to fail: %w", err))
 	}
 
 	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
@@ -98,47 +98,6 @@ func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []bu
 
 	event.DeployComplete()
 	return NewDeploySuccessResult(namespaces)
-}
-
-// Cleanup deletes what was deployed by calling Deploy.
-func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	manifests, err := k.readManifests(ctx)
-	if err != nil {
-		return fmt.Errorf("reading manifests: %w", err)
-	}
-
-	// revert remote manifests
-	// TODO(dgageot): That seems super dangerous and I don't understand
-	// why we need to update resources just before we delete them.
-	if len(k.RemoteManifests) > 0 {
-		var rm deploy.ManifestList
-		for _, m := range k.RemoteManifests {
-			manifest, err := k.readRemoteManifest(ctx, m)
-			if err != nil {
-				return fmt.Errorf("get remote manifests: %w", err)
-			}
-			rm = append(rm, manifest)
-		}
-
-		upd, err := rm.ReplaceImages(k.originalImages)
-		if err != nil {
-			return fmt.Errorf("replacing with originals: %w", err)
-		}
-
-		if err := k.kubectl.Apply(ctx, out, upd); err != nil {
-			return fmt.Errorf("apply original: %w", err)
-		}
-	}
-
-	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
-		return fmt.Errorf("delete: %w", err)
-	}
-
-	return nil
-}
-
-func (k *KubectlDeployer) Dependencies() ([]string, error) {
-	return k.manifestFiles(k.KubectlDeploy.Manifests)
 }
 
 func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
@@ -269,4 +228,46 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 	}
 
 	return manifests, nil
+}
+
+// Cleanup deletes what was deployed by calling Deploy.
+func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
+	manifests, err := k.readManifests(ctx)
+	if err != nil {
+		return fmt.Errorf("reading manifests: %w", err)
+	}
+
+	// revert remote manifests
+	// TODO(dgageot): That seems super dangerous and I don't understand
+	// why we need to update resources just before we delete them.
+	if len(k.RemoteManifests) > 0 {
+		var rm deploy.ManifestList
+		for _, m := range k.RemoteManifests {
+			manifest, err := k.readRemoteManifest(ctx, m)
+			if err != nil {
+				return fmt.Errorf("get remote manifests: %w", err)
+			}
+			rm = append(rm, manifest)
+		}
+
+		upd, err := rm.ReplaceImages(k.originalImages)
+		if err != nil {
+			return fmt.Errorf("replacing with originals: %w", err)
+		}
+
+		if err := k.kubectl.Apply(ctx, out, upd); err != nil {
+			return fmt.Errorf("apply original: %w", err)
+		}
+	}
+
+	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
+		return fmt.Errorf("delete: %w", err)
+	}
+
+	return nil
+}
+
+// Dependencies lists all the files that describe what needs to be deployed.
+func (k *KubectlDeployer) Dependencies() ([]string, error) {
+	return k.manifestFiles(k.KubectlDeploy.Manifests)
 }
