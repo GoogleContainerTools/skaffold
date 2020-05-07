@@ -40,6 +40,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
+const minikubeBadUsageExitCode = 64
+
 // For testing
 var (
 	NewAPIClient = NewAPIClientImpl
@@ -87,11 +89,23 @@ func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
 	return nil, cli, nil
 }
 
+type ExitCoder interface {
+	ExitCode() int
+}
+
 // newMinikubeAPIClient returns a docker client using the environment variables
 // provided by minikube.
 func newMinikubeAPIClient(minikubeProfile string) ([]string, client.CommonAPIClient, error) {
 	env, err := getMinikubeDockerEnv(minikubeProfile)
 	if err != nil {
+		// When minikube uses the infamous `none` driver, it'll exit `minikube docker-env` with code 64.
+		var exitError ExitCoder
+		if errors.As(err, &exitError) && exitError.ExitCode() == minikubeBadUsageExitCode {
+			// Let's ignore the error and fall back to local docker daemon.
+			logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
+			return newEnvAPIClient()
+		}
+
 		return nil, nil, err
 	}
 
