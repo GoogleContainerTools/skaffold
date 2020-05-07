@@ -593,7 +593,7 @@
     }
   },
   "definitions": {
-    "BuildMetadataBuilder": {
+    "BuildMetadataImageBuilder": {
       "type": "object",
       "properties": {
         "type": {
@@ -645,7 +645,7 @@
         "builders": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/BuildMetadataBuilder"
+            "$ref": "#/definitions/BuildMetadataImageBuilder"
           }
         },
         "type": {

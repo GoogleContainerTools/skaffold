@@ -76,7 +76,7 @@ If the build fails, an error will be attached to the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | numberOfArtifacts | [int32](#int32) |  |  |
-| builders | [BuildMetadata.Builder](#proto.BuildMetadata.Builder) | repeated |  |
+| builders | [BuildMetadata.ImageBuilder](#proto.BuildMetadata.ImageBuilder) | repeated |  |
 | type | [BuildType](#proto.BuildType) |  |  |
 | additional | [BuildMetadata.AdditionalEntry](#proto.BuildMetadata.AdditionalEntry) | repeated | Additional key value pairs to describe the deploy pipeline |
 
@@ -102,8 +102,8 @@ If the build fails, an error will be attached to the event.
 
 
 
-<a name="proto.BuildMetadata.Builder"></a>
-#### BuildMetadata.Builder
+<a name="proto.BuildMetadata.ImageBuilder"></a>
+#### BuildMetadata.ImageBuilder
 
 
 
