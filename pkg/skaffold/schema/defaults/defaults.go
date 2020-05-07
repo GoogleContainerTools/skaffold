@@ -32,7 +32,7 @@ const (
 	defaultCloudBuildDockerImage = "gcr.io/cloud-builders/docker"
 	defaultCloudBuildMavenImage  = "gcr.io/cloud-builders/mvn"
 	defaultCloudBuildGradleImage = "gcr.io/cloud-builders/gradle"
-	defaultCloudBuildKanikoImage = "gcr.io/kaniko-project/executor"
+	defaultCloudBuildKanikoImage = constants.DefaultKanikoImage
 	defaultCloudBuildPackImage   = "gcr.io/k8s-skaffold/pack"
 )
 
