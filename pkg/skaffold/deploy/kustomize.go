@@ -41,6 +41,11 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
+var (
+	DefaultKustomizePath = "."
+	kustomizeFilePaths   = []string{"kustomization.yaml", "kustomization.yml", "Kustomization"}
+)
+
 type patchPath struct {
 	Path  string `yaml:"path"`
 	Patch string `yaml:"patch"`
@@ -364,4 +369,14 @@ func buildCommandArgs(buildArgs []string, kustomizePath string) []string {
 	}
 
 	return args
+}
+
+func IsKustomizationPath(path string) bool {
+	filename := filepath.Base(path)
+	for _, candidate := range kustomizeFilePaths {
+		if filename == candidate {
+			return true
+		}
+	}
+	return false
 }
