@@ -17,10 +17,13 @@ limitations under the License.
 package integration
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -268,4 +271,35 @@ func (k *NSKubernetesClient) ExternalIP(serviceName string) string {
 
 func isStable(dp *appsv1.Deployment) bool {
 	return dp.Generation <= dp.Status.ObservedGeneration && *(dp.Spec.Replicas) == dp.Status.Replicas
+}
+
+func WaitForLogs(t *testing.T, out io.Reader, firstMessage string, moreMessages ...string) {
+	lines := make(chan string)
+	go func() {
+		scanner := bufio.NewScanner(out)
+		for scanner.Scan() {
+			lines <- scanner.Text()
+		}
+	}()
+
+	current := 0
+	message := firstMessage
+
+	timer := time.NewTimer(30 * time.Second)
+	defer timer.Stop()
+	for {
+		select {
+		case <-timer.C:
+			t.Fatal("timeout")
+		case line := <-lines:
+			if strings.Contains(line, message) {
+				if current >= len(moreMessages) {
+					return
+				}
+
+				message = moreMessages[current]
+				current++
+			}
+		}
+	}
 }
