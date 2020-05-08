@@ -79,7 +79,7 @@ Pipeline building blocks for CI/CD:
 
 Getting started with a new project:
   init              [alpha] Generate configuration for deploying an application
-  fix               Update old configuration to newest schema version
+  fix               Update old configuration to a newer schema version
 
 Other Commands:
   completion        Output shell completion for the given shell (bash or zsh)
@@ -87,6 +87,7 @@ Other Commands:
   credits           Export third party notices to given path (./skaffold-credits by default)
   diagnose          Run a diagnostic on Skaffold
   schema            List and print json schemas used to validate skaffold.yaml configuration
+  survey            Show Skaffold survey url
   version           Print the version information
 
 Use "skaffold <command> --help" for more information about a given command.
@@ -122,12 +123,16 @@ Examples:
   # Build the artifacts and then deploy them
   skaffold build -q | skaffold deploy --build-artifacts -
 
+  # Print the final image names
+  skaffold build -q --dry-run
+
 Options:
   -b, --build-image=[]: Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts
       --cache-artifacts=true: Set to false to disable default caching of artifacts
       --cache-file='': Specify the location of the cache file (default $HOME/.skaffold/cache)
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -d, --default-repo='': Default repository value (overrides global config)
+      --dry-run=false: Don't build images, just compute the tag for each artifact.
       --enable-rpc=false: Enable gRPC for exposing Skaffold events (true by default for `skaffold dev`)
       --file-output='': Filename to write build images to
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
@@ -136,7 +141,8 @@ Options:
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -n, --namespace='': Run deployments in the specified namespace
   -o, --output={{json .}}: Used in conjunction with --quiet flag. Format output with go-template. For full struct documentation, see https://godoc.org/github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags#BuildOutput
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
+      --profile-auto-activation=true: Set to false to disable profile auto activation
   -q, --quiet=false: Suppress the build output and print image built on success. See --output to format output.
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -158,6 +164,7 @@ Env vars:
 * `SKAFFOLD_CACHE_FILE` (same as `--cache-file`)
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_DRY_RUN` (same as `--dry-run`)
 * `SKAFFOLD_ENABLE_RPC` (same as `--enable-rpc`)
 * `SKAFFOLD_FILE_OUTPUT` (same as `--file-output`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
@@ -167,6 +174,7 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_QUIET` (same as `--quiet`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
@@ -340,7 +348,8 @@ Options:
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
       --port-forward=false: Port-forward exposed container ports within pods
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
+      --profile-auto-activation=true: Set to false to disable profile auto activation
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --skip-tests=false: Whether to skip the tests after building
@@ -375,6 +384,7 @@ Env vars:
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_SKIP_TESTS` (same as `--skip-tests`)
@@ -397,7 +407,8 @@ Options:
       --kube-context='': Deploy to this Kubernetes context
       --kubeconfig='': Path to the kubeconfig file to use for CLI requests.
   -n, --namespace='': Run deployments in the specified namespace
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
+      --profile-auto-activation=true: Set to false to disable profile auto activation
 
 Usage:
   skaffold delete [options]
@@ -415,6 +426,7 @@ Env vars:
 * `SKAFFOLD_KUBECONFIG` (same as `--kubeconfig`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 
 ### skaffold deploy
 
@@ -447,7 +459,8 @@ E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
   -n, --namespace='': Run deployments in the specified namespace
       --port-forward=false: Port-forward exposed container ports within pods
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
+      --profile-auto-activation=true: Set to false to disable profile auto activation
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --status-check=true: Wait for deployed resources to stabilize
@@ -476,6 +489,7 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
 * `SKAFFOLD_STATUS_CHECK` (same as `--status-check`)
@@ -506,7 +520,8 @@ Options:
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
       --port-forward=false: Port-forward exposed container ports within pods
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
+      --profile-auto-activation=true: Set to false to disable profile auto activation
       --render-only=false: Print rendered Kubernetes manifests instead of deploying them
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -545,6 +560,7 @@ Env vars:
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_RENDER_ONLY` (same as `--render-only`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
@@ -564,10 +580,19 @@ Run a diagnostic on Skaffold
 ```
 
 
+Examples:
+  # Search for configuration issues and print the effective configuration
+  skaffold diagnose
+
+  # Print the effective skaffold.yaml configuration for given profile
+  skaffold diagnose --yaml-only --profile PROFILE
+
 Options:
   -c, --config='': File for global configurations (defaults to $HOME/.skaffold/config)
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
+      --profile-auto-activation=true: Set to false to disable profile auto activation
+      --yaml-only=false: Only prints the effective skaffold.yaml configuration
 
 Usage:
   skaffold diagnose [options]
@@ -581,17 +606,27 @@ Env vars:
 * `SKAFFOLD_CONFIG` (same as `--config`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
+* `SKAFFOLD_YAML_ONLY` (same as `--yaml-only`)
 
 ### skaffold fix
 
-Update old configuration to newest schema version
+Update old configuration to a newer schema version
 
 ```
 
 
+Examples:
+  # Update "skaffold.yaml" in the current folder to the latest version
+  skaffold fix
+
+  # Update "skaffold.yaml" in the current folder to version "skaffold/v1"
+  skaffold fix --version skaffold/v1
+
 Options:
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --overwrite=false: Overwrite original config with fixed config
+      --version='skaffold/v2beta3': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -604,6 +639,7 @@ Env vars:
 
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_OVERWRITE` (same as `--overwrite`)
+* `SKAFFOLD_VERSION` (same as `--version`)
 
 ### skaffold init
 
@@ -666,7 +702,8 @@ Options:
       --loud=false: Show the build logs and output
   -n, --namespace='': Run deployments in the specified namespace
       --output='': file to write rendered manifests to
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
+      --profile-auto-activation=true: Set to false to disable profile auto activation
 
 Usage:
   skaffold render [options]
@@ -684,6 +721,7 @@ Env vars:
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 
 ### skaffold run
 
@@ -716,7 +754,8 @@ Options:
       --no-prune=false: Skip removing images and containers built by Skaffold
       --no-prune-children=false: Skip removing layers reused by Skaffold
       --port-forward=false: Port-forward exposed container ports within pods
-  -p, --profile=[]: Activate profiles by name
+  -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
+      --profile-auto-activation=true: Set to false to disable profile auto activation
       --render-only=false: Print rendered Kubernetes manifests instead of deploying them
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
@@ -752,6 +791,7 @@ Env vars:
 * `SKAFFOLD_NO_PRUNE_CHILDREN` (same as `--no-prune-children`)
 * `SKAFFOLD_PORT_FORWARD` (same as `--port-forward`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
+* `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
 * `SKAFFOLD_RENDER_ONLY` (same as `--render-only`)
 * `SKAFFOLD_RPC_HTTP_PORT` (same as `--rpc-http-port`)
 * `SKAFFOLD_RPC_PORT` (same as `--rpc-port`)
@@ -809,6 +849,21 @@ Examples:
 
 Usage:
   skaffold schema list [options]
+
+Use "skaffold options" for a list of global command-line options (applies to all commands).
+
+
+```
+
+### skaffold survey
+
+Show Skaffold survey url
+
+```
+
+
+Usage:
+  skaffold survey [options]
 
 Use "skaffold options" for a list of global command-line options (applies to all commands).
 

@@ -32,16 +32,17 @@ import (
 // NewTester parses the provided test cases from the Skaffold config,
 // and returns a Tester instance with all the necessary test runners
 // to run all specified tests.
-func NewTester(runCtx *runcontext.RunContext) Tester {
-	client, err := docker.NewAPIClient(runCtx)
+func NewTester(runCtx *runcontext.RunContext, imagesAreLocal bool) Tester {
+	localDaemon, err := docker.NewAPIClient(runCtx)
 	if err != nil {
 		return nil
 	}
 
 	return FullTester{
-		testCases:  runCtx.Cfg.Test,
-		workingDir: runCtx.WorkingDir,
-		extraEnv:   client.ExtraEnv(),
+		testCases:      runCtx.Cfg.Test,
+		workingDir:     runCtx.WorkingDir,
+		localDaemon:    localDaemon,
+		imagesAreLocal: imagesAreLocal,
 	}
 }
 
@@ -84,8 +85,16 @@ func (t FullTester) runStructureTests(ctx context.Context, out io.Writer, bRes [
 	}
 
 	fqn := resolveArtifactImageTag(testCase.ImageName, bRes)
+	if !t.imagesAreLocal {
+		// The image is remote so we have to pull it locally.
+		// `container-structure-test` currently can't do it:
+		// https://github.com/GoogleContainerTools/container-structure-test/issues/253.
+		if err := t.localDaemon.Pull(ctx, out, fqn); err != nil {
+			return fmt.Errorf("unable to docker pull image %q: %w", fqn, err)
+		}
+	}
 
-	runner := structure.NewRunner(files, t.extraEnv)
+	runner := structure.NewRunner(files, t.localDaemon.ExtraEnv())
 	return runner.Test(ctx, out, fqn)
 }
 

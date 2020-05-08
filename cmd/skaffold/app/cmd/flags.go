@@ -56,7 +56,7 @@ var FlagRegistry = []Flag{
 	{
 		Name:          "profile",
 		Shorthand:     "p",
-		Usage:         "Activate profiles by name",
+		Usage:         "Activate profiles by name (prefixed with `-` to disable a profile)",
 		Value:         &opts.Profiles,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
@@ -77,7 +77,7 @@ var FlagRegistry = []Flag{
 		Usage:         "Default repository value (overrides global config)",
 		Value:         &opts.DefaultRepo,
 		DefValue:      "",
-		FlagAddMethod: "StringVar",
+		FlagAddMethod: "Var",
 		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
 	},
 	{
@@ -269,6 +269,14 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"build", "debug", "dev", "run"},
 	},
+	{
+		Name:          "profile-auto-activation",
+		Usage:         "Set to false to disable profile auto activation",
+		Value:         &opts.ProfileAutoActivation,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose"},
+	},
 }
 
 var commandFlags []*pflag.Flag
@@ -278,12 +286,13 @@ func SetupFlags() {
 	commandFlags = make([]*pflag.Flag, len(FlagRegistry))
 	for i, fl := range FlagRegistry {
 		fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
-		inputs := []reflect.Value{
-			reflect.ValueOf(fl.Value),
-			reflect.ValueOf(fl.Name),
-			reflect.ValueOf(fl.DefValue),
-			reflect.ValueOf(fl.Usage),
+
+		inputs := []reflect.Value{reflect.ValueOf(fl.Value), reflect.ValueOf(fl.Name)}
+		if fl.FlagAddMethod != "Var" {
+			inputs = append(inputs, reflect.ValueOf(fl.DefValue))
 		}
+		inputs = append(inputs, reflect.ValueOf(fl.Usage))
+
 		reflect.ValueOf(fs).MethodByName(fl.FlagAddMethod).Call(inputs)
 		f := fs.Lookup(fl.Name)
 		if fl.Shorthand != "" {

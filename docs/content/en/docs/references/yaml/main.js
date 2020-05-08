@@ -3,19 +3,23 @@ import { unsafeHTML } from 'https://unpkg.com/lit-html@1.1.2/directives/unsafe-h
 
 var version;
 (async function() {
-  version = document.getElementById('table').attributes['data-version'].value;
+  const table = document.getElementById('table');
+  version = table.attributes['data-version'].value;
   version = version.replace('skaffold/', '');
 
   const response = await fetch(`/schemas/${version}.json`);
   const json = await response.json();
-  const table = document.getElementById('table');
 
   render(html`
-    ${template(json.definitions, undefined, json.anyOf[0].$ref, 0)}
+    ${template(json.definitions, undefined, json.anyOf[0].$ref, 0, "")}
   `, table);
+
+  if (location.hash) {
+    table.querySelector(location.hash).scrollIntoView();
+  }
 })();
 
-function* template(definitions, parentDefinition, ref, ident) {
+function* template(definitions, parentDefinition, ref, ident, parent) {
   const name = ref.replace('#/definitions/', '');
   const allProperties = [];
   const seen = {};
@@ -38,6 +42,7 @@ function* template(definitions, parentDefinition, ref, ident) {
 
   let index = -1;
   for (let [key, definition] of allProperties) {
+    const path = parent.length == 0 ? key : `${parent}-${key}`;
     index++;
 
     // Key
@@ -62,7 +67,7 @@ function* template(definitions, parentDefinition, ref, ident) {
       yield html`
         <tr>
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${key}:</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:</span>
             <span class="${valueClass}">${value}</span>
           </td>
           <td><span class="comment">#&nbsp;</span></td>
@@ -82,7 +87,7 @@ function* template(definitions, parentDefinition, ref, ident) {
       yield html`
         <tr class="top">
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${key}:</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:</span>
             <span class="${valueClass}">${value}</span>
           </td>
           <td class="comment">#&nbsp;</td>
@@ -93,7 +98,7 @@ function* template(definitions, parentDefinition, ref, ident) {
       yield html`
         <tr class="top">
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${key}:</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:</span>
             <span class="${valueClass}">${value}</span>
           </td>
           <td class="comment">#&nbsp;</td>
@@ -104,7 +109,7 @@ function* template(definitions, parentDefinition, ref, ident) {
       yield html`
         <tr>
           <td>
-            <span class="${keyClass}" style="margin-left: ${(ident - 1) * 20}px">- ${key}:</span>
+            <span class="${keyClass}" style="margin-left: ${(ident - 1) * 20}px">- ${anchor(path, key)}:</span>
             <span class="${valueClass}">${value}</span>
           </td>
           <td class="comment">#&nbsp;</td>
@@ -118,7 +123,7 @@ function* template(definitions, parentDefinition, ref, ident) {
       yield html`
         <tr>
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${key}:</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:</span>
           </td>
           <td class="comment">#&nbsp;</td>
           <td class="comment" rowspan="${1 + values.length}">
@@ -144,7 +149,7 @@ function* template(definitions, parentDefinition, ref, ident) {
       yield html`
         <tr>
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${key}:</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:</span>
           </td>
           <td class="comment">#&nbsp;</td>
           <td class="comment" rowspan="${1 + Object.keys(values).length}">
@@ -160,7 +165,7 @@ function* template(definitions, parentDefinition, ref, ident) {
         yield html`
           <tr>
             <td>
-              <span class="key" style="margin-left: ${(ident + 1) * 20}px"><span class="${valueClass}">${k}: ${v}</span></span>
+              <span class="key" style="margin-left: ${(ident + 1) * 20}px"><span class="${valueClass}">${anchor(k)}: ${v}</span></span>
             </td>
             <td class="comment">#&nbsp;</td>
           </tr>
@@ -170,7 +175,7 @@ function* template(definitions, parentDefinition, ref, ident) {
       yield html`
         <tr>
           <td>
-            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${key}:</span>
+            <span class="${keyClass}" style="margin-left: ${ident * 20}px">${anchor(path, key)}:</span>
             <span class="${valueClass}">${value}</span>
           </td>
           <td class="comment">#&nbsp;</td>
@@ -182,15 +187,19 @@ function* template(definitions, parentDefinition, ref, ident) {
     // This definition references another definition
     if (definition.$ref) {
       yield html`
-        ${template(definitions, definition, definition.$ref, ident + 1)}
+        ${template(definitions, definition, definition.$ref, ident + 1, path)}
       `;
     }
 
     // This definition is an array
     if (definition.items && definition.items.$ref) {
       yield html`
-        ${template(definitions, definition, definition.items.$ref, ident + 1)}
+        ${template(definitions, definition, definition.items.$ref, ident + 1, path)}
       `;
     }
   }
+}
+
+function anchor(path, label) {
+    return html`<a class="anchor" id="${path}"></a><a class="key" href="#${path}">${label}</a>`
 }

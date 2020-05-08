@@ -28,13 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-)
-
-var (
-	// For testing
-	buildComplete = event.BuildComplete
 )
 
 func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, artifacts []*latest.Artifact, buildAndTest BuildAndTestFn) ([]build.Artifact, error) {
@@ -64,10 +58,8 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		result := results[i]
 		switch result := result.(type) {
 		case failed:
-			logrus.Warnf("error checking cache, caching may not work as expected: %v", result.err)
-			color.Yellow.Fprintln(out, "Error checking cache. Rebuilding.")
-			needToBuild = append(needToBuild, artifact)
-			continue
+			color.Red.Fprintln(out, "Error checking cache.")
+			return nil, result.err
 
 		case needsBuilding:
 			color.Yellow.Fprintln(out, "Not found. Building")
@@ -96,7 +88,6 @@ func (c *cache) Build(ctx context.Context, out io.Writer, tags tag.ImageTags, ar
 		}
 
 		// Image is already built
-		buildComplete(artifact.ImageName)
 		entry := c.artifactCache[result.Hash()]
 		tag := tags[artifact.ImageName]
 

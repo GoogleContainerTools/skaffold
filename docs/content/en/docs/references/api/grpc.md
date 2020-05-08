@@ -60,7 +60,57 @@ If the build fails, an error will be attached to the event.
 | artifact | [string](#string) |  | artifact name |
 | status | [string](#string) |  | artifact build status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | error when build status is Failed. |
-| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
+| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+
+
+
+
+
+
+
+<a name="proto.BuildMetadata"></a>
+#### BuildMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| numberOfArtifacts | [int32](#int32) |  |  |
+| builders | [BuildMetadata.ImageBuilder](#proto.BuildMetadata.ImageBuilder) | repeated |  |
+| type | [BuildType](#proto.BuildType) |  |  |
+| additional | [BuildMetadata.AdditionalEntry](#proto.BuildMetadata.AdditionalEntry) | repeated | Additional key value pairs to describe the deploy pipeline |
+
+
+
+
+
+
+
+<a name="proto.BuildMetadata.AdditionalEntry"></a>
+#### BuildMetadata.AdditionalEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+
+<a name="proto.BuildMetadata.ImageBuilder"></a>
+#### BuildMetadata.ImageBuilder
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [BuilderType](#proto.BuilderType) |  |  |
+| count | [int32](#int32) |  |  |
 
 
 
@@ -147,7 +197,39 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | error when status is Failed |
-| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
+| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+
+
+
+
+
+
+
+<a name="proto.DeployMetadata"></a>
+#### DeployMetadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| deployers | [DeployMetadata.Deployer](#proto.DeployMetadata.Deployer) | repeated |  |
+| cluster | [ClusterType](#proto.ClusterType) |  |  |
+
+
+
+
+
+
+
+<a name="proto.DeployMetadata.Deployer"></a>
+#### DeployMetadata.Deployer
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| type | [DeployerType](#proto.DeployerType) |  |  |
+| count | [int32](#int32) |  |  |
 
 
 
@@ -163,6 +245,39 @@ anytime a deployment starts or completes, successfully or not.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
+
+
+
+
+
+
+
+<a name="proto.DevLoopEvent"></a>
+#### DevLoopEvent
+`DevLoopEvent` marks the start and end of a dev loop.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| iteration | [int32](#int32) |  | dev loop iteration. 0 represents initialization loop. |
+| status | [string](#string) |  | dev loop status oneof: In Progress, Completed, Failed |
+| err | [ErrDef](#proto.ErrDef) |  | actionable error message |
+
+
+
+
+
+
+
+<a name="proto.ErrDef"></a>
+#### ErrDef
+`ErrDef` defines an error occurred along with an optional suggestions
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| errCode | [StatusCode](#proto.StatusCode) |  | error code representing the error |
+| message | [string](#string) |  | message describing the error. |
 
 
 
@@ -186,6 +301,7 @@ It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, Re
 | resourceStatusCheckEvent | [ResourceStatusCheckEvent](#proto.ResourceStatusCheckEvent) |  | indicates progress for each kubernetes deployment. |
 | fileSyncEvent | [FileSyncEvent](#proto.FileSyncEvent) |  | describes the sync status. |
 | debuggingContainerEvent | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) |  | describes the appearance or disappearance of a debugging container |
+| devLoopEvent | [DevLoopEvent](#proto.DevLoopEvent) |  | describes a start and end of a dev loop. |
 
 
 
@@ -204,7 +320,7 @@ FileSyncEvent describes the sync status.
 | image | [string](#string) |  | the container image to which files are sycned. |
 | status | [string](#string) |  | status of file sync. one of: Not Started, In progress, Succeeded, Failed. |
 | err | [string](#string) |  | error in case of status failed. |
-| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
+| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
@@ -269,6 +385,40 @@ LogEntry describes an event and a string description of the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | entry | [string](#string) |  | entry, for example: `"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}"` |
+| metadata | [Metadata](#proto.Metadata) |  | Metadata describing skaffold pipeline |
+
+
+
+
+
+
+
+<a name="proto.Metadata"></a>
+#### Metadata
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| build | [BuildMetadata](#proto.BuildMetadata) |  |  |
+| deploy | [DeployMetadata](#proto.DeployMetadata) |  |  |
+| additional | [Metadata.AdditionalEntry](#proto.Metadata.AdditionalEntry) | repeated | Additional key value pairs to describe the build pipeline |
+
+
+
+
+
+
+
+<a name="proto.Metadata.AdditionalEntry"></a>
+#### Metadata.AdditionalEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
 
 
 
@@ -364,6 +514,7 @@ will be sent with the new status.
 | statusCheckState | [StatusCheckState](#proto.StatusCheckState) |  |  |
 | fileSyncState | [FileSyncState](#proto.FileSyncState) |  |  |
 | debuggingContainers | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) | repeated |  |
+| metadata | [Metadata](#proto.Metadata) |  |  |
 
 
 
@@ -412,7 +563,7 @@ will be sent with the new status.
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 | err | [string](#string) |  |  |
-| errCode | [ErrorCode](#proto.ErrorCode) |  | error code representing the error |
+| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
@@ -468,14 +619,104 @@ will be sent with the new status.
  <!-- end messages -->
 
 
-<a name="proto.ErrorCode"></a>
+<a name="proto.BuildType"></a>
 
-### ErrorCode
-Enum for error codes
+### BuildType
+Enum indicating build type i.e. local, cluster vs GCB
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| COULD_NOT_DETERMINE | 0 |  |
+| UNKNOWN_BUILD_TYPE | 0 | Could not determine Build Type |
+| CLUSTER | 1 | Cluster Build |
+| GCB | 2 | GCB Build |
+| LOCAL | 3 | Local Build |
+
+
+
+<a name="proto.BuilderType"></a>
+
+### BuilderType
+Enum indicating builders used
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| UNKNOWN_BUILDER_TYPE | 0 | Could not determine builder type |
+| JIB | 1 | JIB Builder |
+| BAZEL | 2 | Bazel Builder |
+| BUILDPACKS | 3 | Buildpacks Builder |
+| CUSTOM | 4 | Custom Builder |
+| KANIKO | 5 | Kaniko Builder |
+| DOCKER | 6 | Docker Builder |
+
+
+
+<a name="proto.ClusterType"></a>
+
+### ClusterType
+Enum indicating cluster type the application is deployed to
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| UNKNOWN_CLUSTER_TYPE | 0 | Could not determine Cluster Type |
+| MINIKUBE | 1 | Minikube Cluster |
+| GKE | 2 | GKE cluster |
+| OTHER | 3 | All Cluster except Minikube and GKE |
+
+
+
+<a name="proto.DeployerType"></a>
+
+### DeployerType
+Enum indicating deploy tools used
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| UNKNOWN_DEPLOYER_TYPE | 0 | Could not determine Deployer Type |
+| HELM | 1 | Helm Deployer |
+| KUSTOMIZE | 2 | Kustomize Deployer |
+| KUBECTL | 3 | Kubectl Deployer |
+
+
+
+<a name="proto.StatusCode"></a>
+
+### StatusCode
+Enum for Status codes
+These error codes are prepended by Phase Name e.g.
+BUILD, DEPLOY, STATUSCHECK, DEVINIT
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| UNKNOWN_ERROR | 0 | Could not determine error and phase |
+| STATUSCHECK_SUCCESS | 200 | Status Check Success |
+| BUILD_SUCCESS | 201 | Build Success |
+| BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
+| BUILD_PROJECT_NOT_FOUND | 102 | Build error due to GCP project not found. |
+| STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
+| STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
+| STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |
+| STATUSCHECK_CONTAINER_TERMINATED | 303 | Container is already terminated |
+| STATUSCHECK_CONTAINER_RESTARTING | 356 | Container restarting error |
+| STATUSCHECK_NODE_MEMORY_PRESSURE | 400 | Node memory pressure error |
+| STATUSCHECK_NODE_DISK_PRESSURE | 401 | Node disk pressure error |
+| STATUSCHECK_NODE_NETWORK_UNAVAILABLE | 402 | Node network unavailable error |
+| STATUSCHECK_NODE_PID_PRESSURE | 403 | Node PID pressure error |
+| STATUSCHECK_NODE_UNSCHEDULABLE | 404 | Node unschedulable error |
+| STATUSCHECK_NODE_UNREACHABLE | 405 | Node unreachable error |
+| STATUSCHECK_NODE_NOT_READY | 406 | Node not ready error |
+| STATUSCHECK_UNKNOWN | 501 | Status Check error unknown |
+| STATUSCHECK_UNKNOWN_UNSCHEDULABLE | 502 | Container is unschedulable due to unknown reasons |
+| STATUSCHECK_CONTAINER_WAITING_UNKNOWN | 503 | Container is waiting due to unknown reason |
+| DEPLOY_UNKNOWN | 504 | Deploy failed due to unknown reason |
+| SYNC_UNKNOWN | 505 | SYNC failed due to known reason |
+| BUILD_UNKNOWN | 506 | Build failed due to unknown reason |
+| DEVINIT_UNKNOWN | 507 | Dev Init failed due to unknown reason |
+| CLEANUP_UNKNOWN | 508 | Cleanup failed due to unknown reason |
+| SYNC_INIT_ERROR | 601 | File Sync Initialize failure |
+| DEVINIT_REGISTER_BUILD_DEPS | 701 | Failed to configure watcher for build dependencies in dev loop |
+| DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
+| DEVINIT_REGISTER_DEPLOY_DEPS | 703 | Failed to configure watcher for deploy dependencies in dev loop |
+| DEVINIT_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
 
 
  <!-- end enums -->

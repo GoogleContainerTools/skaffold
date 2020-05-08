@@ -128,15 +128,16 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(build latest.BuildConfig) proto.State {
+func emptyState(p latest.Pipeline, kubeContext string) proto.State {
 	builds := map[string]string{}
-	for _, a := range build.Artifacts {
+	for _, a := range p.Build.Artifacts {
 		builds[a.ImageName] = NotStarted
 	}
-	return emptyStateWithArtifacts(builds)
+	metadata := initializeMetadata(p, kubeContext)
+	return emptyStateWithArtifacts(builds, metadata)
 }
 
-func emptyStateWithArtifacts(builds map[string]string) proto.State {
+func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata) proto.State {
 	return proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: builds,
@@ -149,12 +150,13 @@ func emptyStateWithArtifacts(builds map[string]string) proto.State {
 		FileSyncState: &proto.FileSyncState{
 			Status: NotStarted,
 		},
+		Metadata: metadata,
 	}
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-func InitializeState(build latest.BuildConfig) {
-	handler.setState(emptyState(build))
+func InitializeState(c latest.Pipeline, kc string) {
+	handler.setState(emptyState(c, kc))
 }
 
 // DeployInProgress notifies that a deployment has been started.
@@ -164,8 +166,8 @@ func DeployInProgress() {
 
 // DeployFailed notifies that non-fatal errors were encountered during a deployment.
 func DeployFailed(err error) {
-	errCode := sErrors.ErrorCodeFromError(err, sErrors.Deploy)
-	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error(), ErrCode: errCode})
+	statusCode := sErrors.ErrorCodeFromError(sErrors.Deploy, err)
+	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error(), ErrCode: statusCode})
 }
 
 // DeployEvent notifies that a deployment of non fatal interesting errors during deploy.
@@ -180,11 +182,11 @@ func StatusCheckEventSucceeded() {
 }
 
 func StatusCheckEventFailed(err error) {
-	errCode := sErrors.ErrorCodeFromError(err, sErrors.StatusCheck)
+	statusCode := sErrors.ErrorCodeFromError(sErrors.StatusCheck, err)
 	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
 		Status:  Failed,
 		Err:     err.Error(),
-		ErrCode: errCode,
+		ErrCode: statusCode,
 	})
 }
 
@@ -237,13 +239,40 @@ func BuildInProgress(imageName string) {
 
 // BuildFailed notifies that a build has failed.
 func BuildFailed(imageName string, err error) {
-	errCode := sErrors.ErrorCodeFromError(err, sErrors.Build)
-	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Failed, Err: err.Error(), ErrCode: errCode})
+	statusCode := sErrors.ErrorCodeFromError(sErrors.Build, err)
+	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Failed, Err: err.Error(), ErrCode: statusCode})
 }
 
 // BuildComplete notifies that a build has completed.
 func BuildComplete(imageName string) {
 	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Complete})
+}
+
+// DevLoopInProgress notifies that a dev loop has been started.
+func DevLoopInProgress(i int) {
+	handler.handleDevLoopEvent(&proto.DevLoopEvent{Iteration: int32(i), Status: InProgress})
+}
+
+// DevLoopFailed notifies that a dev loop has failed with an error code
+func DevLoopFailedWithErrorCode(i int, errCode proto.StatusCode, err error) {
+	handler.handleDevLoopEvent(&proto.DevLoopEvent{
+		Iteration: int32(i),
+		Status:    Failed,
+		Err: &proto.ErrDef{
+			ErrCode: errCode,
+			Message: err.Error(),
+		}})
+}
+
+// DevLoopFailed notifies that a dev loop has failed in a given phase
+func DevLoopFailedInPhase(iteration int, phase sErrors.Phase, err error) {
+	statusCode := sErrors.ErrorCodeFromError(phase, err)
+	DevLoopFailedWithErrorCode(iteration, statusCode, err)
+}
+
+// DevLoopComplete notifies that a dev loop has completed.
+func DevLoopComplete(i int) {
+	handler.handleDevLoopEvent(&proto.DevLoopEvent{Iteration: int32(i), Status: Succeeded})
 }
 
 // FileSyncInProgress notifies that a file sync has been started.
@@ -253,8 +282,8 @@ func FileSyncInProgress(fileCount int, image string) {
 
 // FileSyncFailed notifies that a file sync has failed.
 func FileSyncFailed(fileCount int, image string, err error) {
-	errCode := sErrors.ErrorCodeFromError(err, sErrors.FileSync)
-	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed, Err: err.Error(), ErrCode: errCode})
+	statusCode := sErrors.ErrorCodeFromError(sErrors.FileSync, err)
+	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed, Err: err.Error(), ErrCode: statusCode})
 }
 
 // FileSyncSucceeded notifies that a file sync has succeeded.
@@ -355,6 +384,14 @@ func (ev *eventHandler) handleBuildEvent(e *proto.BuildEvent) {
 	})
 }
 
+func (ev *eventHandler) handleDevLoopEvent(e *proto.DevLoopEvent) {
+	go ev.handle(&proto.Event{
+		EventType: &proto.Event_DevLoopEvent{
+			DevLoopEvent: e,
+		},
+	})
+}
+
 func (ev *eventHandler) handleFileSyncEvent(e *proto.FileSyncEvent) {
 	go ev.handle(&proto.Event{
 		EventType: &proto.Event_FileSyncEvent{
@@ -363,13 +400,15 @@ func (ev *eventHandler) handleFileSyncEvent(e *proto.FileSyncEvent) {
 	})
 }
 
-func LogSkaffoldMetadata(info *version.Info) {
+func LogMetaEvent() {
+	metadata := handler.state.Metadata
 	handler.logEvent(proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
 		Event: &proto.Event{
 			EventType: &proto.Event_MetaEvent{
 				MetaEvent: &proto.MetaEvent{
-					Entry: fmt.Sprintf("Starting Skaffold: %+v", info),
+					Entry:    fmt.Sprintf("Starting Skaffold: %+v", version.Get()),
+					Metadata: metadata,
 				},
 			},
 		},
@@ -489,6 +528,16 @@ func (ev *eventHandler) handle(event *proto.Event) {
 		case Terminated:
 			logEntry.Entry = fmt.Sprintf("Debuggable container terminated pod/%s:%s (%s)", de.PodName, de.ContainerName, de.Namespace)
 		}
+	case *proto.Event_DevLoopEvent:
+		de := e.DevLoopEvent
+		switch de.Status {
+		case InProgress:
+			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d in progress", de.Iteration)
+		case Succeeded:
+			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d successful", de.Iteration)
+		case Failed:
+			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d failed with error code %v", de.Iteration, de.Err.ErrCode)
+		}
 	default:
 		return
 	}
@@ -502,7 +551,7 @@ func ResetStateOnBuild() {
 	for k := range handler.getState().BuildState.Artifacts {
 		builds[k] = NotStarted
 	}
-	newState := emptyStateWithArtifacts(builds)
+	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata)
 	handler.setState(newState)
 }
 

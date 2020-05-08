@@ -24,9 +24,10 @@ import (
 )
 
 func (r *SkaffoldRunner) createContainerManager(out io.Writer) {
-	if !r.runCtx.IsDebugMode() {
+	if !r.runCtx.Opts.IsDebugMode() {
 		return
 	}
+
 	kubectlCLI := kubectl.NewFromRunContext(r.runCtx)
 	r.debugContainerManager = debugging.NewContainerManager(
 		out,

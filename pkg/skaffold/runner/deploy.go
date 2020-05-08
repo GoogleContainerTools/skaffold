@@ -22,9 +22,12 @@ import (
 	"io"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
 
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
@@ -40,7 +43,16 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	}
 
 	if r.imagesAreLocal && len(artifacts) > 0 {
-		color.Green.Fprintln(out, "   local images can't be referenced by digest. They are tagged and referenced by a unique ID instead")
+		logrus.Debugln(`Local images can't be referenced by digest.
+They are tagged and referenced by a unique, local only, tag instead.
+See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
+	}
+
+	// Check that the cluster is reachable.
+	// This gives a better error message when the cluster can't
+	// be reached.
+	if err := failIfClusterIsNotReachable(); err != nil {
+		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
 	if isKind, kindCluster := config.IsKindCluster(r.runCtx.KubeContext); isKind {
@@ -57,6 +69,18 @@ func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []
 	}
 	r.runCtx.UpdateNamespaces(deployResult.Namespaces())
 	return r.performStatusCheck(ctx, out)
+}
+
+// failIfClusterIsNotReachable checks that Kubernetes is reachable.
+// This gives a clear early error when the cluster can't be reached.
+func failIfClusterIsNotReachable() error {
+	client, err := kubernetes.Client()
+	if err != nil {
+		return err
+	}
+
+	_, err = client.Discovery().ServerVersion()
+	return err
 }
 
 func (r *SkaffoldRunner) performStatusCheck(ctx context.Context, out io.Writer) error {

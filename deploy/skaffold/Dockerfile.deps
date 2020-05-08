@@ -21,8 +21,8 @@ RUN chmod +x kubectl
 
 # Download helm
 FROM alpine:3.10 as download-helm
-ENV HELM_VERSION v2.12.0
-ENV HELM_URL https://storage.googleapis.com/kubernetes-helm/helm-${HELM_VERSION}-linux-amd64.tar.gz
+ENV HELM_VERSION v3.2.0
+ENV HELM_URL https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz
 RUN wget -O helm.tar.gz "${HELM_URL}"
 RUN tar -xvf helm.tar.gz --strip-components 1
 

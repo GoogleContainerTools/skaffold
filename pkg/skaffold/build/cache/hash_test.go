@@ -184,7 +184,7 @@ func TestArtifactConfigDevMode(t *testing.T) {
 			},
 		}
 		sync := &latest.Sync{
-			Infer: []string{"**/*"},
+			Auto: &latest.Auto{},
 		}
 
 		config, err := artifactConfig(&latest.Artifact{

@@ -22,6 +22,9 @@ import (
 	"io"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+
+	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -53,7 +56,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				EnableJibGradleInit:    false,
 				EnableBuildpacksInit:   false,
 				EnableNewInitFormat:    false,
-				BuildpacksBuilder:      "heroku/buildpacks",
+				BuildpacksBuilder:      "gcr.io/buildpacks/builder",
 				Opts:                   opts,
 				MaxFileSize:            maxFileSize,
 			},
@@ -113,7 +116,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				EnableJibInit:          true,
 				EnableBuildpacksInit:   false,
 				EnableNewInitFormat:    true,
-				BuildpacksBuilder:      "heroku/buildpacks",
+				BuildpacksBuilder:      "gcr.io/buildpacks/builder",
 				Opts:                   opts,
 				MaxFileSize:            maxFileSize,
 			},
@@ -135,7 +138,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 				EnableJibInit:          false,
 				EnableBuildpacksInit:   true,
 				EnableNewInitFormat:    true,
-				BuildpacksBuilder:      "heroku/buildpacks",
+				BuildpacksBuilder:      "gcr.io/buildpacks/builder",
 				Opts:                   opts,
 				MaxFileSize:            maxFileSize,
 			},
@@ -154,7 +157,7 @@ func TestFlagsToConfigVersion(t *testing.T) {
 
 			// we ignore Skaffold options
 			test.expectedConfig.Opts = capturedConfig.Opts
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedConfig, capturedConfig)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedConfig, capturedConfig, cmp.AllowUnexported(cfg.StringOrUndefined{}))
 		})
 	}
 }

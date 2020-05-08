@@ -5,7 +5,7 @@ weight: 40
 featureId: logging
 ---
 
-Skaffold has built-in support for tailing logs for containers **deployed by Skaffold** on your cluster
+Skaffold has built-in support for tailing logs for containers **built and deployed by Skaffold** on your cluster
 to your local machine when running in either `dev`, `debug` or `run` mode.
 
 {{< alert title="Note" >}}

@@ -180,6 +180,7 @@ func TestKanikoPodSpec(t *testing.T) {
 		},
 	}
 
+	var runAsUser int64 = 0
 	builder := &Builder{
 		ClusterDetails: &latest.ClusterDetails{
 			Namespace:           "ns",
@@ -187,6 +188,8 @@ func TestKanikoPodSpec(t *testing.T) {
 			PullSecretMountPath: "/secret",
 			HTTPProxy:           "http://proxy",
 			HTTPSProxy:          "https://proxy",
+			ServiceAccountName:  "aVerySpecialSA",
+			RunAsUser:           &runAsUser,
 			Resources: &latest.ResourceRequirements{
 				Requests: &latest.ResourceRequirement{
 					CPU: "0.1",
@@ -305,6 +308,10 @@ func TestKanikoPodSpec(t *testing.T) {
 					},
 				},
 			}},
+			ServiceAccountName: "aVerySpecialSA",
+			SecurityContext: &v1.PodSecurityContext{
+				RunAsUser: &runAsUser,
+			},
 			RestartPolicy: v1.RestartPolicyNever,
 			Volumes: []v1.Volume{
 				{

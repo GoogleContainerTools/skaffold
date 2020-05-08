@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -452,6 +452,111 @@ func TestShouldDisplayPrompt(t *testing.T) {
 				return t
 			})
 			t.CheckDeepEqual(test.expected, ShouldDisplayPrompt("dummyconfig"))
+		})
+	}
+}
+
+func TestGetDefaultRepo(t *testing.T) {
+	tests := []struct {
+		description  string
+		cfg          *ContextConfig
+		cliValue     *string
+		expectedRepo string
+		shouldErr    bool
+	}{
+		{
+			description:  "empty",
+			cfg:          &ContextConfig{},
+			cliValue:     nil,
+			expectedRepo: "",
+		},
+		{
+			description:  "from cli",
+			cfg:          &ContextConfig{},
+			cliValue:     util.StringPtr("default/repo"),
+			expectedRepo: "default/repo",
+		},
+		{
+			description:  "from global config",
+			cfg:          &ContextConfig{DefaultRepo: "global/repo"},
+			cliValue:     nil,
+			expectedRepo: "global/repo",
+		},
+		{
+			description:  "cancel global config with cli",
+			cfg:          &ContextConfig{DefaultRepo: "global/repo"},
+			cliValue:     util.StringPtr(""),
+			expectedRepo: "",
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
+
+			defaultRepo, err := GetDefaultRepo("config", test.cliValue)
+
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedRepo, defaultRepo)
+		})
+	}
+}
+
+func TestUpdateGlobalSurveyTaken(t *testing.T) {
+	tests := []struct {
+		description string
+		cfg         string
+		expectedCfg *GlobalConfig
+	}{
+		{
+			description: "update global context when context is empty",
+			expectedCfg: &GlobalConfig{
+				Global:         &ContextConfig{Survey: &SurveyConfig{}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "update global context when survey config is not nil",
+			cfg: `
+global:
+  survey:
+    last-prompted: "some date"
+kubeContexts: []`,
+			expectedCfg: &GlobalConfig{
+				Global:         &ContextConfig{Survey: &SurveyConfig{LastPrompted: "some date"}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+		{
+			description: "update global context when survey config last taken is in past",
+			cfg: `
+global:
+  survey:
+    last-taken: "some date in past"
+kubeContexts: []`,
+			expectedCfg: &GlobalConfig{
+				Global:         &ContextConfig{Survey: &SurveyConfig{}},
+				ContextConfigs: []*ContextConfig{},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			cfg := t.TempFile("config", []byte(test.cfg))
+			testTime := time.Now()
+			t.Override(&ReadConfigFile, ReadConfigFileNoCache)
+			t.Override(&current, func() time.Time {
+				return testTime
+			})
+
+			// update the time
+			err := UpdateGlobalSurveyTaken(cfg)
+			t.CheckNoError(err)
+
+			actualConfig, cfgErr := ReadConfigFile(cfg)
+			t.CheckNoError(cfgErr)
+			// update time in expected cfg.
+			test.expectedCfg.Global.Survey.LastTaken = testTime.Format(time.RFC3339)
+			t.CheckDeepEqual(test.expectedCfg, actualConfig)
 		})
 	}
 }

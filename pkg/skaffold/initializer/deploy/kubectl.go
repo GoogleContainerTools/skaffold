@@ -59,7 +59,7 @@ func (k *kubectl) DeployConfig() latest.DeployConfig {
 }
 
 // GetImages implements the Initializer interface and lists all the
-// images present in the k8 manifest files.
+// images present in the k8s manifest files.
 func (k *kubectl) GetImages() []string {
 	return k.images
 }

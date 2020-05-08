@@ -17,18 +17,54 @@ limitations under the License.
 package errors
 
 import (
+	"fmt"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
+// These are phases in a DevLoop
 const (
-	Build       = phase("Build")
-	Deploy      = phase("Deploy")
-	StatusCheck = phase("StatusCheck")
-	FileSync    = phase("FileSync")
+	Build       = Phase("Build")
+	Deploy      = Phase("Deploy")
+	StatusCheck = Phase("StatusCheck")
+	FileSync    = Phase("FileSync")
+	DevInit     = Phase("DevInit")
+	Cleanup     = Phase("Cleanup")
 )
 
-type phase string
+var (
+	// ErrNoSuggestionFound error not found
+	ErrNoSuggestionFound = fmt.Errorf("no suggestions found")
+)
 
-func ErrorCodeFromError(_ error, _ phase) proto.ErrorCode {
-	return proto.ErrorCode_COULD_NOT_DETERMINE
+type Phase string
+
+func ErrorCodeFromError(phase Phase, _ error) proto.StatusCode {
+	switch phase {
+	case Build:
+		return proto.StatusCode_BUILD_UNKNOWN
+	case Deploy:
+		return proto.StatusCode_DEPLOY_UNKNOWN
+	case StatusCheck:
+		return proto.StatusCode_STATUSCHECK_UNKNOWN
+	case FileSync:
+		return proto.StatusCode_SYNC_UNKNOWN
+	case DevInit:
+		return proto.StatusCode_DEVINIT_UNKNOWN
+	case Cleanup:
+		return proto.StatusCode_CLEANUP_UNKNOWN
+	}
+	return proto.StatusCode_UNKNOWN_ERROR
+}
+
+func ShowAIError(err error, opts config.SkaffoldOptions) error {
+	for _, v := range knownBuildProblems {
+		if v.regexp.MatchString(err.Error()) {
+			if s := v.suggestion(opts); s != "" {
+				return fmt.Errorf("%s. %s", v.description, s)
+			}
+		}
+	}
+	return ErrNoSuggestionFound
 }

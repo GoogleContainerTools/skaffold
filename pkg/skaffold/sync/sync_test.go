@@ -24,13 +24,15 @@ import (
 	"strings"
 	"testing"
 
+	registryv1 "github.com/google/go-containerregistry/pkg/v1"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/jib"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -641,14 +643,14 @@ func TestNewSyncItem(t *testing.T) {
 
 		// Buildpacks
 		{
-			description: "infer with buildpacks",
+			description: "auto with buildpacks",
 			artifact: &latest.Artifact{
 				ArtifactType: latest.ArtifactType{
 					BuildpackArtifact: &latest.BuildpackArtifact{},
 				},
 				ImageName: "test",
 				Sync: &latest.Sync{
-					Infer: []string{"**/*.go"},
+					Auto: &latest.Auto{},
 				},
 				Workspace: ".",
 			},
@@ -659,7 +661,7 @@ func TestNewSyncItem(t *testing.T) {
 				},
 			},
 			evt: filemon.Events{
-				Added: []string{"file.go", "ignored.txt"},
+				Added: []string{"file.go"},
 			},
 			labels: map[string]string{
 				"io.buildpacks.build.metadata": `{
@@ -679,6 +681,40 @@ func TestNewSyncItem(t *testing.T) {
 				},
 				Delete: map[string][]string{},
 			},
+		},
+		{
+			description: "unknown change with buildpacks",
+			artifact: &latest.Artifact{
+				ArtifactType: latest.ArtifactType{
+					BuildpackArtifact: &latest.BuildpackArtifact{},
+				},
+				ImageName: "test",
+				Sync: &latest.Sync{
+					Auto: &latest.Auto{},
+				},
+				Workspace: ".",
+			},
+			builds: []build.Artifact{
+				{
+					ImageName: "test",
+					Tag:       "test:123",
+				},
+			},
+			evt: filemon.Events{
+				Added: []string{"unknown"},
+			},
+			labels: map[string]string{
+				"io.buildpacks.build.metadata": `{
+					"bom":[{
+						"metadata":{
+							"devmode.sync": [
+								{"src":"*.go","dest":"/some"}
+							]
+						}
+					}]
+				}`,
+			},
+			expected: nil,
 		},
 
 		// Auto with Jib
@@ -823,7 +859,7 @@ func fakeCmd(ctx context.Context, p v1.Pod, c v1.Container, files syncMap) *exec
 }
 
 var pod = &v1.Pod{
-	ObjectMeta: meta_v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "skaffold-dirty",
@@ -843,7 +879,7 @@ var pod = &v1.Pod{
 }
 
 var nonRunningPod = &v1.Pod{
-	ObjectMeta: meta_v1.ObjectMeta{
+	ObjectMeta: metav1.ObjectMeta{
 		Name: "podname",
 		Labels: map[string]string{
 			"app.kubernetes.io/managed-by": "skaffold-dirty",
@@ -999,6 +1035,8 @@ func TestSyncMap(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
+			imageFetcher := fakeImageFetcher{}
+			t.Override(&docker.RetrieveImage, imageFetcher.fetch)
 			t.NewTempDir().WriteFiles(test.files).Chdir()
 
 			syncMap, err := SyncMap(&latest.Artifact{ArtifactType: test.artifactType}, nil)
@@ -1007,6 +1045,12 @@ func TestSyncMap(t *testing.T) {
 			t.CheckDeepEqual(test.expectedMap, syncMap)
 		})
 	}
+}
+
+type fakeImageFetcher struct{}
+
+func (f *fakeImageFetcher) fetch(image string, _ map[string]bool) (*registryv1.ConfigFile, error) {
+	return &registryv1.ConfigFile{}, nil
 }
 
 func TestInit(t *testing.T) {

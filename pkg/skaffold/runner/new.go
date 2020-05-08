@@ -44,21 +44,21 @@ import (
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	tagger, err := getTagger(runCtx)
 	if err != nil {
-		return nil, fmt.Errorf("parsing tag config: %w", err)
+		return nil, fmt.Errorf("creating tagger: %w", err)
 	}
 
 	builder, err := getBuilder(runCtx)
 	if err != nil {
-		return nil, fmt.Errorf("parsing build config: %w", err)
+		return nil, fmt.Errorf("creating builder: %w", err)
 	}
-
-	tester := getTester(runCtx)
-	syncer := getSyncer(runCtx)
 
 	imagesAreLocal := false
 	if localBuilder, ok := builder.(*local.Builder); ok {
 		imagesAreLocal = !localBuilder.PushImages()
 	}
+
+	tester := getTester(runCtx, imagesAreLocal)
+	syncer := getSyncer(runCtx)
 
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx.InsecureRegistries)
@@ -81,7 +81,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 
 	deployer, err := getDeployer(runCtx)
 	if err != nil {
-		return nil, fmt.Errorf("parsing deploy config: %w", err)
+		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
 
 	defaultLabeller := deploy.NewLabeller(runCtx.Opts)
@@ -99,7 +99,8 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
-	event.InitializeState(runCtx.Cfg.Build)
+	event.InitializeState(runCtx.Cfg, runCtx.KubeContext)
+	event.LogMetaEvent()
 
 	monitor := filemon.NewMonitor()
 
@@ -209,8 +210,8 @@ func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
 	}
 }
 
-func getTester(runCtx *runcontext.RunContext) test.Tester {
-	return test.NewTester(runCtx)
+func getTester(runCtx *runcontext.RunContext, imagesAreLocal bool) test.Tester {
+	return test.NewTester(runCtx, imagesAreLocal)
 }
 
 func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
@@ -260,7 +261,7 @@ func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {
 		return &tag.ChecksumTagger{}, nil
 
 	case t.GitTagger != nil:
-		return tag.NewGitCommit(t.GitTagger.Variant)
+		return tag.NewGitCommit(t.GitTagger.Prefix, t.GitTagger.Variant)
 
 	case t.DateTimeTagger != nil:
 		return tag.NewDateTimeTagger(t.DateTimeTagger.Format, t.DateTimeTagger.TimeZone), nil

@@ -105,6 +105,10 @@ Once you've done this, merge or rebase your development branch with config chang
 
 For more details behind the logic of config changes see [the Skaffold config management doc](https://docs.google.com/document/d/e/2PACX-1vRIjLuHL2uZ1OXcV9ZXbOQ7ijmqmeCeOZroCGBGTgstuNaZqoKXwg0KLGt_M-PHBwoVpnsKUhHxJ3Jc/pub).
 
+## Making changes to the Skaffold API
+
+We build the API directly through gRPC, which gets translated into REST API through a reverse proxy gateway library. If you make changes to the [proto/skaffold.proto](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/skaffold.proto) file you can run `./hack/generate-proto.sh` to generate the equivalent Go code. 
+
 ## Building skaffold
 
 To build with your local changes you have two options:

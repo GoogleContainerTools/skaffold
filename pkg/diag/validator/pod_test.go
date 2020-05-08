@@ -23,10 +23,11 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	v1 "k8s.io/api/core/v1"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
+	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -39,17 +40,17 @@ func TestRun(t *testing.T) {
 		{
 			description: "pod don't exist in test namespace",
 			pods: []*v1.Pod{{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "foo-ns",
 				}},
 			},
-			expected: []Resource{},
+			expected: nil,
 		},
 		{
 			description: "pod is Waiting conditions with error",
 			pods: []*v1.Pod{{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
@@ -71,12 +72,13 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("container foo-container is waiting to start: image foo-image can't be pulled"))},
+				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
+				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
 		},
 		{
 			description: "pod is in Terminated State",
 			pods: []*v1.Pod{{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
@@ -85,12 +87,13 @@ func TestRun(t *testing.T) {
 					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil)},
+			expected: []Resource{NewResource("test", "", "foo", "Succeeded", nil,
+				proto.StatusCode_STATUSCHECK_SUCCESS)},
 		},
 		{
 			description: "pod is in Stable State",
 			pods: []*v1.Pod{{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
@@ -105,12 +108,13 @@ func TestRun(t *testing.T) {
 					},
 				},
 			}},
-			expected: []Resource{NewResource("test", "", "foo", "Running", nil)},
+			expected: []Resource{NewResource("test", "", "foo", "Running", nil,
+				proto.StatusCode_STATUSCHECK_SUCCESS)},
 		},
 		{
 			description: "pod condition unknown",
 			pods: []*v1.Pod{{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
@@ -124,12 +128,12 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("could not determine"))},
+				fmt.Errorf("could not determine"), proto.StatusCode_STATUSCHECK_UNKNOWN)},
 		},
 		{
 			description: "pod could not be scheduled",
 			pods: []*v1.Pod{{
-				ObjectMeta: meta_v1.ObjectMeta{
+				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
 					Namespace: "test",
 				},
@@ -144,7 +148,30 @@ func TestRun(t *testing.T) {
 				},
 			}},
 			expected: []Resource{NewResource("test", "", "foo", "Pending",
-				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"))},
+				fmt.Errorf("Unschedulable: 0/2 nodes available: 1 node has disk pressure, 1 node is unreachable"),
+				proto.StatusCode_STATUSCHECK_NODE_DISK_PRESSURE)},
+		},
+		{
+			description: "pod is running but container terminated",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				Status: v1.PodStatus{
+					Phase:      v1.PodRunning,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							State: v1.ContainerState{Terminated: &v1.ContainerStateTerminated{ExitCode: 1}},
+						},
+					},
+				},
+			}},
+			expected: []Resource{NewResource("test", "", "foo", "Running",
+				fmt.Errorf("container foo-container terminated with exit code 1"),
+				proto.StatusCode_STATUSCHECK_CONTAINER_TERMINATED)},
 		},
 	}
 
@@ -155,7 +182,7 @@ func TestRun(t *testing.T) {
 				rs[i] = p
 			}
 			f := fakekubeclientset.NewSimpleClientset(rs...)
-			actual, err := NewPodValidator(f).Validate(context.Background(), "test", meta_v1.ListOptions{})
+			actual, err := NewPodValidator(f).Validate(context.Background(), "test", metav1.ListOptions{})
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, actual, cmp.AllowUnexported(Resource{}), cmp.Comparer(func(x, y error) bool {
 				if x == nil && y == nil {

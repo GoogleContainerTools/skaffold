@@ -103,8 +103,6 @@ func TestLookupLocal(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&buildInProgress, func(string) {})
-
 			cache := &cache{
 				imagesAreLocal:  true,
 				artifactCache:   test.cache,
@@ -188,7 +186,6 @@ func TestLookupRemote(t *testing.T) {
 					return "", errors.New("unknown remote tag")
 				}
 			})
-			t.Override(&buildInProgress, func(string) {})
 
 			cache := &cache{
 				imagesAreLocal:  false,

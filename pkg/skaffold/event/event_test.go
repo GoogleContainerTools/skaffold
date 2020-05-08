@@ -57,7 +57,7 @@ func TestGetLogEvents(t *testing.T) {
 
 func TestGetState(t *testing.T) {
 	ev := &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	ev.stateLock.Lock()
@@ -73,7 +73,7 @@ func TestDeployInProgress(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
@@ -85,7 +85,7 @@ func TestDeployFailed(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
@@ -97,7 +97,7 @@ func TestDeployComplete(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().DeployState.Status == NotStarted })
@@ -109,11 +109,11 @@ func TestBuildInProgress(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{
+		state: emptyState(latest.Pipeline{Build: latest.BuildConfig{
 			Artifacts: []*latest.Artifact{{
 				ImageName: "img",
 			}},
-		}),
+		}}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
@@ -125,11 +125,11 @@ func TestBuildFailed(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{
+		state: emptyState(latest.Pipeline{Build: latest.BuildConfig{
 			Artifacts: []*latest.Artifact{{
 				ImageName: "img",
 			}},
-		}),
+		}}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
@@ -141,11 +141,11 @@ func TestBuildComplete(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{
+		state: emptyState(latest.Pipeline{Build: latest.BuildConfig{
 			Artifacts: []*latest.Artifact{{
 				ImageName: "img",
 			}},
-		}),
+		}}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().BuildState.Artifacts["img"] == NotStarted })
@@ -157,7 +157,7 @@ func TestPortForwarded(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().ForwardedPorts[8080] == nil })
@@ -169,7 +169,7 @@ func TestStatusCheckEventStarted(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
@@ -181,7 +181,7 @@ func TestStatusCheckEventInProgress(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
@@ -193,7 +193,7 @@ func TestStatusCheckEventSucceeded(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
@@ -205,7 +205,7 @@ func TestStatusCheckEventFailed(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
@@ -217,7 +217,7 @@ func TestResourceStatusCheckEventUpdated(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
@@ -229,7 +229,7 @@ func TestResourceStatusCheckEventSucceeded(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
@@ -241,7 +241,7 @@ func TestResourceStatusCheckEventFailed(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
@@ -253,7 +253,7 @@ func TestFileSyncInProgress(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().FileSyncState.Status == NotStarted })
@@ -265,7 +265,7 @@ func TestFileSyncFailed(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().FileSyncState.Status == NotStarted })
@@ -277,7 +277,7 @@ func TestFileSyncSucceeded(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	wait(t, func() bool { return handler.getState().FileSyncState.Status == NotStarted })
@@ -289,7 +289,7 @@ func TestDebuggingContainer(t *testing.T) {
 	defer func() { handler = &eventHandler{} }()
 
 	handler = &eventHandler{
-		state: emptyState(latest.BuildConfig{}),
+		state: emptyState(latest.Pipeline{}, "test"),
 	}
 
 	found := func() bool {

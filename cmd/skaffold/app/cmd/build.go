@@ -48,12 +48,14 @@ func NewCmdBuild() *cobra.Command {
 		WithExample("Build artifacts whose image name contains <db>", "build -b <db>").
 		WithExample("Quietly build artifacts and output the image names as json", "build -q > build_result.json").
 		WithExample("Build the artifacts and then deploy them", "build -q | skaffold deploy --build-artifacts -").
+		WithExample("Print the final image names", "build -q --dry-run").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.StringSliceVarP(&opts.TargetImages, "build-image", "b", nil, "Choose which artifacts to build. Artifacts with image names that contain the expression will be built only. Default is to build sources for all artifacts")
 			f.BoolVarP(&quietFlag, "quiet", "q", false, "Suppress the build output and print image built on success. See --output to format output.")
 			f.VarP(buildFormatFlag, "output", "o", "Used in conjunction with --quiet flag. "+buildFormatFlag.Usage())
 			f.StringVar(&buildOutputFlag, "file-output", "", "Filename to write build images to")
+			f.BoolVar(&opts.DryRun, "dry-run", false, "Don't build images, just compute the tag for each artifact.")
 		}).
 		NoArgs(doBuild)
 }
