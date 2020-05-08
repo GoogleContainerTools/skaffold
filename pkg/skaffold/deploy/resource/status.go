@@ -16,16 +16,22 @@ limitations under the License.
 
 package resource
 
+import "github.com/GoogleContainerTools/skaffold/proto"
+
 type Status struct {
-	err      error
-	details  string
-	reported bool
+	err     error
+	details string
+	errCode proto.StatusCode
+	changed bool
 }
 
 func (rs Status) Error() error {
 	return rs.err
 }
 
+func (rs Status) ErrorCode() proto.StatusCode {
+	return rs.errCode
+}
 func (rs Status) String() string {
 	if rs.err != nil {
 		return rs.err.Error()
@@ -43,9 +49,11 @@ func (rs Status) Equal(other Status) bool {
 	return rs.err == other.err
 }
 
-func newStatus(msg string, err error) Status {
+func newStatus(msg string, errCode proto.StatusCode, err error) Status {
 	return Status{
 		details: msg,
 		err:     err,
+		errCode: errCode,
+		changed: true,
 	}
 }

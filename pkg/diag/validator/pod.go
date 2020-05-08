@@ -47,7 +47,7 @@ var (
 	taintsRe       = regexp.MustCompile(taintsExp)
 )
 
-// PodValidator implements the Validator interface for Pods
+// PodValidator implements the Validator interface for pods
 type PodValidator struct {
 	k kubernetes.Interface
 }
@@ -67,7 +67,10 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	var rs []Resource
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
-		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.statusCode))
+		if po.Kind == "" {
+			po.Kind = "pod"
+		}
+		rs = append(rs, NewResourceFromObject(&po, po.Kind, Status(ps.phase), ps.err, ps.statusCode))
 	}
 
 	return rs, nil

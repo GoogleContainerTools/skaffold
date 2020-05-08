@@ -206,7 +206,7 @@ func TestReportSinceLastUpdated(t *testing.T) {
 			dep.UpdateStatus(test.message, test.err)
 
 			t.CheckDeepEqual(test.expected, dep.ReportSinceLastUpdated())
-			t.CheckTrue(dep.status.reported)
+			t.CheckTrue(dep.status.changed)
 		})
 	}
 }
@@ -231,9 +231,10 @@ func TestReportSinceLastUpdatedMultipleTimes(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			dep := NewDeployment("test", "test-ns", 1)
-			dep.UpdateStatus("cannot pull image", nil)
 			var actual string
 			for i := 0; i < test.times; i++ {
+				// update to same status
+				dep.UpdateStatus("cannot pull image", nil)
 				actual = dep.ReportSinceLastUpdated()
 			}
 			t.CheckDeepEqual(test.expected, actual)

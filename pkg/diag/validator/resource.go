@@ -18,7 +18,6 @@ package validator
 
 import (
 	"fmt"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -40,6 +39,9 @@ func (r Resource) Namespace() string { return r.namespace }
 func (r Resource) Status() Status    { return r.status }
 func (r Resource) Error() error      { return r.err }
 func (r Resource) String() string {
+	if r.namespace == "default" {
+		return fmt.Sprintf("%s/%s", r.kind, r.name)
+	}
 	return fmt.Sprintf("{%s:%s/%s}", r.kind, r.namespace, r.name)
 }
 
@@ -55,6 +57,6 @@ type objectWithMetadata interface {
 }
 
 // NewResourceFromObject creates new Resource with fields populated from object metadata.
-func NewResourceFromObject(object objectWithMetadata, status Status, err error, statusCode proto.StatusCode) Resource {
-	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, err, statusCode)
+func NewResourceFromObject(object objectWithMetadata, kind string, status Status, err error, statusCode proto.StatusCode) Resource {
+	return NewResource(object.GetNamespace(), kind, object.GetName(), status, err, statusCode)
 }
