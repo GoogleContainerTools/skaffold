@@ -64,12 +64,9 @@ type counter struct {
 
 func StatusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
 	event.StatusCheckEventStarted()
-	if err := statusCheck(ctx, defaultLabeller, runCtx, out); err != nil {
-		event.StatusCheckEventFailed(err)
-		return err
-	}
-	event.StatusCheckEventSucceeded()
-	return nil
+	err := statusCheck(ctx, defaultLabeller, runCtx, out)
+	event.StatusCheckEventEnded(err)
+	return err
 }
 
 func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *runcontext.RunContext, out io.Writer) error {
@@ -171,20 +168,18 @@ func getDeadline(d int) time.Duration {
 func printStatusCheckSummary(out io.Writer, r Resource, rc resourceCounter) {
 	err := r.Status().Error()
 	if errors.Is(err, context.Canceled) {
-		// Don't print the status summary if the user ctrl-Cd
+		// Don't print the status summary if the user ctrl-C
 		return
 	}
-
+	event.ResourceStatusCheckEventCompleted(r.String(), err)
 	status := fmt.Sprintf("%s %s", tabHeader, r)
 	if err != nil {
-		event.ResourceStatusCheckEventFailed(r.String(), err)
 		status = fmt.Sprintf("%s failed.%s Error: %s.",
 			status,
 			trimNewLine(getPendingMessage(rc.deployments.pending, rc.deployments.total)),
 			trimNewLine(err.Error()),
 		)
 	} else {
-		event.ResourceStatusCheckEventSucceeded(r.String())
 		status = fmt.Sprintf("%s is ready.%s", status, getPendingMessage(rc.deployments.pending, rc.deployments.total))
 	}
 
