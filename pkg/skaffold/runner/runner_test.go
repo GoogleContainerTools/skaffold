@@ -19,6 +19,7 @@ package runner
 import (
 	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"io"
 	"io/ioutil"
 	"testing"
@@ -226,6 +227,8 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 			AutoDeploy:        true,
 		},
 	}
+	event.InitializeState(runCtx.Cfg, runCtx.KubeContext)
+	event.LogMetaEvent()
 	runner, err := NewForConfig(runCtx)
 	t.CheckNoError(err)
 

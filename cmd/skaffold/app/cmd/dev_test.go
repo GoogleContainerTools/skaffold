@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"io"
 	"io/ioutil"
 	"testing"
@@ -95,8 +96,8 @@ func TestDoDev(t *testing.T) {
 				hasDeployed: test.hasDeployed,
 				errDev:      context.Canceled,
 			}
-			t.Override(&createRunner, func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
-				return mockRunner, &latest.SkaffoldConfig{}, nil
+			t.Override(&createRunner, func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, *runcontext.RunContext, error) {
+				return mockRunner, &latest.SkaffoldConfig{}, &runcontext.RunContext{}, nil
 			})
 			t.Override(&opts, config.SkaffoldOptions{
 				Cleanup: true,
@@ -145,8 +146,8 @@ func TestDevConfigChange(t *testing.T) {
 	testutil.Run(t, "test config change", func(t *testutil.T) {
 		mockRunner := &mockConfigChangeRunner{}
 
-		t.Override(&createRunner, func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
-			return mockRunner, &latest.SkaffoldConfig{}, nil
+		t.Override(&createRunner, func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, *runcontext.RunContext, error) {
+			return mockRunner, &latest.SkaffoldConfig{}, &runcontext.RunContext{}, nil
 		})
 		t.Override(&opts, config.SkaffoldOptions{
 			Cleanup: true,

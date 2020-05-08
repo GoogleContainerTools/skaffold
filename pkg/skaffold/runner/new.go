@@ -29,7 +29,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/local"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -98,9 +97,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	if err != nil {
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
-
-	event.InitializeState(runCtx.Cfg, runCtx.KubeContext)
-	event.LogMetaEvent()
 
 	monitor := filemon.NewMonitor()
 

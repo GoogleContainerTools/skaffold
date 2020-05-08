@@ -62,7 +62,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
 	defer r.monitor.Reset()
 	defer r.listener.LogWatchToUser(out)
-	event.DevLoopInProgress(r.devIteration)
+	event.DevLoopInProgress(r.devIteration, r.changeSet.changeType)
 	defer func() { r.devIteration++ }()
 	if needsSync {
 		defer func() {
@@ -125,10 +125,9 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 // Dev watches for changes and runs the skaffold build and deploy
 // config until interrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	event.DevLoopInProgress(r.devIteration)
+	event.DevLoopInProgress(r.devIteration, proto.ChangeType_INITIAL_LOOP)
 	r.createLogger(out, artifacts)
 	defer r.logger.Stop()
-	defer func() { r.devIteration++ }()
 
 	r.createForwarder(out)
 	defer r.forwarderManager.Stop()
@@ -177,7 +176,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch test configuration
 	if err := r.monitor.Register(
 		r.tester.TestDependencies,
-		func(filemon.Events) { r.changeSet.needsRedeploy = true },
+		func(filemon.Events) { r.changeSet.AddRedeploy(proto.ChangeType_TEST) },
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)
 		return fmt.Errorf("watching test files: %w", err)
@@ -186,7 +185,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch deployment configuration
 	if err := r.monitor.Register(
 		r.deployer.Dependencies,
-		func(filemon.Events) { r.changeSet.needsRedeploy = true },
+		func(filemon.Events) { r.changeSet.AddRedeploy(proto.ChangeType_DEPLOY) },
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_DEPLOY_DEPS, err)
 		return fmt.Errorf("watching files for deployer: %w", err)
@@ -195,7 +194,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch Skaffold configuration
 	if err := r.monitor.Register(
 		func() ([]string, error) { return []string{r.runCtx.Opts.ConfigurationFile}, nil },
-		func(filemon.Events) { r.changeSet.needsReload = true },
+		func(filemon.Events) { r.changeSet.NeedsReload() },
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_CONFIG_DEP, err)
 		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.Opts.ConfigurationFile, err)
@@ -237,6 +236,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 			return fmt.Errorf("starting logger: %w", err)
 		}
 	}
-	event.DevLoopComplete(0)
+	event.DevLoopComplete(r.devIteration)
+	r.devIteration++
 	return r.listener.WatchForChanges(ctx, out, r.doDev)
 }

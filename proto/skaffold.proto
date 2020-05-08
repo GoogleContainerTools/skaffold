@@ -27,6 +27,7 @@ message State {
     FileSyncState fileSyncState = 6;
     repeated DebuggingContainerEvent debuggingContainers = 7;
     Metadata metadata = 8;
+    repeated DevLoop loops = 9; // described a dev loop
 }
 
 message Metadata {
@@ -105,6 +106,7 @@ message Event {
         FileSyncEvent fileSyncEvent = 7; // describes the sync status.
         DebuggingContainerEvent debuggingContainerEvent = 8; // describes the appearance or disappearance of a debugging container
         DevLoopEvent devLoopEvent = 9; // describes a start and end of a dev loop.
+        EndEvent endEvent = 10; // describes the skaffold end session event
     }
 }
 
@@ -113,7 +115,7 @@ message DevLoopEvent {
     int32 iteration = 1; // dev loop iteration. 0 represents initialization loop.
     string status = 2; // dev loop status oneof: In Progress, Completed, Failed
     ErrDef err = 3; // actionable error message
-
+    ChangeType changeType = 4; // Enum for dependency that triggered this dev loop.
 }
 
 // `ErrDef` defines an error occurred along with an optional suggestions
@@ -200,6 +202,19 @@ message DebuggingContainerEvent {
   string runtime = 6; // the detected language runtime
   string workingDir = 7; // the working directory in the container image
   map<string,uint32> debugPorts = 8; // the exposed debugging-related ports
+}
+
+// EndEvent described the skaffold end session event
+message EndEvent {
+    StatusCode statusCode = 1;
+    repeated DevLoop loops = 2;
+}
+
+// DevLoop describes skaffold dev iteration
+message DevLoop {
+    int32 iteration = 1; // dev loop iteration
+    ChangeType changeType = 2; // Change type which triggered this loop
+    StatusCode statusCode = 3; // status of the the dev loop
 }
 
 // LogEntry describes an event and a string description of the event.
@@ -317,6 +332,22 @@ enum ClusterType {
     OTHER = 3;
 }
 
+// Enum for indicating which dependency change triggered the dev loop
+enum ChangeType {
+    // First iteration
+    INITIAL_LOOP = 0;
+    // Indicates build dependency change
+    BUILD = 1;
+    // Indicates test dependency change
+    TEST = 2;
+    // Indicates deploy dependency change
+    DEPLOY = 3;
+    // Indicates skaffold config change
+    CONFIG = 4;
+    // Indicates sync dependency change
+    SYNC = 5;
+}
+
 // Enum for Status codes
 // These error codes are prepended by Phase Name e.g.
 // BUILD, DEPLOY, STATUSCHECK, DEVINIT
@@ -326,10 +357,13 @@ enum StatusCode {
 
     // No Error codes
 
+    // Skaffold session success code
+    SESSION_SUCCESS = 200;
     // Status Check Success
-    STATUSCHECK_SUCCESS = 200;
+    STATUSCHECK_SUCCESS = 202;
     // Build Success
     BUILD_SUCCESS = 201;
+    DEVLOOP_SUCCESS = 203;
 
     // Build Errors
 

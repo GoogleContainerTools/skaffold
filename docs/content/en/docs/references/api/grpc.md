@@ -252,6 +252,23 @@ anytime a deployment starts or completes, successfully or not.
 
 
 
+<a name="proto.DevLoop"></a>
+#### DevLoop
+DevLoop describes skaffold dev iteration
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| iteration | [int32](#int32) |  | dev loop iteration |
+| changeType | [ChangeType](#proto.ChangeType) |  | Change type which triggered this loop |
+| statusCode | [StatusCode](#proto.StatusCode) |  | status of the the dev loop |
+
+
+
+
+
+
+
 <a name="proto.DevLoopEvent"></a>
 #### DevLoopEvent
 `DevLoopEvent` marks the start and end of a dev loop.
@@ -262,6 +279,23 @@ anytime a deployment starts or completes, successfully or not.
 | iteration | [int32](#int32) |  | dev loop iteration. 0 represents initialization loop. |
 | status | [string](#string) |  | dev loop status oneof: In Progress, Completed, Failed |
 | err | [ErrDef](#proto.ErrDef) |  | actionable error message |
+| changeType | [ChangeType](#proto.ChangeType) |  | Enum for dependency that triggered this dev loop. |
+
+
+
+
+
+
+
+<a name="proto.EndEvent"></a>
+#### EndEvent
+EndEvent described the skaffold end session event
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| statusCode | [StatusCode](#proto.StatusCode) |  |  |
+| loops | [DevLoop](#proto.DevLoop) | repeated |  |
 
 
 
@@ -302,6 +336,7 @@ It is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, Re
 | fileSyncEvent | [FileSyncEvent](#proto.FileSyncEvent) |  | describes the sync status. |
 | debuggingContainerEvent | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) |  | describes the appearance or disappearance of a debugging container |
 | devLoopEvent | [DevLoopEvent](#proto.DevLoopEvent) |  | describes a start and end of a dev loop. |
+| endEvent | [EndEvent](#proto.EndEvent) |  | describes the skaffold end session event |
 
 
 
@@ -515,6 +550,7 @@ will be sent with the new status.
 | fileSyncState | [FileSyncState](#proto.FileSyncState) |  |  |
 | debuggingContainers | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) | repeated |  |
 | metadata | [Metadata](#proto.Metadata) |  |  |
+| loops | [DevLoop](#proto.DevLoop) | repeated | described a dev loop |
 
 
 
@@ -650,6 +686,22 @@ Enum indicating builders used
 
 
 
+<a name="proto.ChangeType"></a>
+
+### ChangeType
+Enum for indicating which dependency change triggered the dev loop
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| INITIAL_LOOP | 0 | First iteration |
+| BUILD | 1 | Indicates build dependency change |
+| TEST | 2 | Indicates test dependency change |
+| DEPLOY | 3 | Indicates deploy dependency change |
+| CONFIG | 4 | Indicates skaffold config change |
+| SYNC | 5 | Indicates sync dependency change |
+
+
+
 <a name="proto.ClusterType"></a>
 
 ### ClusterType
@@ -688,8 +740,10 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | UNKNOWN_ERROR | 0 | Could not determine error and phase |
-| STATUSCHECK_SUCCESS | 200 | Status Check Success |
+| SESSION_SUCCESS | 200 | Skaffold session success code |
+| STATUSCHECK_SUCCESS | 202 | Status Check Success |
 | BUILD_SUCCESS | 201 | Build Success |
+| DEVLOOP_SUCCESS | 203 |  |
 | BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
 | BUILD_PROJECT_NOT_FOUND | 102 | Build error due to GCP project not found. |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |

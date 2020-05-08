@@ -20,9 +20,8 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
-
 	"github.com/sirupsen/logrus"
+	"io"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 

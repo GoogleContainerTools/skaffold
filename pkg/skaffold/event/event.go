@@ -133,11 +133,12 @@ func emptyState(p latest.Pipeline, kubeContext string) proto.State {
 	for _, a := range p.Build.Artifacts {
 		builds[a.ImageName] = NotStarted
 	}
-	metadata := initializeMetadata(p, kubeContext)
-	return emptyStateWithArtifacts(builds, metadata)
+	newState := emptyStateWithArtifacts(builds)
+	newState.Metadata = initializeMetadata(p, kubeContext)
+	return newState
 }
 
-func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata) proto.State {
+func emptyStateWithArtifacts(builds map[string]string) proto.State {
 	return proto.State{
 		BuildState: &proto.BuildState{
 			Artifacts: builds,
@@ -150,7 +151,6 @@ func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata)
 		FileSyncState: &proto.FileSyncState{
 			Status: NotStarted,
 		},
-		Metadata: metadata,
 	}
 }
 
@@ -249,8 +249,8 @@ func BuildComplete(imageName string) {
 }
 
 // DevLoopInProgress notifies that a dev loop has been started.
-func DevLoopInProgress(i int) {
-	handler.handleDevLoopEvent(&proto.DevLoopEvent{Iteration: int32(i), Status: InProgress})
+func DevLoopInProgress(i int, c proto.ChangeType) {
+	handler.handleDevLoopEvent(&proto.DevLoopEvent{Iteration: int32(i), Status: InProgress, ChangeType: c})
 }
 
 // DevLoopFailed notifies that a dev loop has failed with an error code
@@ -415,6 +415,18 @@ func LogMetaEvent() {
 	})
 }
 
+// SessionEnded notifies that that skaffold session has ended and describes it
+func SessionEnded(statusCode proto.StatusCode) {
+	go handler.handle(&proto.Event{
+		EventType: &proto.Event_EndEvent{
+			EndEvent: &proto.EndEvent{
+				StatusCode: statusCode,
+				Loops:      handler.state.Loops,
+			},
+		},
+	})
+}
+
 func (ev *eventHandler) handle(event *proto.Event) {
 	logEntry := &proto.LogEntry{
 		Timestamp: ptypes.TimestampNow(),
@@ -530,14 +542,24 @@ func (ev *eventHandler) handle(event *proto.Event) {
 		}
 	case *proto.Event_DevLoopEvent:
 		de := e.DevLoopEvent
+		ev.stateLock.Lock()
 		switch de.Status {
 		case InProgress:
 			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d in progress", de.Iteration)
+			ev.state.Loops = append(ev.state.Loops, &proto.DevLoop{
+				Iteration:  de.Iteration,
+				ChangeType: de.ChangeType,
+			})
 		case Succeeded:
+			ev.state.Loops[int(de.Iteration)].StatusCode = proto.StatusCode_DEVLOOP_SUCCESS
 			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d successful", de.Iteration)
 		case Failed:
+			ev.state.Loops[int(de.Iteration)].StatusCode = de.Err.ErrCode
 			logEntry.Entry = fmt.Sprintf("DevInit Iteration %d failed with error code %v", de.Iteration, de.Err.ErrCode)
 		}
+		ev.stateLock.Unlock()
+	case *proto.Event_EndEvent:
+		logEntry.Entry = fmt.Sprintf("Skaffold end event with %d dev loops", len(e.EndEvent.Loops))
 	default:
 		return
 	}
@@ -551,7 +573,9 @@ func ResetStateOnBuild() {
 	for k := range handler.getState().BuildState.Artifacts {
 		builds[k] = NotStarted
 	}
-	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata)
+	newState := emptyStateWithArtifacts(builds)
+	newState.Metadata = handler.getState().Metadata
+	newState.Loops = handler.getState().Loops
 	handler.setState(newState)
 }
 

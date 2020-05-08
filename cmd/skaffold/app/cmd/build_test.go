@@ -20,6 +20,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"io"
 	"io/ioutil"
 	"testing"
@@ -49,8 +50,8 @@ func (r *mockRunner) Stop() error {
 }
 
 func TestTagFlag(t *testing.T) {
-	mockCreateRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
-		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
+	mockCreateRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, *runcontext.RunContext, error) {
+		return &mockRunner{}, &latest.SkaffoldConfig{}, &runcontext.RunContext{}, nil
 	}
 
 	testutil.Run(t, "override tag with argument", func(t *testutil.T) {
@@ -68,8 +69,8 @@ func TestTagFlag(t *testing.T) {
 }
 
 func TestQuietFlag(t *testing.T) {
-	mockCreateRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
-		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
+	mockCreateRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, *runcontext.RunContext, error) {
+		return &mockRunner{}, &latest.SkaffoldConfig{}, &runcontext.RunContext{}, nil
 	}
 
 	tests := []struct {
@@ -114,8 +115,8 @@ func TestQuietFlag(t *testing.T) {
 }
 
 func TestFileOutputFlag(t *testing.T) {
-	mockCreateRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
-		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
+	mockCreateRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, *runcontext.RunContext, error) {
+		return &mockRunner{}, &latest.SkaffoldConfig{}, &runcontext.RunContext{}, nil
 	}
 
 	tests := []struct {
@@ -177,16 +178,16 @@ func TestFileOutputFlag(t *testing.T) {
 }
 
 func TestRunBuild(t *testing.T) {
-	errRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
-		return nil, nil, errors.New("some error")
+	errRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, *runcontext.RunContext, error) {
+		return nil, nil, nil, errors.New("some error")
 	}
-	mockCreateRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
-		return &mockRunner{}, &latest.SkaffoldConfig{}, nil
+	mockCreateRunner := func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, *runcontext.RunContext, error) {
+		return &mockRunner{}, &latest.SkaffoldConfig{}, &runcontext.RunContext{}, nil
 	}
 
 	tests := []struct {
 		description string
-		mock        func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error)
+		mock        func(config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, *runcontext.RunContext, error)
 		shouldErr   bool
 	}{
 		{

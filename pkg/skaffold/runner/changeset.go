@@ -19,6 +19,7 @@ package runner
 import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 type changeSet struct {
@@ -26,6 +27,7 @@ type changeSet struct {
 	rebuildTracker map[string]*latest.Artifact
 	needsResync    []*sync.Item
 	resyncTracker  map[string]*sync.Item
+	changeType     proto.ChangeType
 	needsRedeploy  bool
 	needsReload    bool
 }
@@ -37,6 +39,7 @@ func (c *changeSet) AddRebuild(a *latest.Artifact) {
 	c.rebuildTracker[a.ImageName] = a
 	c.needsRebuild = append(c.needsRebuild, a)
 	c.needsRedeploy = true
+	c.changeType = proto.ChangeType_BUILD
 }
 
 func (c *changeSet) AddResync(s *sync.Item) {
@@ -45,6 +48,17 @@ func (c *changeSet) AddResync(s *sync.Item) {
 	}
 	c.resyncTracker[s.Image] = s
 	c.needsResync = append(c.needsResync, s)
+	c.changeType = proto.ChangeType_SYNC
+}
+
+func (c *changeSet) AddRedeploy(ct proto.ChangeType) {
+	c.needsRedeploy = true
+	c.changeType = ct
+}
+
+func (c *changeSet) NeedsReload() {
+	c.needsReload = true
+	c.changeType = proto.ChangeType_CONFIG
 }
 
 func (c *changeSet) resetBuild() {
