@@ -518,10 +518,9 @@ func TestHelmDeploy(t *testing.T) {
 		},
 		{
 			description: "deploy success when `upgradeOnChange: false` and does not upgrade",
-			commands: &MockHelm{
-				installResult: fmt.Errorf("should not have called install"),
-				upgradeResult: fmt.Errorf("should not have called upgrade"),
-			},
+			commands: testutil.
+				CmdRunWithOutput("helm version", version21).
+				AndRun("helm --kube-context kubecontext get skaffold-helm-upgradeOnChange --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeployUpgradeOnChange, false),
 		},
 		{
