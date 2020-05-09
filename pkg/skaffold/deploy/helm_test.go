@@ -251,6 +251,20 @@ var testTwoReleases = latest.HelmDeploy{
 	}},
 }
 
+var testReleasWithValuesOtherThanImages = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:      "skaffold-helm",
+		ChartPath: "examples/test",
+
+		Values: map[string]string{
+			"image":           "skaffold-helm",
+			"some.key":        "somevalue",
+			"some.otherkey":   "someothervalue",
+			"templated.value": "{{.FOO}}",
+		},
+	}},
+}
+
 var testNamespace = "testNamespace"
 
 var validDeployYaml = `
@@ -486,16 +500,21 @@ func TestHelmDeploy(t *testing.T) {
 			builds:     testBuilds,
 		},
 		{
-			description: "deploy should error for unmatched parameter",
+			description: "deploy should warn for unused build images",
 			commands: testutil.
 				CmdRunWithOutput("helm version", version21).
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
-				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set image=skaffold-helm-unmatched --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeployConfigParameterUnmatched, false),
 			builds:     testBuilds,
-			shouldErr:  true,
+			shouldErr:  false,
+			expectedWarnings: []string{
+				"See helm sample for how to replace image names with their actual tags: https://github.com/GoogleContainerTools/skaffold/blob/master/examples/helm-deployment/skaffold.yaml",
+				"image [docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184] is not used.",
+				"image [skaffold-helm] is used instead.",
+			},
 		},
 		{
 			description: "deploy success remote chart with skipBuildDependencies",
@@ -719,6 +738,17 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext upgrade skaffold-helm  --set-string image.tag=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --kubeconfig kubeconfig").
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testTwoReleases, false),
+			builds:     testBuilds,
+		},
+		{
+			description: "A release with more values than just the image name",
+			commands: testutil.
+				CmdRunWithOutput("helm version", version30).
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --set some.otherkey=someothervalue --set templated.value=FOOBAR --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get all skaffold-helm --kubeconfig kubeconfig"),
+			runContext: makeRunContext(testReleasWithValuesOtherThanImages, false),
 			builds:     testBuilds,
 		},
 	}

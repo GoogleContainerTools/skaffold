@@ -172,7 +172,7 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 			return !info.IsDir() && (!strings.HasPrefix(path, chartDepsDir) || r.SkipBuildDependencies), nil
 		}
 
-		if err := walk.From(release.ChartPath).When(isDep).AppendPaths(&deps); err != nil {
+		if err := walk.From(r.ChartPath).When(isDep).AppendPaths(&deps); err != nil {
 			return deps, fmt.Errorf("issue walking releases: %w", err)
 		}
 	}
@@ -400,42 +400,22 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		args = append(args, "--namespace", o.namespace)
 	}
 
-	params, err := pairParamsToArtifacts(builds, r.Values)
-	if err != nil {
-		return nil, fmt.Errorf("matching build results to chart values: %w", err)
-	}
+	params := pairParamsToArtifacts(builds, r.Values)
 
 	if len(r.Overrides.Values) != 0 {
 		args = append(args, "-f", constants.HelmOverridesFilename)
 	}
 
 	for k, v := range params {
-		var value string
-
 		cfg := r.ImageStrategy.HelmImageConfig.HelmConventionConfig
 
-		value, err = imageSetFromConfig(cfg, k, v.Tag)
+		value, err := imageSetFromConfig(cfg, k, v.Tag)
 		if err != nil {
 			return nil, err
 		}
 
 		valuesSet[v.Tag] = true
 		args = append(args, "--set-string", value)
-	}
-
-	sortedKeys := make([]string, 0, len(r.SetValues))
-	for k := range r.SetValues {
-		sortedKeys = append(sortedKeys, k)
-	}
-	sort.Strings(sortedKeys)
-	for _, k := range sortedKeys {
-		valuesSet[r.SetValues[k]] = true
-		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
-	}
-
-	for k, v := range r.SetFiles {
-		valuesSet[v] = true
-		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, v))
 	}
 
 	envMap := map[string]string{}
@@ -450,6 +430,41 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		}
 	}
 	logrus.Debugf("EnvVarMap: %+v\n", envMap)
+
+	sortedKeys := make([]string, 0, len(r.Values))
+	for k := range r.Values {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+	for _, k := range sortedKeys {
+		_, ok := params[k]
+		// Apply value only if it is not an artifact image
+		if !ok {
+			// Try to expand eny environment variables
+			v, err := util.ExpandEnvTemplate(r.Values[k], envMap)
+			if err != nil {
+				return nil, err
+			}
+
+			valuesSet[v] = true
+			args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
+		}
+	}
+
+	sortedKeys = make([]string, 0, len(r.SetValues))
+	for k := range r.SetValues {
+		sortedKeys = append(sortedKeys, k)
+	}
+	sort.Strings(sortedKeys)
+	for _, k := range sortedKeys {
+		valuesSet[r.SetValues[k]] = true
+		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
+	}
+
+	for k, v := range r.SetFiles {
+		valuesSet[v] = true
+		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, v))
+	}
 
 	sortedKeys = make([]string, 0, len(r.SetValueTemplates))
 	for k := range r.SetValueTemplates {
@@ -597,7 +612,7 @@ func imageSetFromConfig(cfg *latest.HelmConventionConfig, valueName string, tag 
 }
 
 // pairParamsToArtifacts associates parameters to the build artifact it creates
-func pairParamsToArtifacts(builds []build.Artifact, params map[string]string) (map[string]build.Artifact, error) {
+func pairParamsToArtifacts(builds []build.Artifact, params map[string]string) map[string]build.Artifact {
 	imageToBuildResult := map[string]build.Artifact{}
 	for _, b := range builds {
 		imageToBuildResult[b.ImageName] = b
@@ -607,12 +622,10 @@ func pairParamsToArtifacts(builds []build.Artifact, params map[string]string) (m
 
 	for param, imageName := range params {
 		b, ok := imageToBuildResult[imageName]
-		if !ok {
-			return nil, fmt.Errorf("no build present for %s", imageName)
+		if ok {
+			paramToBuildResult[param] = b
 		}
-
-		paramToBuildResult[param] = b
 	}
 
-	return paramToBuildResult, nil
+	return paramToBuildResult
 }

@@ -40,5 +40,10 @@ func TestHelmDeploy(t *testing.T) {
 	testutil.CheckDeepEqual(t, dep.Name, dep.ObjectMeta.Labels["release"])
 	testutil.CheckDeepEqual(t, "helm", dep.ObjectMeta.Labels["skaffold.dev/deployer"])
 
+	// check if host is properly applied
+	ingress := client.GetIngress("skaffold-helm-" + ns.Name)
+	testutil.CheckDeepEqual(t, len(ingress.Spec.Rules), 1)
+	testutil.CheckDeepEqual(t, ingress.Spec.Rules[0].Host, "chart-example."+ns.Name+".local")
+
 	skaffold.Delete().InDir("testdata/helm").InNs(ns.Name).WithEnv(env).RunOrFail(t)
 }

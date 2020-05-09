@@ -30,10 +30,12 @@ import (
 	"github.com/sirupsen/logrus"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	typedextensionsv1beta1 "k8s.io/client-go/kubernetes/typed/extensions/v1beta1"
 
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	k8s "github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
@@ -89,15 +91,15 @@ type NSKubernetesClient struct {
 	ns     string
 }
 
-func (k *NSKubernetesClient) Pods() corev1.PodInterface {
+func (k *NSKubernetesClient) Pods() typedcorev1.PodInterface {
 	return k.client.CoreV1().Pods(k.ns)
 }
 
-func (k *NSKubernetesClient) Secrets() corev1.SecretInterface {
+func (k *NSKubernetesClient) Secrets() typedcorev1.SecretInterface {
 	return k.client.CoreV1().Secrets(k.ns)
 }
 
-func (k *NSKubernetesClient) Services() corev1.ServiceInterface {
+func (k *NSKubernetesClient) Services() typedcorev1.ServiceInterface {
 	return k.client.CoreV1().Services(k.ns)
 }
 
@@ -105,7 +107,11 @@ func (k *NSKubernetesClient) Deployments() typedappsv1.DeploymentInterface {
 	return k.client.AppsV1().Deployments(k.ns)
 }
 
-func (k *NSKubernetesClient) DefaultSecrets() corev1.SecretInterface {
+func (k *NSKubernetesClient) Ingresses() typedextensionsv1beta1.IngressInterface {
+	return k.client.ExtensionsV1beta1().Ingresses(k.ns)
+}
+
+func (k *NSKubernetesClient) DefaultSecrets() typedcorev1.SecretInterface {
 	return k.client.CoreV1().Secrets("default")
 }
 
@@ -189,6 +195,14 @@ func (k *NSKubernetesClient) GetDeployment(depName string) *appsv1.Deployment {
 		k.t.Fatalf("Could not find deployment: %s in namespace %s", depName, k.ns)
 	}
 	return dep
+}
+
+func (k *NSKubernetesClient) GetIngress(ingressName string) *extensionsv1beta1.Ingress {
+	ingress, err := k.Ingresses().Get(ingressName, metav1.GetOptions{})
+	if err != nil {
+		k.t.Fatalf("Could not find ingress: %s in namespace %s", ingressName, k.ns)
+	}
+	return ingress
 }
 
 // WaitForDeploymentsToStabilize waits for a list of deployments to become stable.
