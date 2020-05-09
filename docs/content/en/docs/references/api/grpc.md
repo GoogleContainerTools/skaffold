@@ -40,12 +40,45 @@ Describes all the methods for the Skaffold API
 | EventLog | [LogEntry](#proto.LogEntry) stream | [LogEntry](#proto.LogEntry) stream | DEPRECATED. Events should be used instead. TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168) |
 | Events | [.google.protobuf.Empty](#google.protobuf.Empty) | [LogEntry](#proto.LogEntry) stream | Returns all the events of the current Skaffold execution from the start |
 | Execute | [UserIntentRequest](#proto.UserIntentRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled. |
+| UpdateAutoTrigger | [AutoTriggerRequest](#proto.AutoTriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic triggers for phases (build, sync, deploy) |
 | Handle | [Event](#proto.Event) | [.google.protobuf.Empty](#google.protobuf.Empty) | EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example. |
 
  <!-- end services -->
 
 
 ### Data types
+
+
+
+<a name="proto.AutoTrigger"></a>
+#### AutoTrigger
+AutoTrigger represents enabling or disabling automatic triggers for a given phase
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| build | [bool](#bool) |  | enables or disables autoBuild |
+| sync | [bool](#bool) |  | enables or disables autoSync |
+| deploy | [bool](#bool) |  | enables or disables autoDeploy |
+
+
+
+
+
+
+
+<a name="proto.AutoTriggerRequest"></a>
+#### AutoTriggerRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| phase | [AutoTrigger](#proto.AutoTrigger) |  |  |
+
+
+
+
 
 
 
@@ -126,6 +159,7 @@ If the build fails, an error will be attached to the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | artifacts | [BuildState.ArtifactsEntry](#proto.BuildState.ArtifactsEntry) | repeated | A map of `artifact name -> build-state`. Artifact name is defined in the `skaffold.yaml`. The `build-state` can be: <br> - `"Not started"`: not yet started <br> - `"In progress"`: build started <br> - `"Complete"`: build succeeded <br> - `"Failed"`: build failed |
+| autoTrigger | [bool](#bool) |  |  |
 
 
 
@@ -245,6 +279,7 @@ anytime a deployment starts or completes, successfully or not.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
+| autoTrigger | [bool](#bool) |  |  |
 
 
 
@@ -336,6 +371,7 @@ FileSyncEvent describes the sync status.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  |  |
+| autoTrigger | [bool](#bool) |  |  |
 
 
 

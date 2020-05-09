@@ -67,11 +67,13 @@ message BuildState {
     // - `"Complete"`: build succeeded <br>
     // - `"Failed"`: build failed
     map<string, string> artifacts = 1;
+    bool autoTrigger = 2;
 }
 
 // `DeployState` describes the status of the current deploy
 message DeployState {
     string status = 1;
+    bool autoTrigger = 2;
 }
 
 // `StatusCheckState` describes the state of status check of current deployed resources.
@@ -90,6 +92,7 @@ message StatusCheckState {
 // `FileSyncState` contains the status of the current file sync
 message FileSyncState {
     string status = 1;
+    bool autoTrigger = 2;
 }
 
 // `Event` describes an event in the Skaffold process.
@@ -220,6 +223,18 @@ message Intent {
     bool deploy = 3; // in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once
 }
 
+
+message AutoTriggerRequest {
+    AutoTrigger phase = 1;
+}
+
+// AutoTrigger represents enabling or disabling automatic triggers for a given phase
+message AutoTrigger {
+    bool build = 1; // enables or disables autoBuild
+    bool sync = 2; // enables or disables autoSync
+    bool deploy = 3; // enables or disables autoDeploy
+}
+
 // Describes all the methods for the Skaffold API
 service SkaffoldService {
 
@@ -250,6 +265,14 @@ service SkaffoldService {
         option (google.api.http) = {
             post: "/v1/execute"
             body: "intent"
+    };
+    }
+
+    // Allows for enabling or disabling automatic triggers for phases (build, sync, deploy)
+    rpc UpdateAutoTrigger (AutoTriggerRequest) returns (google.protobuf.Empty) {
+        option (google.api.http) = {
+            post: "/v1/update/trigger"
+            body: "phase"
     };
     }
 

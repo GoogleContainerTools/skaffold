@@ -65,3 +65,27 @@ func (s *server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (
 
 	return &empty.Empty{}, nil
 }
+
+func (s *server) UpdateAutoTrigger(ctx context.Context, phase *proto.AutoTriggerRequest) (*empty.Empty, error) {
+	autoBuild, autoDeploy, autoSync := event.AutoTriggerDiff(phase.GetPhase().GetBuild(), phase.GetPhase().GetDeploy(), phase.GetPhase().GetSync())
+
+	if autoBuild {
+		event.ResetStateUpdateTriggerOnBuild(phase.GetPhase().GetBuild())
+		go func() {
+			s.autoBuildCallback(phase.GetPhase().GetBuild())
+		}()
+	}
+	if autoDeploy {
+		event.ResetStateUpdateTriggerOnDeploy(phase.GetPhase().GetDeploy())
+		go func() {
+			s.autoDeployCallback(phase.GetPhase().GetDeploy())
+		}()
+	}
+	if autoSync {
+		event.ResetStateUpdateTriggerOnSync(phase.GetPhase().GetSync())
+		go func() {
+			s.autoSyncCallback(phase.GetPhase().GetSync())
+		}()
+	}
+	return &empty.Empty{}, nil
+}

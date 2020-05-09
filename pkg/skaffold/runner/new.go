@@ -99,7 +99,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
-	event.InitializeState(runCtx.Cfg, runCtx.KubeContext)
+	event.InitializeState(runCtx.Cfg, runCtx.KubeContext, runCtx.Opts.AutoBuild, runCtx.Opts.AutoDeploy, runCtx.Opts.AutoSync)
 	event.LogMetaEvent()
 
 	monitor := filemon.NewMonitor()
@@ -149,45 +149,104 @@ func (r *SkaffoldRunner) setupTriggerCallbacks(c chan bool) error {
 	if err := r.setupTriggerCallback("deploy", c); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (r *SkaffoldRunner) setupUpdateAutoTriggerCallback(triggerName string, c chan<- bool) error {
+	var (
+		setIntent      func(bool)
+		serverCallback func(func(bool))
+	)
+
+	switch triggerName {
+	case "build":
+		setIntent = r.intents.setAutoBuild
+		serverCallback = server.SetAutoBuildCallback
+	case "sync":
+		setIntent = r.intents.setAutoSync
+		serverCallback = server.SetAutoSyncCallback
+	case "deploy":
+		setIntent = r.intents.setAutoDeploy
+		serverCallback = server.SetAutoDeployCallback
+	default:
+		return fmt.Errorf("unsupported trigger type when setting callbacks: %s", triggerName)
+	}
+
+	serverCallback(func(val bool) {
+		logrus.Debugf("%s auto trigger update received, calling back to runner", triggerName)
+		// signal chan only on resume requests
+		if val {
+			c <- true
+		}
+		setIntent(val)
+	})
 	return nil
 }
 
 func (r *SkaffoldRunner) setupTriggerCallback(triggerName string, c chan<- bool) error {
 	var (
-		setIntent      func(bool)
-		trigger        bool
-		serverCallback func(func())
+		setIntent             func(bool)
+		setAutoTrigger        func(bool)
+		trigger               func() bool
+		singleTriggerCallback func(func())
+		autoTriggerCallback   func(func(bool))
 	)
 
 	switch triggerName {
 	case "build":
 		setIntent = r.intents.setBuild
-		trigger = r.runCtx.Opts.AutoBuild
-		serverCallback = server.SetBuildCallback
+		setAutoTrigger = r.intents.setAutoBuild
+		trigger = func() (b bool) {
+			b, _, _ = r.intents.GetAutoTriggers()
+			return
+		}
+		singleTriggerCallback = server.SetBuildCallback
+		autoTriggerCallback = server.SetAutoBuildCallback
 	case "sync":
 		setIntent = r.intents.setSync
-		trigger = r.runCtx.Opts.AutoSync
-		serverCallback = server.SetSyncCallback
+		setAutoTrigger = r.intents.setAutoSync
+		trigger = func() (s bool) {
+			_, s, _ = r.intents.GetAutoTriggers()
+			return
+		}
+		singleTriggerCallback = server.SetSyncCallback
+		autoTriggerCallback = server.SetAutoSyncCallback
 	case "deploy":
 		setIntent = r.intents.setDeploy
-		trigger = r.runCtx.Opts.AutoDeploy
-		serverCallback = server.SetDeployCallback
+		setAutoTrigger = r.intents.setAutoDeploy
+		trigger = func() (d bool) {
+			_, _, d = r.intents.GetAutoTriggers()
+			return
+		}
+		singleTriggerCallback = server.SetDeployCallback
+		autoTriggerCallback = server.SetAutoDeployCallback
 	default:
 		return fmt.Errorf("unsupported trigger type when setting callbacks: %s", triggerName)
 	}
 
-	setIntent(true)
+	setIntent(trigger())
 
-	// if "auto" is set to false, we're in manual mode
-	if !trigger {
-		setIntent(false) // set the initial value of the intent to false
-		// give the server a callback to set the intent value when a user request is received
-		serverCallback(func() {
+	// give the server a callback to set the intent value when a user request is received
+	singleTriggerCallback(func() {
+		if !trigger() { //if auto trigger is disabled, we're in manual mode
 			logrus.Debugf("%s intent received, calling back to runner", triggerName)
 			c <- true
 			setIntent(true)
-		})
-	}
+		}
+	})
+
+	// give the server a callback to set the intent and auto trigger values when a user request is received
+	autoTriggerCallback(func(val bool) {
+		logrus.Debugf("%s auto trigger update to %t received, calling back to runner", triggerName, val)
+		// signal chan only on start auto trigger requests
+		if val {
+			c <- true
+		}
+		setAutoTrigger(val)
+		setIntent(val)
+	})
+
 	return nil
 }
 

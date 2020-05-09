@@ -590,6 +590,33 @@
           "SkaffoldService"
         ]
       }
+    },
+    "/v1/update/trigger": {
+      "post": {
+        "summary": "Allows for enabling or disabling automatic triggers for phases (build, sync, deploy)",
+        "operationId": "UpdateAutoTrigger",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoAutoTrigger"
+            }
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -616,6 +643,24 @@
           "format": "int32"
         }
       }
+    },
+    "protoAutoTrigger": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "sync": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "deploy": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "description": "AutoTrigger represents enabling or disabling automatic triggers for a given phase"
     },
     "protoBuildEvent": {
       "type": "object",
@@ -669,6 +714,10 @@
             "type": "string"
           },
           "description": "A map of `artifact name -> build-state`.\nArtifact name is defined in the `skaffold.yaml`.\nThe `build-state` can be: <br>\n- `\"Not started\"`: not yet started <br>\n- `\"In progress\"`: build started <br>\n- `\"Complete\"`: build succeeded <br>\n- `\"Failed\"`: build failed"
+        },
+        "autoTrigger": {
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "`BuildState` maps Skaffold artifacts to their current build states"
@@ -777,6 +826,10 @@
       "properties": {
         "status": {
           "type": "string"
+        },
+        "autoTrigger": {
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "`DeployState` describes the status of the current deploy"
@@ -880,6 +933,10 @@
       "properties": {
         "status": {
           "type": "string"
+        },
+        "autoTrigger": {
+          "type": "boolean",
+          "format": "boolean"
         }
       },
       "description": "`FileSyncState` contains the status of the current file sync"

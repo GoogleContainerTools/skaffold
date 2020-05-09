@@ -128,35 +128,38 @@ func (ev *eventHandler) forEachEvent(callback func(*proto.LogEntry) error) error
 	return <-listener.errors
 }
 
-func emptyState(p latest.Pipeline, kubeContext string) proto.State {
+func emptyState(p latest.Pipeline, kubeContext string, autoBuild, autoDeploy, autoSync bool) proto.State {
 	builds := map[string]string{}
 	for _, a := range p.Build.Artifacts {
 		builds[a.ImageName] = NotStarted
 	}
 	metadata := initializeMetadata(p, kubeContext)
-	return emptyStateWithArtifacts(builds, metadata)
+	return emptyStateWithArtifacts(builds, metadata, autoBuild, autoDeploy, autoSync)
 }
 
-func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata) proto.State {
+func emptyStateWithArtifacts(builds map[string]string, metadata *proto.Metadata, autoBuild, autoDeploy, autoSync bool) proto.State {
 	return proto.State{
 		BuildState: &proto.BuildState{
-			Artifacts: builds,
+			Artifacts:   builds,
+			AutoTrigger: autoBuild,
 		},
 		DeployState: &proto.DeployState{
-			Status: NotStarted,
+			Status:      NotStarted,
+			AutoTrigger: autoDeploy,
 		},
 		StatusCheckState: emptyStatusCheckState(),
 		ForwardedPorts:   make(map[int32]*proto.PortEvent),
 		FileSyncState: &proto.FileSyncState{
-			Status: NotStarted,
+			Status:      NotStarted,
+			AutoTrigger: autoSync,
 		},
 		Metadata: metadata,
 	}
 }
 
 // InitializeState instantiates the global state of the skaffold runner, as well as the event log.
-func InitializeState(c latest.Pipeline, kc string) {
-	handler.setState(emptyState(c, kc))
+func InitializeState(c latest.Pipeline, kc string, autoBuild, autoDeploy, autoSync bool) {
+	handler.setState(emptyState(c, kc, autoBuild, autoDeploy, autoSync))
 }
 
 // DeployInProgress notifies that a deployment has been started.
@@ -547,21 +550,39 @@ func (ev *eventHandler) handle(event *proto.Event) {
 
 // ResetStateOnBuild resets the build, deploy and sync state
 func ResetStateOnBuild() {
+	autoBuild := handler.getState().BuildState.AutoTrigger
+	ResetStateUpdateTriggerOnBuild(autoBuild)
+}
+
+func ResetStateUpdateTriggerOnBuild(autoBuild bool) {
 	builds := map[string]string{}
 	for k := range handler.getState().BuildState.Artifacts {
 		builds[k] = NotStarted
 	}
-	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata)
+	autoDeploy, autoSync := handler.getState().DeployState.AutoTrigger, handler.getState().FileSyncState.AutoTrigger
+	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata, autoBuild, autoDeploy, autoSync)
 	handler.setState(newState)
 }
 
 // ResetStateOnDeploy resets the deploy, sync and status check state
 func ResetStateOnDeploy() {
+	autoDeploy := handler.getState().DeployState.AutoTrigger
+	ResetStateUpdateTriggerOnDeploy(autoDeploy)
+}
+
+func ResetStateUpdateTriggerOnDeploy(autoDeploy bool) {
 	newState := handler.getState()
 	newState.DeployState.Status = NotStarted
+	newState.DeployState.AutoTrigger = autoDeploy
 	newState.StatusCheckState = emptyStatusCheckState()
 	newState.ForwardedPorts = map[int32]*proto.PortEvent{}
 	newState.DebuggingContainers = nil
+	handler.setState(newState)
+}
+
+func ResetStateUpdateTriggerOnSync(autoSync bool) {
+	newState := handler.getState()
+	newState.FileSyncState.AutoTrigger = autoSync
 	handler.setState(newState)
 }
 
@@ -570,4 +591,19 @@ func emptyStatusCheckState() *proto.StatusCheckState {
 		Status:    NotStarted,
 		Resources: map[string]string{},
 	}
+}
+
+func AutoTriggerDiff(targetAutoBuild, targetAutoDeploy, targetAutoSync bool) (updateAutoBuild, updateAutoDeploy, updateAutoSync bool) {
+	currAutoBuild, currAutoDeploy, currAutoSync := handler.getState().BuildState.AutoTrigger, handler.getState().DeployState.AutoTrigger, handler.getState().FileSyncState.AutoTrigger
+
+	if currAutoBuild != targetAutoBuild {
+		updateAutoBuild = true
+	}
+	if currAutoDeploy != targetAutoDeploy {
+		updateAutoDeploy = true
+	}
+	if currAutoSync != targetAutoSync {
+		updateAutoSync = true
+	}
+	return
 }

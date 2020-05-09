@@ -19,9 +19,12 @@ package runner
 import "sync"
 
 type intents struct {
-	build  bool
-	sync   bool
-	deploy bool
+	build      bool
+	sync       bool
+	deploy     bool
+	autoBuild  bool
+	autoSync   bool
+	autoDeploy bool
 
 	resetBuild  func()
 	resetSync   func()
@@ -35,24 +38,21 @@ func newIntents(autoBuild, autoSync, autoDeploy bool) *intents {
 		resetBuild:  func() {},
 		resetSync:   func() {},
 		resetDeploy: func() {},
+		autoBuild:   autoBuild,
+		autoSync:    autoSync,
+		autoDeploy:  autoDeploy,
 	}
 
-	if !autoBuild {
-		i.resetBuild = func() {
-			i.setBuild(false)
-		}
+	i.resetBuild = func() {
+		i.setBuild(i.autoBuild)
 	}
 
-	if !autoSync {
-		i.resetSync = func() {
-			i.setSync(false)
-		}
+	i.resetSync = func() {
+		i.setSync(i.autoSync)
 	}
 
-	if !autoDeploy {
-		i.resetDeploy = func() {
-			i.setDeploy(false)
-		}
+	i.resetDeploy = func() {
+		i.setDeploy(i.autoDeploy)
 	}
 
 	return i
@@ -76,9 +76,34 @@ func (i *intents) setDeploy(val bool) {
 	i.lock.Unlock()
 }
 
+func (i *intents) setAutoBuild(val bool) {
+	i.lock.Lock()
+	i.autoBuild = val
+	i.lock.Unlock()
+}
+
+func (i *intents) setAutoSync(val bool) {
+	i.lock.Lock()
+	i.autoSync = val
+	i.lock.Unlock()
+}
+
+func (i *intents) setAutoDeploy(val bool) {
+	i.lock.Lock()
+	i.autoDeploy = val
+	i.lock.Unlock()
+}
+
 // returns build, sync, and deploy intents (in that order)
 func (i *intents) GetIntents() (bool, bool, bool) {
 	i.lock.Lock()
 	defer i.lock.Unlock()
 	return i.build, i.sync, i.deploy
+}
+
+// returns build, sync, and deploy intents (in that order)
+func (i *intents) GetAutoTriggers() (bool, bool, bool) {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	return i.autoBuild, i.autoSync, i.autoDeploy
 }
