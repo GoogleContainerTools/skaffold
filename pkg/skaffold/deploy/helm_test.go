@@ -1004,7 +1004,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRunWithOutput("helm version", version21).
-				AndRun("helm --kube-context kubecontext template examples/test --name skaffold-helm --set-string image=skaffold-helm:tag1 --set image=skaffold-helm --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template examples/test --name skaffold-helm --set-string image=skaffold-helm:tag1 --set some.key=somevalue --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeployConfig, false),
 			builds: []build.Artifact{
 				{
@@ -1017,7 +1017,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRunWithOutput("helm version", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set image=skaffold-helm --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeployConfig, false),
 			builds: []build.Artifact{
 				{
@@ -1030,7 +1030,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRunWithOutput("helm version", version31).
-				AndRunWithOutput("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set image=skaffold-helm --kubeconfig kubeconfig",
+				AndRunWithOutput("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --kubeconfig kubeconfig",
 					"Dummy Output"),
 			runContext: makeRunContext(testDeployConfig, false),
 			outputFile: "dummy.yaml",
@@ -1046,7 +1046,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRunWithOutput("helm version", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set image=skaffold-helm --set image.name=<no value> --set image.tag=<no value> --set missing.key=<no value> --set other.key=<no value> --set some.key=somevalue --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set image.name=<no value> --set image.tag=<no value> --set missing.key=<no value> --set other.key=<no value> --set some.key=somevalue --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeployConfigTemplated, false),
 			builds: []build.Artifact{
 				{
@@ -1058,7 +1058,7 @@ func TestHelmRender(t *testing.T) {
 			description: "render with namespace",
 			shouldErr:   false,
 			commands: testutil.CmdRunWithOutput("helm version", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set image=skaffold-helm --namespace testNamespace --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set some.key=somevalue --namespace testNamespace --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeployNamespacedConfig, false),
 			builds: []build.Artifact{
 				{

@@ -287,11 +287,16 @@ func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build
 			args = append(args, "--set-string", value)
 		}
 
-		for key, value := range r.ArtifactOverrides {
-			args = append(args, "--set", fmt.Sprintf("%s=%s", key, value))
+		sortedKeys := make([]string, 0, len(r.SetValues))
+		for k := range r.SetValues {
+			sortedKeys = append(sortedKeys, k)
+		}
+		sort.Strings(sortedKeys)
+		for _, k := range sortedKeys {
+			args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
 		}
 
-		sortedKeys := make([]string, 0, len(r.SetValueTemplates))
+		sortedKeys = make([]string, 0, len(r.SetValueTemplates))
 		for k := range r.SetValueTemplates {
 			sortedKeys = append(sortedKeys, k)
 		}
