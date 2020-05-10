@@ -45,7 +45,7 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 		return err
 	}
 
-	deployInitializer := deploy.NewInitializer(a.Manifests(), c)
+	deployInitializer := deploy.NewInitializer(a.Manifests(), a.KustomizePaths(), c)
 	images := deployInitializer.GetImages()
 
 	buildInitializer := build.NewInitializer(a.Builders(), c)

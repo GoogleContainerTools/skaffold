@@ -38,7 +38,7 @@ func TestAggregatePodWatcher(t *testing.T) {
 	testutil.Run(t, "fail to get client", func(t *testutil.T) {
 		t.Override(&Client, func() (kubernetes.Interface, error) { return nil, errors.New("unable to get client") })
 
-		cleanup, err := AggregatePodWatcher("", []string{"ns"}, nil)
+		cleanup, err := AggregatePodWatcher([]string{"ns"}, nil)
 		defer cleanup()
 
 		t.CheckErrorContains("unable to get client", err)
@@ -52,7 +52,7 @@ func TestAggregatePodWatcher(t *testing.T) {
 			return true, nil, errors.New("unable to watch")
 		})
 
-		cleanup, err := AggregatePodWatcher("", []string{"ns"}, nil)
+		cleanup, err := AggregatePodWatcher([]string{"ns"}, nil)
 		defer cleanup()
 
 		t.CheckErrorContains("unable to watch", err)
@@ -63,7 +63,7 @@ func TestAggregatePodWatcher(t *testing.T) {
 		t.Override(&Client, func() (kubernetes.Interface, error) { return clientset, nil })
 
 		events := make(chan watch.Event)
-		cleanup, err := AggregatePodWatcher("", []string{"ns1", "ns2"}, events)
+		cleanup, err := AggregatePodWatcher([]string{"ns1", "ns2"}, events)
 		defer cleanup()
 		t.CheckNoError(err)
 

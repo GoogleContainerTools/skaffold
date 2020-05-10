@@ -413,7 +413,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 				forwardedPorts:     newForwardedPorts(),
 				forwardedResources: newForwardedResources(),
 			}
-			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), "", nil)
+			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), nil)
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder()
 			}
@@ -473,7 +473,7 @@ func TestStartPodForwarder(t *testing.T) {
 			client.PrependWatchReactor("*", testutil.SetupFakeWatcher(fakeWatcher))
 
 			waitForWatcher := make(chan bool)
-			t.Override(&aggregatePodWatcher, func(_ string, _ []string, aggregate chan<- watch.Event) (func(), error) {
+			t.Override(&aggregatePodWatcher, func(_ []string, aggregate chan<- watch.Event) (func(), error) {
 				go func() {
 					waitForWatcher <- true
 					for msg := range fakeWatcher.ResultChan() {
@@ -487,7 +487,7 @@ func TestStartPodForwarder(t *testing.T) {
 			imageList := kubernetes.NewImageList()
 			imageList.Add("image")
 
-			p := NewWatchingPodForwarder(NewEntryManager(ioutil.Discard, nil), imageList, "", nil)
+			p := NewWatchingPodForwarder(NewEntryManager(ioutil.Discard, nil), imageList, nil)
 			fakeForwarder := newTestForwarder()
 			p.EntryForwarder = fakeForwarder
 			p.Start(context.Background())

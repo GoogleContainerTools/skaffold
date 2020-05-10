@@ -47,7 +47,7 @@ func initializeMetadata(p latest.Pipeline, kubeContext string) *proto.Metadata {
 	return m
 }
 
-func getBuilders(b latest.BuildConfig) []*proto.BuildMetadata_Builder {
+func getBuilders(b latest.BuildConfig) []*proto.BuildMetadata_ImageBuilder {
 	m := map[proto.BuilderType]int{}
 	for _, a := range b.Artifacts {
 		switch {
@@ -67,10 +67,10 @@ func getBuilders(b latest.BuildConfig) []*proto.BuildMetadata_Builder {
 			updateOrAddKey(m, proto.BuilderType_UNKNOWN_BUILDER_TYPE)
 		}
 	}
-	builders := make([]*proto.BuildMetadata_Builder, len(m))
+	builders := make([]*proto.BuildMetadata_ImageBuilder, len(m))
 	i := 0
 	for k, v := range m {
-		builders[i] = &proto.BuildMetadata_Builder{Type: k, Count: int32(v)}
+		builders[i] = &proto.BuildMetadata_ImageBuilder{Type: k, Count: int32(v)}
 		i++
 	}
 	return builders

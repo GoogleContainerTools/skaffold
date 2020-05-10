@@ -37,12 +37,12 @@ message Metadata {
 }
 
 message BuildMetadata {
-  message Builder {
+  message ImageBuilder {
       BuilderType type = 1;
       int32 count = 2;
   }
   int32 numberOfArtifacts = 1;
-  repeated Builder builders= 2;
+  repeated ImageBuilder builders= 2;
   BuildType type = 3;
   // Additional key value pairs to describe the deploy pipeline
   map<string, string> additional = 99;
