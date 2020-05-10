@@ -550,39 +550,40 @@ func (ev *eventHandler) handle(event *proto.Event) {
 
 // ResetStateOnBuild resets the build, deploy and sync state
 func ResetStateOnBuild() {
-	autoBuild := handler.getState().BuildState.AutoTrigger
-	ResetStateUpdateTriggerOnBuild(autoBuild)
-}
-
-func ResetStateUpdateTriggerOnBuild(autoBuild bool) {
 	builds := map[string]string{}
 	for k := range handler.getState().BuildState.Artifacts {
 		builds[k] = NotStarted
 	}
-	autoDeploy, autoSync := handler.getState().DeployState.AutoTrigger, handler.getState().FileSyncState.AutoTrigger
+	autoBuild, autoDeploy, autoSync := handler.getState().BuildState.AutoTrigger, handler.getState().DeployState.AutoTrigger, handler.getState().FileSyncState.AutoTrigger
 	newState := emptyStateWithArtifacts(builds, handler.getState().Metadata, autoBuild, autoDeploy, autoSync)
 	handler.setState(newState)
 }
 
 // ResetStateOnDeploy resets the deploy, sync and status check state
 func ResetStateOnDeploy() {
-	autoDeploy := handler.getState().DeployState.AutoTrigger
-	ResetStateUpdateTriggerOnDeploy(autoDeploy)
-}
-
-func ResetStateUpdateTriggerOnDeploy(autoDeploy bool) {
 	newState := handler.getState()
 	newState.DeployState.Status = NotStarted
-	newState.DeployState.AutoTrigger = autoDeploy
 	newState.StatusCheckState = emptyStatusCheckState()
 	newState.ForwardedPorts = map[int32]*proto.PortEvent{}
 	newState.DebuggingContainers = nil
 	handler.setState(newState)
 }
 
-func ResetStateUpdateTriggerOnSync(autoSync bool) {
+func UpdateStateAutoBuildTrigger(t bool) {
 	newState := handler.getState()
-	newState.FileSyncState.AutoTrigger = autoSync
+	newState.BuildState.AutoTrigger = t
+	handler.setState(newState)
+}
+
+func UpdateStateAutoDeployTrigger(t bool) {
+	newState := handler.getState()
+	newState.DeployState.AutoTrigger = t
+	handler.setState(newState)
+}
+
+func UpdateStateAutoSyncTrigger(t bool) {
+	newState := handler.getState()
+	newState.FileSyncState.AutoTrigger = t
 	handler.setState(newState)
 }
 

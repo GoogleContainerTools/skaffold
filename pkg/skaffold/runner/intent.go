@@ -26,36 +26,35 @@ type intents struct {
 	autoSync   bool
 	autoDeploy bool
 
-	resetBuild  func()
-	resetSync   func()
-	resetDeploy func()
-
 	lock sync.Mutex
 }
 
 func newIntents(autoBuild, autoSync, autoDeploy bool) *intents {
 	i := &intents{
-		resetBuild:  func() {},
-		resetSync:   func() {},
-		resetDeploy: func() {},
-		autoBuild:   autoBuild,
-		autoSync:    autoSync,
-		autoDeploy:  autoDeploy,
-	}
-
-	i.resetBuild = func() {
-		i.setBuild(i.autoBuild)
-	}
-
-	i.resetSync = func() {
-		i.setSync(i.autoSync)
-	}
-
-	i.resetDeploy = func() {
-		i.setDeploy(i.autoDeploy)
+		autoBuild:  autoBuild,
+		autoSync:   autoSync,
+		autoDeploy: autoDeploy,
 	}
 
 	return i
+}
+
+func (i *intents) resetBuild() {
+	i.lock.Lock()
+	i.build = i.autoBuild
+	i.lock.Unlock()
+}
+
+func (i *intents) resetSync() {
+	i.lock.Lock()
+	i.sync = i.autoSync
+	i.lock.Unlock()
+}
+
+func (i *intents) resetDeploy() {
+	i.lock.Lock()
+	i.deploy = i.autoDeploy
+	i.lock.Unlock()
 }
 
 func (i *intents) setBuild(val bool) {
@@ -101,7 +100,7 @@ func (i *intents) GetIntents() (bool, bool, bool) {
 	return i.build, i.sync, i.deploy
 }
 
-// returns build, sync, and deploy intents (in that order)
+// returns auto build, auto sync, and auto deploy settings (in that order)
 func (i *intents) GetAutoTriggers() (bool, bool, bool) {
 	i.lock.Lock()
 	defer i.lock.Unlock()

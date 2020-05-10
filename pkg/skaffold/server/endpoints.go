@@ -67,24 +67,33 @@ func (s *server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (
 }
 
 func (s *server) UpdateAutoTrigger(ctx context.Context, phase *proto.AutoTriggerRequest) (*empty.Empty, error) {
-	autoBuild, autoDeploy, autoSync := event.AutoTriggerDiff(phase.GetPhase().GetBuild(), phase.GetPhase().GetDeploy(), phase.GetPhase().GetSync())
+	autoBuild, autoDeploy, autoSync := phase.GetPhase().GetBuild(), phase.GetPhase().GetDeploy(), phase.GetPhase().GetSync()
+	updateAutoBuild, updateAutoDeploy, updateAutoSync := event.AutoTriggerDiff(autoBuild, autoDeploy, autoSync)
 
-	if autoBuild {
-		event.ResetStateUpdateTriggerOnBuild(phase.GetPhase().GetBuild())
+	if updateAutoBuild {
+		event.UpdateStateAutoBuildTrigger(autoBuild)
+		if autoBuild {
+			// reset state only when autoBuild is being set to true
+			event.ResetStateOnBuild()
+		}
 		go func() {
-			s.autoBuildCallback(phase.GetPhase().GetBuild())
+			s.autoBuildCallback(autoBuild)
 		}()
 	}
-	if autoDeploy {
-		event.ResetStateUpdateTriggerOnDeploy(phase.GetPhase().GetDeploy())
+	if updateAutoDeploy {
+		event.UpdateStateAutoDeployTrigger(autoDeploy)
+		if autoDeploy {
+			// reset state only when autoDeploy is being set to true
+			event.ResetStateOnDeploy()
+		}
 		go func() {
-			s.autoDeployCallback(phase.GetPhase().GetDeploy())
+			s.autoDeployCallback(autoDeploy)
 		}()
 	}
-	if autoSync {
-		event.ResetStateUpdateTriggerOnSync(phase.GetPhase().GetSync())
+	if updateAutoSync {
+		event.UpdateStateAutoSyncTrigger(autoSync)
 		go func() {
-			s.autoSyncCallback(phase.GetPhase().GetSync())
+			s.autoSyncCallback(autoSync)
 		}()
 	}
 	return &empty.Empty{}, nil
