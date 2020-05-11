@@ -37,6 +37,7 @@ func TestHelmDeploy(t *testing.T) {
 
 	// check if labels are set correctly for deployment
 	dep := client.GetDeployment("skaffold-helm-" + ns.Name)
+	t.Logf("helm deployment metadata: %+v", dep.ObjectMeta)
 	testutil.CheckDeepEqual(t, dep.Name, dep.ObjectMeta.Labels["release"])
 	testutil.CheckDeepEqual(t, "helm", dep.ObjectMeta.Labels["skaffold.dev/deployer"])
 
