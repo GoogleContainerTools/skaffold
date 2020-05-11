@@ -14,14 +14,15 @@ branches:
 jobs:
   include:
     - os: linux
+      name: "linters"
+      script:
+        - make linters
+    - os: linux
       name: "checks"
-      env:
-        - GOLANGCI_LINT_CACHE=$HOME/linting
       script:
         - make checks
       cache:
         directories:
-          - $GOLANGCI_LINT_CACHE
           - $HOME/.cache/go-build
     - os: linux
       name: "Linux unit"

@@ -17,31 +17,29 @@
 set -e -o pipefail
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+BIN=${DIR}/bin
 VERSION=1.26.0
 
 function install_linter() {
   echo "Installing GolangCI-Lint"
-	${DIR}/install_golint.sh -b $GOPATH/bin v$VERSION
+  ${DIR}/install_golint.sh -b ${BIN} v$VERSION
 }
 
-if ! [ -x "$(command -v golangci-lint)" ] ; then
+if ! [ -x "$(command -v ${BIN}/golangci-lint)" ] ; then
   install_linter
-elif [[ $(golangci-lint --version | grep -c " $VERSION ") -eq 0 ]]
+elif [[ $(${BIN}/golangci-lint --version | grep -c " $VERSION ") -eq 0 ]]
 then
   echo "required golangci-lint: v$VERSION"
   echo "current version: $(golangci-lint --version)"
   echo "reinstalling..."
-  rm $(which golangci-lint)
+  rm $(which ${BIN}/golangci-lint)
   install_linter
 fi
 
 FLAGS=""
-if [[ "${TRAVIS}" == "true" ]]; then
-    # Use less memory on Travis
-    # See https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
-    export GOGC=5
-    FLAGS="-j1 -v --print-resources-usage"
+if [[ "${CI}" == "true" ]]; then
+    FLAGS="-v --print-resources-usage"
 fi
 
-$GOPATH/bin/golangci-lint run ${FLAGS} -c ${DIR}/golangci.yml \
+${BIN}/golangci-lint run ${FLAGS} -c ${DIR}/golangci.yml \
     | awk '/out of memory/ || /Timeout exceeded/ {failed = 1}; {print}; END {exit failed}'
