@@ -17,28 +17,34 @@ limitations under the License.
 package deploy
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"io"
+	"strings"
+
+	"github.com/segmentio/textio"
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
+	deploy "github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // KubectlDeployer deploys workflows using kubectl CLI.
 type KubectlDeployer struct {
 	*latest.KubectlDeploy
 
+	originalImages     []build.Artifact
 	workingDir         string
-	kubectl            kubectl.CLI
-	defaultRepo        string
+	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
 }
 
@@ -48,13 +54,11 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 	return &KubectlDeployer{
 		KubectlDeploy: runCtx.Cfg.Deploy.KubectlDeploy,
 		workingDir:    runCtx.WorkingDir,
-		kubectl: kubectl.CLI{
-			Namespace:   runCtx.Opts.Namespace,
-			KubeContext: runCtx.KubeContext,
+		kubectl: deploy.CLI{
+			CLI:         kubectl.NewFromRunContext(runCtx),
 			Flags:       runCtx.Cfg.Deploy.KubectlDeploy.Flags,
-			ForceDeploy: runCtx.Opts.ForceDeploy(),
+			ForceDeploy: runCtx.Opts.Force,
 		},
-		defaultRepo:        runCtx.DefaultRepo,
 		insecureRegistries: runCtx.InsecureRegistries,
 	}
 }
@@ -65,92 +69,53 @@ func (k *KubectlDeployer) Labels() map[string]string {
 	}
 }
 
-type ManifestTransform func(l kubectl.ManifestList, builds []build.Artifact, insecureRegistries map[string]bool) (kubectl.ManifestList, error)
-
-// Transforms are applied to manifests
-var manifestTransforms []ManifestTransform
-
-// AddManifestTransform adds a transform to be applied when deploying.
-func AddManifestTransform(newTransform ManifestTransform) {
-	manifestTransforms = append(manifestTransforms, newTransform)
-}
-
 // Deploy templates the provided manifests with a simple `find and replace` and
 // runs `kubectl apply` on those manifests
-func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) error {
-	color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
-	if err := k.kubectl.CheckVersion(ctx); err != nil {
-		color.Default.Fprintln(out, err)
-	}
-
+func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
 	event.DeployInProgress()
 
-	manifests, err := k.readManifests(ctx)
+	manifests, err := k.renderManifests(ctx, out, builds, labellers)
 	if err != nil {
 		event.DeployFailed(err)
-		return errors.Wrap(err, "reading manifests")
+		return NewDeployErrorResult(err)
 	}
 
 	if len(manifests) == 0 {
-		return nil
+		event.DeployComplete()
+		return NewDeploySuccessResult(nil)
 	}
 
-	manifests, err = manifests.ReplaceImages(builds, k.defaultRepo)
+	namespaces, err := manifests.CollectNamespaces()
 	if err != nil {
-		event.DeployFailed(err)
-		return errors.Wrap(err, "replacing images in manifests")
+		event.DeployInfoEvent(fmt.Errorf("could not fetch deployed resource namespace. "+
+			"This might cause port-forward and deploy health-check to fail: %w", err))
 	}
 
-	manifests, err = manifests.SetLabels(merge(labellers...))
-	if err != nil {
+	if err := k.kubectl.Apply(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
 		event.DeployFailed(err)
-		return errors.Wrap(err, "setting labels in manifests")
-	}
-
-	for _, transform := range manifestTransforms {
-		manifests, err = transform(manifests, builds, k.insecureRegistries)
-		if err != nil {
-			return errors.Wrap(err, "unable to transform manifests")
-		}
-	}
-
-	err = k.kubectl.Apply(ctx, out, manifests)
-	if err != nil {
-		event.DeployFailed(err)
-		return errors.Wrap(err, "kubectl error")
+		return NewDeployErrorResult(fmt.Errorf("kubectl error: %w", err))
 	}
 
 	event.DeployComplete()
-	return err
-}
-
-// Cleanup deletes what was deployed by calling Deploy.
-func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
-	manifests, err := k.readManifests(ctx)
-	if err != nil {
-		return errors.Wrap(err, "reading manifests")
-	}
-
-	if err := k.kubectl.Delete(ctx, out, manifests); err != nil {
-		return errors.Wrap(err, "delete")
-	}
-
-	return nil
-}
-
-func (k *KubectlDeployer) Dependencies() ([]string, error) {
-	return k.manifestFiles(k.KubectlDeploy.Manifests)
+	return NewDeploySuccessResult(namespaces)
 }
 
 func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
-	list, err := util.ExpandPathsGlob(k.workingDir, manifests)
+	var nonURLManifests []string
+	for _, manifest := range manifests {
+		if !util.IsURL(manifest) {
+			nonURLManifests = append(nonURLManifests, manifest)
+		}
+	}
+
+	list, err := util.ExpandPathsGlob(k.workingDir, nonURLManifests)
 	if err != nil {
-		return nil, errors.Wrap(err, "expanding kubectl manifest paths")
+		return nil, fmt.Errorf("expanding kubectl manifest paths: %w", err)
 	}
 
 	var filteredManifests []string
 	for _, f := range list {
-		if !util.IsSupportedKubernetesFormat(f) {
+		if !kubernetes.HasKubernetesFileExtension(f) {
 			if !util.StrSliceContains(manifests, f) {
 				logrus.Infof("refusing to deploy/delete non {json, yaml} file %s", f)
 				logrus.Info("If you still wish to deploy this file, please specify it directly, outside a glob pattern.")
@@ -164,15 +129,145 @@ func (k *KubectlDeployer) manifestFiles(manifests []string) ([]string, error) {
 }
 
 // readManifests reads the manifests to deploy/delete.
-func (k *KubectlDeployer) readManifests(ctx context.Context) (kubectl.ManifestList, error) {
+func (k *KubectlDeployer) readManifests(ctx context.Context) (deploy.ManifestList, error) {
+	// Get file manifests
 	manifests, err := k.Dependencies()
 	if err != nil {
-		return nil, errors.Wrap(err, "listing manifests")
+		return nil, fmt.Errorf("listing manifests: %w", err)
+	}
+
+	// Append URL manifests
+	for _, manifest := range k.KubectlDeploy.Manifests {
+		if util.IsURL(manifest) {
+			manifests = append(manifests, manifest)
+		}
 	}
 
 	if len(manifests) == 0 {
-		return kubectl.ManifestList{}, nil
+		return deploy.ManifestList{}, nil
 	}
 
 	return k.kubectl.ReadManifests(ctx, manifests)
+}
+
+// readRemoteManifests will try to read manifests from the given kubernetes
+// context in the specified namespace and for the specified type
+func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) ([]byte, error) {
+	var args []string
+	ns := ""
+	if parts := strings.Split(name, ":"); len(parts) > 1 {
+		ns = parts[0]
+		name = parts[1]
+	}
+	args = append(args, name, "-o", "yaml")
+
+	var manifest bytes.Buffer
+	err := k.kubectl.RunInNamespace(ctx, nil, &manifest, "get", ns, args...)
+	if err != nil {
+		return nil, fmt.Errorf("getting manifest: %w", err)
+	}
+
+	return manifest.Bytes(), nil
+}
+
+func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, filepath string) error {
+	manifests, err := k.renderManifests(ctx, out, builds, labellers)
+	if err != nil {
+		return err
+	}
+
+	return outputRenderedManifests(manifests.String(), filepath, out)
+}
+
+func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) (deploy.ManifestList, error) {
+	if err := k.kubectl.CheckVersion(ctx); err != nil {
+		color.Default.Fprintln(out, "kubectl client version:", k.kubectl.Version(ctx))
+		color.Default.Fprintln(out, err)
+	}
+
+	manifests, err := k.readManifests(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("reading manifests: %w", err)
+	}
+
+	for _, m := range k.RemoteManifests {
+		manifest, err := k.readRemoteManifest(ctx, m)
+		if err != nil {
+			return nil, fmt.Errorf("get remote manifests: %w", err)
+		}
+
+		manifests = append(manifests, manifest)
+	}
+
+	if len(k.originalImages) == 0 {
+		k.originalImages, err = manifests.GetImages()
+		if err != nil {
+			return nil, fmt.Errorf("get images from manifests: %w", err)
+		}
+	}
+
+	if len(manifests) == 0 {
+		return nil, nil
+	}
+
+	manifests, err = manifests.ReplaceImages(builds)
+	if err != nil {
+		return nil, fmt.Errorf("replacing images in manifests: %w", err)
+	}
+
+	for _, transform := range manifestTransforms {
+		manifests, err = transform(manifests, builds, k.insecureRegistries)
+		if err != nil {
+			return nil, fmt.Errorf("unable to transform manifests: %w", err)
+		}
+	}
+
+	manifests, err = manifests.SetLabels(merge(k, labellers...))
+	if err != nil {
+		return nil, fmt.Errorf("setting labels in manifests: %w", err)
+	}
+
+	return manifests, nil
+}
+
+// Cleanup deletes what was deployed by calling Deploy.
+func (k *KubectlDeployer) Cleanup(ctx context.Context, out io.Writer) error {
+	manifests, err := k.readManifests(ctx)
+	if err != nil {
+		return fmt.Errorf("reading manifests: %w", err)
+	}
+
+	// revert remote manifests
+	// TODO(dgageot): That seems super dangerous and I don't understand
+	// why we need to update resources just before we delete them.
+	if len(k.RemoteManifests) > 0 {
+		var rm deploy.ManifestList
+		for _, m := range k.RemoteManifests {
+			manifest, err := k.readRemoteManifest(ctx, m)
+			if err != nil {
+				return fmt.Errorf("get remote manifests: %w", err)
+			}
+			rm = append(rm, manifest)
+		}
+
+		upd, err := rm.ReplaceImages(k.originalImages)
+		if err != nil {
+			return fmt.Errorf("replacing with originals: %w", err)
+		}
+
+		if err := k.kubectl.Apply(ctx, out, upd); err != nil {
+			return fmt.Errorf("apply original: %w", err)
+		}
+	}
+
+	if err := k.kubectl.Delete(ctx, textio.NewPrefixWriter(out, " - "), manifests); err != nil {
+		return fmt.Errorf("delete: %w", err)
+	}
+
+	return nil
+}
+
+// Dependencies lists all the files that describe what needs to be deployed.
+func (k *KubectlDeployer) Dependencies() ([]string, error) {
+	return k.manifestFiles(k.KubectlDeploy.Manifests)
 }

@@ -1,3 +1,4 @@
+bin/
 out/
 examples/bazel/bazel-*
 integration/examples/bazel/bazel-*
@@ -15,3 +16,4 @@ docs/node_modules
 docs/themes
 docs/package-lock.json
 pkg/skaffold/color/debug.test
+cmd/skaffold/app/cmd/statik/statik.go

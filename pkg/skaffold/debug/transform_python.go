@@ -17,12 +17,14 @@ limitations under the License.
 package debug
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type pythonTransformer struct{}
@@ -45,35 +47,28 @@ type ptvsdSpec struct {
 
 // isLaunchingPython determines if the arguments seems to be invoking python
 func isLaunchingPython(args []string) bool {
-	return args[0] == "python" || strings.HasSuffix(args[0], "/python") ||
-		args[0] == "python2" || strings.HasSuffix(args[0], "/python2") ||
-		args[0] == "python3" || strings.HasSuffix(args[0], "/python3")
+	return len(args) > 0 &&
+		(args[0] == "python" || strings.HasSuffix(args[0], "/python") ||
+			args[0] == "python2" || strings.HasSuffix(args[0], "/python2") ||
+			args[0] == "python3" || strings.HasSuffix(args[0], "/python3"))
 }
 
 func (t pythonTransformer) IsApplicable(config imageConfiguration) bool {
-	if _, found := config.env["PYTHON_VERSION"]; found {
-		return true
-	}
-	if len(config.entrypoint) > 0 {
+	// We can only put Python in debug mode by modifying the python command line,
+	// so looking for Python-related environment variables is insufficient.
+	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return isLaunchingPython(config.entrypoint)
-	} else if len(config.arguments) > 0 {
-		return isLaunchingPython(config.arguments)
 	}
-	return false
-}
-
-func (t pythonTransformer) RuntimeSupportImage() string {
-	return "python"
+	return isLaunchingPython(config.arguments)
 }
 
 // Apply configures a container definition for Python with pydev/ptvsd
 // Returns a simple map describing the debug configuration details.
-func (t pythonTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
+func (t pythonTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for python debugging", container.Name)
 
 	// try to find existing `-mptvsd` command
 	spec := retrievePtvsdSpec(config)
-	// todo: find existing containerPort "dap" (debug-adapter protocol) and use port. But what if it conflicts with command-line spec?
 
 	if spec == nil {
 		spec = &ptvsdSpec{host: "localhost", port: portAlloc(defaultPtvsdPort)}
@@ -85,27 +80,22 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 			container.Args = rewritePythonCommandLine(config.arguments, *spec)
 
 		default:
-			logrus.Warnf("Skipping %q as does not appear to invoke python", container.Name)
-			return nil
+			return ContainerDebugConfiguration{}, "", fmt.Errorf("%q does not appear to invoke python", container.Name)
 		}
 	}
 
-	ptvsdPort := v1.ContainerPort{
-		Name:          "dap", // debug adapter protocol
-		ContainerPort: spec.port,
+	pyUserBase := "/dbg/python"
+	if existing, found := config.env["PYTHONUSERBASE"]; found {
+		// todo: handle windows containers?
+		pyUserBase = pyUserBase + ":" + existing
 	}
-	container.Ports = append(container.Ports, ptvsdPort)
+	container.Env = setEnvVar(container.Env, "PYTHONUSERBASE", pyUserBase)
+	container.Ports = exposePort(container.Ports, "dap", spec.port)
 
-	pythonUserBase := v1.EnvVar{
-		Name:  "PYTHONUSERBASE",
-		Value: "/dbg/python",
-	}
-	container.Env = append(container.Env, pythonUserBase)
-
-	return map[string]interface{}{
-		"runtime": "python",
-		"dap":     spec.port,
-	}
+	return ContainerDebugConfiguration{
+		Runtime: "python",
+		Ports:   map[string]uint32{"dap": uint32(spec.port)},
+	}, "python", nil
 }
 
 func retrievePtvsdSpec(config imageConfiguration) *ptvsdSpec {
@@ -135,7 +125,7 @@ func extractPtvsdArg(args []string) *ptvsdSpec {
 				return nil
 			}
 			port, err := strconv.ParseInt(args[i+1], 10, 32)
-			//spec.port, err := strconv.Atoi(args[i+1])
+			// spec.port, err := strconv.Atoi(args[i+1])
 			if err != nil {
 				logrus.Errorf("Invalid python ptvsd port %q: %s\n", args[i+1], err)
 				return nil

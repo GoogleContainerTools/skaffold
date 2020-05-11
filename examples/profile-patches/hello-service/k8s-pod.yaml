@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-service
+spec:
+  containers:
+  - name: hello-service
+    image: skaffold-hello

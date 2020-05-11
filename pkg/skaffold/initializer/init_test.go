@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,225 +18,232 @@ package initializer
 
 import (
 	"bytes"
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	initconfig "github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestPrintAnalyzeJSON(t *testing.T) {
+func TestDoInit(t *testing.T) {
 	tests := []struct {
-		description string
-		dockerfiles []InitBuilder
-		images      []string
-		skipBuild   bool
-		shouldErr   bool
-		expected    string
+		name      string
+		dir       string
+		config    initconfig.Config
+		shouldErr bool
 	}{
+		//TODO: mocked kompose test
 		{
-			description: "dockerfile and image",
-			dockerfiles: []InitBuilder{docker.Docker("Dockerfile1"), docker.Docker("Dockerfile2")},
-			images:      []string{"image1", "image2"},
-			expected:    "{\"dockerfiles\":[\"Dockerfile1\",\"Dockerfile2\"],\"images\":[\"image1\",\"image2\"]}",
+			name: "getting-started",
+			dir:  "testdata/init/hello",
+			config: initconfig.Config{
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
 		},
 		{
-			description: "no dockerfile, skip build",
-			images:      []string{"image1", "image2"},
-			skipBuild:   true,
-			expected:    "{\"images\":[\"image1\",\"image2\"]}"},
-		{
-			description: "no dockerfile",
-			images:      []string{"image1", "image2"},
-			shouldErr:   true,
+			name: "ignore existing tags",
+			dir:  "testdata/init/ignore-tags",
+			config: initconfig.Config{
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
 		},
 		{
-			description: "no dockerfiles or images",
-			shouldErr:   true,
+			name: "microservices (backwards compatibility)",
+			dir:  "testdata/init/microservices",
+			config: initconfig.Config{
+				CliArtifacts: []string{
+					"leeroy-app/Dockerfile=gcr.io/k8s-skaffold/leeroy-app",
+					"leeroy-web/Dockerfile=gcr.io/k8s-skaffold/leeroy-web",
+				},
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+		},
+		{
+			name: "microservices",
+			dir:  "testdata/init/microservices",
+			config: initconfig.Config{
+				CliArtifacts: []string{
+					`{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
+					`{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
+				},
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+		},
+		{
+			name: "CLI artifacts + manifest placeholders",
+			dir:  "testdata/init/allcli",
+			config: initconfig.Config{
+				CliArtifacts: []string{
+					`{"builder":"Docker","payload":{"path":"Dockerfile"},"image":"passed-in-artifact"}`,
+				},
+				CliKubernetesManifests: []string{
+					"manifest-placeholder1.yaml",
+					"manifest-placeholder2.yaml",
+				},
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+		},
+		{
+			name: "CLI artifacts but no manifests",
+			dir:  "testdata/init/allcli",
+			config: initconfig.Config{
+				CliArtifacts: []string{
+					`{"builder":"Docker","payload":{"path":"Dockerfile"},"image":"passed-in-artifact"}`,
+				},
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			name: "error writing config file",
+			dir:  "testdata/init/microservices",
+
+			config: initconfig.Config{
+				CliArtifacts: []string{
+					`{"builder":"Docker","payload":{"path":"leeroy-app/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-app"}`,
+					`{"builder":"Docker","payload":{"path":"leeroy-web/Dockerfile"},"image":"gcr.io/k8s-skaffold/leeroy-web"}`,
+				},
+				Opts: config.SkaffoldOptions{
+					// erroneous config file as . is a directory
+					ConfigurationFile: ".",
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			name: "error no manifests",
+			dir:  "testdata/init/hello-no-manifest",
+
+			config: initconfig.Config{
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			name: "kustomize",
+			dir:  "testdata/init/getting-started-kustomize",
+
+			config: initconfig.Config{
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
+				},
+			},
 		},
 	}
 	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			out := bytes.NewBuffer([]byte{})
-
-			err := printAnalyzeJSON(out, test.skipBuild, test.dockerfiles, test.images)
-
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, out.String())
-		})
-	}
-}
-
-func TestWalk(t *testing.T) {
-	emptyFile := ""
-	tests := []struct {
-		description       string
-		filesWithContents map[string]string
-		expectedConfigs   []string
-		expectedPaths     []string
-		force             bool
-		shouldErr         bool
-	}{
-		{
-			description: "should return correct k8 configs and build files",
-			filesWithContents: map[string]string{
-				"config/test.yaml":  emptyFile,
-				"k8pod.yml":         emptyFile,
-				"README":            emptyFile,
-				"deploy/Dockerfile": emptyFile,
-				"Dockerfile":        emptyFile,
-			},
-			force: false,
-			expectedConfigs: []string{
-				"config/test.yaml",
-				"k8pod.yml",
-			},
-			expectedPaths: []string{
-				"Dockerfile",
-				"deploy/Dockerfile",
-			},
-			shouldErr: false,
-		},
-		{
-			description: "should skip hidden dir",
-			filesWithContents: map[string]string{
-				".hidden/test.yaml":  emptyFile,
-				"k8pod.yml":          emptyFile,
-				"README":             emptyFile,
-				".hidden/Dockerfile": emptyFile,
-				"Dockerfile":         emptyFile,
-			},
-			force: false,
-			expectedConfigs: []string{
-				"k8pod.yml",
-			},
-			expectedPaths: []string{
-				"Dockerfile",
-			},
-			shouldErr: false,
-		},
-		{
-			description: "should not error when skaffold.config present and force = true",
-			filesWithContents: map[string]string{
-				"skaffold.yaml": `apiVersion: skaffold/v1beta6
-kind: Config
-deploy:
-  kustomize: {}`,
-				"config/test.yaml":  emptyFile,
-				"k8pod.yml":         emptyFile,
-				"README":            emptyFile,
-				"deploy/Dockerfile": emptyFile,
-				"Dockerfile":        emptyFile,
-			},
-			force: true,
-			expectedConfigs: []string{
-				"config/test.yaml",
-				"k8pod.yml",
-			},
-			expectedPaths: []string{
-				"Dockerfile",
-				"deploy/Dockerfile",
-			},
-			shouldErr: false,
-		},
-		{
-			description: "should  error when skaffold.config present and force = false",
-			filesWithContents: map[string]string{
-				"config/test.yaml":  emptyFile,
-				"k8pod.yml":         emptyFile,
-				"README":            emptyFile,
-				"deploy/Dockerfile": emptyFile,
-				"Dockerfile":        emptyFile,
-				"skaffold.yaml": `apiVersion: skaffold/v1beta6
-kind: Config
-deploy:
-  kustomize: {}`,
-			},
-			force:           false,
-			expectedConfigs: nil,
-			expectedPaths:   nil,
-			shouldErr:       true,
-		},
-	}
-	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			tmpDir := t.NewTempDir().
-				WriteFiles(test.filesWithContents)
-
-			t.Override(&docker.ValidateDockerfileFunc, testValidDocker)
-
-			potentialConfigs, builders, err := walk(tmpDir.Root(), test.force, detectBuilders)
-
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			t.Chdir(test.dir)
+			// we still need as a "no-prompt" mode
+			test.config.Force = true
+			err := DoInit(context.TODO(), os.Stdout, test.config)
 			t.CheckError(test.shouldErr, err)
-			t.CheckDeepEqual(tmpDir.Paths(test.expectedConfigs...), potentialConfigs)
-			t.CheckDeepEqual(len(test.expectedPaths), len(builders))
-			for i := range builders {
-				t.CheckDeepEqual(tmpDir.Path(test.expectedPaths[i]), builders[i].Path())
+			if !test.shouldErr {
+				checkGeneratedConfig(t, ".")
 			}
 		})
 	}
 }
 
-func testValidDocker(path string) bool {
-	return strings.HasSuffix(path, "Dockerfile")
-}
-
-func TestResolveBuilderImages(t *testing.T) {
+func TestDoInitAnalyze(t *testing.T) {
 	tests := []struct {
-		description      string
-		buildConfigs     []InitBuilder
-		images           []string
-		shouldMakeChoice bool
-		expectedPairs    []builderImagePair
+		name        string
+		dir         string
+		config      initconfig.Config
+		expectedOut string
 	}{
 		{
-			description:      "nothing to choose from",
-			buildConfigs:     []InitBuilder{},
-			images:           []string{},
-			shouldMakeChoice: false,
-			expectedPairs:    []builderImagePair{},
+			name: "analyze microservices",
+			dir:  "testdata/init/microservices",
+			config: initconfig.Config{
+				Analyze: true,
+			},
+			expectedOut: strip(`{
+							"dockerfiles":["leeroy-app/Dockerfile","leeroy-web/Dockerfile"],
+							"images":["gcr.io/k8s-skaffold/leeroy-app","gcr.io/k8s-skaffold/leeroy-web"]
+							}`) + "\n",
 		},
 		{
-			description:      "don't prompt for single dockerfile and image",
-			buildConfigs:     []InitBuilder{docker.Docker("Dockerfile1")},
-			images:           []string{"image1"},
-			shouldMakeChoice: false,
-			expectedPairs: []builderImagePair{
-				{
-					Builder:   docker.Docker("Dockerfile1"),
-					ImageName: "image1",
-				},
+			name: "analyze microservices new format",
+			dir:  "testdata/init/microservices",
+			config: initconfig.Config{
+				Analyze:             true,
+				EnableNewInitFormat: true,
 			},
+			expectedOut: strip(`{
+									"builders":[
+										{"name":"Docker","payload":{"path":"leeroy-app/Dockerfile"}},
+										{"name":"Docker","payload":{"path":"leeroy-web/Dockerfile"}}
+									],
+									"images":[
+										{"name":"gcr.io/k8s-skaffold/leeroy-app","foundMatch":false},
+										{"name":"gcr.io/k8s-skaffold/leeroy-web","foundMatch":false}]}`) + "\n",
 		},
 		{
-			description:      "prompt for multiple builders and images",
-			buildConfigs:     []InitBuilder{docker.Docker("Dockerfile1"), docker.Docker("Dockerfile2")},
-			images:           []string{"image1", "image2"},
-			shouldMakeChoice: true,
-			expectedPairs: []builderImagePair{
-				{
-					Builder:   docker.Docker("Dockerfile1"),
-					ImageName: "image1",
-				},
-				{
-					Builder:   docker.Docker("Dockerfile2"),
-					ImageName: "image2",
+			name: "no error with no manifests in analyze mode with skip-deploy",
+			dir:  "testdata/init/hello-no-manifest",
+
+			config: initconfig.Config{
+				Analyze:    true,
+				SkipDeploy: true,
+				Opts: config.SkaffoldOptions{
+					ConfigurationFile: "skaffold.yaml.out",
 				},
 			},
+
+			expectedOut: strip(`{"dockerfiles":["Dockerfile"]}`) + "\n",
 		},
 	}
+
 	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			// Overrides promptUserForBuildConfig to choose first option rather than using the interactive menu
-			t.Override(&promptUserForBuildConfigFunc, func(image string, choices []string) string {
-				if !test.shouldMakeChoice {
-					t.FailNow()
-				}
-				return choices[0]
-			})
+		testutil.Run(t, test.name, func(t *testutil.T) {
+			var out bytes.Buffer
+			t.Chdir(test.dir)
 
-			pairs := resolveBuilderImages(test.buildConfigs, test.images)
+			err := DoInit(context.TODO(), &out, test.config)
 
-			t.CheckDeepEqual(test.expectedPairs, pairs)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(test.expectedOut, out.String())
 		})
 	}
+}
+
+func strip(s string) string {
+	cutString := "\n\t\r"
+	stripped := ""
+	for _, r := range s {
+		if strings.ContainsRune(cutString, r) {
+			continue
+		}
+		stripped = fmt.Sprintf("%s%c", stripped, r)
+	}
+	return stripped
+}
+
+func checkGeneratedConfig(t *testutil.T, dir string) {
+	expectedOutput, err := schema.ParseConfig(filepath.Join(dir, "skaffold.yaml"))
+	t.CheckNoError(err)
+
+	output, err := schema.ParseConfig(filepath.Join(dir, "skaffold.yaml.out"))
+	t.CheckNoError(err)
+	t.CheckDeepEqual(expectedOutput, output)
 }

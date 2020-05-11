@@ -1,6 +1,6 @@
 build:
   artifacts:
-    - image: gcr.io/k8s-skaffold/example
+    - image: example
       custom:
         buildCommand: ./build.sh
         dependencies:

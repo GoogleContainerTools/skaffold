@@ -51,21 +51,10 @@ func (s *OrganizationsService) GetHook(ctx context.Context, org string, id int64
 // CreateHook creates a Hook for the specified org.
 // Name and Config are required fields.
 //
-// Note that only a subset of the hook fields are used and hook must
-// not be nil.
-//
 // GitHub API docs: https://developer.github.com/v3/orgs/hooks/#create-a-hook
 func (s *OrganizationsService) CreateHook(ctx context.Context, org string, hook *Hook) (*Hook, *Response, error) {
 	u := fmt.Sprintf("orgs/%v/hooks", org)
-
-	hookReq := &createHookRequest{
-		Name:   hook.Name,
-		Events: hook.Events,
-		Active: hook.Active,
-		Config: hook.Config,
-	}
-
-	req, err := s.client.NewRequest("POST", u, hookReq)
+	req, err := s.client.NewRequest("POST", u, hook)
 	if err != nil {
 		return nil, nil, err
 	}

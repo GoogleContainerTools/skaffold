@@ -17,89 +17,106 @@ limitations under the License.
 package kubectl
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
+
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/image"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
 )
 
+// GetImages gathers a map of base image names to the image with its tag
+func (l *ManifestList) GetImages() ([]build.Artifact, error) {
+	s := &imageSaver{}
+	_, err := l.Visit(s)
+	return s.Images, err
+}
+
+type imageSaver struct {
+	Images []build.Artifact
+}
+
+func (is *imageSaver) Visit(o map[interface{}]interface{}, k interface{}, v interface{}) bool {
+	if k != "image" {
+		return true
+	}
+
+	image, ok := v.(string)
+	if !ok {
+		return true
+	}
+	parsed, err := docker.ParseReference(image)
+	if err != nil {
+		warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
+		return false
+	}
+
+	is.Images = append(is.Images, build.Artifact{
+		Tag:       image,
+		ImageName: parsed.BaseName,
+	})
+	return false
+}
+
 // ReplaceImages replaces image names in a list of manifests.
-func (l *ManifestList) ReplaceImages(builds []build.Artifact, defaultRepo string) (ManifestList, error) {
-	replacer := newImageReplacer(builds, defaultRepo)
+func (l *ManifestList) ReplaceImages(builds []build.Artifact) (ManifestList, error) {
+	replacer := newImageReplacer(builds)
 
 	updated, err := l.Visit(replacer)
 	if err != nil {
-		return nil, errors.Wrap(err, "replacing images")
+		return nil, fmt.Errorf("replacing images: %w", err)
 	}
 
 	replacer.Check()
-	logrus.Debugln("manifests with tagged images", updated.String())
+	logrus.Debugln("manifests with tagged images:", updated.String())
 
 	return updated, nil
 }
 
 type imageReplacer struct {
-	defaultRepo     string
 	tagsByImageName map[string]string
 	found           map[string]bool
 }
 
-func newImageReplacer(builds []build.Artifact, defaultRepo string) *imageReplacer {
+func newImageReplacer(builds []build.Artifact) *imageReplacer {
 	tagsByImageName := make(map[string]string)
 	for _, build := range builds {
 		tagsByImageName[build.ImageName] = build.Tag
 	}
 
 	return &imageReplacer{
-		defaultRepo:     defaultRepo,
 		tagsByImageName: tagsByImageName,
 		found:           make(map[string]bool),
 	}
 }
 
-func (r *imageReplacer) Matches(key string) bool {
-	return key == "image"
-}
+func (r *imageReplacer) Visit(o map[interface{}]interface{}, k interface{}, v interface{}) bool {
+	if k != "image" {
+		return true
+	}
 
-func (r *imageReplacer) NewValue(old interface{}) (bool, interface{}) {
-	imageName, ok := old.(string)
+	image, ok := v.(string)
 	if !ok {
-		return false, nil
+		return true
 	}
-
-	found, tag := r.parseAndReplace(imageName)
-	if !found {
-		subbedImage := r.substituteRepoIntoImage(imageName)
-		if imageName == subbedImage {
-			return found, tag
-		}
-		// no match, so try substituting in defaultRepo value
-		found, tag = r.parseAndReplace(subbedImage)
-	}
-	return found, tag
-}
-
-func (r *imageReplacer) parseAndReplace(imageName string) (bool, interface{}) {
-	parsed, err := docker.ParseReference(imageName)
+	parsed, err := docker.ParseReference(image)
 	if err != nil {
-		warnings.Printf("Couldn't parse image: %s", imageName)
-		return false, nil
+		warnings.Printf("Couldn't parse image [%s]: %s", image, err.Error())
+		return false
+	}
+
+	// Leave images referenced by digest as they are
+	if parsed.Digest != "" {
+		return false
 	}
 
 	if tag, present := r.tagsByImageName[parsed.BaseName]; present {
-		if parsed.FullyQualified {
-			if tag == imageName {
-				r.found[parsed.BaseName] = true
-			}
-		} else {
-			r.found[parsed.BaseName] = true
-			return true, tag
-		}
+		// Apply new image tag
+		r.found[parsed.BaseName] = true
+		o[k] = tag
 	}
-	return false, nil
+	return false
 }
 
 func (r *imageReplacer) Check() {
@@ -108,10 +125,4 @@ func (r *imageReplacer) Check() {
 			warnings.Printf("image [%s] is not used by the deployment", imageName)
 		}
 	}
-}
-
-func (r *imageReplacer) substituteRepoIntoImage(imageName string) string {
-	defaultRegistry := image.RegistryFactory(r.defaultRepo)
-	originalImage := image.Factory(imageName)
-	return originalImage.Update(defaultRegistry)
 }

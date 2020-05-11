@@ -18,60 +18,115 @@ package integration
 
 import (
 	"testing"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 func TestDebug(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping integration test")
-	}
-	if ShouldRunGCPOnlyTests() {
-		t.Skip("skipping test that is not gcp only")
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
 	}
 
 	tests := []struct {
 		description string
 		dir         string
-		filename    string
 		args        []string
 		deployments []string
 		pods        []string
-		env         []string
 	}{
 		{
 			description: "kubectl",
 			dir:         "testdata/debug",
 			deployments: []string{"jib"},
-			pods:        []string{"nodejs", "npm", "python3"},
+			pods:        []string{"nodejs", "npm", "python3", "go"},
 		},
 		{
 			description: "kustomize",
 			args:        []string{"--profile", "kustomize"},
 			dir:         "testdata/debug",
 			deployments: []string{"jib"},
-			pods:        []string{"nodejs", "npm", "python3"},
+			pods:        []string{"nodejs", "npm", "python3", "go"},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			ns, client, deleteNs := SetupNamespace(t)
-			defer deleteNs()
+			// Run skaffold build first to fail quickly on a build failure
+			skaffold.Build(test.args...).InDir(test.dir).RunOrFail(t)
 
-			stop := skaffold.Debug(test.args...).WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunBackground(t)
-			defer stop()
+			ns, client := SetupNamespace(t)
+
+			skaffold.Debug(test.args...).InDir(test.dir).InNs(ns.Name).RunBackground(t)
 
 			client.WaitForPodsReady(test.pods...)
-			client.WaitForDeploymentsToStabilize(test.deployments...)
 			for _, depName := range test.deployments {
 				deploy := client.GetDeployment(depName)
+
 				annotations := deploy.Spec.Template.GetAnnotations()
 				if _, found := annotations["debug.cloud.google.com/config"]; !found {
 					t.Errorf("deployment missing debug annotation: %v", annotations)
 				}
 			}
-
-			skaffold.Delete().WithConfig(test.filename).InDir(test.dir).InNs(ns.Name).WithEnv(test.env).RunOrFail(t)
 		})
+	}
+}
+
+func TestDebugEventsRPC_StatusCheck(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if RunOnGCP() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("testdata/jib").RunOrFail(t)
+
+	ns, client := SetupNamespace(t)
+
+	rpcAddr := randomPort()
+	skaffold.Debug("--enable-rpc", "--rpc-port", rpcAddr).InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
+
+	waitForDebugEvent(t, client, rpcAddr)
+}
+
+func TestDebugEventsRPC_NoStatusCheck(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+	if RunOnGCP() {
+		t.Skip("skipping test that is not gcp only")
+	}
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("testdata/jib").RunOrFail(t)
+
+	ns, client := SetupNamespace(t)
+
+	rpcAddr := randomPort()
+	skaffold.Debug("--enable-rpc", "--rpc-port", rpcAddr, "--status-check=false").InDir("testdata/jib").InNs(ns.Name).RunBackground(t)
+
+	waitForDebugEvent(t, client, rpcAddr)
+}
+
+func waitForDebugEvent(t *testing.T, client *NSKubernetesClient, rpcAddr string) {
+	client.WaitForPodsReady()
+
+	_, entries := apiEvents(t, rpcAddr)
+
+	timeout := time.After(1 * time.Minute)
+	for {
+		select {
+		case <-timeout:
+			t.Fatalf("timed out waiting for port debugging event")
+		case entry := <-entries:
+			switch entry.Event.GetEventType().(type) {
+			case *proto.Event_DebuggingContainerEvent:
+				// success!
+				return
+			default:
+			}
+		}
 	}
 }

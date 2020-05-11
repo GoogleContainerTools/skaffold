@@ -20,17 +20,19 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 	"github.com/docker/cli/cli/config"
+	"github.com/docker/cli/cli/config/configfile"
 	"github.com/docker/distribution/reference"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/pkg/homedir"
 	"github.com/docker/docker/registry"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/gcp"
 )
 
 const (
@@ -60,32 +62,54 @@ type AuthConfigHelper interface {
 
 type credsHelper struct{}
 
-func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
+func loadDockerConfig() (*configfile.ConfigFile, error) {
 	cf, err := config.Load(configDir)
 	if err != nil {
-		return types.AuthConfig{}, errors.Wrap(err, "docker config")
+		return nil, fmt.Errorf("docker config: %w", err)
 	}
 
-	gcp.AutoConfigureGCRCredentialHelper(cf, registry)
+	gcp.AutoConfigureGCRCredentialHelper(cf)
 
-	return cf.GetAuthConfig(registry)
+	return cf, nil
+}
+
+func (credsHelper) GetAuthConfig(registry string) (types.AuthConfig, error) {
+	cf, err := loadDockerConfig()
+	if err != nil {
+		return types.AuthConfig{}, err
+	}
+
+	auth, err := cf.GetAuthConfig(registry)
+	if err != nil {
+		return types.AuthConfig{}, err
+	}
+
+	return types.AuthConfig(auth), nil
 }
 
 func (credsHelper) GetAllAuthConfigs() (map[string]types.AuthConfig, error) {
-	cf, err := config.Load(configDir)
+	cf, err := loadDockerConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "docker config")
+		return nil, err
 	}
 
-	// TODO(dgageot): this is really slow because it has to run all the credential helpers.
-	// return cf.GetAllCredentials()
-	return cf.GetCredentialsStore("").GetAll()
+	credentials, err := cf.GetAllCredentials()
+	if err != nil {
+		return nil, err
+	}
+
+	authConfigs := make(map[string]types.AuthConfig, len(credentials))
+	for k, auth := range credentials {
+		authConfigs[k] = types.AuthConfig(auth)
+	}
+
+	return authConfigs, nil
 }
 
 func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelper, image string) (string, error) {
 	ref, err := reference.ParseNormalizedNamed(image)
 	if err != nil {
-		return "", errors.Wrap(err, "parsing image name for registry")
+		return "", fmt.Errorf("parsing image name for registry: %w", err)
 	}
 
 	repoInfo, err := registry.ParseRepositoryInfo(ref)
@@ -100,7 +124,7 @@ func (l *localDaemon) encodedRegistryAuth(ctx context.Context, a AuthConfigHelpe
 
 	ac, err := a.GetAuthConfig(configKey)
 	if err != nil {
-		return "", errors.Wrap(err, "getting auth config")
+		return "", fmt.Errorf("getting auth config: %w", err)
 	}
 
 	buf, err := json.Marshal(ac)

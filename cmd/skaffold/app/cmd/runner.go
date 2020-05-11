@@ -18,20 +18,21 @@ package cmd
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"os"
 
-	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/defaults"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util/image"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // For tests
@@ -40,52 +41,53 @@ var createRunner = createNewRunner
 func withRunner(ctx context.Context, action func(runner.Runner, *latest.SkaffoldConfig) error) error {
 	runner, config, err := createRunner(opts)
 	if err != nil {
-		return errors.Wrap(err, "creating runner")
+		return err
 	}
-	defer runner.Stop()
 
 	err = action(runner, config)
+
 	return alwaysSucceedWhenCancelled(ctx, err)
 }
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
-func createNewRunner(opts *config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
-	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
+func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
+	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
 	if err != nil {
+		if os.IsNotExist(errors.Unwrap(err)) {
+			return nil, nil, fmt.Errorf("[%s] not found. You might need to run `skaffold init`", opts.ConfigurationFile)
+		}
+
 		// If the error is NOT that the file doesn't exist, then we warn the user
 		// that maybe they are using an outdated version of Skaffold that's unable to read
 		// the configuration.
-		if !os.IsNotExist(err) {
-			warnIfUpdateIsAvailable()
-		}
-
-		return nil, nil, errors.Wrap(err, "parsing skaffold config")
+		warnIfUpdateIsAvailable()
+		return nil, nil, fmt.Errorf("parsing skaffold config: %w", err)
 	}
 
 	config := parsed.(*latest.SkaffoldConfig)
 
 	if err = schema.ApplyProfiles(config, opts); err != nil {
-		return nil, nil, errors.Wrap(err, "applying profiles")
+		return nil, nil, fmt.Errorf("applying profiles: %w", err)
 	}
 
+	kubectx.ConfigureKubeConfig(opts.KubeConfig, opts.KubeContext, config.Deploy.KubeContext)
+
 	if err := defaults.Set(config); err != nil {
-		return nil, nil, errors.Wrap(err, "setting default values")
+		return nil, nil, fmt.Errorf("setting default values: %w", err)
 	}
 
 	if err := validation.Process(config); err != nil {
-		return nil, nil, errors.Wrap(err, "invalid skaffold config")
+		return nil, nil, fmt.Errorf("invalid skaffold config: %w", err)
 	}
 
-	defaultRepo, err := configutil.GetDefaultRepo(opts.DefaultRepo)
+	runCtx, err := runcontext.GetRunContext(opts, config.Pipeline)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "getting default repo")
+		return nil, nil, fmt.Errorf("getting run context: %w", err)
 	}
 
-	applyDefaultRepoSubstitution(config, defaultRepo)
-
-	runner, err := runner.NewForConfig(opts, config)
+	runner, err := runner.NewForConfig(runCtx)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "creating runner")
+		return nil, nil, fmt.Errorf("creating runner: %w", err)
 	}
 
 	return runner, config, nil
@@ -94,23 +96,6 @@ func createNewRunner(opts *config.SkaffoldOptions) (runner.Runner, *latest.Skaff
 func warnIfUpdateIsAvailable() {
 	latest, current, versionErr := update.GetLatestAndCurrentVersion()
 	if versionErr == nil && latest.GT(current) {
-		logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) at %s\n", latest, constants.LatestDownloadURL)
-	}
-}
-
-func applyDefaultRepoSubstitution(config *latest.SkaffoldConfig, defaultRepo string) {
-	if defaultRepo == "" {
-		// noop
-		return
-	}
-
-	defaultRegistry := image.RegistryFactory(defaultRepo)
-	for _, artifact := range config.Build.Artifacts {
-		originalImage := image.Factory(artifact.ImageName)
-		artifact.ImageName = originalImage.Update(defaultRegistry)
-	}
-	for _, testCase := range config.Test {
-		originalImage := image.Factory(testCase.ImageName)
-		testCase.ImageName = originalImage.Update(defaultRegistry)
+		logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) from:\n  %s\n", latest, releaseURL(latest))
 	}
 }

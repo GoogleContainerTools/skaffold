@@ -20,7 +20,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1alpha4"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
 // Upgrade upgrades a configuration to the next version.
@@ -40,35 +39,30 @@ import (
 //    - Artifact.imageName -> image, workspace -> context in yaml
 //		- DockerArtifact.dockerfilePath -> dockerfile in yaml
 //    - BazelArtifact.BuildTarget is optional in yaml
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	// convert Deploy (should be the same)
 	var newDeploy next.DeployConfig
-	if err := pkgutil.CloneThroughJSON(config.Deploy, &newDeploy); err != nil {
-		return nil, errors.Wrap(err, "converting deploy config")
-	}
+	pkgutil.CloneThroughJSON(c.Deploy, &newDeploy)
 
 	// convert Profiles (should be the same)
 	var newProfiles []next.Profile
-	if config.Profiles != nil {
-		if err := pkgutil.CloneThroughJSON(config.Profiles, &newProfiles); err != nil {
-			return nil, errors.Wrap(err, "converting new profile")
-		}
-		for i, oldProfile := range config.Profiles {
+	if c.Profiles != nil {
+		pkgutil.CloneThroughJSON(c.Profiles, &newProfiles)
+
+		for i, oldProfile := range c.Profiles {
 			convertBuild(oldProfile.Build, newProfiles[i].Build)
 		}
 	}
 
 	// convert Build (should be the same)
 	var newBuild next.BuildConfig
-	oldBuild := config.Build
-	if err := pkgutil.CloneThroughJSON(oldBuild, &newBuild); err != nil {
-		return nil, errors.Wrap(err, "converting new build")
-	}
+	oldBuild := c.Build
+	pkgutil.CloneThroughJSON(oldBuild, &newBuild)
 	convertBuild(oldBuild, newBuild)
 
 	return &next.SkaffoldConfig{
 		APIVersion: next.Version,
-		Kind:       config.Kind,
+		Kind:       c.Kind,
 		Deploy:     newDeploy,
 		Build:      newBuild,
 		Profiles:   newProfiles,

@@ -17,19 +17,23 @@ limitations under the License.
 package debug
 
 import (
+	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 type nodeTransformer struct{}
 
 func init() {
 	containerTransforms = append(containerTransforms, nodeTransformer{})
+
+	// the `node` image's "docker-entrypoint.sh" launches the command
+	entrypointLaunchers = append(entrypointLaunchers, "docker-entrypoint.sh")
 }
 
 const (
@@ -56,10 +60,15 @@ func isLaunchingNpm(args []string) bool {
 }
 
 func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
-	if _, found := config.env["NODE_VERSION"]; found {
-		return true
+	// NODE_VERSION defined in Official Docker `node` image
+	// NODEJS_VERSION defined in RedHat's node base image
+	// NODE_ENV is a common var found to toggle debug and production
+	for _, v := range []string{"NODE_VERSION", "NODEJS_VERSION", "NODE_ENV"} {
+		if _, found := config.env[v]; found {
+			return true
+		}
 	}
-	if len(config.entrypoint) > 0 {
+	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return isLaunchingNode(config.entrypoint) || isLaunchingNpm(config.entrypoint)
 	} else if len(config.arguments) > 0 {
 		return isLaunchingNode(config.arguments) || isLaunchingNpm(config.arguments)
@@ -67,20 +76,23 @@ func (t nodeTransformer) IsApplicable(config imageConfiguration) bool {
 	return false
 }
 
-func (t nodeTransformer) RuntimeSupportImage() string {
-	// no additional support required
-	return ""
-}
-
 // Apply configures a container definition for NodeJS Chrome V8 Inspector.
 // Returns a simple map describing the debug configuration details.
-func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) map[string]interface{} {
+func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguration, portAlloc portAllocator) (ContainerDebugConfiguration, string, error) {
 	logrus.Infof("Configuring %q for node.js debugging", container.Name)
+
+	if config.env == nil {
+		config.env = make(map[string]string)
+	}
+	// Add our debug-helper path to resolve to our node wrapper
+	if v, found := config.env["PATH"]; found {
+		config.env["PATH"] = "/dbg/nodejs/bin:" + v
+	} else {
+		config.env["PATH"] = "/dbg/nodejs/bin"
+	}
 
 	// try to find existing `--inspect` command
 	spec := retrieveNodeInspectSpec(config)
-	// todo: find existing containerPort "devtools" and use port. But what if it conflicts with command-line spec?
-
 	if spec == nil {
 		spec = &inspectSpec{port: portAlloc(defaultDevtoolsPort)}
 		switch {
@@ -90,28 +102,33 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 		case len(config.entrypoint) > 0 && isLaunchingNpm(config.entrypoint):
 			container.Command = rewriteNpmCommandLine(config.entrypoint, *spec)
 
-		case len(config.entrypoint) == 0 && len(config.arguments) > 0 && isLaunchingNode(config.arguments):
+		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && len(config.arguments) > 0 && isLaunchingNode(config.arguments):
 			container.Args = rewriteNodeCommandLine(config.arguments, *spec)
 
-		case len(config.entrypoint) == 0 && len(config.arguments) > 0 && isLaunchingNpm(config.arguments):
+		case (len(config.entrypoint) == 0 || isEntrypointLauncher(config.entrypoint)) && len(config.arguments) > 0 && isLaunchingNpm(config.arguments):
 			container.Args = rewriteNpmCommandLine(config.arguments, *spec)
 
 		default:
-			logrus.Warnf("Skipping %q as does not appear to invoke node", container.Name)
-			return nil
+			if v, found := config.env["NODE_OPTIONS"]; found {
+				config.env["NODE_OPTIONS"] = v + " " + spec.String()
+			} else {
+				config.env["NODE_OPTIONS"] = spec.String()
+			}
 		}
 	}
 
-	inspectPort := v1.ContainerPort{
-		Name:          "devtools",
-		ContainerPort: spec.port,
+	container.Ports = exposePort(container.Ports, "devtools", spec.port)
+	for k, v := range config.env {
+		container.Env = append(container.Env, v1.EnvVar{Name: k, Value: v})
 	}
-	container.Ports = append(container.Ports, inspectPort)
+	sort.Slice(container.Env, func(i, j int) bool {
+		return container.Env[i].Name < container.Env[j].Name
+	})
 
-	return map[string]interface{}{
-		"runtime":  "nodejs",
-		"devtools": spec.port,
-	}
+	return ContainerDebugConfiguration{
+		Runtime: "nodejs",
+		Ports:   map[string]uint32{"devtools": uint32(spec.port)},
+	}, "nodejs", nil
 }
 
 func retrieveNodeInspectSpec(config imageConfiguration) *inspectSpec {

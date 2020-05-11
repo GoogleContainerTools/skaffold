@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 GOOS ?= $(shell go env GOOS)
-GOARCH = amd64
+GOARCH ?= amd64
 BUILD_DIR ?= ./out
-ORG := github.com/GoogleContainerTools
-PROJECT := skaffold
+ORG = github.com/GoogleContainerTools
+PROJECT = skaffold
 REPOPATH ?= $(ORG)/$(PROJECT)
 RELEASE_BUCKET ?= $(PROJECT)
 GSC_BUILD_PATH ?= gs://$(RELEASE_BUCKET)/builds/$(COMMIT)
@@ -28,8 +28,11 @@ GCP_PROJECT ?= k8s-skaffold
 GKE_CLUSTER_NAME ?= integration-tests
 GKE_ZONE ?= us-central1-a
 
-SUPPORTED_PLATFORMS := linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
+SUPPORTED_PLATFORMS = linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
+
+SKAFFOLD_TEST_PACKAGES = ./pkg/skaffold/... ./cmd/... ./hack/... ./pkg/webhook/...
+GO_FILES = $(shell find . -type f -name '*.go' -not -path "./vendor/*" -not -path "./pkg/diag/*")
 
 VERSION_PACKAGE = $(REPOPATH)/pkg/skaffold/version
 COMMIT = $(shell git rev-parse HEAD)
@@ -38,42 +41,50 @@ ifeq "$(strip $(VERSION))" ""
  override VERSION = $(shell git describe --always --tags --dirty)
 endif
 
-GO_GCFLAGS := "all=-trimpath=${PWD}"
-GO_ASMFLAGS := "all=-trimpath=${PWD}"
-
 LDFLAGS_linux = -static
 LDFLAGS_darwin =
 LDFLAGS_windows =
 
-GO_BUILD_TAGS_linux := "osusergo netgo static_build"
-GO_BUILD_TAGS_darwin := ""
-GO_BUILD_TAGS_windows := ""
-
+GO_BUILD_TAGS_linux = "osusergo netgo static_build release"
+GO_BUILD_TAGS_darwin = "release"
+GO_BUILD_TAGS_windows = "release"
 
 GO_LDFLAGS = -X $(VERSION_PACKAGE).version=$(VERSION)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).buildDate=$(shell date +'%Y-%m-%dT%H:%M:%SZ')
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitCommit=$(COMMIT)
 GO_LDFLAGS += -X $(VERSION_PACKAGE).gitTreeState=$(if $(shell git status --porcelain),dirty,clean)
+GO_LDFLAGS += -s -w
 
 GO_LDFLAGS_windows =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_windows)\""
 GO_LDFLAGS_darwin =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_darwin)\""
 GO_LDFLAGS_linux =" $(GO_LDFLAGS)  -extldflags \"$(LDFLAGS_linux)\""
 
-GO_FILES := $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+STATIK_FILES = cmd/skaffold/app/cmd/statik/statik.go
 
-$(BUILD_DIR)/$(PROJECT): $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH)
-	cp $(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH) $@
+# Build for local development.
+$(BUILD_DIR)/$(PROJECT): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
+	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -o $@ $(BUILD_PACKAGE)
 
-$(BUILD_DIR)/$(PROJECT)-$(GOOS)-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go build -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) -o $@ $(BUILD_PACKAGE)
+.PHONY: install
+install: $(BUILD_DIR)/$(PROJECT)
+	cp $(BUILD_DIR)/$(PROJECT) $(GOPATH)/bin/$(PROJECT)
 
-$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(GO_FILES) $(BUILD_DIR)
-	docker build --build-arg PROJECT=$(REPOPATH) \
-		--build-arg TARGETS=$*/$(GOARCH) \
-		--build-arg FLAG_LDFLAGS=$(GO_LDFLAGS_$(*)) \
-		--build-arg FLAG_TAGS=$(GO_BUILD_TAGS_$(*)) \
-		-f deploy/cross/Dockerfile -t skaffold/cross .
-	docker run --rm --entrypoint sh skaffold/cross -c "cat /build/skaffold*" > $@
+# Build for a release.
+.PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
+
+.PHONY: cross
+cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform).sha256)
+
+$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross/Dockerfile
+	docker build \
+		--build-arg GOOS=$* \
+		--build-arg GOARCH=$(GOARCH) \
+		--build-arg TAGS=$(GO_BUILD_TAGS_$(*)) \
+		--build-arg LDFLAGS=$(GO_LDFLAGS_$(*)) \
+		-f deploy/cross/Dockerfile \
+		-t skaffold/cross \
+		.
+	docker run --rm skaffold/cross cat /build/skaffold > $@
 
 %.sha256: %
 	shasum -a 256 $< > $@
@@ -88,18 +99,28 @@ $(BUILD_DIR)/VERSION: $(BUILD_DIR)
 $(BUILD_DIR):
 	mkdir -p $(BUILD_DIR)
 
-.PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
-
-.PHONY: cross
-cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform).sha256)
-
 .PHONY: test
 test: $(BUILD_DIR)
-	@ ./test.sh
+	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s $(SKAFFOLD_TEST_PACKAGES)
+	@ ./hack/checks.sh
+	@ ./hack/linters.sh
 
-.PHONY: install
-install: $(GO_FILES) $(BUILD_DIR)
-	GOOS=$(GOOS) GOARCH=$(GOARCH) CGO_ENABLED=1 go install -tags $(GO_BUILD_TAGS_$(GOOS)) -ldflags $(GO_LDFLAGS_$(GOOS)) -gcflags $(GO_GCFLAGS) -asmflags $(GO_ASMFLAGS) $(BUILD_PACKAGE)
+.PHONY: coverage
+coverage: $(BUILD_DIR)
+	@ ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt -coverpkg="./pkg/...,./cmd/..." $(SKAFFOLD_TEST_PACKAGES)
+	@- curl -s https://codecov.io/bash > $(BUILD_DIR)/upload_coverage && bash $(BUILD_DIR)/upload_coverage
+
+.PHONY: checks
+checks: $(BUILD_DIR)
+	@ ./hack/checks.sh
+
+.PHONY: linters
+linters: $(BUILD_DIR)
+	@ ./hack/linters.sh
+
+.PHONY: quicktest
+quicktest:
+	@ ./hack/gotest.sh -short -timeout=60s $(SKAFFOLD_TEST_PACKAGES)
 
 .PHONY: integration
 integration: install
@@ -109,81 +130,70 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	GCP_ONLY=$(GCP_ONLY) go test -v $(REPOPATH)/integration -timeout 15m $(INTEGRATION_TEST_ARGS)
+	@ GCP_ONLY=$(GCP_ONLY) ./hack/gotest.sh -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
 	docker build \
-        		-f deploy/skaffold/Dockerfile \
-        		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
-        		--build-arg VERSION=$(VERSION) \
-        		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
-        		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) .
+		--build-arg VERSION=$(VERSION) \
+		-f deploy/skaffold/Dockerfile \
+		--target release \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:latest \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:$(VERSION) \
+		.
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_RELEASE_PATH)/
 	gsutil -m cp $(BUILD_DIR)/VERSION $(GSC_RELEASE_PATH)/VERSION
 	gsutil -m cp -r $(GSC_RELEASE_PATH)/* $(GSC_RELEASE_LATEST)
 
-.PHONY: release-in-docker
-release-in-docker:
-	docker build \
-    		-f deploy/skaffold/Dockerfile \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
-    		--target builder \
-    		.
-	docker run --rm \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
-		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release VERSION=$(VERSION) RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
-
 .PHONY: release-build
 release-build: cross
 	docker build \
-    		-f deploy/skaffold/Dockerfile \
-    		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) .
+		-f deploy/skaffold/Dockerfile \
+		--target release \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:edge \
+		-t gcr.io/$(GCP_PROJECT)/skaffold:$(COMMIT) \
+		.
 	gsutil -m cp $(BUILD_DIR)/$(PROJECT)-* $(GSC_BUILD_PATH)/
 	gsutil -m cp -r $(GSC_BUILD_PATH)/* $(GSC_BUILD_LATEST)
 
-.PHONY: release-build-in-docker
-release-build-in-docker:
-	docker build \
-    		-f deploy/skaffold/Dockerfile \
-    		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
-    		--target builder \
-    		.
-	docker run --rm \
-		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
-		gcr.io/$(GCP_PROJECT)/skaffold-builder make -j release-build RELEASE_BUCKET=$(RELEASE_BUCKET) GCP_PROJECT=$(GCP_PROJECT)
-
 .PHONY: clean
 clean:
-	rm -rf $(BUILD_DIR)
+	rm -rf $(BUILD_DIR) hack/bin $(STATIK_FILES)
 
-.PHONY: kind-cluster
-kind-cluster:
-	kind get clusters | grep -q kind || kind create cluster
+.PHONY: build_deps
+build_deps:
+	$(eval DEPS_DIGEST := $(shell ./hack/skaffold-deps-sha1.sh))
+	docker build \
+		-f deploy/skaffold/Dockerfile.deps \
+		-t gcr.io/$(GCP_PROJECT)/build_deps:$(DEPS_DIGEST) \
+		deploy/skaffold
+	docker push gcr.io/$(GCP_PROJECT)/build_deps:$(DEPS_DIGEST)
+	@./hack/check-skaffold-builder.sh
 
 .PHONY: skaffold-builder
 skaffold-builder:
-	-docker pull gcr.io/$(GCP_PROJECT)/skaffold-builder
-	docker build \
-		--cache-from gcr.io/$(GCP_PROJECT)/skaffold-builder \
+	time docker build \
 		-f deploy/skaffold/Dockerfile \
-		--target integration \
-		-t gcr.io/$(GCP_PROJECT)/skaffold-integration .
+		--target builder \
+		-t gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		.
 
 .PHONY: integration-in-kind
-integration-in-kind: kind-cluster skaffold-builder
-	docker exec -it kind-control-plane cat /etc/kubernetes/admin.conf > /tmp/kind-config
+integration-in-kind: skaffold-builder
 	echo '{}' > /tmp/docker-config
 	docker run --rm \
 		-v /var/run/docker.sock:/var/run/docker.sock \
-		-v /tmp/kind-config:/kind-config \
+		-v $(HOME)/.gradle:/root/.gradle \
+		-v $(HOME)/.cache:/root/.cache \
 		-v /tmp/docker-config:/root/.docker/config.json \
-		-e KUBECONFIG=/kind-config \
-		gcr.io/$(GCP_PROJECT)/skaffold-integration
+		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
+		-e KUBECONFIG=/tmp/kind-config \
+		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		sh -c ' \
+			kind get clusters | grep -q kind || TERM=dumb kind create cluster --image=kindest/node:v1.13.12@sha256:ad1dd06aca2b85601f882ba1df4fdc03d5a57b304652d0e81476580310ba6289; \
+			kind get kubeconfig --internal > /tmp/kind-config; \
+			make integration \
+		'
 
 .PHONY: integration-in-docker
 integration-in-docker: skaffold-builder
@@ -191,6 +201,7 @@ integration-in-docker: skaffold-builder
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v $(HOME)/.config/gcloud:/root/.config/gcloud \
 		-v $(GOOGLE_APPLICATION_CREDENTIALS):$(GOOGLE_APPLICATION_CREDENTIALS) \
+		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
 		-e GCP_ONLY=$(GCP_ONLY) \
 		-e GCP_PROJECT=$(GCP_PROJECT) \
 		-e GKE_CLUSTER_NAME=$(GKE_CLUSTER_NAME) \
@@ -198,25 +209,26 @@ integration-in-docker: skaffold-builder
 		-e DOCKER_CONFIG=/root/.docker \
 		-e GOOGLE_APPLICATION_CREDENTIALS=$(GOOGLE_APPLICATION_CREDENTIALS) \
 		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
-		gcr.io/$(GCP_PROJECT)/skaffold-integration
+		gcr.io/$(GCP_PROJECT)/skaffold-builder \
+		make integration
 
 .PHONY: submit-build-trigger
 submit-build-trigger:
-	gcloud container builds submit . \
+	gcloud builds submit . \
 		--config=deploy/cloudbuild.yaml \
 		--substitutions="_RELEASE_BUCKET=$(RELEASE_BUCKET),COMMIT_SHA=$(COMMIT)"
 
 .PHONY: submit-release-trigger
 submit-release-trigger:
-	gcloud container builds submit . \
+	gcloud builds submit . \
 		--config=deploy/cloudbuild-release.yaml \
 		--substitutions="_RELEASE_BUCKET=$(RELEASE_BUCKET),TAG_NAME=$(VERSION)"
 
-#utilities for skaffold site - not used anywhere else
+# utilities for skaffold site - not used anywhere else
 
 .PHONY: preview-docs
 preview-docs:
-	./deploy/docs/local-preview.sh hugo serve -D --bind=0.0.0.0
+	./deploy/docs/local-preview.sh hugo serve -D --bind=0.0.0.0 --ignoreCache
 
 .PHONY: build-docs-preview
 build-docs-preview:
@@ -227,3 +239,8 @@ build-docs-preview:
 .PHONY: generate-schemas
 generate-schemas:
 	go run hack/schemas/main.go
+
+# static files
+
+$(STATIK_FILES): go.mod docs/content/en/schemas/*
+	hack/generate-statik.sh

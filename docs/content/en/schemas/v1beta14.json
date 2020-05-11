@@ -1,0 +1,1892 @@
+{
+  "type": "object",
+  "anyOf": [
+    {
+      "$ref": "#/definitions/SkaffoldConfig"
+    }
+  ],
+  "$schema": "http://json-schema-org/draft-07/schema#",
+  "definitions": {
+    "Activation": {
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "a Skaffold command for which the profile is auto-activated.",
+          "x-intellij-html-description": "a Skaffold command for which the profile is auto-activated.",
+          "examples": [
+            "dev"
+          ]
+        },
+        "env": {
+          "type": "string",
+          "description": "a `key=pattern` pair. The profile is auto-activated if an Environment Variable `key` matches the pattern. If the pattern starts with `!`, activation happens if the remaining pattern is _not_ matched. The pattern matches if the Environment Variable value is exactly `pattern`, or the regex `pattern` is found in it. An empty `pattern` (e.g. `env: \"key=\"`) always only matches if the Environment Variable is undefined or empty.",
+          "x-intellij-html-description": "a <code>key=pattern</code> pair. The profile is auto-activated if an Environment Variable <code>key</code> matches the pattern. If the pattern starts with <code>!</code>, activation happens if the remaining pattern is <em>not</em> matched. The pattern matches if the Environment Variable value is exactly <code>pattern</code>, or the regex <code>pattern</code> is found in it. An empty <code>pattern</code> (e.g. <code>env: &quot;key=&quot;</code>) always only matches if the Environment Variable is undefined or empty.",
+          "examples": [
+            "ENV=production"
+          ]
+        },
+        "kubeContext": {
+          "type": "string",
+          "description": "a Kubernetes context for which the profile is auto-activated.",
+          "x-intellij-html-description": "a Kubernetes context for which the profile is auto-activated.",
+          "examples": [
+            "minikube"
+          ]
+        }
+      },
+      "preferredOrder": [
+        "env",
+        "kubeContext",
+        "command"
+      ],
+      "additionalProperties": false,
+      "description": "criteria by which a profile is auto-activated.",
+      "x-intellij-html-description": "criteria by which a profile is auto-activated."
+    },
+    "Artifact": {
+      "required": [
+        "image"
+      ],
+      "anyOf": [
+        {
+          "properties": {
+            "context": {
+              "type": "string",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "directory containing the artifact's sources.",
+              "default": "."
+            },
+            "image": {
+              "type": "string",
+              "description": "name of the image to be built.",
+              "x-intellij-html-description": "name of the image to be built.",
+              "examples": [
+                "gcr.io/k8s-skaffold/example"
+              ]
+            },
+            "sync": {
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
+            }
+          },
+          "preferredOrder": [
+            "image",
+            "context",
+            "sync"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "context": {
+              "type": "string",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "directory containing the artifact's sources.",
+              "default": "."
+            },
+            "docker": {
+              "$ref": "#/definitions/DockerArtifact",
+              "description": "*beta* describes an artifact built from a Dockerfile.",
+              "x-intellij-html-description": "<em>beta</em> describes an artifact built from a Dockerfile."
+            },
+            "image": {
+              "type": "string",
+              "description": "name of the image to be built.",
+              "x-intellij-html-description": "name of the image to be built.",
+              "examples": [
+                "gcr.io/k8s-skaffold/example"
+              ]
+            },
+            "sync": {
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
+            }
+          },
+          "preferredOrder": [
+            "image",
+            "context",
+            "sync",
+            "docker"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "bazel": {
+              "$ref": "#/definitions/BazelArtifact",
+              "description": "*beta* requires bazel CLI to be installed and the sources to contain [Bazel](https://bazel.build/) configuration files.",
+              "x-intellij-html-description": "<em>beta</em> requires bazel CLI to be installed and the sources to contain <a href=\"https://bazel.build/\">Bazel</a> configuration files."
+            },
+            "context": {
+              "type": "string",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "directory containing the artifact's sources.",
+              "default": "."
+            },
+            "image": {
+              "type": "string",
+              "description": "name of the image to be built.",
+              "x-intellij-html-description": "name of the image to be built.",
+              "examples": [
+                "gcr.io/k8s-skaffold/example"
+              ]
+            },
+            "sync": {
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
+            }
+          },
+          "preferredOrder": [
+            "image",
+            "context",
+            "sync",
+            "bazel"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "context": {
+              "type": "string",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "directory containing the artifact's sources.",
+              "default": "."
+            },
+            "image": {
+              "type": "string",
+              "description": "name of the image to be built.",
+              "x-intellij-html-description": "name of the image to be built.",
+              "examples": [
+                "gcr.io/k8s-skaffold/example"
+              ]
+            },
+            "jib": {
+              "$ref": "#/definitions/JibArtifact",
+              "description": "*alpha* builds images using the [Jib plugins for Maven or Gradle](https://github.com/GoogleContainerTools/jib/).",
+              "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/\">Jib plugins for Maven or Gradle</a>."
+            },
+            "sync": {
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
+            }
+          },
+          "preferredOrder": [
+            "image",
+            "context",
+            "sync",
+            "jib"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "context": {
+              "type": "string",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "directory containing the artifact's sources.",
+              "default": "."
+            },
+            "image": {
+              "type": "string",
+              "description": "name of the image to be built.",
+              "x-intellij-html-description": "name of the image to be built.",
+              "examples": [
+                "gcr.io/k8s-skaffold/example"
+              ]
+            },
+            "kaniko": {
+              "$ref": "#/definitions/KanikoArtifact",
+              "description": "*alpha* builds images using [kaniko](https://github.com/GoogleContainerTools/kaniko).",
+              "x-intellij-html-description": "<em>alpha</em> builds images using <a href=\"https://github.com/GoogleContainerTools/kaniko\">kaniko</a>."
+            },
+            "sync": {
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
+            }
+          },
+          "preferredOrder": [
+            "image",
+            "context",
+            "sync",
+            "kaniko"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "context": {
+              "type": "string",
+              "description": "directory containing the artifact's sources.",
+              "x-intellij-html-description": "directory containing the artifact's sources.",
+              "default": "."
+            },
+            "custom": {
+              "$ref": "#/definitions/CustomArtifact",
+              "description": "*alpha* builds images using a custom build script written by the user.",
+              "x-intellij-html-description": "<em>alpha</em> builds images using a custom build script written by the user."
+            },
+            "image": {
+              "type": "string",
+              "description": "name of the image to be built.",
+              "x-intellij-html-description": "name of the image to be built.",
+              "examples": [
+                "gcr.io/k8s-skaffold/example"
+              ]
+            },
+            "sync": {
+              "$ref": "#/definitions/Sync",
+              "description": "*alpha* local files synced to pods instead of triggering an image build when modified.",
+              "x-intellij-html-description": "<em>alpha</em> local files synced to pods instead of triggering an image build when modified."
+            }
+          },
+          "preferredOrder": [
+            "image",
+            "context",
+            "sync",
+            "custom"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "items that need to be built, along with the context in which they should be built.",
+      "x-intellij-html-description": "items that need to be built, along with the context in which they should be built."
+    },
+    "BazelArtifact": {
+      "required": [
+        "target"
+      ],
+      "properties": {
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional args to pass to `bazel build`.",
+          "x-intellij-html-description": "additional args to pass to <code>bazel build</code>.",
+          "default": "[]",
+          "examples": [
+            "[\"-flag\", \"--otherflag\"]"
+          ]
+        },
+        "target": {
+          "type": "string",
+          "description": "`bazel build` target to run.",
+          "x-intellij-html-description": "<code>bazel build</code> target to run.",
+          "examples": [
+            "//:skaffold_example.tar"
+          ]
+        }
+      },
+      "preferredOrder": [
+        "target",
+        "args"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* describes an artifact built with [Bazel](https://bazel.build/).",
+      "x-intellij-html-description": "<em>beta</em> describes an artifact built with <a href=\"https://bazel.build/\">Bazel</a>."
+    },
+    "BuildConfig": {
+      "anyOf": [
+        {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "$ref": "#/definitions/Artifact"
+              },
+              "type": "array",
+              "description": "the images you're going to be building.",
+              "x-intellij-html-description": "the images you're going to be building."
+            },
+            "insecureRegistries": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "x-intellij-html-description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "default": "[]"
+            },
+            "tagPolicy": {
+              "$ref": "#/definitions/TagPolicy",
+              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {variant: Tags}`.",
+              "x-intellij-html-description": "<em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {variant: Tags}</code>."
+            }
+          },
+          "preferredOrder": [
+            "artifacts",
+            "insecureRegistries",
+            "tagPolicy"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "$ref": "#/definitions/Artifact"
+              },
+              "type": "array",
+              "description": "the images you're going to be building.",
+              "x-intellij-html-description": "the images you're going to be building."
+            },
+            "insecureRegistries": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "x-intellij-html-description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "default": "[]"
+            },
+            "local": {
+              "$ref": "#/definitions/LocalBuild",
+              "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",
+              "x-intellij-html-description": "<em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository."
+            },
+            "tagPolicy": {
+              "$ref": "#/definitions/TagPolicy",
+              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {variant: Tags}`.",
+              "x-intellij-html-description": "<em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {variant: Tags}</code>."
+            }
+          },
+          "preferredOrder": [
+            "artifacts",
+            "insecureRegistries",
+            "tagPolicy",
+            "local"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "$ref": "#/definitions/Artifact"
+              },
+              "type": "array",
+              "description": "the images you're going to be building.",
+              "x-intellij-html-description": "the images you're going to be building."
+            },
+            "googleCloudBuild": {
+              "$ref": "#/definitions/GoogleCloudBuild",
+              "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/).",
+              "x-intellij-html-description": "<em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/\">Google Cloud Build</a>."
+            },
+            "insecureRegistries": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "x-intellij-html-description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "default": "[]"
+            },
+            "tagPolicy": {
+              "$ref": "#/definitions/TagPolicy",
+              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {variant: Tags}`.",
+              "x-intellij-html-description": "<em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {variant: Tags}</code>."
+            }
+          },
+          "preferredOrder": [
+            "artifacts",
+            "insecureRegistries",
+            "tagPolicy",
+            "googleCloudBuild"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "artifacts": {
+              "items": {
+                "$ref": "#/definitions/Artifact"
+              },
+              "type": "array",
+              "description": "the images you're going to be building.",
+              "x-intellij-html-description": "the images you're going to be building."
+            },
+            "cluster": {
+              "$ref": "#/definitions/ClusterDetails",
+              "description": "*beta* describes how to do an on-cluster build.",
+              "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
+            },
+            "insecureRegistries": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array",
+              "description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "x-intellij-html-description": "a list of registries declared by the user to be insecure. These registries will be connected to via HTTP instead of HTTPS.",
+              "default": "[]"
+            },
+            "tagPolicy": {
+              "$ref": "#/definitions/TagPolicy",
+              "description": "*beta* determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to `gitCommit: {variant: Tags}`.",
+              "x-intellij-html-description": "<em>beta</em> determines how images are tagged. A few strategies are provided here, although you most likely won't need to care! If not specified, it defaults to <code>gitCommit: {variant: Tags}</code>."
+            }
+          },
+          "preferredOrder": [
+            "artifacts",
+            "insecureRegistries",
+            "tagPolicy",
+            "cluster"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "contains all the configuration for the build steps.",
+      "x-intellij-html-description": "contains all the configuration for the build steps."
+    },
+    "ClusterDetails": {
+      "properties": {
+        "HTTPS_PROXY": {
+          "type": "string",
+          "description": "for kaniko pod.",
+          "x-intellij-html-description": "for kaniko pod."
+        },
+        "HTTP_PROXY": {
+          "type": "string",
+          "description": "for kaniko pod.",
+          "x-intellij-html-description": "for kaniko pod."
+        },
+        "concurrency": {
+          "type": "integer",
+          "description": "how many artifacts can be built concurrently. 0 means \"no-limit\" Defaults to 0.",
+          "x-intellij-html-description": "how many artifacts can be built concurrently. 0 means &quot;no-limit&quot; Defaults to 0."
+        },
+        "dockerConfig": {
+          "$ref": "#/definitions/DockerConfig",
+          "description": "describes how to mount the local Docker configuration into a pod.",
+          "x-intellij-html-description": "describes how to mount the local Docker configuration into a pod."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.",
+          "x-intellij-html-description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration."
+        },
+        "pullSecret": {
+          "type": "string",
+          "description": "path to the Google Cloud service account secret key file.",
+          "x-intellij-html-description": "path to the Google Cloud service account secret key file."
+        },
+        "pullSecretName": {
+          "type": "string",
+          "description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key `kaniko-secret`.",
+          "x-intellij-html-description": "name of the Kubernetes secret for pulling the files from the build context and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key <code>kaniko-secret</code>.",
+          "default": "kaniko-secret"
+        },
+        "resources": {
+          "$ref": "#/definitions/ResourceRequirements",
+          "description": "define the resource requirements for the kaniko pod.",
+          "x-intellij-html-description": "define the resource requirements for the kaniko pod."
+        },
+        "timeout": {
+          "type": "string",
+          "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
+          "x-intellij-html-description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>)."
+        }
+      },
+      "preferredOrder": [
+        "HTTP_PROXY",
+        "HTTPS_PROXY",
+        "pullSecret",
+        "pullSecretName",
+        "namespace",
+        "timeout",
+        "dockerConfig",
+        "resources",
+        "concurrency"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* describes how to do an on-cluster build.",
+      "x-intellij-html-description": "<em>beta</em> describes how to do an on-cluster build."
+    },
+    "CustomArtifact": {
+      "properties": {
+        "buildCommand": {
+          "type": "string",
+          "description": "command executed to build the image.",
+          "x-intellij-html-description": "command executed to build the image."
+        },
+        "dependencies": {
+          "$ref": "#/definitions/CustomDependencies",
+          "description": "file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.",
+          "x-intellij-html-description": "file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact."
+        }
+      },
+      "preferredOrder": [
+        "buildCommand",
+        "dependencies"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* describes an artifact built from a custom build script written by the user. It can be used to build images with builders that aren't directly integrated with skaffold.",
+      "x-intellij-html-description": "<em>alpha</em> describes an artifact built from a custom build script written by the user. It can be used to build images with builders that aren't directly integrated with skaffold."
+    },
+    "CustomDependencies": {
+      "properties": {
+        "command": {
+          "type": "string",
+          "description": "represents a custom command that skaffold executes to obtain dependencies. The output of this command *must* be a valid JSON array.",
+          "x-intellij-html-description": "represents a custom command that skaffold executes to obtain dependencies. The output of this command <em>must</em> be a valid JSON array."
+        },
+        "dockerfile": {
+          "$ref": "#/definitions/DockerfileDependency",
+          "description": "should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies.",
+          "x-intellij-html-description": "should be set if the artifact is built from a Dockerfile, from which skaffold can determine dependencies."
+        },
+        "ignore": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both `paths` and in `ignore`, it will be ignored, and will be excluded from both rebuilds and file synchronization. Will only work in conjunction with `paths`.",
+          "x-intellij-html-description": "specifies the paths that should be ignored by skaffold's file watcher. If a file exists in both <code>paths</code> and in <code>ignore</code>, it will be ignored, and will be excluded from both rebuilds and file synchronization. Will only work in conjunction with <code>paths</code>.",
+          "default": "[]"
+        },
+        "paths": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.",
+          "x-intellij-html-description": "should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "dockerfile",
+        "command",
+        "paths",
+        "ignore"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* used to specify dependencies for an artifact built by a custom build script. Either `dockerfile` or `paths` should be specified for file watching to work as expected.",
+      "x-intellij-html-description": "<em>alpha</em> used to specify dependencies for an artifact built by a custom build script. Either <code>dockerfile</code> or <code>paths</code> should be specified for file watching to work as expected."
+    },
+    "DateTimeTagger": {
+      "properties": {
+        "format": {
+          "type": "string",
+          "description": "formats the date and time. See [#Time.Format](https://golang.org/pkg/time/#Time.Format).",
+          "x-intellij-html-description": "formats the date and time. See <a href=\"https://golang.org/pkg/time/#Time.Format\">#Time.Format</a>.",
+          "default": "2006-01-02_15-04-05.999_MST"
+        },
+        "timezone": {
+          "type": "string",
+          "description": "sets the timezone for the date and time. See [Time.LoadLocation](https://golang.org/pkg/time/#Time.LoadLocation). Defaults to the local timezone.",
+          "x-intellij-html-description": "sets the timezone for the date and time. See <a href=\"https://golang.org/pkg/time/#Time.LoadLocation\">Time.LoadLocation</a>. Defaults to the local timezone."
+        }
+      },
+      "preferredOrder": [
+        "format",
+        "timezone"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* tags images with the build timestamp.",
+      "x-intellij-html-description": "<em>beta</em> tags images with the build timestamp."
+    },
+    "DeployConfig": {
+      "anyOf": [
+        {
+          "properties": {
+            "statusCheckDeadlineSeconds": {
+              "type": "integer",
+              "description": "*beta* deadline for deployments to stabilize in seconds.",
+              "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize in seconds."
+            }
+          },
+          "preferredOrder": [
+            "statusCheckDeadlineSeconds"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "helm": {
+              "$ref": "#/definitions/HelmDeploy",
+              "description": "*beta* uses the `helm` CLI to apply the charts to the cluster.",
+              "x-intellij-html-description": "<em>beta</em> uses the <code>helm</code> CLI to apply the charts to the cluster."
+            },
+            "statusCheckDeadlineSeconds": {
+              "type": "integer",
+              "description": "*beta* deadline for deployments to stabilize in seconds.",
+              "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize in seconds."
+            }
+          },
+          "preferredOrder": [
+            "statusCheckDeadlineSeconds",
+            "helm"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "kubectl": {
+              "$ref": "#/definitions/KubectlDeploy",
+              "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
+              "x-intellij-html-description": "<em>beta</em> uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster."
+            },
+            "statusCheckDeadlineSeconds": {
+              "type": "integer",
+              "description": "*beta* deadline for deployments to stabilize in seconds.",
+              "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize in seconds."
+            }
+          },
+          "preferredOrder": [
+            "statusCheckDeadlineSeconds",
+            "kubectl"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "kustomize": {
+              "$ref": "#/definitions/KustomizeDeploy",
+              "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
+              "x-intellij-html-description": "<em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
+            },
+            "statusCheckDeadlineSeconds": {
+              "type": "integer",
+              "description": "*beta* deadline for deployments to stabilize in seconds.",
+              "x-intellij-html-description": "<em>beta</em> deadline for deployments to stabilize in seconds."
+            }
+          },
+          "preferredOrder": [
+            "statusCheckDeadlineSeconds",
+            "kustomize"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "contains all the configuration needed by the deploy steps.",
+      "x-intellij-html-description": "contains all the configuration needed by the deploy steps."
+    },
+    "DockerArtifact": {
+      "properties": {
+        "buildArgs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "arguments passed to the docker build.",
+          "x-intellij-html-description": "arguments passed to the docker build.",
+          "default": "{}",
+          "examples": [
+            "{\"key1\": \"value1\", \"key2\": \"value2\"}"
+          ]
+        },
+        "cacheFrom": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "the Docker images used as cache sources.",
+          "x-intellij-html-description": "the Docker images used as cache sources.",
+          "default": "[]",
+          "examples": [
+            "[\"golang:1.10.1-alpine3.7\", \"alpine:3.7\"]"
+          ]
+        },
+        "dockerfile": {
+          "type": "string",
+          "description": "locates the Dockerfile relative to workspace.",
+          "x-intellij-html-description": "locates the Dockerfile relative to workspace.",
+          "default": "Dockerfile"
+        },
+        "network": {
+          "type": "string",
+          "description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are `host`: use the host's networking stack. `bridge`: use the bridged network configuration. `none`: no networking in the container.",
+          "x-intellij-html-description": "passed through to docker and overrides the network configuration of docker builder. If unset, use whatever is configured in the underlying docker daemon. Valid modes are <code>host</code>: use the host's networking stack. <code>bridge</code>: use the bridged network configuration. <code>none</code>: no networking in the container.",
+          "enum": [
+            "host",
+            "bridge",
+            "none"
+          ]
+        },
+        "noCache": {
+          "type": "boolean",
+          "description": "used to pass in --no-cache to docker build to prevent caching.",
+          "x-intellij-html-description": "used to pass in --no-cache to docker build to prevent caching.",
+          "default": "false"
+        },
+        "target": {
+          "type": "string",
+          "description": "Dockerfile target name to build.",
+          "x-intellij-html-description": "Dockerfile target name to build."
+        }
+      },
+      "preferredOrder": [
+        "dockerfile",
+        "target",
+        "buildArgs",
+        "network",
+        "cacheFrom",
+        "noCache"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* describes an artifact built from a Dockerfile, usually using `docker build`.",
+      "x-intellij-html-description": "<em>beta</em> describes an artifact built from a Dockerfile, usually using <code>docker build</code>."
+    },
+    "DockerConfig": {
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "path to the docker `config.json`.",
+          "x-intellij-html-description": "path to the docker <code>config.json</code>."
+        },
+        "secretName": {
+          "type": "string",
+          "description": "Kubernetes secret that contains the `config.json` Docker configuration. Note that the expected secret type is not 'kubernetes.io/dockerconfigjson' but 'Opaque'.",
+          "x-intellij-html-description": "Kubernetes secret that contains the <code>config.json</code> Docker configuration. Note that the expected secret type is not 'kubernetes.io/dockerconfigjson' but 'Opaque'."
+        }
+      },
+      "preferredOrder": [
+        "path",
+        "secretName"
+      ],
+      "additionalProperties": false,
+      "description": "contains information about the docker `config.json` to mount.",
+      "x-intellij-html-description": "contains information about the docker <code>config.json</code> to mount."
+    },
+    "DockerfileDependency": {
+      "properties": {
+        "buildArgs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "default": "{}",
+          "examples": [
+            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"{{.ENV_VARIABLE}}\"}"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "description": "locates the Dockerfile relative to workspace.",
+          "x-intellij-html-description": "locates the Dockerfile relative to workspace."
+        }
+      },
+      "preferredOrder": [
+        "path",
+        "buildArgs"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile.",
+      "x-intellij-html-description": "<em>alpha</em> used to specify a custom build artifact that is built from a Dockerfile. This allows skaffold to determine dependencies from the Dockerfile."
+    },
+    "EnvTemplateTagger": {
+      "required": [
+        "template"
+      ],
+      "properties": {
+        "template": {
+          "type": "string",
+          "description": "used to produce the image name and tag. See golang [text/template](https://golang.org/pkg/text/template/). The template is executed against the current environment, with those variables injected:   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.",
+          "x-intellij-html-description": "used to produce the image name and tag. See golang <a href=\"https://golang.org/pkg/text/template/\">text/template</a>. The template is executed against the current environment, with those variables injected:   IMAGE_NAME   |  Name of the image being built, as supplied in the artifacts section.",
+          "examples": [
+            "{{.RELEASE}}-{{.IMAGE_NAME}}"
+          ]
+        }
+      },
+      "preferredOrder": [
+        "template"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* tags images with a configurable template string.",
+      "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string."
+    },
+    "GitTagger": {
+      "properties": {
+        "variant": {
+          "type": "string",
+          "description": "determines the behavior of the git tagger. Valid variants are `Tags` (default): use git tags or fall back to abbreviated commit hash. `CommitSha`: use the full git commit sha. `AbbrevCommitSha`: use the abbreviated git commit sha. `TreeSha`: use the full tree hash of the artifact workingdir. `AbbrevTreeSha`: use the abbreviated tree hash of the artifact workingdir.",
+          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are <code>Tags</code> (default): use git tags or fall back to abbreviated commit hash. <code>CommitSha</code>: use the full git commit sha. <code>AbbrevCommitSha</code>: use the abbreviated git commit sha. <code>TreeSha</code>: use the full tree hash of the artifact workingdir. <code>AbbrevTreeSha</code>: use the abbreviated tree hash of the artifact workingdir.",
+          "enum": [
+            "Tags",
+            "CommitSha",
+            "AbbrevCommitSha",
+            "TreeSha",
+            "AbbrevTreeSha"
+          ]
+        }
+      },
+      "preferredOrder": [
+        "variant"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",
+      "x-intellij-html-description": "<em>beta</em> tags images with the git tag or commit of the artifact's workspace."
+    },
+    "GoogleCloudBuild": {
+      "properties": {
+        "concurrency": {
+          "type": "integer",
+          "description": "how many artifacts can be built concurrently. 0 means \"no-limit\" Defaults to 0.",
+          "x-intellij-html-description": "how many artifacts can be built concurrently. 0 means &quot;no-limit&quot; Defaults to 0."
+        },
+        "diskSizeGb": {
+          "type": "integer",
+          "description": "disk size of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
+          "x-intellij-html-description": "disk size of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>."
+        },
+        "dockerImage": {
+          "type": "string",
+          "description": "image that runs a Docker build. See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).",
+          "x-intellij-html-description": "image that runs a Docker build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
+          "default": "gcr.io/cloud-builders/docker"
+        },
+        "gradleImage": {
+          "type": "string",
+          "description": "image that runs a Gradle build. See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).",
+          "x-intellij-html-description": "image that runs a Gradle build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
+          "default": "gcr.io/cloud-builders/gradle"
+        },
+        "kanikoImage": {
+          "type": "string",
+          "description": "image that runs a Kaniko build. See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).",
+          "x-intellij-html-description": "image that runs a Kaniko build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
+          "default": "gcr.io/kaniko-project/executor"
+        },
+        "machineType": {
+          "type": "string",
+          "description": "type of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
+          "x-intellij-html-description": "type of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>."
+        },
+        "mavenImage": {
+          "type": "string",
+          "description": "image that runs a Maven build. See [Cloud Builders](https://cloud.google.com/cloud-build/docs/cloud-builders).",
+          "x-intellij-html-description": "image that runs a Maven build. See <a href=\"https://cloud.google.com/cloud-build/docs/cloud-builders\">Cloud Builders</a>.",
+          "default": "gcr.io/cloud-builders/mvn"
+        },
+        "projectId": {
+          "type": "string",
+          "description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name `gcr.io/myproject/image`, Skaffold will use the `myproject` GCP project.",
+          "x-intellij-html-description": "ID of your Cloud Platform Project. If it is not provided, Skaffold will guess it from the image name. For example, given the artifact image name <code>gcr.io/myproject/image</code>, Skaffold will use the <code>myproject</code> GCP project."
+        },
+        "timeout": {
+          "type": "string",
+          "description": "amount of time (in seconds) that this build should be allowed to run. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build).",
+          "x-intellij-html-description": "amount of time (in seconds) that this build should be allowed to run. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#resource-build\">Cloud Build Reference</a>."
+        }
+      },
+      "preferredOrder": [
+        "projectId",
+        "diskSizeGb",
+        "machineType",
+        "timeout",
+        "dockerImage",
+        "kanikoImage",
+        "mavenImage",
+        "gradleImage",
+        "concurrency"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* describes how to do a remote build on [Google Cloud Build](https://cloud.google.com/cloud-build/docs/). Docker and Jib artifacts can be built on Cloud Build. The `projectId` needs to be provided and the currently logged in user should be given permissions to trigger new builds.",
+      "x-intellij-html-description": "<em>beta</em> describes how to do a remote build on <a href=\"https://cloud.google.com/cloud-build/docs/\">Google Cloud Build</a>. Docker and Jib artifacts can be built on Cloud Build. The <code>projectId</code> needs to be provided and the currently logged in user should be given permissions to trigger new builds."
+    },
+    "HelmConventionConfig": {
+      "properties": {
+        "explicitRegistry": {
+          "type": "boolean",
+          "description": "separates `image.registry` to the image config syntax. Useful for some charts e.g. `postgresql`.",
+          "x-intellij-html-description": "separates <code>image.registry</code> to the image config syntax. Useful for some charts e.g. <code>postgresql</code>.",
+          "default": "false"
+        }
+      },
+      "preferredOrder": [
+        "explicitRegistry"
+      ],
+      "additionalProperties": false,
+      "description": "image config in the syntax of image.repository and image.tag.",
+      "x-intellij-html-description": "image config in the syntax of image.repository and image.tag."
+    },
+    "HelmDeploy": {
+      "required": [
+        "releases"
+      ],
+      "properties": {
+        "flags": {
+          "$ref": "#/definitions/HelmDeployFlags",
+          "description": "additional option flags that are passed on the command line to `helm`.",
+          "x-intellij-html-description": "additional option flags that are passed on the command line to <code>helm</code>."
+        },
+        "releases": {
+          "items": {
+            "$ref": "#/definitions/HelmRelease"
+          },
+          "type": "array",
+          "description": "a list of Helm releases.",
+          "x-intellij-html-description": "a list of Helm releases."
+        }
+      },
+      "preferredOrder": [
+        "releases",
+        "flags"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* uses the `helm` CLI to apply the charts to the cluster.",
+      "x-intellij-html-description": "<em>beta</em> uses the <code>helm</code> CLI to apply the charts to the cluster."
+    },
+    "HelmDeployFlags": {
+      "properties": {
+        "global": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed on every command.",
+          "x-intellij-html-description": "additional flags passed on every command.",
+          "default": "[]"
+        },
+        "install": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed to (`helm install`).",
+          "x-intellij-html-description": "additional flags passed to (<code>helm install</code>).",
+          "default": "[]"
+        },
+        "upgrade": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed to (`helm upgrade`).",
+          "x-intellij-html-description": "additional flags passed to (<code>helm upgrade</code>).",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "global",
+        "install",
+        "upgrade"
+      ],
+      "additionalProperties": false,
+      "description": "additional option flags that are passed on the command line to `helm`.",
+      "x-intellij-html-description": "additional option flags that are passed on the command line to <code>helm</code>."
+    },
+    "HelmFQNConfig": {
+      "properties": {
+        "property": {
+          "type": "string",
+          "description": "defines the image config.",
+          "x-intellij-html-description": "defines the image config."
+        }
+      },
+      "preferredOrder": [
+        "property"
+      ],
+      "additionalProperties": false,
+      "description": "image config to use the FullyQualifiedImageName as param to set.",
+      "x-intellij-html-description": "image config to use the FullyQualifiedImageName as param to set."
+    },
+    "HelmImageStrategy": {
+      "anyOf": [
+        {
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "fqn": {
+              "$ref": "#/definitions/HelmFQNConfig",
+              "description": "image configuration uses the syntax `IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG`.",
+              "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME=IMAGE-REPOSITORY:IMAGE-TAG</code>."
+            }
+          },
+          "preferredOrder": [
+            "fqn"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "properties": {
+            "helm": {
+              "$ref": "#/definitions/HelmConventionConfig",
+              "description": "image configuration uses the syntax `IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG`.",
+              "x-intellij-html-description": "image configuration uses the syntax <code>IMAGE-NAME.repository=IMAGE-REPOSITORY, IMAGE-NAME.tag=IMAGE-TAG</code>."
+            }
+          },
+          "preferredOrder": [
+            "helm"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "adds image configurations to the Helm `values` file.",
+      "x-intellij-html-description": "adds image configurations to the Helm <code>values</code> file."
+    },
+    "HelmPackaged": {
+      "properties": {
+        "appVersion": {
+          "type": "string",
+          "description": "sets the `appVersion` on the chart to this version.",
+          "x-intellij-html-description": "sets the <code>appVersion</code> on the chart to this version."
+        },
+        "version": {
+          "type": "string",
+          "description": "sets the `version` on the chart to this semver version.",
+          "x-intellij-html-description": "sets the <code>version</code> on the chart to this semver version."
+        }
+      },
+      "preferredOrder": [
+        "version",
+        "appVersion"
+      ],
+      "additionalProperties": false,
+      "description": "parameters for packaging helm chart (`helm package`).",
+      "x-intellij-html-description": "parameters for packaging helm chart (<code>helm package</code>)."
+    },
+    "HelmRelease": {
+      "required": [
+        "name",
+        "chartPath"
+      ],
+      "properties": {
+        "chartPath": {
+          "type": "string",
+          "description": "path to the Helm chart.",
+          "x-intellij-html-description": "path to the Helm chart."
+        },
+        "imageStrategy": {
+          "$ref": "#/definitions/HelmImageStrategy",
+          "description": "adds image configurations to the Helm `values` file.",
+          "x-intellij-html-description": "adds image configurations to the Helm <code>values</code> file."
+        },
+        "name": {
+          "type": "string",
+          "description": "name of the Helm release.",
+          "x-intellij-html-description": "name of the Helm release."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Kubernetes namespace.",
+          "x-intellij-html-description": "Kubernetes namespace."
+        },
+        "overrides": {
+          "description": "key-value pairs. If present, Skaffold will build a Helm `values` file that overrides the original and use it to call Helm CLI (`--f` flag).",
+          "x-intellij-html-description": "key-value pairs. If present, Skaffold will build a Helm <code>values</code> file that overrides the original and use it to call Helm CLI (<code>--f</code> flag)."
+        },
+        "packaged": {
+          "$ref": "#/definitions/HelmPackaged",
+          "description": "parameters for packaging helm chart (`helm package`).",
+          "x-intellij-html-description": "parameters for packaging helm chart (<code>helm package</code>)."
+        },
+        "recreatePods": {
+          "type": "boolean",
+          "description": "if `true`, Skaffold will send `--recreate-pods` flag to Helm CLI.",
+          "x-intellij-html-description": "if <code>true</code>, Skaffold will send <code>--recreate-pods</code> flag to Helm CLI.",
+          "default": "false"
+        },
+        "remote": {
+          "type": "boolean",
+          "description": "specifies whether the chart path is remote, or exists on the host filesystem. `remote: true` implies `skipBuildDependencies: true`.",
+          "x-intellij-html-description": "specifies whether the chart path is remote, or exists on the host filesystem. <code>remote: true</code> implies <code>skipBuildDependencies: true</code>.",
+          "default": "false"
+        },
+        "setValueTemplates": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "key-value pairs. If present, Skaffold will try to parse the value part of each key-value pair using environment variables in the system, then send `--set` flag to Helm CLI and append all parsed pairs after the flag.",
+          "x-intellij-html-description": "key-value pairs. If present, Skaffold will try to parse the value part of each key-value pair using environment variables in the system, then send <code>--set</code> flag to Helm CLI and append all parsed pairs after the flag.",
+          "default": "{}"
+        },
+        "setValues": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "key-value pairs. If present, Skaffold will send `--set` flag to Helm CLI and append all pairs after the flag.",
+          "x-intellij-html-description": "key-value pairs. If present, Skaffold will send <code>--set</code> flag to Helm CLI and append all pairs after the flag.",
+          "default": "{}"
+        },
+        "skipBuildDependencies": {
+          "type": "boolean",
+          "description": "should build dependencies be skipped.",
+          "x-intellij-html-description": "should build dependencies be skipped.",
+          "default": "false"
+        },
+        "useHelmSecrets": {
+          "type": "boolean",
+          "description": "instructs skaffold to use secrets plugin on deployment.",
+          "x-intellij-html-description": "instructs skaffold to use secrets plugin on deployment.",
+          "default": "false"
+        },
+        "values": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "key-value pairs supplementing the Helm `values` file.",
+          "x-intellij-html-description": "key-value pairs supplementing the Helm <code>values</code> file.",
+          "default": "{}"
+        },
+        "valuesFiles": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "paths to the Helm `values` files.",
+          "x-intellij-html-description": "paths to the Helm <code>values</code> files.",
+          "default": "[]"
+        },
+        "version": {
+          "type": "string",
+          "description": "version of the chart.",
+          "x-intellij-html-description": "version of the chart."
+        },
+        "wait": {
+          "type": "boolean",
+          "description": "if `true`, Skaffold will send `--wait` flag to Helm CLI.",
+          "x-intellij-html-description": "if <code>true</code>, Skaffold will send <code>--wait</code> flag to Helm CLI.",
+          "default": "false"
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "chartPath",
+        "valuesFiles",
+        "values",
+        "namespace",
+        "version",
+        "setValues",
+        "setValueTemplates",
+        "wait",
+        "recreatePods",
+        "skipBuildDependencies",
+        "useHelmSecrets",
+        "remote",
+        "overrides",
+        "packaged",
+        "imageStrategy"
+      ],
+      "additionalProperties": false,
+      "description": "describes a helm release to be deployed.",
+      "x-intellij-html-description": "describes a helm release to be deployed."
+    },
+    "JSONPatch": {
+      "required": [
+        "path"
+      ],
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "source position in the yaml, used for `copy` or `move` operations.",
+          "x-intellij-html-description": "source position in the yaml, used for <code>copy</code> or <code>move</code> operations."
+        },
+        "op": {
+          "type": "string",
+          "description": "operation carried by the patch: `add`, `remove`, `replace`, `move`, `copy` or `test`.",
+          "x-intellij-html-description": "operation carried by the patch: <code>add</code>, <code>remove</code>, <code>replace</code>, <code>move</code>, <code>copy</code> or <code>test</code>.",
+          "default": "replace"
+        },
+        "path": {
+          "type": "string",
+          "description": "position in the yaml where the operation takes place. For example, this targets the `dockerfile` of the first artifact built.",
+          "x-intellij-html-description": "position in the yaml where the operation takes place. For example, this targets the <code>dockerfile</code> of the first artifact built.",
+          "examples": [
+            "/build/artifacts/0/docker/dockerfile"
+          ]
+        },
+        "value": {
+          "description": "value to apply. Can be any portion of yaml.",
+          "x-intellij-html-description": "value to apply. Can be any portion of yaml."
+        }
+      },
+      "preferredOrder": [
+        "op",
+        "path",
+        "from",
+        "value"
+      ],
+      "additionalProperties": false,
+      "description": "patch to be applied by a profile.",
+      "x-intellij-html-description": "patch to be applied by a profile."
+    },
+    "JibArtifact": {
+      "properties": {
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional build flags passed to the builder.",
+          "x-intellij-html-description": "additional build flags passed to the builder.",
+          "default": "[]",
+          "examples": [
+            "[\"--no-build-cache\"]"
+          ]
+        },
+        "project": {
+          "type": "string",
+          "description": "selects which sub-project to build for multi-module builds.",
+          "x-intellij-html-description": "selects which sub-project to build for multi-module builds."
+        },
+        "type": {
+          "type": "string",
+          "description": "the Jib builder type; normally determined automatically. Valid types are `maven`: for Maven. `gradle`: for Gradle.",
+          "x-intellij-html-description": "the Jib builder type; normally determined automatically. Valid types are <code>maven</code>: for Maven. <code>gradle</code>: for Gradle.",
+          "enum": [
+            "maven",
+            "gradle"
+          ]
+        }
+      },
+      "preferredOrder": [
+        "project",
+        "args",
+        "type"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* builds images using the [Jib plugins for Maven and Gradle](https://github.com/GoogleContainerTools/jib/).",
+      "x-intellij-html-description": "<em>alpha</em> builds images using the <a href=\"https://github.com/GoogleContainerTools/jib/\">Jib plugins for Maven and Gradle</a>."
+    },
+    "KanikoArtifact": {
+      "properties": {
+        "buildArgs": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "x-intellij-html-description": "arguments passed to the docker build. It also accepts environment variables via the go template syntax.",
+          "default": "{}",
+          "examples": [
+            "{\"key1\": \"value1\", \"key2\": \"value2\", \"key3\": \"{{.ENV_VARIABLE}}\"}"
+          ]
+        },
+        "buildContext": {
+          "$ref": "#/definitions/KanikoBuildContext",
+          "description": "where the build context for this artifact resides.",
+          "x-intellij-html-description": "where the build context for this artifact resides."
+        },
+        "cache": {
+          "$ref": "#/definitions/KanikoCache",
+          "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
+          "x-intellij-html-description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds."
+        },
+        "dockerfile": {
+          "type": "string",
+          "description": "locates the Dockerfile relative to workspace.",
+          "x-intellij-html-description": "locates the Dockerfile relative to workspace.",
+          "default": "Dockerfile"
+        },
+        "flags": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags to be passed to Kaniko command line. See [Kaniko Additional Flags](https://github.com/GoogleContainerTools/kaniko#additional-flags). Deprecated - instead the named, unique fields should be used, e.g. `buildArgs`, `cache`, `target`.",
+          "x-intellij-html-description": "additional flags to be passed to Kaniko command line. See <a href=\"https://github.com/GoogleContainerTools/kaniko#additional-flags\">Kaniko Additional Flags</a>. Deprecated - instead the named, unique fields should be used, e.g. <code>buildArgs</code>, <code>cache</code>, <code>target</code>.",
+          "default": "[]"
+        },
+        "image": {
+          "type": "string",
+          "description": "Docker image used by the Kaniko pod. Defaults to the latest released version of `gcr.io/kaniko-project/executor`.",
+          "x-intellij-html-description": "Docker image used by the Kaniko pod. Defaults to the latest released version of <code>gcr.io/kaniko-project/executor</code>."
+        },
+        "reproducible": {
+          "type": "boolean",
+          "description": "used to strip timestamps out of the built image.",
+          "x-intellij-html-description": "used to strip timestamps out of the built image.",
+          "default": "false"
+        },
+        "target": {
+          "type": "string",
+          "description": "Dockerfile target name to build.",
+          "x-intellij-html-description": "Dockerfile target name to build."
+        }
+      },
+      "preferredOrder": [
+        "flags",
+        "dockerfile",
+        "target",
+        "buildArgs",
+        "buildContext",
+        "image",
+        "cache",
+        "reproducible"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* describes an artifact built from a Dockerfile, with kaniko.",
+      "x-intellij-html-description": "<em>alpha</em> describes an artifact built from a Dockerfile, with kaniko."
+    },
+    "KanikoBuildContext": {
+      "properties": {
+        "gcsBucket": {
+          "type": "string",
+          "description": "GCS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources.",
+          "x-intellij-html-description": "GCS bucket to which sources are uploaded. Kaniko will need access to that bucket to download the sources."
+        },
+        "localDir": {
+          "$ref": "#/definitions/LocalDir",
+          "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
+          "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
+        }
+      },
+      "preferredOrder": [
+        "gcsBucket",
+        "localDir"
+      ],
+      "additionalProperties": false,
+      "description": "contains the different fields available to specify a Kaniko build context.",
+      "x-intellij-html-description": "contains the different fields available to specify a Kaniko build context."
+    },
+    "KanikoCache": {
+      "properties": {
+        "hostPath": {
+          "type": "string",
+          "description": "specifies a path on the host that is mounted to each pod as read only cache volume containing base images. If set, must exist on each node and prepopulated with kaniko-warmer.",
+          "x-intellij-html-description": "specifies a path on the host that is mounted to each pod as read only cache volume containing base images. If set, must exist on each node and prepopulated with kaniko-warmer."
+        },
+        "repo": {
+          "type": "string",
+          "description": "a remote repository to store cached layers. If none is specified, one will be inferred from the image name. See [Kaniko Caching](https://github.com/GoogleContainerTools/kaniko#caching).",
+          "x-intellij-html-description": "a remote repository to store cached layers. If none is specified, one will be inferred from the image name. See <a href=\"https://github.com/GoogleContainerTools/kaniko#caching\">Kaniko Caching</a>."
+        }
+      },
+      "preferredOrder": [
+        "repo",
+        "hostPath"
+      ],
+      "additionalProperties": false,
+      "description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds.",
+      "x-intellij-html-description": "configures Kaniko caching. If a cache is specified, Kaniko will use a remote cache which will speed up builds."
+    },
+    "KubectlDeploy": {
+      "properties": {
+        "flags": {
+          "$ref": "#/definitions/KubectlFlags",
+          "description": "additional flags passed to `kubectl`.",
+          "x-intellij-html-description": "additional flags passed to <code>kubectl</code>."
+        },
+        "manifests": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "the Kubernetes yaml or json manifests.",
+          "x-intellij-html-description": "the Kubernetes yaml or json manifests.",
+          "default": "[\"k8s/*.yaml\"]"
+        },
+        "remoteManifests": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "Kubernetes manifests in remote clusters.",
+          "x-intellij-html-description": "Kubernetes manifests in remote clusters.",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "manifests",
+        "remoteManifests",
+        "flags"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* uses a client side `kubectl apply` to deploy manifests. You'll need a `kubectl` CLI version installed that's compatible with your cluster.",
+      "x-intellij-html-description": "<em>beta</em> uses a client side <code>kubectl apply</code> to deploy manifests. You'll need a <code>kubectl</code> CLI version installed that's compatible with your cluster."
+    },
+    "KubectlFlags": {
+      "properties": {
+        "apply": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed on creations (`kubectl apply`).",
+          "x-intellij-html-description": "additional flags passed on creations (<code>kubectl apply</code>).",
+          "default": "[]"
+        },
+        "delete": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed on deletions (`kubectl delete`).",
+          "x-intellij-html-description": "additional flags passed on deletions (<code>kubectl delete</code>).",
+          "default": "[]"
+        },
+        "global": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "additional flags passed on every command.",
+          "x-intellij-html-description": "additional flags passed on every command.",
+          "default": "[]"
+        }
+      },
+      "preferredOrder": [
+        "global",
+        "apply",
+        "delete"
+      ],
+      "additionalProperties": false,
+      "description": "additional flags passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete).",
+      "x-intellij-html-description": "additional flags passed on the command line to kubectl either on every command (Global), on creations (Apply) or deletions (Delete)."
+    },
+    "KustomizeDeploy": {
+      "properties": {
+        "flags": {
+          "$ref": "#/definitions/KubectlFlags",
+          "description": "additional flags passed to `kubectl`.",
+          "x-intellij-html-description": "additional flags passed to <code>kubectl</code>."
+        },
+        "path": {
+          "type": "string",
+          "description": "path to Kustomization files.",
+          "x-intellij-html-description": "path to Kustomization files.",
+          "default": "."
+        }
+      },
+      "preferredOrder": [
+        "path",
+        "flags"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* uses the `kustomize` CLI to \"patch\" a deployment for a target environment.",
+      "x-intellij-html-description": "<em>beta</em> uses the <code>kustomize</code> CLI to &quot;patch&quot; a deployment for a target environment."
+    },
+    "LocalBuild": {
+      "properties": {
+        "push": {
+          "type": "boolean",
+          "description": "should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster.",
+          "x-intellij-html-description": "should images be pushed to a registry. If not specified, images are pushed only if the current Kubernetes context connects to a remote cluster."
+        },
+        "useBuildkit": {
+          "type": "boolean",
+          "description": "use BuildKit to build Docker images.",
+          "x-intellij-html-description": "use BuildKit to build Docker images.",
+          "default": "false"
+        },
+        "useDockerCLI": {
+          "type": "boolean",
+          "description": "use `docker` command-line interface instead of Docker Engine APIs.",
+          "x-intellij-html-description": "use <code>docker</code> command-line interface instead of Docker Engine APIs.",
+          "default": "false"
+        }
+      },
+      "preferredOrder": [
+        "push",
+        "useDockerCLI",
+        "useBuildkit"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* describes how to do a build on the local docker daemon and optionally push to a repository.",
+      "x-intellij-html-description": "<em>beta</em> describes how to do a build on the local docker daemon and optionally push to a repository."
+    },
+    "LocalDir": {
+      "properties": {
+        "initImage": {
+          "type": "string",
+          "description": "image used to run init container which mounts kaniko context.",
+          "x-intellij-html-description": "image used to run init container which mounts kaniko context."
+        }
+      },
+      "preferredOrder": [
+        "initImage"
+      ],
+      "additionalProperties": false,
+      "description": "configures how Kaniko mounts sources directly via an `emptyDir` volume.",
+      "x-intellij-html-description": "configures how Kaniko mounts sources directly via an <code>emptyDir</code> volume."
+    },
+    "Metadata": {
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "an identifier for the project.",
+          "x-intellij-html-description": "an identifier for the project."
+        }
+      },
+      "preferredOrder": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "description": "holds an optional name of the project.",
+      "x-intellij-html-description": "holds an optional name of the project."
+    },
+    "PortForwardResource": {
+      "properties": {
+        "localPort": {
+          "type": "integer",
+          "description": "local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. *Optional*.",
+          "x-intellij-html-description": "local port to forward to. If the port is unavailable, Skaffold will choose a random open port to forward to. <em>Optional</em>."
+        },
+        "namespace": {
+          "type": "string",
+          "description": "namespace of the resource to port forward.",
+          "x-intellij-html-description": "namespace of the resource to port forward."
+        },
+        "port": {
+          "type": "integer",
+          "description": "resource port that will be forwarded.",
+          "x-intellij-html-description": "resource port that will be forwarded."
+        },
+        "resourceName": {
+          "type": "string",
+          "description": "name of the Kubernetes resource to port forward.",
+          "x-intellij-html-description": "name of the Kubernetes resource to port forward."
+        },
+        "resourceType": {
+          "type": "string",
+          "description": "Kubernetes type that should be port forwarded. Acceptable resource types include: `Service`, `Pod` and Controller resource type that has a pod spec: `ReplicaSet`, `ReplicationController`, `Deployment`, `StatefulSet`, `DaemonSet`, `Job`, `CronJob`.",
+          "x-intellij-html-description": "Kubernetes type that should be port forwarded. Acceptable resource types include: <code>Service</code>, <code>Pod</code> and Controller resource type that has a pod spec: <code>ReplicaSet</code>, <code>ReplicationController</code>, <code>Deployment</code>, <code>StatefulSet</code>, <code>DaemonSet</code>, <code>Job</code>, <code>CronJob</code>."
+        }
+      },
+      "preferredOrder": [
+        "resourceType",
+        "resourceName",
+        "namespace",
+        "port",
+        "localPort"
+      ],
+      "additionalProperties": false,
+      "description": "describes a resource to port forward.",
+      "x-intellij-html-description": "describes a resource to port forward."
+    },
+    "Profile": {
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "activation": {
+          "items": {
+            "$ref": "#/definitions/Activation"
+          },
+          "type": "array",
+          "description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.",
+          "x-intellij-html-description": "criteria by which a profile can be auto-activated. The profile is auto-activated if any one of the activations are triggered. An activation is triggered if all of the criteria (env, kubeContext, command) are triggered."
+        },
+        "build": {
+          "$ref": "#/definitions/BuildConfig",
+          "description": "describes how images are built.",
+          "x-intellij-html-description": "describes how images are built."
+        },
+        "deploy": {
+          "$ref": "#/definitions/DeployConfig",
+          "description": "describes how images are deployed.",
+          "x-intellij-html-description": "describes how images are deployed."
+        },
+        "name": {
+          "type": "string",
+          "description": "a unique profile name.",
+          "x-intellij-html-description": "a unique profile name.",
+          "examples": [
+            "profile-prod"
+          ]
+        },
+        "patches": {
+          "items": {
+            "$ref": "#/definitions/JSONPatch"
+          },
+          "type": "array",
+          "description": "patches applied to the configuration. Patches use the JSON patch notation.",
+          "x-intellij-html-description": "patches applied to the configuration. Patches use the JSON patch notation."
+        },
+        "portForward": {
+          "items": {
+            "$ref": "#/definitions/PortForwardResource"
+          },
+          "type": "array",
+          "description": "describes user defined resources to port-forward.",
+          "x-intellij-html-description": "describes user defined resources to port-forward."
+        },
+        "test": {
+          "items": {
+            "$ref": "#/definitions/TestCase"
+          },
+          "type": "array",
+          "description": "describes how images are tested.",
+          "x-intellij-html-description": "describes how images are tested."
+        }
+      },
+      "preferredOrder": [
+        "name",
+        "build",
+        "test",
+        "deploy",
+        "portForward",
+        "patches",
+        "activation"
+      ],
+      "additionalProperties": false,
+      "description": "*beta* profiles are used to override any `build`, `test` or `deploy` configuration.",
+      "x-intellij-html-description": "<em>beta</em> profiles are used to override any <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
+    },
+    "ResourceRequirement": {
+      "properties": {
+        "cpu": {
+          "type": "string",
+          "description": "the number cores to be used.",
+          "x-intellij-html-description": "the number cores to be used.",
+          "examples": [
+            "2`, `2.0` or `200m"
+          ]
+        },
+        "memory": {
+          "type": "string",
+          "description": "the amount of memory to allocate to the pod.",
+          "x-intellij-html-description": "the amount of memory to allocate to the pod.",
+          "examples": [
+            "1Gi` or `1000Mi"
+          ]
+        }
+      },
+      "preferredOrder": [
+        "cpu",
+        "memory"
+      ],
+      "additionalProperties": false,
+      "description": "stores the CPU/Memory requirements for the pod.",
+      "x-intellij-html-description": "stores the CPU/Memory requirements for the pod."
+    },
+    "ResourceRequirements": {
+      "properties": {
+        "limits": {
+          "$ref": "#/definitions/ResourceRequirement",
+          "description": "[resource limits](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container) for the Kaniko pod.",
+          "x-intellij-html-description": "<a href=\"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container\">resource limits</a> for the Kaniko pod."
+        },
+        "requests": {
+          "$ref": "#/definitions/ResourceRequirement",
+          "description": "[resource requests](https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container) for the Kaniko pod.",
+          "x-intellij-html-description": "<a href=\"https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/#resource-requests-and-limits-of-pod-and-container\">resource requests</a> for the Kaniko pod."
+        }
+      },
+      "preferredOrder": [
+        "requests",
+        "limits"
+      ],
+      "additionalProperties": false,
+      "description": "describes the resource requirements for the kaniko pod.",
+      "x-intellij-html-description": "describes the resource requirements for the kaniko pod."
+    },
+    "ResourceType": {
+      "type": "string",
+      "description": "describes the Kubernetes resource types used for port forwarding.",
+      "x-intellij-html-description": "describes the Kubernetes resource types used for port forwarding."
+    },
+    "ShaTagger": {
+      "description": "*beta* tags images with their sha256 digest.",
+      "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest."
+    },
+    "SkaffoldConfig": {
+      "required": [
+        "apiVersion",
+        "kind"
+      ],
+      "properties": {
+        "apiVersion": {
+          "type": "string",
+          "description": "version of the configuration.",
+          "x-intellij-html-description": "version of the configuration."
+        },
+        "build": {
+          "$ref": "#/definitions/BuildConfig",
+          "description": "describes how images are built.",
+          "x-intellij-html-description": "describes how images are built."
+        },
+        "deploy": {
+          "$ref": "#/definitions/DeployConfig",
+          "description": "describes how images are deployed.",
+          "x-intellij-html-description": "describes how images are deployed."
+        },
+        "kind": {
+          "type": "string",
+          "description": "always `Config`.",
+          "x-intellij-html-description": "always <code>Config</code>.",
+          "default": "Config"
+        },
+        "metadata": {
+          "$ref": "#/definitions/Metadata",
+          "description": "holds additional information about the config.",
+          "x-intellij-html-description": "holds additional information about the config."
+        },
+        "portForward": {
+          "items": {
+            "$ref": "#/definitions/PortForwardResource"
+          },
+          "type": "array",
+          "description": "describes user defined resources to port-forward.",
+          "x-intellij-html-description": "describes user defined resources to port-forward."
+        },
+        "profiles": {
+          "items": {
+            "$ref": "#/definitions/Profile"
+          },
+          "type": "array",
+          "description": "*beta* can override be used to `build`, `test` or `deploy` configuration.",
+          "x-intellij-html-description": "<em>beta</em> can override be used to <code>build</code>, <code>test</code> or <code>deploy</code> configuration."
+        },
+        "test": {
+          "items": {
+            "$ref": "#/definitions/TestCase"
+          },
+          "type": "array",
+          "description": "describes how images are tested.",
+          "x-intellij-html-description": "describes how images are tested."
+        }
+      },
+      "preferredOrder": [
+        "apiVersion",
+        "kind",
+        "metadata",
+        "build",
+        "test",
+        "deploy",
+        "portForward",
+        "profiles"
+      ],
+      "additionalProperties": false,
+      "description": "holds the fields parsed from the Skaffold configuration file (skaffold.yaml).",
+      "x-intellij-html-description": "holds the fields parsed from the Skaffold configuration file (skaffold.yaml)."
+    },
+    "Sync": {
+      "properties": {
+        "infer": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "file patterns which may be synced into the container. The container destination is inferred by the builder. Currently only available for docker artifacts.",
+          "x-intellij-html-description": "file patterns which may be synced into the container. The container destination is inferred by the builder. Currently only available for docker artifacts.",
+          "default": "[]"
+        },
+        "manual": {
+          "items": {
+            "$ref": "#/definitions/SyncRule"
+          },
+          "type": "array",
+          "description": "manual sync rules indicating the source and destination.",
+          "x-intellij-html-description": "manual sync rules indicating the source and destination."
+        }
+      },
+      "preferredOrder": [
+        "manual",
+        "infer"
+      ],
+      "additionalProperties": false,
+      "description": "*alpha* specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files.",
+      "x-intellij-html-description": "<em>alpha</em> specifies what files to sync into the container. This is a list of sync rules indicating the intent to sync for source files."
+    },
+    "SyncRule": {
+      "required": [
+        "src",
+        "dest"
+      ],
+      "properties": {
+        "dest": {
+          "type": "string",
+          "description": "destination path in the container where the files should be synced to.",
+          "x-intellij-html-description": "destination path in the container where the files should be synced to.",
+          "examples": [
+            "\"app/\""
+          ]
+        },
+        "src": {
+          "type": "string",
+          "description": "a glob pattern to match local paths against. Directories should be delimited by `/` on all platforms.",
+          "x-intellij-html-description": "a glob pattern to match local paths against. Directories should be delimited by <code>/</code> on all platforms.",
+          "examples": [
+            "\"css/**/*.css\""
+          ]
+        },
+        "strip": {
+          "type": "string",
+          "description": "specifies the path prefix to remove from the source path when transplanting the files into the destination folder.",
+          "x-intellij-html-description": "specifies the path prefix to remove from the source path when transplanting the files into the destination folder.",
+          "examples": [
+            "\"css/\""
+          ]
+        }
+      },
+      "preferredOrder": [
+        "src",
+        "dest",
+        "strip"
+      ],
+      "additionalProperties": false,
+      "description": "specifies which local files to sync to remote folders.",
+      "x-intellij-html-description": "specifies which local files to sync to remote folders."
+    },
+    "TagPolicy": {
+      "properties": {
+        "dateTime": {
+          "$ref": "#/definitions/DateTimeTagger",
+          "description": "*beta* tags images with the build timestamp.",
+          "x-intellij-html-description": "<em>beta</em> tags images with the build timestamp."
+        },
+        "envTemplate": {
+          "$ref": "#/definitions/EnvTemplateTagger",
+          "description": "*beta* tags images with a configurable template string.",
+          "x-intellij-html-description": "<em>beta</em> tags images with a configurable template string."
+        },
+        "gitCommit": {
+          "$ref": "#/definitions/GitTagger",
+          "description": "*beta* tags images with the git tag or commit of the artifact's workspace.",
+          "x-intellij-html-description": "<em>beta</em> tags images with the git tag or commit of the artifact's workspace."
+        },
+        "sha256": {
+          "$ref": "#/definitions/ShaTagger",
+          "description": "*beta* tags images with their sha256 digest.",
+          "x-intellij-html-description": "<em>beta</em> tags images with their sha256 digest."
+        }
+      },
+      "preferredOrder": [
+        "gitCommit",
+        "sha256",
+        "envTemplate",
+        "dateTime"
+      ],
+      "additionalProperties": false,
+      "description": "contains all the configuration for the tagging step.",
+      "x-intellij-html-description": "contains all the configuration for the tagging step."
+    },
+    "TestCase": {
+      "required": [
+        "image"
+      ],
+      "properties": {
+        "image": {
+          "type": "string",
+          "description": "artifact on which to run those tests.",
+          "x-intellij-html-description": "artifact on which to run those tests.",
+          "examples": [
+            "gcr.io/k8s-skaffold/example"
+          ]
+        },
+        "structureTests": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array",
+          "description": "the [Container Structure Tests](https://github.com/GoogleContainerTools/container-structure-test) to run on that artifact.",
+          "x-intellij-html-description": "the <a href=\"https://github.com/GoogleContainerTools/container-structure-test\">Container Structure Tests</a> to run on that artifact.",
+          "default": "[]",
+          "examples": [
+            "[\"./test/*\"]"
+          ]
+        }
+      },
+      "preferredOrder": [
+        "image",
+        "structureTests"
+      ],
+      "additionalProperties": false,
+      "description": "a list of structure tests to run on images that Skaffold builds.",
+      "x-intellij-html-description": "a list of structure tests to run on images that Skaffold builds."
+    }
+  }
+}

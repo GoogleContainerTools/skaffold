@@ -17,8 +17,9 @@ limitations under the License.
 package kubernetes
 
 import (
-	"github.com/pkg/errors"
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"fmt"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
@@ -33,19 +34,18 @@ func AggregatePodWatcher(namespaces []string, aggregate chan<- watch.Event) (fun
 
 	kubeclient, err := Client()
 	if err != nil {
-		return func() {}, errors.Wrap(err, "getting k8s client")
+		return func() {}, fmt.Errorf("getting k8s client: %w", err)
 	}
 
 	var forever int64 = 3600 * 24 * 365 * 100
 
 	for _, ns := range namespaces {
-		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(meta_v1.ListOptions{
-			IncludeUninitialized: true,
-			TimeoutSeconds:       &forever,
+		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(metav1.ListOptions{
+			TimeoutSeconds: &forever,
 		})
 		if err != nil {
 			stopWatchers()
-			return func() {}, errors.Wrap(err, "initializing pod watcher for "+ns)
+			return func() {}, fmt.Errorf("initializing pod watcher for %q: %w", ns, err)
 		}
 
 		watchers = append(watchers, watcher)

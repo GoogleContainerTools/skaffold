@@ -21,7 +21,9 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // Forwarder is an interface that can modify and manage port-forward processes
@@ -43,16 +45,16 @@ var (
 )
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
-func NewForwarderManager(out io.Writer, podSelector kubernetes.PodSelector, namespaces []string, label string, opts config.PortForwardOptions) *ForwarderManager {
+func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string, label string, opts config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
 	if !opts.Enabled {
 		return emptyForwarderManager
 	}
 
-	em := NewEntryManager(out)
+	em := NewEntryManager(out, cli)
 
 	ForwarderManager := &ForwarderManager{
 		output:     out,
-		Forwarders: []Forwarder{NewResourceForwarder(em, label)},
+		Forwarders: []Forwarder{NewResourceForwarder(em, namespaces, label, userDefined)},
 	}
 
 	if opts.ForwardPods {

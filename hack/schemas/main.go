@@ -29,10 +29,11 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+	"sync"
+
+	blackfriday "github.com/russross/blackfriday/v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
-	"github.com/pkg/errors"
-	blackfriday "gopkg.in/russross/blackfriday.v2"
 )
 
 const (
@@ -44,6 +45,11 @@ var (
 	regexpDefaults = regexp.MustCompile("(.*)Defaults to `(.*)`")
 	regexpExample  = regexp.MustCompile("(.*)For example: `(.*)`")
 	pTags          = regexp.MustCompile("(<p>)|(</p>)")
+
+	// patterns for enum-type values
+	enumValuePattern     = "^[ \t]*`(?P<name>[^`]+)`([ \t]*\\(default\\))?: .*$"
+	regexpEnumDefinition = regexp.MustCompile("(?m).*Valid [a-z]+ are((\\n" + enumValuePattern + ")*)")
+	regexpEnumValues     = regexp.MustCompile("(?m)" + enumValuePattern)
 )
 
 type schemaGenerator struct {
@@ -69,6 +75,7 @@ type Definition struct {
 	HTMLDescription      string                 `json:"x-intellij-html-description,omitempty"`
 	Default              interface{}            `json:"default,omitempty"`
 	Examples             []string               `json:"examples,omitempty"`
+	Enum                 []string               `json:"enum,omitempty"`
 
 	inlines []*Definition
 	tags    string
@@ -80,53 +87,86 @@ func main() {
 	}
 }
 
+type sameErr struct {
+	same bool
+	err  error
+}
+
 func generateSchemas(root string, dryRun bool) (bool, error) {
-	same := true
+	var results [](chan sameErr)
+	for range schema.SchemaVersions {
+		results = append(results, make(chan sameErr, 1))
+	}
 
+	var wg sync.WaitGroup
 	for i, version := range schema.SchemaVersions {
-		apiVersion := strings.TrimPrefix(version.APIVersion, "skaffold/")
-
-		folder := apiVersion
-		strict := false
-		if i == len(schema.SchemaVersions)-1 {
-			folder = "latest"
-			strict = true
-		}
-
-		input := filepath.Join(root, "pkg", "skaffold", "schema", folder, "config.go")
-		output := filepath.Join(root, "docs", "content", "en", "schemas", apiVersion+".json")
-
-		generator := schemaGenerator{
-			strict: strict,
-		}
-
-		buf, err := generator.Apply(input)
-		if err != nil {
-			return false, errors.Wrapf(err, "unable to generate schema for version %s", version.APIVersion)
-		}
-
-		var current []byte
-		if _, err := os.Stat(output); err == nil {
-			var err error
-			current, err = ioutil.ReadFile(output)
-			if err != nil {
-				return false, errors.Wrapf(err, "unable to read existing schema for version %s", version.APIVersion)
+		wg.Add(1)
+		go func(i int, version schema.Version) {
+			same, err := generateSchema(root, dryRun, version)
+			results[i] <- sameErr{
+				same: same,
+				err:  err,
 			}
-		} else if !os.IsNotExist(err) {
-			return false, errors.Wrapf(err, "unable to check that file exists %s", output)
+			wg.Done()
+		}(i, version)
+	}
+	wg.Wait()
+
+	same := true
+	for i := range schema.SchemaVersions {
+		result := <-results[i]
+		if result.err != nil {
+			return false, result.err
 		}
 
-		current = bytes.Replace(current, []byte("\r\n"), []byte("\n"), -1)
+		same = same && result.same
+	}
 
-		if string(current) != string(buf) {
-			same = false
+	return same, nil
+}
+
+func generateSchema(root string, dryRun bool, version schema.Version) (bool, error) {
+	apiVersion := strings.TrimPrefix(version.APIVersion, "skaffold/")
+
+	folder := apiVersion
+	strict := false
+	if version.APIVersion == schema.SchemaVersions[len(schema.SchemaVersions)-1].APIVersion {
+		folder = "latest"
+		strict = true
+	}
+
+	input := filepath.Join(root, "pkg", "skaffold", "schema", folder, "config.go")
+	output := filepath.Join(root, "docs", "content", "en", "schemas", apiVersion+".json")
+
+	generator := schemaGenerator{
+		strict: strict,
+	}
+
+	buf, err := generator.Apply(input)
+	if err != nil {
+		return false, fmt.Errorf("unable to generate schema for version %q: %w", version.APIVersion, err)
+	}
+
+	var current []byte
+	if _, err := os.Stat(output); err == nil {
+		var err error
+		current, err = ioutil.ReadFile(output)
+		if err != nil {
+			return false, fmt.Errorf("unable to read existing schema for version %q: %w", version.APIVersion, err)
 		}
+	} else if !os.IsNotExist(err) {
+		return false, fmt.Errorf("unable to check that file exists %q: %w", output, err)
+	}
 
-		if !dryRun {
-			ioutil.WriteFile(output, buf, os.ModePerm)
+	current = bytes.Replace(current, []byte("\r\n"), []byte("\n"), -1)
+
+	if !dryRun {
+		if err := ioutil.WriteFile(output, buf, os.ModePerm); err != nil {
+			return false, fmt.Errorf("unable to write schema %q: %w", output, err)
 		}
 	}
 
+	same := string(current) == string(buf)
 	return same, nil
 }
 
@@ -138,14 +178,17 @@ func yamlFieldName(field *ast.Field) string {
 	return strings.Split(yamlTag, ",")[0]
 }
 
+//nolint:golint,goconst
 func setTypeOrRef(def *Definition, typeName string) {
 	switch typeName {
-	case "string":
-		def.Type = typeName
+	// Special case for ResourceType that is an alias of string.
+	// Fixes #3623
+	case "string", "ResourceType":
+		def.Type = "string"
 	case "bool":
 		def.Type = "boolean"
-	case "int", "int64":
-		def.Type = "number"
+	case "int", "int64", "int32":
+		def.Type = "integer"
 	default:
 		def.Ref = defPrefix + typeName
 	}
@@ -174,8 +217,6 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 		if ident, ok := tt.X.(*ast.Ident); ok {
 			typeName := ident.Name
 			setTypeOrRef(def, typeName)
-		} else if _, ok := tt.X.(*ast.SelectorExpr); ok {
-			def.Type = "object"
 		}
 
 	case *ast.ArrayType:
@@ -195,6 +236,7 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 			yamlName := yamlFieldName(field)
 
 			if strings.Contains(field.Tag.Value, "inline") {
+				def.PreferredOrder = append(def.PreferredOrder, "<inline>")
 				def.inlines = append(def.inlines, &Definition{
 					Ref: defPrefix + field.Type.(*ast.Ident).Name,
 				})
@@ -222,6 +264,17 @@ func (g *schemaGenerator) newDefinition(name string, t ast.Expr, comment string,
 	if g.strict && name != "" {
 		if !strings.HasPrefix(comment, name+" ") {
 			panic(fmt.Sprintf("comment should start with field name on field %s", name))
+		}
+	}
+
+	// process enums before stripping out newlines
+	if m := regexpEnumDefinition.FindStringSubmatch(comment); m != nil {
+		enums := make([]string, 0)
+		if n := regexpEnumValues.FindAllStringSubmatch(m[1], -1); n != nil {
+			for _, matches := range n {
+				enums = append(enums, matches[1])
+			}
+			def.Enum = enums
 		}
 	}
 
@@ -300,23 +353,46 @@ func (g *schemaGenerator) Apply(inputPath string) ([]byte, error) {
 			continue
 		}
 
-		var options []*Definition
+		for _, inlineStruct := range def.inlines {
+			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
+			inlines = append(inlines, ref)
+		}
 
+		// First, inline definitions without `oneOf`
+		inlineIndex := 0
+		var defPreferredOrder []string
+		for _, k := range def.PreferredOrder {
+			if k != "<inline>" {
+				defPreferredOrder = append(defPreferredOrder, k)
+				continue
+			}
+
+			inlineStruct := def.inlines[inlineIndex]
+			inlineIndex++
+
+			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
+			inlineStructRef := definitions[ref]
+			if isOneOf(inlineStructRef) {
+				continue
+			}
+
+			if def.Properties == nil {
+				def.Properties = make(map[string]*Definition, len(inlineStructRef.Properties))
+			}
+			for k, v := range inlineStructRef.Properties {
+				def.Properties[k] = v
+			}
+			defPreferredOrder = append(defPreferredOrder, inlineStructRef.PreferredOrder...)
+			def.Required = append(def.Required, inlineStructRef.Required...)
+		}
+		def.PreferredOrder = defPreferredOrder
+
+		// Then add options for `oneOf` definitions
+		var options []*Definition
 		for _, inlineStruct := range def.inlines {
 			ref := strings.TrimPrefix(inlineStruct.Ref, defPrefix)
 			inlineStructRef := definitions[ref]
-			inlines = append(inlines, ref)
-
-			// if not anyof, merge & continue
 			if !isOneOf(inlineStructRef) {
-				if def.Properties == nil {
-					def.Properties = make(map[string]*Definition, len(inlineStructRef.Properties))
-				}
-				for k, v := range inlineStructRef.Properties {
-					def.Properties[k] = v
-				}
-				def.PreferredOrder = append(def.PreferredOrder, inlineStructRef.PreferredOrder...)
-				def.Required = append(def.Required, inlineStructRef.Required...)
 				continue
 			}
 

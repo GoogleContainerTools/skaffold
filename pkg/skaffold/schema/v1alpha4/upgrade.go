@@ -29,11 +29,11 @@ import (
 // 2. No removal
 // 3. Updates
 //    - minor - []TestCase type aliased to TestConfig
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 
-	err := pkgutil.CloneThroughJSON(config, &newConfig)
+	pkgutil.CloneThroughJSON(c, &newConfig)
 	newConfig.APIVersion = next.Version
 
-	return &newConfig, err
+	return &newConfig, nil
 }

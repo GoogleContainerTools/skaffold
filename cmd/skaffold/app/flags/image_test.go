@@ -32,7 +32,7 @@ func TestNewEmptyImage(t *testing.T) {
 }
 
 func TestImagesFlagSet(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description      string
 		setValue         string
 		shouldErr        bool
@@ -55,7 +55,7 @@ func TestImagesFlagSet(t *testing.T) {
 			},
 		},
 		{
-			description: "set on correct value return right artifact without dogest",
+			description: "set on correct value return right artifact without digest",
 			setValue:    "gcr.io/test/test-image@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
 			expectedArtifact: build.Artifact{
 				ImageName: "gcr.io/test/test-image",
@@ -117,7 +117,7 @@ func TestImagesType(t *testing.T) {
 }
 
 func TestConvertToArtifact(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		image       string
 		expected    *build.Artifact

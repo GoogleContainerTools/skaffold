@@ -24,8 +24,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/imdario/mergo"
+	"k8s.io/klog"
 
 	restclient "k8s.io/client-go/rest"
 	clientauth "k8s.io/client-go/tools/auth"
@@ -297,16 +297,6 @@ func makeUserIdentificationConfig(info clientauth.Info) *restclient.Config {
 	return config
 }
 
-// makeUserIdentificationFieldsConfig returns a client.Config capable of being merged using mergo for only server identification information
-func makeServerIdentificationConfig(info clientauth.Info) restclient.Config {
-	config := restclient.Config{}
-	config.CAFile = info.CAFile
-	if info.Insecure != nil {
-		config.Insecure = *info.Insecure
-	}
-	return config
-}
-
 func canIdentifyUser(config restclient.Config) bool {
 	return len(config.Username) > 0 ||
 		(len(config.CertFile) > 0 || len(config.CertData) > 0) ||
@@ -459,13 +449,15 @@ func (config *DirectClientConfig) getCluster() (clientcmdapi.Cluster, error) {
 		return clientcmdapi.Cluster{}, fmt.Errorf("cluster %q does not exist", clusterInfoName)
 	}
 	mergo.MergeWithOverwrite(mergedClusterInfo, config.overrides.ClusterInfo)
-	// An override of --insecure-skip-tls-verify=true and no accompanying CA/CA data should clear already-set CA/CA data
-	// otherwise, a kubeconfig containing a CA reference would return an error that "CA and insecure-skip-tls-verify couldn't both be set"
+	// * An override of --insecure-skip-tls-verify=true and no accompanying CA/CA data should clear already-set CA/CA data
+	// otherwise, a kubeconfig containing a CA reference would return an error that "CA and insecure-skip-tls-verify couldn't both be set".
+	// * An override of --certificate-authority should also override TLS skip settings and CA data, otherwise existing CA data will take precedence.
 	caLen := len(config.overrides.ClusterInfo.CertificateAuthority)
 	caDataLen := len(config.overrides.ClusterInfo.CertificateAuthorityData)
-	if config.overrides.ClusterInfo.InsecureSkipTLSVerify && caLen == 0 && caDataLen == 0 {
-		mergedClusterInfo.CertificateAuthority = ""
-		mergedClusterInfo.CertificateAuthorityData = nil
+	if config.overrides.ClusterInfo.InsecureSkipTLSVerify || caLen > 0 || caDataLen > 0 {
+		mergedClusterInfo.InsecureSkipTLSVerify = config.overrides.ClusterInfo.InsecureSkipTLSVerify
+		mergedClusterInfo.CertificateAuthority = config.overrides.ClusterInfo.CertificateAuthority
+		mergedClusterInfo.CertificateAuthorityData = config.overrides.ClusterInfo.CertificateAuthorityData
 	}
 
 	return *mergedClusterInfo, nil
@@ -548,12 +540,12 @@ func (config *inClusterClientConfig) Possible() bool {
 // to the default config.
 func BuildConfigFromFlags(masterUrl, kubeconfigPath string) (*restclient.Config, error) {
 	if kubeconfigPath == "" && masterUrl == "" {
-		glog.Warningf("Neither --kubeconfig nor --master was specified.  Using the inClusterConfig.  This might not work.")
+		klog.Warningf("Neither --kubeconfig nor --master was specified.  Using the inClusterConfig.  This might not work.")
 		kubeconfig, err := restclient.InClusterConfig()
 		if err == nil {
 			return kubeconfig, nil
 		}
-		glog.Warning("error creating inClusterConfig, falling back to default config: ", err)
+		klog.Warning("error creating inClusterConfig, falling back to default config: ", err)
 	}
 	return NewNonInteractiveDeferredLoadingClientConfig(
 		&ClientConfigLoadingRules{ExplicitPath: kubeconfigPath},

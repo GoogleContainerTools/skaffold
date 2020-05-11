@@ -19,13 +19,13 @@ package server
 import (
 	"fmt"
 	"net"
-	"sync"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server/proto"
-	"github.com/GoogleContainerTools/skaffold/testutil"
 	"google.golang.org/grpc"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/proto"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 var (
@@ -34,10 +34,8 @@ var (
 )
 
 func TestServerStartup(t *testing.T) {
-	once = sync.Once{}
-
 	// start up servers
-	shutdown, err := initialize(&config.SkaffoldOptions{
+	shutdown, err := Initialize(config.SkaffoldOptions{
 		EnableRPC:   true,
 		RPCPort:     rpcAddr,
 		RPCHTTPPort: httpAddr,

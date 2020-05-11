@@ -1,0 +1,9 @@
+apiVersion: skaffold/v1beta12
+kind: Config
+build:
+  artifacts:
+    - image: incorrect-example
+deploy:
+  kubectl:
+    manifests:
+      - incorrect-deployment.yaml

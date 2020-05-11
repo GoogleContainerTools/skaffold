@@ -21,14 +21,11 @@ import (
 	"io"
 	"time"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"k8s.io/apimachinery/pkg/util/wait"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/jib"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 )
 
 const (
@@ -58,7 +55,25 @@ const (
 
 	// RetryDelay is the time to wait in between polling the status of the cloud build
 	RetryDelay = 1 * time.Second
+
+	// BackoffFactor is the exponent for exponential backoff during build status polling
+	BackoffFactor = 1.5
+
+	// BackoffSteps is the number of times we increase the backoff time during exponential backoff
+	BackoffSteps = 10
+
+	// RetryTimeout is the max amount of time to retry getting the status of the build before erroring
+	RetryTimeout = 3 * time.Minute
 )
+
+func NewStatusBackoff() *wait.Backoff {
+	return &wait.Backoff{
+		Duration: RetryDelay,
+		Factor:   float64(BackoffFactor),
+		Steps:    BackoffSteps,
+		Cap:      60 * time.Second,
+	}
+}
 
 // Builder builds artifacts with Google Cloud Build.
 type Builder struct {
@@ -83,36 +98,6 @@ func (b *Builder) Labels() map[string]string {
 	}
 }
 
-// DependenciesForArtifact returns the dependencies for this artifact
-func (b *Builder) DependenciesForArtifact(ctx context.Context, a *latest.Artifact) ([]string, error) {
-	var paths []string
-	var err error
-	if a.DockerArtifact != nil {
-		paths, err = docker.GetDependencies(ctx, a.Workspace, a.DockerArtifact.DockerfilePath, a.DockerArtifact.BuildArgs, b.insecureRegistries)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
-		}
-	}
-	if a.JibMavenArtifact != nil {
-		paths, err = jib.GetDependenciesMaven(ctx, a.Workspace, a.JibMavenArtifact)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
-		}
-	}
-	if a.JibGradleArtifact != nil {
-		paths, err = jib.GetDependenciesGradle(ctx, a.Workspace, a.JibGradleArtifact)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting dependencies for %s", a.ImageName)
-		}
-	}
-
-	return util.AbsolutePaths(a.Workspace, paths), nil
-}
-
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
 	return nil // noop
-}
-
-func (b *Builder) SyncMap(ctx context.Context, artifact *latest.Artifact) (map[string][]string, error) {
-	return nil, build.ErrSyncMapNotSupported{}
 }

@@ -1,10 +1,10 @@
-apiVersion: skaffold/v1beta12
+apiVersion: skaffold/v2beta3
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-example
+  - image: skaffold-example
 test:
-  - image: gcr.io/k8s-skaffold/skaffold-example
+  - image: skaffold-example
     structureTests:
       - ./test/*
 deploy:
@@ -14,6 +14,6 @@ deploy:
 profiles:
   - name: test
     test:
-      - image: gcr.io/k8s-skaffold/skaffold-example
+      - image: skaffold-example
         structureTests:
           - ./test/profile_structure_test.yaml

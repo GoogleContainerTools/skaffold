@@ -695,7 +695,12 @@
         "variant": {
           "type": "string",
           "description": "determines the behavior of the git tagger. Valid variants are `Tags` (default): use git tags or fall back to abbreviated commit hash. `CommitSha`: use the full git commit sha. `AbbrevCommitSha`: use the abbreviated git commit sha.",
-          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are <code>Tags</code> (default): use git tags or fall back to abbreviated commit hash. <code>CommitSha</code>: use the full git commit sha. <code>AbbrevCommitSha</code>: use the abbreviated git commit sha."
+          "x-intellij-html-description": "determines the behavior of the git tagger. Valid variants are <code>Tags</code> (default): use git tags or fall back to abbreviated commit hash. <code>CommitSha</code>: use the full git commit sha. <code>AbbrevCommitSha</code>: use the abbreviated git commit sha.",
+          "enum": [
+            "Tags",
+            "CommitSha",
+            "AbbrevCommitSha"
+          ]
         }
       },
       "preferredOrder": [
@@ -708,7 +713,7 @@
     "GoogleCloudBuild": {
       "properties": {
         "diskSizeGb": {
-          "type": "number",
+          "type": "integer",
           "description": "disk size of the VM that runs the build. See [Cloud Build Reference](https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions).",
           "x-intellij-html-description": "disk size of the VM that runs the build. See <a href=\"https://cloud.google.com/cloud-build/docs/api/reference/rest/v1/projects.builds#buildoptions\">Cloud Build Reference</a>."
         },
@@ -1047,7 +1052,6 @@
           ]
         },
         "value": {
-          "type": "object",
           "description": "value to apply. Can be any portion of yaml.",
           "x-intellij-html-description": "value to apply. Can be any portion of yaml."
         }
@@ -1413,11 +1417,11 @@
       },
       "preferredOrder": [
         "name",
-        "patches",
-        "activation",
         "build",
         "test",
-        "deploy"
+        "deploy",
+        "patches",
+        "activation"
       ],
       "additionalProperties": false,
       "description": "*beta* profiles are used to override any `build`, `test` or `deploy` configuration.",
@@ -1522,10 +1526,10 @@
       "preferredOrder": [
         "apiVersion",
         "kind",
-        "profiles",
         "build",
         "test",
-        "deploy"
+        "deploy",
+        "profiles"
       ],
       "additionalProperties": false,
       "description": "holds the fields parsed from the Skaffold configuration file (skaffold.yaml).",

@@ -18,43 +18,72 @@ package deploy
 
 import (
 	"fmt"
+	"strings"
 
+	"github.com/google/uuid"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
 )
 
 const (
-	K8ManagedByLabelKey = "app.kubernetes.io/managed-by"
-	UnknownVersion      = "unknown"
-	Empty               = ""
+	K8sManagedByLabelKey = "app.kubernetes.io/managed-by"
+	RunIDLabel           = "skaffold.dev/run-id"
+	unknownVersion       = "unknown"
+	empty                = ""
 )
 
-// DefaultLabeller adds K9 style managed-by label
+var runID = uuid.New().String()
+
+// DefaultLabeller adds K8s style managed-by label and a run-specific UUID label
 type DefaultLabeller struct {
+	opts    config.SkaffoldOptions
 	version string
+	runID   string
 }
 
-func NewLabeller(verStr string) *DefaultLabeller {
-	if verStr == Empty {
-		verStr = version.Get().Version
-	}
-	if verStr == Empty {
-		verStr = UnknownVersion
+func NewLabeller(opts config.SkaffoldOptions) *DefaultLabeller {
+	verStr := version.Get().Version
+	if verStr == empty {
+		verStr = unknownVersion
 	}
 	return &DefaultLabeller{
+		opts:    opts,
 		version: verStr,
+		runID:   runID,
 	}
 }
 
 func (d *DefaultLabeller) Labels() map[string]string {
-	return map[string]string{
-		K8ManagedByLabelKey: d.skaffoldVersion(),
+	labels := map[string]string{
+		K8sManagedByLabelKey: fmt.Sprintf("skaffold-%s", d.version),
+		RunIDLabel:           d.runID,
 	}
+
+	if d.opts.Cleanup {
+		labels["skaffold.dev/cleanup"] = "true"
+	}
+	if d.opts.Tail || d.opts.TailDev {
+		labels["skaffold.dev/tail"] = "true"
+	}
+	if d.opts.Namespace != "" {
+		labels["skaffold.dev/namespace"] = d.opts.Namespace
+	}
+	for i, profile := range d.opts.Profiles {
+		key := fmt.Sprintf("skaffold.dev/profile.%d", i)
+		labels[key] = profile
+	}
+	for _, cl := range d.opts.CustomLabels {
+		l := strings.SplitN(cl, "=", 2)
+		if len(l) == 1 {
+			labels[l[0]] = ""
+			continue
+		}
+		labels[l[0]] = l[1]
+	}
+	return labels
 }
 
-func (d *DefaultLabeller) K8sManagedByLabelKeyValueString() string {
-	return fmt.Sprintf("%s=%s", K8ManagedByLabelKey, d.skaffoldVersion())
-}
-
-func (d *DefaultLabeller) skaffoldVersion() string {
-	return fmt.Sprintf("skaffold-%s", d.version)
+func (d *DefaultLabeller) RunIDSelector() string {
+	return fmt.Sprintf("%s=%s", RunIDLabel, d.Labels()[RunIDLabel])
 }

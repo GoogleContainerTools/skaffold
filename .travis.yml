@@ -1,43 +1,77 @@
+dist: xenial
+
 language: go
+go: "1.14.x"
+go_import_path: /skaffold
 
 git:
   submodules: false
 
-go_import_path: github.com/GoogleContainerTools/skaffold
+branches:
+  only:
+    - master
 
 jobs:
   include:
     - os: linux
-      go: "1.11.x"
+      name: "linters"
       script:
-        - make
-        - make test
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
-    - os: osx
-      go: "1.11.x"
-      script:
-        - make
-        - make test
-      after_success:
-        - bash <(curl -s https://codecov.io/bash)
+        - make linters
     - os: linux
-      go: "1.12.x"
+      name: "checks"
       script:
-        - make
+        - make checks
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+    - os: linux
+      name: "Linux unit"
+      script:
+        - make coverage
+      cache:
+        directories:
+          - $HOME/.cache/go-build
     - os: osx
-      go: "1.12.x"
-      script:
-        - make
-    - os: windows
-      go: "1.11.x"
-      script:
-        - go build -o out/skaffold.exe cmd/skaffold/skaffold.go
-        - go test -short -timeout 60s ./...
-    - stage: integration
-      os: linux
-      go: "1.11.x"
+      name: "OSX unit"
       before_install:
-        - curl -Lo ${HOME}/bin/kind https://github.com/kubernetes-sigs/kind/releases/download/v0.3.0/kind-linux-amd64
-        - chmod +x ${HOME}/bin/kind
-      script: make integration-in-kind
+        - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64
+        - chmod +x ${HOME}/bin/jq
+      script:
+        - make quicktest
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+    - os: windows
+      name: "Windows unit"
+      script:
+        - go test -short -timeout 60s ./...
+      cache:
+        directories:
+          - C:\\Users\\travis\\AppData\\Local\\go-build
+    - os: linux
+      name: "integration"
+      language: minimal
+      script:
+        - make integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
+          - $HOME/.m2
+    - os: linux
+      name: "diag/Linux unit"
+      script:
+        - make -f Makefile.diag coverage
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+    - os: osx
+      name: "diag/OSX unit"
+      before_install:
+        - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64
+        - chmod +x ${HOME}/bin/jq
+      script:
+        - make -f Makefile.diag test
+      cache:
+        directories:
+          - $HOME/.cache/go-build

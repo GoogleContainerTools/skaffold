@@ -1,0 +1,33 @@
+# Copyright 2020 The Skaffold Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+GOOS ?= $(shell go env GOOS)
+GOARCH ?= amd64
+BUILD_DIR ?= ./out
+ORG := github.com/GoogleContainerTools
+PROJECT := diag
+REPOPATH ?= $(ORG)/skaffold
+VERSION_PACKAGE = $(REPOPATH)/pkg/diag/version
+
+TEST_PACKAGES := $(shell go list ./pkg/diag/...)
+
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+
+.PHONY: test
+test: $(BUILD_DIR)
+	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s $(TEST_PACKAGES)
+
+.PHONY: coverage
+coverage: $(BUILD_DIR)
+	@ ./hack/gotest.sh -count=1 -race -cover -short -timeout=90s -coverprofile=out/coverage.txt $(TEST_PACKAGES)

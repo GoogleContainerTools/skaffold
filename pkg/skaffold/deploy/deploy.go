@@ -30,7 +30,7 @@ type Deployer interface {
 
 	// Deploy should ensure that the build results are deployed to the Kubernetes
 	// cluster.
-	Deploy(context.Context, io.Writer, []build.Artifact, []Labeller) error
+	Deploy(context.Context, io.Writer, []build.Artifact, []Labeller) *Result
 
 	// Dependencies returns a list of files that the deployer depends on.
 	// In dev mode, a redeploy will be triggered
@@ -38,4 +38,29 @@ type Deployer interface {
 
 	// Cleanup deletes what was deployed by calling Deploy.
 	Cleanup(context.Context, io.Writer) error
+
+	// Render generates the Kubernetes manifests replacing the build results and
+	// writes them to the given file path
+	Render(context.Context, io.Writer, []build.Artifact, []Labeller, string) error
+}
+
+type Result struct {
+	err        error
+	namespaces []string
+}
+
+func NewDeployErrorResult(err error) *Result {
+	return &Result{err: err}
+}
+
+func NewDeploySuccessResult(namespaces []string) *Result {
+	return &Result{namespaces: namespaces}
+}
+
+func (d *Result) Namespaces() []string {
+	return d.namespaces
+}
+
+func (d *Result) GetError() error {
+	return d.err
 }

@@ -27,11 +27,12 @@ import (
 )
 
 type layer struct {
-	digest     v1.Hash
-	diffID     v1.Hash
-	size       int64
-	opener     Opener
-	compressed bool
+	digest      v1.Hash
+	diffID      v1.Hash
+	size        int64
+	opener      Opener
+	compressed  bool
+	compression int
 }
 
 func (l *layer) Digest() (v1.Hash, error) {
@@ -45,7 +46,7 @@ func (l *layer) DiffID() (v1.Hash, error) {
 func (l *layer) Compressed() (io.ReadCloser, error) {
 	rc, err := l.opener()
 	if err == nil && !l.compressed {
-		return v1util.GzipReadCloser(rc)
+		return v1util.GzipReadCloserLevel(rc, l.compression), nil
 	}
 
 	return rc, err
@@ -68,16 +69,26 @@ func (l *layer) MediaType() (types.MediaType, error) {
 	return types.DockerLayer, nil
 }
 
+// LayerOption applies options to layer
+type LayerOption func(*layer)
+
+// WithCompressionLevel sets the gzip compression. See `gzip.NewWriterLevel` for possible values.
+func WithCompressionLevel(level int) LayerOption {
+	return func(l *layer) {
+		l.compression = level
+	}
+}
+
 // LayerFromFile returns a v1.Layer given a tarball
-func LayerFromFile(path string) (v1.Layer, error) {
+func LayerFromFile(path string, opts ...LayerOption) (v1.Layer, error) {
 	opener := func() (io.ReadCloser, error) {
 		return os.Open(path)
 	}
-	return LayerFromOpener(opener)
+	return LayerFromOpener(opener, opts...)
 }
 
 // LayerFromOpener returns a v1.Layer given an Opener function
-func LayerFromOpener(opener Opener) (v1.Layer, error) {
+func LayerFromOpener(opener Opener, opts ...LayerOption) (v1.Layer, error) {
 	rc, err := opener()
 	if err != nil {
 		return nil, err
@@ -89,28 +100,29 @@ func LayerFromOpener(opener Opener) (v1.Layer, error) {
 		return nil, err
 	}
 
-	var digest v1.Hash
-	var size int64
-	if digest, size, err = computeDigest(opener, compressed); err != nil {
+	layer := &layer{
+		compressed:  compressed,
+		compression: gzip.BestSpeed,
+		opener:      opener,
+	}
+
+	for _, opt := range opts {
+		opt(layer)
+	}
+
+	if layer.digest, layer.size, err = computeDigest(opener, compressed, layer.compression); err != nil {
 		return nil, err
 	}
 
-	diffID, err := computeDiffID(opener, compressed)
-	if err != nil {
+	if layer.diffID, err = computeDiffID(opener, compressed); err != nil {
 		return nil, err
 	}
 
-	return &layer{
-		digest:     digest,
-		diffID:     diffID,
-		size:       size,
-		compressed: compressed,
-		opener:     opener,
-	}, nil
+	return layer, nil
 }
 
 // LayerFromReader returns a v1.Layer given a io.Reader.
-func LayerFromReader(reader io.Reader) (v1.Layer, error) {
+func LayerFromReader(reader io.Reader, opts ...LayerOption) (v1.Layer, error) {
 	// Buffering due to Opener requiring multiple calls.
 	a, err := ioutil.ReadAll(reader)
 	if err != nil {
@@ -118,10 +130,10 @@ func LayerFromReader(reader io.Reader) (v1.Layer, error) {
 	}
 	return LayerFromOpener(func() (io.ReadCloser, error) {
 		return ioutil.NopCloser(bytes.NewReader(a)), nil
-	})
+	}, opts...)
 }
 
-func computeDigest(opener Opener, compressed bool) (v1.Hash, int64, error) {
+func computeDigest(opener Opener, compressed bool, compression int) (v1.Hash, int64, error) {
 	rc, err := opener()
 	if err != nil {
 		return v1.Hash{}, 0, err
@@ -132,12 +144,7 @@ func computeDigest(opener Opener, compressed bool) (v1.Hash, int64, error) {
 		return v1.SHA256(rc)
 	}
 
-	reader, err := v1util.GzipReadCloser(ioutil.NopCloser(rc))
-	if err != nil {
-		return v1.Hash{}, 0, err
-	}
-
-	return v1.SHA256(reader)
+	return v1.SHA256(v1util.GzipReadCloserLevel(ioutil.NopCloser(rc), compression))
 }
 
 func computeDiffID(opener Opener, compressed bool) (v1.Hash, error) {

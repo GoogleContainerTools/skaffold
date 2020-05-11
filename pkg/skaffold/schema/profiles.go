@@ -20,26 +20,28 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	re "regexp"
 	"strings"
+
+	yamlpatch "github.com/krishicks/yaml-patch"
+	"github.com/sirupsen/logrus"
+	yaml "gopkg.in/yaml.v2"
 
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	yamlpatch "github.com/krishicks/yaml-patch"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
 // ApplyProfiles returns configuration modified by the application
 // of a list of profiles.
-func ApplyProfiles(c *latest.SkaffoldConfig, opts *cfg.SkaffoldOptions) error {
+func ApplyProfiles(c *latest.SkaffoldConfig, opts cfg.SkaffoldOptions) error {
 	byName := profilesByName(c.Profiles)
 
-	profiles, err := activatedProfiles(c.Profiles, opts)
+	profiles, contextSpecificProfiles, err := activatedProfiles(c.Profiles, opts)
 	if err != nil {
-		return errors.Wrap(err, "finding auto-activated profiles")
+		return fmt.Errorf("finding auto-activated profiles: %w", err)
 	}
 
 	for _, name := range profiles {
@@ -49,38 +51,86 @@ func ApplyProfiles(c *latest.SkaffoldConfig, opts *cfg.SkaffoldOptions) error {
 		}
 
 		if err := applyProfile(c, profile); err != nil {
-			return errors.Wrapf(err, "applying profile %s", name)
+			return fmt.Errorf("applying profile %q: %w", name, err)
 		}
 	}
 
-	return nil
+	return checkKubeContextConsistency(contextSpecificProfiles, opts.KubeContext, c.Deploy.KubeContext)
 }
 
-func activatedProfiles(profiles []latest.Profile, opts *cfg.SkaffoldOptions) ([]string, error) {
-	activated := opts.Profiles
+func checkKubeContextConsistency(contextSpecificProfiles []string, cliContext, effectiveContext string) error {
+	// cli flag takes precedence
+	if cliContext != "" {
+		return nil
+	}
 
-	// Auto-activated profiles
-	for _, profile := range profiles {
-		for _, cond := range profile.Activation {
-			command := isCommand(cond.Command, opts)
+	kubeConfig, err := kubectx.CurrentConfig()
+	if err != nil {
+		return fmt.Errorf("getting current cluster context: %w", err)
+	}
+	currentContext := kubeConfig.CurrentContext
 
-			env, err := isEnv(cond.Env)
-			if err != nil {
-				return nil, err
-			}
+	// nothing to do
+	if effectiveContext == "" || effectiveContext == currentContext || len(contextSpecificProfiles) == 0 {
+		return nil
+	}
 
-			kubeContext, err := isKubeContext(cond.KubeContext)
-			if err != nil {
-				return nil, err
-			}
+	return fmt.Errorf("profiles %q were activated by kube-context %q, but the effective kube-context is %q -- please revise your `profiles.activation` and `deploy.kubeContext` configurations", contextSpecificProfiles, currentContext, effectiveContext)
+}
 
-			if command && env && kubeContext {
-				activated = append(activated, profile.Name)
+// activatedProfiles returns the activated profiles and activated profiles which are kube-context specific.
+// The latter matters for error reporting when the effective kube-context changes.
+func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]string, []string, error) {
+	var activated []string
+	var contextSpecificProfiles []string
+
+	if opts.ProfileAutoActivation {
+		// Auto-activated profiles
+		for _, profile := range profiles {
+			for _, cond := range profile.Activation {
+				command := isCommand(cond.Command, opts)
+
+				env, err := isEnv(cond.Env)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				kubeContext, err := isKubeContext(cond.KubeContext, opts)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				if command && env && kubeContext {
+					if cond.KubeContext != "" {
+						contextSpecificProfiles = append(contextSpecificProfiles, profile.Name)
+					}
+					activated = append(activated, profile.Name)
+				}
 			}
 		}
 	}
 
-	return activated, nil
+	for _, profile := range opts.Profiles {
+		if strings.HasPrefix(profile, "-") {
+			activated = removeValue(activated, strings.TrimPrefix(profile, "-"))
+		} else {
+			activated = append(activated, profile)
+		}
+	}
+
+	return activated, contextSpecificProfiles, nil
+}
+
+func removeValue(values []string, value string) []string {
+	var updated []string
+
+	for _, v := range values {
+		if v != value {
+			updated = append(updated, v)
+		}
+	}
+
+	return updated
 }
 
 func isEnv(env string) (bool, error) {
@@ -96,10 +146,18 @@ func isEnv(env string) (bool, error) {
 	key := keyValue[0]
 	value := keyValue[1]
 
-	return satisfies(value, os.Getenv(key)), nil
+	envValue := os.Getenv(key)
+
+	// Special case, since otherwise the regex substring check (`re.Compile("").MatchString(envValue)`)
+	// would always match which is most probably not what the user wanted.
+	if value == "" {
+		return envValue == "", nil
+	}
+
+	return satisfies(value, envValue), nil
 }
 
-func isCommand(command string, opts *cfg.SkaffoldOptions) bool {
+func isCommand(command string, opts cfg.SkaffoldOptions) bool {
 	if command == "" {
 		return true
 	}
@@ -107,14 +165,19 @@ func isCommand(command string, opts *cfg.SkaffoldOptions) bool {
 	return satisfies(command, opts.Command)
 }
 
-func isKubeContext(kubeContext string) (bool, error) {
+func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
 	if kubeContext == "" {
 		return true, nil
 	}
 
+	// cli flag takes precedence
+	if opts.KubeContext != "" {
+		return satisfies(kubeContext, opts.KubeContext), nil
+	}
+
 	currentKubeConfig, err := kubectx.CurrentConfig()
 	if err != nil {
-		return false, errors.Wrap(err, "getting current cluster context")
+		return false, fmt.Errorf("getting current cluster context: %w", err)
 	}
 
 	return satisfies(kubeContext, currentKubeConfig.CurrentContext), nil
@@ -122,24 +185,45 @@ func isKubeContext(kubeContext string) (bool, error) {
 
 func satisfies(expected, actual string) bool {
 	if strings.HasPrefix(expected, "!") {
-		return actual != expected[1:]
+		notExpected := expected[1:]
+
+		return !matches(notExpected, actual)
 	}
-	return actual == expected
+
+	return matches(expected, actual)
+}
+
+func matches(expected, actual string) bool {
+	if actual == expected {
+		return true
+	}
+
+	matcher, err := re.Compile(expected)
+	if err != nil {
+		logrus.Infof("profile activation criteria '%s' is not a valid regexp, falling back to string", expected)
+		return false
+	}
+
+	return matcher.MatchString(actual)
 }
 
 func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 	logrus.Infof("applying profile: %s", profile.Name)
 
-	// this intentionally removes the Profiles field from the returned config
-	*config = latest.SkaffoldConfig{
-		APIVersion: config.APIVersion,
-		Kind:       config.Kind,
-		Pipeline: latest.Pipeline{
-			Build:  overlayProfileField(config.Build, profile.Build).(latest.BuildConfig),
-			Deploy: overlayProfileField(config.Deploy, profile.Deploy).(latest.DeployConfig),
-			Test:   overlayProfileField(config.Test, profile.Test).([]*latest.TestCase),
-		},
+	// Apply profile, field by field
+	mergedV := reflect.Indirect(reflect.ValueOf(&config.Pipeline))
+	configV := reflect.ValueOf(config.Pipeline)
+	profileV := reflect.ValueOf(profile.Pipeline)
+
+	profileT := profileV.Type()
+	for i := 0; i < profileT.NumField(); i++ {
+		name := profileT.Field(i).Name
+		merged := overlayProfileField(name, configV.FieldByName(name).Interface(), profileV.FieldByName(name).Interface())
+		mergedV.FieldByName(name).Set(reflect.ValueOf(merged))
 	}
+
+	// Remove the Profiles field from the returned config
+	config.Profiles = nil
 
 	if len(profile.Patches) == 0 {
 		return nil
@@ -183,6 +267,7 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 		return err
 	}
 
+	*config = latest.SkaffoldConfig{}
 	return yaml.Unmarshal(buf, config)
 }
 
@@ -238,16 +323,16 @@ func overlayStructField(config interface{}, profile interface{}) interface{} {
 
 	for i := 0; i < profileValue.NumField(); i++ {
 		fieldType := t.Field(i)
-		overlay := overlayProfileField(configValue.Field(i).Interface(), profileValue.Field(i).Interface())
+		overlay := overlayProfileField(yamltags.YamlName(fieldType), configValue.Field(i).Interface(), profileValue.Field(i).Interface())
 		finalConfig.Elem().FieldByName(fieldType.Name).Set(reflect.ValueOf(overlay))
 	}
 	return reflect.Indirect(finalConfig).Interface() // since finalConfig is a pointer, dereference it
 }
 
-func overlayProfileField(config interface{}, profile interface{}) interface{} {
+func overlayProfileField(fieldName string, config interface{}, profile interface{}) interface{} {
 	v := reflect.ValueOf(profile) // the profile itself
 	t := reflect.TypeOf(profile)  // the type of the profile, used for getting struct field types
-	logrus.Debugf("overlaying profile on config for field %s", t.Name())
+	logrus.Debugf("overlaying profile on config for field %s", fieldName)
 	switch v.Kind() {
 	case reflect.Struct:
 		// check the first field of the struct for a oneOf yamltag.
@@ -267,8 +352,18 @@ func overlayProfileField(config interface{}, profile interface{}) interface{} {
 			return config
 		}
 		return v.Interface()
+	case reflect.Int:
+		if v.Interface() == reflect.Zero(v.Type()).Interface() {
+			return config
+		}
+		return v.Interface()
+	case reflect.String:
+		if reflect.DeepEqual("", v.Interface()) {
+			return config
+		}
+		return v.Interface()
 	default:
-		logrus.Warnf("unknown field type in profile overlay: %s. falling back to original config values", v.Kind())
+		logrus.Fatalf("Type mismatch in profile overlay for field '%s' with type %s; falling back to original config values", fieldName, v.Kind())
 		return config
 	}
 }

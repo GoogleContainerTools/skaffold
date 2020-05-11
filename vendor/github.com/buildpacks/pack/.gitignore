@@ -1,0 +1,13 @@
+.pack/
+/pack
+out/
+
+# Jetbrains Goland
+.idea/
+
+# Build outputs
+artifacts/
+.DS_Store
+
+# Travis unencrypted file
+.travis/key.pem

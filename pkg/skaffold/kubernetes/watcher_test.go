@@ -17,16 +17,17 @@ limitations under the License.
 package kubernetes
 
 import (
+	"errors"
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	k8stesting "k8s.io/client-go/testing"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func pod(name string) *v1.Pod {

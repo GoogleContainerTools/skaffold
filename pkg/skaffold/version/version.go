@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/pkg/errors"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
@@ -42,8 +41,9 @@ type Info struct {
 	Platform      string
 }
 
-// Get returns the version and buildtime information about the binary
-func Get() *Info {
+// Get returns the version and buildtime information about the binary.
+// Can be overridden for tests.
+var Get = func() *Info {
 	// These variables typically come from -ldflags settings to `go build`
 	return &Info{
 		Version:       version,
@@ -66,7 +66,7 @@ func ParseVersion(version string) (semver.Version, error) {
 	version = strings.TrimSpace(version)
 	v, err := semver.Parse(strings.TrimLeft(version, "v"))
 	if err != nil {
-		return semver.Version{}, errors.Wrap(err, "parsing semver")
+		return semver.Version{}, fmt.Errorf("parsing semver: %w", err)
 	}
 	return v, nil
 }

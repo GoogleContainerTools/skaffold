@@ -1,6 +1,7 @@
 package remote
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -18,13 +19,13 @@ import (
 func CheckPushPermission(ref name.Reference, kc authn.Keychain, t http.RoundTripper) error {
 	auth, err := kc.Resolve(ref.Context().Registry)
 	if err != nil {
-		return err
+		return fmt.Errorf("resolving authorization for %v failed: %v", ref.Context().Registry, err)
 	}
 
 	scopes := []string{ref.Scope(transport.PushScope)}
 	tr, err := transport.New(ref.Context().Registry, auth, t, scopes)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating push check transport for %v failed: %v", ref.Context().Registry, err)
 	}
 	// TODO(jasonhall): Against GCR, just doing the token handshake is
 	// enough, but this doesn't extend to Dockerhub
@@ -33,7 +34,7 @@ func CheckPushPermission(ref name.Reference, kc authn.Keychain, t http.RoundTrip
 	// authorize a push. Figure out how to return early here when we can,
 	// to avoid a roundtrip for spec-compliant registries.
 	w := writer{
-		ref:    ref,
+		repo:   ref.Context(),
 		client: &http.Client{Transport: tr},
 	}
 	loc, _, err := w.initiateUpload("", "")

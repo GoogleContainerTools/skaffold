@@ -31,8 +31,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
 	"golang.org/x/net/http2"
+	"k8s.io/klog"
 )
 
 // JoinPreservingTrailingSlash does a path.Join of the specified elements,
@@ -68,14 +68,17 @@ func IsProbableEOF(err error) bool {
 	if uerr, ok := err.(*url.Error); ok {
 		err = uerr.Err
 	}
+	msg := err.Error()
 	switch {
 	case err == io.EOF:
 		return true
-	case err.Error() == "http: can't write HTTP request on broken connection":
+	case msg == "http: can't write HTTP request on broken connection":
 		return true
-	case strings.Contains(err.Error(), "connection reset by peer"):
+	case strings.Contains(msg, "http2: server sent GOAWAY and closed the connection"):
 		return true
-	case strings.Contains(strings.ToLower(err.Error()), "use of closed network connection"):
+	case strings.Contains(msg, "connection reset by peer"):
+		return true
+	case strings.Contains(strings.ToLower(msg), "use of closed network connection"):
 		return true
 	}
 	return false
@@ -98,6 +101,9 @@ func SetOldTransportDefaults(t *http.Transport) *http.Transport {
 	if t.TLSHandshakeTimeout == 0 {
 		t.TLSHandshakeTimeout = defaultTransport.TLSHandshakeTimeout
 	}
+	if t.IdleConnTimeout == 0 {
+		t.IdleConnTimeout = defaultTransport.IdleConnTimeout
+	}
 	return t
 }
 
@@ -107,13 +113,28 @@ func SetTransportDefaults(t *http.Transport) *http.Transport {
 	t = SetOldTransportDefaults(t)
 	// Allow clients to disable http2 if needed.
 	if s := os.Getenv("DISABLE_HTTP2"); len(s) > 0 {
-		glog.Infof("HTTP2 has been explicitly disabled")
-	} else {
+		klog.Infof("HTTP2 has been explicitly disabled")
+	} else if allowsHTTP2(t) {
 		if err := http2.ConfigureTransport(t); err != nil {
-			glog.Warningf("Transport failed http2 configuration: %v", err)
+			klog.Warningf("Transport failed http2 configuration: %v", err)
 		}
 	}
 	return t
+}
+
+func allowsHTTP2(t *http.Transport) bool {
+	if t.TLSClientConfig == nil || len(t.TLSClientConfig.NextProtos) == 0 {
+		// the transport expressed no NextProto preference, allow
+		return true
+	}
+	for _, p := range t.TLSClientConfig.NextProtos {
+		if p == http2.NextProtoTLS {
+			// the transport explicitly allowed http/2
+			return true
+		}
+	}
+	// the transport explicitly set NextProtos and excluded http/2
+	return false
 }
 
 type RoundTripperWrapper interface {
@@ -368,7 +389,7 @@ redirectLoop:
 		resp, err := http.ReadResponse(respReader, nil)
 		if err != nil {
 			// Unable to read the backend response; let the client handle it.
-			glog.Warningf("Error reading backend response: %v", err)
+			klog.Warningf("Error reading backend response: %v", err)
 			break redirectLoop
 		}
 

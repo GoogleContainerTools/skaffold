@@ -19,9 +19,10 @@ package v1beta9
 import (
 	"testing"
 
+	yaml "gopkg.in/yaml.v2"
+
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta10"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"gopkg.in/yaml.v2"
 )
 
 func TestUpgrade(t *testing.T) {
@@ -171,6 +172,13 @@ build:
     sync:
       'src/***/*.js': app/
   - image: nginx
+profiles:
+- name: test-profile-migration
+  build:
+    artifacts:
+    - image: gcr.io/k8s-skaffold/node-example
+      sync:
+        '**/*.js': .
 deploy:
   kubectl:
     manifests:
@@ -236,6 +244,15 @@ build:
         dest: app/
         strip: src/
   - image: nginx
+profiles:
+- name: test-profile-migration
+  build:
+    artifacts:
+    - image: gcr.io/k8s-skaffold/node-example
+      sync:
+        manual:
+        - src: '**/*.js'
+          dest: .
 deploy:
   kubectl:
     manifests:

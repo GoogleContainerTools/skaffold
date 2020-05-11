@@ -16,23 +16,46 @@ limitations under the License.
 
 package build
 
+import (
+	"context"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
+)
+
 // MergeWithPreviousBuilds merges previous or prebuilt build artifacts with
 // builds. If an artifact is already present in builds, the same artifact from
-// previous will be ignored.
+// previous will be replaced at the same position.
 func MergeWithPreviousBuilds(builds, previous []Artifact) []Artifact {
-	updatedBuilds := map[string]bool{}
+	updatedBuilds := map[string]Artifact{}
 	for _, build := range builds {
-		updatedBuilds[build.ImageName] = true
+		updatedBuilds[build.ImageName] = build
 	}
 
+	added := map[string]bool{}
 	var merged []Artifact
-	merged = append(merged, builds...)
 
-	for _, b := range previous {
-		if !updatedBuilds[b.ImageName] {
-			merged = append(merged, b)
+	for _, artifact := range previous {
+		if updated, found := updatedBuilds[artifact.ImageName]; found {
+			merged = append(merged, updated)
+		} else {
+			merged = append(merged, artifact)
+		}
+		added[artifact.ImageName] = true
+	}
+
+	for _, artifact := range builds {
+		if !added[artifact.ImageName] {
+			merged = append(merged, artifact)
 		}
 	}
 
 	return merged
+}
+
+func TagWithDigest(tag, digest string) string {
+	return tag + "@" + digest
+}
+
+func TagWithImageID(ctx context.Context, tag string, imageID string, localDocker docker.LocalDaemon) (string, error) {
+	return localDocker.TagWithImageID(ctx, tag, imageID)
 }

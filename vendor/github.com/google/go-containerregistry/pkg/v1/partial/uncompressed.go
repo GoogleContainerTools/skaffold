@@ -54,7 +54,7 @@ func (ule *uncompressedLayerExtender) Compressed() (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return v1util.GzipReadCloser(u)
+	return v1util.GzipReadCloser(u), nil
 }
 
 // Digest implements v1.Layer
@@ -89,7 +89,7 @@ func UncompressedToLayer(ul UncompressedLayer) (v1.Layer, error) {
 // UncompressedImageCore represents the bare minimum interface a natively
 // uncompressed image must implement for us to produce a v1.Image
 type UncompressedImageCore interface {
-	imageCore
+	ImageCore
 
 	// LayerByDiffID is a variation on the v1.Image method, which returns
 	// an UncompressedLayer instead.
@@ -155,20 +155,12 @@ func (i *uncompressedImageExtender) Manifest() (*v1.Manifest, error) {
 
 	m.Layers = make([]v1.Descriptor, len(ls))
 	for i, l := range ls {
-		sz, err := l.Size()
-		if err != nil {
-			return nil, err
-		}
-		h, err := l.Digest()
+		desc, err := Descriptor(l)
 		if err != nil {
 			return nil, err
 		}
 
-		m.Layers[i] = v1.Descriptor{
-			MediaType: types.DockerLayer,
-			Size:      sz,
-			Digest:    h,
-		}
+		m.Layers[i] = *desc
 	}
 
 	i.manifest = m
@@ -178,6 +170,11 @@ func (i *uncompressedImageExtender) Manifest() (*v1.Manifest, error) {
 // RawManifest implements v1.Image
 func (i *uncompressedImageExtender) RawManifest() ([]byte, error) {
 	return RawManifest(i)
+}
+
+// Size implements v1.Image
+func (i *uncompressedImageExtender) Size() (int64, error) {
+	return Size(i)
 }
 
 // ConfigName implements v1.Image

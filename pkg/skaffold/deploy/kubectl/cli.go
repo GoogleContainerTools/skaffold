@@ -18,32 +18,29 @@ package kubectl
 
 import (
 	"context"
+	"fmt"
 	"io"
-	"os/exec"
-	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	pkgkubectl "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 // CLI holds parameters to run kubectl.
 type CLI struct {
-	Namespace   string
-	KubeContext string
-	Flags       latest.KubectlFlags
+	*pkgkubectl.CLI
+	Flags latest.KubectlFlags
 
-	version       ClientVersion
-	versionOnce   sync.Once
 	ForceDeploy   bool
 	previousApply ManifestList
 }
 
 // Delete runs `kubectl delete` on a list of manifests.
 func (c *CLI) Delete(ctx context.Context, out io.Writer, manifests ManifestList) error {
-	if err := c.Run(ctx, manifests.Reader(), out, "delete", c.Flags.Delete, "--ignore-not-found=true", "-f", "-"); err != nil {
-		return errors.Wrap(err, "kubectl delete")
+	args := c.args(c.Flags.Delete, "--ignore-not-found=true", "-f", "-")
+	if err := c.Run(ctx, manifests.Reader(), out, "delete", args...); err != nil {
+		return fmt.Errorf("kubectl delete: %w", err)
 	}
 
 	return nil
@@ -62,11 +59,15 @@ func (c *CLI) Apply(ctx context.Context, out io.Writer, manifests ManifestList) 
 
 	args := []string{"-f", "-"}
 	if c.ForceDeploy {
-		args = append(args, "--force")
+		args = append(args, "--force", "--grace-period=0")
 	}
 
-	if err := c.Run(ctx, updated.Reader(), out, "apply", c.Flags.Apply, args...); err != nil {
-		return errors.Wrap(err, "kubectl apply")
+	if c.Flags.DisableValidation {
+		args = append(args, "--validate=false")
+	}
+
+	if err := c.Run(ctx, updated.Reader(), out, "apply", c.args(c.Flags.Apply, args...)...); err != nil {
+		return fmt.Errorf("kubectl apply: %w", err)
 	}
 
 	return nil
@@ -79,42 +80,37 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (ManifestLi
 		list = append(list, "-f", manifest)
 	}
 
-	args := c.args("create", []string{"--dry-run", "-oyaml"}, list...)
-
-	cmd := exec.CommandContext(ctx, "kubectl", args...)
-	buf, err := util.RunCmdOut(cmd)
+	var dryRun = "--dry-run"
+	compTo1_18, err := c.CLI.CompareVersionTo(ctx, 1, 18)
 	if err != nil {
-		return nil, errors.Wrap(err, "kubectl create")
+		return nil, err
+	}
+	if compTo1_18 >= 0 {
+		dryRun += "=client"
+	}
+
+	args := c.args([]string{dryRun, "-oyaml"}, list...)
+	if c.Flags.DisableValidation {
+		args = append(args, "--validate=false")
+	}
+
+	buf, err := c.RunOut(ctx, "create", args...)
+	if err != nil {
+		return nil, fmt.Errorf("kubectl create: %w", err)
 	}
 
 	var manifestList ManifestList
 	manifestList.Append(buf)
-	logrus.Debugln("manifests", manifestList.String())
 
 	return manifestList, nil
 }
 
-// Run shells out kubectl CLI.
-func (c *CLI) Run(ctx context.Context, in io.Reader, out io.Writer, command string, commandFlags []string, arg ...string) error {
-	args := c.args(command, commandFlags, arg...)
+func (c *CLI) args(commandFlags []string, additionalArgs ...string) []string {
+	args := make([]string, 0, len(c.Flags.Global)+len(commandFlags)+len(additionalArgs))
 
-	cmd := exec.CommandContext(ctx, "kubectl", args...)
-	cmd.Stdin = in
-	cmd.Stdout = out
-	cmd.Stderr = out
-
-	return util.RunCmd(cmd)
-}
-
-func (c *CLI) args(command string, commandFlags []string, arg ...string) []string {
-	args := []string{"--context", c.KubeContext}
-	if c.Namespace != "" {
-		args = append(args, "--namespace", c.Namespace)
-	}
 	args = append(args, c.Flags.Global...)
-	args = append(args, command)
 	args = append(args, commandFlags...)
-	args = append(args, arg...)
+	args = append(args, additionalArgs...)
 
 	return args
 }

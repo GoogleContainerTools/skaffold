@@ -44,22 +44,22 @@ type compressedLayerExtender struct {
 }
 
 // Uncompressed implements v1.Layer
-func (ule *compressedLayerExtender) Uncompressed() (io.ReadCloser, error) {
-	u, err := ule.Compressed()
+func (cle *compressedLayerExtender) Uncompressed() (io.ReadCloser, error) {
+	r, err := cle.Compressed()
 	if err != nil {
 		return nil, err
 	}
-	return v1util.GunzipReadCloser(u)
+	return v1util.GunzipReadCloser(r)
 }
 
 // DiffID implements v1.Layer
-func (ule *compressedLayerExtender) DiffID() (v1.Hash, error) {
+func (cle *compressedLayerExtender) DiffID() (v1.Hash, error) {
 	// If our nested CompressedLayer implements DiffID,
 	// then delegate to it instead.
-	if wdi, ok := ule.CompressedLayer.(WithDiffID); ok {
+	if wdi, ok := cle.CompressedLayer.(WithDiffID); ok {
 		return wdi.DiffID()
 	}
-	r, err := ule.Uncompressed()
+	r, err := cle.Uncompressed()
 	if err != nil {
 		return v1.Hash{}, err
 	}
@@ -76,7 +76,7 @@ func CompressedToLayer(ul CompressedLayer) (v1.Layer, error) {
 // CompressedImageCore represents the base minimum interface a natively
 // compressed image must implement for us to produce a v1.Image.
 type CompressedImageCore interface {
-	imageCore
+	ImageCore
 
 	// RawManifest returns the serialized bytes of the manifest.
 	RawManifest() ([]byte, error)
@@ -148,6 +148,11 @@ func (i *compressedImageExtender) ConfigFile() (*v1.ConfigFile, error) {
 // Manifest implements v1.Image
 func (i *compressedImageExtender) Manifest() (*v1.Manifest, error) {
 	return Manifest(i)
+}
+
+// Size implements v1.Image
+func (i *compressedImageExtender) Size() (int64, error) {
+	return Size(i)
 }
 
 // CompressedToImage fills in the missing methods from a CompressedImageCore so that it implements v1.Image

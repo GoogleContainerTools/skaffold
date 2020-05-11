@@ -1,18 +1,24 @@
-apiVersion: skaffold/v1beta10
+apiVersion: skaffold/v2beta3
 kind: Config
 build:
   artifacts:
-  - image: gcr.io/k8s-skaffold/skaffold-debug-jib
+  - image: skaffold-debug-jib
     context: jib
-    jibMaven:
+    jib:
       args:
-      - -q
-  - image: gcr.io/k8s-skaffold/skaffold-debug-npm
+      - --no-transfer-progress
+  - image: skaffold-debug-npm
     context: npm
-  - image: gcr.io/k8s-skaffold/skaffold-debug-nodejs
+  - image: skaffold-debug-nodejs
     context: nodejs
-  - image: gcr.io/k8s-skaffold/skaffold-debug-python3
+  - image: skaffold-debug-python3
     context: python3
+  - image: skaffold-debug-go
+    context: go
+    docker:
+      buildArgs:
+        GOGCFLAGS: "-gcflags='all=-N -l'"
+
 deploy:
   kubectl:
     manifests:
@@ -20,7 +26,9 @@ deploy:
     - nodejs/k8s/pod.yaml
     - npm/k8s/pod.yaml
     - python3/k8s/pod.yaml
+    - go/k8s/pod.yaml
 profiles:
   - name: kustomize
     deploy:
       kustomize: {}
+      kubectl: {}

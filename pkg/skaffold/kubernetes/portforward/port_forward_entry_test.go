@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestPortForwardEntryKey(t *testing.T) {
@@ -31,39 +32,44 @@ func TestPortForwardEntryKey(t *testing.T) {
 	}{
 		{
 			description: "entry for pod",
-			pfe: &portForwardEntry{
-				resource: latest.PortForwardResource{
-					Type:      "pod",
-					Name:      "podName",
-					Namespace: "default",
-					Port:      8080,
-				},
-			},
+			pfe: newPortForwardEntry(0, latest.PortForwardResource{
+				Type:      "pod",
+				Name:      "podName",
+				Namespace: "default",
+				Port:      8080,
+			}, "", "", "", "", 0, false),
 			expected: "pod-podName-default-8080",
 		}, {
 			description: "entry for deploy",
-			pfe: &portForwardEntry{
-				resource: latest.PortForwardResource{
-					Type:      "deployment",
-					Name:      "depName",
-					Namespace: "namespace",
-					Port:      9000,
-				},
-			},
+			pfe: newPortForwardEntry(0, latest.PortForwardResource{
+				Type:      "deployment",
+				Name:      "depName",
+				Namespace: "namespace",
+				Port:      9000,
+			}, "", "", "", "", 0, false),
+			expected: "deployment-depName-namespace-9000",
+		}, {
+			description: "entry for deployment with capital normalization",
+			pfe: newPortForwardEntry(0, latest.PortForwardResource{
+				Type:      "Deployment",
+				Name:      "depName",
+				Namespace: "namespace",
+				Port:      9000,
+			}, "", "", "", "", 0, false),
 			expected: "deployment-depName-namespace-9000",
 		},
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			acutalKey := test.pfe.key()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actualKey := test.pfe.key()
 
-			if acutalKey != test.expected {
-				t.Fatalf("port forward entry key is incorrect: \n actual: %s \n expected: %s", acutalKey, test.expected)
+			if actualKey != test.expected {
+				t.Fatalf("port forward entry key is incorrect: \n actual: %s \n expected: %s", actualKey, test.expected)
 			}
 
 			if test.pfe.String() != test.expected {
-				t.Fatalf("port forward entry string is incorrect: \n actual: %s \n expected: %s", acutalKey, test.expected)
+				t.Fatalf("port forward entry string is incorrect: \n actual: %s \n expected: %s", actualKey, test.expected)
 			}
 		})
 	}
@@ -77,30 +83,25 @@ func TestAutomaticPodForwardingKey(t *testing.T) {
 	}{
 		{
 			description: "entry for automatically port forwarded pod",
-			pfe: &portForwardEntry{
-				containerName: "containerName",
-				portName:      "portName",
-				resource: latest.PortForwardResource{
-					Type:      "pod",
-					Name:      "podName",
-					Namespace: "default",
-					Port:      8080,
-				},
-				automaticPodForwarding: true,
-			},
-			expected: "containerName-default-portName-8080",
+			pfe: newPortForwardEntry(0, latest.PortForwardResource{
+				Type:      "pod",
+				Name:      "podName",
+				Namespace: "default",
+				Port:      8080,
+			}, "", "containerName", "portName", "owner", 0, true),
+			expected: "owner-containerName-default-portName-8080",
 		},
 	}
 
 	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			acutalKey := test.pfe.key()
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			actualKey := test.pfe.key()
 
-			if acutalKey != test.expected {
-				t.Fatalf("port forward entry key is incorrect: \n actual: %s \n expected: %s", acutalKey, test.expected)
+			if actualKey != test.expected {
+				t.Fatalf("port forward entry key is incorrect: \n actual: %s \n expected: %s", actualKey, test.expected)
 			}
 
-			if strings.Contains(acutalKey, "pod") {
+			if strings.Contains(actualKey, "pod") {
 				t.Fatal("key should not contain podname, otherwise containers will be mapped to a new port every time a pod is regenerated. See Issues #1815 and #1594.")
 			}
 		})

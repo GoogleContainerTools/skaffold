@@ -1,0 +1,1162 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "version not set",
+    "description": "skaffold.proto"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/event_log": {
+      "get": {
+        "summary": "DEPRECATED. Events should be used instead.\nTODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)",
+        "operationId": "EventLog",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/protoLogEntry"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "timestamp",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "date-time"
+          },
+          {
+            "name": "event.metaEvent.entry",
+            "description": "entry, for example: `\"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}\"`.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.metaEvent.metadata.build.numberOfArtifacts",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.metaEvent.metadata.build.type",
+            "description": " - UNKNOWN_BUILD_TYPE: Could not determine Build Type\n - CLUSTER: Cluster Build\n - GCB: GCB Build\n - LOCAL: Local Build",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "UNKNOWN_BUILD_TYPE",
+              "CLUSTER",
+              "GCB",
+              "LOCAL"
+            ],
+            "default": "UNKNOWN_BUILD_TYPE"
+          },
+          {
+            "name": "event.metaEvent.metadata.deploy.cluster",
+            "description": " - UNKNOWN_CLUSTER_TYPE: Could not determine Cluster Type\n - MINIKUBE: Minikube Cluster\n - GKE: GKE cluster\n - OTHER: All Cluster except Minikube and GKE",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "UNKNOWN_CLUSTER_TYPE",
+              "MINIKUBE",
+              "GKE",
+              "OTHER"
+            ],
+            "default": "UNKNOWN_CLUSTER_TYPE"
+          },
+          {
+            "name": "event.buildEvent.artifact",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.buildEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.buildEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.buildEvent.errCode",
+            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "UNKNOWN_ERROR",
+              "STATUSCHECK_SUCCESS",
+              "BUILD_SUCCESS",
+              "BUILD_PUSH_ACCESS_DENIED",
+              "BUILD_PROJECT_NOT_FOUND",
+              "STATUSCHECK_IMAGE_PULL_ERR",
+              "STATUSCHECK_CONTAINER_CREATING",
+              "STATUSCHECK_RUN_CONTAINER_ERR",
+              "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_NODE_MEMORY_PRESSURE",
+              "STATUSCHECK_NODE_DISK_PRESSURE",
+              "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUSCHECK_NODE_PID_PRESSURE",
+              "STATUSCHECK_NODE_UNSCHEDULABLE",
+              "STATUSCHECK_NODE_UNREACHABLE",
+              "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "DEPLOY_UNKNOWN",
+              "SYNC_UNKNOWN",
+              "BUILD_UNKNOWN",
+              "DEVINIT_UNKNOWN",
+              "CLEANUP_UNKNOWN",
+              "SYNC_INIT_ERROR",
+              "DEVINIT_REGISTER_BUILD_DEPS",
+              "DEVINIT_REGISTER_TEST_DEPS",
+              "DEVINIT_REGISTER_DEPLOY_DEPS",
+              "DEVINIT_REGISTER_CONFIG_DEP"
+            ],
+            "default": "UNKNOWN_ERROR"
+          },
+          {
+            "name": "event.deployEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.deployEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.deployEvent.errCode",
+            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "UNKNOWN_ERROR",
+              "STATUSCHECK_SUCCESS",
+              "BUILD_SUCCESS",
+              "BUILD_PUSH_ACCESS_DENIED",
+              "BUILD_PROJECT_NOT_FOUND",
+              "STATUSCHECK_IMAGE_PULL_ERR",
+              "STATUSCHECK_CONTAINER_CREATING",
+              "STATUSCHECK_RUN_CONTAINER_ERR",
+              "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_NODE_MEMORY_PRESSURE",
+              "STATUSCHECK_NODE_DISK_PRESSURE",
+              "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUSCHECK_NODE_PID_PRESSURE",
+              "STATUSCHECK_NODE_UNSCHEDULABLE",
+              "STATUSCHECK_NODE_UNREACHABLE",
+              "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "DEPLOY_UNKNOWN",
+              "SYNC_UNKNOWN",
+              "BUILD_UNKNOWN",
+              "DEVINIT_UNKNOWN",
+              "CLEANUP_UNKNOWN",
+              "SYNC_INIT_ERROR",
+              "DEVINIT_REGISTER_BUILD_DEPS",
+              "DEVINIT_REGISTER_TEST_DEPS",
+              "DEVINIT_REGISTER_DEPLOY_DEPS",
+              "DEVINIT_REGISTER_CONFIG_DEP"
+            ],
+            "default": "UNKNOWN_ERROR"
+          },
+          {
+            "name": "event.portEvent.localPort",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.portEvent.remotePort",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.portEvent.podName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.containerName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.namespace",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.portName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.resourceType",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.resourceName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.portEvent.address",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.statusCheckEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.statusCheckEvent.message",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.statusCheckEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.statusCheckEvent.errCode",
+            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "UNKNOWN_ERROR",
+              "STATUSCHECK_SUCCESS",
+              "BUILD_SUCCESS",
+              "BUILD_PUSH_ACCESS_DENIED",
+              "BUILD_PROJECT_NOT_FOUND",
+              "STATUSCHECK_IMAGE_PULL_ERR",
+              "STATUSCHECK_CONTAINER_CREATING",
+              "STATUSCHECK_RUN_CONTAINER_ERR",
+              "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_NODE_MEMORY_PRESSURE",
+              "STATUSCHECK_NODE_DISK_PRESSURE",
+              "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUSCHECK_NODE_PID_PRESSURE",
+              "STATUSCHECK_NODE_UNSCHEDULABLE",
+              "STATUSCHECK_NODE_UNREACHABLE",
+              "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "DEPLOY_UNKNOWN",
+              "SYNC_UNKNOWN",
+              "BUILD_UNKNOWN",
+              "DEVINIT_UNKNOWN",
+              "CLEANUP_UNKNOWN",
+              "SYNC_INIT_ERROR",
+              "DEVINIT_REGISTER_BUILD_DEPS",
+              "DEVINIT_REGISTER_TEST_DEPS",
+              "DEVINIT_REGISTER_DEPLOY_DEPS",
+              "DEVINIT_REGISTER_CONFIG_DEP"
+            ],
+            "default": "UNKNOWN_ERROR"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.resource",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.message",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.resourceStatusCheckEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.fileCount",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.fileSyncEvent.image",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.err",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.fileSyncEvent.errCode",
+            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "UNKNOWN_ERROR",
+              "STATUSCHECK_SUCCESS",
+              "BUILD_SUCCESS",
+              "BUILD_PUSH_ACCESS_DENIED",
+              "BUILD_PROJECT_NOT_FOUND",
+              "STATUSCHECK_IMAGE_PULL_ERR",
+              "STATUSCHECK_CONTAINER_CREATING",
+              "STATUSCHECK_RUN_CONTAINER_ERR",
+              "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_NODE_MEMORY_PRESSURE",
+              "STATUSCHECK_NODE_DISK_PRESSURE",
+              "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUSCHECK_NODE_PID_PRESSURE",
+              "STATUSCHECK_NODE_UNSCHEDULABLE",
+              "STATUSCHECK_NODE_UNREACHABLE",
+              "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "DEPLOY_UNKNOWN",
+              "SYNC_UNKNOWN",
+              "BUILD_UNKNOWN",
+              "DEVINIT_UNKNOWN",
+              "CLEANUP_UNKNOWN",
+              "SYNC_INIT_ERROR",
+              "DEVINIT_REGISTER_BUILD_DEPS",
+              "DEVINIT_REGISTER_TEST_DEPS",
+              "DEVINIT_REGISTER_DEPLOY_DEPS",
+              "DEVINIT_REGISTER_CONFIG_DEP"
+            ],
+            "default": "UNKNOWN_ERROR"
+          },
+          {
+            "name": "event.debuggingContainerEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.debuggingContainerEvent.podName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.debuggingContainerEvent.containerName",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.debuggingContainerEvent.namespace",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.debuggingContainerEvent.artifact",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.debuggingContainerEvent.runtime",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.debuggingContainerEvent.workingDir",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.devLoopEvent.iteration",
+            "in": "query",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          },
+          {
+            "name": "event.devLoopEvent.status",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "event.devLoopEvent.err.errCode",
+            "description": " - UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "enum": [
+              "UNKNOWN_ERROR",
+              "STATUSCHECK_SUCCESS",
+              "BUILD_SUCCESS",
+              "BUILD_PUSH_ACCESS_DENIED",
+              "BUILD_PROJECT_NOT_FOUND",
+              "STATUSCHECK_IMAGE_PULL_ERR",
+              "STATUSCHECK_CONTAINER_CREATING",
+              "STATUSCHECK_RUN_CONTAINER_ERR",
+              "STATUSCHECK_CONTAINER_TERMINATED",
+              "STATUSCHECK_CONTAINER_RESTARTING",
+              "STATUSCHECK_NODE_MEMORY_PRESSURE",
+              "STATUSCHECK_NODE_DISK_PRESSURE",
+              "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
+              "STATUSCHECK_NODE_PID_PRESSURE",
+              "STATUSCHECK_NODE_UNSCHEDULABLE",
+              "STATUSCHECK_NODE_UNREACHABLE",
+              "STATUSCHECK_NODE_NOT_READY",
+              "STATUSCHECK_UNKNOWN",
+              "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
+              "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+              "DEPLOY_UNKNOWN",
+              "SYNC_UNKNOWN",
+              "BUILD_UNKNOWN",
+              "DEVINIT_UNKNOWN",
+              "CLEANUP_UNKNOWN",
+              "SYNC_INIT_ERROR",
+              "DEVINIT_REGISTER_BUILD_DEPS",
+              "DEVINIT_REGISTER_TEST_DEPS",
+              "DEVINIT_REGISTER_DEPLOY_DEPS",
+              "DEVINIT_REGISTER_CONFIG_DEP"
+            ],
+            "default": "UNKNOWN_ERROR"
+          },
+          {
+            "name": "event.devLoopEvent.err.message",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "entry",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v1/events": {
+      "get": {
+        "summary": "Returns all the events of the current Skaffold execution from the start",
+        "operationId": "Events",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/x-stream-definitions/protoLogEntry"
+            }
+          }
+        },
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v1/events/handle": {
+      "post": {
+        "summary": "EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example.",
+        "operationId": "Handle",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoEvent"
+            }
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v1/execute": {
+      "post": {
+        "summary": "Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled.",
+        "operationId": "Execute",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoIntent"
+            }
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
+    "/v1/state": {
+      "get": {
+        "summary": "Returns the state of the current Skaffold execution",
+        "operationId": "GetState",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/protoState"
+            }
+          }
+        },
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "BuildMetadataImageBuilder": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/protoBuilderType"
+        },
+        "count": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "DeployMetadataDeployer": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/protoDeployerType"
+        },
+        "count": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
+    "protoBuildEvent": {
+      "type": "object",
+      "properties": {
+        "artifact": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/protoStatusCode"
+        }
+      },
+      "description": "`BuildEvent` describes the build status per artifact, and will be emitted by Skaffold anytime a build starts or finishes, successfully or not.\nIf the build fails, an error will be attached to the event."
+    },
+    "protoBuildMetadata": {
+      "type": "object",
+      "properties": {
+        "numberOfArtifacts": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "builders": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BuildMetadataImageBuilder"
+          }
+        },
+        "type": {
+          "$ref": "#/definitions/protoBuildType"
+        },
+        "additional": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Additional key value pairs to describe the deploy pipeline"
+        }
+      }
+    },
+    "protoBuildState": {
+      "type": "object",
+      "properties": {
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A map of `artifact name -> build-state`.\nArtifact name is defined in the `skaffold.yaml`.\nThe `build-state` can be: <br>\n- `\"Not started\"`: not yet started <br>\n- `\"In progress\"`: build started <br>\n- `\"Complete\"`: build succeeded <br>\n- `\"Failed\"`: build failed"
+        }
+      },
+      "description": "`BuildState` maps Skaffold artifacts to their current build states"
+    },
+    "protoBuildType": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_BUILD_TYPE",
+        "CLUSTER",
+        "GCB",
+        "LOCAL"
+      ],
+      "default": "UNKNOWN_BUILD_TYPE",
+      "description": "Enum indicating build type i.e. local, cluster vs GCB\n- UNKNOWN_BUILD_TYPE: Could not determine Build Type\n - CLUSTER: Cluster Build\n - GCB: GCB Build\n - LOCAL: Local Build"
+    },
+    "protoBuilderType": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_BUILDER_TYPE",
+        "JIB",
+        "BAZEL",
+        "BUILDPACKS",
+        "CUSTOM",
+        "KANIKO",
+        "DOCKER"
+      ],
+      "default": "UNKNOWN_BUILDER_TYPE",
+      "description": "Enum indicating builders used\n- UNKNOWN_BUILDER_TYPE: Could not determine builder type\n - JIB: JIB Builder\n - BAZEL: Bazel Builder\n - BUILDPACKS: Buildpacks Builder\n - CUSTOM: Custom Builder\n - KANIKO: Kaniko Builder\n - DOCKER: Docker Builder"
+    },
+    "protoClusterType": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_CLUSTER_TYPE",
+        "MINIKUBE",
+        "GKE",
+        "OTHER"
+      ],
+      "default": "UNKNOWN_CLUSTER_TYPE",
+      "description": "Enum indicating cluster type the application is deployed to\n- UNKNOWN_CLUSTER_TYPE: Could not determine Cluster Type\n - MINIKUBE: Minikube Cluster\n - GKE: GKE cluster\n - OTHER: All Cluster except Minikube and GKE"
+    },
+    "protoDebuggingContainerEvent": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "containerName": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "artifact": {
+          "type": "string"
+        },
+        "runtime": {
+          "type": "string"
+        },
+        "workingDir": {
+          "type": "string"
+        },
+        "debugPorts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "description": "DebuggingContainerEvent is raised when a debugging container is started or terminated"
+    },
+    "protoDeployEvent": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/protoStatusCode"
+        }
+      },
+      "description": "`DeployEvent` represents the status of a deployment, and is emitted by Skaffold\nanytime a deployment starts or completes, successfully or not."
+    },
+    "protoDeployMetadata": {
+      "type": "object",
+      "properties": {
+        "deployers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DeployMetadataDeployer"
+          }
+        },
+        "cluster": {
+          "$ref": "#/definitions/protoClusterType"
+        }
+      }
+    },
+    "protoDeployState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      },
+      "description": "`DeployState` describes the status of the current deploy"
+    },
+    "protoDeployerType": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_DEPLOYER_TYPE",
+        "HELM",
+        "KUSTOMIZE",
+        "KUBECTL"
+      ],
+      "default": "UNKNOWN_DEPLOYER_TYPE",
+      "description": "Enum indicating deploy tools used\n- UNKNOWN_DEPLOYER_TYPE: Could not determine Deployer Type\n - HELM: Helm Deployer\n - KUSTOMIZE: Kustomize Deployer\n - KUBECTL: Kubectl Deployer"
+    },
+    "protoDevLoopEvent": {
+      "type": "object",
+      "properties": {
+        "iteration": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "$ref": "#/definitions/protoErrDef"
+        }
+      },
+      "description": "`DevLoopEvent` marks the start and end of a dev loop."
+    },
+    "protoErrDef": {
+      "type": "object",
+      "properties": {
+        "errCode": {
+          "$ref": "#/definitions/protoStatusCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "description": "`ErrDef` defines an error occurred along with an optional suggestions"
+    },
+    "protoEvent": {
+      "type": "object",
+      "properties": {
+        "metaEvent": {
+          "$ref": "#/definitions/protoMetaEvent"
+        },
+        "buildEvent": {
+          "$ref": "#/definitions/protoBuildEvent"
+        },
+        "deployEvent": {
+          "$ref": "#/definitions/protoDeployEvent"
+        },
+        "portEvent": {
+          "$ref": "#/definitions/protoPortEvent"
+        },
+        "statusCheckEvent": {
+          "$ref": "#/definitions/protoStatusCheckEvent"
+        },
+        "resourceStatusCheckEvent": {
+          "$ref": "#/definitions/protoResourceStatusCheckEvent"
+        },
+        "fileSyncEvent": {
+          "$ref": "#/definitions/protoFileSyncEvent"
+        },
+        "debuggingContainerEvent": {
+          "$ref": "#/definitions/protoDebuggingContainerEvent"
+        },
+        "devLoopEvent": {
+          "$ref": "#/definitions/protoDevLoopEvent"
+        }
+      },
+      "description": "`Event` describes an event in the Skaffold process.\nIt is one of MetaEvent, BuildEvent, DeployEvent, PortEvent, StatusCheckEvent, ResourceStatusCheckEvent, FileSyncEvent, or DebuggingContainerEvent."
+    },
+    "protoFileSyncEvent": {
+      "type": "object",
+      "properties": {
+        "fileCount": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "image": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/protoStatusCode"
+        }
+      },
+      "description": "FileSyncEvent describes the sync status."
+    },
+    "protoFileSyncState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        }
+      },
+      "description": "`FileSyncState` contains the status of the current file sync"
+    },
+    "protoIntent": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "sync": {
+          "type": "boolean",
+          "format": "boolean"
+        },
+        "deploy": {
+          "type": "boolean",
+          "format": "boolean"
+        }
+      },
+      "description": "Intent represents user intents for a given phase to be unblocked, once."
+    },
+    "protoLogEntry": {
+      "type": "object",
+      "properties": {
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "event": {
+          "$ref": "#/definitions/protoEvent"
+        },
+        "entry": {
+          "type": "string"
+        }
+      },
+      "description": "LogEntry describes an event and a string description of the event."
+    },
+    "protoMetaEvent": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "type": "string",
+          "description": "entry, for example: `\"Starting Skaffold: {Version:v0.39.0-16-g5bb7c9e0 ConfigVersion:skaffold/v1 GitVersion: GitCommit:5bb7c9e078e4d522a5ffc42a2f1274fd17d75902 GitTreeState:dirty BuildDate01:29Z GoVersion:go1.13rc1 Compiler:gc Platform:linux/amd64}\"`"
+        },
+        "metadata": {
+          "$ref": "#/definitions/protoMetadata",
+          "description": "Metadata describing skaffold pipeline"
+        }
+      },
+      "description": "`MetaEvent` provides general information regarding Skaffold"
+    },
+    "protoMetadata": {
+      "type": "object",
+      "properties": {
+        "build": {
+          "$ref": "#/definitions/protoBuildMetadata"
+        },
+        "deploy": {
+          "$ref": "#/definitions/protoDeployMetadata"
+        },
+        "additional": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Additional key value pairs to describe the build pipeline"
+        }
+      }
+    },
+    "protoPortEvent": {
+      "type": "object",
+      "properties": {
+        "localPort": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "remotePort": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "podName": {
+          "type": "string"
+        },
+        "containerName": {
+          "type": "string"
+        },
+        "namespace": {
+          "type": "string"
+        },
+        "portName": {
+          "type": "string"
+        },
+        "resourceType": {
+          "type": "string"
+        },
+        "resourceName": {
+          "type": "string"
+        },
+        "address": {
+          "type": "string"
+        }
+      },
+      "description": "PortEvent Event describes each port forwarding event."
+    },
+    "protoResourceStatusCheckEvent": {
+      "type": "object",
+      "properties": {
+        "resource": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        }
+      },
+      "description": "A Resource StatusCheck Event, indicates progress for each kubernetes deployment.\nFor every resource, there will be exactly one event with `status` *Succeeded* or *Failed* event.\nThere can be multiple events with `status` *Pending*.\nSkaffold polls for resource status every 0.5 second. If the resource status changes, an event with `status` “Pending”, “Complete” and “Failed”\nwill be sent with the new status."
+    },
+    "protoState": {
+      "type": "object",
+      "properties": {
+        "buildState": {
+          "$ref": "#/definitions/protoBuildState"
+        },
+        "deployState": {
+          "$ref": "#/definitions/protoDeployState"
+        },
+        "forwardedPorts": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/protoPortEvent"
+          }
+        },
+        "statusCheckState": {
+          "$ref": "#/definitions/protoStatusCheckState"
+        },
+        "fileSyncState": {
+          "$ref": "#/definitions/protoFileSyncState"
+        },
+        "debuggingContainers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protoDebuggingContainerEvent"
+          }
+        },
+        "metadata": {
+          "$ref": "#/definitions/protoMetadata"
+        }
+      },
+      "description": "`State` represents the current state of the Skaffold components"
+    },
+    "protoStatusCheckEvent": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "err": {
+          "type": "string"
+        },
+        "errCode": {
+          "$ref": "#/definitions/protoStatusCode"
+        }
+      },
+      "description": "`StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed."
+    },
+    "protoStatusCheckState": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "resources": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "A map of `resource name -> status-check-state`. Where `resource-name` is the kubernetes resource name.\nThe `status-check-state` can be <br>\n- `\"Not started\"`: indicates that `status-check` has just started. <br>\n- `\"In progress\"`: InProgress is sent after every resource check is complete. <br>\n- `\"Succeeded\"`:\n- `\"Failed\"`:"
+        }
+      },
+      "description": "`StatusCheckState` describes the state of status check of current deployed resources."
+    },
+    "protoStatusCode": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN_ERROR",
+        "STATUSCHECK_SUCCESS",
+        "BUILD_SUCCESS",
+        "BUILD_PUSH_ACCESS_DENIED",
+        "BUILD_PROJECT_NOT_FOUND",
+        "STATUSCHECK_IMAGE_PULL_ERR",
+        "STATUSCHECK_CONTAINER_CREATING",
+        "STATUSCHECK_RUN_CONTAINER_ERR",
+        "STATUSCHECK_CONTAINER_TERMINATED",
+        "STATUSCHECK_CONTAINER_RESTARTING",
+        "STATUSCHECK_NODE_MEMORY_PRESSURE",
+        "STATUSCHECK_NODE_DISK_PRESSURE",
+        "STATUSCHECK_NODE_NETWORK_UNAVAILABLE",
+        "STATUSCHECK_NODE_PID_PRESSURE",
+        "STATUSCHECK_NODE_UNSCHEDULABLE",
+        "STATUSCHECK_NODE_UNREACHABLE",
+        "STATUSCHECK_NODE_NOT_READY",
+        "STATUSCHECK_UNKNOWN",
+        "STATUSCHECK_UNKNOWN_UNSCHEDULABLE",
+        "STATUSCHECK_CONTAINER_WAITING_UNKNOWN",
+        "DEPLOY_UNKNOWN",
+        "SYNC_UNKNOWN",
+        "BUILD_UNKNOWN",
+        "DEVINIT_UNKNOWN",
+        "CLEANUP_UNKNOWN",
+        "SYNC_INIT_ERROR",
+        "DEVINIT_REGISTER_BUILD_DEPS",
+        "DEVINIT_REGISTER_TEST_DEPS",
+        "DEVINIT_REGISTER_DEPLOY_DEPS",
+        "DEVINIT_REGISTER_CONFIG_DEP"
+      ],
+      "default": "UNKNOWN_ERROR",
+      "description": "Enum for Status codes\nThese error codes are prepended by Phase Name e.g.\nBUILD, DEPLOY, STATUSCHECK, DEVINIT\n- UNKNOWN_ERROR: Could not determine error and phase\n - STATUSCHECK_SUCCESS: Status Check Success\n - BUILD_SUCCESS: Build Success\n - BUILD_PUSH_ACCESS_DENIED: Build error due to push access denied\n - BUILD_PROJECT_NOT_FOUND: Build error due to GCP project not found.\n - STATUSCHECK_IMAGE_PULL_ERR: Container image pull error\n - STATUSCHECK_CONTAINER_CREATING: Container creating error\n - STATUSCHECK_RUN_CONTAINER_ERR: Container run error\n - STATUSCHECK_CONTAINER_TERMINATED: Container is already terminated\n - STATUSCHECK_CONTAINER_RESTARTING: Container restarting error\n - STATUSCHECK_NODE_MEMORY_PRESSURE: Node memory pressure error\n - STATUSCHECK_NODE_DISK_PRESSURE: Node disk pressure error\n - STATUSCHECK_NODE_NETWORK_UNAVAILABLE: Node network unavailable error\n - STATUSCHECK_NODE_PID_PRESSURE: Node PID pressure error\n - STATUSCHECK_NODE_UNSCHEDULABLE: Node unschedulable error\n - STATUSCHECK_NODE_UNREACHABLE: Node unreachable error\n - STATUSCHECK_NODE_NOT_READY: Node not ready error\n - STATUSCHECK_UNKNOWN: Status Check error unknown\n - STATUSCHECK_UNKNOWN_UNSCHEDULABLE: Container is unschedulable due to unknown reasons\n - STATUSCHECK_CONTAINER_WAITING_UNKNOWN: Container is waiting due to unknown reason\n - DEPLOY_UNKNOWN: Deploy failed due to unknown reason\n - SYNC_UNKNOWN: SYNC failed due to known reason\n - BUILD_UNKNOWN: Build failed due to unknown reason\n - DEVINIT_UNKNOWN: Dev Init failed due to unknown reason\n - CLEANUP_UNKNOWN: Cleanup failed due to unknown reason\n - SYNC_INIT_ERROR: File Sync Initialize failure\n - DEVINIT_REGISTER_BUILD_DEPS: Failed to configure watcher for build dependencies in dev loop\n - DEVINIT_REGISTER_TEST_DEPS: Failed to configure watcher for test dependencies in dev loop\n - DEVINIT_REGISTER_DEPLOY_DEPS: Failed to configure watcher for deploy dependencies in dev loop\n - DEVINIT_REGISTER_CONFIG_DEP: Failed to configure watcher for Skaffold configuration file."
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "runtimeStreamError": {
+      "type": "object",
+      "properties": {
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  },
+  "x-stream-definitions": {
+    "protoLogEntry": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/protoLogEntry"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "description": "Stream result of protoLogEntry"
+    }
+  }
+}

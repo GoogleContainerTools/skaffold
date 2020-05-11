@@ -18,21 +18,23 @@ package portforward
 
 import (
 	"context"
+	"fmt"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/watch"
 )
 
 var (
 	// For testing
 	aggregatePodWatcher = kubernetes.AggregatePodWatcher
+	topLevelOwnerKey    = kubernetes.TopLevelOwnerKey
 )
 
 // WatchingPodForwarder is responsible for selecting pods satisfying a certain condition and port-forwarding the exposed
@@ -57,7 +59,7 @@ func (p *WatchingPodForwarder) Start(ctx context.Context) error {
 	stopWatchers, err := aggregatePodWatcher(p.namespaces, aggregate)
 	if err != nil {
 		stopWatchers()
-		return errors.Wrap(err, "initializing pod watcher")
+		return fmt.Errorf("initializing pod watcher: %w", err)
 	}
 
 	go func() {
@@ -101,6 +103,7 @@ func (p *WatchingPodForwarder) Start(ctx context.Context) error {
 }
 
 func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
+	ownerReference := topLevelOwnerKey(pod, pod.Kind)
 	for _, c := range pod.Spec.Containers {
 		for _, port := range c.Ports {
 			// get current entry for this container
@@ -108,56 +111,47 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 				Type:      constants.Pod,
 				Name:      pod.Name,
 				Namespace: pod.Namespace,
-				Port:      port.ContainerPort,
+				Port:      int(port.ContainerPort),
+				Address:   constants.DefaultPortForwardAddress,
+				LocalPort: int(port.ContainerPort),
 			}
 
-			entry, err := p.podForwardingEntry(pod.ResourceVersion, c.Name, port.Name, resource)
+			entry, err := p.podForwardingEntry(pod.ResourceVersion, c.Name, port.Name, ownerReference, resource)
 			if err != nil {
-				return errors.Wrap(err, "getting pod forwarding entry")
+				return fmt.Errorf("getting pod forwarding entry: %w", err)
 			}
 			if entry.resource.Port != entry.localPort {
 				color.Yellow.Fprintf(p.output, "Forwarding container %s/%s to local port %d.\n", pod.Name, c.Name, entry.localPort)
 			}
 			if prevEntry, ok := p.forwardedResources.Load(entry.key()); ok {
 				// Check if this is a new generation of pod
-				prevEntry := prevEntry.(*portForwardEntry)
 				if entry.resourceVersion > prevEntry.resourceVersion {
 					p.Terminate(prevEntry)
 				}
 			}
-			if err := p.forwardPortForwardEntry(ctx, entry); err != nil {
-				return err
-			}
+			p.forwardPortForwardEntry(ctx, entry)
 		}
 	}
 	return nil
 }
 
-func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName, portName string, resource latest.PortForwardResource) (*portForwardEntry, error) {
+func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName, portName, ownerReference string, resource latest.PortForwardResource) (*portForwardEntry, error) {
 	rv, err := strconv.Atoi(resourceVersion)
 	if err != nil {
-		return nil, errors.Wrap(err, "converting resource version to integer")
+		return nil, fmt.Errorf("converting resource version to integer: %w", err)
 	}
-	entry := &portForwardEntry{
-		resource:               resource,
-		resourceVersion:        rv,
-		podName:                resource.Name,
-		containerName:          containerName,
-		portName:               portName,
-		automaticPodForwarding: true,
-	}
+	entry := newPortForwardEntry(rv, resource, resource.Name, containerName, portName, ownerReference, 0, true)
 
 	// If we have, return the current entry
 	oldEntry, ok := p.forwardedResources.Load(entry.key())
 
 	if ok {
-		oldEntry := oldEntry.(*portForwardEntry)
 		entry.localPort = oldEntry.localPort
 		return entry, nil
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = int32(retrieveAvailablePort(int(resource.Port), p.forwardedPorts))
+	entry.localPort = retrieveAvailablePort(resource.Address, resource.Port, p.forwardedPorts)
 
 	return entry, nil
 }

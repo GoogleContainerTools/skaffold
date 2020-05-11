@@ -17,17 +17,19 @@ limitations under the License.
 package config
 
 import (
+	"context"
 	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	yaml "gopkg.in/yaml.v2"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
 
-func List(out io.Writer) error {
+func List(ctx context.Context, out io.Writer) error {
 	var configYaml []byte
 	if showAll {
-		cfg, err := readConfig()
+		cfg, err := config.ReadConfigFile(configFile)
 		if err != nil {
 			return err
 		}
@@ -36,19 +38,19 @@ func List(out io.Writer) error {
 		}
 		configYaml, err = yaml.Marshal(&cfg)
 		if err != nil {
-			return errors.Wrap(err, "marshaling config")
+			return fmt.Errorf("marshaling config: %w", err)
 		}
 	} else {
-		config, err := GetConfigForKubectx()
+		contextConfig, err := getConfigForKubectx()
 		if err != nil {
 			return err
 		}
-		if config == nil { // empty config
+		if contextConfig == nil { // empty config
 			return nil
 		}
-		configYaml, err = yaml.Marshal(&config)
+		configYaml, err = yaml.Marshal(&contextConfig)
 		if err != nil {
-			return errors.Wrap(err, "marshaling config")
+			return fmt.Errorf("marshaling config: %w", err)
 		}
 	}
 

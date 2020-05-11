@@ -19,6 +19,7 @@ package docker
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -29,15 +30,21 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/docker/docker/api"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/tlsconfig"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+)
+
+const minikubeBadUsageExitCode = 64
+
+// For testing
+var (
+	NewAPIClient = NewAPIClientImpl
 )
 
 var (
@@ -46,27 +53,25 @@ var (
 	dockerAPIClientErr  error
 )
 
-// NewAPIClient guesses the docker client to use based on current kubernetes context.
-func NewAPIClient(forceRemove bool, insecureRegistries map[string]bool) (LocalDaemon, error) {
+// NewAPIClientImpl guesses the docker client to use based on current Kubernetes context.
+func NewAPIClientImpl(runCtx *runcontext.RunContext) (LocalDaemon, error) {
 	dockerAPIClientOnce.Do(func() {
-		kubeConfig, err := kubectx.CurrentConfig()
-		if err != nil {
-			dockerAPIClientErr = errors.Wrap(err, "getting current cluster context")
-			return
-		}
-
-		env, apiClient, err := newAPIClient(kubeConfig.CurrentContext)
-		dockerAPIClient = NewLocalDaemon(apiClient, env, forceRemove, insecureRegistries)
+		env, apiClient, err := newAPIClient(runCtx.KubeContext, runCtx.Opts.MinikubeProfile)
+		dockerAPIClient = NewLocalDaemon(apiClient, env, runCtx.Opts.Prune(), runCtx.InsecureRegistries)
 		dockerAPIClientErr = err
 	})
 
 	return dockerAPIClient, dockerAPIClientErr
 }
 
-// newAPIClient guesses the docker client to use based on current kubernetes context.
-func newAPIClient(kubeContext string) ([]string, client.CommonAPIClient, error) {
-	if kubeContext == constants.DefaultMinikubeContext {
-		return newMinikubeAPIClient()
+// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
+// remove minikubeProfile from here and instead detect it by matching the
+// kubecontext API Server to minikube profiles
+
+// newAPIClient guesses the docker client to use based on current Kubernetes context.
+func newAPIClient(kubeContext string, minikubeProfile string) ([]string, client.CommonAPIClient, error) {
+	if kubeContext == constants.DefaultMinikubeContext || minikubeProfile != "" {
+		return newMinikubeAPIClient(minikubeProfile)
 	}
 	return newEnvAPIClient()
 }
@@ -84,13 +89,24 @@ func newEnvAPIClient() ([]string, client.CommonAPIClient, error) {
 	return nil, cli, nil
 }
 
+type ExitCoder interface {
+	ExitCode() int
+}
+
 // newMinikubeAPIClient returns a docker client using the environment variables
 // provided by minikube.
-func newMinikubeAPIClient() ([]string, client.CommonAPIClient, error) {
-	env, err := getMinikubeDockerEnv()
+func newMinikubeAPIClient(minikubeProfile string) ([]string, client.CommonAPIClient, error) {
+	env, err := getMinikubeDockerEnv(minikubeProfile)
 	if err != nil {
-		logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
-		return newEnvAPIClient()
+		// When minikube uses the infamous `none` driver, it'll exit `minikube docker-env` with code 64.
+		var exitError ExitCoder
+		if errors.As(err, &exitError) && exitError.ExitCode() == minikubeBadUsageExitCode {
+			// Let's ignore the error and fall back to local docker daemon.
+			logrus.Warnf("Could not get minikube docker env, falling back to local docker daemon: %s", err)
+			return newEnvAPIClient()
+		}
+
+		return nil, nil, err
 	}
 
 	var httpclient *http.Client
@@ -118,16 +134,18 @@ func newMinikubeAPIClient() ([]string, client.CommonAPIClient, error) {
 	if host == "" {
 		host = client.DefaultDockerHost
 	}
-	version := env["DOCKER_API_VERSION"]
-	if version == "" {
-		version = api.DefaultVersion
-	}
 
 	api, err := client.NewClientWithOpts(
 		client.WithHost(host),
-		client.WithVersion(version),
 		client.WithHTTPClient(httpclient),
 		client.WithHTTPHeaders(getUserAgentHeader()))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if api != nil {
+		api.NegotiateAPIVersion(context.Background())
+	}
 
 	// Keep the minikube environment variables
 	var environment []string
@@ -151,7 +169,7 @@ func detectWsl() (bool, error) {
 	if _, err := os.Stat("/proc/version"); err == nil {
 		b, err := ioutil.ReadFile("/proc/version")
 		if err != nil {
-			return false, errors.Wrap(err, "read /proc/version")
+			return false, fmt.Errorf("read /proc/version: %w", err)
 		}
 
 		if bytes.Contains(b, []byte("Microsoft")) {
@@ -175,16 +193,21 @@ func getMiniKubeFilename() (string, error) {
 	return "minikube", nil
 }
 
-func getMinikubeDockerEnv() (map[string]string, error) {
+func getMinikubeDockerEnv(minikubeProfile string) (map[string]string, error) {
 	miniKubeFilename, err := getMiniKubeFilename()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting minikube filename")
+		return nil, fmt.Errorf("getting minikube filename: %w", err)
 	}
 
-	cmd := exec.Command(miniKubeFilename, "docker-env", "--shell", "none")
+	args := []string{"docker-env", "--shell", "none"}
+	if minikubeProfile != "" {
+		args = append(args, "-p", minikubeProfile)
+	}
+
+	cmd := exec.Command(miniKubeFilename, args...)
 	out, err := util.RunCmdOut(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting minikube env")
+		return nil, fmt.Errorf("getting minikube env: %w", err)
 	}
 
 	env := map[string]string{}

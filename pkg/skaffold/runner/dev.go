@@ -18,137 +18,225 @@ package runner
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
+	"time"
 
+	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
+	sErrors "github.com/GoogleContainerTools/skaffold/pkg/skaffold/errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/watch"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 // ErrorConfigurationChanged is a special error that's returned when the skaffold configuration was changed.
 var ErrorConfigurationChanged = errors.New("configuration changed")
 
-// Dev watches for changes and runs the skaffold build and deploy
-// config until interrupted by the user.
-func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
-	logger := r.newLogger(out, artifacts)
-	defer logger.Stop()
+var (
+	// For testing
+	fileSyncInProgress = event.FileSyncInProgress
+	fileSyncFailed     = event.FileSyncFailed
+	fileSyncSucceeded  = event.FileSyncSucceeded
+)
 
-	forwarderManager := portforward.NewForwarderManager(out, r.imageList, r.runCtx.Namespaces, r.defaultLabeller.K8sManagedByLabelKeyValueString(), r.runCtx.Opts.PortForward)
-	defer forwarderManager.Stop()
+func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
+	if r.changeSet.needsReload {
+		return ErrorConfigurationChanged
+	}
 
-	// Create watcher and register artifacts to build current state of files.
-	changed := changes{}
-	onChange := func() error {
-		defer changed.reset()
-
-		logger.Mute()
-
-		for _, a := range changed.dirtyArtifacts {
-			s, err := sync.NewItem(a.artifact, a.events, r.builds, r.runCtx.InsecureRegistries)
-			if err != nil {
-				return errors.Wrap(err, "sync")
-			}
-			if s != nil {
-				changed.AddResync(s)
-			} else {
-				changed.AddRebuild(a.artifact)
-			}
-		}
-
-		switch {
-		case changed.needsReload:
-			return ErrorConfigurationChanged
-		case len(changed.needsResync) > 0:
-			for _, s := range changed.needsResync {
-				color.Default.Fprintf(out, "Syncing %d files for %s\n", len(s.Copy)+len(s.Delete), s.Image)
-
-				if err := r.Syncer.Sync(ctx, s); err != nil {
-					logrus.Warnln("Skipping deploy due to sync error:", err)
-					return nil
-				}
-			}
-		case len(changed.needsRebuild) > 0:
-			if _, err := r.BuildAndTest(ctx, out, changed.needsRebuild); err != nil {
-				logrus.Warnln("Skipping deploy due to error:", err)
-				return nil
-			}
-			fallthrough
-		case changed.needsRedeploy:
-			if err := r.Deploy(ctx, out, r.builds); err != nil {
-				logrus.Warnln("Skipping deploy due to error:", err)
-				return nil
-			}
-		}
-
-		logger.Unmute()
+	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
+	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
+	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
+	needsDeploy := deployIntent && r.changeSet.needsRedeploy
+	if !needsSync && !needsBuild && !needsDeploy {
 		return nil
 	}
 
+	r.logger.Mute()
+	// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
+	defer r.monitor.Reset()
+	defer r.listener.LogWatchToUser(out)
+	event.DevLoopInProgress(r.devIteration)
+	defer func() { r.devIteration++ }()
+	if needsSync {
+		defer func() {
+			r.changeSet.resetSync()
+			r.intents.resetSync()
+		}()
+
+		for _, s := range r.changeSet.needsResync {
+			fileCount := len(s.Copy) + len(s.Delete)
+			color.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
+			fileSyncInProgress(fileCount, s.Image)
+
+			if err := r.syncer.Sync(ctx, s); err != nil {
+				logrus.Warnln("Skipping deploy due to sync error:", err)
+				fileSyncFailed(fileCount, s.Image, err)
+				event.DevLoopFailedInPhase(r.devIteration, sErrors.FileSync, err)
+				return nil
+			}
+
+			fileSyncSucceeded(fileCount, s.Image)
+		}
+	}
+
+	if needsBuild {
+		event.ResetStateOnBuild()
+		defer func() {
+			r.changeSet.resetBuild()
+			r.intents.resetBuild()
+		}()
+
+		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
+			logrus.Warnln("Skipping deploy due to error:", err)
+			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
+			return nil
+		}
+	}
+
+	if needsDeploy {
+		event.ResetStateOnDeploy()
+		defer func() {
+			r.changeSet.resetDeploy()
+			r.intents.resetDeploy()
+		}()
+
+		r.forwarderManager.Stop()
+		if err := r.Deploy(ctx, out, r.builds); err != nil {
+			logrus.Warnln("Skipping deploy due to error:", err)
+			event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
+			return nil
+		}
+		if err := r.forwarderManager.Start(ctx); err != nil {
+			logrus.Warnln("Port forwarding failed:", err)
+		}
+	}
+	event.DevLoopComplete(r.devIteration)
+	r.logger.Unmute()
+	return nil
+}
+
+// Dev watches for changes and runs the skaffold build and deploy
+// config until interrupted by the user.
+func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
+	event.DevLoopInProgress(r.devIteration)
+	r.createLogger(out, artifacts)
+	defer r.logger.Stop()
+	defer func() { r.devIteration++ }()
+
+	r.createForwarder(out)
+	defer r.forwarderManager.Stop()
+
+	r.createContainerManager(out)
+	defer r.debugContainerManager.Stop()
+
 	// Watch artifacts
+	start := time.Now()
+	color.Default.Fprintln(out, "Listing files to watch...")
+
 	for i := range artifacts {
 		artifact := artifacts[i]
 		if !r.runCtx.Opts.IsTargetImage(artifact) {
 			continue
 		}
 
-		if err := r.Watcher.Register(
-			func() ([]string, error) { return r.Builder.DependenciesForArtifact(ctx, artifact) },
-			func(e watch.Events) { changed.AddDirtyArtifact(artifact, e) },
-		); err != nil {
-			return errors.Wrapf(err, "watching files for artifact %s", artifact.ImageName)
+		color.Default.Fprintf(out, " - %s\n", artifact.ImageName)
+
+		select {
+		case <-ctx.Done():
+			return context.Canceled
+		default:
+			if err := r.monitor.Register(
+				func() ([]string, error) {
+					return build.DependenciesForArtifact(ctx, artifact, r.runCtx.InsecureRegistries)
+				},
+				func(e filemon.Events) {
+					s, err := sync.NewItem(ctx, artifact, e, r.builds, r.runCtx.InsecureRegistries)
+					switch {
+					case err != nil:
+						logrus.Warnf("error adding dirty artifact to changeset: %s", err.Error())
+					case s != nil:
+						r.changeSet.AddResync(s)
+					default:
+						r.changeSet.AddRebuild(artifact)
+					}
+				},
+			); err != nil {
+				event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_BUILD_DEPS, err)
+				return fmt.Errorf("watching files for artifact %q: %w", artifact.ImageName, err)
+			}
 		}
 	}
 
 	// Watch test configuration
-	if err := r.Watcher.Register(
-		r.Tester.TestDependencies,
-		func(watch.Events) { changed.needsRedeploy = true },
+	if err := r.monitor.Register(
+		r.tester.TestDependencies,
+		func(filemon.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
-		return errors.Wrap(err, "watching test files")
+		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)
+		return fmt.Errorf("watching test files: %w", err)
 	}
 
 	// Watch deployment configuration
-	if err := r.Watcher.Register(
-		r.Deployer.Dependencies,
-		func(watch.Events) { changed.needsRedeploy = true },
+	if err := r.monitor.Register(
+		r.deployer.Dependencies,
+		func(filemon.Events) { r.changeSet.needsRedeploy = true },
 	); err != nil {
-		return errors.Wrap(err, "watching files for deployer")
+		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_DEPLOY_DEPS, err)
+		return fmt.Errorf("watching files for deployer: %w", err)
 	}
 
 	// Watch Skaffold configuration
-	if err := r.Watcher.Register(
+	if err := r.monitor.Register(
 		func() ([]string, error) { return []string{r.runCtx.Opts.ConfigurationFile}, nil },
-		func(watch.Events) { changed.needsReload = true },
+		func(filemon.Events) { r.changeSet.needsReload = true },
 	); err != nil {
-		return errors.Wrapf(err, "watching skaffold configuration %s", r.runCtx.Opts.ConfigurationFile)
+		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_CONFIG_DEP, err)
+		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.Opts.ConfigurationFile, err)
+	}
+
+	logrus.Infoln("List generated in", time.Since(start))
+
+	// Init Sync State
+	if err := sync.Init(ctx, artifacts); err != nil {
+		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_SYNC_INIT_ERROR, err)
+		return fmt.Errorf("exiting dev mode because initializing sync state failed: %w", err)
 	}
 
 	// First build
 	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {
-		return errors.Wrap(err, "exiting dev mode because first build failed")
+		event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
+		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
 	}
 
-	// Start logs
-	if r.runCtx.Opts.TailDev {
-		if err := logger.Start(ctx); err != nil {
-			return errors.Wrap(err, "starting logger")
-		}
-	}
+	// Logs should be retrieved up to just before the deploy
+	r.logger.SetSince(time.Now())
 
 	// First deploy
 	if err := r.Deploy(ctx, out, r.builds); err != nil {
-		return errors.Wrap(err, "exiting dev mode because first deploy failed")
+		event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
+		return fmt.Errorf("exiting dev mode because first deploy failed: %w", err)
 	}
 
-	// Forward ports
-	if err := forwarderManager.Start(ctx); err != nil {
-		return errors.Wrap(err, "starting forwarder manager")
+	if err := r.forwarderManager.Start(ctx); err != nil {
+		logrus.Warnln("Error starting port forwarding:", err)
+	}
+	if err := r.debugContainerManager.Start(ctx); err != nil {
+		logrus.Warnln("Error starting debug container notification:", err)
 	}
 
-	return r.Watcher.Run(ctx, out, onChange)
+	// Start printing the logs after deploy is finished
+	if r.runCtx.Opts.TailDev {
+		if err := r.logger.Start(ctx); err != nil {
+			return fmt.Errorf("starting logger: %w", err)
+		}
+	}
+	event.DevLoopComplete(0)
+	return r.listener.WatchForChanges(ctx, out, r.doDev)
 }

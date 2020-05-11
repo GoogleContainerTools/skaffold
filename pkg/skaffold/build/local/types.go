@@ -21,24 +21,26 @@ import (
 	"fmt"
 	"io"
 
-	configutil "github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/cmd/config"
+	"github.com/sirupsen/logrus"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
-	runcontext "github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 // Builder uses the host docker daemon to build and tag the image.
 type Builder struct {
-	cfg *latest.LocalBuild
+	cfg latest.LocalBuild
 
 	localDocker        docker.LocalDaemon
 	localCluster       bool
 	pushImages         bool
 	prune              bool
+	pruneChildren      bool
 	skipTests          bool
+	devMode            bool
 	kubeContext        string
 	builtImages        []string
 	insecureRegistries map[string]bool
@@ -47,22 +49,22 @@ type Builder struct {
 // external dependencies are wrapped
 // into private functions for testability
 
-var getLocalCluster = configutil.GetLocalCluster
-
-var getLocalDocker = func(runCtx *runcontext.RunContext) (docker.LocalDaemon, error) {
-	return docker.NewAPIClient(runCtx.Opts.Prune(), runCtx.InsecureRegistries)
-}
+var getLocalCluster = config.GetLocalCluster
 
 // NewBuilder returns an new instance of a local Builder.
 func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
-	localDocker, err := getLocalDocker(runCtx)
+	localDocker, err := docker.NewAPIClient(runCtx)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting docker client")
+		return nil, fmt.Errorf("getting docker client: %w", err)
 	}
 
-	localCluster, err := getLocalCluster()
+	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
+	// remove minikubeProfile from here and instead detect it by matching the
+	// kubecontext API Server to minikube profiles
+
+	localCluster, err := getLocalCluster(runCtx.Opts.GlobalConfig, runCtx.Opts.MinikubeProfile)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting localCluster")
+		return nil, fmt.Errorf("getting localCluster: %w", err)
 	}
 
 	var pushImages bool
@@ -74,15 +76,21 @@ func NewBuilder(runCtx *runcontext.RunContext) (*Builder, error) {
 	}
 
 	return &Builder{
-		cfg:                runCtx.Cfg.Build.LocalBuild,
+		cfg:                *runCtx.Cfg.Build.LocalBuild,
 		kubeContext:        runCtx.KubeContext,
 		localDocker:        localDocker,
 		localCluster:       localCluster,
 		pushImages:         pushImages,
 		skipTests:          runCtx.Opts.SkipTests,
+		devMode:            runCtx.Opts.IsDevMode(),
 		prune:              runCtx.Opts.Prune(),
+		pruneChildren:      !runCtx.Opts.NoPruneChildren,
 		insecureRegistries: runCtx.InsecureRegistries,
 	}, nil
+}
+
+func (b *Builder) PushImages() bool {
+	return b.pushImages
 }
 
 // Labels are labels specific to local builder.
@@ -101,5 +109,5 @@ func (b *Builder) Labels() map[string]string {
 
 // Prune uses the docker API client to remove all images built with Skaffold
 func (b *Builder) Prune(ctx context.Context, out io.Writer) error {
-	return docker.Prune(ctx, out, b.builtImages, b.localDocker)
+	return b.localDocker.Prune(ctx, out, b.builtImages, b.pruneChildren)
 }

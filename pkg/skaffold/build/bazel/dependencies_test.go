@@ -18,6 +18,7 @@ package bazel
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -28,41 +29,64 @@ import (
 func TestGetDependencies(t *testing.T) {
 	tests := []struct {
 		description   string
+		workspace     string
 		target        string
 		files         map[string]string
 		expectedQuery string
 		output        string
 		expected      []string
+		shouldErr     bool
 	}{
 		{
-			description:   "with workspace",
-			target:        "target",
-			files:         map[string]string{"WORKSPACE": "content is ignored"},
-			expectedQuery: "bazel query kind('source file', deps('target')) union buildfiles('target') --noimplicit_deps --order_output=no",
-			output:        "@ignored\n//external/ignored\n\n//:dep1\n//:dep2\n",
-			expected:      []string{"dep1", "dep2", "WORKSPACE"},
+			description: "with WORKSPACE",
+			workspace:   ".",
+			target:      "target",
+			files: map[string]string{
+				"WORKSPACE": "",
+				"BUILD":     "",
+				"dep1":      "",
+				"dep2":      "",
+			},
+			expectedQuery: "bazel query kind('source file', deps('target')) union buildfiles(deps('target')) --noimplicit_deps --order_output=no --output=label",
+			output:        "@ignored\n//:BUILD\n//external/ignored\n\n//:dep1\n//:dep2\n",
+			expected:      []string{"BUILD", "dep1", "dep2", "WORKSPACE"},
 		},
 		{
-			description:   "without workspace",
-			target:        "target2",
-			files:         map[string]string{},
-			expectedQuery: "bazel query kind('source file', deps('target2')) union buildfiles('target2') --noimplicit_deps --order_output=no",
-			output:        "@ignored\n//external/ignored\n\n//:dep3\n",
-			expected:      []string{"dep3"},
+			description: "with parent WORKSPACE",
+			workspace:   "./sub/folder",
+			target:      "target2",
+			files: map[string]string{
+				"WORKSPACE":           "",
+				"BUILD":               "",
+				"sub/folder/BUILD":    "",
+				"sub/folder/dep1":     "",
+				"sub/folder/dep2":     "",
+				"sub/folder/baz/dep3": "",
+			},
+			expectedQuery: "bazel query kind('source file', deps('target2')) union buildfiles(deps('target2')) --noimplicit_deps --order_output=no --output=label",
+			output:        "@ignored\n//:BUILD\n//sub/folder:BUILD\n//external/ignored\n\n//sub/folder:dep1\n//sub/folder:dep2\n//sub/folder/baz:dep3\n",
+			expected:      []string{filepath.Join("..", "..", "BUILD"), "BUILD", "dep1", "dep2", filepath.Join("baz", "dep3"), filepath.Join("..", "..", "WORKSPACE")},
+		},
+		{
+			description: "without WORKSPACE",
+			workspace:   ".",
+			target:      "target",
+			shouldErr:   true,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, t.FakeRunOut(test.expectedQuery, test.output))
-			tmpDir := t.NewTempDir().
-				WriteFiles(test.files)
+			t.Override(&util.DefaultExecCommand, testutil.CmdRunOut(
+				test.expectedQuery,
+				test.output,
+			))
+			t.NewTempDir().WriteFiles(test.files).Chdir()
 
-			deps, err := GetDependencies(context.Background(), tmpDir.Root(), &latest.BazelArtifact{
+			deps, err := GetDependencies(context.Background(), test.workspace, &latest.BazelArtifact{
 				BuildTarget: test.target,
 			})
 
-			t.CheckNoError(err)
-			t.CheckDeepEqual(test.expected, deps)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, deps)
 		})
 	}
 }
@@ -70,14 +94,14 @@ func TestGetDependencies(t *testing.T) {
 func TestQuery(t *testing.T) {
 	query := query("//:skaffold_example.tar")
 
-	expectedQuery := `kind('source file', deps('//:skaffold_example.tar')) union buildfiles('//:skaffold_example.tar')`
+	expectedQuery := `kind('source file', deps('//:skaffold_example.tar')) union buildfiles(deps('//:skaffold_example.tar'))`
 	if query != expectedQuery {
 		t.Errorf("Expected [%s]. Got [%s]", expectedQuery, query)
 	}
 }
 
 func TestDepToPath(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description string
 		dep         string
 		expected    string

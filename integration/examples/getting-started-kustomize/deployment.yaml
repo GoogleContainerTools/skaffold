@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skaffold-kustomize
+  labels:
+    app: skaffold-kustomize
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skaffold-kustomize
+  template:
+    metadata:
+      labels:
+        app: skaffold-kustomize
+

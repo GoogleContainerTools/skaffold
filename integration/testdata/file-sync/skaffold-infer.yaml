@@ -1,0 +1,15 @@
+apiVersion: skaffold/v1beta13
+kind: Config
+build:
+  tagPolicy:
+    gitCommit: {}
+  artifacts:
+  - image: test-file-sync
+    context: .
+    sync:
+      infer:
+      - '**/foo*'
+deploy:
+ kubectl:
+   manifests:
+   - pod.yaml

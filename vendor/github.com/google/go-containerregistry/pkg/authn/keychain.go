@@ -16,137 +16,82 @@ package authn
 
 import (
 	"encoding/json"
-	"errors"
-	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
-	"path/filepath"
-	"runtime"
 
+	"github.com/docker/cli/cli/config"
+	"github.com/docker/cli/cli/config/types"
+	"github.com/google/go-containerregistry/pkg/logs"
 	"github.com/google/go-containerregistry/pkg/name"
 )
 
+// Resource represents a registry or repository that can be authenticated against.
+type Resource interface {
+	// String returns the full string representation of the target, e.g.
+	// gcr.io/my-project or just gcr.io.
+	String() string
+
+	// RegistryStr returns just the registry portion of the target, e.g. for
+	// gcr.io/my-project, this should just return gcr.io. This is needed to
+	// pull out an appropriate hostname.
+	RegistryStr() string
+}
+
 // Keychain is an interface for resolving an image reference to a credential.
 type Keychain interface {
-	// Resolve looks up the most appropriate credential for the specified registry.
-	Resolve(name.Registry) (Authenticator, error)
+	// Resolve looks up the most appropriate credential for the specified target.
+	Resolve(Resource) (Authenticator, error)
 }
 
 // defaultKeychain implements Keychain with the semantics of the standard Docker
 // credential keychain.
 type defaultKeychain struct{}
 
-// configDir returns the directory containing Docker's config.json
-func configDir() (string, error) {
-	if dc := os.Getenv("DOCKER_CONFIG"); dc != "" {
-		return dc, nil
-	}
-	if h := dockerUserHomeDir(); h != "" {
-		return filepath.Join(dockerUserHomeDir(), ".docker"), nil
-	}
-	return "", errNoHomeDir
-}
-
-var errNoHomeDir = errors.New("could not determine home directory")
-
-// dockerUserHomeDir returns the current user's home directory, as interpreted by Docker.
-func dockerUserHomeDir() string {
-	if runtime.GOOS == "windows" {
-		// Docker specifically expands "%USERPROFILE%" on Windows,
-		return os.Getenv("USERPROFILE")
-	}
-	// Docker defaults to "$HOME" Linux and OSX.
-	return os.Getenv("HOME")
-}
-
-// authEntry is a helper for JSON parsing an "auth" entry of config.json
-// This is not meant for direct consumption.
-type authEntry struct {
-	Auth     string `json:"auth"`
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-// cfg is a helper for JSON parsing Docker's config.json
-// This is not meant for direct consumption.
-type cfg struct {
-	CredHelper map[string]string    `json:"credHelpers,omitempty"`
-	CredStore  string               `json:"credsStore,omitempty"`
-	Auths      map[string]authEntry `json:"auths,omitempty"`
-}
-
-// There are a variety of ways a domain may get qualified within the Docker credential file.
-// We enumerate them here as format strings.
 var (
-	domainForms = []string{
-		// Allow naked domains
-		"%s",
-		// Allow scheme-prefixed.
-		"https://%s",
-		"http://%s",
-		// Allow scheme-prefixes with version in url path.
-		"https://%s/v1/",
-		"http://%s/v1/",
-		"https://%s/v2/",
-		"http://%s/v2/",
-	}
-
-	// Export an instance of the default keychain.
+	// DefaultKeychain implements Keychain by interpreting the docker config file.
 	DefaultKeychain Keychain = &defaultKeychain{}
 )
 
+const (
+	// DefaultAuthKey is the key used for dockerhub in config files, which
+	// is hardcoded for historical reasons.
+	DefaultAuthKey = "https://" + name.DefaultRegistry + "/v1/"
+)
+
 // Resolve implements Keychain.
-func (dk *defaultKeychain) Resolve(reg name.Registry) (Authenticator, error) {
-	dir, err := configDir()
+func (dk *defaultKeychain) Resolve(target Resource) (Authenticator, error) {
+	cf, err := config.Load(os.Getenv("DOCKER_CONFIG"))
 	if err != nil {
-		log.Printf("Unable to determine config dir: %v", err)
-		return Anonymous, nil
-	}
-	file := filepath.Join(dir, "config.json")
-	content, err := ioutil.ReadFile(file)
-	if err != nil {
-		log.Printf("Unable to read %q: %v", file, err)
-		return Anonymous, nil
+		return nil, err
 	}
 
-	var cf cfg
-	if err := json.Unmarshal(content, &cf); err != nil {
-		log.Printf("Unable to parse %q: %v", file, err)
-		return Anonymous, nil
+	// See:
+	// https://github.com/google/ko/issues/90
+	// https://github.com/moby/moby/blob/fc01c2b481097a6057bec3cd1ab2d7b4488c50c4/registry/config.go#L397-L404
+	key := target.RegistryStr()
+	if key == name.DefaultRegistry {
+		key = DefaultAuthKey
 	}
 
-	// Per-registry credential helpers take precedence.
-	if cf.CredHelper != nil {
-		for _, form := range domainForms {
-			if entry, ok := cf.CredHelper[fmt.Sprintf(form, reg.Name())]; ok {
-				return &helper{name: entry, domain: reg, r: &defaultRunner{}}, nil
-			}
+	cfg, err := cf.GetAuthConfig(key)
+	if err != nil {
+		return nil, err
+	}
+	if logs.Enabled(logs.Debug) {
+		b, err := json.Marshal(cfg)
+		if err == nil {
+			logs.Debug.Printf("defaultKeychain.Resolve(%q) = %s", key, string(b))
 		}
 	}
 
-	// A global credential helper is next in precedence.
-	if cf.CredStore != "" {
-		return &helper{name: cf.CredStore, domain: reg, r: &defaultRunner{}}, nil
+	empty := types.AuthConfig{}
+	if cfg == empty {
+		return Anonymous, nil
 	}
-
-	// Lastly, the 'auths' section directly contains basic auth entries.
-	if cf.Auths != nil {
-		for _, form := range domainForms {
-			if entry, ok := cf.Auths[fmt.Sprintf(form, reg.Name())]; ok {
-				if entry.Auth != "" {
-					return &auth{entry.Auth}, nil
-				} else if entry.Username != "" {
-					return &Basic{Username: entry.Username, Password: entry.Password}, nil
-				} else {
-					// TODO(mattmoor): Support identitytoken
-					// TODO(mattmoor): Support registrytoken
-					return nil, fmt.Errorf("Unsupported entry in \"auths\" section of %q", file)
-				}
-			}
-		}
-	}
-
-	// Fallback on anonymous.
-	return Anonymous, nil
+	return FromConfig(AuthConfig{
+		Username:      cfg.Username,
+		Password:      cfg.Password,
+		Auth:          cfg.Auth,
+		IdentityToken: cfg.IdentityToken,
+		RegistryToken: cfg.RegistryToken,
+	}), nil
 }

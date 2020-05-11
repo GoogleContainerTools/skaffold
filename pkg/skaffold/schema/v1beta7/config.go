@@ -20,6 +20,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
 const Version string = "skaffold/v1beta7"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
@@ -464,8 +465,6 @@ type Artifact struct {
 
 	// ArtifactType describes how to build an artifact.
 	ArtifactType `yaml:",inline"`
-
-	WorkspaceHash string `yaml:"-,omitempty"`
 
 	// BuilderPlugin is the plugin used to build this artifact.
 	BuilderPlugin *BuilderPlugin `yaml:"plugin,omitempty"`

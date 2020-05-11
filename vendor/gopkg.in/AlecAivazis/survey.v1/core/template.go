@@ -11,17 +11,44 @@ import (
 var DisableColor = false
 
 var (
+	// HelpInputRune is the rune which the user should enter to trigger
+	// more detailed question help
 	HelpInputRune = '?'
 
-	ErrorIcon    = "✘"
-	HelpIcon     = "ⓘ"
+	// ErrorIcon will be be shown before an error
+	ErrorIcon = "X"
+
+	// HelpIcon will be shown before more detailed question help
+	HelpIcon = "?"
+	// QuestionIcon will be shown before a question Message
 	QuestionIcon = "?"
 
-	MarkedOptionIcon   = "◉"
+	// MarkedOptionIcon will be prepended before a selected multiselect option
+	MarkedOptionIcon = "[x]"
+	// UnmarkedOptionIcon will be prepended before an unselected multiselect option
+	UnmarkedOptionIcon = "[ ]"
+
+	// SelectFocusIcon is prepended to an option to signify the user is
+	// currently focusing that option
+	SelectFocusIcon = ">"
+)
+
+/*
+  SetFancyIcons changes the err, help, marked, and focus input icons to their
+  fancier forms. These forms may not be compatible with most terminals.
+  This function will not touch the QuestionIcon as its fancy and non fancy form
+  are the same.
+*/
+func SetFancyIcons() {
+	ErrorIcon = "✘"
+	HelpIcon = "ⓘ"
+	// QuestionIcon fancy and non-fancy form are the same
+
+	MarkedOptionIcon = "◉"
 	UnmarkedOptionIcon = "◯"
 
 	SelectFocusIcon = "❯"
-)
+}
 
 var TemplateFuncs = map[string]interface{}{
 	// Templates with Color formatting. See Documentation: https://github.com/mgutz/ansi#style-format

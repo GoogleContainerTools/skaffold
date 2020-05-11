@@ -9,10 +9,8 @@ This doc explains the development workflow so you can get started
 You must install these tools:
 
 1. [`go`](https://golang.org/doc/install): The language skaffold is
-   built in (version >= go 1.11)
+   built in (version >= go 1.14)
 1. [`git`](https://help.github.com/articles/set-up-git/): For source control
-1. [`dep`](https://github.com/golang/dep): For managing external Go
-   dependencies. - Please Install dep v0.5.0 or greater.
 1. [`make`](https://www.gnu.org/software/make/): For building skaffold.
 1. [`golangci-lint`](https://github.com/golangci/golangci-lint): You can use the
    helper [script](./hack/install_golint.sh) to get golangci-lint.
@@ -20,9 +18,6 @@ You must install these tools:
     ```shell
     ./hack/install_golint.sh
     ```
-
-1. [`gocritic`](https://github.com/go-critic/go-critic): Go source code linter
-   providing advanced checks currently missing from other linters.
 
 ## Getting started
 
@@ -46,19 +41,12 @@ You may also be interested in [contributing to the docs](#contributing-to-skaffo
 
 ## Checkout your fork
 
-The Go tools require that you clone the repository to the `src/github.com/GoogleContainerTools/skaffold` directory
-in your [`GOPATH`](https://github.com/golang/go/wiki/SettingGOPATH).
+To make local changes to skaffold and eventually submit a pull request to the repo,
+we recommend [creating your own fork](https://help.github.com/articles/fork-a-repo/).
 
-To check out this repository:
-
-1. Create your own [fork of this
-  repo](https://help.github.com/articles/fork-a-repo/)
-
-1. Clone it to your machine:
+Once you've done this, clone your fork to your local machine:
 
    ```shell
-   mkdir -p ${GOPATH}/src/github.com/GoogleContainerTools
-   cd ${GOPATH}/src/github.com/GoogleContainerTools
    git clone git@github.com:${YOUR_GITHUB_USERNAME}/skaffold.git
    cd skaffold
    git remote add upstream git@github.com:GoogleContainerTools/skaffold.git
@@ -68,26 +56,43 @@ To check out this repository:
    _Adding the `upstream` remote sets you up nicely for regularly [syncing your
    fork](https://help.github.com/articles/syncing-a-fork/)._
 
+## IDE setup 
+
+Skaffold uses go modules and we commit to the `vendor` directory all our dependencies to make CI faster.  
+We recommend checking out Skaffold outside of the `GOPATH`. 
+
+JetBrains Goland: 
+1. `File > Open...` (choose your skaffold directory) 
+2. ensure `Go > Go modules > Vendoring mode` is checked
+
+JetBrains IntelliJ with [Go plugin](https://plugins.jetbrains.com/plugin/9568-go): 
+1. `File > Open...` (choose your skaffold directory) 
+  
+Visual Studio Code with [Go plugin](https://github.com/Microsoft/vscode-go): 
+1. `File > Open...` 
+
 ## Making a config change
 
 Some changes to the skaffold code require a change to the skaffold config. These changes require a few extra steps:
 
-* Check to see what the latest config version was at the time of the last release. The easiest way to do this is to view the skaffold source on github at the last released tag.
+* Open the latest Config at [pkg/skaffold/schema/latest/config.go](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/config.go#L25) and inspect the comment at [L25](https://github.com/GoogleContainerTools/skaffold/blob/master/pkg/skaffold/schema/latest/config.go#L25)
+* If the line mentions the config version is not released, proceed making your changes.
+  ```
+  // This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+  ```
 
-* Check the current config version in the code. This can be found in `pkg/skaffold/schema/latest/config.go`: look for something like
+* **If the line mentions** the config version is released then, 
+  ```
+  // !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+  ```
+  
+  * Run `./hack/new_version.sh` to create a new version.
 
-```golang
-const Version string = "skaffold/v1beta9"
-```
-* If the config versions are different, do nothing. Somebody has already bumped the config version for this release cycle.
-
-* **If the config versions are the same**:
-
-  * Run `./hack/new_version.sh` to freeze the current config version and cut a new version.
-
+  * Run `make test` to verify changes.
+  
   * Commit these generated changes, and submit a PR.
 
-Once you've done this, continue making your changes locally, including the new config change.
+Once you've done this, merge or rebase your development branch with config changes, including the new config change.
 **Any new config changes belong in pkg/skaffold/schema/latest/config.go. Do not edit the older config versions.**
 
 * Be sure and update the documentation in `pkg/skaffold/schema/<previous_config_version>/upgrade.go` with any additions, removals, or updates you make to the config.
@@ -97,6 +102,12 @@ Once you've done this, continue making your changes locally, including the new c
 *Note: the Upgrade() method is called by skaffold automatically for older config versions. This can also be done manually by users by running `skaffold fix`.*
 
 * Finally, before committing your final changes and opening your pull request, be sure and run `make test` locally. This will regenerate the JSON schemas for the skaffold config with your new changes. Commit the resulting changes autogenerated by the scripts.
+
+For more details behind the logic of config changes see [the Skaffold config management doc](https://docs.google.com/document/d/e/2PACX-1vRIjLuHL2uZ1OXcV9ZXbOQ7ijmqmeCeOZroCGBGTgstuNaZqoKXwg0KLGt_M-PHBwoVpnsKUhHxJ3Jc/pub).
+
+## Making changes to the Skaffold API
+
+We build the API directly through gRPC, which gets translated into REST API through a reverse proxy gateway library. If you make changes to the [proto/skaffold.proto](https://github.com/GoogleContainerTools/skaffold/blob/master/proto/skaffold.proto) file you can run `./hack/generate-proto.sh` to generate the equivalent Go code. 
 
 ## Building skaffold
 
@@ -119,7 +130,7 @@ To build with your local changes you have two options:
    ```
 
    This will install skaffold via `go install` (note that if you have [manually downloaded
-   and installed skaffold to `/usr/local/bin`](README.md#install), this is will probably
+   and installed skaffold to `/usr/local/bin`](README.md#install), this will probably
    take precedence in your path over your `$GOPATH/bin`).
 
    _If you are unsure if you are running a released or locally built version of skaffold, you
@@ -131,7 +142,7 @@ To build with your local changes you have two options:
 If you are iterating on skaffold and want to see your changes in action, you can:
 
 1. [Build skaffold](#building-skaffold)
-2. [Use the quickstart example](README.md#iterative-development)
+2. [Use the quickstart example](examples/getting-started)
 
 ## Testing skaffold
 
@@ -145,9 +156,7 @@ The unit tests live with the code they test and can be run with:
 make test
 ```
 
-_These tests will not run correctly unless you have [checked out your fork into your `$GOPATH`](#checkout-your-fork)._
-
-In case you see go-critic tool error,
+In case you see a linter error such as:
 
 ```shell
 make test
@@ -159,24 +168,43 @@ re-run the `hack/install_golint.sh` script to upgrade `golangci-lint`.
 
 ### Integration tests
 
-The integration tests live in [`integration`](./integration) and run the [`examples`](./examples)
-as tests. They can be run with:
+The integration tests live in [`integration`](./integration). They can be run with:
 
 ```shell
-make integration-test
+make integration
 ```
 
-_These tests require push access to a project in GCP, and so can only be run
-by maintainers who have access. These tests will be kicked off by [reviewers](#reviews)
-for submitted PRs._
+_These tests require a Docker daemon, a Kubernetes cluster and all the tools
+used by every Builder and Deployer, such as kubectl, bazel, java, kustomize..._
+
+A way to run the integration tests without installing those tools
+and without depending on a Kubernetes cluster is to install
+[kind](https://github.com/kubernetes-sigs/kind#installation-and-usage)
+and run:
+
+```shell
+make integration-in-kind
+```
 
 ### Running a subset of integration tests
 
 You can select specific integration tests to run via the `INTEGRATION_TEST_ARGS` env var:
 
 ```shell
-INTEGRATION_TEST_ARGS="-run=TestDev/" make integration-test
+INTEGRATION_TEST_ARGS="-run=TestDev/" make integration
 ```
+
+### Running GCP specific integration tests
+
+Another set of the integration tests require a GCP project because they will
+push to a GCR registry or use Cloud Build to build artifacts. Those tests
+can be run with:
+
+```shell
+GCP_ONLY=true make integration
+```
+
+_These tests will be kicked off by [reviewers](#reviews) for submitted PRs._
 
 ## Building skaffold docs
 
@@ -220,12 +248,6 @@ To test a release on your own project:
 gcloud builds submit --config deploy/cloudbuild-release.yaml --substitutions=_RELEASE_BUCKET=<personal-bucket>,TAG_NAME=testrelease_v1234 --project <personalproject>
 ```
 
-Note: if gcloud submit fails with something similar to the error message below, run `dep ensure && dep prune` to remove the broken symlinks
-```
-ERROR: gcloud crashed (OSError): [Errno 2] No such file or directory: './vendor/github.com/karrick/godirwalk/testdata/symlinks/file-symlink'
-
-```
-
 To just run a release without Google Cloud Build only using your local Docker daemon, you can run:
 
 ```
@@ -239,8 +261,10 @@ When you have changes you would like to propose to skaffold, you will need to:
 1. Ensure the commit message(s) describe what issue you are fixing and how you are fixing it
    (include references to [issue numbers](https://help.github.com/articles/closing-issues-using-keywords/)
    if appropriate)
+1. Add unit tests. Unit test coverage should increase or stay the same with every PR.
 1. [Create a pull request](https://help.github.com/articles/creating-a-pull-request-from-a-fork/)
 
+Please follow our [small Pull Requests guidelines](./docs/community/small-prs.md) for quicker response time.
 ### Reviews
 
 Each PR must be reviewed by a maintainer. This maintainer will add the `kokoro:run` label

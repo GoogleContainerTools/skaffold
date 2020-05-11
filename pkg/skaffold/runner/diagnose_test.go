@@ -25,7 +25,7 @@ import (
 )
 
 func TestSizeOfDockerContext(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description        string
 		artifactName       string
 		DockerfileContents string
@@ -69,7 +69,7 @@ func TestSizeOfDockerContext(t *testing.T) {
 				},
 			}
 
-			actual, err := sizeOfDockerContext(context.TODO(), dummyArtifact, map[string]bool{})
+			actual, err := sizeOfDockerContext(context.TODO(), dummyArtifact, nil)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, actual)
 		})
 	}

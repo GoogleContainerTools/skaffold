@@ -4,12 +4,13 @@
   "description": "",
   "main": "src/index.js",
   "scripts": {
-    "dev": "nodemon src/index.js"
+    "production": "node src/index.js",
+    "development": "nodemon src/index.js"
   },
   "dependencies": {
     "express": "^4.16.4"
   },
   "devDependencies": {
-    "nodemon": "^1.18.4"
+    "nodemon": "^2.0.3"
   }
 }

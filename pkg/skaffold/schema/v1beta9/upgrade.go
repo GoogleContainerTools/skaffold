@@ -20,11 +20,11 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta10"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -43,28 +43,21 @@ var (
 // 2. No removals
 // 3. Updates:
 //    - sync map becomes a list of sync rules
-func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
-	// convert Deploy (should be the same)
-	var newDeploy next.DeployConfig
-	if err := pkgutil.CloneThroughJSON(config.Deploy, &newDeploy); err != nil {
-		return nil, errors.Wrap(err, "converting deploy config")
-	}
+func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
+	var newConfig next.SkaffoldConfig
+	pkgutil.CloneThroughJSON(c, &newConfig)
+	newConfig.APIVersion = next.Version
 
-	// convert Profiles (should be the same)
-	var newProfiles []next.Profile
-	if config.Profiles != nil {
-		if err := pkgutil.CloneThroughJSON(config.Profiles, &newProfiles); err != nil {
-			return nil, errors.Wrap(err, "converting new profile")
-		}
-	}
+	err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline)
+	return &newConfig, err
+}
 
-	newSyncRules := config.convertSyncRules()
-	// convert Build (should be same)
-	var newBuild next.BuildConfig
-	if err := pkgutil.CloneThroughJSON(config.Build, &newBuild); err != nil {
-		return nil, errors.Wrap(err, "converting new build")
-	}
+func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldBuild := &oldPipeline.(*Pipeline).Build
+	newBuild := &newPipeline.(*next.Pipeline).Build
+
 	// set Sync in newBuild
+	newSyncRules := convertSyncRules(oldBuild.Artifacts)
 	for i, a := range newBuild.Artifacts {
 		if len(newSyncRules[i]) > 0 {
 			a.Sync = &next.Sync{
@@ -72,31 +65,15 @@ func (config *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 			}
 		}
 	}
-
-	// convert Test (should be the same)
-	var newTest []*next.TestCase
-	if err := pkgutil.CloneThroughJSON(config.Test, &newTest); err != nil {
-		return nil, errors.Wrap(err, "converting new test")
-	}
-
-	return &next.SkaffoldConfig{
-		APIVersion: next.Version,
-		Kind:       config.Kind,
-		Pipeline: next.Pipeline{
-			Build:  newBuild,
-			Test:   newTest,
-			Deploy: newDeploy,
-		},
-		Profiles: newProfiles,
-	}, nil
+	return nil
 }
 
 // convertSyncRules converts the old sync map into sync rules.
 // It also prints a warning message when some rules can not be upgraded.
-func (config *SkaffoldConfig) convertSyncRules() [][]*next.SyncRule {
+func convertSyncRules(artifacts []*Artifact) [][]*next.SyncRule {
 	var incompatiblePatterns []string
-	newSync := make([][]*next.SyncRule, len(config.Build.Artifacts))
-	for i, a := range config.Build.Artifacts {
+	newSync := make([][]*next.SyncRule, len(artifacts))
+	for i, a := range artifacts {
 		newRules := make([]*next.SyncRule, 0, len(a.Sync))
 		for src, dest := range a.Sync {
 			var syncRule *next.SyncRule

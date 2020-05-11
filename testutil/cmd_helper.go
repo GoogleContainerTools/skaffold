@@ -17,12 +17,11 @@ limitations under the License.
 package testutil
 
 import (
+	"errors"
 	"io/ioutil"
 	"os/exec"
 	"strings"
 	"testing"
-
-	"github.com/pkg/errors"
 )
 
 type FakeCmd struct {
@@ -31,16 +30,16 @@ type FakeCmd struct {
 }
 
 type run struct {
-	command string
-	input   []byte
-	output  []byte
-	err     error
+	command    string
+	input      []byte
+	output     []byte
+	env        []string
+	err        error
+	pipeOutput bool
 }
 
-func NewFakeCmd(t *testing.T) *FakeCmd {
-	return &FakeCmd{
-		t: t,
-	}
+func newFakeCmd() *FakeCmd {
+	return &FakeCmd{}
 }
 
 func (c *FakeCmd) addRun(r run) *FakeCmd {
@@ -58,58 +57,91 @@ func (c *FakeCmd) popRun() (*run, error) {
 	return &run, nil
 }
 
-func FakeRun(t *testing.T, command string) *FakeCmd {
-	return NewFakeCmd(t).WithRun(command)
+func (c *FakeCmd) ForTest(t *testing.T) {
+	if c != nil {
+		c.t = t
+	}
 }
 
-func FakeRunInput(t *testing.T, command, input string) *FakeCmd {
-	return NewFakeCmd(t).WithRunInput(command, input)
+func CmdRun(command string) *FakeCmd {
+	return newFakeCmd().AndRun(command)
 }
 
-func FakeRunErr(t *testing.T, command string, err error) *FakeCmd {
-	return NewFakeCmd(t).WithRunErr(command, err)
+func CmdRunInput(command, input string) *FakeCmd {
+	return newFakeCmd().AndRunInput(command, input)
 }
 
-func FakeRunOut(t *testing.T, command string, output string) *FakeCmd {
-	return NewFakeCmd(t).WithRunOut(command, output)
+func CmdRunErr(command string, err error) *FakeCmd {
+	return newFakeCmd().AndRunErr(command, err)
 }
 
-func FakeRunOutErr(t *testing.T, command string, output string, err error) *FakeCmd {
-	return NewFakeCmd(t).WithRunOutErr(command, output, err)
+func CmdRunOut(command string, output string) *FakeCmd {
+	return newFakeCmd().AndRunOut(command, output)
 }
 
-func (c *FakeCmd) WithRun(command string) *FakeCmd {
+func CmdRunOutErr(command string, output string, err error) *FakeCmd {
+	return newFakeCmd().AndRunOutErr(command, output, err)
+}
+
+func CmdRunEnv(command string, env []string) *FakeCmd {
+	return newFakeCmd().AndRunEnv(command, env)
+}
+
+// CmdRunWithOutput programs the fake runner with a command and expected output
+func CmdRunWithOutput(command, output string) *FakeCmd {
+	return newFakeCmd().AndRunWithOutput(command, output)
+}
+
+func (c *FakeCmd) AndRun(command string) *FakeCmd {
 	return c.addRun(run{
 		command: command,
 	})
 }
 
-func (c *FakeCmd) WithRunInput(command, input string) *FakeCmd {
+func (c *FakeCmd) AndRunInput(command, input string) *FakeCmd {
 	return c.addRun(run{
 		command: command,
 		input:   []byte(input),
 	})
 }
 
-func (c *FakeCmd) WithRunErr(command string, err error) *FakeCmd {
+func (c *FakeCmd) AndRunErr(command string, err error) *FakeCmd {
 	return c.addRun(run{
 		command: command,
 		err:     err,
 	})
 }
 
-func (c *FakeCmd) WithRunOut(command string, output string) *FakeCmd {
+// AndRunWithOutput takes a command and an expected output.
+// It expected to match up with a call to RunCmd, and pipes
+// the provided output to RunCmd's exec.Cmd's stdout.
+func (c *FakeCmd) AndRunWithOutput(command, output string) *FakeCmd {
+	return c.addRun(run{
+		command:    command,
+		output:     []byte(output),
+		pipeOutput: true,
+	})
+}
+
+func (c *FakeCmd) AndRunOut(command string, output string) *FakeCmd {
 	return c.addRun(run{
 		command: command,
 		output:  []byte(output),
 	})
 }
 
-func (c *FakeCmd) WithRunOutErr(command string, output string, err error) *FakeCmd {
+func (c *FakeCmd) AndRunOutErr(command string, output string, err error) *FakeCmd {
 	return c.addRun(run{
 		command: command,
 		output:  []byte(output),
 		err:     err,
+	})
+}
+
+func (c *FakeCmd) AndRunEnv(command string, env []string) *FakeCmd {
+	return c.addRun(run{
+		command: command,
+		env:     env,
 	})
 }
 
@@ -124,6 +156,8 @@ func (c *FakeCmd) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	if r.command != command {
 		c.t.Errorf("expected: %s. Got: %s", r.command, command)
 	}
+
+	c.assertCmdEnv(r.env, cmd.Env)
 
 	if r.output == nil {
 		c.t.Errorf("expected RunCmd(%s) to be called. Got RunCmdOut(%s)", r.command, command)
@@ -141,12 +175,18 @@ func (c *FakeCmd) RunCmd(cmd *exec.Cmd) error {
 	}
 
 	if r.command != command {
-		c.t.Errorf("expected: %s. Got: %s", r.command, command)
+		c.t.Errorf("\nexpected: %s\n\ngot: %s", r.command, command)
 	}
 
 	if r.output != nil {
-		c.t.Errorf("expected RunCmdOut(%s) to be called. Got RunCmd(%s)", r.command, command)
+		if !r.pipeOutput {
+			c.t.Errorf("expected RunCmdOut(%s) to be called. Got RunCmd(%s)", r.command, command)
+		} else {
+			cmd.Stdout.Write(r.output)
+		}
 	}
+
+	c.assertCmdEnv(r.env, cmd.Env)
 
 	if r.input != nil {
 		if cmd.Stdin == nil {
@@ -166,4 +206,23 @@ func (c *FakeCmd) RunCmd(cmd *exec.Cmd) error {
 	}
 
 	return r.err
+}
+
+// assertCmdEnv ensures that actualEnv contains all values from requiredEnv
+func (c *FakeCmd) assertCmdEnv(requiredEnv, actualEnv []string) {
+	if requiredEnv == nil {
+		return
+	}
+	c.t.Helper()
+
+	envs := make(map[string]struct{}, len(actualEnv))
+	for _, e := range actualEnv {
+		envs[e] = struct{}{}
+	}
+
+	for _, e := range requiredEnv {
+		if _, ok := envs[e]; !ok {
+			c.t.Errorf("expected env variable with value %q", e)
+		}
+	}
 }

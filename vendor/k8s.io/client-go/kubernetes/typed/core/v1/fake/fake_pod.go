@@ -131,10 +131,32 @@ func (c *FakePods) DeleteCollection(options *v1.DeleteOptions, listOptions v1.Li
 // Patch applies the patch and returns the patched pod.
 func (c *FakePods) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *corev1.Pod, err error) {
 	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(podsResource, c.ns, name, data, subresources...), &corev1.Pod{})
+		Invokes(testing.NewPatchSubresourceAction(podsResource, c.ns, name, pt, data, subresources...), &corev1.Pod{})
 
 	if obj == nil {
 		return nil, err
 	}
 	return obj.(*corev1.Pod), err
+}
+
+// GetEphemeralContainers takes name of the pod, and returns the corresponding ephemeralContainers object, and an error if there is any.
+func (c *FakePods) GetEphemeralContainers(podName string, options v1.GetOptions) (result *corev1.EphemeralContainers, err error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewGetSubresourceAction(podsResource, c.ns, "ephemeralcontainers", podName), &corev1.EphemeralContainers{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.EphemeralContainers), err
+}
+
+// UpdateEphemeralContainers takes the representation of a ephemeralContainers and updates it. Returns the server's representation of the ephemeralContainers, and an error, if there is any.
+func (c *FakePods) UpdateEphemeralContainers(podName string, ephemeralContainers *corev1.EphemeralContainers) (result *corev1.EphemeralContainers, err error) {
+	obj, err := c.Fake.
+		Invokes(testing.NewUpdateSubresourceAction(podsResource, "ephemeralcontainers", c.ns, ephemeralContainers), &corev1.EphemeralContainers{})
+
+	if obj == nil {
+		return nil, err
+	}
+	return obj.(*corev1.EphemeralContainers), err
 }

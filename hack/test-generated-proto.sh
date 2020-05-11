@@ -14,11 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-cd $GOPATH/src/github.com/GoogleContainerTools/skaffold
-docker build -t generate-proto -f hack/proto/Dockerfile --target compare .
+docker build -t gen-proto -f hack/proto/Dockerfile --target compare proto
 if [ $? -ne 0 ]; then
+   docker run --rm gen-proto
    printf "\nGenerated proto files aren't updated. Please run ./hack/generate-proto.sh\n"
+   exit 1
+fi
+
+temp_file=$(mktemp)
+trap 'rm -f -- "$temp_file"' INT TERM HUP EXIT
+docker run --rm gen-proto cat index.md > "$temp_file"
+cmp "$temp_file" docs/content/en/docs/references/api/grpc.md
+if [ $? -ne 0 ]; then
+   printf "\nGenerated docs aren't updated. Please run ./hack/generate-proto.sh\n"
+   exit 1
 fi
 
 printf "\nGenerated proto files are updated!\n"

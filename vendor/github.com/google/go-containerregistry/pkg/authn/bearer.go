@@ -14,16 +14,14 @@
 
 package authn
 
-import (
-	"fmt"
-)
-
 // Bearer implements Authenticator for bearer authentication.
 type Bearer struct {
 	Token string `json:"token"`
 }
 
 // Authorization implements Authenticator.
-func (b *Bearer) Authorization() (string, error) {
-	return fmt.Sprintf("Bearer %s", b.Token), nil
+func (b *Bearer) Authorization() (*AuthConfig, error) {
+	return &AuthConfig{
+		RegistryToken: b.Token,
+	}, nil
 }

@@ -21,6 +21,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
@@ -33,9 +34,12 @@ var (
 // Process checks if the Skaffold pipeline is valid and returns all encountered errors as a concatenated string
 func Process(config *latest.SkaffoldConfig) error {
 	errs := visitStructs(config, validateYamltags)
+	errs = append(errs, validateImageNames(config.Build.Artifacts)...)
 	errs = append(errs, validateDockerNetworkMode(config.Build.Artifacts)...)
 	errs = append(errs, validateCustomDependencies(config.Build.Artifacts)...)
 	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
+	errs = append(errs, validatePortForwardResources(config.PortForward)...)
+	errs = append(errs, validateJibPluginTypes(config.Build.Artifacts)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -46,6 +50,27 @@ func Process(config *latest.SkaffoldConfig) error {
 		messages = append(messages, err.Error())
 	}
 	return fmt.Errorf(strings.Join(messages, " | "))
+}
+
+// validateImageNames makes sure the artifact image names are valid base names,
+// without tags nor digests.
+func validateImageNames(artifacts []*latest.Artifact) (errs []error) {
+	for _, a := range artifacts {
+		parsed, err := docker.ParseReference(a.ImageName)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("invalid imageName '%s': %v", a.ImageName, err))
+			continue
+		}
+
+		if parsed.Tag != "" {
+			errs = append(errs, fmt.Errorf("invalid imageName '%s': no tag should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))
+		}
+
+		if parsed.Digest != "" {
+			errs = append(errs, fmt.Errorf("invalid imageName '%s': no digest should be specified. Use taggers instead: https://skaffold.dev/docs/how-tos/taggers/", a.ImageName))
+		}
+	}
+	return
 }
 
 // validateDockerNetworkMode makes sure that networkMode is one of `bridge`, `none`, or `host` if set.
@@ -66,12 +91,10 @@ func validateDockerNetworkMode(artifacts []*latest.Artifact) (errs []error) {
 // validateCustomDependencies makes sure that dependencies.ignore is only used in conjunction with dependencies.paths
 func validateCustomDependencies(artifacts []*latest.Artifact) (errs []error) {
 	for _, a := range artifacts {
-		if a.CustomArtifact == nil {
+		if a.CustomArtifact == nil || a.CustomArtifact.Dependencies == nil || a.CustomArtifact.Dependencies.Ignore == nil {
 			continue
 		}
-		if a.CustomArtifact.Dependencies.Ignore == nil {
-			continue
-		}
+
 		if a.CustomArtifact.Dependencies.Dockerfile != nil || a.CustomArtifact.Dependencies.Command != "" {
 			errs = append(errs, fmt.Errorf("artifact %s has invalid dependencies; dependencies.ignore can only be used in conjunction with dependencies.paths", a.ImageName))
 		}
@@ -140,4 +163,43 @@ func validateSyncRules(artifacts []*latest.Artifact) []error {
 		}
 	}
 	return errs
+}
+
+// validatePortForwardResources checks that all user defined port forward resources
+// have a valid resourceType
+func validatePortForwardResources(pfrs []*latest.PortForwardResource) []error {
+	var errs []error
+	validResourceTypes := map[string]struct{}{
+		"pod":                   {},
+		"deployment":            {},
+		"service":               {},
+		"replicaset":            {},
+		"replicationcontroller": {},
+		"statefulset":           {},
+		"daemonset":             {},
+		"cronjob":               {},
+		"job":                   {},
+	}
+	for _, pfr := range pfrs {
+		resourceType := strings.ToLower(string(pfr.Type))
+		if _, ok := validResourceTypes[resourceType]; !ok {
+			errs = append(errs, fmt.Errorf("%s is not a valid resource type for port forwarding", pfr.Type))
+		}
+	}
+	return errs
+}
+
+// validateJibPluginTypes makes sure that jib type is one of `maven`, or `gradle` if set.
+func validateJibPluginTypes(artifacts []*latest.Artifact) (errs []error) {
+	for _, a := range artifacts {
+		if a.JibArtifact == nil || a.JibArtifact.Type == "" {
+			continue
+		}
+		t := strings.ToLower(a.JibArtifact.Type)
+		if t == "maven" || t == "gradle" {
+			continue
+		}
+		errs = append(errs, fmt.Errorf("artifact %s has invalid Jib plugin type '%s'", a.ImageName, t))
+	}
+	return
 }

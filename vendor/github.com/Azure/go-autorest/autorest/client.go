@@ -16,15 +16,16 @@ package autorest
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/http/cookiejar"
+	"strings"
 	"time"
 
-	"github.com/Azure/go-autorest/version"
+	"github.com/Azure/go-autorest/logger"
 )
 
 const (
@@ -68,6 +69,22 @@ const (
 // last http.Response.
 type Response struct {
 	*http.Response `json:"-"`
+}
+
+// IsHTTPStatus returns true if the returned HTTP status code matches the provided status code.
+// If there was no response (i.e. the underlying http.Response is nil) the return value is false.
+func (r Response) IsHTTPStatus(statusCode int) bool {
+	if r.Response == nil {
+		return false
+	}
+	return r.Response.StatusCode == statusCode
+}
+
+// HasHTTPStatus returns true if the returned HTTP status code matches one of the provided status codes.
+// If there was no response (i.e. the underlying http.Response is nil) or not status codes are provided
+// the return value is false.
+func (r Response) HasHTTPStatus(statusCodes ...int) bool {
+	return ResponseHasStatusCode(r.Response, statusCodes...)
 }
 
 // LoggingInspector implements request and response inspectors that log the full request and
@@ -145,6 +162,7 @@ type Client struct {
 	PollingDelay time.Duration
 
 	// PollingDuration sets the maximum polling time after which an error is returned.
+	// Setting this to zero will use the provided context to control the duration.
 	PollingDuration time.Duration
 
 	// RetryAttempts sets the default number of retry attempts for client.
@@ -166,14 +184,32 @@ type Client struct {
 // NewClientWithUserAgent returns an instance of a Client with the UserAgent set to the passed
 // string.
 func NewClientWithUserAgent(ua string) Client {
+	return newClient(ua, tls.RenegotiateNever)
+}
+
+// ClientOptions contains various Client configuration options.
+type ClientOptions struct {
+	// UserAgent is an optional user-agent string to append to the default user agent.
+	UserAgent string
+
+	// Renegotiation is an optional setting to control client-side TLS renegotiation.
+	Renegotiation tls.RenegotiationSupport
+}
+
+// NewClientWithOptions returns an instance of a Client with the specified values.
+func NewClientWithOptions(options ClientOptions) Client {
+	return newClient(options.UserAgent, options.Renegotiation)
+}
+
+func newClient(ua string, renegotiation tls.RenegotiationSupport) Client {
 	c := Client{
 		PollingDelay:    DefaultPollingDelay,
 		PollingDuration: DefaultPollingDuration,
 		RetryAttempts:   DefaultRetryAttempts,
 		RetryDuration:   DefaultRetryDuration,
-		UserAgent:       version.UserAgent(),
+		UserAgent:       UserAgent(),
 	}
-	c.Sender = c.sender()
+	c.Sender = c.sender(renegotiation)
 	c.AddToUserAgent(ua)
 	return c
 }
@@ -208,17 +244,25 @@ func (c Client) Do(r *http.Request) (*http.Response, error) {
 		}
 		return resp, NewErrorWithError(err, "autorest/Client", "Do", nil, "Preparing request failed")
 	}
-
-	resp, err := SendWithSender(c.sender(), r)
+	logger.Instance.WriteRequest(r, logger.Filter{
+		Header: func(k string, v []string) (bool, []string) {
+			// remove the auth token from the log
+			if strings.EqualFold(k, "Authorization") || strings.EqualFold(k, "Ocp-Apim-Subscription-Key") {
+				v = []string{"**REDACTED**"}
+			}
+			return true, v
+		},
+	})
+	resp, err := SendWithSender(c.sender(tls.RenegotiateNever), r)
+	logger.Instance.WriteResponse(resp, logger.Filter{})
 	Respond(resp, c.ByInspecting())
 	return resp, err
 }
 
 // sender returns the Sender to which to send requests.
-func (c Client) sender() Sender {
+func (c Client) sender(renengotiation tls.RenegotiationSupport) Sender {
 	if c.Sender == nil {
-		j, _ := cookiejar.New(nil)
-		return &http.Client{Jar: j}
+		return sender(renengotiation)
 	}
 	return c.Sender
 }

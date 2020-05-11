@@ -17,18 +17,20 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"io"
+
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 var versionFlag = flags.NewTemplateFlag("{{.Version}}\n", version.Info{})
 
-func NewCmdVersion(out io.Writer) *cobra.Command {
-	return NewCmd(out, "version").
+func NewCmdVersion() *cobra.Command {
+	return NewCmd("version").
 		WithDescription("Print the version information").
 		WithFlags(func(f *pflag.FlagSet) {
 			f.VarP(versionFlag, "output", "o", versionFlag.Usage())
@@ -36,6 +38,6 @@ func NewCmdVersion(out io.Writer) *cobra.Command {
 		NoArgs(doVersion)
 }
 
-func doVersion(out io.Writer) error {
+func doVersion(_ context.Context, out io.Writer) error {
 	return versionFlag.Template().Execute(out, version.Get())
 }

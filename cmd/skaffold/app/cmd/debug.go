@@ -20,18 +20,19 @@ import (
 	"context"
 	"io"
 
+	"github.com/spf13/cobra"
+
 	debugging "github.com/GoogleContainerTools/skaffold/pkg/skaffold/debug"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
-	"github.com/spf13/cobra"
 )
 
 // NewCmdDebug describes the CLI command to run a pipeline in debug mode.
-func NewCmdDebug(out io.Writer) *cobra.Command {
-	return NewCmd(out, "debug").
-		WithDescription("Runs a pipeline file in debug mode").
+func NewCmdDebug() *cobra.Command {
+	return NewCmd("debug").
+		WithDescription("[beta] Run a pipeline in debug mode").
 		WithLongDescription("Similar to `dev`, but configures the pipeline for debugging.").
 		WithCommonFlags().
-		NoArgs(cancelWithCtrlC(context.Background(), doDebug))
+		NoArgs(doDebug)
 }
 
 func doDebug(ctx context.Context, out io.Writer) error {

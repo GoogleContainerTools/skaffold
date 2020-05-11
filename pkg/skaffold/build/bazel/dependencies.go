@@ -18,41 +18,55 @@ package bazel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
-const sourceQuery = "kind('source file', deps('%[1]s')) union buildfiles('%[1]s')"
+const sourceQuery = "kind('source file', deps('%[1]s')) union buildfiles(deps('%[1]s'))"
 
 func query(target string) string {
 	return fmt.Sprintf(sourceQuery, target)
 }
 
+var once sync.Once
+
 // GetDependencies finds the sources dependencies for the given bazel artifact.
 // All paths are relative to the workspace.
-func GetDependencies(ctx context.Context, workspace string, a *latest.BazelArtifact) ([]string, error) {
+func GetDependencies(ctx context.Context, dir string, a *latest.BazelArtifact) ([]string, error) {
 	timer := time.NewTimer(1 * time.Second)
 	defer timer.Stop()
 
 	go func() {
 		<-timer.C
-		logrus.Warnln("Retrieving Bazel dependencies can take a long time the first time")
+		once.Do(func() { logrus.Warnln("Retrieving Bazel dependencies can take a long time the first time") })
 	}()
 
-	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no")
-	cmd.Dir = workspace
+	topLevelFolder, err := findWorkspace(dir)
+	if err != nil {
+		return nil, fmt.Errorf("unable to find the WORKSPACE file: %w", err)
+	}
+
+	absDir, err := filepath.Abs(dir)
+	if err != nil {
+		return nil, fmt.Errorf("unable to find absolute path for %q: %w", dir, err)
+	}
+
+	cmd := exec.CommandContext(ctx, "bazel", "query", query(a.BuildTarget), "--noimplicit_deps", "--order_output=no", "--output=label")
+	cmd.Dir = dir
 	stdout, err := util.RunCmdOut(cmd)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting bazel dependencies")
+		return nil, fmt.Errorf("getting bazel dependencies: %w", err)
 	}
 
 	labels := strings.Split(string(stdout), "\n")
@@ -68,12 +82,18 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.BazelArtif
 			continue
 		}
 
-		deps = append(deps, depToPath(l))
+		rel, err := filepath.Rel(absDir, filepath.Join(topLevelFolder, depToPath(l)))
+		if err != nil {
+			return nil, fmt.Errorf("unable to find absolute path: %w", err)
+		}
+		deps = append(deps, rel)
 	}
 
-	if _, err := os.Stat(filepath.Join(workspace, "WORKSPACE")); err == nil {
-		deps = append(deps, "WORKSPACE")
+	rel, err := filepath.Rel(absDir, filepath.Join(topLevelFolder, "WORKSPACE"))
+	if err != nil {
+		return nil, fmt.Errorf("unable to find absolute path: %w", err)
 	}
+	deps = append(deps, rel)
 
 	logrus.Debugf("Found dependencies for bazel artifact: %v", deps)
 
@@ -82,4 +102,23 @@ func GetDependencies(ctx context.Context, workspace string, a *latest.BazelArtif
 
 func depToPath(dep string) string {
 	return strings.TrimPrefix(strings.Replace(strings.TrimPrefix(dep, "//"), ":", "/", 1), "/")
+}
+
+func findWorkspace(workingDir string) (string, error) {
+	dir, err := filepath.Abs(workingDir)
+	if err != nil {
+		return "", fmt.Errorf("invalid working dir: %w", err)
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "WORKSPACE")); err == nil {
+			return dir, nil
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", errors.New("no WORKSPACE file found")
+		}
+		dir = parent
+	}
 }

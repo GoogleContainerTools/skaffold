@@ -18,88 +18,99 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"io/ioutil"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
-	"github.com/pkg/errors"
 )
 
 func TestLoadImagesInKindNodes(t *testing.T) {
-	var tests = []struct {
+	tests := []struct {
 		description   string
+		kindCluster   string
 		built         []build.Artifact
 		deployed      []build.Artifact
-		command       util.Command
+		commands      util.Command
 		shouldErr     bool
 		expectedError string
 	}{
 		{
 			description: "load image",
+			kindCluster: "kind",
 			built:       []build.Artifact{{Tag: "tag1"}},
 			deployed:    []build.Artifact{{Tag: "tag1"}},
-			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
-				WithRun("kind load docker-image tag1"),
+			commands: testutil.
+				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
+				AndRun("kind load docker-image --name kind tag1"),
 		},
 		{
 			description: "load missing image",
+			kindCluster: "other-kind",
 			built:       []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
 			deployed:    []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
-			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "tag1").
-				WithRun("kind load docker-image tag2"),
+			commands: testutil.
+				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "tag1").
+				AndRun("kind load docker-image --name other-kind tag2"),
 		},
 		{
 			description: "inspect error",
 			built:       []build.Artifact{{Tag: "tag"}},
 			deployed:    []build.Artifact{{Tag: "tag"}},
-			command: testutil.NewFakeCmd(t).
-				WithRunOutErr("kubectl get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "", errors.New("BUG")),
+			commands: testutil.
+				CmdRunOutErr("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "", errors.New("BUG")),
 			shouldErr:     true,
 			expectedError: "unable to inspect",
 		},
 		{
 			description: "load error",
+			kindCluster: "kind",
 			built:       []build.Artifact{{Tag: "tag"}},
 			deployed:    []build.Artifact{{Tag: "tag"}},
-			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
-				WithRunErr("kind load docker-image tag", errors.New("BUG")),
+			commands: testutil.
+				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
+				AndRunErr("kind load docker-image --name kind tag", errors.New("BUG")),
 			shouldErr:     true,
 			expectedError: "unable to load",
 		},
 		{
 			description: "ignore image that's not built",
+			kindCluster: "kind",
 			built:       []build.Artifact{{Tag: "built"}},
 			deployed:    []build.Artifact{{Tag: "built"}, {Tag: "busybox"}},
-			command: testutil.NewFakeCmd(t).
-				WithRunOut("kubectl get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
-				WithRun("kind load docker-image built"),
+			commands: testutil.
+				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
+				AndRun("kind load docker-image --name kind built"),
 		},
 		{
 			description: "no artifact",
 			deployed:    []build.Artifact{},
-			command:     testutil.NewFakeCmd(t),
 		},
 		{
 			description: "no built artifact",
 			built:       []build.Artifact{},
 			deployed:    []build.Artifact{{Tag: "busybox"}},
-			command:     testutil.NewFakeCmd(t),
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.Override(&util.DefaultExecCommand, test.command)
+			t.Override(&util.DefaultExecCommand, test.commands)
 
 			r := &SkaffoldRunner{
 				builds: test.built,
+				runCtx: &runcontext.RunContext{
+					Opts: config.SkaffoldOptions{
+						Namespace: "namespace",
+					},
+					KubeContext: "kubecontext",
+				},
 			}
-			err := r.loadImagesInKindNodes(context.Background(), ioutil.Discard, test.deployed)
+			err := r.loadImagesInKindNodes(context.Background(), ioutil.Discard, test.kindCluster, test.deployed)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)

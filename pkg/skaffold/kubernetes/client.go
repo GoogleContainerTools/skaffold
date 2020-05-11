@@ -19,38 +19,31 @@ package kubernetes
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	restclient "k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // Initialize all known client auth plugins
 
-	// Initialize all known client auth plugins
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
 
-func GetClientset() (kubernetes.Interface, error) {
-	config, err := getClientConfig()
+// for tests
+var (
+	Client        = getClientset
+	DynamicClient = getDynamicClient
+)
+
+func getClientset() (kubernetes.Interface, error) {
+	config, err := context.GetRestClientConfig()
 	if err != nil {
-		return nil, errors.Wrap(err, "getting client config for kubernetes client")
+		return nil, fmt.Errorf("getting client config for Kubernetes client: %w", err)
 	}
 	return kubernetes.NewForConfig(config)
 }
 
-func getClientConfig() (*restclient.Config, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
-	clientConfig, err := kubeConfig.ClientConfig()
+func getDynamicClient() (dynamic.Interface, error) {
+	config, err := context.GetRestClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("error creating kubeConfig: %s", err)
-	}
-	return clientConfig, nil
-}
-
-func GetDynamicClient() (dynamic.Interface, error) {
-	config, err := getClientConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "getting client config for dynamic client")
+		return nil, fmt.Errorf("getting client config for dynamic client: %w", err)
 	}
 	return dynamic.NewForConfig(config)
 }

@@ -19,8 +19,9 @@ package cmd
 import (
 	"reflect"
 
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/spf13/pflag"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 )
 
 // Flag defines a Skaffold CLI flag which contains a list of
@@ -46,7 +47,7 @@ var FlagRegistry = []Flag{
 	{
 		Name:          "filename",
 		Shorthand:     "f",
-		Usage:         "Filename or URL to the pipeline file",
+		Usage:         "Path or URL to the Skaffold config file",
 		Value:         &opts.ConfigurationFile,
 		DefValue:      "skaffold.yaml",
 		FlagAddMethod: "StringVar",
@@ -55,11 +56,11 @@ var FlagRegistry = []Flag{
 	{
 		Name:          "profile",
 		Shorthand:     "p",
-		Usage:         "Activate profiles by name",
+		Usage:         "Activate profiles by name (prefixed with `-` to disable a profile)",
 		Value:         &opts.Profiles,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"all"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose"},
 	},
 	{
 		Name:          "namespace",
@@ -68,7 +69,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.Namespace,
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"all"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
 	},
 	{
 		Name:          "default-repo",
@@ -76,14 +77,14 @@ var FlagRegistry = []Flag{
 		Usage:         "Default repository value (overrides global config)",
 		Value:         &opts.DefaultRepo,
 		DefValue:      "",
-		FlagAddMethod: "StringVar",
-		DefinedOn:     []string{"all"},
+		FlagAddMethod: "Var",
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete"},
 	},
 	{
 		Name:          "cache-artifacts",
-		Usage:         "Set to true to enable caching of artifacts",
+		Usage:         "Set to false to disable default caching of artifacts",
 		Value:         &opts.CacheArtifacts,
-		DefValue:      false,
+		DefValue:      true,
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug"},
 	},
@@ -134,7 +135,7 @@ var FlagRegistry = []Flag{
 		Value:         &opts.CustomLabels,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
-		DefinedOn:     []string{"dev", "run", "debug", "deploy"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render"},
 	},
 	{
 		Name:          "toot",
@@ -162,23 +163,13 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "debug"},
 	},
-	// We need opts.Force and opts.ForceDev since cobra, overwrites the default value
-	// when registering the flag twice.
 	{
 		Name:          "force",
-		Usage:         "Recreate kubernetes resources if necessary for deployment (default false, warning: might cause downtime!)",
+		Usage:         "Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)",
 		Value:         &opts.Force,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"deploy"},
-	},
-	{
-		Name:          "force",
-		Usage:         "Recreate kubernetes resources if necessary for deployment (warning: might cause downtime!)",
-		Value:         &opts.ForceDev,
-		DefValue:      true,
-		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "run", "debug"},
+		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
 	},
 	{
 		Name:          "skip-tests",
@@ -218,23 +209,90 @@ var FlagRegistry = []Flag{
 		Value:         &opts.PortForward.Enabled,
 		DefValue:      false,
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "debug"},
+		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
+	},
+	{
+		Name:          "status-check",
+		Usage:         "Wait for deployed resources to stabilize",
+		Value:         &opts.StatusCheck,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "debug", "deploy", "run"},
+	},
+	{
+		Name:          "render-only",
+		Usage:         "Print rendered Kubernetes manifests instead of deploying them",
+		Value:         &opts.RenderOnly,
+		DefValue:      false,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "run"},
+	},
+	{
+		Name:          "config",
+		Shorthand:     "c",
+		Usage:         "File for global configurations (defaults to $HOME/.skaffold/config)",
+		Value:         &opts.GlobalConfig,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"run", "dev", "debug", "build", "deploy", "delete", "diagnose"},
+	},
+	{
+		Name:          "kube-context",
+		Usage:         "Deploy to this Kubernetes context",
+		Value:         &opts.KubeContext,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+	},
+	{
+		Name:          "kubeconfig",
+		Usage:         "Path to the kubeconfig file to use for CLI requests.",
+		Value:         &opts.KubeConfig,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"build", "debug", "delete", "deploy", "dev", "run"},
+	},
+	{
+		Name:          "tag",
+		Shorthand:     "t",
+		Usage:         "The optional custom tag to use for images which overrides the current Tagger configuration",
+		Value:         &opts.CustomTag,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"build", "debug", "dev", "run"},
+	},
+	{
+		Name:          "minikube-profile",
+		Usage:         "forces skaffold use the given minikube-profile and forces building against the docker daemon inside that minikube profile",
+		Value:         &opts.MinikubeProfile,
+		DefValue:      "",
+		FlagAddMethod: "StringVar",
+		DefinedOn:     []string{"build", "debug", "dev", "run"},
+	},
+	{
+		Name:          "profile-auto-activation",
+		Usage:         "Set to false to disable profile auto activation",
+		Value:         &opts.ProfileAutoActivation,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose"},
 	},
 }
 
 var commandFlags []*pflag.Flag
 
-// SetUpFlags creates pflag.Flag for all registered flags
-func SetUpFlags() {
+// SetupFlags creates pflag.Flag for all registered flags
+func SetupFlags() {
 	commandFlags = make([]*pflag.Flag, len(FlagRegistry))
 	for i, fl := range FlagRegistry {
 		fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
-		inputs := []reflect.Value{
-			reflect.ValueOf(fl.Value),
-			reflect.ValueOf(fl.Name),
-			reflect.ValueOf(fl.DefValue),
-			reflect.ValueOf(fl.Usage),
+
+		inputs := []reflect.Value{reflect.ValueOf(fl.Value), reflect.ValueOf(fl.Name)}
+		if fl.FlagAddMethod != "Var" {
+			inputs = append(inputs, reflect.ValueOf(fl.DefValue))
 		}
+		inputs = append(inputs, reflect.ValueOf(fl.Usage))
+
 		reflect.ValueOf(fs).MethodByName(fl.FlagAddMethod).Call(inputs)
 		f := fs.Lookup(fl.Name)
 		if fl.Shorthand != "" {
@@ -248,14 +306,15 @@ func SetUpFlags() {
 }
 
 func AddFlags(fs *pflag.FlagSet, cmdName string) {
-	if len(commandFlags) == 0 {
-		SetUpFlags()
-	}
 	for _, f := range commandFlags {
 		if hasCmdAnnotation(cmdName, f.Annotations["cmds"]) {
 			fs.AddFlag(f)
 		}
 	}
+	// this is a temporary solution until we figure out an automated way to detect the
+	// minikube profile see
+	// https://github.com/GoogleContainerTools/skaffold/issues/3668
+	fs.MarkHidden("minikube-profile")
 }
 
 func hasCmdAnnotation(cmdName string, annotations []string) bool {
@@ -265,4 +324,8 @@ func hasCmdAnnotation(cmdName string, annotations []string) bool {
 		}
 	}
 	return false
+}
+
+func init() {
+	SetupFlags()
 }

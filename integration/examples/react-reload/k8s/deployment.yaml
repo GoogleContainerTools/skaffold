@@ -24,6 +24,6 @@ spec:
     spec:
       containers:
       - name: react
-        image: gcr.io/k8s-skaffold/react-reload
+        image: react-reload
         ports:
         - containerPort: 8080

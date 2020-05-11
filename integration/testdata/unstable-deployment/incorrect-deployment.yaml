@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unstable-deployment
+spec:
+  progressDeadlineSeconds: 10
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unstable
+  template:
+    metadata:
+      labels:
+        app: unstable
+    spec:
+      containers:
+        - name: incorrect-example
+          image: incorrect-example
+          readinessProbe:
+            exec:
+              command:
+                - cat
+                - /does-not-exist

@@ -21,41 +21,38 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os/exec"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 )
-
-// Client is for tests
-var Client = GetClientset
-var DynamicClient = GetDynamicClient
 
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
 	output      io.Writer
+	kubectlcli  *kubectl.CLI
 	podSelector PodSelector
 	namespaces  []string
 	colorPicker ColorPicker
 
 	muted             int32
-	startTime         time.Time
+	sinceTime         time.Time
 	cancel            context.CancelFunc
 	trackedContainers trackedContainers
+	outputLock        sync.Mutex
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, baseImageNames []string, podSelector PodSelector, namespaces []string) *LogAggregator {
+func NewLogAggregator(out io.Writer, cli *kubectl.CLI, baseImageNames []string, podSelector PodSelector, namespaces []string) *LogAggregator {
 	return &LogAggregator{
 		output:      out,
+		kubectlcli:  cli,
 		podSelector: podSelector,
 		namespaces:  namespaces,
 		colorPicker: NewColorPicker(baseImageNames),
@@ -65,18 +62,21 @@ func NewLogAggregator(out io.Writer, baseImageNames []string, podSelector PodSel
 	}
 }
 
+func (a *LogAggregator) SetSince(t time.Time) {
+	a.sinceTime = t
+}
+
 // Start starts a logger that listens to pods and tail their logs
 // if they are matched by the `podSelector`.
 func (a *LogAggregator) Start(ctx context.Context) error {
 	cancelCtx, cancel := context.WithCancel(ctx)
 	a.cancel = cancel
-	a.startTime = time.Now()
 
 	aggregate := make(chan watch.Event)
 	stopWatchers, err := AggregatePodWatcher(a.namespaces, aggregate)
 	if err != nil {
 		stopWatchers()
-		return errors.Wrap(err, "initializing aggregate pod watcher")
+		return fmt.Errorf("initializing aggregate pod watcher: %w", err)
 	}
 
 	go func() {
@@ -91,10 +91,6 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 					return
 				}
 
-				if evt.Type != watch.Added && evt.Type != watch.Modified {
-					continue
-				}
-
 				pod, ok := evt.Object.(*v1.Pod)
 				if !ok {
 					continue
@@ -104,21 +100,17 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 					continue
 				}
 
-				for _, container := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
-					if container.ContainerID == "" {
-						if container.State.Waiting != nil && container.State.Waiting.Message != "" {
-							color.Red.Fprintln(a.output, container.State.Waiting.Message)
+				// TODO(dgageot): Add EphemeralContainerStatuses
+				for _, c := range append(pod.Status.InitContainerStatuses, pod.Status.ContainerStatuses...) {
+					if c.ContainerID == "" {
+						if c.State.Waiting != nil && c.State.Waiting.Message != "" {
+							color.Red.Fprintln(a.output, c.State.Waiting.Message)
 						}
 						continue
 					}
 
-					if container.State.Terminated != nil {
-						color.Purple.Fprintln(a.output, container.State.Terminated.Message)
-						continue
-					}
-
-					if !a.trackedContainers.add(container.ContainerID) {
-						go a.streamContainerLogs(cancelCtx, pod, container)
+					if !a.trackedContainers.add(c.ContainerID) {
+						go a.streamContainerLogs(cancelCtx, pod, c)
 					}
 				}
 			}
@@ -146,26 +138,41 @@ func sinceSeconds(d time.Duration) int64 {
 }
 
 func (a *LogAggregator) streamContainerLogs(ctx context.Context, pod *v1.Pod, container v1.ContainerStatus) {
-	logrus.Infof("Stream logs from pod: %s container: %s", pod.Name, container.Name)
+	logrus.Infof("Streaming logs from pod: %s container: %s", pod.Name, container.Name)
 
 	// In theory, it's more precise to use --since-time='' but there can be a time
 	// difference between the user's machine and the server.
 	// So we use --since=Xs and round up to the nearest second to not lose any log.
-	sinceSeconds := fmt.Sprintf("--since=%ds", sinceSeconds(time.Since(a.startTime)))
+	sinceSeconds := fmt.Sprintf("--since=%ds", sinceSeconds(time.Since(a.sinceTime)))
 
 	tr, tw := io.Pipe()
-	cmd := exec.CommandContext(ctx, "kubectl", "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace)
-	cmd.Stdout = tw
-	go util.RunCmd(cmd)
-
-	color := a.colorPicker.Pick(pod)
-	prefix := prefix(pod, container)
 	go func() {
-		if err := a.streamRequest(ctx, color, prefix, tr); err != nil {
-			logrus.Errorf("streaming request %s", err)
+		if err := a.kubectlcli.Run(ctx, nil, tw, "logs", sinceSeconds, "-f", pod.Name, "-c", container.Name, "--namespace", pod.Namespace); err != nil {
+			// Don't print errors if the user interrupted the logs
+			// or if the logs were interrupted because of a configuration change
+			if ctx.Err() != context.Canceled {
+				logrus.Warn(err)
+			}
 		}
-		a.trackedContainers.remove(container.ContainerID)
+		_ = tw.Close()
 	}()
+
+	headerColor := a.colorPicker.Pick(pod)
+	prefix := prefix(pod, container)
+	if err := a.streamRequest(ctx, headerColor, prefix, tr); err != nil {
+		logrus.Errorf("streaming request %s", err)
+	}
+}
+
+func (a *LogAggregator) printLogLine(headerColor color.Color, prefix, text string) {
+	if !a.IsMuted() {
+		a.outputLock.Lock()
+
+		headerColor.Fprintf(a.output, "%s ", prefix)
+		fmt.Fprint(a.output, text)
+
+		a.outputLock.Unlock()
+	}
 }
 
 func prefix(pod *v1.Pod, container v1.ContainerStatus) string {
@@ -175,38 +182,26 @@ func prefix(pod *v1.Pod, container v1.ContainerStatus) string {
 	return fmt.Sprintf("[%s]", container.Name)
 }
 
-func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Color, header string, rc io.Reader) error {
+func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Color, prefix string, rc io.Reader) error {
 	r := bufio.NewReader(rc)
 	for {
 		select {
 		case <-ctx.Done():
-			logrus.Infof("%s interrupted", header)
+			logrus.Infof("%s interrupted", prefix)
 			return nil
 		default:
-		}
+			// Read up to newline
+			line, err := r.ReadString('\n')
+			if err == io.EOF {
+				return nil
+			}
+			if err != nil {
+				return fmt.Errorf("reading bytes from log stream: %w", err)
+			}
 
-		// Read up to newline
-		line, err := r.ReadBytes('\n')
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return errors.Wrap(err, "reading bytes from log stream")
-		}
-
-		if a.IsMuted() {
-			continue
-		}
-
-		if _, err := headerColor.Fprintf(a.output, "%s ", header); err != nil {
-			return errors.Wrap(err, "writing pod prefix header to out")
-		}
-		if _, err := fmt.Fprint(a.output, string(line)); err != nil {
-			return errors.Wrap(err, "writing pod log to out")
+			a.printLogLine(headerColor, prefix, line)
 		}
 	}
-	logrus.Infof("%s exited", header)
-	return nil
 }
 
 // Mute mutes the logs.
@@ -240,12 +235,6 @@ func (t *trackedContainers) add(id string) bool {
 	return alreadyTracked
 }
 
-func (t *trackedContainers) remove(id string) {
-	t.Lock()
-	delete(t.ids, id)
-	t.Unlock()
-}
-
 // PodSelector is used to choose which pods to log.
 type PodSelector interface {
 	Select(pod *v1.Pod) bool
@@ -271,19 +260,12 @@ func (l *ImageList) Add(image string) {
 	l.Unlock()
 }
 
-// Remove removes an image from the list.
-func (l *ImageList) Remove(image string) {
-	l.Lock()
-	delete(l.names, image)
-	l.Unlock()
-}
-
 // Select returns true if one of the pod's images is in the list.
 func (l *ImageList) Select(pod *v1.Pod) bool {
 	l.RLock()
 	defer l.RUnlock()
 
-	for _, container := range pod.Spec.Containers {
+	for _, container := range append(pod.Spec.InitContainers, pod.Spec.Containers...) {
 		if l.names[container.Image] {
 			return true
 		}

@@ -17,6 +17,10 @@ defaultContentLanguageInSubdir = false
 # Useful when translating.
 enableMissingTranslationPlaceholders = true
 
+# validate links and fail if not found
+refLinksErrorLevel="ERROR"
+relativeURLs=true
+canonifyURLs=false
 disableKinds = ["taxonomy", "taxonomyTerm"]
 
 # Highlighting config
@@ -31,6 +35,12 @@ pygmentsStyle = "tango"
  # First one is picked as the Twitter card image if not set on page.
  #images = ["images/project-illustration.png"]
 
+# Enable Emojis
+enableEmoji = true
+
+[markup.goldmark.renderer]
+unsafe= true
+
 # Configure how URLs look like per section.
 [permalinks]
 blog = "/:section/:year/:month/:day/:slug/"
@@ -38,7 +48,9 @@ blog = "/:section/:year/:month/:day/:slug/"
 ## Configuration for BlackFriday markdown parser: https://github.com/russross/blackfriday
 [blackfriday]
 plainIDAnchors = true
-hrefTargetBlank = true
+
+# due to https://github.com/gohugoio/hugo/issues/2424 this should not be turned on until it is fixed
+hrefTargetBlank = false
 angledQuotes = false
 latexDashes = true
 
@@ -67,10 +79,10 @@ weight = 1
 # Everything below this are Site Params
 
 [params]
-#copyright = "Skaffold"
-#privacy_policy = "https://policies.google.com/privacy"
+copyright = "Skaffold Authors"
+privacy_policy = "https://policies.google.com/privacy"
 github_repo = "https://github.com/GoogleContainerTools/skaffold"
-skaffold_version = "skaffold/v1beta12"
+skaffold_version = "skaffold/v2beta3"
 
 # Google Custom Search Engine ID. Remove or comment out to disable search.
 gcs_engine_id = "013756393218025596041:3nojel67sum"
@@ -96,3 +108,25 @@ breadcrumb_disable = false
 	name = "Mailing List"
 	url = "https://groups.google.com/forum/#!forum/skaffold-users"
 	icon = "fa fa-envelope"
+
+[menu]
+	[[menu.main]]
+		identifier = "mailing list"
+		pre = "<i class='fa fa-envelope'></i>"
+		url = "https://groups.google.com/forum/#!forum/skaffold-users"
+		icon = "fa fa-envelope"
+		weight = -100
+
+	[[menu.main]]
+		identifier = "github"
+		pre = "<i class='fab fa-github'></i>"
+		url = "https://github.com/GoogleContainerTools/skaffold"
+		icon = "fab fa-github"
+		weight = -100
+
+	[[menu.main]]
+		identifier = "slack"
+		pre = "<i class='fab fa-slack'></i>"
+		url = "https://kubernetes.slack.com/messages/CABQMSZA6/"
+		icon = "fab fa-slack"
+		weight = -100

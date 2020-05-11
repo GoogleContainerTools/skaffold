@@ -15,56 +15,102 @@
 package remote
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/logs"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
 )
 
-// ImageOption is a functional option for Image, index, and Get.
-type ImageOption func(*imageOpener) error
+// Option is a functional option for remote operations.
+type Option func(*options) error
+
+type options struct {
+	auth      authn.Authenticator
+	keychain  authn.Keychain
+	transport http.RoundTripper
+	platform  v1.Platform
+}
+
+func makeOptions(target authn.Resource, opts ...Option) (*options, error) {
+	o := &options{
+		auth:      authn.Anonymous,
+		transport: http.DefaultTransport,
+		platform:  defaultPlatform,
+	}
+
+	for _, option := range opts {
+		if err := option(o); err != nil {
+			return nil, err
+		}
+	}
+
+	if o.keychain != nil {
+		auth, err := o.keychain.Resolve(target)
+		if err != nil {
+			return nil, err
+		}
+		if auth == authn.Anonymous {
+			logs.Warn.Println("No matching credentials were found, falling back on anonymous")
+		}
+		o.auth = auth
+	}
+
+	// Wrap the transport in something that logs requests and responses.
+	// It's expensive to generate the dumps, so skip it if we're writing
+	// to nothing.
+	if logs.Enabled(logs.Debug) {
+		o.transport = transport.NewLogger(o.transport)
+	}
+
+	// Wrap the transport in something that can retry network flakes.
+	o.transport = transport.NewRetry(o.transport)
+
+	return o, nil
+}
 
 // WithTransport is a functional option for overriding the default transport
-// on a remote image
-func WithTransport(t http.RoundTripper) ImageOption {
-	return func(i *imageOpener) error {
-		i.transport = t
+// for remote operations.
+//
+// The default transport its http.DefaultTransport.
+func WithTransport(t http.RoundTripper) Option {
+	return func(o *options) error {
+		o.transport = t
 		return nil
 	}
 }
 
 // WithAuth is a functional option for overriding the default authenticator
-// on a remote image
-func WithAuth(auth authn.Authenticator) ImageOption {
-	return func(i *imageOpener) error {
-		i.auth = auth
+// for remote operations.
+//
+// The default authenticator is authn.Anonymous.
+func WithAuth(auth authn.Authenticator) Option {
+	return func(o *options) error {
+		o.auth = auth
 		return nil
 	}
 }
 
 // WithAuthFromKeychain is a functional option for overriding the default
-// authenticator on a remote image using an authn.Keychain
-func WithAuthFromKeychain(keys authn.Keychain) ImageOption {
-	return func(i *imageOpener) error {
-		auth, err := keys.Resolve(i.ref.Context().Registry)
-		if err != nil {
-			return err
-		}
-		if auth == authn.Anonymous {
-			log.Println("No matching credentials were found, falling back on anonymous")
-		}
-		i.auth = auth
+// authenticator for remote operations, using an authn.Keychain to find
+// credentials.
+//
+// The default authenticator is authn.Anonymous.
+func WithAuthFromKeychain(keys authn.Keychain) Option {
+	return func(o *options) error {
+		o.keychain = keys
 		return nil
 	}
 }
 
 // WithPlatform is a functional option for overriding the default platform
 // that Image and Descriptor.Image use for resolving an index to an image.
+//
 // The default platform is amd64/linux.
-func WithPlatform(p v1.Platform) ImageOption {
-	return func(i *imageOpener) error {
-		i.platform = p
+func WithPlatform(p v1.Platform) Option {
+	return func(o *options) error {
+		o.platform = p
 		return nil
 	}
 }

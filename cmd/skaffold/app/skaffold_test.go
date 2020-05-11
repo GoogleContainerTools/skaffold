@@ -37,8 +37,9 @@ func TestMainHelp(t *testing.T) {
 		err := Run(&output, &errOutput)
 
 		t.CheckNoError(err)
-		t.CheckContains("Available Commands", output.String())
-		t.CheckDeepEqual("", errOutput.String())
+		t.CheckContains("End-to-end pipelines", output.String())
+		t.CheckContains("Getting started with a new project", output.String())
+		t.CheckEmpty(errOutput.String())
 	})
 }
 

@@ -1,0 +1,9 @@
+apiVersion: skaffold/v1beta13
+kind: Config
+build:
+  artifacts:
+  - image: extra-config
+deploy:
+  kubectl:
+    manifests:
+      - k8s-*

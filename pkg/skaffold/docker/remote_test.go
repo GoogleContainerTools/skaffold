@@ -17,22 +17,28 @@ limitations under the License.
 package docker
 
 import (
-	"strings"
 	"testing"
+
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestRemoteDigest(t *testing.T) {
-	validReferences := []string{
-		"python",
-		"python:3-slim",
+func TestIsInsecure(t *testing.T) {
+	tests := []struct {
+		description        string
+		registry           string
+		insecureRegistries map[string]bool
+		result             bool
+	}{
+		{"nil registries", "localhost:5000", nil, false},
+		{"unlisted registry", "other.tld", map[string]bool{"registry.tld": true}, false},
+		{"listed insecure", "registry.tld", map[string]bool{"registry.tld": true}, true},
+		{"listed secure", "registry.tld", map[string]bool{"registry.tld": false}, false},
 	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			result := IsInsecure(test.registry, test.insecureRegistries)
 
-	for _, ref := range validReferences {
-		_, err := RemoteDigest(ref, map[string]bool{})
-
-		// Ignore networking errors
-		if err != nil && strings.Contains(err.Error(), "could not parse") {
-			t.Errorf("unable to parse %q: %v", ref, err)
-		}
+			t.CheckDeepEqual(test.result, result)
+		})
 	}
 }

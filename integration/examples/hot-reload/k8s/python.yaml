@@ -22,8 +22,10 @@ spec:
       labels:
         app: python
     spec:
+      securityContext:
+        runAsUser: 1000
       containers:
       - name: python
-        image: gcr.io/k8s-skaffold/python-reload
+        image: python-reload
         ports:
         - containerPort: 5000

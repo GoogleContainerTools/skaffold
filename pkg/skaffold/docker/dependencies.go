@@ -18,15 +18,15 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/docker/docker/builder/dockerignore"
-	"github.com/docker/docker/pkg/fileutils"
-	"github.com/karrick/godirwalk"
-	"github.com/pkg/errors"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/walk"
 )
 
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.
@@ -46,7 +46,15 @@ func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 func GetDependencies(ctx context.Context, workspace string, dockerfilePath string, buildArgs map[string]*string, insecureRegistries map[string]bool) ([]string, error) {
 	absDockerfilePath, err := NormalizeDockerfilePath(workspace, dockerfilePath)
 	if err != nil {
-		return nil, errors.Wrap(err, "normalizing dockerfile path")
+		return nil, fmt.Errorf("normalizing dockerfile path: %w", err)
+	}
+
+	// If the Dockerfile doesn't exist, we can't compute the dependencies.
+	// But since we know the Dockerfile is a dependency, let's return a list
+	// with only that file. It makes errors down the line more actionable
+	// than returning an error now.
+	if _, err := os.Stat(absDockerfilePath); os.IsNotExist(err) {
+		return []string{dockerfilePath}, nil
 	}
 
 	fts, err := readCopyCmdsFromDockerfile(false, absDockerfilePath, workspace, buildArgs, insecureRegistries)
@@ -54,9 +62,9 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 		return nil, err
 	}
 
-	excludes, err := readDockerignore(workspace)
+	excludes, err := readDockerignore(workspace, absDockerfilePath)
 	if err != nil {
-		return nil, errors.Wrap(err, "reading .dockerignore")
+		return nil, fmt.Errorf("reading .dockerignore: %w", err)
 	}
 
 	deps := make([]string, 0, len(fts))
@@ -66,7 +74,7 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 
 	files, err := WalkWorkspace(workspace, excludes, deps)
 	if err != nil {
-		return nil, errors.Wrap(err, "walking workspace")
+		return nil, fmt.Errorf("walking workspace: %w", err)
 	}
 
 	// Always add dockerfile even if it's .dockerignored. The daemon will need it anyways.
@@ -89,85 +97,69 @@ func GetDependencies(ctx context.Context, workspace string, dockerfilePath strin
 }
 
 // readDockerignore reads patterns to ignore
-func readDockerignore(workspace string) ([]string, error) {
+func readDockerignore(workspace string, absDockerfilePath string) ([]string, error) {
 	var excludes []string
-	dockerignorePath := filepath.Join(workspace, ".dockerignore")
-	if _, err := os.Stat(dockerignorePath); !os.IsNotExist(err) {
-		r, err := os.Open(dockerignorePath)
-		if err != nil {
-			return nil, err
-		}
-		defer r.Close()
+	dockerignorePaths := []string{
+		absDockerfilePath + ".dockerignore",
+		filepath.Join(workspace, ".dockerignore"),
+	}
+	for _, dockerignorePath := range dockerignorePaths {
+		if _, err := os.Stat(dockerignorePath); !os.IsNotExist(err) {
+			r, err := os.Open(dockerignorePath)
+			if err != nil {
+				return nil, err
+			}
+			defer r.Close()
 
-		excludes, err = dockerignore.ReadAll(r)
-		if err != nil {
-			return nil, err
+			excludes, err = dockerignore.ReadAll(r)
+			if err != nil {
+				return nil, err
+			}
+			return excludes, nil
 		}
 	}
-	return excludes, nil
+	return nil, nil
 }
 
 // WalkWorkspace walks the given host directories and records all files found.
 // Note: if you change this function, you might also want to modify `walkWorkspaceWithDestinations`.
 func WalkWorkspace(workspace string, excludes, deps []string) (map[string]bool, error) {
-	pExclude, err := fileutils.NewPatternMatcher(excludes)
+	dockerIgnored, err := NewDockerIgnorePredicate(workspace, excludes)
 	if err != nil {
-		return nil, errors.Wrap(err, "invalid exclude patterns")
+		return nil, err
 	}
 
 	// Walk the workspace
 	files := make(map[string]bool)
 	for _, dep := range deps {
-		dep = filepath.Clean(dep)
-		absDep := filepath.Join(workspace, dep)
+		absFrom := filepath.Join(workspace, dep)
 
-		fi, err := os.Stat(absDep)
-		if err != nil {
-			return nil, errors.Wrapf(err, "stating file %s", absDep)
+		keepFile := func(path string, info walk.Dirent) (bool, error) {
+			// Always keep root folders.
+			if info.IsDir() && path == absFrom {
+				return true, nil
+			}
+
+			ignored, err := dockerIgnored(path, info)
+			if err != nil {
+				return false, err
+			}
+
+			return !ignored, nil
 		}
 
-		switch mode := fi.Mode(); {
-		case mode.IsDir():
-			if err := godirwalk.Walk(absDep, &godirwalk.Options{
-				Unsorted: true,
-				Callback: func(fpath string, info *godirwalk.Dirent) error {
-					if fpath == absDep {
-						return nil
-					}
-
-					relPath, err := filepath.Rel(workspace, fpath)
-					if err != nil {
-						return err
-					}
-
-					ignored, err := pExclude.Matches(relPath)
-					if err != nil {
-						return err
-					}
-
-					if info.IsDir() {
-						if ignored {
-							return filepath.SkipDir
-						}
-					} else if !ignored {
-						files[relPath] = true
-					}
-
-					return nil
-				},
-			}); err != nil {
-				return nil, errors.Wrapf(err, "walking folder %s", absDep)
-			}
-		case mode.IsRegular():
-			ignored, err := pExclude.Matches(dep)
+		if err := walk.From(absFrom).Unsorted().When(keepFile).WhenIsFile().Do(func(path string, info walk.Dirent) error {
+			relPath, err := filepath.Rel(workspace, path)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
-			if !ignored {
-				files[dep] = true
-			}
+			files[relPath] = true
+			return nil
+		}); err != nil {
+			return nil, fmt.Errorf("walking %q: %w", absFrom, err)
 		}
 	}
+
 	return files, nil
 }

@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/xeipuuv/gojsonschema"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -45,6 +46,7 @@ func TestGenerators(t *testing.T) {
 		{name: "inline"},
 		{name: "inline-anyof"},
 		{name: "inline-hybrid"},
+		{name: "integer"},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
@@ -62,6 +64,10 @@ func TestGenerators(t *testing.T) {
 			t.CheckNoError(err)
 
 			expected = bytes.Replace(expected, []byte("\r\n"), []byte("\n"), -1)
+
+			schemaLoader := gojsonschema.NewBytesLoader(actual)
+			_, err = gojsonschema.NewSchema(schemaLoader)
+			t.CheckNoError(err)
 
 			if diff := cmp.Diff(string(actual), string(expected)); diff != "" {
 				t.Errorf("%T differ (-got, +want): %s\n actual:\n%s", string(expected), diff, string(actual))
