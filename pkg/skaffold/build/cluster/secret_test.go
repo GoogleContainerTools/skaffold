@@ -95,7 +95,7 @@ func TestExistingSecretNotFound(t *testing.T) {
 		// should fail to retrieve an existing secret
 		_, err = builder.setupPullSecret(ioutil.Discard)
 
-		t.CheckErrorContains("checking for existing kaniko secret", err)
+		t.CheckErrorContains("does not exisit. No path specified to create it", err)
 	})
 }
 
