@@ -52,7 +52,7 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 		if b.PullSecret == "" {
 			return nil, fmt.Errorf("secret %s does not exisit. No path specified to create it", b.PullSecretName)
 		}
-		return createSecretFromFile(secrets, b.PullSecretName, b.PullSecret)
+		return b.createSecretFromFile(secrets)
 	}
 	if b.PullSecret == "" {
 		// TODO: Remove the warning when pod health check can display pod failure errors.
@@ -63,30 +63,32 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 	return func() {}, nil
 }
 
-func createSecretFromFile(secrets typedV1.SecretInterface, name string, secretFile string) (func(), error) {
-	secretData, err := ioutil.ReadFile(secretFile)
+func (b *Builder) createSecretFromFile(secrets typedV1.SecretInterface) (func(), error) {
+	secretData, err := ioutil.ReadFile(b.PullSecret)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create secret %s from path %s. reading pull secret: %w", name, secretFile, err)
+		return nil, fmt.Errorf("cannot create secret %s from path %s. reading pull secret: %w", b.PullSecretName, b.PullSecret, err)
 	}
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:   name,
+			Name:   b.PullSecretName,
 			Labels: map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 		},
 		Data: map[string][]byte{
 			constants.DefaultKanikoSecretName: secretData,
 		},
 	}
+	b.PullSecret = constants.DefaultKanikoSecretName
 	if _, err := secrets.Create(secret); err != nil {
-		return nil, fmt.Errorf("creating pull secret %q: %w", name, err)
+		return nil, fmt.Errorf("creating pull secret %q: %w", b.PullSecretName, err)
 	}
 
 	return func() {
-		if err := secrets.Delete(name, &metav1.DeleteOptions{}); err != nil {
+		if err := secrets.Delete(b.PullSecretName, &metav1.DeleteOptions{}); err != nil {
 			logrus.Warnf("deleting pull secret")
 		}
 	}, nil
 }
+
 func (b *Builder) setupDockerConfigSecret(out io.Writer) (func(), error) {
 	if b.DockerConfig == nil {
 		return func() {}, nil
