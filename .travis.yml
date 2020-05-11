@@ -33,7 +33,7 @@ jobs:
     - os: osx
       name: "OSX unit"
       before_install:
-        - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5rc2/jq-osx-x86_64
+        - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64
         - chmod +x ${HOME}/bin/jq
       script:
         - make quicktest
@@ -67,7 +67,7 @@ jobs:
     - os: osx
       name: "diag/OSX unit"
       before_install:
-        - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5rc2/jq-osx-x86_64
+        - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64
         - chmod +x ${HOME}/bin/jq
       script:
         - make -f Makefile.diag test
