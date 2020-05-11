@@ -103,6 +103,7 @@ $(BUILD_DIR):
 test: $(BUILD_DIR)
 	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s $(SKAFFOLD_TEST_PACKAGES)
 	@ ./hack/checks.sh
+	@ ./hack/linters.sh
 
 .PHONY: coverage
 coverage: $(BUILD_DIR)
@@ -112,6 +113,10 @@ coverage: $(BUILD_DIR)
 .PHONY: checks
 checks: $(BUILD_DIR)
 	@ ./hack/checks.sh
+
+.PHONY: linters
+linters: $(BUILD_DIR)
+	@ ./hack/linters.sh
 
 .PHONY: quicktest
 quicktest:
