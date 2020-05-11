@@ -6,7 +6,8 @@ build:
       kaniko:
         cache: {}
   cluster:
-    pullSecretName: e2esecret
+    pullSecretName: e2esecret-with-path
+    pullSecret:     kaniko-secret.json
     namespace: default
 deploy:
   kubectl:
