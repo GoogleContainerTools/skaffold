@@ -18,8 +18,8 @@ package cluster
 
 import (
 	"fmt"
-	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/sirupsen/logrus"
@@ -119,7 +119,10 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 }
 
 func (b *Builder) env(artifact *latest.KanikoArtifact, httpProxy, httpsProxy string) []v1.EnvVar {
-	pullSecretPath := filepath.Join(b.ClusterDetails.PullSecretMountPath, b.ClusterDetails.PullSecret)
+	pullSecretPath := strings.Join(
+		[]string{b.ClusterDetails.PullSecretMountPath, b.ClusterDetails.PullSecret},
+		"/", // linux filepath separator.
+	)
 	env := []v1.EnvVar{{
 		Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 		Value: pullSecretPath,
