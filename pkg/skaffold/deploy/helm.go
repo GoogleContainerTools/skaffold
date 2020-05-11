@@ -31,6 +31,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/mitchellh/go-homedir"
@@ -308,18 +309,25 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		return nil, fmt.Errorf("release args: %w", err)
 	}
 
-	iErr := h.exec(ctx, out, r.UseHelmSecrets, args...)
-
+	err = h.exec(ctx, out, r.UseHelmSecrets, args...)
 	var b bytes.Buffer
-
-	// Be accepting of failure
-	if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, opts.namespace)...); err != nil {
-		logrus.Warnf(err.Error())
-		return nil, nil
+	artifacts := parseReleaseInfo(opts.namespace, bufio.NewReader(&b))
+	if err != nil {
+		return artifacts, fmt.Errorf("install: %w", err)
 	}
 
-	artifacts := parseReleaseInfo(opts.namespace, bufio.NewReader(&b))
-	return artifacts, iErr
+	args = getArgs(helmVersion, releaseName, opts.namespace)
+	// At one point in ancient history (#644), it was determined that "helm get"
+	// immediately after install would sometimes be unreliable. We carry that
+	// tradition forward today by retrying once rather than ignoring the result.
+	if err := h.exec(ctx, &b, false, args...); err != nil {
+		logrus.Warnf("helm get failed - will retry: %v", err)
+		time.Sleep(5 * time.Second)
+		if err := h.exec(ctx, &b, false, args...); err != nil {
+			return artifacts, err
+		}
+	}
+	return artifacts, nil
 }
 
 // binVer returns the version of the helm binary found in PATH. May be cached.
