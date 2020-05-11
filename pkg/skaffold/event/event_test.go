@@ -405,3 +405,56 @@ func TestEmptyStateCheckState(t *testing.T) {
 	}
 	testutil.CheckDeepEqual(t, expected, actual, cmpopts.EquateEmpty())
 }
+
+func TestUpdateStateAutoTriggers(t *testing.T) {
+	defer func() { handler = &eventHandler{} }()
+	handler = &eventHandler{
+		state: proto.State{
+			BuildState: &proto.BuildState{
+				Artifacts: map[string]string{
+					"image1": Complete,
+				},
+				AutoTrigger: false,
+			},
+			DeployState: &proto.DeployState{Status: Complete, AutoTrigger: false},
+			ForwardedPorts: map[int32]*proto.PortEvent{
+				2001: {
+					LocalPort:  2000,
+					RemotePort: 2001,
+					PodName:    "test/pod",
+				},
+			},
+			StatusCheckState: &proto.StatusCheckState{Status: Complete},
+			FileSyncState: &proto.FileSyncState{
+				Status:      "Complete",
+				AutoTrigger: false,
+			},
+		},
+	}
+	UpdateStateAutoBuildTrigger(true)
+	UpdateStateAutoDeployTrigger(true)
+	UpdateStateAutoSyncTrigger(true)
+
+	expected := proto.State{
+		BuildState: &proto.BuildState{
+			Artifacts: map[string]string{
+				"image1": Complete,
+			},
+			AutoTrigger: true,
+		},
+		DeployState: &proto.DeployState{Status: Complete, AutoTrigger: true},
+		ForwardedPorts: map[int32]*proto.PortEvent{
+			2001: {
+				LocalPort:  2000,
+				RemotePort: 2001,
+				PodName:    "test/pod",
+			},
+		},
+		StatusCheckState: &proto.StatusCheckState{Status: Complete},
+		FileSyncState: &proto.FileSyncState{
+			Status:      "Complete",
+			AutoTrigger: true,
+		},
+	}
+	testutil.CheckDeepEqual(t, expected, handler.getState(), cmpopts.EquateEmpty())
+}
