@@ -1,0 +1,10 @@
+name: PR
+on: pull_request
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: linters
+        run: make linters
+        continue-on-error: false
