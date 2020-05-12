@@ -34,6 +34,7 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
@@ -316,18 +317,39 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		return artifacts, fmt.Errorf("install: %w", err)
 	}
 
-	args = getArgs(helmVersion, releaseName, opts.namespace)
-	// At one point in ancient history (#644), it was determined that "helm get"
-	// immediately after install would sometimes be unreliable. We carry that
-	// tradition forward today by retrying once rather than ignoring the result.
-	if err := h.exec(ctx, &b, false, args...); err != nil {
-		logrus.Warnf("helm get failed - will retry: %v", err)
-		time.Sleep(5 * time.Second)
-		if err := h.exec(ctx, &b, false, args...); err != nil {
-			return artifacts, err
-		}
+	return artifacts, h.checkIfDeployed(ctx, r, helmVersion, releaseName, opts.namespace)
+}
+
+// checkIfDeployed returns whether helm sees the deployment
+func (h *HelmDeployer) checkIfDeployed(ctx context.Context, r latest.HelmRelease, helmVersion semver.Version, releaseName string, namespace string) error {
+	opts := backoff.NewExponentialBackOff()
+	if r.Wait {
+		opts.MaxElapsedTime = 0
+	} else {
+		// Just long enough for "helm get" to give good feedback
+		opts.MaxElapsedTime = 2 * time.Second
 	}
-	return artifacts, nil
+
+	args := getArgs(helmVersion, releaseName, namespace)
+	logrus.Debugf("Waiting %s for %q to succeed ...", opts.MaxElapsedTime, strings.Join(args, " "))
+
+	err := backoff.Retry(
+		func() error {
+			var b bytes.Buffer
+			if err := h.exec(ctx, &b, false, args...); err != nil {
+				logrus.Debugf("deployment check failed: %v (will retry):\n%s", err, b.String())
+				return err
+			}
+			logrus.Debug("deployment check succeeded!")
+			return nil
+		}, opts)
+
+	if err == nil || r.Wait {
+		return err
+	}
+
+	logrus.Warnf("giving up waiting for %s deployment because `wait=False`: %v", releaseName, err)
+	return nil
 }
 
 // binVer returns the version of the helm binary found in PATH. May be cached.
