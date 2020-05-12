@@ -17,10 +17,17 @@ limitations under the License.
 package docker
 
 import (
-	img "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/image"
+	"regexp"
+	"strings"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/registry"
 )
 
 const maxLength = 255
+
+var (
+	escapeRegex = regexp.MustCompile(`[/._:@]`)
+)
 
 func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, error) {
 	if defaultRepo == "" {
@@ -31,9 +38,9 @@ func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, e
 	if err != nil {
 		return "", err
 	}
-	defaultRegistry := img.RegistryFactory(defaultRepo)
-	originalImage := img.Factory(parsed.BaseName)
-	replaced := truncate(originalImage.Update(defaultRegistry))
+
+	// replace registry in parsed name
+	replaced := truncate(replaceRegistry(defaultRepo, parsed.BaseName))
 	if parsed.Tag != "" {
 		replaced = replaced + ":" + parsed.Tag
 	}
@@ -48,4 +55,20 @@ func truncate(image string) string {
 		return image[0:maxLength]
 	}
 	return image
+}
+
+func splitImage(i string) (registry.Registry, string) {
+	s := strings.Split(i, "/")
+	reg := registry.GetRegistry(strings.Join(s[:len(s)-1], "/"))
+	return reg, s[len(s)-1]
+}
+
+func replaceRegistry(defaultRepo string, orignalImage string) string {
+	reg, image := splitImage(orignalImage)
+	defaultRegistry := registry.GetRegistry(defaultRepo)
+	newReg := reg.Update(defaultRegistry)
+	if newReg.Type() == reg.Type() {
+		return newReg.Name() + "/" + image
+	}
+	return newReg.Name() + "/" + escapeRegex.ReplaceAllString(orignalImage, "_")
 }
