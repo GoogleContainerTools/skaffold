@@ -268,5 +268,5 @@ Please follow our [small Pull Requests guidelines](./docs/community/small-prs.md
 ### Reviews
 
 Each PR must be reviewed by a maintainer. This maintainer will add the `kokoro:run` label
-to a PR to kick of [the integration tests](#integration-tests), which must pass for the PR
+to a PR to kick off [the integration tests](#integration-tests), which must pass for the PR
 to be submitted.
