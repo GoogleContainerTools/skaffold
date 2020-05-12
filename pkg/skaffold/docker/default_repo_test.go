@@ -31,7 +31,7 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 		shouldErr     bool
 	}{
 		{
-			description:   "basic GCR concatenation",
+			description:   "basic GCR override",
 			image:         "gcr.io/some/registry",
 			defaultRepo:   "gcr.io/default",
 			expectedImage: "gcr.io/default/registry",
@@ -52,6 +52,12 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			image:         "eu.gcr.io/project/registry",
 			defaultRepo:   "eu.gcr.io/project",
 			expectedImage: "eu.gcr.io/project/registry",
+		},
+		{
+			description:   "provided registry has defaultRepo in another domain",
+			image:         "gcr.io/project/subpath/registry",
+			defaultRepo:   "eu.gcr.io/project/defaultRepoSubpath",
+			expectedImage: "eu.gcr.io/project/defaultRepoSubpath/subpath/registry",
 		},
 		{
 			description:   "registry has shared prefix with defaultRepo",
