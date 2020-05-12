@@ -28,8 +28,6 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -69,22 +67,18 @@ func TestDevNotification(t *testing.T) {
 
 			skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-			client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
+			dep := client.GetDeployment("test-dev")
 
 			// Make a change to foo so that dev is forced to delete the Deployment and redeploy
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 			// Make sure the old Deployment and the new Deployment are different
-<<<<<<< HEAD
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				newDep := client.GetDeployment("test-dev")
 				logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 				return dep.GetGeneration() != newDep.GetGeneration(), nil
 			})
 			failNowIfError(t, err)
-=======
-			client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
->>>>>>> c18b70918... fix integration tests to use channels and calculate on second build
 		})
 	}
 }
@@ -104,7 +98,7 @@ func TestCancellableDeploy(t *testing.T) {
 		// in slow-deployment.yaml
 		out := skaffold.Dev("--profile=slow-deploy", "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-		client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
+		client.WaitForDeploymentsToStabilize("test-dev")
 
 		Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 
@@ -122,10 +116,10 @@ func TestCancellableDeploy(t *testing.T) {
 		}()
 
 		// first deploy, success
-		<- deploying
+		<-deploying
 
 		// second deploy started, should fail
-		<- deploying
+		<-deploying
 
 		// Make a change to foo so that dev is forced to restart and rebuild.
 		// Also, on the rebuild, "bar" is the content in the file, making
@@ -133,7 +127,7 @@ func TestCancellableDeploy(t *testing.T) {
 		Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 		// third deploy started, due to the file change
-		after := time.After(5 * time.Second)
+		after := time.After(30 * time.Second)
 		select {
 		case <-after:
 			t.Errorf("Timed out waiting for the rebuild to be triggered during long running status check.")
@@ -141,11 +135,11 @@ func TestCancellableDeploy(t *testing.T) {
 		case <-deploying:
 		}
 
-		client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
+		client.WaitForDeploymentsToStabilize("test-dev")
 	})
 }
 
-func TestCancellableBuildDev(t *testing.T) {
+func TestCancellableBuild(t *testing.T) {
 	if testing.Short() || RunOnGCP() {
 		t.Skip("skipping kind integration test")
 	}
@@ -159,7 +153,7 @@ func TestCancellableBuildDev(t *testing.T) {
 		// the build is stuck here - we have foo in the file, that tells the build to sleep
 		out := skaffold.Dev("--profile=slow-build", "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-		client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
+		client.WaitForDeploymentsToStabilize("test-dev")
 
 		Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 
@@ -188,16 +182,15 @@ func TestCancellableBuildDev(t *testing.T) {
 
 		// Third build started
 
-		after := time.After(5 * time.Second)
+		after := time.After(30 * time.Second)
 		select {
 		case <-after:
 			t.Errorf("Timed out waiting for the rebuild to be triggered during long running build.")
 			t.FailNow()
 		case <-built:
-
 		}
 
-		client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
+		client.WaitForDeploymentsToStabilize("test-dev")
 	})
 }
 func TestDevAPITriggers(t *testing.T) {

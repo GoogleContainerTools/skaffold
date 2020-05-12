@@ -61,10 +61,12 @@ func TestSkipDevLoopOnMonitorError(t *testing.T) {
 	}
 
 	var devLoopWasCalled bool
-	err := listener.do(context.Background(), ioutil.Discard, func(context.Context, io.Writer) error {
-		devLoopWasCalled = true
-		return nil
-	})
+	err := listener.startDevInBackground(context.Background(), ioutil.Discard,
+		func() (bool, error) { return true, nil },
+		func(context.Context, io.Writer) error {
+			devLoopWasCalled = true
+			return nil
+		})
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, false, devLoopWasCalled)
 }
@@ -75,9 +77,11 @@ func TestContinueOnDevLoopError(t *testing.T) {
 		Trigger: &fakeTriggger{},
 	}
 
-	err := listener.do(context.Background(), ioutil.Discard, func(context.Context, io.Writer) error {
-		return errors.New("devloop error")
-	})
+	err := listener.startDevInBackground(context.Background(), ioutil.Discard,
+		func() (bool, error) { return true, nil },
+		func(context.Context, io.Writer) error {
+			return errors.New("devloop error")
+		})
 
 	testutil.CheckError(t, false, err)
 }
@@ -88,11 +92,15 @@ func TestReportDevLoopError(t *testing.T) {
 		Trigger: &fakeTriggger{},
 	}
 
-	err := listener.do(context.Background(), ioutil.Discard, func(context.Context, io.Writer) error {
-		return ErrorConfigurationChanged
-	})
+	err := listener.startDevInBackground(context.Background(), ioutil.Discard,
+		func() (bool, error) { return false, ErrorConfigurationChanged },
+		func(context.Context, io.Writer) error {
+			return ErrorConfigurationChanged
+		})
 
 	if err != ErrorConfigurationChanged {
 		t.Fatalf("should have returned a ErrorConfigurationChanged error, returned %v", err)
 	}
 }
+
+//TODO(balintp) - cover devloop checker

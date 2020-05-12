@@ -172,7 +172,7 @@ func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
 
-func (t *TestBench) WatchForChanges(context.Context, io.Writer, func(context.Context, io.Writer) error) error {
+func (t *TestBench) WatchForChanges(context.Context, io.Writer, func() (bool, error), func(context.Context, io.Writer) error) error {
 	// don't actually call the monitor here, because extra actions would be added
 	if err := t.firstMonitor(true); err != nil {
 		return err

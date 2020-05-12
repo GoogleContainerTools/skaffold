@@ -17,3 +17,4 @@ spec:
         readinessProbe:
             exec:
               command: ["sh", "-c", '[ "$(cat /foo)" == "bar" ]']
+      terminationGracePeriodSeconds: 0

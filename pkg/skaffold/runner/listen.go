@@ -18,7 +18,6 @@ package runner
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 
@@ -29,7 +28,7 @@ import (
 )
 
 type Listener interface {
-	WatchForChanges(context.Context, io.Writer, func(context.Context, io.Writer) error) error
+	WatchForChanges(context.Context, io.Writer, func() (bool, error), func(context.Context, io.Writer) error) error
 	LogWatchToUser(io.Writer)
 }
 
@@ -37,6 +36,8 @@ type SkaffoldListener struct {
 	Monitor    filemon.Monitor
 	Trigger    trigger.Trigger
 	intentChan <-chan bool
+	ctxDev     context.Context
+	cancelDev  context.CancelFunc
 }
 
 func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
@@ -45,7 +46,7 @@ func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
 
 // WatchForChanges listens to a trigger, and when one is received, computes file changes and
 // conditionally runs the dev loop.
-func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, devLoop func(context.Context, io.Writer) error) error {
+func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, devChecker func() (bool, error), devLoop func(context.Context, io.Writer) error) error {
 	ctxTrigger, cancelTrigger := context.WithCancel(ctx)
 	defer cancelTrigger()
 	trigger, err := trigger.StartTrigger(ctxTrigger, l.Trigger)
@@ -65,31 +66,42 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 		case <-ctx.Done():
 			return nil
 		case <-l.intentChan:
-			if err := l.do(ctx, out, devLoop); err != nil {
+			logrus.Infof("intent chan!!!")
+			if err := l.startDevInBackground(ctx, out, devChecker, devLoop); err != nil {
 				return err
 			}
 		case <-trigger:
-			if err := l.do(ctx, out, devLoop); err != nil {
+			logrus.Infof("trigger chan!!")
+			if err := l.startDevInBackground(ctx, out, devChecker, devLoop); err != nil {
 				return err
 			}
 		}
 	}
 }
 
-func (l *SkaffoldListener) do(ctx context.Context, out io.Writer, devLoop func(context.Context, io.Writer) error) error {
+func (l *SkaffoldListener) startDevInBackground(ctx context.Context, out io.Writer, checker func() (bool, error), devLoop func(context.Context, io.Writer) error) error {
 	if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
 		logrus.Warnf("Ignoring changes: %s", err.Error())
 		return nil
 	}
-
-	if err := devLoop(ctx, out); err != nil {
-		// propagating this error up causes a new runner to be created
-		// and a new dev loop to start
-		if errors.Is(err, ErrorConfigurationChanged) {
-			return err
-		}
-		logrus.Errorf("error running dev loop: %s", err.Error())
+	needNewDevLoop, err := checker()
+	if err != nil {
+		return err
 	}
-
+	if !needNewDevLoop {
+		logrus.Infof("no need for dev loop")
+		return nil
+	}
+	logrus.Infof("running dev loop!")
+	if l.cancelDev != nil {
+		logrus.Infof("cancelling previous dev loop!")
+		l.cancelDev()
+	}
+	l.ctxDev, l.cancelDev = context.WithCancel(ctx)
+	go func(ctx context.Context) {
+		if err := devLoop(ctx, out); err != nil {
+			logrus.Errorf("error running dev loop: %s", err.Error())
+		}
+	}(l.ctxDev)
 	return nil
 }

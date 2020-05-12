@@ -46,14 +46,10 @@ var (
 )
 
 func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
-	if r.changeSet.needsReload {
-		return ErrorConfigurationChanged
+	needsSync, needsBuild, needsDeploy, err := r.checkFiles()
+	if err != nil {
+		return err
 	}
-
-	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
-	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
-	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
-	needsDeploy := deployIntent && r.changeSet.needsRedeploy
 	if !needsSync && !needsBuild && !needsDeploy {
 		return nil
 	}
@@ -120,6 +116,22 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	event.DevLoopComplete(r.devIteration)
 	r.logger.Unmute()
 	return nil
+}
+
+func (r *SkaffoldRunner) newDevLoopRequired() (required bool, err error) {
+	needsSync, needsBuild, needsDeploy, err := r.checkFiles()
+	return needsBuild || needsSync || needsDeploy, err
+}
+func (r *SkaffoldRunner) checkFiles() (bool, bool, bool, error) {
+	if r.changeSet.needsReload {
+		return false, false, false, ErrorConfigurationChanged
+	}
+
+	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
+	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
+	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
+	needsDeploy := deployIntent && r.changeSet.needsRedeploy
+	return needsSync, needsBuild, needsDeploy, nil
 }
 
 // Dev watches for changes and runs the skaffold build and deploy
@@ -238,5 +250,5 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 	event.DevLoopComplete(0)
-	return r.listener.WatchForChanges(ctx, out, r.doDev)
+	return r.listener.WatchForChanges(ctx, out, r.newDevLoopRequired, r.doDev)
 }
