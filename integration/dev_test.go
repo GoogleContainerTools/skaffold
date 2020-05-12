@@ -65,17 +65,13 @@ func TestDev(t *testing.T) {
 
 			skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-			dep := client.GetDeployment("test-dev")
+			client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
 
 			// Make a change to foo so that dev is forced to delete the Deployment and redeploy
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 			// Make sure the old Deployment and the new Deployment are different
-			err := wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
-				newDep := client.GetDeployment("test-dev")
-				return dep.GetGeneration() != newDep.GetGeneration(), nil
-			})
-			failNowIfError(t, err)
+			client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
 		})
 	}
 }

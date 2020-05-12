@@ -198,9 +198,11 @@ func nowInChicago() string {
 
 type Fataler interface {
 	Fatal(args ...interface{})
+	Helper()
 }
 
 func failNowIfError(t Fataler, err error) {
+	t.Helper()
 	if err != nil {
 		t.Fatal(err)
 	}
