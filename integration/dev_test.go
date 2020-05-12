@@ -144,6 +144,64 @@ func TestDevAPITriggers(t *testing.T) {
 	failNowIfError(t, err)
 }
 
+func TestDevAPIAutoTriggers(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
+	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+	defer Run(t, "testdata/dev", "rm", "foo")
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("testdata/dev").RunOrFail(t)
+
+	ns, client := SetupNamespace(t)
+
+	rpcAddr := randomPort()
+	skaffold.Dev("--auto-build=false", "--auto-sync=false", "--auto-deploy=false", "--rpc-port", rpcAddr, "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+
+	rpcClient, entries := apiEvents(t, rpcAddr)
+
+	// throw away first 5 entries of log (from first run of dev loop)
+	for i := 0; i < 5; i++ {
+		<-entries
+	}
+
+	dep := client.GetDeployment("test-dev")
+
+	// Make a change to foo
+	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
+
+	// Issue a build trigger
+	rpcClient.UpdateAutoTrigger(context.Background(), &proto.AutoTriggerRequest{
+		Phase: &proto.AutoTrigger{
+			Build:  true,
+			Deploy: true,
+		},
+	})
+
+	// Ensure we see a build triggered in the event log
+	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
+		e := <-entries
+		return e.GetEvent().GetBuildEvent().GetArtifact() == "test-dev", nil
+	})
+	failNowIfError(t, err)
+
+	// Ensure we see a deploy triggered in the event log
+	err = wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
+		e := <-entries
+		return e.GetEvent().GetDeployEvent().GetStatus() == "In Progress", nil
+	})
+	failNowIfError(t, err)
+
+	// Make sure the old Deployment and the new Deployment are different
+	err = wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+		newDep := client.GetDeployment("test-dev")
+		return dep.GetGeneration() != newDep.GetGeneration(), nil
+	})
+	failNowIfError(t, err)
+}
+
 func TestDevPortForward(t *testing.T) {
 	if testing.Short() || RunOnGCP() {
 		t.Skip("skipping kind integration test")
