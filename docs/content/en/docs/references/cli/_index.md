@@ -357,6 +357,9 @@ Options:
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
       --tail=true: Stream logs from deployed objects
       --toot=false: Emit a terminal beep after the deploy is complete
+      --trigger='notify': How is change detection triggered? (polling, notify, or manual)
+  -w, --watch-image=[]: Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
+  -i, --watch-poll-interval=1000: Interval (in ms) between two checks for file changes
 
 Usage:
   skaffold debug [options]
@@ -392,6 +395,9 @@ Env vars:
 * `SKAFFOLD_TAG` (same as `--tag`)
 * `SKAFFOLD_TAIL` (same as `--tail`)
 * `SKAFFOLD_TOOT` (same as `--toot`)
+* `SKAFFOLD_TRIGGER` (same as `--trigger`)
+* `SKAFFOLD_WATCH_IMAGE` (same as `--watch-image`)
+* `SKAFFOLD_WATCH_POLL_INTERVAL` (same as `--watch-poll-interval`)
 
 ### skaffold delete
 

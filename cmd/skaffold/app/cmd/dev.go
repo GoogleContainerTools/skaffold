@@ -29,26 +29,43 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
+// for tests
+var doDev = runDev
+
 // NewCmdDev describes the CLI command to run a pipeline in development mode.
 func NewCmdDev() *cobra.Command {
+	// local copies to avoid aliasing references from `NewCmdDebug` https://github.com/GoogleContainerTools/skaffold/issues/4129
+	var trigger string
+	var autoBuild, autoDeploy, autoSync bool
+	var targetImages []string
+	var watchPollInterval int
+
 	return NewCmd("dev").
 		WithDescription("Run a pipeline in development mode").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
-			f.StringVar(&opts.Trigger, "trigger", "notify", "How is change detection triggered? (polling, notify, or manual)")
-			f.BoolVar(&opts.AutoBuild, "auto-build", true, "When set to false, builds wait for API request instead of running automatically (default true)")
+			f.StringVar(&trigger, "trigger", "notify", "How is change detection triggered? (polling, notify, or manual)")
+			f.BoolVar(&autoBuild, "auto-build", true, "When set to false, builds wait for API request instead of running automatically (default true)")
 			f.MarkHidden("auto-build")
-			f.BoolVar(&opts.AutoSync, "auto-sync", true, "When set to false, syncs wait for API request instead of running automatically (default true)")
+			f.BoolVar(&autoSync, "auto-sync", true, "When set to false, syncs wait for API request instead of running automatically (default true)")
 			f.MarkHidden("auto-sync")
-			f.BoolVar(&opts.AutoDeploy, "auto-deploy", true, "When set to false, deploys wait for API request instead of running automatically (default true)")
+			f.BoolVar(&autoDeploy, "auto-deploy", true, "When set to false, deploys wait for API request instead of running automatically (default true)")
 			f.MarkHidden("auto-deploy")
-			f.StringSliceVarP(&opts.TargetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
-			f.IntVarP(&opts.WatchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
+			f.StringSliceVarP(&targetImages, "watch-image", "w", nil, "Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts")
+			f.IntVarP(&watchPollInterval, "watch-poll-interval", "i", 1000, "Interval (in ms) between two checks for file changes")
 		}).
-		NoArgs(doDev)
+		NoArgs(func(ctx context.Context, out io.Writer) error {
+			opts.Trigger = trigger
+			opts.AutoBuild = autoBuild
+			opts.AutoDeploy = autoDeploy
+			opts.AutoSync = autoSync
+			opts.TargetImages = targetImages
+			opts.WatchPollInterval = watchPollInterval
+			return doDev(ctx, out)
+		})
 }
 
-func doDev(ctx context.Context, out io.Writer) error {
+func runDev(ctx context.Context, out io.Writer) error {
 	prune := func() {}
 	if opts.Prune() {
 		defer func() {
