@@ -26,6 +26,7 @@ import (
 	"testing"
 	"time"
 
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -129,19 +130,7 @@ func TestDevAPITriggers(t *testing.T) {
 		},
 	})
 
-	// Ensure we see a deploy triggered in the event log
-	err = wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
-		e := <-entries
-		return e.GetEvent().GetDeployEvent().GetStatus() == "In Progress", nil
-	})
-	failNowIfError(t, err)
-
-	// Make sure the old Deployment and the new Deployment are different
-	err = wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
-		newDep := client.GetDeployment("test-dev")
-		return dep.GetGeneration() != newDep.GetGeneration(), nil
-	})
-	failNowIfError(t, err)
+	verifyDeployment(t, entries, client, dep)
 }
 
 func TestDevAPIAutoTriggers(t *testing.T) {
@@ -187,8 +176,12 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 	})
 	failNowIfError(t, err)
 
+	verifyDeployment(t, entries, client, dep)
+}
+
+func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKubernetesClient, dep *appsv1.Deployment) {
 	// Ensure we see a deploy triggered in the event log
-	err = wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
+	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
 		return e.GetEvent().GetDeployEvent().GetStatus() == "In Progress", nil
 	})

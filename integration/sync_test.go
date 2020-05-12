@@ -245,7 +245,6 @@ func TestDevAutoSyncAPITrigger(t *testing.T) {
 }
 
 func verifySyncCompletedWithEvents(t *testing.T, entries chan *proto.LogEntry, namespace string, fileContent string) {
-
 	// Ensure we see a file sync in progress triggered in the event log
 	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
