@@ -75,12 +75,16 @@ func TestDevNotification(t *testing.T) {
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 			// Make sure the old Deployment and the new Deployment are different
+<<<<<<< HEAD
 			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				newDep := client.GetDeployment("test-dev")
 				logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 				return dep.GetGeneration() != newDep.GetGeneration(), nil
 			})
 			failNowIfError(t, err)
+=======
+			client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
+>>>>>>> c18b70918... fix integration tests to use channels and calculate on second build
 		})
 	}
 }
@@ -91,7 +95,7 @@ func TestCancellableDeploy(t *testing.T) {
 	}
 
 	t.Run("cancellable deploy", func(t *testing.T) {
-		Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+		Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 		defer Run(t, "testdata/dev", "rm", "foo")
 
 		ns, client := SetupNamespace(t)
@@ -100,27 +104,42 @@ func TestCancellableDeploy(t *testing.T) {
 		// in slow-deployment.yaml
 		out := skaffold.Dev("--profile=slow-deploy", "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
+		client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
+
+		Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+
 		scanner := bufio.NewScanner(out)
-		deploying := false
+		deploying := make(chan bool, 1)
 		go func() {
 			for scanner.Scan() {
 				line := scanner.Text()
 				logrus.Infof("[skaffold dev] %s", line)
 				if strings.Contains(line, "Waiting for deployments") {
 					logrus.Infof("DEPLOYING!")
-					deploying = true
+					deploying <- true
 				}
 			}
 		}()
 
-		for !deploying {
-			time.Sleep(100 * time.Millisecond)
-		}
+		// first deploy, success
+		<- deploying
+
+		// second deploy started, should fail
+		<- deploying
 
 		// Make a change to foo so that dev is forced to restart and rebuild.
 		// Also, on the rebuild, "bar" is the content in the file, making
 		// the health check in slow-deployment.yaml succeed
 		Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
+
+		// third deploy started, due to the file change
+		after := time.After(5 * time.Second)
+		select {
+		case <-after:
+			t.Errorf("Timed out waiting for the rebuild to be triggered during long running status check.")
+			t.FailNow()
+		case <-deploying:
+		}
 
 		client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
 	})
@@ -140,26 +159,43 @@ func TestCancellableBuildDev(t *testing.T) {
 		// the build is stuck here - we have foo in the file, that tells the build to sleep
 		out := skaffold.Dev("--profile=slow-build", "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
+		client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
+
+		Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+
 		scanner := bufio.NewScanner(out)
-		built := false
+		built := make(chan bool, 1)
 		go func() {
 			for scanner.Scan() {
 				line := scanner.Text()
 				logrus.Infof("[skaffold dev] %s", line)
 				if strings.Contains(line, "COPY foo") {
 					logrus.Infof("BUILT!")
-					built = true
+					built <- true
 				}
 			}
 		}()
 
-		for !built {
-			time.Sleep(100 * time.Millisecond)
-		}
+		// First build with bar -> noSleep, succeeds
+		<-built
+
+		// Second build started with foo -> sleep 3600, stalls
+		<-built
 
 		// Make a change to foo so that dev is forced to restart and rebuild.
 		// Also, on the rebuild, "bar" is the content in the file, instructing the Dockerfile for no sleeping
 		Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
+
+		// Third build started
+
+		after := time.After(5 * time.Second)
+		select {
+		case <-after:
+			t.Errorf("Timed out waiting for the rebuild to be triggered during long running build.")
+			t.FailNow()
+		case <-built:
+
+		}
 
 		client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
 	})
