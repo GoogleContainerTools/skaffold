@@ -19,6 +19,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -65,13 +66,13 @@ func TestDev(t *testing.T) {
 
 			skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-			client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
+			client.WaitForDeploymentsToStabilize("test-dev")
 
 			// Make a change to foo so that dev is forced to delete the Deployment and redeploy
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 			// Make sure the old Deployment and the new Deployment are different
-			client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
+			client.WaitForDeploymentsToStabilize("test-dev")
 		})
 	}
 }
@@ -135,6 +136,7 @@ func TestDevAPITriggers(t *testing.T) {
 	// Make sure the old Deployment and the new Deployment are different
 	err = wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
 		newDep := client.GetDeployment("test-dev")
+		logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 		return dep.GetGeneration() != newDep.GetGeneration(), nil
 	})
 	failNowIfError(t, err)

@@ -195,10 +195,10 @@ func (k *NSKubernetesClient) GetDeployment(depName string) *appsv1.Deployment {
 // WaitForDeploymentsToStabilize waits for a list of deployments to become stable.
 func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 	k.t.Helper()
-	k.WaitForDeploymentsToStabilizeWithTimeout(30 * time.Second, depNames...)
+	k.waitForDeploymentsToStabilizeWithTimeout(30 * time.Second, depNames...)
 }
 
-func (k *NSKubernetesClient) WaitForDeploymentsToStabilizeWithTimeout(timeout time.Duration, depNames ...string) {
+func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout time.Duration, depNames ...string) {
 	k.t.Helper()
 	if len(depNames) == 0 {
 		return
