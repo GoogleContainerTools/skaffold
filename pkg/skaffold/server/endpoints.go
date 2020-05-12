@@ -66,8 +66,8 @@ func (s *server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (
 	return &empty.Empty{}, nil
 }
 
-func (s *server) UpdateAutoTrigger(ctx context.Context, phase *proto.AutoTriggerRequest) (*empty.Empty, error) {
-	autoBuild, autoDeploy, autoSync := phase.GetPhase().GetBuild(), phase.GetPhase().GetDeploy(), phase.GetPhase().GetSync()
+func (s *server) AutoExecute(ctx context.Context, intent *proto.UserIntentRequest) (*empty.Empty, error) {
+	autoBuild, autoDeploy, autoSync := intent.GetIntent().GetBuild(), intent.GetIntent().GetDeploy(), intent.GetIntent().GetSync()
 	updateAutoBuild, updateAutoDeploy, updateAutoSync := event.AutoTriggerDiff(autoBuild, autoDeploy, autoSync)
 
 	if updateAutoBuild {

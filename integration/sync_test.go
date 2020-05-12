@@ -224,8 +224,8 @@ func TestDevAutoSyncAPITrigger(t *testing.T) {
 	ioutil.WriteFile("testdata/file-sync/foo", []byte("foo"), 0644)
 	defer func() { os.Truncate("testdata/file-sync/foo", 0) }()
 
-	rpcClient.UpdateAutoTrigger(context.Background(), &proto.AutoTriggerRequest{
-		Phase: &proto.AutoTrigger{
+	rpcClient.AutoExecute(context.Background(), &proto.UserIntentRequest{
+		Intent: &proto.Intent{
 			Sync: true,
 		},
 	})
@@ -237,8 +237,8 @@ func TestDevAutoSyncAPITrigger(t *testing.T) {
 
 	verifySyncCompletedWithEvents(t, entries, ns.Name, "bar")
 
-	rpcClient.UpdateAutoTrigger(context.Background(), &proto.AutoTriggerRequest{
-		Phase: &proto.AutoTrigger{
+	rpcClient.AutoExecute(context.Background(), &proto.UserIntentRequest{
+		Intent: &proto.Intent{
 			Sync: false,
 		},
 	})

@@ -162,8 +162,8 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 	// Issue a build trigger
-	rpcClient.UpdateAutoTrigger(context.Background(), &proto.AutoTriggerRequest{
-		Phase: &proto.AutoTrigger{
+	rpcClient.AutoExecute(context.Background(), &proto.UserIntentRequest{
+		Intent: &proto.Intent{
 			Build:  true,
 			Deploy: true,
 		},

@@ -15,6 +15,33 @@
     "application/json"
   ],
   "paths": {
+    "/v1/auto_execute": {
+      "post": {
+        "summary": "Allows for enabling or disabling automatic triggers for phases (build, sync, deploy)",
+        "operationId": "AutoExecute",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "properties": {}
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/protoIntent"
+            }
+          }
+        ],
+        "tags": [
+          "SkaffoldService"
+        ]
+      }
+    },
     "/v1/event_log": {
       "get": {
         "summary": "DEPRECATED. Events should be used instead.\nTODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168)",
@@ -590,33 +617,6 @@
           "SkaffoldService"
         ]
       }
-    },
-    "/v1/update/trigger": {
-      "post": {
-        "summary": "Allows for enabling or disabling automatic triggers for phases (build, sync, deploy)",
-        "operationId": "UpdateAutoTrigger",
-        "responses": {
-          "200": {
-            "description": "A successful response.",
-            "schema": {
-              "properties": {}
-            }
-          }
-        },
-        "parameters": [
-          {
-            "name": "body",
-            "in": "body",
-            "required": true,
-            "schema": {
-              "$ref": "#/definitions/protoAutoTrigger"
-            }
-          }
-        ],
-        "tags": [
-          "SkaffoldService"
-        ]
-      }
     }
   },
   "definitions": {
@@ -643,24 +643,6 @@
           "format": "int32"
         }
       }
-    },
-    "protoAutoTrigger": {
-      "type": "object",
-      "properties": {
-        "build": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "sync": {
-          "type": "boolean",
-          "format": "boolean"
-        },
-        "deploy": {
-          "type": "boolean",
-          "format": "boolean"
-        }
-      },
-      "description": "AutoTrigger represents enabling or disabling automatic triggers for a given phase"
     },
     "protoBuildEvent": {
       "type": "object",
@@ -957,7 +939,7 @@
           "format": "boolean"
         }
       },
-      "description": "Intent represents user intents for a given phase to be unblocked, once."
+      "description": "Intent represents user intents for a given phase."
     },
     "protoLogEntry": {
       "type": "object",

@@ -234,7 +234,7 @@ func main() {
 ### Control API
 
 By default, [`skaffold dev`]({{< relref "/docs/workflows/dev" >}}) will automatically build artifacts, deploy manifests and sync files on every source code change.
-However, individual actions can be gated off by user input through the Control API.
+However, this behavior can be paused and individual actions can be gated off by user input through the Control API.
 
 With this API, users can tell Skaffold to wait for user input before performing any of these actions,
 even if the requisite files were changed on the filesystem. By doing so, users can "queue up" changes while
@@ -242,7 +242,7 @@ they are iterating locally, and then have Skaffold rebuild and redeploy only whe
 useful when builds are happening more frequently than desired, when builds or deploys take a long time or
 are otherwise very costly, or when users want to integrate other tools with `skaffold dev`.
 
-The automation can be turned off with `--auto-build=false` flag for building, `--auto-deploy=false` flag for deploys, and the `--auto-sync=false` flag for file sync.
+The automation can be turned off or on using the Control API, or with `auto-build` flag for building, `auto-deploy` flag for deploys, and the `auto-sync` flag for file sync.
 If automation is turned off for a phase, Skaffold will wait for a request to the Control API before executing the associated action.
 
 Each time a request is sent to the Control API by the user, the specified actions in the payload are executed immediately.
@@ -251,9 +251,11 @@ This means that _even if there are new file changes_, Skaffold will wait for ano
 **Control API Contract**
 
 | protocol | endpoint | 
-| --- | --- | --- |
+| --- | --- |
 | HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/execute`, the [Execution Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/Execute">}}) |
 | gRPC | `client.Execute(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
+| HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/auto_execute`, the [Auto Execution Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/AutoExecute">}}) |
+| gRPC | `client.AutoExecute(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
 
 
 **Examples**
@@ -280,10 +282,16 @@ These steps can also be combined into a single request:
 curl -X POST http://localhost:50052/v1/execute -d '{"build": true, "deploy": true}'
 ``` 
 
+We can make Skaffold start noticing file changes automatically again by issuing this request:
+
+```bash
+curl -X POST http://localhost:50052/v1/auto_execute -d '{"build": true, "deploy": true}'
+``` 
+
 {{% /tab %}}
 {{% tab "gRPC API" %}}
 To access the Control API via the `gRPC`, create [`gRPC` client]({{< relref "#creating-a-grpc-client" >}}) as before.
-Then, use the `client.Execute()` method with the desired payload:
+Then, use the `client.Execute()` method with the desired payload to trigger it once:
 
 ```golang
 func main() {
@@ -302,5 +310,24 @@ func main() {
     }
 }
 ```
-{{% /tab %}}
+Use the `client.AutoExecute()` method with the desired payload to enable or disable auto triggering:
+
+```golang
+func main() {
+    ctx, ctxCancel := context.WithCancel(context.Background())
+    defer ctxCancel()
+    // `client` is the gRPC client with connection to localhost:50051.
+    _, err = client.AutoExecute(ctx, &pb.UserIntentRequest{
+        Intent: &pb.Intent{
+            Build:  true,
+            Sync:   true,
+            Deploy: true,
+        },
+    })
+    if err != nil {
+        log.Fatalf("error when trying to execute phases: %v", err)
+    }
+}
+```
+{{% /tab %}
 {{% /tabs %}}
