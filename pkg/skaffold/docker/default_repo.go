@@ -17,16 +17,10 @@ limitations under the License.
 package docker
 
 import (
-	"regexp"
-	"strings"
+	img "github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker/image"
 )
 
 const maxLength = 255
-
-var (
-	escapeRegex = regexp.MustCompile(`[/._:@]`)
-	prefixRegex = regexp.MustCompile(`(.*\.)?gcr.io/[a-zA-Z0-9-_]+/?`)
-)
 
 func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, error) {
 	if defaultRepo == "" {
@@ -37,34 +31,16 @@ func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, e
 	if err != nil {
 		return "", err
 	}
-
-	replaced := replace(defaultRepo, parsed.BaseName)
+	defaultRegistry := img.RegistryFactory(defaultRepo)
+	originalImage := img.Factory(parsed.BaseName)
+	replaced := truncate(originalImage.Update(defaultRegistry))
 	if parsed.Tag != "" {
 		replaced = replaced + ":" + parsed.Tag
 	}
 	if parsed.Digest != "" {
 		replaced = replaced + "@" + parsed.Digest
 	}
-
 	return replaced, nil
-}
-
-func replace(defaultRepo string, baseImage string) string {
-	originalPrefix := prefixRegex.FindString(baseImage)
-	defaultRepoPrefix := prefixRegex.FindString(defaultRepo)
-	if originalPrefix != "" && defaultRepoPrefix != "" {
-		// prefixes match
-		if originalPrefix == defaultRepoPrefix {
-			return defaultRepo + "/" + baseImage[len(originalPrefix):]
-		}
-		if strings.HasPrefix(baseImage, defaultRepo) {
-			return baseImage
-		}
-		// prefixes don't match, concatenate and truncate
-		return truncate(defaultRepo + "/" + baseImage)
-	}
-
-	return truncate(defaultRepo + "/" + escapeRegex.ReplaceAllString(baseImage, "_"))
 }
 
 func truncate(image string) string {

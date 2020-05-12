@@ -105,7 +105,6 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			replaced, err := SubstituteDefaultRepoIntoImage(test.defaultRepo, test.image)
-
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedImage, replaced)
 		})
 	}

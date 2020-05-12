@@ -17,6 +17,7 @@ limitations under the License.
 package image
 
 import (
+	"regexp"
 	"strings"
 )
 
@@ -24,30 +25,32 @@ const maxLength = 255
 
 const gcr = "gcr.io"
 
-//const escapeChars = "[/._:@]"
-//const prefixRegexStr = "gcr.io/[a-zA-Z0-9-_]+/"
+var (
+	escapeRegex = regexp.MustCompile(`[/._:@]`)
+	prefixRegex = regexp.MustCompile(`(.*\.)?gcr.io/[a-zA-Z0-9-_]+/?`)
+)
 
-type GenericContainerRegistry struct {
+type GenericRegistry struct {
 	RegistryName string
 }
 
-func NewGenericContainerRegistry(name string) Registry {
-	return &GenericContainerRegistry{name}
+func NewGenericRegistry(name string) Registry {
+	return &GenericRegistry{name}
 }
 
-func (r *GenericContainerRegistry) String() string {
+func (r *GenericRegistry) String() string {
 	return r.RegistryName
 }
 
-func (r *GenericContainerRegistry) Update(reg *Registry) Registry {
+func (r *GenericRegistry) Update(reg *Registry) Registry {
 	return nil
 }
 
-func (r *GenericContainerRegistry) Prefix() string {
+func (r *GenericRegistry) Prefix() string {
 	return ""
 }
 
-func (r *GenericContainerRegistry) Postfix() string {
+func (r *GenericRegistry) Postfix() string {
 	return ""
 }
 
@@ -74,29 +77,23 @@ func (i *GenericImage) Update(reg Registry) string {
 	if len(i.ImageRegistry.String()) != 0 {
 		originalImage = i.ImageRegistry.String() + "/" + originalImage
 	}
-
-	if reg.String() == "" {
+	defaultRepo := reg.String()
+	if defaultRepo == "" {
 		return originalImage
 	}
-	if strings.HasPrefix(reg.String(), gcr) {
-		originalPrefix := prefixRegex.FindString(originalImage)
-		defaultRepoPrefix := prefixRegex.FindString(reg.String())
-
+	originalPrefix := prefixRegex.FindString(originalImage)
+	defaultRepoPrefix := prefixRegex.FindString(defaultRepo)
+	if originalPrefix != "" && defaultRepoPrefix != "" {
+		// prefixes match
 		if originalPrefix == defaultRepoPrefix {
-			// prefixes match
-			return reg.String() + "/" + originalImage[len(originalPrefix):]
-		} else if strings.HasPrefix(originalImage, reg.String()) {
+			return defaultRepo + "/" + originalImage[len(originalPrefix):]
+		}
+		if strings.HasPrefix(originalImage, defaultRepo) {
 			return originalImage
 		}
 		// prefixes don't match, concatenate and truncate
-		return truncate(reg.String() + "/" + originalImage)
+		return defaultRepo + "/" + originalImage
 	}
-	return truncate(reg.String() + "/" + escapeRegex.ReplaceAllString(originalImage, "_"))
-}
 
-func truncate(image string) string {
-	if len(image) > maxLength {
-		return image[0:maxLength]
-	}
-	return image
+	return reg.String() + "/" + escapeRegex.ReplaceAllString(originalImage, "_")
 }
