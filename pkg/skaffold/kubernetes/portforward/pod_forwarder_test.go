@@ -402,7 +402,7 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState(latest.BuildConfig{})
+			event.InitializeState(latest.Pipeline{}, "test")
 			taken := map[int]struct{}{}
 
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", taken, test.availablePorts))
@@ -467,7 +467,7 @@ func TestStartPodForwarder(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState(latest.BuildConfig{})
+			event.InitializeState(latest.Pipeline{}, "")
 			client := fakekubeclientset.NewSimpleClientset(&v1.Pod{})
 			fakeWatcher := watch.NewRaceFreeFake()
 			client.PrependWatchReactor("*", testutil.SetupFakeWatcher(fakeWatcher))

@@ -80,7 +80,16 @@ func (c *CLI) ReadManifests(ctx context.Context, manifests []string) (ManifestLi
 		list = append(list, "-f", manifest)
 	}
 
-	args := c.args([]string{"--dry-run", "-oyaml"}, list...)
+	var dryRun = "--dry-run"
+	compTo1_18, err := c.CLI.CompareVersionTo(ctx, 1, 18)
+	if err != nil {
+		return nil, err
+	}
+	if compTo1_18 >= 0 {
+		dryRun += "=client"
+	}
+
+	args := c.args([]string{dryRun, "-oyaml"}, list...)
 	if c.Flags.DisableValidation {
 		args = append(args, "--validate=false")
 	}

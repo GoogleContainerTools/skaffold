@@ -131,13 +131,15 @@ spec:
 		{
 			description: "parse invalid release info yaml",
 			yaml:        []byte(`invalid release info`),
-			expected:    []Artifact{},
+			expected:    nil,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			r := bufio.NewReader(bytes.NewBuffer(test.yaml))
+
 			actual := parseReleaseInfo(testNamespace, r)
+
 			t.CheckDeepEqual(test.expected, actual, cmpopts.IgnoreFields(Artifact{}, "Obj"))
 		})
 	}

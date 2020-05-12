@@ -251,3 +251,35 @@ func TestRunUnstableNotChecked(t *testing.T) {
 
 	skaffold.Run("--status-check=false").InDir("testdata/unstable-deployment").InNs(ns.Name).RunOrFail(t)
 }
+
+func TestRunTailPod(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
+	ns, _ := SetupNamespace(t)
+
+	out := skaffold.Run("--tail", "-p", "pod").InDir("testdata/hello").InNs(ns.Name).RunBackground(t)
+
+	WaitForLogs(t, out,
+		"Hello world! 0",
+		"Hello world! 1",
+		"Hello world! 2",
+	)
+}
+
+func TestRunTailDeployment(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
+	ns, _ := SetupNamespace(t)
+
+	out := skaffold.Run("--tail", "-p", "deployment").InDir("testdata/hello").InNs(ns.Name).RunBackground(t)
+
+	WaitForLogs(t, out,
+		"Hello world! 0",
+		"Hello world! 1",
+		"Hello world! 2",
+	)
+}

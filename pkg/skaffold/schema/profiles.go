@@ -84,33 +84,53 @@ func activatedProfiles(profiles []latest.Profile, opts cfg.SkaffoldOptions) ([]s
 	var activated []string
 	var contextSpecificProfiles []string
 
-	// Auto-activated profiles
-	for _, profile := range profiles {
-		for _, cond := range profile.Activation {
-			command := isCommand(cond.Command, opts)
+	if opts.ProfileAutoActivation {
+		// Auto-activated profiles
+		for _, profile := range profiles {
+			for _, cond := range profile.Activation {
+				command := isCommand(cond.Command, opts)
 
-			env, err := isEnv(cond.Env)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			kubeContext, err := isKubeContext(cond.KubeContext, opts)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			if command && env && kubeContext {
-				if cond.KubeContext != "" {
-					contextSpecificProfiles = append(contextSpecificProfiles, profile.Name)
+				env, err := isEnv(cond.Env)
+				if err != nil {
+					return nil, nil, err
 				}
-				activated = append(activated, profile.Name)
+
+				kubeContext, err := isKubeContext(cond.KubeContext, opts)
+				if err != nil {
+					return nil, nil, err
+				}
+
+				if command && env && kubeContext {
+					if cond.KubeContext != "" {
+						contextSpecificProfiles = append(contextSpecificProfiles, profile.Name)
+					}
+					activated = append(activated, profile.Name)
+				}
 			}
 		}
 	}
 
-	activated = append(activated, opts.Profiles...)
+	for _, profile := range opts.Profiles {
+		if strings.HasPrefix(profile, "-") {
+			activated = removeValue(activated, strings.TrimPrefix(profile, "-"))
+		} else {
+			activated = append(activated, profile)
+		}
+	}
 
 	return activated, contextSpecificProfiles, nil
+}
+
+func removeValue(values []string, value string) []string {
+	var updated []string
+
+	for _, v := range values {
+		if v != value {
+			updated = append(updated, v)
+		}
+	}
+
+	return updated
 }
 
 func isEnv(env string) (bool, error) {

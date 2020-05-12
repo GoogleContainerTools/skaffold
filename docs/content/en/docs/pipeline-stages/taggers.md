@@ -6,21 +6,43 @@ featureId: tagpolicy
 aliases: [/docs/how-tos/taggers]
 ---
 
-Skaffold supports the following policies for tagging images:
+Skaffold supports multiple taggers or tag policies for tagging images:
 
-* `gitCommit`: use git commit IDs as tags
-* `sha256`: use sha256 hashes of contents as tags
-* `envTemplate`: use values of environment variables as tags
-* `dateTime`: use date and time values as tags
+ + the `gitCommit` tagger uses git commits/references to tag images.
+ + the `sha256` tagger uses `latest` to tag images.
+ + the `envTemplate` tagger uses environment variables to tag images.
+ + the `datetime` tagger uses current date and time, with a configurable pattern.
 
-The tag policy is specified in the `tagPolicy` field of the `build` section of the
-Skaffold configuration file, `skaffold.yaml`.
+The default tagger, if none is specified in the `skaffold.yaml`, is the `gitCommit` tagger.
+
+### Configuration
+
+The tag policy is specified in the `tagPolicy` field of the `build` section
+of the `skaffold.yaml` configuration file.
+
+{{% readfile file="samples/taggers/git.yaml" %}}
 
 For a detailed discussion on Skaffold configuration, see
 [Skaffold Concepts]({{< relref "/docs/design/config.md" >}}) and
 [skaffold.yaml References]({{< relref "/docs/references/yaml" >}}).
 
-## `gitCommit`: uses Git commit IDs as tags
+### How tagging works
+
+ + Image tags are computed before the images are built.
+ + No matter the tagger, Skaffold always uses immutable references in Kubernetes manifests.
+   Which reference is used depends on whether the images are pushed to a registry or loaded directly into the cluster (such as via the Docker daemon):
+     + **When images are pushed**, their immutable digest is available. Skaffold then references
+       images both by tag and digest. Something like `image:tag@sha256:abacabac...`.
+       Using both the tag and the digest seems superfluous but it guarantees immutability
+       and helps users quickly see which version of the image is used.
+     + **When images are loaded directly into the cluster**, such as loading into the cluster's Docker daemon, digests are not available. We have the tags and the
+       imageIDs. Since imageIDs can't be used in Kubernetes manifests, Skaffold creates
+       an additional immutable, local only, tag with the same name as the imageID and uses that in manifests.
+       Something like `image:abecfabecfabecf...`.
+ + Skaffold never references images just by their tags because those tags are mutable and
+   can lead to cases where Kubernetes will use an outdated version of the image.
+
+## `gitCommit`: uses git commits/references as tags
 
 `gitCommit` is the default tag policy of Skaffold: if you do not specify the
 `tagPolicy` field in the `build` section, Skaffold will use Git information
@@ -45,10 +67,11 @@ specified explicitly:
 
 {{< schema root="GitTagger" >}}
 
-## `sha256`: uses Sha256 hashes of contents as tags
+## `sha256`: uses `latest` to tag images
 
-`sha256` is a content-based tagging strategy: it uses the Sha256 hash of
-your built image as the tag of the Docker image.
+`sha256` is a misleading name. It is named like that because, in the end, when Skaffold
+deploys to a remote cluster, the image's `sha256` digest is used in addition to `:latest`
+in order to create an immutable image reference.
 
 ### Example
 

@@ -86,6 +86,18 @@ func TestNoTest(t *testing.T) {
 	testutil.CheckError(t, false, err)
 }
 
+func TestIgnoreDockerNotFound(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.Override(&docker.NewAPIClient, func(*runcontext.RunContext) (docker.LocalDaemon, error) {
+			return nil, errors.New("not found")
+		})
+
+		tester := NewTester(&runcontext.RunContext{}, true)
+
+		t.CheckNil(tester)
+	})
+}
+
 func TestTestSuccess(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		tmpDir := t.NewTempDir().Touch("tests/test1.yaml", "tests/test2.yaml", "test3.yaml")

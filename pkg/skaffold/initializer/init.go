@@ -22,7 +22,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
@@ -45,7 +45,7 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 		return err
 	}
 
-	deployInitializer := deploy.NewInitializer(a.Manifests(), c)
+	deployInitializer := deploy.NewInitializer(a.Manifests(), a.KustomizePaths(), c)
 	images := deployInitializer.GetImages()
 
 	buildInitializer := build.NewInitializer(a.Builders(), c)

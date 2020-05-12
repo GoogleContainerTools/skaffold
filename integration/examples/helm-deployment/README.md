@@ -5,7 +5,7 @@ Skaffold can inject intermediate build tags in the the values map in the skaffol
 
 Let's walk through the skaffold yaml:
 
-We'll be building an image called `skaffold-helm`, and its a dockerfile, so we'll add it to the artifacts.
+We'll be building an image called `skaffold-helm`, and it's a dockerfile, so we'll add it to the artifacts.
 
 ```yaml
 build:
@@ -21,15 +21,15 @@ deploy:
   helm:
     releases:
     - name: skaffold-helm
-      chartPath: skaffold-helm
-      namespace: skaffold
+      chartPath: charts
+      # namespace: skaffold
       values:
         image: skaffold-helm
       valuesFiles:
-        - helm-values-file.yaml
+      - values.yaml
 ```
 
-This part tells skaffold to set the `image` parameter of the values file to the built skaffold-helm image and tag.
+This part tells Skaffold to set the `image` parameter of the values file to the built `skaffold-helm` image and tag.
 
 ```yaml
       values:

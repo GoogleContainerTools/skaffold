@@ -116,25 +116,17 @@ func (c *FakeCmd) AndRunErr(command string, err error) *FakeCmd {
 // It expected to match up with a call to RunCmd, and pipes
 // the provided output to RunCmd's exec.Cmd's stdout.
 func (c *FakeCmd) AndRunWithOutput(command, output string) *FakeCmd {
-	b := []byte{}
-	if output != "" {
-		b = []byte(output)
-	}
 	return c.addRun(run{
 		command:    command,
-		output:     b,
+		output:     []byte(output),
 		pipeOutput: true,
 	})
 }
 
 func (c *FakeCmd) AndRunOut(command string, output string) *FakeCmd {
-	b := []byte{}
-	if output != "" {
-		b = []byte(output)
-	}
 	return c.addRun(run{
 		command: command,
-		output:  b,
+		output:  []byte(output),
 	})
 }
 

@@ -23,6 +23,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -31,7 +32,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/server"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -91,7 +91,6 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 			// Print version
 			version := version.Get()
 			logrus.Infof("Skaffold %+v", version)
-			event.LogSkaffoldMetadata(version)
 
 			switch {
 			case quietFlag:
@@ -159,6 +158,7 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	rootCmd.AddCommand(NewCmdSchema())
 
 	rootCmd.AddCommand(NewCmdGeneratePipeline())
+	rootCmd.AddCommand(NewCmdSurvey())
 
 	templates.ActsAsRootCommand(rootCmd, nil, groups...)
 	rootCmd.PersistentFlags().StringVarP(&v, "verbosity", "v", constants.DefaultLogLevel.String(), "Log level (debug, info, warn, error, fatal, panic)")
@@ -193,9 +193,13 @@ func updateCheck(ch chan string, configfile string) error {
 		return fmt.Errorf("get latest and current Skaffold version: %w", err)
 	}
 	if latest.GT(current) {
-		ch <- fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it at %s\n", latest, constants.LatestDownloadURL)
+		ch <- fmt.Sprintf("There is a new version (%s) of Skaffold available. Download it from:\n  %s\n", latest, releaseURL(latest))
 	}
 	return nil
+}
+
+func releaseURL(v semver.Version) string {
+	return fmt.Sprintf("https://github.com/GoogleContainerTools/skaffold/releases/tag/v" + v.String())
 }
 
 // Each flag can also be set with an env variable whose name starts with `SKAFFOLD_`.

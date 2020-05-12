@@ -126,7 +126,8 @@ func TestKanikoBuildSpec(t *testing.T) {
 				Timeout: "10m",
 			}
 
-			t.CheckErrorAndDeepEqual(false, err, expected, desc)
+			t.CheckNoError(err)
+			t.CheckDeepEqual(expected, desc)
 		})
 	}
 }

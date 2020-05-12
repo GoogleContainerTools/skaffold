@@ -22,7 +22,7 @@ import (
 	"os"
 
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/pipeline"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
@@ -67,7 +67,7 @@ func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
 	}
 	inputs := &tekton.Inputs{Resources: resources}
 	outputs := &tekton.Outputs{Resources: resources}
-	steps := []corev1.Container{
+	steps := []v1.Container{
 		{
 			Name:       "run-build",
 			Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),
@@ -82,26 +82,26 @@ func generateBuildTask(configFile *ConfigFile) (*tekton.Task, error) {
 	}
 
 	// Add secret volume mounting if any artifacts in config need to be built with kaniko
-	var volumes []corev1.Volume
+	var volumes []v1.Volume
 	for _, artifact := range buildConfig.Artifacts {
 		if artifact.KanikoArtifact != nil {
-			volumes = []corev1.Volume{
+			volumes = []v1.Volume{
 				{
 					Name: kanikoSecretName,
-					VolumeSource: corev1.VolumeSource{
-						Secret: &corev1.SecretVolumeSource{
+					VolumeSource: v1.VolumeSource{
+						Secret: &v1.SecretVolumeSource{
 							SecretName: kanikoSecretName,
 						},
 					},
 				},
 			}
-			steps[0].VolumeMounts = []corev1.VolumeMount{
+			steps[0].VolumeMounts = []v1.VolumeMount{
 				{
 					Name:      kanikoSecretName,
 					MountPath: "/secret",
 				},
 			}
-			steps[0].Env = []corev1.EnvVar{
+			steps[0].Env = []v1.EnvVar{
 				{
 					Name:  "GOOGLE_APPLICATION_CREDENTIALS",
 					Value: "/secret/" + kanikoSecretName,
@@ -151,7 +151,7 @@ func generateDeployTask(configFile *ConfigFile) (*tekton.Task, error) {
 		},
 	}
 	inputs := &tekton.Inputs{Resources: resources}
-	steps := []corev1.Container{
+	steps := []v1.Container{
 		{
 			Name:       "run-deploy",
 			Image:      fmt.Sprintf("gcr.io/k8s-skaffold/skaffold:%s", skaffoldVersion),

@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
@@ -62,7 +63,7 @@ profiles:
 		tmpDir := t.NewTempDir().
 			Write("skaffold.yaml", addVersion(config))
 
-		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"), false)
+		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"))
 		t.CheckNoError(err)
 
 		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
@@ -93,7 +94,7 @@ profiles:
 		tmp := t.NewTempDir().
 			Write("skaffold.yaml", addVersion(config))
 
-		parsed, err := ParseConfig(tmp.Path("skaffold.yaml"), false)
+		parsed, err := ParseConfig(tmp.Path("skaffold.yaml"))
 		t.CheckNoError(err)
 
 		skaffoldConfig := parsed.(*latest.SkaffoldConfig)
@@ -107,12 +108,13 @@ profiles:
 
 func TestApplyProfiles(t *testing.T) {
 	tests := []struct {
-		description    string
-		config         *latest.SkaffoldConfig
-		profile        string
-		expected       *latest.SkaffoldConfig
-		kubeContextCli string
-		shouldErr      bool
+		description              string
+		config                   *latest.SkaffoldConfig
+		profile                  string
+		expected                 *latest.SkaffoldConfig
+		kubeContextCli           string
+		profileAutoActivationCli bool
+		shouldErr                bool
 	}{
 		{
 			description: "unknown profile",
@@ -121,8 +123,9 @@ func TestApplyProfiles(t *testing.T) {
 			shouldErr:   true,
 		},
 		{
-			description: "build type",
-			profile:     "profile",
+			description:              "build type",
+			profile:                  "profile",
+			profileAutoActivationCli: true,
 			config: config(
 				withLocalBuild(
 					withGitTagger(),
@@ -139,7 +142,7 @@ func TestApplyProfiles(t *testing.T) {
 									DockerImage: "gcr.io/cloud-builders/docker",
 									MavenImage:  "gcr.io/cloud-builders/mvn",
 									GradleImage: "gcr.io/cloud-builders/gradle",
-									KanikoImage: "gcr.io/kaniko-project/executor",
+									KanikoImage: constants.DefaultKanikoImage,
 									PackImage:   "gcr.io/k8s-skaffold/pack",
 								},
 							},
@@ -156,8 +159,9 @@ func TestApplyProfiles(t *testing.T) {
 			),
 		},
 		{
-			description: "tag policy",
-			profile:     "dev",
+			description:              "tag policy",
+			profile:                  "dev",
+			profileAutoActivationCli: true,
 			config: config(
 				withLocalBuild(
 					withGitTagger(),
@@ -182,8 +186,9 @@ func TestApplyProfiles(t *testing.T) {
 			),
 		},
 		{
-			description: "artifacts",
-			profile:     "profile",
+			description:              "artifacts",
+			profile:                  "profile",
+			profileAutoActivationCli: true,
 			config: config(
 				withLocalBuild(
 					withGitTagger(),
@@ -220,8 +225,9 @@ func TestApplyProfiles(t *testing.T) {
 			),
 		},
 		{
-			description: "deploy",
-			profile:     "profile",
+			description:              "deploy",
+			profile:                  "profile",
+			profileAutoActivationCli: true,
 			config: config(
 				withLocalBuild(
 					withGitTagger(),
@@ -247,8 +253,9 @@ func TestApplyProfiles(t *testing.T) {
 			),
 		},
 		{
-			description: "patch Dockerfile",
-			profile:     "profile",
+			description:              "patch Dockerfile",
+			profile:                  "profile",
+			profileAutoActivationCli: true,
 			config: config(
 				withLocalBuild(
 					withGitTagger(),
@@ -272,8 +279,9 @@ func TestApplyProfiles(t *testing.T) {
 			),
 		},
 		{
-			description: "invalid patch path",
-			profile:     "profile",
+			description:              "invalid patch path",
+			profile:                  "profile",
+			profileAutoActivationCli: true,
 			config: config(
 				withLocalBuild(
 					withGitTagger(),
@@ -291,8 +299,9 @@ func TestApplyProfiles(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "add test case",
-			profile:     "profile",
+			description:              "add test case",
+			profile:                  "profile",
+			profileAutoActivationCli: true,
 			config: config(
 				withLocalBuild(
 					withGitTagger(),
@@ -318,8 +327,9 @@ func TestApplyProfiles(t *testing.T) {
 			),
 		},
 		{
-			description: "port forwarding",
-			profile:     "profile",
+			description:              "port forwarding",
+			profile:                  "profile",
+			profileAutoActivationCli: true,
 			config: config(
 				withLocalBuild(
 					withGitTagger(),
@@ -351,8 +361,9 @@ func TestApplyProfiles(t *testing.T) {
 			),
 		},
 		{
-			description: "activate kubecontext specific profile and change the kubecontext",
-			profile:     "profile",
+			description:              "activate kubecontext specific profile and change the kubecontext",
+			profile:                  "profile",
+			profileAutoActivationCli: true,
 			config: config(
 				withProfiles(latest.Profile{
 					Name: "profile",
@@ -370,8 +381,9 @@ func TestApplyProfiles(t *testing.T) {
 			shouldErr: true,
 		},
 		{
-			description: "activate kubecontext with kubecontext override",
-			profile:     "profile",
+			description:              "activate kubecontext with kubecontext override",
+			profile:                  "profile",
+			profileAutoActivationCli: true,
 			config: config(
 				withProfiles(latest.Profile{
 					Name: "profile",
@@ -387,8 +399,9 @@ func TestApplyProfiles(t *testing.T) {
 			),
 		},
 		{
-			description: "when CLI flag is given, profiles with conflicting kube-context produce no error",
-			profile:     "profile",
+			description:              "when CLI flag is given, profiles with conflicting kube-context produce no error",
+			profile:                  "profile",
+			profileAutoActivationCli: true,
 			config: config(
 				withProfiles(
 					latest.Profile{
@@ -409,13 +422,76 @@ func TestApplyProfiles(t *testing.T) {
 				withKubeContext("staging"),
 			),
 		},
+		{
+			description:              "Profile auto activated with profile auto activation cli set to true",
+			profile:                  "dev",
+			profileAutoActivationCli: true,
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withProfiles(latest.Profile{
+					Name: "dev",
+				},
+					latest.Profile{
+						Name:       "prod",
+						Activation: []latest.Activation{{KubeContext: "prod-context"}},
+						Pipeline: latest.Pipeline{
+							Build: latest.BuildConfig{
+								TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+							},
+						},
+					}),
+			),
+			expected: config(
+				withLocalBuild(
+					withShaTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+			),
+		},
+		{
+			description:              "Profile not auto activated with profile auto activation cli set to false",
+			profile:                  "dev",
+			profileAutoActivationCli: false,
+			config: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+				withProfiles(latest.Profile{
+					Name: "dev",
+				},
+					latest.Profile{
+						Name:       "prod",
+						Activation: []latest.Activation{{KubeContext: "prod-context"}},
+						Pipeline: latest.Pipeline{
+							Build: latest.BuildConfig{
+								TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
+							},
+						},
+					}),
+			),
+			expected: config(
+				withLocalBuild(
+					withGitTagger(),
+					withDockerArtifact("image", ".", "Dockerfile"),
+				),
+				withKubectlDeploy("k8s/*.yaml"),
+			),
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			setupFakeKubeConfig(t, api.Config{CurrentContext: "prod-context"})
 			err := ApplyProfiles(test.config, cfg.SkaffoldOptions{
-				Profiles:    []string{test.profile},
-				KubeContext: test.kubeContextCli,
+				Profiles:              []string{test.profile},
+				KubeContext:           test.kubeContextCli,
+				ProfileAutoActivation: test.profileAutoActivationCli,
 			})
 
 			if test.shouldErr {
@@ -439,8 +515,9 @@ func TestActivatedProfiles(t *testing.T) {
 		{
 			description: "Selected on the command line",
 			opts: cfg.SkaffoldOptions{
-				Command:  "dev",
-				Profiles: []string{"activated", "also-activated"},
+				ProfileAutoActivation: true,
+				Command:               "dev",
+				Profiles:              []string{"activated", "also-activated"},
 			},
 			profiles: []latest.Profile{
 				{Name: "activated"},
@@ -451,7 +528,8 @@ func TestActivatedProfiles(t *testing.T) {
 		}, {
 			description: "Auto-activated by command",
 			opts: cfg.SkaffoldOptions{
-				Command: "dev",
+				ProfileAutoActivation: true,
+				Command:               "dev",
 			},
 			profiles: []latest.Profile{
 				{Name: "run-profile", Activation: []latest.Activation{{Command: "run"}}},
@@ -464,6 +542,9 @@ func TestActivatedProfiles(t *testing.T) {
 		}, {
 			description: "Auto-activated by env variable",
 			envs:        map[string]string{"KEY": "VALUE"},
+			opts: cfg.SkaffoldOptions{
+				ProfileAutoActivation: true,
+			},
 			profiles: []latest.Profile{
 				{Name: "activated", Activation: []latest.Activation{{Env: "KEY=VALUE"}}},
 				{Name: "not-activated", Activation: []latest.Activation{{Env: "KEY=OTHER"}}},
@@ -477,13 +558,18 @@ func TestActivatedProfiles(t *testing.T) {
 		}, {
 			description: "Invalid env variable",
 			envs:        map[string]string{"KEY": "VALUE"},
-			opts:        cfg.SkaffoldOptions{},
+			opts: cfg.SkaffoldOptions{
+				ProfileAutoActivation: true,
+			},
 			profiles: []latest.Profile{
 				{Name: "activated", Activation: []latest.Activation{{Env: "KEY:VALUE"}}},
 			},
 			shouldErr: true,
 		}, {
 			description: "Auto-activated by kube context",
+			opts: cfg.SkaffoldOptions{
+				ProfileAutoActivation: true,
+			},
 			profiles: []latest.Profile{
 				{Name: "activated", Activation: []latest.Activation{{KubeContext: "prod-context"}}},
 				{Name: "not-activated", Activation: []latest.Activation{{KubeContext: "dev-context"}}},
@@ -497,7 +583,8 @@ func TestActivatedProfiles(t *testing.T) {
 			description: "AND between activation criteria",
 			envs:        map[string]string{"KEY": "VALUE"},
 			opts: cfg.SkaffoldOptions{
-				Command: "dev",
+				ProfileAutoActivation: true,
+				Command:               "dev",
 			},
 			profiles: []latest.Profile{
 				{
@@ -519,7 +606,8 @@ func TestActivatedProfiles(t *testing.T) {
 		}, {
 			description: "OR between activations",
 			opts: cfg.SkaffoldOptions{
-				Command: "dev",
+				ProfileAutoActivation: true,
+				Command:               "dev",
 			},
 			profiles: []latest.Profile{
 				{
@@ -536,7 +624,8 @@ func TestActivatedProfiles(t *testing.T) {
 			description: "Activation for undefined environment variable and empty value",
 			envs:        map[string]string{"ABC": ""},
 			opts: cfg.SkaffoldOptions{
-				Command: "dev",
+				ProfileAutoActivation: true,
+				Command:               "dev",
 			},
 			profiles: []latest.Profile{
 				{
@@ -576,7 +665,8 @@ func TestActivatedProfiles(t *testing.T) {
 			description: "Activation for filled environment variable",
 			envs:        map[string]string{"ABC": "1"},
 			opts: cfg.SkaffoldOptions{
-				Command: "dev",
+				ProfileAutoActivation: true,
+				Command:               "dev",
 			},
 			profiles: []latest.Profile{
 				{
@@ -616,13 +706,43 @@ func TestActivatedProfiles(t *testing.T) {
 		{
 			description: "Profiles on the command line are activated after auto-activated profiles",
 			opts: cfg.SkaffoldOptions{
-				Command:  "run",
-				Profiles: []string{"activated", "also-activated"},
+				ProfileAutoActivation: true,
+				Command:               "run",
+				Profiles:              []string{"activated", "also-activated"},
 			},
 			profiles: []latest.Profile{
 				{Name: "run-profile", Activation: []latest.Activation{{Command: "run"}}},
 			},
 			expected: []string{"run-profile", "activated", "also-activated"},
+		},
+		{
+			description: "Selected on the command line with auto activation disabled",
+			opts: cfg.SkaffoldOptions{
+				ProfileAutoActivation: false,
+				Command:               "dev",
+				Profiles:              []string{"activated", "also-activated"},
+			},
+			profiles: []latest.Profile{
+				{Name: "activated"},
+				{Name: "not-activated"},
+				{Name: "also-activated"},
+				{Name: "not-activated-regexp", Activation: []latest.Activation{{KubeContext: "prod-.*"}}},
+				{Name: "not-activated-kubecontext", Activation: []latest.Activation{{KubeContext: "prod-context"}}},
+			},
+			expected: []string{"activated", "also-activated"},
+		},
+		{
+			description: "Disabled on the command line",
+			opts: cfg.SkaffoldOptions{
+				ProfileAutoActivation: true,
+				Command:               "dev",
+				Profiles:              []string{"-dev-profile"},
+			},
+			profiles: []latest.Profile{
+				{Name: "dev-profile", Activation: []latest.Activation{{Command: "dev"}}},
+				{Name: "run-or-dev-profile", Activation: []latest.Activation{{Command: "(run)|(dev)"}}},
+			},
+			expected: []string{"run-or-dev-profile"},
 		},
 	}
 
@@ -666,7 +786,7 @@ profiles:
 		tmpDir := t.NewTempDir().
 			Write("skaffold.yaml", addVersion(config))
 
-		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"), false)
+		parsed, err := ParseConfig(tmpDir.Path("skaffold.yaml"))
 		t.RequireNoError(err)
 
 		skaffoldConfig := parsed.(*latest.SkaffoldConfig)

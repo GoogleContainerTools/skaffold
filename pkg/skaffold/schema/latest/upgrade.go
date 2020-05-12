@@ -24,5 +24,5 @@ import (
 
 // Upgrade upgrades a configuration to the next version.
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
-	return nil, errors.New("not implemented yet")
+	return nil, errors.New("there's no version to upgrade from \"latest\"")
 }

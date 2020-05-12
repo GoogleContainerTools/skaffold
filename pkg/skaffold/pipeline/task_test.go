@@ -20,7 +20,7 @@ import (
 	"testing"
 
 	tekton "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -31,7 +31,7 @@ func TestNewTask(t *testing.T) {
 		description string
 		taskName    string
 		inputs      *tekton.Inputs
-		steps       []corev1.Container
+		steps       []v1.Container
 		expected    *tekton.Task
 	}{
 		{
@@ -55,7 +55,7 @@ func TestNewTask(t *testing.T) {
 					},
 				},
 			},
-			steps: []corev1.Container{
+			steps: []v1.Container{
 				{
 					Name:    "step1",
 					Image:   "test-image",
@@ -80,7 +80,7 @@ func TestNewTask(t *testing.T) {
 							},
 						},
 					},
-					Steps: []corev1.Container{
+					Steps: []v1.Container{
 						{
 							Name:    "step1",
 							Image:   "test-image",
@@ -95,12 +95,12 @@ func TestNewTask(t *testing.T) {
 			description: "empty params",
 			taskName:    "",
 			inputs:      &tekton.Inputs{},
-			steps:       []corev1.Container{},
+			steps:       []v1.Container{},
 			expected: &tekton.Task{
 				TypeMeta: metav1.TypeMeta{Kind: "Task", APIVersion: "tekton.dev/v1alpha1"},
 				Spec: tekton.TaskSpec{
 					Inputs: &tekton.Inputs{},
-					Steps:  []corev1.Container{},
+					Steps:  []v1.Container{},
 				},
 			},
 		},

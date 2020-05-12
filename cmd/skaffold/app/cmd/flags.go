@@ -56,7 +56,7 @@ var FlagRegistry = []Flag{
 	{
 		Name:          "profile",
 		Shorthand:     "p",
-		Usage:         "Activate profiles by name",
+		Usage:         "Activate profiles by name (prefixed with `-` to disable a profile)",
 		Value:         &opts.Profiles,
 		DefValue:      []string{},
 		FlagAddMethod: "StringSliceVar",
@@ -268,6 +268,14 @@ var FlagRegistry = []Flag{
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"build", "debug", "dev", "run"},
+	},
+	{
+		Name:          "profile-auto-activation",
+		Usage:         "Set to false to disable profile auto activation",
+		Value:         &opts.ProfileAutoActivation,
+		DefValue:      true,
+		FlagAddMethod: "BoolVar",
+		DefinedOn:     []string{"dev", "run", "debug", "deploy", "render", "build", "delete", "diagnose"},
 	},
 }
 

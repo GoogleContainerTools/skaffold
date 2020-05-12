@@ -25,7 +25,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
@@ -42,7 +41,7 @@ var createRunner = createNewRunner
 func withRunner(ctx context.Context, action func(runner.Runner, *latest.SkaffoldConfig) error) error {
 	runner, config, err := createRunner(opts)
 	if err != nil {
-		return fmt.Errorf("creating runner: %w", err)
+		return err
 	}
 
 	err = action(runner, config)
@@ -52,7 +51,7 @@ func withRunner(ctx context.Context, action func(runner.Runner, *latest.Skaffold
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
 func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.SkaffoldConfig, error) {
-	parsed, err := schema.ParseConfig(opts.ConfigurationFile, true)
+	parsed, err := schema.ParseConfigAndUpgrade(opts.ConfigurationFile, latest.Version)
 	if err != nil {
 		if os.IsNotExist(errors.Unwrap(err)) {
 			return nil, nil, fmt.Errorf("[%s] not found. You might need to run `skaffold init`", opts.ConfigurationFile)
@@ -97,6 +96,6 @@ func createNewRunner(opts config.SkaffoldOptions) (runner.Runner, *latest.Skaffo
 func warnIfUpdateIsAvailable() {
 	latest, current, versionErr := update.GetLatestAndCurrentVersion()
 	if versionErr == nil && latest.GT(current) {
-		logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) at %s", latest, constants.LatestDownloadURL)
+		logrus.Warnf("Your Skaffold version might be too old. Download the latest version (%s) from:\n  %s\n", latest, releaseURL(latest))
 	}
 }

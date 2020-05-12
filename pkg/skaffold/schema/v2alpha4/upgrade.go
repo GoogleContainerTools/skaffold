@@ -27,17 +27,13 @@ import (
 // 1. Additions:
 // 2. Removals:
 // 3. Updates:
-//    - kustomize deployer supports multiple paths
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
-
 	pkgutil.CloneThroughJSON(c, &newConfig)
-	if err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline); err != nil {
-		return nil, err
-	}
 	newConfig.APIVersion = next.Version
 
-	return &newConfig, nil
+	err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline)
+	return &newConfig, err
 }
 
 func upgradeOnePipeline(_, _ interface{}) error {

@@ -25,7 +25,7 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
@@ -67,10 +67,11 @@ func ParseImagesFromKubernetesYaml(filepath string) ([]string, error) {
 		return nil, err
 	}
 
-	images := []string{}
+	var images []string
 	for _, k8sObject := range k8sObjects {
 		images = append(images, parseImagesFromYaml(k8sObject)...)
 	}
+
 	return images, nil
 }
 

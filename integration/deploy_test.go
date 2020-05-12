@@ -17,10 +17,8 @@ limitations under the License.
 package integration
 
 import (
-	"bufio"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -80,7 +78,8 @@ func TestDeploy(t *testing.T) {
 
 	ns, client := SetupNamespace(t)
 
-	skaffold.Deploy("--images", "index.docker.io/library/busybox:1").InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	skaffold.Deploy("--images", "index.docker.io/library/busybox:1", "--default-repo=").InDir("examples/kustomize").InNs(ns.Name).RunOrFail(t)
 
 	dep := client.GetDeployment("kustomize-test")
 	testutil.CheckDeepEqual(t, "index.docker.io/library/busybox:1", dep.Spec.Template.Spec.Containers[0].Image)
@@ -93,29 +92,10 @@ func TestDeployTail(t *testing.T) {
 
 	ns, _ := SetupNamespace(t)
 
-	out := skaffold.Deploy("--tail", "--images", "busybox:latest").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunBackground(t)
+	// `--default-repo=` is used to cancel the default repo that is set by default.
+	out := skaffold.Deploy("--tail", "--images", "busybox:latest", "--default-repo=").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunBackground(t)
 
-	// Wait for the logs to print "Hello world!"
-	lines := make(chan string)
-	go func() {
-		scanner := bufio.NewScanner(out)
-		for scanner.Scan() {
-			lines <- scanner.Text()
-		}
-	}()
-
-	timer := time.NewTimer(30 * time.Second)
-	defer timer.Stop()
-	for {
-		select {
-		case <-timer.C:
-			t.Fatal("timeout")
-		case line := <-lines:
-			if strings.Contains(line, "Hello world!") {
-				return
-			}
-		}
-	}
+	WaitForLogs(t, out, "Hello world!")
 }
 
 func TestDeployWithInCorrectConfig(t *testing.T) {

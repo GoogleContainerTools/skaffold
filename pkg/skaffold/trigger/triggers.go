@@ -163,14 +163,24 @@ func (t *fsNotifyTrigger) LogWatchToUser(out io.Writer) {
 func (t *fsNotifyTrigger) Start(ctx context.Context) (<-chan bool, error) {
 	c := make(chan notify.EventInfo, 100)
 
+	// Workaround https://github.com/rjeczalik/notify/issues/96
+	wd, err := RealWorkDir()
+	if err != nil {
+		return nil, err
+	}
+
 	// Watch current directory recursively
-	if err := notify.Watch("./...", c, notify.All); err != nil {
+	if err := notify.Watch(filepath.Join(wd, "..."), c, notify.All); err != nil {
 		return nil, err
 	}
 
 	// Watch all workspaces recursively
 	for w := range t.workspaces {
-		if err := notify.Watch(filepath.Join(w, "..."), c, notify.All); err != nil {
+		if w == "." {
+			continue
+		}
+
+		if err := notify.Watch(filepath.Join(wd, w, "..."), c, notify.All); err != nil {
 			return nil, err
 		}
 	}

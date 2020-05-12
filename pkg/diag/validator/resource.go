@@ -19,16 +19,19 @@ package validator
 import (
 	"fmt"
 
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 type Resource struct {
-	namespace string
-	kind      string
-	name      string
-	status    Status
-	err       error
+	namespace  string
+	kind       string
+	name       string
+	status     Status
+	err        error
+	StatusCode proto.StatusCode
 }
 
 func (r Resource) Kind() string      { return r.kind }
@@ -41,17 +44,17 @@ func (r Resource) String() string {
 }
 
 // NewResource creates new Resource of kind
-func NewResource(namespace, kind, name string, status Status, err error) Resource {
-	return Resource{namespace: namespace, kind: kind, name: name, status: status, err: err}
+func NewResource(namespace, kind, name string, status Status, err error, statusCode proto.StatusCode) Resource {
+	return Resource{namespace: namespace, kind: kind, name: name, status: status, err: err, StatusCode: statusCode}
 }
 
 // objectWithMetadata is any k8s object that has kind and object metadata.
 type objectWithMetadata interface {
 	runtime.Object
-	meta_v1.Object
+	metav1.Object
 }
 
 // NewResourceFromObject creates new Resource with fields populated from object metadata.
-func NewResourceFromObject(object objectWithMetadata, status Status, err error) Resource {
-	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, err)
+func NewResourceFromObject(object objectWithMetadata, status Status, err error, statusCode proto.StatusCode) Resource {
+	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, err, statusCode)
 }

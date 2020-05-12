@@ -43,7 +43,7 @@ func (t jdwpTransformer) IsApplicable(config imageConfiguration) bool {
 	if _, found := config.env["JAVA_VERSION"]; found {
 		return true
 	}
-	if len(config.entrypoint) > 0 {
+	if len(config.entrypoint) > 0 && !isEntrypointLauncher(config.entrypoint) {
 		return config.entrypoint[0] == "java" || strings.HasSuffix(config.entrypoint[0], "/java")
 	}
 	if len(config.arguments) > 0 {

@@ -729,7 +729,7 @@ func TestHelmDeploy(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			event.InitializeState(test.runContext.Cfg.Build)
+			event.InitializeState(test.runContext.Cfg, "test")
 
 			deployer := NewHelmDeployer(test.runContext)
 			deployer.pkgTmpDir = tmpDir
@@ -790,7 +790,7 @@ func TestHelmCleanup(t *testing.T) {
 			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			event.InitializeState(test.runContext.Cfg.Build)
+			event.InitializeState(test.runContext.Cfg, "test")
 
 			deployer := NewHelmDeployer(test.runContext)
 			err := deployer.Cleanup(context.Background(), ioutil.Discard)

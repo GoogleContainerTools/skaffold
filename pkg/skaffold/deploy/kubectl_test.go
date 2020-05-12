@@ -34,9 +34,10 @@ import (
 )
 
 const (
-	testKubeContext = "kubecontext"
-	testKubeConfig  = "kubeconfig"
-	kubectlVersion  = `{"clientVersion":{"major":"1","minor":"12"}}`
+	testKubeContext   = "kubecontext"
+	testKubeConfig    = "kubeconfig"
+	kubectlVersion112 = `{"clientVersion":{"major":"1","minor":"12"}}`
+	kubectlVersion118 = `{"clientVersion":{"major":"1","minor":"18"}}`
 )
 
 const deploymentWebYAML = `apiVersion: v1
@@ -69,7 +70,7 @@ func TestKubectlDeploy(t *testing.T) {
 		{
 			description: "no manifest",
 			cfg:         &latest.KubectlDeploy{},
-			commands:    testutil.CmdRunOut("kubectl version --client -ojson", kubectlVersion),
+			commands:    testutil.CmdRunOut("kubectl version --client -ojson", kubectlVersion112),
 		},
 		{
 			description: "deploy success (disable validation)",
@@ -80,7 +81,7 @@ func TestKubectlDeploy(t *testing.T) {
 				},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml --validate=false", deploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --validate=false"),
 			builds: []build.Artifact{{
@@ -94,7 +95,7 @@ func TestKubectlDeploy(t *testing.T) {
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
 			builds: []build.Artifact{{
@@ -109,8 +110,22 @@ func TestKubectlDeploy(t *testing.T) {
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
+			builds: []build.Artifact{{
+				ImageName: "leeroy-web",
+				Tag:       "leeroy-web:123",
+			}},
+		},
+		{
+			description: "deploy success (kubectl v1.18)",
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
+			},
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion118).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run=client -oyaml -f deployment.yaml", deploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 			builds: []build.Artifact{{
 				ImageName: "leeroy-web",
@@ -123,7 +138,7 @@ func TestKubectlDeploy(t *testing.T) {
 				Manifests: []string{"deployment.yaml", "http://remote.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml -f http://remote.yaml", deploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
 			builds: []build.Artifact{{
@@ -137,7 +152,7 @@ func TestKubectlDeploy(t *testing.T) {
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -f -", fmt.Errorf("")),
 			builds: []build.Artifact{{
@@ -157,7 +172,7 @@ func TestKubectlDeploy(t *testing.T) {
 				},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext --namespace testNamespace create -v=0 --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace apply -v=0 --overwrite=true -f -", fmt.Errorf("")),
 			builds: []build.Artifact{{
@@ -211,7 +226,18 @@ func TestKubectlCleanup(t *testing.T) {
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
+				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
+		},
+		{
+			description: "cleanup success (kubectl v1.18)",
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"deployment.yaml"},
+			},
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion118).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run=client -oyaml -f deployment.yaml", deploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
 		},
 		{
@@ -220,7 +246,8 @@ func TestKubectlCleanup(t *testing.T) {
 				Manifests: []string{"deployment.yaml"},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
@@ -235,7 +262,8 @@ func TestKubectlCleanup(t *testing.T) {
 				},
 			},
 			commands: testutil.
-				CmdRunOut("kubectl --context kubecontext --namespace testNamespace create -v=0 --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace create -v=0 --dry-run -oyaml -f deployment.yaml", deploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace delete -v=0 --grace-period=1 --ignore-not-found=true -f -"),
 		},
 	}
@@ -329,7 +357,7 @@ func TestKubectlRedeploy(t *testing.T) {
 			Write("deployment-app.yaml", deploymentAppYAML)
 
 		t.Override(&util.DefaultExecCommand, testutil.
-			CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+			CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 			AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+tmpDir.Path("deployment-app.yaml")+" -f "+tmpDir.Path("deployment-web.yaml"), deploymentAppYAML+"\n"+deploymentWebYAML).
 			AndRunInput("kubectl --context kubecontext --namespace testNamespace apply -f -", `apiVersion: v1
 kind: Pod
@@ -558,7 +586,7 @@ spec:
 				Write("deployment.yaml", test.input)
 
 			t.Override(&util.DefaultExecCommand, testutil.
-				CmdRunOut("kubectl version --client -ojson", kubectlVersion).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
 				AndRunOut("kubectl --context kubecontext create --dry-run -oyaml -f "+tmpDir.Path("deployment.yaml"), test.input))
 
 			deployer := NewKubectlDeployer(&runcontext.RunContext{

@@ -19,7 +19,7 @@ package kubernetes
 import (
 	"fmt"
 
-	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
@@ -40,7 +40,7 @@ func AggregatePodWatcher(namespaces []string, aggregate chan<- watch.Event) (fun
 	var forever int64 = 3600 * 24 * 365 * 100
 
 	for _, ns := range namespaces {
-		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(meta_v1.ListOptions{
+		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(metav1.ListOptions{
 			TimeoutSeconds: &forever,
 		})
 		if err != nil {

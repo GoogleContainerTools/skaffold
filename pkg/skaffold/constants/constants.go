@@ -17,9 +17,6 @@ limitations under the License.
 package constants
 
 import (
-	"fmt"
-	"runtime"
-
 	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -42,7 +39,7 @@ const (
 
 	DefaultKustomizationPath = "."
 
-	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.14.0@sha256:9c40a04cf1bc9d886f7f000e0b7fa5300c31c89e2ad001e97eeeecdce9f07a29"
+	DefaultKanikoImage                  = "gcr.io/kaniko-project/executor:v0.20.0@sha256:f9a4a760166682c7c7aeda3cc263570682e00848ab47737ed8ffcc3abd2da6c3"
 	DefaultKanikoSecretName             = "kaniko-secret"
 	DefaultKanikoTimeout                = "20m"
 	DefaultKanikoContainerName          = "kaniko"
@@ -107,8 +104,6 @@ var (
 )
 
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
-
-var LatestDownloadURL = fmt.Sprintf("https://storage.googleapis.com/skaffold/releases/latest/skaffold-%s-%s", runtime.GOOS, runtime.GOARCH)
 
 var Labels = struct {
 	TagPolicy        string

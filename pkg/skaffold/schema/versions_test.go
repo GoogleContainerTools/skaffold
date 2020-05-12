@@ -149,7 +149,7 @@ deploy:
 	}
 }
 
-func TestParseConfig(t *testing.T) {
+func TestParseConfigAndUpgrade(t *testing.T) {
 	tests := []struct {
 		apiVersion  string
 		description string
@@ -273,7 +273,7 @@ func TestParseConfig(t *testing.T) {
 			tmpDir := t.NewTempDir().
 				Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", test.apiVersion, test.config))
 
-			cfg, err := ParseConfig(tmpDir.Path("skaffold.yaml"), true)
+			cfg, err := ParseConfigAndUpgrade(tmpDir.Path("skaffold.yaml"), latest.Version)
 			if cfg != nil {
 				config := cfg.(*latest.SkaffoldConfig)
 				err := defaults.Set(config)
@@ -311,7 +311,7 @@ func withGoogleCloudBuild(id string, ops ...func(*latest.BuildConfig)) func(*lat
 			DockerImage: "gcr.io/cloud-builders/docker",
 			MavenImage:  "gcr.io/cloud-builders/mvn",
 			GradleImage: "gcr.io/cloud-builders/gradle",
-			KanikoImage: "gcr.io/kaniko-project/executor",
+			KanikoImage: constants.DefaultKanikoImage,
 			PackImage:   "gcr.io/k8s-skaffold/pack",
 		}}}
 		for _, op := range ops {
@@ -471,4 +471,28 @@ func TestCantUpgradeFromLatestVersion(t *testing.T) {
 
 	_, err := factory().Upgrade()
 	testutil.CheckError(t, true, err)
+}
+
+func TestParseConfigAndUpgradeToUnknownVersion(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.NewTempDir().
+			Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, minimalConfig)).
+			Chdir()
+
+		_, err := ParseConfigAndUpgrade("skaffold.yaml", "unknown")
+
+		t.CheckErrorContains(`unknown api version: "unknown"`, err)
+	})
+}
+
+func TestParseConfigAndUpgradeToOlderVersion(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.NewTempDir().
+			Write("skaffold.yaml", fmt.Sprintf("apiVersion: %s\nkind: Config\n%s", latest.Version, minimalConfig)).
+			Chdir()
+
+		_, err := ParseConfigAndUpgrade("skaffold.yaml", "skaffold/v1alpha1")
+
+		t.CheckErrorContains(`is more recent than target version "skaffold/v1alpha1": upgrade Skaffold`, err)
+	})
 }

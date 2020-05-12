@@ -89,7 +89,7 @@ func TestSetDefaults(t *testing.T) {
 	testutil.CheckDeepEqual(t, "fourth", cfg.Build.Artifacts[3].ImageName)
 	testutil.CheckDeepEqual(t, []string{"."}, cfg.Build.Artifacts[3].BuildpackArtifact.Dependencies.Paths)
 	testutil.CheckDeepEqual(t, []string(nil), cfg.Build.Artifacts[3].BuildpackArtifact.Dependencies.Ignore)
-	testutil.CheckDeepEqual(t, []string{"**/*"}, cfg.Build.Artifacts[3].Sync.Infer)
+	testutil.CheckDeepEqual(t, &latest.Auto{}, cfg.Build.Artifacts[3].Sync.Auto)
 
 	testutil.CheckDeepEqual(t, "fifth", cfg.Build.Artifacts[4].ImageName)
 	testutil.CheckDeepEqual(t, &latest.Auto{}, cfg.Build.Artifacts[4].Sync.Auto)

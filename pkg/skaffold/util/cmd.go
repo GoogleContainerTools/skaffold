@@ -24,6 +24,28 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type cmdError struct {
+	args   []string
+	stdout []byte
+	stderr []byte
+	cause  error
+}
+
+func (e *cmdError) Error() string {
+	return fmt.Sprintf("running %s\n - stdout: %q\n - stderr: %q\n - cause: %s", e.args, e.stdout, e.stderr, e.cause)
+}
+
+func (e *cmdError) Unwrap() error {
+	return e.cause
+}
+
+func (e *cmdError) ExitCode() int {
+	if exitError, ok := e.cause.(*exec.ExitError); ok {
+		return exitError.ExitCode()
+	}
+	return 0
+}
+
 // DefaultExecCommand runs commands using exec.Cmd
 var DefaultExecCommand Command = &Commander{}
 
@@ -73,7 +95,12 @@ func (*Commander) RunCmdOut(cmd *exec.Cmd) ([]byte, error) {
 	}
 
 	if err := cmd.Wait(); err != nil {
-		return stdout, fmt.Errorf("running %s\n - stdout: %s\n - stderr: %q: %w", cmd.Args, stdout, stderr, err)
+		return stdout, &cmdError{
+			args:   cmd.Args,
+			stdout: stdout,
+			stderr: stderr,
+			cause:  err,
+		}
 	}
 
 	if len(stderr) > 0 {

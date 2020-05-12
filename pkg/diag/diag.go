@@ -62,8 +62,11 @@ func (d *diag) WithValidators(v []validator.Validator) Diagnose {
 }
 
 func (d *diag) Run() ([]validator.Resource, error) {
-	res := []validator.Resource{}
-	errs := []error{}
+	var (
+		res  []validator.Resource
+		errs []error
+	)
+
 	for _, v := range d.validators {
 		for _, ns := range d.namespaces {
 			r, err := v.Validate(context.Background(), ns, d.listOptions)
@@ -76,9 +79,11 @@ func (d *diag) Run() ([]validator.Resource, error) {
 	if len(errs) == 0 {
 		return res, nil
 	}
+
 	errBuilder := ""
 	for _, err := range errs {
 		errBuilder = errBuilder + err.Error() + "\n"
 	}
+
 	return res, fmt.Errorf("following errors occurred %s", errBuilder)
 }

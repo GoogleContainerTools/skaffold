@@ -48,7 +48,8 @@ func (c *cliDeployInit) DeployConfig() latest.DeployConfig {
 		DeployType: latest.DeployType{
 			KubectlDeploy: &latest.KubectlDeploy{
 				Manifests: c.cliKubernetesManifests,
-			}},
+			},
+		},
 	}
 }
 
@@ -82,12 +83,17 @@ func (e *emptyDeployInit) Validate() error {
 
 func (e *emptyDeployInit) AddManifestForImage(string, string) {}
 
-func NewInitializer(manifests []string, c config.Config) Initializer {
+// if any CLI manifests are provided, we always use those as part of a kubectl deploy first
+// if not, then if a kustomization yaml is found, we use that next
+// otherwise, default to a kubectl deploy.
+func NewInitializer(manifests []string, kustomizations []string, c config.Config) Initializer {
 	switch {
 	case c.SkipDeploy:
 		return &emptyDeployInit{}
 	case len(c.CliKubernetesManifests) > 0:
 		return &cliDeployInit{c.CliKubernetesManifests}
+	case len(kustomizations) > 0:
+		return newKustomizeInitializer(kustomizations, manifests)
 	default:
 		return newKubectlInitializer(manifests)
 	}
