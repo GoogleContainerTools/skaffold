@@ -6,4 +6,18 @@ build:
 deploy:
   kubectl:
     manifests:
-      - k8s-*
+      - deployment.yaml
+profiles:
+  - name: slow-deploy
+    deploy:
+      kubectl:
+        manifests:
+          - slow-deployment.yaml
+  - name: slow-build
+    build:
+      artifacts:
+        - image: test-dev
+          docker:
+            noCache: true
+            buildArgs:
+              SLEEP: "3600"

@@ -17,6 +17,7 @@ limitations under the License.
 package integration
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -25,6 +26,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -66,7 +69,7 @@ func TestDevNotification(t *testing.T) {
 
 			skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-			dep := client.GetDeployment("test-dev")
+			client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
 
 			// Make a change to foo so that dev is forced to delete the Deployment and redeploy
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
@@ -82,6 +85,85 @@ func TestDevNotification(t *testing.T) {
 	}
 }
 
+func TestCancellableDeploy(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
+	t.Run("cancellable deploy", func(t *testing.T) {
+		Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+		defer Run(t, "testdata/dev", "rm", "foo")
+
+		ns, client := SetupNamespace(t)
+
+		// the deployment is stuck here - we have foo in the file, that fails the health check
+		// in slow-deployment.yaml
+		out := skaffold.Dev("--profile=slow-deploy", "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+
+		scanner := bufio.NewScanner(out)
+		deploying := false
+		go func() {
+			for scanner.Scan() {
+				line := scanner.Text()
+				logrus.Infof("[skaffold dev] %s", line)
+				if strings.Contains(line, "Waiting for deployments") {
+					logrus.Infof("DEPLOYING!")
+					deploying = true
+				}
+			}
+		}()
+
+		for !deploying {
+			time.Sleep(100 * time.Millisecond)
+		}
+
+		// Make a change to foo so that dev is forced to restart and rebuild.
+		// Also, on the rebuild, "bar" is the content in the file, making
+		// the health check in slow-deployment.yaml succeed
+		Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
+
+		client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
+	})
+}
+
+func TestCancellableBuildDev(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
+	t.Run("cancellable build", func(t *testing.T) {
+		Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+		defer Run(t, "testdata/dev", "rm", "foo")
+
+		ns, client := SetupNamespace(t)
+
+		// the build is stuck here - we have foo in the file, that tells the build to sleep
+		out := skaffold.Dev("--profile=slow-build", "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+
+		scanner := bufio.NewScanner(out)
+		built := false
+		go func() {
+			for scanner.Scan() {
+				line := scanner.Text()
+				logrus.Infof("[skaffold dev] %s", line)
+				if strings.Contains(line, "COPY foo") {
+					logrus.Infof("BUILT!")
+					built = true
+				}
+			}
+		}()
+
+		for !built {
+			time.Sleep(100 * time.Millisecond)
+		}
+
+		// Make a change to foo so that dev is forced to restart and rebuild.
+		// Also, on the rebuild, "bar" is the content in the file, instructing the Dockerfile for no sleeping
+		Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
+
+		client.WaitForDeploymentsToStabilizeWithTimeout(30*time.Second, "test-dev")
+	})
+}
 func TestDevAPITriggers(t *testing.T) {
 	if testing.Short() || RunOnGCP() {
 		t.Skip("skipping kind integration test")

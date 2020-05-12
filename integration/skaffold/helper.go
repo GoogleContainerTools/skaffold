@@ -167,6 +167,7 @@ func (b *RunBuilder) RunBackground(t *testing.T) io.ReadCloser {
 
 	cmd := b.cmd(ctx)
 	cmd.Stdout = pw
+	cmd.Stderr = pw
 	logrus.Infoln(cmd.Args)
 
 	start := time.Now()
