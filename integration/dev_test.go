@@ -36,7 +36,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestDev(t *testing.T) {
+func TestDevNotification(t *testing.T) {
 	if testing.Short() || RunOnGCP() {
 		t.Skip("skipping kind integration test")
 	}
