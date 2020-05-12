@@ -42,22 +42,28 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			expectedImage: "gcr.io/some/registry",
 		},
 		{
-			description:   "provided registry has defaultRepo prefix",
+			description:   "provided image has defaultRepo prefix",
 			image:         "gcr.io/default/registry",
 			defaultRepo:   "gcr.io/default",
 			expectedImage: "gcr.io/default/registry",
 		},
 		{
-			description:   "provided registry has defaultRepo eu prefix",
+			description:   "provided image and defaultRepo have eu prefix",
 			image:         "eu.gcr.io/project/registry",
 			defaultRepo:   "eu.gcr.io/project",
 			expectedImage: "eu.gcr.io/project/registry",
 		},
 		{
-			description:   "provided registry has defaultRepo in another domain",
+			description:   "default repo registry is in another domain and different subpaths",
 			image:         "gcr.io/project/subpath/registry",
 			defaultRepo:   "eu.gcr.io/project/defaultRepoSubpath",
 			expectedImage: "eu.gcr.io/project/defaultRepoSubpath/subpath/registry",
+		},
+		{
+			description:   "default repo registry and subset of same subpaths",
+			image:         "gcr.io/project/subpath/another/app1/registry",
+			defaultRepo:   "eu.gcr.io/project/subpath/another/dev",
+			expectedImage: "eu.gcr.io/project/subpath/another/dev/app1/registry",
 		},
 		{
 			description:   "registry has shared prefix with defaultRepo",

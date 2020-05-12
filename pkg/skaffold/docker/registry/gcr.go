@@ -54,10 +54,17 @@ func (r *GCRRegistry) Name() string {
 func (r *GCRRegistry) Update(reg Registry) Registry {
 	switch t := reg.(type) {
 	case *GCRRegistry:
+		i := 0
+		for ; i < len(t.paths)-1; i++ {
+			if i > len(r.paths) || t.paths[i] != r.paths[i] {
+				break
+			}
+			i++
+		}
 		return &GCRRegistry{
 			domain:  t.domain,
 			project: t.project,
-			paths:   append(t.paths, r.paths...),
+			paths:   append(t.paths, r.paths[i:len(r.paths)]...),
 		}
 	default:
 		return reg

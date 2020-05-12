@@ -40,14 +40,25 @@ func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, e
 	}
 
 	// replace registry in parsed name
-	replaced := truncate(replaceRegistry(defaultRepo, parsed.BaseName))
+	replaced := truncate(replace(defaultRepo, parsed.BaseName))
 	if parsed.Tag != "" {
 		replaced = replaced + ":" + parsed.Tag
 	}
 	if parsed.Digest != "" {
 		replaced = replaced + "@" + parsed.Digest
 	}
+
 	return replaced, nil
+}
+
+func replace(defaultRepo string, orignalImage string) string {
+	reg, image := splitImage(orignalImage)
+	defaultRegistry := registry.GetRegistry(defaultRepo)
+	newReg := reg.Update(defaultRegistry)
+	if newReg.Type() == reg.Type() {
+		return newReg.Name() + "/" + image
+	}
+	return newReg.Name() + "/" + escapeRegex.ReplaceAllString(orignalImage, "_")
 }
 
 func truncate(image string) string {
@@ -61,14 +72,4 @@ func splitImage(i string) (registry.Registry, string) {
 	s := strings.Split(i, "/")
 	reg := registry.GetRegistry(strings.Join(s[:len(s)-1], "/"))
 	return reg, s[len(s)-1]
-}
-
-func replaceRegistry(defaultRepo string, orignalImage string) string {
-	reg, image := splitImage(orignalImage)
-	defaultRegistry := registry.GetRegistry(defaultRepo)
-	newReg := reg.Update(defaultRegistry)
-	if newReg.Type() == reg.Type() {
-		return newReg.Name() + "/" + image
-	}
-	return newReg.Name() + "/" + escapeRegex.ReplaceAllString(orignalImage, "_")
 }
