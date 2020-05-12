@@ -75,3 +75,7 @@ jobs:
       cache:
         directories:
           - $HOME/.cache/go-build
+    - os: linux
+      name: "cross"
+      script:
+        - make cross
