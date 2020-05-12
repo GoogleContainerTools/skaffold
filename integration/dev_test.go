@@ -66,13 +66,18 @@ func TestDev(t *testing.T) {
 
 			skaffold.Dev("--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-			client.WaitForDeploymentsToStabilize("test-dev")
+			dep := client.GetDeployment("test-dev")
 
 			// Make a change to foo so that dev is forced to delete the Deployment and redeploy
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 			// Make sure the old Deployment and the new Deployment are different
-			client.WaitForDeploymentsToStabilize("test-dev")
+			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+				newDep := client.GetDeployment("test-dev")
+				logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
+				return dep.GetGeneration() != newDep.GetGeneration(), nil
+			})
+			failNowIfError(t, err)
 		})
 	}
 }
@@ -134,7 +139,7 @@ func TestDevAPITriggers(t *testing.T) {
 	failNowIfError(t, err)
 
 	// Make sure the old Deployment and the new Deployment are different
-	err = wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+	err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 		newDep := client.GetDeployment("test-dev")
 		logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 		return dep.GetGeneration() != newDep.GetGeneration(), nil
