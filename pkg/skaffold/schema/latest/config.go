@@ -500,7 +500,13 @@ type HelmRelease struct {
 	ValuesFiles []string `yaml:"valuesFiles,omitempty"`
 
 	// Values are key-value pairs supplementing the Helm `values` file.
+	// Deprecated - values, `artifactOverrides` should be used.
 	Values map[string]string `yaml:"values,omitempty,omitempty"`
+
+	// ArtifactOverrides are key value pairs where
+	// key represents the parameter used in `values` file to define a container image and
+	// value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section
+	ArtifactOverrides map[string]string `yaml:"imageOverrides,omitempty,omitempty"`
 
 	// Namespace is the Kubernetes namespace.
 	Namespace string `yaml:"namespace,omitempty"`

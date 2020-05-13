@@ -21,6 +21,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
@@ -40,6 +42,7 @@ func Process(config *latest.SkaffoldConfig) error {
 	errs = append(errs, validateSyncRules(config.Build.Artifacts)...)
 	errs = append(errs, validatePortForwardResources(config.PortForward)...)
 	errs = append(errs, validateJibPluginTypes(config.Build.Artifacts)...)
+	errs = append(errs, validateHelmArtifactOverrides(config.Deploy)...)
 
 	if len(errs) == 0 {
 		return nil
@@ -202,4 +205,22 @@ func validateJibPluginTypes(artifacts []*latest.Artifact) (errs []error) {
 		errs = append(errs, fmt.Errorf("artifact %s has invalid Jib plugin type '%s'", a.ImageName, t))
 	}
 	return
+}
+
+// validateHelmArtifactOverrides makes sure both values and artifactOverrides are not set.
+func validateHelmArtifactOverrides(deployConfig latest.DeployConfig) []error {
+	var errs []error
+	if deployConfig.HelmDeploy == nil {
+		return errs
+	}
+	for _, r := range deployConfig.HelmDeploy.Releases {
+		if r.Values != nil && r.ArtifactOverrides != nil {
+			errs = append(errs, fmt.Errorf("both deprecated `values` and `artifactOverrides` defined for relese %s. Please use `artifactOverrides`", r.Name))
+			continue
+		}
+		if r.Values != nil {
+			logrus.Warn("The `values` field in helm.Releases is deprecated, please use `artifactOverrides` config.")
+		}
+	}
+	return errs
 }

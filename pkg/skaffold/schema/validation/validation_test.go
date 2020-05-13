@@ -716,3 +716,70 @@ func TestValidateJibPluginType(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateHelmRelease(t *testing.T) {
+	tests := []struct {
+		description string
+		deploy      latest.DeployType
+		shouldErr   bool
+	}{
+		{
+			description: "helm deployer with values field",
+			deploy: latest.DeployType{
+				HelmDeploy: &latest.HelmDeploy{
+					Releases: []latest.HelmRelease{
+						{Name: "release-1", Values: map[string]string{"image": "artifact"}},
+						{Name: "release-2", Values: map[string]string{"image-2": "artifact-2"}},
+					},
+				},
+			},
+		},
+		{
+			description: "helm deployer with artifactOverrides field",
+			deploy: latest.DeployType{
+				HelmDeploy: &latest.HelmDeploy{
+					Releases: []latest.HelmRelease{
+						{Name: "release-1", ArtifactOverrides: map[string]string{"image": "artifact"}},
+						{Name: "release-2", ArtifactOverrides: map[string]string{"image-2": "artifact-2"}},
+					},
+				},
+			},
+		},
+		{
+			description: "helm deployer with both fields set",
+			deploy: latest.DeployType{
+				HelmDeploy: &latest.HelmDeploy{
+					Releases: []latest.HelmRelease{
+						{Name: "release-1", Values: map[string]string{"image": "artifact"}},
+						{Name: "release-2", Values: map[string]string{"image-2": "artifact-2"},
+							ArtifactOverrides: map[string]string{"image-3": "artifact-3"}},
+					},
+				},
+			},
+			shouldErr: true,
+		},
+		{
+			description: "non helm deployer",
+			deploy: latest.DeployType{
+				KustomizeDeploy: &latest.KustomizeDeploy{},
+			},
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			// disable yamltags validation
+			t.Override(&validateYamltags, func(interface{}) error { return nil })
+
+			err := Process(
+				&latest.SkaffoldConfig{
+					Pipeline: latest.Pipeline{
+						Deploy: latest.DeployConfig{
+							DeployType: test.deploy,
+						},
+					},
+				})
+
+			t.CheckError(test.shouldErr, err)
+		})
+	}
+}

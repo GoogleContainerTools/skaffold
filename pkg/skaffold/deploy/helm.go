@@ -400,7 +400,14 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		args = append(args, "--namespace", o.namespace)
 	}
 
-	params, err := pairParamsToArtifacts(builds, r.Values)
+	// TODO: remove once Values will be deprecated
+	var artifactOverrides map[string]string
+	if r.Values != nil {
+		artifactOverrides = r.Values
+	} else {
+		artifactOverrides = r.ArtifactOverrides
+	}
+	params, err := pairParamsToArtifacts(builds, artifactOverrides)
 	if err != nil {
 		return nil, fmt.Errorf("matching build results to chart values: %w", err)
 	}
