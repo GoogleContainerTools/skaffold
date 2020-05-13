@@ -499,10 +499,6 @@ type HelmRelease struct {
 	// ValuesFiles are the paths to the Helm `values` files.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty"`
 
-	// Values are key-value pairs supplementing the Helm `values` file.
-	// Deprecated - values, `artifactOverrides` should be used.
-	Values map[string]string `yaml:"values,omitempty,omitempty"`
-
 	// ArtifactOverrides are key value pairs where
 	// key represents the parameter used in `values` file to define a container image and
 	// value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section
