@@ -67,7 +67,7 @@ $(BUILD_DIR)/$(PROJECT): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
 
 .PHONY: install
 install: $(BUILD_DIR)/$(PROJECT)
-	cp $(BUILD_DIR)/$(PROJECT) $(GOPATH)/bin/$(PROJECT)
+	go install cmd/skaffold/skaffold.go 
 
 # Build for a release.
 .PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
@@ -123,14 +123,14 @@ quicktest:
 	@ ./hack/gotest.sh -short -timeout=60s $(SKAFFOLD_TEST_PACKAGES)
 
 .PHONY: integration
-integration: install
+integration: $(BUILD_DIR)/$(PROJECT)
 ifeq ($(GCP_ONLY),true)
 	gcloud container clusters get-credentials \
 		$(GKE_CLUSTER_NAME) \
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	@ GCP_ONLY=$(GCP_ONLY) ./hack/gotest.sh -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
+	@ GCP_ONLY=$(GCP_ONLY) env PATH="$(BUILD_DIR):$(PATH)" ./hack/gotest.sh -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
