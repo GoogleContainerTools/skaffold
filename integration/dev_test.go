@@ -19,6 +19,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -321,4 +322,40 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 
 	yaml, err := clientcmd.Write(*kubeConfig)
 	return yaml, contextName, err
+}
+
+func TestDevNoDeployer(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("testdata/nil-deployer").RunOrFail(t)
+	rpcAddr := randomPort()
+	skaffold.Dev().InDir("testdata/nil-deployer").RunBackground(t)
+	_, entries := apiEvents(t, rpcAddr)
+
+	waitForDevIterationCompleteEvent(t, entries)
+}
+
+func waitForDevIterationCompleteEvent(t *testing.T, entries chan *proto.LogEntry) (bool, error) {
+	timeout := time.After(1 * time.Minute)
+	for {
+		select {
+		case <-timeout:
+			t.Fatalf("timed out waiting for port forwarding event")
+		case e := <-entries:
+			switch e.Event.GetEventType().(type) {
+			case *proto.Event_DevLoopEvent:
+				if e.Event.GetDevLoopEvent().Status == event.Failed {
+					return true, fmt.Errorf(e.Event.GetDevLoopEvent().Err.Message)
+				}
+				if e.Event.GetDevLoopEvent().Status == event.Succeeded {
+					return true, nil
+				}
+			default:
+				t.Logf("event received %v", e)
+			}
+		}
+	}
+	return false, fmt.Errorf("timedout waiting for devloop iteration complete")
 }

@@ -219,8 +219,11 @@ func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
 }
 
 func getDeployer(runCtx *runcontext.RunContext) (deploy.Deployer, error) {
-	deployers := deploy.DeployerMux(nil)
+	if runCtx.Cfg.Deploy.DeployType == (latest.DeployType{}) {
+		return &deploy.NilDeployer{}, nil
+	}
 
+	deployers := deploy.DeployerMux(nil)
 	if runCtx.Cfg.Deploy.HelmDeploy != nil {
 		deployers = append(deployers, deploy.NewHelmDeployer(runCtx))
 	}

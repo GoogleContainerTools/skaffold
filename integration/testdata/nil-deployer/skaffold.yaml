@@ -1,0 +1,5 @@
+apiVersion: skaffold/v2beta3
+kind: Config
+build:
+  artifacts:
+  - image: nil-deployer-example

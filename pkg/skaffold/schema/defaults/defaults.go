@@ -39,7 +39,6 @@ const (
 // Set makes sure default values are set on a SkaffoldConfig.
 func Set(c *latest.SkaffoldConfig) error {
 	defaultToLocalBuild(c)
-	defaultToKubectlDeploy(c)
 	setDefaultTagger(c)
 	setDefaultKustomizePath(c)
 	setDefaultKubectlManifests(c)
@@ -106,15 +105,6 @@ func defaultToLocalBuild(c *latest.SkaffoldConfig) {
 
 	logrus.Debugf("Defaulting build type to local build")
 	c.Build.BuildType.LocalBuild = &latest.LocalBuild{}
-}
-
-func defaultToKubectlDeploy(c *latest.SkaffoldConfig) {
-	if c.Deploy.DeployType != (latest.DeployType{}) {
-		return
-	}
-
-	logrus.Debugf("Defaulting deploy type to kubectl")
-	c.Deploy.DeployType.KubectlDeploy = &latest.KubectlDeploy{}
 }
 
 func withLocalBuild(c *latest.SkaffoldConfig, operations ...func(*latest.LocalBuild)) {
