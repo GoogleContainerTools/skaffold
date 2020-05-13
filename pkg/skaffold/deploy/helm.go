@@ -317,39 +317,32 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		return artifacts, fmt.Errorf("install: %w", err)
 	}
 
-	return artifacts, h.checkIfDeployed(ctx, r, helmVersion, releaseName, opts.namespace)
+	return artifacts, h.confirmDeployment(ctx, r, helmVersion, releaseName, opts.namespace)
 }
 
-// checkIfDeployed returns whether helm sees the deployment
-func (h *HelmDeployer) checkIfDeployed(ctx context.Context, r latest.HelmRelease, helmVersion semver.Version, releaseName string, namespace string) error {
+// confirmDeployment confirms that the deployment is visible in helm
+func (h *HelmDeployer) confirmDeployment(ctx context.Context, r latest.HelmRelease, helmVersion semver.Version, releaseName string, namespace string) error {
+	// Retry, because under Helm 2, at least, a deployment may not be immediately visible
 	opts := backoff.NewExponentialBackOff()
-	if r.Wait {
-		opts.MaxElapsedTime = 0
-	} else {
-		// Just long enough for "helm get" to give good feedback
-		opts.MaxElapsedTime = 2 * time.Second
-	}
-
-	args := getArgs(helmVersion, releaseName, namespace)
-	logrus.Debugf("Waiting %s for %q to succeed ...", opts.MaxElapsedTime, strings.Join(args, " "))
+	opts.MaxElapsedTime = 4 * time.Second
 
 	err := backoff.Retry(
 		func() error {
 			var b bytes.Buffer
-			if err := h.exec(ctx, &b, false, args...); err != nil {
-				logrus.Debugf("deployment check failed: %v (will retry):\n%s", err, b.String())
+			if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, namespace)...); err != nil {
+				logrus.Debugf("unable to confirm deployment: %v (will retry):\n%s", err, b.String())
 				return err
 			}
-			logrus.Debug("deployment check succeeded!")
 			return nil
 		}, opts)
 
-	if err == nil || r.Wait {
-		return err
+	if err == nil {
+		logrus.Debugf("%q deployment confirmed", releaseName)
+	} else {
+		logrus.Debugf("%q deployment never appeared: %v", releaseName, err)
 	}
 
-	logrus.Warnf("giving up waiting for %s deployment because `wait=False`: %v", releaseName, err)
-	return nil
+	return err
 }
 
 // binVer returns the version of the helm binary found in PATH. May be cached.
