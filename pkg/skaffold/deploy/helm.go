@@ -220,9 +220,9 @@ func (h *HelmDeployer) Render(context.Context, io.Writer, []build.Artifact, []La
 
 // exec executes the helm command, writing combined stdout/stderr to the provided writer
 func (h *HelmDeployer) exec(ctx context.Context, out io.Writer, useSecrets bool, args ...string) error {
+	args = append(args, h.Flags.Global...)
 	if args[0] != "version" {
 		args = append([]string{"--kube-context", h.kubeContext}, args...)
-		args = append(args, h.Flags.Global...)
 
 		if h.kubeConfig != "" {
 			args = append(args, "--kubeconfig", h.kubeConfig)
