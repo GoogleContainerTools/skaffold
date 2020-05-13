@@ -27,7 +27,7 @@ message State {
     FileSyncState fileSyncState = 6;
     repeated DebuggingContainerEvent debuggingContainers = 7;
     Metadata metadata = 8;
-    repeated DevLoop loops = 9; // described a dev loop
+    repeated DevLoop loops = 9; // describes a dev loop
 }
 
 message Metadata {
