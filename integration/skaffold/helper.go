@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -186,6 +187,37 @@ func (b *RunBuilder) RunBackground(t *testing.T) io.ReadCloser {
 	})
 
 	return pr
+}
+
+// RunCancellable runs the skaffold command in the background which can be cancelled.
+// The caller is responsible to call the cancel function
+func (b *RunBuilder) RunCancellable(t *testing.T) func() {
+	t.Helper()
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	cmd := b.cmd(ctx)
+	logrus.Infoln(cmd.Args)
+	cmd.Stdout = ioutil.Discard
+
+	start := time.Now()
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("skaffold %s: %v", b.command, err)
+	}
+
+	go func() {
+		cmd.Wait()
+		logrus.Infoln("Ran in", time.Since(start))
+	}()
+
+	t.Cleanup(func() {
+		cancel()
+		cmd.Wait()
+	})
+
+	return func() {
+		cmd.Process.Signal(os.Interrupt)
+	}
 }
 
 // RunOrFail runs the skaffold command and fails the test

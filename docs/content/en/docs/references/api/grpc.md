@@ -260,7 +260,7 @@ DevLoop describes skaffold dev iteration
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | iteration | [int32](#int32) |  | dev loop iteration |
-| changeType | [ChangeType](#proto.ChangeType) |  | Change type which triggered this loop |
+| changeType | [ChangeType](#proto.ChangeType) |  | change type which triggered this loop |
 | statusCode | [StatusCode](#proto.StatusCode) |  | status of the the dev loop |
 
 
@@ -550,7 +550,7 @@ will be sent with the new status.
 | fileSyncState | [FileSyncState](#proto.FileSyncState) |  |  |
 | debuggingContainers | [DebuggingContainerEvent](#proto.DebuggingContainerEvent) | repeated |  |
 | metadata | [Metadata](#proto.Metadata) |  |  |
-| loops | [DevLoop](#proto.DevLoop) | repeated | described a dev loop |
+| loops | [DevLoop](#proto.DevLoop) | repeated | describes a dev loop |
 
 
 

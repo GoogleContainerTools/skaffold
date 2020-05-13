@@ -31,6 +31,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -318,4 +319,48 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 
 	yaml, err := clientcmd.Write(*kubeConfig)
 	return yaml, contextName, err
+}
+
+func TestDevSkaffoledEndEvent(t *testing.T) {
+	if testing.Short() || RunOnGCP() {
+		t.Skip("skipping kind integration test")
+	}
+
+	// Run skaffold build first to fail quickly on a build failure
+	skaffold.Build().InDir("examples/getting-started").RunOrFail(t)
+
+	ns, _ := SetupNamespace(t)
+
+	rpcAddr := randomPort()
+	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
+	cancel := skaffold.Dev("--rpc-port", rpcAddr).InDir("examples/getting-started").InNs(ns.Name).WithEnv(env).RunCancellable(t)
+	_, entries := apiEvents(t, rpcAddr)
+	// 1 dev loop iteration is complete.
+	waitForDevLoopIterartion(t, entries, cancel)
+}
+
+func waitForDevLoopIterartion(t *testing.T, entries chan *proto.LogEntry, cancel func()) {
+	timeout := time.After(1 * time.Minute)
+	for {
+		select {
+		case <-timeout:
+			t.Fatalf("timed out waiting for end event")
+		case e := <-entries:
+			switch e1 := e.Event.GetEventType().(type) {
+			case *proto.Event_DevLoopEvent:
+				t.Logf("event received %v", e.GetEvent())
+				if e1.DevLoopEvent.Status != event.InProgress {
+					// cancelling the dev loop
+					go func() {
+						cancel()
+					}()
+				}
+			case *proto.Event_EndEvent:
+				t.Logf("event received %v", e.GetEvent())
+				return
+			default:
+				t.Logf("event received %v", e.GetEvent())
+			}
+		}
+	}
 }

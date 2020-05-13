@@ -114,7 +114,6 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 		pod.Spec.Containers[0].VolumeMounts = append(pod.Spec.Containers[0].VolumeMounts, vm)
 	}
 
-	fmt.Println(pod)
 	return pod, nil
 }
 

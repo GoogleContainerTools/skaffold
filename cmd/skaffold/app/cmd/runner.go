@@ -47,12 +47,12 @@ func withRunner(ctx context.Context, action func(runner.Runner, *latest.Skaffold
 	event.InitializeState(runCtx.Cfg, runCtx.KubeContext)
 	event.LogMetaEvent()
 	err = action(runner, config)
-	if err := alwaysSucceedWhenCancelled(ctx, err); err == nil {
-		event.SessionEnded(0)
-		return nil
+	if err := alwaysSucceedWhenCancelled(ctx, err); err != nil {
+		event.SessionEnded(1)
+		return err
 	}
-	event.SessionEnded(1)
-	return err
+	event.SessionEnded(0)
+	return nil
 }
 
 // createNewRunner creates a Runner and returns the SkaffoldConfig associated with it.
