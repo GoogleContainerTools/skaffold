@@ -213,7 +213,7 @@ message EndEvent {
 // DevLoop describes skaffold dev iteration
 message DevLoop {
     int32 iteration = 1; // dev loop iteration
-    ChangeType changeType = 2; // Change type which triggered this loop
+    ChangeType changeType = 2; // change type which triggered this loop
     StatusCode statusCode = 3; // status of the the dev loop
 }
 
