@@ -175,13 +175,21 @@ func DeployInfoEvent(err error) {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Info, Err: err.Error()})
 }
 
-func StatusCheckEventSucceeded() {
+func StatusCheckEventEnded(err error) {
+	if err != nil {
+		statusCheckEventFailed(err)
+		return
+	}
+	statusCheckEventSucceeded()
+}
+
+func statusCheckEventSucceeded() {
 	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
 		Status: Succeeded,
 	})
 }
 
-func StatusCheckEventFailed(err error) {
+func statusCheckEventFailed(err error) {
 	statusCode := sErrors.ErrorCodeFromError(sErrors.StatusCheck, err)
 	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
 		Status:  Failed,
@@ -203,7 +211,15 @@ func StatusCheckEventInProgress(s string) {
 	})
 }
 
-func ResourceStatusCheckEventSucceeded(r string) {
+func ResourceStatusCheckEventCompleted(r string, err error) {
+	if err != nil {
+		resourceStatusCheckEventFailed(r, err)
+		return
+	}
+	resourceStatusCheckEventSucceeded(r)
+}
+
+func resourceStatusCheckEventSucceeded(r string) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource: r,
 		Status:   Succeeded,
@@ -211,7 +227,7 @@ func ResourceStatusCheckEventSucceeded(r string) {
 	})
 }
 
-func ResourceStatusCheckEventFailed(r string, err error) {
+func resourceStatusCheckEventFailed(r string, err error) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource: r,
 		Status:   Failed,
