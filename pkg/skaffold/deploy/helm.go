@@ -162,14 +162,28 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 			continue
 		}
 
-		chartDepsDir := filepath.Join(release.ChartPath, "charts")
+		chartDepsDirs := []string{
+			"charts",
+			"tmpcharts",
+		}
 
-		// We can always add a dependency if it is not contained in our chartDepsDir.
+		// We can always add a dependency if it is not contained in our chartDepsDirs.
 		// However, if the file is in our chartDepsDir, we can only include the file
 		// if we are not running the helm dep build phase, as that modifies files inside
 		// the chartDepsDir and results in an infinite build loop.
 		isDep := func(path string, info walk.Dirent) (bool, error) {
-			return !info.IsDir() && (!strings.HasPrefix(path, chartDepsDir) || r.SkipBuildDependencies), nil
+			if info.IsDir() {
+				return false, nil
+			}
+
+			if !r.SkipBuildDependencies {
+				for _, v := range chartDepsDirs {
+					if strings.HasPrefix(path, filepath.Join(release.ChartPath, v)) {
+						return false, nil
+					}
+				}
+			}
+			return true, nil
 		}
 
 		if err := walk.From(release.ChartPath).When(isDep).AppendPaths(&deps); err != nil {
