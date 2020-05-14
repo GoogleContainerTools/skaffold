@@ -501,8 +501,8 @@ type HelmRelease struct {
 
 	// ArtifactOverrides are key value pairs where
 	// key represents the parameter used in `values` file to define a container image and
-	// value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section
-	ArtifactOverrides map[string]string `yaml:"imageOverrides,omitempty,omitempty"`
+	// value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section.
+	ArtifactOverrides map[string]string `yaml:"artifactOverrides,omitempty,omitempty"`
 
 	// Namespace is the Kubernetes namespace.
 	Namespace string `yaml:"namespace,omitempty"`
