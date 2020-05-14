@@ -126,15 +126,7 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 // config until interrupted by the user.
 func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*latest.Artifact) error {
 	event.DevLoopInProgress(r.devIteration)
-	r.createLogger(out, artifacts)
-	defer r.logger.Stop()
 	defer func() { r.devIteration++ }()
-
-	r.createForwarder(out)
-	defer r.forwarderManager.Stop()
-
-	r.createContainerManager(out)
-	defer r.debugContainerManager.Stop()
 
 	// Watch artifacts
 	start := time.Now()
@@ -210,10 +202,20 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// First build
-	if _, err := r.BuildAndTest(ctx, out, artifacts); err != nil {
+	bRes, err := r.BuildAndTest(ctx, out, artifacts)
+	if err != nil {
 		event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 		return fmt.Errorf("exiting dev mode because first build failed: %w", err)
 	}
+
+	r.createLogger(out, bRes)
+	defer r.logger.Stop()
+
+	r.createForwarder(out)
+	defer r.forwarderManager.Stop()
+
+	r.createContainerManager(out)
+	defer r.debugContainerManager.Stop()
 
 	// Logs should be retrieved up to just before the deploy
 	r.logger.SetSince(time.Now())
