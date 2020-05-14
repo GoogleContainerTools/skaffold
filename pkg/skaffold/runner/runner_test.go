@@ -303,10 +303,10 @@ func TestNewForConfig(t *testing.T) {
 			shouldErr:        true,
 			expectedBuilder:  &local.Builder{},
 			expectedTester:   &test.FullTester{},
-			expectedDeployer: &deploy.KubectlDeployer{},
+			expectedDeployer: &deploy.NilDeployer{},
 		},
 		{
-			description: "unknown deployer",
+			description: "deployer not specified returns a nil deployer",
 			pipeline: latest.Pipeline{
 				Build: latest.BuildConfig{
 					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
@@ -316,7 +316,9 @@ func TestNewForConfig(t *testing.T) {
 				},
 				Deploy: latest.DeployConfig{},
 			},
-			shouldErr: true,
+			expectedBuilder:  &local.Builder{},
+			expectedTester:   &test.FullTester{},
+			expectedDeployer: &deploy.NilDeployer{},
 		},
 		{
 			description: "no artifacts, cache",

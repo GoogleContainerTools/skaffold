@@ -26,6 +26,7 @@ import (
 // Config changes from v2beta3 to v2beta4
 // 1. Additions:
 // 2. Removals:
+//     - Remove kubectl default deployer
 // 3. Updates:
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
@@ -36,6 +37,17 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	return &newConfig, err
 }
 
-func upgradeOnePipeline(_, _ interface{}) error {
+func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	// set default deployer kubectl
+	setDefaultDeployerConfig(oldPipeline, newPipeline)
 	return nil
+}
+
+func setDefaultDeployerConfig(oldPipeline, newPipeline interface{}) {
+	oldDeploy := &oldPipeline.(*Pipeline).Deploy
+
+	if oldDeploy.DeployType == (DeployType{}) {
+		newDeploy := &newPipeline.(*next.Pipeline).Deploy
+		newDeploy.KubectlDeploy = &next.KubectlDeploy{}
+	}
 }

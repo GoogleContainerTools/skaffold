@@ -19,7 +19,6 @@ package integration
 import (
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -33,6 +32,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/proto"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
@@ -333,29 +333,26 @@ func TestDevNoDeployer(t *testing.T) {
 	rpcAddr := randomPort()
 	skaffold.Dev().InDir("testdata/nil-deployer").RunBackground(t)
 	_, entries := apiEvents(t, rpcAddr)
-
 	waitForDevIterationCompleteEvent(t, entries)
 }
-
-func waitForDevIterationCompleteEvent(t *testing.T, entries chan *proto.LogEntry) (bool, error) {
+func waitForDevIterationCompleteEvent(t *testing.T, entries chan *proto.LogEntry) {
 	timeout := time.After(1 * time.Minute)
 	for {
 		select {
 		case <-timeout:
-			t.Fatalf("timed out waiting for port forwarding event")
+			t.Fatalf("timedout waiting for devloop iteration complete")
 		case e := <-entries:
 			switch e.Event.GetEventType().(type) {
 			case *proto.Event_DevLoopEvent:
 				if e.Event.GetDevLoopEvent().Status == event.Failed {
-					return true, fmt.Errorf(e.Event.GetDevLoopEvent().Err.Message)
+					t.Errorf("expected dev iteration to be successful")
 				}
 				if e.Event.GetDevLoopEvent().Status == event.Succeeded {
-					return true, nil
+					return
 				}
 			default:
 				t.Logf("event received %v", e)
 			}
 		}
 	}
-	return false, fmt.Errorf("timedout waiting for devloop iteration complete")
 }

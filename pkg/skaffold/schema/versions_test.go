@@ -165,7 +165,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{
@@ -213,7 +212,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withGitTagger(),
 					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{
@@ -226,7 +224,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 					withDockerConfig("config-name", "/kaniko/.docker"),
 					withKanikoArtifact("image1", "./examples/app1", "Dockerfile"),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 			),
 		},
 		{
@@ -261,7 +258,6 @@ func TestParseConfigAndUpgrade(t *testing.T) {
 				withLocalBuild(
 					withGitTagger(),
 				),
-				withKubectlDeploy("k8s/*.yaml"),
 				withStatusCheckDeadline(10),
 			),
 		},
