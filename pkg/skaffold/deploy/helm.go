@@ -167,22 +167,37 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 			"tmpcharts",
 		}
 
+		lockFiles := []string{
+			"Chart.lock",
+			"requirements.lock",
+		}
+
 		// We can always add a dependency if it is not contained in our chartDepsDirs.
 		// However, if the file is in our chartDepsDir, we can only include the file
 		// if we are not running the helm dep build phase, as that modifies files inside
 		// the chartDepsDir and results in an infinite build loop.
+		// We additionally exclude ChartFile.lock (Helm 3) and requirements.lock (Helm 2)
+		// since they also get modified on helm dep build phase
 		isDep := func(path string, info walk.Dirent) (bool, error) {
 			if info.IsDir() {
 				return false, nil
 			}
+			if r.SkipBuildDependencies {
+				return true, nil
+			}
 
-			if !r.SkipBuildDependencies {
-				for _, v := range chartDepsDirs {
-					if strings.HasPrefix(path, filepath.Join(release.ChartPath, v)) {
-						return false, nil
-					}
+			for _, v := range chartDepsDirs {
+				if strings.HasPrefix(path, filepath.Join(release.ChartPath, v)) {
+					return false, nil
 				}
 			}
+
+			for _, v := range lockFiles {
+				if strings.EqualFold(info.Name(), v) {
+					return false, nil
+				}
+			}
+
 			return true, nil
 		}
 

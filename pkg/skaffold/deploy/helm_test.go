@@ -839,19 +839,31 @@ func TestHelmDependencies(t *testing.T) {
 		expected              func(folder *testutil.TempDir) []string
 	}{
 		{
-			description:           "charts download dir is included when skipBuildDependencies is true",
-			files:                 []string{"Chart.yaml", "charts/xyz.tar", "tmpcharts/xyz.tar", "templates/deploy.yaml"},
+			description:           "charts download dir and lock files are included when skipBuildDependencies is true",
+			files:                 []string{"Chart.yaml", "Chart.lock", "requirements.yaml", "requirements.lock", "charts/xyz.tar", "tmpcharts/xyz.tar", "templates/deploy.yaml"},
 			skipBuildDependencies: true,
 			expected: func(folder *testutil.TempDir) []string {
-				return []string{folder.Path("Chart.yaml"), folder.Path("charts/xyz.tar"), folder.Path("templates/deploy.yaml"), folder.Path("tmpcharts/xyz.tar")}
+				return []string{
+					folder.Path("Chart.lock"),
+					folder.Path("Chart.yaml"),
+					folder.Path("charts/xyz.tar"),
+					folder.Path("requirements.lock"),
+					folder.Path("requirements.yaml"),
+					folder.Path("templates/deploy.yaml"),
+					folder.Path("tmpcharts/xyz.tar"),
+				}
 			},
 		},
 		{
-			description:           "charts download dir is excluded when skipBuildDependencies is false",
-			files:                 []string{"Chart.yaml", "charts/xyz.tar", "tmpcharts/xyz.tar", "templates/deploy.yaml"},
+			description:           "charts download dir and lock files are excluded when skipBuildDependencies is false",
+			files:                 []string{"Chart.yaml", "Chart.lock", "requirements.yaml", "requirements.lock", "charts/xyz.tar", "tmpcharts/xyz.tar", "templates/deploy.yaml"},
 			skipBuildDependencies: false,
 			expected: func(folder *testutil.TempDir) []string {
-				return []string{folder.Path("Chart.yaml"), folder.Path("templates/deploy.yaml")}
+				return []string{
+					folder.Path("Chart.yaml"),
+					folder.Path("requirements.yaml"),
+					folder.Path("templates/deploy.yaml"),
+				}
 			},
 		},
 		{
