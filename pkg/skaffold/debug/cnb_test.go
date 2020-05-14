@@ -110,15 +110,30 @@ func TestUpdateForCNBImage(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		testutil.Run(t, test.description, func(t *testutil.T) {
-			dummyTransform := func(c *v1.Container, ic imageConfiguration) (ContainerDebugConfiguration, string, error) {
+		// Test that when a transform modifies the command-line arguments, then
+		// the changes are reflected to the launcher command-line
+		testutil.Run(t, test.description+" (args changed)", func(t *testutil.T) {
+			argsChangedTransform := func(c *v1.Container, ic imageConfiguration) (ContainerDebugConfiguration, string, error) {
 				c.Args = ic.arguments
+				return ContainerDebugConfiguration{}, "", nil
+			}
+			copy := v1.Container{}
+			_, _, err := updateForCNBImage(&copy, test.input, argsChangedTransform)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, copy)
+		})
+
+		// Test that when the arguments are left unchanged, that the container is unchanged
+		testutil.Run(t, test.description+" (args unchanged)", func(t *testutil.T) {
+			argsUnchangedTransform := func(c *v1.Container, ic imageConfiguration) (ContainerDebugConfiguration, string, error) {
 				return ContainerDebugConfiguration{}, "", nil
 			}
 
 			copy := v1.Container{}
-			_, _, err := updateForCNBImage(&copy, test.input, dummyTransform)
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expected, copy)
+			_, _, err := updateForCNBImage(&copy, test.input, argsUnchangedTransform)
+			t.CheckError(test.shouldErr, err)
+			if copy.Args != nil {
+				t.Errorf("args not nil: %v", copy.Args)
+			}
 		})
 	}
 }
