@@ -73,7 +73,7 @@ func TestDevNotification(t *testing.T) {
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 			// Make sure the old Deployment and the new Deployment are different
-			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+			err := wait.PollImmediate(time.Millisecond*500, 30*time.Second, func() (bool, error) {
 				newDep := client.GetDeployment("test-dev")
 				logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 				return dep.GetGeneration() != newDep.GetGeneration(), nil
@@ -88,55 +88,86 @@ func TestCancellableDeploy(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	t.Run("cancellable deploy", func(t *testing.T) {
-		Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
-		defer Run(t, "testdata/dev", "rm", "foo")
+	tests := []struct {
+		description string
+		trigger     string
+	}{
+		{
+			description: "cancellable deploy with polling trigger",
+			trigger:     "polling",
+		},
+		{
+			description: "cancellable deploy with notify trigger",
+			trigger:     "notify",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
+			defer Run(t, "testdata/dev", "rm", "foo")
 
-		ns, client := SetupNamespace(t)
+			ns, client := SetupNamespace(t)
 
-		// the deployment is stuck here - we have foo in the file, that fails the health check
-		// in slow-deployment.yaml
-		out := skaffold.Dev("--profile=slow-deploy", "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+			// the deployment is stuck here - we have foo in the file, that fails the health check
+			// in slow-deployment.yaml
+			out := skaffold.Dev("--profile=slow-deploy", "--cache-artifacts=false", "--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-		client.WaitForDeploymentsToStabilize("test-dev")
+			client.WaitForDeploymentsToStabilize("test-dev")
 
-		Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+			Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 
-		scanner := bufio.NewScanner(out)
-		deploying := make(chan bool, 1)
-		go func() {
-			for scanner.Scan() {
-				line := scanner.Text()
-				logrus.Infof("[skaffold dev] %s", line)
-				if strings.Contains(line, "Waiting for deployments") {
-					logrus.Infof("DEPLOYING!")
-					deploying <- true
+			scanner := bufio.NewScanner(out)
+			deploying := make(chan bool, 1)
+			go func() {
+				for scanner.Scan() {
+					line := scanner.Text()
+					//logrus.Infof("[skaffold dev] %s", line)
+					if strings.Contains(line, "Waiting for deployments") {
+						logrus.Infof("DEPLOYING!")
+						deploying <- true
+					}
 				}
-			}
-		}()
+			}()
 
-		// first deploy, success
-		<-deploying
+			// first deploy, success
+			waitFor(t, deploying)
 
-		// second deploy started, should fail
-		<-deploying
+			dep := client.GetDeployment("test-dev")
+			testutil.CheckDeepEqual(t, int64(1), dep.Generation)
 
-		// Make a change to foo so that dev is forced to restart and rebuild.
-		// Also, on the rebuild, "bar" is the content in the file, making
-		// the health check in slow-deployment.yaml succeed
-		Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
+			// second deploy started, should fail and wait
+			waitFor(t, deploying)
 
-		// third deploy started, due to the file change
-		after := time.After(30 * time.Second)
-		select {
-		case <-after:
-			t.Errorf("Timed out waiting for the rebuild to be triggered during long running status check.")
-			t.FailNow()
-		case <-deploying:
-		}
+			// Make a change to foo so that dev is forced to restart and rebuild.
+			// Also, on the rebuild, "bar" is the content in the file, making
+			// the health check in slow-deployment.yaml succeed
+			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
-		client.WaitForDeploymentsToStabilize("test-dev")
-	})
+			// third deploy started, due to the file change
+			waitFor(t, deploying)
+
+			// Make sure the old Deployment and the new Deployment are different
+			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+				newDep := client.GetDeployment("test-dev")
+				logrus.Infof("expected gen: %d, new gen: %d, ", 3, newDep.GetGeneration())
+				if newDep.Generation > 3 {
+					return false, fmt.Errorf("there were more deployments than expected")
+				}
+				return int64(3) == newDep.GetGeneration(), nil
+			})
+			failNowIfError(t, err)
+		})
+	}
+}
+
+func waitFor(t *testing.T, rebuildChan chan bool) {
+	after := time.After(10 * time.Second)
+	select {
+	case <-after:
+		t.Errorf("Timed out waiting for the rebuild to be triggered.")
+		t.FailNow()
+	case <-rebuildChan:
+	}
 }
 
 func TestCancellableBuild(t *testing.T) {
@@ -144,54 +175,71 @@ func TestCancellableBuild(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	t.Run("cancellable build", func(t *testing.T) {
-		Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
-		defer Run(t, "testdata/dev", "rm", "foo")
+	tests := []struct {
+		description string
+		trigger     string
+	}{
+		{
+			description: "cancellable build with polling trigger",
+			trigger:     "polling",
+		},
+		{
+			description: "cancellable build with notify trigger",
+			trigger:     "notify",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
+			defer Run(t, "testdata/dev", "rm", "foo")
 
-		ns, client := SetupNamespace(t)
+			ns, client := SetupNamespace(t)
 
-		// the build is stuck here - we have foo in the file, that tells the build to sleep
-		out := skaffold.Dev("--profile=slow-build", "--cache-artifacts=false").InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
+			out := skaffold.Dev("--profile=slow-build", "--cache-artifacts=false", "--trigger", test.trigger).InDir("testdata/dev").InNs(ns.Name).RunBackground(t)
 
-		client.WaitForDeploymentsToStabilize("test-dev")
+			dep := client.GetDeployment("test-dev")
+			testutil.CheckDeepEqual(t, int64(1), dep.Generation)
 
-		Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
+			Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 
-		scanner := bufio.NewScanner(out)
-		built := make(chan bool, 1)
-		go func() {
-			for scanner.Scan() {
-				line := scanner.Text()
-				logrus.Infof("[skaffold dev] %s", line)
-				if strings.Contains(line, "COPY foo") {
-					logrus.Infof("BUILT!")
-					built <- true
+			scanner := bufio.NewScanner(out)
+			built := make(chan bool, 1)
+			go func() {
+				for scanner.Scan() {
+					line := scanner.Text()
+					//logrus.Infof("[skaffold dev] %s", line)
+					if strings.Contains(line, "COPY foo") {
+						logrus.Infof("BUILT!")
+						built <- true
+					}
 				}
-			}
-		}()
+			}()
 
-		// First build with bar -> noSleep, succeeds
-		<-built
+			// First build with bar -> noSleep, succeeds
+			waitFor(t, built)
 
-		// Second build started with foo -> sleep 3600, stalls
-		<-built
+			// Second build started with foo -> sleep 3600, stalls
+			waitFor(t, built)
 
-		// Make a change to foo so that dev is forced to restart and rebuild.
-		// Also, on the rebuild, "bar" is the content in the file, instructing the Dockerfile for no sleeping
-		Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
+			// Make a change to foo so that dev is forced to restart and rebuild.
+			// Also, on the rebuild, "bar" is the content in the file, instructing the Dockerfile for no sleeping
+			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
-		// Third build started
+			// Third build started
+			waitFor(t, built)
 
-		after := time.After(30 * time.Second)
-		select {
-		case <-after:
-			t.Errorf("Timed out waiting for the rebuild to be triggered during long running build.")
-			t.FailNow()
-		case <-built:
-		}
-
-		client.WaitForDeploymentsToStabilize("test-dev")
-	})
+			// Make sure the old Deployment and the new Deployment are different
+			err := wait.PollImmediate(time.Millisecond*500, 30*time.Second, func() (bool, error) {
+				newDep := client.GetDeployment("test-dev")
+				logrus.Infof("expected gen: %d, new gen: %d, ", 2, newDep.GetGeneration())
+				if newDep.Generation > 2 {
+					return false, fmt.Errorf("there were more deployments than expected")
+				}
+				return 2 == newDep.GetGeneration(), nil
+			})
+			failNowIfError(t, err)
+		})
+	}
 }
 func TestDevAPITriggers(t *testing.T) {
 	if testing.Short() || RunOnGCP() {

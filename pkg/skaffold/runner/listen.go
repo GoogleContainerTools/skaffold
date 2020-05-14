@@ -28,8 +28,19 @@ import (
 )
 
 type Listener interface {
-	WatchForChanges(context.Context, io.Writer, func() (bool, error), func(context.Context, io.Writer) error) error
+	WatchForChanges(context.Context, io.Writer, func() needs, func(context.Context, io.Writer, needs) error) error
 	LogWatchToUser(io.Writer)
+}
+
+type needs struct {
+	needsSync    bool
+	needsBuild   bool
+	needsDeploy  bool
+	configChange bool
+}
+
+func (n *needs) needsNewLoop() bool {
+	return n.needsSync || n.needsBuild || n.needsDeploy
 }
 
 type SkaffoldListener struct {
@@ -46,7 +57,7 @@ func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
 
 // WatchForChanges listens to a trigger, and when one is received, computes file changes and
 // conditionally runs the dev loop.
-func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, devChecker func() (bool, error), devLoop func(context.Context, io.Writer) error) error {
+func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, devChecker func() needs, devLoop func(context.Context, io.Writer, needs) error) error {
 	ctxTrigger, cancelTrigger := context.WithCancel(ctx)
 	defer cancelTrigger()
 	trigger, err := trigger.StartTrigger(ctxTrigger, l.Trigger)
@@ -79,16 +90,16 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 	}
 }
 
-func (l *SkaffoldListener) startDevInBackground(ctx context.Context, out io.Writer, checker func() (bool, error), devLoop func(context.Context, io.Writer) error) error {
+func (l *SkaffoldListener) startDevInBackground(ctx context.Context, out io.Writer, checker func() needs, devLoop func(context.Context, io.Writer, needs) error) error {
 	if err := l.Monitor.Run(l.Trigger.Debounce()); err != nil {
 		logrus.Warnf("Ignoring changes: %s", err.Error())
 		return nil
 	}
-	needNewDevLoop, err := checker()
-	if err != nil {
-		return err
+	n := checker()
+	if n.configChange {
+		return ErrorConfigurationChanged
 	}
-	if !needNewDevLoop {
+	if !n.needsNewLoop() {
 		logrus.Infof("no need for dev loop")
 		return nil
 	}
@@ -99,7 +110,7 @@ func (l *SkaffoldListener) startDevInBackground(ctx context.Context, out io.Writ
 	}
 	l.ctxDev, l.cancelDev = context.WithCancel(ctx)
 	go func(ctx context.Context) {
-		if err := devLoop(ctx, out); err != nil {
+		if err := devLoop(ctx, out, n); err != nil {
 			logrus.Errorf("error running dev loop: %s", err.Error())
 		}
 	}(l.ctxDev)

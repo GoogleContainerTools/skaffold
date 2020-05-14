@@ -62,8 +62,8 @@ func TestSkipDevLoopOnMonitorError(t *testing.T) {
 
 	var devLoopWasCalled bool
 	err := listener.startDevInBackground(context.Background(), ioutil.Discard,
-		func() (bool, error) { return true, nil },
-		func(context.Context, io.Writer) error {
+		func() needs { return needs{needsDeploy: true} },
+		func(context.Context, io.Writer, needs) error {
 			devLoopWasCalled = true
 			return nil
 		})
@@ -78,8 +78,8 @@ func TestContinueOnDevLoopError(t *testing.T) {
 	}
 
 	err := listener.startDevInBackground(context.Background(), ioutil.Discard,
-		func() (bool, error) { return true, nil },
-		func(context.Context, io.Writer) error {
+		func() needs { return needs{needsDeploy: true} },
+		func(context.Context, io.Writer, needs) error {
 			return errors.New("devloop error")
 		})
 
@@ -93,8 +93,8 @@ func TestReportDevLoopError(t *testing.T) {
 	}
 
 	err := listener.startDevInBackground(context.Background(), ioutil.Discard,
-		func() (bool, error) { return false, ErrorConfigurationChanged },
-		func(context.Context, io.Writer) error {
+		func() needs { return needs{configChange: true} },
+		func(context.Context, io.Writer, needs) error {
 			return ErrorConfigurationChanged
 		})
 

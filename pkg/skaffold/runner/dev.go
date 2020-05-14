@@ -45,18 +45,17 @@ var (
 	fileSyncSucceeded  = event.FileSyncSucceeded
 )
 
-func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
-	needsSync, needsBuild, needsDeploy, err := r.checkFiles()
-	if err != nil {
-		return err
+func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, n needs) error {
+	needsSync, needsBuild, needsDeploy := n.needsSync, n.needsBuild, n.needsDeploy
+	if n.configChange {
+		return ErrorConfigurationChanged
 	}
 	if !needsSync && !needsBuild && !needsDeploy {
 		return nil
 	}
 
 	r.logger.Mute()
-	// if any action is going to be performed, reset the monitor's changed component tracker for debouncing
-	defer r.monitor.Reset()
+
 	defer r.listener.LogWatchToUser(out)
 	event.DevLoopInProgress(r.devIteration)
 	defer func() { r.devIteration++ }()
@@ -118,20 +117,16 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer) error {
 	return nil
 }
 
-func (r *SkaffoldRunner) newDevLoopRequired() (required bool, err error) {
-	needsSync, needsBuild, needsDeploy, err := r.checkFiles()
-	return needsBuild || needsSync || needsDeploy, err
-}
-func (r *SkaffoldRunner) checkFiles() (bool, bool, bool, error) {
+func (r *SkaffoldRunner) checkFiles() needs {
 	if r.changeSet.needsReload {
-		return false, false, false, ErrorConfigurationChanged
+		return needs{false, false, false, true}
 	}
 
 	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
 	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
 	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
 	needsDeploy := deployIntent && r.changeSet.needsRedeploy
-	return needsSync, needsBuild, needsDeploy, nil
+	return needs{needsSync, needsBuild, needsDeploy, false}
 }
 
 // Dev watches for changes and runs the skaffold build and deploy
@@ -250,5 +245,5 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 		}
 	}
 	event.DevLoopComplete(0)
-	return r.listener.WatchForChanges(ctx, out, r.newDevLoopRequired, r.doDev)
+	return r.listener.WatchForChanges(ctx, out, r.checkFiles, r.doDev)
 }
