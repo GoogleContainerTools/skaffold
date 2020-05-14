@@ -27,8 +27,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-// Verify workaround so that Dev and Debug can have separate defaults for Auto{Build,Deploy,Sync} 
-// https://github.com/GoogleContainerTools/skaffold/issues/4129 
+// Verify workaround so that Dev and Debug can have separate defaults for Auto{Build,Deploy,Sync}
+// https://github.com/GoogleContainerTools/skaffold/issues/4129
 // https://github.com/spf13/pflag/issues/257
 func TestDebugIndependentFromDev(t *testing.T) {
 	mockRunner := &mockDevRunner{}
