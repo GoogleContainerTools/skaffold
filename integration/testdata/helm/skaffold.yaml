@@ -14,7 +14,7 @@ deploy:
       #wait: true
       #valuesFiles:
       #- helm-skaffold-values.yaml
-      values:
+      artifactOverrides:
         image: gcr.io/k8s-skaffold/skaffold-helm
       #recreatePods will pass --recreate-pods to helm upgrade
       #recreatePods: true
