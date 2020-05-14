@@ -46,6 +46,10 @@ func (f *fakeMonitor) Run(debounce bool) error {
 	return nil
 }
 
+func (f *fakeMonitor) Reset() {
+
+}
+
 type fakeTriggger struct {
 	trigger.Trigger
 }
@@ -93,9 +97,9 @@ func TestReportDevLoopError(t *testing.T) {
 	}
 
 	err := listener.startDevInBackground(context.Background(), ioutil.Discard,
-		func() needs { return needs{configChange: true} },
+		func() needs { return needs{work: devWorkItems{needsReload: true}} },
 		func(context.Context, io.Writer, needs) error {
-			return ErrorConfigurationChanged
+			return nil
 		})
 
 	if err != ErrorConfigurationChanged {

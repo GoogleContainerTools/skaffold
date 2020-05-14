@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"testing"
 
 	"k8s.io/client-go/tools/clientcmd/api"
@@ -53,8 +52,9 @@ type TestBench struct {
 	deployErrors []error
 	namespaces   []string
 
-	devLoop        func(context.Context, io.Writer) error
+	devLoop        func(context.Context, io.Writer, needs) error
 	firstMonitor   func(bool) error
+	monitor        filemon.Monitor
 	cycles         int
 	currentCycle   int
 	currentActions Actions
@@ -172,17 +172,28 @@ func (t *TestBench) Actions() []Actions {
 	return append(t.actions, t.currentActions)
 }
 
-func (t *TestBench) WatchForChanges(context.Context, io.Writer, func() needs, func(context.Context, io.Writer, needs) error) error {
+func (t *TestBench) WatchForChanges(ctx context.Context, out io.Writer, checker func() needs, devLoop func(context.Context, io.Writer, needs) error) error {
 	// don't actually call the monitor here, because extra actions would be added
 	if err := t.firstMonitor(true); err != nil {
 		return err
 	}
+
 	for i := 0; i < t.cycles; i++ {
 		t.enterNewCycle()
 		t.currentCycle = i
-		if err := t.devLoop(context.Background(), ioutil.Discard); err != nil {
+		if err := t.monitor.Run(true); err != nil {
 			return err
 		}
+		n := checker()
+		if n.work.needsReload {
+			return ErrorConfigurationChanged
+		}
+		if !n.needsNewLoop() {
+			continue
+		}
+		t.monitor.Reset()
+
+		devLoop(ctx, out, n)
 	}
 	return nil
 }
@@ -236,12 +247,8 @@ func createRunner(t *testutil.T, testBench *TestBench, monitor filemon.Monitor) 
 	runner.listener = testBench
 	runner.monitor = monitor
 
-	testBench.devLoop = func(context.Context, io.Writer) error {
-		if err := monitor.Run(true); err != nil {
-			return err
-		}
-		return runner.doDev(context.Background(), ioutil.Discard, needs{})
-	}
+	testBench.devLoop = runner.doDev
+	testBench.monitor = monitor
 
 	testBench.firstMonitor = func(bool) error {
 		// default to noop so we don't add extra actions

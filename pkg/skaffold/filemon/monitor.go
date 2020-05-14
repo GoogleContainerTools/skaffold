@@ -18,19 +18,19 @@ package filemon
 
 // Monitor monitors files changes for multiples components.
 type Monitor interface {
-	Register(deps func() ([]string, error), onChange func(Events)) error
+	Register(deps func() ([]string, error), onChange func(Events), reset func()) error
 	Run(debounce bool) error
 	Reset()
 }
 
-type watchList struct {
+type WatchList struct {
 	changedComponents map[int]bool
 	components        []*component
 }
 
 // NewMonitor creates a new Monitor.
 func NewMonitor() Monitor {
-	return &watchList{
+	return &WatchList{
 		changedComponents: map[int]bool{},
 	}
 }
@@ -40,10 +40,11 @@ type component struct {
 	onChange func(Events)
 	state    FileMap
 	events   Events
+	reset    func()
 }
 
 // Register adds a new component to the watch list.
-func (w *watchList) Register(deps func() ([]string, error), onChange func(Events)) error {
+func (w *WatchList) Register(deps func() ([]string, error), onChange func(Events), reset func()) error {
 	state, err := Stat(deps)
 	if err != nil {
 		return err
@@ -52,17 +53,21 @@ func (w *watchList) Register(deps func() ([]string, error), onChange func(Events
 	w.components = append(w.components, &component{
 		deps:     deps,
 		onChange: onChange,
+		reset:    reset,
 		state:    state,
 	})
 	return nil
 }
 
-func (w *watchList) Reset() {
+func (w *WatchList) Reset() {
 	w.changedComponents = map[int]bool{}
+	for _, component := range w.components {
+		component.reset()
+	}
 }
 
 // Run watches files until the context is cancelled or an error occurs.
-func (w *watchList) Run(debounce bool) error {
+func (w *WatchList) Run(debounce bool) error {
 	changed := 0
 	for i, component := range w.components {
 		state, err := Stat(component.deps)

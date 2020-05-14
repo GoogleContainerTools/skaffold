@@ -33,14 +33,23 @@ type Listener interface {
 }
 
 type needs struct {
-	needsSync    bool
-	needsBuild   bool
-	needsDeploy  bool
-	configChange bool
+	needsSync   bool
+	needsBuild  bool
+	needsDeploy bool
+	work        devWorkItems
 }
 
 func (n *needs) needsNewLoop() bool {
 	return n.needsSync || n.needsBuild || n.needsDeploy
+}
+
+func (n *needs) Clone() needs {
+	return needs{
+		needsSync:   n.needsSync,
+		needsBuild:  n.needsBuild,
+		needsDeploy: n.needsDeploy,
+		work:        n.work.Clone(),
+	}
 }
 
 type SkaffoldListener struct {
@@ -77,12 +86,10 @@ func (l *SkaffoldListener) WatchForChanges(ctx context.Context, out io.Writer, d
 		case <-ctx.Done():
 			return nil
 		case <-l.intentChan:
-			logrus.Infof("intent chan!!!")
 			if err := l.startDevInBackground(ctx, out, devChecker, devLoop); err != nil {
 				return err
 			}
 		case <-trigger:
-			logrus.Infof("trigger chan!!")
 			if err := l.startDevInBackground(ctx, out, devChecker, devLoop); err != nil {
 				return err
 			}
@@ -96,16 +103,14 @@ func (l *SkaffoldListener) startDevInBackground(ctx context.Context, out io.Writ
 		return nil
 	}
 	n := checker()
-	if n.configChange {
+	if n.work.needsReload {
 		return ErrorConfigurationChanged
 	}
 	if !n.needsNewLoop() {
-		logrus.Infof("no need for dev loop")
 		return nil
 	}
-	logrus.Infof("running dev loop!")
+	l.Monitor.Reset()
 	if l.cancelDev != nil {
-		logrus.Infof("cancelling previous dev loop!")
 		l.cancelDev()
 	}
 	l.ctxDev, l.cancelDev = context.WithCancel(ctx)

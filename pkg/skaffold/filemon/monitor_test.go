@@ -55,7 +55,7 @@ func TestFileMonitor(t *testing.T) {
 
 			// Register files
 			changed := callback{}
-			err := monitor.Register(tmpDir.List, changed.call)
+			err := monitor.Register(tmpDir.List, changed.call, changed.reset)
 			t.CheckNoError(err)
 			t.CheckDeepEqual(0, changed.calls())
 
@@ -84,4 +84,8 @@ func (c *callback) call(e Events) {
 
 func (c *callback) calls() int {
 	return len(c.events)
+}
+
+func (c *callback) reset() {
+
 }

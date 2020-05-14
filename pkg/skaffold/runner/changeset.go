@@ -21,13 +21,26 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
 )
 
+type devWorkItems struct {
+	needsRebuild  []*latest.Artifact
+	needsResync   []*sync.Item
+	needsRedeploy bool
+	needsReload   bool
+}
+
+func (d *devWorkItems) Clone() devWorkItems {
+	return devWorkItems{
+		needsRebuild:  d.needsRebuild,
+		needsResync:   d.needsResync,
+		needsRedeploy: d.needsRedeploy,
+		needsReload:   d.needsReload,
+	}
+}
+
 type changeSet struct {
-	needsRebuild   []*latest.Artifact
+	devWorkItems
 	rebuildTracker map[string]*latest.Artifact
-	needsResync    []*sync.Item
 	resyncTracker  map[string]*sync.Item
-	needsRedeploy  bool
-	needsReload    bool
 }
 
 func (c *changeSet) AddRebuild(a *latest.Artifact) {

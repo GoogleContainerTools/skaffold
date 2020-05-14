@@ -47,25 +47,19 @@ var (
 
 func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, n needs) error {
 	needsSync, needsBuild, needsDeploy := n.needsSync, n.needsBuild, n.needsDeploy
-	if n.configChange {
+	if n.work.needsReload {
 		return ErrorConfigurationChanged
 	}
 	if !needsSync && !needsBuild && !needsDeploy {
 		return nil
 	}
-
 	r.logger.Mute()
 
 	defer r.listener.LogWatchToUser(out)
 	event.DevLoopInProgress(r.devIteration)
 	defer func() { r.devIteration++ }()
 	if needsSync {
-		defer func() {
-			r.changeSet.resetSync()
-			r.intents.resetSync()
-		}()
-
-		for _, s := range r.changeSet.needsResync {
+		for _, s := range n.work.needsResync {
 			fileCount := len(s.Copy) + len(s.Delete)
 			color.Default.Fprintf(out, "Syncing %d files for %s\n", fileCount, s.Image)
 			fileSyncInProgress(fileCount, s.Image)
@@ -83,12 +77,12 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, n needs) erro
 
 	if needsBuild {
 		event.ResetStateOnBuild()
-		defer func() {
-			r.changeSet.resetBuild()
-			r.intents.resetBuild()
-		}()
 
-		if _, err := r.BuildAndTest(ctx, out, r.changeSet.needsRebuild); err != nil {
+		if _, err := r.BuildAndTest(ctx, out, n.work.needsRebuild); err != nil {
+			if err == context.Canceled {
+				logrus.Info("Build cancelled. Skipping deploy as well.")
+				return nil
+			}
 			logrus.Warnln("Skipping deploy due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Build, err)
 			return nil
@@ -97,10 +91,6 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, n needs) erro
 
 	if needsDeploy {
 		event.ResetStateOnDeploy()
-		defer func() {
-			r.changeSet.resetDeploy()
-			r.intents.resetDeploy()
-		}()
 
 		r.forwarderManager.Stop()
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
@@ -118,15 +108,11 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, n needs) erro
 }
 
 func (r *SkaffoldRunner) checkFiles() needs {
-	if r.changeSet.needsReload {
-		return needs{false, false, false, true}
-	}
-
 	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
 	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
 	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
 	needsDeploy := deployIntent && r.changeSet.needsRedeploy
-	return needs{needsSync, needsBuild, needsDeploy, false}
+	return needs{needsSync, needsBuild, needsDeploy, r.changeSet.devWorkItems}
 }
 
 // Dev watches for changes and runs the skaffold build and deploy
@@ -174,6 +160,12 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 						r.changeSet.AddRebuild(artifact)
 					}
 				},
+				func() {
+					r.changeSet.resetBuild()
+					r.changeSet.resetSync()
+					r.intents.resetBuild()
+					r.intents.resetSync()
+				},
 			); err != nil {
 				event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_BUILD_DEPS, err)
 				return fmt.Errorf("watching files for artifact %q: %w", artifact.ImageName, err)
@@ -185,6 +177,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err := r.monitor.Register(
 		r.tester.TestDependencies,
 		func(filemon.Events) { r.changeSet.needsRedeploy = true },
+		func() {
+			r.changeSet.resetDeploy()
+			r.intents.resetDeploy()
+		},
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_TEST_DEPS, err)
 		return fmt.Errorf("watching test files: %w", err)
@@ -194,6 +190,10 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err := r.monitor.Register(
 		r.deployer.Dependencies,
 		func(filemon.Events) { r.changeSet.needsRedeploy = true },
+		func() {
+			r.changeSet.resetDeploy()
+			r.intents.resetDeploy()
+		},
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_DEPLOY_DEPS, err)
 		return fmt.Errorf("watching files for deployer: %w", err)
@@ -203,6 +203,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err := r.monitor.Register(
 		func() ([]string, error) { return []string{r.runCtx.Opts.ConfigurationFile}, nil },
 		func(filemon.Events) { r.changeSet.needsReload = true },
+		func() {
+			r.changeSet.needsReload = false
+		},
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_CONFIG_DEP, err)
 		return fmt.Errorf("watching skaffold configuration %q: %w", r.runCtx.Opts.ConfigurationFile, err)

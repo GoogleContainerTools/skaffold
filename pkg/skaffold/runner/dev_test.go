@@ -35,7 +35,7 @@ import (
 
 type NoopMonitor struct{}
 
-func (t *NoopMonitor) Register(func() ([]string, error), func(filemon.Events)) error {
+func (t *NoopMonitor) Register(func() ([]string, error), func(filemon.Events), func()) error {
 	return nil
 }
 
@@ -47,7 +47,7 @@ func (t *NoopMonitor) Reset() {}
 
 type FailMonitor struct{}
 
-func (t *FailMonitor) Register(func() ([]string, error), func(filemon.Events)) error {
+func (t *FailMonitor) Register(func() ([]string, error), func(filemon.Events), func()) error {
 	return nil
 }
 
@@ -60,11 +60,13 @@ func (t *FailMonitor) Reset() {}
 type TestMonitor struct {
 	events    []filemon.Events
 	callbacks []func(filemon.Events)
+	resets    []func()
 	testBench *TestBench
 }
 
-func (t *TestMonitor) Register(deps func() ([]string, error), onChange func(filemon.Events)) error {
+func (t *TestMonitor) Register(deps func() ([]string, error), onChange func(filemon.Events), reset func()) error {
 	t.callbacks = append(t.callbacks, onChange)
+	t.resets = append(t.resets, reset)
 	return nil
 }
 
@@ -85,7 +87,11 @@ func (t *TestMonitor) Run(bool) error {
 	return nil
 }
 
-func (t *TestMonitor) Reset() {}
+func (t *TestMonitor) Reset() {
+	for _, reset := range t.resets {
+		reset()
+	}
+}
 
 func mockK8sClient() (k8s.Interface, error) {
 	return fakekubeclientset.NewSimpleClientset(), nil

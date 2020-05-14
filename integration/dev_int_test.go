@@ -235,7 +235,7 @@ func TestCancellableBuild(t *testing.T) {
 				if newDep.Generation > 2 {
 					return false, fmt.Errorf("there were more deployments than expected")
 				}
-				return 2 == newDep.GetGeneration(), nil
+				return newDep.GetGeneration() == int64(2), nil
 			})
 			failNowIfError(t, err)
 		})
