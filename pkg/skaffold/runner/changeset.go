@@ -28,17 +28,8 @@ type devWorkItems struct {
 	needsReload   bool
 }
 
-func (d *devWorkItems) Clone() devWorkItems {
-	return devWorkItems{
-		needsRebuild:  d.needsRebuild,
-		needsResync:   d.needsResync,
-		needsRedeploy: d.needsRedeploy,
-		needsReload:   d.needsReload,
-	}
-}
-
 type changeSet struct {
-	devWorkItems
+	work           devWorkItems
 	rebuildTracker map[string]*latest.Artifact
 	resyncTracker  map[string]*sync.Item
 }
@@ -48,8 +39,8 @@ func (c *changeSet) AddRebuild(a *latest.Artifact) {
 		return
 	}
 	c.rebuildTracker[a.ImageName] = a
-	c.needsRebuild = append(c.needsRebuild, a)
-	c.needsRedeploy = true
+	c.work.needsRebuild = append(c.work.needsRebuild, a)
+	c.work.needsRedeploy = true
 }
 
 func (c *changeSet) AddResync(s *sync.Item) {
@@ -57,19 +48,19 @@ func (c *changeSet) AddResync(s *sync.Item) {
 		return
 	}
 	c.resyncTracker[s.Image] = s
-	c.needsResync = append(c.needsResync, s)
+	c.work.needsResync = append(c.work.needsResync, s)
 }
 
 func (c *changeSet) resetBuild() {
 	c.rebuildTracker = make(map[string]*latest.Artifact)
-	c.needsRebuild = nil
+	c.work.needsRebuild = nil
 }
 
 func (c *changeSet) resetSync() {
 	c.resyncTracker = make(map[string]*sync.Item)
-	c.needsResync = nil
+	c.work.needsResync = nil
 }
 
 func (c *changeSet) resetDeploy() {
-	c.needsRedeploy = false
+	c.work.needsRedeploy = false
 }

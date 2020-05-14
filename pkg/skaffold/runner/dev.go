@@ -109,10 +109,10 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, n needs) erro
 
 func (r *SkaffoldRunner) checkFiles() needs {
 	buildIntent, syncIntent, deployIntent := r.intents.GetIntents()
-	needsSync := syncIntent && len(r.changeSet.needsResync) > 0
-	needsBuild := buildIntent && len(r.changeSet.needsRebuild) > 0
-	needsDeploy := deployIntent && r.changeSet.needsRedeploy
-	return needs{needsSync, needsBuild, needsDeploy, r.changeSet.devWorkItems}
+	needsSync := syncIntent && len(r.changeSet.work.needsResync) > 0
+	needsBuild := buildIntent && len(r.changeSet.work.needsRebuild) > 0
+	needsDeploy := deployIntent && r.changeSet.work.needsRedeploy
+	return needs{needsSync, needsBuild, needsDeploy, r.changeSet.work}
 }
 
 // Dev watches for changes and runs the skaffold build and deploy
@@ -176,7 +176,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch test configuration
 	if err := r.monitor.Register(
 		r.tester.TestDependencies,
-		func(filemon.Events) { r.changeSet.needsRedeploy = true },
+		func(filemon.Events) { r.changeSet.work.needsRedeploy = true },
 		func() {
 			r.changeSet.resetDeploy()
 			r.intents.resetDeploy()
@@ -189,7 +189,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch deployment configuration
 	if err := r.monitor.Register(
 		r.deployer.Dependencies,
-		func(filemon.Events) { r.changeSet.needsRedeploy = true },
+		func(filemon.Events) { r.changeSet.work.needsRedeploy = true },
 		func() {
 			r.changeSet.resetDeploy()
 			r.intents.resetDeploy()
@@ -202,9 +202,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	// Watch Skaffold configuration
 	if err := r.monitor.Register(
 		func() ([]string, error) { return []string{r.runCtx.Opts.ConfigurationFile}, nil },
-		func(filemon.Events) { r.changeSet.needsReload = true },
+		func(filemon.Events) { r.changeSet.work.needsReload = true },
 		func() {
-			r.changeSet.needsReload = false
+			r.changeSet.work.needsReload = false
 		},
 	); err != nil {
 		event.DevLoopFailedWithErrorCode(r.devIteration, proto.StatusCode_DEVINIT_REGISTER_CONFIG_DEP, err)

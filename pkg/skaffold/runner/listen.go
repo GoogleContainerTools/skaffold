@@ -43,15 +43,6 @@ func (n *needs) needsNewLoop() bool {
 	return n.needsSync || n.needsBuild || n.needsDeploy
 }
 
-func (n *needs) Clone() needs {
-	return needs{
-		needsSync:   n.needsSync,
-		needsBuild:  n.needsBuild,
-		needsDeploy: n.needsDeploy,
-		work:        n.work.Clone(),
-	}
-}
-
 type SkaffoldListener struct {
 	Monitor    filemon.Monitor
 	Trigger    trigger.Trigger

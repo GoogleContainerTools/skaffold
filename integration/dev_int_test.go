@@ -73,7 +73,7 @@ func TestDevNotification(t *testing.T) {
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 			// Make sure the old Deployment and the new Deployment are different
-			err := wait.PollImmediate(time.Millisecond*500, 30*time.Second, func() (bool, error) {
+			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				newDep := client.GetDeployment("test-dev")
 				logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 				return dep.GetGeneration() != newDep.GetGeneration(), nil

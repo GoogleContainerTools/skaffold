@@ -23,14 +23,14 @@ type Monitor interface {
 	Reset()
 }
 
-type WatchList struct {
+type watchList struct {
 	changedComponents map[int]bool
 	components        []*component
 }
 
 // NewMonitor creates a new Monitor.
 func NewMonitor() Monitor {
-	return &WatchList{
+	return &watchList{
 		changedComponents: map[int]bool{},
 	}
 }
@@ -44,7 +44,7 @@ type component struct {
 }
 
 // Register adds a new component to the watch list.
-func (w *WatchList) Register(deps func() ([]string, error), onChange func(Events), reset func()) error {
+func (w *watchList) Register(deps func() ([]string, error), onChange func(Events), reset func()) error {
 	state, err := Stat(deps)
 	if err != nil {
 		return err
@@ -59,7 +59,7 @@ func (w *WatchList) Register(deps func() ([]string, error), onChange func(Events
 	return nil
 }
 
-func (w *WatchList) Reset() {
+func (w *watchList) Reset() {
 	w.changedComponents = map[int]bool{}
 	for _, component := range w.components {
 		component.reset()
@@ -67,7 +67,7 @@ func (w *WatchList) Reset() {
 }
 
 // Run watches files until the context is cancelled or an error occurs.
-func (w *WatchList) Run(debounce bool) error {
+func (w *watchList) Run(debounce bool) error {
 	changed := 0
 	for i, component := range w.components {
 		state, err := Stat(component.deps)
