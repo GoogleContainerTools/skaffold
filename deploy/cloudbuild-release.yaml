@@ -14,7 +14,6 @@ steps:
   - name: 'gcr.io/$PROJECT_ID/skaffold-builder:latest'
     args:
     - 'make'
-    - '-j'
     - 'release'
     - 'VERSION=$TAG_NAME'
     - 'RELEASE_BUCKET=$_RELEASE_BUCKET'
