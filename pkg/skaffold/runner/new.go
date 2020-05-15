@@ -220,6 +220,8 @@ func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
 
 func getDeployer(runCtx *runcontext.RunContext) (deploy.Deployer, error) {
 	if runCtx.Cfg.Deploy.DeployType == (latest.DeployType{}) {
+		// Skip status check
+		runCtx.Opts.StatusCheck = false
 		return &deploy.NilDeployer{}, nil
 	}
 

@@ -83,7 +83,12 @@ func (w withTimings) Test(ctx context.Context, out io.Writer, builds []build.Art
 }
 
 func (w withTimings) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []deploy.Labeller) *deploy.Result {
+	switch w.Deployer.(type) {
+	case *deploy.NilDeployer:
+		return w.Deployer.Deploy(ctx, out, builds, labellers)
+	}
 	start := time.Now()
+
 	color.Default.Fprintln(out, "Starting deploy...")
 
 	dr := w.Deployer.Deploy(ctx, out, builds, labellers)

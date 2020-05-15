@@ -331,10 +331,11 @@ func TestDevNoDeployer(t *testing.T) {
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/nil-deployer").RunOrFail(t)
 	rpcAddr := randomPort()
-	skaffold.Dev().InDir("testdata/nil-deployer").RunBackground(t)
+	skaffold.Dev("--rpc-port", rpcAddr).InDir("testdata/nil-deployer").RunBackground(t)
 	_, entries := apiEvents(t, rpcAddr)
 	waitForDevIterationCompleteEvent(t, entries)
 }
+
 func waitForDevIterationCompleteEvent(t *testing.T, entries chan *proto.LogEntry) {
 	timeout := time.After(1 * time.Minute)
 	for {
