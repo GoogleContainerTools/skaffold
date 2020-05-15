@@ -17,14 +17,18 @@ limitations under the License.
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"io"
 	"io/ioutil"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	yaml "gopkg.in/yaml.v2"
+	yaml2 "gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v3"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
@@ -62,18 +66,18 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		return nil
 	}
 
-	cfg, err = schema.ParseConfigAndUpgrade(configFile, toVersion)
+	upCfg, err := schema.ParseConfigAndUpgrade(configFile, toVersion)
 	if err != nil {
 		return err
 	}
 
-	if err := validation.Process(cfg.(*latest.SkaffoldConfig)); err != nil {
+	if err := validation.Process(upCfg.(*latest.SkaffoldConfig)); err != nil {
 		return fmt.Errorf("validating upgraded config: %w", err)
 	}
 
-	newCfg, err := yaml.Marshal(cfg)
+	newCfg, err := marshallPreservingComments(configFile, upCfg)
 	if err != nil {
-		return fmt.Errorf("marshaling new config: %w", err)
+
 	}
 
 	if overwrite {
@@ -87,3 +91,61 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 
 	return nil
 }
+
+func marshallPreservingComments(filename string, cfg util.VersionedConfig) ([]byte, error) {
+	fallbackCfg, err := yaml2.Marshal(cfg)
+	if err != nil {
+		return nil, fmt.Errorf("marshaling new config: %w", err)
+	}
+	prev := yaml.Node{}
+	buf, _ := misc.ReadConfiguration(filename)
+	err = yaml.Unmarshal(buf, &prev)
+	// If any error preserve old behavior and return cfg without comments.
+	if err != nil {
+		return fallbackCfg, nil
+	}
+	// marshal upgraded config with yaml3.Marshal.
+	newNode := yaml.Node{}
+	err = yaml.Unmarshal(fallbackCfg, &newNode)
+	if err != nil {
+		return fallbackCfg, nil
+	}
+	recursivelyCopyComment(prev.Content[0], newNode.Content[0])
+	if newCfg, err := encode(&newNode); err == nil {
+		return newCfg, nil
+	}
+
+	return fallbackCfg, nil
+}
+
+func recursivelyCopyComment(old *yaml.Node, newNode *yaml.Node) {
+	if old.Value == newNode.Value {
+		// copy all the comments if keys match
+		// in case of renames, comments could be lost.
+		newNode.HeadComment = old.HeadComment
+		newNode.LineComment = old.LineComment
+		newNode.FootComment = old.FootComment
+	}
+	if old.Content == nil || newNode.Content == nil {
+		return
+	}
+	for i, c := range old.Content {
+		if len(newNode.Content) < i {
+			// break since no matching nodes in new cfg.
+			// this might happen in case of deletions.
+			return
+		}
+		recursivelyCopyComment(c, newNode.Content[i])
+	}
+}
+
+func encode(in interface{}) (out []byte, err error){
+	var b bytes.Buffer
+	encoder := yaml.NewEncoder(&b)
+	encoder.SetIndent(2)
+	if err := encoder.Encode(in); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
+}
+

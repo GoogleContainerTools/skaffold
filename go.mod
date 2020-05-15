@@ -50,6 +50,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/openzipkin/zipkin-go v0.2.2 // indirect
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
+	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
 	github.com/rjeczalik/notify v0.9.2
 	github.com/russross/blackfriday/v2 v2.0.1
@@ -69,7 +70,8 @@ require (
 	google.golang.org/genproto v0.0.0-20200413115906-b5235f65be36
 	google.golang.org/grpc v1.28.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.2.8 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20200506231410-2ff61e1afc86
 	k8s.io/api v0.18.1
 	k8s.io/apiextensions-apiserver v0.18.1 // indirect
 	k8s.io/apimachinery v0.18.1
