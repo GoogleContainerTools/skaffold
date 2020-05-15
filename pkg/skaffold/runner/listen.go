@@ -49,6 +49,7 @@ type SkaffoldListener struct {
 	intentChan <-chan bool
 	ctxDev     context.Context
 	cancelDev  context.CancelFunc
+	devDone    chan bool
 }
 
 func (l *SkaffoldListener) LogWatchToUser(out io.Writer) {
@@ -103,12 +104,16 @@ func (l *SkaffoldListener) startDevInBackground(ctx context.Context, out io.Writ
 	l.Monitor.Reset()
 	if l.cancelDev != nil {
 		l.cancelDev()
+		//This is mostly to avoid overlapping starting logs from
+		//the new loop and the end of the old loop
+		<-l.devDone
 	}
 	l.ctxDev, l.cancelDev = context.WithCancel(ctx)
-	go func(ctx context.Context) {
+	go func(ctx context.Context, done chan bool) {
 		if err := devLoop(ctx, out, n); err != nil {
 			logrus.Errorf("error running dev loop: %s", err.Error())
 		}
-	}(l.ctxDev)
+		done <- true
+	}(l.ctxDev, l.devDone)
 	return nil
 }

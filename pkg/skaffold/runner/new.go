@@ -117,6 +117,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 			Monitor:    monitor,
 			Trigger:    trigger,
 			intentChan: intentChan,
+			devDone:    make(chan bool, 1),
 		},
 		changeSet: &changeSet{
 			rebuildTracker: make(map[string]*latest.Artifact),

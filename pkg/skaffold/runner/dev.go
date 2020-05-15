@@ -55,7 +55,11 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, n needs) erro
 	}
 	r.logger.Mute()
 
-	defer r.listener.LogWatchToUser(out)
+	defer func() {
+		if ctx.Err() != context.Canceled {
+			r.listener.LogWatchToUser(out)
+		}
+	}()
 	event.DevLoopInProgress(r.devIteration)
 	defer func() { r.devIteration++ }()
 	if needsSync {
@@ -79,8 +83,8 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, n needs) erro
 		event.ResetStateOnBuild()
 
 		if _, err := r.BuildAndTest(ctx, out, n.work.needsRebuild); err != nil {
-			if err == context.Canceled {
-				logrus.Info("Build cancelled. Skipping deploy as well.")
+			if ctx.Err() == context.Canceled {
+				color.Cyan.Fprintf(out, "\n === Build canceled. Skipping deploy too. === \n")
 				return nil
 			}
 			logrus.Warnln("Skipping deploy due to error:", err)
@@ -94,6 +98,10 @@ func (r *SkaffoldRunner) doDev(ctx context.Context, out io.Writer, n needs) erro
 
 		r.forwarderManager.Stop()
 		if err := r.Deploy(ctx, out, r.builds); err != nil {
+			if ctx.Err() == context.Canceled {
+				color.Cyan.Fprintf(out, "\n === Deployment canceled. === \n")
+				return nil
+			}
 			logrus.Warnln("Skipping deploy due to error:", err)
 			event.DevLoopFailedInPhase(r.devIteration, sErrors.Deploy, err)
 			return nil
