@@ -79,6 +79,26 @@ jobs:
           - $HOME/.gradle
           - $HOME/.m2
     - os: linux
+      name: "integration partition 3"
+      language: minimal
+      script:
+        - env IT_PARTITION=3 make integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
+          - $HOME/.m2
+    - os: linux
+      name: "integration partition 4"
+      language: minimal
+      script:
+        - env IT_PARTITION=4 make integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
+          - $HOME/.m2
+    - os: linux
       name: "diag/Linux unit"
       script:
         - make -f Makefile.diag coverage

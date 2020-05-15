@@ -19,6 +19,8 @@ package binpack
 import (
 	"fmt"
 	"sort"
+
+	"github.com/sirupsen/logrus"
 )
 
 type timing struct {
@@ -29,12 +31,12 @@ type timing struct {
 // we'll need to regenerate this list time to time
 var timings = []timing{
 	{"TestRun", 183.68},
-	{"TestDebug", 100.51},
+	{"TestDebug", 128.16},
 	{"TestDevAPITriggers", 81.05},
 	{"TestBuild", 68.59},
-	{"TestDevAutoSync", 68.45},
-	{"TestDiagnose", 35.67},
-	{"TestDevPortForward", 35.44},
+	{"TestDevAutoSync", 99.71},
+	{"TestDiagnose", 96.12},
+	{"TestDevPortForward", 34.81},
 	{"TestCancellableBuild", 30.83},
 	{"TestCancellableDeploy", 29.04},
 	{"TestDevSync", 25.69},
@@ -75,18 +77,24 @@ var timings = []timing{
 	{"TestConfigListForAll", 0.03},
 }
 
+const maxTime = 240.0
+
 type bin struct {
-	timings []timing
-	total   float64
+	size  int
+	total float64
 }
 
-func (b *bin) Add(t timing) {
-	b.timings = append(b.timings, t)
+func (b *bin) Add(t timing) bool {
+	if b.total+t.time > maxTime {
+		return false
+	}
 	b.total += t.time
+	b.size += 1
+	return true
 }
 
 func (b *bin) String() string {
-	return fmt.Sprintf("total: %f, size: %d", b.total, len(b.timings))
+	return fmt.Sprintf("total: %f, size: %d", b.total, b.size)
 }
 
 func Partitions() (map[string]int, int) {
@@ -94,30 +102,33 @@ func Partitions() (map[string]int, int) {
 	sort.Slice(timings, func(i, j int) bool {
 		return timings[i].time > timings[j].time
 	})
-	maxTime := 240.0
 
 	result := make(map[string]int)
 
-	var bins []bin
+	var bins []*bin
 	for _, timing := range timings {
 		fit := false
 		for i := range bins {
-			if bins[i].total+timing.time < maxTime {
-				bins[i].Add(timing)
+			if bins[i].Add(timing) {
 				result[timing.name] = i
 				fit = true
 				break
 			}
 		}
 		if !fit {
-			newBin := bin{}
+			newBin := &bin{}
 			bins = append(bins, newBin)
-			newBin.Add(timing)
+			if !newBin.Add(timing) {
+				panic(fmt.Errorf("can't fit %v into max bucket size %f", timing, maxTime))
+			}
 			result[timing.name] = len(bins) - 1
 		}
 	}
-	for _, b := range bins {
-		fmt.Printf("%s\n", b.String())
+	if logrus.GetLevel() == logrus.TraceLevel {
+		logrus.Trace("Partitions: ")
+		for i, b := range bins {
+			logrus.Tracef("P%d %s\n", i, b.String())
+		}
 	}
 	return result, len(bins) - 1
 }

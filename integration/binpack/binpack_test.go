@@ -17,17 +17,36 @@ limitations under the License.
 package binpack
 
 import (
+	"fmt"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
 func TestPartitions(t *testing.T) {
+	level := logrus.GetLevel()
+	defer logrus.SetLevel(level)
+	logrus.SetLevel(logrus.TraceLevel)
 	partitions, lastPartition := Partitions()
 	testutil.CheckDeepEqual(t, len(partitions), len(timings))
+	var bins []bin
+	for i := 0; i <= lastPartition; i++ {
+		bins = append(bins, bin{})
+	}
+
 	for testName, p := range partitions {
 		if p > lastPartition {
 			t.Errorf("invalid partition %d > max_partition(%d), for %s", p, lastPartition, testName)
+		}
+	}
+	for _, timing := range timings {
+		p := partitions[timing.name]
+		fmt.Printf("P:%d | %s: %f\n", p, timing.name, timing.time)
+		bins[p].total += timing.time
+		if bins[p].total > maxTime {
+			t.Errorf("partition %d is oversubscribed %f > %f", p, bins[p].total, maxTime)
 		}
 	}
 }
