@@ -20,20 +20,20 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"io"
 	"io/ioutil"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	yaml2 "gopkg.in/yaml.v2"
-	yaml "gopkg.in/yaml.v3"
+	yaml3 "gopkg.in/yaml.v3"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
+	misc "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 var toVersion string
@@ -97,16 +97,16 @@ func marshallPreservingComments(filename string, cfg util.VersionedConfig) ([]by
 	if err != nil {
 		return nil, fmt.Errorf("marshaling new config: %w", err)
 	}
-	prev := yaml.Node{}
+	prev := yaml3.Node{}
 	buf, _ := misc.ReadConfiguration(filename)
-	err = yaml.Unmarshal(buf, &prev)
+	err = yaml3.Unmarshal(buf, &prev)
 	// If any error preserve old behavior and return cfg without comments.
 	if err != nil {
 		return fallbackCfg, nil
 	}
 	// marshal upgraded config with yaml3.Marshal.
-	newNode := yaml.Node{}
-	err = yaml.Unmarshal(fallbackCfg, &newNode)
+	newNode := yaml3.Node{}
+	err = yaml3.Unmarshal(fallbackCfg, &newNode)
 	if err != nil {
 		return fallbackCfg, nil
 	}
@@ -118,30 +118,33 @@ func marshallPreservingComments(filename string, cfg util.VersionedConfig) ([]by
 	return fallbackCfg, nil
 }
 
-func recursivelyCopyComment(old *yaml.Node, newNode *yaml.Node) {
+func recursivelyCopyComment(old *yaml3.Node, newNode *yaml3.Node) {
 	newNode.HeadComment = old.HeadComment
 	newNode.LineComment = old.LineComment
 	newNode.FootComment = old.FootComment
 	if old.Content == nil || newNode.Content == nil {
 		return
 	}
-	renamed := false
+	added := false
 	j := 0
 	for i, c := range old.Content {
-		if renamed && c.Value != newNode.Content[j].Value {
+		// if previous node was added/renamed, move old contents nodes
+		// until we find a node with same Value.
+		if added && c.Value != newNode.Content[j].Value {
 			j++
 			continue
 		}
-		renamed = false
+		added = false
 		if i > len(newNode.Content) {
 			// break since no matching nodes in new cfg.
 			// this might happen in case of deletions.
 			return
 		}
 		if c.Value != newNode.Content[j].Value {
-			// rename or additions happened.
-			renamed = true
+			// rename or additions happened set the flag.
+			added = true
 		}
+		// copy comments for corresponding nodes
 		recursivelyCopyComment(c, newNode.Content[j])
 		j++
 	}
@@ -149,7 +152,7 @@ func recursivelyCopyComment(old *yaml.Node, newNode *yaml.Node) {
 
 func encode(in interface{}) (out []byte, err error) {
 	var b bytes.Buffer
-	encoder := yaml.NewEncoder(&b)
+	encoder := yaml3.NewEncoder(&b)
 	encoder.SetIndent(2)
 	if err := encoder.Encode(in); err != nil {
 		return nil, err
