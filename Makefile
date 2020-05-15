@@ -125,8 +125,7 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	@ echo "PATH=$(realpath $(BUILD_DIR)):$(PATH)"
-	@ GCP_ONLY=$(GCP_ONLY) env PATH="$(BUILD_DIR):$(PATH)" ./hack/gotest.sh -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
+	@ GCP_ONLY=$(GCP_ONLY) env PATH="$(realpath BUILD_DIR):$(PATH)" ./hack/gotest.sh -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
