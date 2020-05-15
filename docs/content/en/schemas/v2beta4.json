@@ -1798,12 +1798,12 @@
       },
       "preferredOrder": [
         "name",
+        "activation",
+        "patches",
         "build",
         "test",
         "deploy",
-        "portForward",
-        "patches",
-        "activation"
+        "portForward"
       ],
       "additionalProperties": false,
       "description": "used to override any `build`, `test` or `deploy` configuration.",
