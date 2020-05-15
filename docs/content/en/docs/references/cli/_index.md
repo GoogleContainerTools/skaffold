@@ -693,8 +693,10 @@ The following options can be passed to any command:
 [alpha] Perform all image builds, and output rendered Kubernetes manifests
 
 ```
+
+
 Examples:
-  # Hydrate Kubernetes manifests without building the images
+  # Hydrate Kubernetes manifests without building the images 
   skaffold render --skip-build
 
 Options:
@@ -707,6 +709,7 @@ Options:
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
       --skip-build=false: Don't build images, just hydrate Kubernetes manifests.
+
 Usage:
   skaffold render [options]
 

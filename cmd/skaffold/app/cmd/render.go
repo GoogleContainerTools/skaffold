@@ -44,7 +44,6 @@ func NewCmdRender() *cobra.Command {
 			f.BoolVar(&showBuild, "loud", false, "Show the build logs and output")
 			f.StringVar(&renderOutputPath, "output", "", "file to write rendered manifests to")
 			f.BoolVar(&opts.SkipBuild, "skip-build", false, "Don't build images, just hydrate Kubernetes manifests.")
-
 		}).
 		NoArgs(doRender)
 }
