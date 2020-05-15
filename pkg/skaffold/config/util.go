@@ -150,17 +150,24 @@ func getConfigForKubeContextWithGlobalDefaults(cfg *GlobalConfig, kubeContext st
 	return &mergedConfig, nil
 }
 
-func GetDefaultRepo(configFile string, cliValue *string) (string, error) {
-	// CLI flag takes precedence.
-	if cliValue != nil {
-		return *cliValue, nil
-	}
+func GetDefaultRepo(configFile string, cliValue *string) (string, bool, error) {
 	cfg, err := GetConfigForCurrentKubectx(configFile)
 	if err != nil {
-		return "", err
+		return "", false, err
 	}
+	useNewSubstitution := getSubstitutionConfig(cfg)
+	// CLI flag takes precedence.
+	if cliValue != nil {
+		return *cliValue, useNewSubstitution, nil
+	}
+	return cfg.DefaultRepo, useNewSubstitution, nil
+}
 
-	return cfg.DefaultRepo, nil
+func getSubstitutionConfig(cfg *ContextConfig) bool {
+	if cfg.UseNewSubstitution == nil {
+		return false
+	}
+	return *cfg.UseNewSubstitution
 }
 
 func GetLocalCluster(configFile string, minikubeProfile string) (bool, error) {

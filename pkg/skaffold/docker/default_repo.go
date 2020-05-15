@@ -26,10 +26,18 @@ import (
 const maxLength = 255
 
 var (
+	prefixRegex = regexp.MustCompile(`(.*\.)?gcr.io/[a-zA-Z0-9-_]+/?`)
 	escapeRegex = regexp.MustCompile(`[/._:@]`)
 )
 
-func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, error) {
+func SubstituteDefaultRepoIntoImage(defaultRepo string, image string, useNew bool) (string, error) {
+	if useNew {
+		return substituteDefaultRepoIntoImageNew(defaultRepo, image)
+	}
+	return substituteDefaultRepoIntoImage(defaultRepo, image)
+}
+
+func substituteDefaultRepoIntoImage(defaultRepo string, image string) (string, error) {
 	if defaultRepo == "" {
 		return image, nil
 	}
@@ -39,8 +47,7 @@ func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, e
 		return "", err
 	}
 
-	// replace registry in parsed name
-	replaced := truncate(replace(defaultRepo, parsed.BaseName))
+	replaced := replace(defaultRepo, parsed.BaseName)
 	if parsed.Tag != "" {
 		replaced = replaced + ":" + parsed.Tag
 	}
@@ -51,14 +58,54 @@ func SubstituteDefaultRepoIntoImage(defaultRepo string, image string) (string, e
 	return replaced, nil
 }
 
-func replace(defaultRepo string, orignalImage string) string {
-	reg, image := splitImage(orignalImage)
+func substituteDefaultRepoIntoImageNew(defaultRepo string, image string) (string, error) {
+	if defaultRepo == "" {
+		return image, nil
+	}
+
+	parsed, err := ParseReference(image)
+	if err != nil {
+		return "", err
+	}
+
+	// replace registry in parsed name
+	var replaced string
+	reg, image := splitImage(parsed.BaseName)
 	defaultRegistry := registry.GetRegistry(defaultRepo)
 	newReg := reg.Update(defaultRegistry)
 	if newReg.Type() == reg.Type() {
-		return newReg.Name() + "/" + image
+		replaced = newReg.Name() + "/" + image
+	} else {
+		replaced = newReg.Name() + "/" + escapeRegex.ReplaceAllString(parsed.BaseName, "_")
 	}
-	return newReg.Name() + "/" + escapeRegex.ReplaceAllString(orignalImage, "_")
+	replaced = truncate(replaced)
+
+	if parsed.Tag != "" {
+		replaced = replaced + ":" + parsed.Tag
+	}
+	if parsed.Digest != "" {
+		replaced = replaced + "@" + parsed.Digest
+	}
+
+	return replaced, nil
+}
+
+func replace(defaultRepo string, baseImage string) string {
+	originalPrefix := prefixRegex.FindString(baseImage)
+	defaultRepoPrefix := prefixRegex.FindString(defaultRepo)
+	if originalPrefix != "" && defaultRepoPrefix != "" {
+		// prefixes match
+		if originalPrefix == defaultRepoPrefix {
+			return defaultRepo + "/" + baseImage[len(originalPrefix):]
+		}
+		if strings.HasPrefix(baseImage, defaultRepo) {
+			return baseImage
+		}
+		// prefixes don't match, concatenate and truncate
+		return truncate(defaultRepo + "/" + baseImage)
+	}
+
+	return truncate(defaultRepo + "/" + escapeRegex.ReplaceAllString(baseImage, "_"))
 }
 
 func truncate(image string) string {

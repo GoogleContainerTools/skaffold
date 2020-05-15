@@ -24,88 +24,102 @@ import (
 
 func TestImageReplaceDefaultRepo(t *testing.T) {
 	tests := []struct {
-		description   string
-		image         string
-		defaultRepo   string
-		expectedImage string
-		shouldErr     bool
+		description      string
+		image            string
+		defaultRepo      string
+		expectedImage    string
+		expectedImageNew string
+		shouldErr        bool
 	}{
 		{
-			description:   "basic GCR override",
-			image:         "gcr.io/some/registry",
-			defaultRepo:   "gcr.io/default",
-			expectedImage: "gcr.io/default/registry",
+			description:      "basic GCR override",
+			image:            "gcr.io/some/registry",
+			defaultRepo:      "gcr.io/default",
+			expectedImage:    "gcr.io/default/gcr.io/some/registry",
+			expectedImageNew: "gcr.io/default/registry",
 		},
 		{
-			description:   "no default repo set",
-			image:         "gcr.io/some/registry",
-			expectedImage: "gcr.io/some/registry",
+			description:      "no default repo set",
+			image:            "gcr.io/some/registry",
+			expectedImage:    "gcr.io/some/registry",
+			expectedImageNew: "gcr.io/some/registry",
 		},
 		{
-			description:   "provided image has defaultRepo prefix",
-			image:         "gcr.io/default/registry",
-			defaultRepo:   "gcr.io/default",
-			expectedImage: "gcr.io/default/registry",
+			description:      "provided image has defaultRepo prefix",
+			image:            "gcr.io/default/registry",
+			defaultRepo:      "gcr.io/default",
+			expectedImage:    "gcr.io/default/registry",
+			expectedImageNew: "gcr.io/default/registry",
 		},
 		{
-			description:   "provided image and defaultRepo have eu prefix",
-			image:         "eu.gcr.io/project/registry",
-			defaultRepo:   "eu.gcr.io/project",
-			expectedImage: "eu.gcr.io/project/registry",
+			description:      "provided image and defaultRepo have eu prefix",
+			image:            "eu.gcr.io/project/registry",
+			defaultRepo:      "eu.gcr.io/project",
+			expectedImage:    "eu.gcr.io/project/registry",
+			expectedImageNew: "eu.gcr.io/project/registry",
 		},
 		{
-			description:   "default repo registry is in another domain and different subpaths",
-			image:         "gcr.io/project/subpath/registry",
-			defaultRepo:   "eu.gcr.io/project/defaultRepoSubpath",
-			expectedImage: "eu.gcr.io/project/defaultRepoSubpath/subpath/registry",
+			description:      "default repo registry is in another domain and different subpaths",
+			image:            "gcr.io/project1/subpath/registry",
+			defaultRepo:      "eu.gcr.io/project2/defaultRepoSubpath",
+			expectedImage:    "eu.gcr.io/project2/defaultRepoSubpath/gcr.io/project1/subpath/registry",
+			expectedImageNew: "eu.gcr.io/project2/defaultRepoSubpath/subpath/registry",
 		},
 		{
-			description:   "default repo registry and subset of same subpaths",
-			image:         "gcr.io/project/subpath/another/app1/registry",
-			defaultRepo:   "eu.gcr.io/project/subpath/another/dev",
-			expectedImage: "eu.gcr.io/project/subpath/another/dev/app1/registry",
+			description:      "default repo registry and subset of same subpaths",
+			image:            "gcr.io/project1/subpath/another/app1/registry",
+			defaultRepo:      "eu.gcr.io/project2/subpath/another/dev",
+			expectedImage:    "eu.gcr.io/project2/subpath/another/dev/gcr.io/project1/subpath/another/app1/registry",
+			expectedImageNew: "eu.gcr.io/project2/subpath/another/dev/app1/registry",
 		},
 		{
-			description:   "registry has shared prefix with defaultRepo",
-			image:         "gcr.io/default/example/registry",
-			defaultRepo:   "gcr.io/default/repository",
-			expectedImage: "gcr.io/default/repository/example/registry",
+			description:      "registry has shared prefix with defaultRepo",
+			image:            "gcr.io/default/example/registry",
+			defaultRepo:      "gcr.io/default/repository",
+			expectedImage:    "gcr.io/default/repository/example/registry",
+			expectedImageNew: "gcr.io/default/repository/example/registry",
 		},
 		{
-			description:   "aws",
-			image:         "gcr.io/some/registry",
-			defaultRepo:   "aws_account_id.dkr.ecr.region.amazonaws.com",
-			expectedImage: "aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_some_registry",
+			description:      "aws",
+			image:            "gcr.io/some/registry",
+			defaultRepo:      "aws_account_id.dkr.ecr.region.amazonaws.com",
+			expectedImage:    "aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_some_registry",
+			expectedImageNew: "aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_some_registry",
 		},
 		{
-			description:   "aws over 255 chars",
-			image:         "gcr.io/herewehaveanincrediblylongregistryname/herewealsohaveanabnormallylongimagename/doubtyouveseenanimagethislong/butyouneverknowdoyouimeanpeopledosomecrazystuffoutthere/goodluckpushingthistoanyregistrymyfriend",
-			defaultRepo:   "aws_account_id.dkr.ecr.region.amazonaws.com",
-			expectedImage: "aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_herewehaveanincrediblylongregistryname_herewealsohaveanabnormallylongimagename_doubtyouveseenanimagethislong_butyouneverknowdoyouimeanpeopledosomecrazystuffoutthere_goodluckpushingthistoanyregistrymyfrien",
+			description:      "aws over 255 chars",
+			image:            "gcr.io/herewehaveanincrediblylongregistryname/herewealsohaveanabnormallylongimagename/doubtyouveseenanimagethislong/butyouneverknowdoyouimeanpeopledosomecrazystuffoutthere/goodluckpushingthistoanyregistrymyfriend",
+			defaultRepo:      "aws_account_id.dkr.ecr.region.amazonaws.com",
+			expectedImage:    "aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_herewehaveanincrediblylongregistryname_herewealsohaveanabnormallylongimagename_doubtyouveseenanimagethislong_butyouneverknowdoyouimeanpeopledosomecrazystuffoutthere_goodluckpushingthistoanyregistrymyfrien",
+			expectedImageNew: "aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_herewehaveanincrediblylongregistryname_herewealsohaveanabnormallylongimagename_doubtyouveseenanimagethislong_butyouneverknowdoyouimeanpeopledosomecrazystuffoutthere_goodluckpushingthistoanyregistrymyfrien",
 		},
 		{
-			description:   "normal GCR concatenation with numbers and other characters",
-			image:         "gcr.io/k8s-skaffold/skaffold-example",
-			defaultRepo:   "gcr.io/k8s-skaffold",
-			expectedImage: "gcr.io/k8s-skaffold/skaffold-example",
+			description:      "normal GCR concatenation with numbers and other characters",
+			image:            "gcr.io/k8s-skaffold/skaffold-example",
+			defaultRepo:      "gcr.io/k8s-skaffold",
+			expectedImage:    "gcr.io/k8s-skaffold/skaffold-example",
+			expectedImageNew: "gcr.io/k8s-skaffold/skaffold-example",
 		},
 		{
-			description:   "keep tag",
-			image:         "img:tag",
-			defaultRepo:   "gcr.io/default",
-			expectedImage: "gcr.io/default/img:tag",
+			description:      "keep tag",
+			image:            "img:tag",
+			defaultRepo:      "gcr.io/default",
+			expectedImage:    "gcr.io/default/img:tag",
+			expectedImageNew: "gcr.io/default/img:tag",
 		},
 		{
-			description:   "keep digest",
-			image:         "img@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
-			defaultRepo:   "gcr.io/default",
-			expectedImage: "gcr.io/default/img@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+			description:      "keep digest",
+			image:            "img@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+			defaultRepo:      "gcr.io/default",
+			expectedImage:    "gcr.io/default/img@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+			expectedImageNew: "gcr.io/default/img@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
 		},
 		{
-			description:   "keep tag and digest",
-			image:         "img:tag@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
-			defaultRepo:   "gcr.io/default",
-			expectedImage: "gcr.io/default/img:tag@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+			description:      "keep tag and digest",
+			image:            "img:tag@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+			defaultRepo:      "gcr.io/default",
+			expectedImage:    "gcr.io/default/img:tag@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
+			expectedImageNew: "gcr.io/default/img:tag@sha256:81daf011d63b68cfa514ddab7741a1adddd59d3264118dfb0fd9266328bb8883",
 		},
 		{
 			description: "invalid",
@@ -116,8 +130,10 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			replaced, err := SubstituteDefaultRepoIntoImage(test.defaultRepo, test.image)
+			replaced, err := substituteDefaultRepoIntoImage(test.defaultRepo, test.image)
+			replacedNew, err := substituteDefaultRepoIntoImageNew(test.defaultRepo, test.image)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedImage, replaced)
+			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedImageNew, replacedNew)
 		})
 	}
 }

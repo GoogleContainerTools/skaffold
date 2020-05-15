@@ -28,6 +28,7 @@ type GlobalConfig struct {
 type ContextConfig struct {
 	Kubecontext        string        `yaml:"kube-context,omitempty"`
 	DefaultRepo        string        `yaml:"default-repo,omitempty"`
+	UseNewSubstitution *bool         `yaml:"use-new-substitution,omitempty"`
 	LocalCluster       *bool         `yaml:"local-cluster,omitempty"`
 	InsecureRegistries []string      `yaml:"insecure-registries,omitempty"`
 	UpdateCheck        *bool         `yaml:"update-check,omitempty"`

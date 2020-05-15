@@ -493,7 +493,7 @@ func TestGetDefaultRepo(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
 
-			defaultRepo, err := GetDefaultRepo("config", test.cliValue)
+			defaultRepo, _, err := GetDefaultRepo("config", test.cliValue)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedRepo, defaultRepo)
