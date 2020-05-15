@@ -105,12 +105,8 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		return err
 	}
 
-	if r.runCtx.Opts.PortForward.Enabled {
-		if err := forwarderManager.Start(ctx); err != nil {
-			logrus.Warnln("Error starting port forwarding:", err)
-		} else {
-			color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
-		}
+	if err := forwarderManager.Start(ctx); err != nil {
+		logrus.Warnln("Error starting port forwarding:", err)
 	}
 
 	// Start printing the logs after deploy is finished
@@ -119,6 +115,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	}
 
 	if r.runCtx.Opts.Tail || r.runCtx.Opts.PortForward.Enabled {
+		color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
 		<-ctx.Done()
 	}
 
