@@ -236,7 +236,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	}
 
 	// Start printing the logs after deploy is finished
-	if r.runCtx.Opts.TailDev {
+	if r.runCtx.Opts.Tail {
 		if err := logger.Start(ctx); err != nil {
 			return fmt.Errorf("starting logger: %w", err)
 		}
