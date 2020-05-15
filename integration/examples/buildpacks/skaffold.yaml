@@ -9,6 +9,8 @@ build:
       - GOPROXY={{.GOPROXY}}
     sync:
       auto: {}
+deploy:
+  kubectl: {}
 profiles:
 - name: gcb
   build:

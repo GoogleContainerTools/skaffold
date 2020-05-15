@@ -10,3 +10,5 @@ build:
         dest: .
       - src: 'src/styles/*'
         dest: .
+deploy:
+  kubectl: {}

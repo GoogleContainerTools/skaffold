@@ -5,6 +5,8 @@ build:
   artifacts:
   - image: node-example
     context: backend
+deploy:
+  kubectl: {}
 
 profiles:
   - name: dev

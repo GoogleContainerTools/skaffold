@@ -5,3 +5,5 @@ build:
   - image: skaffold-example-sub
     context: sub
   googleCloudBuild: {}
+deploy:
+  kubectl: {}

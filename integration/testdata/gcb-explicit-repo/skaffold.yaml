@@ -4,3 +4,5 @@ build:
   artifacts:
   - image: gcr.io/k8s-skaffold/skaffold-explicit-repo
   googleCloudBuild: {}
+deploy:
+  kubectl: {}

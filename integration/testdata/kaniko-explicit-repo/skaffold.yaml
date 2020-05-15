@@ -6,3 +6,5 @@ build:
       kaniko: {}
   cluster:
     pullSecretName: e2esecret
+deploy:
+  kubectl: {}

@@ -6,6 +6,8 @@ build:
     jib:
       type: must-use-profile
     sync: {}
+deploy:
+  kubectl: {}
 
 profiles:
 - name: maven

@@ -7,3 +7,5 @@ build:
       builder: "gcr.io/buildpacks/builder"
     sync:
       auto: {}
+deploy:
+  kubectl: {}

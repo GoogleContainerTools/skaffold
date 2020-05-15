@@ -9,3 +9,5 @@ build:
       # or add any other rb file to your application 
       infer:
       - '*.rb'
+deploy:
+  kubectl: {}

@@ -3,6 +3,8 @@ kind: Config
 build:
   artifacts:
   - image: skaffold-hello
+deploy:
+  kubectl: {}
 
 profiles:
   - name: pod
