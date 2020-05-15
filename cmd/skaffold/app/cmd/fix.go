@@ -77,7 +77,7 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 
 	newCfg, err := marshallPreservingComments(configFile, upCfg)
 	if err != nil {
-
+		return fmt.Errorf("marshaling new config: %w", err)
 	}
 
 	if overwrite {
