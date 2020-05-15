@@ -37,9 +37,7 @@ import (
 )
 
 func TestDevNotification(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		description string
@@ -83,9 +81,7 @@ func TestDevNotification(t *testing.T) {
 }
 
 func TestDevAPITriggers(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 	defer Run(t, "testdata/dev", "rm", "foo")
@@ -148,9 +144,7 @@ func TestDevAPITriggers(t *testing.T) {
 }
 
 func TestDevPortForward(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
@@ -176,9 +170,7 @@ func TestDevPortForward(t *testing.T) {
 }
 
 func TestDevPortForwardGKELoadBalancer(t *testing.T) {
-	if testing.Short() || !RunOnGCP() {
-		t.Skip("skipping GCP integration test")
-	}
+	MarkIntegrationTest(t, NeedsGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/gke_loadbalancer").RunOrFail(t)
@@ -274,9 +266,7 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 }
 
 func TestDev_WithKubecontextOverride(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	testutil.Run(t, "skaffold run with kubecontext override", func(t *testutil.T) {
 		ns, client := SetupNamespace(t.T)

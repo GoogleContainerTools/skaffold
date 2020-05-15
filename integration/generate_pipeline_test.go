@@ -31,9 +31,7 @@ type configContents struct {
 }
 
 func TestGeneratePipeline(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		description string

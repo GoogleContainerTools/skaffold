@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Skaffold Authors
+Copyright 2020 The Skaffold Authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,20 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package integration
+package binpack
 
 import (
 	"testing"
 
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestFix(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
-
-	ns, _ := SetupNamespace(t)
-
-	out := skaffold.Fix().InDir("testdata/fix").RunOrFailOutput(t)
-
-	skaffold.Run().WithConfig("-").InDir("testdata/fix").InNs(ns.Name).WithStdin(out).RunOrFail(t)
+func TestPartitions(t *testing.T) {
+	partitions, lastPartition := Partitions()
+	testutil.CheckDeepEqual(t, len(partitions), len(timings))
+	for testName, p := range partitions {
+		if p > lastPartition {
+			t.Errorf("invalid partition %d > max_partition(%d), for %s", p, lastPartition, testName)
+		}
+	}
 }
