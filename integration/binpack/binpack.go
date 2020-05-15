@@ -89,7 +89,7 @@ func (b *bin) Add(t timing) bool {
 		return false
 	}
 	b.total += t.time
-	b.size += 1
+	b.size++
 	return true
 }
 
