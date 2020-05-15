@@ -21,6 +21,7 @@ import (
 	"io"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 )
 
 // NilDeployer is an empty deployer which does not deploy to the cluster
@@ -33,7 +34,8 @@ func (n *NilDeployer) Labels() map[string]string {
 }
 
 // Deploy returns an empty result with no error
-func (n *NilDeployer) Deploy(_ context.Context, _ io.Writer, _ []build.Artifact, _ []Labeller) *Result {
+func (n *NilDeployer) Deploy(_ context.Context, out io.Writer, _ []build.Artifact, _ []Labeller) *Result {
+	color.Default.Fprintln(out, "Nothing to deploy.")
 	return &Result{}
 }
 
