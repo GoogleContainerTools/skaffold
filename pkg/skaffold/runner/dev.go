@@ -216,7 +216,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	forwarderManager := r.createForwarder(out)
 	defer forwarderManager.Stop()
 
-	debugContainerManager := r.createContainerManager(out)
+	debugContainerManager := r.createContainerManager()
 	defer debugContainerManager.Stop()
 
 	// Logs should be retrieved up to just before the deploy
