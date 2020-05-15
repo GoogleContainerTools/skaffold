@@ -128,6 +128,7 @@ endif
 	@ echo "PATH=$(realpath $(BUILD_DIR)):$(PATH)"
 	@ ls -la "$(BUILD_DIR)"
 	@ echo "***"
+	@ env PATH="$(realpath BUILD_DIR):$(PATH)" skaffold -h
 	@ env PATH="$(realpath BUILD_DIR):$(PATH)" GCP_ONLY=$(GCP_ONLY) ./hack/gotest.sh -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release

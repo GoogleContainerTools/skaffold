@@ -20,6 +20,7 @@ set -e
 # - It prints the failures in RED
 # - It recaps the failures at the end
 # - It lists the 20 slowest tests
+env
 
 echo "go test $@"
 
