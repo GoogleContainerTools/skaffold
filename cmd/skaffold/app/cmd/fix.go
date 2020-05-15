@@ -119,27 +119,35 @@ func marshallPreservingComments(filename string, cfg util.VersionedConfig) ([]by
 }
 
 func recursivelyCopyComment(old *yaml.Node, newNode *yaml.Node) {
-	if old.Value == newNode.Value {
-		// copy all the comments if keys match
-		// in case of renames, comments could be lost.
-		newNode.HeadComment = old.HeadComment
-		newNode.LineComment = old.LineComment
-		newNode.FootComment = old.FootComment
-	}
+	newNode.HeadComment = old.HeadComment
+	newNode.LineComment = old.LineComment
+	newNode.FootComment = old.FootComment
 	if old.Content == nil || newNode.Content == nil {
 		return
 	}
+	renamed := false
+	j := 0
 	for i, c := range old.Content {
-		if len(newNode.Content) < i {
+		if renamed && c.Value != newNode.Content[j].Value {
+			j++
+			continue
+		}
+		renamed = false
+		if i > len(newNode.Content) {
 			// break since no matching nodes in new cfg.
 			// this might happen in case of deletions.
 			return
 		}
-		recursivelyCopyComment(c, newNode.Content[i])
+		if c.Value != newNode.Content[j].Value {
+			// rename or additions happened.
+			renamed = true
+		}
+		recursivelyCopyComment(c, newNode.Content[j])
+		j++
 	}
 }
 
-func encode(in interface{}) (out []byte, err error){
+func encode(in interface{}) (out []byte, err error) {
 	var b bytes.Buffer
 	encoder := yaml.NewEncoder(&b)
 	encoder.SetIndent(2)
@@ -148,4 +156,3 @@ func encode(in interface{}) (out []byte, err error){
 	}
 	return b.Bytes(), nil
 }
-

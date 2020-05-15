@@ -33,41 +33,41 @@ func TestFix(t *testing.T) {
 		output      string
 		shouldErr   bool
 	}{
-//		{
-//			description: "v1alpha4 to latest",
-//			inputYaml: `apiVersion: skaffold/v1alpha4
-//kind: Config
-//build:
-//  artifacts:
-//  - image: docker/image
-//    docker:
-//      dockerfile: dockerfile.test
-//test:
-//- image: docker/image
-//  structureTests:
-//  - ./test/*
-//deploy:
-//  kubectl:
-//    manifests:
-//    - k8s/deployment.yaml
-//`,
-//			output: fmt.Sprintf(`apiVersion: %s
-//kind: Config
-//build:
-//  artifacts:
-//  - image: docker/image
-//    docker:
-//      dockerfile: dockerfile.test
-//test:
-//- image: docker/image
-//  structureTests:
-//  - ./test/*
-//deploy:
-//  kubectl:
-//    manifests:
-//    - k8s/deployment.yaml
-//`, latest.Version),
-//		},
+		{
+			description: "v1alpha4 to latest",
+			inputYaml: `apiVersion: skaffold/v1alpha4
+kind: Config
+build:
+  artifacts:
+  - image: docker/image
+    docker:
+      dockerfile: dockerfile.test
+test:
+- image: docker/image
+  structureTests:
+  - ./test/*
+deploy:
+  kubectl:
+    manifests:
+    - k8s/deployment.yaml
+`,
+			output: fmt.Sprintf(`apiVersion: %s
+kind: Config
+build:
+  artifacts:
+    - image: docker/image
+      docker:
+        dockerfile: dockerfile.test
+test:
+  - image: docker/image
+    structureTests:
+      - ./test/*
+deploy:
+  kubectl:
+    manifests:
+      - k8s/deployment.yaml
+`, latest.Version),
+		},
 		{
 			description: "v1alpha1 to latest",
 			inputYaml: `# skaffold.yaml defines the pipeline
@@ -77,7 +77,8 @@ kind: Config
 build:
   artifacts:
   - imageName: docker/image # this is a docker image
-    dockerfilePath: dockerfile.test # custom dockerfile
+    # custom dockerfile
+    dockerfilePath: dockerfile.test
 deploy:
   kubectl:
     # manifests paths
@@ -91,14 +92,15 @@ kind: Config
 #comments here
 build:
   artifacts:
-  - image: docker/image # this is a docker image
-    docker:
-      dockerfile: dockerfile.test # custom dockerfile
+    - image: docker/image # this is a docker image
+      # custom dockerfile
+      docker:
+        dockerfile: dockerfile.test
 deploy:
   kubectl:
     # manifests paths
     manifests:
-    - k8s/deployment.yaml
+      - k8s/deployment.yaml
 `, latest.Version),
 		},
 		{
@@ -147,17 +149,17 @@ deploy:
 kind: Config
 build:
   artifacts:
-  - image: docker/image
-    docker:
-      dockerfile: dockerfile.test
+    - image: docker/image
+      docker:
+        dockerfile: dockerfile.test
 test:
-- image: docker/image
-  structureTests:
-  - ./test/*
+  - image: docker/image
+    structureTests:
+      - ./test/*
 deploy:
   kubectl:
     manifests:
-    - k8s/deployment.yaml
+      - k8s/deployment.yaml
 `, latest.Version)
 
 	testutil.Run(t, "", func(t *testutil.T) {
