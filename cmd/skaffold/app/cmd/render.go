@@ -38,10 +38,13 @@ var (
 func NewCmdRender() *cobra.Command {
 	return NewCmd("render").
 		WithDescription("[alpha] Perform all image builds, and output rendered Kubernetes manifests").
+		WithExample("Hydrate Kubernetes manifests without building the images ", "render --skip-build").
 		WithCommonFlags().
 		WithFlags(func(f *pflag.FlagSet) {
 			f.BoolVar(&showBuild, "loud", false, "Show the build logs and output")
 			f.StringVar(&renderOutputPath, "output", "", "file to write rendered manifests to")
+			f.BoolVar(&opts.SkipBuild, "skip-build", false, "Don't build images, just hydrate Kubernetes manifests.")
+
 		}).
 		NoArgs(doRender)
 }
@@ -54,11 +57,9 @@ func doRender(ctx context.Context, out io.Writer) error {
 
 	return withRunner(ctx, func(r runner.Runner, config *latest.SkaffoldConfig) error {
 		bRes, err := r.BuildAndTest(ctx, buildOut, targetArtifacts(opts, config))
-
 		if err != nil {
 			return fmt.Errorf("executing build: %w", err)
 		}
-
 		if err := r.Render(ctx, out, bRes, renderOutputPath); err != nil {
 			return fmt.Errorf("rendering manifests: %w", err)
 		}

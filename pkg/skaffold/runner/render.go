@@ -20,9 +20,23 @@ import (
 	"context"
 	"io"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 )
 
 func (r *SkaffoldRunner) Render(ctx context.Context, out io.Writer, builds []build.Artifact, filepath string) error {
+	//Fetch the digest and append it to the tag with the format of "tag@digest"
+	if r.runCtx.Opts.SkipBuild {
+		for i, a := range builds {
+			digest, err := docker.RemoteDigest(a.Tag, r.runCtx.InsecureRegistries)
+			if err != nil {
+				logrus.Debugf("Digest not found, using %s \n", a.Tag)
+				break
+			}
+			builds[i].Tag = build.TagWithDigest(a.Tag, digest)
+		}
+	}
 	return r.deployer.Render(ctx, out, builds, r.labellers, filepath)
 }
