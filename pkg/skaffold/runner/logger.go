@@ -24,12 +24,12 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 )
 
-func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []build.Artifact) {
+func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []build.Artifact) *kubernetes.LogAggregator {
 	var imageNames []string
 	for _, artifact := range artifacts {
 		imageNames = append(imageNames, artifact.Tag)
 	}
 
 	kubectlCLI := kubectl.NewFromRunContext(r.runCtx)
-	r.logger = kubernetes.NewLogAggregator(out, kubectlCLI, imageNames, r.podSelector, r.runCtx.Namespaces)
+	return kubernetes.NewLogAggregator(out, kubectlCLI, imageNames, r.podSelector, r.runCtx.Namespaces)
 }
