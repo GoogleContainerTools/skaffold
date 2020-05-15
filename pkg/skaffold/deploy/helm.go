@@ -315,7 +315,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		return nil, fmt.Errorf("install: %w", err)
 	}
 
-	b, err := h.getRelease(ctx, r, helmVersion, releaseName, opts.namespace)
+	b, err := h.getRelease(ctx, helmVersion, releaseName, opts.namespace)
 	if err != nil {
 		return nil, fmt.Errorf("get release: %w", err)
 	}
@@ -325,7 +325,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 }
 
 // getRelease confirms that a release is visible to helm
-func (h *HelmDeployer) getRelease(ctx context.Context, r latest.HelmRelease, helmVersion semver.Version, releaseName string, namespace string) (bytes.Buffer, error) {
+func (h *HelmDeployer) getRelease(ctx context.Context, helmVersion semver.Version, releaseName string, namespace string) (bytes.Buffer, error) {
 	// Retry, because under Helm 2, at least, a release may not be immediately visible
 	opts := backoff.NewExponentialBackOff()
 	opts.MaxElapsedTime = 4 * time.Second
@@ -334,17 +334,11 @@ func (h *HelmDeployer) getRelease(ctx context.Context, r latest.HelmRelease, hel
 	err := backoff.Retry(
 		func() error {
 			if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, namespace)...); err != nil {
-				logrus.Debugf("unable to get release: %v (will retry):\n%s", err, b.String())
+				logrus.Debugf("unable to get release: %v (may retry):\n%s", err, b.String())
 				return err
 			}
 			return nil
 		}, opts)
-
-	if err == nil {
-		logrus.Debugf("%q release confirmed", releaseName)
-	} else {
-		logrus.Debugf("%q release never appeared: %v", releaseName, err)
-	}
 
 	return b, err
 }
