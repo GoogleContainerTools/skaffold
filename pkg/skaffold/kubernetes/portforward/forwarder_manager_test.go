@@ -14,21 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package runner
+package portforward
 
 import (
-	"io"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
+	"context"
+	"testing"
 )
 
-func (r *SkaffoldRunner) createForwarder(out io.Writer) *portforward.ForwarderManager {
-	return portforward.NewForwarderManager(out,
-		kubectl.NewFromRunContext(r.runCtx),
-		r.podSelector,
-		r.runCtx.Namespaces,
-		r.defaultLabeller.RunIDSelector(),
-		r.runCtx.Opts.PortForward,
-		r.portForwardResources)
+func TestForwarderManagerZeroValue(t *testing.T) {
+	var m *ForwarderManager
+
+	// Should not raise a nil dereference
+	m.Start(context.Background())
+	m.Stop()
 }
