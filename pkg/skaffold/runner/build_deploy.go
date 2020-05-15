@@ -90,10 +90,6 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
-	if !r.runCtx.Opts.Tail && !r.runCtx.Opts.PortForward.Enabled {
-		return r.Deploy(ctx, out, artifacts)
-	}
-
 	for _, artifact := range artifacts {
 		r.podSelector.Add(artifact.Tag)
 	}
@@ -127,7 +123,9 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		}
 	}
 
-	<-ctx.Done()
+	if r.runCtx.Opts.Tail || r.runCtx.Opts.PortForward.Enabled {
+		<-ctx.Done()
+	}
 
 	return nil
 }
