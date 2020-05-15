@@ -14,7 +14,7 @@
 
 # Download kubectl
 FROM alpine:3.10 as download-kubectl
-ENV KUBECTL_VERSION v1.14.10
+ENV KUBECTL_VERSION v1.15.5
 ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl
 RUN wget -O kubectl "${KUBECTL_URL}"
 RUN chmod +x kubectl
@@ -25,13 +25,6 @@ ENV HELM_VERSION v3.2.0
 ENV HELM_URL https://get.helm.sh/helm-${HELM_VERSION}-linux-amd64.tar.gz
 RUN wget -O helm.tar.gz "${HELM_URL}"
 RUN tar -xvf helm.tar.gz --strip-components 1
-
-# Download kustomize
-FROM alpine:3.10 as download-kustomize
-ENV KUSTOMIZE_VERSION 3.5.4
-ENV KUSTOMIZE_URL https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v${KUSTOMIZE_VERSION}/kustomize_v${KUSTOMIZE_VERSION}_linux_amd64.tar.gz
-RUN wget -O kustomize.tar.gz "${KUSTOMIZE_URL}"
-RUN tar -xvf kustomize.tar.gz
 
 # Download kompose
 FROM alpine:3.10 as download-kompose
@@ -78,7 +71,6 @@ RUN apt-get update && \
 COPY --from=docker:18.09.6 /usr/local/bin/docker /usr/local/bin/
 COPY --from=download-kubectl kubectl /usr/local/bin/
 COPY --from=download-helm helm /usr/local/bin/
-COPY --from=download-kustomize kustomize /usr/local/bin/
 COPY --from=download-kompose kompose /usr/local/bin/
 COPY --from=download-container-structure-test container-structure-test /usr/local/bin/
 COPY --from=download-bazel bazel /usr/local/bin/
