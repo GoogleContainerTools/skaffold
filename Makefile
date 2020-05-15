@@ -127,9 +127,8 @@ ifeq ($(GCP_ONLY),true)
 endif
 	@ echo "PATH=$(realpath $(BUILD_DIR)):$(PATH)"
 	@ ls -la "$(BUILD_DIR)"
-	@ echo "$(shell $(realpath $(BUILD_DIR)):$(PATH)" whereis skaffold)"
 	@ echo "***"
-	@ GCP_ONLY=$(GCP_ONLY) env PATH="$(BUILD_DIR):$(PATH)" ./hack/gotest.sh -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
+	@ env PATH="$(realpath BUILD_DIR):$(PATH)" GCP_ONLY=$(GCP_ONLY) ./hack/gotest.sh -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
