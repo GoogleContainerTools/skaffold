@@ -26,8 +26,8 @@ import (
 )
 
 func TestBuildDeploy(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
+	if testing.Short() || !RunOnGCP() {
+		t.Skip("skipping GCP integration test")
 	}
 
 	ns, client := SetupNamespace(t)
