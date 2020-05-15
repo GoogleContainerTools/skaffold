@@ -234,12 +234,9 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err := debugContainerManager.Start(ctx); err != nil {
 		logrus.Warnln("Error starting debug container notification:", err)
 	}
-
 	// Start printing the logs after deploy is finished
-	if r.runCtx.Opts.Tail {
-		if err := logger.Start(ctx); err != nil {
-			return fmt.Errorf("starting logger: %w", err)
-		}
+	if err := logger.Start(ctx); err != nil {
+		return fmt.Errorf("starting logger: %w", err)
 	}
 	event.DevLoopComplete(0)
 	return r.listener.WatchForChanges(ctx, out, func() error {

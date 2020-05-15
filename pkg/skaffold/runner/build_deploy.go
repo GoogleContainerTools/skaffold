@@ -121,10 +121,8 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	}
 
 	// Start printing the logs after deploy is finished
-	if r.runCtx.Opts.Tail {
-		if err := logger.Start(ctx); err != nil {
-			return fmt.Errorf("starting logger: %w", err)
-		}
+	if err := logger.Start(ctx); err != nil {
+		return fmt.Errorf("starting logger: %w", err)
 	}
 
 	<-ctx.Done()

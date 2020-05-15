@@ -25,6 +25,10 @@ import (
 )
 
 func (r *SkaffoldRunner) createLogger(out io.Writer, artifacts []build.Artifact) *kubernetes.LogAggregator {
+	if !r.runCtx.Opts.Tail {
+		return nil
+	}
+
 	var imageNames []string
 	for _, artifact := range artifacts {
 		imageNames = append(imageNames, artifact.Tag)
