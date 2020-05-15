@@ -31,6 +31,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -42,6 +43,8 @@ import (
 
 // NewForConfig returns a new SkaffoldRunner for a SkaffoldConfig
 func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
+	kubectlCLI := kubectl.NewFromRunContext(runCtx)
+
 	tagger, err := getTagger(runCtx)
 	if err != nil {
 		return nil, fmt.Errorf("creating tagger: %w", err)
@@ -107,12 +110,13 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	intentChan := make(chan bool, 1)
 
 	r := &SkaffoldRunner{
-		builder:  builder,
-		tester:   tester,
-		deployer: deployer,
-		tagger:   tagger,
-		syncer:   syncer,
-		monitor:  monitor,
+		kubectlCLI: kubectlCLI,
+		builder:    builder,
+		tester:     tester,
+		deployer:   deployer,
+		tagger:     tagger,
+		syncer:     syncer,
+		monitor:    monitor,
 		listener: &SkaffoldListener{
 			Monitor:    monitor,
 			Trigger:    trigger,
