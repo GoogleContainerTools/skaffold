@@ -94,20 +94,18 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		return r.Deploy(ctx, out, artifacts)
 	}
 
-	var imageNames []string
 	for _, artifact := range artifacts {
-		imageNames = append(imageNames, artifact.ImageName)
 		r.podSelector.Add(artifact.Tag)
 	}
 
-	r.createLoggerForImages(out, imageNames)
-	defer r.logger.Stop()
+	logger := r.createLogger(out, artifacts)
+	defer logger.Stop()
 
-	r.createForwarder(out)
-	defer r.forwarderManager.Stop()
+	forwarderManager := r.createForwarder(out)
+	defer forwarderManager.Stop()
 
 	// Logs should be retrieved up to just before the deploy
-	r.logger.SetSince(time.Now())
+	logger.SetSince(time.Now())
 
 	// First deploy
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
@@ -115,7 +113,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 	}
 
 	if r.runCtx.Opts.PortForward.Enabled {
-		if err := r.forwarderManager.Start(ctx); err != nil {
+		if err := forwarderManager.Start(ctx); err != nil {
 			logrus.Warnln("Error starting port forwarding:", err)
 		} else {
 			color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
@@ -124,7 +122,7 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 
 	// Start printing the logs after deploy is finished
 	if r.runCtx.Opts.Tail {
-		if err := r.logger.Start(ctx); err != nil {
+		if err := logger.Start(ctx); err != nil {
 			return fmt.Errorf("starting logger: %w", err)
 		}
 	}
