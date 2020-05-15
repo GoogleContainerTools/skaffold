@@ -24,6 +24,10 @@ import (
 )
 
 func (r *SkaffoldRunner) createForwarder(out io.Writer) *portforward.ForwarderManager {
+	if !r.runCtx.Opts.PortForward.Enabled {
+		return nil
+	}
+
 	return portforward.NewForwarderManager(out,
 		kubectl.NewFromRunContext(r.runCtx),
 		r.podSelector,
