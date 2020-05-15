@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package latest
+package v2beta3
 
 import (
 	v1 "k8s.io/api/core/v1"
@@ -22,8 +22,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
-const Version string = "skaffold/v2beta4"
+// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
+const Version string = "skaffold/v2beta3"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -655,17 +655,17 @@ type Profile struct {
 	// For example: `profile-prod`.
 	Name string `yaml:"name,omitempty" yamltags:"required"`
 
-	// Activation criteria by which a profile can be auto-activated.
-	// The profile is auto-activated if any one of the activations are triggered.
-	// An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.
-	Activation []Activation `yaml:"activation,omitempty"`
+	// Pipeline contains the definitions to replace the default skaffold pipeline.
+	Pipeline `yaml:",inline"`
 
 	// Patches lists patches applied to the configuration.
 	// Patches use the JSON patch notation.
 	Patches []JSONPatch `yaml:"patches,omitempty"`
 
-	// Pipeline contains the definitions to replace the default skaffold pipeline.
-	Pipeline `yaml:",inline"`
+	// Activation criteria by which a profile can be auto-activated.
+	// The profile is auto-activated if any one of the activations are triggered.
+	// An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.
+	Activation []Activation `yaml:"activation,omitempty"`
 }
 
 // JSONPatch patch to be applied by a profile.
