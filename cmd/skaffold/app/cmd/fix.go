@@ -24,12 +24,12 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
 )
 
 var toVersion string
@@ -71,7 +71,7 @@ func fix(out io.Writer, configFile string, toVersion string, overwrite bool) err
 		return fmt.Errorf("validating upgraded config: %w", err)
 	}
 
-	newCfg, err := yaml.Marshal(cfg)
+	newCfg, err := yamlutil.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("marshaling new config: %w", err)
 	}

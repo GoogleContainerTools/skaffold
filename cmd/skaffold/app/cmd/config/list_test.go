@@ -22,10 +22,9 @@ import (
 	"strings"
 	"testing"
 
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -149,7 +148,7 @@ kubeContexts:
 	for _, test := range tests {
 		testutil.Run(t, test.name, func(t *testutil.T) {
 			// create new config file
-			content, _ := yaml.Marshal(*test.cfg)
+			content, _ := yamlutil.Marshal(*test.cfg)
 			cfg := t.TempFile("config", content)
 
 			t.Override(&config.ReadConfigFile, config.ReadConfigFileNoCache)

@@ -25,13 +25,13 @@ import (
 
 	yamlpatch "github.com/krishicks/yaml-patch"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 
 	cfg "github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
 )
 
 // ApplyProfiles returns configuration modified by the application
@@ -230,7 +230,7 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 	}
 
 	// Apply profile patches
-	buf, err := yaml.Marshal(*config)
+	buf, err := yamlutil.Marshal(*config)
 	if err != nil {
 		return err
 	}
@@ -268,7 +268,7 @@ func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {
 	}
 
 	*config = latest.SkaffoldConfig{}
-	return yaml.Unmarshal(buf, config)
+	return yamlutil.Unmarshal(buf, config)
 }
 
 // tryPatch is here to verify patches one by one before we

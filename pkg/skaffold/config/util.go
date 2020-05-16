@@ -27,11 +27,11 @@ import (
 	"github.com/imdario/mergo"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
 )
 
 const (
@@ -95,7 +95,7 @@ func ReadConfigFileNoCache(configFile string) (*GlobalConfig, error) {
 		return nil, fmt.Errorf("reading global config: %w", err)
 	}
 	config := GlobalConfig{}
-	if err := yaml.Unmarshal(contents, &config); err != nil {
+	if err := yamlutil.Unmarshal(contents, &config); err != nil {
 		return nil, fmt.Errorf("unmarshalling global skaffold config: %w", err)
 	}
 	return &config, nil
@@ -292,7 +292,7 @@ func UpdateGlobalSurveyTaken(configFile string) error {
 }
 
 func WriteFullConfig(configFile string, cfg *GlobalConfig) error {
-	contents, err := yaml.Marshal(cfg)
+	contents, err := yamlutil.Marshal(cfg)
 	if err != nil {
 		return fmt.Errorf("marshaling config: %w", err)
 	}

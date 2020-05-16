@@ -19,9 +19,8 @@ package v1beta11
 import (
 	"testing"
 
-	yaml "gopkg.in/yaml.v2"
-
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v1beta12"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -137,14 +136,14 @@ profiles:
 
 func verifyUpgrade(t *testing.T, input, output string) {
 	config := NewSkaffoldConfig()
-	err := yaml.UnmarshalStrict([]byte(input), config)
+	err := yamlutil.UnmarshalStrict([]byte(input), config)
 	testutil.CheckErrorAndDeepEqual(t, false, err, Version, config.GetVersion())
 
 	upgraded, err := config.Upgrade()
 	testutil.CheckError(t, false, err)
 
 	expected := next.NewSkaffoldConfig()
-	err = yaml.UnmarshalStrict([]byte(output), expected)
+	err = yamlutil.UnmarshalStrict([]byte(output), expected)
 
 	testutil.CheckErrorAndDeepEqual(t, false, err, expected, upgraded)
 }

@@ -29,7 +29,7 @@ type mockVisitor struct {
 	replaceWith interface{}
 }
 
-func (m *mockVisitor) Visit(o map[interface{}]interface{}, k interface{}, v interface{}) bool {
+func (m *mockVisitor) Visit(o map[string]interface{}, k string, v interface{}) bool {
 	s := fmt.Sprintf("%+v", v)
 	if len(s) > 4 {
 		s = s[:4] + "..."

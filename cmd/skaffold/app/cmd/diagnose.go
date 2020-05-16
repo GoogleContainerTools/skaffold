@@ -23,12 +23,12 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/version"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
 )
 
 var (
@@ -62,7 +62,7 @@ func doDiagnose(ctx context.Context, out io.Writer) error {
 			color.Blue.Fprintln(out, "\nConfiguration")
 		}
 
-		buf, err := yaml.Marshal(config)
+		buf, err := yamlutil.Marshal(config)
 		if err != nil {
 			return fmt.Errorf("marshalling configuration: %w", err)
 		}

@@ -22,7 +22,8 @@ import (
 	"strings"
 
 	yamlpatch "github.com/krishicks/yaml-patch"
-	yaml "gopkg.in/yaml.v2"
+
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
 )
 
 type VersionedConfig interface {
@@ -46,7 +47,7 @@ func (h *HelmOverrides) UnmarshalJSON(text []byte) error {
 	if err != nil {
 		return err
 	}
-	return yaml.Unmarshal([]byte(yml), h)
+	return yamlutil.Unmarshal([]byte(yml), h)
 }
 
 // YamlpatchNode wraps a `yamlpatch.Node` and makes it serializable to JSON.
@@ -68,7 +69,7 @@ func (n *YamlpatchNode) UnmarshalJSON(text []byte) error {
 	if err != nil {
 		return err
 	}
-	return yaml.Unmarshal([]byte(yml), n)
+	return yamlutil.Unmarshal([]byte(yml), n)
 }
 
 // MarshalYAML implements yaml.Marshaler.
@@ -82,7 +83,7 @@ func (n *YamlpatchNode) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 func marshalInlineYaml(in interface{}) ([]byte, error) {
-	yaml, err := yaml.Marshal(in)
+	yaml, err := yamlutil.Marshal(in)
 	if err != nil {
 		return nil, err
 	}

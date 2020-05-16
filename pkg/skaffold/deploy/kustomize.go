@@ -27,7 +27,6 @@ import (
 	"strings"
 
 	"github.com/segmentio/textio"
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
@@ -39,6 +38,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/warnings"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
 )
 
 var (
@@ -255,7 +255,7 @@ func dependenciesForKustomization(dir string) ([]string, error) {
 	}
 
 	content := kustomization{}
-	if err := yaml.Unmarshal(buf, &content); err != nil {
+	if err := yamlutil.Unmarshal(buf, &content); err != nil {
 		return nil, err
 	}
 

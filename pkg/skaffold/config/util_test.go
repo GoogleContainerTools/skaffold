@@ -23,9 +23,8 @@ import (
 	"testing"
 	"time"
 
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -67,7 +66,7 @@ func TestReadConfig(t *testing.T) {
 				Chdir()
 
 			if test.content != nil {
-				c, _ := yaml.Marshal(*test.content)
+				c, _ := yamlutil.Marshal(*test.content)
 				tmpDir.Write(test.filename, string(c))
 			}
 

@@ -20,8 +20,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	yaml "gopkg.in/yaml.v2"
-
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
@@ -32,7 +31,7 @@ const yamlFragment string = `global:
 
 func TestHelmOverridesMarshalling(t *testing.T) {
 	h := &HelmOverrides{}
-	err := yaml.Unmarshal([]byte(yamlFragment), h)
+	err := yamlutil.Unmarshal([]byte(yamlFragment), h)
 	testutil.CheckError(t, false, err)
 
 	asJSON, err := json.Marshal(h)
@@ -41,16 +40,16 @@ func TestHelmOverridesMarshalling(t *testing.T) {
 	err = json.Unmarshal(asJSON, h)
 	testutil.CheckError(t, false, err)
 
-	actual, err := yaml.Marshal(h)
+	actual, err := yamlutil.Marshal(h)
 	testutil.CheckErrorAndDeepEqual(t, false, err, yamlFragment, string(actual))
 }
 
 func TestHelmOverridesWhenEmbedded(t *testing.T) {
 	h := HelmOverrides{}
-	err := yaml.Unmarshal([]byte(yamlFragment), &h)
+	err := yamlutil.Unmarshal([]byte(yamlFragment), &h)
 	testutil.CheckError(t, false, err)
 
-	out, err := yaml.Marshal(struct {
+	out, err := yamlutil.Marshal(struct {
 		Overrides HelmOverrides `yaml:"overrides,omitempty"`
 	}{h})
 
@@ -63,7 +62,7 @@ func TestHelmOverridesWhenEmbedded(t *testing.T) {
 
 func TestYamlpatchNodeMarshalling(t *testing.T) {
 	n := &YamlpatchNode{}
-	err := yaml.Unmarshal([]byte(yamlFragment), n)
+	err := yamlutil.Unmarshal([]byte(yamlFragment), n)
 	testutil.CheckError(t, false, err)
 
 	asJSON, err := json.Marshal(n)
@@ -72,16 +71,16 @@ func TestYamlpatchNodeMarshalling(t *testing.T) {
 	err = json.Unmarshal(asJSON, n)
 	testutil.CheckError(t, false, err)
 
-	actual, err := yaml.Marshal(n)
+	actual, err := yamlutil.Marshal(n)
 	testutil.CheckErrorAndDeepEqual(t, false, err, yamlFragment, string(actual))
 }
 
 func TestYamlpatchNodeWhenEmbedded(t *testing.T) {
 	n := &YamlpatchNode{}
-	err := yaml.Unmarshal([]byte(yamlFragment), &n)
+	err := yamlutil.Unmarshal([]byte(yamlFragment), &n)
 	testutil.CheckError(t, false, err)
 
-	out, err := yaml.Marshal(struct {
+	out, err := yamlutil.Marshal(struct {
 		Node *YamlpatchNode `yaml:"value,omitempty"`
 	}{n})
 

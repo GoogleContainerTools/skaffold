@@ -22,14 +22,13 @@ import (
 	"io"
 	"io/ioutil"
 
-	yaml "gopkg.in/yaml.v2"
-
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/tips"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/analyze"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/initializer/prompt"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamlutil"
 )
 
 // DoInit executes the `skaffold init` flow.
@@ -74,7 +73,7 @@ func DoInit(ctx context.Context, out io.Writer, c config.Config) error {
 		return err
 	}
 
-	pipeline, err := yaml.Marshal(generateSkaffoldConfig(buildInitializer, deployInitializer))
+	pipeline, err := yamlutil.Marshal(generateSkaffoldConfig(buildInitializer, deployInitializer))
 	if err != nil {
 		return err
 	}
