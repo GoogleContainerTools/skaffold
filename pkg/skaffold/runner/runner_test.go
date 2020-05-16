@@ -305,19 +305,6 @@ func TestNewForConfig(t *testing.T) {
 			expectedDeployer: &deploy.KubectlDeployer{},
 		},
 		{
-			description: "unknown deployer",
-			pipeline: latest.Pipeline{
-				Build: latest.BuildConfig{
-					TagPolicy: latest.TagPolicy{ShaTagger: &latest.ShaTagger{}},
-					BuildType: latest.BuildType{
-						LocalBuild: &latest.LocalBuild{},
-					},
-				},
-				Deploy: latest.DeployConfig{},
-			},
-			shouldErr: true,
-		},
-		{
 			description: "no artifacts, cache",
 			pipeline: latest.Pipeline{
 				Build: latest.BuildConfig{
