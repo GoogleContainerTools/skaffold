@@ -34,6 +34,7 @@ type Flag struct {
 	DefValue      interface{}
 	FlagAddMethod string
 	DefinedOn     []string
+	Hidden        bool
 }
 
 // FlagRegistry is a list of all Skaffold CLI flags.
@@ -268,6 +269,10 @@ var FlagRegistry = []Flag{
 		DefValue:      "",
 		FlagAddMethod: "StringVar",
 		DefinedOn:     []string{"build", "debug", "dev", "run"},
+		// this is a temporary solution until we figure out an automated way to detect the
+		// minikube profile see
+		// https://github.com/GoogleContainerTools/skaffold/issues/3668
+		Hidden: true,
 	},
 	{
 		Name:          "profile-auto-activation",
@@ -298,6 +303,7 @@ func SetupFlags() {
 		if fl.Shorthand != "" {
 			f.Shorthand = fl.Shorthand
 		}
+		f.Hidden = fl.Hidden
 		f.Annotations = map[string][]string{
 			"cmds": fl.DefinedOn,
 		}
@@ -311,10 +317,6 @@ func AddFlags(fs *pflag.FlagSet, cmdName string) {
 			fs.AddFlag(f)
 		}
 	}
-	// this is a temporary solution until we figure out an automated way to detect the
-	// minikube profile see
-	// https://github.com/GoogleContainerTools/skaffold/issues/3668
-	fs.MarkHidden("minikube-profile")
 }
 
 func hasCmdAnnotation(cmdName string, annotations []string) bool {
