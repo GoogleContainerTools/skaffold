@@ -59,9 +59,9 @@ func (r *SkaffoldRunner) loadImagesInKindNodes(ctx context.Context, out io.Write
 		}
 
 		cmd := exec.CommandContext(ctx, "kind", "load", "docker-image", "--name", kindCluster, artifact.Tag)
-		if err := util.RunCmd(cmd); err != nil {
+		if output, err := util.RunCmdOut(cmd); err != nil {
 			color.Red.Fprintln(out, "Failed")
-			return fmt.Errorf("unable to load image with kind %q: %w", artifact.Tag, err)
+			return fmt.Errorf("unable to load image with kind %q: %w, %s", artifact.Tag, err, output)
 		}
 
 		color.Green.Fprintln(out, "Loaded")
