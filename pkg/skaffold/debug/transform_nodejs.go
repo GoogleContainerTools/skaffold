@@ -94,7 +94,7 @@ func (t nodeTransformer) Apply(container *v1.Container, config imageConfiguratio
 	// try to find existing `--inspect` command
 	spec := retrieveNodeInspectSpec(config)
 	if spec == nil {
-		spec = &inspectSpec{port: portAlloc(defaultDevtoolsPort)}
+		spec = &inspectSpec{host: "0.0.0.0", port: portAlloc(defaultDevtoolsPort)}
 		switch {
 		case len(config.entrypoint) > 0 && isLaunchingNode(config.entrypoint):
 			container.Command = rewriteNodeCommandLine(config.entrypoint, *spec)

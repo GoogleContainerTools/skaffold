@@ -219,7 +219,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{},
 			result: v1.Container{
-				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=9229"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
+				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=0.0.0.0:9229"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
@@ -229,7 +229,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{entrypoint: []string{"node"}},
 			result: v1.Container{
-				Command: []string{"node", "--inspect=9229"},
+				Command: []string{"node", "--inspect=0.0.0.0:9229"},
 				Env:     []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
@@ -240,7 +240,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{entrypoint: []string{"node"}, env: map[string]string{"PATH": "/usr/bin"}},
 			result: v1.Container{
-				Command: []string{"node", "--inspect=9229"},
+				Command: []string{"node", "--inspect=0.0.0.0:9229"},
 				Env:     []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin:/usr/bin"}},
 				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
@@ -253,7 +253,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 			},
 			configuration: imageConfiguration{entrypoint: []string{"node"}},
 			result: v1.Container{
-				Command: []string{"node", "--inspect=9229"},
+				Command: []string{"node", "--inspect=0.0.0.0:9229"},
 				Env:     []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports:   []v1.ContainerPort{{Name: "http-server", ContainerPort: 8080}, {Name: "devtools", ContainerPort: 9229}},
 			},
@@ -266,7 +266,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 			},
 			configuration: imageConfiguration{entrypoint: []string{"node"}},
 			result: v1.Container{
-				Command: []string{"node", "--inspect=9229"},
+				Command: []string{"node", "--inspect=0.0.0.0:9229"},
 				Env:     []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports:   []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
@@ -277,7 +277,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 			containerSpec: v1.Container{},
 			configuration: imageConfiguration{arguments: []string{"node"}},
 			result: v1.Container{
-				Args:  []string{"node", "--inspect=9229"},
+				Args:  []string{"node", "--inspect=0.0.0.0:9229"},
 				Env:   []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
@@ -291,7 +291,7 @@ func TestNodeTransformer_Apply(t *testing.T) {
 				entrypoint: []string{"docker-entrypoint.sh"},
 				arguments:  []string{"npm run script"}},
 			result: v1.Container{
-				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=9229"}, {Name: "NODE_VERSION", Value: "10.12"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
+				Env:   []v1.EnvVar{{Name: "NODE_OPTIONS", Value: "--inspect=0.0.0.0:9229"}, {Name: "NODE_VERSION", Value: "10.12"}, {Name: "PATH", Value: "/dbg/nodejs/bin"}},
 				Ports: []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 			},
 			debugConfig: ContainerDebugConfiguration{Runtime: "nodejs", Ports: map[string]uint32{"devtools": 9229}},
@@ -350,7 +350,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 				Spec: v1.PodSpec{
 					Containers: []v1.Container{{
 						Name:         "test",
-						Command:      []string{"node", "--inspect=9229", "foo.js"},
+						Command:      []string{"node", "--inspect=0.0.0.0:9229", "foo.js"},
 						Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 						Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 						VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -390,7 +390,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Command:      []string{"node", "--inspect=0.0.0.0:9229", "foo.js"},
 								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -427,7 +427,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Command:      []string{"node", "--inspect=0.0.0.0:9229", "foo.js"},
 								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -467,7 +467,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Command:      []string{"node", "--inspect=0.0.0.0:9229", "foo.js"},
 								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -505,7 +505,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Command:      []string{"node", "--inspect=0.0.0.0:9229", "foo.js"},
 								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -544,7 +544,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Command:      []string{"node", "--inspect=0.0.0.0:9229", "foo.js"},
 								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -586,7 +586,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Command:      []string{"node", "--inspect=0.0.0.0:9229", "foo.js"},
 								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
@@ -636,7 +636,7 @@ func TestTransformManifestNodeJS(t *testing.T) {
 						Spec: v1.PodSpec{
 							Containers: []v1.Container{{
 								Name:         "test",
-								Command:      []string{"node", "--inspect=9229", "foo.js"},
+								Command:      []string{"node", "--inspect=0.0.0.0:9229", "foo.js"},
 								Ports:        []v1.ContainerPort{{Name: "devtools", ContainerPort: 9229}},
 								Env:          []v1.EnvVar{{Name: "PATH", Value: "/dbg/nodejs/bin"}},
 								VolumeMounts: []v1.VolumeMount{{Name: "debugging-support-files", MountPath: "/dbg"}},
