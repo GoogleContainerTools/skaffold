@@ -146,29 +146,19 @@ var FlagRegistry = []Flag{
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"dev", "build", "run", "debug", "deploy"},
 	},
-	// We need opts.Tail and opts.TailDev since cobra, overwrites the default value
-	// when registering the flag twice.
 	{
 		Name:          "tail",
-		Usage:         "Stream logs from deployed objects (default false)",
+		Usage:         "Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)",
 		Value:         &opts.Tail,
-		DefValue:      false,
+		DefValue:      false, // true for "dev" and "debug"
 		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"deploy", "run"},
-	},
-	{
-		Name:          "tail",
-		Usage:         "Stream logs from deployed objects",
-		Value:         &opts.TailDev,
-		DefValue:      true,
-		FlagAddMethod: "BoolVar",
-		DefinedOn:     []string{"dev", "debug"},
+		DefinedOn:     []string{"dev", "run", "debug", "deploy"},
 	},
 	{
 		Name:          "force",
 		Usage:         "Recreate Kubernetes resources if necessary for deployment, warning: might cause downtime! (true by default for `skaffold dev`)",
 		Value:         &opts.Force,
-		DefValue:      false,
+		DefValue:      false, // true for "dev"
 		FlagAddMethod: "BoolVar",
 		DefinedOn:     []string{"deploy", "dev", "run", "debug"},
 	},
