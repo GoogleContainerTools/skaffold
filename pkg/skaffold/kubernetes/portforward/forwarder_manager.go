@@ -42,10 +42,6 @@ type ForwarderManager struct {
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
 func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string, label string, opts config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
-	if !opts.Enabled {
-		return nil
-	}
-
 	em := NewEntryManager(out, cli)
 
 	ForwarderManager := &ForwarderManager{
