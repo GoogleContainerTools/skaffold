@@ -71,7 +71,7 @@ func (b *builder) WithExample(comment, command string) Builder {
 }
 
 func (b *builder) WithCommonFlags() Builder {
-	AddFlags(b.cmd.Flags(), b.cmd.Use)
+	AddFlags(&b.cmd)
 	return b
 }
 
