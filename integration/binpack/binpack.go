@@ -77,7 +77,7 @@ var timings = []timing{
 	{"TestConfigListForAll", 0.03},
 }
 
-const maxTime = 300.0
+const maxTime = 1200.0
 
 type bin struct {
 	size  int
