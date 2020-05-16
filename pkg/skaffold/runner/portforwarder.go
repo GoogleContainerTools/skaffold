@@ -34,5 +34,5 @@ func (r *SkaffoldRunner) createForwarder(out io.Writer) *portforward.ForwarderMa
 		r.runCtx.Namespaces,
 		r.defaultLabeller.RunIDSelector(),
 		r.runCtx.Opts.PortForward,
-		r.portForwardResources)
+		r.runCtx.Cfg.PortForward)
 }

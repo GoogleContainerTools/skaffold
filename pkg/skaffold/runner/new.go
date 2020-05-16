@@ -122,14 +122,13 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 			rebuildTracker: make(map[string]*latest.Artifact),
 			resyncTracker:  make(map[string]*sync.Item),
 		},
-		labellers:            labellers,
-		defaultLabeller:      defaultLabeller,
-		portForwardResources: runCtx.Cfg.PortForward,
-		podSelector:          kubernetes.NewImageList(),
-		cache:                artifactCache,
-		runCtx:               runCtx,
-		intents:              newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy),
-		imagesAreLocal:       imagesAreLocal,
+		labellers:       labellers,
+		defaultLabeller: defaultLabeller,
+		podSelector:     kubernetes.NewImageList(),
+		cache:           artifactCache,
+		runCtx:          runCtx,
+		intents:         newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy),
+		imagesAreLocal:  imagesAreLocal,
 	}
 
 	if err := r.setupTriggerCallbacks(intentChan); err != nil {
