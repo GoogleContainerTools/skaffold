@@ -37,12 +37,12 @@ message Metadata {
 }
 
 message BuildMetadata {
-  message Builder {
+  message ImageBuilder {
       BuilderType type = 1;
       int32 count = 2;
   }
   int32 numberOfArtifacts = 1;
-  repeated Builder builders= 2;
+  repeated ImageBuilder builders= 2;
   BuildType type = 3;
   // Additional key value pairs to describe the deploy pipeline
   map<string, string> additional = 99;
@@ -136,7 +136,7 @@ message BuildEvent {
     string artifact = 1; // artifact name
     string status = 2; // artifact build status oneof: InProgress, Completed, Failed
     string err = 3; // error when build status is Failed.
-    StatusCode statusCode = 4; // status code representing success or failure
+    StatusCode errCode = 4; // status code representing success or failure
 }
 
 // `DeployEvent` represents the status of a deployment, and is emitted by Skaffold
@@ -144,7 +144,7 @@ message BuildEvent {
 message DeployEvent {
     string status = 1; // deployment status oneof: InProgress, Completed, Failed
     string err = 2; // error when status is Failed
-    StatusCode statusCode = 3; // status code representing success or failure
+    StatusCode errCode = 3; // status code representing success or failure
 }
 
 // `StatusCheckEvent` describes if the status check for kubernetes rollout has started, is in progress, has succeeded or failed.
@@ -152,7 +152,7 @@ message StatusCheckEvent {
     string status = 1;
     string message = 2;
     string err = 3;
-    StatusCode statusCode = 4; // status code representing success or failure
+    StatusCode errCode = 4; // status code representing success or failure
 }
 
 // A Resource StatusCheck Event, indicates progress for each kubernetes deployment.
@@ -186,7 +186,7 @@ message FileSyncEvent {
     string image = 2; // the container image to which files are sycned.
     string status = 3; // status of file sync. one of: Not Started, In progress, Succeeded, Failed.
     string err = 4; // error in case of status failed.
-    StatusCode statusCode = 5; // status code representing success or failure
+    StatusCode errCode = 5; // status code representing success or failure
 }
 
 // DebuggingContainerEvent is raised when a debugging container is started or terminated
@@ -328,7 +328,15 @@ enum StatusCode {
 
     // Status Check Success
     STATUSCHECK_SUCCESS = 200;
+    // Build Success
+    BUILD_SUCCESS = 201;
 
+    // Build Errors
+
+    // Build error due to push access denied
+    BUILD_PUSH_ACCESS_DENIED = 101;
+    // Build error due to GCP project not found.
+    BUILD_PROJECT_NOT_FOUND = 102;
 
     // Container errors
 
@@ -379,10 +387,6 @@ enum StatusCode {
     // Cleanup failed due to unknown reason
     CLEANUP_UNKNOWN = 508;
 
-
-
-
-
     // FILE_SYNC Failures
 
     // File Sync Initialize failure
@@ -399,5 +403,4 @@ enum StatusCode {
     DEVINIT_REGISTER_DEPLOY_DEPS = 703;
     // Failed to configure watcher for Skaffold configuration file.
     DEVINIT_REGISTER_CONFIG_DEP = 704;
-
 }

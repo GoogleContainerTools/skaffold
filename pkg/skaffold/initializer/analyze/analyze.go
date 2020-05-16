@@ -40,10 +40,11 @@ type analyzer interface {
 }
 
 type ProjectAnalysis struct {
-	configAnalyzer  *skaffoldConfigAnalyzer
-	kubeAnalyzer    *kubeAnalyzer
-	builderAnalyzer *builderAnalyzer
-	maxFileSize     int64
+	configAnalyzer    *skaffoldConfigAnalyzer
+	kubeAnalyzer      *kubeAnalyzer
+	kustomizeAnalyzer *kustomizeAnalyzer
+	builderAnalyzer   *builderAnalyzer
+	maxFileSize       int64
 }
 
 func (a *ProjectAnalysis) Builders() []build.InitBuilder {
@@ -54,9 +55,14 @@ func (a *ProjectAnalysis) Manifests() []string {
 	return a.kubeAnalyzer.kubernetesManifests
 }
 
+func (a *ProjectAnalysis) KustomizePaths() []string {
+	return a.kustomizeAnalyzer.kustomizePaths
+}
+
 func (a *ProjectAnalysis) analyzers() []analyzer {
 	return []analyzer{
 		a.kubeAnalyzer,
+		a.kustomizeAnalyzer,
 		a.configAnalyzer,
 		a.builderAnalyzer,
 	}
@@ -65,7 +71,8 @@ func (a *ProjectAnalysis) analyzers() []analyzer {
 // NewAnalyzer sets up the analysis of the directory based on the initializer configuration
 func NewAnalyzer(c config.Config) *ProjectAnalysis {
 	return &ProjectAnalysis{
-		kubeAnalyzer: &kubeAnalyzer{},
+		kubeAnalyzer:      &kubeAnalyzer{},
+		kustomizeAnalyzer: &kustomizeAnalyzer{},
 		builderAnalyzer: &builderAnalyzer{
 			findBuilders:         !c.SkipBuild,
 			enableJibInit:        c.EnableJibInit,

@@ -60,7 +60,7 @@ If the build fails, an error will be attached to the event.
 | artifact | [string](#string) |  | artifact name |
 | status | [string](#string) |  | artifact build status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | error when build status is Failed. |
-| statusCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
@@ -76,7 +76,7 @@ If the build fails, an error will be attached to the event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | numberOfArtifacts | [int32](#int32) |  |  |
-| builders | [BuildMetadata.Builder](#proto.BuildMetadata.Builder) | repeated |  |
+| builders | [BuildMetadata.ImageBuilder](#proto.BuildMetadata.ImageBuilder) | repeated |  |
 | type | [BuildType](#proto.BuildType) |  |  |
 | additional | [BuildMetadata.AdditionalEntry](#proto.BuildMetadata.AdditionalEntry) | repeated | Additional key value pairs to describe the deploy pipeline |
 
@@ -102,8 +102,8 @@ If the build fails, an error will be attached to the event.
 
 
 
-<a name="proto.BuildMetadata.Builder"></a>
-#### BuildMetadata.Builder
+<a name="proto.BuildMetadata.ImageBuilder"></a>
+#### BuildMetadata.ImageBuilder
 
 
 
@@ -197,7 +197,7 @@ anytime a deployment starts or completes, successfully or not.
 | ----- | ---- | ----- | ----------- |
 | status | [string](#string) |  | deployment status oneof: InProgress, Completed, Failed |
 | err | [string](#string) |  | error when status is Failed |
-| statusCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
@@ -320,7 +320,7 @@ FileSyncEvent describes the sync status.
 | image | [string](#string) |  | the container image to which files are sycned. |
 | status | [string](#string) |  | status of file sync. one of: Not Started, In progress, Succeeded, Failed. |
 | err | [string](#string) |  | error in case of status failed. |
-| statusCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
@@ -563,7 +563,7 @@ will be sent with the new status.
 | status | [string](#string) |  |  |
 | message | [string](#string) |  |  |
 | err | [string](#string) |  |  |
-| statusCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
+| errCode | [StatusCode](#proto.StatusCode) |  | status code representing success or failure |
 
 
 
@@ -689,6 +689,9 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | ---- | ------ | ----------- |
 | UNKNOWN_ERROR | 0 | Could not determine error and phase |
 | STATUSCHECK_SUCCESS | 200 | Status Check Success |
+| BUILD_SUCCESS | 201 | Build Success |
+| BUILD_PUSH_ACCESS_DENIED | 101 | Build error due to push access denied |
+| BUILD_PROJECT_NOT_FOUND | 102 | Build error due to GCP project not found. |
 | STATUSCHECK_IMAGE_PULL_ERR | 300 | Container image pull error |
 | STATUSCHECK_CONTAINER_CREATING | 301 | Container creating error |
 | STATUSCHECK_RUN_CONTAINER_ERR | 302 | Container run error |

@@ -24,9 +24,7 @@ import (
 )
 
 func TestSchema(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	testutil.Run(t, "list", func(t *testutil.T) {
 		out := skaffold.Schema("list").RunOrFailOutput(t.T)

@@ -87,6 +87,28 @@ func TestKustomizeDeploy(t *testing.T) {
 			},
 			forceDeploy: true,
 		},
+		{
+			description: "built-in kubectl kustomize with newer version",
+			cfg: &latest.KustomizeDeploy{
+				KustomizePaths: []string{"a", "b"},
+			},
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion118).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace kustomize a", deploymentWebYAML).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace kustomize b", deploymentAppYAML).
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f - --force --grace-period=0"),
+			builds: []build.Artifact{
+				{
+					ImageName: "leeroy-web",
+					Tag:       "leeroy-web:123",
+				},
+				{
+					ImageName: "leeroy-app",
+					Tag:       "leeroy-app:123",
+				},
+			},
+			forceDeploy: true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -131,7 +153,8 @@ func TestKustomizeCleanup(t *testing.T) {
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
-				CmdRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+				AndRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
 		},
 		{
@@ -140,7 +163,8 @@ func TestKustomizeCleanup(t *testing.T) {
 				KustomizePaths: tmpDir.Paths("a", "b"),
 			},
 			commands: testutil.
-				CmdRunOut("kustomize build "+tmpDir.Path("a"), deploymentWebYAML).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+				AndRunOut("kustomize build "+tmpDir.Path("a"), deploymentWebYAML).
 				AndRunOut("kustomize build "+tmpDir.Path("b"), deploymentAppYAML).
 				AndRun("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -"),
 		},
@@ -150,7 +174,8 @@ func TestKustomizeCleanup(t *testing.T) {
 				KustomizePaths: []string{tmpDir.Root()},
 			},
 			commands: testutil.
-				CmdRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+				AndRunOut("kustomize build "+tmpDir.Root(), deploymentWebYAML).
 				AndRunErr("kubectl --context kubecontext --namespace testNamespace delete --ignore-not-found=true -f -", errors.New("BUG")),
 			shouldErr: true,
 		},
@@ -159,11 +184,9 @@ func TestKustomizeCleanup(t *testing.T) {
 			cfg: &latest.KustomizeDeploy{
 				KustomizePaths: []string{tmpDir.Root()},
 			},
-			commands: testutil.CmdRunOutErr(
-				"kustomize build "+tmpDir.Root(),
-				"",
-				errors.New("BUG"),
-			),
+			commands: testutil.
+				CmdRunOut("kubectl version --client -ojson", kubectlVersion112).
+				AndRunOutErr("kustomize build "+tmpDir.Root(), "", errors.New("BUG")),
 			shouldErr: true,
 		},
 	}
@@ -399,49 +422,49 @@ func TestKustomizeBuildCommandArgs(t *testing.T) {
 			description:   "no BuildArgs, empty KustomizePaths ",
 			buildArgs:     []string{},
 			kustomizePath: "",
-			expectedArgs:  []string{"build"},
+			expectedArgs:  nil,
 		},
 		{
 			description:   "One BuildArg, empty KustomizePaths",
 			buildArgs:     []string{"--foo"},
 			kustomizePath: "",
-			expectedArgs:  []string{"build", "--foo"},
+			expectedArgs:  []string{"--foo"},
 		},
 		{
 			description:   "no BuildArgs, non-empty KustomizePaths",
 			buildArgs:     []string{},
 			kustomizePath: "foo",
-			expectedArgs:  []string{"build", "foo"},
+			expectedArgs:  []string{"foo"},
 		},
 		{
 			description:   "One BuildArg, non-empty KustomizePaths",
 			buildArgs:     []string{"--foo"},
 			kustomizePath: "bar",
-			expectedArgs:  []string{"build", "--foo", "bar"},
+			expectedArgs:  []string{"--foo", "bar"},
 		},
 		{
 			description:   "Multiple BuildArg, empty KustomizePaths",
 			buildArgs:     []string{"--foo", "--bar"},
 			kustomizePath: "",
-			expectedArgs:  []string{"build", "--foo", "--bar"},
+			expectedArgs:  []string{"--foo", "--bar"},
 		},
 		{
 			description:   "Multiple BuildArg with spaces, empty KustomizePaths",
 			buildArgs:     []string{"--foo bar", "--baz"},
 			kustomizePath: "",
-			expectedArgs:  []string{"build", "--foo", "bar", "--baz"},
+			expectedArgs:  []string{"--foo", "bar", "--baz"},
 		},
 		{
 			description:   "Multiple BuildArg with spaces, non-empty KustomizePaths",
 			buildArgs:     []string{"--foo bar", "--baz"},
 			kustomizePath: "barfoo",
-			expectedArgs:  []string{"build", "--foo", "bar", "--baz", "barfoo"},
+			expectedArgs:  []string{"--foo", "bar", "--baz", "barfoo"},
 		},
 		{
 			description:   "Multiple BuildArg no spaces, non-empty KustomizePaths",
 			buildArgs:     []string{"--foo", "bar", "--baz"},
 			kustomizePath: "barfoo",
-			expectedArgs:  []string{"build", "--foo", "bar", "--baz", "barfoo"},
+			expectedArgs:  []string{"--foo", "bar", "--baz", "barfoo"},
 		},
 	}
 

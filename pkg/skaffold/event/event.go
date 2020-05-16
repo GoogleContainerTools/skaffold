@@ -167,7 +167,7 @@ func DeployInProgress() {
 // DeployFailed notifies that non-fatal errors were encountered during a deployment.
 func DeployFailed(err error) {
 	statusCode := sErrors.ErrorCodeFromError(sErrors.Deploy, err)
-	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error(), StatusCode: statusCode})
+	handler.handleDeployEvent(&proto.DeployEvent{Status: Failed, Err: err.Error(), ErrCode: statusCode})
 }
 
 // DeployEvent notifies that a deployment of non fatal interesting errors during deploy.
@@ -175,18 +175,26 @@ func DeployInfoEvent(err error) {
 	handler.handleDeployEvent(&proto.DeployEvent{Status: Info, Err: err.Error()})
 }
 
-func StatusCheckEventSucceeded() {
+func StatusCheckEventEnded(err error) {
+	if err != nil {
+		statusCheckEventFailed(err)
+		return
+	}
+	statusCheckEventSucceeded()
+}
+
+func statusCheckEventSucceeded() {
 	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
 		Status: Succeeded,
 	})
 }
 
-func StatusCheckEventFailed(err error) {
+func statusCheckEventFailed(err error) {
 	statusCode := sErrors.ErrorCodeFromError(sErrors.StatusCheck, err)
 	handler.handleStatusCheckEvent(&proto.StatusCheckEvent{
-		Status:     Failed,
-		Err:        err.Error(),
-		StatusCode: statusCode,
+		Status:  Failed,
+		Err:     err.Error(),
+		ErrCode: statusCode,
 	})
 }
 
@@ -203,7 +211,15 @@ func StatusCheckEventInProgress(s string) {
 	})
 }
 
-func ResourceStatusCheckEventSucceeded(r string) {
+func ResourceStatusCheckEventCompleted(r string, err error) {
+	if err != nil {
+		resourceStatusCheckEventFailed(r, err)
+		return
+	}
+	resourceStatusCheckEventSucceeded(r)
+}
+
+func resourceStatusCheckEventSucceeded(r string) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource: r,
 		Status:   Succeeded,
@@ -211,7 +227,7 @@ func ResourceStatusCheckEventSucceeded(r string) {
 	})
 }
 
-func ResourceStatusCheckEventFailed(r string, err error) {
+func resourceStatusCheckEventFailed(r string, err error) {
 	handler.handleResourceStatusCheckEvent(&proto.ResourceStatusCheckEvent{
 		Resource: r,
 		Status:   Failed,
@@ -240,7 +256,7 @@ func BuildInProgress(imageName string) {
 // BuildFailed notifies that a build has failed.
 func BuildFailed(imageName string, err error) {
 	statusCode := sErrors.ErrorCodeFromError(sErrors.Build, err)
-	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Failed, Err: err.Error(), StatusCode: statusCode})
+	handler.handleBuildEvent(&proto.BuildEvent{Artifact: imageName, Status: Failed, Err: err.Error(), ErrCode: statusCode})
 }
 
 // BuildComplete notifies that a build has completed.
@@ -283,7 +299,7 @@ func FileSyncInProgress(fileCount int, image string) {
 // FileSyncFailed notifies that a file sync has failed.
 func FileSyncFailed(fileCount int, image string, err error) {
 	statusCode := sErrors.ErrorCodeFromError(sErrors.FileSync, err)
-	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed, Err: err.Error(), StatusCode: statusCode})
+	handler.handleFileSyncEvent(&proto.FileSyncEvent{FileCount: int32(fileCount), Image: image, Status: Failed, Err: err.Error(), ErrCode: statusCode})
 }
 
 // FileSyncSucceeded notifies that a file sync has succeeded.

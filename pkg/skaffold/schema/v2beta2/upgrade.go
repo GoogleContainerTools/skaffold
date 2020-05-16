@@ -17,8 +17,8 @@ limitations under the License.
 package v2beta2
 
 import (
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta3"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -29,14 +29,11 @@ import (
 // 3. Updates:
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
-
 	pkgutil.CloneThroughJSON(c, &newConfig)
-	if err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline); err != nil {
-		return nil, err
-	}
 	newConfig.APIVersion = next.Version
 
-	return &newConfig, nil
+	err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline)
+	return &newConfig, err
 }
 
 func upgradeOnePipeline(_, _ interface{}) error {

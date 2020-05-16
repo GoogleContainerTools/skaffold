@@ -17,10 +17,8 @@ limitations under the License.
 package integration
 
 import (
-	"bufio"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/GoogleContainerTools/skaffold/cmd/skaffold/app/flags"
 	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
@@ -28,9 +26,7 @@ import (
 )
 
 func TestBuildDeploy(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, NeedsGcp)
 
 	ns, client := SetupNamespace(t)
 
@@ -74,9 +70,7 @@ func TestBuildDeploy(t *testing.T) {
 }
 
 func TestDeploy(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, client := SetupNamespace(t)
 
@@ -88,42 +82,18 @@ func TestDeploy(t *testing.T) {
 }
 
 func TestDeployTail(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
 
 	// `--default-repo=` is used to cancel the default repo that is set by default.
 	out := skaffold.Deploy("--tail", "--images", "busybox:latest", "--default-repo=").InDir("testdata/deploy-hello-tail").InNs(ns.Name).RunBackground(t)
 
-	// Wait for the logs to print "Hello world!"
-	lines := make(chan string)
-	go func() {
-		scanner := bufio.NewScanner(out)
-		for scanner.Scan() {
-			lines <- scanner.Text()
-		}
-	}()
-
-	timer := time.NewTimer(30 * time.Second)
-	defer timer.Stop()
-	for {
-		select {
-		case <-timer.C:
-			t.Fatal("timeout")
-		case line := <-lines:
-			if strings.Contains(line, "Hello world!") {
-				return
-			}
-		}
-	}
+	WaitForLogs(t, out, "Hello world!")
 }
 
 func TestDeployWithInCorrectConfig(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
 

@@ -17,7 +17,6 @@ limitations under the License.
 package debugging
 
 import (
-	"bytes"
 	"context"
 	"testing"
 
@@ -52,7 +51,7 @@ func TestContainerManager(t *testing.T) {
 				}}},
 			Status: v1.PodStatus{ContainerStatuses: []v1.ContainerStatus{{Name: "test", State: v1.ContainerState{Waiting: &v1.ContainerStateWaiting{}}}}},
 		}
-		m := &ContainerManager{output: &bytes.Buffer{}, active: make(map[string]string)}
+		m := &ContainerManager{active: make(map[string]string)}
 		state := &pod.Status.ContainerStatuses[0].State
 
 		// should never be active until running
@@ -83,4 +82,12 @@ func TestContainerManager(t *testing.T) {
 		t.CheckDeepEqual(1, startCount)
 		t.CheckDeepEqual(1, terminatedCount)
 	})
+}
+
+func TestContainerManagerZeroValue(t *testing.T) {
+	var m *ContainerManager
+
+	// Should not raise a nil dereference
+	m.Start(context.Background())
+	m.Stop()
 }

@@ -35,12 +35,11 @@ import (
 
 // LogAggregator aggregates the logs for all the deployed pods.
 type LogAggregator struct {
-	output        io.Writer
-	kubectlcli    *kubectl.CLI
-	podSelector   PodSelector
-	labelSelector string
-	namespaces    []string
-	colorPicker   ColorPicker
+	output      io.Writer
+	kubectlcli  *kubectl.CLI
+	podSelector PodSelector
+	namespaces  []string
+	colorPicker ColorPicker
 
 	muted             int32
 	sinceTime         time.Time
@@ -50,14 +49,13 @@ type LogAggregator struct {
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, cli *kubectl.CLI, baseImageNames []string, podSelector PodSelector, labelSelector string, namespaces []string) *LogAggregator {
+func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector PodSelector, namespaces []string) *LogAggregator {
 	return &LogAggregator{
-		output:        out,
-		kubectlcli:    cli,
-		podSelector:   podSelector,
-		labelSelector: labelSelector,
-		namespaces:    namespaces,
-		colorPicker:   NewColorPicker(baseImageNames),
+		output:      out,
+		kubectlcli:  cli,
+		podSelector: podSelector,
+		namespaces:  namespaces,
+		colorPicker: NewColorPicker(imageNames),
 		trackedContainers: trackedContainers{
 			ids: map[string]bool{},
 		},
@@ -75,7 +73,7 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 	a.cancel = cancel
 
 	aggregate := make(chan watch.Event)
-	stopWatchers, err := AggregatePodWatcher(a.labelSelector, a.namespaces, aggregate)
+	stopWatchers, err := AggregatePodWatcher(a.namespaces, aggregate)
 	if err != nil {
 		stopWatchers()
 		return fmt.Errorf("initializing aggregate pod watcher: %w", err)

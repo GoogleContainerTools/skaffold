@@ -17,10 +17,14 @@ limitations under the License.
 package integration
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -32,9 +36,55 @@ import (
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
+	"github.com/GoogleContainerTools/skaffold/integration/binpack"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	k8s "github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 )
+
+type TestType int
+
+const (
+	CanRunWithoutGcp TestType = iota
+	NeedsGcp
+)
+
+func MarkIntegrationTest(t *testing.T, testType TestType) {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	if testType == NeedsGcp && !RunOnGCP() {
+		t.Skip("skipping GCP integration test")
+	}
+
+	if testType == CanRunWithoutGcp && RunOnGCP() {
+		t.Skip("skipping non-GCP integration test")
+	}
+
+	if partition() && testType == CanRunWithoutGcp && !matchesPartition(t.Name()) {
+		t.Skip(fmt.Sprintf("skipping non-GCP integration test that doesn't match partition %s", getPartition()))
+	}
+}
+
+func partition() bool {
+	return getPartition() != ""
+}
+
+func getPartition() string {
+	return os.Getenv("IT_PARTITION")
+}
+
+func matchesPartition(testName string) bool {
+	var partition int
+	m, lastPartition := binpack.Partitions()
+	if p, ok := m[testName]; ok {
+		partition = p
+	} else {
+		partition = lastPartition
+	}
+	return strconv.Itoa(partition) == getPartition()
+}
 
 func RunOnGCP() bool {
 	return os.Getenv("GCP_ONLY") == "true"
@@ -179,6 +229,7 @@ func (k *NSKubernetesClient) WaitForPodsInPhase(expectedPhase v1.PodPhase, podNa
 
 // GetDeployment gets a deployment by name.
 func (k *NSKubernetesClient) GetDeployment(depName string) *appsv1.Deployment {
+	k.t.Helper()
 	k.WaitForDeploymentsToStabilize(depName)
 
 	dep, err := k.Deployments().Get(depName, metav1.GetOptions{})
@@ -190,13 +241,19 @@ func (k *NSKubernetesClient) GetDeployment(depName string) *appsv1.Deployment {
 
 // WaitForDeploymentsToStabilize waits for a list of deployments to become stable.
 func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
+	k.t.Helper()
+	k.waitForDeploymentsToStabilizeWithTimeout(30*time.Second, depNames...)
+}
+
+func (k *NSKubernetesClient) waitForDeploymentsToStabilizeWithTimeout(timeout time.Duration, depNames ...string) {
+	k.t.Helper()
 	if len(depNames) == 0 {
 		return
 	}
 
 	logrus.Infoln("Waiting for deployments", depNames, "to stabilize")
 
-	ctx, cancelTimeout := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancelTimeout := context.WithTimeout(context.Background(), timeout)
 	defer cancelTimeout()
 
 	w, err := k.Deployments().Watch(metav1.ListOptions{})
@@ -219,7 +276,12 @@ func (k *NSKubernetesClient) WaitForDeploymentsToStabilize(depNames ...string) {
 
 		case event := <-w.ResultChan():
 			dp := event.Object.(*appsv1.Deployment)
-			logrus.Infof("Deployment %s: Generation %d/%d, Replicas %d/%d", dp.Name, dp.Status.ObservedGeneration, dp.Generation, dp.Status.Replicas, *(dp.Spec.Replicas))
+			desiredReplicas := *(dp.Spec.Replicas)
+			logrus.Infof("Deployment %s: Generation %d/%d, Replicas %d/%d, Available %d/%d",
+				dp.Name,
+				dp.Status.ObservedGeneration, dp.Generation,
+				dp.Status.Replicas, desiredReplicas,
+				dp.Status.AvailableReplicas, desiredReplicas)
 
 			deployments[dp.Name] = dp
 
@@ -267,5 +329,36 @@ func (k *NSKubernetesClient) ExternalIP(serviceName string) string {
 }
 
 func isStable(dp *appsv1.Deployment) bool {
-	return dp.Generation <= dp.Status.ObservedGeneration && *(dp.Spec.Replicas) == dp.Status.Replicas
+	return dp.Generation <= dp.Status.ObservedGeneration && *(dp.Spec.Replicas) == dp.Status.Replicas && *(dp.Spec.Replicas) == dp.Status.AvailableReplicas
+}
+
+func WaitForLogs(t *testing.T, out io.Reader, firstMessage string, moreMessages ...string) {
+	lines := make(chan string)
+	go func() {
+		scanner := bufio.NewScanner(out)
+		for scanner.Scan() {
+			lines <- scanner.Text()
+		}
+	}()
+
+	current := 0
+	message := firstMessage
+
+	timer := time.NewTimer(30 * time.Second)
+	defer timer.Stop()
+	for {
+		select {
+		case <-timer.C:
+			t.Fatal("timeout")
+		case line := <-lines:
+			if strings.Contains(line, message) {
+				if current >= len(moreMessages) {
+					return
+				}
+
+				message = moreMessages[current]
+				current++
+			}
+		}
+	}
 }

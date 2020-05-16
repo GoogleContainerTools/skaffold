@@ -41,24 +41,22 @@ var (
 // container ports within those pods. It also tracks and manages the port-forward connections.
 type WatchingPodForwarder struct {
 	EntryManager
-	namespaces    []string
-	podSelector   kubernetes.PodSelector
-	labelSelector string
+	namespaces  []string
+	podSelector kubernetes.PodSelector
 }
 
 // NewWatchingPodForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewWatchingPodForwarder(em EntryManager, podSelector kubernetes.PodSelector, labelSelector string, namespaces []string) *WatchingPodForwarder {
+func NewWatchingPodForwarder(em EntryManager, podSelector kubernetes.PodSelector, namespaces []string) *WatchingPodForwarder {
 	return &WatchingPodForwarder{
-		EntryManager:  em,
-		podSelector:   podSelector,
-		labelSelector: labelSelector,
-		namespaces:    namespaces,
+		EntryManager: em,
+		podSelector:  podSelector,
+		namespaces:   namespaces,
 	}
 }
 
 func (p *WatchingPodForwarder) Start(ctx context.Context) error {
 	aggregate := make(chan watch.Event)
-	stopWatchers, err := aggregatePodWatcher(p.labelSelector, p.namespaces, aggregate)
+	stopWatchers, err := aggregatePodWatcher(p.namespaces, aggregate)
 	if err != nil {
 		stopWatchers()
 		return fmt.Errorf("initializing pod watcher: %w", err)
