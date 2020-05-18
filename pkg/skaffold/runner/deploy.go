@@ -28,6 +28,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/color"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
+	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 )
 
 func (r *SkaffoldRunner) Deploy(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
@@ -55,7 +56,19 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		return fmt.Errorf("unable to connect to Kubernetes: %w", err)
 	}
 
-	if isKind, kindCluster := config.IsKindCluster(r.runCtx.KubeContext); isKind {
+	if config.IsKindCluster(r.runCtx.KubeContext) {
+		currentCfg, err := kubectx.CurrentConfig()
+		if err != nil {
+			return fmt.Errorf("unable to get kubernetes config: %w", err)
+		}
+
+		currentContext, present := currentCfg.Contexts[r.runCtx.KubeContext]
+		if !present {
+			return fmt.Errorf("unable to get current kubernetes context: %w", err)
+		}
+
+		kindCluster := config.KindClusterName(currentContext.Cluster)
+
 		// With `kind`, docker images have to be loaded with the `kind` CLI.
 		if err := r.loadImagesInKindNodes(ctx, out, kindCluster, artifacts); err != nil {
 			return fmt.Errorf("loading images into kind nodes: %w", err)

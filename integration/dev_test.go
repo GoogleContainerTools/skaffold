@@ -266,7 +266,6 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 }
 
 func TestDev_WithKubecontextOverride(t *testing.T) {
-	t.Skip("Skipping due to error in this logic: see https://github.com/GoogleContainerTools/skaffold/issues/4198")
 	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	testutil.Run(t, "skaffold run with kubecontext override", func(t *testutil.T) {
@@ -295,7 +294,7 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 	}
 
 	contextName := "modified-context"
-	if isKind, _ := config.IsKindCluster(kubeConfig.CurrentContext); isKind {
+	if config.IsKindCluster(kubeConfig.CurrentContext) {
 		contextName = "kind-" + contextName
 	}
 
