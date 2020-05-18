@@ -48,8 +48,7 @@ func (r *SkaffoldRunner) loadImagesInKindNodes(ctx context.Context, out io.Write
 		// Only `kind load` the images that are unknown to the node
 		if knownImages == nil {
 			var err error
-			kubectlCLI := kubectl.NewFromRunContext(r.runCtx)
-			if knownImages, err = findKnownImages(ctx, kubectlCLI); err != nil {
+			if knownImages, err = findKnownImages(ctx, r.kubectlCLI); err != nil {
 				return fmt.Errorf("unable to retrieve node's images: %w", err)
 			}
 		}
