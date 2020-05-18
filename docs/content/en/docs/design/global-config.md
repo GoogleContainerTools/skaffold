@@ -6,7 +6,7 @@ featureId: global_config
 
 ---
 
-Some context specific settings can be configured in a global configuration file, which defaults to `~/.skaffold/config`. Options can be configured globally or for specific Kubernetes contexts.
+Some context specific settings can be configured in a global configuration file, which defaults to `~/.skaffold/config`. Options can be configured globally or for specific Kubernetes contexts. Context name matching supports regex, e.g.: `.*-cluster.*-regex.*-test.*`
 
 The options are:
 

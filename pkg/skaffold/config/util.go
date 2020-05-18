@@ -132,7 +132,7 @@ func getConfigForKubeContextWithGlobalDefaults(cfg *GlobalConfig, kubeContext st
 
 	var mergedConfig ContextConfig
 	for _, contextCfg := range cfg.ContextConfigs {
-		if contextCfg.Kubecontext == kubeContext {
+		if util.RegexEqual(contextCfg.Kubecontext, kubeContext) {
 			logrus.Debugf("found config for context %q", kubeContext)
 			mergedConfig = *contextCfg
 		}
