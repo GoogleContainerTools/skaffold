@@ -37,9 +37,7 @@ import (
 const imageName = "gcr.io/k8s-skaffold/simple-build:"
 
 func TestBuild(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		description string
@@ -113,9 +111,7 @@ func TestBuild(t *testing.T) {
 
 // TestExpectedBuildFailures verifies that `skaffold build` fails in expected ways
 func TestExpectedBuildFailures(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		description string
@@ -198,9 +194,11 @@ func nowInChicago() string {
 
 type Fataler interface {
 	Fatal(args ...interface{})
+	Helper()
 }
 
 func failNowIfError(t Fataler, err error) {
+	t.Helper()
 	if err != nil {
 		t.Fatal(err)
 	}

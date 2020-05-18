@@ -28,7 +28,7 @@ GCP_PROJECT ?= k8s-skaffold
 GKE_CLUSTER_NAME ?= integration-tests
 GKE_ZONE ?= us-central1-a
 
-SUPPORTED_PLATFORMS = linux-$(GOARCH) darwin-$(GOARCH) windows-$(GOARCH).exe
+SUPPORTED_PLATFORMS = linux-amd64 darwin-amd64 windows-amd64.exe linux-arm64
 BUILD_PACKAGE = $(REPOPATH)/cmd/skaffold
 
 SKAFFOLD_TEST_PACKAGES = ./pkg/skaffold/... ./cmd/... ./hack/... ./pkg/webhook/...
@@ -69,28 +69,23 @@ $(BUILD_DIR)/$(PROJECT): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR)
 install: $(BUILD_DIR)/$(PROJECT)
 	cp $(BUILD_DIR)/$(PROJECT) $(GOPATH)/bin/$(PROJECT)
 
-# Build for a release.
 .PRECIOUS: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
 
 .PHONY: cross
-cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform).sha256)
+cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
 
-$(BUILD_DIR)/$(PROJECT)-%-$(GOARCH): $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross/Dockerfile
+$(BUILD_DIR)/$(PROJECT)-%: $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross/Dockerfile
+	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst .exe,,$*)))" \
 	docker build \
-		--build-arg GOOS=$* \
+		--build-arg GOOS=$(GOOS) \
 		--build-arg GOARCH=$(GOARCH) \
-		--build-arg TAGS=$(GO_BUILD_TAGS_$(*)) \
-		--build-arg LDFLAGS=$(GO_LDFLAGS_$(*)) \
+		--build-arg TAGS=$(GO_BUILD_TAGS_$(GOOS)) \
+		--build-arg LDFLAGS=$(GO_LDFLAGS_$(GOOS)) \
 		-f deploy/cross/Dockerfile \
 		-t skaffold/cross \
 		.
 	docker run --rm skaffold/cross cat /build/skaffold > $@
-
-%.sha256: %
-	shasum -a 256 $< > $@
-
-%.exe: %
-	cp $< $@
+	shasum -a 256 $@ > $@.sha256
 
 .PHONY: $(BUILD_DIR)/VERSION
 $(BUILD_DIR)/VERSION: $(BUILD_DIR)
@@ -103,6 +98,7 @@ $(BUILD_DIR):
 test: $(BUILD_DIR)
 	@ ./hack/gotest.sh -count=1 -race -short -timeout=90s $(SKAFFOLD_TEST_PACKAGES)
 	@ ./hack/checks.sh
+	@ ./hack/linters.sh
 
 .PHONY: coverage
 coverage: $(BUILD_DIR)
@@ -112,6 +108,10 @@ coverage: $(BUILD_DIR)
 .PHONY: checks
 checks: $(BUILD_DIR)
 	@ ./hack/checks.sh
+
+.PHONY: linters
+linters: $(BUILD_DIR)
+	@ ./hack/linters.sh
 
 .PHONY: quicktest
 quicktest:
@@ -125,7 +125,7 @@ ifeq ($(GCP_ONLY),true)
 		--zone $(GKE_ZONE) \
 		--project $(GCP_PROJECT)
 endif
-	@ GCP_ONLY=$(GCP_ONLY) ./hack/gotest.sh -v $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
+	@ GCP_ONLY=$(GCP_ONLY) ./hack/gotest.sh -v $(REPOPATH)/integration/binpack $(REPOPATH)/integration -timeout 20m $(INTEGRATION_TEST_ARGS)
 
 .PHONY: release
 release: cross $(BUILD_DIR)/VERSION
@@ -183,6 +183,8 @@ integration-in-kind: skaffold-builder
 		-v /tmp/docker-config:/root/.docker/config.json \
 		-v $(CURDIR)/hack/maven/settings.xml:/root/.m2/settings.xml \
 		-e KUBECONFIG=/tmp/kind-config \
+		-e INTEGRATION_TEST_ARGS=$(INTEGRATION_TEST_ARGS) \
+		-e IT_PARTITION=$(IT_PARTITION) \
 		gcr.io/$(GCP_PROJECT)/skaffold-builder \
 		sh -c ' \
 			kind get clusters | grep -q kind || TERM=dumb kind create cluster --image=kindest/node:v1.13.12@sha256:ad1dd06aca2b85601f882ba1df4fdc03d5a57b304652d0e81476580310ba6289; \

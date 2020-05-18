@@ -25,9 +25,7 @@ import (
 )
 
 func TestHelmDeploy(t *testing.T) {
-	if testing.Short() || !RunOnGCP() {
-		t.Skip("skipping GCP integration test")
-	}
+	MarkIntegrationTest(t, NeedsGcp)
 
 	ns, client := SetupNamespace(t)
 
