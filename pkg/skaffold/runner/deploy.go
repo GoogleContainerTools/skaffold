@@ -62,6 +62,12 @@ See https://skaffold.dev/docs/pipeline-stages/taggers/#how-tagging-works`)
 		}
 	}
 
+	if isK3d, k3dCluster := config.IsK3dCluster(r.runCtx.KubeContext); isK3d {
+		if err := r.loadImagesInK3dNodes(ctx, out, k3dCluster, artifacts); err != nil {
+			return fmt.Errorf("loading images into k3d nodes: %w", err)
+		}
+	}
+
 	deployResult := r.deployer.Deploy(ctx, out, artifacts, r.labellers)
 	r.hasDeployed = true
 	if err := deployResult.GetError(); err != nil {

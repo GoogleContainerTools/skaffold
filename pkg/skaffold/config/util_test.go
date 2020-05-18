@@ -311,6 +311,28 @@ func TestIsKindCluster(t *testing.T) {
 	}
 }
 
+func TestIsK3dCluster(t *testing.T) {
+	tests := []struct {
+		context       string
+		expectedName  string
+		expectedIsK3d bool
+	}{
+		{context: "k3d-k3s-default", expectedName: "k3s-default", expectedIsK3d: true},
+		{context: "k3d-other", expectedName: "other", expectedIsK3d: true},
+		{context: "kind-kind", expectedName: "", expectedIsK3d: false},
+		{context: "docker-for-desktop", expectedName: "", expectedIsK3d: false},
+		{context: "not-k3d", expectedName: "", expectedIsK3d: false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			isKind, name := IsK3dCluster(test.context)
+
+			t.CheckDeepEqual(test.expectedIsK3d, isKind)
+			t.CheckDeepEqual(test.expectedName, name)
+		})
+	}
+}
+
 func TestIsSurveyPromptDisabled(t *testing.T) {
 	tests := []struct {
 		description string

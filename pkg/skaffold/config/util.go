@@ -199,8 +199,13 @@ func isDefaultLocal(kubeContext string) bool {
 		return true
 	}
 
-	isKind, _ := IsKindCluster(kubeContext)
-	return isKind
+	if isKind, _ := IsKindCluster(kubeContext); isKind {
+		return true
+	}
+	if isK3d, _ := IsK3dCluster(kubeContext); isK3d {
+		return true
+	}
+	return false
 }
 
 // IsKindCluster checks that the given `kubeContext` is talking to `kind`.
@@ -224,6 +229,13 @@ func IsKindCluster(kubeContext string) (bool, string) {
 	default:
 		return false, ""
 	}
+}
+
+func IsK3dCluster(kubeContext string) (bool, string) {
+	if strings.HasPrefix(kubeContext, "k3d-") {
+		return true, strings.TrimPrefix(kubeContext, "k3d-")
+	}
+	return false, ""
 }
 
 func IsUpdateCheckEnabled(configfile string) bool {
