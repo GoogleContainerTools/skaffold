@@ -122,50 +122,18 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		imagesAreLocal:  imagesAreLocal,
 	}
 
-	if err := r.setupTriggerCallbacks(intentChan); err != nil {
-		return nil, fmt.Errorf("setting up trigger callbacks: %w", err)
-	}
+	r.setupTriggerCallbacks(intentChan)
 
 	return r, nil
 }
 
-func (r *SkaffoldRunner) setupTriggerCallbacks(c chan bool) error {
-	if err := r.setupTriggerCallback("build", c); err != nil {
-		return err
-	}
-	if err := r.setupTriggerCallback("sync", c); err != nil {
-		return err
-	}
-	if err := r.setupTriggerCallback("deploy", c); err != nil {
-		return err
-	}
-	return nil
+func (r *SkaffoldRunner) setupTriggerCallbacks(c chan bool) {
+	setupTriggerCallback("build", r.intents.setBuild, r.runCtx.Opts.AutoBuild, server.SetBuildCallback, c)
+	setupTriggerCallback("sync", r.intents.setSync, r.runCtx.Opts.AutoSync, server.SetSyncCallback, c)
+	setupTriggerCallback("deploy", r.intents.setDeploy, r.runCtx.Opts.AutoDeploy, server.SetDeployCallback, c)
 }
 
-func (r *SkaffoldRunner) setupTriggerCallback(triggerName string, c chan<- bool) error {
-	var (
-		setIntent      func(bool)
-		trigger        bool
-		serverCallback func(func())
-	)
-
-	switch triggerName {
-	case "build":
-		setIntent = r.intents.setBuild
-		trigger = r.runCtx.Opts.AutoBuild
-		serverCallback = server.SetBuildCallback
-	case "sync":
-		setIntent = r.intents.setSync
-		trigger = r.runCtx.Opts.AutoSync
-		serverCallback = server.SetSyncCallback
-	case "deploy":
-		setIntent = r.intents.setDeploy
-		trigger = r.runCtx.Opts.AutoDeploy
-		serverCallback = server.SetDeployCallback
-	default:
-		return fmt.Errorf("unsupported trigger type when setting callbacks: %s", triggerName)
-	}
-
+func setupTriggerCallback(triggerName string, setIntent func(bool), trigger bool, serverCallback func(func()), c chan<- bool) {
 	setIntent(true)
 
 	// if "auto" is set to false, we're in manual mode
@@ -178,7 +146,6 @@ func (r *SkaffoldRunner) setupTriggerCallback(triggerName string, c chan<- bool)
 			setIntent(true)
 		})
 	}
-	return nil
 }
 
 // getBuilder creates a builder from a given RunContext.
