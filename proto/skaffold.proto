@@ -204,13 +204,13 @@ message DebuggingContainerEvent {
   map<string,uint32> debugPorts = 8; // the exposed debugging-related ports
 }
 
-// EndEvent described the skaffold end session event
+// EndEvent summarizes the skaffold session including the results of the dev loops.
 message EndEvent {
     StatusCode statusCode = 1;
     repeated DevLoop loops = 2;
 }
 
-// DevLoop describes skaffold dev iteration
+// DevLoop describes an iteration of the skaffold dev loop
 message DevLoop {
     int32 iteration = 1; // dev loop iteration
     ChangeType changeType = 2; // change type which triggered this loop
@@ -332,7 +332,7 @@ enum ClusterType {
     OTHER = 3;
 }
 
-// Enum for indicating which dependency change triggered the dev loop
+// ChangeType describes the type of dependency change that triggered a new iteration of the dev loop.
 enum ChangeType {
     // First iteration
     INITIAL_LOOP = 0;
