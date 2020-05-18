@@ -321,7 +321,7 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 	return yaml, contextName, err
 }
 
-func TestDevSkaffoledEndEvent(t *testing.T) {
+func TestDevSkaffoldEndEvent(t *testing.T) {
 	if testing.Short() || RunOnGCP() {
 		t.Skip("skipping kind integration test")
 	}
@@ -335,11 +335,11 @@ func TestDevSkaffoledEndEvent(t *testing.T) {
 	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
 	cancel := skaffold.Dev("--rpc-port", rpcAddr).InDir("examples/getting-started").InNs(ns.Name).WithEnv(env).RunCancellable(t)
 	_, entries := apiEvents(t, rpcAddr)
-	// 1 dev loop iteration is complete.
-	waitForDevLoopIterartion(t, entries, cancel)
+	// Wait for 1 dev loop iteration to complete and then cancel.  Ensure the end event is received.
+	waitForDevLoopIteration(t, entries, cancel)
 }
 
-func waitForDevLoopIterartion(t *testing.T, entries chan *proto.LogEntry, cancel func()) {
+func waitForDevLoopIteration(t *testing.T, entries chan *proto.LogEntry, cancel func()) {
 	timeout := time.After(1 * time.Minute)
 	for {
 		select {
