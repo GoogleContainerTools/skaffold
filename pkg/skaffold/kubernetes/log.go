@@ -63,12 +63,22 @@ func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podS
 }
 
 func (a *LogAggregator) SetSince(t time.Time) {
+	if a == nil {
+		// Logs are not activated.
+		return
+	}
+
 	a.sinceTime = t
 }
 
 // Start starts a logger that listens to pods and tail their logs
 // if they are matched by the `podSelector`.
 func (a *LogAggregator) Start(ctx context.Context) error {
+	if a == nil {
+		// Logs are not activated.
+		return nil
+	}
+
 	cancelCtx, cancel := context.WithCancel(ctx)
 	a.cancel = cancel
 
@@ -122,6 +132,11 @@ func (a *LogAggregator) Start(ctx context.Context) error {
 
 // Stop stops the logger.
 func (a *LogAggregator) Stop() {
+	if a == nil {
+		// Logs are not activated.
+		return
+	}
+
 	if a.cancel != nil {
 		a.cancel()
 	}
@@ -206,11 +221,21 @@ func (a *LogAggregator) streamRequest(ctx context.Context, headerColor color.Col
 
 // Mute mutes the logs.
 func (a *LogAggregator) Mute() {
+	if a == nil {
+		// Logs are not activated.
+		return
+	}
+
 	atomic.StoreInt32(&a.muted, 1)
 }
 
 // Unmute unmutes the logs.
 func (a *LogAggregator) Unmute() {
+	if a == nil {
+		// Logs are not activated.
+		return
+	}
+
 	atomic.StoreInt32(&a.muted, 0)
 }
 
