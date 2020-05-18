@@ -26,17 +26,18 @@ var (
 )
 
 func suggestBuildPushAccessDeniedAction(opts config.SkaffoldOptions) string {
-	action := "Trying running with `--default-repo` flag."
-	if opts.DefaultRepo.Value() != nil {
-		return errMessage(*opts.DefaultRepo.Value(), "Check your `--default-repo` value")
+	if defaultRepo := opts.DefaultRepo.Value(); defaultRepo != nil {
+		return errMessage(*defaultRepo, "Check your `--default-repo` value")
 	}
+
 	// check if global repo is set
 	if cfg, err := getConfigForCurrentContext(opts.GlobalConfig); err == nil {
-		if cfg.DefaultRepo != "" {
-			return errMessage(cfg.DefaultRepo, "Check your default-repo setting in skaffold config")
+		if defaultRepo := cfg.DefaultRepo; defaultRepo != "" {
+			return errMessage(defaultRepo, "Check your default-repo setting in skaffold config")
 		}
 	}
-	return action
+
+	return "Trying running with `--default-repo` flag."
 }
 
 func errMessage(repo string, prefix string) string {
