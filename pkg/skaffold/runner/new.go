@@ -47,18 +47,14 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating tagger: %w", err)
 	}
 
-	builder, err := getBuilder(runCtx)
+	builder, imagesAreLocal, err := getBuilder(runCtx)
 	if err != nil {
 		return nil, fmt.Errorf("creating builder: %w", err)
 	}
 
-	imagesAreLocal := false
-	if localBuilder, ok := builder.(*local.Builder); ok {
-		imagesAreLocal = !localBuilder.PushImages()
-	}
-
 	tester := getTester(runCtx, imagesAreLocal)
 	syncer := getSyncer(runCtx)
+	deployer := getDeployer(runCtx)
 
 	depLister := func(ctx context.Context, artifact *latest.Artifact) ([]string, error) {
 		buildDependencies, err := build.DependenciesForArtifact(ctx, artifact, runCtx.InsecureRegistries)
@@ -77,11 +73,6 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	artifactCache, err := cache.NewCache(runCtx, imagesAreLocal, depLister)
 	if err != nil {
 		return nil, fmt.Errorf("initializing cache: %w", err)
-	}
-
-	deployer, err := getDeployer(runCtx)
-	if err != nil {
-		return nil, fmt.Errorf("creating deployer: %w", err)
 	}
 
 	defaultLabeller := deploy.NewLabeller(runCtx.Opts)
@@ -122,14 +113,13 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 			rebuildTracker: make(map[string]*latest.Artifact),
 			resyncTracker:  make(map[string]*sync.Item),
 		},
-		labellers:            labellers,
-		defaultLabeller:      defaultLabeller,
-		portForwardResources: runCtx.Cfg.PortForward,
-		podSelector:          kubernetes.NewImageList(),
-		cache:                artifactCache,
-		runCtx:               runCtx,
-		intents:              newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy),
-		imagesAreLocal:       imagesAreLocal,
+		labellers:       labellers,
+		defaultLabeller: defaultLabeller,
+		podSelector:     kubernetes.NewImageList(),
+		cache:           artifactCache,
+		runCtx:          runCtx,
+		intents:         newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy),
+		imagesAreLocal:  imagesAreLocal,
 	}
 
 	if err := r.setupTriggerCallbacks(intentChan); err != nil {
@@ -191,22 +181,30 @@ func (r *SkaffoldRunner) setupTriggerCallback(triggerName string, c chan<- bool)
 	return nil
 }
 
-func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
+// getBuilder creates a builder from a given RunContext.
+// Returns that builder, a bool to indicate that images are local
+// (ie don't need to be pushed) and an error.
+func getBuilder(runCtx *runcontext.RunContext) (build.Builder, bool, error) {
 	switch {
 	case runCtx.Cfg.Build.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
-		return local.NewBuilder(runCtx)
+		builder, err := local.NewBuilder(runCtx)
+		if err != nil {
+			return nil, false, err
+		}
+		return builder, !builder.PushImages(), nil
 
 	case runCtx.Cfg.Build.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
-		return gcb.NewBuilder(runCtx), nil
+		return gcb.NewBuilder(runCtx), false, nil
 
 	case runCtx.Cfg.Build.Cluster != nil:
 		logrus.Debugln("Using builder: cluster")
-		return cluster.NewBuilder(runCtx)
+		builder, err := cluster.NewBuilder(runCtx)
+		return builder, false, err
 
 	default:
-		return nil, fmt.Errorf("unknown builder for config %+v", runCtx.Cfg.Build)
+		return nil, false, fmt.Errorf("unknown builder for config %+v", runCtx.Cfg.Build)
 	}
 }
 
@@ -218,8 +216,8 @@ func getSyncer(runCtx *runcontext.RunContext) sync.Syncer {
 	return sync.NewSyncer(runCtx)
 }
 
-func getDeployer(runCtx *runcontext.RunContext) (deploy.Deployer, error) {
-	deployers := deploy.DeployerMux(nil)
+func getDeployer(runCtx *runcontext.RunContext) deploy.Deployer {
+	var deployers deploy.DeployerMux
 
 	if runCtx.Cfg.Deploy.HelmDeploy != nil {
 		deployers = append(deployers, deploy.NewHelmDeployer(runCtx))
@@ -233,16 +231,12 @@ func getDeployer(runCtx *runcontext.RunContext) (deploy.Deployer, error) {
 		deployers = append(deployers, deploy.NewKustomizeDeployer(runCtx))
 	}
 
-	if deployers == nil {
-		return nil, fmt.Errorf("unknown deployer for config %+v", runCtx.Cfg.Deploy)
-	}
-
 	// avoid muxing overhead when only a single deployer is configured
 	if len(deployers) == 1 {
-		return deployers[0], nil
+		return deployers[0]
 	}
 
-	return deployers, nil
+	return deployers
 }
 
 func getTagger(runCtx *runcontext.RunContext) (tag.Tagger, error) {

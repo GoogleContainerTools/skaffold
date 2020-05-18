@@ -26,9 +26,7 @@ import (
 )
 
 func TestDiagnose(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	examples, err := folders("examples")
 	failNowIfError(t, err)

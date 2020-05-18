@@ -45,6 +45,31 @@ var (
 	overwrite    bool
 )
 
+func setSpecialDefaults(cmd *cobra.Command) {
+	switch cmd.Use {
+	case "dev":
+		// In dev mode, the default is to enable the rpc server
+		if !cmd.Flag("enable-rpc").Changed {
+			opts.EnableRPC = true
+		}
+
+		// In dev mode, the default is to force deployments
+		if !cmd.Flag("force").Changed {
+			opts.Force = true
+		}
+
+		// In dev mode, the default is to tail the logs
+		if !cmd.Flag("tail").Changed {
+			opts.Tail = true
+		}
+	case "debug":
+		// In debug mode, the default is to tail the logs
+		if !cmd.Flag("tail").Changed {
+			opts.Tail = true
+		}
+	}
+}
+
 func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 	updateMsg := make(chan string)
 	var shutdownAPIServer func() error
@@ -63,22 +88,15 @@ func NewSkaffoldCommand(out, err io.Writer) *cobra.Command {
 
 			opts.Command = cmd.Use
 
+			// Some flags have special default values depending on the command.
+			setSpecialDefaults(cmd)
+
 			color.SetupColors(out, defaultColor, forceColors)
 			cmd.Root().SetOutput(out)
 
 			// Setup logs
 			if err := setUpLogs(err, v); err != nil {
 				return err
-			}
-
-			// In dev mode, the default is to enable the rpc server
-			if cmd.Use == "dev" && !cmd.Flag("enable-rpc").Changed {
-				opts.EnableRPC = true
-			}
-
-			// In dev mode, the default is to force deployments
-			if cmd.Use == "dev" && !cmd.Flag("force").Changed {
-				opts.Force = true
 			}
 
 			// Start API Server

@@ -49,13 +49,13 @@ type LogAggregator struct {
 }
 
 // NewLogAggregator creates a new LogAggregator for a given output.
-func NewLogAggregator(out io.Writer, cli *kubectl.CLI, baseImageNames []string, podSelector PodSelector, namespaces []string) *LogAggregator {
+func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podSelector PodSelector, namespaces []string) *LogAggregator {
 	return &LogAggregator{
 		output:      out,
 		kubectlcli:  cli,
 		podSelector: podSelector,
 		namespaces:  namespaces,
-		colorPicker: NewColorPicker(baseImageNames),
+		colorPicker: NewColorPicker(imageNames),
 		trackedContainers: trackedContainers{
 			ids: map[string]bool{},
 		},

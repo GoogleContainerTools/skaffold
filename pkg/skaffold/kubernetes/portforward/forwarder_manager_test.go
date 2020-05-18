@@ -14,20 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package integration
+package portforward
 
 import (
+	"context"
 	"testing"
-
-	"github.com/GoogleContainerTools/skaffold/integration/skaffold"
 )
 
-func TestFix(t *testing.T) {
-	MarkIntegrationTest(t, CanRunWithoutGcp)
+func TestForwarderManagerZeroValue(t *testing.T) {
+	var m *ForwarderManager
 
-	ns, _ := SetupNamespace(t)
-
-	out := skaffold.Fix().InDir("testdata/fix").RunOrFailOutput(t)
-
-	skaffold.Run().WithConfig("-").InDir("testdata/fix").InNs(ns.Name).WithStdin(out).RunOrFail(t)
+	// Should not raise a nil dereference
+	m.Start(context.Background())
+	m.Stop()
 }

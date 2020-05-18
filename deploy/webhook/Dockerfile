@@ -31,7 +31,7 @@ RUN wget -O- "${HUGO_URL}" | tar xz
 
 # Download kubectl
 FROM alpine:3.10 as download-kubectl
-ENV KUBECTL_VERSION v1.12.0
+ENV KUBECTL_VERSION v1.15.5
 ENV KUBECTL_URL https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl
 RUN wget -O kubectl "${KUBECTL_URL}"
 RUN chmod +x kubectl
