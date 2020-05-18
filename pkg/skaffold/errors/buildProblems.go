@@ -17,8 +17,6 @@ limitations under the License.
 package errors
 
 import (
-	"strings"
-
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 )
 
@@ -30,19 +28,19 @@ var (
 func suggestBuildPushAccessDeniedAction(opts config.SkaffoldOptions) string {
 	action := "Trying running with `--default-repo` flag."
 	if opts.DefaultRepo.Value() != nil {
-		return curateErrorMessage(*opts.DefaultRepo.Value(), "Check your `--default-repo` value")
+		return errMessage(*opts.DefaultRepo.Value(), "Check your `--default-repo` value")
 	}
 	// check if global repo is set
 	if cfg, err := getConfigForCurrentContext(opts.GlobalConfig); err == nil {
 		if cfg.DefaultRepo != "" {
-			return curateErrorMessage(cfg.DefaultRepo, "Check your default-repo setting in skaffold config")
+			return errMessage(cfg.DefaultRepo, "Check your default-repo setting in skaffold config")
 		}
 	}
 	return action
 }
 
-func curateErrorMessage(repo string, prefix string) string {
-	if strings.HasPrefix(repo, "gcr.io") {
+func errMessage(repo string, prefix string) string {
+	if re(`(.+\.)?gcr\.io.*`).MatchString(repo) {
 		return prefix + " or try `gcloud auth configure-docker`."
 	}
 	return prefix + " or try `docker login`."
