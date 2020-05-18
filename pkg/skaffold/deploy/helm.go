@@ -421,7 +421,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		args = append(args, "--namespace", o.namespace)
 	}
 
-	params, err := pairParamsToArtifacts(builds, r.Values)
+	params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
 	if err != nil {
 		return nil, fmt.Errorf("matching build results to chart values: %w", err)
 	}

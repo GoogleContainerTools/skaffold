@@ -3,5 +3,5 @@ deploy:
     releases:
     - name: skaffold-helm
       chartPath: skaffold-helm
-      values:
+      artifactOverrides:
         image: gcr.io/k8s-skaffold/skaffold-helm
