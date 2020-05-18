@@ -47,14 +47,9 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating tagger: %w", err)
 	}
 
-	builder, err := getBuilder(runCtx)
+	builder, imagesAreLocal, err := getBuilder(runCtx)
 	if err != nil {
 		return nil, fmt.Errorf("creating builder: %w", err)
-	}
-
-	imagesAreLocal := false
-	if localBuilder, ok := builder.(*local.Builder); ok {
-		imagesAreLocal = !localBuilder.PushImages()
 	}
 
 	tester := getTester(runCtx, imagesAreLocal)
@@ -186,22 +181,30 @@ func (r *SkaffoldRunner) setupTriggerCallback(triggerName string, c chan<- bool)
 	return nil
 }
 
-func getBuilder(runCtx *runcontext.RunContext) (build.Builder, error) {
+// getBuilder creates a builder from a given RunContext.
+// Returns that builder, a bool to indicate that images are local
+// (ie don't need to be pushed) and an error.
+func getBuilder(runCtx *runcontext.RunContext) (build.Builder, bool, error) {
 	switch {
 	case runCtx.Cfg.Build.LocalBuild != nil:
 		logrus.Debugln("Using builder: local")
-		return local.NewBuilder(runCtx)
+		builder, err := local.NewBuilder(runCtx)
+		if err != nil {
+			return nil, false, err
+		}
+		return builder, !builder.PushImages(), nil
 
 	case runCtx.Cfg.Build.GoogleCloudBuild != nil:
 		logrus.Debugln("Using builder: google cloud")
-		return gcb.NewBuilder(runCtx), nil
+		return gcb.NewBuilder(runCtx), false, nil
 
 	case runCtx.Cfg.Build.Cluster != nil:
 		logrus.Debugln("Using builder: cluster")
-		return cluster.NewBuilder(runCtx)
+		builder, err := cluster.NewBuilder(runCtx)
+		return builder, false, err
 
 	default:
-		return nil, fmt.Errorf("unknown builder for config %+v", runCtx.Cfg.Build)
+		return nil, false, fmt.Errorf("unknown builder for config %+v", runCtx.Cfg.Build)
 	}
 }
 
