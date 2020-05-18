@@ -78,9 +78,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	}
 
 	// Update which images are logged.
-	for _, build := range bRes {
-		r.podSelector.Add(build.Tag)
-	}
+	r.addTagsToPodSelector(bRes)
 
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
@@ -90,13 +88,8 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
-	if !r.runCtx.Opts.Tail && !r.runCtx.Opts.PortForward.Enabled {
-		return r.Deploy(ctx, out, artifacts)
-	}
-
-	for _, artifact := range artifacts {
-		r.podSelector.Add(artifact.Tag)
-	}
+	// Update which images are logged.
+	r.addTagsToPodSelector(artifacts)
 
 	logger := r.createLogger(out, artifacts)
 	defer logger.Stop()
@@ -125,9 +118,18 @@ func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifa
 		return fmt.Errorf("starting logger: %w", err)
 	}
 
-	<-ctx.Done()
+	if r.runCtx.Opts.Tail || r.runCtx.Opts.PortForward.Enabled {
+		<-ctx.Done()
+	}
 
 	return nil
+}
+
+// Update which images are logged.
+func (r *SkaffoldRunner) addTagsToPodSelector(artifacts []build.Artifact) {
+	for _, artifact := range artifacts {
+		r.podSelector.Add(artifact.Tag)
+	}
 }
 
 type tagErr struct {
