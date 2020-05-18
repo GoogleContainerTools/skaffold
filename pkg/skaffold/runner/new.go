@@ -94,10 +94,9 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	event.LogMetaEvent()
 
 	monitor := filemon.NewMonitor()
+	intents, intentChan := setupIntents(runCtx)
 
-	intentChan := make(chan bool, 1)
-
-	r := &SkaffoldRunner{
+	return &SkaffoldRunner{
 		builder:  builder,
 		tester:   tester,
 		deployer: deployer,
@@ -118,54 +117,23 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		podSelector:     kubernetes.NewImageList(),
 		cache:           artifactCache,
 		runCtx:          runCtx,
-		intents:         newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy),
+		intents:         intents,
 		imagesAreLocal:  imagesAreLocal,
-	}
-
-	if err := r.setupTriggerCallbacks(intentChan); err != nil {
-		return nil, fmt.Errorf("setting up trigger callbacks: %w", err)
-	}
-
-	return r, nil
+	}, nil
 }
 
-func (r *SkaffoldRunner) setupTriggerCallbacks(c chan bool) error {
-	if err := r.setupTriggerCallback("build", c); err != nil {
-		return err
-	}
-	if err := r.setupTriggerCallback("sync", c); err != nil {
-		return err
-	}
-	if err := r.setupTriggerCallback("deploy", c); err != nil {
-		return err
-	}
-	return nil
+func setupIntents(runCtx *runcontext.RunContext) (*intents, chan bool) {
+	intents := newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy)
+
+	intentChan := make(chan bool, 1)
+	setupTrigger("build", intents.setBuild, runCtx.Opts.AutoBuild, server.SetBuildCallback, intentChan)
+	setupTrigger("sync", intents.setSync, runCtx.Opts.AutoSync, server.SetSyncCallback, intentChan)
+	setupTrigger("deploy", intents.setDeploy, runCtx.Opts.AutoDeploy, server.SetDeployCallback, intentChan)
+
+	return intents, intentChan
 }
 
-func (r *SkaffoldRunner) setupTriggerCallback(triggerName string, c chan<- bool) error {
-	var (
-		setIntent      func(bool)
-		trigger        bool
-		serverCallback func(func())
-	)
-
-	switch triggerName {
-	case "build":
-		setIntent = r.intents.setBuild
-		trigger = r.runCtx.Opts.AutoBuild
-		serverCallback = server.SetBuildCallback
-	case "sync":
-		setIntent = r.intents.setSync
-		trigger = r.runCtx.Opts.AutoSync
-		serverCallback = server.SetSyncCallback
-	case "deploy":
-		setIntent = r.intents.setDeploy
-		trigger = r.runCtx.Opts.AutoDeploy
-		serverCallback = server.SetDeployCallback
-	default:
-		return fmt.Errorf("unsupported trigger type when setting callbacks: %s", triggerName)
-	}
-
+func setupTrigger(triggerName string, setIntent func(bool), trigger bool, serverCallback func(func()), c chan<- bool) {
 	setIntent(true)
 
 	// if "auto" is set to false, we're in manual mode
@@ -178,7 +146,6 @@ func (r *SkaffoldRunner) setupTriggerCallback(triggerName string, c chan<- bool)
 			setIntent(true)
 		})
 	}
-	return nil
 }
 
 // getBuilder creates a builder from a given RunContext.
