@@ -19,6 +19,7 @@ package cmd
 import (
 	"reflect"
 
+	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
@@ -35,6 +36,8 @@ type Flag struct {
 	FlagAddMethod string
 	DefinedOn     []string
 	Hidden        bool
+
+	pflag *pflag.Flag
 }
 
 // FlagRegistry is a list of all Skaffold CLI flags.
@@ -274,37 +277,33 @@ var FlagRegistry = []Flag{
 	},
 }
 
-var commandFlags []*pflag.Flag
-
-// SetupFlags creates pflag.Flag for all registered flags
-func SetupFlags() {
-	commandFlags = make([]*pflag.Flag, len(FlagRegistry))
-	for i, fl := range FlagRegistry {
-		fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
-
-		inputs := []reflect.Value{reflect.ValueOf(fl.Value), reflect.ValueOf(fl.Name)}
-		if fl.FlagAddMethod != "Var" {
-			inputs = append(inputs, reflect.ValueOf(fl.DefValue))
-		}
-		inputs = append(inputs, reflect.ValueOf(fl.Usage))
-
-		reflect.ValueOf(fs).MethodByName(fl.FlagAddMethod).Call(inputs)
-		f := fs.Lookup(fl.Name)
-		if fl.Shorthand != "" {
-			f.Shorthand = fl.Shorthand
-		}
-		f.Hidden = fl.Hidden
-		f.Annotations = map[string][]string{
-			"cmds": fl.DefinedOn,
-		}
-		commandFlags[i] = f
+func (fl *Flag) flag() *pflag.Flag {
+	if fl.pflag != nil {
+		return fl.pflag
 	}
+
+	inputs := []reflect.Value{reflect.ValueOf(fl.Value), reflect.ValueOf(fl.Name)}
+	if fl.FlagAddMethod != "Var" {
+		inputs = append(inputs, reflect.ValueOf(fl.DefValue))
+	}
+	inputs = append(inputs, reflect.ValueOf(fl.Usage))
+
+	fs := pflag.NewFlagSet(fl.Name, pflag.ContinueOnError)
+	reflect.ValueOf(fs).MethodByName(fl.FlagAddMethod).Call(inputs)
+	f := fs.Lookup(fl.Name)
+	f.Shorthand = fl.Shorthand
+	f.Hidden = fl.Hidden
+
+	fl.pflag = f
+	return fl.pflag
 }
 
-func AddFlags(fs *pflag.FlagSet, cmdName string) {
-	for _, f := range commandFlags {
-		if hasCmdAnnotation(cmdName, f.Annotations["cmds"]) {
-			fs.AddFlag(f)
+func AddFlags(cmd *cobra.Command) {
+	for i := range FlagRegistry {
+		fl := &FlagRegistry[i]
+
+		if hasCmdAnnotation(cmd.Use, fl.DefinedOn) {
+			cmd.Flags().AddFlag(fl.flag())
 		}
 	}
 }
@@ -316,8 +315,4 @@ func hasCmdAnnotation(cmdName string, annotations []string) bool {
 		}
 	}
 	return false
-}
-
-func init() {
-	SetupFlags()
 }
