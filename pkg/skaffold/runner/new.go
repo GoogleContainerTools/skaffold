@@ -94,10 +94,9 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 	event.LogMetaEvent()
 
 	monitor := filemon.NewMonitor()
+	intents, intentChan := setupIntents(runCtx)
 
-	intentChan := make(chan bool, 1)
-
-	r := &SkaffoldRunner{
+	return &SkaffoldRunner{
 		builder:  builder,
 		tester:   tester,
 		deployer: deployer,
@@ -118,22 +117,23 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		podSelector:     kubernetes.NewImageList(),
 		cache:           artifactCache,
 		runCtx:          runCtx,
-		intents:         newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy),
+		intents:         intents,
 		imagesAreLocal:  imagesAreLocal,
-	}
-
-	r.setupTriggerCallbacks(intentChan)
-
-	return r, nil
+	}, nil
 }
 
-func (r *SkaffoldRunner) setupTriggerCallbacks(c chan bool) {
-	setupTriggerCallback("build", r.intents.setBuild, r.runCtx.Opts.AutoBuild, server.SetBuildCallback, c)
-	setupTriggerCallback("sync", r.intents.setSync, r.runCtx.Opts.AutoSync, server.SetSyncCallback, c)
-	setupTriggerCallback("deploy", r.intents.setDeploy, r.runCtx.Opts.AutoDeploy, server.SetDeployCallback, c)
+func setupIntents(runCtx *runcontext.RunContext) (*intents, chan bool) {
+	intents := newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy)
+
+	intentChan := make(chan bool, 1)
+	setupTrigger("build", intents.setBuild, runCtx.Opts.AutoBuild, server.SetBuildCallback, intentChan)
+	setupTrigger("sync", intents.setSync, runCtx.Opts.AutoSync, server.SetSyncCallback, intentChan)
+	setupTrigger("deploy", intents.setDeploy, runCtx.Opts.AutoDeploy, server.SetDeployCallback, intentChan)
+
+	return intents, intentChan
 }
 
-func setupTriggerCallback(triggerName string, setIntent func(bool), trigger bool, serverCallback func(func()), c chan<- bool) {
+func setupTrigger(triggerName string, setIntent func(bool), trigger bool, serverCallback func(func()), c chan<- bool) {
 	setIntent(true)
 
 	// if "auto" is set to false, we're in manual mode
