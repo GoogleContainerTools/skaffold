@@ -19,6 +19,8 @@ package deploy
 import (
 	"bytes"
 	"errors"
+	"github.com/GoogleContainerTools/skaffold/pkg/diag"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"testing"
 	"time"
 
@@ -214,7 +216,8 @@ func TestGetDeployments(t *testing.T) {
 			client := fakekubeclientset.NewSimpleClientset(objs...)
 			actual, err := getDeployments(client, "test", labeller, 200*time.Second)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, &test.expected, &actual,
-				cmp.AllowUnexported(resource.Deployment{}, resource.Status{}))
+				cmp.AllowUnexported(resource.Deployment{}, resource.Status{}),
+				cmpopts.IgnoreInterfaces(struct{ diag.Diagnose }{}))
 		})
 	}
 }

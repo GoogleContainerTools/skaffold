@@ -81,11 +81,12 @@ func (d *Deployment) UpdateStatus(details string, err error) {
 
 func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 	return &Deployment{
-		name:      name,
-		namespace: ns,
-		rType:     deploymentType,
-		status:    newStatus("", proto.StatusCode_STATUSCHECK_UNKNOWN, nil),
-		deadline:  deadline,
+		name:         name,
+		namespace:    ns,
+		rType:        deploymentType,
+		status:       newStatus("", proto.StatusCode_STATUSCHECK_UNKNOWN, nil),
+		deadline:     deadline,
+		podDiagnoser: diag.New(nil),
 	}
 }
 
