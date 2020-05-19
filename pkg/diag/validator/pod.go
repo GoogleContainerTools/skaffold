@@ -40,6 +40,7 @@ const (
 	imagePullErr        = "ErrImagePull"
 	errImagePullBackOff = "ErrImagePullBackOff"
 	containerCreating   = "ContainerCreating"
+	podKind             = "pod"
 )
 
 var (
@@ -67,6 +68,11 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	var rs []Resource
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
+		// The GVK group is not populated for List Objects. Hence set `kind` to `pod`
+		// See https://github.com/kubernetes-sigs/controller-runtime/pull/389
+		if po.Kind == "" {
+			po.Kind = podKind
+		}
 		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.statusCode))
 	}
 
