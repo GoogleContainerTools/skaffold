@@ -162,3 +162,18 @@ func TestDevConfigChange(t *testing.T) {
 		t.CheckDeepEqual(mockRunner.cycles, 2)
 	})
 }
+
+func TestNewCmdDev(t *testing.T) {
+	testutil.Run(t, "", func(t *testutil.T) {
+		t.NewTempDir().Chdir()
+		t.Override(&opts, config.SkaffoldOptions{})
+
+		cmd := NewCmdDev()
+		cmd.SilenceUsage = true
+		cmd.Execute()
+
+		t.CheckDeepEqual(true, opts.Tail)
+		t.CheckDeepEqual(true, opts.Force)
+		t.CheckDeepEqual(true, opts.EnableRPC)
+	})
+}

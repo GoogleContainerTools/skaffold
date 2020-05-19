@@ -14,14 +14,15 @@ branches:
 jobs:
   include:
     - os: linux
+      name: "linters"
+      script:
+        - make linters
+    - os: linux
       name: "checks"
-      env:
-        - GOLANGCI_LINT_CACHE=$HOME/linting
       script:
         - make checks
       cache:
         directories:
-          - $GOLANGCI_LINT_CACHE
           - $HOME/.cache/go-build
     - os: linux
       name: "Linux unit"
@@ -33,7 +34,7 @@ jobs:
     - os: osx
       name: "OSX unit"
       before_install:
-        - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5rc2/jq-osx-x86_64
+        - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64
         - chmod +x ${HOME}/bin/jq
       script:
         - make quicktest
@@ -48,10 +49,40 @@ jobs:
         directories:
           - C:\\Users\\travis\\AppData\\Local\\go-build
     - os: linux
-      name: "integration"
+      name: "integration partition 0"
       language: minimal
       script:
-        - make integration-in-kind
+        - env IT_PARTITION=0 make integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
+          - $HOME/.m2
+    - os: linux
+      name: "integration partition 1"
+      language: minimal
+      script:
+        - env IT_PARTITION=1 make integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
+          - $HOME/.m2
+    - os: linux
+      name: "integration partition 2"
+      language: minimal
+      script:
+        - env IT_PARTITION=2 make integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
+          - $HOME/.m2
+    - os: linux
+      name: "integration partition 3"
+      language: minimal
+      script:
+        - env IT_PARTITION=3 make integration-in-kind
       cache:
         directories:
           - $HOME/.cache/go-build
@@ -67,7 +98,7 @@ jobs:
     - os: osx
       name: "diag/OSX unit"
       before_install:
-        - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5rc2/jq-osx-x86_64
+        - curl -Lo ${HOME}/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64
         - chmod +x ${HOME}/bin/jq
       script:
         - make -f Makefile.diag test

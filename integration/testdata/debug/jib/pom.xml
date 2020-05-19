@@ -21,6 +21,9 @@
                 <artifactId>jib-maven-plugin</artifactId>
                 <version>${jib.maven-plugin-version}</version>
                 <configuration>
+                    <from>
+                        <image>openjdk</image> <!-- has jdb -->
+                    </from>
                     <container>
                         <jvmFlags>
                             <jvmFlag>-Djava.security.egd=file:/dev/./urandom</jvmFlag>

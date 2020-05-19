@@ -23,7 +23,6 @@ import (
 	"net"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/sirupsen/logrus"
@@ -154,7 +153,7 @@ func newGRPCServer(port int) (func() error, error) {
 		}
 	}()
 	return func() error {
-		s.GracefulStop()
+		s.Stop()
 		return l.Close()
 	}, nil
 }
@@ -173,15 +172,7 @@ func newHTTPServer(port, proxyPort int) (func() error, error) {
 	}
 	logrus.Infof("starting gRPC HTTP server on port %d", port)
 
-	server := &http.Server{
-		Handler:     mux,
-		ReadTimeout: 10 * time.Second,
-	}
+	go http.Serve(l, mux)
 
-	go server.Serve(l)
-
-	return func() error {
-		server.SetKeepAlivesEnabled(false)
-		return server.Shutdown(context.Background())
-	}, nil
+	return l.Close, nil
 }

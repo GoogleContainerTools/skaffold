@@ -22,8 +22,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v2beta3"
+// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+const Version string = "skaffold/v2beta4"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -499,8 +499,10 @@ type HelmRelease struct {
 	// ValuesFiles are the paths to the Helm `values` files.
 	ValuesFiles []string `yaml:"valuesFiles,omitempty"`
 
-	// Values are key-value pairs supplementing the Helm `values` file.
-	Values map[string]string `yaml:"values,omitempty,omitempty"`
+	// ArtifactOverrides are key value pairs where
+	// key represents the parameter used in `values` file to define a container image and
+	// value corresponds to artifact i.e. `ImageName` defined in `Build.Artifacts` section.
+	ArtifactOverrides map[string]string `yaml:"artifactOverrides,omitempty,omitempty"`
 
 	// Namespace is the Kubernetes namespace.
 	Namespace string `yaml:"namespace,omitempty"`
@@ -655,17 +657,17 @@ type Profile struct {
 	// For example: `profile-prod`.
 	Name string `yaml:"name,omitempty" yamltags:"required"`
 
-	// Pipeline contains the definitions to replace the default skaffold pipeline.
-	Pipeline `yaml:",inline"`
+	// Activation criteria by which a profile can be auto-activated.
+	// The profile is auto-activated if any one of the activations are triggered.
+	// An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.
+	Activation []Activation `yaml:"activation,omitempty"`
 
 	// Patches lists patches applied to the configuration.
 	// Patches use the JSON patch notation.
 	Patches []JSONPatch `yaml:"patches,omitempty"`
 
-	// Activation criteria by which a profile can be auto-activated.
-	// The profile is auto-activated if any one of the activations are triggered.
-	// An activation is triggered if all of the criteria (env, kubeContext, command) are triggered.
-	Activation []Activation `yaml:"activation,omitempty"`
+	// Pipeline contains the definitions to replace the default skaffold pipeline.
+	Pipeline `yaml:",inline"`
 }
 
 // JSONPatch patch to be applied by a profile.

@@ -34,9 +34,7 @@ import (
 
 // run on GCP as this test requires a load balancer
 func TestBuildKanikoInsecureRegistry(t *testing.T) {
-	if testing.Short() || !RunOnGCP() {
-		t.Skip("skipping GCP integration test")
-	}
+	MarkIntegrationTest(t, NeedsGcp)
 
 	ns, client := SetupNamespace(t)
 
@@ -50,9 +48,7 @@ func TestBuildKanikoInsecureRegistry(t *testing.T) {
 }
 
 func TestBuildKanikoWithExplicitRepo(t *testing.T) {
-	if testing.Short() || !RunOnGCP() {
-		t.Skip("skipping GCP integration test")
-	}
+	MarkIntegrationTest(t, NeedsGcp)
 
 	// Other integration tests run with the --default-repo option.
 	// This one explicitly specifies the full image name.
@@ -61,9 +57,7 @@ func TestBuildKanikoWithExplicitRepo(t *testing.T) {
 
 //see integration/testdata/README.md for details
 func TestBuildInCluster(t *testing.T) {
-	if testing.Short() || !RunOnGCP() {
-		t.Skip("skipping GCP integration test")
-	}
+	MarkIntegrationTest(t, NeedsGcp)
 
 	testutil.Run(t, "", func(t *testutil.T) {
 		ns, client := SetupNamespace(t.T)

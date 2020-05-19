@@ -33,9 +33,7 @@ import (
 )
 
 func TestDevSync(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		description string
@@ -82,9 +80,7 @@ func TestDevSync(t *testing.T) {
 }
 
 func TestDevAutoSync(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	dir := "testdata/jib-sync/"
 
@@ -169,9 +165,7 @@ func TestDevAutoSync(t *testing.T) {
 }
 
 func TestDevSyncAPITrigger(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, client := SetupNamespace(t)
 

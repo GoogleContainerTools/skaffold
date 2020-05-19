@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta3
+apiVersion: skaffold/v2beta4
 kind: Config
 build:
   artifacts:
@@ -10,5 +10,5 @@ deploy:
     # seed test namespace in the release name.
     - name: skaffold-helm-{{.TEST_NS}}
       chartPath: loadbalancer-helm
-      values:
+      artifactOverrides:
         image: gke-loadbalancer

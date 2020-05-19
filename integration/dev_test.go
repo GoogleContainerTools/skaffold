@@ -27,6 +27,7 @@ import (
 	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/tools/clientcmd"
 
@@ -36,10 +37,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestDev(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+func TestDevNotification(t *testing.T) {
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		description string
@@ -72,8 +71,9 @@ func TestDev(t *testing.T) {
 			Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
 			// Make sure the old Deployment and the new Deployment are different
-			err := wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+			err := wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 				newDep := client.GetDeployment("test-dev")
+				logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 				return dep.GetGeneration() != newDep.GetGeneration(), nil
 			})
 			failNowIfError(t, err)
@@ -82,9 +82,7 @@ func TestDev(t *testing.T) {
 }
 
 func TestDevAPITriggers(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	Run(t, "testdata/dev", "sh", "-c", "echo foo > foo")
 	defer Run(t, "testdata/dev", "rm", "foo")
@@ -188,17 +186,16 @@ func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKube
 	failNowIfError(t, err)
 
 	// Make sure the old Deployment and the new Deployment are different
-	err = wait.PollImmediate(time.Millisecond*500, 10*time.Minute, func() (bool, error) {
+	err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 		newDep := client.GetDeployment("test-dev")
+		logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 		return dep.GetGeneration() != newDep.GetGeneration(), nil
 	})
 	failNowIfError(t, err)
 }
 
 func TestDevPortForward(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("examples/microservices").RunOrFail(t)
@@ -224,9 +221,7 @@ func TestDevPortForward(t *testing.T) {
 }
 
 func TestDevPortForwardGKELoadBalancer(t *testing.T) {
-	if testing.Short() || !RunOnGCP() {
-		t.Skip("skipping GCP integration test")
-	}
+	MarkIntegrationTest(t, NeedsGcp)
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("testdata/gke_loadbalancer").RunOrFail(t)
@@ -322,9 +317,7 @@ func replaceInFile(target, replacement, filepath string) ([]byte, os.FileMode, e
 }
 
 func TestDev_WithKubecontextOverride(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	testutil.Run(t, "skaffold run with kubecontext override", func(t *testutil.T) {
 		ns, client := SetupNamespace(t.T)
@@ -352,7 +345,7 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 	}
 
 	contextName := "modified-context"
-	if isKind, _ := config.IsKindCluster(kubeConfig.CurrentContext); isKind {
+	if config.IsKindCluster(kubeConfig.CurrentContext) {
 		contextName = "kind-" + contextName
 	}
 

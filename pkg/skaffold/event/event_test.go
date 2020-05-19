@@ -197,7 +197,7 @@ func TestStatusCheckEventSucceeded(t *testing.T) {
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	StatusCheckEventSucceeded()
+	statusCheckEventSucceeded()
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == Succeeded })
 }
 
@@ -209,7 +209,7 @@ func TestStatusCheckEventFailed(t *testing.T) {
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	StatusCheckEventFailed(errors.New("one or more deployments failed"))
+	statusCheckEventFailed(errors.New("one or more deployments failed"))
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == Failed })
 }
 
@@ -233,7 +233,7 @@ func TestResourceStatusCheckEventSucceeded(t *testing.T) {
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	ResourceStatusCheckEventSucceeded("ns:pod/foo")
+	resourceStatusCheckEventSucceeded("ns:pod/foo")
 	wait(t, func() bool { return handler.getState().StatusCheckState.Resources["ns:pod/foo"] == Succeeded })
 }
 
@@ -245,7 +245,7 @@ func TestResourceStatusCheckEventFailed(t *testing.T) {
 	}
 
 	wait(t, func() bool { return handler.getState().StatusCheckState.Status == NotStarted })
-	ResourceStatusCheckEventFailed("ns:pod/foo", errors.New("one or more deployments failed"))
+	resourceStatusCheckEventFailed("ns:pod/foo", errors.New("one or more deployments failed"))
 	wait(t, func() bool { return handler.getState().StatusCheckState.Resources["ns:pod/foo"] == Failed })
 }
 

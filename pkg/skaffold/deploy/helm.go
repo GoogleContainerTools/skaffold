@@ -31,8 +31,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/blang/semver"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	yaml "gopkg.in/yaml.v2"
@@ -162,14 +164,43 @@ func (h *HelmDeployer) Dependencies() ([]string, error) {
 			continue
 		}
 
-		chartDepsDir := filepath.Join(release.ChartPath, "charts")
+		chartDepsDirs := []string{
+			"charts",
+			"tmpcharts",
+		}
 
-		// We can always add a dependency if it is not contained in our chartDepsDir.
+		lockFiles := []string{
+			"Chart.lock",
+			"requirements.lock",
+		}
+
+		// We can always add a dependency if it is not contained in our chartDepsDirs.
 		// However, if the file is in our chartDepsDir, we can only include the file
 		// if we are not running the helm dep build phase, as that modifies files inside
 		// the chartDepsDir and results in an infinite build loop.
+		// We additionally exclude ChartFile.lock (Helm 3) and requirements.lock (Helm 2)
+		// since they also get modified on helm dep build phase
 		isDep := func(path string, info walk.Dirent) (bool, error) {
-			return !info.IsDir() && (!strings.HasPrefix(path, chartDepsDir) || r.SkipBuildDependencies), nil
+			if info.IsDir() {
+				return false, nil
+			}
+			if r.SkipBuildDependencies {
+				return true, nil
+			}
+
+			for _, v := range chartDepsDirs {
+				if strings.HasPrefix(path, filepath.Join(release.ChartPath, v)) {
+					return false, nil
+				}
+			}
+
+			for _, v := range lockFiles {
+				if strings.EqualFold(info.Name(), v) {
+					return false, nil
+				}
+			}
+
+			return true, nil
 		}
 
 		if err := walk.From(release.ChartPath).When(isDep).AppendPaths(&deps); err != nil {
@@ -308,18 +339,37 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		return nil, fmt.Errorf("release args: %w", err)
 	}
 
-	iErr := h.exec(ctx, out, r.UseHelmSecrets, args...)
+	err = h.exec(ctx, out, r.UseHelmSecrets, args...)
+	if err != nil {
+		return nil, fmt.Errorf("install: %w", err)
+	}
 
-	var b bytes.Buffer
-
-	// Be accepting of failure
-	if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, opts.namespace)...); err != nil {
-		logrus.Warnf(err.Error())
-		return nil, nil
+	b, err := h.getRelease(ctx, helmVersion, releaseName, opts.namespace)
+	if err != nil {
+		return nil, fmt.Errorf("get release: %w", err)
 	}
 
 	artifacts := parseReleaseInfo(opts.namespace, bufio.NewReader(&b))
-	return artifacts, iErr
+	return artifacts, nil
+}
+
+// getRelease confirms that a release is visible to helm
+func (h *HelmDeployer) getRelease(ctx context.Context, helmVersion semver.Version, releaseName string, namespace string) (bytes.Buffer, error) {
+	// Retry, because under Helm 2, at least, a release may not be immediately visible
+	opts := backoff.NewExponentialBackOff()
+	opts.MaxElapsedTime = 4 * time.Second
+	var b bytes.Buffer
+
+	err := backoff.Retry(
+		func() error {
+			if err := h.exec(ctx, &b, false, getArgs(helmVersion, releaseName, namespace)...); err != nil {
+				logrus.Debugf("unable to get release: %v (may retry):\n%s", err, b.String())
+				return err
+			}
+			return nil
+		}, opts)
+
+	return b, err
 }
 
 // binVer returns the version of the helm binary found in PATH. May be cached.
@@ -400,7 +450,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		args = append(args, "--namespace", o.namespace)
 	}
 
-	params, err := pairParamsToArtifacts(builds, r.Values)
+	params, err := pairParamsToArtifacts(builds, r.ArtifactOverrides)
 	if err != nil {
 		return nil, fmt.Errorf("matching build results to chart values: %w", err)
 	}

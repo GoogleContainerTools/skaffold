@@ -12,12 +12,6 @@ You must install these tools:
    built in (version >= go 1.14)
 1. [`git`](https://help.github.com/articles/set-up-git/): For source control
 1. [`make`](https://www.gnu.org/software/make/): For building skaffold.
-1. [`golangci-lint`](https://github.com/golangci/golangci-lint): You can use the
-   helper [script](./hack/install_golint.sh) to get golangci-lint.
-
-    ```shell
-    ./hack/install_golint.sh
-    ```
 
 ## Getting started
 
@@ -268,5 +262,5 @@ Please follow our [small Pull Requests guidelines](./docs/community/small-prs.md
 ### Reviews
 
 Each PR must be reviewed by a maintainer. This maintainer will add the `kokoro:run` label
-to a PR to kick of [the integration tests](#integration-tests), which must pass for the PR
+to a PR to kick off [the integration tests](#integration-tests), which must pass for the PR
 to be submitted.

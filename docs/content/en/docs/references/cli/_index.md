@@ -355,7 +355,7 @@ Options:
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=true: Stream logs from deployed objects
+      --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
 
 Usage:
@@ -464,7 +464,7 @@ E.g. build.out created by running skaffold build --quiet -o "{{json .}}" > build
       --rpc-http-port=50052: tcp port to expose event REST API over HTTP
       --rpc-port=50051: tcp port to expose event API
       --status-check=true: Wait for deployed resources to stabilize
-      --tail=false: Stream logs from deployed objects (default false)
+      --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
 
 Usage:
@@ -528,7 +528,7 @@ Options:
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=true: Stream logs from deployed objects
+      --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
       --trigger='notify': How is change detection triggered? (polling, notify, or manual)
   -w, --watch-image=[]: Choose which artifacts to watch. Artifacts with image names that contain the expression will be watched only. Default is to watch sources for all artifacts
@@ -626,7 +626,7 @@ Examples:
 Options:
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
       --overwrite=false: Overwrite original config with fixed config
-      --version='skaffold/v2beta3': Target schema version to upgrade to
+      --version='skaffold/v2beta4': Target schema version to upgrade to
 
 Usage:
   skaffold fix [options]
@@ -762,7 +762,7 @@ Options:
       --skip-tests=false: Whether to skip the tests after building
       --status-check=true: Wait for deployed resources to stabilize
   -t, --tag='': The optional custom tag to use for images which overrides the current Tagger configuration
-      --tail=false: Stream logs from deployed objects (default false)
+      --tail=false: Stream logs from deployed objects (true by default for `skaffold dev` and `skaffold debug`)
       --toot=false: Emit a terminal beep after the deploy is complete
 
 Usage:

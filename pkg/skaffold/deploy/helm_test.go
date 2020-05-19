@@ -48,7 +48,7 @@ var testDeployConfig = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		Values: map[string]string{
+		ArtifactOverrides: map[string]string{
 			"image": "skaffold-helm",
 		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
@@ -62,7 +62,7 @@ var testDeployNamespacedConfig = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		Values: map[string]string{
+		ArtifactOverrides: map[string]string{
 			"image": "skaffold-helm",
 		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
@@ -77,7 +77,7 @@ var testDeployConfigTemplated = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		Values: map[string]string{
+		ArtifactOverrides: map[string]string{
 			"image": "skaffold-helm",
 		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
@@ -95,7 +95,7 @@ var testDeployConfigValuesFilesTemplated = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		Values: map[string]string{
+		ArtifactOverrides: map[string]string{
 			"image": "skaffold-helm",
 		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
@@ -109,7 +109,7 @@ var testDeployRecreatePodsConfig = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		Values: map[string]string{
+		ArtifactOverrides: map[string]string{
 			"image": "skaffold-helm",
 		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
@@ -124,7 +124,7 @@ var testDeploySkipBuildDependenciesConfig = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		Values: map[string]string{
+		ArtifactOverrides: map[string]string{
 			"image": "skaffold-helm",
 		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
@@ -139,7 +139,7 @@ var testDeployHelmStyleConfig = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		Values: map[string]string{
+		ArtifactOverrides: map[string]string{
 			"image": "skaffold-helm",
 		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
@@ -158,7 +158,7 @@ var testDeployHelmExplicitRegistryStyleConfig = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		Values: map[string]string{
+		ArtifactOverrides: map[string]string{
 			"image": "skaffold-helm",
 		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
@@ -179,7 +179,7 @@ var testDeployConfigParameterUnmatched = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "examples/test",
-		Values: map[string]string{
+		ArtifactOverrides: map[string]string{
 			"image": "skaffold-helm-unmatched",
 		}},
 	},
@@ -189,7 +189,7 @@ var testDeployFooWithPackaged = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "foo",
 		ChartPath: "testdata/foo",
-		Values: map[string]string{
+		ArtifactOverrides: map[string]string{
 			"image": "foo",
 		},
 		Packaged: &latest.HelmPackaged{
@@ -203,7 +203,7 @@ var testDeployWithTemplatedName = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "{{.USER}}-skaffold-helm",
 		ChartPath: "examples/test",
-		Values: map[string]string{
+		ArtifactOverrides: map[string]string{
 			"image.tag": "skaffold-helm",
 		},
 		Overrides: schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
@@ -217,7 +217,7 @@ var testDeploySkipBuildDependencies = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
 		ChartPath: "stable/chartmuseum",
-		Values: map[string]string{
+		ArtifactOverrides: map[string]string{
 			"image.tag": "skaffold-helm",
 		},
 		SkipBuildDependencies: true,
@@ -245,7 +245,7 @@ var testTwoReleases = latest.HelmDeploy{
 		ChartPath: "examples/test",
 	}, {
 		Name: "skaffold-helm",
-		Values: map[string]string{
+		ArtifactOverrides: map[string]string{
 			"image.tag": "skaffold-helm",
 		},
 	}},
@@ -839,19 +839,31 @@ func TestHelmDependencies(t *testing.T) {
 		expected              func(folder *testutil.TempDir) []string
 	}{
 		{
-			description:           "charts dir is included when skipBuildDependencies is true",
-			files:                 []string{"Chart.yaml", "charts/xyz.tar", "templates/deploy.yaml"},
+			description:           "charts download dir and lock files are included when skipBuildDependencies is true",
+			files:                 []string{"Chart.yaml", "Chart.lock", "requirements.yaml", "requirements.lock", "charts/xyz.tar", "tmpcharts/xyz.tar", "templates/deploy.yaml"},
 			skipBuildDependencies: true,
 			expected: func(folder *testutil.TempDir) []string {
-				return []string{folder.Path("Chart.yaml"), folder.Path("charts/xyz.tar"), folder.Path("templates/deploy.yaml")}
+				return []string{
+					folder.Path("Chart.lock"),
+					folder.Path("Chart.yaml"),
+					folder.Path("charts/xyz.tar"),
+					folder.Path("requirements.lock"),
+					folder.Path("requirements.yaml"),
+					folder.Path("templates/deploy.yaml"),
+					folder.Path("tmpcharts/xyz.tar"),
+				}
 			},
 		},
 		{
-			description:           "charts dir is excluded when skipBuildDependencies is false",
-			files:                 []string{"Chart.yaml", "charts/xyz.tar", "templates/deploy.yaml"},
+			description:           "charts download dir and lock files are excluded when skipBuildDependencies is false",
+			files:                 []string{"Chart.yaml", "Chart.lock", "requirements.yaml", "requirements.lock", "charts/xyz.tar", "tmpcharts/xyz.tar", "templates/deploy.yaml"},
 			skipBuildDependencies: false,
 			expected: func(folder *testutil.TempDir) []string {
-				return []string{folder.Path("Chart.yaml"), folder.Path("templates/deploy.yaml")}
+				return []string{
+					folder.Path("Chart.yaml"),
+					folder.Path("requirements.yaml"),
+					folder.Path("templates/deploy.yaml"),
+				}
 			},
 		},
 		{
@@ -883,7 +895,7 @@ func TestHelmDependencies(t *testing.T) {
 					Name:                  "skaffold-helm",
 					ChartPath:             tmpDir.Root(),
 					ValuesFiles:           test.valuesFiles,
-					Values:                map[string]string{"image": "skaffold-helm"},
+					ArtifactOverrides:     map[string]string{"image": "skaffold-helm"},
 					Overrides:             schemautil.HelmOverrides{Values: map[string]interface{}{"foo": "bar"}},
 					SetValues:             map[string]string{"some.key": "somevalue"},
 					SkipBuildDependencies: test.skipBuildDependencies,

@@ -48,8 +48,7 @@ func (r *SkaffoldRunner) loadImagesInKindNodes(ctx context.Context, out io.Write
 		// Only `kind load` the images that are unknown to the node
 		if knownImages == nil {
 			var err error
-			kubectlCLI := kubectl.NewFromRunContext(r.runCtx)
-			if knownImages, err = findKnownImages(ctx, kubectlCLI); err != nil {
+			if knownImages, err = findKnownImages(ctx, r.kubectlCLI); err != nil {
 				return fmt.Errorf("unable to retrieve node's images: %w", err)
 			}
 		}
@@ -59,9 +58,9 @@ func (r *SkaffoldRunner) loadImagesInKindNodes(ctx context.Context, out io.Write
 		}
 
 		cmd := exec.CommandContext(ctx, "kind", "load", "docker-image", "--name", kindCluster, artifact.Tag)
-		if err := util.RunCmd(cmd); err != nil {
+		if output, err := util.RunCmdOut(cmd); err != nil {
 			color.Red.Fprintln(out, "Failed")
-			return fmt.Errorf("unable to load image with kind %q: %w", artifact.Tag, err)
+			return fmt.Errorf("unable to load image with kind %q: %w, %s", artifact.Tag, err, output)
 		}
 
 		color.Green.Fprintln(out, "Loaded")

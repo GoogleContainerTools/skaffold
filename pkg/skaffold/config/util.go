@@ -132,7 +132,7 @@ func getConfigForKubeContextWithGlobalDefaults(cfg *GlobalConfig, kubeContext st
 
 	var mergedConfig ContextConfig
 	for _, contextCfg := range cfg.ContextConfigs {
-		if contextCfg.Kubecontext == kubeContext {
+		if util.RegexEqual(contextCfg.Kubecontext, kubeContext) {
 			logrus.Debugf("found config for context %q", kubeContext)
 			mergedConfig = *contextCfg
 		}
@@ -199,31 +199,50 @@ func isDefaultLocal(kubeContext string) bool {
 		return true
 	}
 
-	isKind, _ := IsKindCluster(kubeContext)
-	return isKind
+	return IsKindCluster(kubeContext)
 }
 
 // IsKindCluster checks that the given `kubeContext` is talking to `kind`.
-// It also returns the name of the `kind` cluster.
-func IsKindCluster(kubeContext string) (bool, string) {
+func IsKindCluster(kubeContext string) bool {
 	switch {
 	// With kind version < 0.6.0, the k8s context
 	// is `[CLUSTER NAME]@kind`.
 	// For eg: `cluster@kind`
 	// the default name is `kind@kind`
 	case strings.HasSuffix(kubeContext, "@kind"):
-		return true, strings.TrimSuffix(kubeContext, "@kind")
+		return true
 
 	// With kind version >= 0.6.0, the k8s context
 	// is `kind-[CLUSTER NAME]`.
 	// For eg: `kind-cluster`
 	// the default name is `kind-kind`
 	case strings.HasPrefix(kubeContext, "kind-"):
-		return true, strings.TrimPrefix(kubeContext, "kind-")
+		return true
 
 	default:
-		return false, ""
+		return false
 	}
+}
+
+// KindClusterName returns the internal kind name of a kubernetes cluster.
+func KindClusterName(clusterName string) string {
+	switch {
+	// With kind version < 0.6.0, the k8s context
+	// is `[CLUSTER NAME]@kind`.
+	// For eg: `cluster@kind`
+	// the default name is `kind@kind`
+	case strings.HasSuffix(clusterName, "@kind"):
+		return strings.TrimSuffix(clusterName, "@kind")
+
+	// With kind version >= 0.6.0, the k8s context
+	// is `kind-[CLUSTER NAME]`.
+	// For eg: `kind-cluster`
+	// the default name is `kind-kind`
+	case strings.HasPrefix(clusterName, "kind-"):
+		return strings.TrimPrefix(clusterName, "kind-")
+	}
+
+	return clusterName
 }
 
 func IsUpdateCheckEnabled(configfile string) bool {

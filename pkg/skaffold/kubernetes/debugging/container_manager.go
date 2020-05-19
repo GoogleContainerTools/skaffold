@@ -20,7 +20,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 
 	"github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -41,7 +40,6 @@ var (
 )
 
 type ContainerManager struct {
-	output      io.Writer
 	cli         *kubectl.CLI
 	podSelector kubernetes.PodSelector
 	namespaces  []string
@@ -49,10 +47,16 @@ type ContainerManager struct {
 	aggregate   chan watch.Event
 }
 
-func NewContainerManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string) *ContainerManager {
+func NewContainerManager(cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string) *ContainerManager {
 	// Create the channel here as Stop() may be called before Start() when a build fails, thus
 	// avoiding the possibility of closing a nil channel. Channels are cheap.
-	return &ContainerManager{output: out, cli: cli, podSelector: podSelector, namespaces: namespaces, active: map[string]string{}, aggregate: make(chan watch.Event)}
+	return &ContainerManager{
+		cli:         cli,
+		podSelector: podSelector,
+		namespaces:  namespaces,
+		active:      map[string]string{},
+		aggregate:   make(chan watch.Event),
+	}
 }
 
 func (d *ContainerManager) Start(ctx context.Context) error {
