@@ -159,14 +159,17 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 	// Make a change to foo
 	Run(t, "testdata/dev", "sh", "-c", "echo bar > foo")
 
-	// Issue a build trigger
-	rpcClient.AutoExecute(context.Background(), &proto.UserIntentRequest{
-		Intent: &proto.Intent{
-			Build:  true,
-			Deploy: true,
+	// Enable auto build
+	rpcClient.AutoBuild(context.Background(), &proto.TriggerRequest{
+		Enabled: &proto.TriggerState{
+			State: true,
 		},
 	})
-
+	rpcClient.AutoDeploy(context.Background(), &proto.TriggerRequest{
+		Enabled: &proto.TriggerState{
+			State: true,
+		},
+	})
 	// Ensure we see a build triggered in the event log
 	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries

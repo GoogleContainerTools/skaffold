@@ -254,8 +254,12 @@ This means that _even if there are new file changes_, Skaffold will wait for ano
 | --- | --- |
 | HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/execute`, the [Execution Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/Execute">}}) |
 | gRPC | `client.Execute(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
-| HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/auto_execute`, the [Auto Execution Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/AutoExecute">}}) |
-| gRPC | `client.AutoExecute(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
+| HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/build/auto_execute`, the [Auto Build Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/AutoBuild">}}) |
+| gRPC | `client.AutoBuild(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
+| HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/sync/auto_execute`, the [Auto Sync Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/AutoSync">}}) |
+| gRPC | `client.AutoSync(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
+| HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/deploy/auto_execute`, the [Auto Deploy Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/AutoDeploy">}}) |
+| gRPC | `client.AutoDeploy(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
 
 
 **Examples**
@@ -282,10 +286,11 @@ These steps can also be combined into a single request:
 curl -X POST http://localhost:50052/v1/execute -d '{"build": true, "deploy": true}'
 ``` 
 
-We can make Skaffold start noticing file changes automatically again by issuing this request:
+We can make Skaffold start noticing file changes automatically again by issuing the requests:
 
 ```bash
-curl -X POST http://localhost:50052/v1/auto_execute -d '{"build": true, "deploy": true}'
+curl -X POST http://localhost:50052/v1/build/auto_execute -d '{"enabled": true}'
+curl -X POST http://localhost:50052/v1/deploy/auto_execute -d '{"enabled": true}'
 ``` 
 
 {{% /tab %}}
@@ -310,18 +315,16 @@ func main() {
     }
 }
 ```
-Use the `client.AutoExecute()` method with the desired payload to enable or disable auto triggering:
+Use the `client.AutoBuild()`,`client.AutoSync()` and `client.AutoDeploy()` method to enable or disable auto build, auto sync and auto deploy:
 
 ```golang
 func main() {
     ctx, ctxCancel := context.WithCancel(context.Background())
     defer ctxCancel()
     // `client` is the gRPC client with connection to localhost:50051.
-    _, err = client.AutoExecute(ctx, &pb.UserIntentRequest{
-        Intent: &pb.Intent{
-            Build:  true,
-            Sync:   true,
-            Deploy: true,
+    _, err = client.AutoBuild(ctx, &pb.TriggerRequest{
+        Enabled: &pb.TriggerState{
+            State:  true,
         },
     })
     if err != nil {

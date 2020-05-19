@@ -117,10 +117,3 @@ func (i *intents) GetIntents() (bool, bool, bool) {
 	defer i.lock.Unlock()
 	return i.build, i.sync, i.deploy
 }
-
-// returns auto build, auto sync, and auto deploy settings (in that order)
-func (i *intents) GetAutoTriggers() (bool, bool, bool) {
-	i.lock.Lock()
-	defer i.lock.Unlock()
-	return i.autoBuild, i.autoSync, i.autoDeploy
-}

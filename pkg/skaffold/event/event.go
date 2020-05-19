@@ -610,17 +610,15 @@ func emptyStatusCheckState() *proto.StatusCheckState {
 	}
 }
 
-func AutoTriggerDiff(targetAutoBuild, targetAutoDeploy, targetAutoSync bool) (updateAutoBuild, updateAutoDeploy, updateAutoSync bool) {
-	currAutoBuild, currAutoDeploy, currAutoSync := handler.getState().BuildState.AutoTrigger, handler.getState().DeployState.AutoTrigger, handler.getState().FileSyncState.AutoTrigger
-
-	if currAutoBuild != targetAutoBuild {
-		updateAutoBuild = true
+func AutoTriggerDiff(name string, val bool) (bool, error) {
+	switch name {
+	case "build":
+		return val != handler.getState().BuildState.AutoTrigger, nil
+	case "sync":
+		return val != handler.getState().FileSyncState.AutoTrigger, nil
+	case "deploy":
+		return val != handler.getState().DeployState.AutoTrigger, nil
+	default:
+		return false, fmt.Errorf("unknown phase %v not found in handler state\n", name)
 	}
-	if currAutoDeploy != targetAutoDeploy {
-		updateAutoDeploy = true
-	}
-	if currAutoSync != targetAutoSync {
-		updateAutoSync = true
-	}
-	return
 }

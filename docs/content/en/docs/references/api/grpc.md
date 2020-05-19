@@ -40,7 +40,9 @@ Describes all the methods for the Skaffold API
 | EventLog | [LogEntry](#proto.LogEntry) stream | [LogEntry](#proto.LogEntry) stream | DEPRECATED. Events should be used instead. TODO remove (https://github.com/GoogleContainerTools/skaffold/issues/3168) |
 | Events | [.google.protobuf.Empty](#google.protobuf.Empty) | [LogEntry](#proto.LogEntry) stream | Returns all the events of the current Skaffold execution from the start |
 | Execute | [UserIntentRequest](#proto.UserIntentRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for a single execution of some or all of the phases (build, sync, deploy) in case autoBuild, autoDeploy or autoSync are disabled. |
-| AutoExecute | [UserIntentRequest](#proto.UserIntentRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic triggers for phases (build, sync, deploy) |
+| AutoBuild | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic build trigger |
+| AutoSync | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic sync trigger |
+| AutoDeploy | [TriggerRequest](#proto.TriggerRequest) | [.google.protobuf.Empty](#google.protobuf.Empty) | Allows for enabling or disabling automatic deploy trigger |
 | Handle | [Event](#proto.Event) | [.google.protobuf.Empty](#google.protobuf.Empty) | EXPERIMENTAL. It allows for custom events to be implemented in custom builders for example. |
 
  <!-- end services -->
@@ -354,9 +356,9 @@ Intent represents user intents for a given phase.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| build | [bool](#bool) |  | a build intent enables building, once for `execute`, and always for `auto_execute` |
-| sync | [bool](#bool) |  | a sync intent enables file sync once for `execute`, and always for `auto_execute` |
-| deploy | [bool](#bool) |  | a deploy intent enables deploys once for `execute`, and always for `auto_execute` |
+| build | [bool](#bool) |  | in case skaffold dev is ran with autoBuild=false, a build intent enables building once |
+| sync | [bool](#bool) |  | in case skaffold dev is ran with autoSync=false, a sync intent enables file sync once |
+| deploy | [bool](#bool) |  | in case skaffold dev is ran with autoDeploy=false, a deploy intent enables deploys once |
 
 
 
@@ -600,6 +602,36 @@ will be sent with the new status.
 | ----- | ---- | ----- | ----------- |
 | key | [string](#string) |  |  |
 | value | [string](#string) |  |  |
+
+
+
+
+
+
+
+<a name="proto.TriggerRequest"></a>
+#### TriggerRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| enabled | [TriggerState](#proto.TriggerState) |  |  |
+
+
+
+
+
+
+
+<a name="proto.TriggerState"></a>
+#### TriggerState
+TriggerState represents trigger state for a given phase.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| state | [bool](#bool) |  | enable or disable a trigger state |
 
 
 
