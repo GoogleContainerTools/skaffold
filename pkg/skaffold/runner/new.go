@@ -111,11 +111,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 			Trigger:    trigger,
 			intentChan: intentChan,
 		},
-		kubectlCLI: kubectlCLI,
-		changeSet: &changeSet{
-			rebuildTracker: make(map[string]*latest.Artifact),
-			resyncTracker:  make(map[string]*sync.Item),
-		},
+		kubectlCLI:      kubectlCLI,
 		labellers:       labellers,
 		defaultLabeller: defaultLabeller,
 		podSelector:     kubernetes.NewImageList(),

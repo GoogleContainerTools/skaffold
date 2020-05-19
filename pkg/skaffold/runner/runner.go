@@ -60,7 +60,7 @@ type SkaffoldRunner struct {
 
 	kubectlCLI      *kubectl.CLI
 	cache           cache.Cache
-	changeSet       *changeSet
+	changeSet       changeSet
 	runCtx          *runcontext.RunContext
 	labellers       []deploy.Labeller
 	defaultLabeller *deploy.DefaultLabeller
