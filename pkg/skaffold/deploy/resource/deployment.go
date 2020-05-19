@@ -54,11 +54,14 @@ func (d *Deployment) Deadline() time.Duration {
 
 func (d *Deployment) UpdateStatus(details string, err error) {
 	updated := newStatus(details, err)
-	if !d.status.Equal(updated) {
-		d.status = updated
-		if strings.Contains(details, rollOutSuccess) || isErrAndNotRetryAble(err) {
-			d.done = true
-		}
+	if d.status.Equal(updated) {
+		d.status.changed = false
+		return
+	}
+	d.status = updated
+	d.status.changed = true
+	if strings.Contains(details, rollOutSuccess) || isErrAndNotRetryAble(err) {
+		d.done = true
 	}
 }
 
@@ -111,10 +114,9 @@ func (d *Deployment) IsStatusCheckComplete() bool {
 }
 
 func (d *Deployment) ReportSinceLastUpdated() string {
-	if d.status.reported {
+	if !d.status.changed {
 		return ""
 	}
-	d.status.reported = true
 	return fmt.Sprintf("%s: %s", d, d.status)
 }
 
