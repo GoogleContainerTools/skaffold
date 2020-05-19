@@ -30,19 +30,21 @@ import (
 	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
+type ImageLoadingTest = struct {
+	description   string
+	cluster       string
+	built         []build.Artifact
+	deployed      []build.Artifact
+	commands      util.Command
+	shouldErr     bool
+	expectedError string
+}
+
 func TestLoadImagesInKindNodes(t *testing.T) {
-	tests := []struct {
-		description   string
-		kindCluster   string
-		built         []build.Artifact
-		deployed      []build.Artifact
-		commands      util.Command
-		shouldErr     bool
-		expectedError string
-	}{
+	tests := []ImageLoadingTest{
 		{
 			description: "load image",
-			kindCluster: "kind",
+			cluster:     "kind",
 			built:       []build.Artifact{{Tag: "tag1"}},
 			deployed:    []build.Artifact{{Tag: "tag1"}},
 			commands: testutil.
@@ -51,7 +53,7 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 		},
 		{
 			description: "load missing image",
-			kindCluster: "other-kind",
+			cluster:     "other-kind",
 			built:       []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
 			deployed:    []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
 			commands: testutil.
@@ -69,7 +71,7 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 		},
 		{
 			description: "load error",
-			kindCluster: "kind",
+			cluster:     "kind",
 			built:       []build.Artifact{{Tag: "tag"}},
 			deployed:    []build.Artifact{{Tag: "tag"}},
 			commands: testutil.
@@ -80,7 +82,7 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 		},
 		{
 			description: "ignore image that's not built",
-			kindCluster: "kind",
+			cluster:     "kind",
 			built:       []build.Artifact{{Tag: "built"}},
 			deployed:    []build.Artifact{{Tag: "built"}, {Tag: "busybox"}},
 			commands: testutil.
@@ -98,6 +100,77 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 		},
 	}
 
+	runImageLoadingTests(t, tests, func(r *SkaffoldRunner, test ImageLoadingTest) error {
+		return r.loadImagesInKindNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
+	})
+}
+
+func TestLoadImagesInK3dNodes(t *testing.T) {
+	tests := []ImageLoadingTest{
+		{
+			description: "load image",
+			cluster:     "k3d",
+			built:       []build.Artifact{{Tag: "tag1"}},
+			deployed:    []build.Artifact{{Tag: "tag1"}},
+			commands: testutil.
+				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
+				AndRunOut("k3d load image --cluster k3d tag1", "output: image loaded"),
+		},
+		{
+			description: "load missing image",
+			cluster:     "other-k3d",
+			built:       []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
+			deployed:    []build.Artifact{{Tag: "tag1"}, {Tag: "tag2"}},
+			commands: testutil.
+				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "tag1").
+				AndRunOut("k3d load image --cluster other-k3d tag2", "output: image loaded"),
+		},
+		{
+			description: "inspect error",
+			built:       []build.Artifact{{Tag: "tag"}},
+			deployed:    []build.Artifact{{Tag: "tag"}},
+			commands: testutil.
+				CmdRunOutErr("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "", errors.New("BUG")),
+			shouldErr:     true,
+			expectedError: "unable to inspect",
+		},
+		{
+			description: "load error",
+			cluster:     "k3d",
+			built:       []build.Artifact{{Tag: "tag"}},
+			deployed:    []build.Artifact{{Tag: "tag"}},
+			commands: testutil.
+				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
+				AndRunOutErr("k3d load image --cluster k3d tag", "output: error!", errors.New("BUG")),
+			shouldErr:     true,
+			expectedError: "output: error!",
+		},
+		{
+			description: "ignore image that's not built",
+			cluster:     "k3d",
+			built:       []build.Artifact{{Tag: "built"}},
+			deployed:    []build.Artifact{{Tag: "built"}, {Tag: "busybox"}},
+			commands: testutil.
+				CmdRunOut("kubectl --context kubecontext --namespace namespace get nodes -ojsonpath='{@.items[*].status.images[*].names[*]}'", "").
+				AndRunOut("k3d load image --cluster k3d built", ""),
+		},
+		{
+			description: "no artifact",
+			deployed:    []build.Artifact{},
+		},
+		{
+			description: "no built artifact",
+			built:       []build.Artifact{},
+			deployed:    []build.Artifact{{Tag: "busybox"}},
+		},
+	}
+
+	runImageLoadingTests(t, tests, func(r *SkaffoldRunner, test ImageLoadingTest) error {
+		return r.loadImagesInK3dNodes(context.Background(), ioutil.Discard, test.cluster, test.deployed)
+	})
+}
+
+func runImageLoadingTests(t *testing.T, tests []ImageLoadingTest, loadingFunc func(r *SkaffoldRunner, test ImageLoadingTest) error) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
@@ -114,7 +187,7 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 				kubectlCLI: kubectl.NewFromRunContext(runCtx),
 				builds:     test.built,
 			}
-			err := r.loadImagesInKindNodes(context.Background(), ioutil.Discard, test.kindCluster, test.deployed)
+			err := loadingFunc(r, test)
 
 			if test.shouldErr {
 				t.CheckErrorContains(test.expectedError, err)
