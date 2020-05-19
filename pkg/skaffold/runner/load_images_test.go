@@ -197,14 +197,17 @@ func TestLoadImagesInK3dNodes(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			r := &SkaffoldRunner{
-				builds: test.built,
-				runCtx: &runcontext.RunContext{
-					Opts: config.SkaffoldOptions{
-						Namespace: "namespace",
-					},
-					KubeContext: "kubecontext",
+			runCtx := &runcontext.RunContext{
+				Opts: config.SkaffoldOptions{
+					Namespace: "namespace",
 				},
+				KubeContext: "kubecontext",
+			}
+
+			r := &SkaffoldRunner{
+				runCtx:     runCtx,
+				kubectlCLI: kubectl.NewFromRunContext(runCtx),
+				builds:     test.built,
 			}
 			err := r.loadImagesInK3dNodes(context.Background(), ioutil.Discard, test.k3dCluster, test.deployed)
 
