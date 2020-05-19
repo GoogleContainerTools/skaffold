@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
 )
@@ -32,9 +33,9 @@ type Diagnose interface {
 }
 
 type diag struct {
-	namespaces    []string
-	labelSelector metav1.LabelSelector
-	validators    []validator.Validator
+	namespaces []string
+	labels     map[string]string
+	validators []validator.Validator
 }
 
 func New(namespaces []string) Diagnose {
@@ -45,13 +46,13 @@ func New(namespaces []string) Diagnose {
 		}
 	}
 	return &diag{
-		namespaces:    ns,
-		labelSelector: metav1.LabelSelector{MatchLabels: map[string]string{}},
+		namespaces: ns,
+		labels:     map[string]string{},
 	}
 }
 
 func (d *diag) WithLabel(key, value string) Diagnose {
-	d.labelSelector.MatchLabels[key] = value
+	d.labels[key] = value
 	return d
 }
 
@@ -65,9 +66,12 @@ func (d *diag) Run(ctx context.Context) ([]validator.Resource, error) {
 		res  []validator.Resource
 		errs []error
 	)
+	// get selector from labels
+	selector := labels.SelectorFromSet(d.labels)
 	listOptions := metav1.ListOptions{
-		LabelSelector: d.labelSelector.String(),
+		LabelSelector: selector.String(),
 	}
+
 	for _, v := range d.validators {
 		for _, ns := range d.namespaces {
 			r, err := v.Validate(ctx, ns, listOptions)

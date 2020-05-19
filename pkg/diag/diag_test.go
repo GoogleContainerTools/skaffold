@@ -38,14 +38,6 @@ func (m *mockValidator) Validate(_ context.Context, ns string, opts metav1.ListO
 	return nil, nil
 }
 
-func newMockValidator(ns []string, ls metav1.LabelSelector) *mockValidator {
-	return &mockValidator{
-		ns: ns,
-		listOptions: metav1.ListOptions{
-			LabelSelector: ls.String(),
-		},
-	}
-}
 func TestRun(t *testing.T) {
 	tests := []struct {
 		description string
@@ -56,7 +48,10 @@ func TestRun(t *testing.T) {
 		{
 			description: "multiple namespaces with an empty namespace and no labels",
 			ns:          []string{"foo", "bar", ""},
-			expected:    newMockValidator([]string{"foo", "bar"}, metav1.LabelSelector{MatchLabels: map[string]string{}}),
+			expected: &mockValidator{
+				ns:          []string{"foo", "bar"},
+				listOptions: metav1.ListOptions{},
+			},
 		},
 		{
 			description: "empty namespaces no labels",
@@ -70,13 +65,12 @@ func TestRun(t *testing.T) {
 				"skaffold":       "session",
 				"deployment-app": "app",
 			},
-			expected: newMockValidator([]string{"foo", "goo"},
-				metav1.LabelSelector{
-					MatchLabels: map[string]string{
-						"skaffold":       "session",
-						"deployment-app": "app",
-					},
-				}),
+			expected: &mockValidator{
+				ns: []string{"foo", "goo"},
+				listOptions: metav1.ListOptions{
+					LabelSelector: "deployment-app=app,skaffold=session",
+				},
+			},
 		},
 	}
 	for _, test := range tests {
