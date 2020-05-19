@@ -254,7 +254,7 @@ anytime a deployment starts or completes, successfully or not.
 
 <a name="proto.DevLoop"></a>
 #### DevLoop
-DevLoop describes skaffold dev iteration
+DevLoop describes an iteration of the skaffold dev loop
 
 
 | Field | Type | Label | Description |
@@ -289,7 +289,7 @@ DevLoop describes skaffold dev iteration
 
 <a name="proto.EndEvent"></a>
 #### EndEvent
-EndEvent described the skaffold end session event
+EndEvent summarizes the skaffold session including the results of the dev loops.
 
 
 | Field | Type | Label | Description |
@@ -689,7 +689,7 @@ Enum indicating builders used
 <a name="proto.ChangeType"></a>
 
 ### ChangeType
-Enum for indicating which dependency change triggered the dev loop
+ChangeType describes the type of dependency change that triggered a new iteration of the dev loop.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -771,6 +771,7 @@ BUILD, DEPLOY, STATUSCHECK, DEVINIT
 | DEVINIT_REGISTER_TEST_DEPS | 702 | Failed to configure watcher for test dependencies in dev loop |
 | DEVINIT_REGISTER_DEPLOY_DEPS | 703 | Failed to configure watcher for deploy dependencies in dev loop |
 | DEVINIT_REGISTER_CONFIG_DEP | 704 | Failed to configure watcher for Skaffold configuration file. |
+| SESSION_FAILURE | 901 | Session Failure |
 
 
  <!-- end enums -->

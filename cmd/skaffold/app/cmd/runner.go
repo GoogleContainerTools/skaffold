@@ -34,6 +34,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/validation"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/update"
+	"github.com/GoogleContainerTools/skaffold/proto"
 )
 
 // For tests
@@ -48,10 +49,10 @@ func withRunner(ctx context.Context, action func(runner.Runner, *latest.Skaffold
 	event.LogMetaEvent()
 	err = action(runner, config)
 	if err := alwaysSucceedWhenCancelled(ctx, err); err != nil {
-		event.SessionEnded(1)
+		event.SessionEnded(proto.StatusCode_SESSION_FAILURE)
 		return err
 	}
-	event.SessionEnded(0)
+	event.SessionEnded(proto.StatusCode_SESSION_SUCCESS)
 	return nil
 }
 

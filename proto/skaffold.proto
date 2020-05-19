@@ -437,4 +437,7 @@ enum StatusCode {
     DEVINIT_REGISTER_DEPLOY_DEPS = 703;
     // Failed to configure watcher for Skaffold configuration file.
     DEVINIT_REGISTER_CONFIG_DEP = 704;
+
+    // Session Failure
+    SESSION_FAILURE = 901;
 }

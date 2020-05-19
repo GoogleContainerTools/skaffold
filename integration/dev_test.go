@@ -322,12 +322,9 @@ func TestDevSkaffoldEndEvent(t *testing.T) {
 
 	// Run skaffold build first to fail quickly on a build failure
 	skaffold.Build().InDir("examples/getting-started").RunOrFail(t)
-
 	ns, _ := SetupNamespace(t)
-
 	rpcAddr := randomPort()
-	env := []string{fmt.Sprintf("TEST_NS=%s", ns.Name)}
-	cancel := skaffold.Dev("--rpc-port", rpcAddr).InDir("examples/getting-started").InNs(ns.Name).WithEnv(env).RunCancellable(t)
+	cancel := skaffold.Dev("--rpc-port", rpcAddr).InDir("examples/getting-started").InNs(ns.Name).RunCancellable(t)
 	_, entries := apiEvents(t, rpcAddr)
 	// Wait for 1 dev loop iteration to complete and then cancel.  Ensure the end event is received.
 	waitForDevLoopIteration(t, entries, cancel)
@@ -350,7 +347,7 @@ func waitForDevLoopIteration(t *testing.T, entries chan *proto.LogEntry, cancel 
 					}()
 				}
 			case *proto.Event_EndEvent:
-				t.Logf("event received %v", e.GetEvent())
+				t.Logf("end event received %v", e.GetEvent())
 				return
 			default:
 				t.Logf("event received %v", e.GetEvent())
