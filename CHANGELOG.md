@@ -1,3 +1,81 @@
+# v1.10.0 Release - 05/19/2020
+
+Note: This release comes with a new config version `v2beta4`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
+
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.10.0/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.10.0/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.10.0/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.10.0`
+
+
+Highlights:
+- Skaffold no longer requires a standalone Kustomize binary to be installed!
+- Kustomize projects are now also supported in `skaffold init`
+- This release also (re)adds support for ARM binaries :)
+
+New Features:
+* allow specifying regex in global config kubecontext [#4076](https://github.com/GoogleContainerTools/skaffold/pull/4076)
+* Add MacPorts install command [#4157](https://github.com/GoogleContainerTools/skaffold/pull/4157)
+* use kubectl's built-in kustomize when possible [#4183](https://github.com/GoogleContainerTools/skaffold/pull/4183)
+* Logger now recognises images with default-repo [#4178](https://github.com/GoogleContainerTools/skaffold/pull/4178)
+* Cross compile for linux-arm [#4151](https://github.com/GoogleContainerTools/skaffold/pull/4151)
+* support Kustomize projects in `skaffold init` [#3925](https://github.com/GoogleContainerTools/skaffold/pull/3925)
+
+Fixes:
+* Exclude tmpcharts folder and helm generated .lock files from list of watched files [#4181](https://github.com/GoogleContainerTools/skaffold/pull/4181)
+* Retrieve the proper kind cluster name [#4212](https://github.com/GoogleContainerTools/skaffold/pull/4212)
+* Return error from 'helm get' rather than swallowing result [#4173](https://github.com/GoogleContainerTools/skaffold/pull/4173)
+* Rely on LogAggregator’s Zero value [#4199](https://github.com/GoogleContainerTools/skaffold/pull/4199)
+* CNB command-line should only be rewritten if changed [#4176](https://github.com/GoogleContainerTools/skaffold/pull/4176)
+* A default deployer is guaranteed to be set [#4204](https://github.com/GoogleContainerTools/skaffold/pull/4204)
+* Don’t store portForwardResources [#4202](https://github.com/GoogleContainerTools/skaffold/pull/4202)
+* allow error from kind at image loading to propagate [#4196](https://github.com/GoogleContainerTools/skaffold/pull/4196)
+* Return early like for createContainerManager() [#4190](https://github.com/GoogleContainerTools/skaffold/pull/4190)
+* Don’t duplicate the definition of `portForward`, under the `profiles` section. [#4165](https://github.com/GoogleContainerTools/skaffold/pull/4165)
+
+Updates & Refactors:
+* Simpler code for changeset [#4217](https://github.com/GoogleContainerTools/skaffold/pull/4217)
+
+* Always print `ctrl-c` message [#4214](https://github.com/GoogleContainerTools/skaffold/pull/4214)
+* Small `diag` improvements [#4219](https://github.com/GoogleContainerTools/skaffold/pull/4219)
+* Remove duplication around `kubectlCLI` [#4215](https://github.com/GoogleContainerTools/skaffold/pull/4215)
+* Better handling of per-command default values [#4209](https://github.com/GoogleContainerTools/skaffold/pull/4209)
+* Simplify code to set intents up [#4211](https://github.com/GoogleContainerTools/skaffold/pull/4211)
+* Rename Values to artifactOverrides [#4169](https://github.com/GoogleContainerTools/skaffold/pull/4169)
+* Show suggestions for every command [#4206](https://github.com/GoogleContainerTools/skaffold/pull/4206)
+* Recognise *.gcr.io default-repo in suggestions [#4208](https://github.com/GoogleContainerTools/skaffold/pull/4208)
+* Common flags: simpler code and no init() function [#4200](https://github.com/GoogleContainerTools/skaffold/pull/4200)
+* Move `imagesAreLocal` logic to where it belongs [#4203](https://github.com/GoogleContainerTools/skaffold/pull/4203)
+* Use a single flag for log tailing [#4189](https://github.com/GoogleContainerTools/skaffold/pull/4189)
+* improve deployment waiting logic in integration tests [#4162](https://github.com/GoogleContainerTools/skaffold/pull/4162)
+* Show message "Press ctrl c to exit" on forward manager start [#4113](https://github.com/GoogleContainerTools/skaffold/pull/4113)
+* Make sure log tailing works with pods and deployments [#4119](https://github.com/GoogleContainerTools/skaffold/pull/4119)
+
+Docs updates:
+* Change the order of properties in the doc [#4184](https://github.com/GoogleContainerTools/skaffold/pull/4184)
+* Fix typo in development guide [#4152](https://github.com/GoogleContainerTools/skaffold/pull/4152)
+* Update DEVELOPMENT.md on making changes to the skaffold api [#4127](https://github.com/GoogleContainerTools/skaffold/pull/4127)
+
+
+Huge thanks goes out to all of our contributors for this release:
+- Balint Pato
+- Brian de Alwis
+- Daniel Sel
+- David Gageot
+- Gaurav Ghosh
+- Nick Kubala
+- Nils Breunese
+- Tejal Desai
+- Thomas Strömberg
+
+
 # v1.9.1 Hotfix Release - 05/07/2020
 
 This is a hotfix release to address an issue with tailing logs while deploying with Helm, and to avoid an issue with authentication while building with Kaniko in GCB.
