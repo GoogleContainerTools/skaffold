@@ -34,6 +34,6 @@ func TestNewCmdDebug(t *testing.T) {
 
 		t.CheckDeepEqual(true, opts.Tail)
 		t.CheckDeepEqual(false, opts.Force)
-		t.CheckDeepEqual(false, opts.Force)
+		t.CheckDeepEqual(false, opts.EnableRPC)
 	})
 }
