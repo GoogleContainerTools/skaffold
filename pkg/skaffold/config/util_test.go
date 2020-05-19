@@ -291,22 +291,40 @@ func TestIsDefaultLocal(t *testing.T) {
 func TestIsKindCluster(t *testing.T) {
 	tests := []struct {
 		context        string
-		expectedName   string
 		expectedIsKind bool
 	}{
-		{context: "kind-kind", expectedName: "kind", expectedIsKind: true},
-		{context: "kind-other", expectedName: "other", expectedIsKind: true},
-		{context: "kind@kind", expectedName: "kind", expectedIsKind: true},
-		{context: "other@kind", expectedName: "other", expectedIsKind: true},
-		{context: "docker-for-desktop", expectedName: "", expectedIsKind: false},
-		{context: "not-kind", expectedName: "", expectedIsKind: false},
+		{context: "kind-kind", expectedIsKind: true},
+		{context: "kind-other", expectedIsKind: true},
+		{context: "kind@kind", expectedIsKind: true},
+		{context: "other@kind", expectedIsKind: true},
+		{context: "docker-for-desktop", expectedIsKind: false},
+		{context: "not-kind", expectedIsKind: false},
 	}
 	for _, test := range tests {
-		testutil.Run(t, "", func(t *testutil.T) {
-			isKind, name := IsKindCluster(test.context)
+		testutil.Run(t, test.context, func(t *testutil.T) {
+			isKind := IsKindCluster(test.context)
 
 			t.CheckDeepEqual(test.expectedIsKind, isKind)
-			t.CheckDeepEqual(test.expectedName, name)
+		})
+	}
+}
+
+func TestKindClusterName(t *testing.T) {
+	tests := []struct {
+		kubeCluster  string
+		expectedName string
+	}{
+		{kubeCluster: "kind", expectedName: "kind"},
+		{kubeCluster: "kind-kind", expectedName: "kind"},
+		{kubeCluster: "kind-other", expectedName: "other"},
+		{kubeCluster: "kind@kind", expectedName: "kind"},
+		{kubeCluster: "other@kind", expectedName: "other"},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.kubeCluster, func(t *testutil.T) {
+			kindCluster := KindClusterName(test.kubeCluster)
+
+			t.CheckDeepEqual(test.expectedName, kindCluster)
 		})
 	}
 }
