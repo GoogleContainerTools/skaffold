@@ -44,6 +44,6 @@ var knownBuildProblems = map[proto.StatusCode]problem{
 	proto.StatusCode_BUILD_PROJECT_NOT_FOUND: {
 		regexp:      re("build failed: pushing image: unknown: Project"),
 		description: "Build Failed",
-		suggestion:  func(_ config.SkaffoldOptions) string { return "Check your GCR project." },
+		suggestion:  func(config.SkaffoldOptions) string { return "Check your GCR project." },
 	},
 }
