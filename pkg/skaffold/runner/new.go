@@ -133,8 +133,7 @@ func setupIntents(runCtx *runcontext.RunContext) (*intents, chan bool) {
 	return intents, intentChan
 }
 
-func setupTrigger(triggerName string, setIntent func(bool),setAutoTrigger func(bool), autoTrigger func() bool, singleTriggerCallback func(func()), autoTriggerCallback func(func(bool)), c chan<- bool) {
-
+func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(bool), autoTrigger func() bool, singleTriggerCallback func(func()), autoTriggerCallback func(func(bool)), c chan<- bool) {
 	setIntent(autoTrigger())
 	// give the server a callback to set the intent value when a user request is received
 	singleTriggerCallback(func() {

@@ -75,6 +75,24 @@ func (i *intents) setDeploy(val bool) {
 	i.lock.Unlock()
 }
 
+func (i *intents) getAutoBuild() bool {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	return i.autoBuild
+}
+
+func (i *intents) getAutoSync() bool {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	return i.autoSync
+}
+
+func (i *intents) getAutoDeploy() bool {
+	i.lock.Lock()
+	defer i.lock.Unlock()
+	return i.autoDeploy
+}
+
 func (i *intents) setAutoBuild(val bool) {
 	i.lock.Lock()
 	i.autoBuild = val
