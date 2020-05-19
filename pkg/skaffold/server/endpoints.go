@@ -68,7 +68,7 @@ func (s *server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (
 
 func (s *server) AutoBuild(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
 	res = &empty.Empty{}
-	autoBuild := request.GetEnabled().State
+	autoBuild := request.GetState().Enabled
 	updateAutoBuild, err := event.AutoTriggerDiff("build", autoBuild)
 	if err != nil {
 		return
@@ -89,7 +89,7 @@ func (s *server) AutoBuild(ctx context.Context, request *proto.TriggerRequest) (
 
 func (s *server) AutoDeploy(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
 	res = &empty.Empty{}
-	autoDeploy := request.GetEnabled().State
+	autoDeploy := request.GetState().Enabled
 	updateAutoDeploy, err := event.AutoTriggerDiff("deploy", autoDeploy)
 	if err != nil {
 		return
@@ -111,7 +111,7 @@ func (s *server) AutoDeploy(ctx context.Context, request *proto.TriggerRequest) 
 
 func (s *server) AutoSync(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
 	res = &empty.Empty{}
-	autoSync := request.GetEnabled().State
+	autoSync := request.GetState().Enabled
 	updateAutoSync, err := event.AutoTriggerDiff("sync", autoSync)
 	if err != nil {
 		return

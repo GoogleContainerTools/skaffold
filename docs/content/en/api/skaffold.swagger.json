@@ -1203,7 +1203,7 @@
     "protoTriggerState": {
       "type": "object",
       "properties": {
-        "state": {
+        "enabled": {
           "type": "boolean",
           "format": "boolean"
         }

@@ -217,12 +217,12 @@ message UserIntentRequest {
 }
 
 message TriggerRequest {
-  TriggerState enabled = 1;
+  TriggerState state = 1;
 }
 
 // TriggerState represents trigger state for a given phase.
 message TriggerState {
-  bool state = 1; // enable or disable a trigger state
+  bool enabled = 1; // enable or disable a trigger state
 }
 
 // Intent represents user intents for a given phase.
@@ -269,7 +269,7 @@ service SkaffoldService {
     rpc AutoBuild (TriggerRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
             put: "/v1/build/auto_execute"
-            body: "enabled"
+            body: "state"
         };
     }
 
@@ -277,7 +277,7 @@ service SkaffoldService {
     rpc AutoSync (TriggerRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
             put: "/v1/sync/auto_execute"
-            body: "enabled"
+            body: "state"
         };
     }
 
@@ -285,7 +285,7 @@ service SkaffoldService {
     rpc AutoDeploy (TriggerRequest) returns (google.protobuf.Empty) {
         option (google.api.http) = {
             put: "/v1/deploy/auto_execute"
-            body: "enabled"
+            body: "state"
         };
     }
 

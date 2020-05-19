@@ -616,7 +616,7 @@ will be sent with the new status.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| enabled | [TriggerState](#proto.TriggerState) |  |  |
+| state | [TriggerState](#proto.TriggerState) |  |  |
 
 
 
@@ -631,7 +631,7 @@ TriggerState represents trigger state for a given phase.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| state | [bool](#bool) |  | enable or disable a trigger state |
+| enabled | [bool](#bool) |  | enable or disable a trigger state |
 
 
 
