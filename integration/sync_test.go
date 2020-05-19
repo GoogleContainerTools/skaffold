@@ -219,8 +219,8 @@ func TestDevAutoSyncAPITrigger(t *testing.T) {
 	defer func() { os.Truncate("testdata/file-sync/foo", 0) }()
 
 	rpcClient.AutoSync(context.Background(), &proto.TriggerRequest{
-		Enabled: &proto.TriggerState{
-			State: true,
+		State: &proto.TriggerState{
+			Enabled: true,
 		},
 	})
 
@@ -232,8 +232,8 @@ func TestDevAutoSyncAPITrigger(t *testing.T) {
 	verifySyncCompletedWithEvents(t, entries, ns.Name, "bar")
 
 	rpcClient.AutoSync(context.Background(), &proto.TriggerRequest{
-		Enabled: &proto.TriggerState{
-			State: false,
+		State: &proto.TriggerState{
+			Enabled: false,
 		},
 	})
 }

@@ -161,35 +161,35 @@ func TestDevAPIAutoTriggers(t *testing.T) {
 
 	// Enable auto build
 	rpcClient.AutoBuild(context.Background(), &proto.TriggerRequest{
-		Enabled: &proto.TriggerState{
-			State: true,
-		},
-	})
-	rpcClient.AutoDeploy(context.Background(), &proto.TriggerRequest{
-		Enabled: &proto.TriggerState{
-			State: true,
+		State: &proto.TriggerState{
+			Enabled: true,
 		},
 	})
 	// Ensure we see a build triggered in the event log
-	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
+	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
 		return e.GetEvent().GetBuildEvent().GetArtifact() == "test-dev", nil
 	})
 	failNowIfError(t, err)
 
+	rpcClient.AutoDeploy(context.Background(), &proto.TriggerRequest{
+		State: &proto.TriggerState{
+			Enabled: true,
+		},
+	})
 	verifyDeployment(t, entries, client, dep)
 }
 
 func verifyDeployment(t *testing.T, entries chan *proto.LogEntry, client *NSKubernetesClient, dep *appsv1.Deployment) {
 	// Ensure we see a deploy triggered in the event log
-	err := wait.PollImmediate(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
+	err := wait.Poll(time.Millisecond*500, 2*time.Minute, func() (bool, error) {
 		e := <-entries
 		return e.GetEvent().GetDeployEvent().GetStatus() == "In Progress", nil
 	})
 	failNowIfError(t, err)
 
 	// Make sure the old Deployment and the new Deployment are different
-	err = wait.PollImmediate(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
+	err = wait.Poll(time.Millisecond*500, 1*time.Minute, func() (bool, error) {
 		newDep := client.GetDeployment("test-dev")
 		logrus.Infof("old gen: %d, new gen: %d", dep.GetGeneration(), newDep.GetGeneration())
 		return dep.GetGeneration() != newDep.GetGeneration(), nil
