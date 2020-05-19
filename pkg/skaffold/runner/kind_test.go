@@ -24,6 +24,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/testutil"
@@ -101,14 +102,17 @@ func TestLoadImagesInKindNodes(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&util.DefaultExecCommand, test.commands)
 
-			r := &SkaffoldRunner{
-				builds: test.built,
-				runCtx: &runcontext.RunContext{
-					Opts: config.SkaffoldOptions{
-						Namespace: "namespace",
-					},
-					KubeContext: "kubecontext",
+			runCtx := &runcontext.RunContext{
+				Opts: config.SkaffoldOptions{
+					Namespace: "namespace",
 				},
+				KubeContext: "kubecontext",
+			}
+
+			r := &SkaffoldRunner{
+				runCtx:     runCtx,
+				kubectlCLI: kubectl.NewFromRunContext(runCtx),
+				builds:     test.built,
 			}
 			err := r.loadImagesInKindNodes(context.Background(), ioutil.Discard, test.kindCluster, test.deployed)
 
