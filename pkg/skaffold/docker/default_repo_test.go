@@ -45,6 +45,13 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			expectedImageNew: "gcr.io/some/registry",
 		},
 		{
+			description:      "prefix example on docs",
+			image:            "gcr.io/k8s-skaffold/lib/core",
+			defaultRepo:      "gcr.io/myproject/path/subpath",
+			expectedImage:    "gcr.io/myproject/path/subpath/gcr.io/k8s-skaffold/lib/core",
+			expectedImageNew: "gcr.io/myproject/path/subpath/lib/core",
+		},
+		{
 			description:      "provided image has defaultRepo prefix",
 			image:            "gcr.io/default/registry",
 			defaultRepo:      "gcr.io/default",
@@ -131,9 +138,9 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			replaced, err := substituteDefaultRepoIntoImage(test.defaultRepo, test.image)
-			replacedNew, err := substituteDefaultRepoIntoImageNew(test.defaultRepo, test.image)
+			replacedNew, errNew := substituteDefaultRepoIntoImageNew(test.defaultRepo, test.image)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedImage, replaced)
-			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedImageNew, replacedNew)
+			t.CheckErrorAndDeepEqual(test.shouldErr, errNew, test.expectedImageNew, replacedNew)
 		})
 	}
 }

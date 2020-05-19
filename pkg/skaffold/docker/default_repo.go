@@ -30,8 +30,8 @@ var (
 	escapeRegex = regexp.MustCompile(`[/._:@]`)
 )
 
-func SubstituteDefaultRepoIntoImage(defaultRepo string, image string, useNew bool) (string, error) {
-	if useNew {
+func SubstituteDefaultRepoIntoImage(defaultRepo string, image string, rewriteStrategy bool) (string, error) {
+	if rewriteStrategy {
 		return substituteDefaultRepoIntoImageNew(defaultRepo, image)
 	}
 	return substituteDefaultRepoIntoImage(defaultRepo, image)

@@ -38,9 +38,9 @@ try to push the image as provided in the yaml.
 The image name rewriting strategies are designed to be *conflict-free*:
 the full image name is rewritten on top of the default-repo so similar image names don't collide in the base namespace (e.g.: repo1/example and repo2/example would collide in the target_namespace/example without this)
 
-Automated image name rewriting strategies are determined based on the default-repo and the original image repository:
+Automated image name rewriting strategies are determined based on the default-repo, the original image repository and global config value `reconstruct-strategy`:
 
-* default-repo does not begin with gcr.io
+* Non GCR Default Repository.
   * **strategy**: 		escape & concat & truncate to 256
 
     ```
@@ -49,29 +49,66 @@ Automated image name rewriting strategies are determined based on the default-re
      rewritten image:   aws_account_id.dkr.ecr.region.amazonaws.com/gcr_io_k8s-skaffold_skaffold-example1
     ```
 
-* default-repo begins with "gcr.io" (special case - as GCR allows for infinite deep image repo names)
-  * **strategy**: concat unless prefix matches
-  * **example1**: prefix doesn't match:
+* GCR Default repository.
 
-    ```
-      original image: 	gcr.io/k8s-skaffold/skaffold-example1
-      default-repo: 	gcr.io/myproject/myimage
-      rewritten image:  gcr.io/myproject/myimage/gcr.io/k8s-skaffold/skaffold-example1
-    ```
-  * **example2**: prefix matches:
+  For GCR default registry, Skaffold provides 2 strategies:
+  1. **Concatenation Strategy**: Concatenation strategy is the default strategy. In this strategy, the resulting image will have paths concatenated unless prefix matches.
 
-    ```
-      original image: 	gcr.io/k8s-skaffold/skaffold-example1
-      default-repo: 	gcr.io/k8s-skaffold
-      rewritten image:  gcr.io/k8s-skaffold/skaffold-example1	
-    ```
-  * **example3**: shared prefix:
+     e.g when prefixes do not match,
+     ```
+       original image:    gcr.io/k8s-skaffold/lib/core
+       default-repo:      gcr.io/myproject/path/subpath
+       rewritten image:   gcr.io/myproject/path/subpath/gcr.io/k8s-skaffold/lib/core
+     ```
+     the re-written `ggcr.io/myproject/path/subpath/gcr.io/k8s-skaffold/lib/core` image is concatenation of all paths including the project id `k8s-skaffold` from the original name.
+  2. **Reconstruct Strategy**: Reconstruct Strategy will reconstruct the resulting image retaining the `project` id from `default-repo` and concatenate only the paths elements.
 
-    ```
-      original image: 	gcr.io/k8s-skaffold/skaffold-example1
-      default-repo: 	gcr.io/k8s-skaffold/myimage
-      rewritten image:  gcr.io/k8s-skaffold/myimage/skaffold-example1	
-    ```
+     e.g for the same example above,
+     ```
+       original image:    gcr.io/k8s-skaffold/lib/core
+       default-repo:      eu.gcr.io/myproject/path/subpath
+       rewritten image:   eu.gcr.io/myproject/path/subpath/lib/core
+     ```
+     the re-written `gcr.io/myproject/myimage/app` is constructed by,
+      * replacing the registry location in the `original name` with the location `eu.gcr.io` from `default-repo`
+      * replacing the project id in the `original image` with project id from `default-repo`,
+      * appending the paths [`path`, `subpath`] from `default-repo` to the path [`lib`] in `original image`.
+
+     To use this strategy, set the `reconstruct-strategy` to `true` using command:
+     ```
+       skaffold config set --global reconstruct-strategy true
+     ```
+
+  Below are example of the resulting image with Concatenation and Reconstruct Strategies.
+  1. Image prefix and `default-repo` do not match
+     ```
+      original image:         gcr.io/k8s-skaffold/skaffold-example1
+      default-repo:           gcr.io/myproject/myimage
+      Concatenation Strategy: gcr.io/myproject/myimage/gcr.io/k8s-skaffold/skaffold-example1
+      Reconstruct Strategy:   gcr.io/myproject/myimage/skaffold-example1
+     ```
+  2. Image prefix and default-repo matches
+     ```
+      original image:         gcr.io/k8s-skaffold/skaffold-example1
+      default-repo:           gcr.io/k8s-skaffold
+      Concatenation Strategy: gcr.io/k8s-skaffold/skaffold-example1
+      Reconstruct Strategy:   gcr.io/k8s-skaffold/skaffold-example1
+     ```
+  3. Image and `default-repo` have shared prefix.
+     ```
+      original image:         gcr.io/k8s-skaffold/skaffold-example1
+      default-repo:           gcr.io/k8s-skaffold/myimage
+      Concatenation Strategy: gcr.io/k8s-skaffold/myimage/skaffold-example1
+      Reconstruct Strategy:   gcr.io/k8s-skaffold/myimage/skaffold-example1
+     ```
+  4. Image and `default-repo` have shared prefix but in different regions.
+     ```
+      original image:         gcr.io/k8s-skaffold/skaffold-example1
+      default-repo:           eu.gcr.io/k8s-skaffold/myimage
+      Concatenation Strategy: eu.gcr.io/k8s-skaffold/myimage/gcr.io/k8s-skaffold/skaffold-example1
+      Reconstruct Strategy:   eu.gcr.io/k8s-skaffold/myimage/skaffold-example1
+     ```
+
 
 ## Insecure image registries
 

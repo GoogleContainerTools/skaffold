@@ -155,19 +155,18 @@ func GetDefaultRepo(configFile string, cliValue *string) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	useNewSubstitution := getSubstitutionConfig(cfg)
 	// CLI flag takes precedence.
 	if cliValue != nil {
-		return *cliValue, useNewSubstitution, nil
+		return *cliValue, useReconstructStrategy(cfg), nil
 	}
-	return cfg.DefaultRepo, useNewSubstitution, nil
+	return cfg.DefaultRepo, useReconstructStrategy(cfg), nil
 }
 
-func getSubstitutionConfig(cfg *ContextConfig) bool {
-	if cfg.UseNewSubstitution == nil {
+func useReconstructStrategy(cfg *ContextConfig) bool {
+	if cfg.ReconstructStrategy == nil {
 		return false
 	}
-	return *cfg.UseNewSubstitution
+	return *cfg.ReconstructStrategy
 }
 
 func GetLocalCluster(configFile string, minikubeProfile string) (bool, error) {

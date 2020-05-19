@@ -141,12 +141,12 @@ type tagErr struct {
 
 // ApplyDefaultRepo spplies the default repo to a given image tag.
 func (r *SkaffoldRunner) ApplyDefaultRepo(tag string) (string, error) {
-	defaultRepo, useNewSubstitution, err := config.GetDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo.Value())
+	defaultRepo, reconstructStrategy, err := config.GetDefaultRepo(r.runCtx.Opts.GlobalConfig, r.runCtx.Opts.DefaultRepo.Value())
 	if err != nil {
 		return "", fmt.Errorf("getting default repo: %w", err)
 	}
 
-	newTag, err := docker.SubstituteDefaultRepoIntoImage(defaultRepo, tag, useNewSubstitution)
+	newTag, err := docker.SubstituteDefaultRepoIntoImage(defaultRepo, tag, reconstructStrategy)
 	if err != nil {
 		return "", fmt.Errorf("applying default repo to %q: %w", tag, err)
 	}

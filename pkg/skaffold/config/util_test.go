@@ -458,11 +458,12 @@ func TestShouldDisplayPrompt(t *testing.T) {
 
 func TestGetDefaultRepo(t *testing.T) {
 	tests := []struct {
-		description  string
-		cfg          *ContextConfig
-		cliValue     *string
-		expectedRepo string
-		shouldErr    bool
+		description    string
+		cfg            *ContextConfig
+		cliValue       *string
+		expectedRepo   string
+		useNewStrategy bool
+		shouldErr      bool
 	}{
 		{
 			description:  "empty",
@@ -477,26 +478,29 @@ func TestGetDefaultRepo(t *testing.T) {
 			expectedRepo: "default/repo",
 		},
 		{
-			description:  "from global config",
-			cfg:          &ContextConfig{DefaultRepo: "global/repo"},
-			cliValue:     nil,
-			expectedRepo: "global/repo",
+			description:    "from global config",
+			cfg:            &ContextConfig{DefaultRepo: "global/repo", ReconstructStrategy: util.BoolPtr(true)},
+			cliValue:       nil,
+			expectedRepo:   "global/repo",
+			useNewStrategy: true,
 		},
 		{
-			description:  "cancel global config with cli",
-			cfg:          &ContextConfig{DefaultRepo: "global/repo"},
-			cliValue:     util.StringPtr(""),
-			expectedRepo: "",
+			description:    "cancel global config with cli",
+			cfg:            &ContextConfig{DefaultRepo: "global/repo", ReconstructStrategy: util.BoolPtr(false)},
+			cliValue:       util.StringPtr(""),
+			expectedRepo:   "",
+			useNewStrategy: false,
 		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			t.Override(&GetConfigForCurrentKubectx, func(string) (*ContextConfig, error) { return test.cfg, nil })
 
-			defaultRepo, _, err := GetDefaultRepo("config", test.cliValue)
+			defaultRepo, newStrategy, err := GetDefaultRepo("config", test.cliValue)
 
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expectedRepo, defaultRepo)
+			t.CheckDeepEqual(test.useNewStrategy, newStrategy)
 		})
 	}
 }
