@@ -46,6 +46,7 @@ type KubectlDeployer struct {
 	workingDir         string
 	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
+	renderNoLabels     bool
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
@@ -60,6 +61,7 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 			ForceDeploy: runCtx.Opts.Force,
 		},
 		insecureRegistries: runCtx.InsecureRegistries,
+		renderNoLabels:     runCtx.Opts.NoLabels,
 	}
 }
 
@@ -170,6 +172,8 @@ func (k *KubectlDeployer) readRemoteManifest(ctx context.Context, name string) (
 	return manifest.Bytes(), nil
 }
 
+// Render the Kubernetes YAML that Skaffold would normally apply to a runnning
+// environment to Standard Out or a file according to command arguments.
 func (k *KubectlDeployer) Render(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller, filepath string) error {
 	manifests, err := k.renderManifests(ctx, out, builds, labellers)
 	if err != nil {
@@ -222,7 +226,13 @@ func (k *KubectlDeployer) renderManifests(ctx context.Context, out io.Writer, bu
 		}
 	}
 
-	manifests, err = manifests.SetLabels(merge(k, labellers...))
+	labels := merge(k, labellers...)
+
+	if k.renderNoLabels {
+		labels = filter(labels, constants.Labels.Filter)
+	}
+
+	manifests, err = manifests.SetLabels(labels)
 	if err != nil {
 		return nil, fmt.Errorf("setting labels in manifests: %w", err)
 	}

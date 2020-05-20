@@ -42,6 +42,7 @@ func NewCmdRender() *cobra.Command {
 		WithFlags(func(f *pflag.FlagSet) {
 			f.BoolVar(&showBuild, "loud", false, "Show the build logs and output")
 			f.StringVar(&renderOutputPath, "output", "", "file to write rendered manifests to")
+			f.BoolVar(&opts.NoLabels, "no-labels", false, "Do not add 'skaffold.dev/' labels to rendered objects")
 		}).
 		NoArgs(doRender)
 }

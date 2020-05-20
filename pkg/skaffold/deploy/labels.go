@@ -19,6 +19,7 @@ package deploy
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -50,12 +51,24 @@ type Labeller interface {
 // merge merges the labels from multiple sources.
 func merge(deployer Labeller, sources ...Labeller) map[string]string {
 	merged := deployer.Labels()
-
 	for _, src := range sources {
 		copyMap(merged, src.Labels())
 	}
 
 	return merged
+}
+
+func filter(labels map[string]string, filter string) map[string]string {
+	// Remove labels that match the filter
+	r := regexp.MustCompile(filter)
+	for k := range labels {
+		match := r.MatchString(k)
+		if match {
+			delete(labels, k)
+		}
+	}
+
+	return labels
 }
 
 // retry 3 times to give the object time to propagate to the API server

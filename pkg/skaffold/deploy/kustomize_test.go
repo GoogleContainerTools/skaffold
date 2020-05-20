@@ -472,6 +472,7 @@ func TestKustomizeRender(t *testing.T) {
 		kustomizations []kustomizationCall
 		expected       string
 		shouldErr      bool
+		noLabels       bool
 	}{
 		{
 			description: "single kustomization",
@@ -625,6 +626,62 @@ spec:
     name: image2
 `,
 		},
+		{
+			description: "No Labels: Remove skaffold.dev/ labels from rendered output; user labels are left untouched",
+			noLabels:    true,
+			builds: []build.Artifact{
+				{
+					ImageName: "gcr.io/project/image1",
+					Tag:       "gcr.io/project/image1:tag1",
+				},
+				{
+					ImageName: "gcr.io/project/image2",
+					Tag:       "gcr.io/project/image2:tag2",
+				},
+			},
+			labels: []Labeller{
+				&testLabels{
+					labels: map[string]string{
+						"skaffold/label":           "expected",
+						"skaffold.dev":             "expected",
+						"test.dev/label":           "expected",
+						"user/label":               "expected",
+						"skaffold.dev/customLabel": "not-expected",
+					}},
+			},
+			kustomizations: []kustomizationCall{
+				{
+					folder: ".",
+					buildResult: `apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1 
+    name: image1
+  - image: gcr.io/project/image2
+    name: image2
+`,
+				},
+			},
+			expected: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    skaffold.dev: expected
+    skaffold/label: expected
+    test.dev/label: expected
+    user/label: expected
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/project/image1:tag1
+    name: image1
+  - image: gcr.io/project/image2:tag2
+    name: image2
+`,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -653,6 +710,7 @@ spec:
 				KubeContext: testKubeContext,
 				Opts: config.SkaffoldOptions{
 					Namespace: testNamespace,
+					NoLabels:  test.noLabels,
 				},
 			})
 			var b bytes.Buffer

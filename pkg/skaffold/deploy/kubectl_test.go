@@ -511,6 +511,7 @@ func TestKubectlRender(t *testing.T) {
 		labels      []Labeller
 		input       string
 		expected    string
+		noLabels    bool
 	}{
 		{
 			description: "normal render",
@@ -579,6 +580,49 @@ spec:
     name: image2
 `,
 		},
+		{
+			description: "No Labels: Remove skaffold.dev/ labels from rendered output; user labels are left untouched",
+			noLabels:    true,
+			builds: []build.Artifact{
+				{
+					ImageName: "gcr.io/k8s-skaffold/skaffold",
+					Tag:       "gcr.io/k8s-skaffold/skaffold:test",
+				},
+			},
+			labels: []Labeller{
+				&testLabels{
+					labels: map[string]string{
+						"skaffold/label":           "expected",
+						"skaffold.dev":             "expected",
+						"test.dev/label":           "expected",
+						"user/label":               "expected",
+						"skaffold.dev/customLabel": "not-expected",
+					}},
+			},
+			input: `apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold
+    name: skaffold
+`,
+			expected: `apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    skaffold.dev: expected
+    skaffold/label: expected
+    test.dev/label: expected
+    user/label: expected
+  namespace: default
+spec:
+  containers:
+  - image: gcr.io/k8s-skaffold/skaffold:test
+    name: skaffold
+`,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
@@ -601,6 +645,9 @@ spec:
 					},
 				},
 				KubeContext: testKubeContext,
+				Opts: config.SkaffoldOptions{
+					NoLabels: test.noLabels,
+				},
 			})
 			var b bytes.Buffer
 			err := deployer.Render(context.Background(), &b, test.builds, test.labels, "")

@@ -701,6 +701,7 @@ Options:
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
       --loud=false: Show the build logs and output
   -n, --namespace='': Run deployments in the specified namespace
+      --no-labels=false: Do not add 'skaffold.dev/' labels to rendered objects
       --output='': file to write rendered manifests to
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
@@ -719,6 +720,7 @@ Env vars:
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_LOUD` (same as `--loud`)
 * `SKAFFOLD_NAMESPACE` (same as `--namespace`)
+* `SKAFFOLD_NO_LABELS` (same as `--no-labels`)
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)

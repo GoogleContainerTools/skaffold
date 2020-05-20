@@ -117,11 +117,13 @@ var ImageRef = struct {
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
 
 var Labels = struct {
+	Filter           string
 	TagPolicy        string
 	Deployer         string
 	Builder          string
 	DockerAPIVersion string
 }{
+	Filter:           "^skaffold\\.dev/",
 	TagPolicy:        "skaffold.dev/tag-policy",
 	Deployer:         "skaffold.dev/deployer",
 	Builder:          "skaffold.dev/builder",
