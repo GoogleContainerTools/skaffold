@@ -1,3 +1,23 @@
+# v1.10.1 Hotfix Release - 05/20/2020
+
+This is a hotfix release to address an issue with newer versions of Kustomize being broken, and to address an issue in our release process with malformed binaries.
+
+* Revert "use kubectl's built-in kustomize when possible" [#4237](https://github.com/GoogleContainerTools/skaffold/pull/4237)
+* Makefile: evaluate os/arch based on target name [#4236](https://github.com/GoogleContainerTools/skaffold/pull/4236)
+
+**Linux**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.10.1/skaffold-linux-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**macOS**
+`curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/v1.10.1/skaffold-darwin-amd64 && chmod +x skaffold && sudo mv skaffold /usr/local/bin`
+
+**Windows**
+ https://storage.googleapis.com/skaffold/releases/v1.10.1/skaffold-windows-amd64.exe
+
+**Docker image**
+`gcr.io/k8s-skaffold/skaffold:v1.10.1`
+
+
 # v1.10.0 Release - 05/19/2020
 
 Note: This release comes with a new config version `v2beta4`. To upgrade your skaffold.yaml, use `skaffold fix`. If you choose not to upgrade, skaffold will auto-upgrade as best as it can.
