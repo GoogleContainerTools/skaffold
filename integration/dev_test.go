@@ -356,6 +356,9 @@ func createModifiedKubeconfig(namespace string) ([]byte, string, error) {
 	if config.IsKindCluster(kubeConfig.CurrentContext) {
 		contextName = "kind-" + contextName
 	}
+	if config.IsK3dCluster(kubeConfig.CurrentContext) {
+		contextName = "k3d-" + contextName
+	}
 
 	if kubeConfig.CurrentContext == constants.DefaultMinikubeContext {
 		contextName = constants.DefaultMinikubeContext // skip, since integration test with minikube runs on single cluster
