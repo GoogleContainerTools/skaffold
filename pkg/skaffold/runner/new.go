@@ -133,11 +133,11 @@ func setupIntents(runCtx *runcontext.RunContext) (*intents, chan bool) {
 	return intents, intentChan
 }
 
-func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(bool), autoTrigger func() bool, singleTriggerCallback func(func()), autoTriggerCallback func(func(bool)), c chan<- bool) {
-	setIntent(autoTrigger())
+func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(bool), getAutoTrigger func() bool, singleTriggerCallback func(func()), autoTriggerCallback func(func(bool)), c chan<- bool) {
+	setIntent(getAutoTrigger())
 	// give the server a callback to set the intent value when a user request is received
 	singleTriggerCallback(func() {
-		if !autoTrigger() { //if auto trigger is disabled, we're in manual mode
+		if !getAutoTrigger() { //if auto trigger is disabled, we're in manual mode
 			logrus.Debugf("%s intent received, calling back to runner", triggerName)
 			c <- true
 			setIntent(true)

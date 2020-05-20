@@ -254,11 +254,11 @@ This means that _even if there are new file changes_, Skaffold will wait for ano
 | --- | --- |
 | HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/execute`, the [Execution Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/Execute">}}) |
 | gRPC | `client.Execute(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
-| HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/build/auto_execute`, the [Auto Build Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/AutoBuild">}}) |
+| HTTP, method: PUT | `http://localhost:{HTTP_RPC_PORT}/v1/build/auto_execute`, the [Auto Build Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/AutoBuild">}}) |
 | gRPC | `client.AutoBuild(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
-| HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/sync/auto_execute`, the [Auto Sync Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/AutoSync">}}) |
+| HTTP, method: PUT | `http://localhost:{HTTP_RPC_PORT}/v1/sync/auto_execute`, the [Auto Sync Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/AutoSync">}}) |
 | gRPC | `client.AutoSync(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
-| HTTP, method: POST | `http://localhost:{HTTP_RPC_PORT}/v1/deploy/auto_execute`, the [Auto Deploy Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/AutoDeploy">}}) |
+| HTTP, method: PUT | `http://localhost:{HTTP_RPC_PORT}/v1/deploy/auto_execute`, the [Auto Deploy Service]({{<relref "/docs/references/api/swagger#/SkaffoldService/AutoDeploy">}}) |
 | gRPC | `client.AutoDeploy(ctx)` method on the [`SkaffoldService`]({{< relref "/docs/references/api/grpc#skaffoldservice">}}) |
 
 
@@ -289,8 +289,8 @@ curl -X POST http://localhost:50052/v1/execute -d '{"build": true, "deploy": tru
 We can make Skaffold start noticing file changes automatically again by issuing the requests:
 
 ```bash
-curl -X POST http://localhost:50052/v1/build/auto_execute -d '{"enabled": true}'
-curl -X POST http://localhost:50052/v1/deploy/auto_execute -d '{"enabled": true}'
+curl -X PUT http://localhost:50052/v1/build/auto_execute -d '{"enabled": true}'
+curl -X PUT http://localhost:50052/v1/deploy/auto_execute -d '{"enabled": true}'
 ``` 
 
 {{% /tab %}}
@@ -323,8 +323,8 @@ func main() {
     defer ctxCancel()
     // `client` is the gRPC client with connection to localhost:50051.
     _, err = client.AutoBuild(ctx, &pb.TriggerRequest{
-        Enabled: &pb.TriggerState{
-            State:  true,
+        State: &pb.TriggerState{
+            Enabled:  true,
         },
     })
     if err != nil {
