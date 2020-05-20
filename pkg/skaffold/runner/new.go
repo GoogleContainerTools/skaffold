@@ -93,7 +93,7 @@ func NewForConfig(runCtx *runcontext.RunContext) (*SkaffoldRunner, error) {
 		return nil, fmt.Errorf("creating watch trigger: %w", err)
 	}
 
-	event.InitializeState(runCtx.Cfg, runCtx.KubeContext)
+	event.InitializeState(runCtx.Cfg, runCtx.KubeContext, runCtx.Opts.AutoBuild, runCtx.Opts.AutoDeploy, runCtx.Opts.AutoSync)
 	event.LogMetaEvent()
 
 	monitor := filemon.NewMonitor()
@@ -126,26 +126,34 @@ func setupIntents(runCtx *runcontext.RunContext) (*intents, chan bool) {
 	intents := newIntents(runCtx.Opts.AutoBuild, runCtx.Opts.AutoSync, runCtx.Opts.AutoDeploy)
 
 	intentChan := make(chan bool, 1)
-	setupTrigger("build", intents.setBuild, runCtx.Opts.AutoBuild, server.SetBuildCallback, intentChan)
-	setupTrigger("sync", intents.setSync, runCtx.Opts.AutoSync, server.SetSyncCallback, intentChan)
-	setupTrigger("deploy", intents.setDeploy, runCtx.Opts.AutoDeploy, server.SetDeployCallback, intentChan)
+	setupTrigger("build", intents.setBuild, intents.setAutoBuild, intents.getAutoBuild, server.SetBuildCallback, server.SetAutoBuildCallback, intentChan)
+	setupTrigger("sync", intents.setSync, intents.setAutoSync, intents.getAutoSync, server.SetSyncCallback, server.SetAutoSyncCallback, intentChan)
+	setupTrigger("deploy", intents.setDeploy, intents.setAutoDeploy, intents.getAutoDeploy, server.SetDeployCallback, server.SetAutoDeployCallback, intentChan)
 
 	return intents, intentChan
 }
 
-func setupTrigger(triggerName string, setIntent func(bool), trigger bool, serverCallback func(func()), c chan<- bool) {
-	setIntent(true)
-
-	// if "auto" is set to false, we're in manual mode
-	if !trigger {
-		setIntent(false) // set the initial value of the intent to false
-		// give the server a callback to set the intent value when a user request is received
-		serverCallback(func() {
+func setupTrigger(triggerName string, setIntent func(bool), setAutoTrigger func(bool), getAutoTrigger func() bool, singleTriggerCallback func(func()), autoTriggerCallback func(func(bool)), c chan<- bool) {
+	setIntent(getAutoTrigger())
+	// give the server a callback to set the intent value when a user request is received
+	singleTriggerCallback(func() {
+		if !getAutoTrigger() { //if auto trigger is disabled, we're in manual mode
 			logrus.Debugf("%s intent received, calling back to runner", triggerName)
 			c <- true
 			setIntent(true)
-		})
-	}
+		}
+	})
+
+	// give the server a callback to update auto trigger value when a user request is received
+	autoTriggerCallback(func(val bool) {
+		logrus.Debugf("%s auto trigger update to %t received, calling back to runner", triggerName, val)
+		// signal chan only when auto trigger is set to true
+		if val {
+			c <- true
+		}
+		setAutoTrigger(val)
+		setIntent(val)
+	})
 }
 
 // getBuilder creates a builder from a given RunContext.
