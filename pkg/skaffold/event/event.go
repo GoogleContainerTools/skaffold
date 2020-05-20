@@ -619,6 +619,6 @@ func AutoTriggerDiff(name string, val bool) (bool, error) {
 	case "deploy":
 		return val != handler.getState().DeployState.AutoTrigger, nil
 	default:
-		return false, fmt.Errorf("unknown phase %v not found in handler state\n", name)
+		return false, fmt.Errorf("unknown phase %v not found in handler state", name)
 	}
 }
