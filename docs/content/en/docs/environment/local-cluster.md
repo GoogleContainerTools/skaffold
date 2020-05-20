@@ -23,6 +23,7 @@ The following context names are checked:
 | minikube           | [`minikube`]       | |
 | kind-(.*)          | [`kind`]           | This pattern is used by kind >= v0.6.0 |
 | (.*)@kind          | [`kind`]           | This pattern was used by kind < v0.6.0 |
+| k3d-(.*)           | [`k3d`]            | This pattern is used by k3d >= v3.0.0 |
 
 For any other name, Skaffold assumes that the cluster is remote and that images
 have to be pushed.
@@ -30,6 +31,7 @@ have to be pushed.
  [`minikube`]: https://github.com/kubernetes/minikube/
  [`Docker Desktop`]: https://www.docker.com/products/docker-desktop
  [`kind`]: https://github.com/kubernetes-sigs/kind
+ [`k3d`]: https://github.com/rancher/k3d
 
 ### Manual override
 
