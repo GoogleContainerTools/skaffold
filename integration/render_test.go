@@ -50,7 +50,7 @@ func TestKubectlRenderOutput(t *testing.T) {
 		input       string
 		expectedOut string
 	}{
-		description: "it persist rendered manifest to provided filepath",
+		description: "write rendered manifest to provided filepath",
 		builds: []build.Artifact{
 			{
 				ImageName: "gcr.io/k8s-skaffold/skaffold",

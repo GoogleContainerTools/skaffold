@@ -141,7 +141,7 @@ func TestRunRenderOnly(t *testing.T) {
 		t.Skip("skipping kind integration test")
 	}
 
-	testutil.Run(t, "it persist rendered manifest to provided filepath", func(tu *testutil.T) {
+	testutil.Run(t, "write rendered manifest to provided filepath", func(tu *testutil.T) {
 		tmpDir := tu.NewTempDir()
 		renderPath := tmpDir.Path("output.yaml")
 
