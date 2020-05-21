@@ -349,7 +349,7 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 		return nil, fmt.Errorf("get release: %w", err)
 	}
 
-	artifacts := parseReleaseInfo(opts.namespace, bufio.NewReader(&b))
+	artifacts := parseHelmGet(opts.namespace, bufio.NewReader(&b))
 	return artifacts, nil
 }
 
