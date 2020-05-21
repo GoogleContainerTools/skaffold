@@ -570,7 +570,7 @@ func TestTransformPodSpecSkips(t *testing.T) {
 	}
 
 	copy := pod
-	result := transformManifest(&pod, retriever)
+	result := transformManifest(&pod, retriever, "HELPERS")
 	testutil.CheckDeepEqual(t, false, result)
 	testutil.CheckDeepEqual(t, copy, pod) // should be unchanged
 }
