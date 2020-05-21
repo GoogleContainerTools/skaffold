@@ -52,22 +52,24 @@ type SkaffoldOptions struct {
 	ProfileAutoActivation bool
 	DryRun                bool
 	SkipBuild             bool
-	PortForward           PortForwardOptions
-	CustomTag             string
-	Namespace             string
-	CacheFile             string
-	Trigger               string
-	KubeContext           string
-	KubeConfig            string
-	WatchPollInterval     int
-	DefaultRepo           StringOrUndefined
-	CustomLabels          []string
-	TargetImages          []string
-	Profiles              []string
-	InsecureRegistries    []string
-	Command               string
-	RPCPort               int
-	RPCHTTPPort           int
+	//todo: option-1
+	DeployOnly         bool
+	PortForward        PortForwardOptions
+	CustomTag          string
+	Namespace          string
+	CacheFile          string
+	Trigger            string
+	KubeContext        string
+	KubeConfig         string
+	WatchPollInterval  int
+	DefaultRepo        StringOrUndefined
+	CustomLabels       []string
+	TargetImages       []string
+	Profiles           []string
+	InsecureRegistries []string
+	Command            string
+	RPCPort            int
+	RPCHTTPPort        int
 	// TODO(https://github.com/GoogleContainerTools/skaffold/issues/3668):
 	// remove minikubeProfile from here and instead detect it by matching the
 	// kubecontext API Server to minikube profiles

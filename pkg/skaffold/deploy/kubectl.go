@@ -46,6 +46,8 @@ type KubectlDeployer struct {
 	workingDir         string
 	kubectl            deploy.CLI
 	insecureRegistries map[string]bool
+	//todo:option-1
+	deployOnly bool
 }
 
 // NewKubectlDeployer returns a new KubectlDeployer for a DeployConfig filled
@@ -60,6 +62,8 @@ func NewKubectlDeployer(runCtx *runcontext.RunContext) *KubectlDeployer {
 			ForceDeploy: runCtx.Opts.Force,
 		},
 		insecureRegistries: runCtx.InsecureRegistries,
+		//todo:option-1
+		deployOnly: runCtx.Opts.DeployOnly,
 	}
 }
 
@@ -73,8 +77,16 @@ func (k *KubectlDeployer) Labels() map[string]string {
 // runs `kubectl apply` on those manifests
 func (k *KubectlDeployer) Deploy(ctx context.Context, out io.Writer, builds []build.Artifact, labellers []Labeller) *Result {
 	event.DeployInProgress()
-
-	manifests, err := k.renderManifests(ctx, out, builds, labellers)
+	//todo:option-1
+	////
+	var manifests deploy.ManifestList
+	var err error
+	if k.deployOnly {
+		manifests, err = k.readManifests(ctx)
+	} else {
+		manifests, err = k.renderManifests(ctx, out, builds, labellers)
+	}
+	/////
 	if err != nil {
 		event.DeployFailed(err)
 		return NewDeployErrorResult(err)
