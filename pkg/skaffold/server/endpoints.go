@@ -82,13 +82,12 @@ func (s *server) AutoSync(ctx context.Context, request *proto.TriggerRequest) (r
 
 func executeAutoTrigger(triggerName string, request *proto.TriggerRequest, updateTriggerStateFunc func(bool), resetPhaseStateFunc func(), serverCallback func(bool)) (res *empty.Empty, err error) {
 	res = &empty.Empty{}
-	var trigger bool
-	if v, ok := request.GetState().GetVal().(*proto.TriggerState_Enabled); !ok {
+	v, ok := request.GetState().GetVal().(*proto.TriggerState_Enabled)
+	if !ok {
 		err = status.Error(codes.InvalidArgument, "missing required boolean parameter 'enabled'")
 		return
-	} else {
-		trigger = v.Enabled
 	}
+	trigger := v.Enabled
 	update, err := event.AutoTriggerDiff(triggerName, trigger)
 	if err != nil {
 		return
