@@ -52,6 +52,10 @@ var transformableWhitelist = []apimachinery.GroupKind{
 		Group: "batch",
 		Kind:  "Job",
 	},
+	{
+		Group: "serving.knative.dev",
+		Kind:  "Service",
+	},
 }
 
 // FieldVisitor represents the aggregation/transformation that should be performed on each traversed field.

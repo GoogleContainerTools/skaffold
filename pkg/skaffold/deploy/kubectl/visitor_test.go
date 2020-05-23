@@ -174,6 +174,32 @@ spec:
     kind: MyKind`)},
 			expected: []string{"apiVersion=apie...", "kind=Cust...", "metadata=map[...", "spec=map[..."},
 		},
+		{
+			description: "replace knative serving image",
+			manifests: ManifestList{[]byte(`apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: mknservice
+spec:
+  template:
+    spec:
+      containers:
+      - image: orig`)},
+			pivotKey:    "image",
+			replaceWith: "repl",
+			expected: []string{"apiVersion=serv...", "kind=Serv...", "metadata=map[...", "name=mkns...",
+				"spec=map[...", "template=map[...", "spec=map[...",
+				"containers=[map...", "image=orig"},
+			expectedManifests: ManifestList{[]byte(`apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: mknservice
+spec:
+  template:
+    spec:
+      containers:
+      - image: repl`)},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
