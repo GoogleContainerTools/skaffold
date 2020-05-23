@@ -265,6 +265,9 @@ spec:
 				ArtifactOverrides: map[string]string{
 					"image": "gcr.io/k8s-skaffold/skaffold-helm",
 				},
+				SetValues: map[string]string{
+					"pullPolicy": "Always",
+				},
 			}},
 			expectedOut: `---
 # Source: skaffold-helm/templates/service.yaml
@@ -313,7 +316,7 @@ spec:
       containers:
         - name: skaffold-helm
           image: gcr.io/k8s-skaffold/skaffold-helm:sha256-nonsenslettersandnumbers
-          imagePullPolicy: 
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
           resources:
