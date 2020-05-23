@@ -44,7 +44,7 @@ func NewContainerManager(podSelector kubernetes.PodSelector, namespaces []string
 	// Create the channel here as Stop() may be called before Start() when a build fails, thus
 	// avoiding the possibility of closing a nil channel. Channels are cheap.
 	return &ContainerManager{
-		podWatcher: kubernetes.NewAggregatePodWatcher(podSelector, namespaces),
+		podWatcher: kubernetes.NewPodWatcher(podSelector, namespaces),
 		active:     map[string]string{},
 		events:     make(chan kubernetes.PodEvent),
 	}

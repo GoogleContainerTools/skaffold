@@ -31,8 +31,8 @@ type PodWatcher interface {
 	Start() (func(), error)
 }
 
-// aggregatePodWatcher is a pod watcher for multiple namespaces.
-type aggregatePodWatcher struct {
+// podWatcher is a pod watcher for multiple namespaces.
+type podWatcher struct {
 	podSelector PodSelector
 	namespaces  []string
 	receivers   []chan<- PodEvent
@@ -43,18 +43,18 @@ type PodEvent struct {
 	Pod  *v1.Pod
 }
 
-func NewAggregatePodWatcher(podSelector PodSelector, namespaces []string) PodWatcher {
-	return &aggregatePodWatcher{
+func NewPodWatcher(podSelector PodSelector, namespaces []string) PodWatcher {
+	return &podWatcher{
 		podSelector: podSelector,
 		namespaces:  namespaces,
 	}
 }
 
-func (w *aggregatePodWatcher) Register(receiver chan<- PodEvent) {
+func (w *podWatcher) Register(receiver chan<- PodEvent) {
 	w.receivers = append(w.receivers, receiver)
 }
 
-func (w *aggregatePodWatcher) Start() (func(), error) {
+func (w *podWatcher) Start() (func(), error) {
 	if len(w.receivers) == 0 {
 		return func() {}, errors.New("no receiver was registered")
 	}

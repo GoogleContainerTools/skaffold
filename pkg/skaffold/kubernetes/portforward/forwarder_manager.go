@@ -34,27 +34,22 @@ type Forwarder interface {
 
 // ForwarderManager manages all forwarders
 type ForwarderManager struct {
-	output io.Writer
-
-	EntryForwarder
-	Forwarders []Forwarder
+	forwarders []Forwarder
 }
 
 // NewForwarderManager returns a new port manager which handles starting and stopping port forwarding
 func NewForwarderManager(out io.Writer, cli *kubectl.CLI, podSelector kubernetes.PodSelector, namespaces []string, label string, opts config.PortForwardOptions, userDefined []*latest.PortForwardResource) *ForwarderManager {
-	em := NewEntryManager(out, cli)
+	entryManager := NewEntryManager(out, NewKubectlForwarder(out, cli))
 
-	ForwarderManager := &ForwarderManager{
-		output:     out,
-		Forwarders: []Forwarder{NewResourceForwarder(em, namespaces, label, userDefined)},
-	}
-
+	var forwarders []Forwarder
+	forwarders = append(forwarders, NewResourceForwarder(entryManager, namespaces, label, userDefined))
 	if opts.ForwardPods {
-		f := NewWatchingPodForwarder(em, podSelector, namespaces)
-		ForwarderManager.Forwarders = append(ForwarderManager.Forwarders, f)
+		forwarders = append(forwarders, NewWatchingPodForwarder(entryManager, podSelector, namespaces))
 	}
 
-	return ForwarderManager
+	return &ForwarderManager{
+		forwarders: forwarders,
+	}
 }
 
 // Start begins all forwarders managed by the ForwarderManager
@@ -64,7 +59,7 @@ func (p *ForwarderManager) Start(ctx context.Context) error {
 		return nil
 	}
 
-	for _, f := range p.Forwarders {
+	for _, f := range p.forwarders {
 		if err := f.Start(ctx); err != nil {
 			return err
 		}
@@ -79,7 +74,7 @@ func (p *ForwarderManager) Stop() {
 		return
 	}
 
-	for _, f := range p.Forwarders {
+	for _, f := range p.forwarders {
 		f.Stop()
 	}
 }

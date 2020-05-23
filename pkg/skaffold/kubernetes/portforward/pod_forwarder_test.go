@@ -39,15 +39,15 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		description     string
 		pods            []*v1.Pod
 		forwarder       *testForwarder
-		expectedPorts   map[int]struct{}
-		expectedEntries map[string]*portForwardEntry
 		availablePorts  []int
+		expectedPorts   []int
+		expectedEntries map[string]*portForwardEntry
 		shouldErr       bool
 	}{
 		{
 			description:    "single container port",
-			expectedPorts:  map[int]struct{}{8080: {}},
 			availablePorts: []int{8080},
+			expectedPorts:  []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 1,
@@ -91,8 +91,9 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 			},
 		},
 		{
-			description:   "unavailable container port",
-			expectedPorts: map[int]struct{}{9000: {}},
+			description:    "unavailable container port",
+			availablePorts: []int{9000},
+			expectedPorts:  []int{9000},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 1,
@@ -112,7 +113,6 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 					localPort:              9000,
 				},
 			},
-			availablePorts: []int{9000},
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -138,10 +138,10 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:     "bad resource version",
-			expectedPorts:   map[int]struct{}{},
-			shouldErr:       true,
-			expectedEntries: map[string]*portForwardEntry{},
 			availablePorts:  []int{8080},
+			expectedPorts:   nil,
+			shouldErr:       true,
+			expectedEntries: nil,
 			pods: []*v1.Pod{
 				{
 					ObjectMeta: metav1.ObjectMeta{
@@ -167,8 +167,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "two different container ports",
-			expectedPorts:  map[int]struct{}{8080: {}, 50051: {}},
 			availablePorts: []int{8080, 50051},
+			expectedPorts:  []int{8080, 50051},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 1,
@@ -250,8 +250,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "two same container ports",
-			expectedPorts:  map[int]struct{}{8080: {}, 9000: {}},
 			availablePorts: []int{8080, 9000},
+			expectedPorts:  []int{8080, 9000},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 1,
@@ -333,8 +333,8 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		},
 		{
 			description:    "updated pod gets port forwarded",
-			expectedPorts:  map[int]struct{}{8080: {}},
 			availablePorts: []int{8080},
+			expectedPorts:  []int{8080},
 			expectedEntries: map[string]*portForwardEntry{
 				"owner-containername-namespace-portname-8080": {
 					resourceVersion: 2,
@@ -402,33 +402,25 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 			taken := map[int]struct{}{}
-
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", taken, test.availablePorts))
-			t.Override(&topLevelOwnerKey, func(_ metav1.Object, _ string) string { return "owner" })
+			t.Override(&topLevelOwnerKey, func(metav1.Object, string) string { return "owner" })
 
-			entryManager := EntryManager{
-				output:             ioutil.Discard,
-				forwardedPorts:     newForwardedPorts(),
-				forwardedResources: newForwardedResources(),
-			}
-			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), nil)
 			if test.forwarder == nil {
 				test.forwarder = newTestForwarder()
 			}
-			p.EntryForwarder = test.forwarder
+			entryManager := NewEntryManager(ioutil.Discard, nil)
+			entryManager.entryForwarder = test.forwarder
 
+			p := NewWatchingPodForwarder(entryManager, kubernetes.NewImageList(), nil)
 			for _, pod := range test.pods {
 				err := p.portForwardPod(context.Background(), pod)
 				t.CheckError(test.shouldErr, err)
 			}
 
-			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
-			if !reflect.DeepEqual(test.expectedPorts, test.forwarder.forwardedPorts.ports) {
-				t.Errorf("Expected differs from actual entries. Expected: %v, Actual: %v", test.expectedPorts, test.forwarder.forwardedPorts.ports)
-			}
+			t.CheckDeepEqual(test.expectedPorts, test.forwarder.forwardedPorts.List())
 
-			actualForwardedResources := test.forwarder.forwardedResources.resources
 			// cmp.Diff cannot access unexported fields, so use reflect.DeepEqual here directly
+			actualForwardedResources := test.forwarder.forwardedResources.resources
 			if !reflect.DeepEqual(test.expectedEntries, actualForwardedResources) {
 				t.Errorf("Forwarded entries differs from expected entries. Expected: %v, Actual: %v", test.expectedEntries, actualForwardedResources)
 			}
@@ -483,7 +475,7 @@ func TestStartPodForwarder(t *testing.T) {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(latest.Pipeline{}, "", true, true, true)
 			t.Override(&topLevelOwnerKey, func(metav1.Object, string) string { return "owner" })
-			t.Override(&newAggregatePodWatcher, func(kubernetes.PodSelector, []string) kubernetes.PodWatcher {
+			t.Override(&newPodWatcher, func(kubernetes.PodSelector, []string) kubernetes.PodWatcher {
 				return &fakePodWatcher{
 					events: []kubernetes.PodEvent{test.event},
 				}
@@ -492,9 +484,10 @@ func TestStartPodForwarder(t *testing.T) {
 			imageList := kubernetes.NewImageList()
 			imageList.Add("image")
 
-			p := NewWatchingPodForwarder(NewEntryManager(ioutil.Discard, nil), imageList, nil)
 			fakeForwarder := newTestForwarder()
-			p.EntryForwarder = fakeForwarder
+			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
+
+			p := NewWatchingPodForwarder(entryManager, imageList, nil)
 			p.Start(context.Background())
 
 			// wait for the pod resource to be forwarded

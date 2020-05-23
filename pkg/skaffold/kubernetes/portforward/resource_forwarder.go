@@ -31,10 +31,10 @@ import (
 // ResourceForwarder is responsible for forwarding user defined port forwarding resources and automatically forwarding
 // services deployed by skaffold.
 type ResourceForwarder struct {
-	EntryManager
+	entryManager         *EntryManager
 	namespaces           []string
-	userDefinedResources []*latest.PortForwardResource
 	label                string
+	userDefinedResources []*latest.PortForwardResource
 }
 
 var (
@@ -44,12 +44,12 @@ var (
 )
 
 // NewResourceForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewResourceForwarder(em EntryManager, namespaces []string, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
+func NewResourceForwarder(entryManager *EntryManager, namespaces []string, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
 	return &ResourceForwarder{
-		EntryManager:         em,
+		entryManager:         entryManager,
 		namespaces:           namespaces,
-		userDefinedResources: userDefinedResources,
 		label:                label,
+		userDefinedResources: userDefinedResources,
 	}
 }
 
@@ -62,6 +62,10 @@ func (p *ResourceForwarder) Start(ctx context.Context) error {
 	}
 	p.portForwardResources(ctx, append(p.userDefinedResources, serviceResources...))
 	return nil
+}
+
+func (p *ResourceForwarder) Stop() {
+	p.entryManager.Stop()
 }
 
 // Port forward each resource individually in a goroutine
@@ -77,7 +81,7 @@ func (p *ResourceForwarder) portForwardResource(ctx context.Context, resource la
 	// Get port forward entry for this resource
 	entry := p.getCurrentEntry(resource)
 	// Forward the entry
-	p.forwardPortForwardEntry(ctx, entry)
+	p.entryManager.forwardPortForwardEntry(ctx, entry)
 }
 
 func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource) *portForwardEntry {
@@ -85,15 +89,14 @@ func (p *ResourceForwarder) getCurrentEntry(resource latest.PortForwardResource)
 	entry := newPortForwardEntry(0, resource, "", "", "", "", 0, false)
 
 	// If we have, return the current entry
-	oldEntry, ok := p.forwardedResources.Load(entry.key())
-
+	oldEntry, ok := p.entryManager.forwardedResources.Load(entry.key())
 	if ok {
 		entry.localPort = oldEntry.localPort
 		return entry
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = retrieveAvailablePort(resource.Address, resource.LocalPort, &p.forwardedPorts)
+	entry.localPort = retrieveAvailablePort(resource.Address, resource.LocalPort, &p.entryManager.forwardedPorts)
 	return entry
 }
 

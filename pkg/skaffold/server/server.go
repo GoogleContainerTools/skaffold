@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sync"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/sirupsen/logrus"
@@ -88,23 +87,24 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 		return func() error { return nil }, nil
 	}
 
+	var usedPorts util.PortSet
+
 	originalRPCPort := opts.RPCPort
 	if originalRPCPort == -1 {
 		return func() error { return nil }, nil
 	}
-	rpcPort := util.GetAvailablePort(util.Loopback, originalRPCPort, &sync.Map{})
+	rpcPort := util.GetAvailablePort(util.Loopback, originalRPCPort, &usedPorts)
 	if rpcPort != originalRPCPort {
 		logrus.Warnf("port %d for gRPC server already in use: using %d instead", originalRPCPort, rpcPort)
 	}
+	usedPorts.Set(rpcPort)
 	grpcCallback, err := newGRPCServer(rpcPort)
 	if err != nil {
 		return grpcCallback, fmt.Errorf("starting gRPC server: %w", err)
 	}
-	m := &sync.Map{}
-	m.Store(rpcPort, true)
 
 	originalHTTPPort := opts.RPCHTTPPort
-	httpPort := util.GetAvailablePort(util.Loopback, originalHTTPPort, m)
+	httpPort := util.GetAvailablePort(util.Loopback, originalHTTPPort, &usedPorts)
 	if httpPort != originalHTTPPort {
 		logrus.Warnf("port %d for gRPC HTTP server already in use: using %d instead", originalHTTPPort, httpPort)
 	}
