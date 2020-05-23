@@ -54,9 +54,6 @@ func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podS
 		podWatcher:  NewAggregatePodWatcher(podSelector, namespaces),
 		colorPicker: NewColorPicker(imageNames),
 		events:      make(chan PodEvent),
-		trackedContainers: trackedContainers{
-			ids: map[string]bool{},
-		},
 	}
 }
 
@@ -238,6 +235,9 @@ type trackedContainers struct {
 func (t *trackedContainers) add(id string) bool {
 	t.Lock()
 	alreadyTracked := t.ids[id]
+	if t.ids == nil {
+		t.ids = map[string]bool{}
+	}
 	t.ids[id] = true
 	t.Unlock()
 
