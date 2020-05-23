@@ -25,10 +25,8 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
-	fakekubeclientset "k8s.io/client-go/kubernetes/fake"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
@@ -439,50 +437,57 @@ func TestAutomaticPortForwardPod(t *testing.T) {
 }
 
 func TestStartPodForwarder(t *testing.T) {
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:       "default",
+			ResourceVersion: "9",
+		},
+		Spec: v1.PodSpec{
+			Containers: []v1.Container{{
+				Name:  "mycontainer",
+				Image: "image",
+				Ports: []v1.ContainerPort{{
+					Name:          "myport",
+					ContainerPort: 8080,
+				}},
+			}},
+		},
+		Status: v1.PodStatus{
+			Phase: v1.PodRunning,
+		},
+	}
+
 	tests := []struct {
 		description   string
 		entryExpected bool
-		obj           runtime.Object
-		event         watch.EventType
+		event         kubernetes.PodEvent
 	}{
 		{
 			description:   "pod modified event",
 			entryExpected: true,
-			event:         watch.Modified,
-		},
-		{
-			description: "pod error event",
-			event:       watch.Error,
-		},
-		{
-			description: "event isn't for a pod",
-			obj:         &v1.Service{},
-			event:       watch.Modified,
+			event: kubernetes.PodEvent{
+				Type: watch.Modified,
+				Pod:  pod,
+			},
 		},
 		{
 			description: "event is deleted",
-			event:       watch.Deleted,
+			event: kubernetes.PodEvent{
+				Type: watch.Deleted,
+				Pod:  pod,
+			},
 		},
 	}
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
 			event.InitializeState(latest.Pipeline{}, "", true, true, true)
-			client := fakekubeclientset.NewSimpleClientset(&v1.Pod{})
-			fakeWatcher := watch.NewRaceFreeFake()
-			client.PrependWatchReactor("*", testutil.SetupFakeWatcher(fakeWatcher))
-
-			waitForWatcher := make(chan bool)
-			t.Override(&aggregatePodWatcher, func(_ []string, aggregate chan<- watch.Event) (func(), error) {
-				go func() {
-					waitForWatcher <- true
-					for msg := range fakeWatcher.ResultChan() {
-						aggregate <- msg
-					}
-				}()
-				return func() {}, nil
+			t.Override(&topLevelOwnerKey, func(metav1.Object, string) string { return "owner" })
+			t.Override(&newAggregatePodWatcher, func(kubernetes.PodSelector, []string) kubernetes.PodWatcher {
+				return &fakePodWatcher{
+					events: []kubernetes.PodEvent{test.event},
+				}
 			})
-			t.Override(&topLevelOwnerKey, func(_ metav1.Object, _ string) string { return "owner" })
 
 			imageList := kubernetes.NewImageList()
 			imageList.Add("image")
@@ -491,37 +496,6 @@ func TestStartPodForwarder(t *testing.T) {
 			fakeForwarder := newTestForwarder()
 			p.EntryForwarder = fakeForwarder
 			p.Start(context.Background())
-
-			// Wait for the watcher to start before we send it an event
-			<-waitForWatcher
-			obj := test.obj
-			if test.obj == nil {
-				obj = &v1.Pod{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace:       "default",
-						ResourceVersion: "9",
-					},
-					Spec: v1.PodSpec{
-						Containers: []v1.Container{
-							{
-								Name:  "mycontainer",
-								Image: "image",
-								Ports: []v1.ContainerPort{
-									{
-										Name:          "myport",
-										ContainerPort: 8080,
-									},
-								},
-							},
-						},
-					},
-					Status: v1.PodStatus{
-						Phase: v1.PodRunning,
-					},
-				}
-			}
-
-			fakeWatcher.Action(test.event, obj)
 
 			// wait for the pod resource to be forwarded
 			err := wait.PollImmediate(10*time.Millisecond, 100*time.Millisecond, func() (bool, error) {
@@ -533,4 +507,23 @@ func TestStartPodForwarder(t *testing.T) {
 			}
 		})
 	}
+}
+
+type fakePodWatcher struct {
+	events   []kubernetes.PodEvent
+	receiver chan<- kubernetes.PodEvent
+}
+
+func (f *fakePodWatcher) Register(receiver chan<- kubernetes.PodEvent) {
+	f.receiver = receiver
+}
+
+func (f *fakePodWatcher) Start() (func(), error) {
+	go func() {
+		for _, event := range f.events {
+			f.receiver <- event
+		}
+	}()
+
+	return func() {}, nil
 }

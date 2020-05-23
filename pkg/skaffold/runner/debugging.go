@@ -25,5 +25,5 @@ func (r *SkaffoldRunner) createContainerManager() *debugging.ContainerManager {
 		return nil
 	}
 
-	return debugging.NewContainerManager(r.kubectlCLI, r.podSelector, r.runCtx.Namespaces)
+	return debugging.NewContainerManager(r.podSelector, r.runCtx.Namespaces)
 }

@@ -33,64 +33,50 @@ import (
 
 var (
 	// For testing
-	aggregatePodWatcher = kubernetes.AggregatePodWatcher
-	topLevelOwnerKey    = kubernetes.TopLevelOwnerKey
+	newAggregatePodWatcher = kubernetes.NewAggregatePodWatcher
+	topLevelOwnerKey       = kubernetes.TopLevelOwnerKey
 )
 
 // WatchingPodForwarder is responsible for selecting pods satisfying a certain condition and port-forwarding the exposed
 // container ports within those pods. It also tracks and manages the port-forward connections.
 type WatchingPodForwarder struct {
 	EntryManager
-	namespaces  []string
-	podSelector kubernetes.PodSelector
+	podWatcher kubernetes.PodWatcher
+	events     chan kubernetes.PodEvent
 }
 
 // NewWatchingPodForwarder returns a struct that tracks and port-forwards pods as they are created and modified
 func NewWatchingPodForwarder(em EntryManager, podSelector kubernetes.PodSelector, namespaces []string) *WatchingPodForwarder {
 	return &WatchingPodForwarder{
 		EntryManager: em,
-		podSelector:  podSelector,
-		namespaces:   namespaces,
+		podWatcher:   newAggregatePodWatcher(podSelector, namespaces),
+		events:       make(chan kubernetes.PodEvent),
 	}
 }
 
 func (p *WatchingPodForwarder) Start(ctx context.Context) error {
-	aggregate := make(chan watch.Event)
-	stopWatchers, err := aggregatePodWatcher(p.namespaces, aggregate)
+	p.podWatcher.Register(p.events)
+	stopWatcher, err := p.podWatcher.Start()
 	if err != nil {
-		stopWatchers()
-		return fmt.Errorf("initializing pod watcher: %w", err)
+		return err
 	}
 
 	go func() {
-		defer stopWatchers()
+		defer stopWatcher()
 
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case evt, ok := <-aggregate:
+			case evt, ok := <-p.events:
 				if !ok {
 					return
 				}
 
-				// If the event's type is "ERROR", warn and continue.
-				if evt.Type == watch.Error {
-					logrus.Warnf("got unexpected event of type %s", evt.Type)
-					continue
-				}
-				// Grab the pod from the event.
-				pod, ok := evt.Object.(*v1.Pod)
-				if !ok {
-					continue
-				}
-				// If the event's type is "DELETED", continue.
-				if evt.Type == watch.Deleted {
-					continue
-				}
 				// At this point, we know the event's type is "ADDED" or "MODIFIED".
 				// We must take both types into account as it is possible for the pod to have become ready for port-forwarding before we established the watch.
-				if p.podSelector.Select(pod) && pod.Status.Phase == v1.PodRunning && pod.DeletionTimestamp == nil {
+				pod := evt.Pod
+				if evt.Type != watch.Deleted && pod.Status.Phase == v1.PodRunning && pod.DeletionTimestamp == nil {
 					if err := p.portForwardPod(ctx, pod); err != nil {
 						logrus.Warnf("port forwarding pod failed: %s", err)
 					}
