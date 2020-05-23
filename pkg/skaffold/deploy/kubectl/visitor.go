@@ -20,17 +20,38 @@ import (
 	"fmt"
 
 	yaml "gopkg.in/yaml.v2"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// recursivelyTransformableKinds whitelists kinds that can be transformed recursively.
-var recursivelyTransformableKinds = map[string]bool{
-	"Pod":         true,
-	"ReplicaSet":  true,
-	"StatefulSet": true,
-	"Deployment":  true,
-	"DaemonSet":   true,
-	"Job":         true,
-	"CronJob":     true,
+var transformableWhitelist = []apimachinery.GroupKind{
+	{
+		Group: "",
+		Kind:  "Pod",
+	},
+	{
+		Group: "apps",
+		Kind:  "DaemonSet",
+	},
+	{
+		Group: "apps",
+		Kind:  "Deployment",
+	},
+	{
+		Group: "apps",
+		Kind:  "ReplicaSet",
+	},
+	{
+		Group: "apps",
+		Kind:  "StatefulSet",
+	},
+	{
+		Group: "batch",
+		Kind:  "CronJob",
+	},
+	{
+		Group: "batch",
+		Kind:  "Job",
+	},
 }
 
 // FieldVisitor represents the aggregation/transformation that should be performed on each traversed field.
@@ -69,11 +90,41 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 
 // traverseManifest traverses all transformable fields contained within the manifest.
 func traverseManifestFields(manifest map[interface{}]interface{}, visitor FieldVisitor) {
-	kind := manifest["kind"]
-	if k, ok := kind.(string); ok && recursivelyTransformableKinds[k] {
+	if shouldTransformManifest(manifest) {
 		visitor = &recursiveVisitorDecorator{visitor}
 	}
 	visitFields(manifest, visitor)
+}
+
+func shouldTransformManifest(manifest map[interface{}]interface{}) bool {
+	var apiVersion string
+	switch value := manifest["apiVersion"].(type) {
+	case string:
+		apiVersion = value
+	default:
+		return false
+	}
+
+	var kind string
+	switch value := manifest["kind"].(type) {
+	case string:
+		kind = value
+	default:
+		return false
+	}
+
+	gvk := apimachinery.FromAPIVersionAndKind(apiVersion, kind)
+	groupKind := apimachinery.GroupKind{
+		Group: gvk.Group,
+		Kind:  gvk.Kind,
+	}
+
+	for _, allowedGroupKind := range transformableWhitelist {
+		if groupKind == allowedGroupKind {
+			return true
+		}
+	}
+	return false
 }
 
 // recursiveVisitorDecorator adds recursion to a FieldVisitor.
