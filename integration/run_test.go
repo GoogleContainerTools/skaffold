@@ -162,10 +162,7 @@ func TestRunRenderOnly(t *testing.T) {
 		dat, err := ioutil.ReadFile(renderPath)
 		tu.CheckNoError(err)
 
-		exp, err := ioutil.ReadFile(test.dir + "/k8s-pod.yaml")
-		tu.CheckNoError(err)
-
-		tu.CheckDeepEqual(string(exp), string(dat))
+		tu.CheckMatches("name: getting-started", string(dat))
 	})
 }
 
