@@ -107,6 +107,8 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 		Env:        env,
 		Image:      latest,
 		NoPull:     alreadyPulled,
+		// TODO(dgageot): Support project.toml include/exclude.
+		// FileFilter: func(string) bool { return true },
 	}); err != nil {
 		return "", err
 	}
