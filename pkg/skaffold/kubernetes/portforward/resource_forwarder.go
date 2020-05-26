@@ -43,7 +43,7 @@ var (
 	retrieveServices      = retrieveServiceResources
 )
 
-// NewResourceForwarder returns a struct that tracks and port-forwards pods as they are created and modified
+// NewResourceForwarder returns a struct that tracks and port-forwards services as they are created and modified
 func NewResourceForwarder(entryManager *EntryManager, namespaces []string, label string, userDefinedResources []*latest.PortForwardResource) *ResourceForwarder {
 	return &ResourceForwarder{
 		entryManager:         entryManager,
