@@ -646,6 +646,13 @@
           "description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (`20m`).",
           "x-intellij-html-description": "amount of time (in seconds) that this build is allowed to run. Defaults to 20 minutes (<code>20m</code>)."
         },
+        "tolerations": {
+          "items": {},
+          "type": "array",
+          "description": "describes the Kubernetes tolerations for the pod.",
+          "x-intellij-html-description": "describes the Kubernetes tolerations for the pod.",
+          "default": "[]"
+        },
         "volumes": {
           "items": {},
           "type": "array",
@@ -664,6 +671,7 @@
         "timeout",
         "dockerConfig",
         "serviceAccount",
+        "tolerations",
         "runAsUser",
         "resources",
         "concurrency",
