@@ -21,17 +21,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	lifecycle "github.com/buildpacks/lifecycle/cmd"
 	"github.com/buildpacks/pack"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
+
+const projectTOML = "project.toml"
 
 // For testing
 var (
@@ -47,6 +50,18 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	artifact := a.BuildpackArtifact
 	workspace := a.Workspace
 
+	// Read `project.toml` if it exists.
+	var projectDescriptor Descriptor
+	path := filepath.Join(a.Workspace, projectTOML)
+	if _, err := os.Stat(path); err == nil {
+		desc, err := ReadProjectDescriptor(path)
+		if err != nil {
+			return "", fmt.Errorf("failed to read project descriptor %q: %w", path, err)
+		}
+
+		projectDescriptor = desc
+	}
+
 	// To improve caching, we always build the image with [:latest] tag
 	// This way, the lifecycle is able to "bootstrap" from the previously built image.
 	// The image will then be tagged as usual with the tag provided by the tag policy.
@@ -56,24 +71,40 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	}
 	latest := parsed.BaseName + ":latest"
 
-	logrus.Debugln("Evaluate env variables")
-	env, err := misc.EvaluateEnv(artifact.Env)
+	// Eveluate Env Vars.
+	envVars, err := misc.EvaluateEnv(artifact.Env)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate env variables: %w", err)
 	}
 
 	if b.devMode && a.Sync != nil && a.Sync.Auto != nil {
-		env = append(env, "GOOGLE_DEVMODE=1")
+		envVars = append(envVars, "GOOGLE_DEVMODE=1")
 	}
 
+	env := envMap(envVars)
+	for _, kv := range projectDescriptor.Build.Env {
+		env[kv.Name] = kv.Value
+	}
+
+	// List buildpacks to be used for the build.
+	// Those specified in the skaffold.yaml override those in the project.toml.
+	buildpacks := artifact.Buildpacks
+	if len(buildpacks) == 0 {
+		for _, buildpack := range projectDescriptor.Build.Buildpacks {
+			// TODO(dgageot): Support version and URI.
+			buildpacks = append(buildpacks, buildpack.ID)
+		}
+	}
+
+	// Does the builder image need to be pulled?
 	alreadyPulled := images.AreAlreadyPulled(artifact.Builder, artifact.RunImage)
 
 	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
 		AppPath:    workspace,
 		Builder:    artifact.Builder,
 		RunImage:   artifact.RunImage,
-		Buildpacks: artifact.Buildpacks,
-		Env:        envMap(env),
+		Buildpacks: buildpacks,
+		Env:        env,
 		Image:      latest,
 		NoPull:     alreadyPulled,
 	}); err != nil {
