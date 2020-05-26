@@ -17,31 +17,19 @@ limitations under the License.
 package portforward
 
 import (
+	"context"
 	"io/ioutil"
-	"reflect"
 	"testing"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/testutil"
 )
 
-func TestNewEntryManager(t *testing.T) {
-	out := ioutil.Discard
-	cli := &kubectl.CLI{}
-	expected := EntryManager{
-		output:             out,
-		forwardedPorts:     newForwardedPorts(),
-		forwardedResources: newForwardedResources(),
-		EntryForwarder:     NewKubectlForwarder(out, cli),
-	}
-	actual := NewEntryManager(out, cli)
-	if !reflect.DeepEqual(expected, actual) {
-		t.Errorf("Expected result different from actual result. Expected: %v, Actual: %v", expected, actual)
-	}
-}
-
 func TestStop(t *testing.T) {
+	event.InitializeState(latest.Pipeline{}, "test", true, true, true)
+
 	pfe1 := newPortForwardEntry(0, latest.PortForwardResource{
 		Type:      constants.Pod,
 		Name:      "resource",
@@ -54,61 +42,22 @@ func TestStop(t *testing.T) {
 		Namespace: "default",
 	}, "", "", "", "", 9001, false)
 
-	em := NewEntryManager(ioutil.Discard, nil)
-
-	em.forwardedResources = newForwardedResources()
-	em.forwardedResources.Store("pod-resource-default-0", pfe1)
-	em.forwardedResources.Store("pod-resource2-default-0", pfe2)
-
-	em.forwardedPorts = newForwardedPorts()
-	em.forwardedPorts.Store(9000, struct{}{})
-	em.forwardedPorts.Store(9001, struct{}{})
-
 	fakeForwarder := newTestForwarder()
-	fakeForwarder.forwardedResources = em.forwardedResources
-	em.EntryForwarder = fakeForwarder
+	em := NewEntryManager(ioutil.Discard, fakeForwarder)
+	em.forwardPortForwardEntry(context.Background(), pfe1)
+	em.forwardPortForwardEntry(context.Background(), pfe2)
+
+	testutil.CheckDeepEqual(t, 2, fakeForwarder.forwardedResources.Length())
+	testutil.CheckDeepEqual(t, 2, fakeForwarder.forwardedPorts.Length())
 
 	em.Stop()
 
-	if count := fakeForwarder.forwardedResources.Length(); count != 0 {
-		t.Fatalf("error stopping port forwarding. expected 0 entries and got %d", count)
-	}
-
-	if count := len(fakeForwarder.forwardedPorts.ports); count != 0 {
-		t.Fatalf("error cleaning up ports. expected 0 entries and got %d", count)
-	}
-}
-
-func TestForwardedPorts(t *testing.T) {
-	pf := newForwardedPorts()
-
-	// Try to store a port
-	pf.Store(9000, struct{}{})
-
-	// Try to load the port
-	if _, ok := pf.LoadOrStore(9000, struct{}{}); !ok {
-		t.Fatal("didn't load port 9000 correctly")
-	}
-
-	if _, ok := pf.LoadOrStore(4000, struct{}{}); ok {
-		t.Fatal("didn't store port 4000 correctly")
-	}
-
-	if _, ok := pf.LoadOrStore(4000, struct{}{}); !ok {
-		t.Fatal("didn't load port 4000 correctly")
-	}
-
-	// Try to store a non int, catch panic
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("The code did not panic")
-		}
-	}()
-	pf.Store("not an int", struct{}{})
+	testutil.CheckDeepEqual(t, 0, fakeForwarder.forwardedResources.Length())
+	testutil.CheckDeepEqual(t, 0, fakeForwarder.forwardedPorts.Length())
 }
 
 func TestForwardedResources(t *testing.T) {
-	pf := newForwardedResources()
+	pf := &forwardedResources{}
 
 	// Try to store a resource
 	pf.Store("resource", &portForwardEntry{})
@@ -122,12 +71,4 @@ func TestForwardedResources(t *testing.T) {
 	if actual, ok := pf.Load("dne"); ok || actual != nil {
 		t.Fatal("loaded resource that doesn't exist")
 	}
-
-	// Try to store a string instead of *portForwardEntry
-	defer func() {
-		if r := recover(); r == nil {
-			t.Errorf("The code did not panic")
-		}
-	}()
-	pf.Store("resource2", "not port forward entry")
 }

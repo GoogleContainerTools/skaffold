@@ -33,23 +33,23 @@ import (
 
 var (
 	// For testing
-	newAggregatePodWatcher = kubernetes.NewAggregatePodWatcher
-	topLevelOwnerKey       = kubernetes.TopLevelOwnerKey
+	newPodWatcher    = kubernetes.NewPodWatcher
+	topLevelOwnerKey = kubernetes.TopLevelOwnerKey
 )
 
 // WatchingPodForwarder is responsible for selecting pods satisfying a certain condition and port-forwarding the exposed
 // container ports within those pods. It also tracks and manages the port-forward connections.
 type WatchingPodForwarder struct {
-	EntryManager
-	podWatcher kubernetes.PodWatcher
-	events     chan kubernetes.PodEvent
+	entryManager *EntryManager
+	podWatcher   kubernetes.PodWatcher
+	events       chan kubernetes.PodEvent
 }
 
 // NewWatchingPodForwarder returns a struct that tracks and port-forwards pods as they are created and modified
-func NewWatchingPodForwarder(em EntryManager, podSelector kubernetes.PodSelector, namespaces []string) *WatchingPodForwarder {
+func NewWatchingPodForwarder(entryManager *EntryManager, podSelector kubernetes.PodSelector, namespaces []string) *WatchingPodForwarder {
 	return &WatchingPodForwarder{
-		EntryManager: em,
-		podWatcher:   newAggregatePodWatcher(podSelector, namespaces),
+		entryManager: entryManager,
+		podWatcher:   newPodWatcher(podSelector, namespaces),
 		events:       make(chan kubernetes.PodEvent),
 	}
 }
@@ -88,6 +88,10 @@ func (p *WatchingPodForwarder) Start(ctx context.Context) error {
 	return nil
 }
 
+func (p *WatchingPodForwarder) Stop() {
+	p.entryManager.Stop()
+}
+
 func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) error {
 	ownerReference := topLevelOwnerKey(pod, pod.Kind)
 	for _, c := range pod.Spec.Containers {
@@ -107,15 +111,15 @@ func (p *WatchingPodForwarder) portForwardPod(ctx context.Context, pod *v1.Pod) 
 				return fmt.Errorf("getting pod forwarding entry: %w", err)
 			}
 			if entry.resource.Port != entry.localPort {
-				color.Yellow.Fprintf(p.output, "Forwarding container %s/%s to local port %d.\n", pod.Name, c.Name, entry.localPort)
+				color.Yellow.Fprintf(p.entryManager.output, "Forwarding container %s/%s to local port %d.\n", pod.Name, c.Name, entry.localPort)
 			}
-			if prevEntry, ok := p.forwardedResources.Load(entry.key()); ok {
+			if prevEntry, ok := p.entryManager.forwardedResources.Load(entry.key()); ok {
 				// Check if this is a new generation of pod
 				if entry.resourceVersion > prevEntry.resourceVersion {
-					p.Terminate(prevEntry)
+					p.entryManager.Terminate(prevEntry)
 				}
 			}
-			p.forwardPortForwardEntry(ctx, entry)
+			p.entryManager.forwardPortForwardEntry(ctx, entry)
 		}
 	}
 	return nil
@@ -129,7 +133,7 @@ func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName
 	entry := newPortForwardEntry(rv, resource, resource.Name, containerName, portName, ownerReference, 0, true)
 
 	// If we have, return the current entry
-	oldEntry, ok := p.forwardedResources.Load(entry.key())
+	oldEntry, ok := p.entryManager.forwardedResources.Load(entry.key())
 
 	if ok {
 		entry.localPort = oldEntry.localPort
@@ -137,7 +141,7 @@ func (p *WatchingPodForwarder) podForwardingEntry(resourceVersion, containerName
 	}
 
 	// retrieve an open port on the host
-	entry.localPort = retrieveAvailablePort(resource.Address, resource.Port, p.forwardedPorts)
+	entry.localPort = retrieveAvailablePort(resource.Address, resource.Port, &p.entryManager.forwardedPorts)
 
 	return entry, nil
 }

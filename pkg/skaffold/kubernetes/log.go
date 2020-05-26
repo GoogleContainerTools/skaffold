@@ -51,7 +51,7 @@ func NewLogAggregator(out io.Writer, cli *kubectl.CLI, imageNames []string, podS
 	return &LogAggregator{
 		output:      out,
 		kubectlcli:  cli,
-		podWatcher:  NewAggregatePodWatcher(podSelector, namespaces),
+		podWatcher:  NewPodWatcher(podSelector, namespaces),
 		colorPicker: NewColorPicker(imageNames),
 		events:      make(chan PodEvent),
 	}

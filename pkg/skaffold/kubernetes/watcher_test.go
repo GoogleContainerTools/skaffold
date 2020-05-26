@@ -56,9 +56,9 @@ func (h *hasName) Select(pod *v1.Pod) bool {
 	return false
 }
 
-func TestAggregatePodWatcher(t *testing.T) {
+func TestPodWatcher(t *testing.T) {
 	testutil.Run(t, "need to register first", func(t *testutil.T) {
-		watcher := NewAggregatePodWatcher(&anyPod{}, []string{"ns"})
+		watcher := NewPodWatcher(&anyPod{}, []string{"ns"})
 		cleanup, err := watcher.Start()
 		defer cleanup()
 
@@ -68,7 +68,7 @@ func TestAggregatePodWatcher(t *testing.T) {
 	testutil.Run(t, "fail to get client", func(t *testutil.T) {
 		t.Override(&Client, func() (kubernetes.Interface, error) { return nil, errors.New("unable to get client") })
 
-		watcher := NewAggregatePodWatcher(&anyPod{}, []string{"ns"})
+		watcher := NewPodWatcher(&anyPod{}, []string{"ns"})
 		watcher.Register(make(chan PodEvent))
 		cleanup, err := watcher.Start()
 		defer cleanup()
@@ -84,7 +84,7 @@ func TestAggregatePodWatcher(t *testing.T) {
 			return true, nil, errors.New("unable to watch")
 		})
 
-		watcher := NewAggregatePodWatcher(&anyPod{}, []string{"ns"})
+		watcher := NewPodWatcher(&anyPod{}, []string{"ns"})
 		watcher.Register(make(chan PodEvent))
 		cleanup, err := watcher.Start()
 		defer cleanup()
@@ -100,7 +100,7 @@ func TestAggregatePodWatcher(t *testing.T) {
 			validNames: []string{"pod1", "pod2", "pod3"},
 		}
 		events := make(chan PodEvent)
-		watcher := NewAggregatePodWatcher(podSelector, []string{"ns1", "ns2"})
+		watcher := NewPodWatcher(podSelector, []string{"ns1", "ns2"})
 		watcher.Register(events)
 		cleanup, err := watcher.Start()
 		defer cleanup()
