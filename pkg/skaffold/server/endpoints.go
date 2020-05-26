@@ -65,3 +65,63 @@ func (s *server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (
 
 	return &empty.Empty{}, nil
 }
+
+func (s *server) AutoBuild(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
+	res = &empty.Empty{}
+	autoBuild := request.GetState().Enabled
+	updateAutoBuild, err := event.AutoTriggerDiff("build", autoBuild)
+	if err != nil {
+		return
+	}
+	if !updateAutoBuild {
+		return
+	}
+	event.UpdateStateAutoBuildTrigger(autoBuild)
+	if autoBuild {
+		// reset state only when autoBuild is being set to true
+		event.ResetStateOnBuild()
+	}
+	go func() {
+		s.autoBuildCallback(autoBuild)
+	}()
+	return
+}
+
+func (s *server) AutoDeploy(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
+	res = &empty.Empty{}
+	autoDeploy := request.GetState().Enabled
+	updateAutoDeploy, err := event.AutoTriggerDiff("deploy", autoDeploy)
+	if err != nil {
+		return
+	}
+	if !updateAutoDeploy {
+		return
+	}
+
+	event.UpdateStateAutoDeployTrigger(autoDeploy)
+	if autoDeploy {
+		// reset state only when autoDeploy is being set to true
+		event.ResetStateOnDeploy()
+	}
+	go func() {
+		s.autoDeployCallback(autoDeploy)
+	}()
+	return
+}
+
+func (s *server) AutoSync(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
+	res = &empty.Empty{}
+	autoSync := request.GetState().Enabled
+	updateAutoSync, err := event.AutoTriggerDiff("sync", autoSync)
+	if err != nil {
+		return
+	}
+	if !updateAutoSync {
+		return
+	}
+	event.UpdateStateAutoSyncTrigger(autoSync)
+	go func() {
+		s.autoSyncCallback(autoSync)
+	}()
+	return
+}

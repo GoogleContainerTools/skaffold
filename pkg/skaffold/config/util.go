@@ -199,31 +199,68 @@ func isDefaultLocal(kubeContext string) bool {
 		return true
 	}
 
-	isKind, _ := IsKindCluster(kubeContext)
-	return isKind
+	return IsKindCluster(kubeContext) || IsK3dCluster(kubeContext)
+}
+
+// IsImageLoadingRequired checks if the cluster requires loading images into it
+func IsImageLoadingRequired(kubeContext string) bool {
+	return IsKindCluster(kubeContext) || IsK3dCluster(kubeContext)
 }
 
 // IsKindCluster checks that the given `kubeContext` is talking to `kind`.
-// It also returns the name of the `kind` cluster.
-func IsKindCluster(kubeContext string) (bool, string) {
+func IsKindCluster(kubeContext string) bool {
 	switch {
 	// With kind version < 0.6.0, the k8s context
 	// is `[CLUSTER NAME]@kind`.
 	// For eg: `cluster@kind`
 	// the default name is `kind@kind`
 	case strings.HasSuffix(kubeContext, "@kind"):
-		return true, strings.TrimSuffix(kubeContext, "@kind")
+		return true
 
 	// With kind version >= 0.6.0, the k8s context
 	// is `kind-[CLUSTER NAME]`.
 	// For eg: `kind-cluster`
 	// the default name is `kind-kind`
 	case strings.HasPrefix(kubeContext, "kind-"):
-		return true, strings.TrimPrefix(kubeContext, "kind-")
+		return true
 
 	default:
-		return false, ""
+		return false
 	}
+}
+
+// KindClusterName returns the internal kind name of a kubernetes cluster.
+func KindClusterName(clusterName string) string {
+	switch {
+	// With kind version < 0.6.0, the k8s context
+	// is `[CLUSTER NAME]@kind`.
+	// For eg: `cluster@kind`
+	// the default name is `kind@kind`
+	case strings.HasSuffix(clusterName, "@kind"):
+		return strings.TrimSuffix(clusterName, "@kind")
+
+	// With kind version >= 0.6.0, the k8s context
+	// is `kind-[CLUSTER NAME]`.
+	// For eg: `kind-cluster`
+	// the default name is `kind-kind`
+	case strings.HasPrefix(clusterName, "kind-"):
+		return strings.TrimPrefix(clusterName, "kind-")
+	}
+
+	return clusterName
+}
+
+// IsK3dCluster checks that the given `kubeContext` is talking to `k3d`.
+func IsK3dCluster(kubeContext string) bool {
+	return strings.HasPrefix(kubeContext, "k3d-")
+}
+
+// K3dClusterName returns the internal name of a k3d cluster.
+func K3dClusterName(clusterName string) string {
+	if strings.HasPrefix(clusterName, "k3d-") {
+		return strings.TrimPrefix(clusterName, "k3d-")
+	}
+	return clusterName
 }
 
 func IsUpdateCheckEnabled(configfile string) bool {

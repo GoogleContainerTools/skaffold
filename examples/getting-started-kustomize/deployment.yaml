@@ -13,7 +13,4 @@ spec:
     metadata:
       labels:
         app: skaffold-kustomize
-    spec:
-      containers:
-      - name: skaffold-kustomize
-        image: not/a/valid/image
+

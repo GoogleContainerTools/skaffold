@@ -75,17 +75,23 @@ install: $(BUILD_DIR)/$(PROJECT)
 cross: $(foreach platform, $(SUPPORTED_PLATFORMS), $(BUILD_DIR)/$(PROJECT)-$(platform))
 
 $(BUILD_DIR)/$(PROJECT)-%: $(STATIK_FILES) $(GO_FILES) $(BUILD_DIR) deploy/cross/Dockerfile
-	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst .exe,,$*)))" \
+	$(eval os = $(firstword $(subst -, ,$*)))
+	$(eval arch = $(lastword $(subst -, ,$(subst .exe,,$*))))
+	$(eval ldflags = $(GO_LDFLAGS_$(os)))
+	$(eval tags = $(GO_BUILD_TAGS_$(os)))
+
 	docker build \
-		--build-arg GOOS=$(GOOS) \
-		--build-arg GOARCH=$(GOARCH) \
-		--build-arg TAGS=$(GO_BUILD_TAGS_$(GOOS)) \
-		--build-arg LDFLAGS=$(GO_LDFLAGS_$(GOOS)) \
+		--build-arg GOOS=$(os) \
+		--build-arg GOARCH=$(arch) \
+		--build-arg TAGS=$(tags) \
+		--build-arg LDFLAGS=$(ldflags) \
 		-f deploy/cross/Dockerfile \
 		-t skaffold/cross \
 		.
+
 	docker run --rm skaffold/cross cat /build/skaffold > $@
-	shasum -a 256 $@ > $@.sha256
+	shasum -a 256 $@ | tee $@.sha256
+	file $@ || true
 
 .PHONY: $(BUILD_DIR)/VERSION
 $(BUILD_DIR)/VERSION: $(BUILD_DIR)
