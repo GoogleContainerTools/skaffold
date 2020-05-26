@@ -32,7 +32,7 @@ import (
 func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
 	// Expected case: should be found relative to the context directory.
 	// If it does not exist, check if it's found relative to the current directory in case it's shared.
-	// Otherwise return the path relative to the context directory, where it should have been.  
+	// Otherwise return the path relative to the context directory, where it should have been.
 	rel := filepath.Join(context, dockerfile)
 	if _, err := os.Stat(rel); os.IsNotExist(err) {
 		if _, err := os.Stat(dockerfile); err == nil || !os.IsNotExist(err) {
