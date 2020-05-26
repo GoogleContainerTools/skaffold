@@ -23,39 +23,39 @@ import (
 	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-var transformableWhitelist = []apimachinery.GroupKind{
+var transformableWhitelist = map[apimachinery.GroupKind]bool{
 	{
 		Group: "",
 		Kind:  "Pod",
-	},
+	}: true,
 	{
 		Group: "apps",
 		Kind:  "DaemonSet",
-	},
+	}: true,
 	{
 		Group: "apps",
 		Kind:  "Deployment",
-	},
+	}: true,
 	{
 		Group: "apps",
 		Kind:  "ReplicaSet",
-	},
+	}: true,
 	{
 		Group: "apps",
 		Kind:  "StatefulSet",
-	},
+	}: true,
 	{
 		Group: "batch",
 		Kind:  "CronJob",
-	},
+	}: true,
 	{
 		Group: "batch",
 		Kind:  "Job",
-	},
+	}: true,
 	{
 		Group: "serving.knative.dev",
 		Kind:  "Service",
-	},
+	}: true,
 }
 
 // FieldVisitor represents the aggregation/transformation that should be performed on each traversed field.
@@ -123,12 +123,7 @@ func shouldTransformManifest(manifest map[interface{}]interface{}) bool {
 		Kind:  gvk.Kind,
 	}
 
-	for _, allowedGroupKind := range transformableWhitelist {
-		if groupKind == allowedGroupKind {
-			return true
-		}
-	}
-	return false
+	return transformableWhitelist[groupKind]
 }
 
 // recursiveVisitorDecorator adds recursion to a FieldVisitor.
