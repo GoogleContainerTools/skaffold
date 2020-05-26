@@ -576,6 +576,18 @@ func TestNormalizeDockerfilePath(t *testing.T) {
 			expected:    "context/Dockerfile",
 		},
 		{
+			description: "path to dockerfile resolved in context first",
+			files:       []string{"context/context/Dockerfile", "context/Dockerfile"},
+			dockerfile:  "context/Dockerfile",
+			expected:    "context/context/Dockerfile",
+		},
+		{
+			description: "path to dockerfile in working directory",
+			files:       []string{"context/Dockerfile"},
+			dockerfile:  "context/Dockerfile",
+			expected:    "context/Dockerfile",
+		},
+		{
 			description: "workspace dockerfile when missing in context",
 			files:       []string{"Dockerfile", "context/randomfile.txt"},
 			dockerfile:  "Dockerfile",
