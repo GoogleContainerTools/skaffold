@@ -28,7 +28,6 @@ import (
 
 type Diagnose interface {
 	Run(ctx context.Context) ([]validator.Resource, error)
-	Labels() map[string]string
 	WithLabel(key, value string) Diagnose
 	WithValidators(v []validator.Validator) Diagnose
 }
@@ -55,10 +54,6 @@ func New(namespaces []string) Diagnose {
 func (d *diag) WithLabel(key, value string) Diagnose {
 	d.labels[key] = value
 	return d
-}
-
-func (d *diag) Labels() map[string]string {
-	return d.labels
 }
 
 func (d *diag) WithValidators(v []validator.Validator) Diagnose {

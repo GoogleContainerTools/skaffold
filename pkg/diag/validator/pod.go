@@ -74,7 +74,7 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 		if po.Kind == "" {
 			po.Kind = podKind
 		}
-		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.statusCode))
+		rs = append(rs, NewResourceFromObject(&po, po.Kind, Status(ps.phase), ps.err, ps.statusCode))
 	}
 
 	return rs, nil

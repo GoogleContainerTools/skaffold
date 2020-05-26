@@ -20,13 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
-	"github.com/sirupsen/logrus"
 	"strings"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/proto"
@@ -108,13 +109,10 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 	err = parseKubectlRolloutError(err)
 	if err == errKubectlKilled {
 		err = fmt.Errorf("received Ctrl-C or deployments could not stabilize within %v: %w", d.deadline, err)
-	} else {
-		if err := d.fetchPods(ctx); err != nil {
-			logrus.Debugf("pod statuses could be fetched this time due to %s", err)
-		}
+	} else if err := d.fetchPods(ctx); err != nil {
+		logrus.Debugf("pod statuses could be fetched this time due to %s", err)
 	}
 	d.UpdateStatus(details, err)
-
 }
 
 func (d *Deployment) String() string {
@@ -154,7 +152,6 @@ func (d *Deployment) ReportSinceLastUpdated() string {
 		if p.Error() != nil {
 			result.WriteString(fmt.Sprintf("%s %s %s: %s\n", tab, tabHeader, p, p.Error()))
 		}
-
 	}
 	return result.String()
 }
