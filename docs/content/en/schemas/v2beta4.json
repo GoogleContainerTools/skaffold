@@ -1204,6 +1204,7 @@
         "chartPath"
       ],
       "properties": {
+<<<<<<< HEAD
         "artifactOverrides": {
           "additionalProperties": {
             "type": "string"
@@ -1213,6 +1214,8 @@
           "x-intellij-html-description": "key value pairs where key represents the parameter used in <code>values</code> file to define a container image and value corresponds to artifact i.e. <code>ImageName</code> defined in <code>Build.Artifacts</code> section.",
           "default": "{}"
         },
+=======
+>>>>>>> d43417a8588f9c52cf717199deb05ae72757d941
         "chartPath": {
           "type": "string",
           "description": "path to the Helm chart.",
@@ -1250,8 +1253,13 @@
         },
         "remote": {
           "type": "boolean",
+<<<<<<< HEAD
           "description": "specifies whether the chart path is remote, or exists on the host filesystem. `remote: true` implies `skipBuildDependencies: true`.",
           "x-intellij-html-description": "specifies whether the chart path is remote, or exists on the host filesystem. <code>remote: true</code> implies <code>skipBuildDependencies: true</code>.",
+=======
+          "description": "specifies whether the chart path is remote, or exists on the host filesystem.",
+          "x-intellij-html-description": "specifies whether the chart path is remote, or exists on the host filesystem.",
+>>>>>>> d43417a8588f9c52cf717199deb05ae72757d941
           "default": "false"
         },
         "setFiles": {
@@ -1283,16 +1291,40 @@
         },
         "skipBuildDependencies": {
           "type": "boolean",
+<<<<<<< HEAD
           "description": "should build dependencies be skipped.",
           "x-intellij-html-description": "should build dependencies be skipped.",
           "default": "false"
         },
+=======
+          "description": "should build dependencies be skipped. Ignored when `remote: true`.",
+          "x-intellij-html-description": "should build dependencies be skipped. Ignored when <code>remote: true</code>.",
+          "default": "false"
+        },
+        "upgradeOnChange": {
+          "type": "boolean",
+          "description": "specifies whether to upgrade helm chart on code changes. Default is `true` when helm chart is local (`remote: false`). Default is `false` if `remote: true`.",
+          "x-intellij-html-description": "specifies whether to upgrade helm chart on code changes. Default is <code>true</code> when helm chart is local (<code>remote: false</code>). Default is <code>false</code> if <code>remote: true</code>."
+        },
+>>>>>>> d43417a8588f9c52cf717199deb05ae72757d941
         "useHelmSecrets": {
           "type": "boolean",
           "description": "instructs skaffold to use secrets plugin on deployment.",
           "x-intellij-html-description": "instructs skaffold to use secrets plugin on deployment.",
           "default": "false"
         },
+<<<<<<< HEAD
+=======
+        "values": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "key-value pairs supplementing the Helm `values` file.",
+          "x-intellij-html-description": "key-value pairs supplementing the Helm <code>values</code> file.",
+          "default": "{}"
+        },
+>>>>>>> d43417a8588f9c52cf717199deb05ae72757d941
         "valuesFiles": {
           "items": {
             "type": "string"
@@ -1318,7 +1350,11 @@
         "name",
         "chartPath",
         "valuesFiles",
+<<<<<<< HEAD
         "artifactOverrides",
+=======
+        "values",
+>>>>>>> d43417a8588f9c52cf717199deb05ae72757d941
         "namespace",
         "version",
         "setValues",
@@ -1329,6 +1365,10 @@
         "skipBuildDependencies",
         "useHelmSecrets",
         "remote",
+<<<<<<< HEAD
+=======
+        "upgradeOnChange",
+>>>>>>> d43417a8588f9c52cf717199deb05ae72757d941
         "overrides",
         "packaged",
         "imageStrategy"
@@ -1798,12 +1838,21 @@
       },
       "preferredOrder": [
         "name",
+<<<<<<< HEAD
         "activation",
         "patches",
         "build",
         "test",
         "deploy",
         "portForward"
+=======
+        "build",
+        "test",
+        "deploy",
+        "portForward",
+        "patches",
+        "activation"
+>>>>>>> d43417a8588f9c52cf717199deb05ae72757d941
       ],
       "additionalProperties": false,
       "description": "used to override any `build`, `test` or `deploy` configuration.",

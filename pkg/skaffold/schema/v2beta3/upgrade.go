@@ -1,5 +1,9 @@
 /*
+<<<<<<< HEAD
 Copyright 2020 The Skaffold Authors
+=======
+Copyright 2019 The Skaffold Authors
+>>>>>>> d43417a8588f9c52cf717199deb05ae72757d941
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,8 +21,13 @@ limitations under the License.
 package v2beta3
 
 import (
+<<<<<<< HEAD
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta4"
+=======
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+>>>>>>> d43417a8588f9c52cf717199deb05ae72757d941
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
@@ -27,7 +36,10 @@ import (
 // 1. Additions:
 // 2. Removals:
 // 3. Updates:
+<<<<<<< HEAD
 //    - Rename `values` in `helm.Releases` to `artifactOverrides`
+=======
+>>>>>>> d43417a8588f9c52cf717199deb05ae72757d941
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
@@ -37,6 +49,7 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	return &newConfig, err
 }
 
+<<<<<<< HEAD
 func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 	oldDeploy := &oldPipeline.(*Pipeline).Deploy
 	if oldDeploy.HelmDeploy == nil {
@@ -47,5 +60,8 @@ func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
 	for i, r := range oldDeploy.HelmDeploy.Releases {
 		newDeploy.HelmDeploy.Releases[i].ArtifactOverrides = r.Values
 	}
+=======
+func upgradeOnePipeline(_, _ interface{}) error {
+>>>>>>> d43417a8588f9c52cf717199deb05ae72757d941
 	return nil
 }
