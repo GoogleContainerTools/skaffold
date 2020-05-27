@@ -76,6 +76,62 @@ func TestRun(t *testing.T) {
 				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
 		},
 		{
+			description: "pod is Waiting condition due to ErrImageBackOffPullErr",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				Status: v1.PodStatus{
+					Phase:      v1.PodPending,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							Image: "foo-image",
+							State: v1.ContainerState{
+								Waiting: &v1.ContainerStateWaiting{
+									Reason:  "ErrImagePullBackOff",
+									Message: "rpc error: code = Unknown desc = Error response from daemon: pull access denied for leeroy-web1, repository does not exist or may require 'docker login': denied: requested access to the resource is denied",
+								},
+							},
+						},
+					},
+				},
+			}},
+			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
+				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
+				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
+		},
+		{
+			description: "pod is Waiting due to Image Backoff Pull error",
+			pods: []*v1.Pod{{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "foo",
+					Namespace: "test",
+				},
+				Status: v1.PodStatus{
+					Phase:      v1.PodPending,
+					Conditions: []v1.PodCondition{{Type: v1.PodScheduled, Status: v1.ConditionTrue}},
+					ContainerStatuses: []v1.ContainerStatus{
+						{
+							Name:  "foo-container",
+							Image: "foo-image",
+							State: v1.ContainerState{
+								Waiting: &v1.ContainerStateWaiting{
+									Reason:  "ImagePullBackOff",
+									Message: "rpc error: code = Unknown desc = Error response from daemon: pull access denied for leeroy-web1, repository does not exist or may require 'docker login': denied: requested access to the resource is denied",
+								},
+							},
+						},
+					},
+				},
+			}},
+			expected: []Resource{NewResource("test", "pod", "foo", "Pending",
+				fmt.Errorf("container foo-container is waiting to start: foo-image can't be pulled"),
+				proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR)},
+		},
+		{
 			description: "pod is in Terminated State",
 			pods: []*v1.Pod{{
 				ObjectMeta: metav1.ObjectMeta{

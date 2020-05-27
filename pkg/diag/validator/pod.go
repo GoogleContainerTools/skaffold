@@ -30,17 +30,17 @@ import (
 )
 
 const (
-	success             = "Succeeded"
-	running             = "Running"
-	actionableMessage   = `could not determine pod status. Try kubectl describe -n %s po/%s`
-	errorPrefix         = `(?P<Prefix>)(?P<DaemonLog>Error response from daemon\:)(?P<Error>.*)`
-	taintsExp           = `\{(?P<taint>.*?):.*?}`
-	crashLoopBackOff    = "CrashLoopBackOff"
-	runContainerError   = "RunContainerError"
-	imagePullErr        = "ErrImagePull"
-	errImagePullBackOff = "ErrImagePullBackOff"
-	containerCreating   = "ContainerCreating"
-	podKind             = "pod"
+	success           = "Succeeded"
+	running           = "Running"
+	actionableMessage = `could not determine pod status. Try kubectl describe -n %s po/%s`
+	errorPrefix       = `(?P<Prefix>)(?P<DaemonLog>Error response from daemon\:)(?P<Error>.*)`
+	taintsExp         = `\{(?P<taint>.*?):.*?}`
+	crashLoopBackOff  = "CrashLoopBackOff"
+	runContainerError = "RunContainerError"
+	imagePullErr      = "ErrImagePull"
+	imagePullBackOff  = "ImagePullBackOff"
+	containerCreating = "ContainerCreating"
+	podKind           = "pod"
 )
 
 var (
@@ -202,14 +202,18 @@ func (p *podStatus) String() string {
 }
 
 func extractErrorMessageFromWaitingContainerStatus(c v1.ContainerStatus) (proto.StatusCode, error) {
+	r := c.State.Waiting.Reason
+	if strings.HasSuffix(r, imagePullBackOff) {
+		r = imagePullBackOff
+	}
+	switch r {
 	// Extract meaning full error out of container statuses.
-	switch c.State.Waiting.Reason {
 	case containerCreating:
 		return proto.StatusCode_STATUSCHECK_CONTAINER_CREATING, fmt.Errorf("creating container %s", c.Name)
 	case crashLoopBackOff:
 		// TODO, in case of container restarting, return the original failure reason due to which container failed.
 		return proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING, fmt.Errorf("restarting failed container %s", c.Name)
-	case imagePullErr, errImagePullBackOff:
+	case imagePullErr, imagePullBackOff:
 		return proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
 	case runContainerError:
 		match := runContainerRe.FindStringSubmatch(c.State.Waiting.Message)
