@@ -72,10 +72,12 @@ func GetRestClientConfig() (*restclient.Config, error) {
 
 func getRestClientConfig(kctx string, kcfg string) (*restclient.Config, error) {
 	logrus.Debugf("getting client config for kubeContext: `%s`", kctx)
-	rawConfig, err := getRawKubeConfig()
+
+	rawConfig, err := getCurrentConfig()
 	if err != nil {
 		return nil, err
 	}
+
 	clientConfig := clientcmd.NewNonInteractiveClientConfig(rawConfig, kctx, &clientcmd.ConfigOverrides{CurrentContext: kctx}, nil)
 	restConfig, err := clientConfig.ClientConfig()
 	if kctx == "" && kcfg == "" && clientcmd.IsEmptyConfig(err) {
@@ -94,20 +96,9 @@ func getRestClientConfig(kctx string, kcfg string) (*restclient.Config, error) {
 	return restConfig, nil
 }
 
-// getCurrentConfig retrieves the kubeconfig file. If ConfigureKubeConfig was called before, the CurrentContext will be overridden.
-// The result will be cached after the first call.
-func getCurrentConfig() (clientcmdapi.Config, error) {
-	cfg, err := getRawKubeConfig()
-	if kubeContext != "" {
-		// RawConfig does not respect the override in kubeConfig
-		cfg.CurrentContext = kubeContext
-	}
-	return cfg, err
-}
-
-// getRawKubeConfig retrieves and caches the raw kubeConfig. The cache ensures that Skaffold always works with the identical kubeconfig,
+// getCurrentConfig retrieves and caches the raw kubeConfig. The cache ensures that Skaffold always works with the identical kubeconfig,
 // even if it was changed on disk.
-func getRawKubeConfig() (clientcmdapi.Config, error) {
+func getCurrentConfig() (clientcmdapi.Config, error) {
 	kubeConfigOnce.Do(func() {
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 		loadingRules.ExplicitPath = kubeConfigFile
@@ -116,10 +107,10 @@ func getRawKubeConfig() (clientcmdapi.Config, error) {
 		})
 	})
 
-	rawConfig, err := kubeConfig.RawConfig()
-	if err != nil {
-		return rawConfig, fmt.Errorf("loading kubeconfig: %w", err)
+	cfg, err := kubeConfig.RawConfig()
+	if kubeContext != "" {
+		// RawConfig does not respect the override in kubeConfig
+		cfg.CurrentContext = kubeContext
 	}
-
-	return rawConfig, nil
+	return cfg, err
 }

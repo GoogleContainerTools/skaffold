@@ -25,9 +25,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/portforward"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/sync"
@@ -51,24 +50,21 @@ type Runner interface {
 
 // SkaffoldRunner is responsible for running the skaffold build, test and deploy config.
 type SkaffoldRunner struct {
-	builder               build.Builder
-	deployer              deploy.Deployer
-	tester                test.Tester
-	tagger                tag.Tagger
-	syncer                sync.Syncer
-	monitor               filemon.Monitor
-	listener              Listener
-	forwarderManager      *portforward.ForwarderManager
-	debugContainerManager *debugging.ContainerManager
+	builder  build.Builder
+	deployer deploy.Deployer
+	tester   test.Tester
+	tagger   tag.Tagger
+	syncer   sync.Syncer
+	monitor  filemon.Monitor
+	listener Listener
 
-	logger               *kubernetes.LogAggregator
-	cache                cache.Cache
-	changeSet            *changeSet
-	runCtx               *runcontext.RunContext
-	labellers            []deploy.Labeller
-	defaultLabeller      *deploy.DefaultLabeller
-	portForwardResources []*latest.PortForwardResource
-	builds               []build.Artifact
+	kubectlCLI      *kubectl.CLI
+	cache           cache.Cache
+	changeSet       changeSet
+	runCtx          *runcontext.RunContext
+	labellers       []deploy.Labeller
+	defaultLabeller *deploy.DefaultLabeller
+	builds          []build.Artifact
 
 	// podSelector is used to determine relevant pods for logging and portForwarding
 	podSelector *kubernetes.ImageList

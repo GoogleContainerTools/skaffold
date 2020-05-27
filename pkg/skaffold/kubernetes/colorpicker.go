@@ -53,11 +53,11 @@ type colorPicker struct {
 // sequentially from `colorCodes`. If all colors are used, the first color will be used
 // again. The formatter for the associated color will then be returned by `Pick` each
 // time it is called for the artifact and can be used to write to out in that color.
-func NewColorPicker(baseImageNames []string) ColorPicker {
+func NewColorPicker(imageNames []string) ColorPicker {
 	imageColors := make(map[string]color.Color)
 
-	for i, baseImageName := range baseImageNames {
-		imageColors[baseImageName] = colorCodes[i%len(colorCodes)]
+	for i, imageName := range imageNames {
+		imageColors[stripTag(imageName)] = colorCodes[i%len(colorCodes)]
 	}
 
 	return &colorPicker{

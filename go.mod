@@ -21,10 +21,12 @@ require (
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0 // indirect
 	contrib.go.opencensus.io/exporter/prometheus v0.1.0 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.13.1 // indirect
+	github.com/BurntSushi/toml v0.3.1
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.4
 	github.com/buildpacks/lifecycle v0.7.1
 	github.com/buildpacks/pack v0.10.0
+	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/docker/cli v0.0.0-20200312141509-ef2f64abbd37
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/docker/docker v1.14.0-0.20190319215453-e7b5f7dbe98c
@@ -67,7 +69,7 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.1.0 // indirect
 	google.golang.org/api v0.21.0
 	google.golang.org/genproto v0.0.0-20200413115906-b5235f65be36
-	google.golang.org/grpc v1.28.1
+	google.golang.org/grpc v1.29.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.8
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.18.1

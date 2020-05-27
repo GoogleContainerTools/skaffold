@@ -69,10 +69,13 @@ func updateForCNBImage(container *v1.Container, ic imageConfiguration, transform
 		return ContainerDebugConfiguration{}, "", fmt.Errorf("buildpacks metadata has no processes")
 	}
 
-	// the buildpacks launcher is retained as the entrypoint
+	// The buildpacks launcher is retained as the entrypoint
 	ic, rewriter := adjustCommandLine(m, ic)
 	c, img, err := transformer(container, ic)
-	if err == nil && rewriter != nil {
+
+	// Only rewrite the container.Args if set: some transforms only alter env vars,
+	// and the image's arguments are not changed.
+	if err == nil && container.Args != nil && rewriter != nil {
 		container.Args = rewriter(container.Args)
 	}
 	return c, img, err

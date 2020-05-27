@@ -59,10 +59,19 @@ func TestHasCmdAnnotation(t *testing.T) {
 }
 
 func TestAddFlagsSmoke(t *testing.T) {
-	testCmd := &cobra.Command{
-		Use:   "test",
-		Short: "Test command for smoke testing",
+	// Collect all commands that have common flags.
+	commands := map[string]bool{}
+	for _, fr := range FlagRegistry {
+		for _, command := range fr.DefinedOn {
+			commands[command] = true
+		}
 	}
-	SetupFlags()
-	AddFlags(testCmd.Flags(), "test")
+
+	// Make sure AddFlags() works for every command.
+	for command := range commands {
+		AddFlags(&cobra.Command{
+			Use:   command,
+			Short: "Test command for smoke testing",
+		})
+	}
 }

@@ -53,6 +53,12 @@ sudo install skaffold /usr/local/bin/
 brew install skaffold
 ```
 
+### MacPorts
+
+```bash
+sudo port install skaffold
+```
+
 ### Stable binary
 For the latest **stable** release download and place it in your `PATH`:
 

@@ -78,9 +78,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	}
 
 	// Update which images are logged.
-	for _, build := range bRes {
-		r.podSelector.Add(build.Tag)
-	}
+	r.addTagsToPodSelector(bRes)
 
 	// Make sure all artifacts are redeployed. Not only those that were just built.
 	r.builds = build.MergeWithPreviousBuilds(bRes, r.builds)
@@ -90,46 +88,45 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 
 // DeployAndLog deploys a list of already built artifacts and optionally show the logs.
 func (r *SkaffoldRunner) DeployAndLog(ctx context.Context, out io.Writer, artifacts []build.Artifact) error {
-	if !r.runCtx.Opts.Tail && !r.runCtx.Opts.PortForward.Enabled {
-		return r.Deploy(ctx, out, artifacts)
-	}
+	// Update which images are logged.
+	r.addTagsToPodSelector(artifacts)
 
-	var imageNames []string
-	for _, artifact := range artifacts {
-		imageNames = append(imageNames, artifact.ImageName)
-		r.podSelector.Add(artifact.Tag)
-	}
+	logger := r.createLogger(out, artifacts)
+	defer logger.Stop()
 
-	r.createLoggerForImages(out, imageNames)
-	defer r.logger.Stop()
-
-	r.createForwarder(out)
-	defer r.forwarderManager.Stop()
+	forwarderManager := r.createForwarder(out)
+	defer forwarderManager.Stop()
 
 	// Logs should be retrieved up to just before the deploy
-	r.logger.SetSince(time.Now())
+	logger.SetSince(time.Now())
 
 	// First deploy
 	if err := r.Deploy(ctx, out, artifacts); err != nil {
 		return err
 	}
 
-	if r.runCtx.Opts.PortForward.Enabled {
-		if err := r.forwarderManager.Start(ctx); err != nil {
-			logrus.Warnln("Error starting port forwarding:", err)
-		}
+	if err := forwarderManager.Start(ctx); err != nil {
+		logrus.Warnln("Error starting port forwarding:", err)
 	}
 
 	// Start printing the logs after deploy is finished
-	if r.runCtx.Opts.Tail {
-		if err := r.logger.Start(ctx); err != nil {
-			return fmt.Errorf("starting logger: %w", err)
-		}
+	if err := logger.Start(ctx); err != nil {
+		return fmt.Errorf("starting logger: %w", err)
 	}
 
-	<-ctx.Done()
+	if r.runCtx.Opts.Tail || r.runCtx.Opts.PortForward.Enabled {
+		color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
+		<-ctx.Done()
+	}
 
 	return nil
+}
+
+// Update which images are logged.
+func (r *SkaffoldRunner) addTagsToPodSelector(artifacts []build.Artifact) {
+	for _, artifact := range artifacts {
+		r.podSelector.Add(artifact.Tag)
+	}
 }
 
 type tagErr struct {
