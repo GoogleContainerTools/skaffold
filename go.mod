@@ -5,7 +5,7 @@ go 1.14
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.1+incompatible
 	github.com/containerd/containerd => github.com/containerd/containerd v1.3.4
-	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20190319215453-e7b5f7dbe98c
+	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20200221181110-62bd5a33f707
 	github.com/tektoncd/pipeline => github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
 	golang.org/x/sys => golang.org/x/sys v0.0.0-20190507160741-ecd444e8653b
 	k8s.io/api => k8s.io/api v0.17.4
@@ -52,6 +52,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/openzipkin/zipkin-go v0.2.2 // indirect
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
+	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
 	github.com/rjeczalik/notify v0.9.2
 	github.com/russross/blackfriday/v2 v2.0.1
