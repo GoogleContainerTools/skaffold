@@ -68,7 +68,6 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	var rs []Resource
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
-		rs = append(rs, NewResourceFromObject(&po, po.Kind, Status(ps.phase), ps.err, ps.statusCode))
 		// The GVK group is not populated for List Objects. Hence set `kind` to `pod`
 		// See https://github.com/kubernetes-sigs/controller-runtime/pull/389
 		if po.Kind == "" {
