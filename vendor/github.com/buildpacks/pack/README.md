@@ -2,6 +2,7 @@
 
 [![Build results](https://github.com/buildpacks/pack/workflows/build/badge.svg)](https://github.com/buildpacks/pack/actions)
 [![Go Report Card](https://goreportcard.com/badge/github.com/buildpacks/pack)](https://goreportcard.com/report/github.com/buildpacks/pack)
+[![codecov](https://codecov.io/gh/buildpacks/pack/branch/master/graph/badge.svg)](https://codecov.io/gh/buildpacks/pack)
 [![GoDoc](https://godoc.org/github.com/buildpacks/pack?status.svg)](https://godoc.org/github.com/buildpacks/pack)
 [![GitHub license](https://img.shields.io/github/license/buildpacks/pack)](https://github.com/buildpacks/pack/blob/master/LICENSE)
 [![Slack](https://slack.buildpacks.io/badge.svg)](https://slack.buildpacks.io/)

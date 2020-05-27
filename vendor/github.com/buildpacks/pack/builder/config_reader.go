@@ -15,28 +15,7 @@ import (
 	"github.com/buildpacks/pack/internal/style"
 )
 
-type BuildpackCollection []BuildpackConfig
-
-func (c BuildpackCollection) Packages() []BuildpackConfig {
-	var bps []BuildpackConfig
-	for _, bp := range c {
-		if bp.ImageName != "" && bp.URI == "" {
-			bps = append(bps, bp)
-		}
-	}
-	return bps
-}
-
-func (c BuildpackCollection) Buildpacks() []BuildpackConfig {
-	var bps []BuildpackConfig
-	for _, bp := range c {
-		if bp.URI != "" && bp.ImageName == "" {
-			bps = append(bps, bp)
-		}
-	}
-	return bps
-}
-
+// Config is a builder configuration file
 type Config struct {
 	Description string              `toml:"description"`
 	Buildpacks  BuildpackCollection `toml:"buildpacks"`
@@ -45,11 +24,16 @@ type Config struct {
 	Lifecycle   LifecycleConfig     `toml:"lifecycle"`
 }
 
+// BuildpackCollection is a list of BuildpackConfigs
+type BuildpackCollection []BuildpackConfig
+
+// BuildpackConfig details the configuration of a Buildpack
 type BuildpackConfig struct {
 	dist.BuildpackInfo
 	dist.ImageOrURI
 }
 
+// StackConfig details the configuration of a Stack
 type StackConfig struct {
 	ID              string   `toml:"id"`
 	BuildImage      string   `toml:"build-image"`
@@ -57,6 +41,7 @@ type StackConfig struct {
 	RunImageMirrors []string `toml:"run-image-mirrors,omitempty"`
 }
 
+// LifecycleConfig details the configuration of the Lifecycle
 type LifecycleConfig struct {
 	URI     string `toml:"uri"`
 	Version string `toml:"version"`
@@ -76,14 +61,6 @@ func ReadConfig(path string) (config Config, warnings []string, err error) {
 	}
 	defer file.Close()
 
-	warnings, err = getWarningsForObsoleteFields(file)
-	if err != nil {
-		return Config{}, nil, errors.Wrapf(err, "check warnings for file '%s'", path)
-	}
-	if _, err := file.Seek(0, io.SeekStart); err != nil {
-		return Config{}, nil, errors.Wrap(err, "reset config file pointer")
-	}
-
 	config, err = parseConfig(file, builderDir, path)
 	if err != nil {
 		return Config{}, nil, errors.Wrapf(err, "parse contents of '%s'", path)
@@ -96,22 +73,26 @@ func ReadConfig(path string) (config Config, warnings []string, err error) {
 	return config, warnings, nil
 }
 
-func getWarningsForObsoleteFields(reader io.Reader) ([]string, error) {
-	var warnings []string
+// Validate a Config
+func (c Config) Validate() error {
+	return c.Stack.Validate()
+}
 
-	var obsoleteConfig = struct {
-		Groups []interface{}
-	}{}
-
-	if _, err := toml.DecodeReader(reader, &obsoleteConfig); err != nil {
-		return nil, err
+// Validate a StackConfig
+func (s StackConfig) Validate() error {
+	if s.ID == "" {
+		return errors.New("stack.id is required")
 	}
 
-	if len(obsoleteConfig.Groups) > 0 {
-		warnings = append(warnings, fmt.Sprintf("%s field is obsolete in favor of %s", style.Symbol("groups"), style.Symbol("order")))
+	if s.BuildImage == "" {
+		return errors.New("stack.build-image is required")
 	}
 
-	return warnings, nil
+	if s.RunImage == "" {
+		return errors.New("stack.run-image is required")
+	}
+
+	return nil
 }
 
 // parseConfig reads a builder configuration from reader and resolves relative buildpack paths using `relativeToDir`
@@ -132,7 +113,11 @@ func parseConfig(reader io.Reader, relativeToDir, path string) (Config, error) {
 		)
 	}
 
-	for i, bp := range builderConfig.Buildpacks.Buildpacks() {
+	for i, bp := range builderConfig.Buildpacks {
+		if bp.URI == "" {
+			continue
+		}
+
 		uri, err := paths.ToAbsolute(bp.URI, relativeToDir)
 		if err != nil {
 			return Config{}, errors.Wrap(err, "transforming buildpack URI")
