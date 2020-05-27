@@ -524,6 +524,12 @@
             "[\"key1=value1\", \"key2=value2\", \"key3={{.ENV_VARIABLE}}\"]"
           ]
         },
+        "projectDescriptor": {
+          "type": "string",
+          "description": "path to the project descriptor file.",
+          "x-intellij-html-description": "path to the project descriptor file.",
+          "default": "project.toml"
+        },
         "runImage": {
           "type": "string",
           "description": "overrides the stack's default run image.",
@@ -542,6 +548,7 @@
         "env",
         "buildpacks",
         "trustBuilder",
+        "projectDescriptor",
         "dependencies"
       ],
       "additionalProperties": false,

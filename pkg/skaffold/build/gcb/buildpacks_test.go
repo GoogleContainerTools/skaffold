@@ -36,7 +36,8 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		{
 			description: "default run image",
 			artifact: &latest.BuildpackArtifact{
-				Builder: "builder",
+				Builder:           "builder",
+				ProjectDescriptor: "project.toml",
 			},
 			expected: cloudbuild.Build{
 				Steps: []*cloudbuild.BuildStep{{
@@ -49,8 +50,9 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		{
 			description: "env variables",
 			artifact: &latest.BuildpackArtifact{
-				Builder: "builder",
-				Env:     []string{"KEY=VALUE", "FOO={{.BAR}}"},
+				Builder:           "builder",
+				Env:               []string{"KEY=VALUE", "FOO={{.BAR}}"},
+				ProjectDescriptor: "project.toml",
 			},
 			expected: cloudbuild.Build{
 				Steps: []*cloudbuild.BuildStep{{
@@ -63,8 +65,9 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		{
 			description: "run image",
 			artifact: &latest.BuildpackArtifact{
-				Builder:  "otherbuilder",
-				RunImage: "run/image",
+				Builder:           "otherbuilder",
+				RunImage:          "run/image",
+				ProjectDescriptor: "project.toml",
 			},
 			expected: cloudbuild.Build{
 				Steps: []*cloudbuild.BuildStep{{
@@ -85,8 +88,9 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		{
 			description: "buildpacks list",
 			artifact: &latest.BuildpackArtifact{
-				Builder:    "builder",
-				Buildpacks: []string{"buildpack1", "buildpack2"},
+				Builder:           "builder",
+				Buildpacks:        []string{"buildpack1", "buildpack2"},
+				ProjectDescriptor: "project.toml",
 			},
 			expected: cloudbuild.Build{
 				Steps: []*cloudbuild.BuildStep{{
@@ -99,13 +103,28 @@ func TestBuildpackBuildSpec(t *testing.T) {
 		{
 			description: "trusted builder",
 			artifact: &latest.BuildpackArtifact{
-				Builder:      "builder",
-				TrustBuilder: true,
+				Builder:           "builder",
+				ProjectDescriptor: "project.toml",
+				TrustBuilder:      true,
 			},
 			expected: cloudbuild.Build{
 				Steps: []*cloudbuild.BuildStep{{
 					Name: "pack/image",
 					Args: []string{"pack", "build", "img", "--builder", "builder", "--trust-builder"},
+				}},
+				Images: []string{"img"},
+			},
+		},
+		{
+			description: "project descriptor",
+			artifact: &latest.BuildpackArtifact{
+				Builder:           "builder",
+				ProjectDescriptor: "non-default.toml",
+			},
+			expected: cloudbuild.Build{
+				Steps: []*cloudbuild.BuildStep{{
+					Name: "pack/image",
+					Args: []string{"pack", "build", "img", "--builder", "builder", "--descriptor", "non-default.toml"},
 				}},
 				Images: []string{"img"},
 			},

@@ -753,6 +753,10 @@ type BuildpackArtifact struct {
 	// TrustBuilder indicates that the builder should be trusted.
 	TrustBuilder bool `yaml:"trustBuilder,omitempty"`
 
+	// ProjectDescriptor is the path to the project descriptor file.
+	// Defaults to `project.toml` if it exists.
+	ProjectDescriptor string `yaml:"projectDescriptor,omitempty"`
+
 	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`
 }
