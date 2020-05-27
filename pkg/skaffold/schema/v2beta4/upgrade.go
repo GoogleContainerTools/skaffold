@@ -14,20 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v2beta3
+package v2beta4
 
 import (
+	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
-	next "github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/v2beta4"
 	pkgutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 // Upgrade upgrades a configuration to the next version.
-// Config changes from v2beta3 to v2beta4
+// Config changes from v2beta4 to v2beta5
 // 1. Additions:
 // 2. Removals:
 // 3. Updates:
-//    - Rename `values` in `helm.Releases` to `artifactOverrides`
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
@@ -37,15 +36,6 @@ func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	return &newConfig, err
 }
 
-func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
-	oldDeploy := &oldPipeline.(*Pipeline).Deploy
-	if oldDeploy.HelmDeploy == nil {
-		return nil
-	}
-	newDeploy := &newPipeline.(*next.Pipeline).Deploy
-
-	for i, r := range oldDeploy.HelmDeploy.Releases {
-		newDeploy.HelmDeploy.Releases[i].ArtifactOverrides = r.Values
-	}
+func upgradeOnePipeline(_, _ interface{}) error {
 	return nil
 }
