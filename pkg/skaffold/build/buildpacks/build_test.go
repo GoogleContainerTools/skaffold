@@ -90,13 +90,14 @@ value = "14.3.0"
 id = "my/buildpack"
 [[build.buildpacks]]
 id = "my/otherBuildpack"
+version = "1.0"
 `,
 			},
 			expectedOptions: &pack.BuildOptions{
 				AppPath:    ".",
 				Builder:    "my/builder2",
 				RunImage:   "my/run2",
-				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
+				Buildpacks: []string{"my/buildpack", "my/otherBuildpack@1.0"},
 				Env: map[string]string{
 					"GOOGLE_RUNTIME_VERSION": "14.3.0",
 				},
