@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 apiVersion: skaffold/v2beta5
-=======
-apiVersion: skaffold/v2beta4
->>>>>>> d43417a8588f9c52cf717199deb05ae72757d941
 kind: Config
 build:
   tagPolicy:
