@@ -51,15 +51,10 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	workspace := a.Workspace
 
 	// Read `project.toml` if it exists.
-	var projectDescriptor Descriptor
 	path := filepath.Join(a.Workspace, projectTOML)
-	if _, err := os.Stat(path); err == nil {
-		desc, err := ReadProjectDescriptor(path)
-		if err != nil {
-			return "", fmt.Errorf("failed to read project descriptor %q: %w", path, err)
-		}
-
-		projectDescriptor = desc
+	projectDescriptor, err := ReadProjectDescriptor(path)
+	if err != nil && !os.IsNotExist(err) {
+		return "", fmt.Errorf("failed to read project descriptor %q: %w", path, err)
 	}
 
 	// To improve caching, we always build the image with [:latest] tag
@@ -87,7 +82,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	}
 
 	// List buildpacks to be used for the build.
-	// Those specified in the skaffold.yaml override those in the project.toml.
+	// Those specified in the skaffold.yaml replace those in the project.toml.
 	buildpacks := artifact.Buildpacks
 	if len(buildpacks) == 0 {
 		for _, buildpack := range projectDescriptor.Build.Buildpacks {
