@@ -7,7 +7,6 @@ replace (
 	github.com/containerd/containerd => github.com/containerd/containerd v1.3.4
 	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20200221181110-62bd5a33f707
 	github.com/tektoncd/pipeline => github.com/tektoncd/pipeline v0.5.1-0.20190731183258-9d7e37e85bf8
-	golang.org/x/sys => golang.org/x/sys v0.0.0-20190507160741-ecd444e8653b
 	k8s.io/api => k8s.io/api v0.17.4
 	k8s.io/apimachinery => k8s.io/apimachinery v0.17.4
 	k8s.io/client-go => k8s.io/client-go v0.17.4
