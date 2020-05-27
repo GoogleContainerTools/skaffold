@@ -51,7 +51,6 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/openzipkin/zipkin-go v0.2.2 // indirect
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
-	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
 	github.com/rjeczalik/notify v0.9.2
 	github.com/russross/blackfriday/v2 v2.0.1
