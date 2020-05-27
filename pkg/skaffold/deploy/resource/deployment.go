@@ -105,6 +105,7 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 	}
 
 	details := d.cleanupStatus(string(b))
+	d.UpdateStatus(details, err)
 
 	err = parseKubectlRolloutError(err)
 	if err == errKubectlKilled {
@@ -112,7 +113,7 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 	} else if err := d.fetchPods(ctx); err != nil {
 		logrus.Debugf("pod statuses could be fetched this time due to %s", err)
 	}
-	d.UpdateStatus(details, err)
+
 }
 
 func (d *Deployment) String() string {
@@ -199,8 +200,7 @@ func (d *Deployment) fetchPods(ctx context.Context) error {
 		if !ok {
 			d.status.changed = true
 			event.ResourceStatusCheckEventCompleted(p.String(), p.Error())
-		}
-		if originalPod.StatusCode != p.StatusCode {
+		} else if originalPod.StatusCode != p.StatusCode {
 			d.status.changed = true
 			event.ResourceStatusCheckEventCompleted(p.String(), p.Error())
 		}
