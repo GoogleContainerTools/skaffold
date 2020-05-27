@@ -56,7 +56,8 @@ github.com/blang/semver
 # github.com/bmatcuk/doublestar v1.2.4
 ## explicit
 github.com/bmatcuk/doublestar
-# github.com/buildpacks/imgutil v0.0.0-20200313170640-a02052f47d62
+# github.com/buildpacks/imgutil v0.0.0-20200520132953-ba4f77a60397
+## explicit
 github.com/buildpacks/imgutil
 github.com/buildpacks/imgutil/local
 github.com/buildpacks/imgutil/remote

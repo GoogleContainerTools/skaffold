@@ -24,6 +24,7 @@ require (
 	github.com/BurntSushi/toml v0.3.1
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/bmatcuk/doublestar v1.2.4
+	github.com/buildpacks/imgutil v0.0.0-20200520132953-ba4f77a60397 // indirect
 	github.com/buildpacks/lifecycle v0.7.1
 	github.com/buildpacks/pack v0.10.0
 	github.com/cenkalti/backoff/v4 v4.0.2

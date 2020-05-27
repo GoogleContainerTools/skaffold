@@ -147,6 +147,8 @@ github.com/bugsnag/osext v0.0.0-20130617224835-0dd3f918b21b/go.mod h1:obH5gd0Bsq
 github.com/bugsnag/panicwrap v0.0.0-20151223152923-e2c28503fcd0/go.mod h1:D/8v3kj0zr8ZAKg1AQ6crr+5VwKN5eIywRkfhyM/+dE=
 github.com/buildpacks/imgutil v0.0.0-20200313170640-a02052f47d62 h1:jo6zuwPgCWD/V5YQEgaRKeW/uxy4fhFO9FsFWmKCtdQ=
 github.com/buildpacks/imgutil v0.0.0-20200313170640-a02052f47d62/go.mod h1:TjPmM78urjQIiMal4T7en6iBekAPv6z1yVMZobc4Kd8=
+github.com/buildpacks/imgutil v0.0.0-20200520132953-ba4f77a60397 h1:EVMQIte6zLeSVgCtUVgXuHYf/gcdFhYGqFkXXSowqbU=
+github.com/buildpacks/imgutil v0.0.0-20200520132953-ba4f77a60397/go.mod h1:5AWk59DdFQopBvOPhpx0tRum31cIjO1Ln/kABKFOzKQ=
 github.com/buildpacks/lifecycle v0.7.1 h1:cfVdxGJJqAoK55kkxTA5HxHPmUNp0NuGgDzRl5f7R/E=
 github.com/buildpacks/lifecycle v0.7.1/go.mod h1:k41tT3XOt7ufaMGAvOpEsXyuJpUPoo4F686Z652lU3E=
 github.com/buildpacks/pack v0.10.0 h1:2v0htfRQIGH8ka0/WGrKs4KuS9CWF8yv9SrctRXYLy8=
