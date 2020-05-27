@@ -58,6 +58,6 @@ type objectWithMetadata interface {
 }
 
 // NewResourceFromObject creates new Resource with fields populated from object metadata.
-func NewResourceFromObject(object objectWithMetadata, kind string, status Status, err error, statusCode proto.StatusCode) Resource {
-	return NewResource(object.GetNamespace(), kind, object.GetName(), status, err, statusCode)
+func NewResourceFromObject(object objectWithMetadata, status Status, err error, statusCode proto.StatusCode) Resource {
+	return NewResource(object.GetNamespace(), object.GetObjectKind().GroupVersionKind().Kind, object.GetName(), status, err, statusCode)
 }

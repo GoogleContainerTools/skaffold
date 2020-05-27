@@ -30,17 +30,17 @@ import (
 )
 
 const (
-	success             = "Succeeded"
-	running             = "Running"
-	actionableMessage   = `could not determine pod status. Try kubectl describe -n %s po/%s`
-	errorPrefix         = `(?P<Prefix>)(?P<DaemonLog>Error response from daemon\:)(?P<Error>.*)`
-	taintsExp           = `\{(?P<taint>.*?):.*?}`
-	crashLoopBackOff    = "CrashLoopBackOff"
-	runContainerError   = "RunContainerError"
-	imagePullErr        = "ErrImagePull"
-	imagePullBackOff    = "ImagePullBackOff"
-	containerCreating   = "ContainerCreating"
-	podKind             = "pod"
+	success           = "Succeeded"
+	running           = "Running"
+	actionableMessage = `could not determine pod status. Try kubectl describe -n %s po/%s`
+	errorPrefix       = `(?P<Prefix>)(?P<DaemonLog>Error response from daemon\:)(?P<Error>.*)`
+	taintsExp         = `\{(?P<taint>.*?):.*?}`
+	crashLoopBackOff  = "CrashLoopBackOff"
+	runContainerError = "RunContainerError"
+	imagePullErr      = "ErrImagePull"
+	imagePullBackOff  = "ImagePullBackOff"
+	containerCreating = "ContainerCreating"
+	podKind           = "pod"
 )
 
 var (
@@ -73,7 +73,7 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 		if po.Kind == "" {
 			po.Kind = podKind
 		}
-		rs = append(rs, NewResourceFromObject(&po, po.Kind, Status(ps.phase), ps.err, ps.statusCode))
+		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.statusCode))
 	}
 
 	return rs, nil
