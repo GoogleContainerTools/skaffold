@@ -114,9 +114,10 @@ func (d *Deployment) IsStatusCheckComplete() bool {
 }
 
 func (d *Deployment) ReportSinceLastUpdated() string {
-	if !d.status.changed {
+	if d.status.reported && !d.status.changed {
 		return ""
 	}
+	d.status.reported = true
 	return fmt.Sprintf("%s: %s", d, d.status)
 }
 

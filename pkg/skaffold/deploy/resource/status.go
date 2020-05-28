@@ -17,9 +17,10 @@ limitations under the License.
 package resource
 
 type Status struct {
-	err     error
-	details string
-	changed bool
+	err      error
+	details  string
+	changed  bool
+	reported bool
 }
 
 func (rs Status) Error() error {
