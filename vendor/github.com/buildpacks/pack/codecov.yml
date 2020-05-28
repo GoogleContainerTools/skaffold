@@ -1,0 +1,18 @@
+codecov:
+  notify:
+    after_n_builds: 4
+
+coverage:
+  round: up
+  status:
+    project:
+      default:
+        threshold: 1%
+    patch:
+      default:
+        threshold: 1%
+
+comment:
+  layout: "reach,diff,flags"
+  require_changes: yes
+  after_n_builds: 4

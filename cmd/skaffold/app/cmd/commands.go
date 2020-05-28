@@ -71,7 +71,7 @@ func (b *builder) WithExample(comment, command string) Builder {
 }
 
 func (b *builder) WithCommonFlags() Builder {
-	AddFlags(b.cmd.Flags(), b.cmd.Use)
+	AddFlags(&b.cmd)
 	return b
 }
 
@@ -88,7 +88,7 @@ func (b *builder) Hidden() Builder {
 func (b *builder) ExactArgs(argCount int, action func(context.Context, io.Writer, []string) error) *cobra.Command {
 	b.cmd.Args = cobra.ExactArgs(argCount)
 	b.cmd.RunE = func(_ *cobra.Command, args []string) error {
-		return action(b.cmd.Context(), b.cmd.OutOrStdout(), args)
+		return handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout(), args))
 	}
 	return &b.cmd
 }
@@ -96,15 +96,19 @@ func (b *builder) ExactArgs(argCount int, action func(context.Context, io.Writer
 func (b *builder) NoArgs(action func(context.Context, io.Writer) error) *cobra.Command {
 	b.cmd.Args = cobra.NoArgs
 	b.cmd.RunE = func(*cobra.Command, []string) error {
-		out := b.cmd.OutOrStdout()
-		err := action(b.cmd.Context(), out)
-		if err == nil {
-			return err
-		}
-		if aErr := sErrors.ShowAIError(err, opts); aErr != sErrors.ErrNoSuggestionFound {
-			return aErr
-		}
-		return err
+		return handleWellKnownErrors(action(b.cmd.Context(), b.cmd.OutOrStdout()))
 	}
 	return &b.cmd
+}
+
+func handleWellKnownErrors(err error) error {
+	if err == nil {
+		return err
+	}
+
+	if aErr := sErrors.ShowAIError(err, opts); aErr != sErrors.ErrNoSuggestionFound {
+		return aErr
+	}
+
+	return err
 }

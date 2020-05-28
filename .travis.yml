@@ -49,10 +49,40 @@ jobs:
         directories:
           - C:\\Users\\travis\\AppData\\Local\\go-build
     - os: linux
-      name: "integration"
+      name: "integration partition 0"
       language: minimal
       script:
-        - make integration-in-kind
+        - env IT_PARTITION=0 make integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
+          - $HOME/.m2
+    - os: linux
+      name: "integration partition 1"
+      language: minimal
+      script:
+        - env IT_PARTITION=1 make integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
+          - $HOME/.m2
+    - os: linux
+      name: "integration partition 2"
+      language: minimal
+      script:
+        - env IT_PARTITION=2 make integration-in-kind
+      cache:
+        directories:
+          - $HOME/.cache/go-build
+          - $HOME/.gradle
+          - $HOME/.m2
+    - os: linux
+      name: "integration partition 3"
+      language: minimal
+      script:
+        - env IT_PARTITION=3 make integration-in-kind
       cache:
         directories:
           - $HOME/.cache/go-build

@@ -44,6 +44,7 @@ func TestBuild(t *testing.T) {
 		artifact        *latest.Artifact
 		tag             string
 		api             *testutil.FakeAPIClient
+		files           map[string]string
 		pushImages      bool
 		devMode         bool
 		shouldErr       bool
@@ -74,6 +75,73 @@ func TestBuild(t *testing.T) {
 				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
 				Env:        map[string]string{},
 				Image:      "img:latest",
+			},
+		},
+		{
+			description: "project.toml",
+			artifact:    buildpacksArtifact("my/builder2", "my/run2"),
+			tag:         "img:tag",
+			api:         &testutil.FakeAPIClient{},
+			files: map[string]string{
+				"project.toml": `[[build.env]]
+name = "GOOGLE_RUNTIME_VERSION"
+value = "14.3.0"
+[[build.buildpacks]]
+id = "my/buildpack"
+[[build.buildpacks]]
+id = "my/otherBuildpack"
+`,
+			},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:    ".",
+				Builder:    "my/builder2",
+				RunImage:   "my/run2",
+				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
+				Env: map[string]string{
+					"GOOGLE_RUNTIME_VERSION": "14.3.0",
+				},
+				Image: "img:latest",
+			},
+		},
+		{
+			description: "Buildpacks in skaffold.yaml override those in project.toml",
+			artifact:    withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/builder3", "my/run3")),
+			tag:         "img:tag",
+			api:         &testutil.FakeAPIClient{},
+			files: map[string]string{
+				"project.toml": `[[build.buildpacks]]
+id = "my/ignored"
+`,
+			},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:    ".",
+				Builder:    "my/builder3",
+				RunImage:   "my/run3",
+				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
+				Env:        map[string]string{},
+				Image:      "img:latest",
+			},
+		},
+		{
+			description: "Combine env from skaffold.yaml and project.toml",
+			artifact:    withEnv([]string{"KEY1=VALUE1"}, buildpacksArtifact("my/builder4", "my/run4")),
+			tag:         "img:tag",
+			api:         &testutil.FakeAPIClient{},
+			files: map[string]string{
+				"project.toml": `[[build.env]]
+name = "KEY2"
+value = "VALUE2"
+`,
+			},
+			expectedOptions: &pack.BuildOptions{
+				AppPath:  ".",
+				Builder:  "my/builder4",
+				RunImage: "my/run4",
+				Env: map[string]string{
+					"KEY1": "VALUE1",
+					"KEY2": "VALUE2",
+				},
+				Image: "img:latest",
 			},
 		},
 		{
@@ -130,10 +198,20 @@ func TestBuild(t *testing.T) {
 			api:         &testutil.FakeAPIClient{},
 			shouldErr:   true,
 		},
+		{
+			description: "invalid project.toml",
+			artifact:    buildpacksArtifact("my/builder2", "my/run2"),
+			tag:         "img:tag",
+			api:         &testutil.FakeAPIClient{},
+			files: map[string]string{
+				"project.toml": `INVALID`,
+			},
+			shouldErr: true,
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			t.NewTempDir().Touch("file").Chdir()
+			t.NewTempDir().Touch("file").WriteFiles(test.files).Chdir()
 			pack := &fakePack{}
 			t.Override(&runPackBuildFunc, pack.runPack)
 

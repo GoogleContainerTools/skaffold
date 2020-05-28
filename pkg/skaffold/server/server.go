@@ -22,8 +22,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"sync"
-	"time"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/sirupsen/logrus"
@@ -40,6 +38,9 @@ type server struct {
 	buildIntentCallback  func()
 	syncIntentCallback   func()
 	deployIntentCallback func()
+	autoBuildCallback    func(bool)
+	autoSyncCallback     func(bool)
+	autoDeployCallback   func(bool)
 }
 
 func SetBuildCallback(callback func()) {
@@ -60,6 +61,24 @@ func SetSyncCallback(callback func()) {
 	}
 }
 
+func SetAutoBuildCallback(callback func(bool)) {
+	if srv != nil {
+		srv.autoBuildCallback = callback
+	}
+}
+
+func SetAutoDeployCallback(callback func(bool)) {
+	if srv != nil {
+		srv.autoDeployCallback = callback
+	}
+}
+
+func SetAutoSyncCallback(callback func(bool)) {
+	if srv != nil {
+		srv.autoSyncCallback = callback
+	}
+}
+
 // Initialize creates the gRPC and HTTP servers for serving the state and event log.
 // It returns a shutdown callback for tearing down the grpc server,
 // which the runner is responsible for calling.
@@ -68,23 +87,24 @@ func Initialize(opts config.SkaffoldOptions) (func() error, error) {
 		return func() error { return nil }, nil
 	}
 
+	var usedPorts util.PortSet
+
 	originalRPCPort := opts.RPCPort
 	if originalRPCPort == -1 {
 		return func() error { return nil }, nil
 	}
-	rpcPort := util.GetAvailablePort(util.Loopback, originalRPCPort, &sync.Map{})
+	rpcPort := util.GetAvailablePort(util.Loopback, originalRPCPort, &usedPorts)
 	if rpcPort != originalRPCPort {
 		logrus.Warnf("port %d for gRPC server already in use: using %d instead", originalRPCPort, rpcPort)
 	}
+	usedPorts.Set(rpcPort)
 	grpcCallback, err := newGRPCServer(rpcPort)
 	if err != nil {
 		return grpcCallback, fmt.Errorf("starting gRPC server: %w", err)
 	}
-	m := &sync.Map{}
-	m.Store(rpcPort, true)
 
 	originalHTTPPort := opts.RPCHTTPPort
-	httpPort := util.GetAvailablePort(util.Loopback, originalHTTPPort, m)
+	httpPort := util.GetAvailablePort(util.Loopback, originalHTTPPort, &usedPorts)
 	if httpPort != originalHTTPPort {
 		logrus.Warnf("port %d for gRPC HTTP server already in use: using %d instead", originalHTTPPort, httpPort)
 	}
@@ -121,6 +141,9 @@ func newGRPCServer(port int) (func() error, error) {
 		buildIntentCallback:  func() {},
 		deployIntentCallback: func() {},
 		syncIntentCallback:   func() {},
+		autoBuildCallback:    func(bool) {},
+		autoSyncCallback:     func(bool) {},
+		autoDeployCallback:   func(bool) {},
 	}
 	proto.RegisterSkaffoldServiceServer(s, srv)
 
@@ -130,7 +153,7 @@ func newGRPCServer(port int) (func() error, error) {
 		}
 	}()
 	return func() error {
-		s.GracefulStop()
+		s.Stop()
 		return l.Close()
 	}, nil
 }
@@ -149,15 +172,7 @@ func newHTTPServer(port, proxyPort int) (func() error, error) {
 	}
 	logrus.Infof("starting gRPC HTTP server on port %d", port)
 
-	server := &http.Server{
-		Handler:     mux,
-		ReadTimeout: 10 * time.Second,
-	}
+	go http.Serve(l, mux)
 
-	go server.Serve(l)
-
-	return func() error {
-		server.SetKeepAlivesEnabled(false)
-		return server.Shutdown(context.Background())
-	}, nil
+	return l.Close, nil
 }
