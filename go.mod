@@ -25,7 +25,7 @@ require (
 	github.com/bmatcuk/doublestar v1.2.4
 	github.com/buildpacks/imgutil v0.0.0-20200520132953-ba4f77a60397 // indirect
 	github.com/buildpacks/lifecycle v0.7.2
-	github.com/buildpacks/pack v0.10.1-0.20200527141928-1ddd54e7d18f
+	github.com/buildpacks/pack v0.11.0
 	github.com/cenkalti/backoff/v4 v4.0.2
 	github.com/docker/cli v0.0.0-20200312141509-ef2f64abbd37
 	github.com/docker/distribution v2.7.1+incompatible

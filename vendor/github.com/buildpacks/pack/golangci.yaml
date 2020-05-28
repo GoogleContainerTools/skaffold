@@ -17,7 +17,6 @@ linters:
     - maligned
     - misspell
     - nakedret
-    - rowserrcheck
     - scopelint
     - staticcheck
     - structcheck
