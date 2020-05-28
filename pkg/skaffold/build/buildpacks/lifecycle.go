@@ -95,13 +95,14 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	alreadyPulled := images.AreAlreadyPulled(artifact.Builder, artifact.RunImage)
 
 	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
-		AppPath:    workspace,
-		Builder:    artifact.Builder,
-		RunImage:   artifact.RunImage,
-		Buildpacks: buildpacks,
-		Env:        env,
-		Image:      latest,
-		NoPull:     alreadyPulled,
+		AppPath:      workspace,
+		Builder:      artifact.Builder,
+		RunImage:     artifact.RunImage,
+		Buildpacks:   buildpacks,
+		Env:          env,
+		Image:        latest,
+		NoPull:       alreadyPulled,
+		TrustBuilder: artifact.TrustBuilder,
 		// TODO(dgageot): Support project.toml include/exclude.
 		// FileFilter: func(string) bool { return true },
 	}); err != nil {
