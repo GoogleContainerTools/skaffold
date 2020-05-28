@@ -259,12 +259,12 @@ func setDefaultClusterTimeout(cluster *latest.ClusterDetails) error {
 
 func setDefaultClusterPullSecret(cluster *latest.ClusterDetails) error {
 	cluster.PullSecretMountPath = valueOrDefault(cluster.PullSecretMountPath, constants.DefaultKanikoSecretMountPath)
-	if cluster.PullSecret != "" {
-		absPath, err := homedir.Expand(cluster.PullSecret)
+	if cluster.PullSecretPath != "" {
+		absPath, err := homedir.Expand(cluster.PullSecretPath)
 		if err != nil {
-			return fmt.Errorf("unable to expand pullSecret %s", cluster.PullSecret)
+			return fmt.Errorf("unable to expand pullSecret %s", cluster.PullSecretPath)
 		}
-		cluster.PullSecret = absPath
+		cluster.PullSecretPath = absPath
 		random := ""
 		if cluster.RandomPullSecret {
 			uid, _ := uuid.NewUUID()

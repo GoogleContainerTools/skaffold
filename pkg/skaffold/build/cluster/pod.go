@@ -120,7 +120,7 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 
 func (b *Builder) env(artifact *latest.KanikoArtifact, httpProxy, httpsProxy string) []v1.EnvVar {
 	pullSecretPath := strings.Join(
-		[]string{b.ClusterDetails.PullSecretMountPath, b.ClusterDetails.PullSecret},
+		[]string{b.ClusterDetails.PullSecretMountPath, b.ClusterDetails.PullSecretPath},
 		"/", // linux filepath separator.
 	)
 	env := []v1.EnvVar{{

@@ -326,7 +326,7 @@ func withClusterBuild(secretName, mountPath, namespace, secret string, timeout s
 		b := latest.BuildConfig{BuildType: latest.BuildType{Cluster: &latest.ClusterDetails{
 			PullSecretName:      secretName,
 			Namespace:           namespace,
-			PullSecret:          secret,
+			PullSecretPath:      secret,
 			PullSecretMountPath: mountPath,
 			Timeout:             timeout,
 		}}}

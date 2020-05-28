@@ -65,6 +65,7 @@ profiles:
           cache: {}
       cluster:
         pullSecretName: e2esecret
+        pullSecret: secret.json
         namespace: default
     test:
      - image: gcr.io/k8s-skaffold/skaffold-example
@@ -130,6 +131,7 @@ profiles:
           cache: {}
       cluster:
         pullSecretName: e2esecret
+        pullSecretPath: secret.json
         namespace: default
     test:
      - image: gcr.io/k8s-skaffold/skaffold-example

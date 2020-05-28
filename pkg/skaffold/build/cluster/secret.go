@@ -36,7 +36,7 @@ const (
 )
 
 func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
-	if b.PullSecret == "" && b.PullSecretName == "" {
+	if b.PullSecretPath == "" && b.PullSecretName == "" {
 		return func() {}, nil
 	}
 
@@ -49,24 +49,24 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 	secrets := client.CoreV1().Secrets(b.Namespace)
 	if _, err := secrets.Get(b.PullSecretName, metav1.GetOptions{}); err != nil {
 		color.Default.Fprintf(out, "Creating kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
-		if b.PullSecret == "" {
+		if b.PullSecretPath == "" {
 			return nil, fmt.Errorf("secret %s does not exisit. No path specified to create it", b.PullSecretName)
 		}
 		return b.createSecretFromFile(secrets)
 	}
-	if b.PullSecret == "" {
+	if b.PullSecretPath == "" {
 		// TODO: Remove the warning when pod health check can display pod failure errors.
 		logrus.Warnf("Setting secret keyfile path to %s. If this is incorrect, please specify using config key `pullSecret`.\nSee https://skaffold.dev/docs/references/yaml/#build-cluster-pullSecret", defaultKanikoSecretPath)
-		b.PullSecret = defaultKanikoSecretPath
+		b.PullSecretPath = defaultKanikoSecretPath
 		return func() {}, nil
 	}
 	return func() {}, nil
 }
 
 func (b *Builder) createSecretFromFile(secrets typedV1.SecretInterface) (func(), error) {
-	secretData, err := ioutil.ReadFile(b.PullSecret)
+	secretData, err := ioutil.ReadFile(b.PullSecretPath)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create secret %s from path %s. reading pull secret: %w", b.PullSecretName, b.PullSecret, err)
+		return nil, fmt.Errorf("cannot create secret %s from path %s. reading pull secret: %w", b.PullSecretName, b.PullSecretPath, err)
 	}
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -77,7 +77,7 @@ func (b *Builder) createSecretFromFile(secrets typedV1.SecretInterface) (func(),
 			constants.DefaultKanikoSecretName: secretData,
 		},
 	}
-	b.PullSecret = constants.DefaultKanikoSecretName
+	b.PullSecretPath = constants.DefaultKanikoSecretName
 	if _, err := secrets.Create(secret); err != nil {
 		return nil, fmt.Errorf("creating pull secret %q: %w", b.PullSecretName, err)
 	}

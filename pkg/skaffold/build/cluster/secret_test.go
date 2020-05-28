@@ -46,7 +46,7 @@ func TestCreateSecret(t *testing.T) {
 						Cluster: &latest.ClusterDetails{
 							Timeout:        "20m",
 							PullSecretName: "kaniko-secret",
-							PullSecret:     tmpDir.Path("secret.json"),
+							PullSecretPath: tmpDir.Path("secret.json"),
 							Namespace:      "ns",
 						},
 					},

@@ -185,7 +185,7 @@ func TestKanikoPodSpec(t *testing.T) {
 		ClusterDetails: &latest.ClusterDetails{
 			Namespace:           "ns",
 			PullSecretName:      "secret",
-			PullSecret:          "kaniko-secret.json",
+			PullSecretPath:      "kaniko-secret.json",
 			PullSecretMountPath: "/secret",
 			HTTPProxy:           "http://proxy",
 			HTTPSProxy:          "https://proxy",

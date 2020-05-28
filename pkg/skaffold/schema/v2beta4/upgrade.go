@@ -27,15 +27,26 @@ import (
 // 1. Additions:
 // 2. Removals:
 // 3. Updates:
+//    pullSecret renamed to pullSecretPath
+
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
 	newConfig.APIVersion = next.Version
 
 	err := util.UpgradePipelines(c, &newConfig, upgradeOnePipeline)
+
 	return &newConfig, err
 }
 
-func upgradeOnePipeline(_, _ interface{}) error {
+func upgradeOnePipeline(oldPipeline, newPipeline interface{}) error {
+	oldBuild := &oldPipeline.(*Pipeline).Build
+	newBuild := &newPipeline.(*next.Pipeline).Build
+
+	// rename: cluster.PullSecretPath cluster.PullSecretName
+	if c := oldBuild.Cluster; c != nil {
+		newBuild.Cluster.PullSecretPath = c.PullSecret
+	}
+
 	return nil
 }
