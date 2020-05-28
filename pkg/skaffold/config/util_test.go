@@ -271,19 +271,45 @@ func TestIsDefaultLocal(t *testing.T) {
 	}{
 		{context: "kind-other", expectedLocal: true},
 		{context: "kind@kind", expectedLocal: true},
+		{context: "k3d-k3s-default", expectedLocal: true},
 		{context: "docker-for-desktop", expectedLocal: true},
 		{context: "minikube", expectedLocal: true},
-		{context: "docker-for-desktop", expectedLocal: true},
 		{context: "docker-desktop", expectedLocal: true},
 		{context: "anything-else", expectedLocal: false},
 		{context: "kind@blah", expectedLocal: false},
 		{context: "other-kind", expectedLocal: false},
+		{context: "not-k3d", expectedLocal: false},
 	}
 	for _, test := range tests {
 		testutil.Run(t, "", func(t *testutil.T) {
 			local := isDefaultLocal(test.context)
 
 			t.CheckDeepEqual(test.expectedLocal, local)
+		})
+	}
+}
+
+func TestIsImageLoadingRequired(t *testing.T) {
+	tests := []struct {
+		context                      string
+		expectedImageLoadingRequired bool
+	}{
+		{context: "kind-other", expectedImageLoadingRequired: true},
+		{context: "kind@kind", expectedImageLoadingRequired: true},
+		{context: "k3d-k3s-default", expectedImageLoadingRequired: true},
+		{context: "docker-for-desktop", expectedImageLoadingRequired: false},
+		{context: "minikube", expectedImageLoadingRequired: false},
+		{context: "docker-desktop", expectedImageLoadingRequired: false},
+		{context: "anything-else", expectedImageLoadingRequired: false},
+		{context: "kind@blah", expectedImageLoadingRequired: false},
+		{context: "other-kind", expectedImageLoadingRequired: false},
+		{context: "not-k3d", expectedImageLoadingRequired: false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			imageLoadingRequired := IsImageLoadingRequired(test.context)
+
+			t.CheckDeepEqual(test.expectedImageLoadingRequired, imageLoadingRequired)
 		})
 	}
 }
@@ -325,6 +351,43 @@ func TestKindClusterName(t *testing.T) {
 			kindCluster := KindClusterName(test.kubeCluster)
 
 			t.CheckDeepEqual(test.expectedName, kindCluster)
+		})
+	}
+}
+
+func TestIsK3dCluster(t *testing.T) {
+	tests := []struct {
+		context       string
+		expectedIsK3d bool
+	}{
+		{context: "k3d-k3s-default", expectedIsK3d: true},
+		{context: "k3d-other", expectedIsK3d: true},
+		{context: "kind-kind", expectedIsK3d: false},
+		{context: "docker-for-desktop", expectedIsK3d: false},
+		{context: "not-k3d", expectedIsK3d: false},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			isK3d := IsK3dCluster(test.context)
+
+			t.CheckDeepEqual(test.expectedIsK3d, isK3d)
+		})
+	}
+}
+
+func TestK3dClusterName(t *testing.T) {
+	tests := []struct {
+		kubeCluster  string
+		expectedName string
+	}{
+		{kubeCluster: "k3d-k3s-default", expectedName: "k3s-default"},
+		{kubeCluster: "k3d-other", expectedName: "other"},
+	}
+	for _, test := range tests {
+		testutil.Run(t, "", func(t *testutil.T) {
+			k3dCluster := K3dClusterName(test.kubeCluster)
+
+			t.CheckDeepEqual(test.expectedName, k3dCluster)
 		})
 	}
 }

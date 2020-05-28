@@ -8,7 +8,7 @@ build:
   cluster:
     pullSecretName: e2esecret
     namespace: default
-# If kaniko pod should be run on the tainted node, You can setup tolerations here.
+# If kaniko pod should be run on a tainted node, you can setup tolerations here.
 #    tolerations:
 #      - key: app
 #        operator: "Equal"
