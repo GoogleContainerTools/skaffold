@@ -95,7 +95,7 @@ func TestExistingSecretNotFound(t *testing.T) {
 		// should fail to retrieve an existing secret
 		_, err = builder.setupPullSecret(ioutil.Discard)
 
-		t.CheckErrorContains("does not exisit. No path specified to create it", err)
+		t.CheckErrorContains("does not exist. No path specified to create it", err)
 	})
 }
 
