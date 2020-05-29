@@ -598,11 +598,6 @@
           "description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration.",
           "x-intellij-html-description": "Kubernetes namespace. Defaults to current namespace in Kubernetes configuration."
         },
-        "pullSecret": {
-          "type": "string",
-          "description": "path to the Google Cloud service account secret key file.",
-          "x-intellij-html-description": "path to the Google Cloud service account secret key file."
-        },
         "pullSecretMountPath": {
           "type": "string",
           "description": "path the pull secret will be mounted at within the running container.",
@@ -613,6 +608,11 @@
           "description": "name of the Kubernetes secret for pulling base images and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key `kaniko-secret`.",
           "x-intellij-html-description": "name of the Kubernetes secret for pulling base images and pushing the final image. If given, the secret needs to contain the Google Cloud service account secret key under the key <code>kaniko-secret</code>.",
           "default": "kaniko-secret"
+        },
+        "pullSecretPath": {
+          "type": "string",
+          "description": "path to the Google Cloud service account secret key file.",
+          "x-intellij-html-description": "path to the Google Cloud service account secret key file."
         },
         "randomDockerConfigSecret": {
           "type": "boolean",
@@ -657,7 +657,7 @@
       "preferredOrder": [
         "HTTP_PROXY",
         "HTTPS_PROXY",
-        "pullSecret",
+        "pullSecretPath",
         "pullSecretName",
         "pullSecretMountPath",
         "namespace",
