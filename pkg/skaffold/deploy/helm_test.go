@@ -800,6 +800,54 @@ func TestHelmCleanup(t *testing.T) {
 	}
 }
 
+func TestHelmDeployWithGlobalArgs(t *testing.T) {
+	tmpDir, err := ioutil.TempDir("", "TestHelmDeploy")
+	if err != nil {
+		t.Fatalf("tempdir: %v", err)
+	}
+
+	globalArgs := []string{"--tiller-namespace=test-globalarg"}
+
+	tests := []struct {
+		description      string
+		commands         util.Command
+		runContext       *runcontext.RunContext
+		builds           []build.Artifact
+		shouldErr        bool
+		expectedWarnings []string
+	}{
+		{
+			description: "deploy success",
+			commands: testutil.
+				CmdRunWithOutput("helm version --tiller-namespace=test-globalarg", version21).
+				AndRun("helm --kube-context kubecontext get skaffold-helm --tiller-namespace=test-globalarg --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext dep build examples/test --tiller-namespace=test-globalarg --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext upgrade skaffold-helm examples/test -f skaffold-overrides.yaml --set-string image=docker.io:5000/skaffold-helm:3605e7bc17cf46e53f4d81c4cbc24e5b4c495184 --set some.key=somevalue --tiller-namespace=test-globalarg --kubeconfig kubeconfig").
+				AndRun("helm --kube-context kubecontext get skaffold-helm --tiller-namespace=test-globalarg --kubeconfig kubeconfig"),
+			runContext: makeRunContext(testDeployConfig, false),
+			builds:     testBuilds,
+		},
+	}
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+			fakeWarner := &warnings.Collect{}
+			t.Override(&warnings.Printf, fakeWarner.Warnf)
+			t.Override(&util.OSEnviron, func() []string { return []string{"FOO=FOOBAR"} })
+			t.Override(&util.DefaultExecCommand, test.commands)
+
+			event.InitializeState(test.runContext.Cfg, "test")
+
+			deployer := NewHelmDeployer(test.runContext)
+			deployer.Flags.Global = globalArgs
+			deployer.pkgTmpDir = tmpDir
+			result := deployer.Deploy(context.Background(), ioutil.Discard, test.builds, nil)
+
+			t.CheckError(test.shouldErr, result.GetError())
+			t.CheckDeepEqual(test.expectedWarnings, fakeWarner.Warnings)
+		})
+	}
+}
+
 func TestParseHelmRelease(t *testing.T) {
 	tests := []struct {
 		description string
