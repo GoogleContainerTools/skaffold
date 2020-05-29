@@ -96,6 +96,20 @@ func TestBuildpackBuildSpec(t *testing.T) {
 				Images: []string{"img"},
 			},
 		},
+		{
+			description: "trusted builder",
+			artifact: &latest.BuildpackArtifact{
+				Builder:      "builder",
+				TrustBuilder: true,
+			},
+			expected: cloudbuild.Build{
+				Steps: []*cloudbuild.BuildStep{{
+					Name: "pack/image",
+					Args: []string{"pack", "build", "img", "--builder", "builder", "--trust-builder"},
+				}},
+				Images: []string{"img"},
+			},
+		},
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {

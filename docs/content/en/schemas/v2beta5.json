@@ -528,6 +528,12 @@
           "type": "string",
           "description": "overrides the stack's default run image.",
           "x-intellij-html-description": "overrides the stack's default run image."
+        },
+        "trustBuilder": {
+          "type": "boolean",
+          "description": "indicates that the builder should be trusted.",
+          "x-intellij-html-description": "indicates that the builder should be trusted.",
+          "default": "false"
         }
       },
       "preferredOrder": [
@@ -535,6 +541,7 @@
         "runImage",
         "env",
         "buildpacks",
+        "trustBuilder",
         "dependencies"
       ],
       "additionalProperties": false,

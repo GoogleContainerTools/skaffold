@@ -750,6 +750,9 @@ type BuildpackArtifact struct {
 	// Order matters.
 	Buildpacks []string `yaml:"buildpacks,omitempty"`
 
+	// TrustBuilder indicates that the builder should be trusted.
+	TrustBuilder bool `yaml:"trustBuilder,omitempty"`
+
 	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`
 }

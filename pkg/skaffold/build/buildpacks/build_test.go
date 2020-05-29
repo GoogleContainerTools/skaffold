@@ -65,16 +65,17 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			description: "success with buildpacks",
-			artifact:    withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun")),
+			artifact:    withTrustedBuilder(withBuildpacks([]string{"my/buildpack", "my/otherBuildpack"}, buildpacksArtifact("my/otherBuilder", "my/otherRun"))),
 			tag:         "img:tag",
 			api:         &testutil.FakeAPIClient{},
 			expectedOptions: &pack.BuildOptions{
-				AppPath:    ".",
-				Builder:    "my/otherBuilder",
-				RunImage:   "my/otherRun",
-				Buildpacks: []string{"my/buildpack", "my/otherBuildpack"},
-				Env:        map[string]string{},
-				Image:      "img:latest",
+				AppPath:      ".",
+				Builder:      "my/otherBuilder",
+				RunImage:     "my/otherRun",
+				Buildpacks:   []string{"my/buildpack", "my/otherBuildpack"},
+				TrustBuilder: true,
+				Env:          map[string]string{},
+				Image:        "img:latest",
 			},
 		},
 		{
@@ -258,6 +259,10 @@ func withSync(sync *latest.Sync, artifact *latest.Artifact) *latest.Artifact {
 	return artifact
 }
 
+func withTrustedBuilder(artifact *latest.Artifact) *latest.Artifact {
+	artifact.BuildpackArtifact.TrustBuilder = true
+	return artifact
+}
 func withBuildpacks(buildpacks []string, artifact *latest.Artifact) *latest.Artifact {
 	artifact.BuildpackArtifact.Buildpacks = buildpacks
 	return artifact
