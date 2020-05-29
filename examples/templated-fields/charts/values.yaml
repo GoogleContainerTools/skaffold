@@ -1,4 +1,0 @@
-# Default values for skaffold-helm.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-replicaCount: 2

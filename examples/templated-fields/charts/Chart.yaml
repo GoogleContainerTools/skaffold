@@ -1,4 +1,0 @@
-apiVersion: v1
-description: Skaffold example with Helm
-name: skaffold-helm
-version: 0.1.0

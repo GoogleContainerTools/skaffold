@@ -25,22 +25,22 @@ $ cd skaffold/examples/templated-fields
 `IMAGE_REPO` and `IMAGE_TAG` are available as templated fields in `build.sh` file
 
 ```shell
-$ sed '13q;d' build.sh
+#from build.sh, line 13
 img="${IMAGE_REPO}:${IMAGE_TAG}"
 ```
 
 and also in the `helm` deploy section of the skaffold config, which configures artifact `skaffold-templated` to build with `build.sh`:
 
-```shell
-$ tail -n 3 skaffold.yaml
+```yaml
+// from skaffold.yaml, line 22-24
       setValueTemplates:
           imageRepo: "{{.IMAGE_REPO}}"
           imageTag: "{{.IMAGE_TAG}}"
 ```
 These values are then being set as container environment variables `FOO_IMAGE_REPO` and `FOO_IMAGE_TAG` in the helm template `deployment.yaml` file, just as an example to show how they can be added to your helm templates.
 
-```shell
-$ tail -n 8 charts/templates/deployment.yaml
+```yaml
+// from charts/templates/deployment.yaml, line 16-24
       containers:
       - name: {{ .Chart.Name }}
         image: {{ .Values.image }}
@@ -65,14 +65,9 @@ You should be able to see something like:
 Running image skaffold-templated:a866d5efd634062ea74662b20e172cd6e2d645f9f33f929bfaf8e856ec66bd94
 ```
  printed every second in the Skaffold logs, since the code being executed is `main.go`.
-```shell
-$ tail -n 6 main.go
-func main() {
-        for {
-                fmt.Printf("Running image %v:%v\n", os.Getenv("FOO_IMAGE_REPO"), os.Getenv("FOO_IMAGE_TAG"))
-                time.Sleep(time.Second * 1)
-        }
-}
+```go
+// from main.go, line 12
+fmt.Printf("Running image %v:%v\n", os.Getenv("FOO_IMAGE_REPO"), os.Getenv("FOO_IMAGE_TAG"))
 ```
 
 #### Cleanup
