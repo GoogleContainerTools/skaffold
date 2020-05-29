@@ -321,6 +321,9 @@ type ClusterDetails struct {
 	// Defaults to 'default'.
 	ServiceAccountName string `yaml:"serviceAccount,omitempty"`
 
+	// Tolerations describes the Kubernetes tolerations for the pod.
+	Tolerations []v1.Toleration `yaml:"tolerations,omitempty"`
+
 	// RunAsUser defines the UID to request for running the container.
 	// If omitted, no SeurityContext will be specified for the pod and will therefore be inherited
 	// from the service account.
