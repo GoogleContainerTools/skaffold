@@ -23,6 +23,7 @@ $ cd skaffold/examples/templated-fields
 ```
 
 `IMAGE_REPO` and `IMAGE_TAG` are available as templated fields in `build.sh` file
+
 ```shell
 $ sed '13q;d' build.sh
 img="${IMAGE_REPO}:${IMAGE_TAG}"
