@@ -43,32 +43,29 @@ import (
 
 type testForwarder struct {
 	forwardedResources forwardedResources
-	forwardedPorts     forwardedPorts
+	forwardedPorts     util.PortSet
 }
 
 func (f *testForwarder) Forward(ctx context.Context, pfe *portForwardEntry) {
 	f.forwardedResources.Store(pfe.key(), pfe)
-	f.forwardedPorts.Store(pfe.localPort, true)
+	f.forwardedPorts.Set(pfe.localPort)
 }
 
-func (f *testForwarder) Monitor(_ *portForwardEntry, _ func()) {}
+func (f *testForwarder) Monitor(*portForwardEntry, func()) {}
 
 func (f *testForwarder) Terminate(pfe *portForwardEntry) {
 	f.forwardedResources.Delete(pfe.key())
-	f.forwardedPorts.Delete(pfe.resource.Port)
+	f.forwardedPorts.Delete(pfe.localPort)
 }
 
 func newTestForwarder() *testForwarder {
-	return &testForwarder{
-		forwardedResources: newForwardedResources(),
-		forwardedPorts:     newForwardedPorts(),
-	}
+	return &testForwarder{}
 }
 
-func mockRetrieveAvailablePort(_ string, taken map[int]struct{}, availablePorts []int) func(string, int, util.ForwardedPorts) int {
+func mockRetrieveAvailablePort(_ string, taken map[int]struct{}, availablePorts []int) func(string, int, *util.PortSet) int {
 	// Return first available port in ports that isn't taken
 	var lock sync.Mutex
-	return func(string, int, util.ForwardedPorts) int {
+	return func(string, int, *util.PortSet) int {
 		for _, p := range availablePorts {
 			lock.Lock()
 			if _, ok := taken[p]; ok {
@@ -122,25 +119,26 @@ func TestStart(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState(latest.Pipeline{}, "")
-			fakeForwarder := newTestForwarder()
-			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", nil)
-			rf.EntryForwarder = fakeForwarder
-
+			event.InitializeState(latest.Pipeline{}, "", true, true, true)
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, test.availablePorts))
 			t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
 				return test.resources, nil
 			})
 
+			fakeForwarder := newTestForwarder()
+			entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
+
+			rf := NewResourceForwarder(entryManager, []string{"test"}, "", nil)
 			if err := rf.Start(context.Background()); err != nil {
 				t.Fatalf("error starting resource forwarder: %v", err)
 			}
+
 			// poll up to 10 seconds for the resources to be forwarded
 			err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
 				return len(test.expected) == fakeForwarder.forwardedResources.Length(), nil
 			})
 			if err != nil {
-				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expected, fakeForwarder.forwardedResources)
+				t.Fatalf("expected entries didn't match actual entries. Expected: \n %v Actual: \n %v", test.expected, fakeForwarder.forwardedResources.resources)
 			}
 		})
 	}
@@ -188,18 +186,17 @@ func TestGetCurrentEntryFunc(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			expectedEntry := test.expected
-			expectedEntry.resource = test.resource
-
-			rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", nil)
-			rf.forwardedResources = forwardedResources{
-				resources: test.forwardedResources,
-				lock:      &sync.Mutex{},
-			}
-
 			t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, test.availablePorts))
 
+			entryManager := NewEntryManager(ioutil.Discard, newTestForwarder())
+			entryManager.forwardedResources = forwardedResources{
+				resources: test.forwardedResources,
+			}
+			rf := NewResourceForwarder(entryManager, []string{"test"}, "", nil)
 			actualEntry := rf.getCurrentEntry(test.resource)
+
+			expectedEntry := test.expected
+			expectedEntry.resource = test.resource
 			t.CheckDeepEqual(expectedEntry, actualEntry, cmp.AllowUnexported(portForwardEntry{}, sync.Mutex{}))
 		})
 	}
@@ -232,19 +229,20 @@ func TestUserDefinedResources(t *testing.T) {
 	}
 
 	testutil.Run(t, "one service and one user defined pod", func(t *testutil.T) {
-		event.InitializeState(latest.Pipeline{}, "")
-		fakeForwarder := newTestForwarder()
-		rf := NewResourceForwarder(NewEntryManager(ioutil.Discard, nil), []string{"test"}, "", []*latest.PortForwardResource{pod})
-		rf.EntryForwarder = fakeForwarder
-
+		event.InitializeState(latest.Pipeline{}, "", true, true, true)
 		t.Override(&retrieveAvailablePort, mockRetrieveAvailablePort("127.0.0.1", map[int]struct{}{}, []int{8080, 9000}))
 		t.Override(&retrieveServices, func(string, []string) ([]*latest.PortForwardResource, error) {
 			return []*latest.PortForwardResource{svc}, nil
 		})
 
+		fakeForwarder := newTestForwarder()
+		entryManager := NewEntryManager(ioutil.Discard, fakeForwarder)
+
+		rf := NewResourceForwarder(entryManager, []string{"test"}, "", []*latest.PortForwardResource{pod})
 		if err := rf.Start(context.Background()); err != nil {
 			t.Fatalf("error starting resource forwarder: %v", err)
 		}
+
 		// poll up to 10 seconds for the resources to be forwarded
 		err := wait.PollImmediate(100*time.Millisecond, 10*time.Second, func() (bool, error) {
 			return len(expected) == fakeForwarder.forwardedResources.Length(), nil

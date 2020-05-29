@@ -26,9 +26,7 @@ import (
 )
 
 func TestBuildDeploy(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, NeedsGcp)
 
 	ns, client := SetupNamespace(t)
 
@@ -72,9 +70,7 @@ func TestBuildDeploy(t *testing.T) {
 }
 
 func TestDeploy(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, client := SetupNamespace(t)
 
@@ -86,9 +82,7 @@ func TestDeploy(t *testing.T) {
 }
 
 func TestDeployTail(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
 
@@ -99,9 +93,7 @@ func TestDeployTail(t *testing.T) {
 }
 
 func TestDeployWithInCorrectConfig(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
 

@@ -11,7 +11,7 @@
     "build": "x",
     "area": "Build",
     "feature": "Cloud Native Buildpacks support",
-    "maturity": "alpha",
+    "maturity": "beta",
     "description": "Skaffold natively support for artifacts built with Cloud Native Buildpacks"
   },
   "build.custom": {
@@ -240,8 +240,8 @@
   "render": {
     "deploy": "x",
     "area": "Render",
-    "maturity": "alpha",
-    "description": "Skaffold render can produce the transformed manifests as a separate step"
+    "maturity": "beta",
+    "description": "Produce hydrated Kubernetes manifests that reference the built resources"
   },
   "run.cmd": {
     "run": "x",

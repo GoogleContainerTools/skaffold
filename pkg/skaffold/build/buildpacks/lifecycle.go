@@ -21,12 +21,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
 	lifecycle "github.com/buildpacks/lifecycle/cmd"
 	"github.com/buildpacks/pack"
-	"github.com/sirupsen/logrus"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/docker"
@@ -47,6 +48,13 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	artifact := a.BuildpackArtifact
 	workspace := a.Workspace
 
+	// Read `project.toml` if it exists.
+	path := filepath.Join(workspace, artifact.ProjectDescriptor)
+	projectDescriptor, err := ReadProjectDescriptor(path)
+	if err != nil && !os.IsNotExist(err) {
+		return "", fmt.Errorf("failed to read project descriptor %q: %w", path, err)
+	}
+
 	// To improve caching, we always build the image with [:latest] tag
 	// This way, the lifecycle is able to "bootstrap" from the previously built image.
 	// The image will then be tagged as usual with the tag provided by the tag policy.
@@ -56,26 +64,52 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	}
 	latest := parsed.BaseName + ":latest"
 
-	logrus.Debugln("Evaluate env variables")
-	env, err := misc.EvaluateEnv(artifact.Env)
+	// Eveluate Env Vars.
+	envVars, err := misc.EvaluateEnv(artifact.Env)
 	if err != nil {
 		return "", fmt.Errorf("unable to evaluate env variables: %w", err)
 	}
 
 	if b.devMode && a.Sync != nil && a.Sync.Auto != nil {
-		env = append(env, "GOOGLE_DEVMODE=1")
+		envVars = append(envVars, "GOOGLE_DEVMODE=1")
 	}
 
+	env := envMap(envVars)
+	for _, kv := range projectDescriptor.Build.Env {
+		env[kv.Name] = kv.Value
+	}
+
+	// List buildpacks to be used for the build.
+	// Those specified in the skaffold.yaml replace those in the project.toml.
+	buildpacks := artifact.Buildpacks
+	if len(buildpacks) == 0 {
+		for _, bp := range projectDescriptor.Build.Buildpacks {
+			if bp.ID != "" {
+				if bp.Version == "" {
+					buildpacks = append(buildpacks, bp.ID)
+				} else {
+					buildpacks = append(buildpacks, fmt.Sprintf("%s@%s", bp.ID, bp.Version))
+				}
+				// } else {
+				// TODO(dgageot): Support URI.
+			}
+		}
+	}
+
+	// Does the builder image need to be pulled?
 	alreadyPulled := images.AreAlreadyPulled(artifact.Builder, artifact.RunImage)
 
 	if err := runPackBuildFunc(ctx, out, b.localDocker, pack.BuildOptions{
-		AppPath:    workspace,
-		Builder:    artifact.Builder,
-		RunImage:   artifact.RunImage,
-		Buildpacks: artifact.Buildpacks,
-		Env:        envMap(env),
-		Image:      latest,
-		NoPull:     alreadyPulled,
+		AppPath:      workspace,
+		Builder:      artifact.Builder,
+		RunImage:     artifact.RunImage,
+		Buildpacks:   buildpacks,
+		Env:          env,
+		Image:        latest,
+		NoPull:       alreadyPulled,
+		TrustBuilder: artifact.TrustBuilder,
+		// TODO(dgageot): Support project.toml include/exclude.
+		// FileFilter: func(string) bool { return true },
 	}); err != nil {
 		return "", err
 	}

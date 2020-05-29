@@ -18,6 +18,7 @@ package kubernetes
 
 import (
 	"bytes"
+	"context"
 	"strings"
 	"sync"
 	"testing"
@@ -119,4 +120,14 @@ func TestPrintLogLine(t *testing.T) {
 			t.CheckDeepEqual("PREFIX TEXT", lines[i])
 		}
 	})
+}
+
+func TestLogAggregatorZeroValue(t *testing.T) {
+	var m *LogAggregator
+
+	// Should not raise a nil dereference
+	m.Start(context.Background())
+	m.Mute()
+	m.Unmute()
+	m.Stop()
 }

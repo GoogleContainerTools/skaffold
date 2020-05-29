@@ -250,7 +250,7 @@ func TestGetDeployStatus(t *testing.T) {
 
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			event.InitializeState(latest.Pipeline{}, "test")
+			event.InitializeState(latest.Pipeline{}, "test", true, true, true)
 			err := getSkaffoldDeployStatus(test.counter)
 			t.CheckError(test.shouldErr, err)
 			if test.shouldErr {

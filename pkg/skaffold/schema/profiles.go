@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	re "regexp"
 	"strings"
 
 	yamlpatch "github.com/krishicks/yaml-patch"
@@ -31,6 +30,7 @@ import (
 	kubectx "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
+	skutil "github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/yamltags"
 )
 
@@ -154,7 +154,7 @@ func isEnv(env string) (bool, error) {
 		return envValue == "", nil
 	}
 
-	return satisfies(value, envValue), nil
+	return skutil.RegexEqual(value, envValue), nil
 }
 
 func isCommand(command string, opts cfg.SkaffoldOptions) bool {
@@ -162,7 +162,7 @@ func isCommand(command string, opts cfg.SkaffoldOptions) bool {
 		return true
 	}
 
-	return satisfies(command, opts.Command)
+	return skutil.RegexEqual(command, opts.Command)
 }
 
 func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
@@ -172,7 +172,7 @@ func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
 
 	// cli flag takes precedence
 	if opts.KubeContext != "" {
-		return satisfies(kubeContext, opts.KubeContext), nil
+		return skutil.RegexEqual(kubeContext, opts.KubeContext), nil
 	}
 
 	currentKubeConfig, err := kubectx.CurrentConfig()
@@ -180,31 +180,7 @@ func isKubeContext(kubeContext string, opts cfg.SkaffoldOptions) (bool, error) {
 		return false, fmt.Errorf("getting current cluster context: %w", err)
 	}
 
-	return satisfies(kubeContext, currentKubeConfig.CurrentContext), nil
-}
-
-func satisfies(expected, actual string) bool {
-	if strings.HasPrefix(expected, "!") {
-		notExpected := expected[1:]
-
-		return !matches(notExpected, actual)
-	}
-
-	return matches(expected, actual)
-}
-
-func matches(expected, actual string) bool {
-	if actual == expected {
-		return true
-	}
-
-	matcher, err := re.Compile(expected)
-	if err != nil {
-		logrus.Infof("profile activation criteria '%s' is not a valid regexp, falling back to string", expected)
-		return false
-	}
-
-	return matcher.MatchString(actual)
+	return skutil.RegexEqual(kubeContext, currentKubeConfig.CurrentContext), nil
 }
 
 func applyProfile(config *latest.SkaffoldConfig, profile latest.Profile) error {

@@ -71,7 +71,7 @@ func (t pythonTransformer) Apply(container *v1.Container, config imageConfigurat
 	spec := retrievePtvsdSpec(config)
 
 	if spec == nil {
-		spec = &ptvsdSpec{host: "localhost", port: portAlloc(defaultPtvsdPort)}
+		spec = &ptvsdSpec{port: portAlloc(defaultPtvsdPort)}
 		switch {
 		case len(config.entrypoint) > 0 && isLaunchingPython(config.entrypoint):
 			container.Command = rewritePythonCommandLine(config.entrypoint, *spec)
@@ -165,7 +165,10 @@ func rewritePythonCommandLine(commandLine []string, spec ptvsdSpec) []string {
 
 func (spec ptvsdSpec) asArguments() []string {
 	args := []string{"-mptvsd"}
-	if spec.host != "" {
+	// --host is a mandatory argument
+	if spec.host == "" {
+		args = append(args, "--host", "0.0.0.0")
+	} else {
 		args = append(args, "--host", spec.host)
 	}
 	if spec.port >= 0 {

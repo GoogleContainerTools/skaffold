@@ -63,7 +63,7 @@ func (d *DefaultLabeller) Labels() map[string]string {
 	if d.opts.Cleanup {
 		labels["skaffold.dev/cleanup"] = "true"
 	}
-	if d.opts.Tail || d.opts.TailDev {
+	if d.opts.Tail {
 		labels["skaffold.dev/tail"] = "true"
 	}
 	if d.opts.Namespace != "" {

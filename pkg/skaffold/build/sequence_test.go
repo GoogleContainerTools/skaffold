@@ -149,5 +149,8 @@ func initializeEvents() {
 			},
 		},
 	},
-		"temp")
+		"temp",
+		true,
+		true,
+		true)
 }
