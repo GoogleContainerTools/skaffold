@@ -241,7 +241,7 @@
     "deploy": "x",
     "area": "Render",
     "maturity": "beta",
-    "description": "Skaffold render provides hydrated manifests rather than creating Kubernetes resources"
+    "description": "Produce hydrated Kubernetes manifests that reference the built resources"
   },
   "run.cmd": {
     "run": "x",
