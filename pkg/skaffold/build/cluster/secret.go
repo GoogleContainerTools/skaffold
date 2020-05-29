@@ -50,7 +50,7 @@ func (b *Builder) setupPullSecret(out io.Writer) (func(), error) {
 	if _, err := secrets.Get(b.PullSecretName, metav1.GetOptions{}); err != nil {
 		color.Default.Fprintf(out, "Creating kaniko secret [%s/%s]...\n", b.Namespace, b.PullSecretName)
 		if b.PullSecretPath == "" {
-			return nil, fmt.Errorf("secret %s does not exisit. No path specified to create it", b.PullSecretName)
+			return nil, fmt.Errorf("secret %s does not exist. No path specified to create it", b.PullSecretName)
 		}
 		return b.createSecretFromFile(secrets)
 	}

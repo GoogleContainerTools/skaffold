@@ -89,7 +89,7 @@ build:
     context: ./examples/app1
     kaniko: {}
   cluster:
-    pullSecret: /secret.json
+    pullSecretPath: /secret.json
     pullSecretName: secret-name
     namespace: nskaniko
     timeout: 120m
