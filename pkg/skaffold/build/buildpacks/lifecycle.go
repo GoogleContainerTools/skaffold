@@ -85,9 +85,16 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	// Those specified in the skaffold.yaml replace those in the project.toml.
 	buildpacks := artifact.Buildpacks
 	if len(buildpacks) == 0 {
-		for _, buildpack := range projectDescriptor.Build.Buildpacks {
-			// TODO(dgageot): Support version and URI.
-			buildpacks = append(buildpacks, buildpack.ID)
+		for _, bp := range projectDescriptor.Build.Buildpacks {
+			if bp.ID != "" {
+				if bp.Version == "" {
+					buildpacks = append(buildpacks, bp.ID)
+				} else {
+					buildpacks = append(buildpacks, fmt.Sprintf("%s@%s", bp.ID, bp.Version))
+				}
+				// } else {
+				// TODO(dgageot): Support URI.
+			}
 		}
 	}
 
