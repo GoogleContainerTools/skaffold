@@ -239,8 +239,9 @@ func buildpacksArtifact(builder, runImage string) *latest.Artifact {
 		Workspace: ".",
 		ArtifactType: latest.ArtifactType{
 			BuildpackArtifact: &latest.BuildpackArtifact{
-				Builder:  builder,
-				RunImage: runImage,
+				Builder:           builder,
+				RunImage:          runImage,
+				ProjectDescriptor: "project.toml",
 				Dependencies: &latest.BuildpackDependencies{
 					Paths: []string{"."},
 				},

@@ -22,11 +22,16 @@ import (
 	cloudbuild "google.golang.org/api/cloudbuild/v1"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/misc"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/constants"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
 func (b *Builder) buildpackBuildSpec(artifact *latest.BuildpackArtifact, tag string) (cloudbuild.Build, error) {
 	args := []string{"pack", "build", tag, "--builder", artifact.Builder}
+
+	if artifact.ProjectDescriptor != constants.DefaultProjectDescriptor {
+		args = append(args, "--descriptor", artifact.ProjectDescriptor)
+	}
 
 	if artifact.RunImage != "" {
 		args = append(args, "--run-image", artifact.RunImage)

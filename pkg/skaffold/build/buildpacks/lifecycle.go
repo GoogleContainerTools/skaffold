@@ -34,8 +34,6 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
 )
 
-const projectTOML = "project.toml"
-
 // For testing
 var (
 	runPackBuildFunc = runPackBuild
@@ -51,7 +49,7 @@ func (b *Builder) build(ctx context.Context, out io.Writer, a *latest.Artifact, 
 	workspace := a.Workspace
 
 	// Read `project.toml` if it exists.
-	path := filepath.Join(a.Workspace, projectTOML)
+	path := filepath.Join(workspace, artifact.ProjectDescriptor)
 	projectDescriptor, err := ReadProjectDescriptor(path)
 	if err != nil && !os.IsNotExist(err) {
 		return "", fmt.Errorf("failed to read project descriptor %q: %w", path, err)
