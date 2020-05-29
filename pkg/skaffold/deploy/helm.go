@@ -287,29 +287,7 @@ func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build
 			args = append(args, "--set-string", value)
 		}
 
-		sortedKeys := make([]string, 0, len(r.SetValues))
-		for k := range r.SetValues {
-			sortedKeys = append(sortedKeys, k)
-		}
-		sort.Strings(sortedKeys)
-		for _, k := range sortedKeys {
-			args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
-		}
-
-		sortedKeys = make([]string, 0, len(r.SetValueTemplates))
-		for k := range r.SetValueTemplates {
-			sortedKeys = append(sortedKeys, k)
-		}
-		sort.Strings(sortedKeys)
-
-		for _, key := range sortedKeys {
-			v, err := util.ExpandEnvTemplate(r.SetValueTemplates[key], nil)
-			if err != nil {
-				return err
-			}
-			args = append(args, "--set", fmt.Sprintf("%s=%s", key, v))
-		}
-
+		args, err = constructOverrideArgs(&r, builds, args, func(string) {})
 		if r.Namespace != "" {
 			args = append(args, "--namespace", r.Namespace)
 		}
@@ -546,18 +524,34 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 		args = append(args, "--set-string", value)
 	}
 
+	args, err = constructOverrideArgs(&r, builds, args, func(k string) {
+		valuesSet[k] = true
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if r.Wait {
+		args = append(args, "--wait")
+	}
+
+	return args, nil
+}
+
+// constructOverrideArgs creates the command line arguments for overrides
+func constructOverrideArgs(r *latest.HelmRelease, builds []build.Artifact, args []string, record func(string)) ([]string, error) {
 	sortedKeys := make([]string, 0, len(r.SetValues))
 	for k := range r.SetValues {
 		sortedKeys = append(sortedKeys, k)
 	}
 	sort.Strings(sortedKeys)
 	for _, k := range sortedKeys {
-		valuesSet[r.SetValues[k]] = true
+		record(r.SetValues[k])
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, r.SetValues[k]))
 	}
 
 	for k, v := range r.SetFiles {
-		valuesSet[v] = true
+		record(v)
 		args = append(args, "--set-file", fmt.Sprintf("%s=%s", k, v))
 	}
 
@@ -585,7 +579,7 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 			return nil, err
 		}
 
-		valuesSet[v] = true
+		record(v)
 		args = append(args, "--set", fmt.Sprintf("%s=%s", k, v))
 	}
 
@@ -602,11 +596,6 @@ func installArgs(r latest.HelmRelease, builds []build.Artifact, valuesSet map[st
 
 		args = append(args, "-f", exp)
 	}
-
-	if r.Wait {
-		args = append(args, "--wait")
-	}
-
 	return args, nil
 }
 
@@ -627,6 +616,14 @@ func envVarForImage(imageName string, digest string) map[string]string {
 	customMap := map[string]string{
 		"IMAGE_NAME": imageName,
 		"DIGEST":     digest, // The `DIGEST` name is kept for compatibility reasons
+	}
+
+	// Standardize access to Image reference fields in templates
+	ref, err := docker.ParseReference(digest)
+	if err == nil {
+		customMap[constants.ImageRef.Repo] = ref.BaseName
+		customMap[constants.ImageRef.Tag] = ref.Tag
+		customMap[constants.ImageRef.Digest] = ref.Digest
 	}
 
 	if digest == "" {
