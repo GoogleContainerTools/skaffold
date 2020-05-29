@@ -288,6 +288,10 @@ func (h *HelmDeployer) Render(ctx context.Context, out io.Writer, builds []build
 		}
 
 		args, err = constructOverrideArgs(&r, builds, args, func(string) {})
+		if err != nil {
+			return err
+		}
+
 		if r.Namespace != "" {
 			args = append(args, "--namespace", r.Namespace)
 		}
