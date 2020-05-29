@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/Masterminds/semver"
 	"github.com/buildpacks/imgutil"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/volume/mounts"
@@ -26,19 +27,23 @@ import (
 	"github.com/buildpacks/pack/internal/buildpack"
 	"github.com/buildpacks/pack/internal/buildpackage"
 	"github.com/buildpacks/pack/internal/dist"
+	"github.com/buildpacks/pack/internal/layer"
 	"github.com/buildpacks/pack/internal/paths"
 	"github.com/buildpacks/pack/internal/stack"
 	"github.com/buildpacks/pack/internal/stringset"
 	"github.com/buildpacks/pack/internal/style"
 )
 
+const lifecycleImageRepo = "buildpacksio/lifecycle"
+
 type Lifecycle interface {
 	Execute(ctx context.Context, opts build.LifecycleOptions) error
 }
 
 type BuildOptions struct {
-	Image              string              // required
-	Builder            string              // required
+	Image              string // required
+	Builder            string // required
+	Registry           string
 	AppPath            string              // defaults to current working directory
 	RunImage           string              // defaults to the best mirror from the builder metadata or AdditionalMirrors
 	AdditionalMirrors  map[string][]string // only considered if RunImage is not provided
@@ -46,6 +51,7 @@ type BuildOptions struct {
 	Publish            bool
 	NoPull             bool
 	ClearCache         bool
+	TrustBuilder       bool
 	Buildpacks         []string
 	ProxyConfig        *ProxyConfig // defaults to  environment proxy vars
 	ContainerConfig    ContainerConfig
@@ -103,7 +109,7 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		return err
 	}
 
-	fetchedBPs, order, err := c.processBuildpacks(ctx, bldr.Buildpacks(), bldr.Order(), opts.Buildpacks, opts.NoPull, opts.Publish)
+	fetchedBPs, order, err := c.processBuildpacks(ctx, bldr.Image(), bldr.Buildpacks(), bldr.Order(), opts.Buildpacks, opts.NoPull, opts.Publish, opts.Registry)
 	if err != nil {
 		return err
 	}
@@ -137,13 +143,16 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		return err
 	}
 
-	return c.lifecycle.Execute(ctx, build.LifecycleOptions{
+	lifecycleOpts := build.LifecycleOptions{
 		AppPath:            appPath,
 		Image:              imageRef,
 		Builder:            ephemeralBuilder,
 		RunImage:           runImageName,
 		ClearCache:         opts.ClearCache,
 		Publish:            opts.Publish,
+		UseCreator:         false,
+		TrustBuilder:       opts.TrustBuilder,
+		LifecycleImage:     ephemeralBuilder.Name(),
 		HTTPProxy:          proxyConfig.HTTPProxy,
 		HTTPSProxy:         proxyConfig.HTTPSProxy,
 		NoProxy:            proxyConfig.NoProxy,
@@ -151,7 +160,40 @@ func (c *Client) Build(ctx context.Context, opts BuildOptions) error {
 		Volumes:            platformVolumes,
 		DefaultProcessType: opts.DefaultProcessType,
 		FileFilter:         opts.FileFilter,
-	})
+	}
+
+	lifecycleVersion := ephemeralBuilder.LifecycleDescriptor().Info.Version
+	// Technically the creator is supported as of platform API version 0.3 (lifecycle version 0.7.0+) but earlier versions
+	// have bugs that make using the creator problematic.
+	lifecycleSupportsCreator := !lifecycleVersion.LessThan(semver.MustParse("0.7.4"))
+
+	if lifecycleSupportsCreator && opts.TrustBuilder {
+		lifecycleOpts.UseCreator = true
+		// no need to fetch a lifecycle image, it won't be used
+		return c.lifecycle.Execute(ctx, lifecycleOpts)
+	}
+
+	lifecycleImageSupported := lifecycleVersion.Equal(builder.VersionMustParse("0.6.1")) || !lifecycleVersion.LessThan(semver.MustParse("0.7.5"))
+	if !opts.TrustBuilder {
+		switch lifecycleImageSupported {
+		case true:
+			lifecycleImage, err := c.imageFetcher.Fetch(
+				ctx,
+				fmt.Sprintf("%s:%s", lifecycleImageRepo, lifecycleVersion.String()),
+				true,
+				!opts.NoPull,
+			)
+			if err != nil {
+				return errors.Wrap(err, "fetching lifecycle image")
+			}
+
+			lifecycleOpts.LifecycleImage = lifecycleImage.Name()
+		default:
+			return errors.Errorf("Lifecycle %s does not have an associated lifecycle image. Builder must be trusted.", lifecycleVersion.String())
+		}
+	}
+
+	return c.lifecycle.Execute(ctx, lifecycleOpts)
 }
 
 func (c *Client) processBuilderName(builderName string) (name.Reference, error) {
@@ -395,7 +437,7 @@ func (c *Client) processProxyConfig(config *ProxyConfig) ProxyConfig {
 // 	----------
 // 	- group:
 //		- A
-func (c *Client) processBuildpacks(ctx context.Context, builderBPs []dist.BuildpackInfo, builderOrder dist.Order, declaredBPs []string, noPull bool, publish bool) (fetchedBPs []dist.Buildpack, order dist.Order, err error) {
+func (c *Client) processBuildpacks(ctx context.Context, builderImage imgutil.Image, builderBPs []dist.BuildpackInfo, builderOrder dist.Order, declaredBPs []string, noPull bool, publish bool, registry string) (fetchedBPs []dist.Buildpack, order dist.Order, err error) {
 	order = dist.Order{{Group: []dist.BuildpackRef{}}}
 	for _, bp := range declaredBPs {
 		locatorType, err := buildpack.GetLocatorType(bp, builderBPs)
@@ -452,7 +494,11 @@ func (c *Client) processBuildpacks(ctx context.Context, builderBPs []dist.Buildp
 					return fetchedBPs, order, errors.Wrapf(err, "extracting buildpacks from %s", style.Symbol(bp))
 				}
 			} else {
-				mainBP, err = dist.BuildpackFromRootBlob(blob)
+				layerWriterFactory, err := layer.NewWriterFactory(builderImage)
+				if err != nil {
+					return fetchedBPs, order, errors.Wrapf(err, "get tar writer factory for image %s", style.Symbol(builderImage.Name()))
+				}
+				mainBP, err = dist.BuildpackFromRootBlob(blob, layerWriterFactory)
 				if err != nil {
 					return fetchedBPs, order, errors.Wrapf(err, "creating buildpack from %s", style.Symbol(bp))
 				}
@@ -463,7 +509,25 @@ func (c *Client) processBuildpacks(ctx context.Context, builderBPs []dist.Buildp
 		case buildpack.PackageLocator:
 			mainBP, depBPs, err := extractPackagedBuildpacks(ctx, bp, c.imageFetcher, publish, noPull)
 			if err != nil {
-				return fetchedBPs, order, err
+				return fetchedBPs, order, errors.Wrapf(err, "creating from buildpackage %s", style.Symbol(bp))
+			}
+
+			fetchedBPs = append(append(fetchedBPs, mainBP), depBPs...)
+			order = appendBuildpackToOrder(order, mainBP.Descriptor().Info)
+		case buildpack.RegistryLocator:
+			registryCache, err := c.getRegistry(c.logger, registry)
+			if err != nil {
+				return fetchedBPs, order, errors.Wrapf(err, "invalid registry '%s'", registry)
+			}
+
+			registryBp, err := registryCache.LocateBuildpack(bp)
+			if err != nil {
+				return fetchedBPs, order, errors.Wrapf(err, "locating in registry %s", style.Symbol(bp))
+			}
+
+			mainBP, depBPs, err := extractPackagedBuildpacks(ctx, registryBp.Address, c.imageFetcher, publish, noPull)
+			if err != nil {
+				return fetchedBPs, order, errors.Wrapf(err, "extracting from registry %s", style.Symbol(bp))
 			}
 
 			fetchedBPs = append(append(fetchedBPs, mainBP), depBPs...)

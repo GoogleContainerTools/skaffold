@@ -51,6 +51,11 @@ func TestValidate(t *testing.T) {
 			expectedValid: true,
 		},
 		{
+			description:   "Buildpacks",
+			path:          filepath.Join("project.toml"),
+			expectedValid: true,
+		},
+		{
 			description:   "Unknown language",
 			path:          filepath.Join("path", "to", "something.txt"),
 			expectedValid: false,
@@ -73,6 +78,8 @@ func TestValidateIgnored(t *testing.T) {
 		filepath.Join("node_modules", "package.json"),
 		filepath.Join("vendor", "go.mod"),
 		filepath.Join("parent", "vendor", "go.mod"),
+		filepath.Join("parent", "vendor", "project.toml"),
+		filepath.Join("node_modules", "project.toml"),
 	}
 
 	for _, path := range paths {
