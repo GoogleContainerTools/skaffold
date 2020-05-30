@@ -20,17 +20,19 @@ import (
 	"fmt"
 
 	yaml "gopkg.in/yaml.v2"
+	apimachinery "k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// recursivelyTransformableKinds whitelists kinds that can be transformed recursively.
-var recursivelyTransformableKinds = map[string]bool{
-	"Pod":         true,
-	"ReplicaSet":  true,
-	"StatefulSet": true,
-	"Deployment":  true,
-	"DaemonSet":   true,
-	"Job":         true,
-	"CronJob":     true,
+// transformableWhitelist is the set of kinds that can be transformed by Skaffold.
+var transformableWhitelist = map[apimachinery.GroupKind]bool{
+	{Group: "", Kind: "Pod"}:                        true,
+	{Group: "apps", Kind: "DaemonSet"}:              true,
+	{Group: "apps", Kind: "Deployment"}:             true,
+	{Group: "apps", Kind: "ReplicaSet"}:             true,
+	{Group: "apps", Kind: "StatefulSet"}:            true,
+	{Group: "batch", Kind: "CronJob"}:               true,
+	{Group: "batch", Kind: "Job"}:                   true,
+	{Group: "serving.knative.dev", Kind: "Service"}: true,
 }
 
 // FieldVisitor represents the aggregation/transformation that should be performed on each traversed field.
@@ -69,11 +71,36 @@ func (l *ManifestList) Visit(visitor FieldVisitor) (ManifestList, error) {
 
 // traverseManifest traverses all transformable fields contained within the manifest.
 func traverseManifestFields(manifest map[interface{}]interface{}, visitor FieldVisitor) {
-	kind := manifest["kind"]
-	if k, ok := kind.(string); ok && recursivelyTransformableKinds[k] {
+	if shouldTransformManifest(manifest) {
 		visitor = &recursiveVisitorDecorator{visitor}
 	}
 	visitFields(manifest, visitor)
+}
+
+func shouldTransformManifest(manifest map[interface{}]interface{}) bool {
+	var apiVersion string
+	switch value := manifest["apiVersion"].(type) {
+	case string:
+		apiVersion = value
+	default:
+		return false
+	}
+
+	var kind string
+	switch value := manifest["kind"].(type) {
+	case string:
+		kind = value
+	default:
+		return false
+	}
+
+	gvk := apimachinery.FromAPIVersionAndKind(apiVersion, kind)
+	groupKind := apimachinery.GroupKind{
+		Group: gvk.Group,
+		Kind:  gvk.Kind,
+	}
+
+	return transformableWhitelist[groupKind]
 }
 
 // recursiveVisitorDecorator adds recursion to a FieldVisitor.
