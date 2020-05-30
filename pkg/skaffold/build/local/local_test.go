@@ -241,7 +241,7 @@ func TestLocalRun(t *testing.T) {
 					BuildType: latest.BuildType{
 						LocalBuild: &latest.LocalBuild{},
 					},
-				}}, "")
+				}}, "", true, true, true)
 
 			builder, err := NewBuilder(stubRunContext(latest.LocalBuild{
 				Push:        util.BoolPtr(test.pushImages),

@@ -24,9 +24,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	tests := []struct {
 		description string
@@ -121,9 +119,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunGCPOnly(t *testing.T) {
-	if testing.Short() || !RunOnGCP() {
-		t.Skip("skipping GCP integration test")
-	}
+	MarkIntegrationTest(t, NeedsGcp)
 
 	tests := []struct {
 		description string
@@ -201,9 +197,7 @@ func TestRunGCPOnly(t *testing.T) {
 }
 
 func TestRunIdempotent(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
 
@@ -228,9 +222,7 @@ func TestRunIdempotent(t *testing.T) {
 }
 
 func TestRunUnstableChecked(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
 
@@ -243,9 +235,7 @@ func TestRunUnstableChecked(t *testing.T) {
 }
 
 func TestRunUnstableNotChecked(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
 
@@ -253,9 +243,7 @@ func TestRunUnstableNotChecked(t *testing.T) {
 }
 
 func TestRunTailPod(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
 
@@ -269,9 +257,7 @@ func TestRunTailPod(t *testing.T) {
 }
 
 func TestRunTailDeployment(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
 

@@ -218,6 +218,15 @@ func TestKanikoPodSpec(t *testing.T) {
 					},
 				},
 			},
+			Tolerations: []v1.Toleration{
+				{
+					Key:               "app",
+					Operator:          "Equal",
+					Value:             "skaffold",
+					Effect:            "NoSchedule",
+					TolerationSeconds: nil,
+				},
+			},
 		},
 	}
 	pod, _ := builder.kanikoPodSpec(artifact, "tag")
@@ -345,6 +354,15 @@ func TestKanikoPodSpec(t *testing.T) {
 							SecretName: "secret-1",
 						},
 					},
+				},
+			},
+			Tolerations: []v1.Toleration{
+				{
+					Key:               "app",
+					Operator:          "Equal",
+					Value:             "skaffold",
+					Effect:            "NoSchedule",
+					TolerationSeconds: nil,
 				},
 			},
 		},

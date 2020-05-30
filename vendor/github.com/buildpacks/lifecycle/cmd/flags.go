@@ -102,7 +102,7 @@ func FlagPlatformDir(dir *string) {
 }
 
 func DeprecatedFlagRunImage(image *string) {
-	flagSet.StringVar(image, "image", os.Getenv(EnvRunImage), "reference to run image")
+	flagSet.StringVar(image, "image", "", "reference to run image")
 }
 
 func FlagRunImage(image *string) {

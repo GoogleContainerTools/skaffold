@@ -21,27 +21,51 @@ func init() {
 	NormalizedDateTime = time.Date(1980, time.January, 1, 0, 0, 1, 0, time.UTC)
 }
 
+type TarWriter interface {
+	WriteHeader(hdr *tar.Header) error
+	Write(b []byte) (int, error)
+	Close() error
+}
+
+type TarWriterFactory interface {
+	NewWriter(io.Writer) TarWriter
+}
+
+type defaultTarWriterFactory struct{}
+
+func DefaultTarWriterFactory() TarWriterFactory {
+	return defaultTarWriterFactory{}
+}
+
+func (defaultTarWriterFactory) NewWriter(w io.Writer) TarWriter {
+	return tar.NewWriter(w)
+}
+
 func ReadDirAsTar(srcDir, basePath string, uid, gid int, mode int64, normalizeModTime bool, fileFilter func(string) bool) io.ReadCloser {
-	return GenerateTar(func(tw *tar.Writer) error {
+	return GenerateTar(func(tw TarWriter) error {
 		return WriteDirToTar(tw, srcDir, basePath, uid, gid, mode, normalizeModTime, fileFilter)
 	})
 }
 
 func ReadZipAsTar(srcPath, basePath string, uid, gid int, mode int64, normalizeModTime bool, fileFilter func(string) bool) io.ReadCloser {
-	return GenerateTar(func(tw *tar.Writer) error {
+	return GenerateTar(func(tw TarWriter) error {
 		return WriteZipToTar(tw, srcPath, basePath, uid, gid, mode, normalizeModTime, fileFilter)
 	})
 }
 
-// GenerateTar returns a reader to a tar from a generator function. Note that the
-// generator will not fully execute until the reader is fully read from. Any errors
-// returned by the generator will be returned when reading the reader.
-func GenerateTar(gen func(*tar.Writer) error) io.ReadCloser {
+func GenerateTar(genFn func(TarWriter) error) io.ReadCloser {
+	return GenerateTarWithWriter(genFn, DefaultTarWriterFactory())
+}
+
+// GenerateTarWithTar returns a reader to a tar from a generator function using a writer from the provided factory.
+// Note that the generator will not fully execute until the reader is fully read from. Any errors returned by the
+// generator will be returned when reading the reader.
+func GenerateTarWithWriter(genFn func(TarWriter) error, twf TarWriterFactory) io.ReadCloser {
 	errChan := make(chan error)
 	pr, pw := io.Pipe()
 
 	go func() {
-		tw := tar.NewWriter(pw)
+		tw := twf.NewWriter(pw)
 		defer func() {
 			if r := recover(); r != nil {
 				tw.Close()
@@ -49,7 +73,7 @@ func GenerateTar(gen func(*tar.Writer) error) io.ReadCloser {
 			}
 		}()
 
-		err := gen(tw)
+		err := genFn(tw)
 
 		closeErr := tw.Close()
 		closeErr = aggregateError(closeErr, pw.CloseWithError(err))
@@ -87,45 +111,27 @@ func aggregateError(base, addition error) error {
 	return errors.Wrap(addition, base.Error())
 }
 
-func CreateSingleFileTarReader(path, txt string) (io.Reader, error) {
-	var buf bytes.Buffer
+func CreateSingleFileTarReader(path, txt string) io.ReadCloser {
 	tarBuilder := TarBuilder{}
 	tarBuilder.AddFile(path, 0644, NormalizedDateTime, []byte(txt))
-	_, err := tarBuilder.WriteTo(&buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return bytes.NewReader(buf.Bytes()), nil
+	return tarBuilder.Reader(DefaultTarWriterFactory())
 }
 
 func CreateSingleFileTar(tarFile, path, txt string) error {
 	tarBuilder := TarBuilder{}
 	tarBuilder.AddFile(path, 0644, NormalizedDateTime, []byte(txt))
-	return tarBuilder.WriteToPath(tarFile)
+	return tarBuilder.WriteToPath(tarFile, DefaultTarWriterFactory())
 }
 
-func AddFileToTar(tw *tar.Writer, path string, txt string) error {
-	if err := tw.WriteHeader(&tar.Header{
-		Name:    path,
-		Size:    int64(len(txt)),
-		Mode:    0644,
-		ModTime: NormalizedDateTime,
-	}); err != nil {
-		return err
-	}
-	if _, err := tw.Write([]byte(txt)); err != nil {
-		return err
-	}
-	return nil
-}
-
+// ErrEntryNotExist is an error returned if an entry path doesn't exist
 var ErrEntryNotExist = errors.New("not exist")
 
+// IsEntryNotExist detects whether a given error is of type ErrEntryNotExist
 func IsEntryNotExist(err error) bool {
 	return err == ErrEntryNotExist || errors.Cause(err) == ErrEntryNotExist
 }
 
+// ReadTarEntry reads and returns a tar file
 func ReadTarEntry(rc io.Reader, entryPath string) (*tar.Header, []byte, error) {
 	tr := tar.NewReader(rc)
 	for {
@@ -151,8 +157,8 @@ func ReadTarEntry(rc io.Reader, entryPath string) (*tar.Header, []byte, error) {
 }
 
 // WriteDirToTar writes the contents of a directory to a tar writer. `basePath` is the "location" in the tar the
-// contents will be places.
-func WriteDirToTar(tw *tar.Writer, srcDir, basePath string, uid, gid int, mode int64, normalizeModTime bool, fileFilter func(string) bool) error {
+// contents will be placed.
+func WriteDirToTar(tw TarWriter, srcDir, basePath string, uid, gid int, mode int64, normalizeModTime bool, fileFilter func(string) bool) error {
 	return filepath.Walk(srcDir, func(file string, fi os.FileInfo, err error) error {
 		if fileFilter != nil && !fileFilter(file) {
 			return nil
@@ -213,17 +219,25 @@ func WriteDirToTar(tw *tar.Writer, srcDir, basePath string, uid, gid int, mode i
 	})
 }
 
-func WriteZipToTar(tw *tar.Writer, srcZip, basePath string, uid, gid int, mode int64, normalizeModTime bool, fileFilter func(string) bool) error {
+// WriteZipToTar writes the contents of a zip file to a tar writer.
+func WriteZipToTar(tw TarWriter, srcZip, basePath string, uid, gid int, mode int64, normalizeModTime bool, fileFilter func(string) bool) error {
 	zipReader, err := zip.OpenReader(srcZip)
 	if err != nil {
 		return err
 	}
 	defer zipReader.Close()
 
+	var fileMode int64
 	for _, f := range zipReader.File {
 		if fileFilter != nil && !fileFilter(f.Name) {
 			continue
 		}
+
+		fileMode = mode
+		if isFatFile(f.FileHeader) {
+			fileMode = 0777
+		}
+
 		var header *tar.Header
 		if f.Mode()&os.ModeSymlink != 0 {
 			target, err := func() (string, error) {
@@ -258,7 +272,7 @@ func WriteZipToTar(tw *tar.Writer, srcZip, basePath string, uid, gid int, mode i
 		}
 
 		header.Name = filepath.ToSlash(filepath.Join(basePath, f.Name))
-		finalizeHeader(header, uid, gid, mode, normalizeModTime)
+		finalizeHeader(header, uid, gid, fileMode, normalizeModTime)
 
 		if err := tw.WriteHeader(header); err != nil {
 			return err
@@ -283,6 +297,17 @@ func WriteZipToTar(tw *tar.Writer, srcZip, basePath string, uid, gid int, mode i
 	}
 
 	return nil
+}
+
+func isFatFile(header zip.FileHeader) bool {
+	var (
+		creatorFAT  uint16 = 0
+		creatorVFAT uint16 = 14
+	)
+
+	// This identifies FAT files, based on the `zip` source: https://golang.org/src/archive/zip/struct.go
+	firstByte := header.CreatorVersion >> 8
+	return firstByte == creatorFAT || firstByte == creatorVFAT
 }
 
 func finalizeHeader(header *tar.Header, uid, gid int, mode int64, normalizeModTime bool) {
@@ -312,6 +337,7 @@ func NormalizeHeader(header *tar.Header, normalizeModTime bool) {
 	header.Gname = ""
 }
 
+// IsZip detects whether or not a File is a zip directory
 func IsZip(file io.Reader) (bool, error) {
 	b := make([]byte, 4)
 	_, err := file.Read(b)

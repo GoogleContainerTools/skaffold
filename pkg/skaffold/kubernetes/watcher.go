@@ -17,15 +17,49 @@ limitations under the License.
 package kubernetes
 
 import (
+	"errors"
 	"fmt"
 
+	"github.com/sirupsen/logrus"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 )
 
-// AggregatePodWatcher returns a watcher for multiple namespaces.
-func AggregatePodWatcher(namespaces []string, aggregate chan<- watch.Event) (func(), error) {
-	watchers := make([]watch.Interface, 0, len(namespaces))
+type PodWatcher interface {
+	Register(receiver chan<- PodEvent)
+	Start() (func(), error)
+}
+
+// podWatcher is a pod watcher for multiple namespaces.
+type podWatcher struct {
+	podSelector PodSelector
+	namespaces  []string
+	receivers   []chan<- PodEvent
+}
+
+type PodEvent struct {
+	Type watch.EventType
+	Pod  *v1.Pod
+}
+
+func NewPodWatcher(podSelector PodSelector, namespaces []string) PodWatcher {
+	return &podWatcher{
+		podSelector: podSelector,
+		namespaces:  namespaces,
+	}
+}
+
+func (w *podWatcher) Register(receiver chan<- PodEvent) {
+	w.receivers = append(w.receivers, receiver)
+}
+
+func (w *podWatcher) Start() (func(), error) {
+	if len(w.receivers) == 0 {
+		return func() {}, errors.New("no receiver was registered")
+	}
+
+	var watchers []watch.Interface
 	stopWatchers := func() {
 		for _, w := range watchers {
 			w.Stop()
@@ -39,7 +73,7 @@ func AggregatePodWatcher(namespaces []string, aggregate chan<- watch.Event) (fun
 
 	var forever int64 = 3600 * 24 * 365 * 100
 
-	for _, ns := range namespaces {
+	for _, ns := range w.namespaces {
 		watcher, err := kubeclient.CoreV1().Pods(ns).Watch(metav1.ListOptions{
 			TimeoutSeconds: &forever,
 		})
@@ -51,8 +85,29 @@ func AggregatePodWatcher(namespaces []string, aggregate chan<- watch.Event) (fun
 		watchers = append(watchers, watcher)
 
 		go func() {
-			for msg := range watcher.ResultChan() {
-				aggregate <- msg
+			for evt := range watcher.ResultChan() {
+				// If the event's type is "ERROR", warn and continue.
+				if evt.Type == watch.Error {
+					logrus.Warnf("got unexpected event of type %s", evt.Type)
+					continue
+				}
+
+				// Grab the pod from the event.
+				pod, ok := evt.Object.(*v1.Pod)
+				if !ok {
+					continue
+				}
+
+				if !w.podSelector.Select(pod) {
+					continue
+				}
+
+				for _, receiver := range w.receivers {
+					receiver <- PodEvent{
+						Type: evt.Type,
+						Pod:  pod,
+					}
+				}
 			}
 		}()
 	}

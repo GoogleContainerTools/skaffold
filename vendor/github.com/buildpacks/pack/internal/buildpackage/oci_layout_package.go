@@ -170,6 +170,7 @@ func unmarshalJSONFromBlob(blob dist.Blob, path string, obj interface{}) error {
 	if err != nil {
 		return err
 	}
+	defer reader.Close()
 
 	_, contents, err := archive.ReadTarEntry(reader, path)
 	if err != nil {

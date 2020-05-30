@@ -23,6 +23,7 @@ import (
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/config"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/context"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/util"
 )
 
 func resolveKubectlContext() {
@@ -74,7 +75,7 @@ func getConfigForKubectx() (*config.ContextConfig, error) {
 		return cfg.Global, nil
 	}
 	for _, contextCfg := range cfg.ContextConfigs {
-		if contextCfg.Kubecontext == kubecontext {
+		if util.RegexEqual(contextCfg.Kubecontext, kubecontext) {
 			return contextCfg, nil
 		}
 	}

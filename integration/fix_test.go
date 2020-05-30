@@ -23,9 +23,7 @@ import (
 )
 
 func TestFix(t *testing.T) {
-	if testing.Short() || RunOnGCP() {
-		t.Skip("skipping kind integration test")
-	}
+	MarkIntegrationTest(t, CanRunWithoutGcp)
 
 	ns, _ := SetupNamespace(t)
 

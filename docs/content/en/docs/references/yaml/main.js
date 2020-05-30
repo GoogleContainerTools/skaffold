@@ -61,8 +61,8 @@ function* template(definitions, parentDefinition, ref, ident, parent) {
     // Description
     const desc = definition['x-intellij-html-description'];
     
-    // Special case for profiles
-    if ((name === 'Profile') && (key === 'build' || key === 'test' || key === 'deploy')) {
+    // Don't duplicate definitions of top level sections such as build, test, deploy and portForward.
+    if ((name === 'Profile') && definitions['SkaffoldConfig'].properties[key]) {
       value = '{}';
       yield html`
         <tr>
