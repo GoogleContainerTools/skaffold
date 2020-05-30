@@ -34,7 +34,6 @@ var transformableWhitelist = map[apimachinery.GroupKind]bool{
 	{Group: "batch", Kind: "Job"}:                   true,
 	{Group: "serving.knative.dev", Kind: "Service"}: true,
 }
-}
 
 // FieldVisitor represents the aggregation/transformation that should be performed on each traversed field.
 type FieldVisitor interface {
