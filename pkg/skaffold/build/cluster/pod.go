@@ -45,6 +45,7 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 
 	pod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
+			Annotations:  b.ClusterDetails.Annotations,
 			GenerateName: "kaniko-",
 			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 			Namespace:    b.ClusterDetails.Namespace,

@@ -233,6 +233,7 @@ func TestKanikoPodSpec(t *testing.T) {
 
 	expectedPod := &v1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
+			Annotations:  map[string]string{"iam.amazonaws.com/role": "skaffold"},
 			GenerateName: "kaniko-",
 			Labels:       map[string]string{"skaffold-kaniko": "skaffold-kaniko"},
 			Namespace:    "ns",

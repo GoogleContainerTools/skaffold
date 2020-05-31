@@ -596,6 +596,15 @@
           "description": "for kaniko pod.",
           "x-intellij-html-description": "for kaniko pod."
         },
+        "annotations": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "type": "object",
+          "description": "defines arbitrary non-identifying metadata to a kaniko pod.",
+          "x-intellij-html-description": "defines arbitrary non-identifying metadata to a kaniko pod.",
+          "default": "{}"
+        },
         "concurrency": {
           "type": "integer",
           "description": "how many artifacts can be built concurrently. 0 means \"no-limit\".",
@@ -691,7 +700,8 @@
         "concurrency",
         "volumes",
         "randomPullSecret",
-        "randomDockerConfigSecret"
+        "randomDockerConfigSecret",
+        "annotations"
       ],
       "additionalProperties": false,
       "description": "*beta* describes how to do an on-cluster build.",

@@ -8,6 +8,9 @@ build:
   cluster:
     pullSecretName: e2esecret
     namespace: default
+#    annotations:
+#      iam.amazonaws.com/role: skaffold
+
 # If kaniko pod should be run on a tainted node, you can setup tolerations here.
 #    tolerations:
 #      - key: app
