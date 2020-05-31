@@ -227,10 +227,10 @@ func (h *HelmDeployer) Cleanup(ctx context.Context, out io.Writer) error {
 		}
 
 		var namespace string
-		if r.Namespace != "" {
-			namespace = r.Namespace
-		} else if h.namespace != "" {
+		if h.namespace != "" {
 			namespace = h.namespace
+		} else if r.Namespace != "" {
+			namespace = r.Namespace
 		}
 
 		args := []string{"delete", releaseName}
