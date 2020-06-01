@@ -128,7 +128,7 @@ func getDeployments(client kubernetes.Interface, ns string, l *DefaultLabeller, 
 			pd = pd.WithLabel(k, v)
 		}
 
-		deployments[i] = resource.NewDeployment(d.Name, d.Namespace, deadline).WithDiagnoser(pd)
+		deployments[i] = resource.NewDeployment(d.Name, d.Namespace, deadline).WithValidator(pd)
 	}
 
 	return deployments, nil

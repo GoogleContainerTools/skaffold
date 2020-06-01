@@ -56,7 +56,7 @@ type Deployment struct {
 	done         bool
 	deadline     time.Duration
 	pods         map[string]validator.Resource
-	podDiagnoser diag.Diagnose
+	podValidator diag.Diagnose
 }
 
 func (d *Deployment) Deadline() time.Duration {
@@ -87,12 +87,12 @@ func NewDeployment(name string, ns string, deadline time.Duration) *Deployment {
 		rType:        deploymentType,
 		status:       newStatus("", proto.StatusCode_STATUSCHECK_UNKNOWN, nil),
 		deadline:     deadline,
-		podDiagnoser: diag.New(nil),
+		podValidator: diag.New(nil),
 	}
 }
 
-func (d *Deployment) WithDiagnoser(pd diag.Diagnose) *Deployment {
-	d.podDiagnoser = pd
+func (d *Deployment) WithValidator(pd diag.Diagnose) *Deployment {
+	d.podValidator = pd
 	return d
 }
 
@@ -187,7 +187,7 @@ func isErrAndNotRetryAble(err error) bool {
 func (d *Deployment) fetchPods(ctx context.Context) error {
 	timeoutContext, cancel := context.WithTimeout(ctx, defaultPodCheckDeadline)
 	defer cancel()
-	pods, err := d.podDiagnoser.Run(timeoutContext)
+	pods, err := d.podValidator.Run(timeoutContext)
 	if err != nil {
 		return err
 	}
