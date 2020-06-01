@@ -211,7 +211,7 @@ func extractErrorMessageFromWaitingContainerStatus(c v1.ContainerStatus) (proto.
 	case crashLoopBackOff:
 		// TODO, in case of container restarting, return the original failure reason due to which container failed.
 		// TODO Add pod logs
-		return proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING, fmt.Errorf("container %s is backing off", c.Name)
+		return proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING, fmt.Errorf("container %s is backing off waiting to restart", c.Name)
 	case imagePullErr, imagePullBackOff, errImagePullBackOff:
 		return proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
 	case runContainerError:
