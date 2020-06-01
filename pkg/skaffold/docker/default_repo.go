@@ -26,22 +26,21 @@ import (
 const maxLength = 255
 
 var (
-	prefixRegex = regexp.MustCompile(`(.*\.)?gcr.io/[a-zA-Z0-9-_]+/?`)
-	escapeRegex = regexp.MustCompile(`[/._:@]`)
+	gcrPrefixRegex = regexp.MustCompile(registry.GCRRegex)
+	escapeRegex    = regexp.MustCompile(`[/._:@]`)
 )
 
 func SubstituteDefaultRepoIntoImage(defaultRepo string, image string, rewriteStrategy bool) (string, error) {
+	if defaultRepo == "" {
+		return image, nil
+	}
 	if rewriteStrategy {
-		return substituteDefaultRepoIntoImageNew(defaultRepo, image)
+		return substituteDefaultRepoIntoImageWithRewrite(defaultRepo, image)
 	}
 	return substituteDefaultRepoIntoImage(defaultRepo, image)
 }
 
 func substituteDefaultRepoIntoImage(defaultRepo string, image string) (string, error) {
-	if defaultRepo == "" {
-		return image, nil
-	}
-
 	parsed, err := ParseReference(image)
 	if err != nil {
 		return "", err
@@ -58,41 +57,9 @@ func substituteDefaultRepoIntoImage(defaultRepo string, image string) (string, e
 	return replaced, nil
 }
 
-func substituteDefaultRepoIntoImageNew(defaultRepo string, image string) (string, error) {
-	if defaultRepo == "" {
-		return image, nil
-	}
-
-	parsed, err := ParseReference(image)
-	if err != nil {
-		return "", err
-	}
-
-	// replace registry in parsed name
-	var replaced string
-	reg, image := splitImage(parsed.BaseName)
-	defaultRegistry := registry.GetRegistry(defaultRepo)
-	newReg := reg.Update(defaultRegistry)
-	if newReg.Type() == reg.Type() {
-		replaced = newReg.Name() + "/" + image
-	} else {
-		replaced = newReg.Name() + "/" + escapeRegex.ReplaceAllString(parsed.BaseName, "_")
-	}
-	replaced = truncate(replaced)
-
-	if parsed.Tag != "" {
-		replaced = replaced + ":" + parsed.Tag
-	}
-	if parsed.Digest != "" {
-		replaced = replaced + "@" + parsed.Digest
-	}
-
-	return replaced, nil
-}
-
 func replace(defaultRepo string, baseImage string) string {
-	originalPrefix := prefixRegex.FindString(baseImage)
-	defaultRepoPrefix := prefixRegex.FindString(defaultRepo)
+	originalPrefix := gcrPrefixRegex.FindString(baseImage)
+	defaultRepoPrefix := gcrPrefixRegex.FindString(defaultRepo)
 	if originalPrefix != "" && defaultRepoPrefix != "" {
 		// prefixes match
 		if originalPrefix == defaultRepoPrefix {
@@ -115,8 +82,37 @@ func truncate(image string) string {
 	return image
 }
 
+func substituteDefaultRepoIntoImageWithRewrite(defaultRepo string, image string) (string, error) {
+	parsed, err := ParseReference(image)
+	if err != nil {
+		return "", err
+	}
+
+	// replace repository in parsed name
+	var replaced string
+	reg, image := splitImage(parsed.BaseName)
+	defaultRepository := registry.New(defaultRepo)
+	newRepository := reg.Update(defaultRepository)
+	// if both repository types are similar, then image will be
+	if newRepository.Type() == reg.Type() {
+		replaced = newRepository.Name() + "/" + image
+	} else {
+		replaced = newRepository.Name() + "/" + escapeRegex.ReplaceAllString(parsed.BaseName, "_")
+	}
+	replaced = truncate(replaced)
+
+	if parsed.Tag != "" {
+		replaced = replaced + ":" + parsed.Tag
+	}
+	if parsed.Digest != "" {
+		replaced = replaced + "@" + parsed.Digest
+	}
+
+	return replaced, nil
+}
+
 func splitImage(i string) (registry.Registry, string) {
 	s := strings.Split(i, "/")
-	reg := registry.GetRegistry(strings.Join(s[:len(s)-1], "/"))
+	reg := registry.New(strings.Join(s[:len(s)-1], "/"))
 	return reg, s[len(s)-1]
 }

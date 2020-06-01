@@ -43,10 +43,6 @@ func NewGCRRegistry(name string) (Registry, error) {
 	}, nil
 }
 
-func (r *GCRRegistry) Prefix() string {
-	return strings.Join(append([]string{"gcr.io", r.project}, r.paths...), "/")
-}
-
 func (r *GCRRegistry) Name() string {
 	return strings.Join(append([]string{r.domain, r.project}, r.paths...), "/")
 }

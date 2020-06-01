@@ -39,6 +39,20 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			expectedImageNew: "gcr.io/default/registry",
 		},
 		{
+			description:      "AWS override",
+			image:            "aws_account_id.dkr.ecr.region.amazonaws.com/image1",
+			defaultRepo:      "aws_account_dev.dkr.ecr.region.amazonaws.com",
+			expectedImage:    "aws_account_dev.dkr.ecr.region.amazonaws.com/aws_account_id_dkr_ecr_region_amazonaws_com_image1",
+			expectedImageNew: "aws_account_dev.dkr.ecr.region.amazonaws.com/image1",
+		},
+		{
+			description:      "aws and dockerhub",
+			image:            "aws_account_id.dkr.ecr.region.amazonaws.com/image1",
+			defaultRepo:      "docker.hub/myspace/dev",
+			expectedImage:    "docker.hub/myspace/dev/aws_account_id_dkr_ecr_region_amazonaws_com_image1",
+			expectedImageNew: "docker.hub/myspace/dev/image1",
+		},
+		{
 			description:      "no default repo set",
 			image:            "gcr.io/some/registry",
 			expectedImage:    "gcr.io/some/registry",
@@ -137,8 +151,8 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 	}
 	for _, test := range tests {
 		testutil.Run(t, test.description, func(t *testutil.T) {
-			replaced, err := substituteDefaultRepoIntoImage(test.defaultRepo, test.image)
-			replacedNew, errNew := substituteDefaultRepoIntoImageNew(test.defaultRepo, test.image)
+			replaced, err := SubstituteDefaultRepoIntoImage(test.defaultRepo, test.image, false)
+			replacedNew, errNew := SubstituteDefaultRepoIntoImage(test.defaultRepo, test.image, true)
 			t.CheckErrorAndDeepEqual(test.shouldErr, err, test.expectedImage, replaced)
 			t.CheckErrorAndDeepEqual(test.shouldErr, errNew, test.expectedImageNew, replacedNew)
 		})
