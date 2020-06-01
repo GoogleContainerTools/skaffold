@@ -37,6 +37,7 @@ and also in the `helm` deploy section of the skaffold config, which configures a
           imageRepo: "{{.IMAGE_REPO}}"
           imageTag: "{{.IMAGE_TAG}}"
 ```
+
 These values are then being set as container environment variables `FOO_IMAGE_REPO` and `FOO_IMAGE_TAG` in the helm template `deployment.yaml` file, just as an example to show how they can be added to your helm templates.
 
 ```yaml
@@ -61,10 +62,13 @@ $ skaffold run --tail --default-repo <your repo>
 
 With this command, Skaffold will build the `skaffold-templated` artifact with ko and deploy the application to Kubernetes using helm.
 You should be able to see something like:
+
 ```shell
 Running image skaffold-templated:a866d5efd634062ea74662b20e172cd6e2d645f9f33f929bfaf8e856ec66bd94
 ```
+
  printed every second in the Skaffold logs, since the code being executed is `main.go`.
+ 
 ```go
 // from main.go, line 12
 fmt.Printf("Running image %v:%v\n", os.Getenv("FOO_IMAGE_REPO"), os.Getenv("FOO_IMAGE_TAG"))
