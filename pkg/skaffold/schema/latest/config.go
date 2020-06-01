@@ -22,8 +22,8 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/util"
 )
 
-// !!! WARNING !!! This config version is already released, please DO NOT MODIFY the structs in this file.
-const Version string = "skaffold/v2beta4"
+// This config version is not yet released, it is SAFE TO MODIFY the structs in this file.
+const Version string = "skaffold/v2beta5"
 
 // NewSkaffoldConfig creates a SkaffoldConfig
 func NewSkaffoldConfig() util.VersionedConfig {
@@ -321,6 +321,9 @@ type ClusterDetails struct {
 	// Defaults to 'default'.
 	ServiceAccountName string `yaml:"serviceAccount,omitempty"`
 
+	// Tolerations describes the Kubernetes tolerations for the pod.
+	Tolerations []v1.Toleration `yaml:"tolerations,omitempty"`
+
 	// RunAsUser defines the UID to request for running the container.
 	// If omitted, no SeurityContext will be specified for the pod and will therefore be inherited
 	// from the service account.
@@ -534,14 +537,19 @@ type HelmRelease struct {
 	RecreatePods bool `yaml:"recreatePods,omitempty"`
 
 	// SkipBuildDependencies should build dependencies be skipped.
+	// Ignored when `remote: true`.
 	SkipBuildDependencies bool `yaml:"skipBuildDependencies,omitempty"`
 
 	// UseHelmSecrets instructs skaffold to use secrets plugin on deployment.
 	UseHelmSecrets bool `yaml:"useHelmSecrets,omitempty"`
 
 	// Remote specifies whether the chart path is remote, or exists on the host filesystem.
-	// `remote: true` implies `skipBuildDependencies: true`.
 	Remote bool `yaml:"remote,omitempty"`
+
+	// UpgradeOnChange specifies whether to upgrade helm chart on code changes.
+	// Default is `true` when helm chart is local (`remote: false`).
+	// Default is `false` if `remote: true`.
+	UpgradeOnChange *bool `yaml:"upgradeOnChange,omitempty"`
 
 	// Overrides are key-value pairs.
 	// If present, Skaffold will build a Helm `values` file that overrides
@@ -749,6 +757,13 @@ type BuildpackArtifact struct {
 	// If you specify buildpacks the builder image automatic detection will be ignored. These buildpacks will be used to build the Image from your source code.
 	// Order matters.
 	Buildpacks []string `yaml:"buildpacks,omitempty"`
+
+	// TrustBuilder indicates that the builder should be trusted.
+	TrustBuilder bool `yaml:"trustBuilder,omitempty"`
+
+	// ProjectDescriptor is the path to the project descriptor file.
+	// Defaults to `project.toml` if it exists.
+	ProjectDescriptor string `yaml:"projectDescriptor,omitempty"`
 
 	// Dependencies are the file dependencies that skaffold should watch for both rebuilding and file syncing for this artifact.
 	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`

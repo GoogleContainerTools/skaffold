@@ -232,6 +232,15 @@ var testDeployRemoteChart = latest.HelmDeploy{
 	}},
 }
 
+var upgradeOnChangeFalse = false
+var testDeployUpgradeOnChange = latest.HelmDeploy{
+	Releases: []latest.HelmRelease{{
+		Name:            "skaffold-helm-upgradeOnChange",
+		ChartPath:       "examples/test",
+		UpgradeOnChange: &upgradeOnChangeFalse,
+	}},
+}
+
 var testDeployWithoutTags = latest.HelmDeploy{
 	Releases: []latest.HelmRelease{{
 		Name:      "skaffold-helm",
@@ -506,6 +515,13 @@ func TestHelmDeploy(t *testing.T) {
 				AndRun("helm --kube-context kubecontext get skaffold-helm --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeploySkipBuildDependencies, false),
 			builds:     testBuilds,
+		},
+		{
+			description: "deploy success when `upgradeOnChange: false` and does not upgrade",
+			commands: testutil.
+				CmdRunWithOutput("helm version", version21).
+				AndRun("helm --kube-context kubecontext get skaffold-helm-upgradeOnChange --kubeconfig kubeconfig"),
+			runContext: makeRunContext(testDeployUpgradeOnChange, false),
 		},
 		{
 			description: "deploy error remote chart without skipBuildDependencies",

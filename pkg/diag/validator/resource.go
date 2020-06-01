@@ -43,7 +43,7 @@ func (r Resource) String() string {
 	if r.namespace == "default" {
 		return fmt.Sprintf("%s/%s", r.kind, r.name)
 	}
-	return fmt.Sprintf("{%s:%s/%s}", r.kind, r.namespace, r.name)
+	return fmt.Sprintf("%s:%s/%s", r.namespace, r.kind, r.name)
 }
 
 // NewResource creates new Resource of kind

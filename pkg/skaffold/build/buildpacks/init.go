@@ -71,14 +71,12 @@ func (c ArtifactConfig) Path() string {
 
 // validate checks if a file is a valid Buildpack configuration.
 func validate(path string) bool {
-	switch filepath.Base(path) {
-	case "package.json":
-		return !hasParent(path, "node_modules")
-	case "go.mod":
-		return !hasParent(path, "vendor")
-	default:
-		return false
+	file := filepath.Base(path)
+	if file == "package.json" || file == "go.mod" || file == "project.toml" {
+		return !hasParent(path, "node_modules") && !hasParent(path, "vendor")
 	}
+
+	return false
 }
 
 func hasParent(path, parent string) bool {

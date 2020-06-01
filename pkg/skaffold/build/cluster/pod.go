@@ -105,6 +105,11 @@ func (b *Builder) kanikoPodSpec(artifact *latest.KanikoArtifact, tag string) (*v
 		pod.Spec.SecurityContext.RunAsUser = b.ClusterDetails.RunAsUser
 	}
 
+	// Add Tolerations for kaniko pod setup
+	if len(b.ClusterDetails.Tolerations) > 0 {
+		pod.Spec.Tolerations = b.ClusterDetails.Tolerations
+	}
+
 	// Add used-defines Volumes
 	pod.Spec.Volumes = append(pod.Spec.Volumes, b.Volumes...)
 

@@ -93,26 +93,29 @@ rules:
 		},
 		{
 			description: "nested map in Pod",
-			manifests: ManifestList{[]byte(`kind: Pod
+			manifests: ManifestList{[]byte(`apiVersion: v1
+kind: Pod
 metadata:
   name: mpod
 spec:
   restartPolicy: Always`)},
-			expected: []string{"kind=Pod", "metadata=map[...", "name=mpod", "spec=map[...", "restartPolicy=Alwa..."},
+			expected: []string{"apiVersion=v1", "kind=Pod", "metadata=map[...", "name=mpod", "spec=map[...", "restartPolicy=Alwa..."},
 		},
 		{
 			description: "skip recursion at key",
 			pivotKey:    "metadata",
-			manifests: ManifestList{[]byte(`kind: Pod
+			manifests: ManifestList{[]byte(`apiVersion: v1
+kind: Pod
 metadata:
   name: mpod
 spec:
   restartPolicy: Always`)},
-			expected: []string{"kind=Pod", "metadata=map[...", "spec=map[...", "restartPolicy=Alwa..."},
+			expected: []string{"apiVersion=v1", "kind=Pod", "metadata=map[...", "spec=map[...", "restartPolicy=Alwa..."},
 		},
 		{
 			description: "nested array and map in Pod",
-			manifests: ManifestList{[]byte(`kind: Pod
+			manifests: ManifestList{[]byte(`apiVersion: v1
+kind: Pod
 metadata:
   name: mpod
 spec:
@@ -123,7 +126,7 @@ spec:
     name: c1
   - name: c2
   restartPolicy: Always`)},
-			expected: []string{"kind=Pod", "metadata=map[...", "name=mpod",
+			expected: []string{"apiVersion=v1", "kind=Pod", "metadata=map[...", "name=mpod",
 				"spec=map[...", "containers=[map...",
 				"name=c1", "env=map[...", "name=k", "value=v",
 				"name=c2", "restartPolicy=Alwa...",
@@ -133,7 +136,8 @@ spec:
 			description: "replace key",
 			pivotKey:    "name",
 			replaceWith: "repl",
-			manifests: ManifestList{[]byte(`kind: Deployment
+			manifests: ManifestList{[]byte(`apiVersion: apps/v1
+kind: Deployment
 metadata:
   labels:
     name: x
@@ -143,14 +147,15 @@ spec:
 			// This behaviour is questionable but implemented like this for simplicity.
 			// In practice this is not a problem (currently) since only the fields
 			// "metadata" and "image" are matched in known kinds without ambiguous field names.
-			expectedManifests: ManifestList{[]byte(`kind: Deployment
+			expectedManifests: ManifestList{[]byte(`apiVersion: apps/v1
+kind: Deployment
 metadata:
   labels:
     name: repl
   name: repl
 spec:
   replicas: 0`), []byte(`name: repl`)},
-			expected: []string{"kind=Depl...", "metadata=map[...", "name=app", "labels=map[...", "name=x", "spec=map[...", "replicas=0", "name=foo"},
+			expected: []string{"apiVersion=apps...", "kind=Depl...", "metadata=map[...", "name=app", "labels=map[...", "name=x", "spec=map[...", "replicas=0", "name=foo"},
 		},
 		{
 			description: "invalid input",
@@ -168,6 +173,32 @@ spec:
   names:
     kind: MyKind`)},
 			expected: []string{"apiVersion=apie...", "kind=Cust...", "metadata=map[...", "spec=map[..."},
+		},
+		{
+			description: "replace knative serving image",
+			manifests: ManifestList{[]byte(`apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: mknservice
+spec:
+  template:
+    spec:
+      containers:
+      - image: orig`)},
+			pivotKey:    "image",
+			replaceWith: "repl",
+			expected: []string{"apiVersion=serv...", "kind=Serv...", "metadata=map[...", "name=mkns...",
+				"spec=map[...", "template=map[...", "spec=map[...",
+				"containers=[map...", "image=orig"},
+			expectedManifests: ManifestList{[]byte(`apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: mknservice
+spec:
+  template:
+    spec:
+      containers:
+      - image: repl`)},
 		},
 	}
 	for _, test := range tests {

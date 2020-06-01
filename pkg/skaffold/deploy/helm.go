@@ -371,6 +371,14 @@ func (h *HelmDeployer) deployRelease(ctx context.Context, out io.Writer, r lates
 
 		opts.upgrade = false
 		opts.flags = h.Flags.Install
+	} else {
+		if r.UpgradeOnChange != nil && !*r.UpgradeOnChange {
+			logrus.Infof("Release %s already installed...", releaseName)
+			return []Artifact{}, nil
+		} else if r.UpgradeOnChange == nil && r.Remote {
+			logrus.Infof("Release %s not upgraded as it is remote...", releaseName)
+			return []Artifact{}, nil
+		}
 	}
 
 	// Only build local dependencies, but allow a user to skip them.
