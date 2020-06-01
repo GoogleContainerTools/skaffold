@@ -17,20 +17,13 @@ limitations under the License.
 package runner
 
 import (
-	"io"
-
-	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes/debugging"
 )
 
-func (r *SkaffoldRunner) createContainerManager(out io.Writer) *debugging.ContainerManager {
+func (r *SkaffoldRunner) createContainerManager() *debugging.ContainerManager {
 	if !r.runCtx.Opts.IsDebugMode() {
 		return nil
 	}
 
-	return debugging.NewContainerManager(
-		out,
-		kubectl.NewFromRunContext(r.runCtx),
-		r.podSelector,
-		r.runCtx.Namespaces)
+	return debugging.NewContainerManager(r.podSelector, r.runCtx.Namespaces)
 }

@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -35,9 +36,55 @@ import (
 	typedappsv1 "k8s.io/client-go/kubernetes/typed/apps/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
+	"github.com/GoogleContainerTools/skaffold/integration/binpack"
 	pkgkubernetes "github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	k8s "github.com/GoogleContainerTools/skaffold/pkg/webhook/kubernetes"
 )
+
+type TestType int
+
+const (
+	CanRunWithoutGcp TestType = iota
+	NeedsGcp
+)
+
+func MarkIntegrationTest(t *testing.T, testType TestType) {
+	t.Helper()
+	if testing.Short() {
+		t.Skip("skipping integration test")
+	}
+
+	if testType == NeedsGcp && !RunOnGCP() {
+		t.Skip("skipping GCP integration test")
+	}
+
+	if testType == CanRunWithoutGcp && RunOnGCP() {
+		t.Skip("skipping non-GCP integration test")
+	}
+
+	if partition() && testType == CanRunWithoutGcp && !matchesPartition(t.Name()) {
+		t.Skip(fmt.Sprintf("skipping non-GCP integration test that doesn't match partition %s", getPartition()))
+	}
+}
+
+func partition() bool {
+	return getPartition() != ""
+}
+
+func getPartition() string {
+	return os.Getenv("IT_PARTITION")
+}
+
+func matchesPartition(testName string) bool {
+	var partition int
+	m, lastPartition := binpack.Partitions()
+	if p, ok := m[testName]; ok {
+		partition = p
+	} else {
+		partition = lastPartition
+	}
+	return strconv.Itoa(partition) == getPartition()
+}
 
 func RunOnGCP() bool {
 	return os.Getenv("GCP_ONLY") == "true"

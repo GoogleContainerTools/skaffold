@@ -25,6 +25,7 @@ import (
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/build/tag"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/deploy"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/filemon"
+	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubectl"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/kubernetes"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/runner/runcontext"
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/schema/latest"
@@ -57,13 +58,13 @@ type SkaffoldRunner struct {
 	monitor  filemon.Monitor
 	listener Listener
 
-	cache                cache.Cache
-	changeSet            *changeSet
-	runCtx               *runcontext.RunContext
-	labellers            []deploy.Labeller
-	defaultLabeller      *deploy.DefaultLabeller
-	portForwardResources []*latest.PortForwardResource
-	builds               []build.Artifact
+	kubectlCLI      *kubectl.CLI
+	cache           cache.Cache
+	changeSet       changeSet
+	runCtx          *runcontext.RunContext
+	labellers       []deploy.Labeller
+	defaultLabeller *deploy.DefaultLabeller
+	builds          []build.Artifact
 
 	// podSelector is used to determine relevant pods for logging and portForwarding
 	podSelector *kubernetes.ImageList

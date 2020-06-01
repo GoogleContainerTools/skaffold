@@ -216,7 +216,7 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	forwarderManager := r.createForwarder(out)
 	defer forwarderManager.Stop()
 
-	debugContainerManager := r.createContainerManager(out)
+	debugContainerManager := r.createContainerManager()
 	defer debugContainerManager.Stop()
 
 	// Logs should be retrieved up to just before the deploy
@@ -234,13 +234,13 @@ func (r *SkaffoldRunner) Dev(ctx context.Context, out io.Writer, artifacts []*la
 	if err := debugContainerManager.Start(ctx); err != nil {
 		logrus.Warnln("Error starting debug container notification:", err)
 	}
-
 	// Start printing the logs after deploy is finished
-	if r.runCtx.Opts.TailDev {
-		if err := logger.Start(ctx); err != nil {
-			return fmt.Errorf("starting logger: %w", err)
-		}
+	if err := logger.Start(ctx); err != nil {
+		return fmt.Errorf("starting logger: %w", err)
 	}
+
+	color.Yellow.Fprintln(out, "Press Ctrl+C to exit")
+
 	event.DevLoopComplete(0)
 	return r.listener.WatchForChanges(ctx, out, func() error {
 		return r.doDev(ctx, out, logger, forwarderManager)

@@ -22,7 +22,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/docker/docker/builder/dockerignore"
 
@@ -31,14 +30,16 @@ import (
 
 // NormalizeDockerfilePath returns the absolute path to the dockerfile.
 func NormalizeDockerfilePath(context, dockerfile string) (string, error) {
-	if filepath.IsAbs(dockerfile) {
-		return dockerfile, nil
+	// Expected case: should be found relative to the context directory.
+	// If it does not exist, check if it's found relative to the current directory in case it's shared.
+	// Otherwise return the path relative to the context directory, where it should have been.
+	rel := filepath.Join(context, dockerfile)
+	if _, err := os.Stat(rel); os.IsNotExist(err) {
+		if _, err := os.Stat(dockerfile); err == nil || !os.IsNotExist(err) {
+			return filepath.Abs(dockerfile)
+		}
 	}
-
-	if !strings.HasPrefix(dockerfile, context) {
-		dockerfile = filepath.Join(context, dockerfile)
-	}
-	return filepath.Abs(dockerfile)
+	return filepath.Abs(rel)
 }
 
 // GetDependencies finds the sources dependencies for the given docker artifact.

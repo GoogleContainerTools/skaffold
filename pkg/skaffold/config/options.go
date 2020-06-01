@@ -37,7 +37,6 @@ type SkaffoldOptions struct {
 	Cleanup               bool
 	Notification          bool
 	Tail                  bool
-	TailDev               bool
 	SkipTests             bool
 	CacheArtifacts        bool
 	EnableRPC             bool

@@ -1,7 +1,6 @@
 package remote
 
 import (
-	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
@@ -53,6 +52,7 @@ func WithPreviousImage(imageName string) ImageOption {
 func FromBaseImage(imageName string) ImageOption {
 	return func(r *Image) (*Image, error) {
 		var err error
+
 		r.image, err = newV1Image(r.keychain, imageName)
 		if err != nil {
 			return nil, err
@@ -88,6 +88,7 @@ func newV1Image(keychain authn.Keychain, repoName string) (v1.Image, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	image, err := remote.Image(ref, remote.WithAuth(auth), remote.WithTransport(http.DefaultTransport))
 	if err != nil {
 		if transportErr, ok := err.(*transport.Error); ok && len(transportErr.Errors) > 0 {
@@ -98,13 +99,14 @@ func newV1Image(keychain authn.Keychain, repoName string) (v1.Image, error) {
 		}
 		return nil, fmt.Errorf("connect to repo store '%s': %s", repoName, err.Error())
 	}
+
 	return image, nil
 }
 
 func emptyImage() (v1.Image, error) {
 	cfg := &v1.ConfigFile{
-		Architecture: "amd64",
 		OS:           "linux",
+		Architecture: "amd64",
 		RootFS: v1.RootFS{
 			Type:    "layers",
 			DiffIDs: []v1.Hash{},
@@ -134,7 +136,6 @@ func (i *Image) Label(key string) (string, error) {
 	}
 	labels := cfg.Config.Labels
 	return labels[key], nil
-
 }
 
 func (i *Image) Env(key string) (string, error) {
@@ -151,6 +152,30 @@ func (i *Image) Env(key string) (string, error) {
 	return "", nil
 }
 
+func (i *Image) OS() (string, error) {
+	cfg, err := i.image.ConfigFile()
+	if err != nil || cfg == nil || cfg.OS == "" {
+		return "", fmt.Errorf("failed to get OS from config file for image '%s'", i.repoName)
+	}
+	return cfg.OS, nil
+}
+
+func (i *Image) OSVersion() (string, error) {
+	cfg, err := i.image.ConfigFile()
+	if err != nil || cfg == nil {
+		return "", fmt.Errorf("failed to get OSVersion from config file for image '%s'", i.repoName)
+	}
+	return cfg.OSVersion, nil
+}
+
+func (i *Image) Architecture() (string, error) {
+	cfg, err := i.image.ConfigFile()
+	if err != nil || cfg == nil || cfg.Architecture == "" {
+		return "", fmt.Errorf("failed to get Architecture from config file for image '%s'", i.repoName)
+	}
+	return cfg.Architecture, nil
+}
+
 func (i *Image) Rename(name string) {
 	i.repoName = name
 }
@@ -165,10 +190,7 @@ func (i *Image) Found() bool {
 		return false
 	}
 	_, err = remote.Image(ref, remote.WithAuth(auth), remote.WithTransport(http.DefaultTransport))
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 func (i *Image) Identifier() (imgutil.Identifier, error) {
@@ -314,7 +336,7 @@ func (i *Image) GetLayer(sha string) (io.ReadCloser, error) {
 }
 
 func (i *Image) AddLayer(path string) error {
-	layer, err := tarball.LayerFromFile(path, tarball.WithCompressionLevel(gzip.DefaultCompression))
+	layer, err := tarball.LayerFromFile(path)
 	if err != nil {
 		return err
 	}
@@ -374,7 +396,7 @@ func (i *Image) Save(additionalNames ...string) error {
 		return errors.Wrap(err, "get image layers")
 	}
 	cfg.History = make([]v1.History, len(layers))
-	for i, _ := range cfg.History {
+	for i := range cfg.History {
 		cfg.History[i] = v1.History{
 			Created: v1.Time{Time: imgutil.NormalizedDateTime},
 		}

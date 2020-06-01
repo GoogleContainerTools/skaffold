@@ -38,8 +38,10 @@ const (
 	crashLoopBackOff    = "CrashLoopBackOff"
 	runContainerError   = "RunContainerError"
 	imagePullErr        = "ErrImagePull"
+	imagePullBackOff    = "ImagePullBackOff"
 	errImagePullBackOff = "ErrImagePullBackOff"
 	containerCreating   = "ContainerCreating"
+	podKind             = "pod"
 )
 
 var (
@@ -67,6 +69,11 @@ func (p *PodValidator) Validate(ctx context.Context, ns string, opts metav1.List
 	var rs []Resource
 	for _, po := range pods.Items {
 		ps := p.getPodStatus(&po)
+		// The GVK group is not populated for List Objects. Hence set `kind` to `pod`
+		// See https://github.com/kubernetes-sigs/controller-runtime/pull/389
+		if po.Kind == "" {
+			po.Kind = podKind
+		}
 		rs = append(rs, NewResourceFromObject(&po, Status(ps.phase), ps.err, ps.statusCode))
 	}
 
@@ -196,14 +203,14 @@ func (p *podStatus) String() string {
 }
 
 func extractErrorMessageFromWaitingContainerStatus(c v1.ContainerStatus) (proto.StatusCode, error) {
-	// Extract meaning full error out of container statuses.
 	switch c.State.Waiting.Reason {
+	// Extract meaning full error out of container statuses.
 	case containerCreating:
 		return proto.StatusCode_STATUSCHECK_CONTAINER_CREATING, fmt.Errorf("creating container %s", c.Name)
 	case crashLoopBackOff:
 		// TODO, in case of container restarting, return the original failure reason due to which container failed.
 		return proto.StatusCode_STATUSCHECK_CONTAINER_RESTARTING, fmt.Errorf("restarting failed container %s", c.Name)
-	case imagePullErr, errImagePullBackOff:
+	case imagePullErr, imagePullBackOff, errImagePullBackOff:
 		return proto.StatusCode_STATUSCHECK_IMAGE_PULL_ERR, fmt.Errorf("container %s is waiting to start: %s can't be pulled", c.Name, c.Image)
 	case runContainerError:
 		match := runContainerRe.FindStringSubmatch(c.State.Waiting.Message)
