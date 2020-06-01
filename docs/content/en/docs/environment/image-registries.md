@@ -38,7 +38,22 @@ try to push the image as provided in the yaml.
 The image name rewriting strategies are designed to be *conflict-free*:
 the full image name is rewritten on top of the default-repo so similar image names don't collide in the base namespace (e.g.: repo1/example and repo2/example would collide in the target_namespace/example without this)
 
-Automated image name rewriting strategies are determined based on the default-repo, the original image repository and global config value `reconstruct-strategy`:
+Skaffold supports three rewriting strategies, as determined by the registry type of the default-repo value.  
+Two strategies are specific to the Google Container Registry (GCR or `gcr.io`) as  GCR allows for infinitely deep image repository names.
+
+* **Escaping Strategy**: (_escape & concat & truncate to 256_)
+
+   The original image reference is transformed to be a single repository component.
+   This strategy is selected for all registries other than GCR (gcr.io) due to their limited repository support.
+   [example]
+  
+*  **Reconstruct Strategy**: (GCR-specific)
+
+   Reconstruct Strategy will reconstruct the resulting image retaining the `project` id from `default-repo` and concatenate only the paths elements.
+   ...
+   
+* **Concatenation Strategy**: (GCR-specific)
+   ...
 
 * Non GCR Default Repository.
   * **strategy**: 		escape & concat & truncate to 256
