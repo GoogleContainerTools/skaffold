@@ -35,3 +35,7 @@ func (r *GenericRegistry) Update(reg Registry) Registry {
 func (r *GenericRegistry) Type() string {
 	return generic
 }
+
+func (r *GenericRegistry) Prefix() string {
+	return ESCRegex.ReplaceAllString(r.name, ReplaceStr)
+}

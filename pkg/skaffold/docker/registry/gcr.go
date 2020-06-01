@@ -70,3 +70,7 @@ func (r *GCRRegistry) Update(reg Registry) Registry {
 func (r *GCRRegistry) Type() string {
 	return GCR
 }
+
+func (r *GCRRegistry) Prefix() string {
+	return ESCRegex.ReplaceAllString(r.Name(), ReplaceStr)
+}

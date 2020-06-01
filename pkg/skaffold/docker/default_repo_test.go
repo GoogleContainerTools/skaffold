@@ -73,6 +73,13 @@ func TestImageReplaceDefaultRepo(t *testing.T) {
 			expectedImageNew: "gcr.io/default/registry",
 		},
 		{
+			description:      "generic image and GCR image",
+			image:            "mcr.microsoft.com/windows/servercore/image",
+			defaultRepo:      "gcr.io/my-project",
+			expectedImage:    "gcr.io/my-project/mcr_microsoft_com_windows_servercore_image",
+			expectedImageNew: "gcr.io/my-project/mcr_microsoft_com_windows_servercore_image",
+		},
+		{
 			description:      "provided image and defaultRepo have eu prefix",
 			image:            "eu.gcr.io/project/registry",
 			defaultRepo:      "eu.gcr.io/project",

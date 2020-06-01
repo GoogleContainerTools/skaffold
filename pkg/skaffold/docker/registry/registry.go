@@ -21,14 +21,17 @@ import (
 )
 
 const (
-	GCRRegex = `(.*\.)?gcr.io/[a-zA-Z0-9-_]+/?`
-	generic  = "generic"
-	GCR      = "gcr"
+	generic    = "generic"
+	GCR        = "gcr"
+	ReplaceStr = "_"
 )
 
 type Registry interface {
 	// Name returns the string representation of the registry
 	Name() string
+
+	// Prefix returns the string representation of the registry
+	Prefix() string
 
 	// Replace replaces the current registry in a given registry name to input registry
 	Update(reg Registry) Registry
@@ -38,12 +41,13 @@ type Registry interface {
 }
 
 var (
-	gcrPrefixRegex = regexp.MustCompile(GCRRegex)
+	GCRPrefixRegex = regexp.MustCompile(`(.*\.)?gcr.io/[a-zA-Z0-9-_]+/?`)
+	ESCRegex       = regexp.MustCompile(`[/._:@]`)
 )
 
 // New takes an input string repo and parses it to return the appropriate registry type
 func New(repo string) Registry {
-	if gcrPrefixRegex.MatchString(repo) {
+	if GCRPrefixRegex.MatchString(repo) {
 		if reg, err := NewGCRRegistry(repo); err == nil {
 			return reg
 		}
