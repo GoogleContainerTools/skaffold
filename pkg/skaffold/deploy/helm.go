@@ -636,6 +636,8 @@ func envVarForImage(imageName string, digest string) map[string]string {
 		customMap[constants.ImageRef.Repo] = ref.BaseName
 		customMap[constants.ImageRef.Tag] = ref.Tag
 		customMap[constants.ImageRef.Digest] = ref.Digest
+	} else {
+		logrus.Warnf("unable to extract values for %v, %v and %v from image %v due to error:\n%v", constants.ImageRef.Repo, constants.ImageRef.Tag, constants.ImageRef.Digest, digest, err)
 	}
 
 	if digest == "" {
