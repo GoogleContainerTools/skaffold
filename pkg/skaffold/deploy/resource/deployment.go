@@ -105,12 +105,12 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 	}
 
 	details := d.cleanupStatus(string(b))
-	d.UpdateStatus(details, err)
-
 	err = parseKubectlRolloutError(err)
 	if err == errKubectlKilled {
 		err = fmt.Errorf("received Ctrl-C or deployments could not stabilize within %v: %w", d.deadline, err)
-	} else if err := d.fetchPods(ctx); err != nil {
+	}
+	d.UpdateStatus(details, err)
+	if err := d.fetchPods(ctx); err != nil {
 		logrus.Debugf("pod statuses could be fetched this time due to %s", err)
 	}
 }
@@ -119,7 +119,6 @@ func (d *Deployment) String() string {
 	if d.namespace == "default" {
 		return fmt.Sprintf("%s/%s", d.rType, d.name)
 	}
-
 	return fmt.Sprintf("%s:%s/%s", d.namespace, d.rType, d.name)
 }
 
