@@ -36,9 +36,12 @@ import (
 )
 
 const (
-	renderedManifestsStagingDir  = "render_temp_"
+	manifestsStagingFolder       = "manifest_tmp"
 	renderedManifestsStagingFile = "rendered_manifest.yaml"
+	gcsPrefix                    = "gs://"
 )
+
+var manifestTmpDir = filepath.Join(os.TempDir(), manifestsStagingFolder)
 
 func parseRuntimeObject(namespace string, b []byte) (*Artifact, error) {
 	d := scheme.Codecs.UniversalDeserializer()
@@ -101,10 +104,10 @@ func outputRenderedManifests(renderedManifests string, output string, manifestOu
 	case output == "":
 		_, err := fmt.Fprintln(manifestOut, renderedManifests)
 		return err
-	case strings.HasPrefix(output, "gs://"):
-		tempDir, err := ioutil.TempDir("", renderedManifestsStagingDir)
+	case strings.HasPrefix(output, gcsPrefix):
+		tempDir, err := ioutil.TempDir("", manifestsStagingFolder)
 		if err != nil {
-			return fmt.Errorf("failed to create tmp directory: %w", err)
+			return fmt.Errorf("failed to create the tmp directory: %w", err)
 		}
 		defer os.RemoveAll(tempDir)
 		tempFile := filepath.Join(tempDir, renderedManifestsStagingFile)
@@ -129,4 +132,22 @@ func dumpToFile(renderedManifests string, filepath string) error {
 	defer f.Close()
 	_, err = f.WriteString(renderedManifests + "\n")
 	return err
+}
+
+// Returns relative path pointing to the GCS temp dir
+func downloadManifestsFromGCS(manifests []string) (string, error) {
+	if err := os.MkdirAll(manifestTmpDir, os.ModePerm); err != nil {
+		return "", fmt.Errorf("failed to create the tmp directory: %w", err)
+	}
+	for _, manifest := range manifests {
+		if manifest == "" || !strings.HasPrefix(manifest, gcsPrefix) {
+			return "", fmt.Errorf("%v is not a valid GCS path", manifest)
+		}
+		gcs := util.Gsutil{}
+		if err := gcs.Copy(context.Background(), manifest, manifestTmpDir, true); err != nil {
+			return "", fmt.Errorf("failed to download manifests fom GCS: %w", err)
+		}
+	}
+	return manifestTmpDir, nil
+
 }

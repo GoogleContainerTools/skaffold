@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -606,6 +607,61 @@ spec:
 			err := deployer.Render(context.Background(), &b, test.builds, test.labels, "")
 			t.CheckNoError(err)
 			t.CheckDeepEqual(test.expected, b.String())
+		})
+	}
+}
+
+func TestGCSManifests(t *testing.T) {
+
+	tests := []struct {
+		description string
+		cfg         *latest.KubectlDeploy
+		commands    util.Command
+		shouldErr   bool
+		skipRender  bool
+	}{
+		{
+			description: "manifest from GCS",
+			cfg: &latest.KubectlDeploy{
+				Manifests: []string{"gs://dev/deployment.yaml"},
+			},
+			commands: testutil.
+				CmdRunOut(fmt.Sprintf("gsutil cp -r %s %s", "gs://dev/deployment.yaml", manifestTmpDir), "log").
+				AndRunOut("kubectl version --client -ojson", kubectlVersion112).
+				AndRunOut("kubectl --context kubecontext --namespace testNamespace create --dry-run -oyaml -f "+manifestTmpDir+"/deployment.yaml", deploymentWebYAML).
+				AndRun("kubectl --context kubecontext --namespace testNamespace apply -f -"),
+			skipRender: true,
+		}}
+
+	for _, test := range tests {
+		testutil.Run(t, test.description, func(t *testutil.T) {
+
+			t.Override(&util.DefaultExecCommand, test.commands)
+			if err := os.MkdirAll(manifestTmpDir, os.ModePerm); err != nil {
+				t.Fatal(err)
+			}
+			if err := ioutil.WriteFile(manifestTmpDir+"/deployment.yaml", []byte(deploymentWebYAML), os.ModePerm); err != nil {
+				t.Fatal(err)
+			}
+			k := NewKubectlDeployer(&runcontext.RunContext{
+				WorkingDir: ".",
+				Cfg: latest.Pipeline{
+					Deploy: latest.DeployConfig{
+						DeployType: latest.DeployType{
+							KubectlDeploy: test.cfg,
+						},
+					},
+				},
+				KubeContext: testKubeContext,
+				Opts: config.SkaffoldOptions{
+					Namespace:  testNamespace,
+					SkipRender: test.skipRender,
+				},
+			})
+
+			err := k.Deploy(context.Background(), ioutil.Discard, nil, nil).GetError()
+
+			t.CheckError(test.shouldErr, err)
 		})
 	}
 }
