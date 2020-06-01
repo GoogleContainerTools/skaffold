@@ -113,7 +113,6 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 	} else if err := d.fetchPods(ctx); err != nil {
 		logrus.Debugf("pod statuses could be fetched this time due to %s", err)
 	}
-
 }
 
 func (d *Deployment) String() string {
@@ -138,8 +137,8 @@ func (d *Deployment) IsStatusCheckComplete() bool {
 
 // This returns a string representing deployment status along with tab header
 // e.g.
-//  - testNs/leeroy-app: waiting for rollout to complete. (1/2) pending
-//      - testNs/leeroy-app-xvbg : error pulling container image
+//  - testNs:deployment/leeroy-app: waiting for rollout to complete. (1/2) pending
+//      - testNs:pod/leeroy-app-xvbg : error pulling container image
 func (d *Deployment) ReportSinceLastUpdated() string {
 	if !d.status.changed {
 		return ""
