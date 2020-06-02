@@ -115,7 +115,7 @@ func TestBuildAndTestSkipBuild(t *testing.T) {
 	testutil.Run(t, "", func(t *testutil.T) {
 		testBench := &TestBench{}
 		runner := createRunner(t, testBench, nil)
-		runner.runCtx.Opts.SkipBuild = true
+		runner.runCtx.Opts.DigestSource = "none"
 
 		bRes, err := runner.BuildAndTest(context.Background(), ioutil.Discard, []*latest.Artifact{
 			{ImageName: "img1"},

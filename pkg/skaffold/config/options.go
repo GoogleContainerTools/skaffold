@@ -50,7 +50,6 @@ type SkaffoldOptions struct {
 	RenderOnly            bool
 	ProfileAutoActivation bool
 	DryRun                bool
-	SkipBuild             bool
 	PortForward           PortForwardOptions
 	CustomTag             string
 	Namespace             string
@@ -58,6 +57,7 @@ type SkaffoldOptions struct {
 	Trigger               string
 	KubeContext           string
 	KubeConfig            string
+	DigestSource          string
 	WatchPollInterval     int
 	DefaultRepo           StringOrUndefined
 	CustomLabels          []string

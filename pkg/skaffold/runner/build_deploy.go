@@ -39,8 +39,8 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 		return nil, err
 	}
 
-	// In dry-run mode or when the skip build flag set to true, we don't build anything, just return the tag for each artifact.
-	if r.runCtx.Opts.DryRun || r.runCtx.Opts.SkipBuild {
+	// In dry-run mode or --digest-source  set to 'remote' or 'none', we don't build anything, just return the tag for each artifact.
+	if r.runCtx.Opts.DryRun || (r.runCtx.Opts.DigestSource == "remote" || r.runCtx.Opts.DigestSource == "none") {
 		var bRes []build.Artifact
 
 		for _, artifact := range artifacts {

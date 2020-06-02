@@ -697,10 +697,11 @@ The following options can be passed to any command:
 
 Examples:
   # Hydrate Kubernetes manifests without building the images 
-  skaffold render --skip-build
+  skaffold render --digest-source=remote
 
 Options:
   -d, --default-repo='': Default repository value (overrides global config)
+      --digest-source='local': Set to 'local' to build and tag images, and output templated Kubernetes manifests; Set to 'remote' to resolve the digest of the image by tag from the container registry and output templated Kubernetes manifests; Set to 'none' to output templated Kubernetes manifests with images listed in skaffold.yaml
   -f, --filename='skaffold.yaml': Path or URL to the Skaffold config file
   -l, --label=[]: Add custom labels to deployed objects. Set multiple times for multiple labels
       --loud=false: Show the build logs and output
@@ -708,7 +709,6 @@ Options:
       --output='': file to write rendered manifests to
   -p, --profile=[]: Activate profiles by name (prefixed with `-` to disable a profile)
       --profile-auto-activation=true: Set to false to disable profile auto activation
-      --skip-build=false: Don't build images, just hydrate Kubernetes manifests.
 
 Usage:
   skaffold render [options]
@@ -720,6 +720,7 @@ Use "skaffold options" for a list of global command-line options (applies to all
 Env vars:
 
 * `SKAFFOLD_DEFAULT_REPO` (same as `--default-repo`)
+* `SKAFFOLD_DIGEST_SOURCE` (same as `--digest-source`)
 * `SKAFFOLD_FILENAME` (same as `--filename`)
 * `SKAFFOLD_LABEL` (same as `--label`)
 * `SKAFFOLD_LOUD` (same as `--loud`)
@@ -727,7 +728,6 @@ Env vars:
 * `SKAFFOLD_OUTPUT` (same as `--output`)
 * `SKAFFOLD_PROFILE` (same as `--profile`)
 * `SKAFFOLD_PROFILE_AUTO_ACTIVATION` (same as `--profile-auto-activation`)
-* `SKAFFOLD_SKIP_BUILD` (same as `--skip-build`)
 
 ### skaffold run
 
