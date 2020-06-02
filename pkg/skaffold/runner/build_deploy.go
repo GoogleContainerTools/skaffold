@@ -40,7 +40,7 @@ func (r *SkaffoldRunner) BuildAndTest(ctx context.Context, out io.Writer, artifa
 	}
 
 	// In dry-run mode or --digest-source  set to 'remote' or 'none', we don't build anything, just return the tag for each artifact.
-	if r.runCtx.Opts.DryRun || (r.runCtx.Opts.DigestSource == "remote" || r.runCtx.Opts.DigestSource == "none") {
+	if r.runCtx.Opts.DryRun || (r.runCtx.Opts.DigestSource == remoteDigestSource || r.runCtx.Opts.DigestSource == noneDigestSource) {
 		var bRes []build.Artifact
 
 		for _, artifact := range artifacts {
