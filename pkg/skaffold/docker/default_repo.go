@@ -72,7 +72,7 @@ func truncate(image string) string {
 	return image
 }
 
-func substituteDefaultRepoIntoImageWithRewrite(defaultRepo string, image string) string {	
+func substituteDefaultRepoIntoImageWithRewrite(defaultRepo string, image string) string {
 	oldRepo, image := splitImage(image)
 	defaultRepository := registry.New(defaultRepo)
 	newRepo := oldRepo.Update(defaultRepository)
