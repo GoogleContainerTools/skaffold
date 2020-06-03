@@ -1062,7 +1062,7 @@ func TestHelmRender(t *testing.T) {
 			shouldErr:   false,
 			commands: testutil.
 				CmdRunWithOutput("helm version", version31).
-				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set image.name=<no value> --set image.tag=<no value> --set missing.key=<no value> --set other.key=<no value> --set some.key=somevalue --kubeconfig kubeconfig"),
+				AndRun("helm --kube-context kubecontext template skaffold-helm examples/test --set-string image=skaffold-helm:tag1 --set image.name=skaffold-helm --set image.tag=skaffold-helm:tag1 --set missing.key=<no value> --set other.key=<no value> --set some.key=somevalue --kubeconfig kubeconfig"),
 			runContext: makeRunContext(testDeployConfigTemplated, false),
 			builds: []build.Artifact{
 				{
