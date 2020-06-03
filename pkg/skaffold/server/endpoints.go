@@ -20,6 +20,8 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/skaffold/event"
 	"github.com/GoogleContainerTools/skaffold/proto"
@@ -67,61 +69,41 @@ func (s *server) Execute(ctx context.Context, intent *proto.UserIntentRequest) (
 }
 
 func (s *server) AutoBuild(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
-	res = &empty.Empty{}
-	autoBuild := request.GetState().Enabled
-	updateAutoBuild, err := event.AutoTriggerDiff("build", autoBuild)
-	if err != nil {
-		return
-	}
-	if !updateAutoBuild {
-		return
-	}
-	event.UpdateStateAutoBuildTrigger(autoBuild)
-	if autoBuild {
-		// reset state only when autoBuild is being set to true
-		event.ResetStateOnBuild()
-	}
-	go func() {
-		s.autoBuildCallback(autoBuild)
-	}()
-	return
+	return executeAutoTrigger("build", request, event.UpdateStateAutoBuildTrigger, event.ResetStateOnBuild, s.autoBuildCallback)
 }
 
 func (s *server) AutoDeploy(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
-	res = &empty.Empty{}
-	autoDeploy := request.GetState().Enabled
-	updateAutoDeploy, err := event.AutoTriggerDiff("deploy", autoDeploy)
-	if err != nil {
-		return
-	}
-	if !updateAutoDeploy {
-		return
-	}
-
-	event.UpdateStateAutoDeployTrigger(autoDeploy)
-	if autoDeploy {
-		// reset state only when autoDeploy is being set to true
-		event.ResetStateOnDeploy()
-	}
-	go func() {
-		s.autoDeployCallback(autoDeploy)
-	}()
-	return
+	return executeAutoTrigger("deploy", request, event.UpdateStateAutoDeployTrigger, event.ResetStateOnDeploy, s.autoDeployCallback)
 }
 
 func (s *server) AutoSync(ctx context.Context, request *proto.TriggerRequest) (res *empty.Empty, err error) {
+	return executeAutoTrigger("sync", request, event.UpdateStateAutoSyncTrigger, func() {}, s.autoSyncCallback)
+}
+
+func executeAutoTrigger(triggerName string, request *proto.TriggerRequest, updateTriggerStateFunc func(bool), resetPhaseStateFunc func(), serverCallback func(bool)) (res *empty.Empty, err error) {
 	res = &empty.Empty{}
-	autoSync := request.GetState().Enabled
-	updateAutoSync, err := event.AutoTriggerDiff("sync", autoSync)
+	v, ok := request.GetState().GetVal().(*proto.TriggerState_Enabled)
+	if !ok {
+		err = status.Error(codes.InvalidArgument, "missing required boolean parameter 'enabled'")
+		return
+	}
+	trigger := v.Enabled
+	update, err := event.AutoTriggerDiff(triggerName, trigger)
 	if err != nil {
 		return
 	}
-	if !updateAutoSync {
+	if !update {
+		err = status.Errorf(codes.AlreadyExists, "auto %v is already set to %t", triggerName, trigger)
 		return
 	}
-	event.UpdateStateAutoSyncTrigger(autoSync)
+	// update trigger state
+	updateTriggerStateFunc(trigger)
+	if trigger {
+		// reset phase state only when auto trigger is being set to true
+		resetPhaseStateFunc()
+	}
 	go func() {
-		s.autoSyncCallback(autoSync)
+		serverCallback(trigger)
 	}()
 	return
 }

@@ -220,7 +220,9 @@ func TestDevAutoSyncAPITrigger(t *testing.T) {
 
 	rpcClient.AutoSync(context.Background(), &proto.TriggerRequest{
 		State: &proto.TriggerState{
-			Enabled: true,
+			Val: &proto.TriggerState_Enabled{
+				Enabled: true,
+			},
 		},
 	})
 
@@ -233,7 +235,9 @@ func TestDevAutoSyncAPITrigger(t *testing.T) {
 
 	rpcClient.AutoSync(context.Background(), &proto.TriggerRequest{
 		State: &proto.TriggerState{
-			Enabled: false,
+			Val: &proto.TriggerState_Enabled{
+				Enabled: true,
+			},
 		},
 	})
 }

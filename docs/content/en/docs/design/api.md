@@ -323,12 +323,13 @@ func main() {
     defer ctxCancel()
     // `client` is the gRPC client with connection to localhost:50051.
     _, err = client.AutoBuild(ctx, &pb.TriggerRequest{
-        State: &pb.TriggerState{
-            Enabled:  true,
-        },
-    })
-    if err != nil {
-        log.Fatalf("error when trying to execute phases: %v", err)
+		State: &pb.TriggerState{
+			Val: &pb.TriggerState_Enabled{
+				Enabled: true,
+			},
+		},
+	})    if err != nil {
+        log.Fatalf("error when trying to auto trigger phases: %v", err)
     }
 }
 ```
