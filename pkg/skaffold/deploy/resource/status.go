@@ -19,6 +19,7 @@ package resource
 type Status struct {
 	err      error
 	details  string
+	changed  bool
 	reported bool
 }
 
@@ -47,5 +48,6 @@ func newStatus(msg string, err error) Status {
 	return Status{
 		details: msg,
 		err:     err,
+		changed: true,
 	}
 }
