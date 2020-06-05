@@ -72,11 +72,11 @@ func statusCheck(ctx context.Context, defaultLabeller *DefaultLabeller, runCtx *
 		return fmt.Errorf("getting Kubernetes client: %w", err)
 	}
 
-	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller, getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds))
+	deployments, err := getDeployments(client, runCtx.Opts.Namespace, defaultLabeller,
+		getDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds))
 	if err != nil {
 		return fmt.Errorf("could not fetch deployments: %w", err)
 	}
-
 	deadline := statusCheckMaxDeadline(runCtx.Cfg.Deploy.StatusCheckDeadlineSeconds, deployments)
 
 	var wg sync.WaitGroup

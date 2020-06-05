@@ -105,6 +105,15 @@ var (
 	Timeout = "TIMEOUT"
 )
 
+var ImageRef = struct {
+	Repo   string
+	Tag    string
+	Digest string
+}{
+	Repo:   "IMAGE_REPO",
+	Tag:    "IMAGE_TAG",
+	Digest: "IMAGE_DIGEST",
+}
 var DefaultKubectlManifests = []string{"k8s/*.yaml"}
 
 var Labels = struct {

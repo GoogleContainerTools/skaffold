@@ -733,7 +733,7 @@ type ArtifactType struct {
 	KanikoArtifact *KanikoArtifact `yaml:"kaniko,omitempty" yamltags:"oneOf=artifact"`
 
 	// BuildpackArtifact builds images using [Cloud Native Buildpacks](https://buildpacks.io/).
-	BuildpackArtifact *BuildpackArtifact `yaml:"buildpack,omitempty" yamltags:"oneOf=artifact"`
+	BuildpackArtifact *BuildpackArtifact `yaml:"buildpacks,omitempty" yamltags:"oneOf=artifact"`
 
 	// CustomArtifact *beta* builds images using a custom build script written by the user.
 	CustomArtifact *CustomArtifact `yaml:"custom,omitempty" yamltags:"oneOf=artifact"`
@@ -769,7 +769,7 @@ type BuildpackArtifact struct {
 	Dependencies *BuildpackDependencies `yaml:"dependencies,omitempty"`
 }
 
-// BuildpackDependencies *alpha* is used to specify dependencies for an artifact built by a buildpack.
+// BuildpackDependencies *alpha* is used to specify dependencies for an artifact built by buildpacks.
 type BuildpackDependencies struct {
 	// Paths should be set to the file dependencies for this artifact, so that the skaffold file watcher knows when to rebuild and perform file synchronization.
 	Paths []string `yaml:"paths,omitempty" yamltags:"oneOf=dependency"`

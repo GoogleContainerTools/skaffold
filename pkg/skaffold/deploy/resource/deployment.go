@@ -20,10 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
-	"time"
 
 	"github.com/sirupsen/logrus"
+	"strings"
+	"time"
 
 	"github.com/GoogleContainerTools/skaffold/pkg/diag"
 	"github.com/GoogleContainerTools/skaffold/pkg/diag/validator"
@@ -73,8 +73,8 @@ func (d *Deployment) UpdateStatus(details string, err error) {
 		d.status.changed = false
 		return
 	}
-	d.status.changed = true
 	d.status = updated
+	d.status.changed = true
 	if strings.Contains(details, rollOutSuccess) || isErrAndNotRetryAble(err) {
 		d.done = true
 	}
@@ -105,10 +105,12 @@ func (d *Deployment) CheckStatus(ctx context.Context, runCtx *runcontext.RunCont
 	}
 
 	details := d.cleanupStatus(string(b))
+
 	err = parseKubectlRolloutError(err)
 	if err == errKubectlKilled {
 		err = fmt.Errorf("received Ctrl-C or deployments could not stabilize within %v: %w", d.deadline, err)
 	}
+
 	d.UpdateStatus(details, err)
 	if err := d.fetchPods(ctx); err != nil {
 		logrus.Debugf("pod statuses could be fetched this time due to %s", err)
@@ -119,6 +121,7 @@ func (d *Deployment) String() string {
 	if d.namespace == "default" {
 		return fmt.Sprintf("%s/%s", d.rType, d.name)
 	}
+
 	return fmt.Sprintf("%s:%s/%s", d.namespace, d.rType, d.name)
 }
 
@@ -139,9 +142,10 @@ func (d *Deployment) IsStatusCheckComplete() bool {
 //  - testNs:deployment/leeroy-app: waiting for rollout to complete. (1/2) pending
 //      - testNs:pod/leeroy-app-xvbg : error pulling container image
 func (d *Deployment) ReportSinceLastUpdated() string {
-	if !d.status.changed {
+	if d.status.reported && !d.status.changed {
 		return ""
 	}
+	d.status.reported = true
 	if d.status.String() == "" {
 		return ""
 	}

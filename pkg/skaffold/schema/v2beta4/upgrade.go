@@ -27,6 +27,7 @@ import (
 // 1. Additions:
 // 2. Removals:
 // 3. Updates:
+//    + Rename `buildpack` to `buildpacks`
 func (c *SkaffoldConfig) Upgrade() (util.VersionedConfig, error) {
 	var newConfig next.SkaffoldConfig
 	pkgutil.CloneThroughJSON(c, &newConfig)
